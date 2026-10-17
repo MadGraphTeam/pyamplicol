@@ -136,3 +136,49 @@ workspace reference `papers` directory:
 * [UFO 2.0](https://arxiv.org/pdf/2304.09883)
 * [SM rational terms and gamma-five schemes](https://arxiv.org/pdf/1106.5030)
 * [Chiral symmetry-restoring counterterms](https://arxiv.org/pdf/2406.17013)
+
+## Exact tensor and direct-R2 R0 oracle
+
+`tensor_oracle.py` uses the public Symbolica Community tensor, HEP graph,
+amplitude and one-loop APIs. Run with the licensed Community environment:
+
+```bash
+python3 tools/loop_reference/tensor_oracle.py \
+  --output "$LOOP_REFERENCE_ROOT/runs/tensor-r0/report.json"
+python3 -m pytest tools/loop_reference/test_tensor_oracle.py -q
+```
+
+The exact checks contract physical and evanescent representation identities,
+verify a dimensional Dirac trace, retain its explicit epsilon coefficient,
+and verify that gamma-five anticommutes in four dimensions while the generic
+dimensional chain remains unsimplified. The last result is a capability
+boundary: no BMHV algebra, chiral electroweak or finite symmetry-restoring
+counterterm certificate follows from it. Separate representation ports
+prevent accidental contractions; a general split Clifford algebra remains
+to be implemented through the dependency.
+
+The nonchiral top-loop Higgs-to-diphoton oracle is adapted from Community's
+example, retaining its generated graph weights, fermion signs and routing.
+It generates both orientations independently in D and four dimensions.
+With `q_D^2=q_4^2-mu2`, the full tensor difference per orientation is
+`-4*mu2*g4(mu,nu)` after stripping `Nc*Q^2*e^2*y*m`. Physical transverse
+projection, summing orientations and the form-factor normalization give
+`2*mu2`. Dependency reduction computes the extra-dimensional integral
+`I(q_tilde^2)=-1/2`, hence the normalized `R2=1`. The separate full-D
+reduction retains the epsilon-dependent bubble coefficient and gives total
+rational term 2; `R1=1` is inferred from that total minus R2.
+
+`diphoton_r2.json` exports the exact polynomial and a nonsingular massive
+triangle route for the NinjaRS adapter: epsilon sectors `[2*mu2, 0, 0]`,
+expected Laurent coefficients `[1, 0, 0]`. Its rational-number strings
+should be converted directly into the target arithmetic, without binary64
+intermediates. The integration identity used to obtain the extra-dimensional
+integral is an integrated rotational identity, not a pointwise numerator
+replacement. The oracle uses no effective R2 vertex.
+
+This is a small symbolic validation oracle, not the production recurrence,
+an extension to loop-induced process support, a proof for CMS/BSM models,
+or a numerical precision/batch test. It was exercised with the published
+Community distribution 3.0.2 (kernel 3.0.1). The executable checks require
+a license because graph generation uses native workers. Keep the license
+in the process environment; do not put it in fixtures or reports.
