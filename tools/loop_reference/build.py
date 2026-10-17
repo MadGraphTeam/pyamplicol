@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: 0BSD
 """Compile the small native controls against already built reference providers."""
 
 import argparse

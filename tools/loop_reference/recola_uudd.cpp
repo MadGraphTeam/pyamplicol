@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: 0BSD
 #include "native_driver.hpp"
 extern "C" {
 void reference_recola_init(double, double, double, double);

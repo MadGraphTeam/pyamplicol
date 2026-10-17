@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: 0BSD
 """Compare actual virtual poles from native reference controls, plus QCD oracles."""
 
 import argparse

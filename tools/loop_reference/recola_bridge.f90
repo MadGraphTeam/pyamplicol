@@ -1,3 +1,4 @@
+! SPDX-License-Identifier: 0BSD
 ! Use the public Fortran API: Recola 2.3.0's C++ header has unrelated missing
 ! declarations, and the reference library itself need not be patched.
 subroutine reference_recola_init(alpha_s, mu, mt, mb) bind(C)

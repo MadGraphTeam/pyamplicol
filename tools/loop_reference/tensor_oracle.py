@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: 0BSD AND MIT
 """Exact dependency-backed conformance checks for the direct-R2 R0 milestone.
 
 This is an algebra oracle, not the production recurrence or a capability

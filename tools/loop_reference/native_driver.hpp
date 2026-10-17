@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: 0BSD
 // Small reference-control driver. Provider calls and timing loops stay native.
 #pragma once
 #include <array>

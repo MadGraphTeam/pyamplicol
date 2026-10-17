@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: 0BSD
 """Run explicitly with the licensed Community environment; no external providers."""
 
 import json
