@@ -714,8 +714,9 @@ Source scalar callbacks and their diagnostics use those same carriers.
 Points, helicities and coefficient components have explicit ordered layouts.
 Native buffers retain original point identities through compaction, tail batches,
 failure masks and result scatter. Changing sizes, empty batches and repeated
-calls are covered. Python coordinates batch plans; it does not evaluate each
-phase-space point in an interpreted numerical loop.
+calls are covered. Headline timings use Python to coordinate native batch plans.
+The shared Rust coordinator now executes complete bounded QCD plans in one call,
+with all three carriers checked; source-model composition is under validation.
 
 The coefficient scheduler uses bounded row tiles and reusable scratch storage.
 Its present 16-row default is a measured development choice, not a universal
@@ -745,9 +746,9 @@ Internal PACBIN controls retain model-rule four-quark/top, direct-gluon and
 source-owned complete gluon plans, including external fields. Fresh double/DD/AP
 views need neither source models nor producer graphs. Source v3 retains exact
 parameter snapshots, shared ordinary/CT scale views and checked scalar columns.
-Formal-colour/correlated portable plans, source direct mode, rescue, public
-artifacts and SDKs remain open. Numerical primitives have shared Rust bindings;
-native process coordination is under validation.
+The native source owner also passes exact-update, concurrent-publication,
+retained-snapshot and per-point-scale controls. Formal/correlated portable plans,
+source direct mode, rescue, public artifacts and SDKs remain open.
 
 == Success, accuracy and rescue are different facts
 A reducer's success flag is not an accuracy certificate. Native checks reject
@@ -848,7 +849,7 @@ complete answer cannot conceal a wrong component.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
-  [Public delivery], [A development install passes the public tree smoke. Source-free PACBIN model-rule quark/top and direct-gluon roundtrips include fields and all three carriers; public loop artifacts, commands and SDK/UMAMI remain open.],
+  [Public delivery], [Source-free PACBIN includes complete source-model plans. The shared Rust coordinator passes bounded QCD controls in all three carriers; native source composition, public loop artifacts, commands and SDK/UMAMI remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
@@ -861,6 +862,9 @@ unavailable public OpenLoops channel is not invented for comparison.
 
 The generic-any-$n$ consumer is adopted after a seven-propagator anchor in all
 three carriers; high-multiplicity physical validation is still a separate gate.
+For $u overline(u) -> e^- e^+ g g$, MadLoop/Recola reference points and the
+additional local counterterm tensor checks pass; complete pyAmpliCol validation
+is pending, so this process has no timing row yet.
 Rank above the supported $n+1$ domain must reject. Required progress also includes broader cold-plan and portable-plan coverage, optional FFT,
 complete correlation/mapping transport and broader certified model coverage.
 These requirements remain visible even when a smaller control is fast.
