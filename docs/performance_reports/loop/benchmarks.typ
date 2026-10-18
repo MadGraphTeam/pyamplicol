@@ -199,6 +199,7 @@
         v(5pt)
         text(size: 10.5pt, weight: "semibold", label(c.case))
         linebreak()
+        if c.case == "dy" { text(size: 7pt, fill: grey)[photon only]; linebreak() }
         text(size: 7pt, fill: grey)[#c.counts.loop_graphs #if c.counts.loop_graphs == 1 [loop] else [loops]\ #c.counts.families #if c.counts.families == 1 [family] else [families]]
       }),
       ..("pyamplicol", "madloop", "recola", "openloops").map(p => provider-box(c, p)),
@@ -252,11 +253,12 @@ Instrumented stage lines: $B=32$ for two-to-two, $B=128$ for five-leg; no stage 
 )
 #v(7pt)
 #text(size: 8.2pt)[
-  Five warm calls on repeated three-point streams; no event reuse. CPU 382, one
-  thread/shared host. pyAmpliCol includes decimal ingress/Python scheduling with
-  rescue off; providers use native arrays and their own rescue policies. Formatting
-  is excluded. Fresh preparation: CPU 380, ML DY 381, Recola DY 382; no cache flush
-  or uncertainty estimate. Recola photon-only DY passes analytic checks; OL DY is absent.
+  Five warm calls on repeated three-point streams; no cached event results in
+  pyAmpliCol. CPU 382, one thread/shared host. pyAmpliCol includes decimal ingress/
+  Python scheduling with rescue off; providers retain native-array input and normal
+  rescue/cache policies. Formatting is excluded. Preparation: CPU 380, ML DY 381,
+  Recola DY 382; no cache flush or uncertainty estimate. Recola photon-only DY
+  passes analytic checks; OL DY is absent.
 ]
 #v(3pt)
 #text(size: 8.6pt)[
@@ -309,7 +311,8 @@ Instrumented stage lines: $B=32$ for two-to-two, $B=128$ for five-leg; no stage 
   fill: (x,y) => if y == 0 { navy } else { none },
   table.header(header[Process / strategy], header[Single point · $B=1$], header[Native batch · $B=128$], header[Generation · seconds]),
   ..rows.map(c => (
-    { v(8pt); text(size: 12pt, weight: "bold", label(c.case)); linebreak(); v(4pt);
+    { v(8pt); text(size: 12pt, weight: "bold", label(c.case)); linebreak();
+      if c.case == "dy" { text(size: 8pt, fill: grey)[photon only]; linebreak() }; v(4pt);
       text(size: 8.5pt, fill: grey)[#if c.full.r2_strategy == "direct" [Direct $R_2$] else [Model-rule $R_2$]] },
     colour-warm(c,1), colour-warm(c,128),
     { v(8pt); text(size: 9pt)[LC: *#fmt(c.lc.generation_s,digits: 2)* s]; linebreak();
