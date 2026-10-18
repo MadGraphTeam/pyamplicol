@@ -39,12 +39,31 @@ def color_oracle(entries, catalogue, mg5_source, ufo_path):
         ufo = models.load_model(str(ufo_path.resolve()))
         converter = import_ufo.UFOMG5Converter(ufo)
         external_legs = len(entries[0].particle_ids)
-        if external_legs not in (3, 4) or any(
+        if external_legs not in (2, 3, 4) or any(
             len(entry.particle_ids) != external_legs for entry in entries
         ):
-            raise ValueError("local gluon colour oracle requires three or four legs")
+            raise ValueError("local gauge colour oracle requires two to four legs")
+        particles = tuple(
+            catalogue.model.raw.collections["particles"][index]["fields"]
+            for index in entries[0].particle_ids
+        )
+        colors = tuple(item["color"] for item in particles)
+        if any(color not in (1, 8) for color in colors) or any(
+            tuple(
+                catalogue.model.raw.collections["particles"][index]["fields"]["color"]
+                for index in entry.particle_ids
+            )
+            != colors
+            for entry in entries
+        ):
+            raise ValueError(
+                "local gauge oracle requires the same adjoint/singlet ports"
+            )
         metadata = SimpleNamespace(
-            particles=[SimpleNamespace(color=8, pdg_code=21)] * external_legs
+            particles=[
+                SimpleNamespace(color=item["color"], pdg_code=item["pdg_code"])
+                for item in particles
+            ]
         )
         selected = {entry.color: entry for entry in entries}
         strings, native = [], []
@@ -54,15 +73,20 @@ def color_oracle(entries, catalogue, mg5_source, ufo_path):
             labels = {
                 hep.Symbols.half_edge()(half, 1): f"four_gluon_color_leg_{leg}"
                 for leg, half in enumerate(local.leg_half_edges)
+                if colors[leg] == 8
             }
             strings.append(entry.color)
             native.append(local.color.rename_indices(labels))
         generator = tensor.TensorExpression.color_t(8, 3)
-        probe_legs = (
-            ((1, 2, 3), (1, 3, 2))
-            if external_legs == 3
-            else ((1, 2, 3, 4), (1, 3, 2, 4))
+        colored = tuple(index + 1 for index, color in enumerate(colors) if color == 8)
+        if len(colored) < 2:
+            raise ValueError("local gauge oracle requires at least two adjoint ports")
+        alternate = (
+            (colored[0], colored[2], colored[1], *colored[3:])
+            if len(colored) >= 3
+            else colored
         )
+        probe_legs = (colored, alternate)
         for legs in probe_legs:
             # Complex trace probes test the relative orientation of d*f terms;
             # their overlaps with the real source basis need not be real.

@@ -33,7 +33,9 @@ def _native_contraction(local, momentum, polarizations):
 
 
 def native_vector_contraction(local, momenta, polarizations):
-    library = tensor.TensorLibrary.hep_lib_atom()
+    from pyamplicol.loops.tensor_components import physical_tensor_library
+
+    library = physical_tensor_library()
     for edge, momentum in enumerate(momenta):
         library.register(
             tensor.Tensor.dense(
