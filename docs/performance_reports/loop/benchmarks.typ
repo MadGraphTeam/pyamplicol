@@ -64,114 +64,214 @@
 #let mlstage(c, field) = data.references.at(c.case, default: (:)).at("timings", default: (:)).at("32", default: (:)).at("madloop-instrumented", default: (:)).at("stages", default: (:)).at(field, default: (:)).at("median_us_per_point", default: none)
 #let stages(c, field) = data.stages.at(c.case, default: (:)).at(field, default: none)
 
+// Comparison cards follow NinjaRS: value, named reference and multiplier.
+#let palette = gradient.linear(rgb("#5aae61"), rgb("#d9f0d3"), white, rgb("#fddbc7"), rgb("#d6604d"))
+#let ratio-fill(r) = if r == none { none } else {
+  palette.sample(calc.clamp(0.5 + calc.log(r, base: 2) / 8, 0, 1) * 100%)
+}
+#let provider-name(p) = (madloop: "ML", recola: "Recola", openloops: "OL").at(p)
+#let provider-time(c, b, p) = data.references.at(c.case, default: (:)).at("timings", default: (:)).at(str(b), default: (:)).at(p, default: (:)).at("median_us_per_point", default: none)
+#let fastest(c, b) = {
+  let found = ("madloop", "recola", "openloops").map(p => (name: provider-name(p), value: provider-time(c, b, p))).filter(r => r.value != none)
+  if found.len() == 0 { return none }
+  found.sorted(key: r => r.value).first()
+}
+#let value-fmt(x) = {
+  if x == none { return [—] }
+  let digits = if x >= 1000 { 0 } else if x >= 100 { 1 } else { 2 }
+  let s = fmt(x, digits: digits)
+  if x >= 10000 {
+    let rest = str(int(calc.round(x)))
+    let groups = ()
+    while rest.len() > 3 {
+      groups.insert(0, rest.slice(rest.len() - 3))
+      rest = rest.slice(0, rest.len() - 3)
+    }
+    groups.insert(0, rest)
+    return groups.join(sym.space.thin)
+  }
+  s
+}
+#let metric(value, unit: none, details: (), multiplier: none, extra: none) = table.cell(
+  fill: ratio-fill(multiplier),
+  {
+    set par(justify: false, leading: 0.25em)
+    text(font: "DejaVu Sans", size: 11pt, weight: "bold", value-fmt(value))
+    if unit != none { text(size: 7.4pt)[#h(2pt)#unit] }
+    for line in details {
+      linebreak()
+      text(size: 7.4pt, fill: luma(65), line)
+    }
+    if multiplier != none {
+      linebreak()
+      text(font: "DejaVu Sans", size: 8pt, weight: "bold")[×#fmt(multiplier, digits: 2)]
+    }
+    if extra != none {
+      linebreak()
+      text(size: 6.9pt, fill: luma(60), extra)
+    }
+  },
+)
+#let comparison(c, b) = {
+  let best = fastest(c, b)
+  metric(timed(c, b),
+    details: if best == none { ([No matched reference],) } else { ([#best.name #value-fmt(best.value) µs],) },
+    multiplier: if best == none { none } else { timed(c, b)/best.value },
+  )
+}
+#let process-cell(c, details: true) = table.cell({
+  set par(justify: false, leading: 0.3em)
+  text(size: 11.2pt, weight: "semibold", label(c.case))
+  if details {
+    linebreak()
+    text(size: 7.4pt, fill: luma(75))[#c.counts.loop_graphs #if c.counts.loop_graphs == 1 [loop] else [loops] · #c.counts.families #if c.counts.families == 1 [family] else [families]]
+  }
+})
+#let cards(columns, ..cells) = {
+  set par(justify: false)
+  table(columns: columns, align: (x, y) => if x == 0 { left + horizon } else { center + horizon },
+    inset: (x: 5.5pt, y: 8pt),
+    stroke: (x, y) => (top: if y > 1 { 0.45pt + luma(224) } else { none }, left: if x > 0 and y > 0 { 0.4pt + white } else { none }),
+    fill: (x, y) => if y == 0 { navy } else if calc.even(y) { rgb("#f4f6f8") } else { none },
+    ..cells.pos(),
+  )
+}
+#let header(body) = text(font: "DejaVu Sans", size: 8pt, fill: white, weight: "bold", body)
+#let legend = align(center)[
+  #box(width: 9cm, height: 0.27cm, fill: palette, radius: 2pt)
+  #v(-5pt)
+  #box(width: 9cm, text(size: 7.3pt)[×1/16 #h(1fr) ×1/4 #h(1fr) ×1 #h(1fr) ×4 #h(1fr) ×16])
+  #v(-3pt)
+  #text(size: 8pt, fill: luma(75))[Logarithmic scale · lower is faster · white is parity · red is slower]
+]
+
 #align(center)[
   #v(3pt)
-  #text(25pt, weight: "bold", fill: navy)[pyAmpliCol at one loop]
+  #text(29pt, weight: "bold", fill: navy)[pyAmpliCol at one loop]
   #v(-2pt)
-  #text(12.5pt, fill: grey)[Implementation and live performance report]
-  #v(2pt)
-  #text(9pt, fill: grey)[#data.date · revision #data.revision · #data.host]
+  #text(12.5pt, fill: luma(85))[Batched Born–loop interference · implementation & live benchmarks]
+  #v(3pt)
+  #text(8.8pt, fill: luma(110))[#data.date · measured revision #data.revision · AMD EPYC 9754]
 ]
 #v(9pt)
 #note[
-  *First development snapshot.* The numbers below evaluate complete Born–loop
-  interference for the listed internal QCD controls: all physical helicities,
-  full SU(3), UV counterterms, model-supplied $R_2$, and all three Laurent
-  coefficients. Native batched arithmetic is driven by the current Python
-  coordinator. These are measured implementation diagnostics; the matched
-  MadLoop/Recola/OpenLoops speed gates have not been run.
+  *Reading guide.* Each coloured cell in the summary table shows *pyAmpliCol time*, the *fastest
+  available reference* for the same process and batch, and their ratio.
+  References are MadLoop (ML), Recola and OpenLoops (OL); the winner is selected
+  independently in each cell. Green is faster, white parity, red slower.
+  These are complete Born–loop results: all helicities, full SU(3), UV,
+  model-rule $R_2$ and all three Laurent coefficients.
 ]
 
-= Complete evaluation in binary64
-Each cell is *microseconds per phase-space point*, the median of five warm
-batch calls. The batch repeats three frozen, valid control points. It does not
-reuse computed event results. Exact decimal ingress and Python batch scheduling
-are inside the timer; output formatting and reference comparisons are outside.
+= Complete evaluation, from cold plan to warm batch
+Warm values are *µs per point*, medians of five calls on a repeated three-point
+stream. Every call recomputes events. Generation is in seconds, with first-call
+latency and peak RSS below it; no provider generation ratio is available.
 
-#figure(kind: table, caption: [Warm complete runtime. $B$ is the number of physical phase-space points in one call. All rows use model-rule $R_2$.],
-  tab((1.5fr, 1fr, 1fr, 1fr, 1fr),
-    table.header(th[Process], th[$B=1$], th[$B=8$], th[$B=32$], th[$B=128$]),
-    ..data.cases.map(c => (label(c.case), fmt(timed(c, 1)), fmt(timed(c, 8)), fmt(timed(c, 32)), fmt(timed(c, 128)))).flatten(),
+#figure(kind: table, caption: [*Complete binary64 controls.* The named reference and runtime multiplier appear below each value.],
+  cards((1.35fr, 1fr, 1fr, 1fr, 1fr, 1fr),
+    table.header(header[Process], header[Generation\ s], header[$B=1$\ µs / point], header[$B=8$\ µs / point], header[$B=32$\ µs / point], header[$B=128$\ µs / point]),
+    ..data.cases.map(c => (
+      process-cell(c),
+      metric(c.generation_s, unit: "s", details: ([first #fmt(1000*c.first_evaluation_s) ms], [RSS #fmt(c.peak_rss_mib, digits: 0) MiB])),
+      comparison(c, 1), comparison(c, 8), comparison(c, 32), comparison(c, 128),
+    )).flatten(),
   )
 )
-
-#figure(kind: table, caption: [Cold construction and first evaluation, measured separately. One cold observation per process; no statistical uncertainty is inferred.],
-  tab((1.5fr, 1fr, 1fr, 1fr),
-    table.header(th[Process], th[Generation / s], th[First $B=3$ / ms], th[Peak RSS / MiB]),
-    ..data.cases.map(c => (label(c.case), fmt(c.at("generation_s", default: none), digits: 2), fmt(if "first_evaluation_s" in c { 1000*c.first_evaluation_s } else { none }, digits: 1), fmt(c.at("peak_rss_mib", default: none), digits: 0))).flatten(),
-  )
+#legend
+#v(5pt)
+#grid(columns: (1fr, 1fr), gutter: 13pt,
+  [#text(weight: "bold", fill: navy)[Cold and first-call costs]
+   #linebreak()
+   #text(size: 9.1pt)[Generation includes UFO capture, graphs, colour, recurrence,
+   CT matching and JIT/reducer plans. Imports and installation are excluded.
+   First evaluation is $B=3$, timed separately. RSS is the high-water mark of
+   the full run, not an event-buffer estimate.]],
+  [#text(weight: "bold", fill: navy)[Comparable physics; different boundaries]
+   #linebreak()
+   #text(size: 9.1pt)[Coefficients and points agree, but pyAmpliCol includes exact
+   decimal ingress and its Python batch coordinator. Provider timers start
+   with native arrays. Provider rescue policies remain active; pyAmpliCol
+   has no rescue in these measurements. Output formatting is excluded.]],
 )
-
-*Generation* includes source UFO capture/lowering, graphs, colour and recurrence
-preparation, counterterm matching, and creation of JIT/reducer plans. Imports,
-dependency installation and the first evaluation are excluded. Lazy first-call
-work is therefore visible separately. Peak RSS is the process high-water mark
-across construction and all batch tests, not an event-buffer estimate.
-
+#v(8pt)
+#block(stroke: 0.55pt + rule, inset: 9pt, radius: 4pt, width: 100%)[
+  #set text(size: 9pt)
+  *Development comparison, not acceptance.* Complete totals are slower than
+  MadLoop in every listed case. Required high-multiplicity gates remain:
+  faster than MadLoop and at most $1.30 times$ each available Recola/OpenLoops result,
+  for latency and native throughput.
+]
+#v(6pt)
 #small[
-  Development build: Rust dev profile, local module opt3 / dependencies opt2,
-  no LTO; dev assertions and overflow checks retained. Community opt2; SymJIT.
-  This is not a frozen release-performance build. One pinned core (CPU 382), one thread,
-  shared AMD EPYC 9754 host. Five calls describe local variation only. Source
-  capture and cold plans are rebuilt per process. “—” means not measured in this
-  snapshot. Real-mass EW, higher multiplicity and direct-$R_2$ timings remain to
-  be added under this same protocol.
+  CPU 382, one thread, shared host. Rust dev: local opt3 / dependencies opt2,
+  debug/overflow checks retained, no LTO; Community opt2 and SymJIT. Five samples describe
+  local variation. EW, direct-$R_2$ and higher multiplicity are not timed here.
 ]
 
 #pagebreak()
-#section-label[MEASUREMENTS · COMPONENT BOUNDARIES]
-= Where the event time goes
-The requested decomposition separates numerator work, integrand reduction and
-scalar master integrals. A complete event also needs states, kinematics,
-Born weighting, UV/$R_2$ currents and output assembly. Those costs must remain
-visible; the three core columns need not sum to the end-to-end time.
+#section-label[MEASUREMENTS · COMPONENTS AND REFERENCES]
+= The work behind a complete event
+The native component clocks separate numerator execution, integrand reduction
+and scalar masters. Everything else remains visible. These boundaries differ
+from MadLoop’s, so stage cells are deliberately neutral: *no stage speed ratio
+is inferred*.
 
-#figure(kind: table, caption: [pyAmpliCol at $B=32$, in µs per point. Stage and “instr.” columns are medians of five instrumented calls; “total” repeats the independent uninstrumented baseline. Component medians need not sum to the median instrumented total.],
-  tab((1.4fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr),
-    table.header(th[Process], th[Numerator], th[NinjaRS\ reduction], th[Scalar\ masters], th[Other], th[Instr.\ total], th[Complete\ total]),
-    ..data.cases.map(c => (label(c.case), fmt(stages(c, "numerator_us")), fmt(stages(c, "reduction_us")), fmt(stages(c, "masters_us")), fmt(stages(c, "other_work_us")), fmt(stages(c, "instrumented_total_us")), fmt(timed(c, 32)))).flatten(),
+#figure(kind: table, caption: [*pyAmpliCol at $B=32$.* µs per point; medians of five instrumented calls. Independently computed medians need not add to the median total.],
+  cards((1.3fr, 1fr, 1fr, 1fr, 1fr, 1fr),
+    table.header(header[Process], header[Numerator], header[NinjaRS\ reduction], header[Scalar\ masters], header[Other work], header[Instrumented\ total]),
+    ..data.cases.map(c => (
+      process-cell(c, details: false),
+      metric(stages(c, "numerator_us"), details: ([DAG + callbacks],)),
+      metric(stages(c, "reduction_us"), details: ([exclusive engine],)),
+      metric(stages(c, "masters_us"), details: ([oneloopmaster],)),
+      metric(stages(c, "other_work_us"), details: ([states · UV / $R_2$],)),
+      metric(stages(c, "instrumented_total_us"), details: ([with clocks],)),
+    )).flatten(),
   )
 )
 
-#figure(kind: table, caption: [Fresh reference performance at $B=32$, in µs per point, on the same control stream and pinned CPU. Full physical coefficients agree. Input and stability policies differ as described below; these are development comparisons.],
-  tab((1.5fr, 1fr, 1fr, 0.9fr, 0.9fr, 0.9fr),
-    table.header(th[Process], th[MadLoop\ numerator], th[MadLoop\ reduction\ + masters], th[MadLoop\ total], th[Recola\ total], th[OpenLoops\ total]),
-    ..data.cases.map(c => (label(c.case), fmt(mlstage(c, "loop_coefficients")), fmt(mlstage(c, "reduction_masters")), fmt(reference(c, "madloop")), fmt(reference(c, "recola")), fmt(reference(c, "openloops")))).flatten(),
+#figure(kind: table, caption: [*Complete provider calls at $B=32$, µs per point.* Each total is coloured against the fastest existing reference. ML’s smaller lines give its separately instrumented numerator and reduction + masters; these are not components of the uninstrumented total above them.],
+  cards((1.3fr, 1.13fr, 1fr, 1fr, 1fr),
+    table.header(header[Process], header[MadLoop], header[Recola], header[OpenLoops], header[pyAmpliCol]),
+    ..data.cases.map(c => {
+      let best = fastest(c, 32)
+      let refcell(p) = {
+        let x = provider-time(c, 32, p)
+        metric(x, details: if x == none { ([not measured],) } else if p == "madloop" { () } else { ([#best.name #value-fmt(best.value) µs],) },
+          multiplier: if x == none or best == none { none } else { x/best.value },
+          extra: if p == "madloop" { [num #value-fmt(mlstage(c, "loop_coefficients")) · red+M #value-fmt(mlstage(c, "reduction_masters"))] } else { none },
+        )
+      }
+      (process-cell(c, details: false), refcell("madloop"), refcell("recola"), refcell("openloops"), comparison(c, 32))
+    }).flatten(),
   )
 )
 
-== Timer definitions
-*Numerator* is loop coefficient DAG execution plus reducer numerator callbacks
-and coefficient-head preparation. *Reduction* excludes callbacks and scalar
-integrals. *Masters* is the actual oneloopmaster adapter time, with its existing
-cache policy. *Other* contains states, exact kinematics, Born and UV/$R_2$
-work, weighting, assembly, transport and clock overhead. Instrumented components
-and uninstrumented runtime are separate observations; neither is rescaled to
-force agreement. Raw five-sample variation is retained with the report.
-
-MadLoop coefficient construction excludes shared wavefunctions supplied by
-HELAS; its loop-CT call window includes reducer interfaces, masters and retries.
-Recola/OpenLoops totals use native public calls in compiled loops. Provider
-input parsing is excluded; pyAmpliCol includes exact decimal ingress and Python
-batch scheduling. Provider rescue stays enabled where supplied; pyAmpliCol
-has no rescue here. Instrumented stage clocks are separate from original-binary
-totals. The current complete totals are slower than MadLoop in every listed case.
-
+#grid(columns: (1fr, 1fr), gutter: 13pt,
+  [#text(weight: "bold", fill: navy)[pyAmpliCol clocks]
+   #linebreak()
+   #text(size: 8.8pt)[Numerator includes loop DAGs, reducer callbacks and
+   coefficient-head preparation. Reduction excludes callbacks and masters.
+   Other work contains states, exact kinematics, Born and UV/$R_2$ currents,
+   weighting, assembly, transport and clock overhead. Master timing retains
+   the adapter’s cache policy.]],
+  [#text(weight: "bold", fill: navy)[Reference clocks]
+   #linebreak()
+   #text(size: 8.8pt)[ML numerator excludes shared HELAS wavefunctions;
+   its loop-CT window includes reduction interfaces, masters and retries.
+   Recola/OL totals use native public calls in compiled loops. Original-binary
+   totals and instrumented stages are separate observations, with all raw
+   samples retained.]],
+)
+#v(7pt)
 #note[
-  *Acceptance is still open.* On each designated high-multiplicity process,
-  pyAmpliCol must be faster than MadLoop and at most $1.30$ times each available
-  matched Recola and OpenLoops result, for warm single-point latency and native
-  batch throughput. The faster complete, validated SM $R_2$ strategy may be used.
-  A slow process cannot be hidden by a geometric mean. These measurements
-  do not establish performance acceptance.
+  *Next benchmark gate.* Use distinct frozen event streams, paired timing
+  blocks, matched stability criteria and native-interface boundaries; report
+  uncertainty, rescue rates and memory. A fast average cannot hide a failing
+  designated process. The current three-point developmental stream does not
+  establish those acceptance conditions.
 ]
-
-== How this report will evolve
-Replace missing cells only with matched measurements. Keep generation, first
-evaluation and warmed runtime separate. Add distinct frozen event streams,
-paired provider timing blocks, rescue rates, uncertainty and memory before
-evaluating a performance gate. Keep historical diagnostics tied to their own
-revision instead of merging them into the current table.
 
 #pagebreak()
 #section-label[ARCHITECTURE · PHYSICAL CONTRACT]
@@ -578,7 +678,7 @@ complete answer cannot conceal a wrong component.
   table.header(th[Area], th[Current boundary]),
   [Complete QCD], [Internal DY, four-quark, top-pair, quark/gluon and gluon controls; all three carriers.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
-  [CMS], [Shared exact continuation and source-semantic controls; independent finite UV/branch conventions and an AP master boundary remain open.],
+  [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
   [Public delivery], [A genuine development install passes the public tree smoke; loop artifacts, commands and SDK/UMAMI integration remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],

@@ -25,6 +25,14 @@ measurement revision remain unchanged. The pulled generic-any-n NinjaRS
 extension is described as a consumer candidate until its validation and
 staged-module adoption finish.
 
+The summary tables follow the NinjaRS benchmark's value/reference/multiplier
+layout. Heat-map ratios use the fastest available original-binary provider
+median for the same process and batch width, computed from the retained data.
+Generation and instrumented components stay neutral because their reference
+boundaries are not matched. Full numeric observations and samples remain in
+the JSON; display values are rounded for readability. Input and rescue-policy
+asymmetries still prevent treating these ratios as performance acceptance.
+
 The original measurement drivers and full provider logs are retained in the
 task workspace as `experiments/loop_live_benchmark.py`,
 `experiments/loop_live_stages.py`,
