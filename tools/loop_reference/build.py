@@ -38,7 +38,7 @@ def main():
     parser.add_argument("--fc", default="gfortran")
     parser.add_argument(
         "--case",
-        choices=("uudd", "drell-yan", "top-pair", "gluon-scattering"),
+        choices=("uudd", "drell-yan", "top-pair", "gluon-scattering", "quark-gluon"),
         default="uudd",
     )
     args = parser.parse_args()
@@ -50,6 +50,7 @@ def main():
     case_defines = {
         "top-pair": ["-DLOOP_REFERENCE_TOP_PAIR"],
         "gluon-scattering": ["-DLOOP_REFERENCE_GLUON_SCATTERING"],
+        "quark-gluon": ["-DLOOP_REFERENCE_QUARK_GLUON"],
     }.get(args.case, [])
 
     def run(command, **kwargs):
@@ -94,6 +95,7 @@ def main():
                 "drell-yan": "P0_uux_emep_no_z",
                 "top-pair": "P0_uux_ttx",
                 "gluon-scattering": "P0_gg_gg",
+                "quark-gluon": "P0_uux_gg",
             }[args.case]
             process = root / "SubProcesses" / directory
             if not process.is_dir():

@@ -24,6 +24,8 @@ struct OpenLoops {
     id = ol_register_process("2 -2 -> 6 -6", 11);
 #elif defined(LOOP_REFERENCE_GLUON_SCATTERING)
     id = ol_register_process("21 21 -> 21 21", 11);
+#elif defined(LOOP_REFERENCE_QUARK_GLUON)
+    id = ol_register_process("2 -2 -> 21 21", 11);
 #else
     id = ol_register_process("2 -2 -> 1 -1", 11);
 #endif

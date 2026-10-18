@@ -19,6 +19,8 @@ subroutine reference_recola_init(alpha_s, mu, mt, mb) bind(C)
   call define_process_rcl(1, 'u u~ -> t t~', 'NLO')
 #elif defined(LOOP_REFERENCE_GLUON_SCATTERING)
   call define_process_rcl(1, 'g g -> g g', 'NLO')
+#elif defined(LOOP_REFERENCE_QUARK_GLUON)
+  call define_process_rcl(1, 'u u~ -> g g', 'NLO')
 #else
   call define_process_rcl(1, 'u u~ -> d d~', 'NLO')
 #endif

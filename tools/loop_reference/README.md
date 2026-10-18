@@ -138,6 +138,12 @@ The external-dependency export with Ninja/Collier enabled agrees with the other
 two providers. This observation is specific to the recorded control, not a
 general accuracy claim about any reduction library.
 
+For quark annihilation into gluons, generate
+`u u~ > g g QED=0 [virt=QCD]` with the same external dependencies, build with
+`--case quark-gluon`, and run with
+`--fixture tools/loop_reference/quark_gluon_qcd.json`. OpenLoops' existing
+`ppjj` library supplies this channel too.
+
 The native MadLoop bridge requests relative accuracy `1e-11` for correctness
 controls (the generated card otherwise defaults to `1e-3`). Rescue remains
 inside the timed call. Fixed mass, width and electromagnetic inputs are bound
@@ -192,8 +198,8 @@ are written under the requested output directory.
 The fixture fixes six quarks in loops, five active renormalization flavours,
 massless bottom, stable top mass 173 GeV, alpha_s=0.118 and common UV/IR/
 renormalization scale 1000 GeV. All providers sum final spins/colours and
-average initial spins/colours. The gluon-scattering fixture additionally includes
-the final identical-particle factor `1/2`; the other fixtures have distinct final
+average initial spins/colours. Both fixtures with two final gluons include the
+final identical-particle factor `1/2`; the other fixtures have distinct final
 particles.
 
 Results include physical couplings and UV/R2 contributions. They return
@@ -220,6 +226,13 @@ It follows from the unpolarized cross section in
 [PDG 2022, Eq. (51.12)](https://pdg.lbl.gov/2022/reviews/rpp2022-rev-cross-section-formulae.pdf).
 Its universal double pole is `-4*CA*alpha_s/(2*pi)*Born`, with `CA=3`.
 The generated MadLoop averaging denominator is 512, including final symmetry.
+
+For `u u~ > g g`, the Born control is
+`16/27*g_s^4*(t^2+u^2)*(1/(t*u)-9/(4*s^2))`, including final symmetry.
+It follows from [PDG 2022, Eq. (51.9)](https://pdg.lbl.gov/2022/reviews/rpp2022-rev-cross-section-formulae.pdf).
+The double pole is `-(2*CF+2*CA)*alpha_s/(2*pi)*Born`; MadLoop's averaging
+denominator is 72. These formulae are independent validation controls, never
+substitutes for generated amplitudes.
 
 The top-pair Born control is the massive Dirac trace
 `4/9*g_s^4*((mt^2-t)^2+(mt^2-u)^2+2*mt^2*s)/s^2`. Only its two massless

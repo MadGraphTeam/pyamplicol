@@ -60,6 +60,20 @@ def gluon_scattering(point, parameters):
     }
 
 
+def quark_gluon(point, parameters):
+    """PDG quark annihilation Born, with final identical-gluon factor 1/2."""
+    s = 2 * dot(point[0], point[1])
+    t = -2 * dot(point[0], point[2])
+    u = -2 * dot(point[0], point[3])
+    born = 16 / 27 * (4 * math.pi * parameters["alpha_s"]) ** 2 * (
+        t**2 + u**2
+    ) * (1 / (t * u) - 9 / (4 * s**2))
+    return {
+        "born": born,
+        "double_pole": -26 / 3 * parameters["alpha_s"] / (2 * math.pi) * born,
+    }
+
+
 def drell_yan(point, parameters):
     """Independent photon-exchange Born and timelike QCD form-factor control.
 
@@ -114,6 +128,8 @@ def main():
         case = "top-pair"
     elif fixture["process"] == "g g > g g":
         case = "gluon-scattering"
+    elif fixture["process"] == "u u~ > g g":
+        case = "quark-gluon"
     else:
         parser.error("the control drivers do not support this fixture process")
     output = args.output_dir.resolve()
@@ -177,6 +193,8 @@ def main():
                     if case == "top-pair"
                     else gluon_scattering(point, p)
                     if case == "gluon-scattering"
+                    else quark_gluon(point, p)
+                    if case == "quark-gluon"
                     else analytic(point, p["alpha_s"])
                 )
                 for name, expected in expected_values.items():
