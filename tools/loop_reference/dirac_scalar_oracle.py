@@ -170,6 +170,8 @@ def dirac_scalar_oracle(ufo: Path, madgraph: Path, build_dir: Path):
     for name in NAMES:
         entries = tuple(entry for entry in source.kernels if entry.lorentz_name == name)
         entry = entries[0]
+        if any(candidate.lorentz != entry.lorentz for candidate in entries):
+            raise ValueError(f"ambiguous source Lorentz declarations for {name}")
         declaration = SimpleNamespace(
             spins=tuple(
                 source.raw.collections["particles"][index]["fields"]["spin"]
