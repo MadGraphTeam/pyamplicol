@@ -31,6 +31,28 @@ def analytic(point, alpha_s):
     return {"born": born, "double_pole": -16 / 3 * alpha_s / (2 * math.pi) * born}
 
 
+def drell_yan(point, parameters):
+    """Independent photon-exchange Born and timelike QCD form-factor control.
+
+    Cepsilon=(4*pi)^eps/Gamma(1-eps), physical couplings, initial average.
+    See README for the continuation and epsilon-prefactor conversion. This
+    closed form is a validation oracle, never a production evaluator.
+    """
+    s = 2 * dot(point[0], point[1])
+    t = -2 * dot(point[0], point[2])
+    u = -2 * dot(point[0], point[3])
+    e_squared = 4 * math.pi / parameters["aEWM1"]
+    born = 2 * e_squared**2 * (4 / 9) / 3 * (t * t + u * u) / s**2
+    prefactor = born * parameters["alpha_s"] * (4 / 3) / (2 * math.pi)
+    logarithm = math.log(parameters["mu"] ** 2 / s)
+    return {
+        "born": born,
+        "finite": prefactor * (math.pi**2 - 8 - 3 * logarithm - logarithm**2),
+        "single_pole": prefactor * (-3 - 2 * logarithm),
+        "double_pole": -2 * prefactor,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -53,8 +75,14 @@ def main():
     if args.repetitions <= 0 or any(b <= 0 for b in args.batch_sizes):
         parser.error("batch sizes and repetitions must be positive")
     fixture = json.loads(args.fixture.read_text())
-    if fixture["process"] != "u u~ > d d~":
-        parser.error("the initial control drivers support only u u~ > d d~")
+    if fixture["process"] == "u u~ > d d~":
+        case = "uudd"
+    elif fixture["process"] == "u u~ > e- e+ / z":
+        case = "drell-yan"
+        if args.providers != ["madloop"]:
+            parser.error("photon-only Drell-Yan requires --providers madloop")
+    else:
+        parser.error("the control drivers do not support this fixture process")
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
     environment = os.environ.copy()
@@ -72,7 +100,8 @@ def main():
     for batch in args.batch_sizes:
         points = list(itertools.islice(itertools.cycle(fixture["points"]), batch))
         header = (
-            f"{batch} {args.repetitions} {p['alpha_s']} {p['mu']} {p['mt']} {p['mb']}\n"
+            f"{batch} {args.repetitions} {p['alpha_s']} {p['mu']} {p['mt']} {p['mb']} "
+            f"{p.get('aEWM1', 132.507)}\n"
         )
         payload = (
             header
@@ -82,7 +111,7 @@ def main():
         measurements = []
         for provider in args.providers:
             completed = subprocess.run(
-                [str(args.bin_dir.resolve() / f"{provider}-uudd")],
+                [str(args.bin_dir.resolve() / f"{provider}-{case}")],
                 input=payload,
                 text=True,
                 capture_output=True,
@@ -108,7 +137,12 @@ def main():
             for lane, (point, result) in enumerate(
                 zip(points, measurement["results"], strict=True)
             ):
-                for name, expected in analytic(point, p["alpha_s"]).items():
+                expected_values = (
+                    drell_yan(point, p)
+                    if case == "drell-yan"
+                    else analytic(point, p["alpha_s"])
+                )
+                for name, expected in expected_values.items():
                     if not close(result[name], expected):
                         raise AssertionError(
                             f"{provider} lane {lane}: analytic {name} mismatch"

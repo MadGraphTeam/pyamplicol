@@ -55,6 +55,14 @@ independent correctness validation. The eventual MadLoop performance
 baseline must also enable its supported optimized reduction libraries;
 timings from this control do not establish that baseline.
 
+For the photon-only Drell–Yan control, replace the `generate` line with
+`generate u u~ > e- e+ / z QCD=0 QED=2 [virt=QCD]` and use a separate
+workspace output. Build with `--case drell-yan --madloop OUTPUT`; run with
+`--fixture tools/loop_reference/drell_yan_qcd.json --providers madloop`.
+The other two native drivers are specific to the four-quark control and
+cannot be used for the photon-only fixture. Both controls set the inverse
+electromagnetic coupling explicitly (132.507 by default).
+
 The Gmu UFO initially uses Python 2 imports/`iteritems`. For normal Python
 package loading, make a separate workspace copy, run MG's `convert model
 ABSOLUTE_COPY_PATH`, then `python3 -m lib2to3 -w -n -f import COPY_PATH`
@@ -121,6 +129,31 @@ value `4/9 * g_s^4 * (t^2+u^2)/s^2` and universal double pole
 tolerance `2e-9` with a `1e-3` scale floor. This deliberately small smooth
 control does not replace later threshold, cancellation, singular-region,
 coupling-order, correlation, colour-expansion or precision validation.
+
+The Drell–Yan oracle tests all coefficients independently. Write
+`a=alpha_s*CF/(2*pi)` and `L=log(mu_R^2/s)`. Its initial-state-averaged Born
+value is `2*e^4*Q_u^2/Nc*(t^2+u^2)/s^2`; the virtual/Born coefficients are
+`a*(pi^2-8-3*L-L^2, -3-2*L, -2)`. This follows from the one-loop quark form
+factor in [Moch, Vermaseren and Vogt, Eq. (22)](https://arxiv.org/html/hep-ph/0507039#S3),
+continued with `log(-s-i0)=log(s)-i*pi` and converted from the exponential
+MSbar prefactor to the declared Cepsilon. The epsilon-squared conversion
+removes the spacelike zeta(2) constant. The three frozen points exercise
+different scattering angles and two invariant masses at fixed scale.
+
+In this specific massless photon-exchange QCD process, the standalone
+`loop_sm` export contains one Born graph, one loop graph, one effective R2
+graph and no UV graph. Its model-rule R2 interference is `-2*a*Born` for
+`lhv=1`. Subtracting this from the complete reference isolates the
+four-dimensional bare-numerator result; this is a process-specific audit,
+not a generic rule for deriving bare amplitudes.
+
+At the reduction boundary, OneLOop uses
+`rGamma=Gamma(1+eps)*Gamma(1-eps)^2/Gamma(1-2*eps)`. Since
+`rGamma*Gamma(1-eps)=1+O(eps^3)`, a raw integral with measure
+`mu_R^(2*eps)/(i*pi^(2-eps)*rGamma)` converts to the conventional Feynman
+measure and Cepsilon coefficients by `i/(16*pi^2)` through finite order.
+There is no additional pole-to-finite shift for that adapter. Graph/UFO
+factors and Born interference must still be applied separately.
 
 ## Papers acquired for this milestone
 

@@ -15,7 +15,10 @@ def main():
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--cxx", default="g++")
     parser.add_argument("--fc", default="gfortran")
+    parser.add_argument("--case", choices=("uudd", "drell-yan"), default="uudd")
     args = parser.parse_args()
+    if args.case == "drell-yan" and (args.recola or args.openloops):
+        parser.error("the photon-only Drell-Yan control currently supports MadLoop")
     source = Path(__file__).resolve().parent
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -54,10 +57,11 @@ def main():
             )
             command += [bridge, "-L", root, f"-Wl,-rpath,{root}", "-lrecola"]
         else:
-            process = root / "SubProcesses/P0_uux_ddx"
+            directory = "P0_uux_ddx" if args.case == "uudd" else "P0_uux_emep_no_z"
+            process = root / "SubProcesses" / directory
             if not process.is_dir():
                 parser.error(
-                    "MadLoop must be the documented u u~ > d d~ standalone export"
+                    f"MadLoop export must contain the documented {directory} process"
                 )
             # The native target avoids the export's optional f2py targets.
             run(
@@ -79,6 +83,8 @@ def main():
                     source / "madloop_bridge.f",
                     "-I",
                     process,
+                    "-I",
+                    root / "Source/MODEL",
                     "-o",
                     bridge,
                 ]
@@ -98,7 +104,7 @@ def main():
                     [args.fc, f"-print-file-name={library}"], text=True
                 ).strip()
                 command += [library_path]
-        run([*command, "-o", output / f"{provider}-uudd"])
+        run([*command, "-o", output / f"{provider}-{args.case}"])
 
 
 if __name__ == "__main__":

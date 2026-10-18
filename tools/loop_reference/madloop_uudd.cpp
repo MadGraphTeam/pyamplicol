@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <filesystem>
 extern "C" {
-void reference_madloop_init(const char *, int, const char *, int, double, double, double);
+void reference_madloop_init(const char *, int, const char *, int, double, double, double, double);
 void reference_madloop_evaluate(const double *, double *, double *, int *);
 }
 struct MadLoop {
@@ -17,7 +17,7 @@ struct MadLoop {
     if (card.size() > 512 || resource.size() > 512)
       throw std::runtime_error("MadLoop path exceeds its Fortran interface limit");
     reference_madloop_init(card.data(), card.size(), resource.data(), resource.size(),
-                          p.alpha_s, p.mu, p.mt);
+                          p.alpha_s, p.mu, p.mt, p.inverse_alpha_em);
   }
   loop_reference::Result evaluate(const loop_reference::Point &point) {
     loop_reference::Result r;

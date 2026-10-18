@@ -11,7 +11,7 @@
 
 namespace loop_reference {
 using Point = std::array<std::array<double, 4>, 4>;
-struct Parameters { double alpha_s, mu, mt, mb; };
+struct Parameters { double alpha_s, mu, mt, mb, inverse_alpha_em; };
 struct Result {
   double born{}, finite{}, single{}, doub{}, accuracy{-1.};
   bool initialized{true};
@@ -22,7 +22,8 @@ template<class Provider> int run() {
     std::size_t batch, repetitions;
     Parameters parameters{};
     if (!(std::cin >> batch >> repetitions >> parameters.alpha_s >> parameters.mu
-                   >> parameters.mt >> parameters.mb) || !batch || !repetitions)
+                   >> parameters.mt >> parameters.mb >> parameters.inverse_alpha_em)
+        || !batch || !repetitions || !(parameters.inverse_alpha_em > 0.))
       throw std::runtime_error("invalid reference input header");
     std::vector<Point> points(batch);
     for (auto &point : points) for (auto &leg : point) for (auto &x : leg)
