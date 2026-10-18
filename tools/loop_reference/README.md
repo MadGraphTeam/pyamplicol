@@ -255,6 +255,32 @@ process-library comparison must be validated and timed in its own build before
 replacing any existing measurements; keep normal hybrid precision and actual
 poles enabled.
 
+The development audit rebuilt an isolated copy of the `ppjj` process library
+with gfortran 15.2.0 using
+`python scons -Q lt=ppjj generator=0 loop_optimisation=-O3 num_jobs=1`.
+Generic/Born libraries and physics/stability settings were unchanged. The
+copied generic library embeds its original installation prefix: the audit
+therefore set `ol_setparameter_string("install_path", isolated_path)` before
+registration and observed the isolated process library in the running process's
+loaded mappings. Temporary compiler output was redirected with `TMPDIR` included
+in the copied installation's `import_env` setting.
+
+Five alternating paired blocks on CPU 382, each warming 128 calls then timing
+128 calls over the same three-point stream, gave medians of 13.927 ms for the
+default build and 14.123 ms for the `-O3` copy. Paired runtime ratios ranged
+from 0.921 to 1.099; this does not establish an improvement. Born and every
+Laurent coefficient passed throughout. The default build and original headline
+measurements are retained. The diagnostic uses `OLMode=3`, `hp_mode=1`,
+`stability_mode=11` (the normal on-the-fly preset), and the default eight-digit
+hybrid target. A separate logged three-point check observed no quadruple
+precision upgrades in its scalar, dressing or reduction counters. Neither
+disabled rescue nor an OpenLoops 1 library explains the comparison.
+
+The raw development audit is under
+`workspace/reports/provider-timing-audit/`; `paired-gg.json` contains paired
+samples and the observed library paths. These repeated-point observations
+remain distinct from the required future random-point acceptance campaign.
+
 Alongside pairwise provider agreement, the runner checks the analytic Born
 value `4/9 * g_s^4 * (t^2+u^2)/s^2` and universal double pole
 `-4*C_F*alpha_s/(2*pi)*Born`, with `C_F=4/3`. Agreement uses relative
