@@ -1,0 +1,167 @@
+{
+  "observations_per_case_provider": 1,
+  "warm_timings": "Unchanged; these new observations supply constructor times only.",
+  "scopes": {
+    "madloop": "Per-case encompassing source export plus static compilation observations are retained in each cases.*.madloop record. Model/process preparation included; Python import and event initialization excluded. Existing external reduction libraries reused, except DY where bundled reduction libraries are also compiled.",
+    "recola": "Parameter setup, process definition, gs-order selection, and generate_processes_rcl in unchanged RecolaProvider constructor. Excludes library build/load, input parsing, and first evaluation.",
+    "openloops": "Parameter setup, process registration, and ol_start in unchanged OpenLoops constructor. Uses prebuilt process libraries; this is initialization, NOT source generation/compilation. Excludes library build/load, input parsing, and first evaluation."
+  },
+  "cases": {
+    "dy": {
+      "madloop": {
+        "case": "dy",
+        "provider": "MadLoop-3.7.0",
+        "cpu": 381,
+        "generation_s": 198.13659435103182,
+        "source_export_s": 196.5505748980213,
+        "process_compilation_s": 1.5860194530105218,
+        "process": "u u~ > e- e+ / z QCD=0 QED=2 [virt=QCD]",
+        "dependencies": "internal",
+        "scope": "One cold observation in a fresh process: loop_sm-no_b_mass import, Feynman-gauge preparation, graph/HELAS/colour generation, standalone source export and source/process static compilation. MG5 Python imports and event initialization are excluded. One pinned CPU and make -j1; FFLAGS=-w -fPIC -fallow-argument-mismatch; standard polynomial optimization unchanged. Existing warmed runtime exports are untouched.",
+        "reduction_build_scope": "Bundled internal reduction libraries are copied and compiled as part of this fresh standalone export.",
+        "output": "/shared/external/pyLoopAmpliCol/workspace/reference/builds/live-provider-generation/madloop-dy",
+        "seconds": 198.13659435103182,
+        "status": "measured_once_fresh_process",
+        "metric": "generation_and_static_compilation"
+      },
+      "recola": {
+        "seconds": null,
+        "status": "matched_process_not_available_in_current_reference_suite"
+      },
+      "openloops": {
+        "seconds": null,
+        "status": "matched_process_not_available_in_current_reference_suite"
+      }
+    },
+    "uudd": {
+      "madloop": {
+        "case": "uudd",
+        "provider": "MadLoop-3.7.0",
+        "cpu": 380,
+        "generation_s": 14.425080786983017,
+        "source_export_s": 9.821134986006655,
+        "process_compilation_s": 4.603945800976362,
+        "process": "u u~ > d d~ QED=0 [virt=QCD]",
+        "dependencies": "external",
+        "scope": "One cold observation in a fresh process: loop_sm-no_b_mass import, Feynman-gauge preparation, graph/HELAS/colour generation, standalone source export and source/process static compilation. MG5 Python imports and event initialization are excluded. One pinned CPU and make -j1; FFLAGS=-w -fPIC -fallow-argument-mismatch; standard polynomial optimization unchanged. Existing warmed runtime exports are untouched.",
+        "reduction_build_scope": "Existing external reduction libraries are reused; their installation/build is excluded.",
+        "output": "/shared/external/pyLoopAmpliCol/workspace/reference/builds/live-provider-generation/madloop-uudd",
+        "seconds": 14.425080786983017,
+        "status": "measured_once_fresh_process",
+        "metric": "generation_and_static_compilation"
+      },
+      "recola": {
+        "seconds": 0.253395537,
+        "status": "measured_once_fresh_process",
+        "metric": "generation_constructor",
+        "log": "/shared/external/pyLoopAmpliCol/workspace/reports/loop-live-provider-initialization/uudd-recola.log",
+        "validation": "Born/finite/single/double match saved independent MadLoop first point"
+      },
+      "openloops": {
+        "seconds": 0.038204342,
+        "status": "measured_once_fresh_process",
+        "metric": "prebuilt_registration_start",
+        "log": "/shared/external/pyLoopAmpliCol/workspace/reports/loop-live-provider-initialization/uudd-openloops.log",
+        "validation": "Born/finite/single/double match saved independent MadLoop first point"
+      }
+    },
+    "tt": {
+      "madloop": {
+        "case": "tt",
+        "provider": "MadLoop-3.7.0",
+        "cpu": 380,
+        "generation_s": 17.051988277002238,
+        "source_export_s": 9.516874841996469,
+        "process_compilation_s": 7.535113435005769,
+        "process": "u u~ > t t~ QED=0 [virt=QCD]",
+        "dependencies": "external",
+        "scope": "One cold observation in a fresh process: loop_sm-no_b_mass import, Feynman-gauge preparation, graph/HELAS/colour generation, standalone source export and source/process static compilation. MG5 Python imports and event initialization are excluded. One pinned CPU and make -j1; FFLAGS=-w -fPIC -fallow-argument-mismatch; standard polynomial optimization unchanged. Existing warmed runtime exports are untouched.",
+        "reduction_build_scope": "Existing external reduction libraries are reused; their installation/build is excluded.",
+        "output": "/shared/external/pyLoopAmpliCol/workspace/reference/builds/live-provider-generation/madloop-tt",
+        "seconds": 17.051988277002238,
+        "status": "measured_once_fresh_process",
+        "metric": "generation_and_static_compilation"
+      },
+      "recola": {
+        "seconds": 1.121840296,
+        "status": "measured_once_fresh_process",
+        "metric": "generation_constructor",
+        "log": "/shared/external/pyLoopAmpliCol/workspace/reports/loop-live-provider-initialization/tt-recola.log",
+        "validation": "Born/finite/single/double match saved independent MadLoop first point"
+      },
+      "openloops": {
+        "seconds": 0.010286253,
+        "status": "measured_once_fresh_process",
+        "metric": "prebuilt_registration_start",
+        "log": "/shared/external/pyLoopAmpliCol/workspace/reports/loop-live-provider-initialization/tt-openloops.log",
+        "validation": "Born/finite/single/double match saved independent MadLoop first point"
+      }
+    },
+    "qqgg": {
+      "madloop": {
+        "case": "qqgg",
+        "provider": "MadLoop-3.7.0",
+        "cpu": 380,
+        "generation_s": 29.106515959952958,
+        "source_export_s": 21.235886696958914,
+        "process_compilation_s": 7.8706292629940435,
+        "process": "u u~ > g g QED=0 [virt=QCD]",
+        "dependencies": "external",
+        "scope": "One cold observation in a fresh process: loop_sm-no_b_mass import, Feynman-gauge preparation, graph/HELAS/colour generation, standalone source export and source/process static compilation. MG5 Python imports and event initialization are excluded. One pinned CPU and make -j1; FFLAGS=-w -fPIC -fallow-argument-mismatch; standard polynomial optimization unchanged. Existing warmed runtime exports are untouched.",
+        "reduction_build_scope": "Existing external reduction libraries are reused; their installation/build is excluded.",
+        "output": "/shared/external/pyLoopAmpliCol/workspace/reference/builds/live-provider-generation/madloop-qqgg",
+        "seconds": 29.106515959952958,
+        "status": "measured_once_fresh_process",
+        "metric": "generation_and_static_compilation"
+      },
+      "recola": {
+        "seconds": 0.18336671,
+        "status": "measured_once_fresh_process",
+        "metric": "generation_constructor",
+        "log": "/shared/external/pyLoopAmpliCol/workspace/reports/loop-live-provider-initialization/qqgg-recola.log",
+        "validation": "Born/finite/single/double match saved independent MadLoop first point"
+      },
+      "openloops": {
+        "seconds": 0.014935893,
+        "status": "measured_once_fresh_process",
+        "metric": "prebuilt_registration_start",
+        "log": "/shared/external/pyLoopAmpliCol/workspace/reports/loop-live-provider-initialization/qqgg-openloops.log",
+        "validation": "Born/finite/single/double match saved independent MadLoop first point"
+      }
+    },
+    "gg": {
+      "madloop": {
+        "case": "gg",
+        "provider": "MadLoop-3.7.0",
+        "cpu": 380,
+        "generation_s": 30.1389806829975,
+        "source_export_s": 20.81572385301115,
+        "process_compilation_s": 9.323256829986349,
+        "process": "g g > g g QED=0 [virt=QCD]",
+        "dependencies": "external",
+        "scope": "One cold observation in a fresh process: loop_sm-no_b_mass import, Feynman-gauge preparation, graph/HELAS/colour generation, standalone source export and source/process static compilation. MG5 Python imports and event initialization are excluded. One pinned CPU and make -j1; FFLAGS=-w -fPIC -fallow-argument-mismatch; standard polynomial optimization unchanged. Existing warmed runtime exports are untouched.",
+        "reduction_build_scope": "Existing external reduction libraries are reused; their installation/build is excluded.",
+        "output": "/shared/external/pyLoopAmpliCol/workspace/reference/builds/live-provider-generation/madloop-gg",
+        "seconds": 30.1389806829975,
+        "status": "measured_once_fresh_process",
+        "metric": "generation_and_static_compilation"
+      },
+      "recola": {
+        "seconds": 0.169947801,
+        "status": "measured_once_fresh_process",
+        "metric": "generation_constructor",
+        "log": "/shared/external/pyLoopAmpliCol/workspace/reports/loop-live-provider-initialization/gg-recola.log",
+        "validation": "Born/finite/single/double match saved independent MadLoop first point"
+      },
+      "openloops": {
+        "seconds": 0.012955335,
+        "status": "measured_once_fresh_process",
+        "metric": "prebuilt_registration_start",
+        "log": "/shared/external/pyLoopAmpliCol/workspace/reports/loop-live-provider-initialization/gg-openloops.log",
+        "validation": "Born/finite/single/double match saved independent MadLoop first point"
+      }
+    }
+  },
+  "recola_openloops_cpu": 380,
+  "recola_openloops_cold_scope": "One fresh OS process per case/provider, constructor wall time after binary loader/input parsing and before first evaluation. No filesystem-cache flush, uncertainty estimate, or acceptance claim. Same prebuilt provider libraries/bridge/configuration as warm report; all four first-point outputs independently checked against saved matched MadLoop results."
+}
