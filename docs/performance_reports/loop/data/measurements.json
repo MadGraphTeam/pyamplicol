@@ -1,0 +1,3325 @@
+{
+  "date": "2026-10-18",
+  "revision": "fa599885",
+  "host": "AMD EPYC 9754 \u00b7 one pinned CPU thread \u00b7 shared host",
+  "status": "Development measurements; not performance acceptance",
+  "cases": [
+    {
+      "case": "dy",
+      "process": "u u~ > e- e+ / z",
+      "commit": "fa599885fc43ab399f031ddbe92a51a04077bd93",
+      "source_generation_s": 0.5528138669906184,
+      "program_generation_s": 1.8732707320014015,
+      "generation_s": 2.42608459899202,
+      "cpu": 382,
+      "cpu_model": "AMD EPYC 9754 128-Core Processor",
+      "scope": "Complete internal model-rule Born-loop interference, full SU(3), all physical helicities, all three poles, local UV/R2 and external fields. Python batch scheduling and exact decimal input included; decimal output formatting and validation excluded. Warm repeated three-point control stream; no per-point cached results. No rescue or cross-precision verification; reducer-success accuracy not established. Not provider acceptance.",
+      "generation_scope": "Fresh process after imports: source UFO capture/lowering, graph generation, recurrence/colour/CT preparation and binary64 JIT/reducer plan construction. Source/build installation, imports and warmup excluded. One cold observation, no uncertainty estimate.",
+      "arithmetic": "double",
+      "reduction_engine": "fast",
+      "coefficient_engine": "jit",
+      "r2_strategy": "model",
+      "counts": {
+        "born_graphs": 1,
+        "loop_graphs": 1,
+        "families": 1,
+        "helicities": 16,
+        "counterterms": 1,
+        "external_fields": 0
+      },
+      "timings": {
+        "1": {
+          "median_us_per_point": 583.6919881403446,
+          "min_us_per_point": 406.4610111527145,
+          "max_us_per_point": 686.9829958304763,
+          "samples_us_per_point": [
+            686.9829958304763,
+            671.9020311720669,
+            583.6919881403446,
+            480.1020259037614,
+            406.4610111527145
+          ],
+          "checksum_all_poles_and_born": [
+            0.0020138684019948075,
+            0.0020138684019948075,
+            0.0020138684019948075,
+            0.0020138684019948075,
+            0.0020138684019948075
+          ]
+        },
+        "8": {
+          "median_us_per_point": 169.9745043879375,
+          "min_us_per_point": 165.1857528486289,
+          "max_us_per_point": 208.25712999794632,
+          "samples_us_per_point": [
+            208.25712999794632,
+            166.9157500145957,
+            176.0846280376427,
+            165.1857528486289,
+            169.9745043879375
+          ],
+          "checksum_all_poles_and_born": [
+            0.013880358830810902,
+            0.013880358830810902,
+            0.013880358830810902,
+            0.013880358830810902,
+            0.013880358830810902
+          ]
+        },
+        "32": {
+          "median_us_per_point": 141.986844027997,
+          "min_us_per_point": 134.56278247758746,
+          "max_us_per_point": 152.99968799808994,
+          "samples_us_per_point": [
+            145.6125010008691,
+            152.99968799808994,
+            141.986844027997,
+            136.883718369063,
+            134.56278247758746
+          ],
+          "checksum_all_poles_and_born": [
+            0.05534808161006752,
+            0.05534808161006752,
+            0.05534808161006752,
+            0.05534808161006752,
+            0.05534808161006752
+          ]
+        },
+        "128": {
+          "median_us_per_point": 147.4028986194753,
+          "min_us_per_point": 127.52406246363535,
+          "max_us_per_point": 235.38225786978728,
+          "samples_us_per_point": [
+            127.52406246363535,
+            135.18635932996403,
+            235.38225786978728,
+            169.36002339207334,
+            147.4028986194753
+          ],
+          "checksum_all_poles_and_born": [
+            0.221218972727094,
+            0.221218972727094,
+            0.221218972727094,
+            0.221218972727094,
+            0.221218972727094
+          ]
+        }
+      },
+      "first_evaluation_s": 0.021595152036752552,
+      "peak_rss_mib": 132.02734375
+    },
+    {
+      "case": "uudd",
+      "process": "u u~ > d d~",
+      "commit": "fa599885fc43ab399f031ddbe92a51a04077bd93",
+      "source_generation_s": 0.5591835219529457,
+      "program_generation_s": 6.532861857034732,
+      "generation_s": 7.092045378987677,
+      "cpu": 382,
+      "cpu_model": "AMD EPYC 9754 128-Core Processor",
+      "scope": "Complete internal model-rule Born-loop interference, full SU(3), all physical helicities, all three poles, local UV/R2 and external fields. Python batch scheduling and exact decimal input included; decimal output formatting and validation excluded. Warm repeated three-point control stream; no per-point cached results. No rescue or cross-precision verification; reducer-success accuracy not established. Not provider acceptance.",
+      "generation_scope": "Fresh process after imports: source UFO capture/lowering, graph generation, recurrence/colour/CT preparation and binary64 JIT/reducer plan construction. Source/build installation, imports and warmup excluded. One cold observation, no uncertainty estimate.",
+      "arithmetic": "double",
+      "reduction_engine": "fast",
+      "coefficient_engine": "jit",
+      "r2_strategy": "model",
+      "counts": {
+        "born_graphs": 1,
+        "loop_graphs": 14,
+        "families": 8,
+        "helicities": 16,
+        "counterterms": 23,
+        "external_fields": 0
+      },
+      "timings": {
+        "1": {
+          "median_us_per_point": 1733.3769937977195,
+          "min_us_per_point": 1631.9769783876836,
+          "max_us_per_point": 1827.4380126968026,
+          "samples_us_per_point": [
+            1827.4380126968026,
+            1733.3769937977195,
+            1631.9769783876836,
+            1655.3670284338295,
+            1823.2979928143322
+          ],
+          "checksum_all_poles_and_born": [
+            0.24590394169733554,
+            0.24590394169733554,
+            0.24590394169733554,
+            0.24590394169733554,
+            0.24590394169733554
+          ]
+        },
+        "8": {
+          "median_us_per_point": 814.9247514666058,
+          "min_us_per_point": 803.6785002332181,
+          "max_us_per_point": 922.4201276083477,
+          "samples_us_per_point": [
+            922.4201276083477,
+            836.0348729183897,
+            814.9247514666058,
+            812.1572536765598,
+            803.6785002332181
+          ],
+          "checksum_all_poles_and_born": [
+            2.671487994316953,
+            2.671487994316953,
+            2.671487994316953,
+            2.671487994316953,
+            2.671487994316953
+          ]
+        },
+        "32": {
+          "median_us_per_point": 719.3536876002327,
+          "min_us_per_point": 690.1195301907137,
+          "max_us_per_point": 723.9396563818445,
+          "samples_us_per_point": [
+            720.1421267382102,
+            723.9396563818445,
+            719.3536876002327,
+            690.1195301907137,
+            716.6530613176292
+          ],
+          "checksum_all_poles_and_born": [
+            10.921942986437411,
+            10.921942986437411,
+            10.921942986437411,
+            10.921942986437411,
+            10.921942986437411
+          ]
+        },
+        "128": {
+          "median_us_per_point": 763.9618593202613,
+          "min_us_per_point": 734.8183753492776,
+          "max_us_per_point": 812.9756561174872,
+          "samples_us_per_point": [
+            812.9756561174872,
+            783.7073435439379,
+            734.8183753492776,
+            763.9618593202613,
+            744.2959140462335
+          ],
+          "checksum_all_poles_and_born": [
+            43.92376295491925,
+            43.92376295491925,
+            43.92376295491925,
+            43.92376295491925,
+            43.92376295491925
+          ]
+        }
+      },
+      "first_evaluation_s": 0.0630417299689725,
+      "peak_rss_mib": 180.38671875
+    },
+    {
+      "case": "tt",
+      "process": "u u~ > t t~",
+      "commit": "fa599885fc43ab399f031ddbe92a51a04077bd93",
+      "source_generation_s": 0.4839420900098048,
+      "program_generation_s": 5.902094871969894,
+      "generation_s": 6.386036961979698,
+      "cpu": 382,
+      "cpu_model": "AMD EPYC 9754 128-Core Processor",
+      "scope": "Complete internal model-rule Born-loop interference, full SU(3), all physical helicities, all three poles, local UV/R2 and external fields. Python batch scheduling and exact decimal input included; decimal output formatting and validation excluded. Warm repeated three-point control stream; no per-point cached results. No rescue or cross-precision verification; reducer-success accuracy not established. Not provider acceptance.",
+      "generation_scope": "Fresh process after imports: source UFO capture/lowering, graph generation, recurrence/colour/CT preparation and binary64 JIT/reducer plan construction. Source/build installation, imports and warmup excluded. One cold observation, no uncertainty estimate.",
+      "arithmetic": "double",
+      "reduction_engine": "fast",
+      "coefficient_engine": "jit",
+      "r2_strategy": "model",
+      "counts": {
+        "born_graphs": 1,
+        "loop_graphs": 14,
+        "families": 9,
+        "helicities": 16,
+        "counterterms": 23,
+        "external_fields": 2
+      },
+      "timings": {
+        "1": {
+          "median_us_per_point": 2006.1589893884957,
+          "min_us_per_point": 1942.4979691393673,
+          "max_us_per_point": 2069.6489955298603,
+          "samples_us_per_point": [
+            2057.089004665613,
+            1942.4979691393673,
+            1987.7980230376124,
+            2006.1589893884957,
+            2069.6489955298603
+          ],
+          "checksum_all_poles_and_born": [
+            0.9513401088522968,
+            0.9513401088522968,
+            0.9513401088522968,
+            0.9513401088522968,
+            0.9513401088522968
+          ]
+        },
+        "8": {
+          "median_us_per_point": 939.9940026924014,
+          "min_us_per_point": 924.3976237485185,
+          "max_us_per_point": 975.8203741512261,
+          "samples_us_per_point": [
+            975.8203741512261,
+            939.9940026924014,
+            944.5252435398288,
+            931.443995796144,
+            924.3976237485185
+          ],
+          "checksum_all_poles_and_born": [
+            6.321971026177991,
+            6.321971026177991,
+            6.321971026177991,
+            6.321971026177991,
+            6.321971026177991
+          ]
+        },
+        "32": {
+          "median_us_per_point": 811.8772184388945,
+          "min_us_per_point": 790.199313996709,
+          "max_us_per_point": 860.3927490185015,
+          "samples_us_per_point": [
+            811.8772184388945,
+            794.307468822808,
+            790.199313996709,
+            841.5564061579062,
+            860.3927490185015
+          ],
+          "checksum_all_poles_and_born": [
+            24.454161424315185,
+            24.454161424315185,
+            24.454161424315185,
+            24.454161424315185,
+            24.454161424315185
+          ]
+        },
+        "128": {
+          "median_us_per_point": 744.9835002262262,
+          "min_us_per_point": 726.443492112594,
+          "max_us_per_point": 1002.5617812061682,
+          "samples_us_per_point": [
+            744.9835002262262,
+            739.3553437395894,
+            726.443492112594,
+            813.2824609674572,
+            1002.5617812061682
+          ],
+          "checksum_all_poles_and_born": [
+            96.98292301686394,
+            96.98292301686394,
+            96.98292301686394,
+            96.98292301686394,
+            96.98292301686394
+          ]
+        }
+      },
+      "first_evaluation_s": 0.09056060703005642,
+      "peak_rss_mib": 183.30859375
+    },
+    {
+      "case": "qqgg",
+      "process": "u u~ > g g",
+      "commit": "fa599885fc43ab399f031ddbe92a51a04077bd93",
+      "source_generation_s": 0.466356844000984,
+      "program_generation_s": 20.692502285004593,
+      "generation_s": 21.158859129005577,
+      "cpu": 382,
+      "cpu_model": "AMD EPYC 9754 128-Core Processor",
+      "scope": "Complete internal model-rule Born-loop interference, full SU(3), all physical helicities, all three poles, local UV/R2 and external fields. Python batch scheduling and exact decimal input included; decimal output formatting and validation excluded. Warm repeated three-point control stream; no per-point cached results. No rescue or cross-precision verification; reducer-success accuracy not established. Not provider acceptance.",
+      "generation_scope": "Fresh process after imports: source UFO capture/lowering, graph generation, recurrence/colour/CT preparation and binary64 JIT/reducer plan construction. Source/build installation, imports and warmup excluded. One cold observation, no uncertainty estimate.",
+      "arithmetic": "double",
+      "reduction_engine": "fast",
+      "coefficient_engine": "jit",
+      "r2_strategy": "model",
+      "counts": {
+        "born_graphs": 3,
+        "loop_graphs": 45,
+        "families": 20,
+        "helicities": 16,
+        "counterterms": 63,
+        "external_fields": 18
+      },
+      "timings": {
+        "1": {
+          "median_us_per_point": 6834.629981312901,
+          "min_us_per_point": 6734.107970260084,
+          "max_us_per_point": 7148.389995563775,
+          "samples_us_per_point": [
+            7148.389995563775,
+            6999.309989623725,
+            6834.629981312901,
+            6734.107970260084,
+            6757.509021554142
+          ],
+          "checksum_all_poles_and_born": [
+            0.9421208867259132,
+            0.9421208867259132,
+            0.9421208867259132,
+            0.9421208867259132,
+            0.9421208867259132
+          ]
+        },
+        "8": {
+          "median_us_per_point": 4701.62887359038,
+          "min_us_per_point": 4542.1693721436895,
+          "max_us_per_point": 4853.275626373943,
+          "samples_us_per_point": [
+            4701.62887359038,
+            4542.1693721436895,
+            4706.33887744043,
+            4853.275626373943,
+            4615.486002876423
+          ],
+          "checksum_all_poles_and_born": [
+            8.8273578350206,
+            8.8273578350206,
+            8.8273578350206,
+            8.8273578350206,
+            8.8273578350206
+          ]
+        },
+        "32": {
+          "median_us_per_point": 4125.180748815183,
+          "min_us_per_point": 3179.7929368622135,
+          "max_us_per_point": 4342.122279922478,
+          "samples_us_per_point": [
+            3179.7929368622135,
+            3395.302936041844,
+            4125.180748815183,
+            4212.8108125325525,
+            4342.122279922478
+          ],
+          "checksum_all_poles_and_born": [
+            35.59055847536271,
+            35.59055847536271,
+            35.59055847536271,
+            35.59055847536271,
+            35.59055847536271
+          ]
+        },
+        "128": {
+          "median_us_per_point": 3099.789718817192,
+          "min_us_per_point": 2783.0579842884617,
+          "max_us_per_point": 3380.1068593675154,
+          "samples_us_per_point": [
+            3052.3289765369555,
+            2783.0579842884617,
+            3231.7876330125728,
+            3099.789718817192,
+            3380.1068593675154
+          ],
+          "checksum_all_poles_and_born": [
+            142.64336103673116,
+            142.64336103673116,
+            142.64336103673116,
+            142.64336103673116,
+            142.64336103673116
+          ]
+        }
+      },
+      "first_evaluation_s": 0.6162403720081784,
+      "peak_rss_mib": 320.5703125
+    },
+    {
+      "case": "gg",
+      "process": "g g > g g",
+      "commit": "fa599885fc43ab399f031ddbe92a51a04077bd93",
+      "source_generation_s": 0.48317577299894765,
+      "program_generation_s": 98.25564249203308,
+      "generation_s": 98.73881826503202,
+      "cpu": 382,
+      "cpu_model": "AMD EPYC 9754 128-Core Processor",
+      "scope": "Complete internal model-rule Born-loop interference, full SU(3), all physical helicities, all three poles, local UV/R2 and external fields. Python batch scheduling and exact decimal input included; decimal output formatting and validation excluded. Warm repeated three-point control stream; no per-point cached results. No rescue or cross-precision verification; reducer-success accuracy not established. Not provider acceptance.",
+      "generation_scope": "Fresh process after imports: source UFO capture/lowering, graph generation, recurrence/colour/CT preparation and binary64 JIT/reducer plan construction. Source/build installation, imports and warmup excluded. One cold observation, no uncertainty estimate.",
+      "arithmetic": "double",
+      "reduction_engine": "fast",
+      "coefficient_engine": "jit",
+      "r2_strategy": "model",
+      "counts": {
+        "born_graphs": 4,
+        "loop_graphs": 186,
+        "families": 52,
+        "helicities": 16,
+        "counterterms": 119,
+        "external_fields": 48
+      },
+      "timings": {
+        "1": {
+          "median_us_per_point": 33655.682986136526,
+          "min_us_per_point": 31017.44200102985,
+          "max_us_per_point": 33842.664037365466,
+          "samples_us_per_point": [
+            33842.664037365466,
+            32506.637973710895,
+            33675.20298343152,
+            33655.682986136526,
+            31017.44200102985
+          ],
+          "checksum_all_poles_and_born": [
+            43.617915006472856,
+            43.617915006472856,
+            43.617915006472856,
+            43.617915006472856,
+            43.617915006472856
+          ]
+        },
+        "8": {
+          "median_us_per_point": 19119.715252600145,
+          "min_us_per_point": 18278.604002262,
+          "max_us_per_point": 20489.689624810126,
+          "samples_us_per_point": [
+            19119.715252600145,
+            19022.994747501798,
+            18278.604002262,
+            19411.81262372993,
+            20489.689624810126
+          ],
+          "checksum_all_poles_and_born": [
+            272.301578418537,
+            272.301578418537,
+            272.301578418537,
+            272.301578418537,
+            272.301578418537
+          ]
+        },
+        "32": {
+          "median_us_per_point": 15208.445031021256,
+          "min_us_per_point": 13885.373780794907,
+          "max_us_per_point": 16122.110468131723,
+          "samples_us_per_point": [
+            13885.373780794907,
+            15208.445031021256,
+            15282.482843758771,
+            14973.878092860105,
+            16122.110468131723
+          ],
+          "checksum_all_poles_and_born": [
+            1070.8180962936294,
+            1070.8180962936294,
+            1070.8180962936294,
+            1070.8180962936294,
+            1070.8180962936294
+          ]
+        },
+        "128": {
+          "median_us_per_point": 14280.34372656839,
+          "min_us_per_point": 13502.603148481285,
+          "max_us_per_point": 14626.810351273889,
+          "samples_us_per_point": [
+            14256.844960982562,
+            14280.34372656839,
+            13502.603148481285,
+            14626.810351273889,
+            14572.413086170855
+          ],
+          "checksum_all_poles_and_born": [
+            4264.884167794,
+            4264.884167794,
+            4264.884167794,
+            4264.884167794,
+            4264.884167794
+          ]
+        }
+      },
+      "first_evaluation_s": 11.531704595021438,
+      "peak_rss_mib": 1085.09375
+    }
+  ],
+  "stages": {
+    "dy": {
+      "case": "dy",
+      "batch_size": 32,
+      "cpu": 382,
+      "physics_revision": "fa599885",
+      "profiling_revision": "54b39e18",
+      "scope": "Instrumented diagnostic B32, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+      "samples": [
+        {
+          "parameters": 0.22718631953466684,
+          "born_coefficients": 2.642813342390582,
+          "loop_coefficients": 24.37668626953382,
+          "born_projection": 0.3565619408618659,
+          "born_weighting": 2.0006264094263315,
+          "family_masses": 0.05218862497713417,
+          "bare_assembly": 0.19187427824363112,
+          "counterterm_scalars": 0.12562486517708749,
+          "counterterm_coefficients": 2.4206565285567194,
+          "ct_projection": 0.43409454519860446,
+          "complete_assembly": 0.12625059753190726,
+          "numerator_us": 26.90324876953382,
+          "reduction_us": 1.0490625,
+          "masters_us": 0.40721874999999996,
+          "instrumented_total_us": 115.33518772921525,
+          "other_work_us": 86.97565770968143,
+          "raw_native": {
+            "engine_calls": 1.0,
+            "engine_excluding_masters_seconds": 0.00011326,
+            "engine_seconds": 0.000126291,
+            "master_calls": 2.0,
+            "master_rows": 64.0,
+            "masters_seconds": 1.3031e-05,
+            "numerator_callback_seconds": 7.969e-05,
+            "numerator_calls": 2.0,
+            "numerator_preparation_seconds": 1.16e-06,
+            "numerator_rows": 96.0,
+            "reduction_exclusive_seconds": 3.357e-05
+          },
+          "checksum_all_poles_and_born": 0.05534808161006752
+        },
+        {
+          "parameters": 0.11968768376391381,
+          "born_coefficients": 2.4781566025922075,
+          "loop_coefficients": 23.83665560046211,
+          "born_projection": 0.2796878106892109,
+          "born_weighting": 1.852531568147242,
+          "family_masses": 0.07062590157147497,
+          "bare_assembly": 0.1487514964537695,
+          "counterterm_scalars": 0.12187410902697593,
+          "counterterm_coefficients": 2.4706259864615276,
+          "ct_projection": 0.42409374145790935,
+          "complete_assembly": 0.13250064512249082,
+          "numerator_us": 25.76103060046211,
+          "reduction_us": 0.9056562499999999,
+          "masters_us": 0.3303125,
+          "instrumented_total_us": 106.65703121048864,
+          "other_work_us": 79.66003186002652,
+          "raw_native": {
+            "engine_calls": 1.0,
+            "engine_excluding_masters_seconds": 8.9421e-05,
+            "engine_seconds": 9.9991e-05,
+            "master_calls": 2.0,
+            "master_rows": 64.0,
+            "masters_seconds": 1.057e-05,
+            "numerator_callback_seconds": 6.044e-05,
+            "numerator_calls": 2.0,
+            "numerator_preparation_seconds": 1.14e-06,
+            "numerator_rows": 96.0,
+            "reduction_exclusive_seconds": 2.8981e-05
+          },
+          "checksum_all_poles_and_born": 0.05534808161006752
+        },
+        {
+          "parameters": 0.12659256753977388,
+          "born_coefficients": 2.4474993551848456,
+          "loop_coefficients": 21.97665708081331,
+          "born_projection": 0.28750037017744035,
+          "born_weighting": 1.8606569938128814,
+          "family_masses": 0.0581239874009043,
+          "bare_assembly": 0.178124537342228,
+          "counterterm_scalars": 0.11468728189356625,
+          "counterterm_coefficients": 2.4143755581462756,
+          "ct_projection": 0.44718763092532754,
+          "complete_assembly": 0.1171883923234418,
+          "numerator_us": 23.87975083081331,
+          "reduction_us": 0.9188125,
+          "masters_us": 0.346875,
+          "instrumented_total_us": 96.83759344625287,
+          "other_work_us": 71.69215511543956,
+          "raw_native": {
+            "engine_calls": 1.0,
+            "engine_excluding_masters_seconds": 8.9141e-05,
+            "engine_seconds": 0.000100241,
+            "master_calls": 2.0,
+            "master_rows": 64.0,
+            "masters_seconds": 1.11e-05,
+            "numerator_callback_seconds": 5.9739e-05,
+            "numerator_calls": 2.0,
+            "numerator_preparation_seconds": 1.16e-06,
+            "numerator_rows": 96.0,
+            "reduction_exclusive_seconds": 2.9402e-05
+          },
+          "checksum_all_poles_and_born": 0.05534808161006752
+        },
+        {
+          "parameters": 0.11656265996862203,
+          "born_coefficients": 2.4487817427143455,
+          "loop_coefficients": 22.04884367529303,
+          "born_projection": 0.2990618668263778,
+          "born_weighting": 1.8037499103229493,
+          "family_masses": 0.05659421731252223,
+          "bare_assembly": 0.1584376150276512,
+          "counterterm_scalars": 0.11027987056877464,
+          "counterterm_coefficients": 2.4009386834222823,
+          "ct_projection": 0.4065623215865344,
+          "complete_assembly": 0.11500014807097614,
+          "numerator_us": 24.66946867529303,
+          "reduction_us": 0.9221875,
+          "masters_us": 0.36,
+          "instrumented_total_us": 96.08728214516304,
+          "other_work_us": 70.13562596987002,
+          "raw_native": {
+            "engine_calls": 1.0,
+            "engine_excluding_masters_seconds": 0.0001121,
+            "engine_seconds": 0.00012362,
+            "master_calls": 2.0,
+            "master_rows": 64.0,
+            "masters_seconds": 1.152e-05,
+            "numerator_callback_seconds": 8.259e-05,
+            "numerator_calls": 2.0,
+            "numerator_preparation_seconds": 1.27e-06,
+            "numerator_rows": 96.0,
+            "reduction_exclusive_seconds": 2.951e-05
+          },
+          "checksum_all_poles_and_born": 0.05534808161006752
+        },
+        {
+          "parameters": 0.097501470008865,
+          "born_coefficients": 2.584094545454718,
+          "loop_coefficients": 21.851032215636224,
+          "born_projection": 0.2696870069485158,
+          "born_weighting": 1.7468737496528774,
+          "family_masses": 0.045907654566690326,
+          "bare_assembly": 0.1624994183657691,
+          "counterterm_scalars": 0.0924992491491139,
+          "counterterm_coefficients": 2.4309374566655606,
+          "ct_projection": 0.4387493390822783,
+          "complete_assembly": 0.1240623532794416,
+          "numerator_us": 23.621969715636222,
+          "reduction_us": 0.7903125,
+          "masters_us": 0.27468750000000003,
+          "instrumented_total_us": 94.5085303101223,
+          "other_work_us": 69.82156059448607,
+          "raw_native": {
+            "engine_calls": 1.0,
+            "engine_excluding_masters_seconds": 8.118e-05,
+            "engine_seconds": 8.997e-05,
+            "master_calls": 2.0,
+            "master_rows": 64.0,
+            "masters_seconds": 8.79e-06,
+            "numerator_callback_seconds": 5.589e-05,
+            "numerator_calls": 2.0,
+            "numerator_preparation_seconds": 7.8e-07,
+            "numerator_rows": 96.0,
+            "reduction_exclusive_seconds": 2.529e-05
+          },
+          "checksum_all_poles_and_born": 0.05534808161006752
+        }
+      ],
+      "parameters": 0.11968768376391381,
+      "born_coefficients": 2.4781566025922075,
+      "loop_coefficients": 22.04884367529303,
+      "born_projection": 0.28750037017744035,
+      "born_weighting": 1.852531568147242,
+      "family_masses": 0.05659421731252223,
+      "bare_assembly": 0.1624994183657691,
+      "counterterm_scalars": 0.11468728189356625,
+      "counterterm_coefficients": 2.4206565285567194,
+      "ct_projection": 0.43409454519860446,
+      "complete_assembly": 0.1240623532794416,
+      "numerator_us": 24.66946867529303,
+      "reduction_us": 0.9188125,
+      "masters_us": 0.346875,
+      "instrumented_total_us": 96.83759344625287,
+      "other_work_us": 71.69215511543956
+    },
+    "uudd": {
+      "case": "uudd",
+      "batch_size": 32,
+      "cpu": 382,
+      "physics_revision": "fa599885",
+      "profiling_revision": "54b39e18",
+      "scope": "Instrumented diagnostic B32, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+      "samples": [
+        {
+          "parameters": 0.2593751560198143,
+          "born_coefficients": 2.70753116637934,
+          "loop_coefficients": 273.84365603211336,
+          "born_projection": 0.5290621629683301,
+          "born_weighting": 30.52206193387974,
+          "family_masses": 0.4281264409655705,
+          "bare_assembly": 0.45406159188132733,
+          "counterterm_scalars": 3.457218554103747,
+          "counterterm_coefficients": 73.14006143133156,
+          "ct_projection": 3.883156750816852,
+          "complete_assembly": 0.16778176359366626,
+          "numerator_us": 290.97034353211336,
+          "reduction_us": 7.20834375,
+          "masters_us": 8.02221875,
+          "instrumented_total_us": 686.7829069960862,
+          "other_work_us": 380.5820009639729,
+          "raw_native": {
+            "engine_calls": 8.0,
+            "engine_excluding_masters_seconds": 0.0007701709999999999,
+            "engine_seconds": 0.001026882,
+            "master_calls": 15.0,
+            "master_rows": 768.0,
+            "masters_seconds": 0.000256711,
+            "numerator_callback_seconds": 0.000539504,
+            "numerator_calls": 25.0,
+            "numerator_preparation_seconds": 8.55e-06,
+            "numerator_rows": 1184.0,
+            "reduction_exclusive_seconds": 0.000230667
+          },
+          "checksum_all_poles_and_born": 10.921942986437411
+        },
+        {
+          "parameters": 0.19628168956842273,
+          "born_coefficients": 2.6990619517164305,
+          "loop_coefficients": 275.473657893599,
+          "born_projection": 0.5437505024019629,
+          "born_weighting": 30.56947207369376,
+          "family_masses": 0.4224057192914188,
+          "bare_assembly": 0.42687497625593096,
+          "counterterm_scalars": 3.4271815820829943,
+          "counterterm_coefficients": 74.86221329600085,
+          "ct_projection": 4.5990927901584655,
+          "complete_assembly": 0.18874925444833934,
+          "numerator_us": 293.957157893599,
+          "reduction_us": 7.3450625,
+          "masters_us": 9.050656249999998,
+          "instrumented_total_us": 691.369812557241,
+          "other_work_us": 381.016935913642,
+          "raw_native": {
+            "engine_calls": 8.0,
+            "engine_excluding_masters_seconds": 0.000818315,
+            "engine_seconds": 0.0011079360000000001,
+            "master_calls": 15.0,
+            "master_rows": 768.0,
+            "masters_seconds": 0.00028962099999999994,
+            "numerator_callback_seconds": 0.000583273,
+            "numerator_calls": 25.0,
+            "numerator_preparation_seconds": 8.198999999999999e-06,
+            "numerator_rows": 1184.0,
+            "reduction_exclusive_seconds": 0.000235042
+          },
+          "checksum_all_poles_and_born": 10.921942986437411
+        },
+        {
+          "parameters": 0.21468804334290326,
+          "born_coefficients": 2.7025307645089924,
+          "loop_coefficients": 267.5042487680912,
+          "born_projection": 0.5653128027915955,
+          "born_weighting": 29.594188163173385,
+          "family_masses": 0.4206249286653474,
+          "bare_assembly": 0.44312582758720964,
+          "counterterm_scalars": 3.312217813800089,
+          "counterterm_coefficients": 72.26416346384212,
+          "ct_projection": 4.550967787508853,
+          "complete_assembly": 0.18375067156739533,
+          "numerator_us": 284.5078112680912,
+          "reduction_us": 7.7556562499999995,
+          "masters_us": 7.74784375,
+          "instrumented_total_us": 677.1785010641906,
+          "other_work_us": 377.1671897960994,
+          "raw_native": {
+            "engine_calls": 8.0,
+            "engine_excluding_masters_seconds": 0.0007836360000000001,
+            "engine_seconds": 0.001031567,
+            "master_calls": 15.0,
+            "master_rows": 768.0,
+            "masters_seconds": 0.000247931,
+            "numerator_callback_seconds": 0.000535455,
+            "numerator_calls": 25.0,
+            "numerator_preparation_seconds": 8.659e-06,
+            "numerator_rows": 1184.0,
+            "reduction_exclusive_seconds": 0.000248181
+          },
+          "checksum_all_poles_and_born": 10.921942986437411
+        },
+        {
+          "parameters": 0.1993739715544507,
+          "born_coefficients": 2.649061570991762,
+          "loop_coefficients": 274.1401840467006,
+          "born_projection": 0.6209065759321675,
+          "born_weighting": 48.48487333219964,
+          "family_masses": 0.9399955160915852,
+          "bare_assembly": 1.5247187548084185,
+          "counterterm_scalars": 7.163744157878682,
+          "counterterm_coefficients": 136.74743604497053,
+          "ct_projection": 9.56221811065916,
+          "complete_assembly": 0.46562490751966834,
+          "numerator_us": 307.6152465467006,
+          "reduction_us": 13.218499999999999,
+          "masters_us": 15.455718749999997,
+          "instrumented_total_us": 990.0804379867623,
+          "other_work_us": 653.7909726900616,
+          "raw_native": {
+            "engine_calls": 8.0,
+            "engine_excluding_masters_seconds": 0.0014775749999999999,
+            "engine_seconds": 0.001972158,
+            "master_calls": 15.0,
+            "master_rows": 768.0,
+            "masters_seconds": 0.0004945829999999999,
+            "numerator_callback_seconds": 0.001054583,
+            "numerator_calls": 25.0,
+            "numerator_preparation_seconds": 1.6619e-05,
+            "numerator_rows": 1184.0,
+            "reduction_exclusive_seconds": 0.00042299199999999996
+          },
+          "checksum_all_poles_and_born": 10.921942986437411
+        },
+        {
+          "parameters": 1.3859371392754838,
+          "born_coefficients": 3.450000804150477,
+          "loop_coefficients": 376.20062357746065,
+          "born_projection": 1.019061528495513,
+          "born_weighting": 56.93306229659356,
+          "family_masses": 1.1918436939595267,
+          "bare_assembly": 0.7209364412119612,
+          "counterterm_scalars": 8.479690222884528,
+          "counterterm_coefficients": 134.64556286635343,
+          "ct_projection": 8.362843800568953,
+          "complete_assembly": 0.36718847695738077,
+          "numerator_us": 410.1695298274606,
+          "reduction_us": 15.570687499999998,
+          "masters_us": 15.011374999999997,
+          "instrumented_total_us": 1288.659188503516,
+          "other_work_us": 847.9075961760552,
+          "raw_native": {
+            "engine_calls": 8.0,
+            "engine_excluding_masters_seconds": 0.0015663170000000002,
+            "engine_seconds": 0.002046681,
+            "master_calls": 15.0,
+            "master_rows": 768.0,
+            "masters_seconds": 0.00048036399999999994,
+            "numerator_callback_seconds": 0.0010680549999999998,
+            "numerator_calls": 25.0,
+            "numerator_preparation_seconds": 1.8950000000000003e-05,
+            "numerator_rows": 1184.0,
+            "reduction_exclusive_seconds": 0.000498262
+          },
+          "checksum_all_poles_and_born": 10.921942986437411
+        }
+      ],
+      "parameters": 0.21468804334290326,
+      "born_coefficients": 2.7025307645089924,
+      "loop_coefficients": 274.1401840467006,
+      "born_projection": 0.5653128027915955,
+      "born_weighting": 30.56947207369376,
+      "family_masses": 0.4281264409655705,
+      "bare_assembly": 0.45406159188132733,
+      "counterterm_scalars": 3.457218554103747,
+      "counterterm_coefficients": 74.86221329600085,
+      "ct_projection": 4.5990927901584655,
+      "complete_assembly": 0.18874925444833934,
+      "numerator_us": 293.957157893599,
+      "reduction_us": 7.7556562499999995,
+      "masters_us": 9.050656249999998,
+      "instrumented_total_us": 691.369812557241,
+      "other_work_us": 381.016935913642
+    },
+    "tt": {
+      "case": "tt",
+      "batch_size": 32,
+      "cpu": 382,
+      "physics_revision": "fa599885",
+      "profiling_revision": "54b39e18",
+      "scope": "Instrumented diagnostic B32, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+      "samples": [
+        {
+          "parameters": 0.3112509148195386,
+          "born_coefficients": 3.0153132684063166,
+          "loop_coefficients": 369.6384355862392,
+          "born_projection": 0.720312527846545,
+          "born_weighting": 34.506407246226445,
+          "family_masses": 0.5897200026083738,
+          "bare_assembly": 0.5481251719174907,
+          "counterterm_scalars": 4.201248884783126,
+          "counterterm_coefficients": 83.79409337067045,
+          "field_scalars": 0.7762191671645269,
+          "ct_projection": 6.370311893988401,
+          "complete_assembly": 0.16124977264553308,
+          "numerator_us": 397.13015433623923,
+          "reduction_us": 14.3790625,
+          "masters_us": 17.918218750000005,
+          "instrumented_total_us": 937.8483446198516,
+          "other_work_us": 508.42090903361236,
+          "raw_native": {
+            "engine_calls": 9.0,
+            "engine_excluding_masters_seconds": 0.0013283160000000002,
+            "engine_seconds": 0.001901699,
+            "master_calls": 19.0,
+            "master_rows": 1184.0,
+            "masters_seconds": 0.0005733830000000001,
+            "numerator_callback_seconds": 0.0008681860000000001,
+            "numerator_calls": 43.0,
+            "numerator_preparation_seconds": 1.1549e-05,
+            "numerator_rows": 1792.0,
+            "reduction_exclusive_seconds": 0.00046013
+          },
+          "checksum_all_poles_and_born": 24.454161424315185
+        },
+        {
+          "parameters": 0.23562461137771606,
+          "born_coefficients": 4.237499524606392,
+          "loop_coefficients": 314.6259950881358,
+          "born_projection": 0.8259066817117855,
+          "born_weighting": 43.265190470265225,
+          "family_masses": 1.2143755157012492,
+          "bare_assembly": 0.6594054866582155,
+          "counterterm_scalars": 5.439906090032309,
+          "counterterm_coefficients": 109.7494696296053,
+          "field_scalars": 0.9528139344183728,
+          "ct_projection": 5.629686711472459,
+          "complete_assembly": 0.18562423065304756,
+          "numerator_us": 352.6596825881358,
+          "reduction_us": 18.9071875,
+          "masters_us": 24.669187500000003,
+          "instrumented_total_us": 1041.490031639114,
+          "other_work_us": 645.2539740509782,
+          "raw_native": {
+            "engine_calls": 9.0,
+            "engine_excluding_masters_seconds": 0.0018011760000000003,
+            "engine_seconds": 0.00259059,
+            "master_calls": 19.0,
+            "master_rows": 1184.0,
+            "masters_seconds": 0.0007894140000000001,
+            "numerator_callback_seconds": 0.0011961460000000001,
+            "numerator_calls": 43.0,
+            "numerator_preparation_seconds": 2.0932000000000002e-05,
+            "numerator_rows": 1792.0,
+            "reduction_exclusive_seconds": 0.00060503
+          },
+          "checksum_all_poles_and_born": 24.454161424315185
+        },
+        {
+          "parameters": 0.3106251824647188,
+          "born_coefficients": 2.9584698495455086,
+          "loop_coefficients": 303.3196917385794,
+          "born_projection": 0.8424995030509308,
+          "born_weighting": 37.22165820363443,
+          "family_masses": 0.6671871233265847,
+          "bare_assembly": 0.5068759492132813,
+          "counterterm_scalars": 4.0371305658482015,
+          "counterterm_coefficients": 82.40881288656965,
+          "field_scalars": 0.8549995982320979,
+          "ct_projection": 5.6065946409944445,
+          "complete_assembly": 0.24343898985534906,
+          "numerator_us": 334.37056673857944,
+          "reduction_us": 16.34225,
+          "masters_us": 18.28034375,
+          "instrumented_total_us": 889.8350006347755,
+          "other_work_us": 520.8418401461961,
+          "raw_native": {
+            "engine_calls": 9.0,
+            "engine_excluding_masters_seconds": 0.001503008,
+            "engine_seconds": 0.0020879790000000002,
+            "master_calls": 19.0,
+            "master_rows": 1184.0,
+            "masters_seconds": 0.000584971,
+            "numerator_callback_seconds": 0.000980056,
+            "numerator_calls": 43.0,
+            "numerator_preparation_seconds": 1.3572e-05,
+            "numerator_rows": 1792.0,
+            "reduction_exclusive_seconds": 0.000522952
+          },
+          "checksum_all_poles_and_born": 24.454161424315185
+        },
+        {
+          "parameters": 0.34031290851999074,
+          "born_coefficients": 2.9906568670412526,
+          "loop_coefficients": 303.0219359061448,
+          "born_projection": 0.6203135853866115,
+          "born_weighting": 35.24953353917226,
+          "family_masses": 0.8375300240004435,
+          "bare_assembly": 0.4734374670078978,
+          "counterterm_scalars": 4.99940688314382,
+          "counterterm_coefficients": 81.1759691714542,
+          "field_scalars": 0.9115628927247599,
+          "ct_projection": 5.245969077805057,
+          "complete_assembly": 0.20999868866056204,
+          "numerator_us": 334.9060609061448,
+          "reduction_us": 16.10353125,
+          "masters_us": 19.57325,
+          "instrumented_total_us": 882.6709054119419,
+          "other_work_us": 512.0880632557971,
+          "raw_native": {
+            "engine_calls": 9.0,
+            "engine_excluding_masters_seconds": 0.001520575,
+            "engine_seconds": 0.002146919,
+            "master_calls": 19.0,
+            "master_rows": 1184.0,
+            "masters_seconds": 0.000626344,
+            "numerator_callback_seconds": 0.001005262,
+            "numerator_calls": 43.0,
+            "numerator_preparation_seconds": 1.503e-05,
+            "numerator_rows": 1792.0,
+            "reduction_exclusive_seconds": 0.000515313
+          },
+          "checksum_all_poles_and_born": 24.454161424315185
+        },
+        {
+          "parameters": 0.3334371285745874,
+          "born_coefficients": 3.085937350988388,
+          "loop_coefficients": 297.38718876615167,
+          "born_projection": 0.6581249181181192,
+          "born_weighting": 35.71919114619959,
+          "family_masses": 0.5896872607991099,
+          "bare_assembly": 0.46249988372437656,
+          "counterterm_scalars": 5.030999091104604,
+          "counterterm_coefficients": 85.0437136250548,
+          "field_scalars": 0.668747816234827,
+          "ct_projection": 5.497531674336642,
+          "complete_assembly": 0.1949993020389229,
+          "numerator_us": 325.5560950161517,
+          "reduction_us": 13.246843749999998,
+          "masters_us": 16.907906250000003,
+          "instrumented_total_us": 882.7687179291388,
+          "other_work_us": 527.0578729129871,
+          "raw_native": {
+            "engine_calls": 9.0,
+            "engine_excluding_masters_seconds": 0.001314404,
+            "engine_seconds": 0.001855457,
+            "master_calls": 19.0,
+            "master_rows": 1184.0,
+            "masters_seconds": 0.0005410530000000001,
+            "numerator_callback_seconds": 0.0008905050000000001,
+            "numerator_calls": 43.0,
+            "numerator_preparation_seconds": 1.0899999999999999e-05,
+            "numerator_rows": 1792.0,
+            "reduction_exclusive_seconds": 0.00042389899999999993
+          },
+          "checksum_all_poles_and_born": 24.454161424315185
+        }
+      ],
+      "parameters": 0.3112509148195386,
+      "born_coefficients": 3.0153132684063166,
+      "loop_coefficients": 303.3196917385794,
+      "born_projection": 0.720312527846545,
+      "born_weighting": 35.71919114619959,
+      "family_masses": 0.6671871233265847,
+      "bare_assembly": 0.5068759492132813,
+      "counterterm_scalars": 4.99940688314382,
+      "counterterm_coefficients": 83.79409337067045,
+      "field_scalars": 0.8549995982320979,
+      "ct_projection": 5.6065946409944445,
+      "complete_assembly": 0.1949993020389229,
+      "numerator_us": 334.9060609061448,
+      "reduction_us": 16.10353125,
+      "masters_us": 18.28034375,
+      "instrumented_total_us": 889.8350006347755,
+      "other_work_us": 520.8418401461961
+    },
+    "qqgg": {
+      "case": "qqgg",
+      "batch_size": 32,
+      "cpu": 382,
+      "physics_revision": "fa599885",
+      "profiling_revision": "54b39e18",
+      "scope": "Instrumented diagnostic B32, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+      "samples": [
+        {
+          "parameters": 0.3618733899202198,
+          "born_coefficients": 15.676936527597718,
+          "loop_coefficients": 1895.9753415401792,
+          "born_projection": 2.002218025154434,
+          "born_weighting": 315.95628570357803,
+          "family_masses": 1.4197175914887339,
+          "bare_assembly": 0.7068756531225517,
+          "counterterm_scalars": 10.349442163715139,
+          "counterterm_coefficients": 227.11722340318374,
+          "field_scalars": 1.5793430065969005,
+          "ct_projection": 20.241968741174787,
+          "complete_assembly": 0.2053129719570279,
+          "numerator_us": 1992.5035915401793,
+          "reduction_us": 19.888125000000006,
+          "masters_us": 16.451281250000005,
+          "instrumented_total_us": 3450.253030678141,
+          "other_work_us": 1421.4100328879617,
+          "raw_native": {
+            "engine_calls": 20.0,
+            "engine_excluding_masters_seconds": 0.003696213,
+            "engine_seconds": 0.004222654000000001,
+            "master_calls": 35.0,
+            "master_rows": 1664.0,
+            "masters_seconds": 0.0005264410000000001,
+            "numerator_callback_seconds": 0.0030597930000000008,
+            "numerator_calls": 56.0,
+            "numerator_preparation_seconds": 2.9111000000000003e-05,
+            "numerator_rows": 2560.0,
+            "reduction_exclusive_seconds": 0.0006364200000000002
+          },
+          "checksum_all_poles_and_born": 35.59055847536271
+        },
+        {
+          "parameters": 0.28437534638214856,
+          "born_coefficients": 9.98943687591236,
+          "loop_coefficients": 1726.6350296267774,
+          "born_projection": 2.1771884348709136,
+          "born_weighting": 340.52928094752133,
+          "family_masses": 1.6752219380578026,
+          "bare_assembly": 0.6828122423030436,
+          "counterterm_scalars": 10.248151738778688,
+          "counterterm_coefficients": 228.82071607455146,
+          "field_scalars": 1.5819332475075498,
+          "ct_projection": 19.942594008171,
+          "complete_assembly": 0.20565676095429808,
+          "numerator_us": 1827.5814983767773,
+          "reduction_us": 21.473437499999996,
+          "masters_us": 17.453156250000003,
+          "instrumented_total_us": 3301.343936982448,
+          "other_work_us": 1434.835844855671,
+          "raw_native": {
+            "engine_calls": 20.0,
+            "engine_excluding_masters_seconds": 0.003885438,
+            "engine_seconds": 0.004443939,
+            "master_calls": 35.0,
+            "master_rows": 1664.0,
+            "masters_seconds": 0.0005585010000000001,
+            "numerator_callback_seconds": 0.0031982879999999997,
+            "numerator_calls": 56.0,
+            "numerator_preparation_seconds": 3.199900000000001e-05,
+            "numerator_rows": 2560.0,
+            "reduction_exclusive_seconds": 0.0006871499999999999
+          },
+          "checksum_all_poles_and_born": 35.59055847536271
+        },
+        {
+          "parameters": 0.2428132575005293,
+          "born_coefficients": 9.273499017581344,
+          "loop_coefficients": 1674.91084903304,
+          "born_projection": 2.1081250451970845,
+          "born_weighting": 337.4770658410853,
+          "family_masses": 1.4084653230383992,
+          "bare_assembly": 0.6878126441733912,
+          "counterterm_scalars": 9.866615073406138,
+          "counterterm_coefficients": 229.5656449859962,
+          "field_scalars": 1.51902531797532,
+          "ct_projection": 22.259157049120404,
+          "complete_assembly": 0.21437517716549337,
+          "numerator_us": 1778.39819278304,
+          "reduction_us": 21.515750000000004,
+          "masters_us": 17.65046875,
+          "instrumented_total_us": 3195.9182197169866,
+          "other_work_us": 1378.3538081839465,
+          "raw_native": {
+            "engine_calls": 20.0,
+            "engine_excluding_masters_seconds": 0.003973910000000001,
+            "engine_seconds": 0.0045387249999999995,
+            "master_calls": 35.0,
+            "master_rows": 1664.0,
+            "masters_seconds": 0.0005648150000000001,
+            "numerator_callback_seconds": 0.003285406,
+            "numerator_calls": 56.0,
+            "numerator_preparation_seconds": 2.6188999999999996e-05,
+            "numerator_rows": 2560.0,
+            "reduction_exclusive_seconds": 0.0006885040000000002
+          },
+          "checksum_all_poles_and_born": 35.59055847536271
+        },
+        {
+          "parameters": 0.2253127604490146,
+          "born_coefficients": 9.004717867355794,
+          "loop_coefficients": 1597.8325591277098,
+          "born_projection": 2.026250513154082,
+          "born_weighting": 333.3980312163476,
+          "family_masses": 1.662780050537549,
+          "bare_assembly": 0.630625436315313,
+          "counterterm_scalars": 9.72656016529072,
+          "counterterm_coefficients": 229.38705478736665,
+          "field_scalars": 1.50752930494491,
+          "ct_projection": 22.145093680592254,
+          "complete_assembly": 0.22593667381443083,
+          "numerator_us": 1704.1557153777098,
+          "reduction_us": 21.779843749999998,
+          "masters_us": 19.087249999999997,
+          "instrumented_total_us": 3111.181906206184,
+          "other_work_us": 1366.1590970784741,
+          "raw_native": {
+            "engine_calls": 20.0,
+            "engine_excluding_masters_seconds": 0.0040713960000000006,
+            "engine_seconds": 0.0046821879999999995,
+            "master_calls": 35.0,
+            "master_rows": 1664.0,
+            "masters_seconds": 0.0006107919999999999,
+            "numerator_callback_seconds": 0.0033744409999999997,
+            "numerator_calls": 56.0,
+            "numerator_preparation_seconds": 2.79e-05,
+            "numerator_rows": 2560.0,
+            "reduction_exclusive_seconds": 0.000696955
+          },
+          "checksum_all_poles_and_born": 35.59055847536271
+        },
+        {
+          "parameters": 0.2596880221972242,
+          "born_coefficients": 10.505031241336837,
+          "loop_coefficients": 1542.9774302901933,
+          "born_projection": 2.1374999050749466,
+          "born_weighting": 346.6260950517608,
+          "family_masses": 1.5575296856695786,
+          "bare_assembly": 0.6337504601106048,
+          "counterterm_scalars": 9.783740097191185,
+          "counterterm_coefficients": 236.09062191098928,
+          "field_scalars": 1.5943460311973467,
+          "ct_projection": 19.45134499692358,
+          "complete_assembly": 0.19562503439374268,
+          "numerator_us": 1660.8682427901933,
+          "reduction_us": 23.100343749999997,
+          "masters_us": 20.146937499999996,
+          "instrumented_total_us": 3092.8134056011913,
+          "other_work_us": 1388.697881560998,
+          "raw_native": {
+            "engine_calls": 20.0,
+            "engine_excluding_masters_seconds": 0.004482669000000002,
+            "engine_seconds": 0.0051273709999999995,
+            "master_calls": 35.0,
+            "master_rows": 1664.0,
+            "masters_seconds": 0.0006447019999999999,
+            "numerator_callback_seconds": 0.0037434580000000003,
+            "numerator_calls": 56.0,
+            "numerator_preparation_seconds": 2.9048e-05,
+            "numerator_rows": 2560.0,
+            "reduction_exclusive_seconds": 0.0007392109999999999
+          },
+          "checksum_all_poles_and_born": 35.59055847536271
+        }
+      ],
+      "parameters": 0.2596880221972242,
+      "born_coefficients": 9.98943687591236,
+      "loop_coefficients": 1674.91084903304,
+      "born_projection": 2.1081250451970845,
+      "born_weighting": 337.4770658410853,
+      "family_masses": 1.5575296856695786,
+      "bare_assembly": 0.6828122423030436,
+      "counterterm_scalars": 9.866615073406138,
+      "counterterm_coefficients": 229.38705478736665,
+      "field_scalars": 1.5793430065969005,
+      "ct_projection": 20.241968741174787,
+      "complete_assembly": 0.20565676095429808,
+      "numerator_us": 1778.39819278304,
+      "reduction_us": 21.515750000000004,
+      "masters_us": 17.65046875,
+      "instrumented_total_us": 3195.9182197169866,
+      "other_work_us": 1388.697881560998
+    },
+    "gg": {
+      "case": "gg",
+      "batch_size": 32,
+      "cpu": 382,
+      "physics_revision": "fa599885",
+      "profiling_revision": "54b39e18",
+      "scope": "Instrumented diagnostic B32, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+      "samples": [
+        {
+          "parameters": 0.5965630407445133,
+          "born_coefficients": 15.320687452913262,
+          "loop_coefficients": 8198.067705961876,
+          "born_projection": 4.374718628241681,
+          "born_weighting": 2016.2856562819798,
+          "family_masses": 4.710314897238277,
+          "bare_assembly": 1.4950001059332862,
+          "counterterm_scalars": 22.422651454689912,
+          "counterterm_coefficients": 599.3380655127112,
+          "field_scalars": 5.202500688028522,
+          "ct_projection": 89.64474909589626,
+          "complete_assembly": 0.3256263880757615,
+          "numerator_us": 9185.433049711875,
+          "reduction_us": 98.26968750000005,
+          "masters_us": 80.61793750000001,
+          "instrumented_total_us": 14166.838218443445,
+          "other_work_us": 4802.51754373157,
+          "raw_native": {
+            "engine_calls": 52.0,
+            "engine_excluding_masters_seconds": 0.034624389999999984,
+            "engine_seconds": 0.037204164,
+            "master_calls": 108.0,
+            "master_rows": 6528.0,
+            "masters_seconds": 0.0025797740000000004,
+            "numerator_callback_seconds": 0.03147976,
+            "numerator_calls": 255.0,
+            "numerator_preparation_seconds": 0.000115931,
+            "numerator_rows": 10848.0,
+            "reduction_exclusive_seconds": 0.0031446300000000016
+          },
+          "checksum_all_poles_and_born": 1070.8180962936294
+        },
+        {
+          "parameters": 0.25437475414946675,
+          "born_coefficients": 16.795689589343965,
+          "loop_coefficients": 8608.314810771844,
+          "born_projection": 7.520344297518022,
+          "born_weighting": 2270.0662739225663,
+          "family_masses": 3.719085725606419,
+          "bare_assembly": 1.425312802894041,
+          "counterterm_scalars": 18.370985344517976,
+          "counterterm_coefficients": 562.7157515846193,
+          "field_scalars": 3.580033080652356,
+          "ct_projection": 62.07056139828637,
+          "complete_assembly": 0.2721862983889878,
+          "numerator_us": 9574.595185771845,
+          "reduction_us": 88.41815625,
+          "masters_us": 68.70621875000002,
+          "instrumented_total_us": 14573.265249055112,
+          "other_work_us": 4841.545688283268,
+          "raw_native": {
+            "engine_calls": 52.0,
+            "engine_excluding_masters_seconds": 0.033641435,
+            "engine_seconds": 0.03584003399999999,
+            "master_calls": 108.0,
+            "master_rows": 6528.0,
+            "masters_seconds": 0.0021985990000000007,
+            "numerator_callback_seconds": 0.030812054000000005,
+            "numerator_calls": 255.0,
+            "numerator_preparation_seconds": 0.00010891799999999999,
+            "numerator_rows": 10848.0,
+            "reduction_exclusive_seconds": 0.0028293809999999997
+          },
+          "checksum_all_poles_and_born": 1070.8180962936294
+        },
+        {
+          "parameters": 0.21528285287786275,
+          "born_coefficients": 15.17037526355125,
+          "loop_coefficients": 8052.40642876015,
+          "born_projection": 2.5868739612633362,
+          "born_weighting": 1893.6090909846826,
+          "family_masses": 3.766841473407112,
+          "bare_assembly": 1.294687535846606,
+          "counterterm_scalars": 20.85119194816798,
+          "counterterm_coefficients": 569.7286596841877,
+          "field_scalars": 3.6853143683401868,
+          "ct_projection": 59.78462468192447,
+          "complete_assembly": 0.2600008883746341,
+          "numerator_us": 8957.19142876015,
+          "reduction_us": 87.543125,
+          "masters_us": 66.25428125,
+          "instrumented_total_us": 13417.682876024628,
+          "other_work_us": 4306.694041014478,
+          "raw_native": {
+            "engine_calls": 52.0,
+            "engine_excluding_masters_seconds": 0.03165538999999999,
+            "engine_seconds": 0.03377552699999999,
+            "master_calls": 108.0,
+            "master_rows": 6528.0,
+            "masters_seconds": 0.0021201370000000002,
+            "numerator_callback_seconds": 0.028854010000000003,
+            "numerator_calls": 255.0,
+            "numerator_preparation_seconds": 9.910999999999998e-05,
+            "numerator_rows": 10848.0,
+            "reduction_exclusive_seconds": 0.00280138
+          },
+          "checksum_all_poles_and_born": 1070.8180962936294
+        },
+        {
+          "parameters": 0.2278120518894866,
+          "born_coefficients": 14.611909136874601,
+          "loop_coefficients": 9499.39919883036,
+          "born_projection": 2.791563019854948,
+          "born_weighting": 1894.5791834994452,
+          "family_masses": 4.360128514235839,
+          "bare_assembly": 1.3962508091935888,
+          "counterterm_scalars": 21.223650037427433,
+          "counterterm_coefficients": 568.3464114554226,
+          "field_scalars": 3.8690868677804247,
+          "ct_projection": 101.5273137454642,
+          "complete_assembly": 0.472811734653078,
+          "numerator_us": 10439.08676133036,
+          "reduction_us": 90.22725000000003,
+          "masters_us": 73.78021875,
+          "instrumented_total_us": 15118.487561267102,
+          "other_work_us": 4515.393331186742,
+          "raw_native": {
+            "engine_calls": 52.0,
+            "engine_excluding_masters_seconds": 0.03284727099999999,
+            "engine_seconds": 0.035208238,
+            "master_calls": 108.0,
+            "master_rows": 6528.0,
+            "masters_seconds": 0.0023609670000000003,
+            "numerator_callback_seconds": 0.029959998999999998,
+            "numerator_calls": 255.0,
+            "numerator_preparation_seconds": 0.00011000299999999997,
+            "numerator_rows": 10848.0,
+            "reduction_exclusive_seconds": 0.0028872720000000006
+          },
+          "checksum_all_poles_and_born": 1070.8180962936294
+        },
+        {
+          "parameters": 0.30874980438966304,
+          "born_coefficients": 15.754747437313199,
+          "loop_coefficients": 7973.954769113334,
+          "born_projection": 2.420001692371443,
+          "born_weighting": 1921.5729680581717,
+          "family_masses": 4.041003194288351,
+          "bare_assembly": 1.8409373296890408,
+          "counterterm_scalars": 18.706674381974153,
+          "counterterm_coefficients": 550.3290412889328,
+          "field_scalars": 3.389031917322427,
+          "ct_projection": 67.71309381292667,
+          "complete_assembly": 0.3078112058574334,
+          "numerator_us": 8865.192862863334,
+          "reduction_us": 86.893625,
+          "masters_us": 68.75946875000001,
+          "instrumented_total_us": 13322.600281753694,
+          "other_work_us": 4301.754325140359,
+          "raw_native": {
+            "engine_calls": 52.0,
+            "engine_excluding_masters_seconds": 0.031195114999999992,
+            "engine_seconds": 0.033395417999999996,
+            "master_calls": 108.0,
+            "master_rows": 6528.0,
+            "masters_seconds": 0.0022003030000000002,
+            "numerator_callback_seconds": 0.028414518999999996,
+            "numerator_calls": 255.0,
+            "numerator_preparation_seconds": 0.00010509999999999997,
+            "numerator_rows": 10848.0,
+            "reduction_exclusive_seconds": 0.002780596
+          },
+          "checksum_all_poles_and_born": 1070.8180962936294
+        }
+      ],
+      "parameters": 0.25437475414946675,
+      "born_coefficients": 15.320687452913262,
+      "loop_coefficients": 8198.067705961876,
+      "born_projection": 2.791563019854948,
+      "born_weighting": 1921.5729680581717,
+      "family_masses": 4.041003194288351,
+      "bare_assembly": 1.425312802894041,
+      "counterterm_scalars": 20.85119194816798,
+      "counterterm_coefficients": 568.3464114554226,
+      "field_scalars": 3.6853143683401868,
+      "ct_projection": 67.71309381292667,
+      "complete_assembly": 0.3078112058574334,
+      "numerator_us": 9185.433049711875,
+      "reduction_us": 88.41815625,
+      "masters_us": 68.75946875000001,
+      "instrumented_total_us": 14166.838218443445,
+      "other_work_us": 4515.393331186742
+    }
+  },
+  "references": {
+    "dy": {
+      "case": "dy",
+      "cpu": 382,
+      "blocks": 5,
+      "warmup": "existing provider initialization loop before measured blocks",
+      "timing_scope": "Native full provider calls over repeated three-point control stream; startup, initialization, input parsing/output excluded. Native per-point APIs are called in a C++ loop; not a batch API. Rescue requested by provider remains inside timing. No acceptance claim.",
+      "stage_scope": {
+        "loop_coefficients": "COEF_CONSTRUCTION including MP equivalents; external/shared wavefunctions produced by HELAS are excluded",
+        "born_counterterm_helas": "HELAS_CALLS_AMPB (Born and local UV/R2 plus shared wavefunctions) and HELAS_CALLS_UVCT (UVtree/external-field) including MP equivalents",
+        "reduction_masters": "LOOP_CT_CALLS including native reducer/master calls and stability retries",
+        "residual": "total minus disjoint measured call windows: initial Born-squared calculation, colour/order/helicity and CT interference, stability coordinator, clock overhead"
+      },
+      "validation": "all original/instrumented/provider coefficients and independent analytic controls agree",
+      "instrumentation_compilation": "Copied coordinator objects use declared export flags -w -fPIC -ffixed-line-length-132, plus compiler compatibility -fallow-argument-mismatch; original coefficient kernels/reducer archives unchanged.",
+      "timings": {
+        "1": {
+          "madloop": {
+            "median_us_per_point": 46.86,
+            "min_us_per_point": 46.68,
+            "max_us_per_point": 48.79,
+            "samples_us_per_point": [
+              48.79,
+              46.86,
+              46.8,
+              47.311,
+              46.68
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 49.82,
+            "min_us_per_point": 49.24,
+            "max_us_per_point": 51.400999999999996,
+            "samples_us_per_point": [
+              51.400999999999996,
+              50.61,
+              49.24,
+              49.82,
+              49.330999999999996
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 6.2,
+                "samples_us_per_point": [
+                  6.2,
+                  6.12,
+                  6.2299999999999995,
+                  6.2,
+                  6.9799999999999995
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 0.62,
+                "samples_us_per_point": [
+                  0.609,
+                  0.62,
+                  0.61,
+                  0.62,
+                  0.62
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 32.91,
+                "samples_us_per_point": [
+                  33.150999999999996,
+                  33.879999999999995,
+                  32.660000000000004,
+                  32.91,
+                  32.46
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 9.990000000000004,
+                "samples_us_per_point": [
+                  11.441,
+                  9.990000000000004,
+                  9.739999999999998,
+                  10.090000000000007,
+                  9.270999999999999
+                ]
+              }
+            }
+          }
+        },
+        "8": {
+          "madloop": {
+            "median_us_per_point": 46.371500000000005,
+            "min_us_per_point": 46.082750000000004,
+            "max_us_per_point": 48.052625000000006,
+            "samples_us_per_point": [
+              48.052625000000006,
+              46.371500000000005,
+              46.343875,
+              47.925125,
+              46.082750000000004
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 48.57525,
+            "min_us_per_point": 48.141375,
+            "max_us_per_point": 51.237750000000005,
+            "samples_us_per_point": [
+              48.331375,
+              51.237750000000005,
+              48.57525,
+              48.141375,
+              49.4365
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 6.13625,
+                "samples_us_per_point": [
+                  6.13625,
+                  8.562874999999998,
+                  6.253749999999999,
+                  6.104999999999999,
+                  6.102375000000001
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 0.612625,
+                "samples_us_per_point": [
+                  0.6138750000000002,
+                  0.612625,
+                  0.65875,
+                  0.6063749999999999,
+                  0.6051249999999999
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 32.652875,
+                "samples_us_per_point": [
+                  32.43537499999999,
+                  32.96124999999999,
+                  32.652875,
+                  32.41137500000001,
+                  33.602375
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 9.101000000000006,
+                "samples_us_per_point": [
+                  9.145875000000002,
+                  9.101000000000006,
+                  9.009875000000001,
+                  9.018624999999997,
+                  9.126624999999997
+                ]
+              }
+            }
+          }
+        },
+        "32": {
+          "madloop": {
+            "median_us_per_point": 46.844249999999995,
+            "min_us_per_point": 46.238625000000006,
+            "max_us_per_point": 46.988625,
+            "samples_us_per_point": [
+              46.238625000000006,
+              46.988625,
+              46.93240625,
+              46.844249999999995,
+              46.6026875
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 52.86490625,
+            "min_us_per_point": 50.328656249999995,
+            "max_us_per_point": 54.98146875,
+            "samples_us_per_point": [
+              53.887125000000005,
+              50.328656249999995,
+              54.98146875,
+              52.86490625,
+              50.73396875
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 6.471374999999998,
+                "samples_us_per_point": [
+                  6.703437499999998,
+                  6.22303125,
+                  6.9753437499999995,
+                  6.365843750000001,
+                  6.471374999999998
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 0.6505000000000002,
+                "samples_us_per_point": [
+                  0.6737500000000002,
+                  0.6227500000000004,
+                  0.69334375,
+                  0.6289375000000003,
+                  0.6505000000000002
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 35.86078124999998,
+                "samples_us_per_point": [
+                  36.18478125,
+                  34.274624999999986,
+                  37.51946875,
+                  35.86078124999998,
+                  33.05140625
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 10.009343750000014,
+                "samples_us_per_point": [
+                  10.325156250000006,
+                  9.208250000000008,
+                  9.793312499999997,
+                  10.009343750000014,
+                  10.560687500000004
+                ]
+              }
+            }
+          }
+        },
+        "128": {
+          "madloop": {
+            "median_us_per_point": 46.4861328125,
+            "min_us_per_point": 46.2937890625,
+            "max_us_per_point": 47.174890624999996,
+            "samples_us_per_point": [
+              46.2937890625,
+              47.174890624999996,
+              46.4861328125,
+              46.4154296875,
+              46.65715625
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 48.625828125,
+            "min_us_per_point": 48.2706015625,
+            "max_us_per_point": 54.96921875,
+            "samples_us_per_point": [
+              54.96921875,
+              48.625828125,
+              48.429187500000005,
+              48.2706015625,
+              49.720921875
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 6.244953124999995,
+                "samples_us_per_point": [
+                  6.937851562499998,
+                  6.098531250000002,
+                  6.066898437500006,
+                  6.244953124999995,
+                  6.412437500000001
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 0.6162578124999988,
+                "samples_us_per_point": [
+                  0.8485234374999971,
+                  0.6162578124999988,
+                  0.6008515624999987,
+                  0.597046874999999,
+                  0.6263124999999992
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 32.62907812499999,
+                "samples_us_per_point": [
+                  37.276171874999996,
+                  32.62907812499999,
+                  32.400765625000005,
+                  32.2776796875,
+                  33.33898437499999
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 9.343187500000012,
+                "samples_us_per_point": [
+                  9.906671875000008,
+                  9.281960937500005,
+                  9.36067187499999,
+                  9.150921875000009,
+                  9.343187500000012
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "uudd": {
+      "case": "uudd",
+      "cpu": 382,
+      "blocks": 5,
+      "warmup": "existing provider initialization loop before measured blocks",
+      "timing_scope": "Native full provider calls over repeated three-point control stream; startup, initialization, input parsing/output excluded. Native per-point APIs are called in a C++ loop; not a batch API. Rescue requested by provider remains inside timing. No acceptance claim.",
+      "stage_scope": {
+        "loop_coefficients": "COEF_CONSTRUCTION including MP equivalents; external/shared wavefunctions produced by HELAS are excluded",
+        "born_counterterm_helas": "HELAS_CALLS_AMPB (Born and local UV/R2 plus shared wavefunctions) and HELAS_CALLS_UVCT (UVtree/external-field) including MP equivalents",
+        "reduction_masters": "LOOP_CT_CALLS including native reducer/master calls and stability retries",
+        "residual": "total minus disjoint measured call windows: initial Born-squared calculation, colour/order/helicity and CT interference, stability coordinator, clock overhead"
+      },
+      "validation": "all original/instrumented/provider coefficients and independent analytic controls agree",
+      "instrumentation_compilation": "Copied coordinator objects use declared export flags -w -fPIC -ffixed-line-length-132, plus compiler compatibility -fallow-argument-mismatch; original coefficient kernels/reducer archives unchanged.",
+      "timings": {
+        "1": {
+          "madloop": {
+            "median_us_per_point": 251.311,
+            "min_us_per_point": 249.851,
+            "max_us_per_point": 264.621,
+            "samples_us_per_point": [
+              256.251,
+              251.311,
+              264.621,
+              249.851,
+              251.22099999999998
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 2650.8819999999996,
+            "min_us_per_point": 2632.061,
+            "max_us_per_point": 2784.322,
+            "samples_us_per_point": [
+              2784.322,
+              2632.061,
+              2673.822,
+              2650.8819999999996,
+              2644.3410000000003
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 547.682,
+            "min_us_per_point": 529.142,
+            "max_us_per_point": 596.353,
+            "samples_us_per_point": [
+              596.353,
+              557.4119999999999,
+              536.092,
+              547.682,
+              529.142
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 255.05100000000002,
+            "min_us_per_point": 254.672,
+            "max_us_per_point": 326.691,
+            "samples_us_per_point": [
+              326.691,
+              255.05100000000002,
+              254.83100000000002,
+              278.582,
+              254.672
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 55.300999999999995,
+                "samples_us_per_point": [
+                  120.11,
+                  54.980999999999995,
+                  54.621,
+                  56.458999999999996,
+                  55.300999999999995
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 1.8900000000000001,
+                "samples_us_per_point": [
+                  2.0300000000000002,
+                  1.8599999999999999,
+                  1.8809999999999998,
+                  1.8900000000000001,
+                  1.891
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 187.13,
+                "samples_us_per_point": [
+                  191.201,
+                  186.43,
+                  187.13,
+                  209.25000000000003,
+                  186.35999999999999
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 11.199000000000012,
+                "samples_us_per_point": [
+                  13.350000000000026,
+                  11.78,
+                  11.199000000000012,
+                  10.983,
+                  11.120000000000015
+                ]
+              }
+            }
+          }
+        },
+        "8": {
+          "madloop": {
+            "median_us_per_point": 254.733625,
+            "min_us_per_point": 254.69725,
+            "max_us_per_point": 254.923625,
+            "samples_us_per_point": [
+              254.733625,
+              254.731125,
+              254.864875,
+              254.69725,
+              254.923625
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 2438.1128750000003,
+            "min_us_per_point": 2335.971125,
+            "max_us_per_point": 2539.8019999999997,
+            "samples_us_per_point": [
+              2438.1128750000003,
+              2539.8019999999997,
+              2484.733125,
+              2411.9741249999997,
+              2335.971125
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 557.074875,
+            "min_us_per_point": 543.071125,
+            "max_us_per_point": 584.9612500000001,
+            "samples_us_per_point": [
+              557.091125,
+              584.9612500000001,
+              557.074875,
+              548.7423749999999,
+              543.071125
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 258.784875,
+            "min_us_per_point": 255.88862500000002,
+            "max_us_per_point": 273.979875,
+            "samples_us_per_point": [
+              262.431,
+              258.784875,
+              273.979875,
+              257.13100000000003,
+              255.88862500000002
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 58.246375,
+                "samples_us_per_point": [
+                  55.618874999999996,
+                  58.246375,
+                  60.13775,
+                  58.568999999999996,
+                  55.32287499999999
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 1.8676249999999999,
+                "samples_us_per_point": [
+                  1.8676249999999999,
+                  1.9299999999999997,
+                  2.0649999999999995,
+                  1.8363749999999996,
+                  1.8374999999999995
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 187.41599999999997,
+                "samples_us_per_point": [
+                  193.55100000000002,
+                  187.41599999999997,
+                  199.640875,
+                  185.588375,
+                  186.80087500000005
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 11.393499999999959,
+                "samples_us_per_point": [
+                  11.393499999999959,
+                  11.192499999999992,
+                  12.136250000000025,
+                  11.137250000000016,
+                  11.927374999999975
+                ]
+              }
+            }
+          }
+        },
+        "32": {
+          "madloop": {
+            "median_us_per_point": 255.55859374999997,
+            "min_us_per_point": 255.1010625,
+            "max_us_per_point": 317.39165625000004,
+            "samples_us_per_point": [
+              317.39165625000004,
+              255.98578125,
+              255.44421875,
+              255.55859374999997,
+              255.1010625
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 2293.7300625,
+            "min_us_per_point": 2249.7936250000002,
+            "max_us_per_point": 2337.3136875,
+            "samples_us_per_point": [
+              2337.3136875,
+              2259.1127187499997,
+              2249.7936250000002,
+              2304.14884375,
+              2293.7300625
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 542.9929375,
+            "min_us_per_point": 535.89759375,
+            "max_us_per_point": 557.3858124999999,
+            "samples_us_per_point": [
+              536.95946875,
+              542.9929375,
+              557.3858124999999,
+              535.89759375,
+              545.6904375
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 266.2795625,
+            "min_us_per_point": 265.7526875,
+            "max_us_per_point": 272.98115625,
+            "samples_us_per_point": [
+              272.98115625,
+              266.2795625,
+              266.0445625,
+              265.7526875,
+              272.51834375
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 55.75559374999998,
+                "samples_us_per_point": [
+                  56.202624999999976,
+                  55.739937499999996,
+                  55.05525,
+                  55.75559374999998,
+                  56.53778125
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 1.8744687499999995,
+                "samples_us_per_point": [
+                  2.4765,
+                  1.8727812500000003,
+                  1.8744687499999995,
+                  1.8632187499999995,
+                  1.9541562500000003
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 197.1496875,
+                "samples_us_per_point": [
+                  201.59928125000002,
+                  196.96250000000003,
+                  197.1496875,
+                  196.81840624999998,
+                  202.23962500000002
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 11.786781249999981,
+                "samples_us_per_point": [
+                  12.70275,
+                  11.70434374999995,
+                  11.965156249999984,
+                  11.315468750000047,
+                  11.786781249999981
+                ]
+              }
+            }
+          }
+        },
+        "128": {
+          "madloop": {
+            "median_us_per_point": 254.310921875,
+            "min_us_per_point": 252.6492734375,
+            "max_us_per_point": 263.1628359375,
+            "samples_us_per_point": [
+              253.49279687499998,
+              252.6492734375,
+              263.1628359375,
+              255.7655390625,
+              254.310921875
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 2672.4138515625,
+            "min_us_per_point": 2572.4025625,
+            "max_us_per_point": 2722.58109375,
+            "samples_us_per_point": [
+              2663.963109375,
+              2705.9808671875,
+              2722.58109375,
+              2672.4138515625,
+              2572.4025625
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 563.3199687499999,
+            "min_us_per_point": 555.5082968749999,
+            "max_us_per_point": 670.6714374999999,
+            "samples_us_per_point": [
+              612.6701796875,
+              670.6714374999999,
+              563.3199687499999,
+              559.298,
+              555.5082968749999
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 281.474859375,
+            "min_us_per_point": 264.7967421875,
+            "max_us_per_point": 288.9989609375,
+            "samples_us_per_point": [
+              281.474859375,
+              285.7495703125,
+              270.51747656249995,
+              264.7967421875,
+              288.9989609375
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 60.445789062499976,
+                "samples_us_per_point": [
+                  60.445789062499976,
+                  61.332125000000005,
+                  57.9905078125,
+                  57.13745312500001,
+                  61.951749999999976
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 2.0996875,
+                "samples_us_per_point": [
+                  2.0996875,
+                  2.1061249999999987,
+                  2.008195312499999,
+                  1.9464062500000006,
+                  2.342812499999999
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 205.89804687500015,
+                "samples_us_per_point": [
+                  205.89804687500015,
+                  209.75682812500008,
+                  198.41478906250003,
+                  194.16778906249993,
+                  211.80436718750013
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 12.554492187499864,
+                "samples_us_per_point": [
+                  13.031335937499868,
+                  12.554492187499864,
+                  12.103984374999932,
+                  11.54509375000007,
+                  12.900031249999863
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "tt": {
+      "case": "tt",
+      "cpu": 382,
+      "blocks": 5,
+      "warmup": "existing provider initialization loop before measured blocks",
+      "timing_scope": "Native full provider calls over repeated three-point control stream; startup, initialization, input parsing/output excluded. Native per-point APIs are called in a C++ loop; not a batch API. Rescue requested by provider remains inside timing. No acceptance claim.",
+      "stage_scope": {
+        "loop_coefficients": "COEF_CONSTRUCTION including MP equivalents; external/shared wavefunctions produced by HELAS are excluded",
+        "born_counterterm_helas": "HELAS_CALLS_AMPB (Born and local UV/R2 plus shared wavefunctions) and HELAS_CALLS_UVCT (UVtree/external-field) including MP equivalents",
+        "reduction_masters": "LOOP_CT_CALLS including native reducer/master calls and stability retries",
+        "residual": "total minus disjoint measured call windows: initial Born-squared calculation, colour/order/helicity and CT interference, stability coordinator, clock overhead"
+      },
+      "validation": "all original/instrumented/provider coefficients and independent analytic controls agree",
+      "instrumentation_compilation": "Copied coordinator objects use declared export flags -w -fPIC -ffixed-line-length-132, plus compiler compatibility -fallow-argument-mismatch; original coefficient kernels/reducer archives unchanged.",
+      "timings": {
+        "1": {
+          "madloop": {
+            "median_us_per_point": 352.00100000000003,
+            "min_us_per_point": 319.151,
+            "max_us_per_point": 434.042,
+            "samples_us_per_point": [
+              434.042,
+              352.00100000000003,
+              319.412,
+              319.151,
+              409.312
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 2908.4919999999997,
+            "min_us_per_point": 2880.922,
+            "max_us_per_point": 3181.354,
+            "samples_us_per_point": [
+              3013.552,
+              2889.843,
+              2880.922,
+              2908.4919999999997,
+              3181.354
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 654.643,
+            "min_us_per_point": 633.883,
+            "max_us_per_point": 709.7429999999999,
+            "samples_us_per_point": [
+              643.783,
+              709.7429999999999,
+              633.883,
+              687.643,
+              654.643
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 563.5930000000001,
+            "min_us_per_point": 546.062,
+            "max_us_per_point": 570.263,
+            "samples_us_per_point": [
+              557.4319999999999,
+              570.263,
+              546.062,
+              563.5930000000001,
+              566.033
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 149.47000000000003,
+                "samples_us_per_point": [
+                  149.47000000000003,
+                  169.07,
+                  148.89,
+                  164.681,
+                  147.08
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 5.561,
+                "samples_us_per_point": [
+                  5.640000000000001,
+                  5.831,
+                  5.561,
+                  5.400000000000001,
+                  5.45
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 371.332,
+                "samples_us_per_point": [
+                  373.341,
+                  371.332,
+                  367.37,
+                  370.291,
+                  390.55199999999996
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 24.029999999999973,
+                "samples_us_per_point": [
+                  28.980999999999863,
+                  24.029999999999973,
+                  24.241000000000042,
+                  23.22100000000003,
+                  22.951000000000004
+                ]
+              }
+            }
+          }
+        },
+        "8": {
+          "madloop": {
+            "median_us_per_point": 335.227625,
+            "min_us_per_point": 332.50149999999996,
+            "max_us_per_point": 351.94025,
+            "samples_us_per_point": [
+              335.227625,
+              333.90025,
+              332.50149999999996,
+              351.94025,
+              350.6015
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 3065.793125,
+            "min_us_per_point": 2725.0989999999997,
+            "max_us_per_point": 3961.3979999999997,
+            "samples_us_per_point": [
+              2725.0989999999997,
+              3226.44625,
+              3961.3979999999997,
+              3065.793125,
+              3001.536375
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 617.318875,
+            "min_us_per_point": 612.115125,
+            "max_us_per_point": 636.4965,
+            "samples_us_per_point": [
+              626.891375,
+              617.318875,
+              612.115125,
+              616.9188750000001,
+              636.4965
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 355.66275,
+            "min_us_per_point": 355.0715,
+            "max_us_per_point": 369.76525000000004,
+            "samples_us_per_point": [
+              355.66275,
+              355.564,
+              358.52275,
+              355.0715,
+              369.76525000000004
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 89.734875,
+                "samples_us_per_point": [
+                  89.734875,
+                  88.76925000000001,
+                  91.98262500000003,
+                  88.79674999999999,
+                  94.633125
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 3.4426249999999996,
+                "samples_us_per_point": [
+                  3.4426249999999996,
+                  3.529749999999999,
+                  3.4302499999999996,
+                  3.429999999999999,
+                  3.667375
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 247.75224999999998,
+                "samples_us_per_point": [
+                  246.99849999999995,
+                  247.98987499999998,
+                  247.75224999999998,
+                  247.50724999999997,
+                  255.4025
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 15.357624999999965,
+                "samples_us_per_point": [
+                  15.486750000000033,
+                  15.27512500000002,
+                  15.357624999999965,
+                  15.337500000000041,
+                  16.062249999999988
+                ]
+              }
+            }
+          }
+        },
+        "32": {
+          "madloop": {
+            "median_us_per_point": 318.66415625,
+            "min_us_per_point": 316.30728125,
+            "max_us_per_point": 378.12721875,
+            "samples_us_per_point": [
+              330.47049999999996,
+              317.40978125000004,
+              316.30728125,
+              318.66415625,
+              378.12721875
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 2953.470375,
+            "min_us_per_point": 2602.740125,
+            "max_us_per_point": 3595.933375,
+            "samples_us_per_point": [
+              2602.740125,
+              2654.4609375,
+              3404.8750625,
+              2953.470375,
+              3595.933375
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 675.9103749999999,
+            "min_us_per_point": 664.7428125,
+            "max_us_per_point": 709.3623749999999,
+            "samples_us_per_point": [
+              664.7428125,
+              675.9103749999999,
+              709.3623749999999,
+              673.386,
+              684.34384375
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 371.29125000000005,
+            "min_us_per_point": 357.71184375,
+            "max_us_per_point": 379.09096875,
+            "samples_us_per_point": [
+              357.71184375,
+              379.09096875,
+              371.29125000000005,
+              368.0775,
+              377.61503125
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 94.47984375000001,
+                "samples_us_per_point": [
+                  91.70762500000002,
+                  96.28453124999999,
+                  94.47984375000001,
+                  94.09290624999998,
+                  95.25343749999996
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 3.5929999999999995,
+                "samples_us_per_point": [
+                  3.4922812500000022,
+                  3.786781249999999,
+                  3.5929999999999995,
+                  3.611031249999999,
+                  3.5710624999999996
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 256.9375625,
+                "samples_us_per_point": [
+                  246.63162499999999,
+                  261.05118749999997,
+                  256.9375625,
+                  254.20887499999995,
+                  262.6463125000001
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 16.16468750000006,
+                "samples_us_per_point": [
+                  15.880312500000015,
+                  17.968468750000067,
+                  16.280843749999963,
+                  16.16468750000006,
+                  16.144218749999993
+                ]
+              }
+            }
+          }
+        },
+        "128": {
+          "madloop": {
+            "median_us_per_point": 376.1916015625,
+            "min_us_per_point": 372.8126796875,
+            "max_us_per_point": 381.7616171875,
+            "samples_us_per_point": [
+              376.1916015625,
+              381.7616171875,
+              377.2876171875,
+              373.1472890625,
+              372.8126796875
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 3053.3396093750002,
+            "min_us_per_point": 2945.2721953125,
+            "max_us_per_point": 3298.7379921875,
+            "samples_us_per_point": [
+              2945.2721953125,
+              3053.3396093750002,
+              3298.7379921875,
+              3037.5963359375,
+              3280.83628125
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 686.4461171875,
+            "min_us_per_point": 670.9617578125,
+            "max_us_per_point": 698.815703125,
+            "samples_us_per_point": [
+              670.9617578125,
+              676.2652109375,
+              692.8927109375,
+              698.815703125,
+              686.4461171875
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 338.83159375,
+            "min_us_per_point": 332.79070312500005,
+            "max_us_per_point": 458.9883515625,
+            "samples_us_per_point": [
+              334.9469609375,
+              338.83159375,
+              458.9883515625,
+              380.1482421875,
+              332.79070312500005
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 86.97603906250009,
+                "samples_us_per_point": [
+                  84.50857812499997,
+                  86.97603906250009,
+                  113.96356249999987,
+                  97.10878906250001,
+                  83.76245312499994
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 3.4124609374999944,
+                "samples_us_per_point": [
+                  3.28205468749999,
+                  3.4124609374999944,
+                  4.513984374999996,
+                  3.778156249999995,
+                  3.2934375000000005
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 233.32534375000003,
+                "samples_us_per_point": [
+                  232.39328124999992,
+                  233.32534375000003,
+                  318.45553906249995,
+                  262.0031796875,
+                  230.56660156250018
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 15.168210937499918,
+                "samples_us_per_point": [
+                  14.763046875000132,
+                  15.117749999999914,
+                  22.05526562500012,
+                  17.258117187500023,
+                  15.168210937499918
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "qqgg": {
+      "case": "qqgg",
+      "cpu": 382,
+      "blocks": 5,
+      "warmup": "existing provider initialization loop before measured blocks",
+      "timing_scope": "Native full provider calls over repeated three-point control stream; startup, initialization, input parsing/output excluded. Native per-point APIs are called in a C++ loop; not a batch API. Rescue requested by provider remains inside timing. No acceptance claim.",
+      "stage_scope": {
+        "loop_coefficients": "COEF_CONSTRUCTION including MP equivalents; external/shared wavefunctions produced by HELAS are excluded",
+        "born_counterterm_helas": "HELAS_CALLS_AMPB (Born and local UV/R2 plus shared wavefunctions) and HELAS_CALLS_UVCT (UVtree/external-field) including MP equivalents",
+        "reduction_masters": "LOOP_CT_CALLS including native reducer/master calls and stability retries",
+        "residual": "total minus disjoint measured call windows: initial Born-squared calculation, colour/order/helicity and CT interference, stability coordinator, clock overhead"
+      },
+      "validation": "all original/instrumented/provider coefficients and independent analytic controls agree",
+      "instrumentation_compilation": "Copied coordinator objects use declared export flags -w -fPIC -ffixed-line-length-132, plus compiler compatibility -fallow-argument-mismatch; original coefficient kernels/reducer archives unchanged.",
+      "timings": {
+        "1": {
+          "madloop": {
+            "median_us_per_point": 462.762,
+            "min_us_per_point": 381.442,
+            "max_us_per_point": 494.14200000000005,
+            "samples_us_per_point": [
+              462.762,
+              381.442,
+              478.91200000000003,
+              494.14200000000005,
+              435.122
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 5343.293,
+            "min_us_per_point": 4829.771,
+            "max_us_per_point": 5673.114,
+            "samples_us_per_point": [
+              5343.293,
+              5673.114,
+              5363.503000000001,
+              5211.1720000000005,
+              4829.771
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 1701.537,
+            "min_us_per_point": 1553.7459999999999,
+            "max_us_per_point": 1860.988,
+            "samples_us_per_point": [
+              1701.537,
+              1860.988,
+              1809.6080000000002,
+              1602.386,
+              1553.7459999999999
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 394.80199999999996,
+            "min_us_per_point": 383.742,
+            "max_us_per_point": 418.442,
+            "samples_us_per_point": [
+              418.442,
+              394.80199999999996,
+              404.602,
+              383.792,
+              383.742
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 209.92100000000002,
+                "samples_us_per_point": [
+                  209.92100000000002,
+                  210.941,
+                  224.491,
+                  207.092,
+                  205.60000000000002
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 8.099,
+                "samples_us_per_point": [
+                  8.101,
+                  9.231,
+                  8.09,
+                  8.099,
+                  8.061000000000002
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 131.481,
+                "samples_us_per_point": [
+                  134.91099999999997,
+                  133.381,
+                  131.481,
+                  127.88099999999999,
+                  129.801
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 40.720000000000006,
+                "samples_us_per_point": [
+                  65.509,
+                  41.24899999999998,
+                  40.539999999999985,
+                  40.720000000000006,
+                  40.280000000000015
+                ]
+              }
+            }
+          }
+        },
+        "8": {
+          "madloop": {
+            "median_us_per_point": 407.57175,
+            "min_us_per_point": 393.791625,
+            "max_us_per_point": 445.443125,
+            "samples_us_per_point": [
+              445.443125,
+              407.57175,
+              402.83175,
+              393.791625,
+              411.89925
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 6983.707125000001,
+            "min_us_per_point": 5480.10825,
+            "max_us_per_point": 8714.33825,
+            "samples_us_per_point": [
+              7989.9515,
+              8714.33825,
+              6983.707125000001,
+              5653.3015000000005,
+              5480.10825
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 1719.886,
+            "min_us_per_point": 1567.1405,
+            "max_us_per_point": 1786.146375,
+            "samples_us_per_point": [
+              1669.682125,
+              1719.886,
+              1567.1405,
+              1786.146375,
+              1756.8874999999998
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 390.915375,
+            "min_us_per_point": 386.45912500000003,
+            "max_us_per_point": 415.06925,
+            "samples_us_per_point": [
+              389.916625,
+              415.06925,
+              391.289125,
+              390.915375,
+              386.45912500000003
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 210.36187499999997,
+                "samples_us_per_point": [
+                  210.24462499999998,
+                  226.40725000000003,
+                  210.36187499999997,
+                  211.886875,
+                  208.96437500000005
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 8.337625,
+                "samples_us_per_point": [
+                  8.555124999999997,
+                  8.622625,
+                  8.225124999999998,
+                  8.337625,
+                  8.308875
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 130.29662499999998,
+                "samples_us_per_point": [
+                  130.29662499999998,
+                  136.71812500000001,
+                  131.91924999999998,
+                  129.91075,
+                  128.973
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 40.78287500000003,
+                "samples_us_per_point": [
+                  40.82025000000004,
+                  43.3212499999999,
+                  40.78287500000003,
+                  40.78012500000001,
+                  40.21287499999995
+                ]
+              }
+            }
+          }
+        },
+        "32": {
+          "madloop": {
+            "median_us_per_point": 404.37203125,
+            "min_us_per_point": 391.05634375,
+            "max_us_per_point": 414.22865625000003,
+            "samples_us_per_point": [
+              400.93075,
+              404.37203125,
+              414.22865625000003,
+              391.05634375,
+              409.17859375
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 4884.47259375,
+            "min_us_per_point": 4579.85415625,
+            "max_us_per_point": 5228.17125,
+            "samples_us_per_point": [
+              5228.17125,
+              4884.47259375,
+              4892.4941874999995,
+              4830.5214375,
+              4579.85415625
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 1485.2181875,
+            "min_us_per_point": 1482.2087812500001,
+            "max_us_per_point": 1992.1684375,
+            "samples_us_per_point": [
+              1488.60475,
+              1482.2087812500001,
+              1484.94725,
+              1485.2181875,
+              1992.1684375
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 380.2550625,
+            "min_us_per_point": 379.42128125000005,
+            "max_us_per_point": 384.17009375,
+            "samples_us_per_point": [
+              384.17009375,
+              379.85006250000004,
+              379.42128125000005,
+              380.2550625,
+              380.83909375
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 205.45624999999995,
+                "samples_us_per_point": [
+                  206.37462499999998,
+                  205.45624999999995,
+                  203.63031250000003,
+                  204.31971874999994,
+                  206.21896875000004
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 8.212937499999994,
+                "samples_us_per_point": [
+                  8.351593749999996,
+                  8.212937499999994,
+                  8.493593749999997,
+                  8.081187499999997,
+                  8.19737499999999
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 127.27715625000002,
+                "samples_us_per_point": [
+                  128.95759375,
+                  126.14771874999998,
+                  127.27715625000002,
+                  127.83906250000003,
+                  126.68996875
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 40.02021874999998,
+                "samples_us_per_point": [
+                  40.48628125000002,
+                  40.03315625000011,
+                  40.02021874999998,
+                  40.01509375000008,
+                  39.732781249999974
+                ]
+              }
+            }
+          }
+        },
+        "128": {
+          "madloop": {
+            "median_us_per_point": 371.533140625,
+            "min_us_per_point": 371.190015625,
+            "max_us_per_point": 373.58159375,
+            "samples_us_per_point": [
+              373.58159375,
+              371.9465,
+              371.38821875,
+              371.533140625,
+              371.190015625
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 4469.9499140625,
+            "min_us_per_point": 4202.2470546875,
+            "max_us_per_point": 5358.979390625,
+            "samples_us_per_point": [
+              4215.920953125,
+              4469.9499140625,
+              4202.2470546875,
+              4662.797609375,
+              5358.979390625
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 1695.9213359375,
+            "min_us_per_point": 1643.92253125,
+            "max_us_per_point": 1757.4753515625,
+            "samples_us_per_point": [
+              1643.92253125,
+              1695.9213359375,
+              1757.4753515625,
+              1690.40225,
+              1730.2653984375
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 394.23432812500005,
+            "min_us_per_point": 392.148921875,
+            "max_us_per_point": 422.1170234375,
+            "samples_us_per_point": [
+              422.1170234375,
+              394.23432812500005,
+              393.46003125,
+              392.148921875,
+              408.606109375
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 212.38525781250002,
+                "samples_us_per_point": [
+                  227.20616406249994,
+                  212.38525781250002,
+                  211.73496874999987,
+                  210.7588203125,
+                  219.70579687499995
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 8.468132812499993,
+                "samples_us_per_point": [
+                  8.914648437500011,
+                  8.266484375000017,
+                  8.380703125000002,
+                  8.468132812499993,
+                  8.600914062499978
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 132.26195312499996,
+                "samples_us_per_point": [
+                  141.66999218749996,
+                  132.26195312499996,
+                  131.9834765625,
+                  131.62945312499994,
+                  137.25908593749998
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 41.36088281250013,
+                "samples_us_per_point": [
+                  44.32621875000007,
+                  41.32063281250001,
+                  41.36088281250013,
+                  41.292515625000064,
+                  43.0403125000001
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "gg": {
+      "case": "gg",
+      "cpu": 382,
+      "blocks": 5,
+      "warmup": "existing provider initialization loop before measured blocks",
+      "timing_scope": "Native full provider calls over repeated three-point control stream; startup, initialization, input parsing/output excluded. Native per-point APIs are called in a C++ loop; not a batch API. Rescue requested by provider remains inside timing. No acceptance claim.",
+      "stage_scope": {
+        "loop_coefficients": "COEF_CONSTRUCTION including MP equivalents; external/shared wavefunctions produced by HELAS are excluded",
+        "born_counterterm_helas": "HELAS_CALLS_AMPB (Born and local UV/R2 plus shared wavefunctions) and HELAS_CALLS_UVCT (UVtree/external-field) including MP equivalents",
+        "reduction_masters": "LOOP_CT_CALLS including native reducer/master calls and stability retries",
+        "residual": "total minus disjoint measured call windows: initial Born-squared calculation, colour/order/helicity and CT interference, stability coordinator, clock overhead"
+      },
+      "validation": "all original/instrumented/provider coefficients and independent analytic controls agree",
+      "instrumentation_compilation": "Copied coordinator objects use declared export flags -w -fPIC -ffixed-line-length-132, plus compiler compatibility -fallow-argument-mismatch; original coefficient kernels/reducer archives unchanged.",
+      "timings": {
+        "1": {
+          "madloop": {
+            "median_us_per_point": 2592.7,
+            "min_us_per_point": 2456.751,
+            "max_us_per_point": 2839.432,
+            "samples_us_per_point": [
+              2839.432,
+              2592.7,
+              2548.621,
+              2456.751,
+              2744.351
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 36056.373,
+            "min_us_per_point": 33454.462,
+            "max_us_per_point": 43623.355,
+            "samples_us_per_point": [
+              43623.355,
+              37574.78999999999,
+              34662.157,
+              36056.373,
+              33454.462
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 11874.611,
+            "min_us_per_point": 11510.009,
+            "max_us_per_point": 12746.014,
+            "samples_us_per_point": [
+              11874.611,
+              11570.659,
+              12746.014,
+              11510.009,
+              12251.242
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 2288.99,
+            "min_us_per_point": 2280.31,
+            "max_us_per_point": 2326.37,
+            "samples_us_per_point": [
+              2326.37,
+              2288.99,
+              2285.089,
+              2296.64,
+              2280.31
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 1412.726,
+                "samples_us_per_point": [
+                  1434.106,
+                  1412.726,
+                  1433.3649999999998,
+                  1407.4959999999999,
+                  1412.056
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 43.35,
+                "samples_us_per_point": [
+                  43.35,
+                  42.160000000000004,
+                  44.001,
+                  58.051,
+                  42.08
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 631.7429999999999,
+                "samples_us_per_point": [
+                  631.7429999999999,
+                  634.772,
+                  608.492,
+                  633.973,
+                  628.243
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 199.23100000000022,
+                "samples_us_per_point": [
+                  217.17099999999994,
+                  199.33199999999954,
+                  199.23100000000022,
+                  197.1200000000003,
+                  197.93099999999973
+                ]
+              }
+            }
+          }
+        },
+        "8": {
+          "madloop": {
+            "median_us_per_point": 2326.57125,
+            "min_us_per_point": 2237.0807499999996,
+            "max_us_per_point": 2473.64175,
+            "samples_us_per_point": [
+              2473.64175,
+              2326.57125,
+              2297.944875,
+              2328.282375,
+              2237.0807499999996
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 33448.65825,
+            "min_us_per_point": 32591.20325,
+            "max_us_per_point": 35402.671500000004,
+            "samples_us_per_point": [
+              35402.671500000004,
+              32591.20325,
+              33579.856375,
+              33448.65825,
+              32669.622375
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 11723.430875,
+            "min_us_per_point": 11131.273500000001,
+            "max_us_per_point": 14720.668625,
+            "samples_us_per_point": [
+              11723.430875,
+              11235.407625000002,
+              11131.273500000001,
+              11967.618375,
+              14720.668625
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 2383.481375,
+            "min_us_per_point": 2377.798875,
+            "max_us_per_point": 2414.956375,
+            "samples_us_per_point": [
+              2386.3025000000002,
+              2381.445125,
+              2377.798875,
+              2414.956375,
+              2383.481375
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 1479.907625,
+                "samples_us_per_point": [
+                  1479.445,
+                  1479.907625,
+                  1470.845125,
+                  1500.8062499999999,
+                  1493.0710000000001
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 43.68649999999999,
+                "samples_us_per_point": [
+                  44.113875,
+                  45.33024999999999,
+                  42.479374999999976,
+                  43.68649999999999,
+                  43.20212500000001
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 647.6065000000002,
+                "samples_us_per_point": [
+                  647.6065000000002,
+                  643.945375,
+                  650.525625,
+                  652.735125,
+                  631.9385
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 215.13712500000017,
+                "samples_us_per_point": [
+                  215.13712500000017,
+                  212.26187500000003,
+                  213.94874999999988,
+                  217.7285000000001,
+                  215.26974999999973
+                ]
+              }
+            }
+          }
+        },
+        "32": {
+          "madloop": {
+            "median_us_per_point": 2283.2978125,
+            "min_us_per_point": 2163.3635624999997,
+            "max_us_per_point": 2581.38753125,
+            "samples_us_per_point": [
+              2283.2978125,
+              2163.3635624999997,
+              2177.4976875,
+              2395.17953125,
+              2581.38753125
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 32811.273625,
+            "min_us_per_point": 32362.63890625,
+            "max_us_per_point": 37357.1910625,
+            "samples_us_per_point": [
+              37357.1910625,
+              34979.583468749996,
+              32651.75078125,
+              32811.273625,
+              32362.63890625
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 10357.59740625,
+            "min_us_per_point": 10319.450375,
+            "max_us_per_point": 12495.65053125,
+            "samples_us_per_point": [
+              12495.65053125,
+              10717.093625,
+              10319.450375,
+              10357.59740625,
+              10357.09928125
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 3075.6670625,
+            "min_us_per_point": 2515.74753125,
+            "max_us_per_point": 3536.76621875,
+            "samples_us_per_point": [
+              2515.74753125,
+              2747.831,
+              3536.76621875,
+              3075.6670625,
+              3217.8539375
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 1915.8965000000003,
+                "samples_us_per_point": [
+                  1562.04425,
+                  1711.000375,
+                  2206.81453125,
+                  1915.8965000000003,
+                  2009.209156249999
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 58.85709375000001,
+                "samples_us_per_point": [
+                  46.42721875,
+                  51.76756250000004,
+                  65.90621874999998,
+                  58.85709375000001,
+                  62.50259374999998
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 824.84796875,
+                "samples_us_per_point": [
+                  687.78390625,
+                  747.1382187500001,
+                  955.38659375,
+                  824.84796875,
+                  856.0070312499998
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 276.0655,
+                "samples_us_per_point": [
+                  219.4921562500003,
+                  237.92484375000004,
+                  308.6588749999998,
+                  276.0655,
+                  290.13515625000116
+                ]
+              }
+            }
+          }
+        },
+        "128": {
+          "madloop": {
+            "median_us_per_point": 2073.3698124999996,
+            "min_us_per_point": 2066.7218203125,
+            "max_us_per_point": 2090.9360625,
+            "samples_us_per_point": [
+              2066.7218203125,
+              2083.518609375,
+              2073.3698124999996,
+              2090.9360625,
+              2069.9380781249997
+            ]
+          },
+          "recola": {
+            "median_us_per_point": 33245.062421875,
+            "min_us_per_point": 31961.546687500002,
+            "max_us_per_point": 35331.2617265625,
+            "samples_us_per_point": [
+              32271.152156250002,
+              31961.546687500002,
+              33399.0885625,
+              33245.062421875,
+              35331.2617265625
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 16233.3996953125,
+            "min_us_per_point": 13254.109484375,
+            "max_us_per_point": 17742.783835937502,
+            "samples_us_per_point": [
+              16292.352765625,
+              17742.783835937502,
+              16233.3996953125,
+              15119.96840625,
+              13254.109484375
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 2790.452203125,
+            "min_us_per_point": 2281.8762187499997,
+            "max_us_per_point": 3238.2459765625,
+            "samples_us_per_point": [
+              3238.2459765625,
+              2790.452203125,
+              3122.08040625,
+              2374.1646640625,
+              2281.8762187499997
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 1729.3162343749998,
+                "samples_us_per_point": [
+                  2031.3171874999973,
+                  1729.3162343749998,
+                  1952.8079453124985,
+                  1474.8647500000004,
+                  1417.0896796875
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 52.17053906249994,
+                "samples_us_per_point": [
+                  62.443898437499854,
+                  52.17053906249994,
+                  57.84652343749998,
+                  44.3389296875,
+                  42.72161718750004
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 758.2820390625004,
+                "samples_us_per_point": [
+                  850.6169687500003,
+                  758.2820390625004,
+                  827.0490156250002,
+                  638.4823203125,
+                  615.4693046875004
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 250.68339062500004,
+                "samples_us_per_point": [
+                  293.8679218750027,
+                  250.68339062500004,
+                  284.3769218750011,
+                  216.4786640624994,
+                  206.5956171874994
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "reference_protocol": {
+    "created_utc": "2026-10-18T09:02:12.945644+00:00",
+    "cpu": 382,
+    "cpu_model": "AMD EPYC 9754 128-Core Processor",
+    "single_thread_environment": {
+      "RAYON_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1"
+    },
+    "driver": "workspace/reference/live_provider_benchmark.py",
+    "scope": "Fresh full 2-to-2 controls on repeated three-point streams. Five warm native blocks at each batch. Total timers use original provider objects, exclude input/output and initialization, include provider numerical checks/rescue. Not an acceptance benchmark; pyAmpliCol comparator includes Python scheduling and exact decimal ingress while these timers start with binary64 arrays. Small repeated controls and provider cache policies differ from broad production phase space.",
+    "madloop_stage_scope": "Disjoint wall-clock call windows in copied loop_matrix/mp_compute_loop_coefs objects. COEF_CONSTRUCTION excludes shared HELAS work; HELAS contains Born/local UV/R2/UVtree/external fields and shared wavefunctions; LOOP_CT_CALLS includes reducer interface and masters, with retries. No outer MP timer. Residual includes initial Born-squared, helicity/order/colour/CT interference, coordinator and clocks. Stage medians belong to separate instrumented observations; medians need not add to total.",
+    "cms_status": "Prior CMS audit frozen; no CMS/provider physics mutation for this timing task.",
+    "dy_unavailable": "Existing DY control is photon-only and only has a matched MadLoop wrapper; Recola/OpenLoops omitted, not zero."
+  }
+}
