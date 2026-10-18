@@ -315,3 +315,18 @@ or a numerical precision/batch test. It was exercised with the published
 Community distribution 3.0.2 (kernel 3.0.1). The executable checks require
 a license because graph generation uses native workers. Keep the license
 in the process environment; do not put it in fixtures or reports.
+
+The remaining pure-gluon local source tensors can be checked with
+`gluon_vertex_oracle.py --ufo MODEL --madloop-build EXPORT --mg5-source MG5
+--build-dir WORKSPACE_BUILD --output REPORT`. This covers the off-shell derivative
+three-gluon tensor and ordinary/UV quartic bases with 1,672 ALOHA component
+comparisons and 34 exact MadGraph colour overlaps. The model preparation helper
+`loops.model_gluons.prepare_gluon_counterterm_basis` exposes exact ordinary basis
+representatives and the separately checked two-/four-point R2 primitives.
+
+`wavefunction_oracle.py` also accepts the gluon-scattering component fixture. It
+first proves that all four Born graphs receive identical source external-field
+factors, then compares their interference using reference Born values. The three
+heavy-quark groups and four external legs retain their source multiplicity;
+mass-zero branches are evaluated by the native conditional evaluator. This is
+an independent field-factor control, not a full amplitude calculation.

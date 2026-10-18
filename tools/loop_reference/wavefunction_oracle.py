@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: 0BSD
-"""Compare source-derived top external-field factors to isolated MadLoop output.
+"""Compare source-derived quark/gluon external-field factors to isolated MadLoop.
 
 The Born values are inputs from the independent reference, so this validates
 field normalization/multiplicity and scalar evaluation, not a full amplitude.
@@ -24,14 +24,29 @@ from pyamplicol.loops.wavefunction import match_external_field_counterterms
 from pyamplicol.models.loop_import import load_raw_loop_model
 
 
-def top_pair_field_oracle(ufo: Path, reference: Path) -> dict:
+def external_field_oracle(ufo: Path, reference: Path) -> dict:
     control = json.loads(reference.read_text())
-    if control["fixture"]["process"] != "u u~ > t t~":
-        raise ValueError("the external-field control requires the top-pair fixture")
+    process = control["fixture"]["process"]
+    if process == "u u~ > t t~":
+        incoming, outgoing, expected_born, expected_fields = (
+            ["u", "u~"],
+            ["t", "t~"],
+            1,
+            2,
+        )
+    elif process == "g g > g g":
+        incoming, outgoing, expected_born, expected_fields = (
+            ["g", "g"],
+            ["g", "g"],
+            4,
+            12,
+        )
+    else:
+        raise ValueError("external-field control requires the top or gluon fixture")
     source = build_loop_model(load_raw_loop_model(ufo))
     native = hep.Model.qcd_qed()
     loops = build_loop_process(
-        native.process(["u", "u~"], ["t", "t~"]),
+        native.process(incoming, outgoing),
         selected_corrections=["QCD"],
         perturbative_orders={"QCD": 1},
         born_order_bounds={"QED": 0},
@@ -40,29 +55,60 @@ def top_pair_field_oracle(ufo: Path, reference: Path) -> dict:
     fields = match_external_field_counterterms(
         source, loops, selected_corrections=["QCD"]
     )
-    if len(loops.born) != 1 or len(fields.insertions) != 2:
-        raise ValueError("expected one Born and the two top external-field factors")
+    per_born = [
+        tuple(item for item in fields.insertions if item.born.id == graph.id)
+        for graph in loops.born
+    ]
+    if len(per_born) != expected_born or any(
+        len(items) != expected_fields for items in per_born
+    ):
+        raise ValueError("unexpected source field/Born multiplicity")
+    # The reference Born includes all graph/basis interference. A common field
+    # factor may multiply it only after proving identical ordered factors for
+    # every Born graph; no graph is discarded from the physical amplitude.
+    signatures = [
+        sorted(
+            (
+                item.external_index,
+                item.rule.pdg,
+                item.rule.loop_group_index,
+                item.alternative_index,
+                tuple(item.coefficient(p).to_canonical_string() for p in (0, -1, -2)),
+            )
+            for item in items
+        )
+        for items in per_born
+    ]
+    if any(signature != signatures[0] for signature in signatures[1:]):
+        raise ValueError("field factors are not universal across the Born graphs")
+    factors = per_born[0]
     born = S("wavefunction_oracle::reference_born")
     expressions = []
     for power in (0, -1, -2):
-        expression = (
-            2 * born * sum(item.coefficient(power) for item in fields.insertions)
-        )
+        expression = 2 * born * sum(item.coefficient(power) for item in factors)
         expression = expression.replace(
             parse_exact_ufo("G"), parse_exact_ufo("cmath.sqrt(4*cmath.pi*alpha_s)")
         )
         expression = expression.replace(parse_exact_ufo("CF"), parse_exact_ufo("4/3"))
+        expression = expression.replace(parse_exact_ufo("TF"), parse_exact_ufo("1/2"))
         expressions.append(expression)
     evaluator = Expression.evaluator_multiple(
         expressions,
-        [born, *map(parse_exact_ufo, ("alpha_s", "MT", "MU_R"))],
+        [born, *map(parse_exact_ufo, ("alpha_s", "MT", "MB", "MC", "MU_R"))],
         n_cores=1,
         jit_compile=False,
     )
     parameters = control["fixture"]["parameters"]
     inputs = np.asarray(
         [
-            [row["born"], parameters["alpha_s"], parameters["mt"], parameters["mu"]]
+            [
+                row["born"],
+                parameters["alpha_s"],
+                parameters["mt"],
+                parameters.get("mb", 0),
+                parameters.get("mc", 0),
+                parameters["mu"],
+            ]
             for row in control["rows"]
         ],
         dtype=np.complex128,
@@ -80,14 +126,17 @@ def top_pair_field_oracle(ufo: Path, reference: Path) -> dict:
             "source-derived field factors disagree with isolated MadLoop"
         )
     return {
-        "kind": "external-field-top-pair-source-factor-oracle",
+        "kind": "external-field-source-factor-oracle",
+        "process": process,
+        "born_graph_count": len(loops.born),
+        "total_source_field_records": len(fields.insertions),
         "reference": str(reference.resolve()),
         "reference_sha256": hashlib.sha256(reference.read_bytes()).hexdigest(),
         "born_values_from_reference": True,
         "native_and_reference_arithmetic": "binary64",
         "native_batch_size": len(inputs),
-        "external_indices": [item.external_index for item in fields.insertions],
-        "model_factors_per_born": len(fields.insertions),
+        "external_indices": [item.external_index for item in factors],
+        "model_factors_per_born": len(factors),
         "extra_half_z_factor": False,
         "extra_loop_measure": False,
         "full_process_validated": False,
@@ -99,13 +148,18 @@ def top_pair_field_oracle(ufo: Path, reference: Path) -> dict:
     }
 
 
+def top_pair_field_oracle(ufo: Path, reference: Path) -> dict:
+    """Backward-compatible entry point; the fixture selects top or gluon fields."""
+    return external_field_oracle(ufo, reference)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ufo", required=True, type=Path)
     parser.add_argument("--reference", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
-    report = top_pair_field_oracle(args.ufo, args.reference)
+    report = external_field_oracle(args.ufo, args.reference)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))

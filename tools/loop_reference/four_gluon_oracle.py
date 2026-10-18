@@ -38,10 +38,15 @@ def color_oracle(entries, catalogue, mg5_source, ufo_path):
 
         ufo = models.load_model(str(ufo_path.resolve()))
         converter = import_ufo.UFOMG5Converter(ufo)
+        external_legs = len(entries[0].particle_ids)
+        if external_legs not in (3, 4) or any(
+            len(entry.particle_ids) != external_legs for entry in entries
+        ):
+            raise ValueError("local gluon colour oracle requires three or four legs")
         metadata = SimpleNamespace(
-            particles=[SimpleNamespace(color=8, pdg_code=21)] * 4
+            particles=[SimpleNamespace(color=8, pdg_code=21)] * external_legs
         )
-        selected = {entry.color_index: entry for entry in entries}
+        selected = {entry.color: entry for entry in entries}
         strings, native = [], []
         for index in sorted(selected):
             entry = selected[index]
@@ -53,7 +58,12 @@ def color_oracle(entries, catalogue, mg5_source, ufo_path):
             strings.append(entry.color)
             native.append(local.color.rename_indices(labels))
         generator = tensor.TensorExpression.color_t(8, 3)
-        for legs in ((1, 2, 3, 4), (1, 3, 2, 4)):
+        probe_legs = (
+            ((1, 2, 3), (1, 3, 2))
+            if external_legs == 3
+            else ((1, 2, 3, 4), (1, 3, 2, 4))
+        )
+        for legs in probe_legs:
             # Complex trace probes test the relative orientation of d*f terms;
             # their overlaps with the real source basis need not be real.
             strings.append("Tr(" + ",".join(map(str, legs)) + ")")
@@ -120,7 +130,7 @@ def color_oracle(entries, catalogue, mg5_source, ufo_path):
             actual = (bras[i] * kets[j]).to_tensor()
             if actual.axes or (actual[0] - expected).expand() != 0:
                 raise AssertionError(
-                    f"four-gluon color overlap ({i},{j}) disagrees with MadGraph: "
+                    f"gluon color overlap ({i},{j}) disagrees with MadGraph: "
                     f"native={actual}, expected={expected}, ports={actual.axes}"
                 )
             nonreal += expected != expected.conj()
