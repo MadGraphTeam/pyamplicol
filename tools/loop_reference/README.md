@@ -43,6 +43,27 @@ legs, and evaluates their interference factors in one native batch. The Born
 values come from the reference. It tests field normalization/multiplicity and
 scalar execution; it does not validate an independently computed Born amplitude.
 
+The active four-gluon R2 local tensor control uses the gluon-scattering export:
+
+```bash
+python3 tools/loop_reference/four_gluon_oracle.py \
+  --ufo "$LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0/models/loop_sm" \
+  --madloop-build "$LOOP_REFERENCE_ROOT/builds/madloop-gluon-scattering" \
+  --mg5-source "$LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0" \
+  --build-dir "$LOOP_REFERENCE_ROOT/builds/ct-four-gluon-aloha" \
+  --output "$LOOP_REFERENCE_ROOT/runs/ct-four-gluon-r2-oracle.json"
+```
+
+It checks all four Lorentz structures of active `V_R2RGA` with 256 component
+polarizations and four complex polarization configurations each. Momenta are
+off shell and conserved, and no polarization transversality is imposed. The
+12 active colour bases and two complex ordered-trace probes give 196 exact
+overlaps checked against MadGraph's own UFO importer and reduced trace-basis
+colour matrix. Native SU(3) components and contractions come from Community;
+the script implements no colour identities. This controls all 57 active local
+basis entries but does not validate scalar coefficients, a whole process or
+general-Nc continuation. The commented alternative four-gluon rule is unused.
+
 ## Provider versions and acquisition
 
 * MadLoop: copy the supplied MG5_aMC 3.7.0 tree into the workspace.

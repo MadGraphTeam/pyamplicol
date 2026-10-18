@@ -27,14 +27,20 @@ from pyamplicol.models.loop_import import load_raw_loop_model
 
 
 def _native_contraction(local, momentum, polarizations):
+    return native_vector_contraction(
+        local, (momentum, tuple(-x for x in momentum)), polarizations
+    )
+
+
+def native_vector_contraction(local, momenta, polarizations):
     library = tensor.TensorLibrary.hep_lib_atom()
-    for edge, sign in ((0, 1), (1, -1)):
+    for edge, momentum in enumerate(momenta):
         library.register(
             tensor.Tensor.dense(
                 tensor.TensorName(hep.Symbols.edge_momentum().get_name())(
                     edge, tensor.Representation.mink(4)
                 ),
-                [sign * component for component in momentum],
+                momentum,
             )
         )
     expression = local.lorentz
@@ -46,22 +52,28 @@ def _native_contraction(local, momentum, polarizations):
         expression *= name(axis)
     value = expression.to_tensor(library)
     if value.axes:
-        raise ValueError("two-point tensor contraction left unresolved ports")
+        raise ValueError("local vector tensor contraction left unresolved ports")
     return value[0]
 
 
 def _aloha_contraction(function, momentum, polarizations):
+    return aloha_vector_contraction(
+        function, (momentum, tuple(-x for x in momentum)), polarizations
+    )
+
+
+def aloha_vector_contraction(function, momenta, polarizations):
     # The generated routine accepts four explicit complex momentum components
-    # followed by four vector-current components. Momentum on leg 2 is opposite.
+    # followed by four vector-current components, for each ordered vector leg.
     waves = [
         np.asarray(
             [
-                *([sign * x.evaluate({}) for x in momentum]),
+                *(x.evaluate({}) for x in momentum),
                 *(x.evaluate({}) for x in pol),
             ],
             dtype=np.complex128,
         )
-        for sign, pol in zip((1, -1), polarizations, strict=True)
+        for momentum, pol in zip(momenta, polarizations, strict=True)
     ]
     coupling = np.asarray([complex(3 / 7, 2 / 5)], dtype=np.complex128)
     output = np.empty(1, dtype=np.complex128)
