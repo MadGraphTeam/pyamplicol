@@ -741,13 +741,13 @@ symbolic owners. Python distribution and Rust kernel version labels are recorded
 separately. A genuine isolated development-package install now passes a public
 ordinary-tree generation/evaluation smoke.
 
-Internal PACBIN controls retain complete model-rule four-quark/top and direct-gluon
-plans, including external-field factors. The Rust reader validates shapes, order
-axes, bindings and layouts; fresh double/DD/AP views need neither source models
-nor producer graphs. Source, formal-colour and correlated portable plans, rescue,
-public artifacts and SDK execution remain open. Typed buffers, evaluators,
-schedules, exact ingress, wavefunctions and the polynomial reduction facade now
-have shared Rust bindings; the complete native coordinator remains unfinished.
+Internal PACBIN controls retain model-rule four-quark/top, direct-gluon and
+source-owned complete gluon plans, including external fields. Fresh double/DD/AP
+views need neither source models nor producer graphs. Source v3 retains exact
+parameter snapshots, shared ordinary/CT scale views and checked scalar columns.
+Formal-colour/correlated portable plans, source direct mode, rescue, public
+artifacts and SDKs remain open. Numerical primitives have shared Rust bindings;
+native process coordination is under validation.
 
 == Success, accuracy and rescue are different facts
 A reducer's success flag is not an accuracy certificate. Native checks reject
@@ -893,8 +893,8 @@ interference, not a single diagram and helicity.
 
 #v(5pt)
 #note[
-  *Living document.* Update the source, measured data and compiled PDF together
-  after each milestone. Next timing additions include bounded CMS
-  and further validated processes. Keep incomplete rows and capability limits explicit;
-  the full physics, precision, feature and performance contract remains the goal.
+  *Living document.* Update source, data and PDF after each milestone. Current
+  priority is requested feature coverage and validated two-to-four/two-to-five
+  processes; further two-to-two optimization is deferred. Add timing rows only
+  after physical validation, and keep capability limits explicit.
 ]

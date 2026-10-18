@@ -195,3 +195,16 @@ rtol=5e-10/atol=1e-10 gate. Raw samples retain JIT variation; both bound plans c
 so RSS is not a standalone A/B measure. There is no factorization, arena change,
 new engine or provider acceptance claim. Driver:
 `workspace/experiments/loop_projector_binding_benchmark.py`.
+
+Source-owned complete gluon plans now pass the internal PACBIN v3 roundtrip
+(`e09f19f5`) in double, DoubleFloat and AP70, with nonzero external-field terms,
+exact parameter overlays, shared ordinary/CT scale snapshots and a fresh process
+without source producers. Native source coordination, public artifact dispatch
+and the remaining portable feature combinations remain open.
+
+The current priority is feature coverage and higher multiplicity, as requested
+on 2026-10-18; further two-to-two optimization is deferred. The next full
+neutral-current `u u~ -> e- e+ g g [QCD]` control has independent MadLoop/Recola
+Born and Laurent agreement at three distinct points and scales (maximum relative
+difference1.69e-12). pyAmpliCol source/kernel validation is still in progress, so
+this is not yet a measured row. Earlier timing data are unchanged.
