@@ -296,6 +296,10 @@ leg retained. Local and field UV remain separately inspectable, then join the
 same ordered interference. Model-rule $R_2$ currents already contain their loop
 normalization; the assembly does not multiply them by a second loop measure.
 
+The bounded Gmu continuation offers an explicit `ufo-standard` logarithm
+convention. The default preserves the source helper; either choice retains
+the original model and does not certify complete CMS physics.
+
 #note[
   *Evidence boundary.* Complete bounded QCD controls and real-mass neutral-current charged-lepton
   EW components are validated. That does not certify every rule in a supplied
@@ -358,14 +362,19 @@ values at one point are insufficient.
 
 The current process cache shares compatible Born, loop and counterterm kernels;
 exact whole-schedule groups cover Born and loop execution. It does not cache
-event results between calls. Cold plans independent of arithmetic, persistent
-artifacts and broader subtree reuse remain active work.
+event results between calls. Complete unprojected model-rule QCD plans now
+retain exact instructions and bindings across arithmetic views. Rebinding
+creates fresh evaluators, reducers and buffers without repeating graph,
+colour or coefficient preparation. Colour-weight changes invalidate the cached
+plan. Source-model, direct-$R_2$ and formal-colour reuse remain outside this
+checkpoint; persistent artifacts and broader subtree reuse are still open.
 
 #small[
-  Current NinjaRS support bounds are enforced explicitly. The generic
-  all-precision path is limited to six loop propagators and validated weighted
-  rank through $n+1$; unsupported ranks are rejected rather than truncated.
-  Required seven-propagator coverage remains a dependency-owner gate.
+  The staged NinjaRS path supports up to six propagators and validated weighted
+  rank through $n+1$; unsupported ranks reject. The owner's generic-any-$n$
+  extension (`e4c16a7`) has been pulled. A separate consumer candidate is testing
+  seven propagators in all three carriers; staged-module adoption and required
+  high-multiplicity physics remain pending. No timing table uses that candidate.
 ]
 
 #pagebreak()
@@ -582,9 +591,10 @@ lepton-pair plus jets, and heavy-quark/lepton-pair production with a jet.
 Five-final-parton gluon channels also require MadLoop/Recola controls; an
 unavailable public OpenLoops channel is not invented for comparison.
 
-The generic seven-propagator reducer extension remains an external prerequisite.
-Rank above the supported $n+1$ domain must reject. Required progress also
-includes precision-independent cold plans, persistent artifacts, optional FFT,
+The new generic-any-$n$ reducer still needs consumer validation and adoption;
+seven-propagator physics is a separate gate. Rank above the supported $n+1$
+domain must reject. Required progress also includes broader cold-plan coverage,
+persistent artifacts, optional FFT,
 complete correlation/mapping transport and broader certified model coverage.
 These requirements remain visible even when a smaller control is fast.
 

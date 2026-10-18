@@ -19,6 +19,12 @@ It is not the distinct-point, native-interface performance acceptance campaign.
 Generation, first evaluation, warmed totals and instrumented component clocks
 have separate definitions in the report. Test durations are not event timings.
 
+Architecture notes are updated through the retained model-plan checkpoint
+`7290ec92` and explicit Gmu helper convention `146f6d8a`. The tables and their
+measurement revision remain unchanged. The pulled generic-any-n NinjaRS
+extension is described as a consumer candidate until its validation and
+staged-module adoption finish.
+
 The original measurement drivers and full provider logs are retained in the
 task workspace as `experiments/loop_live_benchmark.py`,
 `experiments/loop_live_stages.py`,
