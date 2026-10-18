@@ -28,6 +28,21 @@ Its 102 real/complex off-shell polarization checks validate only the local
 Lorentz structures. Scalar CT normalization and physical process assembly need
 separate controls. The independent ALOHA comparison uses binary64.
 
+For an isolated top-pair external-field component report containing the
+reference `born` and `wf` Laurent columns, run:
+
+```bash
+python3 tools/loop_reference/wavefunction_oracle.py \
+  --ufo "$LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0/models/loop_sm" \
+  --reference "$LOOP_REFERENCE_ROOT/runs/top-pair-component-control.json" \
+  --output "$LOOP_REFERENCE_ROOT/runs/top-pair-field-factor-oracle.json"
+```
+
+This derives the model's external-field factors, retains the two physical top
+legs, and evaluates their interference factors in one native batch. The Born
+values come from the reference. It tests field normalization/multiplicity and
+scalar execution; it does not validate an independently computed Born amplitude.
+
 ## Provider versions and acquisition
 
 * MadLoop: copy the supplied MG5_aMC 3.7.0 tree into the workspace.
