@@ -195,6 +195,15 @@
         "log": "/shared/external/pyLoopAmpliCol/workspace/reports/loop-live-provider-initialization/qqggg-openloops.log",
         "validation": "Born/finite/single/double match saved independent MadLoop first point"
       }
+    },
+    "ee-mumu-ew": {
+      "recola": {
+        "seconds": 0.174693046,
+        "cpu": 382,
+        "status": "measured_once_fresh_process",
+        "metric": "parameters_define_generate",
+        "scope": "FullEW real-mass Gmu parameters + definition + generate; B1 fresh observation selected; both raw constructor observations retained in measurements.json."
+      }
     }
   },
   "recola_openloops_cpu": 380,

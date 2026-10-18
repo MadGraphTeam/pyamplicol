@@ -6,6 +6,7 @@
 #let cold = json("data/provider-cold.json")
 #let colours = json("data/colour-measurements.json")
 #let projectors = json("data/local-projector-experiment.json")
+#let bound-projectors = json("data/projector-binding-benchmark.json")
 #let navy = rgb("#203c60")
 #let blue = rgb("#356b92")
 #let pale = rgb("#edf3f8")
@@ -54,6 +55,7 @@
   qqgg: [$u overline(u) -> g g$],
   gg: [$g g -> g g$],
   qqggg: [$u overline(u) -> g g g$],
+  "ee-mumu-ew": [$e^- e^+ -> mu^- mu^+$],
 ).at(key)
 #let names(key) = (dy: "Photon-only Drell–Yan", uudd: "Distinct-flavour quarks", tt: "Stable top pair", qqgg: "Quark annihilation", gg: "Gluon scattering").at(key)
 #let timed(c, b) = c.at("timings", default: (:)).at(str(b), default: (:)).at("median_us_per_point", default: none)
@@ -110,7 +112,7 @@
   #text(size: 8pt, fill: luma(75))[Logarithmic scale · lower is faster · white is parity · red is slower]
 ]
 
-// A single process/provider grid, continued across two pages.
+// One process/provider grid, continued as validated measurements are added.
 #let warm-block(c, p, b) = {
   let value = if p == "pyamplicol" { timed(c, b) } else { provider-time(c, b, p) }
   let best = fastest(c, b)
@@ -121,7 +123,7 @@
     #linebreak()
     #if ratio != none {
       text(size: 7.1pt)[*×#fmt(ratio, digits: 2)* vs #best.name · #value-fmt(best.value) µs]
-    } else { text(size: 7.1pt, fill: grey)[Matched control unavailable] }
+    } else { text(size: 7.1pt, fill: grey)[Timing not recorded] }
   ]
 }
 #let detail-line(name, value) = {
@@ -200,6 +202,7 @@
         text(size: 10.5pt, weight: "semibold", label(c.case))
         linebreak()
         if c.case == "dy" { text(size: 7pt, fill: grey)[photon only]; linebreak() }
+        if c.case == "ee-mumu-ew" { text(size: 7pt, fill: grey)[full EW · Gmu]; linebreak() }
         text(size: 7pt, fill: grey)[#c.counts.loop_graphs #if c.counts.loop_graphs == 1 [loop] else [loops]\ #c.counts.families #if c.counts.families == 1 [family] else [families]]
       }),
       ..("pyamplicol", "madloop", "recola", "openloops").map(p => provider-box(c, p)),
@@ -213,7 +216,7 @@
   #v(-2pt)
   #text(12.5pt, fill: luma(85))[Batched Born–loop interference · implementation & live benchmarks]
   #v(3pt)
-  #text(8.5pt, fill: luma(110))[#data.date · measured revisions #data.revision / f89249d2 · AMD EPYC 9754]
+  #text(8.5pt, fill: luma(110))[#data.date · measured #data.revision / f89249d2 / 85fb0900 · AMD EPYC 9754]
 ]
 #v(8pt)
 #note[
@@ -235,7 +238,27 @@
 #small[Warm boxes: µs per point at $B=1$ and $B=128$. Neutral preparation: seconds.
 Instrumented stage lines: $B=32$ for two-to-two, $B=128$ for five-leg; no stage speed ratios.]
 #v(5pt)
-#provider-grid(data.cases.slice(3))
+#provider-grid(data.cases.slice(3, 6))
+#v(7pt)
+#small[Original five processes retain revision #data.revision; the five-leg row uses
+f89249d2. These are complete model-rule development observations; see the continued
+grid and measurement boundaries on the next page.]
+
+#pagebreak()
+#section-label[MEASUREMENTS · SAME GRID, CONTINUED]
+= Real-mass electroweak control
+#small[Full Gmu electroweak correction, real masses, source compiler revision 85fb0900.
+Warm boxes: µs per point. Generation: seconds. Separate stage clocks: $B=128$.]
+#v(5pt)
+#provider-grid(data.cases.slice(6))
+#v(7pt)
+#small[The matched Recola setup retains actual poles and the same Gmu inputs.
+MadLoop validates complete components; its timing and OpenLoops timing are not
+recorded here. No provider speed is inferred from correctness tests.]
+#v(4pt)
+#small[The EW row uses $G_mu=1.16639 times 10^(-5)$ $"GeV"^(-2)$, $m_W=80.419$,
+$m_Z=91.188$, $m_H=125$, $m_t=173.3$ GeV, zero widths and light masses,
+and $mu_R=1000$ GeV. Its full source counterterms are retained.]
 #v(7pt)
 #grid(columns: (1fr, 1fr), gutter: 13pt,
   [#text(weight: "bold", fill: navy)[Numerator, reduction and masters]
@@ -257,12 +280,12 @@ Instrumented stage lines: $B=32$ for two-to-two, $B=128$ for five-leg; no stage 
   pyAmpliCol. CPU 382, one thread/shared host. pyAmpliCol includes decimal ingress/
   Python scheduling with rescue off; providers retain native-array input and normal
   rescue/cache policies. Formatting is excluded. Preparation: CPU 380, ML DY 381,
-  Recola DY 382; no cache flush or uncertainty estimate. Recola photon-only DY
+  Recola DY and EW 382; no cache flush or uncertainty estimate. Recola photon-only DY
   passes analytic checks; OL DY is absent.
 ]
 #v(3pt)
 #text(size: 8.6pt)[
-  *Development comparison:* pyAmpliCol is slower than ML here. Acceptance requires
+  *Development comparison:* the measured QCD rows remain slower than ML. Acceptance requires
   distinct points, matched boundaries/stability, faster than ML and within $1.30 times$
   Recola/OL per designated high-multiplicity case; generation has no gate.
   OL actual-pole mode runs the amplitude three times with Collier cache off.
@@ -331,7 +354,7 @@ Instrumented stage lines: $B=32$ for two-to-two, $B=128$ for five-leg; no stage 
   decimal ingress and Python batch scheduling are included, checks and output
   formatting excluded. Generation includes source capture and the complete plan;
   first evaluation is separate. These are development observations, not an LC
-  performance target or a replacement for the full-colour snapshot on pages 1–2.
+  performance target or a replacement for the full-colour snapshot on pages 1–3.
 ]
 #v(5pt)
 #text(size: 9pt)[
@@ -364,15 +387,20 @@ instrumented calls; medians need not add. Generation and first evaluation: secon
 ]
 #v(7pt)
 #small[
-  *Separate projector experiment, not adopted.* On 128 distinct exact energy-rescaled
-  gluon points, reusing the same saved family projectors through the existing tiled
-  JIT plan reduced the $B=128$ projection median from #projector-ms("projection_prebound_native_inputs", "baseline")
-  to #projector-ms("projection_prebound_native_inputs", "tiled_jit") ms/point and
-  the complete call from #projector-ms("complete", "baseline") to
-  #projector-ms("complete", "tiled_jit") ms/point. Tiled interpretation alone did not help. Original
-  independent physics checks passed; floating-point ordering changed, so this is
-  not bit-exact JIT parity. DD output-wise controls and raw samples are retained.
-  These separate CPU379 observations do not change either timing table.
+  *Opt-in projector JIT.* Saved family bilinears now bind through the existing
+  tiled coefficient plan when `projector_engine="jit"` is requested in binary64.
+  The interpreter remains the default and the DoubleFloat/AP path. A fresh complete
+  gluon check at `d6c05e08`, on 128 distinct exact energy-scaled control points,
+  gave $B=128$ projection medians of
+  #fmt(bound-projectors.projection_B128.interpreted.median_us_per_point / 1000, digits: 2) to
+  #fmt(bound-projectors.projection_B128.jit.median_us_per_point / 1000, digits: 2) ms/point and
+  complete calls of #fmt(bound-projectors.complete_B128.interpreted.median_us_per_point / 1000, digits: 2) to
+  #fmt(bound-projectors.complete_B128.jit.median_us_per_point / 1000, digits: 2) ms/point.
+  Five paired CPU379 blocks retain visible variation; independent physics gates
+  passed unchanged. Saved ordering, retained/portable bindings, tail/empty batches
+  and precision checks pass. JIT is not bit-exact; earlier output-wise DD evidence
+  remains available. No algebra, arena or factorization change is included.
+  These observations do not replace the timing tables.
 ]
 
 #pagebreak()
@@ -429,6 +457,7 @@ either singleton selection. Independent MadLoop graph controls give 16 QCD,
   label("qqgg"), [$1/72$], [Local/field UV; $R_2$],
   label("gg"), [$1/512$], [Local/field UV; $R_2$],
   label("qqggg"), [$1/216$], [Local/field UV; $R_2$],
+  label("ee-mumu-ew"), [$1/4$], [Full EW; real-mass Gmu; local UV/$R_2$],
 )
 
 The QCD scattering controls use $alpha_s=0.118$, $mu_R=1000$ GeV,
@@ -577,8 +606,9 @@ creates fresh evaluators, reducers and buffers without repeating graph,
 colour or coefficient preparation. Colour-weight changes invalidate the cached
 plan. The bounded full-colour direct-$R_2$ gluon plan also rebinds its retained
 dimensional DAG and physical/evanescent sectors, including UV and field completion.
-Source-model, formal-colour and correlated plan reuse remain outside this
-checkpoint; reducer Laurent preparation remains a cold binding cost.
+Source-owned complete QCD views also retain their exact scalar definitions and
+parameter snapshots across carrier rebinding. Formal-colour and correlated plan
+reuse remain outside this checkpoint; reducer Laurent preparation remains a cold binding cost.
 
 #small[
   *Separate sharing experiment.* On distinct exact energy rescalings of gluon
@@ -595,13 +625,11 @@ checkpoint; reducer Laurent preparation remains a cold binding cost.
   arena capacity by 48.4% without changing instructions or 16-row tiles. Complete
   $B=32,128$ medians were
   #arena-ms(32, "complete", "baseline") → #arena-ms(32, "complete", "compact") /
-  #arena-ms(128, "complete", "baseline") → #arena-ms(128, "complete", "compact") ms per point; loop DAG
-  medians were
-  #arena-ms(32, "loop_dag_including_io", "baseline") → #arena-ms(32, "loop_dag_including_io", "compact") /
-  #arena-ms(128, "loop_dag_including_io", "baseline") → #arena-ms(128, "loop_dag_including_io", "compact") ms.
-  Binary64 graph coefficients and complete components were bit-identical; DD/AP80 layout controls passed. No speed benefit
-  was established, so the production layout remains unchanged. Same distinct-point
-  protocol/CPU; both plans coexisted and capacity excludes dependency buffers.
+  #arena-ms(128, "complete", "baseline") → #arena-ms(128, "complete", "compact") ms per point.
+  Coefficients and complete components were bit-identical; DD/AP80 layout checks
+  passed. No speed benefit was established; the production layout is unchanged.
+  Both plans coexisted, capacity excludes dependency buffers, and raw DAG clocks
+  remain available. Same distinct-point protocol and CPU.
 ]
 
 #pagebreak()
@@ -713,14 +741,13 @@ symbolic owners. Python distribution and Rust kernel version labels are recorded
 separately. A genuine isolated development-package install now passes a public
 ordinary-tree generation/evaluation smoke.
 
-Internal portable controls now save complete four-quark and massive-top
-model-rule plans, plus the certified direct gluon plan, in the existing PACBIN
-container. Nonzero external-field factors are retained. The Rust reader validates
-evaluator shapes, order axes, bindings and layouts; fresh double, DoubleFloat
-and AP views execute without the source model or producer graphs. Source-model,
-formal-colour and correlated portable plans, rescue, public artifacts and
-standalone SDK execution remain open. Validated typed buffers now also have
-non-Python native bindings; a complete native coordinator remains unfinished.
+Internal PACBIN controls retain complete model-rule four-quark/top and direct-gluon
+plans, including external-field factors. The Rust reader validates shapes, order
+axes, bindings and layouts; fresh double/DD/AP views need neither source models
+nor producer graphs. Source, formal-colour and correlated portable plans, rescue,
+public artifacts and SDK execution remain open. Typed buffers, evaluators,
+schedules, exact ingress, wavefunctions and the polynomial reduction facade now
+have shared Rust bindings; the complete native coordinator remains unfinished.
 
 == Success, accuracy and rescue are different facts
 A reducer's success flag is not an accuracy certificate. Native checks reject
@@ -867,7 +894,7 @@ interference, not a single diagram and helicity.
 #v(5pt)
 #note[
   *Living document.* Update the source, measured data and compiled PDF together
-  after each milestone. Next timing additions include validated real-mass EW
-  and bounded CMS controls. Keep incomplete rows and capability limits explicit;
+  after each milestone. Next timing additions include bounded CMS
+  and further validated processes. Keep incomplete rows and capability limits explicit;
   the full physics, precision, feature and performance contract remains the goal.
 ]

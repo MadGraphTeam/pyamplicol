@@ -83,7 +83,8 @@ original component timings remain in the data.
 The retained-plan architecture also includes the bounded direct-R2 full-colour
 gluon checkpoint `54f28474`: dimensional instructions and physical/evanescent
 sectors rebind into fresh arithmetic workspaces while retaining UV/field
-completion. Source, formal-colour and correlated retained views remain separate;
+completion. Source-owned complete QCD plans also retain exact scalar state across rebinding
+(`75bb2487`); formal-colour and correlated retained views remain separate;
 fresh reducers still prepare their own Laurent expansions.
 
 Architecture coverage also records request-scoped source lowering (`5ecc735c`),
@@ -151,14 +152,46 @@ and one 3.03e-12 relative finite difference. Output-wise DD checks use identical
 native-promoted f64 inputs and are retained without mixing differently dimensioned
 coefficient norms; the flagged final finite value is closer to the DD-projector
 oracle with JIT. Tiled interpreter/carrier layout, empty/tail/IDs and parameter
-updates also pass. This remains an isolated, unadopted optimization; tables use
-the original engines. Driver: `experiments/loop_projector_profile.py`.
+updates also pass. That experiment motivated the later explicit binding checkpoint below; its
+measurements remain separate and tables retain their recorded original engines. Driver: `experiments/loop_projector_profile.py`.
 
-The next performance additions include the already validated real-mass EW and
-bounded CMS controls. They are listed as pending measurements, not inferred from
-test durations. New validated processes and colour modes remain live-report work.
+The next performance additions include bounded CMS controls and further
+validated processes. Pending measurements are never inferred from test durations. New validated processes and colour modes remain live-report work.
 
-Shared typed buffer parsing and immutable transport now live outside PyO3
-(`d3883dea`), retaining thin wrappers and validated native shapes. This is a
-mechanical native boundary checkpoint, not complete native coordinator/SDK
-activation; the shared timing module was unchanged.
+Shared typed buffers, saved evaluators, tiled schedules, exact ingress,
+wavefunctions and the polynomial reduction facade now live outside PyO3
+(`d3883dea` through `e90ab9f5`), retaining thin wrappers and validated native
+shapes. These are shared native primitive checkpoints; complete native process
+coordination and SDK activation remain open. Shared timing modules were unchanged.
+
+The seventh row adds real-mass full-EW Gmu `e- e+ -> mu- mu+` through the generic
+source compiler at `85fb0900`, on CPU382. Fresh source capture/complete plan,
+first evaluation, B1/B128 complete calls and separate B128 stage clocks are
+retained in the measured snapshot. Matched Recola native timing uses the existing
+verified full-EW Gmu setup, actual poles, normal cache/rescue policy and the
+Cepsilon conversion inside the clock. Every timed Born/pole value is checked
+against the independent MadLoop capture. The B1 fresh Recola constructor supplies
+the neutral generation cell; both constructor observations remain in raw data.
+No MadLoop/OpenLoops runtime is inferred. All earlier six cases and provider
+observations remain unchanged. The single provider grid now continues over
+three pages, followed by two LC pages and seven architecture pages. Drivers:
+`workspace/experiments/loop_live_ew.py`,
+`workspace/reference/recola_electroweak_timing.f90`, and
+`workspace/reference/benchmark_recola_electroweak.py`.
+
+`data/projector-binding-benchmark.json` measures the integrated opt-in family
+projector binding (`d6c05e08`, main `996ade2d`) at CPU379. Exact saved bilinear
+instructions bind as one node in the existing native tiled CoefficientPlan;
+`projector_engine="jit"` is binary64-only and independent of coefficient JIT.
+The interpreter remains the default and the DoubleFloat/AP path. Initial,
+retained and portable bindings retain ordered shapes and fresh workspaces;
+twelve focused controls cover mixed orders, all three default carriers,
+precision rejection, changed parameters/scales, empty/tail batches, point IDs
+and old-buffer independence. The actual complete gg production API gives B128
+projection medians 1.75161→0.52171 ms/point and complete 13.28348→11.84918 ms/point
+over five paired blocks of 128 distinct exact energy rescalings. All original
+independent MadLoop components and old/new complete outputs pass the unchanged
+rtol=5e-10/atol=1e-10 gate. Raw samples retain JIT variation; both bound plans coexist,
+so RSS is not a standalone A/B measure. There is no factorization, arena change,
+new engine or provider acceptance claim. Driver:
+`workspace/experiments/loop_projector_binding_benchmark.py`.

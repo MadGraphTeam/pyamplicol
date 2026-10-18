@@ -590,6 +590,73 @@
       "first_evaluation_s": 18.423702505999245,
       "peak_rss_mib": 5328.69921875,
       "revision_note": "The process imported this revision when launched; the workspace HEAD advanced during its cold construction. This field records the executed source, rather than the later HEAD sampled by the original timer."
+    },
+    {
+      "case": "ee-mumu-ew",
+      "process": "e- e+ > mu- mu+ [QED]",
+      "commit": "85fb0900ed694339f86fbe082b436478918144a3",
+      "source_generation_s": 49.04566732101375,
+      "program_generation_s": 66.77036063099513,
+      "generation_s": 115.81602795200888,
+      "cpu": 382,
+      "cpu_model": "AMD EPYC 9754 128-Core Processor",
+      "scope": "Complete real-mass Gmu EW source model; all physical helicities, full colour, all three Laurent coefficients, local UV/R2 and source field terms. Native numerical batches with Python scheduling and exact decimal input. Decimal output and validation excluded. Repeated three-point development stream; no pyAmpliCol event cache or rescue. Not provider acceptance.",
+      "generation_scope": "Fresh process after imports: raw NLO UFO capture, exact restrictions, covariant structure, counterterms, graphs, recurrences, colour, scalar and binary64 JIT/reducer binding. One cold observation; build/import/warmup excluded.",
+      "arithmetic": "double",
+      "reduction_engine": "fast",
+      "coefficient_engine": "jit",
+      "r2_strategy": "model",
+      "source_reference": "/shared/external/pyLoopAmpliCol/workspace/reference/runs/electroweak-mumu-control.json",
+      "counts": {
+        "born_graphs": 2,
+        "loop_graphs": 98,
+        "families": 24,
+        "helicities": 16,
+        "counterterms": 59,
+        "external_fields": 0
+      },
+      "timings": {
+        "1": {
+          "median_us_per_point": 6589.366006664932,
+          "min_us_per_point": 6472.245033364743,
+          "max_us_per_point": 6744.696001987904,
+          "samples_us_per_point": [
+            6744.696001987904,
+            6589.366006664932,
+            6622.295011766255,
+            6551.065016537905,
+            6472.245033364743
+          ],
+          "checksum_all_poles_and_born": [
+            0.028676735925494343,
+            0.028676735925494343,
+            0.028676735925494343,
+            0.028676735925494343,
+            0.028676735925494343
+          ]
+        },
+        "128": {
+          "median_us_per_point": 2921.7131718723977,
+          "min_us_per_point": 2852.2998518383247,
+          "max_us_per_point": 3032.698046808946,
+          "samples_us_per_point": [
+            3032.698046808946,
+            2933.652593583247,
+            2921.7131718723977,
+            2871.1578202091914,
+            2852.2998518383247
+          ],
+          "checksum_all_poles_and_born": [
+            2.239869828761226,
+            2.239869828761226,
+            2.239869828761226,
+            2.239869828761226,
+            2.239869828761226
+          ]
+        }
+      },
+      "first_evaluation_s": 0.17929841700242832,
+      "peak_rss_mib": 710.640625
     }
   ],
   "stages": {
@@ -1733,6 +1800,180 @@
       "instrumented_total_us": 129626.00278115133,
       "other_work_us": 73757.03365280054,
       "revision_note": "The process imported this revision when launched; the workspace HEAD advanced during its cold construction. This field records the executed source, rather than the later HEAD sampled by the original timer."
+    },
+    "ee-mumu-ew": {
+      "case": "ee-mumu-ew",
+      "batch_size": 128,
+      "cpu": 382,
+      "physics_revision": "85fb0900ed694339f86fbe082b436478918144a3",
+      "profiling_revision": "85fb0900ed694339f86fbe082b436478918144a3",
+      "scope": "Separate B128 diagnostic, five blocks after warmup; complete physical output checked. Numerator=loop coefficient schedules plus callbacks and head preparation. Exclusive Ninja time excludes masters/callbacks; oneloopmaster adapter timed separately. Other=Born, source scalars, UV/R2, kinematics, Born weighting, assembly, transport and timer overhead. No subtraction from independently measured uninstrumented total.",
+      "samples": [
+        {
+          "born_coefficients": 5.023304765927605,
+          "loop_coefficients": 1484.0983117210271,
+          "born_projection": 0.4767189238918945,
+          "born_weighting": 134.67418784784968,
+          "family_masses": 1.0824378477991559,
+          "bare_assembly": 0.5674219210050069,
+          "counterterm_coefficients": 288.7114465011109,
+          "ct_projection": 11.322156296955654,
+          "complete_assembly": 0.09773430065251887,
+          "numerator_us": 1538.976225783527,
+          "reduction_us": 31.3061328125,
+          "masters_us": 67.29016406250003,
+          "instrumented_total_us": 2962.3784062096092,
+          "other_work_us": 1324.8058835510822,
+          "raw_native": {
+            "engine_calls": 24.0,
+            "engine_excluding_masters_seconds": 0.010977939999999999,
+            "engine_seconds": 0.019591081000000003,
+            "master_calls": 59.0,
+            "master_rows": 16896.0,
+            "masters_seconds": 0.008613141000000003,
+            "numerator_callback_seconds": 0.0069707549999999995,
+            "numerator_calls": 149.0,
+            "numerator_preparation_seconds": 5.361799999999999e-05,
+            "numerator_rows": 25856.0,
+            "reduction_exclusive_seconds": 0.004007185
+          },
+          "checksum_all_poles_and_born": 2.239869828761226
+        },
+        {
+          "born_coefficients": 5.194078312342754,
+          "loop_coefficients": 1489.4725318299606,
+          "born_projection": 0.4626640475180466,
+          "born_weighting": 135.01864077625214,
+          "family_masses": 1.0156413736694958,
+          "bare_assembly": 0.5825859261676669,
+          "counterterm_coefficients": 276.5272229225957,
+          "ct_projection": 10.861445389309665,
+          "complete_assembly": 0.08890629032975994,
+          "numerator_us": 1544.2147896424606,
+          "reduction_us": 31.268070312499997,
+          "masters_us": 67.01994531250001,
+          "instrumented_total_us": 2926.1363906698534,
+          "other_work_us": 1283.6335854023928,
+          "raw_native": {
+            "engine_calls": 24.0,
+            "engine_excluding_masters_seconds": 0.010958480000000003,
+            "engine_seconds": 0.019537033000000002,
+            "master_calls": 59.0,
+            "master_rows": 16896.0,
+            "masters_seconds": 0.008578553000000001,
+            "numerator_callback_seconds": 0.006956166999999999,
+            "numerator_calls": 149.0,
+            "numerator_preparation_seconds": 5.084199999999999e-05,
+            "numerator_rows": 25856.0,
+            "reduction_exclusive_seconds": 0.0040023129999999995
+          },
+          "checksum_all_poles_and_born": 2.239869828761226
+        },
+        {
+          "born_coefficients": 5.034007244830718,
+          "loop_coefficients": 1501.162273598311,
+          "born_projection": 0.4529765647021122,
+          "born_weighting": 174.0745856295689,
+          "family_masses": 1.1240936146350577,
+          "bare_assembly": 0.6425780156860128,
+          "counterterm_coefficients": 277.243669188465,
+          "ct_projection": 11.935281236219453,
+          "complete_assembly": 0.09374980436405167,
+          "numerator_us": 1559.861859535811,
+          "reduction_us": 33.555570312499995,
+          "masters_us": 71.1112734375,
+          "instrumented_total_us": 3018.718547082244,
+          "other_work_us": 1354.1898437964333,
+          "raw_native": {
+            "engine_calls": 24.0,
+            "engine_excluding_masters_seconds": 0.011750028000000001,
+            "engine_seconds": 0.020852271,
+            "master_calls": 59.0,
+            "master_rows": 16896.0,
+            "masters_seconds": 0.009102243000000001,
+            "numerator_callback_seconds": 0.007454915000000001,
+            "numerator_calls": 149.0,
+            "numerator_preparation_seconds": 5.863200000000001e-05,
+            "numerator_rows": 25856.0,
+            "reduction_exclusive_seconds": 0.004295113
+          },
+          "checksum_all_poles_and_born": 2.239869828761226
+        },
+        {
+          "born_coefficients": 5.04455510963453,
+          "loop_coefficients": 1481.5293543506414,
+          "born_projection": 0.48055471779662184,
+          "born_weighting": 132.72685373522108,
+          "family_masses": 0.8519855327904224,
+          "bare_assembly": 0.5690626494470052,
+          "counterterm_coefficients": 275.81848689806066,
+          "ct_projection": 10.26903100864729,
+          "complete_assembly": 0.0911718416318763,
+          "numerator_us": 1536.1280184131413,
+          "reduction_us": 31.065265625,
+          "masters_us": 66.86939843750001,
+          "instrumented_total_us": 2846.898273219267,
+          "other_work_us": 1212.835590743626,
+          "raw_native": {
+            "engine_calls": 24.0,
+            "engine_excluding_masters_seconds": 0.010914622999999998,
+            "engine_seconds": 0.019473906000000003,
+            "master_calls": 59.0,
+            "master_rows": 16896.0,
+            "masters_seconds": 0.008559283,
+            "numerator_callback_seconds": 0.006938268999999999,
+            "numerator_calls": 149.0,
+            "numerator_preparation_seconds": 5.0360000000000006e-05,
+            "numerator_rows": 25856.0,
+            "reduction_exclusive_seconds": 0.003976354
+          },
+          "checksum_all_poles_and_born": 2.239869828761226
+        },
+        {
+          "born_coefficients": 4.946663921145955,
+          "loop_coefficients": 1480.5971641180804,
+          "born_projection": 0.44132821130915545,
+          "born_weighting": 132.21510334915365,
+          "family_masses": 0.8702104423718993,
+          "bare_assembly": 0.5724996299250051,
+          "counterterm_coefficients": 274.7231224020652,
+          "ct_projection": 10.84660152628203,
+          "complete_assembly": 0.0858672137837857,
+          "numerator_us": 1535.2577969305803,
+          "reduction_us": 30.510796875,
+          "masters_us": 66.40401562499999,
+          "instrumented_total_us": 2845.403179890127,
+          "other_work_us": 1213.2305704595465,
+          "raw_native": {
+            "engine_calls": 24.0,
+            "engine_excluding_masters_seconds": 0.010851383000000003,
+            "engine_seconds": 0.019351097,
+            "master_calls": 59.0,
+            "master_rows": 16896.0,
+            "masters_seconds": 0.008499713999999998,
+            "numerator_callback_seconds": 0.006946000999999999,
+            "numerator_calls": 149.0,
+            "numerator_preparation_seconds": 5.056e-05,
+            "numerator_rows": 25856.0,
+            "reduction_exclusive_seconds": 0.003905382
+          },
+          "checksum_all_poles_and_born": 2.239869828761226
+        }
+      ],
+      "born_coefficients": 5.034007244830718,
+      "loop_coefficients": 1484.0983117210271,
+      "born_projection": 0.4626640475180466,
+      "born_weighting": 134.67418784784968,
+      "family_masses": 1.0156413736694958,
+      "bare_assembly": 0.5724996299250051,
+      "counterterm_coefficients": 276.5272229225957,
+      "ct_projection": 10.861445389309665,
+      "complete_assembly": 0.0911718416318763,
+      "numerator_us": 1538.976225783527,
+      "reduction_us": 31.268070312499997,
+      "masters_us": 67.01994531250001,
+      "instrumented_total_us": 2926.1363906698534,
+      "other_work_us": 1283.6335854023928
     }
   },
   "references": {
@@ -3927,6 +4168,108 @@
           }
         }
       }
+    },
+    "ee-mumu-ew": {
+      "case": "ee-mumu-ew",
+      "provider": "Recola 2.3.0 / SM 2.2.3 / Collier 1.2.8",
+      "cpu": 382,
+      "scope": "Complete real-mass Gmu EW Born/interference with actual IR poles enabled, dynamic_settings=1. Native Fortran bulk loop; usual provider cache policy, no manual per-event reset. Repeated three-point development stream; not acceptance. Generation from parameter setup through generate_processes, imports/library load excluded. Laurent normalization conversion included in runtime. Output formatting and numerical checks excluded.",
+      "driver": "/shared/external/pyLoopAmpliCol/workspace/reference/recola_electroweak_timing.f90",
+      "timings": {
+        "1": {
+          "recola": {
+            "median_us_per_point": 3104.7230000000004,
+            "samples_us_per_point": [
+              3106.772,
+              3150.123,
+              3086.063,
+              3048.982,
+              3104.7230000000004
+            ],
+            "min_us_per_point": 3048.982,
+            "max_us_per_point": 3150.123,
+            "generation_s": 0.174693046,
+            "checksum_all_poles_and_born": [
+              0.028676735925494194,
+              0.028676735925494194,
+              0.028676735925494194,
+              0.028676735925494194,
+              0.028676735925494194
+            ]
+          }
+        },
+        "128": {
+          "recola": {
+            "median_us_per_point": 2945.5426640625,
+            "samples_us_per_point": [
+              2980.5194453125,
+              2957.0769296875,
+              2936.0606015625,
+              2935.5089531249996,
+              2945.5426640625
+            ],
+            "min_us_per_point": 2935.5089531249996,
+            "max_us_per_point": 2980.5194453125,
+            "generation_s": 0.153363981,
+            "checksum_all_poles_and_born": [
+              2.2398698287612153,
+              2.2398698287612153,
+              2.2398698287612153,
+              2.2398698287612153,
+              2.2398698287612153
+            ]
+          }
+        }
+      },
+      "raw_provider_record": {
+        "case": "ee-mumu-ew",
+        "provider": "Recola 2.3.0 / SM 2.2.3 / Collier 1.2.8",
+        "cpu": 382,
+        "scope": "Complete real-mass Gmu EW Born/interference with actual IR poles enabled, dynamic_settings=1. Native Fortran bulk loop; usual provider cache policy, no manual per-event reset. Repeated three-point development stream; not acceptance. Generation from parameter setup through generate_processes, imports/library load excluded. Laurent normalization conversion included in runtime. Output formatting and numerical checks excluded.",
+        "driver": "/shared/external/pyLoopAmpliCol/workspace/reference/recola_electroweak_timing.f90",
+        "timings": {
+          "1": {
+            "median_us_per_point": 3104.7230000000004,
+            "samples_us_per_point": [
+              3106.772,
+              3150.123,
+              3086.063,
+              3048.982,
+              3104.7230000000004
+            ],
+            "min_us_per_point": 3048.982,
+            "max_us_per_point": 3150.123,
+            "generation_s": 0.174693046,
+            "checksum_all_poles_and_born": [
+              0.028676735925494194,
+              0.028676735925494194,
+              0.028676735925494194,
+              0.028676735925494194,
+              0.028676735925494194
+            ]
+          },
+          "128": {
+            "median_us_per_point": 2945.5426640625,
+            "samples_us_per_point": [
+              2980.5194453125,
+              2957.0769296875,
+              2936.0606015625,
+              2935.5089531249996,
+              2945.5426640625
+            ],
+            "min_us_per_point": 2935.5089531249996,
+            "max_us_per_point": 2980.5194453125,
+            "generation_s": 0.153363981,
+            "checksum_all_poles_and_born": [
+              2.2398698287612153,
+              2.2398698287612153,
+              2.2398698287612153,
+              2.2398698287612153,
+              2.2398698287612153
+            ]
+          }
+        }
+      }
     }
   },
   "reference_protocol": {
@@ -3945,9 +4288,11 @@
     "cms_status": "Prior CMS audit frozen; no CMS/provider physics mutation for this timing task.",
     "dy_unavailable": "Matched Recola photon-only DY now included by public Z,e-,e+ coupling switch; OpenLoops control remains unavailable in this suite.",
     "additional_scope": "The separate five-leg 2-to-3 qqggg observation uses the same complete-call protocol at B1/B128 and instrumented stages at B128. Original five 2-to-2 rows retain fa599885; qqggg executed f89249d2.",
-    "provider_audit": "Additional CPU382 Recola DY observations and isolated OpenLoops gg compiler/settings audit are retained in provider-audit.json. Original matched provider rows are unchanged; O3 trial did not establish a speed benefit."
+    "provider_audit": "Additional CPU382 Recola DY observations and isolated OpenLoops gg compiler/settings audit are retained in provider-audit.json. Original matched provider rows are unchanged; O3 trial did not establish a speed benefit.",
+    "electroweak_scope": "Additional real-mass fullEW Gmu ee\u2192mumu source compiler observation at85fb0900, CPU382, B1/B128 and separate B128 stages. Recola preserves verified fullEW model/settings, all actual poles and Cepsilon conversion inside clock; every timed output validated. MadLoop and OpenLoops timings absent. Earlier six case/provider/stage snapshots unchanged."
   },
   "additional_revisions": {
-    "qqggg": "f89249d278a52ecfe2fc8b53ba87fd31532c5a56"
+    "qqggg": "f89249d278a52ecfe2fc8b53ba87fd31532c5a56",
+    "ee-mumu-ew": "85fb0900ed694339f86fbe082b436478918144a3"
   }
 }
