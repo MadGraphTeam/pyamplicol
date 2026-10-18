@@ -716,7 +716,7 @@ Native buffers retain original point identities through compaction, tail batches
 failure masks and result scatter. Changing sizes, empty batches and repeated
 calls are covered. Headline timings use Python to coordinate native batch plans.
 The shared Rust coordinator now executes complete bounded QCD plans in one call,
-with all three carriers checked; source-model composition is under validation.
+including source-model gluon controls checked in all three carriers.
 
 The coefficient scheduler uses bounded row tiles and reusable scratch storage.
 Its present 16-row default is a measured development choice, not a universal
@@ -782,8 +782,9 @@ an executed model result as direct.
 
 Four-dimensional reduction already produces denominator-related rational terms.
 The presence of $mu^2$ in a reducer interface therefore does not, on its own,
-prove that numerator-origin $R_2$ is complete. The direct extension must account
-for extra-dimensional momentum, metric/spin traces and explicit epsilon factors.
+prove that numerator-origin $R_2$ is complete. In the target HV scheme, effective
+rules already include the missing spin-dimension terms. They must not also be
+added to the four-dimensional numerator. FDH has a different prescription.
 
 == Local evanescent state, not a whole-loop trace engine
 For a certified closed vectorlike fermion cycle, the local component construction
@@ -826,12 +827,11 @@ compatible model-rule completion. No universal massless FDH-to-HV shift is
 assumed for massive EW or general models.
 
 #note[
-  *Selection and performance.* Automatic policy may prefer a certified direct
-  strategy, but completeness is mandatory. Model and direct costs must be
-  measured as standalone complete evaluations. The present headline table uses
-  model rules throughout; a new direct-versus-model comparison is still due
-  after recent colour and scheduling changes. The separate LC page uses direct
-completion for both gluon colour modes.
+  *Current priority.* Complete effective-rule $R_2$ plus UV, feature coverage and
+  higher multiplicities. Further generic direct development and strategy timing
+  are deferred; existing bounded controls and interfaces are retained. Headline
+  timings use model rules. The historical paired gluon LC/full cells use direct
+  completion. Scheme distinction: #link("https://arxiv.org/html/0903.0356v2#S2")[QCD rational rules, §2].
 ]
 
 #pagebreak()
@@ -849,7 +849,7 @@ complete answer cannot conceal a wrong component.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
-  [Public delivery], [Source-free PACBIN includes complete source-model plans. The shared Rust coordinator passes bounded QCD controls in all three carriers; native source composition, public loop artifacts, commands and SDK/UMAMI remain open.],
+  [Public delivery], [Source-free PACBIN and the shared Rust coordinator include complete source-model gluon controls in all three carriers. Public loop artifacts, commands and SDK/UMAMI remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
