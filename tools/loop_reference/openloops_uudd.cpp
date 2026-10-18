@@ -6,7 +6,7 @@ struct OpenLoops {
   static constexpr const char *name = "OpenLoops-2.1.5";
   int id;
   explicit OpenLoops(const loop_reference::Parameters &p) {
-    ol_setparameter_int("order_qcd", 2);
+    ol_setparameter_int("order_qcd", LOOP_REFERENCE_QCD_BORN_POWER);
     ol_setparameter_int("order_ew", 0);
     ol_setparameter_int("nf", 6);
     ol_setparameter_int("nf_alphasrun", 5);
@@ -20,7 +20,11 @@ struct OpenLoops {
     ol_setparameter_double("mass(5)", p.mb);
     ol_setparameter_double("alpha_s", p.alpha_s);
     ol_setparameter_double("mu", p.mu);
-#ifdef LOOP_REFERENCE_TOP_PAIR
+#ifdef LOOP_REFERENCE_QUARK_THREE_GLUON
+    id = ol_register_process("2 -2 -> 21 21 21", 11);
+#elif defined(LOOP_REFERENCE_FIVE_GLUON)
+    id = ol_register_process("21 21 -> 21 21 21", 11);
+#elif defined(LOOP_REFERENCE_TOP_PAIR)
     id = ol_register_process("2 -2 -> 6 -6", 11);
 #elif defined(LOOP_REFERENCE_GLUON_SCATTERING)
     id = ol_register_process("21 21 -> 21 21", 11);
@@ -34,8 +38,8 @@ struct OpenLoops {
   }
   ~OpenLoops() { ol_finish(); }
   loop_reference::Result evaluate(const loop_reference::Point &point) {
-    double momenta[20]{};
-    for (int leg = 0; leg < 4; ++leg)
+    double momenta[5 * loop_reference::external_legs]{};
+    for (int leg = 0; leg < loop_reference::external_legs; ++leg)
       for (int mu = 0; mu < 4; ++mu) momenta[5*leg+mu] = point[leg][mu];
     loop_reference::Result r;
     double loop[3];

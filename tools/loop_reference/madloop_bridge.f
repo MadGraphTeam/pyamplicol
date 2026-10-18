@@ -38,7 +38,8 @@ C     which only updates the running strong coupling and scale.
      $ STATUS) BIND(C)
       USE ISO_C_BINDING
       IMPLICIT NONE
-      REAL(C_DOUBLE), INTENT(IN) :: P(0:3,4)
+      INCLUDE 'nexternal.inc'
+      REAL(C_DOUBLE), INTENT(IN) :: P(0:3,NEXTERNAL)
       REAL(C_DOUBLE), INTENT(OUT) :: ANSWER(4),ACCURACY
       INTEGER(C_INT), INTENT(OUT) :: STATUS
       REAL(C_DOUBLE) RESULT(0:3,0:1),PRECISION(0:1)

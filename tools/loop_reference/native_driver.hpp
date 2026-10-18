@@ -10,7 +10,14 @@
 #include <vector>
 
 namespace loop_reference {
-using Point = std::array<std::array<double, 4>, 4>;
+#ifndef LOOP_REFERENCE_LEGS
+#define LOOP_REFERENCE_LEGS 4
+#endif
+#ifndef LOOP_REFERENCE_QCD_BORN_POWER
+#define LOOP_REFERENCE_QCD_BORN_POWER 2
+#endif
+constexpr int external_legs = LOOP_REFERENCE_LEGS;
+using Point = std::array<std::array<double, 4>, external_legs>;
 struct Parameters { double alpha_s, mu, mt, mb, inverse_alpha_em; };
 struct Result {
   double born{}, finite{}, single{}, doub{}, accuracy{-1.};

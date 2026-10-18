@@ -38,7 +38,15 @@ def main():
     parser.add_argument("--fc", default="gfortran")
     parser.add_argument(
         "--case",
-        choices=("uudd", "drell-yan", "top-pair", "gluon-scattering", "quark-gluon"),
+        choices=(
+            "uudd",
+            "drell-yan",
+            "top-pair",
+            "gluon-scattering",
+            "quark-gluon",
+            "quark-three-gluon",
+            "five-gluon",
+        ),
         default="uudd",
     )
     args = parser.parse_args()
@@ -51,7 +59,11 @@ def main():
         "top-pair": ["-DLOOP_REFERENCE_TOP_PAIR"],
         "gluon-scattering": ["-DLOOP_REFERENCE_GLUON_SCATTERING"],
         "quark-gluon": ["-DLOOP_REFERENCE_QUARK_GLUON"],
+        "quark-three-gluon": ["-DLOOP_REFERENCE_QUARK_THREE_GLUON"],
+        "five-gluon": ["-DLOOP_REFERENCE_FIVE_GLUON"],
     }.get(args.case, [])
+    if args.case in {"quark-three-gluon", "five-gluon"}:
+        case_defines += ["-DLOOP_REFERENCE_LEGS=5", "-DLOOP_REFERENCE_QCD_BORN_POWER=3"]
 
     def run(command, **kwargs):
         subprocess.run([str(x) for x in command], check=True, **kwargs)
@@ -96,6 +108,8 @@ def main():
                 "top-pair": "P0_uux_ttx",
                 "gluon-scattering": "P0_gg_gg",
                 "quark-gluon": "P0_uux_gg",
+                "quark-three-gluon": "P0_uux_ggg",
+                "five-gluon": "P0_gg_ggg",
             }[args.case]
             process = root / "SubProcesses" / directory
             if not process.is_dir():

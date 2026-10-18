@@ -13,8 +13,8 @@ struct RecolaProvider {
   }
   ~RecolaProvider() { reference_recola_finish(); }
   loop_reference::Result evaluate(const loop_reference::Point &point) {
-    double momenta[4][4];
-    for (int leg = 0; leg < 4; ++leg)
+    double momenta[loop_reference::external_legs][4];
+    for (int leg = 0; leg < loop_reference::external_legs; ++leg)
       for (int mu = 0; mu < 4; ++mu) momenta[leg][mu] = point[leg][mu];
     loop_reference::Result r;
     double result[4];

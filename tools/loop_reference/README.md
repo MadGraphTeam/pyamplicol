@@ -144,6 +144,24 @@ For quark annihilation into gluons, generate
 `--fixture tools/loop_reference/quark_gluon_qcd.json`. OpenLoops' existing
 `ppjj` library supplies this channel too.
 
+For the first five-leg control, generate
+`u u~ > g g g QED=0 [virt=QCD]`, install OpenLoops `ppjjj`, build with
+`--case quark-three-gluon`, and run with `quark_three_gluon_qcd.json`.
+The three finite-decimal points are exact massless, momentum-conserving
+rational rotations of a three-body configuration. Born/loop coupling powers
+are 3/5 and the interference has squared QCD order 8. All three final gluons
+are identical: the normalization is `1/(4*9*6)=1/216`. Independent provider
+controls agree on Born and all three coefficients. The double-pole control is
+`-(2*CF+3*CA)*alpha_s/(2*pi)*Born`; it uses the measured Born and does not
+supply an independent five-leg Born formula. This validates the references,
+not an implemented pyAmpliCol five-leg process or a performance gate.
+
+The native drivers retain four external legs and Born power 2 by default;
+five-leg builds select both dimensions and powers explicitly. The MadLoop
+Fortran boundary takes its external count from the generated `nexternal.inc`.
+`--case five-gluon` also supplies the native `g g -> g g g` registration,
+but it has no validated fixture in this checkpoint.
+
 The native MadLoop bridge requests relative accuracy `1e-11` for correctness
 controls (the generated card otherwise defaults to `1e-3`). Rescue remains
 inside the timed call. Fixed mass, width and electromagnetic inputs are bound

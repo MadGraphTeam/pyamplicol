@@ -130,6 +130,10 @@ def main():
         case = "gluon-scattering"
     elif fixture["process"] == "u u~ > g g":
         case = "quark-gluon"
+    elif fixture["process"] == "u u~ > g g g":
+        case = "quark-three-gluon"
+    elif fixture["process"] == "g g > g g g":
+        case = "five-gluon"
     else:
         parser.error("the control drivers do not support this fixture process")
     output = args.output_dir.resolve()
@@ -187,7 +191,14 @@ def main():
                 zip(points, measurement["results"], strict=True)
             ):
                 expected_values = (
-                    drell_yan(point, p)
+                    {
+                        "double_pole": -(15 if case == "five-gluon" else 35 / 3)
+                        * p["alpha_s"]
+                        / (2 * math.pi)
+                        * result["born"]
+                    }
+                    if case in {"quark-three-gluon", "five-gluon"}
+                    else drell_yan(point, p)
                     if case == "drell-yan"
                     else top_pair(point, p)
                     if case == "top-pair"
