@@ -160,6 +160,38 @@
         "log": "/shared/external/pyLoopAmpliCol/workspace/reports/loop-live-provider-initialization/gg-openloops.log",
         "validation": "Born/finite/single/double match saved independent MadLoop first point"
       }
+    },
+    "qqggg": {
+      "madloop": {
+        "case": "qqggg",
+        "provider": "MadLoop-3.7.0",
+        "cpu": 380,
+        "generation_s": 23.892183871008456,
+        "source_export_s": 18.274289052002132,
+        "process_compilation_s": 5.617894819006324,
+        "process": "u u~ > g g g QED=0 [virt=QCD]",
+        "dependencies": "external",
+        "scope": "One cold observation in a fresh process: loop_sm-no_b_mass import, Feynman-gauge preparation, graph/HELAS/colour generation, standalone source export and source/process static compilation. MG5 Python imports and event initialization are excluded. One pinned CPU and make -j1; FFLAGS=-w -fPIC -fallow-argument-mismatch; standard polynomial optimization unchanged. Existing warmed runtime exports are untouched.",
+        "reduction_build_scope": "Existing external reduction libraries are reused; their installation/build is excluded.",
+        "output": "/shared/external/pyLoopAmpliCol/workspace/reference/builds/live-provider-generation/madloop-qqggg",
+        "seconds": 23.892183871008456,
+        "status": "measured_once_fresh_process",
+        "metric": "generation_and_static_compilation"
+      },
+      "recola": {
+        "seconds": 0.724089365,
+        "status": "measured_once_fresh_process",
+        "metric": "generation_constructor",
+        "log": "/shared/external/pyLoopAmpliCol/workspace/reports/loop-live-provider-initialization/qqggg-recola.log",
+        "validation": "Born/finite/single/double match saved independent MadLoop first point"
+      },
+      "openloops": {
+        "seconds": 0.010883815,
+        "status": "measured_once_fresh_process",
+        "metric": "prebuilt_registration_start",
+        "log": "/shared/external/pyLoopAmpliCol/workspace/reports/loop-live-provider-initialization/qqggg-openloops.log",
+        "validation": "Born/finite/single/double match saved independent MadLoop first point"
+      }
     }
   },
   "recola_openloops_cpu": 380,

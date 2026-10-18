@@ -29,12 +29,16 @@ physical validation remains separate. The five-leg counterterm fix recovers
 39 missed insertions; complete five-leg Born/bare/UV/R2/full components now
 pass in double, DoubleFloat and AP80 at the external reference accuracy
 (`f89249d2`), with separate exact parameter-update controls.
-No five-leg timing row is inferred from these validation tests.
-The existing warm/stage observations and their measurement revision remain
-unchanged; validation durations are not new event timings.
+The separate five-leg timing row comes from a fresh measured run at executed
+revision `f89249d2`, including complete native components and provider checks.
+Its original timer read HEAD after construction while main advanced; the retained
+revision note corrects this to the actual imported source. The five original
+warm/provider/stage observations at `fa599885` are unchanged. Validation durations
+are not event timings.
 
 The single process/provider grid continues across the first two pages and shows
-B=1 and B=128 totals, preparation and available B=32 stage detail in each cell.
+B=1 and B=128 totals, preparation and stage detail in each cell. The original
+five controls retain B=32 stage clocks; the five-leg row uses separate B=128 clocks.
 It follows the NinjaRS benchmark's value/reference/multiplier
 layout. Heat-map ratios use the fastest available original-binary provider
 median for the same process and batch width, computed from the retained data.
@@ -77,3 +81,25 @@ gluon checkpoint `54f28474`: dimensional instructions and physical/evanescent
 sectors rebind into fresh arithmetic workspaces while retaining UV/field
 completion. Source, formal-colour and correlated retained views remain separate;
 fresh reducers still prepare their own Laurent expansions.
+
+Architecture coverage also records request-scoped source lowering (`5ecc735c`),
+which preserves full-source species eligibility before bounded pruning, and the
+internal portable model-rule four-quark checkpoint (`94340682`). The latter
+uses the existing PACBIN envelope and validated Rust-owned numerical layouts;
+fresh source-free arithmetic views pass in all three carriers. Its first control
+has nonzero UV/R2 but no external fields. Direct/source/formal/correlated plans,
+rescue, public artifact activation and standalone SDK dispatch remain separate.
+The shared source compiler (`43d22a52`) also prepares complete bounded QCD and
+neutral-current Gmu controls from retained raw models and exact restrictions,
+without named-process dispatch or rounded normalized defaults.
+
+`data/local-arena-experiment.json` records a separate graph-local compaction
+prototype (`a738b6a3`, not adopted). It reuses the existing core lifetime allocator,
+unchanged instructions and 16-row tiles, over the same distinct finite-decimal
+gluon stream on CPU379. Five alternating B32/B128 calls establish exact binary64
+coefficient/full-component parity; actual graph instructions also pass DD/AP80
+layout checks using identical natively promoted inputs, without a higher-accuracy
+physics claim. Arena capacity falls 48.4%, but no speed benefit is established.
+The production baseline is retained. Both plan sets coexist during this diagnostic;
+capacity excludes dependency workspaces and RSS is not a standalone A/B measure.
+The driver remains `workspace/experiments/loop_arena_compaction.py`.

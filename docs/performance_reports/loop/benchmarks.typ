@@ -2,6 +2,7 @@
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
 #let sharing = json("data/local-sharing-experiment.json")
+#let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
 #let navy = rgb("#203c60")
 #let blue = rgb("#356b92")
@@ -42,12 +43,14 @@
   parts.first() + "." + decimal + "0" * calc.max(0, digits - decimal.len())
 }
 #let sharing-ms(batch, stage, mode) = fmt(sharing.timings.at(str(batch)).at(stage).at(mode).median_us_per_point / 1000, digits: 2)
+#let arena-ms(batch, stage, mode) = fmt(arena.timings.at(str(batch)).at(stage).at(mode).median_us_per_point / 1000, digits: 2)
 #let label(key) = (
   dy: [$u overline(u) -> e^- e^+$],
   uudd: [$u overline(u) -> d overline(d)$],
   tt: [$u overline(u) -> t overline(t)$],
   qqgg: [$u overline(u) -> g g$],
   gg: [$g g -> g g$],
+  qqggg: [$u overline(u) -> g g g$],
 ).at(key)
 #let names(key) = (dy: "Photon-only Drell–Yan", uudd: "Distinct-flavour quarks", tt: "Stable top pair", qqgg: "Quark annihilation", gg: "Gluon scattering").at(key)
 #let timed(c, b) = c.at("timings", default: (:)).at(str(b), default: (:)).at("median_us_per_point", default: none)
@@ -63,7 +66,8 @@
   )
 }
 #let th(body) = text(fill: white, size: 8.1pt, weight: "semibold", body)
-#let mlstage(c, field) = data.references.at(c.case, default: (:)).at("timings", default: (:)).at("32", default: (:)).at("madloop-instrumented", default: (:)).at("stages", default: (:)).at(field, default: (:)).at("median_us_per_point", default: none)
+#let stage-batch(c) = data.stages.at(c.case).batch_size
+#let mlstage(c, field) = data.references.at(c.case, default: (:)).at("timings", default: (:)).at(str(stage-batch(c)), default: (:)).at("madloop-instrumented", default: (:)).at("stages", default: (:)).at(field, default: (:)).at("median_us_per_point", default: none)
 #let stages(c, field) = data.stages.at(c.case, default: (:)).at(field, default: none)
 
 // Comparison cards follow NinjaRS: value, named reference and multiplier.
@@ -165,7 +169,7 @@
     v(6pt)
     line(length: 100%, stroke: 0.4pt + rule)
     v(3pt)
-    text(size: 7.1pt, fill: navy, weight: "bold")[Stages at $B=32$ · µs/point]
+    text(size: 7.1pt, fill: navy, weight: "bold")[Stages at $B=#stage-batch(c)$ · µs/point]
     linebreak()
     if p == "pyamplicol" {
       detail-line("Numerator", stages(c, "numerator_us"))
@@ -205,55 +209,29 @@
   #v(-2pt)
   #text(12.5pt, fill: luma(85))[Batched Born–loop interference · implementation & live benchmarks]
   #v(3pt)
-  #text(8.8pt, fill: luma(110))[#data.date · measured revision #data.revision · AMD EPYC 9754]
+  #text(8.5pt, fill: luma(110))[#data.date · measured revisions #data.revision / f89249d2 · AMD EPYC 9754]
 ]
 #v(8pt)
 #note[
   *One grid, four providers.* Each coloured box gives *µs per point* at $B=1$
   or $B=128$, plus its multiplier against the fastest existing matched reference
-  (ML, Recola or OL). Generation/setup and $B=32$ instrumented stages appear in
-  neutral lines below. Every result includes Born, all helicities, full SU(3),
+  (ML, Recola or OL). Neutral lines show generation/setup and separately clocked
+  stages at the indicated batch size. Every result includes Born, all helicities, full SU(3),
   UV, model-rule $R_2$ and all three Laurent coefficients.
 ]
 
-= Complete evaluation · latency, throughput and preparation
-Warm values are medians of five calls on a repeated three-point stream.
-Each call recomputes events. *Lower is faster.* Preparation scopes differ by
-provider and are stated explicitly; they carry no speed ratio.
-
-#provider-grid(data.cases.slice(0, 2))
+#v(6pt)
+#provider-grid(data.cases.slice(0, 3))
 #v(7pt)
 #legend
-#v(6pt)
-#grid(columns: (1fr, 1fr), gutter: 13pt,
-  [#text(weight: "bold", fill: navy)[What generation includes]
-   #linebreak()
-   #text(size: 8.7pt)[pyAmpliCol: source through compiled complete plans; imports excluded.
-   ML: model import, source export and static compilation; prebuilt reducers except
-   DY. Recola: parameters, definition and generation. OpenLoops: registration/start
-   of prebuilt libraries, not source generation.]],
-  [#text(weight: "bold", fill: navy)[What warm evaluation includes]
-   #linebreak()
-   #text(size: 8.7pt)[pyAmpliCol includes exact decimal ingress and its Python batch
-   coordinator; providers start with native arrays. Their rescue policies remain
-   active, pyAmpliCol's is off. Output formatting is excluded. Coefficients and
-   points agree; timing boundaries are not identical.]],
-)
-#v(7pt)
-#small[
-  Continued on page 2 with the same provider grid. Warm timings: CPU 382, one
-  thread, shared host. Provider preparation: one fresh process on CPU 380 (ML DY: 381),
-  no filesystem-cache flush or uncertainty estimate. Photon-only DY has no
-  matched Recola/OL control in this suite.
-]
 
 #pagebreak()
 #section-label[MEASUREMENTS · SAME GRID, CONTINUED]
 = Complete evaluation · remaining processes
 #small[Warm boxes: µs per point at $B=1$ and $B=128$. Neutral preparation: seconds.
-Instrumented stage lines: $B=32$, µs per point; no stage-to-stage speed ratio.]
+Instrumented stage lines: $B=32$ for two-to-two, $B=128$ for five-leg; no stage speed ratios.]
 #v(5pt)
-#provider-grid(data.cases.slice(2))
+#provider-grid(data.cases.slice(3))
 #v(7pt)
 #grid(columns: (1fr, 1fr), gutter: 13pt,
   [#text(weight: "bold", fill: navy)[Numerator, reduction and masters]
@@ -270,11 +248,19 @@ Instrumented stage lines: $B=32$, µs per point; no stage-to-stage speed ratio.]
    no LTO; Community opt2. All raw timing samples are retained.]],
 )
 #v(7pt)
-#note[
-  *Development comparison.* All listed pyAmpliCol totals are slower than MadLoop.
-  Acceptance still requires distinct event streams, matched native boundaries
-  and stability criteria, faster than ML and within $1.30 times$ Recola/OL on each
-  designated high-multiplicity case. No generation-time acceptance gate is imposed.
+#text(size: 8.2pt)[
+  Five warm calls on repeated three-point streams; no event reuse. CPU 382, one
+  thread/shared host. pyAmpliCol includes decimal ingress and Python scheduling;
+  providers use native arrays and their rescue policies, while pyAmpliCol rescue
+  is off. Output formatting is excluded. Preparation uses one fresh process on
+  CPU 380 (ML DY: 381), no cache flush or uncertainty estimate; pyAmpliCol imports
+  are excluded. Photon-only DY lacks matched Recola/OL controls.
+]
+#v(3pt)
+#text(size: 8.6pt)[
+  *Development comparison:* pyAmpliCol is slower than ML here. Acceptance requires
+  distinct points, matched native boundaries/stability, faster than ML and within
+  $1.30 times$ Recola/OL per designated high-multiplicity case. Generation has no acceptance gate.
 ]
 
 #pagebreak()
@@ -330,13 +316,14 @@ either singleton selection. Independent MadLoop graph controls give 16 QCD,
   label("tt"), [$1/36$], [Local and external-field UV; $R_2$],
   label("qqgg"), [$1/72$], [Local/field UV; $R_2$],
   label("gg"), [$1/512$], [Local/field UV; $R_2$],
+  label("qqggg"), [$1/216$], [Local/field UV; $R_2$],
 )
 
 The QCD scattering controls use $alpha_s=0.118$, $mu_R=1000$ GeV,
 stable $m_t=173$ GeV, five renormalization flavours and six quarks in loops;
 the other quark masses vanish under explicit control restrictions. Drell–Yan
 uses $alpha^(-1)=132.507$. Initial spin and colour are averaged, and physical
-external helicities are summed. The two final-gluon controls include $1/2$.
+external helicities are summed. Two final gluons include $1/2$, three include $1/6$.
 
 #pagebreak()
 #section-label[ARCHITECTURE · MODEL AND COUNTERTERMS]
@@ -359,18 +346,19 @@ the exact scalar and covariant-kernel representations.
 #v(5pt)
 
 == Exactness begins at input
-Statically identifiable source literals are preserved as text, including long
-decimal and Laurent coefficients. String-valued expressions remain exact.
-Arbitrary Python computations or mutations do not gain an exactness claim
-merely because their imported result is a number. Explicit exact runtime
-overrides and fixed parameters flow through the same retained scalar owner.
+Literal decimal and Laurent source text, exact overrides and fixed parameters
+retain their scalar owner. Imported results of arbitrary Python computation or
+mutation do not acquire exactness. Symbolica performs substitution, series and
+expression preparation. Source helpers retain their branches; native evaluation
+checks each value and active diagnostic. A nonfinite or unsupported branch cannot
+silently succeed. Per-point scales reach the same counterterm scalar program.
 
-Symbolica performs substitution, series extraction and expression preparation.
-Source helper functions and their branch semantics are retained. Each selected
-scalar has a value and an active diagnostic expression; native evaluation
-checks both. A nonfinite or unsupported active branch cannot silently inherit
-a successful amplitude status. Per-point renormalization scales reach the
-same scalar program used by counterterms.
+Request-scoped lowering can omit a basis only when exact declared coupling
+bounds prove it irrelevant. The full source and species-correction eligibility
+remain retained; pruning does not certify a model or its counterterm completion.
+The shared source compiler now prepares bounded complete QCD and neutral-current
+Gmu controls through retained raw models, exact restrictions and model-derived
+states, without named-process dispatch or rounded normalized defaults.
 
 == Tensor structure and physical frame
 Each basis entry retains its scalar coefficient, native Lorentz tensor,
@@ -478,29 +466,30 @@ colour or coefficient preparation. Colour-weight changes invalidate the cached
 plan. The bounded full-colour direct-$R_2$ gluon plan also rebinds its retained
 dimensional DAG and physical/evanescent sectors, including UV and field completion.
 Source-model, formal-colour and correlated plan reuse remain outside this
-checkpoint; reducer Laurent preparation and persistent artifacts remain open.
+checkpoint; reducer Laurent preparation remains a cold binding cost.
 
 #small[
-  *Separate sharing experiment.* On distinct exact energy rescalings of the gluon
-  controls, five alternating calls at $B=32$ and $128$ gave complete medians
+  *Separate sharing experiment.* On distinct exact energy rescalings of gluon
+  controls, five alternating calls at $B=32,128$ gave complete medians
   #sharing-ms(32, "complete", "baseline") → #sharing-ms(32, "complete", "joined") /
   #sharing-ms(128, "complete", "baseline") → #sharing-ms(128, "complete", "joined") ms per point.
-  Loop-coefficient stages rose
-  #sharing-ms(32, "loop_dag_including_io", "baseline") → #sharing-ms(32, "loop_dag_including_io", "joined") /
-  #sharing-ms(128, "loop_dag_including_io", "baseline") → #sharing-ms(128, "loop_dag_including_io", "joined") ms.
-  Exact interning reduced 1,963 local instruction nodes to 1,358; all 186 graph buffers and complete
-  components remained bit-identical. The enlarged active arena and output scatter
-  slowed native execution; a cache-locality explanation remains an inference.
-  Global interning was not adopted. Small shared subcurrents retaining local tiles
-  are an unmeasured next option. CPU 379/shared host; this is not the headline data.
+  Exact interning reduced 1,963 nodes to 1,358 with bit-identical outputs, but native
+  execution slowed. A cache-locality explanation remains an inference; global
+  interning was not adopted. CPU 379/shared host; separate from headline data.
 ]
 
 #small[
-  The staged consumer now uses NinjaRS's generic-any-$n$ extension (`e4c16a7`).
-  A seven-propagator, rank-eight numerator cancelling to a triangle master passes
-  generic double/DD/AP80 and binary64 fast-tensor evaluation. The old six-propagator
-  consumer cap is removed; weighted ranks above $n+1$ still reject. Broader
-  physical multiplicity remains a separate gate. Timing tables keep their snapshot.
+  *Graph-local arena experiment.* Existing lifetime allocation reduced retained
+  arena capacity by 48.4% without changing instructions or 16-row tiles. Complete
+  $B=32,128$ medians were
+  #arena-ms(32, "complete", "baseline") → #arena-ms(32, "complete", "compact") /
+  #arena-ms(128, "complete", "baseline") → #arena-ms(128, "complete", "compact") ms per point; loop DAG
+  medians were
+  #arena-ms(32, "loop_dag_including_io", "baseline") → #arena-ms(32, "loop_dag_including_io", "compact") /
+  #arena-ms(128, "loop_dag_including_io", "baseline") → #arena-ms(128, "loop_dag_including_io", "compact") ms.
+  Binary64 graph coefficients and complete components were bit-identical; DD/AP80 layout controls passed. No speed benefit
+  was established, so the production layout remains unchanged. Same distinct-point
+  protocol/CPU; both plans coexisted and capacity excludes dependency buffers.
 ]
 
 #pagebreak()
@@ -602,11 +591,23 @@ reduce independently and combine by Laurent multiplication. A newer dense-$mu$
 numerator adapter is available as an additive internal option; the headline
 timings specify the actual `fast` engine they use.
 
+The staged generic-any-$n$ consumer (`e4c16a7`) removes the old six-propagator
+cap. A seven-propagator rank-eight numerator cancelling to a triangle master
+passes generic double/DD/AP80 and binary64 fast-tensor evaluation; broader
+physical multiplicity remains a separate gate. Rank above $n+1$ still rejects.
+
 The native module and Community producer use the same underlying numerical and
 symbolic owners. Python distribution and Rust kernel version labels are recorded
 separately. A genuine isolated development-package install now passes a public
-ordinary-tree generation/evaluation smoke. Publishable dependency packaging,
-loop artifacts and cross-language virtual SDK delivery remain open.
+ordinary-tree generation/evaluation smoke.
+
+An internal portable control now saves complete four-quark model-rule plans in
+the existing PACBIN container. The Rust reader validates saved evaluator shapes,
+order axes, bindings and layouts; fresh double, DoubleFloat and AP views execute
+without the source model or producer graphs. This checkpoint has nonzero UV and
+$R_2$, but no external fields. Direct/source/formal/correlated plans and rescue
+are not yet admitted there. Public loop artifacts and standalone SDK execution
+remain open; the internal coordinator still invokes existing native operations.
 
 == Success, accuracy and rescue are different facts
 A reducer's success flag is not an accuracy certificate. Native checks reject
@@ -702,11 +703,11 @@ complete answer cannot conceal a wrong component.
 
 #tab((1.4fr, 2.6fr), left-columns: (0, 1),
   table.header(th[Area], th[Current boundary]),
-  [Complete QCD], [Internal two-to-two DY, four-quark, top-pair, quark/gluon and gluon controls; all three carriers. The complete five-leg quark-to-three-gluon control also passes in all three carriers after the counterterm witness fix; no timing row yet.],
+  [Complete QCD], [Internal two-to-two DY, four-quark, top-pair, quark/gluon and gluon controls; all three carriers. The complete five-leg quark-to-three-gluon control passes after the counterterm witness fix and now has a separate measured row.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
-  [Public delivery], [A genuine development install passes the public tree smoke; loop artifacts, commands and SDK/UMAMI integration remain open.],
+  [Public delivery], [A development install passes the public tree smoke. An internal source-free PACBIN model-rule four-quark roundtrip passes all three carriers; public loop artifacts, commands and SDK/UMAMI remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
@@ -719,8 +720,7 @@ unavailable public OpenLoops channel is not invented for comparison.
 
 The generic-any-$n$ consumer is adopted after a seven-propagator anchor in all
 three carriers; high-multiplicity physical validation is still a separate gate.
-Rank above the supported $n+1$ domain must reject. Required progress also includes broader cold-plan coverage,
-persistent artifacts, optional FFT,
+Rank above the supported $n+1$ domain must reject. Required progress also includes broader cold-plan and portable-plan coverage, optional FFT,
 complete correlation/mapping transport and broader certified model coverage.
 These requirements remain visible even when a smaller control is fast.
 

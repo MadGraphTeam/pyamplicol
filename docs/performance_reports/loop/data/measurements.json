@@ -523,6 +523,73 @@
       },
       "first_evaluation_s": 11.531704595021438,
       "peak_rss_mib": 1085.09375
+    },
+    {
+      "case": "qqggg",
+      "process": "u u~ > g g g",
+      "commit": "f89249d278a52ecfe2fc8b53ba87fd31532c5a56",
+      "source_generation_s": 0.4502659779973328,
+      "program_generation_s": 862.4205735480064,
+      "generation_s": 862.8708395260037,
+      "cpu": 382,
+      "cpu_model": "AMD EPYC 9754 128-Core Processor",
+      "scope": "Complete internal model-rule Born-loop interference, full SU(3), all physical helicities, all three poles, local UV/R2 and external fields. Python batch scheduling and exact decimal input included; decimal output formatting and validation excluded. Warm repeated three-point control stream; no per-point cached results. No rescue or cross-precision verification; reducer-success accuracy not established. Not provider acceptance.",
+      "generation_scope": "Fresh process after imports: source UFO capture/lowering, graph generation, recurrence/colour/CT preparation and binary64 JIT/reducer plan construction. Source/build installation, imports and warmup excluded. One cold observation, no uncertainty estimate.",
+      "arithmetic": "double",
+      "reduction_engine": "fast",
+      "coefficient_engine": "jit",
+      "r2_strategy": "model",
+      "counts": {
+        "born_graphs": 16,
+        "loop_graphs": 556,
+        "families": 119,
+        "helicities": 32,
+        "counterterms": 563,
+        "external_fields": 144
+      },
+      "timings": {
+        "1": {
+          "median_us_per_point": 194467.91399968788,
+          "min_us_per_point": 179652.05101063475,
+          "max_us_per_point": 239723.8250123337,
+          "samples_us_per_point": [
+            194467.91399968788,
+            239723.8250123337,
+            212259.81903262436,
+            190107.38498764113,
+            179652.05101063475
+          ],
+          "checksum_all_poles_and_born": [
+            1.3175381102260191e-05,
+            1.3175381102260191e-05,
+            1.3175381102260191e-05,
+            1.3175381102260191e-05,
+            1.3175381102260191e-05
+          ]
+        },
+        "128": {
+          "median_us_per_point": 125357.19261722988,
+          "min_us_per_point": 121752.65072619368,
+          "max_us_per_point": 130631.11165638475,
+          "samples_us_per_point": [
+            125251.61781240968,
+            121752.65072619368,
+            125357.19261722988,
+            130631.11165638475,
+            127585.21610930984
+          ],
+          "checksum_all_poles_and_born": [
+            0.004442487400517826,
+            0.004442487400517826,
+            0.004442487400517826,
+            0.004442487400517826,
+            0.004442487400517826
+          ]
+        }
+      },
+      "first_evaluation_s": 18.423702505999245,
+      "peak_rss_mib": 5328.69921875,
+      "revision_note": "The process imported this revision when launched; the workspace HEAD advanced during its cold construction. This field records the executed source, rather than the later HEAD sampled by the original timer."
     }
   ],
   "stages": {
@@ -1473,6 +1540,199 @@
       "masters_us": 68.75946875000001,
       "instrumented_total_us": 14166.838218443445,
       "other_work_us": 4515.393331186742
+    },
+    "qqggg": {
+      "case": "qqggg",
+      "batch_size": 128,
+      "cpu": 382,
+      "physics_revision": "f89249d278a52ecfe2fc8b53ba87fd31532c5a56",
+      "profiling_revision": "f89249d278a52ecfe2fc8b53ba87fd31532c5a56",
+      "scope": "Instrumented diagnostic B128, five blocks, the same retained plan after a separate warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+      "samples": [
+        {
+          "parameters": 0.08515598892699927,
+          "born_coefficients": 157.6846311763802,
+          "loop_coefficients": 55335.562919026415,
+          "born_projection": 37.047257592348615,
+          "born_weighting": 45302.27439227019,
+          "family_masses": 7.537401415902423,
+          "bare_assembly": 2.9017264751018956,
+          "counterterm_scalars": 73.9112888368254,
+          "counterterm_coefficients": 7434.1909626127745,
+          "field_scalars": 7.453540092683397,
+          "ct_projection": 5991.4671714977885,
+          "complete_assembly": 0.14875013221171685,
+          "numerator_us": 57626.92547371391,
+          "reduction_us": 284.0031484375,
+          "masters_us": 302.49234375,
+          "instrumented_total_us": 131524.25941416368,
+          "other_work_us": 73310.83844826228,
+          "raw_native": {
+            "engine_calls": 119.0,
+            "engine_excluding_masters_seconds": 0.32862605800000005,
+            "engine_seconds": 0.367345078,
+            "master_calls": 274.0,
+            "master_rows": 94720.0,
+            "masters_seconds": 0.03871902,
+            "numerator_callback_seconds": 0.292273655,
+            "numerator_calls": 792.0,
+            "numerator_preparation_seconds": 0.0010207519999999998,
+            "numerator_rows": 154880.0,
+            "reduction_exclusive_seconds": 0.036352403
+          },
+          "checksum_all_poles_and_born": 0.004442487400517826
+        },
+        {
+          "parameters": 0.19757817426580004,
+          "born_coefficients": 168.29662536110845,
+          "loop_coefficients": 52357.833856603975,
+          "born_projection": 38.222734019655036,
+          "born_weighting": 46284.45449088758,
+          "family_masses": 7.125678621378029,
+          "bare_assembly": 4.852046913583763,
+          "counterterm_scalars": 110.81707043558708,
+          "counterterm_coefficients": 8433.249304744095,
+          "field_scalars": 9.258561476599425,
+          "ct_projection": 5864.780453521234,
+          "complete_assembly": 0.14320312402560376,
+          "numerator_us": 54492.995130041476,
+          "reduction_us": 265.5945156250001,
+          "masters_us": 283.5306640624999,
+          "instrumented_total_us": 129626.00278115133,
+          "other_work_us": 74583.88247142234,
+          "raw_native": {
+            "engine_calls": 119.0,
+            "engine_excluding_masters_seconds": 0.30643463,
+            "engine_seconds": 0.34272655500000004,
+            "master_calls": 274.0,
+            "master_rows": 94720.0,
+            "masters_seconds": 0.03629192499999999,
+            "numerator_callback_seconds": 0.272438532,
+            "numerator_calls": 792.0,
+            "numerator_preparation_seconds": 0.0008621110000000004,
+            "numerator_rows": 154880.0,
+            "reduction_exclusive_seconds": 0.03399609800000001
+          },
+          "checksum_all_poles_and_born": 0.004442487400517826
+        },
+        {
+          "parameters": 0.07937524060253054,
+          "born_coefficients": 157.59925918246154,
+          "loop_coefficients": 54700.50560143136,
+          "born_projection": 36.68898443720536,
+          "born_weighting": 42485.22890611639,
+          "family_masses": 6.7626097006723285,
+          "bare_assembly": 6.05939840170322,
+          "counterterm_scalars": 66.34959390794393,
+          "counterterm_coefficients": 7082.3641581228,
+          "field_scalars": 7.627844752278179,
+          "ct_projection": 5228.181351412786,
+          "complete_assembly": 0.19289063857286237,
+          "numerator_us": 56775.97740611886,
+          "reduction_us": 267.21631249999996,
+          "masters_us": 276.13760156249987,
+          "instrumented_total_us": 124871.8414844916,
+          "other_work_us": 67552.51016431024,
+          "raw_native": {
+            "engine_calls": 119.0,
+            "engine_excluding_masters_seconds": 0.29820385100000013,
+            "engine_seconds": 0.3335494639999999,
+            "master_calls": 274.0,
+            "master_rows": 94720.0,
+            "masters_seconds": 0.035345612999999984,
+            "numerator_callback_seconds": 0.2640001629999999,
+            "numerator_calls": 792.0,
+            "numerator_preparation_seconds": 0.0016602279999999997,
+            "numerator_rows": 154880.0,
+            "reduction_exclusive_seconds": 0.034203687999999996
+          },
+          "checksum_all_poles_and_born": 0.004442487400517826
+        },
+        {
+          "parameters": 0.181476934812963,
+          "born_coefficients": 224.81064070234424,
+          "loop_coefficients": 53312.59976128422,
+          "born_projection": 38.36907035292825,
+          "born_weighting": 46838.48402919466,
+          "family_masses": 7.321579232666409,
+          "bare_assembly": 4.501499915932072,
+          "counterterm_scalars": 84.79536654704134,
+          "counterterm_coefficients": 7629.524760886852,
+          "field_scalars": 7.060774805722758,
+          "ct_projection": 5287.956609663524,
+          "complete_assembly": 0.16468766261823475,
+          "numerator_us": 55493.65340190922,
+          "reduction_us": 268.474265625,
+          "masters_us": 288.43753124999995,
+          "instrumented_total_us": 129807.59885158477,
+          "other_work_us": 73757.03365280054,
+          "raw_native": {
+            "engine_calls": 119.0,
+            "engine_excluding_masters_seconds": 0.3125242980000001,
+            "engine_seconds": 0.34944430200000004,
+            "master_calls": 274.0,
+            "master_rows": 94720.0,
+            "masters_seconds": 0.03692000399999999,
+            "numerator_callback_seconds": 0.27815959199999996,
+            "numerator_calls": 792.0,
+            "numerator_preparation_seconds": 0.0010152740000000003,
+            "numerator_rows": 154880.0,
+            "reduction_exclusive_seconds": 0.034364706
+          },
+          "checksum_all_poles_and_born": 0.004442487400517826
+        },
+        {
+          "parameters": 0.06093750926083885,
+          "born_coefficients": 155.31393910350744,
+          "loop_coefficients": 51946.54348088079,
+          "born_projection": 37.49046891243779,
+          "born_weighting": 46487.69898221872,
+          "family_masses": 7.339023795793764,
+          "bare_assembly": 2.7542264433577657,
+          "counterterm_scalars": 94.52517315367004,
+          "counterterm_coefficients": 8152.909065302083,
+          "field_scalars": 7.772780008963309,
+          "ct_projection": 5635.631125187501,
+          "complete_assembly": 0.13101544027449563,
+          "numerator_us": 54163.700910568296,
+          "reduction_us": 268.10100781250003,
+          "masters_us": 293.6001953125,
+          "instrumented_total_us": 128915.56578142627,
+          "other_work_us": 74190.16366773297,
+          "raw_native": {
+            "engine_calls": 119.0,
+            "engine_excluding_masters_seconds": 0.3171987189999999,
+            "engine_seconds": 0.35477954399999995,
+            "master_calls": 274.0,
+            "master_rows": 94720.0,
+            "masters_seconds": 0.037580825,
+            "numerator_callback_seconds": 0.28288179000000013,
+            "numerator_calls": 792.0,
+            "numerator_preparation_seconds": 0.0009143609999999999,
+            "numerator_rows": 154880.0,
+            "reduction_exclusive_seconds": 0.034316929
+          },
+          "checksum_all_poles_and_born": 0.004442487400517826
+        }
+      ],
+      "parameters": 0.08515598892699927,
+      "born_coefficients": 157.6846311763802,
+      "loop_coefficients": 53312.59976128422,
+      "born_projection": 37.49046891243779,
+      "born_weighting": 46284.45449088758,
+      "family_masses": 7.321579232666409,
+      "bare_assembly": 4.501499915932072,
+      "counterterm_scalars": 84.79536654704134,
+      "counterterm_coefficients": 7629.524760886852,
+      "field_scalars": 7.627844752278179,
+      "ct_projection": 5635.631125187501,
+      "complete_assembly": 0.14875013221171685,
+      "numerator_us": 55493.65340190922,
+      "reduction_us": 268.10100781250003,
+      "masters_us": 288.43753124999995,
+      "instrumented_total_us": 129626.00278115133,
+      "other_work_us": 73757.03365280054,
+      "revision_note": "The process imported this revision when launched; the workspace HEAD advanced during its cold construction. This field records the executed source, rather than the later HEAD sampled by the original timer."
     }
   },
   "references": {
@@ -3304,6 +3564,345 @@
           }
         }
       }
+    },
+    "qqggg": {
+      "case": "qqggg",
+      "cpu": 382,
+      "fixture": {
+        "process": "u u~ > g g g",
+        "born_orders": {
+          "QCD": 3,
+          "QED": 0
+        },
+        "loop_orders": {
+          "QCD": 5,
+          "QED": 0
+        },
+        "squared_orders": {
+          "QCD": 8,
+          "QED": 0
+        },
+        "parameters": {
+          "alpha_s": 0.118,
+          "mu": 1000.0,
+          "mt": 173.0,
+          "mb": 0.0
+        },
+        "renormalization_flavours": 5,
+        "loop_quark_flavours": 6,
+        "external_momenta": "positive-energy incoming legs 1,2; outgoing legs 3,4,5; E,px,py,pz in GeV",
+        "normalization": "initial spin/colour average and final identical-gluon factor 1/6; physical couplings; Cepsilon=(4pi)^epsilon/Gamma(1-epsilon)",
+        "points": [
+          [
+            [
+              663.0,
+              0.0,
+              0.0,
+              663.0
+            ],
+            [
+              663.0,
+              0.0,
+              0.0,
+              -663.0
+            ],
+            [
+              331.5,
+              -12.24,
+              315.18,
+              -102.0
+            ],
+            [
+              442.0,
+              -112.24,
+              127.68,
+              408.0
+            ],
+            [
+              552.5,
+              124.48,
+              -442.86,
+              -306.0
+            ]
+          ],
+          [
+            [
+              663.0,
+              0.0,
+              0.0,
+              663.0
+            ],
+            [
+              663.0,
+              0.0,
+              0.0,
+              -663.0
+            ],
+            [
+              331.5,
+              116.16,
+              302.4,
+              70.38
+            ],
+            [
+              442.0,
+              -333.84,
+              62.4,
+              282.88
+            ],
+            [
+              552.5,
+              217.68,
+              -364.8,
+              -353.26
+            ]
+          ],
+          [
+            [
+              663.0,
+              0.0,
+              0.0,
+              663.0
+            ],
+            [
+              663.0,
+              0.0,
+              0.0,
+              -663.0
+            ],
+            [
+              331.5,
+              -92.4,
+              164.88,
+              -272.34
+            ],
+            [
+              442.0,
+              -332.4,
+              -285.12,
+              -59.84
+            ],
+            [
+              552.5,
+              424.8,
+              120.24,
+              332.18
+            ]
+          ]
+        ]
+      },
+      "blocks": 5,
+      "warmup": "existing provider initialization loop before measured blocks",
+      "timing_scope": "Native full provider calls over repeated three-point control stream; startup, initialization, input parsing/output excluded. Native per-point APIs are called in a C++ loop; not a batch API. Rescue requested by provider remains inside timing. No acceptance claim.",
+      "stage_scope": {
+        "loop_coefficients": "COEF_CONSTRUCTION including MP equivalents; external/shared wavefunctions produced by HELAS are excluded",
+        "born_counterterm_helas": "HELAS_CALLS_AMPB (Born and local UV/R2 plus shared wavefunctions) and HELAS_CALLS_UVCT (UVtree/external-field) including MP equivalents",
+        "reduction_masters": "LOOP_CT_CALLS including native reducer/master calls and stability retries",
+        "residual": "total minus disjoint measured call windows: initial Born-squared calculation, colour/order/helicity and CT interference, stability coordinator, clock overhead"
+      },
+      "validation": "All original/instrumented provider Born and Laurent coefficients agree with the independent MadLoop component capture; all providers agree with each other, and the universal double-pole relation passes.",
+      "timings": {
+        "1": {
+          "madloop": {
+            "median_us_per_point": 36056.102999999996,
+            "min_us_per_point": 32058.575999999997,
+            "max_us_per_point": 36762.816,
+            "samples_us_per_point": [
+              36762.816,
+              32058.575999999997,
+              32741.328,
+              36142.593,
+              36056.102999999996
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 34170.915,
+            "min_us_per_point": 33072.631,
+            "max_us_per_point": 36849.327000000005,
+            "samples_us_per_point": [
+              34170.915,
+              33918.144,
+              36849.327000000005,
+              33072.631,
+              34813.477
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 24925.107000000004,
+                "min_us_per_point": 24477.704999999994,
+                "max_us_per_point": 26187.852000000006,
+                "samples_us_per_point": [
+                  24925.107000000004,
+                  24866.204,
+                  26187.852000000006,
+                  24477.704999999994,
+                  25528.787000000004
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 626.9150000000001,
+                "min_us_per_point": 547.6930000000001,
+                "max_us_per_point": 656.025,
+                "samples_us_per_point": [
+                  626.9150000000001,
+                  547.6930000000001,
+                  591.8330000000001,
+                  646.0319999999999,
+                  656.025
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 2515.02,
+                "min_us_per_point": 2252.969,
+                "max_us_per_point": 3583.666,
+                "samples_us_per_point": [
+                  2492.68,
+                  2695.931,
+                  3583.666,
+                  2252.969,
+                  2515.02
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 6113.644999999998,
+                "min_us_per_point": 5695.925000000001,
+                "max_us_per_point": 6485.975999999998,
+                "samples_us_per_point": [
+                  6126.213000000002,
+                  5808.315999999994,
+                  6485.975999999998,
+                  5695.925000000001,
+                  6113.644999999998
+                ]
+              }
+            }
+          },
+          "recola": {
+            "median_us_per_point": 81543.795,
+            "min_us_per_point": 80728.072,
+            "max_us_per_point": 84582.218,
+            "samples_us_per_point": [
+              81543.795,
+              80728.072,
+              84582.218,
+              81101.823,
+              82225.048
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 36927.585999999996,
+            "min_us_per_point": 36233.534,
+            "max_us_per_point": 56318.868,
+            "samples_us_per_point": [
+              56318.868,
+              38067.861000000004,
+              36927.585999999996,
+              36233.534,
+              36450.814
+            ]
+          }
+        },
+        "128": {
+          "madloop": {
+            "median_us_per_point": 33494.1906328125,
+            "min_us_per_point": 32786.3171640625,
+            "max_us_per_point": 37096.8468203125,
+            "samples_us_per_point": [
+              33494.1906328125,
+              32962.7876015625,
+              32786.3171640625,
+              37096.8468203125,
+              34276.46596875
+            ]
+          },
+          "madloop-instrumented": {
+            "median_us_per_point": 35577.4524140625,
+            "min_us_per_point": 33329.8246171875,
+            "max_us_per_point": 36492.407999999996,
+            "samples_us_per_point": [
+              33956.6446171875,
+              33329.8246171875,
+              35577.4524140625,
+              36492.407999999996,
+              36474.047687499995
+            ],
+            "stages": {
+              "loop_coefficients": {
+                "median_us_per_point": 26380.168101562507,
+                "min_us_per_point": 24723.458726562494,
+                "max_us_per_point": 27125.492375000013,
+                "samples_us_per_point": [
+                  25336.84220312497,
+                  24723.458726562494,
+                  26380.168101562507,
+                  27125.492375000013,
+                  27012.994789062497
+                ]
+              },
+              "born_counterterm_helas": {
+                "median_us_per_point": 689.3491718750007,
+                "min_us_per_point": 625.9306171875016,
+                "max_us_per_point": 714.3882500000019,
+                "samples_us_per_point": [
+                  714.3882500000019,
+                  625.9306171875016,
+                  689.3491718750007,
+                  692.0175546875001,
+                  630.8505781250003
+                ]
+              },
+              "reduction_masters": {
+                "median_us_per_point": 2465.7909687499996,
+                "min_us_per_point": 2324.9431328125,
+                "max_us_per_point": 2533.947429687499,
+                "samples_us_per_point": [
+                  2324.9431328125,
+                  2355.796265625001,
+                  2465.7909687499996,
+                  2501.2224921875,
+                  2533.947429687499
+                ]
+              },
+              "residual": {
+                "median_us_per_point": 6042.144171874997,
+                "min_us_per_point": 5580.471031250024,
+                "max_us_per_point": 6296.254890624999,
+                "samples_us_per_point": [
+                  5580.471031250024,
+                  5624.639007812505,
+                  6042.144171874997,
+                  6173.675578124986,
+                  6296.254890624999
+                ]
+              }
+            }
+          },
+          "recola": {
+            "median_us_per_point": 88558.28584375,
+            "min_us_per_point": 85369.535390625,
+            "max_us_per_point": 88711.0078203125,
+            "samples_us_per_point": [
+              88303.8228125,
+              88558.28584375,
+              88711.0078203125,
+              85369.535390625,
+              88620.1843828125
+            ]
+          },
+          "openloops": {
+            "median_us_per_point": 43380.271609375,
+            "min_us_per_point": 40693.548992187505,
+            "max_us_per_point": 50298.9148125,
+            "samples_us_per_point": [
+              41378.404,
+              44105.4869453125,
+              50298.9148125,
+              43380.271609375,
+              40693.548992187505
+            ]
+          }
+        }
+      }
     }
   },
   "reference_protocol": {
@@ -3320,6 +3919,10 @@
     "scope": "Fresh full 2-to-2 controls on repeated three-point streams. Five warm native blocks at each batch. Total timers use original provider objects, exclude input/output and initialization, include provider numerical checks/rescue. Not an acceptance benchmark; pyAmpliCol comparator includes Python scheduling and exact decimal ingress while these timers start with binary64 arrays. Small repeated controls and provider cache policies differ from broad production phase space.",
     "madloop_stage_scope": "Disjoint wall-clock call windows in copied loop_matrix/mp_compute_loop_coefs objects. COEF_CONSTRUCTION excludes shared HELAS work; HELAS contains Born/local UV/R2/UVtree/external fields and shared wavefunctions; LOOP_CT_CALLS includes reducer interface and masters, with retries. No outer MP timer. Residual includes initial Born-squared, helicity/order/colour/CT interference, coordinator and clocks. Stage medians belong to separate instrumented observations; medians need not add to total.",
     "cms_status": "Prior CMS audit frozen; no CMS/provider physics mutation for this timing task.",
-    "dy_unavailable": "Existing DY control is photon-only and only has a matched MadLoop wrapper; Recola/OpenLoops omitted, not zero."
+    "dy_unavailable": "Existing DY control is photon-only and only has a matched MadLoop wrapper; Recola/OpenLoops omitted, not zero.",
+    "additional_scope": "The separate five-leg 2-to-3 qqggg observation uses the same complete-call protocol at B1/B128 and instrumented stages at B128. Original five 2-to-2 rows retain fa599885; qqggg executed f89249d2."
+  },
+  "additional_revisions": {
+    "qqggg": "f89249d278a52ecfe2fc8b53ba87fd31532c5a56"
   }
 }

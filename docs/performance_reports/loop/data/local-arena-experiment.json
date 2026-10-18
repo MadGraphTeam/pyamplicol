@@ -1,0 +1,151 @@
+{
+  "commit": "a738b6a39f682891728b20915a37a4165ebbd7c9",
+  "generation_s": 88.65683639998315,
+  "cpu": 379,
+  "scope": "Graph-local liveness using existing direct_arena allocator; all kernel states/order, 16row tiles, graph/family/color and complete UV/R2 paths unchanged. No event-result cache. Isolated native candidate; same program, two coexisting sets of loop plans.",
+  "timings": {
+    "32": {
+      "complete": {
+        "baseline": {
+          "median_us_per_point": 14226.128343580058,
+          "samples_us_per_point": [
+            13347.957750738715,
+            14226.128343580058,
+            14542.246561177308,
+            14549.857218298712,
+            13324.070469025173
+          ]
+        },
+        "compact": {
+          "median_us_per_point": 13548.822031225427,
+          "samples_us_per_point": [
+            13656.27937593672,
+            12883.724219136639,
+            13548.822031225427,
+            13211.484374551219,
+            14746.68993796513
+          ]
+        }
+      },
+      "loop_dag_including_io": {
+        "baseline": {
+          "median_us_per_point": 8138.821343891323,
+          "samples_us_per_point": [
+            8722.736280105892,
+            8075.506060777116,
+            8345.304062459036,
+            8138.821343891323,
+            8079.772313067224
+          ]
+        },
+        "compact": {
+          "median_us_per_point": 8728.957905987045,
+          "samples_us_per_point": [
+            8728.957905987045,
+            7931.677000669879,
+            8791.790343821049,
+            8759.642063523643,
+            8411.447812250117
+          ]
+        }
+      },
+      "workspace_capacity": {
+        "baseline": [
+          1615952,
+          652736,
+          437792
+        ],
+        "compact": [
+          833296,
+          652736,
+          437792
+        ]
+      },
+      "executed_graphs": 137,
+      "all_graphs": 186,
+      "parity": "Bit-identical all loop coefficients and complete components."
+    },
+    "128": {
+      "complete": {
+        "baseline": {
+          "median_us_per_point": 13598.982023268036,
+          "samples_us_per_point": [
+            14225.504593923688,
+            13445.732851323555,
+            13716.037437461637,
+            13186.733086058666,
+            13598.982023268036
+          ]
+        },
+        "compact": {
+          "median_us_per_point": 14055.734265184583,
+          "samples_us_per_point": [
+            14671.0214844461,
+            14055.734265184583,
+            14330.566289117996,
+            13463.651062465942,
+            13564.407656303956
+          ]
+        }
+      },
+      "loop_dag_including_io": {
+        "baseline": {
+          "median_us_per_point": 8026.903898553428,
+          "samples_us_per_point": [
+            8619.136882771272,
+            8013.601585844299,
+            8020.273171950976,
+            8305.32218742519,
+            8026.903898553428
+          ]
+        },
+        "compact": {
+          "median_us_per_point": 8555.652156246651,
+          "samples_us_per_point": [
+            8573.832859383401,
+            7803.891781350103,
+            8711.345625215472,
+            8555.652156246651,
+            8249.968757809256
+          ]
+        }
+      },
+      "workspace_capacity": {
+        "baseline": [
+          1615952,
+          652736,
+          437792
+        ],
+        "compact": [
+          833296,
+          652736,
+          437792
+        ]
+      },
+      "executed_graphs": 137,
+      "all_graphs": 186,
+      "parity": "Bit-identical all loop coefficients and complete components."
+    }
+  },
+  "compact_bind_s": 0.036489063990302384,
+  "first_complete_s": 10.810519405000377,
+  "peak_rss_mib": 3428.19140625,
+  "higher_carrier_layout_checks": [
+    {
+      "arithmetic": "double-double",
+      "precision": null,
+      "graphs": 137,
+      "parity": "exact",
+      "scope": "Native promoted identical physical inputs; no higher-accuracy physics claim."
+    },
+    {
+      "arithmetic": "arbitrary",
+      "precision": 80,
+      "graphs": 137,
+      "parity": "exact",
+      "scope": "Native promoted identical physical inputs; no higher-accuracy physics claim."
+    }
+  ],
+  "edge_checks": "Changed alpha_s/topmass/scale, empty and B3 tail complete outputs bit-identical.",
+  "memory_scope": "Both sets coexist; arena/gather/output capacities exclude dependency/JIT buffers. RSS is not a standalone A/B memory comparison."
+}
