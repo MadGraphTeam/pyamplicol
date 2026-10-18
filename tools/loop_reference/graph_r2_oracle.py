@@ -16,7 +16,7 @@ from pyamplicol.loops.recurrence import (
 )
 
 
-def graph_full_dimension_numerator(recurrence, bindings):
+def graph_full_dimension_numerator(recurrence, bindings, *, dimension_value=None):
     """Trace the unmodified source graph in D before physical materialization."""
     from symbolica.community import hepkit as h
 
@@ -68,6 +68,10 @@ def graph_full_dimension_numerator(recurrence, bindings):
         )
     )
     trace = t.TensorExpression(trace.to_expression().replace_multiple(replacements))
+    if dimension_value is not None:
+        trace = t.TensorExpression(
+            trace.to_expression().replace(dimension, dimension_value)
+        )
     if dimension in trace.to_expression().get_all_symbols():
         raise NotImplementedError(
             "source graph retained an unsupported dimensional contraction"
