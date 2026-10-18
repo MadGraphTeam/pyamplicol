@@ -50,12 +50,13 @@ def main():
         default="uudd",
     )
     args = parser.parse_args()
-    if args.case == "drell-yan" and (args.recola or args.openloops):
-        parser.error("the photon-only Drell-Yan control currently supports MadLoop")
+    if args.case == "drell-yan" and args.openloops:
+        parser.error("the photon-only Drell-Yan control has no matched OpenLoops library")
     source = Path(__file__).resolve().parent
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
     case_defines = {
+        "drell-yan": ["-DLOOP_REFERENCE_DRELL_YAN", "-DLOOP_REFERENCE_QCD_BORN_POWER=0"],
         "top-pair": ["-DLOOP_REFERENCE_TOP_PAIR"],
         "gluon-scattering": ["-DLOOP_REFERENCE_GLUON_SCATTERING"],
         "quark-gluon": ["-DLOOP_REFERENCE_QUARK_GLUON"],

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: 0BSD
 #include "native_driver.hpp"
 extern "C" {
-void reference_recola_init(double, double, double, double);
+void reference_recola_init(double, double, double, double, double);
 void reference_recola_evaluate(const double *, double *);
 void reference_recola_finish();
 }
@@ -9,7 +9,7 @@ void reference_recola_finish();
 struct RecolaProvider {
   static constexpr const char *name = "Recola-2.3.0-SM-2.2.3";
   explicit RecolaProvider(const loop_reference::Parameters &p) {
-    reference_recola_init(p.alpha_s, p.mu, p.mt, p.mb);
+    reference_recola_init(p.alpha_s, p.mu, p.mt, p.mb, p.inverse_alpha_em);
   }
   ~RecolaProvider() { reference_recola_finish(); }
   loop_reference::Result evaluate(const loop_reference::Point &point) {

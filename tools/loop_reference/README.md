@@ -111,11 +111,18 @@ timings from this control do not establish that baseline.
 
 For the photon-only Drell–Yan control, replace the `generate` line with
 `generate u u~ > e- e+ / z QCD=0 QED=2 [virt=QCD]` and use a separate
-workspace output. Build with `--case drell-yan --madloop OUTPUT`; run with
-`--fixture tools/loop_reference/drell_yan_qcd.json --providers madloop`.
-The other two native drivers are specific to the four-quark control and
-cannot be used for the photon-only fixture. Both controls set the inverse
-electromagnetic coupling explicitly (132.507 by default).
+workspace output. Build with `--case drell-yan --madloop OUTPUT` and/or
+`--recola RECOLA_SOURCE`; run with
+`--fixture tools/loop_reference/drell_yan_qcd.json --providers madloop recola`.
+The Recola bridge uses its public `switchoff_coupling3_rcl('Z','e-','e+')`
+before generation to remove Z exchange, sets a massless electron, and selects
+Born/loop powers zero/two in the strong coupling. Both providers set the inverse
+electromagnetic coupling explicitly (132.507 by default). The Born and all
+three Laurent coefficients agree with the independent form factor below at
+all three fixture points and at renormalization scales 1000 and 700 GeV.
+The matched photon-only OpenLoops library remains unavailable in this suite;
+this restriction is not a claim about either provider's ordinary Drell–Yan
+capability.
 
 For stable top-pair production, use `generate u u~ > t t~ QED=0 [virt=QCD]`
 and another standalone output. Install the OpenLoops `pptt` library and build
@@ -230,6 +237,23 @@ OpenLoops explicitly sets `truepoles=1`, `polenorm=0`, `ct_on=1`, `r2_on=1`,
 `compute_ir_poles=1`; its `NLO-IR1/2` values come from repeated integral
 evaluation. That extra work remains inside its timing. MadLoop returns its
 computed Laurent coefficients directly, without Born or alpha_s division.
+
+In OpenLoops 2.1.5, `truepoles=1` disables the Collier cache and the generated
+`vamp2pc` wrapper calls the complete amplitude three times with different pole
+parameters. This is a materially different timing scope from an ordinary
+finite-only production call. Do not replace these actual coefficients with
+IR-operator predictions to improve benchmark numbers. In particular, identical
+repeated points may hit OpenLoops' event-result cache in a finite-only diagnostic;
+such timings cannot stand in for the distinct-point acceptance workload.
+
+Record the generated-process compilation settings separately from the generic
+library settings. The pinned release defaults to `loop_optimisation = -O0`,
+while generic and Born kernels use `-O2`. The process metadata reports
+`OLMode=3` for the installed `ppjj` channels, so the default compilation flags
+do not mean that the obsolete OpenLoops 1 algorithm was selected. An optimized
+process-library comparison must be validated and timed in its own build before
+replacing any existing measurements; keep normal hybrid precision and actual
+poles enabled.
 
 Alongside pairwise provider agreement, the runner checks the analytic Born
 value `4/9 * g_s^4 * (t^2+u^2)/s^2` and universal double pole

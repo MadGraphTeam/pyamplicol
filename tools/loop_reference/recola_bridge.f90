@@ -7,11 +7,11 @@
 #ifndef LOOP_REFERENCE_QCD_BORN_POWER
 #define LOOP_REFERENCE_QCD_BORN_POWER 2
 #endif
-subroutine reference_recola_init(alpha_s, mu, mt, mb) bind(C)
+subroutine reference_recola_init(alpha_s, mu, mt, mb, inverse_alpha_em) bind(C)
   use iso_c_binding
   use recola
   implicit none
-  real(c_double), value :: alpha_s, mu, mt, mb
+  real(c_double), value :: alpha_s, mu, mt, mb, inverse_alpha_em
   call set_pole_mass_top_rcl(mt, 0d0)
   call set_pole_mass_bottom_rcl(mb, 0d0)
   call set_alphas_rcl(alpha_s, mu, 5)
@@ -21,7 +21,14 @@ subroutine reference_recola_init(alpha_s, mu, mt, mb) bind(C)
   call set_delta_ir_rcl(0d0, 0d0)
   call set_dynamic_settings_rcl(1)
   call set_compute_ir_poles_rcl(1)
-#ifdef LOOP_REFERENCE_QUARK_THREE_GLUON
+#ifdef LOOP_REFERENCE_DRELL_YAN
+  call use_alpha0_scheme_rcl(1d0 / inverse_alpha_em)
+  call set_pole_mass_electron_rcl(0d0)
+  ! The photon-only control excludes Z exchange. Removing this vertex before
+  ! generation removes every Z attachment to the external lepton current.
+  call switchoff_coupling3_rcl('Z', 'e-', 'e+')
+  call define_process_rcl(1, 'u u~ -> e- e+', 'NLO')
+#elif defined(LOOP_REFERENCE_QUARK_THREE_GLUON)
   call define_process_rcl(1, 'u u~ -> g g g', 'NLO')
 #elif defined(LOOP_REFERENCE_FIVE_GLUON)
   call define_process_rcl(1, 'g g -> g g g', 'NLO')
