@@ -1,8 +1,8 @@
 # One-loop reference controls
 
 These small controls compare the Born–loop interference for
-four-quark scattering, photon-only Drell–Yan and stable top-pair production.
-The four-quark cases select pure QCD Born/loop coupling powers 2/4. They are an
+four-quark scattering, photon-only Drell–Yan, stable top-pair production and
+gluon scattering. The QCD cases select Born/loop coupling powers 2/4. They are an
 independent reference harness, not a pyAmpliCol loop implementation or a
 performance acceptance campaign. The initial control uses binary64; it does
 not establish DoubleFloat or arbitrary-precision support.
@@ -125,6 +125,26 @@ points satisfy the massive on-shell and momentum-conservation relations exactly;
 the final point lies near threshold. The public `pptt` source acquired for this
 control has revision `e4668fa` (2020-06-23, process API 2).
 
+For gluon scattering, use `generate g g > g g QED=0 [virt=QCD]`, build with
+`--case gluon-scattering`, and run with
+`--fixture tools/loop_reference/gluon_scattering_qcd.json`. OpenLoops' `ppjj`
+library already supplies this channel. Use `set output_dependencies external`
+when generating the MadLoop export to retain installed Ninja/Collier libraries;
+all their sources and builds must still live in the workspace. `build.py` reads
+the export's static-library list, so it links the reducers actually generated.
+The earlier internal-dependency CutTools-only export showed finite-term errors
+of several parts in 10^9 at these points, even after its own precision rescue.
+The external-dependency export with Ninja/Collier enabled agrees with the other
+two providers. This observation is specific to the recorded control, not a
+general accuracy claim about any reduction library.
+
+The native MadLoop bridge requests relative accuracy `1e-11` for correctness
+controls (the generated card otherwise defaults to `1e-3`). Rescue remains
+inside the timed call. Fixed mass, width and electromagnetic inputs are bound
+to both double and multiprecision model storage before recomputing couplings;
+MadLoop's running-parameter updater only synchronizes the strong coupling and
+scale. These controls still use binary64 external inputs and outputs.
+
 The Gmu UFO initially uses Python 2 imports/`iteritems`. For normal Python
 package loading, make a separate workspace copy, run MG's `convert model
 ABSOLUTE_COPY_PATH`, then `python3 -m lib2to3 -w -n -f import COPY_PATH`
@@ -172,7 +192,9 @@ are written under the requested output directory.
 The fixture fixes six quarks in loops, five active renormalization flavours,
 massless bottom, stable top mass 173 GeV, alpha_s=0.118 and common UV/IR/
 renormalization scale 1000 GeV. All providers sum final spins/colours and
-average initial spins/colours. No identical-final-state factor occurs.
+average initial spins/colours. The gluon-scattering fixture additionally includes
+the final identical-particle factor `1/2`; the other fixtures have distinct final
+particles.
 
 Results include physical couplings and UV/R2 contributions. They return
 `finite`, `single_pole`, `double_pole` in the MadLoop/BLHA convention
@@ -191,6 +213,13 @@ value `4/9 * g_s^4 * (t^2+u^2)/s^2` and universal double pole
 tolerance `2e-9` with a `1e-3` scale floor. This deliberately small smooth
 control does not replace later threshold, cancellation, singular-region,
 coupling-order, correlation, colour-expansion or precision validation.
+
+The gluon-scattering Born control is
+`9/4*g_s^4*(3-u*t/s^2-s*u/t^2-s*t/u^2)`, including the final factor `1/2`.
+It follows from the unpolarized cross section in
+[PDG 2022, Eq. (51.12)](https://pdg.lbl.gov/2022/reviews/rpp2022-rev-cross-section-formulae.pdf).
+Its universal double pole is `-4*CA*alpha_s/(2*pi)*Born`, with `CA=3`.
+The generated MadLoop averaging denominator is 512, including final symmetry.
 
 The top-pair Born control is the massive Dirac trace
 `4/9*g_s^4*((mt^2-t)^2+(mt^2-u)^2+2*mt^2*s)/s^2`. Only its two massless

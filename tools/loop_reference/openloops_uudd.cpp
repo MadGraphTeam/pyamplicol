@@ -22,6 +22,8 @@ struct OpenLoops {
     ol_setparameter_double("mu", p.mu);
 #ifdef LOOP_REFERENCE_TOP_PAIR
     id = ol_register_process("2 -2 -> 6 -6", 11);
+#elif defined(LOOP_REFERENCE_GLUON_SCATTERING)
+    id = ol_register_process("21 21 -> 21 21", 11);
 #else
     id = ol_register_process("2 -2 -> 1 -1", 11);
 #endif

@@ -3,9 +3,30 @@
 """Compile the small native controls against already built reference providers."""
 
 import argparse
+import shlex
 import shutil
 import subprocess
 from pathlib import Path
+
+
+def madloop_libraries(root):
+    """Use the export's actual static reducers, including optional Ninja/Collier."""
+    definitions = root / "SubProcesses/MadLoop_makefile_definitions"
+    rows = [
+        line.split("=", 1)[1].strip()
+        for line in definitions.read_text().splitlines()
+        if line.startswith("LOOP_LIBS =")
+    ]
+    if len(rows) != 1:
+        raise ValueError("MadLoop export has no unique LOOP_LIBS definition")
+    value = rows[0].replace("$(LIBDIR)", str(root / "lib") + "/")
+    value = value.replace("$(libext)", "a")
+    if "$" in value or value.endswith("\\"):
+        raise ValueError("unsupported MadLoop static-library definition")
+    libraries = [Path(x) for x in shlex.split(value)]
+    if not libraries or any(not x.is_file() for x in libraries):
+        raise ValueError("MadLoop static reducer libraries are missing")
+    return libraries
 
 
 def main():
@@ -16,7 +37,9 @@ def main():
     parser.add_argument("--cxx", default="g++")
     parser.add_argument("--fc", default="gfortran")
     parser.add_argument(
-        "--case", choices=("uudd", "drell-yan", "top-pair"), default="uudd"
+        "--case",
+        choices=("uudd", "drell-yan", "top-pair", "gluon-scattering"),
+        default="uudd",
     )
     args = parser.parse_args()
     if args.case == "drell-yan" and (args.recola or args.openloops):
@@ -24,6 +47,10 @@ def main():
     source = Path(__file__).resolve().parent
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
+    case_defines = {
+        "top-pair": ["-DLOOP_REFERENCE_TOP_PAIR"],
+        "gluon-scattering": ["-DLOOP_REFERENCE_GLUON_SCATTERING"],
+    }.get(args.case, [])
 
     def run(command, **kwargs):
         subprocess.run([str(x) for x in command], check=True, **kwargs)
@@ -34,8 +61,7 @@ def main():
             continue
         root = root.resolve()
         command = [args.cxx, "-O2", "-std=c++17", source / f"{provider}_uudd.cpp"]
-        if args.case == "top-pair":
-            command += ["-DLOOP_REFERENCE_TOP_PAIR"]
+        command += case_defines
         if provider == "openloops":
             command += [
                 "-I",
@@ -52,7 +78,7 @@ def main():
                     args.fc,
                     "-O2",
                     "-cpp",
-                    *(["-DLOOP_REFERENCE_TOP_PAIR"] if args.case == "top-pair" else []),
+                    *case_defines,
                     "-c",
                     source / "recola_bridge.f90",
                     "-I",
@@ -67,6 +93,7 @@ def main():
                 "uudd": "P0_uux_ddx",
                 "drell-yan": "P0_uux_emep_no_z",
                 "top-pair": "P0_uux_ttx",
+                "gluon-scattering": "P0_gg_gg",
             }[args.case]
             process = root / "SubProcesses" / directory
             if not process.is_dir():
@@ -106,8 +133,7 @@ def main():
                 root / "lib",
                 "-ldhelas",
                 "-lmodel",
-                "-lcts",
-                "-liregi",
+                *madloop_libraries(root),
             ]
             for library in ("libgfortran.so", "libquadmath.so"):
                 library_path = subprocess.check_output(

@@ -17,6 +17,8 @@ subroutine reference_recola_init(alpha_s, mu, mt, mb) bind(C)
   call set_compute_ir_poles_rcl(1)
 #ifdef LOOP_REFERENCE_TOP_PAIR
   call define_process_rcl(1, 'u u~ -> t t~', 'NLO')
+#elif defined(LOOP_REFERENCE_GLUON_SCATTERING)
+  call define_process_rcl(1, 'g g -> g g', 'NLO')
 #else
   call define_process_rcl(1, 'u u~ -> d d~', 'NLO')
 #endif

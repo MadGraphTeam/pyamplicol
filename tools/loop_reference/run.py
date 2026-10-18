@@ -46,6 +46,20 @@ def top_pair(point, parameters):
     }
 
 
+def gluon_scattering(point, parameters):
+    """PDG gg scattering Born, including the final identical-particle factor."""
+    s = 2 * dot(point[0], point[1])
+    t = -2 * dot(point[0], point[2])
+    u = -2 * dot(point[0], point[3])
+    born = 9 / 4 * (4 * math.pi * parameters["alpha_s"]) ** 2 * (
+        3 - u * t / s**2 - s * u / t**2 - s * t / u**2
+    )
+    return {
+        "born": born,
+        "double_pole": -12 * parameters["alpha_s"] / (2 * math.pi) * born,
+    }
+
+
 def drell_yan(point, parameters):
     """Independent photon-exchange Born and timelike QCD form-factor control.
 
@@ -98,6 +112,8 @@ def main():
             parser.error("photon-only Drell-Yan requires --providers madloop")
     elif fixture["process"] == "u u~ > t t~":
         case = "top-pair"
+    elif fixture["process"] == "g g > g g":
+        case = "gluon-scattering"
     else:
         parser.error("the control drivers do not support this fixture process")
     output = args.output_dir.resolve()
@@ -159,6 +175,8 @@ def main():
                     if case == "drell-yan"
                     else top_pair(point, p)
                     if case == "top-pair"
+                    else gluon_scattering(point, p)
+                    if case == "gluon-scattering"
                     else analytic(point, p["alpha_s"])
                 )
                 for name, expected in expected_values.items():
