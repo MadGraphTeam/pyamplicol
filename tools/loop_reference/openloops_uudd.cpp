@@ -20,8 +20,12 @@ struct OpenLoops {
     ol_setparameter_double("mass(5)", p.mb);
     ol_setparameter_double("alpha_s", p.alpha_s);
     ol_setparameter_double("mu", p.mu);
+#ifdef LOOP_REFERENCE_TOP_PAIR
+    id = ol_register_process("2 -2 -> 6 -6", 11);
+#else
     id = ol_register_process("2 -2 -> 1 -1", 11);
-    if (id <= 0) throw std::runtime_error("OpenLoops ppjj process unavailable");
+#endif
+    if (id <= 0) throw std::runtime_error("OpenLoops control process unavailable");
     ol_start();
   }
   ~OpenLoops() { ol_finish(); }

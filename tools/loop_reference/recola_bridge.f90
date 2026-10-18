@@ -15,7 +15,11 @@ subroutine reference_recola_init(alpha_s, mu, mt, mb) bind(C)
   call set_delta_ir_rcl(0d0, 0d0)
   call set_dynamic_settings_rcl(1)
   call set_compute_ir_poles_rcl(1)
+#ifdef LOOP_REFERENCE_TOP_PAIR
+  call define_process_rcl(1, 'u u~ -> t t~', 'NLO')
+#else
   call define_process_rcl(1, 'u u~ -> d d~', 'NLO')
+#endif
   call unselect_all_gs_powers_BornAmpl_rcl(1)
   call select_gs_power_BornAmpl_rcl(1, 2)
   call unselect_all_gs_powers_LoopAmpl_rcl(1)

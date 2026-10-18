@@ -15,7 +15,9 @@ def main():
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--cxx", default="g++")
     parser.add_argument("--fc", default="gfortran")
-    parser.add_argument("--case", choices=("uudd", "drell-yan"), default="uudd")
+    parser.add_argument(
+        "--case", choices=("uudd", "drell-yan", "top-pair"), default="uudd"
+    )
     args = parser.parse_args()
     if args.case == "drell-yan" and (args.recola or args.openloops):
         parser.error("the photon-only Drell-Yan control currently supports MadLoop")
@@ -32,6 +34,8 @@ def main():
             continue
         root = root.resolve()
         command = [args.cxx, "-O2", "-std=c++17", source / f"{provider}_uudd.cpp"]
+        if args.case == "top-pair":
+            command += ["-DLOOP_REFERENCE_TOP_PAIR"]
         if provider == "openloops":
             command += [
                 "-I",
@@ -47,6 +51,8 @@ def main():
                 [
                     args.fc,
                     "-O2",
+                    "-cpp",
+                    *(["-DLOOP_REFERENCE_TOP_PAIR"] if args.case == "top-pair" else []),
                     "-c",
                     source / "recola_bridge.f90",
                     "-I",
@@ -57,7 +63,11 @@ def main():
             )
             command += [bridge, "-L", root, f"-Wl,-rpath,{root}", "-lrecola"]
         else:
-            directory = "P0_uux_ddx" if args.case == "uudd" else "P0_uux_emep_no_z"
+            directory = {
+                "uudd": "P0_uux_ddx",
+                "drell-yan": "P0_uux_emep_no_z",
+                "top-pair": "P0_uux_ttx",
+            }[args.case]
             process = root / "SubProcesses" / directory
             if not process.is_dir():
                 parser.error(

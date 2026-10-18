@@ -31,6 +31,21 @@ def analytic(point, alpha_s):
     return {"born": born, "double_pole": -16 / 3 * alpha_s / (2 * math.pi) * born}
 
 
+def top_pair(point, parameters):
+    """Massive Dirac Born trace and the two massless external-leg double poles."""
+    s = 2 * dot(point[0], point[1])
+    mt2_minus_t = 2 * dot(point[0], point[2])
+    mt2_minus_u = 2 * dot(point[0], point[3])
+    mass_squared = parameters["mt"] ** 2
+    born = 4 / 9 * (4 * math.pi * parameters["alpha_s"]) ** 2 * (
+        mt2_minus_t**2 + mt2_minus_u**2 + 2 * mass_squared * s
+    ) / s**2
+    return {
+        "born": born,
+        "double_pole": -8 / 3 * parameters["alpha_s"] / (2 * math.pi) * born,
+    }
+
+
 def drell_yan(point, parameters):
     """Independent photon-exchange Born and timelike QCD form-factor control.
 
@@ -81,6 +96,8 @@ def main():
         case = "drell-yan"
         if args.providers != ["madloop"]:
             parser.error("photon-only Drell-Yan requires --providers madloop")
+    elif fixture["process"] == "u u~ > t t~":
+        case = "top-pair"
     else:
         parser.error("the control drivers do not support this fixture process")
     output = args.output_dir.resolve()
@@ -140,6 +157,8 @@ def main():
                 expected_values = (
                     drell_yan(point, p)
                     if case == "drell-yan"
+                    else top_pair(point, p)
+                    if case == "top-pair"
                     else analytic(point, p["alpha_s"])
                 )
                 for name, expected in expected_values.items():

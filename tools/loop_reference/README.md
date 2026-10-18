@@ -1,7 +1,8 @@
 # One-loop reference controls
 
 These small controls compare the Born–loop interference for
-`u u~ > d d~`, with pure QCD Born/loop coupling powers 2/4. They are an
+four-quark scattering, photon-only Drell–Yan and stable top-pair production.
+The four-quark cases select pure QCD Born/loop coupling powers 2/4. They are an
 independent reference harness, not a pyAmpliCol loop implementation or a
 performance acceptance campaign. The initial control uses binary64; it does
 not establish DoubleFloat or arbitrary-precision support.
@@ -80,6 +81,14 @@ The other two native drivers are specific to the four-quark control and
 cannot be used for the photon-only fixture. Both controls set the inverse
 electromagnetic coupling explicitly (132.507 by default).
 
+For stable top-pair production, use `generate u u~ > t t~ QED=0 [virt=QCD]`
+and another standalone output. Install the OpenLoops `pptt` library and build
+all providers with `--case top-pair`. Run with
+`--fixture tools/loop_reference/top_pair_qcd.json`. Its three decimal-input
+points satisfy the massive on-shell and momentum-conservation relations exactly;
+the final point lies near threshold. The public `pptt` source acquired for this
+control has revision `e4668fa` (2020-06-23, process API 2).
+
 The Gmu UFO initially uses Python 2 imports/`iteritems`. For normal Python
 package loading, make a separate workspace copy, run MG's `convert model
 ABSOLUTE_COPY_PATH`, then `python3 -m lib2to3 -w -n -f import COPY_PATH`
@@ -146,6 +155,15 @@ value `4/9 * g_s^4 * (t^2+u^2)/s^2` and universal double pole
 tolerance `2e-9` with a `1e-3` scale floor. This deliberately small smooth
 control does not replace later threshold, cancellation, singular-region,
 coupling-order, correlation, colour-expansion or precision validation.
+
+The top-pair Born control is the massive Dirac trace
+`4/9*g_s^4*((mt^2-t)^2+(mt^2-u)^2+2*mt^2*s)/s^2`. Only its two massless
+initial legs contribute double poles, giving
+`-2*CF*alpha_s/(2*pi)*Born`; see
+[Catani, Dittmaier and Trocsanyi, Eq. (21)](https://arxiv.org/html/hep-ph/0011222#S3).
+All providers use stable top pole mass and five-flavour strong-coupling
+renormalization. The reference includes external-field renormalization; a
+bare-loop comparison requires explicit component separation.
 
 The Drell–Yan oracle tests all coefficients independently. Write
 `a=alpha_s*CF/(2*pi)` and `L=log(mu_R^2/s)`. Its initial-state-averaged Born
