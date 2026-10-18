@@ -1,9 +1,11 @@
 # SPDX-License-Identifier: 0BSD
 """Exact local FFS source tensors versus unmodified standalone ALOHA routines.
 
-Only the four-dimensional Dirac/scalar vertex and external-current frame are
-tested. Scalar couplings, propagators, UV/R2 completeness and dimensional gamma5
-prescriptions are outside this control. Reference arithmetic is binary64.
+Only the raw four-dimensional source matrix is tested. In particular, these
+diagonal matrices do not establish the physical directed-current frame: that
+requires the separate FFS/propagator/chiral-FFV oracle. Scalar couplings, UV/R2
+completeness and dimensional gamma5 prescriptions are outside this control.
+Reference arithmetic is binary64.
 """
 
 from __future__ import annotations
@@ -13,7 +15,6 @@ import ctypes
 import json
 import subprocess
 import sys
-from dataclasses import replace
 from itertools import product
 from pathlib import Path
 from types import SimpleNamespace
@@ -26,7 +27,7 @@ from pyamplicol.loops.covariant_model import build_covariant_structure
 from pyamplicol.loops.model import CovariantKernelCatalogue, build_loop_model
 from pyamplicol.loops.model_expressions import parse_exact_ufo
 from pyamplicol.loops.scalar_frontend import lower_scalar_program
-from pyamplicol.loops.vertex_frames import certified_ffs_source, native_physical_vertex
+from pyamplicol.loops.vertex_frames import certified_ffs_source
 from pyamplicol.models.loop_import import load_raw_loop_model
 
 NAMES = ("FFS1", "FFS2", "FFS3", "FFS4", "FFS5", "l_epemH23", "l_epemH24")
@@ -156,7 +157,7 @@ def dirac_scalar_oracle(ufo: Path, madgraph: Path, build_dir: Path):
     catalogue = CovariantKernelCatalogue(source, structure.native)
     controls = tuple(_controls())
     report = {
-        "kind": "local-dirac-scalar-source-physical-frame-aloha-control",
+        "kind": "local-dirac-scalar-raw-source-matrix-aloha-control",
         "reference_phase_removed": "-i*COUP",
         "reference_spinor_order": "unbarred HELAS F1, barred HELAS F2",
         "native_arithmetic": "exact local tensors; binary64 physical-state inputs",
@@ -164,6 +165,7 @@ def dirac_scalar_oracle(ufo: Path, madgraph: Path, build_dir: Path):
         "source_scalars_evaluated": False,
         "propagators_changed": False,
         "full_process_validated": False,
+        "physical_directed_current_frame_validated": False,
         "dimensional_gamma5_validated": False,
         "controls": [],
     }
@@ -182,27 +184,13 @@ def dirac_scalar_oracle(ufo: Path, madgraph: Path, build_dir: Path):
         if not certified_ffs_source(declaration):
             raise AssertionError(f"actual source {name} is outside the local FFS gate")
         local = catalogue.lower(entry)
-        graph_frame = SimpleNamespace(
-            edges=tuple(
-                SimpleNamespace(id=i, spin=spin) for i, spin in enumerate((2, 2, 1))
-            ),
-            half_edges=tuple(
-                (half, 0, leg, "incoming")
-                for leg, half in enumerate(local.leg_half_edges)
-            ),
-        )
-        mapped = replace(
-            local, lorentz=native_physical_vertex(graph_frame, 0, local.lorentz)
-        )
-        assert native_physical_vertex(graph_frame, 0, mapped.lorentz) == local.lorentz
-        assert set(mapped.lorentz.axes) == set(local.lorentz.axes)
         function = getattr(library, f"{name.lower()}_0_")
         function.argtypes, function.restype = [ctypes.c_void_p] * 5, None
-        errors, raw_failures = [], 0
+        errors = []
         for kind, momenta, spinors, reference_spinors, scalar in controls:
             # Scalar legs carry no tensor port; their unit state or supplied
             # off-shell scalar-current value multiplies the local bilinear.
-            value = scalar * native_vector_contraction(mapped, momenta, spinors)
+            value = scalar * native_vector_contraction(local, momenta, spinors)
             target = aloha_vector_contraction(
                 function,
                 (momenta[1], momenta[0], momenta[2]),
@@ -212,10 +200,6 @@ def dirac_scalar_oracle(ufo: Path, madgraph: Path, build_dir: Path):
             if error > 3e-13:
                 raise AssertionError(f"{name} {kind}: FFS/ALOHA scaled error {error}")
             errors.append(error)
-            raw_value = scalar * native_vector_contraction(local, momenta, spinors)
-            raw_failures += abs(raw_value.evaluate({}) - target) > 3e-13 * max(
-                1.0, abs(target)
-            )
         report["controls"].append(
             {
                 "lorentz_name": name,
@@ -224,7 +208,6 @@ def dirac_scalar_oracle(ufo: Path, madgraph: Path, build_dir: Path):
                 "reference_source": str((build_dir / f"{name}_0.f").resolve()),
                 "checks": len(errors),
                 "maximum_scaled_error": max(errors),
-                "unadapted_failing_controls": int(raw_failures),
             }
         )
     return report
