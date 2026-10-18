@@ -1817,6 +1817,18 @@
                 ]
               }
             }
+          },
+          "recola": {
+            "median_us_per_point": 1877.829,
+            "samples_us_per_point": [
+              1984.7290000000003,
+              1877.829,
+              1859.297,
+              1929.379,
+              1872.288
+            ],
+            "cpu": 382,
+            "audit_record": "provider-audit.json/recola_dy/1"
           }
         },
         "8": {
@@ -2021,6 +2033,18 @@
                 ]
               }
             }
+          },
+          "recola": {
+            "median_us_per_point": 1783.5303046875001,
+            "samples_us_per_point": [
+              1781.4672421875,
+              1784.6390625,
+              1796.4798203125,
+              1783.5303046875001,
+              1781.0839687500002
+            ],
+            "cpu": 382,
+            "audit_record": "provider-audit.json/recola_dy/128"
           }
         }
       }
@@ -3919,8 +3943,9 @@
     "scope": "Fresh full 2-to-2 controls on repeated three-point streams. Five warm native blocks at each batch. Total timers use original provider objects, exclude input/output and initialization, include provider numerical checks/rescue. Not an acceptance benchmark; pyAmpliCol comparator includes Python scheduling and exact decimal ingress while these timers start with binary64 arrays. Small repeated controls and provider cache policies differ from broad production phase space.",
     "madloop_stage_scope": "Disjoint wall-clock call windows in copied loop_matrix/mp_compute_loop_coefs objects. COEF_CONSTRUCTION excludes shared HELAS work; HELAS contains Born/local UV/R2/UVtree/external fields and shared wavefunctions; LOOP_CT_CALLS includes reducer interface and masters, with retries. No outer MP timer. Residual includes initial Born-squared, helicity/order/colour/CT interference, coordinator and clocks. Stage medians belong to separate instrumented observations; medians need not add to total.",
     "cms_status": "Prior CMS audit frozen; no CMS/provider physics mutation for this timing task.",
-    "dy_unavailable": "Existing DY control is photon-only and only has a matched MadLoop wrapper; Recola/OpenLoops omitted, not zero.",
-    "additional_scope": "The separate five-leg 2-to-3 qqggg observation uses the same complete-call protocol at B1/B128 and instrumented stages at B128. Original five 2-to-2 rows retain fa599885; qqggg executed f89249d2."
+    "dy_unavailable": "Matched Recola photon-only DY now included by public Z,e-,e+ coupling switch; OpenLoops control remains unavailable in this suite.",
+    "additional_scope": "The separate five-leg 2-to-3 qqggg observation uses the same complete-call protocol at B1/B128 and instrumented stages at B128. Original five 2-to-2 rows retain fa599885; qqggg executed f89249d2.",
+    "provider_audit": "Additional CPU382 Recola DY observations and isolated OpenLoops gg compiler/settings audit are retained in provider-audit.json. Original matched provider rows are unchanged; O3 trial did not establish a speed benefit."
   },
   "additional_revisions": {
     "qqggg": "f89249d278a52ecfe2fc8b53ba87fd31532c5a56"

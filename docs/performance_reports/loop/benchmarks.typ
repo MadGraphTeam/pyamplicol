@@ -4,6 +4,8 @@
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
+#let colours = json("data/colour-measurements.json")
+#let projectors = json("data/local-projector-experiment.json")
 #let navy = rgb("#203c60")
 #let blue = rgb("#356b92")
 #let pale = rgb("#edf3f8")
@@ -44,6 +46,7 @@
 }
 #let sharing-ms(batch, stage, mode) = fmt(sharing.timings.at(str(batch)).at(stage).at(mode).median_us_per_point / 1000, digits: 2)
 #let arena-ms(batch, stage, mode) = fmt(arena.timings.at(str(batch)).at(stage).at(mode).median_us_per_point / 1000, digits: 2)
+#let projector-ms(stage, mode) = fmt(projectors.timings.at("128").at(stage).at(mode).median_us_per_point / 1000, digits: 2)
 #let label(key) = (
   dy: [$u overline(u) -> e^- e^+$],
   uudd: [$u overline(u) -> d overline(d)$],
@@ -216,7 +219,7 @@
   *One grid, four providers.* Each coloured box gives *µs per point* at $B=1$
   or $B=128$, plus its multiplier against the fastest existing matched reference
   (ML, Recola or OL). Neutral lines show generation/setup and separately clocked
-  stages at the indicated batch size. Every result includes Born, all helicities, full SU(3),
+  stages at the indicated batch size. Binary64 results include Born, all helicities, full SU(3),
   UV, model-rule $R_2$ and all three Laurent coefficients.
 ]
 
@@ -245,22 +248,128 @@ Instrumented stage lines: $B=32$ for two-to-two, $B=128$ for five-leg; no stage 
    #text(size: 8.6pt)[Warm totals use uninstrumented calls. Stage medians come from separate
    clocked calls and need not sum to the median clocked total. Master clocks retain
    the adapter cache policy. Rust dev: local opt3 / dependencies opt2, checks on,
-   no LTO; Community opt2. All raw timing samples are retained.]],
+   no LTO; Community opt2. Raw timing samples are retained.]],
 )
 #v(7pt)
 #text(size: 8.2pt)[
   Five warm calls on repeated three-point streams; no event reuse. CPU 382, one
-  thread/shared host. pyAmpliCol includes decimal ingress and Python scheduling;
-  providers use native arrays and their rescue policies, while pyAmpliCol rescue
-  is off. Output formatting is excluded. Preparation uses one fresh process on
-  CPU 380 (ML DY: 381), no cache flush or uncertainty estimate; pyAmpliCol imports
-  are excluded. Photon-only DY lacks matched Recola/OL controls.
+  thread/shared host. pyAmpliCol includes decimal ingress/Python scheduling with
+  rescue off; providers use native arrays and their own rescue policies. Formatting
+  is excluded. Fresh preparation: CPU 380, ML DY 381, Recola DY 382; no cache flush
+  or uncertainty estimate. Recola photon-only DY passes analytic checks; OL DY is absent.
 ]
 #v(3pt)
 #text(size: 8.6pt)[
   *Development comparison:* pyAmpliCol is slower than ML here. Acceptance requires
-  distinct points, matched native boundaries/stability, faster than ML and within
-  $1.30 times$ Recola/OL per designated high-multiplicity case. Generation has no acceptance gate.
+  distinct points, matched boundaries/stability, faster than ML and within $1.30 times$
+  Recola/OL per designated high-multiplicity case; generation has no gate.
+  OL actual-pole mode runs the amplitude three times with Collier cache off.
+  Original loop kernels use `-O0`; a separate `-O3` gg trial showed no clear win.
+]
+
+#pagebreak()
+#section-label[MEASUREMENTS · MATCHED LEADING COLOUR]
+= Leading colour and its full-colour counterpart
+#note[
+  *An internal comparison.* Each warm cell pairs LC with a new full-colour
+  measurement of the same process and $R_2$ strategy. Its colour and multiplier
+  refer only to that full-colour run; no external provider enters this page.
+  Both binary64 paths return Born and all three completed Laurent coefficients.
+]
+#let colour-warm(c, b) = {
+  let lc = timed(c.lc, b)
+  let full = timed(c.full, b)
+  block(width: 100%, fill: ratio-fill(lc/full), inset: 9pt, radius: 3pt)[
+    #set par(justify: false, leading: 0.25em)
+    #text(size: 8pt, fill: grey)[LEADING COLOUR]
+    #linebreak()
+    #text(font: "DejaVu Sans", size: 15pt, weight: "bold", value-fmt(lc)) #text(size: 8pt)[µs/point]
+    #v(4pt)
+    #text(size: 9pt)[Full: *#value-fmt(full)* µs/point]
+    #linebreak()
+    #text(size: 8.5pt)[LC / full: *×#fmt(lc/full, digits: 2)*]
+  ]
+  if b == 128 {
+    v(6pt)
+    text(size: 7.5pt, fill: navy, weight: "bold")[Stages · LC / full · µs/point]
+    linebreak()
+    for (name,key) in (("Numerator","numerator_us"),("NinjaRS only","reduction_us"),("Masters","masters_us"),("Other","other_work_us"),("Clocked total","instrumented_total_us")) {
+      text(size: 7.4pt, fill: grey, name)
+      h(1fr)
+      let slc = c.at("lc_stages",default: (:)).at(key,default: none)
+      let sfull = c.at("full_stages",default: (:)).at(key,default: none)
+      text(size: 7.5pt)[#value-fmt(slc) / #value-fmt(sfull)]
+      linebreak()
+    }
+  }
+}
+#let colour-grid(rows) = table(columns: (1.1fr, 1.55fr, 1.55fr, 1.35fr), align: top,
+  inset: (x: 5pt, y: 8pt),
+  stroke: (x,y) => (top: if y > 1 { 0.5pt + rule } else { none }),
+  fill: (x,y) => if y == 0 { navy } else { none },
+  table.header(header[Process / strategy], header[Single point · $B=1$], header[Native batch · $B=128$], header[Generation · seconds]),
+  ..rows.map(c => (
+    { v(8pt); text(size: 12pt, weight: "bold", label(c.case)); linebreak(); v(4pt);
+      text(size: 8.5pt, fill: grey)[#if c.full.r2_strategy == "direct" [Direct $R_2$] else [Model-rule $R_2$]] },
+    colour-warm(c,1), colour-warm(c,128),
+    { v(8pt); text(size: 9pt)[LC: *#fmt(c.lc.generation_s,digits: 2)* s]; linebreak();
+      text(size: 9pt)[Full: *#fmt(c.full.generation_s,digits: 2)* s]; v(7pt);
+      text(size: 7.8pt, fill: grey)[First $B=3$, LC / full:\ #fmt(c.lc.first_evaluation_s,digits: 3) / #fmt(c.full.first_evaluation_s,digits: 3) s] },
+  )).flatten(),
+)
+#v(9pt)
+#colour-grid(colours.cases.slice(0,2))
+#v(7pt)
+#legend
+#v(5pt)
+#text(size: 9pt)[
+  Independent fresh process for each colour mode, revision #colours.revision, CPU #colours.cpu,
+  one thread/shared host. Five timed calls use the repeated three-point controls;
+  decimal ingress and Python batch scheduling are included, checks and output
+  formatting excluded. Generation includes source capture and the complete plan;
+  first evaluation is separate. These are development observations, not an LC
+  performance target or a replacement for the full-colour snapshot on pages 1–2.
+]
+#v(5pt)
+#text(size: 9pt)[
+  Fixed-$N_f$ LC keeps the common highest formal-$N_c$ power before setting $N_c=3$.
+  Full and LC retain the current graph schedules; this is not yet numerator pruning.
+  Quark controls use the fixed-SU(3) full path and formal LC path. The gluon control
+  uses the certified direct strategy and formal algebra for both paths, avoiding
+  an unsupported continuation of the model's four-gluon $R_2$ coefficients.
+  Full components pass independent references; LC checks use the certified Born,
+  pole and UV/field relations, with complete component reconstruction.
+]
+#pagebreak()
+#section-label[MEASUREMENTS · SAME COLOUR GRID, CONTINUED]
+= Leading colour · massive quarks and gluons
+#small[Warm cells: µs per point. Neutral B128 stage pairs: LC / full, from separate
+instrumented calls; medians need not add. Generation and first evaluation: seconds.]
+#v(9pt)
+#colour-grid(colours.cases.slice(2))
+#v(8pt)
+#legend
+#v(7pt)
+#note[
+  *What is and is not measured.* Every timed call computes the complete selected
+  observable. LC changes the retained formal-colour powers; current graph schedules
+  still run. These same-strategy internal pairs do not compare direct and model
+  $R_2$, nor replace the model-rule provider grid. Stage scopes match that grid:
+  numerator includes DAGs and reducer callbacks/head preparation; NinjaRS excludes
+  callbacks and scalar masters. Other work includes states, Born weighting,
+  counterterms, kinematics, assembly and instrumentation.
+]
+#v(7pt)
+#small[
+  *Separate projector experiment, not adopted.* On 128 distinct exact energy-rescaled
+  gluon points, reusing the same saved family projectors through the existing tiled
+  JIT plan reduced the $B=128$ projection median from #projector-ms("projection_prebound_native_inputs", "baseline")
+  to #projector-ms("projection_prebound_native_inputs", "tiled_jit") ms/point and
+  the complete call from #projector-ms("complete", "baseline") to
+  #projector-ms("complete", "tiled_jit") ms/point. Tiled interpretation alone did not help. Original
+  independent physics checks passed; floating-point ordering changed, so this is
+  not bit-exact JIT parity. DD output-wise controls and raw samples are retained.
+  These separate CPU379 observations do not change either timing table.
 ]
 
 #pagebreak()
@@ -358,7 +467,8 @@ bounds prove it irrelevant. The full source and species-correction eligibility
 remain retained; pruning does not certify a model or its counterterm completion.
 The shared source compiler now prepares bounded complete QCD and neutral-current
 Gmu controls through retained raw models, exact restrictions and model-derived
-states, without named-process dispatch or rounded normalized defaults.
+states, without named-process dispatch or rounded defaults. Source gluon controls
+include external fields and owned scale snapshots in all three carriers.
 
 == Tensor structure and physical frame
 Each basis entry retains its scalar coefficient, native Lorentz tensor,
@@ -398,9 +508,8 @@ convention. The default preserves the source helper; either choice retains
 the original model and does not certify complete CMS physics.
 
 #note[
-  *Evidence boundary.* Complete bounded QCD controls and real-mass neutral-current charged-lepton
-  EW components are validated. That does not certify every rule in a supplied
-  UFO, arbitrary restriction cards, all gauges, or general BSM renormalization.
+  *Evidence boundary.* Bounded QCD and real-mass neutral-current EW controls
+  do not certify arbitrary UFO rules, restrictions, gauges or BSM renormalization.
 ]
 
 #pagebreak()
@@ -601,13 +710,14 @@ symbolic owners. Python distribution and Rust kernel version labels are recorded
 separately. A genuine isolated development-package install now passes a public
 ordinary-tree generation/evaluation smoke.
 
-An internal portable control now saves complete four-quark model-rule plans in
-the existing PACBIN container. The Rust reader validates saved evaluator shapes,
-order axes, bindings and layouts; fresh double, DoubleFloat and AP views execute
-without the source model or producer graphs. This checkpoint has nonzero UV and
-$R_2$, but no external fields. Direct/source/formal/correlated plans and rescue
-are not yet admitted there. Public loop artifacts and standalone SDK execution
-remain open; the internal coordinator still invokes existing native operations.
+Internal portable controls now save complete four-quark and massive-top
+model-rule plans, plus the certified direct gluon plan, in the existing PACBIN
+container. Nonzero external-field factors are retained. The Rust reader validates
+evaluator shapes, order axes, bindings and layouts; fresh double, DoubleFloat
+and AP views execute without the source model or producer graphs. Source-model,
+formal-colour and correlated portable plans, rescue, public artifacts and
+standalone SDK execution remain open. Validated typed buffers now also have
+non-Python native bindings; a complete native coordinator remains unfinished.
 
 == Success, accuracy and rescue are different facts
 A reducer's success flag is not an accuracy certificate. Native checks reject
@@ -689,7 +799,8 @@ assumed for massive EW or general models.
   strategy, but completeness is mandatory. Model and direct costs must be
   measured as standalone complete evaluations. The present headline table uses
   model rules throughout; a new direct-versus-model comparison is still due
-  after recent colour and scheduling changes.
+  after recent colour and scheduling changes. The separate LC page uses direct
+completion for both gluon colour modes.
 ]
 
 #pagebreak()
@@ -707,7 +818,7 @@ complete answer cannot conceal a wrong component.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
-  [Public delivery], [A development install passes the public tree smoke. An internal source-free PACBIN model-rule four-quark roundtrip passes all three carriers; public loop artifacts, commands and SDK/UMAMI remain open.],
+  [Public delivery], [A development install passes the public tree smoke. Source-free PACBIN model-rule quark/top and direct-gluon roundtrips include fields and all three carriers; public loop artifacts, commands and SDK/UMAMI remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
@@ -753,8 +864,7 @@ interference, not a single diagram and helicity.
 #v(5pt)
 #note[
   *Living document.* Update the source, measured data and compiled PDF together
-  after each implementation milestone. Keep incomplete rows and capability
-  limits explicit. The completion criterion is the full physics, feature,
-  precision, packaging and per-process performance contract—not the existence
-  of this first report.
+  after each milestone. Next timing additions include validated real-mass EW
+  and bounded CMS controls. Keep incomplete rows and capability limits explicit;
+  the full physics, precision, feature and performance contract remains the goal.
 ]

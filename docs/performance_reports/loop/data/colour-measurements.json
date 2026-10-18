@@ -1,0 +1,4364 @@
+{
+  "revision": "95c4ed50",
+  "cpu": 379,
+  "scope": "Independent matched complete full/LC observations, not external-provider comparison. Original headline full-colour timings are preserved.",
+  "cases": [
+    {
+      "case": "dy",
+      "full": {
+        "case": "dy",
+        "process": "u u~ > e- e+ / z",
+        "colour": "full",
+        "commit": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "cpu": 379,
+        "generation_s": 1.6053041869890876,
+        "source_generation_s": 0.48313414299627766,
+        "arithmetic": "double",
+        "r2_strategy": "model",
+        "reduction_engine": "fast",
+        "coefficient_engine": "jit",
+        "scope": "Complete physical-helicity model-rule Born-loop interference. Fixed Nf LC projects the full formal-Nc contribution before Nc=3 and normalization. Python batch scheduling and exact decimal ingress included; output formatting/checks excluded. Repeated three-point stream; reducer success only, no rescue or cross-precision verification. Development observation, not performance acceptance.",
+        "generation_scope": "Independent fresh process: UFO capture, model/graph/colour/CT lowering, numerical plan and JIT construction. Imports/installation and first evaluation excluded. One cold observation.",
+        "validation": "Existing certified formal-colour controls; full Born/all Laurent components versus independent MadLoop or analytic DY; LC Born/pole/UV-field ratios below plus complete component reconstruction.",
+        "counts": {
+          "born_graphs": 1,
+          "loop_graphs": 1,
+          "families": 1,
+          "helicities": 16,
+          "counterterms": 1,
+          "external_fields": 0
+        },
+        "timings": {
+          "1": {
+            "median_us_per_point": 351.2119874358177,
+            "min_us_per_point": 302.35102167353034,
+            "max_us_per_point": 440.2819904498756,
+            "samples_us_per_point": [
+              440.2819904498756,
+              415.0620079599321,
+              351.2119874358177,
+              322.87201611325145,
+              302.35102167353034
+            ],
+            "checksum_all_poles_and_born": [
+              0.0020138684019948075,
+              0.0020138684019948075,
+              0.0020138684019948075,
+              0.0020138684019948075,
+              0.0020138684019948075
+            ]
+          },
+          "128": {
+            "median_us_per_point": 98.1274688456324,
+            "min_us_per_point": 90.23844540934078,
+            "max_us_per_point": 100.93880473505124,
+            "samples_us_per_point": [
+              100.93880473505124,
+              98.1274688456324,
+              90.23844540934078,
+              99.12809400702827,
+              92.934859367233
+            ],
+            "checksum_all_poles_and_born": [
+              0.221218972727094,
+              0.221218972727094,
+              0.221218972727094,
+              0.221218972727094,
+              0.221218972727094
+            ]
+          }
+        },
+        "first_evaluation_s": 0.009891153022181243,
+        "validation_samples": {
+          "born": [
+            [
+              [
+                0.0021851545568216447,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0015295135806876856,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0018120793885838043,
+                0.0
+              ]
+            ]
+          ],
+          "bare": [
+            [
+              [
+                0.00021173351342375251,
+                0.0
+              ],
+              [
+                -0.00016415128639310988,
+                0.0
+              ],
+              [
+                -0.00010943419092873992,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0001979495545572053,
+                0.0
+              ],
+              [
+                -7.470501013185575e-05,
+                0.0
+              ],
+              [
+                -7.659919555554745e-05,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.00017558388918067274,
+                0.0
+              ],
+              [
+                -0.00013612545700892052,
+                0.0
+              ],
+              [
+                -9.075030467261365e-05,
+                0.0
+              ]
+            ]
+          ],
+          "uv": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "r2": [
+            [
+              [
+                -0.00010943419092873994,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -7.65991955555475e-05,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -9.075030467261365e-05,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "virtual": [
+            [
+              [
+                0.00010229932249501258,
+                0.0
+              ],
+              [
+                -0.00016415128639310988,
+                0.0
+              ],
+              [
+                -0.00010943419092873992,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.00012135035900165781,
+                0.0
+              ],
+              [
+                -7.470501013185575e-05,
+                0.0
+              ],
+              [
+                -7.659919555554745e-05,
+                0.0
+              ]
+            ],
+            [
+              [
+                8.483358450805909e-05,
+                0.0
+              ],
+              [
+                -0.00013612545700892052,
+                0.0
+              ],
+              [
+                -9.075030467261365e-05,
+                0.0
+              ]
+            ]
+          ],
+          "uv_local": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "uv_external_fields": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "peak_rss_mib": 147.57421875
+      },
+      "lc": {
+        "case": "dy",
+        "process": "u u~ > e- e+ / z",
+        "colour": "lc",
+        "commit": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "cpu": 379,
+        "generation_s": 1.6146340769482777,
+        "source_generation_s": 0.43352612300077453,
+        "arithmetic": "double",
+        "r2_strategy": "model",
+        "reduction_engine": "fast",
+        "coefficient_engine": "jit",
+        "scope": "Complete physical-helicity model-rule Born-loop interference. Fixed Nf LC projects the full formal-Nc contribution before Nc=3 and normalization. Python batch scheduling and exact decimal ingress included; output formatting/checks excluded. Repeated three-point stream; reducer success only, no rescue or cross-precision verification. Development observation, not performance acceptance.",
+        "generation_scope": "Independent fresh process: UFO capture, model/graph/colour/CT lowering, numerical plan and JIT construction. Imports/installation and first evaluation excluded. One cold observation.",
+        "validation": "Existing certified formal-colour controls; full Born/all Laurent components versus independent MadLoop or analytic DY; LC Born/pole/UV-field ratios below plus complete component reconstruction.",
+        "counts": {
+          "born_graphs": 1,
+          "loop_graphs": 1,
+          "families": 1,
+          "helicities": 16,
+          "counterterms": 1,
+          "external_fields": 0
+        },
+        "timings": {
+          "1": {
+            "median_us_per_point": 359.5610032789409,
+            "min_us_per_point": 335.4920190759003,
+            "max_us_per_point": 457.57199404761195,
+            "samples_us_per_point": [
+              457.57199404761195,
+              404.5420209877193,
+              359.5610032789409,
+              339.76201666519046,
+              335.4920190759003
+            ],
+            "checksum_all_poles_and_born": [
+              0.001992457632641453,
+              0.001992457632641453,
+              0.001992457632641453,
+              0.001992457632641453,
+              0.001992457632641453
+            ]
+          },
+          "128": {
+            "median_us_per_point": 103.38873426007922,
+            "min_us_per_point": 97.15300757306977,
+            "max_us_per_point": 114.83370326459408,
+            "samples_us_per_point": [
+              114.83370326459408,
+              103.38873426007922,
+              100.66834374811151,
+              109.53306264127605,
+              97.15300757306977
+            ],
+            "checksum_all_poles_and_born": [
+              0.21939158628880315,
+              0.21939158628880315,
+              0.21939158628880315,
+              0.21939158628880315,
+              0.21939158628880315
+            ]
+          }
+        },
+        "first_evaluation_s": 0.008750737993977964,
+        "validation_samples": {
+          "born": [
+            [
+              [
+                0.0021851545568216447,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0015295135806876856,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0018120793885838043,
+                0.0
+              ]
+            ]
+          ],
+          "bare": [
+            [
+              [
+                0.0002382002026017216,
+                0.0
+              ],
+              [
+                -0.00018467019719224857,
+                0.0
+              ],
+              [
+                -0.0001231134647948324,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.00022269324887685604,
+                0.0
+              ],
+              [
+                -8.404313639833773e-05,
+                0.0
+              ],
+              [
+                -8.617409499999091e-05,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0001975318753282569,
+                0.0
+              ],
+              [
+                -0.00015314113913503558,
+                0.0
+              ],
+              [
+                -0.00010209409275669036,
+                0.0
+              ]
+            ]
+          ],
+          "uv": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "r2": [
+            [
+              [
+                -0.00012311346479483242,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -8.617409499999095e-05,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.00010209409275669036,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "virtual": [
+            [
+              [
+                0.00011508673780688918,
+                0.0
+              ],
+              [
+                -0.00018467019719224857,
+                0.0
+              ],
+              [
+                -0.0001231134647948324,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0001365191538768651,
+                0.0
+              ],
+              [
+                -8.404313639833773e-05,
+                0.0
+              ],
+              [
+                -8.617409499999091e-05,
+                0.0
+              ]
+            ],
+            [
+              [
+                9.543778257156654e-05,
+                0.0
+              ],
+              [
+                -0.00015314113913503558,
+                0.0
+              ],
+              [
+                -0.00010209409275669036,
+                0.0
+              ]
+            ]
+          ],
+          "uv_local": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "uv_external_fields": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "peak_rss_mib": 144.59765625
+      },
+      "full_stages": {
+        "case": "dy",
+        "batch_size": 128,
+        "colour": "full",
+        "r2_strategy": "model",
+        "cpu": 379,
+        "physics_revision": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "profiling_revision": "54b39e18",
+        "scope": "Instrumented diagnostic B128, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+        "samples": [
+          {
+            "parameters": 0.06835944077465683,
+            "born_coefficients": 2.4192340788431466,
+            "loop_coefficients": 21.56212531190249,
+            "born_projection": 0.23188249542727135,
+            "born_weighting": 1.7644606487010606,
+            "family_masses": 0.019453182176221162,
+            "bare_assembly": 0.11273414202150889,
+            "counterterm_scalars": 0.16156263882294297,
+            "counterterm_coefficients": 2.568843683548039,
+            "ct_projection": 0.36328128771856427,
+            "complete_assembly": 0.08023471309570596,
+            "numerator_us": 23.07002374940249,
+            "reduction_us": 0.6399296875,
+            "masters_us": 0.208828125,
+            "instrumented_total_us": 109.55062498396728,
+            "other_work_us": 85.63184342206479,
+            "raw_native": {
+              "engine_calls": 1.0,
+              "engine_excluding_masters_seconds": 0.000271952,
+              "engine_seconds": 0.000298682,
+              "master_calls": 2.0,
+              "master_rows": 256.0,
+              "masters_seconds": 2.673e-05,
+              "numerator_callback_seconds": 0.000190041,
+              "numerator_calls": 2.0,
+              "numerator_preparation_seconds": 2.97e-06,
+              "numerator_rows": 384.0,
+              "reduction_exclusive_seconds": 8.1911e-05
+            },
+            "checksum_all_poles_and_born": 0.221218972727094
+          },
+          {
+            "parameters": 0.05796846380690113,
+            "born_coefficients": 2.564624992373865,
+            "loop_coefficients": 23.60994540140382,
+            "born_projection": 0.22703125068801455,
+            "born_weighting": 1.6347735254385043,
+            "family_masses": 0.022812400857219473,
+            "bare_assembly": 0.10523444871068932,
+            "counterterm_scalars": 0.062344042817130685,
+            "counterterm_coefficients": 2.606492216727929,
+            "ct_projection": 0.38235157262533903,
+            "complete_assembly": 0.09265613698516972,
+            "numerator_us": 25.10276571390382,
+            "reduction_us": 0.7249218749999999,
+            "masters_us": 0.200078125,
+            "instrumented_total_us": 101.11262463396997,
+            "other_work_us": 75.08485892006615,
+            "raw_native": {
+              "engine_calls": 1.0,
+              "engine_excluding_masters_seconds": 0.000281191,
+              "engine_seconds": 0.000306801,
+              "master_calls": 2.0,
+              "master_rows": 256.0,
+              "masters_seconds": 2.561e-05,
+              "numerator_callback_seconds": 0.000188401,
+              "numerator_calls": 2.0,
+              "numerator_preparation_seconds": 2.68e-06,
+              "numerator_rows": 384.0,
+              "reduction_exclusive_seconds": 9.279e-05
+            },
+            "checksum_all_poles_and_born": 0.221218972727094
+          },
+          {
+            "parameters": 0.06062509783077985,
+            "born_coefficients": 2.463210876157973,
+            "loop_coefficients": 21.535327960009454,
+            "born_projection": 0.2179685907321982,
+            "born_weighting": 1.602038992132293,
+            "family_masses": 0.020312199922045693,
+            "bare_assembly": 0.10726580512709916,
+            "counterterm_scalars": 0.06172649591462687,
+            "counterterm_coefficients": 2.5617264327593148,
+            "ct_projection": 0.3756331352633424,
+            "complete_assembly": 0.08531242201570421,
+            "numerator_us": 23.113460772509455,
+            "reduction_us": 0.6388203124999999,
+            "masters_us": 0.20446875,
+            "instrumented_total_us": 92.15485169988824,
+            "other_work_us": 68.1981018648788,
+            "raw_native": {
+              "engine_calls": 1.0,
+              "engine_excluding_masters_seconds": 0.00028133,
+              "engine_seconds": 0.000307502,
+              "master_calls": 2.0,
+              "master_rows": 256.0,
+              "masters_seconds": 2.6172e-05,
+              "numerator_callback_seconds": 0.000199561,
+              "numerator_calls": 2.0,
+              "numerator_preparation_seconds": 2.44e-06,
+              "numerator_rows": 384.0,
+              "reduction_exclusive_seconds": 8.1769e-05
+            },
+            "checksum_all_poles_and_born": 0.221218972727094
+          },
+          {
+            "parameters": 0.05718720785807818,
+            "born_coefficients": 2.4596952243882697,
+            "loop_coefficients": 21.450632630148903,
+            "born_projection": 0.22336689653457142,
+            "born_weighting": 1.6182107174245175,
+            "family_masses": 0.020156221580691636,
+            "bare_assembly": 0.10820303941727616,
+            "counterterm_scalars": 0.061648279370274395,
+            "counterterm_coefficients": 2.550085810071323,
+            "ct_projection": 0.3820309757429641,
+            "complete_assembly": 0.08116421668091789,
+            "numerator_us": 22.9778279426489,
+            "reduction_us": 0.689375,
+            "masters_us": 0.2213359375,
+            "instrumented_total_us": 94.67485961067723,
+            "other_work_us": 70.78632073052833,
+            "raw_native": {
+              "engine_calls": 1.0,
+              "engine_excluding_masters_seconds": 0.000280541,
+              "engine_seconds": 0.000308872,
+              "master_calls": 2.0,
+              "master_rows": 256.0,
+              "masters_seconds": 2.8331e-05,
+              "numerator_callback_seconds": 0.000192301,
+              "numerator_calls": 2.0,
+              "numerator_preparation_seconds": 3.18e-06,
+              "numerator_rows": 384.0,
+              "reduction_exclusive_seconds": 8.824e-05
+            },
+            "checksum_all_poles_and_born": 0.221218972727094
+          },
+          {
+            "parameters": 0.067265318648424,
+            "born_coefficients": 2.5104063752223738,
+            "loop_coefficients": 23.423148832080187,
+            "born_projection": 0.2118749762303196,
+            "born_weighting": 1.6276562746497802,
+            "family_masses": 0.024453129299217835,
+            "bare_assembly": 0.11406245903344825,
+            "counterterm_scalars": 0.06320306056295522,
+            "counterterm_coefficients": 2.7377495825930964,
+            "ct_projection": 0.36554683902068064,
+            "complete_assembly": 0.07757807907182723,
+            "numerator_us": 25.069961332080187,
+            "reduction_us": 0.6377343750000001,
+            "masters_us": 0.20515624999999998,
+            "instrumented_total_us": 91.85210910800379,
+            "other_work_us": 65.9392571509236,
+            "raw_native": {
+              "engine_calls": 1.0,
+              "engine_excluding_masters_seconds": 0.000289471,
+              "engine_seconds": 0.000315731,
+              "master_calls": 2.0,
+              "master_rows": 256.0,
+              "masters_seconds": 2.626e-05,
+              "numerator_callback_seconds": 0.000207841,
+              "numerator_calls": 2.0,
+              "numerator_preparation_seconds": 2.951e-06,
+              "numerator_rows": 384.0,
+              "reduction_exclusive_seconds": 8.163e-05
+            },
+            "checksum_all_poles_and_born": 0.221218972727094
+          }
+        ],
+        "parameters": 0.06062509783077985,
+        "born_coefficients": 2.463210876157973,
+        "loop_coefficients": 21.56212531190249,
+        "born_projection": 0.22336689653457142,
+        "born_weighting": 1.6276562746497802,
+        "family_masses": 0.020312199922045693,
+        "bare_assembly": 0.10820303941727616,
+        "counterterm_scalars": 0.062344042817130685,
+        "counterterm_coefficients": 2.568843683548039,
+        "ct_projection": 0.3756331352633424,
+        "complete_assembly": 0.08116421668091789,
+        "numerator_us": 23.113460772509455,
+        "reduction_us": 0.6399296875,
+        "masters_us": 0.20515624999999998,
+        "instrumented_total_us": 94.67485961067723,
+        "other_work_us": 70.78632073052833
+      },
+      "lc_stages": {
+        "case": "dy",
+        "batch_size": 128,
+        "colour": "lc",
+        "r2_strategy": "model",
+        "cpu": 379,
+        "physics_revision": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "profiling_revision": "54b39e18",
+        "scope": "Instrumented diagnostic B128, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+        "samples": [
+          {
+            "parameters": 0.07312519301194698,
+            "born_coefficients": 2.480866896803491,
+            "loop_coefficients": 24.40823436700157,
+            "born_projection": 0.21726555132772774,
+            "born_weighting": 1.7471170394856017,
+            "family_masses": 0.029374859877862036,
+            "bare_assembly": 0.10273424777551554,
+            "counterterm_scalars": 0.146242200571578,
+            "counterterm_coefficients": 4.78618767374428,
+            "ct_projection": 0.40742952478467487,
+            "complete_assembly": 0.08336746759596281,
+            "numerator_us": 25.937789054501568,
+            "reduction_us": 0.74615625,
+            "masters_us": 0.2127421875,
+            "instrumented_total_us": 121.5472425428743,
+            "other_work_us": 94.65055505087273,
+            "raw_native": {
+              "engine_calls": 1.0,
+              "engine_excluding_masters_seconds": 0.00028824,
+              "engine_seconds": 0.000315471,
+              "master_calls": 2.0,
+              "master_rows": 256.0,
+              "masters_seconds": 2.7231e-05,
+              "numerator_callback_seconds": 0.000192732,
+              "numerator_calls": 2.0,
+              "numerator_preparation_seconds": 3.051e-06,
+              "numerator_rows": 384.0,
+              "reduction_exclusive_seconds": 9.5508e-05
+            },
+            "checksum_all_poles_and_born": 0.21939158628880315
+          },
+          {
+            "parameters": 0.040468876250088215,
+            "born_coefficients": 2.3908673938422,
+            "loop_coefficients": 24.603312340332195,
+            "born_projection": 0.2063279680442065,
+            "born_weighting": 1.748445356497541,
+            "family_masses": 0.022109361452749,
+            "bare_assembly": 0.10140593076357618,
+            "counterterm_scalars": 0.12976533980690874,
+            "counterterm_coefficients": 4.785483724845108,
+            "ct_projection": 0.38328153095790185,
+            "complete_assembly": 0.07671860657865182,
+            "numerator_us": 26.144023277832193,
+            "reduction_us": 0.6703984374999999,
+            "masters_us": 0.203515625,
+            "instrumented_total_us": 108.47140629266505,
+            "other_work_us": 81.45346895233286,
+            "raw_native": {
+              "engine_calls": 1.0,
+              "engine_excluding_masters_seconds": 0.000280012,
+              "engine_seconds": 0.000306062,
+              "master_calls": 2.0,
+              "master_rows": 256.0,
+              "masters_seconds": 2.605e-05,
+              "numerator_callback_seconds": 0.000194201,
+              "numerator_calls": 2.0,
+              "numerator_preparation_seconds": 3.01e-06,
+              "numerator_rows": 384.0,
+              "reduction_exclusive_seconds": 8.5811e-05
+            },
+            "checksum_all_poles_and_born": 0.21939158628880315
+          },
+          {
+            "parameters": 0.05070296538178809,
+            "born_coefficients": 2.4977421162475366,
+            "loop_coefficients": 24.16275810901425,
+            "born_projection": 0.20117977328482084,
+            "born_weighting": 1.7131328604591545,
+            "family_masses": 0.021328105503926054,
+            "bare_assembly": 0.10890607882174663,
+            "counterterm_scalars": 0.12874988897237927,
+            "counterterm_coefficients": 5.170257736608619,
+            "ct_projection": 0.39828137232689187,
+            "complete_assembly": 0.08093729775282554,
+            "numerator_us": 25.689867484014247,
+            "reduction_us": 0.6563359375000001,
+            "masters_us": 0.20726562499999998,
+            "instrumented_total_us": 99.83691415982321,
+            "other_work_us": 73.28344511330896,
+            "raw_native": {
+              "engine_calls": 1.0,
+              "engine_excluding_masters_seconds": 0.000275981,
+              "engine_seconds": 0.000302511,
+              "master_calls": 2.0,
+              "master_rows": 256.0,
+              "masters_seconds": 2.653e-05,
+              "numerator_callback_seconds": 0.00019197,
+              "numerator_calls": 2.0,
+              "numerator_preparation_seconds": 3.5e-06,
+              "numerator_rows": 384.0,
+              "reduction_exclusive_seconds": 8.4011e-05
+            },
+            "checksum_all_poles_and_born": 0.21939158628880315
+          },
+          {
+            "parameters": 0.03390641722944565,
+            "born_coefficients": 2.4932969608926214,
+            "loop_coefficients": 24.574867438786896,
+            "born_projection": 0.198047018784564,
+            "born_weighting": 1.7157108231913298,
+            "family_masses": 0.02492197381798178,
+            "bare_assembly": 0.09898440112010576,
+            "counterterm_scalars": 0.12703094398602843,
+            "counterterm_coefficients": 4.8284532567777205,
+            "ct_projection": 0.37867948776693083,
+            "complete_assembly": 0.08125743988784961,
+            "numerator_us": 26.099172126286895,
+            "reduction_us": 0.640625,
+            "masters_us": 0.203671875,
+            "instrumented_total_us": 103.75622650826699,
+            "other_work_us": 76.81275750698009,
+            "raw_native": {
+              "engine_calls": 1.0,
+              "engine_excluding_masters_seconds": 0.000274461,
+              "engine_seconds": 0.000300531,
+              "master_calls": 2.0,
+              "master_rows": 256.0,
+              "masters_seconds": 2.607e-05,
+              "numerator_callback_seconds": 0.000192461,
+              "numerator_calls": 2.0,
+              "numerator_preparation_seconds": 2.65e-06,
+              "numerator_rows": 384.0,
+              "reduction_exclusive_seconds": 8.2e-05
+            },
+            "checksum_all_poles_and_born": 0.21939158628880315
+          },
+          {
+            "parameters": 0.034921868063975126,
+            "born_coefficients": 2.3374300326395314,
+            "loop_coefficients": 22.072679712437093,
+            "born_projection": 0.18906257537310012,
+            "born_weighting": 1.7990701053349767,
+            "family_masses": 0.019140315998811275,
+            "bare_assembly": 0.0973436726781074,
+            "counterterm_scalars": 0.14101624401519075,
+            "counterterm_coefficients": 4.896281552646542,
+            "ct_projection": 0.39960968933883123,
+            "complete_assembly": 0.0770314727560617,
+            "numerator_us": 23.578234399937095,
+            "reduction_us": 0.649609375,
+            "masters_us": 0.20453125,
+            "instrumented_total_us": 93.34024207419134,
+            "other_work_us": 68.90786704925424,
+            "raw_native": {
+              "engine_calls": 1.0,
+              "engine_excluding_masters_seconds": 0.000272841,
+              "engine_seconds": 0.000299021,
+              "master_calls": 2.0,
+              "master_rows": 256.0,
+              "masters_seconds": 2.618e-05,
+              "numerator_callback_seconds": 0.000189691,
+              "numerator_calls": 2.0,
+              "numerator_preparation_seconds": 3.02e-06,
+              "numerator_rows": 384.0,
+              "reduction_exclusive_seconds": 8.315e-05
+            },
+            "checksum_all_poles_and_born": 0.21939158628880315
+          }
+        ],
+        "parameters": 0.040468876250088215,
+        "born_coefficients": 2.480866896803491,
+        "loop_coefficients": 24.40823436700157,
+        "born_projection": 0.20117977328482084,
+        "born_weighting": 1.7471170394856017,
+        "family_masses": 0.022109361452749,
+        "bare_assembly": 0.10140593076357618,
+        "counterterm_scalars": 0.12976533980690874,
+        "counterterm_coefficients": 4.8284532567777205,
+        "ct_projection": 0.39828137232689187,
+        "complete_assembly": 0.08093729775282554,
+        "numerator_us": 25.937789054501568,
+        "reduction_us": 0.6563359375000001,
+        "masters_us": 0.20453125,
+        "instrumented_total_us": 103.75622650826699,
+        "other_work_us": 76.81275750698009
+      }
+    },
+    {
+      "case": "uudd",
+      "full": {
+        "case": "uudd",
+        "process": "u u~ > d d~",
+        "colour": "full",
+        "commit": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "cpu": 379,
+        "generation_s": 5.267499393958133,
+        "source_generation_s": 0.43129252298967913,
+        "arithmetic": "double",
+        "r2_strategy": "model",
+        "reduction_engine": "fast",
+        "coefficient_engine": "jit",
+        "scope": "Complete physical-helicity model-rule Born-loop interference. Fixed Nf LC projects the full formal-Nc contribution before Nc=3 and normalization. Python batch scheduling and exact decimal ingress included; output formatting/checks excluded. Repeated three-point stream; reducer success only, no rescue or cross-precision verification. Development observation, not performance acceptance.",
+        "generation_scope": "Independent fresh process: UFO capture, model/graph/colour/CT lowering, numerical plan and JIT construction. Imports/installation and first evaluation excluded. One cold observation.",
+        "validation": "Existing certified formal-colour controls; full Born/all Laurent components versus independent MadLoop or analytic DY; LC Born/pole/UV-field ratios below plus complete component reconstruction.",
+        "counts": {
+          "born_graphs": 1,
+          "loop_graphs": 14,
+          "families": 8,
+          "helicities": 16,
+          "counterterms": 23,
+          "external_fields": 0
+        },
+        "timings": {
+          "1": {
+            "median_us_per_point": 1535.7970260083675,
+            "min_us_per_point": 1473.1359551660717,
+            "max_us_per_point": 1572.376990225166,
+            "samples_us_per_point": [
+              1558.70703747496,
+              1572.376990225166,
+              1535.7970260083675,
+              1514.3469790928066,
+              1473.1359551660717
+            ],
+            "checksum_all_poles_and_born": [
+              0.24590394169733554,
+              0.24590394169733554,
+              0.24590394169733554,
+              0.24590394169733554,
+              0.24590394169733554
+            ]
+          },
+          "128": {
+            "median_us_per_point": 646.7448047260405,
+            "min_us_per_point": 620.6172656675335,
+            "max_us_per_point": 679.6033826503844,
+            "samples_us_per_point": [
+              620.6172656675335,
+              646.7448047260405,
+              641.276656097034,
+              673.9525001648872,
+              679.6033826503844
+            ],
+            "checksum_all_poles_and_born": [
+              43.92376295491924,
+              43.92376295491924,
+              43.92376295491924,
+              43.92376295491924,
+              43.92376295491924
+            ]
+          }
+        },
+        "first_evaluation_s": 0.05692094104597345,
+        "validation_samples": {
+          "born": [
+            [
+              [
+                0.8013367806451902,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.5609010515412286,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.6645231839496704,
+                0.0
+              ]
+            ]
+          ],
+          "bare": [
+            [
+              [
+                -0.19766330639287605,
+                0.0
+              ],
+              [
+                -0.17887451793962553,
+                0.0
+              ],
+              [
+                -0.08026310265110038,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.028809943970074935,
+                0.0
+              ],
+              [
+                -0.04415947643616966,
+                0.0
+              ],
+              [
+                -0.05618069676112516,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.04148194344019177,
+                0.0
+              ],
+              [
+                -0.05225664944170014,
+                0.0
+              ],
+              [
+                -0.06655964610091243,
+                0.0
+              ]
+            ]
+          ],
+          "uv": [
+            [
+              [
+                0.03520467470134887,
+                0.0
+              ],
+              [
+                -0.10534532222956905,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.024641748059105507,
+                0.0
+              ],
+              [
+                -0.07373716449897667,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.029194120484045422,
+                0.0
+              ],
+              [
+                -0.08735953550744747,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "r2": [
+            [
+              [
+                -0.02849126443603249,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.01968521334448374,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.023626902215246454,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "virtual": [
+            [
+              [
+                -0.1909498961275597,
+                0.0
+              ],
+              [
+                -0.28421984016919455,
+                0.0
+              ],
+              [
+                -0.08026310265110038,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.023853409255453168,
+                0.0
+              ],
+              [
+                -0.11789664093514633,
+                0.0
+              ],
+              [
+                -0.05618069676112516,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.03591472517139281,
+                0.0
+              ],
+              [
+                -0.13961618494914763,
+                0.0
+              ],
+              [
+                -0.06655964610091243,
+                0.0
+              ]
+            ]
+          ],
+          "uv_local": [
+            [
+              [
+                0.03520467470134887,
+                0.0
+              ],
+              [
+                -0.10534532222956905,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.024641748059105507,
+                0.0
+              ],
+              [
+                -0.07373716449897667,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.029194120484045422,
+                0.0
+              ],
+              [
+                -0.08735953550744747,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "uv_external_fields": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "peak_rss_mib": 187.671875
+      },
+      "lc": {
+        "case": "uudd",
+        "process": "u u~ > d d~",
+        "colour": "lc",
+        "commit": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "cpu": 379,
+        "generation_s": 6.045945697987918,
+        "source_generation_s": 0.4311612320016138,
+        "arithmetic": "double",
+        "r2_strategy": "model",
+        "reduction_engine": "fast",
+        "coefficient_engine": "jit",
+        "scope": "Complete physical-helicity model-rule Born-loop interference. Fixed Nf LC projects the full formal-Nc contribution before Nc=3 and normalization. Python batch scheduling and exact decimal ingress included; output formatting/checks excluded. Repeated three-point stream; reducer success only, no rescue or cross-precision verification. Development observation, not performance acceptance.",
+        "generation_scope": "Independent fresh process: UFO capture, model/graph/colour/CT lowering, numerical plan and JIT construction. Imports/installation and first evaluation excluded. One cold observation.",
+        "validation": "Existing certified formal-colour controls; full Born/all Laurent components versus independent MadLoop or analytic DY; LC Born/pole/UV-field ratios below plus complete component reconstruction.",
+        "counts": {
+          "born_graphs": 1,
+          "loop_graphs": 14,
+          "families": 8,
+          "helicities": 16,
+          "counterterms": 23,
+          "external_fields": 0
+        },
+        "timings": {
+          "1": {
+            "median_us_per_point": 1635.1669910363853,
+            "min_us_per_point": 1485.8259819447994,
+            "max_us_per_point": 1663.0669706501067,
+            "samples_us_per_point": [
+              1663.0669706501067,
+              1656.5470141358674,
+              1620.9569876082242,
+              1635.1669910363853,
+              1485.8259819447994
+            ],
+            "checksum_all_poles_and_born": [
+              0.22728513214646184,
+              0.22728513214646184,
+              0.22728513214646184,
+              0.22728513214646184,
+              0.22728513214646184
+            ]
+          },
+          "128": {
+            "median_us_per_point": 608.9587736823887,
+            "min_us_per_point": 595.440124925517,
+            "max_us_per_point": 625.5937814785284,
+            "samples_us_per_point": [
+              614.0245859569404,
+              608.9587736823887,
+              595.440124925517,
+              625.5937814785284,
+              607.6222030060308
+            ],
+            "checksum_all_poles_and_born": [
+              51.76444443119046,
+              51.76444443119046,
+              51.76444443119046,
+              51.76444443119046,
+              51.76444443119046
+            ]
+          }
+        },
+        "first_evaluation_s": 0.05770891503198072,
+        "validation_samples": {
+          "born": [
+            [
+              [
+                0.901503878225839,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.6310136829838822,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.7475885819433792,
+                0.0
+              ]
+            ]
+          ],
+          "bare": [
+            [
+              [
+                -0.11017055403040943,
+                0.0
+              ],
+              [
+                -0.2000424804164391,
+                0.0
+              ],
+              [
+                -0.10158298929279874,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.05933936412998616,
+                0.0
+              ],
+              [
+                -0.022795356212107425,
+                0.0
+              ],
+              [
+                -0.071103694338299,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.12218026747359874,
+                0.0
+              ],
+              [
+                0.009282337882898247,
+                0.0
+              ],
+              [
+                -0.08423955209646729,
+                0.0
+              ]
+            ]
+          ],
+          "uv": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.1862354803701309,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.13035677295354814,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.15443917884352332,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "r2": [
+            [
+              [
+                -0.076187241969599,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.05332777075372424,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.06317966407235043,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "virtual": [
+            [
+              [
+                -0.18635779600000843,
+                0.0
+              ],
+              [
+                -0.38627796078657,
+                0.0
+              ],
+              [
+                -0.10158298929279874,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.00601159337626192,
+                0.0
+              ],
+              [
+                -0.15315212916565557,
+                0.0
+              ],
+              [
+                -0.071103694338299,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.05900060340124831,
+                0.0
+              ],
+              [
+                -0.14515684096062506,
+                0.0
+              ],
+              [
+                -0.08423955209646729,
+                0.0
+              ]
+            ]
+          ],
+          "uv_local": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.1862354803701309,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.13035677295354814,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.15443917884352332,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "uv_external_fields": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "peak_rss_mib": 187.1484375
+      },
+      "full_stages": {
+        "case": "uudd",
+        "batch_size": 128,
+        "colour": "full",
+        "r2_strategy": "model",
+        "cpu": 379,
+        "physics_revision": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "profiling_revision": "54b39e18",
+        "scope": "Instrumented diagnostic B128, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+        "samples": [
+          {
+            "parameters": 0.06742220648447983,
+            "born_coefficients": 2.3625075300515164,
+            "loop_coefficients": 285.24418758024694,
+            "born_projection": 0.29360171538428403,
+            "born_weighting": 35.31313222993049,
+            "family_masses": 0.296718098979909,
+            "bare_assembly": 0.29124976208549924,
+            "counterterm_scalars": 2.1088972061988898,
+            "counterterm_coefficients": 83.727069068118,
+            "ct_projection": 4.34658613812644,
+            "complete_assembly": 0.10976555131492205,
+            "numerator_us": 303.13696883024693,
+            "reduction_us": 9.379398437499999,
+            "masters_us": 8.729257812499998,
+            "instrumented_total_us": 717.8331643444835,
+            "other_work_us": 396.58753926423657,
+            "raw_native": {
+              "engine_calls": 8.0,
+              "engine_excluding_masters_seconds": 0.003465635,
+              "engine_seconds": 0.0045829799999999995,
+              "master_calls": 15.0,
+              "master_rows": 3072.0,
+              "masters_seconds": 0.0011173449999999998,
+              "numerator_callback_seconds": 0.002265072,
+              "numerator_calls": 25.0,
+              "numerator_preparation_seconds": 2.5203999999999998e-05,
+              "numerator_rows": 4736.0,
+              "reduction_exclusive_seconds": 0.001200563
+            },
+            "checksum_all_poles_and_born": 43.92376295491924
+          },
+          {
+            "parameters": 0.07609378371853381,
+            "born_coefficients": 2.6875859475694597,
+            "loop_coefficients": 306.99936678502127,
+            "born_projection": 0.3373515937710181,
+            "born_weighting": 31.078867323230952,
+            "family_masses": 0.17000002117129043,
+            "bare_assembly": 0.2640622369654011,
+            "counterterm_scalars": 1.8086952877638396,
+            "counterterm_coefficients": 74.40351373588783,
+            "ct_projection": 3.8085236155893654,
+            "complete_assembly": 0.08414872354478575,
+            "numerator_us": 322.9069839725213,
+            "reduction_us": 6.6395937499999995,
+            "masters_us": 6.890101562499999,
+            "instrumented_total_us": 704.909515206964,
+            "other_work_us": 368.4728359219427,
+            "raw_native": {
+              "engine_calls": 8.0,
+              "engine_excluding_masters_seconds": 0.0028606239999999995,
+              "engine_seconds": 0.003742557,
+              "master_calls": 15.0,
+              "master_rows": 3072.0,
+              "masters_seconds": 0.0008819329999999999,
+              "numerator_callback_seconds": 0.002010756,
+              "numerator_calls": 25.0,
+              "numerator_preparation_seconds": 2.5418999999999995e-05,
+              "numerator_rows": 4736.0,
+              "reduction_exclusive_seconds": 0.0008498679999999999
+            },
+            "checksum_all_poles_and_born": 43.92376295491924
+          },
+          {
+            "parameters": 0.0847653609525878,
+            "born_coefficients": 3.163921974191908,
+            "loop_coefficients": 273.9863357419381,
+            "born_projection": 0.2627343747008126,
+            "born_weighting": 29.79864802910015,
+            "family_masses": 0.26671068553696387,
+            "bare_assembly": 0.30532009986927733,
+            "counterterm_scalars": 2.3203269847726915,
+            "counterterm_coefficients": 80.08514032553649,
+            "ct_projection": 3.919781192962546,
+            "complete_assembly": 0.09171844794764183,
+            "numerator_us": 288.0260779294381,
+            "reduction_us": 6.1727734375,
+            "masters_us": 6.531125,
+            "instrumented_total_us": 693.9409531696583,
+            "other_work_us": 393.21097680272027,
+            "raw_native": {
+              "engine_calls": 8.0,
+              "engine_excluding_masters_seconds": 0.002561542,
+              "engine_seconds": 0.0033975259999999997,
+              "master_calls": 15.0,
+              "master_rows": 3072.0,
+              "masters_seconds": 0.000835984,
+              "numerator_callback_seconds": 0.0017714270000000001,
+              "numerator_calls": 25.0,
+              "numerator_preparation_seconds": 2.566e-05,
+              "numerator_rows": 4736.0,
+              "reduction_exclusive_seconds": 0.000790115
+            },
+            "checksum_all_poles_and_born": 43.92376295491924
+          },
+          {
+            "parameters": 0.0924219420994632,
+            "born_coefficients": 3.5495468182489276,
+            "loop_coefficients": 306.20297002315056,
+            "born_projection": 0.2964920895465184,
+            "born_weighting": 27.775352009484777,
+            "family_masses": 0.1381249603582546,
+            "bare_assembly": 0.26484349291422404,
+            "counterterm_scalars": 1.6037661225709599,
+            "counterterm_coefficients": 68.86406345074647,
+            "ct_projection": 3.848218511848245,
+            "complete_assembly": 0.08664073902764358,
+            "numerator_us": 320.3724543981506,
+            "reduction_us": 5.9401093750000005,
+            "masters_us": 6.499164062500001,
+            "instrumented_total_us": 689.2969531691051,
+            "other_work_us": 356.4852253334545,
+            "raw_native": {
+              "engine_calls": 8.0,
+              "engine_excluding_masters_seconds": 0.0025526389999999998,
+              "engine_seconds": 0.0033845320000000004,
+              "master_calls": 15.0,
+              "master_rows": 3072.0,
+              "masters_seconds": 0.0008318930000000001,
+              "numerator_callback_seconds": 0.0017923050000000001,
+              "numerator_calls": 25.0,
+              "numerator_preparation_seconds": 2.1389e-05,
+              "numerator_rows": 4736.0,
+              "reduction_exclusive_seconds": 0.0007603340000000001
+            },
+            "checksum_all_poles_and_born": 43.92376295491924
+          },
+          {
+            "parameters": 0.05781248546554707,
+            "born_coefficients": 2.563374891906278,
+            "loop_coefficients": 258.3576101642393,
+            "born_projection": 0.25727376851136796,
+            "born_weighting": 28.27575053743203,
+            "family_masses": 0.13359431250137277,
+            "bare_assembly": 0.26851557777263224,
+            "counterterm_scalars": 1.6774451978562865,
+            "counterterm_coefficients": 69.00860262248898,
+            "ct_projection": 3.6350938898976892,
+            "complete_assembly": 0.09250015864381567,
+            "numerator_us": 272.0107117267393,
+            "reduction_us": 5.7087031249999995,
+            "masters_us": 6.175882812499999,
+            "instrumented_total_us": 620.549781160662,
+            "other_work_us": 336.65448349642264,
+            "raw_native": {
+              "engine_calls": 8.0,
+              "engine_excluding_masters_seconds": 0.0024586409999999997,
+              "engine_seconds": 0.0032491539999999998,
+              "master_calls": 15.0,
+              "master_rows": 3072.0,
+              "masters_seconds": 0.000790513,
+              "numerator_callback_seconds": 0.001727927,
+              "numerator_calls": 25.0,
+              "numerator_preparation_seconds": 1.967e-05,
+              "numerator_rows": 4736.0,
+              "reduction_exclusive_seconds": 0.0007307139999999999
+            },
+            "checksum_all_poles_and_born": 43.92376295491924
+          }
+        ],
+        "parameters": 0.07609378371853381,
+        "born_coefficients": 2.6875859475694597,
+        "loop_coefficients": 285.24418758024694,
+        "born_projection": 0.29360171538428403,
+        "born_weighting": 29.79864802910015,
+        "family_masses": 0.17000002117129043,
+        "bare_assembly": 0.26851557777263224,
+        "counterterm_scalars": 1.8086952877638396,
+        "counterterm_coefficients": 74.40351373588783,
+        "ct_projection": 3.848218511848245,
+        "complete_assembly": 0.09171844794764183,
+        "numerator_us": 303.13696883024693,
+        "reduction_us": 6.1727734375,
+        "masters_us": 6.531125,
+        "instrumented_total_us": 693.9409531696583,
+        "other_work_us": 368.4728359219427
+      },
+      "lc_stages": {
+        "case": "uudd",
+        "batch_size": 128,
+        "colour": "lc",
+        "r2_strategy": "model",
+        "cpu": 379,
+        "physics_revision": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "profiling_revision": "54b39e18",
+        "scope": "Instrumented diagnostic B128, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+        "samples": [
+          {
+            "parameters": 0.06929667506483383,
+            "born_coefficients": 2.5155627554340754,
+            "loop_coefficients": 273.08853077556705,
+            "born_projection": 0.26820316634257324,
+            "born_weighting": 16.853960460139206,
+            "family_masses": 0.1637417881283909,
+            "bare_assembly": 0.2846090865205042,
+            "counterterm_scalars": 2.332913936697878,
+            "counterterm_coefficients": 81.81684233932174,
+            "ct_projection": 2.128757842001505,
+            "complete_assembly": 0.09359382602269761,
+            "numerator_us": 288.42928858806704,
+            "reduction_us": 6.4137031250000005,
+            "masters_us": 7.089156249999999,
+            "instrumented_total_us": 663.2813669966708,
+            "other_work_us": 361.34921903360384,
+            "raw_native": {
+              "engine_calls": 8.0,
+              "engine_excluding_masters_seconds": 0.002763162,
+              "engine_seconds": 0.0036705739999999994,
+              "master_calls": 15.0,
+              "master_rows": 3072.0,
+              "masters_seconds": 0.0009074119999999999,
+              "numerator_callback_seconds": 0.001942208,
+              "numerator_calls": 25.0,
+              "numerator_preparation_seconds": 2.1408999999999998e-05,
+              "numerator_rows": 4736.0,
+              "reduction_exclusive_seconds": 0.000820954
+            },
+            "checksum_all_poles_and_born": 51.76444443119046
+          },
+          {
+            "parameters": 0.06281243258854374,
+            "born_coefficients": 2.3732891349936835,
+            "loop_coefficients": 262.4185535751167,
+            "born_projection": 0.26210909709334373,
+            "born_weighting": 15.349929526564665,
+            "family_masses": 0.1659527697484009,
+            "bare_assembly": 0.3156251295877155,
+            "counterterm_scalars": 2.0574384507199284,
+            "counterterm_coefficients": 81.76472056220518,
+            "ct_projection": 2.7131327442475595,
+            "complete_assembly": 0.1059374881151598,
+            "numerator_us": 277.7927410751167,
+            "reduction_us": 6.297492187500001,
+            "masters_us": 6.834250000000001,
+            "instrumented_total_us": 642.657375010458,
+            "other_work_us": 351.7328917478414,
+            "raw_native": {
+              "engine_calls": 8.0,
+              "engine_excluding_masters_seconds": 0.0027538640000000004,
+              "engine_seconds": 0.003628648,
+              "master_calls": 15.0,
+              "master_rows": 3072.0,
+              "masters_seconds": 0.0008747840000000001,
+              "numerator_callback_seconds": 0.0019477849999999998,
+              "numerator_calls": 25.0,
+              "numerator_preparation_seconds": 2.0111000000000004e-05,
+              "numerator_rows": 4736.0,
+              "reduction_exclusive_seconds": 0.0008060790000000001
+            },
+            "checksum_all_poles_and_born": 51.76444443119046
+          },
+          {
+            "parameters": 0.044844000512966886,
+            "born_coefficients": 2.495874923624797,
+            "loop_coefficients": 349.0218141450896,
+            "born_projection": 0.3760155777854379,
+            "born_weighting": 18.190397895523347,
+            "family_masses": 0.2415631570329424,
+            "bare_assembly": 0.2520391717553139,
+            "counterterm_scalars": 1.9322883417771664,
+            "counterterm_coefficients": 75.2615774217702,
+            "ct_projection": 2.643445441208314,
+            "complete_assembly": 0.1075700311048422,
+            "numerator_us": 366.0917125825896,
+            "reduction_us": 6.8993203124999996,
+            "masters_us": 7.2459140625,
+            "instrumented_total_us": 735.6464452641376,
+            "other_work_us": 355.409498306548,
+            "raw_native": {
+              "engine_calls": 8.0,
+              "engine_excluding_masters_seconds": 0.0030456410000000004,
+              "engine_seconds": 0.0039731179999999994,
+              "master_calls": 15.0,
+              "master_rows": 3072.0,
+              "masters_seconds": 0.000927477,
+              "numerator_callback_seconds": 0.0021625280000000004,
+              "numerator_calls": 25.0,
+              "numerator_preparation_seconds": 2.2419e-05,
+              "numerator_rows": 4736.0,
+              "reduction_exclusive_seconds": 0.0008831129999999999
+            },
+            "checksum_all_poles_and_born": 51.76444443119046
+          },
+          {
+            "parameters": 0.047109097067732364,
+            "born_coefficients": 3.123999704257585,
+            "loop_coefficients": 273.24876600687276,
+            "born_projection": 0.39937458495842293,
+            "born_weighting": 16.200242498598527,
+            "family_masses": 0.16257763491012156,
+            "bare_assembly": 0.2605388544907328,
+            "counterterm_scalars": 2.279726686538197,
+            "counterterm_coefficients": 81.37168015309726,
+            "ct_projection": 2.6223515305900946,
+            "complete_assembly": 0.10124995242222212,
+            "numerator_us": 287.40446913187276,
+            "reduction_us": 5.892429687500001,
+            "masters_us": 6.409710937500001,
+            "instrumented_total_us": 658.2811874977779,
+            "other_work_us": 358.5745777409051,
+            "raw_native": {
+              "engine_calls": 8.0,
+              "engine_excluding_masters_seconds": 0.0025472909999999997,
+              "engine_seconds": 0.0033677340000000003,
+              "master_calls": 15.0,
+              "master_rows": 3072.0,
+              "masters_seconds": 0.0008204430000000001,
+              "numerator_callback_seconds": 0.00179306,
+              "numerator_calls": 25.0,
+              "numerator_preparation_seconds": 1.887e-05,
+              "numerator_rows": 4736.0,
+              "reduction_exclusive_seconds": 0.0007542310000000001
+            },
+            "checksum_all_poles_and_born": 51.76444443119046
+          },
+          {
+            "parameters": 0.05718766260542907,
+            "born_coefficients": 3.138531155855162,
+            "loop_coefficients": 270.1024923226214,
+            "born_projection": 0.26491443350096233,
+            "born_weighting": 16.454047909064684,
+            "family_masses": 0.16686772141838446,
+            "bare_assembly": 0.3156251295877155,
+            "counterterm_scalars": 2.0259449229342863,
+            "counterterm_coefficients": 79.31988147902302,
+            "ct_projection": 2.0932966435793787,
+            "complete_assembly": 0.09328095984528773,
+            "numerator_us": 284.7247970101214,
+            "reduction_us": 5.796632812499999,
+            "masters_us": 6.2476015625,
+            "instrumented_total_us": 645.656375127146,
+            "other_work_us": 348.88734374202465,
+            "raw_native": {
+              "engine_calls": 8.0,
+              "engine_excluding_masters_seconds": 0.002593914,
+              "engine_seconds": 0.003393607,
+              "master_calls": 15.0,
+              "master_rows": 3072.0,
+              "masters_seconds": 0.000799693,
+              "numerator_callback_seconds": 0.0018519449999999998,
+              "numerator_calls": 25.0,
+              "numerator_preparation_seconds": 1.971e-05,
+              "numerator_rows": 4736.0,
+              "reduction_exclusive_seconds": 0.0007419689999999999
+            },
+            "checksum_all_poles_and_born": 51.76444443119046
+          }
+        ],
+        "parameters": 0.05718766260542907,
+        "born_coefficients": 2.5155627554340754,
+        "loop_coefficients": 273.08853077556705,
+        "born_projection": 0.26820316634257324,
+        "born_weighting": 16.454047909064684,
+        "family_masses": 0.1659527697484009,
+        "bare_assembly": 0.2846090865205042,
+        "counterterm_scalars": 2.0574384507199284,
+        "counterterm_coefficients": 81.37168015309726,
+        "ct_projection": 2.6223515305900946,
+        "complete_assembly": 0.10124995242222212,
+        "numerator_us": 287.40446913187276,
+        "reduction_us": 6.297492187500001,
+        "masters_us": 6.834250000000001,
+        "instrumented_total_us": 658.2811874977779,
+        "other_work_us": 355.409498306548
+      }
+    },
+    {
+      "case": "tt",
+      "full": {
+        "case": "tt",
+        "process": "u u~ > t t~",
+        "colour": "full",
+        "commit": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "cpu": 379,
+        "generation_s": 5.252590928983409,
+        "source_generation_s": 0.4145754079800099,
+        "arithmetic": "double",
+        "r2_strategy": "model",
+        "reduction_engine": "fast",
+        "coefficient_engine": "jit",
+        "scope": "Complete physical-helicity model-rule Born-loop interference. Fixed Nf LC projects the full formal-Nc contribution before Nc=3 and normalization. Python batch scheduling and exact decimal ingress included; output formatting/checks excluded. Repeated three-point stream; reducer success only, no rescue or cross-precision verification. Development observation, not performance acceptance.",
+        "generation_scope": "Independent fresh process: UFO capture, model/graph/colour/CT lowering, numerical plan and JIT construction. Imports/installation and first evaluation excluded. One cold observation.",
+        "validation": "Existing certified formal-colour controls; full Born/all Laurent components versus independent MadLoop or analytic DY; LC Born/pole/UV-field ratios below plus complete component reconstruction.",
+        "counts": {
+          "born_graphs": 1,
+          "loop_graphs": 14,
+          "families": 9,
+          "helicities": 16,
+          "counterterms": 23,
+          "external_fields": 2
+        },
+        "timings": {
+          "1": {
+            "median_us_per_point": 1940.907968673855,
+            "min_us_per_point": 1786.1079541034997,
+            "max_us_per_point": 2120.7500249147415,
+            "samples_us_per_point": [
+              1933.7779958732426,
+              1940.907968673855,
+              1786.1079541034997,
+              2048.959955573082,
+              2120.7500249147415
+            ],
+            "checksum_all_poles_and_born": [
+              0.9513401088522968,
+              0.9513401088522968,
+              0.9513401088522968,
+              0.9513401088522968,
+              0.9513401088522968
+            ]
+          },
+          "128": {
+            "median_us_per_point": 729.9900157704542,
+            "min_us_per_point": 691.0213987794123,
+            "max_us_per_point": 743.1600779455039,
+            "samples_us_per_point": [
+              732.5665155804018,
+              729.9900157704542,
+              718.8676249825221,
+              743.1600779455039,
+              691.0213987794123
+            ],
+            "checksum_all_poles_and_born": [
+              96.98292301686394,
+              96.98292301686394,
+              96.98292301686394,
+              96.98292301686394,
+              96.98292301686394
+            ]
+          }
+        },
+        "first_evaluation_s": 0.08367912896210328,
+        "validation_samples": {
+          "born": [
+            [
+              [
+                0.8211891045997556,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.830573925663837,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.9735915609477962,
+                0.0
+              ]
+            ]
+          ],
+          "bare": [
+            [
+              [
+                0.5698202478151116,
+                0.0
+              ],
+              [
+                0.0628802859420972,
+                0.0
+              ],
+              [
+                -0.041125770706161364,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.47860713447621217,
+                0.0
+              ],
+              [
+                0.039956208101324005,
+                0.0
+              ],
+              [
+                -0.0415957696345907,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.1438892255135022,
+                0.0
+              ],
+              [
+                -0.03614319274465776,
+                0.0
+              ],
+              [
+                -0.048758200848887226,
+                0.0
+              ]
+            ]
+          ],
+          "uv": [
+            [
+              [
+                -0.2626357194132996,
+                0.0
+              ],
+              [
+                -0.16964380416291563,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.26563720739934826,
+                0.0
+              ],
+              [
+                -0.17158254974268683,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.31137763347319247,
+                0.0
+              ],
+              [
+                -0.2011275785016601,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "r2": [
+            [
+              [
+                -0.029144235222291003,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.0327384236733513,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.04247380776944467,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "virtual": [
+            [
+              [
+                0.278040293179521,
+                0.0
+              ],
+              [
+                -0.10676351822081843,
+                0.0
+              ],
+              [
+                -0.041125770706161364,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.18023150340351263,
+                0.0
+              ],
+              [
+                -0.13162634164136283,
+                0.0
+              ],
+              [
+                -0.0415957696345907,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.20996221572913495,
+                0.0
+              ],
+              [
+                -0.23727077124631785,
+                0.0
+              ],
+              [
+                -0.048758200848887226,
+                0.0
+              ]
+            ]
+          ],
+          "uv_local": [
+            [
+              [
+                0.03607683560019538,
+                0.0
+              ],
+              [
+                -0.10795514810367357,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.036489133626033336,
+                0.0
+              ],
+              [
+                -0.10918889529080068,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.042772246355083574,
+                0.0
+              ],
+              [
+                -0.12799027722832915,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "uv_external_fields": [
+            [
+              [
+                -0.298712555013495,
+                0.0
+              ],
+              [
+                -0.06168865605924206,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.3021263410253816,
+                0.0
+              ],
+              [
+                -0.06239365445188613,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.35414987982827606,
+                0.0
+              ],
+              [
+                -0.07313730127333096,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "peak_rss_mib": 190.3984375
+      },
+      "lc": {
+        "case": "tt",
+        "process": "u u~ > t t~",
+        "colour": "lc",
+        "commit": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "cpu": 379,
+        "generation_s": 5.637405484972987,
+        "source_generation_s": 0.4201689619803801,
+        "arithmetic": "double",
+        "r2_strategy": "model",
+        "reduction_engine": "fast",
+        "coefficient_engine": "jit",
+        "scope": "Complete physical-helicity model-rule Born-loop interference. Fixed Nf LC projects the full formal-Nc contribution before Nc=3 and normalization. Python batch scheduling and exact decimal ingress included; output formatting/checks excluded. Repeated three-point stream; reducer success only, no rescue or cross-precision verification. Development observation, not performance acceptance.",
+        "generation_scope": "Independent fresh process: UFO capture, model/graph/colour/CT lowering, numerical plan and JIT construction. Imports/installation and first evaluation excluded. One cold observation.",
+        "validation": "Existing certified formal-colour controls; full Born/all Laurent components versus independent MadLoop or analytic DY; LC Born/pole/UV-field ratios below plus complete component reconstruction.",
+        "counts": {
+          "born_graphs": 1,
+          "loop_graphs": 14,
+          "families": 9,
+          "helicities": 16,
+          "counterterms": 23,
+          "external_fields": 2
+        },
+        "timings": {
+          "1": {
+            "median_us_per_point": 1729.337964206934,
+            "min_us_per_point": 1673.0980132706463,
+            "max_us_per_point": 2102.9289928264916,
+            "samples_us_per_point": [
+              1673.0980132706463,
+              1729.337964206934,
+              2102.9289928264916,
+              1694.4470116868615,
+              1799.357996787876
+            ],
+            "checksum_all_poles_and_born": [
+              1.1206127218983115,
+              1.1206127218983115,
+              1.1206127218983115,
+              1.1206127218983115,
+              1.1206127218983115
+            ]
+          },
+          "128": {
+            "median_us_per_point": 723.7474060275417,
+            "min_us_per_point": 703.9513825475296,
+            "max_us_per_point": 734.9267498284462,
+            "samples_us_per_point": [
+              727.8007888089633,
+              723.7474060275417,
+              709.4557031450677,
+              734.9267498284462,
+              703.9513825475296
+            ],
+            "checksum_all_poles_and_born": [
+              141.31449737635577,
+              141.31449737635577,
+              141.31449737635577,
+              141.31449737635577,
+              141.31449737635577
+            ]
+          }
+        },
+        "first_evaluation_s": 0.07794906303752214,
+        "validation_samples": {
+          "born": [
+            [
+              [
+                0.9238377426747251,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.9343956663718167,
+                0.0
+              ]
+            ],
+            [
+              [
+                1.0952905060662708,
+                0.0
+              ]
+            ]
+          ],
+          "bare": [
+            [
+              [
+                0.8642422394556326,
+                0.0
+              ],
+              [
+                0.10963931109013049,
+                0.0
+              ],
+              [
+                -0.052049803549985486,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.9534301245123351,
+                0.0
+              ],
+              [
+                0.13153286540776057,
+                0.0
+              ],
+              [
+                -0.052644645943778906,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.7595860528757741,
+                0.0
+              ],
+              [
+                0.021051181894126428,
+                0.0
+              ],
+              [
+                -0.061709597949372565,
+                0.0
+              ]
+            ]
+          ],
+          "uv": [
+            [
+              [
+                -0.3780580774389547,
+                0.0
+              ],
+              [
+                -0.2689239850082583,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.3823786503602486,
+                0.0
+              ],
+              [
+                -0.27199733737619114,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.448220941657662,
+                0.0
+              ],
+              [
+                -0.31883292273842706,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "r2": [
+            [
+              [
+                -0.07807470532497823,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.07896696891566836,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.09256439692405943,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "virtual": [
+            [
+              [
+                0.40810945669169973,
+                0.0
+              ],
+              [
+                -0.15928467391812784,
+                0.0
+              ],
+              [
+                -0.052049803549985486,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.49208450523641817,
+                0.0
+              ],
+              [
+                -0.14046447196843057,
+                0.0
+              ],
+              [
+                -0.052644645943778906,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.21880071429405257,
+                0.0
+              ],
+              [
+                -0.29778174084430065,
+                0.0
+              ],
+              [
+                -0.061709597949372565,
+                0.0
+              ]
+            ]
+          ],
+          "uv_local": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.19084927968328008,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.19303036846052277,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -0.22626852581436757,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "uv_external_fields": [
+            [
+              [
+                -0.3780580774389547,
+                0.0
+              ],
+              [
+                -0.07807470532497823,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.3823786503602486,
+                0.0
+              ],
+              [
+                -0.07896696891566839,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -0.448220941657662,
+                0.0
+              ],
+              [
+                -0.09256439692405949,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "peak_rss_mib": 189.55859375
+      },
+      "full_stages": {
+        "case": "tt",
+        "batch_size": 128,
+        "colour": "full",
+        "r2_strategy": "model",
+        "cpu": 379,
+        "physics_revision": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "profiling_revision": "54b39e18",
+        "scope": "Instrumented diagnostic B128, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+        "samples": [
+          {
+            "parameters": 0.07749986252747476,
+            "born_coefficients": 2.688609583856305,
+            "loop_coefficients": 284.5292656274978,
+            "born_projection": 0.2630467861308716,
+            "born_weighting": 31.66708620483405,
+            "family_masses": 0.3492968971841037,
+            "bare_assembly": 0.28476551960920915,
+            "counterterm_scalars": 2.4313990252267104,
+            "counterterm_coefficients": 78.88150139478967,
+            "field_scalars": 0.3554769136826508,
+            "ct_projection": 4.914711098535918,
+            "complete_assembly": 0.09406221579411067,
+            "numerator_us": 305.0036093774978,
+            "reduction_us": 10.1391640625,
+            "masters_us": 14.323562499999998,
+            "instrumented_total_us": 796.1098358464369,
+            "other_work_us": 466.6434999064391,
+            "raw_native": {
+              "engine_calls": 9.0,
+              "engine_excluding_masters_seconds": 0.003889239,
+              "engine_seconds": 0.005722655,
+              "master_calls": 19.0,
+              "master_rows": 4736.0,
+              "masters_seconds": 0.0018334159999999996,
+              "numerator_callback_seconds": 0.002591426,
+              "numerator_calls": 43.0,
+              "numerator_preparation_seconds": 2.9290000000000006e-05,
+              "numerator_rows": 7168.0,
+              "reduction_exclusive_seconds": 0.001297813
+            },
+            "checksum_all_poles_and_born": 96.98292301686394
+          },
+          {
+            "parameters": 0.0862501110532321,
+            "born_coefficients": 3.5193902476748917,
+            "loop_coefficients": 278.79016397491796,
+            "born_projection": 0.2821875568770338,
+            "born_weighting": 30.86872584390221,
+            "family_masses": 0.34688355299294926,
+            "bare_assembly": 0.27710939320968464,
+            "counterterm_scalars": 2.130881512130145,
+            "counterterm_coefficients": 78.09167163941311,
+            "field_scalars": 0.3587419996620156,
+            "ct_projection": 4.623843778972514,
+            "complete_assembly": 0.0853128767630551,
+            "numerator_us": 299.39160928741796,
+            "reduction_us": 10.014828125,
+            "masters_us": 12.463859374999997,
+            "instrumented_total_us": 759.8064685225836,
+            "other_work_us": 437.93617173516566,
+            "raw_native": {
+              "engine_calls": 9.0,
+              "engine_excluding_masters_seconds": 0.0038903009999999997,
+              "engine_seconds": 0.005485675000000001,
+              "master_calls": 19.0,
+              "master_rows": 4736.0,
+              "masters_seconds": 0.0015953739999999997,
+              "numerator_callback_seconds": 0.002608403,
+              "numerator_calls": 43.0,
+              "numerator_preparation_seconds": 2.8582e-05,
+              "numerator_rows": 7168.0,
+              "reduction_exclusive_seconds": 0.0012818979999999998
+            },
+            "checksum_all_poles_and_born": 96.98292301686394
+          },
+          {
+            "parameters": 0.08359347702935338,
+            "born_coefficients": 2.708445208554622,
+            "loop_coefficients": 269.6838751035102,
+            "born_projection": 0.27671876523527317,
+            "born_weighting": 29.736756914644502,
+            "family_masses": 0.3927580110030249,
+            "bare_assembly": 0.3505547283566557,
+            "counterterm_scalars": 2.136108832928585,
+            "counterterm_coefficients": 78.33525023670518,
+            "field_scalars": 0.4436014933162369,
+            "ct_projection": 4.75947626910056,
+            "complete_assembly": 0.08617189450887963,
+            "numerator_us": 289.9113047910102,
+            "reduction_us": 10.096843750000001,
+            "masters_us": 13.907023437500001,
+            "instrumented_total_us": 752.4176949118555,
+            "other_work_us": 438.5025229333453,
+            "raw_native": {
+              "engine_calls": 9.0,
+              "engine_excluding_masters_seconds": 0.003854596,
+              "engine_seconds": 0.005634695,
+              "master_calls": 19.0,
+              "master_rows": 4736.0,
+              "masters_seconds": 0.0017800990000000003,
+              "numerator_callback_seconds": 0.0025622,
+              "numerator_calls": 43.0,
+              "numerator_preparation_seconds": 2.6911e-05,
+              "numerator_rows": 7168.0,
+              "reduction_exclusive_seconds": 0.0012923960000000001
+            },
+            "checksum_all_poles_and_born": 96.98292301686394
+          },
+          {
+            "parameters": 0.07758626452414319,
+            "born_coefficients": 3.4569688978081103,
+            "loop_coefficients": 273.75351601222064,
+            "born_projection": 0.28140630092821084,
+            "born_weighting": 28.131991712143645,
+            "family_masses": 0.22296899260254577,
+            "bare_assembly": 0.2848437361535616,
+            "counterterm_scalars": 2.0317988855822477,
+            "counterterm_coefficients": 75.52501529062283,
+            "field_scalars": 0.3573513822630048,
+            "ct_projection": 4.716664079751354,
+            "complete_assembly": 0.08210963642341085,
+            "numerator_us": 293.4922503872206,
+            "reduction_us": 9.392999999999999,
+            "masters_us": 11.881070312499999,
+            "instrumented_total_us": 733.8529217122414,
+            "other_work_us": 419.08660101252076,
+            "raw_native": {
+              "engine_calls": 9.0,
+              "engine_excluding_masters_seconds": 0.003702922,
+              "engine_seconds": 0.005223698999999999,
+              "master_calls": 19.0,
+              "master_rows": 4736.0,
+              "masters_seconds": 0.0015207769999999998,
+              "numerator_callback_seconds": 0.002500618,
+              "numerator_calls": 43.0,
+              "numerator_preparation_seconds": 2.594e-05,
+              "numerator_rows": 7168.0,
+              "reduction_exclusive_seconds": 0.001202304
+            },
+            "checksum_all_poles_and_born": 96.98292301686394
+          },
+          {
+            "parameters": 0.0896097844815813,
+            "born_coefficients": 3.1397030397783965,
+            "loop_coefficients": 267.0739690984192,
+            "born_projection": 0.3116406332992483,
+            "born_weighting": 29.65527301057591,
+            "family_masses": 0.3087575350946281,
+            "bare_assembly": 0.2874221536330879,
+            "counterterm_scalars": 1.9813533072010614,
+            "counterterm_coefficients": 73.96750106636318,
+            "field_scalars": 0.32179741538129747,
+            "ct_projection": 4.522984454524703,
+            "complete_assembly": 0.08375036486540921,
+            "numerator_us": 287.59754722341916,
+            "reduction_us": 9.910117187500001,
+            "masters_us": 12.204765625000002,
+            "instrumented_total_us": 737.2946565737948,
+            "other_work_us": 427.5822265378756,
+            "raw_native": {
+              "engine_calls": 9.0,
+              "engine_excluding_masters_seconds": 0.003867512,
+              "engine_seconds": 0.005429722,
+              "master_calls": 19.0,
+              "master_rows": 4736.0,
+              "masters_seconds": 0.0015622100000000003,
+              "numerator_callback_seconds": 0.002599017,
+              "numerator_calls": 43.0,
+              "numerator_preparation_seconds": 2.8001e-05,
+              "numerator_rows": 7168.0,
+              "reduction_exclusive_seconds": 0.0012684950000000001
+            },
+            "checksum_all_poles_and_born": 96.98292301686394
+          }
+        ],
+        "parameters": 0.08359347702935338,
+        "born_coefficients": 3.1397030397783965,
+        "loop_coefficients": 273.75351601222064,
+        "born_projection": 0.28140630092821084,
+        "born_weighting": 29.736756914644502,
+        "family_masses": 0.34688355299294926,
+        "bare_assembly": 0.2848437361535616,
+        "counterterm_scalars": 2.130881512130145,
+        "counterterm_coefficients": 78.09167163941311,
+        "field_scalars": 0.3573513822630048,
+        "ct_projection": 4.716664079751354,
+        "complete_assembly": 0.0853128767630551,
+        "numerator_us": 293.4922503872206,
+        "reduction_us": 10.014828125,
+        "masters_us": 12.463859374999997,
+        "instrumented_total_us": 752.4176949118555,
+        "other_work_us": 437.93617173516566
+      },
+      "lc_stages": {
+        "case": "tt",
+        "batch_size": 128,
+        "colour": "lc",
+        "r2_strategy": "model",
+        "cpu": 379,
+        "physics_revision": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "profiling_revision": "54b39e18",
+        "scope": "Instrumented diagnostic B128, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+        "samples": [
+          {
+            "parameters": 0.07804692359059118,
+            "born_coefficients": 2.4904766178224236,
+            "loop_coefficients": 278.5881474665075,
+            "born_projection": 0.26507814254728146,
+            "born_weighting": 17.20702357488335,
+            "family_masses": 0.42312558434787206,
+            "bare_assembly": 0.28140630092821084,
+            "counterterm_scalars": 2.2125718714960385,
+            "counterterm_coefficients": 84.69740714645013,
+            "field_scalars": 0.7757030289212707,
+            "ct_projection": 3.390086021681782,
+            "complete_assembly": 0.09679706636234187,
+            "numerator_us": 299.6947412165075,
+            "reduction_us": 9.826601562499999,
+            "masters_us": 13.056609375,
+            "instrumented_total_us": 762.0961641805479,
+            "other_work_us": 439.5182120265404,
+            "raw_native": {
+              "engine_calls": 9.0,
+              "engine_excluding_masters_seconds": 0.003934988,
+              "engine_seconds": 0.005606233999999999,
+              "master_calls": 19.0,
+              "master_rows": 4736.0,
+              "masters_seconds": 0.0016712460000000001,
+              "numerator_callback_seconds": 0.0026771829999999996,
+              "numerator_calls": 43.0,
+              "numerator_preparation_seconds": 2.4461000000000002e-05,
+              "numerator_rows": 7168.0,
+              "reduction_exclusive_seconds": 0.0012578049999999999
+            },
+            "checksum_all_poles_and_born": 141.31449737635577
+          },
+          {
+            "parameters": 0.07484368325094692,
+            "born_coefficients": 2.4100859263853636,
+            "loop_coefficients": 278.11839845526265,
+            "born_projection": 0.2593751560198143,
+            "born_weighting": 17.312492218479747,
+            "family_masses": 0.3834379640466068,
+            "bare_assembly": 0.34593722375575453,
+            "counterterm_scalars": 2.341172148589976,
+            "counterterm_coefficients": 82.89885909107397,
+            "field_scalars": 0.6354694050969556,
+            "ct_projection": 3.761890638998011,
+            "complete_assembly": 0.0964059836405795,
+            "numerator_us": 299.65883595526265,
+            "reduction_us": 10.568992187500003,
+            "masters_us": 13.546695312499999,
+            "instrumented_total_us": 769.4824530517508,
+            "other_work_us": 445.70792959648816,
+            "raw_native": {
+              "engine_calls": 9.0,
+              "engine_excluding_masters_seconds": 0.004082627,
+              "engine_seconds": 0.005816604000000001,
+              "master_calls": 19.0,
+              "master_rows": 4736.0,
+              "masters_seconds": 0.0017339769999999998,
+              "numerator_callback_seconds": 0.0027297959999999996,
+              "numerator_calls": 43.0,
+              "numerator_preparation_seconds": 2.7380000000000002e-05,
+              "numerator_rows": 7168.0,
+              "reduction_exclusive_seconds": 0.0013528310000000003
+            },
+            "checksum_all_poles_and_born": 141.31449737635577
+          },
+          {
+            "parameters": 0.0926638676901348,
+            "born_coefficients": 2.6231405172438826,
+            "loop_coefficients": 269.91575714419014,
+            "born_projection": 0.31484341889154166,
+            "born_weighting": 18.63438228610903,
+            "family_masses": 0.2869537638616748,
+            "bare_assembly": 0.28632803150685504,
+            "counterterm_scalars": 2.0782981664524414,
+            "counterterm_coefficients": 81.37856275425293,
+            "field_scalars": 0.8082188287517056,
+            "ct_projection": 2.9383750188571867,
+            "complete_assembly": 0.07976586857694201,
+            "numerator_us": 291.52138995669014,
+            "reduction_us": 10.535898437500002,
+            "masters_us": 13.3151015625,
+            "instrumented_total_us": 747.898765894206,
+            "other_work_us": 432.52637593751587,
+            "raw_native": {
+              "engine_calls": 9.0,
+              "engine_excluding_masters_seconds": 0.004090725,
+              "engine_seconds": 0.005795058,
+              "master_calls": 19.0,
+              "master_rows": 4736.0,
+              "masters_seconds": 0.0017043330000000001,
+              "numerator_callback_seconds": 0.00274213,
+              "numerator_calls": 43.0,
+              "numerator_preparation_seconds": 2.3391000000000004e-05,
+              "numerator_rows": 7168.0,
+              "reduction_exclusive_seconds": 0.0013485950000000002
+            },
+            "checksum_all_poles_and_born": 141.31449737635577
+          },
+          {
+            "parameters": 0.06843720257165842,
+            "born_coefficients": 2.5918043320416473,
+            "loop_coefficients": 270.8907663873106,
+            "born_projection": 0.31140643841354176,
+            "born_weighting": 18.61624241428217,
+            "family_masses": 0.25343069864902645,
+            "bare_assembly": 0.2784372554742731,
+            "counterterm_scalars": 2.080330432363553,
+            "counterterm_coefficients": 81.49978930305224,
+            "field_scalars": 0.6393829607986845,
+            "ct_projection": 3.5250936889497098,
+            "complete_assembly": 0.09929681255016476,
+            "numerator_us": 290.7593757623106,
+            "reduction_us": 9.995195312499998,
+            "masters_us": 11.8366171875,
+            "instrumented_total_us": 745.7217184310139,
+            "other_work_us": 433.1305301687033,
+            "raw_native": {
+              "engine_calls": 9.0,
+              "engine_excluding_masters_seconds": 0.003798305,
+              "engine_seconds": 0.005313392,
+              "master_calls": 19.0,
+              "master_rows": 4736.0,
+              "masters_seconds": 0.001515087,
+              "numerator_callback_seconds": 0.00251892,
+              "numerator_calls": 43.0,
+              "numerator_preparation_seconds": 2.4262e-05,
+              "numerator_rows": 7168.0,
+              "reduction_exclusive_seconds": 0.0012793849999999999
+            },
+            "checksum_all_poles_and_born": 141.31449737635577
+          },
+          {
+            "parameters": 0.07390644896076992,
+            "born_coefficients": 2.410476554359775,
+            "loop_coefficients": 263.6862818690133,
+            "born_projection": 0.2510937520128209,
+            "born_weighting": 16.39382026041858,
+            "family_masses": 0.2352267074456904,
+            "bare_assembly": 0.2843748916347977,
+            "counterterm_scalars": 2.1091464077471755,
+            "counterterm_coefficients": 81.09549116852577,
+            "field_scalars": 0.6569694050995167,
+            "ct_projection": 3.567749899957562,
+            "complete_assembly": 0.1040625647874549,
+            "numerator_us": 284.2549068690133,
+            "reduction_us": 9.675554687499998,
+            "masters_us": 11.784578125,
+            "instrumented_total_us": 718.2259764704213,
+            "other_work_us": 412.510936788908,
+            "raw_native": {
+              "engine_calls": 9.0,
+              "engine_excluding_masters_seconds": 0.0038495959999999994,
+              "engine_seconds": 0.0053580220000000005,
+              "master_calls": 19.0,
+              "master_rows": 4736.0,
+              "masters_seconds": 0.001508426,
+              "numerator_callback_seconds": 0.0026111249999999997,
+              "numerator_calls": 43.0,
+              "numerator_preparation_seconds": 2.1659e-05,
+              "numerator_rows": 7168.0,
+              "reduction_exclusive_seconds": 0.0012384709999999999
+            },
+            "checksum_all_poles_and_born": 141.31449737635577
+          }
+        ],
+        "parameters": 0.07484368325094692,
+        "born_coefficients": 2.4904766178224236,
+        "loop_coefficients": 270.8907663873106,
+        "born_projection": 0.26507814254728146,
+        "born_weighting": 17.312492218479747,
+        "family_masses": 0.2869537638616748,
+        "bare_assembly": 0.2843748916347977,
+        "counterterm_scalars": 2.1091464077471755,
+        "counterterm_coefficients": 81.49978930305224,
+        "field_scalars": 0.6569694050995167,
+        "ct_projection": 3.5250936889497098,
+        "complete_assembly": 0.09679706636234187,
+        "numerator_us": 291.52138995669014,
+        "reduction_us": 9.995195312499998,
+        "masters_us": 13.056609375,
+        "instrumented_total_us": 747.898765894206,
+        "other_work_us": 433.1305301687033
+      }
+    },
+    {
+      "case": "gg",
+      "full": {
+        "case": "gg",
+        "process": "g g > g g",
+        "colour": "full",
+        "commit": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "cpu": 379,
+        "generation_s": 161.06550179701298,
+        "source_generation_s": 0.8987848359975033,
+        "arithmetic": "double",
+        "r2_strategy": "direct",
+        "reduction_engine": "fast",
+        "coefficient_engine": "jit",
+        "scope": "Complete physical-helicity Born-loop interference, with the explicit r2_strategy recorded above. Fixed Nf LC projects the full formal-Nc contribution before Nc=3 and normalization. Python batch scheduling and exact decimal ingress included; output formatting/checks excluded. Repeated three-point stream; reducer success only, no rescue or cross-precision verification. Development observation, not performance acceptance.",
+        "generation_scope": "Independent fresh process: UFO capture, model/graph/colour/CT lowering, numerical plan and JIT construction. Imports/installation and first evaluation excluded. One cold observation.",
+        "validation": "Existing certified formal-colour controls; full Born/all Laurent components versus independent MadLoop or analytic DY; LC Born/pole/UV-field ratios below plus complete component reconstruction.",
+        "counts": {
+          "born_graphs": 4,
+          "loop_graphs": 186,
+          "families": 52,
+          "helicities": 16,
+          "counterterms": 49,
+          "external_fields": 48
+        },
+        "timings": {
+          "1": {
+            "median_us_per_point": 34287.4979833141,
+            "min_us_per_point": 33459.22403968871,
+            "max_us_per_point": 34477.50897612423,
+            "samples_us_per_point": [
+              33459.22403968871,
+              34202.68802437931,
+              34401.23796463013,
+              34287.4979833141,
+              34477.50897612423
+            ],
+            "checksum_all_poles_and_born": [
+              43.61791500647303,
+              43.61791500647303,
+              43.61791500647303,
+              43.61791500647303,
+              43.61791500647303
+            ]
+          },
+          "128": {
+            "median_us_per_point": 18843.40427341158,
+            "min_us_per_point": 17542.879960728897,
+            "max_us_per_point": 20942.23886706459,
+            "samples_us_per_point": [
+              18843.40427341158,
+              17542.879960728897,
+              17931.622031028382,
+              19306.398367461952,
+              20942.23886706459
+            ],
+            "checksum_all_poles_and_born": [
+              4264.884167794022,
+              4264.884167794022,
+              4264.884167794022,
+              4264.884167794022,
+              4264.884167794022
+            ]
+          }
+        },
+        "first_evaluation_s": 13.61172833602177,
+        "validation_samples": {
+          "born": [
+            [
+              [
+                460.26231640821413,
+                0.0
+              ]
+            ],
+            [
+              [
+                53.14097000623396,
+                0.0
+              ]
+            ],
+            [
+              [
+                114.54183955220341,
+                0.0
+              ]
+            ]
+          ],
+          "bare": [
+            [
+              [
+                42.992134472617856,
+                0.0
+              ],
+              [
+                -182.30254152766406,
+                -7.105427357601002e-15
+              ],
+              [
+                -103.72628024981523,
+                0.0
+              ]
+            ],
+            [
+              [
+                17.349879780068857,
+                0.0
+              ],
+              [
+                -8.866552360713609,
+                0.0
+              ],
+              [
+                -11.97602964898143,
+                0.0
+              ]
+            ],
+            [
+              [
+                19.443303262147417,
+                0.0
+              ],
+              [
+                -37.1188499518112,
+                0.0
+              ],
+              [
+                -25.813538337089874,
+                0.0
+              ]
+            ]
+          ],
+          "uv": [
+            [
+              [
+                -20.220443536105325,
+                0.0
+              ],
+              [
+                -72.03213906237167,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -2.3346121226050975,
+                0.0
+              ],
+              [
+                -8.316687256237106,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -5.032101731163219,
+                0.0
+              ],
+              [
+                -17.92606828964575,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "r2": [
+            [
+              [
+                -81.35513149840267,
+                -6.310887241768095e-30
+              ],
+              [
+                -8.224062064061582e-15,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -9.942434454474117,
+                -7.888609052210118e-31
+              ],
+              [
+                5.086336514202385e-16,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -20.95246872001818,
+                3.549874073494553e-30
+              ],
+              [
+                4.456368619870381e-18,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "virtual": [
+            [
+              [
+                -58.58344056189014,
+                -6.310887241768095e-30
+              ],
+              [
+                -254.33468059003573,
+                -7.105427357601002e-15
+              ],
+              [
+                -103.72628024981523,
+                0.0
+              ]
+            ],
+            [
+              [
+                5.072833202989642,
+                -7.888609052210118e-31
+              ],
+              [
+                -17.183239616950715,
+                0.0
+              ],
+              [
+                -11.97602964898143,
+                0.0
+              ]
+            ],
+            [
+              [
+                -6.5412671890339835,
+                3.549874073494553e-30
+              ],
+              [
+                -55.044918241456955,
+                0.0
+              ],
+              [
+                -25.813538337089874,
+                0.0
+              ]
+            ]
+          ],
+          "uv_local": [
+            [
+              [
+                20.220443536105332,
+                0.0
+              ],
+              [
+                -60.50699681239221,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                2.3346121226050984,
+                0.0
+              ],
+              [
+                -6.9860172952391695,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                5.032101731163215,
+                0.0
+              ],
+              [
+                -15.057897363302432,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "uv_external_fields": [
+            [
+              [
+                -40.44088707221066,
+                0.0
+              ],
+              [
+                -11.525142249979465,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -4.669224245210196,
+                0.0
+              ],
+              [
+                -1.3306699609979367,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -10.064203462326434,
+                0.0
+              ],
+              [
+                -2.8681709263433195,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "peak_rss_mib": 1478.69140625
+      },
+      "lc": {
+        "case": "gg",
+        "process": "g g > g g",
+        "colour": "lc",
+        "commit": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "cpu": 379,
+        "generation_s": 126.59145399404224,
+        "source_generation_s": 0.5295392980333418,
+        "arithmetic": "double",
+        "r2_strategy": "direct",
+        "reduction_engine": "fast",
+        "coefficient_engine": "jit",
+        "scope": "Complete physical-helicity Born-loop interference, with the explicit r2_strategy recorded above. Fixed Nf LC projects the full formal-Nc contribution before Nc=3 and normalization. Python batch scheduling and exact decimal ingress included; output formatting/checks excluded. Repeated three-point stream; reducer success only, no rescue or cross-precision verification. Development observation, not performance acceptance.",
+        "generation_scope": "Independent fresh process: UFO capture, model/graph/colour/CT lowering, numerical plan and JIT construction. Imports/installation and first evaluation excluded. One cold observation.",
+        "validation": "Existing certified formal-colour controls; full Born/all Laurent components versus independent MadLoop or analytic DY; LC Born/pole/UV-field ratios below plus complete component reconstruction.",
+        "counts": {
+          "born_graphs": 4,
+          "loop_graphs": 186,
+          "families": 52,
+          "helicities": 16,
+          "counterterms": 49,
+          "external_fields": 48
+        },
+        "timings": {
+          "1": {
+            "median_us_per_point": 34688.180021476,
+            "min_us_per_point": 33263.11300043017,
+            "max_us_per_point": 36065.4549440369,
+            "samples_us_per_point": [
+              34688.180021476,
+              36065.4549440369,
+              33712.895994540304,
+              33263.11300043017,
+              35005.78104285523
+            ],
+            "checksum_all_poles_and_born": [
+              -146.67523939969487,
+              -146.67523939969487,
+              -146.67523939969487,
+              -146.67523939969487,
+              -146.67523939969487
+            ]
+          },
+          "128": {
+            "median_us_per_point": 14569.81103092403,
+            "min_us_per_point": 14401.282664039172,
+            "max_us_per_point": 16189.86668790967,
+            "samples_us_per_point": [
+              14805.844179591077,
+              14401.282664039172,
+              14569.81103092403,
+              14535.10409419323,
+              16189.86668790967
+            ],
+            "checksum_all_poles_and_born": [
+              -6185.862191040833,
+              -6185.862191040833,
+              -6185.862191040833,
+              -6185.862191040833,
+              -6185.862191040833
+            ]
+          }
+        },
+        "first_evaluation_s": 13.941111300024204,
+        "validation_samples": {
+          "born": [
+            [
+              [
+                517.7951059592409,
+                0.0
+              ]
+            ],
+            [
+              [
+                59.78359125701318,
+                0.0
+              ]
+            ],
+            [
+              [
+                128.85956949622891,
+                0.0
+              ]
+            ]
+          ],
+          "bare": [
+            [
+              [
+                -157.90706160139752,
+                0.0
+              ],
+              [
+                -243.98771431230145,
+                0.0
+              ],
+              [
+                -116.69206528104212,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.7767868309111565,
+                -4.440892098500626e-16
+              ],
+              [
+                -14.465882524170844,
+                -4.440892098500626e-16
+              ],
+              [
+                -13.473033355104114,
+                0.0
+              ]
+            ],
+            [
+              [
+                -25.31635889706307,
+                3.552713678800501e-15
+              ],
+              [
+                -51.4387830721964,
+                0.0
+              ],
+              [
+                -29.040230629226116,
+                0.0
+              ]
+            ]
+          ],
+          "uv": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -106.96772650762195,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -12.350280575512103,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -26.62021141012394,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "r2": [
+            [
+              [
+                -38.91577765657271,
+                3.944304526105059e-30
+              ],
+              [
+                -3.560014747658891e-15,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -4.507826374690598,
+                1.232595164407831e-31
+              ],
+              [
+                -1.141838581516858e-16,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                -9.69758484398022,
+                0.0
+              ],
+              [
+                8.075191914813865e-16,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "virtual": [
+            [
+              [
+                -196.82283925797023,
+                3.944304526105059e-30
+              ],
+              [
+                -350.9554408199234,
+                0.0
+              ],
+              [
+                -116.69206528104212,
+                0.0
+              ]
+            ],
+            [
+              [
+                -3.731039543779442,
+                -4.440892098500625e-16
+              ],
+              [
+                -26.816163099682946,
+                -4.440892098500626e-16
+              ],
+              [
+                -13.473033355104114,
+                0.0
+              ]
+            ],
+            [
+              [
+                -35.01394374104329,
+                3.552713678800501e-15
+              ],
+              [
+                -78.05899448232034,
+                0.0
+              ],
+              [
+                -29.040230629226116,
+                0.0
+              ]
+            ]
+          ],
+          "uv_local": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -106.96772650762195,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -12.350280575512103,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                -26.62021141012394,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ],
+          "uv_external_fields": [
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0
+              ]
+            ]
+          ]
+        },
+        "peak_rss_mib": 1430.2265625
+      },
+      "full_stages": {
+        "case": "gg",
+        "batch_size": 128,
+        "colour": "full",
+        "r2_strategy": "direct",
+        "cpu": 379,
+        "physics_revision": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "profiling_revision": "54b39e18",
+        "scope": "Instrumented diagnostic B128, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+        "samples": [
+          {
+            "parameters": 0.05571109795710072,
+            "born_coefficients": 13.559038961830083,
+            "loop_coefficients": 10599.455784813472,
+            "born_projection": 2.043913809757214,
+            "born_weighting": 2384.32818741785,
+            "family_masses": 1.323513515671948,
+            "bare_assembly": 2.2785229703004006,
+            "counterterm_scalars": 4.470860403671395,
+            "counterterm_coefficients": 184.71687553756055,
+            "field_scalars": 2.2664999050903134,
+            "ct_projection": 33.61037488502916,
+            "complete_assembly": 0.09843779480434023,
+            "numerator_us": 11671.645261375972,
+            "reduction_us": 144.00546093749995,
+            "masters_us": 100.99607031250004,
+            "instrumented_total_us": 15966.215320531774,
+            "other_work_us": 4049.5685279058016,
+            "raw_native": {
+              "engine_calls": 116.0,
+              "engine_excluding_masters_seconds": 0.15487201299999998,
+              "engine_seconds": 0.16779950999999993,
+              "master_calls": 240.0,
+              "master_rows": 56832.0,
+              "masters_seconds": 0.012927497000000005,
+              "numerator_callback_seconds": 0.13643931399999998,
+              "numerator_calls": 549.0,
+              "numerator_preparation_seconds": 0.000800939,
+              "numerator_rows": 94464.0,
+              "reduction_exclusive_seconds": 0.018432698999999993
+            },
+            "checksum_all_poles_and_born": 4264.884167794022
+          },
+          {
+            "parameters": 0.06023446985636838,
+            "born_coefficients": 13.604968899016967,
+            "loop_coefficients": 10763.94906067435,
+            "born_projection": 2.0282109289837535,
+            "born_weighting": 2400.948475496989,
+            "family_masses": 1.1244865163462237,
+            "bare_assembly": 2.26789870794164,
+            "counterterm_scalars": 4.146539140492678,
+            "counterterm_coefficients": 183.78568847765564,
+            "field_scalars": 2.1777568690595217,
+            "ct_projection": 33.81014857950504,
+            "complete_assembly": 0.08476581569993868,
+            "numerator_us": 11851.139841924349,
+            "reduction_us": 143.9806171875,
+            "masters_us": 104.26618749999996,
+            "instrumented_total_us": 16139.456844030065,
+            "other_work_us": 4040.0701974182157,
+            "raw_native": {
+              "engine_calls": 116.0,
+              "engine_excluding_masters_seconds": 0.15682685100000004,
+              "engine_seconds": 0.17017292300000006,
+              "master_calls": 240.0,
+              "master_rows": 56832.0,
+              "masters_seconds": 0.013346071999999995,
+              "numerator_callback_seconds": 0.13839733200000004,
+              "numerator_calls": 549.0,
+              "numerator_preparation_seconds": 0.0007630879999999998,
+              "numerator_rows": 94464.0,
+              "reduction_exclusive_seconds": 0.018429519000000002
+            },
+            "checksum_all_poles_and_born": 4264.884167794022
+          },
+          {
+            "parameters": 0.04336698111728765,
+            "born_coefficients": 13.556546946347225,
+            "loop_coefficients": 10582.561147202796,
+            "born_projection": 2.019617113546701,
+            "born_weighting": 2524.76453078998,
+            "family_masses": 1.3012891031394247,
+            "bare_assembly": 2.2900158000993542,
+            "counterterm_scalars": 4.487684236664791,
+            "counterterm_coefficients": 184.69917949914816,
+            "field_scalars": 2.2259382603806444,
+            "ct_projection": 32.854672099347226,
+            "complete_assembly": 0.08367169357370585,
+            "numerator_us": 11703.420553452796,
+            "reduction_us": 152.1258984375,
+            "masters_us": 105.98502343750005,
+            "instrumented_total_us": 16133.201187585655,
+            "other_work_us": 4171.669712257859,
+            "raw_native": {
+              "engine_calls": 116.0,
+              "engine_excluding_masters_seconds": 0.16191255999999987,
+              "engine_seconds": 0.17547864299999982,
+              "master_calls": 240.0,
+              "master_rows": 56832.0,
+              "masters_seconds": 0.013566083000000007,
+              "numerator_callback_seconds": 0.142440445,
+              "numerator_calls": 549.0,
+              "numerator_preparation_seconds": 0.0010295589999999996,
+              "numerator_rows": 94464.0,
+              "reduction_exclusive_seconds": 0.019472115
+            },
+            "checksum_all_poles_and_born": 4264.884167794022
+          },
+          {
+            "parameters": 0.05257788870949298,
+            "born_coefficients": 13.615062471217243,
+            "loop_coefficients": 10558.69543188237,
+            "born_projection": 1.9915701159334276,
+            "born_weighting": 2395.9559480317694,
+            "family_masses": 1.1999941307294648,
+            "bare_assembly": 2.2772733245801646,
+            "counterterm_scalars": 4.095178610441508,
+            "counterterm_coefficients": 184.15100703350618,
+            "field_scalars": 2.193283762608189,
+            "ct_projection": 31.958109502738807,
+            "complete_assembly": 0.08351526048500091,
+            "numerator_us": 11633.43109594487,
+            "reduction_us": 143.49603124999993,
+            "masters_us": 103.60853125000001,
+            "instrumented_total_us": 15808.204163931805,
+            "other_work_us": 3927.668505486934,
+            "raw_native": {
+              "engine_calls": 116.0,
+              "engine_excluding_masters_seconds": 0.15513385400000007,
+              "engine_seconds": 0.16839574599999996,
+              "master_calls": 240.0,
+              "master_rows": 56832.0,
+              "masters_seconds": 0.013261892,
+              "numerator_callback_seconds": 0.13676636199999995,
+              "numerator_calls": 549.0,
+              "numerator_preparation_seconds": 0.0007998030000000001,
+              "numerator_rows": 94464.0,
+              "reduction_exclusive_seconds": 0.018367491999999992
+            },
+            "checksum_all_poles_and_born": 4264.884167794022
+          },
+          {
+            "parameters": 0.04265621100785211,
+            "born_coefficients": 13.586070963356178,
+            "loop_coefficients": 10799.039161156543,
+            "born_projection": 2.0221955310262274,
+            "born_weighting": 2537.9243202223734,
+            "family_masses": 1.5278756109182723,
+            "bare_assembly": 2.362116902077105,
+            "counterterm_scalars": 4.822914434043923,
+            "counterterm_coefficients": 188.45574231818318,
+            "field_scalars": 2.1850796656508464,
+            "ct_projection": 33.87561719137011,
+            "complete_assembly": 0.08085908120847307,
+            "numerator_us": 11901.355122094043,
+            "reduction_us": 153.3078046875,
+            "masters_us": 104.62203125000002,
+            "instrumented_total_us": 16376.727773604216,
+            "other_work_us": 4217.442815572673,
+            "raw_native": {
+              "engine_calls": 116.0,
+              "engine_excluding_masters_seconds": 0.1597140379999999,
+              "engine_seconds": 0.17310565799999994,
+              "master_calls": 240.0,
+              "master_rows": 56832.0,
+              "masters_seconds": 0.013391620000000003,
+              "numerator_callback_seconds": 0.14009063900000004,
+              "numerator_calls": 549.0,
+              "numerator_preparation_seconds": 0.0010058039999999995,
+              "numerator_rows": 94464.0,
+              "reduction_exclusive_seconds": 0.019623399
+            },
+            "checksum_all_poles_and_born": 4264.884167794022
+          }
+        ],
+        "parameters": 0.05257788870949298,
+        "born_coefficients": 13.586070963356178,
+        "loop_coefficients": 10599.455784813472,
+        "born_projection": 2.0221955310262274,
+        "born_weighting": 2400.948475496989,
+        "family_masses": 1.3012891031394247,
+        "bare_assembly": 2.2785229703004006,
+        "counterterm_scalars": 4.470860403671395,
+        "counterterm_coefficients": 184.69917949914816,
+        "field_scalars": 2.193283762608189,
+        "ct_projection": 33.61037488502916,
+        "complete_assembly": 0.08367169357370585,
+        "numerator_us": 11703.420553452796,
+        "reduction_us": 144.00546093749995,
+        "masters_us": 104.26618749999996,
+        "instrumented_total_us": 16133.201187585655,
+        "other_work_us": 4049.5685279058016
+      },
+      "lc_stages": {
+        "case": "gg",
+        "batch_size": 128,
+        "colour": "lc",
+        "r2_strategy": "direct",
+        "cpu": 379,
+        "physics_revision": "95c4ed50ce4c6ada04ea2ab7bd97cee575cbd50c",
+        "profiling_revision": "54b39e18",
+        "scope": "Instrumented diagnostic B128, five blocks, fresh model plan after warmup; same complete physical output as baseline. Loop numerator=coefficient DAG+reducer callbacks+coefficient head preparation. Exclusive reduction subtracts masters and callbacks from engine. Master time includes existing oneloopmaster adapter. Other work=Born/states/UV/R2/kinematics/weighting/assembly/transport and timer overhead. No subtraction from independently observed uninstrumented total. No result caching or rescue.",
+        "samples": [
+          {
+            "parameters": 0.054843440011609346,
+            "born_coefficients": 13.123179542162688,
+            "loop_coefficients": 10570.23756129638,
+            "born_projection": 1.9386015992495231,
+            "born_weighting": 1186.2495866807876,
+            "family_masses": 1.5533764781139325,
+            "bare_assembly": 5.47822673979681,
+            "counterterm_scalars": 10.500437838345533,
+            "counterterm_coefficients": 274.19569460107596,
+            "field_scalars": 7.046521659503924,
+            "ct_projection": 23.224788947118213,
+            "complete_assembly": 0.1654689185670577,
+            "numerator_us": 11777.10413160888,
+            "reduction_us": 181.68113281249995,
+            "masters_us": 117.07980468749997,
+            "instrumented_total_us": 15462.05494514652,
+            "other_work_us": 3386.189876037639,
+            "raw_native": {
+              "engine_calls": 116.0,
+              "engine_excluding_masters_seconds": 0.17648271099999996,
+              "engine_seconds": 0.1914689260000001,
+              "master_calls": 240.0,
+              "master_rows": 56832.0,
+              "masters_seconds": 0.014986214999999997,
+              "numerator_callback_seconds": 0.15322752599999992,
+              "numerator_calls": 549.0,
+              "numerator_preparation_seconds": 0.0012513949999999998,
+              "numerator_rows": 94464.0,
+              "reduction_exclusive_seconds": 0.023255184999999994
+            },
+            "checksum_all_poles_and_born": -6185.862191040833
+          },
+          {
+            "parameters": 0.056405951909255236,
+            "born_coefficients": 13.502328329195734,
+            "loop_coefficients": 11394.658263725432,
+            "born_projection": 1.8643049770616926,
+            "born_weighting": 1109.7418191639008,
+            "family_masses": 1.2335235624050256,
+            "bare_assembly": 2.369078174524475,
+            "counterterm_scalars": 4.6704076339665335,
+            "counterterm_coefficients": 187.5633747658867,
+            "field_scalars": 2.796969965856988,
+            "ct_projection": 8.59832016431028,
+            "complete_assembly": 0.08742199497646652,
+            "numerator_us": 12489.467709037932,
+            "reduction_us": 146.26724999999996,
+            "masters_us": 105.20400781250001,
+            "instrumented_total_us": 15415.392867453193,
+            "other_work_us": 2674.4539006027608,
+            "raw_native": {
+              "engine_calls": 116.0,
+              "engine_excluding_masters_seconds": 0.15803960700000005,
+              "engine_seconds": 0.17150571999999997,
+              "master_calls": 240.0,
+              "master_rows": 56832.0,
+              "masters_seconds": 0.013466113000000002,
+              "numerator_callback_seconds": 0.13931739899999998,
+              "numerator_calls": 549.0,
+              "numerator_preparation_seconds": 0.0008182100000000001,
+              "numerator_rows": 94464.0,
+              "reduction_exclusive_seconds": 0.018722207999999994
+            },
+            "checksum_all_poles_and_born": -6185.862191040833
+          },
+          {
+            "parameters": 0.049687514547258615,
+            "born_coefficients": 13.059038337814854,
+            "loop_coefficients": 10870.032705497579,
+            "born_projection": 1.9428202904236969,
+            "born_weighting": 1198.1413736066315,
+            "family_masses": 1.668491222517332,
+            "bare_assembly": 2.9018829081906006,
+            "counterterm_scalars": 4.864828042627778,
+            "counterterm_coefficients": 201.69099707345595,
+            "field_scalars": 2.8158660825283732,
+            "ct_projection": 9.206452887156047,
+            "complete_assembly": 0.08257848094217479,
+            "numerator_us": 12005.156041435079,
+            "reduction_us": 159.45951562499994,
+            "masters_us": 106.13421093749999,
+            "instrumented_total_us": 15301.736359106144,
+            "other_work_us": 3030.9865911085653,
+            "raw_native": {
+              "engine_calls": 116.0,
+              "engine_excluding_masters_seconds": 0.16452158200000003,
+              "engine_seconds": 0.17810676100000003,
+              "master_calls": 240.0,
+              "master_rows": 56832.0,
+              "masters_seconds": 0.013585178999999998,
+              "numerator_callback_seconds": 0.14411076399999992,
+              "numerator_calls": 549.0,
+              "numerator_preparation_seconds": 0.001185023,
+              "numerator_rows": 94464.0,
+              "reduction_exclusive_seconds": 0.02041081799999999
+            },
+            "checksum_all_poles_and_born": -6185.862191040833
+          },
+          {
+            "parameters": 0.0540621840627864,
+            "born_coefficients": 14.540140455210349,
+            "loop_coefficients": 10767.238663447642,
+            "born_projection": 1.8708669813349843,
+            "born_weighting": 1192.065180021018,
+            "family_masses": 1.420494299964048,
+            "bare_assembly": 2.318054612260312,
+            "counterterm_scalars": 4.541735961538507,
+            "counterterm_coefficients": 186.28188263392076,
+            "field_scalars": 2.3960951693879906,
+            "ct_projection": 8.526523288310273,
+            "complete_assembly": 0.09218729246640578,
+            "numerator_us": 11960.481921260141,
+            "reduction_us": 164.7288515625001,
+            "masters_us": 110.35581250000003,
+            "instrumented_total_us": 15130.607343508018,
+            "other_work_us": 2895.040758185376,
+            "raw_native": {
+              "engine_calls": 116.0,
+              "engine_excluding_masters_seconds": 0.172628021,
+              "engine_seconds": 0.18675356499999998,
+              "master_calls": 240.0,
+              "master_rows": 56832.0,
+              "masters_seconds": 0.014125544000000004,
+              "numerator_callback_seconds": 0.15154272799999993,
+              "numerator_calls": 549.0,
+              "numerator_preparation_seconds": 0.001192409,
+              "numerator_rows": 94464.0,
+              "reduction_exclusive_seconds": 0.021085293000000012
+            },
+            "checksum_all_poles_and_born": -6185.862191040833
+          },
+          {
+            "parameters": 0.0577342689211946,
+            "born_coefficients": 13.08435184910195,
+            "loop_coefficients": 10894.674975588714,
+            "born_projection": 1.8654063751455396,
+            "born_weighting": 1169.8864950631105,
+            "family_masses": 1.5996470210666303,
+            "bare_assembly": 2.32189086091239,
+            "counterterm_scalars": 4.7130479288171045,
+            "counterterm_coefficients": 187.3254545898817,
+            "field_scalars": 2.3314369173021987,
+            "ct_projection": 7.805031145835528,
+            "complete_assembly": 0.08156257536029443,
+            "numerator_us": 12040.995022463714,
+            "reduction_us": 161.16869531249995,
+            "masters_us": 112.52447656250001,
+            "instrumented_total_us": 15176.051992057182,
+            "other_work_us": 2861.36379771847,
+            "raw_native": {
+              "engine_calls": 116.0,
+              "engine_excluding_masters_seconds": 0.16635613199999993,
+              "engine_seconds": 0.18075926499999995,
+              "master_calls": 240.0,
+              "master_rows": 56832.0,
+              "masters_seconds": 0.014403133000000002,
+              "numerator_callback_seconds": 0.14572653899999996,
+              "numerator_calls": 549.0,
+              "numerator_preparation_seconds": 0.0010024269999999997,
+              "numerator_rows": 94464.0,
+              "reduction_exclusive_seconds": 0.020629592999999995
+            },
+            "checksum_all_poles_and_born": -6185.862191040833
+          }
+        ],
+        "parameters": 0.054843440011609346,
+        "born_coefficients": 13.123179542162688,
+        "loop_coefficients": 10870.032705497579,
+        "born_projection": 1.8708669813349843,
+        "born_weighting": 1186.2495866807876,
+        "family_masses": 1.5533764781139325,
+        "bare_assembly": 2.369078174524475,
+        "counterterm_scalars": 4.7130479288171045,
+        "counterterm_coefficients": 187.5633747658867,
+        "field_scalars": 2.796969965856988,
+        "ct_projection": 8.59832016431028,
+        "complete_assembly": 0.08742199497646652,
+        "numerator_us": 12005.156041435079,
+        "reduction_us": 161.16869531249995,
+        "masters_us": 110.35581250000003,
+        "instrumented_total_us": 15301.736359106144,
+        "other_work_us": 2895.040758185376
+      }
+    }
+  ],
+  "stage_scope": "Separate instrumented B128 calls: unchanged complete component checks, five samples per colour, numerator DAG+callback+head preparation, exclusive NinjaRS, masters, residual. Original warm observations unchanged; independent medians need not add."
+}

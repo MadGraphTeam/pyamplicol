@@ -25,8 +25,11 @@
         "metric": "generation_and_static_compilation"
       },
       "recola": {
-        "seconds": null,
-        "status": "matched_process_not_available_in_current_reference_suite"
+        "seconds": 0.135163512,
+        "cpu": 382,
+        "status": "measured_once_fresh_process",
+        "metric": "parameters_define_generate",
+        "scope": "Public photon-only vertex restriction, alpha0 and massless electron setup; process definition/generation. Same constructor scope as other Recola cells; fresh CPU382 audit observation."
       },
       "openloops": {
         "seconds": null,
