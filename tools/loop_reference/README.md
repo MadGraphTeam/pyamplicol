@@ -10,6 +10,23 @@ All provider sources, downloads, builds, logs and run directories belong in
 the task's `workspace`. Keep the supplied `FOR_REFERENCE_ONLY` sources read-only.
 The scripts accept paths and do not depend on the original task location.
 
+The local two-vector CT tensor oracle can reuse the three `R2_GG_*_0.f`
+ALOHA routines in the generated four-quark MadLoop build:
+
+```bash
+python3 tools/loop_reference/ct_tensor_oracle.py \
+  --ufo "$LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0/models/loop_sm" \
+  --madloop-build "$LOOP_REFERENCE_ROOT/builds/madloop-uudd" \
+  --build-dir "$LOOP_REFERENCE_ROOT/builds/ct-local-aloha" \
+  --output "$LOOP_REFERENCE_ROOT/runs/ct-gluon-two-point-tensor.json"
+```
+
+Run in a licensed Symbolica environment. The oracle compiles isolated copies
+of those routines into its own shared library; it never modifies their source.
+Its 102 real/complex off-shell polarization checks validate only the local
+Lorentz structures. Scalar CT normalization and physical process assembly need
+separate controls. The independent ALOHA comparison uses binary64.
+
 ## Provider versions and acquisition
 
 * MadLoop: copy the supplied MG5_aMC 3.7.0 tree into the workspace.
