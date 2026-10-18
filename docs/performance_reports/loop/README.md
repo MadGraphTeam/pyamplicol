@@ -19,11 +19,15 @@ It is not the distinct-point, native-interface performance acceptance campaign.
 Generation, first evaluation, warmed totals and instrumented component clocks
 have separate definitions in the report. Test durations are not event timings.
 
-Architecture notes are updated through the retained model-plan checkpoint
-`7290ec92` and explicit Gmu helper convention `146f6d8a`. The tables and their
-measurement revision remain unchanged. The pulled generic-any-n NinjaRS
-extension is described as a consumer candidate until its validation and
-staged-module adoption finish.
+Architecture notes include retained model-plan checkpoint `7290ec92`, the
+explicit Gmu helper convention, exact Bose-symmetric counterterm witness
+matching (`fcb5aa8b`), and the adopted NinjaRS `e4c16a7` consumer (`02922947`).
+The seven-propagator rank-eight numerator cancelling exactly to a triangle
+master passes generic double/DoubleFloat/AP80 and binary64 fast-tensor evaluation. That removes the old six-propagator consumer cap; higher-multiplicity
+physical validation remains separate. The five-leg counterterm fix recovers
+39 missed insertions, with full three-carrier physical validation still running.
+The tables and their measurement revision remain unchanged; these validation
+durations are not new event timings.
 
 The summary tables follow the NinjaRS benchmark's value/reference/multiplier
 layout. Heat-map ratios use the fastest available original-binary provider

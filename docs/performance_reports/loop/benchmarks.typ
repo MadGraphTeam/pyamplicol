@@ -389,7 +389,10 @@ its loop correction belongs to the request. Local $R_2$/UV matching retains the
 actual attachment currents, ordered binding legs, local coupling order and
 allowed loop-species alternatives. Wildcards and repeated alternatives preserve
 their source semantics and multiplicity. Fresh native tree graphs provide the
-insertion signs and propagators.
+insertion signs and propagators. Ordinary Bose slot classes are identified only
+after exact native tests of the complete vertex under generating transpositions.
+This repairs 39 missed insertions in a five-leg control; its full three-carrier
+physical validation is running.
 
 External-field factors multiply the applicable Born currents with each physical
 leg retained. Local and field UV remain separately inspectable, then join the
@@ -470,11 +473,11 @@ plan. Source-model, direct-$R_2$ and formal-colour reuse remain outside this
 checkpoint; persistent artifacts and broader subtree reuse are still open.
 
 #small[
-  The staged NinjaRS path supports up to six propagators and validated weighted
-  rank through $n+1$; unsupported ranks reject. The owner's generic-any-$n$
-  extension (`e4c16a7`) has been pulled. A separate consumer candidate is testing
-  seven propagators in all three carriers; staged-module adoption and required
-  high-multiplicity physics remain pending. No timing table uses that candidate.
+  The staged consumer now uses NinjaRS's generic-any-$n$ extension (`e4c16a7`).
+  A seven-propagator, rank-eight numerator cancelling to a triangle master passes
+  generic double/DD/AP80 and binary64 fast-tensor evaluation. The old six-propagator
+  consumer cap is removed; weighted ranks above $n+1$ still reject. Broader
+  physical multiplicity remains a separate gate. Timing tables keep their snapshot.
 ]
 
 #pagebreak()
@@ -676,7 +679,7 @@ complete answer cannot conceal a wrong component.
 
 #tab((1.4fr, 2.6fr), left-columns: (0, 1),
   table.header(th[Area], th[Current boundary]),
-  [Complete QCD], [Internal DY, four-quark, top-pair, quark/gluon and gluon controls; all three carriers.],
+  [Complete QCD], [Internal two-to-two DY, four-quark, top-pair, quark/gluon and gluon controls; all three carriers. Full five-leg validation is running after the counterterm witness fix.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
@@ -691,9 +694,9 @@ lepton-pair plus jets, and heavy-quark/lepton-pair production with a jet.
 Five-final-parton gluon channels also require MadLoop/Recola controls; an
 unavailable public OpenLoops channel is not invented for comparison.
 
-The new generic-any-$n$ reducer still needs consumer validation and adoption;
-seven-propagator physics is a separate gate. Rank above the supported $n+1$
-domain must reject. Required progress also includes broader cold-plan coverage,
+The generic-any-$n$ consumer is adopted after a seven-propagator anchor in all
+three carriers; high-multiplicity physical validation is still a separate gate.
+Rank above the supported $n+1$ domain must reject. Required progress also includes broader cold-plan coverage,
 persistent artifacts, optional FFT,
 complete correlation/mapping transport and broader certified model coverage.
 These requirements remain visible even when a smaller control is fast.
