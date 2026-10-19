@@ -52,6 +52,9 @@ fn main() {
         )
         .unwrap();
     assert_eq!(result.spin_legs_json, "[3]");
+    assert_eq!(result.shape.axes.histories, 11);
+    assert_eq!(result.shape.axes.epsilon_count, 3);
+    assert!(result.histories_json.contains("history-10"));
     assert_eq!(result.virtual_values.len(), 2 * 11 * 3);
     assert_eq!(result.born.len(), 2 * 11);
     for (a, b) in result.virtual_values[..33]
@@ -64,6 +67,7 @@ fn main() {
     }
     drop(runtime);
     assert_eq!(result.spin_legs_json, "[3]");
+    assert!(result.histories_json.contains("history-10"));
     println!(
         "ORDERED_COLOR_SDK_PASSED contracted family axes, literal source scaling, owned result"
     );
