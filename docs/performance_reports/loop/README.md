@@ -133,8 +133,9 @@ internal portable checkpoints (`94340682`, extended by `95c4ed50`). Existing
 PACBIN envelopes and validated Rust-owned layouts now cover complete model-rule
 four-quark/top controls and direct gluon controls, including nonzero external
 fields. Fresh source-free views pass in all three carriers. Source-model portable plans and public activation have subsequently been
-validated. Formal/correlated portable composition and standalone SDK dispatch
-remain separate; explicit public numerical rescue is now delivered below.
+validated. Correlated portable composition remains separate; retained projected
+transport, source Rust/C SDK dispatch and explicit public numerical rescue are
+now delivered below.
 The shared source compiler (`43d22a52`) also prepares complete bounded QCD and
 neutral-current Gmu controls from retained raw models and exact restrictions,
 without named-process dispatch or rounded normalized defaults. Source gg fields
@@ -202,7 +203,8 @@ Shared typed buffers, saved evaluators, tiled schedules, exact ingress,
 wavefunctions and the polynomial reduction facade now live outside PyO3
 (`d3883dea` through `e90ab9f5`), retaining thin wrappers and validated native
 shapes. Those primitive checkpoints now underpin complete native source coordination
-and helicity-resolved evaluation. SDK activation remains open. Shared timing
+and helicity-resolved evaluation. Source Rust/C SDK delivery is now validated;
+normal packaging and the remaining language interfaces stay open. Shared timing
 modules were unchanged.
 
 The seventh row adds real-mass full-EW Gmu `e- e+ -> mu- mu+` through the generic
@@ -316,6 +318,17 @@ carriers. Descriptors report the actual colour policy; public artifacts claiming
 full colour for a projected plan are rejected. Certified source effective-rule
 continuation and signed LC resolved semantics still gate public source LC/NLC.
 
+Explicit source-owned continuation (`89e16576`, `04fd32d9`) now composes complete
+source Drell–Yan full/LC/NLC through all three carriers, exact parameter changes,
+per-point scales and saved plans. The independent fundamental colour factor
+predicts LC/full=9/8 and NLC=full. Full-CKM mixed Born/virtual orders agree with
+MadLoop after formal-full projection, and an external-gluon field control is
+absent at LC and retained at NLC. Every selected ordinary source entry must be
+bound or proved exactly zero in both value and diagnostic under the same fixed
+map. This rejects an Nc=3-only zero and an active zero-value diagnostic. These
+explicit prepared controls exclude the fixed-SU3 four-gluon rule; they do not
+enable automatic public LC/NLC or certify an entire model from its name.
+
 The seven-leg formal-colour probe identifies a separate dependency limitation.
 After the trace-scope repair, the documented symbolic routes still retain a
 degree-five fundamental invariant; Idenso's dimension-invariant rewrite covers
@@ -349,6 +362,21 @@ per-attempt diagnostic history. Initially successful points remain accuracy-
 unestablished unless verification is requested. This is empirical numerical
 evidence, not independent physics certification; no timing row enables it.
 Global source-owner construction/update overflow remains unrecovered.
+
+The genuine installed candidate `9fc5556ec4a8` and its matching loop companion
+pass fresh transactional source DY generation, Runtime loading, inclusive and
+resolved totals in double/DD/AP70, explicit DD verification, and exact `1e-400`
+subset rescue through AP60/AP80 with output conversion checks. Empty batches
+and clear also pass. This is installed-package correctness evidence, not timing.
+
+Source Rust/C virtual SDK delivery (`d085b70d`) reuses the same `VirtualRuntime`
+without a Python library. Complete order/Laurent/resolved axes, compact successful
+IDs, statuses for all requested lanes, scalar/per-point scales and atomic source
+updates are retained. Actual gg verification/rescue, genuine three-order full-CKM
+transport, and shared/static C clients pass. Normal SDK packaging, C++/Fortran,
+UMAMI and correlated/mapped public operations remain open. The selected old
+NinjaRS packaging restriction still applies until the newer coherent consumer
+passes adoption checks.
 
 These milestones contribute no
 new benchmark measurements. Keep the source, PDF and coverage notes live after

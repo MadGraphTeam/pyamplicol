@@ -712,18 +712,12 @@ reuse remain outside this checkpoint; reducer Laurent preparation remains a cold
 #pagebreak()
 #section-label[ARCHITECTURE · COLOUR AND OBSERVABLES]
 = Full colour without dense event tensors
-The current complete QCD path contracts colour at plan construction using
-native fixed-SU(3) tensors. It forms the properly scoped bra–ket expression,
-uses dependency colour simplification and caches the exact pair. The numerical
-event path receives the resulting rectangular weights. Unresolved symbolic
-overlaps use the dependency's exact component contraction at construction time;
-the event path does not sum dense colour tensors.
-
-Closed residual contractions use existing projector expansion and exact native
-tensor components, preserving the original network. Minimal upstream fixes address
-specific demonstrated tensor-lowering or invariant-contraction defects. No
-private group identities or numerical colour fitting are inserted into the
-application.
+The complete QCD path contracts scoped bra–ket colour expressions at plan
+construction. Dependency simplification and exact SU(3) component contraction
+produce cached rectangular weights for numerical evaluation. Residual contractions
+preserve the original network; event evaluation does not sum dense colour tensors.
+Minimal upstream fixes address demonstrated defects. No private group identities
+or numerical colour fitting are introduced.
 
 == LC and NLC are structural projections
 For a certified formal-$N_c$ model, all contributions belonging to one squared
@@ -733,18 +727,16 @@ $
   "LC": N_c^P, quad
   "NLC": N_c^P, N_c^(P-1), N_c^(P-2).
 $
-Odd suppression powers are retained. The same $P$ spans the relevant helicities,
-epsilon sectors and source contributions; choosing a different leading power
-for each term would change the approximation. Exact native algebra handles
-Laurent coefficients and semantic $C_A,C_F,T_R$ relations. Source scalar views now
-retain explicit colour identities, exact grade coefficients and active diagnostics
-through saved evaluation in all carriers. Counterterm DAGs now retain scalar-alias
-incidence and exact local grade-zero cancellations without expanding whole
-currents. Common squared-sector projection now combines bare, UV, $R_2$, field
-and epsilon rows before selecting a degree. Retained full/LC/NLC model-rule
-plans now save, reload and rebind in all carriers, with native resolved sums
-and truthful colour descriptors. Certified source continuation and signed LC
-resolved semantics still gate public source LC/NLC.
+The same $P$ spans helicities, epsilon sectors and bare/UV/$R_2$/field contributions,
+including odd suppression powers. Exact dependency algebra preserves semantic
+$C_A,C_F,T_R$, scalar-alias incidence, local cancellations and active diagnostics.
+Full/LC/NLC plans save, reload and rebind in all carriers with native resolved
+sums and truthful colour descriptors. Explicit source DY now passes all
+carriers, exact updates, scales and saved plans: LC/full is $9/8$ and NLC equals
+full. Mixed-order source controls match MadLoop, and an external-gluon field
+term is absent at LC and retained at NLC. Every selected source entry must be
+bound or exactly zero, including its diagnostic. General continuation and signed
+LC resolved semantics still gate public source LC/NLC.
 
 The active `loop_sm` four-gluon $R_2$ rule has fixed-$N_c=3$ coefficients;
 numbers are never promoted heuristically to $N_c$. A published general-$N_c$
@@ -831,16 +823,15 @@ The selected consumer rejects rank above $n+1$. New owner revision `0d0d7e7`
 passes locked Git dependency resolution; coherent consumer adoption and physics
 checks remain pending, including its changed masters and rank interfaces.
 
-`Runtime.load` and CLI/TOML evaluation retain checked PACBIN instructions, exact
-parameters, per-point scales and every order/pole. Arithmetic binds before
-parameters, including `aS=1e400` in AP70. The public slice uses full colour,
-model-rule $R_2$ and UV, with explicit positive $mu_R^2$. Generic DY and $g g -> g g$
-generation now passes source-to-staged-runtime checks before transactional
-publication, then public Runtime/CLI and DD32/AP70 evaluation. This first
-generation slice is full-colour/model-$R_2$/JIT, with inclusive and
-helicity-resolved publication. A fresh DY artifact passes both views in all three
-carriers. Directed correlation/mapping transport, LC/FFT and
-SDK/UMAMI remain separate work.
+Public Runtime/CLI retains exact inputs, per-point scales and every order/pole;
+arithmetic binds before parameters, including `aS=1e400` in AP70. Generic DY and
+$g g -> g g$ generation validates source against staged runtime before publishing
+full-colour/model-$R_2$/JIT artifacts. Inclusive/resolved views pass all carriers.
+A genuine installed candidate also passes fresh generation, exact subset rescue,
+empty batches and clear. Source Rust/C SDK clients reuse this runtime without
+Python, retaining all orders, poles, resolved rows and lane statuses. Shared/static
+clients pass; SDK packaging, C++/Fortran/UMAMI and public directed/mapping/LC/FFT
+delivery remain open.
 
 == Successful completion is not established accuracy
 Native guards isolate state, scale, current, reduction and assembly failures with
@@ -942,7 +933,7 @@ complete answer cannot conceal a wrong component.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
-  [Public delivery], [Generic full-colour/model-$R_2$/JIT generation, Runtime/CLI and helicity-resolved publication pass real-artifact checks in all three carriers. Directed transport, mappings and SDK/UMAMI remain open.],
+  [Public delivery], [Generic full-colour/model-$R_2$/JIT generation and both public views pass all carriers, including an installed candidate and exact subset rescue. Source Rust/C SDK clients pass; SDK packaging, C++/Fortran/UMAMI and directed/mapping transport remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
