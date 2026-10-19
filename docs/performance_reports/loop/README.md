@@ -45,9 +45,25 @@ formal inequalities hidden at Nc=3. Exact formal preparation is separate from
 numerical grading, whose existing restrictions remain unchanged. The cold check
 has 39 passing controls and a separate strengthened positive-epsilon regression;
 eight legacy `_loop_reduction` import checks are explicitly skipped.
-Nonidentity formal-colour histories and LC/NLC process transport remain open;
-this prerequisite creates no process graphs and certifies no numerical mapping.
+This prerequisite creates no process graphs and certifies no numerical mapping;
+LC/NLC process transport remains open.
 No timing observations change.
+
+Complete-family nonidentity formal-colour preparation now passes
+(`40261bce`, `baf5fcd8`). One structural degree per squared-order sector spans
+all compatible ordered histories and all actual bare/UV/R2/field columns, so a
+suppressed requested dipole cannot be promoted. The existing catalogue includes
+physical-gluon splitting through an opt-in extension; its default tree catalogue
+retains exact historical JSON and IDs. The separate rectangular non-Hermitian
+oracle passes. Ten retained complete outgoing W+ controls pass full/LC/NLC ×
+double/DoubleFloat/AP70, including both terms, all components and poles, charge
+rows, CA/TR identities, W/gluon singleton and joint sources, precision-sensitive
+source changes, opaque IDs, empty/tail batches and owner negatives. Arithmetic
+rebind shares the actual bank without repeated colour algebra. Original owners,
+modules and native binaries are preserved. Saved/public family transport and
+projected flavour reuse remain separate gates. No graphs, native build or timing
+observations were added. See `docs/development/LOOP_ORDERED_COLOR_PROJECTION.md`.
+
 Outgoing W± and incoming W+ LC/NLC composition is now validated as described
 below; broader source domains remain separate gates. See `docs/development/LOOP_PUBLIC_SPIN.md`.
 

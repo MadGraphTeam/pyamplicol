@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-19 · 23:06 UTC"
+#let report-date = "2026-10-19 · 23:16 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -760,12 +760,12 @@ Recola independently checks physical sources with identity colour; other ordered
 histories use internal component reconstruction. Arbitrary literal vectors use
 homogeneity/replay, without projection. Public subset rescue and Rust SDK pass.
 
-Projected gg and outgoing $W^plus.minus$/incoming $W^+$ LC/NLC compose with identity
-spin sources in all carriers. The full continuation reproduces original components;
-W uses common Born/virtual degrees 2/3, retaining odd suppression at NLC.
-Saved/public controls and subset rescue pass. Ordinary LC keeps signed Born anchors;
-inclusive source components are contracted. Nonidentity formal histories,
-EW/CMS sources and broader source composition remain open.
+Projected gg/W LC/NLC identity sources pass all carriers and rescue; ordinary LC
+keeps signed anchors. Complete-family nonidentity cold projection now spans all
+compatible histories and bare/UV/$R_2$/field rows, including physical splits.
+Rectangular oracles and retained W controls pass components, charges and three
+source classes in every carrier. Saved/public family transport and wider EW/CMS
+sources remain open.
 
 == Exact mappings and the rectangular FFT boundary
 Exact flavour reuse preserves resolved four-quark output and complex histories.
@@ -934,7 +934,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
-  [Correlations / mapping], [Photon/W/d/s sources and gg/W LC/NLC identity spin pass. Formal d/s source symmetry covers all 9/64/6 retained rules; projected process transport, nonidentity histories and wider EW/CMS sources remain open.],
+  [Correlations / mapping], [Photon/W/d/s and gg/W LC/NLC identity sources pass. Nonidentity complete-family cold W controls pass; saved/public transport remains open. Formal d/s symmetry covers 9/64/6 rules; projected mapping and EW/CMS sources remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Full/NLC ordinary/resolved binary64 FFT and exact DD/AP fallback pass. Source rescue, partial returns and grouped CLI retain IDs, precision and diagnostics.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
