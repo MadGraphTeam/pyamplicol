@@ -838,25 +838,23 @@ and owned diagnostics. Source layouts, empty/partial batches and rescue pass.
 Fresh correlated CLI uses a matching developer build, separate from installed `bc78`.
 
 == Successful completion is not established accuracy
-Native guards isolate failures with physical identities, now including shared
-weights. Successful whole points remain compact; late failures replay original
-inputs under one exact parameter snapshot. Public evaluation rejects failures
-by default. Opt-in rescue batches original rows at higher precision; two higher
-results must agree before checked conversion to the requested carrier.
-All components, orders, poles and requested helicities enter the comparison.
-Directed calls also retain each complex cross term and history independently.
-Per-attempt histories distinguish failure, agreement and unresolved accuracy.
-Empirical agreement is not independent physics proof. No headline timing enables
-rescue or verification, and the selected $R_2$ strategy stays fixed.
+Native guards retain original point IDs and exact snapshots. Public evaluation
+rejects unrecovered failures by default. A policy configured before binding can
+retain exact inputs after numerical overflow if a higher carrier succeeds.
+Default binding stays eager; invalid inputs and failed updates keep atomic rollback.
+Source admission does not establish amplitude accuracy. Two complete higher
+results must agree across components, orders, poles, helicities and both directed
+terms, followed by checked output conversion. Attempt histories survive and
+the $R_2$ strategy stays fixed.
+Guard-only controls pass native/public Python signed-LC resolved and joint-spin
+results, Rust rescue and C/C++/Fortran policy transport. Physical evaluators are
+unchanged; these checks add no physics certification or timing observations.
 
 #note[
-  *Numerical boundary.* Structural mass-shell assignments fix the demonstrated
-  rounded six-leg DD/AP branch discrepancy without numerical snapping. Original
-  rounded inputs, exact controls and lane permutations now pass all carriers.
-  Opt-in public verification/rescue now passes eight native controls across all
-  carriers. Global source-owner binding overflow remains unrecovered. General
-  input-consistency diagnostics, broader domain certification and production
-  adoption of the tested CMS master fix remain open.
+  *Open boundaries.* Producer policy composition, CLI policy transport and
+  explicit public partial-value return remain pending. General input-consistency
+  diagnostics, wider physics certification and normal adoption of the tested
+  CMS master fix remain open.
 ]
 
 #pagebreak()
@@ -935,7 +933,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
   [Correlations / mapping], [Directed/joint sources include crossed photons and exact d/s reuse in all carriers. Projected gg LC/NLC identity histories now compose with spin; ordered formal-colour operators, LC/NLC mappings and nonidentity permutations remain open.],
-  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs the PR 155 overlay. Six API clients agree on mixed-order resolved output. Native ID/failure/verification checks pass.],
+  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Saved/public Python and standalone SDK configured source-binding rescue pass; producer composition, CLI policy and public partial returns remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
@@ -967,7 +965,7 @@ broader spin/colour/mapping composition and general-model coverage remain open.
 `data/measurements.json` retains the samples, revisions and cold times behind the
 unchanged tables; `tools/loop_reference/` contains frozen points and drivers.
 Timing covers complete `evaluate_ordered_native` calls, excluding checks and
-output conversion. New projected-spin, photon, six-leg and shared-weight checks
+output conversion. New source-binding, projected-spin, photon, six-leg and shared-weight checks
 add no timings. The new schedule is unretimed; original timing identities are retained.
 
 Providers are MadLoop 3.7.0, Recola2 2.3.0 with matched SM/Collier, and OpenLoops

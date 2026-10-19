@@ -81,10 +81,15 @@ Typed native failures retain physical identities and compact whole-point
 successes. State/scale compaction and exact-snapshot replay are delivered; public
 opt-in cross-precision verification/rescue now passes eight native cases across
 all carriers. Default evaluation performs no hidden precision retry.
+Configured source-binding rescue now also passes saved/native Python, public
+resolved and joint-spin, and standalone SDK controls, as detailed below. Its
+synthetic guard fixture tests failure routing with unchanged physical evaluators;
+it adds no model certification or benchmark observation.
 Structural mass-shell binding (`e070f5fe`) fixes the demonstrated rounded-input
 DD/AP branch discrepancy in the six-leg control, with all components and carriers
-checked. General input-consistency diagnostics, global source-owner binding
-overflow and normal adoption of the isolated AP CMS master fix remain open. Charged chiral R2 source rules and
+checked. Producer policy composition, CLI policy transport, explicit public
+partial-value return, general input-consistency diagnostics and normal adoption
+of the isolated AP CMS master fix remain open. Charged chiral R2 source rules and
 full-CKM mixed-Born QCD corrections now pass (`886ffd74`); this is not a joint
 QCD/EW correction claim.
 
@@ -323,8 +328,9 @@ external mass-shell bindings now make the original three rounded RAMBO points
 pass all components in double, DoubleFloat and AP80. Exact old/new controls,
 empty batches and permuted lanes also pass. The raw off-shell evaluator is
 unchanged; there is no numerical snapping. This closes the demonstrated branch
-discrepancy, while general input-consistency diagnostics and unrecovered global
-source-binding overflow remain separate requirements.
+discrepancy; general input-consistency diagnostics remain a separate requirement.
+Configured global source-binding rescue is now covered below for saved/public
+Python and standalone SDK execution, with producer composition still pending.
 
 Complete pure-QCD `u u~ -> d d~ s s~ [QCD]` (`ec2fb7f5`, author `287df96a`)
 adds 7 Born graphs, 275 loops, 94 families (eight with six propagators), and 341
@@ -470,8 +476,8 @@ currents, reduction and assembly. State/scale blocks compact before currents;
 later failures remove whole physical points and replay surviving original exact
 inputs under one captured source snapshot. Typed diagnostics retain physical
 identities. Public evaluation still rejects failures by default. This supplies
-same-carrier failure isolation; failed global parameter binding remains a
-separate boundary.
+same-carrier failure isolation. The later configured source-binding controls
+below cover numerical global realization failure on saved/public and SDK paths.
 
 Explicit public precision verification/rescue (`43ae3254`, `cdac4326`) captures
 one exact source snapshot and retries original decimal rows in native batches.
@@ -482,7 +488,42 @@ failures, resolved results, output-bound rejection, exact parameter updates and
 per-attempt diagnostic history. Initially successful points remain accuracy-
 unestablished unless verification is requested. This is empirical numerical
 evidence, not independent physics certification; no timing row enables it.
-Global source-owner construction/update overflow remains unrecovered.
+The later configured source-binding extension below covers construction/update
+overflow without treating source admission as complete-result agreement.
+
+Configured source-binding rescue (`41184493`, `f2334128`, `6de24b02`, native tests
+`8cda5136`; public/SDK `9137ef5a`, acceptance `730c5827`) adds an opt-in policy
+before source construction. Default binding remains eager. Exact syntax, names,
+real/complex declarations and fixed ties are validated before retry; only an
+explicit nonfinite numerical realization can be admitted through a configured
+higher carrier. The published owner retains the original exact declaration and
+revision, with failed numerical buffers inaccessible. Invalid or unadmitted
+updates retain atomic rollback; snapshots and arithmetic rebind preserve owner
+identity and effective policy. Complete evaluation still requires two successful
+higher results and checked conversion, retaining original IDs and per-attempt
+diagnostics. Raw result methods cannot silently discard those diagnostics.
+
+The normal combined native build has digest
+`97031cfc06132791fa8f66144089f3a90aae97df6cfde9fd05f8b22ccda0c5fe`.
+Four focused Rust owner/complete-result controls pass. Both native Python owner
+variants pass construction, update, snapshot, rebind, clear and empty contracts.
+Two public tests compare all signed-LC resolved and complex joint-spin
+Born/order/pole values against unchanged saved controls after AP60/AP80 rescue
+(141.81 s). A safe Rust SDK complete ordinary rescue control passes with an opaque
+maximum-width ID and owned diagnostics (36.47 s). C11, C++17, Fortran2018 and
+installed safe Rust clients pass policy-before-binding, eager rejection, empty
+verified output and owned lifetime; standalone outputs remain binary64.
+
+These controls add an exponential-overflow diagnostic to one original real-input
+guard. Physical values, defaults, ordinary/CT instructions and other guards stay
+unchanged; artifacts use normal transactional writers and source-identity
+staging. This is synthetic failure-routing evidence, not a new model, physics
+certification or performance measurement. No graph generation or timing campaign
+ran, and normal dependency pins remain unchanged. Detailed evidence:
+`workspace/reports/loop-source-binding-rescue-contract.md` and
+`workspace/reports/source-rescue-public-sdk-acceptance.md`.
+Producer scalar/stability composition, CLI policy transport and explicit public
+partial-value return remain separate open gates.
 
 The genuine installed candidate `9fc5556ec4a8` and its matching loop companion
 pass fresh transactional source DY generation, Runtime loading, inclusive and
