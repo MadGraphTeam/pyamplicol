@@ -1,6 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
+#let report-date = "2026-10-19"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -15,7 +16,7 @@
 #set document(title: "pyAmpliCol — one-loop implementation and benchmarks", author: "pyAmpliCol development team")
 #set page(paper: "a4", margin: (x: 1.65cm, top: 1.65cm, bottom: 1.7cm), numbering: "1 / 1", header: context {
   if counter(page).get().first() > 1 {
-    text(8pt, fill: grey)[pyAmpliCol · one-loop development #h(1fr) #data.date]
+    text(8pt, fill: grey)[pyAmpliCol · one-loop development #h(1fr) #report-date]
     v(3pt)
     line(length: 100%, stroke: 0.4pt + rule)
   }
@@ -216,7 +217,7 @@
   #v(-2pt)
   #text(12.5pt, fill: luma(85))[Batched Born–loop interference · implementation & live benchmarks]
   #v(3pt)
-  #text(8.5pt, fill: luma(110))[#data.date · measured #data.revision / f89249d2 / 85fb0900 · AMD EPYC 9754]
+  #text(8.5pt, fill: luma(110))[#report-date · timings #data.date · AMD EPYC 9754]
 ]
 #v(8pt)
 #note[
@@ -715,7 +716,7 @@ Points, helicities and coefficient components have explicit ordered layouts.
 Native buffers retain original point identities through compaction, tail batches,
 failure masks and result scatter. Changing sizes, empty batches and repeated
 calls are covered. Headline timings use Python to coordinate native batch plans.
-The shared Rust coordinator now executes complete bounded QCD plans in one call,
+The shared Rust coordinator now executes complete validated QCD plans in one call,
 including source-model gluon controls checked in all three carriers.
 
 The coefficient scheduler uses bounded row tiles and reusable scratch storage.
@@ -737,18 +738,17 @@ cap. A seven-propagator rank-eight numerator cancelling to a triangle master
 passes generic double/DD/AP80 and binary64 fast-tensor evaluation; broader
 physical multiplicity remains a separate gate. Rank above $n+1$ still rejects.
 
-The native module and Community producer use the same underlying numerical and
-symbolic owners. Python distribution and Rust kernel version labels are recorded
-separately. A genuine isolated development-package install now passes a public
-ordinary-tree generation/evaluation smoke.
+Ordinary schema-v3 artifacts now connect `Runtime.load` to the shared Rust
+coordinator without producer graphs or source imports. The loader checks order,
+state, normalization and strategy declarations against the retained PACBIN.
+Complete source gluon controls pass in double, DoubleFloat and AP70, including
+independent Born/double-pole checks, exact updates and native workspace lifecycle.
 
-Internal PACBIN controls retain model-rule four-quark/top, direct-gluon and
-source-owned complete gluon plans, including external fields. Fresh double/DD/AP
-views need neither source models nor producer graphs. Source v3 retains exact
-parameter snapshots, shared ordinary/CT scale views and checked scalar columns.
-The native source owner also passes exact-update, concurrent-publication,
-retained-snapshot and per-point-scale controls. Formal/correlated portable plans,
-source direct mode, rescue, public artifacts and SDKs remain open.
+The public slice requires full-colour inclusive model-rule $R_2$ plus UV and
+explicit positive scalar or per-point $mu_R^2$. Generation must retain exact
+source, completion and scheme metadata; model names confer no certification.
+Commands, resolved/correlated output, LC/FFT, rescue and SDK/UMAMI remain open.
+NinjaRS packaging remains an owner follow-up.
 
 == Success, accuracy and rescue are different facts
 A reducer's success flag is not an accuracy certificate. Native checks reject
@@ -849,7 +849,7 @@ complete answer cannot conceal a wrong component.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
-  [Public delivery], [Source-free PACBIN and the shared Rust coordinator include complete source-model gluon controls in all three carriers. Public loop artifacts, commands and SDK/UMAMI remain open.],
+  [Public delivery], [Saved source artifacts execute through Runtime.load and the shared Rust coordinator in double/DD/AP70. Typed orders/poles, exact updates and explicit per-point scales pass; generation commands and SDK/UMAMI remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
@@ -900,5 +900,6 @@ interference, not a single diagram and helicity.
   *Living document.* Update source, data and PDF after each milestone. Current
   priority is requested feature coverage and validated two-to-four/two-to-five
   processes; further two-to-two optimization is deferred. Add timing rows only
-  after physical validation, and keep capability limits explicit.
+  after physical validation. No arbitrary caps on process size or current count;
+  report actual dependency limits explicitly.
 ]
