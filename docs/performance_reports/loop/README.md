@@ -40,7 +40,10 @@ The authoritative formal projection now retains exact pre-Nc Born/loop matrices,
 common squared-order degrees and actual tensor/order columns (`0ca10348`, root
 `4b36d496`). Cold actual physical-orbit certificates and factories are checked against
 ordinary/resolved direct weights. This supplies physical ownership; public FFT
-attachment, selection and execution remain open. The schedule remains unretimed.
+attachment, selection and execution remain open. PR 155 is now merged upstream;
+the selected native FeynKit already contains its canonicalizer repair. The normal
+Python Community package still needs adoption; its isolated corrected complete
+wheel remains the qualified DY/open-fundamental evidence. The schedule remains unretimed.
 Every measured table value, recorded timing revision and provider comparison is
 unchanged.
 
@@ -131,7 +134,7 @@ DD/AP branch discrepancy in the six-leg control, with all components and carrier
 checked. Full-colour real-mass producer source rescue now includes field terms
 and captured-update replay, now including stable massive W states. CLI policy,
 partial-return and numerical grouped transport also pass. Wider producer domains,
-maximum-u64 producer lane packing, general input-consistency diagnostics and normal adoption
+general input-consistency diagnostics and normal adoption
 of the isolated AP CMS master fix remain open. Charged chiral R2 source rules and
 full-CKM mixed-Born QCD corrections now pass (`886ffd74`); this is not a joint
 QCD/EW correction claim.
@@ -638,9 +641,18 @@ physical scattering reference. Original owners, caches and native modules stay
 intact. The raw port-packing check requires actual model-owned SourceIR; no
 wavefunction convention was added. Evidence:
 `workspace/reports/producer-massive-state-physical.log` and independent read audit.
-A separate valid maximum-u64 producer-ID overflow remains open in arithmetic
-point/helicity packing; no smaller ID limit is imposed. The saved native opaque-ID
-checks remain valid. These correctness-test durations add no benchmark data.
+Producer opaque-ID correction (`039a1772`, author `820f56e0`) now closes the
+maximum-u64 overflow. State/current and reduction rows use dense local indices,
+with explicit mappings to original point labels and squared-order sectors.
+Compaction preserves those mappings; strict state errors use structured dependency
+statuses and retain their original IDs. The 15 retained-W controls pass in 60.82 s,
+including all carriers and rescue, irregular/permuted labels, state-compacted
+loop/CT failures, reduction failures/nonfinite values, and literal singleton/joint
+sources across both directed terms. Original owners/modules and native build
+remain intact. No ID cap or artifact change is introduced; broader correlated
+producer rescue remains open. The saved native opaque-ID checks remain valid.
+Evidence is `workspace/reports/producer-opaque-id-acceptance.md` and the independent
+read audit. These correctness-test durations add no benchmark data.
 
 Explicit public partial-value return (`8ebd1af6`, acceptance `48327639`) reuses
 the immutable virtual result types. The per-call `on_failure="return"` option

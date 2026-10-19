@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-19 · 22:05 UTC"
+#let report-date = "2026-10-19 · 22:11 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -847,13 +847,14 @@ Python, CLI and standalone SDK source-rescue controls pass. Public
 partial returns pass signed-LC $16 times 6$ in all carriers and complex joint-source
 controls. Full-colour real-mass producer rescue includes external fields and
 stable massive W states, with captured-update replay and genuine state-failure
-compaction. Physical evaluators and timing data stay unchanged.
+compaction. Producer state/reduction rows also preserve maximum-u64 caller IDs.
+Physical evaluators and timing data stay unchanged.
 
 #note[
   *Open boundaries.* Producer rescue requires native physical frames and coherent
-  source-scale ownership. CMS, projected/correlated producer domains, maximum-u64
-  producer lane packing, input-consistency diagnostics and normal adoption of the
-  tested CMS master fix remain open.
+  source-scale ownership. CMS, projected/correlated producer domains,
+  input-consistency diagnostics and normal adoption of the tested CMS master fix
+  remain open.
 ]
 
 #pagebreak()
