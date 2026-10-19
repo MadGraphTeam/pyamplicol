@@ -715,11 +715,12 @@ reuse remain outside this checkpoint; reducer Laurent preparation remains a cold
 The current complete QCD path contracts colour at plan construction using
 native fixed-SU(3) tensors. It forms the properly scoped bra–ket expression,
 uses dependency colour simplification and caches the exact pair. The numerical
-event path receives the resulting rectangular weights. Dense SU(3) components
-remain an independent small-control oracle, not the production colour sum.
+event path receives the resulting rectangular weights. Unresolved symbolic
+overlaps use the dependency's exact component contraction at construction time;
+the event path does not sum dense colour tensors.
 
-Closed residual contractions use the dependency's existing projector expansion,
-trace/chain operations and canonicalization. Minimal upstream fixes address
+Closed residual contractions use existing projector expansion and exact native
+tensor components, preserving the original network. Minimal upstream fixes address
 specific demonstrated tensor-lowering or invariant-contraction defects. No
 private group identities or numerical colour fitting are inserted into the
 application.
@@ -735,13 +736,18 @@ $
 Odd suppression powers are retained. The same $P$ spans the relevant helicities,
 epsilon sectors and source contributions; choosing a different leading power
 for each term would change the approximation. Exact native algebra handles
-Laurent coefficients and semantic $C_A,C_F,T_R$ relations.
+Laurent coefficients and semantic $C_A,C_F,T_R$ relations. Source scalar views now
+retain explicit colour identities, exact grade coefficients and active diagnostics
+through saved evaluation in all carriers. This does not yet enable source LC/NLC:
+tensor-alias incidence and common process-sector projection remain open.
 
 Complete bounded quark-process colour projections have controls. The active
 `loop_sm` four-gluon $R_2$ model contains fixed-$N_c=3$ coefficients. Its
 full-SU(3) validity does not imply a formal continuation, and numerical constants
 are never promoted heuristically to $N_c$. Validated direct completion can
-provide a different continuation only within its certified domain.
+provide a different continuation only within its certified domain. A published
+general-$N_c$ model-rule formula now matches every active SU(3) four-gluon entry
+and an independent general-$N_c$ formula; source integration is next.
 
 == Directed colour and spin sources
 Correlated virtual observables require both rectangular cross terms. For
@@ -825,9 +831,10 @@ carriers. Directed correlation/mapping transport, LC/FFT, complete rescue and
 SDK/UMAMI remain separate work.
 
 == Successful completion is not established accuracy
-Native guards reject nonfinite stages. Reducer failures now carry physical point,
-helicity, order and family identities; successful complete points remain compact,
-and ordinary public evaluation rejects failures by default.
+Native guards isolate state, scale, current, reduction and assembly failures with
+physical identities. Successful whole points remain compact; late failures replay
+survivors from original inputs under one exact parameter snapshot. Public
+evaluation rejects failures by default; this is not a hidden precision retry.
 Internal bounded cross-precision checks and subset rescue recompute complete
 outputs without switching $R_2$ strategy. Their existence does not certify every
 physical domain or the public rescue contract. Diagnostics separate precision,
@@ -839,9 +846,9 @@ cross-precision verification.
   rounded six-leg DD/AP branch discrepancy without numerical snapping. Original
   rounded inputs, exact controls and lane permutations now pass all carriers.
   General input-consistency diagnostics and the public rescue contract remain
-  open, as does a separate AP CMS zero-width master gate. Typed native reducer
-  failures retain physical identities; state/scale compaction and subset rescue
-  remain separate delivery gates.
+  open, as does a separate AP CMS zero-width master gate. Native state/scale
+  compaction and same-carrier replay are delivered; public precision rescue and
+  empirical accuracy certification remain separate delivery gates.
 ]
 
 #pagebreak()

@@ -289,6 +289,20 @@ orientations. Saved native inclusive/resolved reconstruction and exact alpha_s
 updates pass all carriers (AP70 uses 2^-170); no joint QCD/EW correction claim is
 made. The consolidated grid records this new control with pending timings.
 
+Source scalar colour preparation (`2693ab28`) now retains explicitly supplied
+semantic identities, exact formal grades and active diagnostics through saved
+native evaluation in all carriers. It neither guesses numerical colour constants
+nor enables public source LC/NLC: local tensor-alias incidence, common sector
+projection and certified effective-rule continuation remain necessary.
+
+Native point-stage failures (`6b8da611`) now include external states, scale values,
+currents, reduction and assembly. State/scale blocks compact before currents;
+later failures remove whole physical points and replay surviving original exact
+inputs under one captured source snapshot. Typed diagnostics retain physical
+identities. Public evaluation still rejects failures by default. This supplies
+same-carrier failure isolation, not public precision rescue or accuracy proof;
+failed global parameter binding remains a separate boundary.
+
 These milestones contribute no
 new benchmark measurements. Keep the source, PDF and coverage notes live after
 each accepted feature milestone.
