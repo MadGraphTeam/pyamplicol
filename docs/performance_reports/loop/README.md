@@ -34,7 +34,7 @@ Public LC AP60/AP80 subset rescue, clear/empty transport and a packaged Rust SDK
 shape/source-ownership control pass. Inclusive correlated LC has one contracted
 component; ordinary LC still requires signed Born anchors and resolved payloads.
 Nonidentity formal-colour histories, LC/NLC flavour reuse and massive-vector
-sources remain open. See `docs/development/LOOP_PUBLIC_SPIN.md`.
+LC/NLC composition remain open. See `docs/development/LOOP_PUBLIC_SPIN.md`.
 
 The authoritative formal projection now retains exact pre-Nc Born/loop matrices,
 common squared-order degrees and actual tensor/order columns (`0ca10348`, root
@@ -55,6 +55,33 @@ nontransverse source oracle. See `docs/development/LOOP_PUBLIC_SPIN.md` and
 `tools/loop_reference/PHOTON_SOURCES.md`. Photon timing rows remain pending; the
 135.05 s test duration is not a generation/runtime measurement. Existing measured
 tables and JSON are unchanged.
+
+Stable charged-vector sources now cover complete full-colour QCD controls for
+`u d~ -> W+ g` and crossed `d W+ -> u g` (`9cbc02ce`, acceptance `931b0b83`,
+scope `82067260`/`065b033b`). The actual model-owned SourceIR supplies the charged
+identity and three physical states, including the longitudinal state; saved
+loading reuses existing canonical and reciprocal antiparticle checks. Ordinary
+Born/all-pole values match MadLoop. Recola's own massive wavefunctions and coherent
+columns independently check physical source mixtures with identity colour: maximum
+outgoing/incoming differences are approximately `2.9e-13` / `3.2e-9`. These are
+binary64 provider controls, not independent AP70 accuracy.
+
+Seven native controls pass three-state and joint completeness in double,
+DoubleFloat and AP70, every bare/UV/R2/field component, both directed terms, exact
+source changes, identities, empty/tail rows and original IDs. The identity and
+two ordered histories reconstruct internally; independent provider comparison
+covers identity only. Three public controls pass coherent references, AP60/AP80
+subset rescue and clear, with two massless-photon regressions and a safe Rust SDK
+longitudinal/ownership check. Arbitrary nontransverse vectors are checked through
+literal transport and homogeneity, without an independent Recola oracle.
+W−, neutral axial/chiral source cases, EW corrections, complex external masses and
+massive-vector LC/NLC remain separate gates. See
+`tools/loop_reference/MASSIVE_VECTOR_SOURCES.md`. The provider grid now includes
+both W+ directions with all timing cells pending; no measured observation changes.
+
+Existing correlated CLI coverage means generation and inspection. Numerical
+grouped source/correlation requests are not yet exposed by `evaluate`; Python and
+SDK paths supply the numerical controls above.
 
 Native helicity-resolved full-colour output is delivered (`ede24fad`, finite-guard
 follow-up `182f06c3`). Its singleton colour axis is a complete contracted component,
