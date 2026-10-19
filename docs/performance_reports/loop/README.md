@@ -3,7 +3,8 @@
 `benchmarks.pdf` is the rendered report; `benchmarks.typ` is its source.
 
 Current physics coverage includes complete model-rule UV/R2 controls through two
-six-leg processes in double, DoubleFloat and AP80. The provider grid keeps their
+six-leg processes in double, DoubleFloat and AP80, and full-CKM mixed-Born
+four-quark scattering with QCD corrections in double, DoubleFloat and AP70. The provider grid keeps their
 B1/B128, generation and stage timing cells explicitly pending; earlier measured
 observations are unchanged. The six-fermion case exercises eight true
 six-propagator families. Independent references remain binary64; analytic pole,
@@ -16,13 +17,21 @@ not a colour-flow decomposition. `.total()` retains every order/pole and the
 original averaging. Public generic generation now passes real DY and gg controls
 from an explicit prepared `loop_sm`: source/staged-runtime validation before
 transactional publication, public Runtime/CLI, and loaded DD32/AP70 evaluation.
-This generation slice is full-colour, inclusive, model-R2 and JIT; public resolved
-publication is next. The observed 215.94 s is a correctness-test duration, not a
+This generation slice is full-colour, model-R2 and JIT; public helicity-resolved
+publication now also passes a fresh DY artifact in all three carriers
+(`0dd89d11`). The resolved axis has 16 helicities and one complete contracted
+full-colour component; `.total()` preserves orders, poles and original averaging. The observed 215.94 s is a correctness-test duration, not a
 benchmark. Directed correlation/mapping transport, SDK/UMAMI delivery and the
-full rescue contract remain open. Early reducer exceptions retain encoded channel
-IDs; returned statuses and nonfinite guards identify physical point/helicity.
-Rounded-input structural mass-shell binding, two mixed-source chiral-R2 tensor
-correspondences, and the AP CMS zero-width master gate remain visible limitations.
+full rescue contract remain open. Typed native reducer failures (`b92461c7`) now
+retain physical point/helicity/order/family identities with compact complete-point
+successes; default public evaluation rejects failures. State/scale lane compaction
+and subset rescue remain open.
+Structural mass-shell binding (`e070f5fe`) fixes the demonstrated rounded-input
+DD/AP branch discrepancy in the six-leg control, with all components and carriers
+checked. General input-consistency diagnostics, public rescue and the separate
+AP CMS zero-width master gate remain open. Charged chiral R2 source rules and
+full-CKM mixed-Born QCD corrections now pass (`886ffd74`); this is not a joint
+QCD/EW correction claim.
 
 Build with Typst 0.15.1 from this directory:
 
@@ -229,8 +238,13 @@ remaining portable feature combinations are still separate milestones.
 The current priority is feature coverage and higher multiplicity; further
 small-process optimization is deferred. Complete full gamma/Z
 `u u~ -> e- e+ g g [QCD]` now passes all carriers at exact on-shell points,
-with 528 loops, 71 families and separate bare/UV/R2/field controls. Rounded
-RAMBO inputs pass double but retain an unresolved DD/AP on-shell branch issue.
+with 528 loops, 71 families and separate bare/UV/R2/field controls. Structural
+external mass-shell bindings now make the original three rounded RAMBO points
+pass all components in double, DoubleFloat and AP80. Exact old/new controls,
+empty batches and permuted lanes also pass. The raw off-shell evaluator is
+unchanged; there is no numerical snapping. This closes the demonstrated branch
+discrepancy, while general input-consistency diagnostics and public rescue remain
+separate requirements.
 
 Complete pure-QCD `u u~ -> d d~ s s~ [QCD]` (`ec2fb7f5`, author `287df96a`)
 adds 7 Born graphs, 275 loops, 94 families (eight with six propagators), and 341
@@ -258,7 +272,19 @@ Detailed source/component/status evidence and provider audit remain under
 `workspace/reports/multiquark-provider-audit.md` and
 `workspace/reference/runs/multiquark-sixleg-decimal-control/`.
 The next seven-leg six-fermion-plus-gluon catalogue has 751 families, including
-48 seven-propagator families; independent references are being prepared. A graph
-catalogue is not a complete physical validation. These milestones contribute no
+48 seven-propagator families. Three exact-decimal points/scales now match
+MadLoop/Ninja, MadLoop/Collier and cached/uncached Recola within 1.11e-10; separate
+MadLoop UV/R2/field controls are frozen too. Complete source construction is
+running, so no seven-leg pyAmpliCol physical result is claimed yet.
+
+Full unrestricted-CKM `u u~ -> d d~ [QCD]` now matches MadLoop for every one of
+three Born orders and three virtual orders/poles at three exact points, within
+6.7e-15. This extends the pure-QCD timed row rather than replacing its scope.
+Independent ALOHA unequal-mass/Yukawa endpoint controls cover both charged FFV
+orientations. Saved native inclusive/resolved reconstruction and exact alpha_s
+updates pass all carriers (AP70 uses 2^-170); no joint QCD/EW correction claim is
+made. The consolidated grid records this new control with pending timings.
+
+These milestones contribute no
 new benchmark measurements. Keep the source, PDF and coverage notes live after
 each accepted feature milestone.
