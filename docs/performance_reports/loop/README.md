@@ -569,3 +569,20 @@ rule/parameter ties before saving the admission in the existing immutable plan.
 Full-colour fixed external ordering passes inclusive/resolved and complex directed
 outputs in all carriers. Spin/LC/NLC requests retain independently generated
 processes and report that outcome. No generation-time speedup is claimed.
+
+
+The native rectangular-FFT prerequisite (`0f450dc8`, author `0b1d91fc`) now
+provides batched adjoint and normalized inverse operations by reversing the
+existing symmetric-group transform. All 16 focused native checks pass, including
+an independent complex 13-by-20 dual-weight matrix with different Born/loop orbits
+and both residual cross terms, trivial groups, both round-trip directions and
+changing batch tails. No second Fourier representation algebra was introduced.
+The arbitrary native degree-ten cap was removed in favour of actual checked
+factorial/u32 storage admission; separate old tree wire/UI bounds are unchanged.
+
+This is a mathematical execution primitive, not public loop FFT acceptance.
+Producer orbit certificates, shared dual-Born-weight scheduling, saved plans and
+physical/precision composition remain required. Exact high-precision direct
+contraction is retained; no binary64 transform is promoted into DD/AP. See
+`docs/development/LOOP_RECTANGULAR_FFT.md`. The report remains 13 pages and all
+measured tables/data are unchanged. Test duration is not a benchmark result.

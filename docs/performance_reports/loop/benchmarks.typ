@@ -713,12 +713,10 @@ this same ownership boundary; reducer Laurent preparation remains a cold binding
 #pagebreak()
 #section-label[ARCHITECTURE · COLOUR AND OBSERVABLES]
 = Full colour without dense event tensors
-The complete QCD path contracts scoped bra–ket colour expressions at plan
-construction. Dependency simplification and exact SU(3) component contraction
-produce cached rectangular weights for numerical evaluation. Residual contractions
-preserve the original network; event evaluation does not sum dense colour tensors.
-Minimal upstream fixes address demonstrated defects. No private group identities
-or numerical colour fitting are introduced.
+Dependency algebra and exact SU(3) components contract scoped bra–ket colour
+expressions into cached rectangular weights at preparation. Residual contractions
+preserve the original network. Event evaluation uses these weights; no dense
+colour tensors, private group identities or numerical colour fits are needed.
 
 == LC and NLC are structural projections
 For a certified formal-$N_c$ model, all contributions belonging to one squared
@@ -728,30 +726,24 @@ $
   "LC": N_c^P, quad
   "NLC": N_c^P, N_c^(P-1), N_c^(P-2).
 $
-The same $P$ spans helicities, epsilon sectors and bare/UV/$R_2$/field terms,
-including odd suppressions. Dependency algebra retains semantic invariants,
-alias cancellations and diagnostics. Full/LC/NLC source plans rebind in all
-carriers; DY has LC/full $=9/8$ and NLC $=$ full. Signed LC components use
-canonical Born tensors and a common sector degree before anchor masking.
-Their sum reconstructs the inclusive result. Fresh installed gg LC and NLC generation
-pass with explicit model data; DY LC passes with the isolated PR 155 overlay.
+The common $P$ spans helicities, epsilon sectors and bare/UV/$R_2$/field terms,
+including odd suppressions. Exact invariants, alias cancellations and diagnostics
+survive. Full/LC/NLC plans rebind in all carriers; DY has LC/full $=9/8$ and
+NLC $=$ full. Signed Born anchors reconstruct the inclusive result. Fresh installed
+gg LC/NLC passes; DY LC uses the isolated PR 155 overlay.
 
-The `loop_sm` four-gluon $R_2$ coefficients are fixed at $N_c=3$. A published
-general-$N_c$ rule matches the complete source tensor and an independent rule:
-#link("https://arxiv.org/abs/0903.0356")[Fig. 2
-of 0903.0356] and #link("https://arxiv.org/abs/2007.03713")[Eqs. 5.30–5.38 of
-2007.03713]. Its explicit HV source profile now composes complete gluon
-full/LC/NLC plans in all carriers, with exact updates, scales and 16-helicity sums.
-Whole source groups, diagnostics and the checked scheme binding remain.
-This does not certify arbitrary models or numerically fit colour constants.
+An explicit general-$N_c$ replacement for `loop_sm`'s fixed-SU3 four-gluon
+$R_2$ matches its complete source tensor at $N_c=3$ and independent published rules:
+#link("https://arxiv.org/abs/0903.0356")[Fig. 2 of 0903.0356] and
+#link("https://arxiv.org/abs/2007.03713")[Eqs. 5.30–5.38 of 2007.03713]. Source
+groups, diagnostics and HV bindings survive; full/LC/NLC passes exact updates and
+16-helicity sums in all carriers. Arbitrary model continuation remains uncertified.
 
-A seven-leg colour network exposes a separate dependency boundary: exact
-SU(3) components close it, but symbolic reduction retains a degree-five
-fundamental invariant. The available dimension rewrite covers degrees three
-and four. Its trace-scope fix alone does not certify formal high-multiplicity colour.
-An independent open-dual-index canonicalization fix is in
-#link("https://github.com/alphal00p/gammaloop/pull/155")[upstream PR 155]. An isolated
-Python build passes strict fundamental-port and canonical-partition controls.
+Seven-leg exact SU(3) components close a colour network whose formal reduction
+retains a degree-five invariant; existing rewrites cover degrees three and four.
+Its trace-scope repair therefore does not certify formal colour.
+#link("https://github.com/alphal00p/gammaloop/pull/155")[Upstream PR 155] separately
+fixes open-dual canonicalization; isolated fundamental-port controls pass.
 
 == Directed colour and spin sources
 Correlated virtual observables require both rectangular cross terms. For
@@ -780,13 +772,17 @@ snapshots, empty batches and AP60/AP80 rescue pass. Internal controls additional
 cover Ward shifts and imaginary ordered histories. Massive-vector and LC/NLC
 spin composition remain open.
 
-== Flavour mapping and FFT remain distinct work
-Public $u overline(u) -> d overline(d)$ and $u overline(u) -> s overline(s)$ now share
-an immutable admitted plan at fixed external ordering. Independently generated
-members agree in all carriers, resolved axes, complex histories and exact updates.
-Rule/parameter ties prove reuse; all members are generated first, so no generation
-speedup is claimed. Spin/LC/NLC requests stay independent. Permutations and FFT
-remain open.
+== Exact mappings and the rectangular FFT boundary
+Public $u overline(u) -> d overline(d)$ and $u overline(u) -> s overline(s)$ share an
+immutable plan after independent generation and exact rule/parameter proofs.
+All carriers, resolved axes, complex histories and updates agree. No generation
+speedup is claimed; permutations and spin/LC/NLC composition remain open.
+
+Native FFT now has a batched adjoint and normalized inverse. Independent complex
+$13 times 20$ controls cover distinct Born/loop orbits and both residual cross
+terms; all 16 transform checks pass. Actual loop orbit certification and shared
+Born-weight scheduling remain open: public loop FFT and speedups are not claimed.
+Higher precision retains exact direct contraction.
 
 #pagebreak()
 #section-label[ARCHITECTURE · NATIVE BATCHES AND PRECISION]
