@@ -21,7 +21,9 @@ This generation slice is full-colour, model-R2 and JIT; public helicity-resolved
 publication now also passes a fresh DY artifact in all three carriers
 (`0dd89d11`). The resolved axis has 16 helicities and one complete contracted
 full-colour component; `.total()` preserves orders, poles and original averaging. The observed 215.94 s is a correctness-test duration, not a
-benchmark. Directed correlation/mapping transport remains open. Fresh installed gg
+benchmark. Public directed generation and grouped complex SDK transport now pass. Internal
+joint spin and exact identity-order flavour transport also pass; public spin
+ingress, flavour grouping and their composition remain follow-ups. Fresh installed gg
 LC publication now passes; DY LC requires the isolated PR 155 Community overlay,
 as detailed below. Ordinary installed native/SDK evidence is also recorded below.
 The subsequent signed-LC source milestone adds six canonical Born components
@@ -523,3 +525,20 @@ correlated evaluation, spin/resolved/LC/NLC/direct-R2 support or new physics dat
 These milestones contribute no
 new benchmark measurements. Keep the source, PDF and coverage notes live after
 each accepted feature milestone.
+
+
+Internal source-spin and flavour transport now pass (2026-10-19). Saved singleton
+and joint massless-gluon classes preserve exact inputs, compact spectator sums,
+complex histories and AP60/AP80 subset rescue. Joint polarization reconstruction
+checks absolute normalization. Independently generated uudd/uuss controls establish
+identity-port flavour reuse, including exact updates; public spin ingress and
+mapping publication are separate follow-ups. Timings are unchanged.
+
+The reproducible local compiler is isolated in
+`workspace/tools/typst-python` (Python package `typst==0.15.0`). From this report
+directory, with workspace cache variables set, render with:
+
+```sh
+/shared/external/pyLoopAmpliCol/workspace/tools/typst-python/bin/python -c \
+  'import typst; typst.compile("benchmarks.typ", output="benchmarks.pdf")'
+```

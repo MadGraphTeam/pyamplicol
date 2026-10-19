@@ -771,20 +771,20 @@ Partial failures and subset rescue preserve physical IDs and history labels.
 Public Python/CLI histories now pass fresh quark-scattering publication.
 Identity, Casimir and nontrivial $T_1 dot T_2$ Born/Laurent values match binary64
 Recola at two points/scales in double, DD and AP70. This checks provider agreement,
-not 70 digits or complex two-emission histories; generic source spin remains open.
+not 70 digits or complex two-emission histories.
 
-Literal complex spin-source vectors enter the admitted physical external ports
-without an implicit conjugation, normalization or projection. Spectator states
-are summed and a replaced leg is counted once. The source/current frame and
-crossing factors remain explicit. Scalar and massive-vector layouts reuse native
-wavefunctions; a generic source API is not yet certified by these controls.
+Saved singleton/joint gluon spin classes pass $u overline(u) -> g g$ in all carriers.
+Literal complex sources enter shared Born/loop/CT currents; compact spectator sums
+preserve averaging. Joint polarization reconstruction, Ward shifts, complex ordered
+histories, sub-double input changes and AP60/AP80 subset rescue pass. Public/SDK
+ingress and massive-vector support remain open.
 
 == Flavour mapping and FFT remain distinct work
-An exact species certificate compares ordinary/UV/$R_2$/field structures and
-bindings. Independent massless $d$ and $s$ catalogues pass; unequal masses,
-Yukawas or UV logarithms reject. External-leg, momentum, spin-source and history
-transport remain open. Optional FFT is outside the measured path; its cost model,
-exact reconstruction and composition remain acceptance gates.
+Independently generated $u overline(u) -> d overline(d)$ and $u overline(u) -> s overline(s)$
+pass exact identity-port reuse in all carriers, including complex histories and
+updates. Ordinary/UV/$R_2$/field rules and bindings prove the relation; unequal
+masses, Yukawas or UV logs reject. Public grouping, permutations, spin composition
+and optional FFT remain open.
 
 #pagebreak()
 #section-label[ARCHITECTURE · NATIVE BATCHES AND PRECISION]
@@ -937,7 +937,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
-  [Correlations / mapping], [Grouped public Python and fresh CLI colour-history generation pass all carriers; Recola checks a nontrivial dipole. Complex grouped SDK clients pass. Source spin and public mapping remain open.],
+  [Correlations / mapping], [Grouped public Python and fresh CLI colour-history generation pass all carriers; Recola checks a nontrivial dipole. Complex grouped SDK clients pass. Internal joint spin and identity-order flavour transport pass all carriers; public ingress/grouping remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs the PR 155 overlay. Six API clients agree on mixed-order resolved output. Native ID/failure/verification checks pass.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
@@ -964,7 +964,7 @@ The seven-leg control has matched independent references. Its source build
 completed Born and first-family projection before the retained process disappeared
 with no recorded terminal cause. An unchanged detached recovery is underway;
 no seven-leg numerical result is claimed. Required $2 -> 5$, FFT,
-spin/correlation composition, public mapping and broader model coverage remain open.
+broader spin/colour composition, public mapping and broader model coverage remain open.
 
 == Independent evidence and reproducibility
 `data/measurements.json` retains the samples, revisions and cold times behind the
