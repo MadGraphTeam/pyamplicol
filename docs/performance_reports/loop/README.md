@@ -13,8 +13,12 @@ high-precision evidence.
 Native helicity-resolved full-colour output is delivered (`ede24fad`, finite-guard
 follow-up `182f06c3`). Its singleton colour axis is a complete contracted component,
 not a colour-flow decomposition. `.total()` retains every order/pole and the
-original averaging. Public generic generation is undergoing final real-artifact
-validation. Directed correlation/mapping transport, SDK/UMAMI delivery and the
+original averaging. Public generic generation now passes real DY and gg controls
+from an explicit prepared `loop_sm`: source/staged-runtime validation before
+transactional publication, public Runtime/CLI, and loaded DD32/AP70 evaluation.
+This generation slice is full-colour, inclusive, model-R2 and JIT; public resolved
+publication is next. The observed 215.94 s is a correctness-test duration, not a
+benchmark. Directed correlation/mapping transport, SDK/UMAMI delivery and the
 full rescue contract remain open. Early reducer exceptions retain encoded channel
 IDs; returned statuses and nonfinite guards identify physical point/helicity.
 Rounded-input structural mass-shell binding, two mixed-source chiral-R2 tensor

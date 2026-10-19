@@ -576,8 +576,8 @@ source, restrictions and species eligibility remain retained. The explicit
 `loop.model` contract declares joint correction coverage, UV/$R_2$ completeness,
 dimensional regularization, external states, gamma-five, renormalization, masses
 and finite restoration. It remains `declared-not-certified`: model names and
-counterterm presence do not prove completeness. Public generation is still being
-connected.
+counterterm presence do not prove completeness. Public generation now consumes
+this explicit prepared-model contract.
 
 == Tensor structure and physical frame
 Each basis entry retains its scalar coefficient, native Lorentz tensor,
@@ -814,9 +814,12 @@ Rank above $n+1$ rejects. NinjaRS packaging remains an owner follow-up.
 `Runtime.load` and CLI/TOML evaluation retain checked PACBIN instructions, exact
 parameters, per-point scales and every order/pole. Arithmetic binds before
 parameters, including `aS=1e400` in AP70. The public slice uses full colour,
-model-rule $R_2$ and UV, with explicit positive $mu_R^2$. Generic generation awaits
-final real-artifact validation. Directed correlation/mapping transport, LC/FFT,
-complete rescue and SDK/UMAMI remain separate work.
+model-rule $R_2$ and UV, with explicit positive $mu_R^2$. Generic DY and $g g -> g g$
+generation now passes source-to-staged-runtime checks before transactional
+publication, then public Runtime/CLI and DD32/AP70 evaluation. This first
+generation slice is inclusive/full-colour/model-$R_2$/JIT; resolved publication
+is next. Directed correlation/mapping transport, LC/FFT, complete rescue and
+SDK/UMAMI remain separate work.
 
 == Successful completion is not established accuracy
 Native guards reject nonfinite stages and retain failed point identities.
@@ -913,7 +916,7 @@ complete answer cannot conceal a wrong component.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
-  [Public delivery], [Native ordinary and helicity-resolved full-colour output retain every order/pole. Generic generation awaits final real-artifact checks; directed correlation, mapping and SDK/UMAMI transport remain open.],
+  [Public delivery], [Generic inclusive/full-colour/model-$R_2$/JIT generation and Runtime/CLI pass real-artifact checks, including DD32/AP70. Native helicity-resolved output is separate; resolved publication, directed transport, mappings and SDK/UMAMI remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
