@@ -341,7 +341,7 @@ and $mu_R=1000$ GeV. Its full source counterterms are retained.]
   pending-provider([Matched\ cache checked], provider: true),
   pending-provider([Not yet matched], provider: true),
   [#text(size: 10pt, weight: "bold")[$u overline(u)$\ $-> d overline(d)$]
-   #v(5pt) #text(size: 7.6pt, fill: grey)[QCD correction\ full CKM / mixed Born\ 3 Born + 3 virtual orders\ new scope;\ pure-QCD timing unchanged]],
+   #v(5pt) #text(size: 7.6pt, fill: grey)[QCD correction\ full CKM / mixed Born\ 3 Born + 3 virtual orders\ new physics scope;\ prior timings unchanged]],
   pending-provider([Validated\ double / DD / AP70]),
   pending-provider([Matched\ every order / pole], provider: true, stage-note: [Numerator and reduction + masters: pending]),
   pending-provider([Not yet matched], provider: true),
