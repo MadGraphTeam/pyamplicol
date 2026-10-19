@@ -728,16 +728,13 @@ $
   "LC": N_c^P, quad
   "NLC": N_c^P, N_c^(P-1), N_c^(P-2).
 $
-The same $P$ spans helicities, epsilon sectors and bare/UV/$R_2$/field contributions,
-including odd suppression powers. Exact dependency algebra preserves semantic
-$C_A,C_F,T_R$, scalar-alias incidence, local cancellations and active diagnostics.
-Full/LC/NLC source plans save, reload and rebind in all carriers. Source DY
-has LC/full $=9/8$ and NLC $=$ full; mixed orders match MadLoop. Every selected
-source entry must be bound or exactly zero, including its diagnostic. LC output uses
-signed coherent interferences anchored to canonical Born tensors. Equal tensors
-share a component; this partition need not be a minimal colour basis. The common
-sector degree is chosen before masking anchors. All components sum to the
-inclusive result; public source-colour generation still needs model ingress.
+The same $P$ spans helicities, epsilon sectors and bare/UV/$R_2$/field terms,
+including odd suppressions. Dependency algebra retains semantic invariants,
+alias cancellations and diagnostics. Full/LC/NLC source plans rebind in all
+carriers; DY has LC/full $=9/8$ and NLC $=$ full. Signed LC components use
+canonical Born tensors and a common sector degree before anchor masking.
+Their sum reconstructs the inclusive result. Explicit model data now enters
+public LC/NLC generation; fresh installed publication remains pending.
 
 The `loop_sm` four-gluon $R_2$ coefficients are fixed at $N_c=3$. A published
 general-$N_c$ rule matches the complete source tensor and an independent rule:
@@ -753,7 +750,7 @@ SU(3) components close it, but symbolic reduction retains a degree-five
 fundamental invariant. The available dimension rewrite covers degrees three
 and four. Its trace-scope fix alone does not certify formal high-multiplicity colour.
 An independent open-dual-index canonicalization fix is in
-#link("https://github.com/alphal00p/gammaloop/pull/155")[upstream PR 155]; an isolated
+#link("https://github.com/alphal00p/gammaloop/pull/155")[upstream PR 155]. An isolated
 Python build passes strict fundamental-port and canonical-partition controls.
 
 == Directed colour and spin sources
@@ -764,8 +761,11 @@ $
 $
 For unequal histories this is not generally $2 Re(B_A^dagger G L_B)$; the
 result can be complex. Existing colour-connection metadata and native charge
-tensors provide the operator action and signs. Current internal controls compose
-bounded histories with Born, bare loop, local counterterms and field factors.
+tensors provide the operator action. Immutable projectors now share source-owned
+currents and scalar state. Four-quark controls pass all carriers, complex swapped
+terms, order/field masks and exact updates. Reducer statuses retain original IDs;
+early state/current errors still use legacy context. Native correlated failure/
+rescue transport remains open.
 
 Literal complex spin-source vectors enter the admitted physical external ports
 without an implicit conjugation, normalization or projection. Spectator states
@@ -774,15 +774,11 @@ crossing factors remain explicit. Scalar and massive-vector layouts reuse native
 wavefunctions; a generic source API is not yet certified by these controls.
 
 == Flavour mapping and FFT remain distinct work
-An exact species-symmetry certificate now compares the entire retained ordinary,
-UV, $R_2$ and external-field plan, including prepared native structures and
-parameter bindings. Independent massless $d$ and $s$ catalogues pass; unequal masses,
-Yukawas or UV logarithms reject. This is a prerequisite for mapping, not yet
-external-leg, momentum, spin-source or colour-history transport.
-
-Optional FFT contraction is an agreed feature but is not part of the measured
-path. Its cost model, exact observable reconstruction and composition with the
-other features remain acceptance gates.
+An exact species certificate compares ordinary/UV/$R_2$/field structures and
+bindings. Independent massless $d$ and $s$ catalogues pass; unequal masses,
+Yukawas or UV logarithms reject. External-leg, momentum, spin-source and history
+transport remain open. Optional FFT is outside the measured path; its cost model,
+exact reconstruction and composition remain acceptance gates.
 
 #pagebreak()
 #section-label[ARCHITECTURE · NATIVE BATCHES AND PRECISION]
@@ -822,18 +818,20 @@ Selected source consumer `0d0d7e7` uses self-contained Git pins and passes
 compilation, analytic anchors, saved six-propagator physics and a seven-line
 rank-eight cancellation in all carriers. The reducer's authoritative constructor
 now admits its $n+2$ domain; an independent rank-four bubble passes all carriers
-and both fast adapters. This is not general higher-rank model certification. The seven-leg
-producer stays on `e4c16a7`. Complete seven-line physics and the AP CMS
-zero-width discrepancy remain open.
+and both fast adapters. General higher-rank models, complete seven-line physics
+and the AP CMS zero-width discrepancy remain open. The retained seven-leg
+producer stays on `e4c16a7`.
 
 Public Runtime/CLI retains exact inputs, scales and every order/pole. Generic
-DY/gluon generation validates source against staged runtime before publishing
-full-colour/model-$R_2$/JIT artifacts; both views pass all carriers. An installed
-candidate also passes exact subset rescue, empty batches and clear.
-Rust/C/C++/Fortran and the UMAMI extension reuse this runtime. Python, Rust, C
-and UMAMI now pass six-component source transport and subset rescue, including
-AP60/AP80 retries. Their fixture target stamps do not certify fresh public LC
-generation. Model ingress, release packaging and directed/mapping/FFT remain open.
+full-colour generation passes staged validation and all carriers. Explicit model
+colour declarations now enter LC/NLC generation with checked scheme ties;
+full colour retains its original path. Fresh installed LC publication is pending.
+
+The unified package uses one Rust workspace, one nested native loop module and
+one tree/virtual C archive. Mixed-order Rust, combined C, C++/Fortran and UMAMI
+source clients pass; optional exact state preserves binary64-only tree artifacts.
+Six-component transport and AP60/AP80 subset rescue pass. The new ordinary host
+wheel and fresh public LC proof are pending; directed/mapping/FFT remain open.
 
 == Successful completion is not established accuracy
 Native guards isolate state, scale, current, reduction and assembly failures with
@@ -934,8 +932,8 @@ complete answer cannot conceal a wrong component.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
-  [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
-  [Public delivery], [Generic full-colour/model-$R_2$/JIT generation passes all carriers. Signed LC source transport passes Python/Rust/C/UMAMI with six components and subset rescue. Fresh public LC generation, release packaging and directed/mapping transport remain open.],
+  [Correlations / mapping], [Immutable directed projectors bind the source owner in all carriers; complex terms and massive-field controls pass. Early failure context, native/public transport and general spin/mapping composition remain open.],
+  [Public delivery], [Full-colour generation and six-component source transport pass. Explicit model colour data now enters LC/NLC generation. Unified Python/native/SDK source delivery passes; the ordinary installed wheel and fresh public LC publication remain pending.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 

@@ -392,8 +392,11 @@ and padding untouched. Synthetic negative, multi-order controls independently
 check transpose semantics. Evidence is in `workspace/reports/loop-color-components-native.log`,
 `loop-public-components-native.log`, and `loop-sdk-components-{native,c,umami}.log`.
 The artifact wrappers use explicit test target stamps: these prove source
-transport, not fresh public LC generation. Declaration-only model data
-(`f6375e34`) is integrated; its resolver and generation ingress remain active.
+transport, not fresh public LC generation. Explicit model colour declarations now resolve into the actual request owner
+and enter public LC/NLC generation (`a4723935`, author `cfa96d3f`). Required scheme
+constants cannot undo a source restriction; complete rule groups and original
+diagnostics survive. The actual raw-model JSON and request-scope preflights pass.
+Fresh installed-package LC publication remains a separate pending gate.
 
 An independent Idenso defect changed open fundamental/dual port identities during
 canonicalization. The minimal repair removes the lossy dual-strip/restore step,
@@ -441,11 +444,29 @@ verification. The versioned pyAmpliCol UMAMI virtual extension (`f2374f8d`)
 preserves keyed bulk offset/count/stride layouts, all squared orders and Laurent
 coefficients, and mandatory lane statuses. Native one- and three-order controls
 check untouched padding/failed slots and resolved reconstruction. It is a
-pyAmpliCol extension, not a standard UMAMI virtual interface. Normal SDK release
-packaging, generated UMAMI bundles and correlated/mapped public operations remain
-open. The new self-contained NinjaRS source pin removes the former untracked
-dependency-directory requirement; ordinary release packaging remains its own
-delivery step.
+pyAmpliCol extension, not a standard UMAMI virtual interface. Generated UMAMI bundles and correlated/mapped public operations remain open.
+The unified source package (`904829bb`) now uses one root Cargo workspace/lock,
+one `_rusticol._loop` module behind the lazy authoritative loader, and one C
+archive carrying tree and virtual APIs. SDK staging includes the existing native
+wrappers and a safe standalone Rust virtual wrapper. A no-Python mixed-order Rust
+client matches the frozen MadLoop result and passes sparse/failing lanes, resolved
+axes, DD verification, parameter updates and result lifetime. A single-archive C
+client evaluates an existing binary64 tree and the complete six-component virtual
+controls. Binary64-only tree artifacts continue to load; requests for unavailable
+exact evaluation reject without breaking later binary64 calls (`52ebf72b`).
+SM/HEFT portable assets were regenerated through loader1.0.1/v4 (`f9874045`).
+The new ordinary host wheel is compiling; its installed-package validation and
+fresh public LC generation are still pending. These source checks add no timings.
+
+Immutable directed Born/family/CT-field/assembly projectors now bind the existing
+source owner and rebind carriers without repeating tensor algebra. Actual source
+`u u~ > d d~ [QCD]` identity, Casimir and complex swapped histories pass double,
+DoubleFloat and AP70 with exact updates and independent analytic Born/UV controls.
+Legacy massive-field controls also pass. The internal directed wrapper retains original point IDs at the native integer
+boundary without multiplying those IDs; ordinary native-core ID transport is a
+separate implementation boundary. Early state/
+current errors still expose legacy dense context; native/public correlated
+failure/rescue, source-spin transport and general mapping are not completed.
 
 These milestones contribute no
 new benchmark measurements. Keep the source, PDF and coverage notes live after
