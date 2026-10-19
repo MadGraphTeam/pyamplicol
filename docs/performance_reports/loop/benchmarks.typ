@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-19 · 22:33 UTC"
+#let report-date = "2026-10-19 · 22:42 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -760,12 +760,12 @@ Recola independently checks physical sources with identity colour; other ordered
 histories use internal component reconstruction. Arbitrary literal vectors use
 homogeneity/replay, without projection. Public subset rescue and Rust SDK pass.
 
-Projected gg and outgoing $u overline(d) -> W^+ g$ LC/NLC compose with identity
+Projected gg and outgoing $W^plus.minus$/incoming $W^+$ LC/NLC compose with identity
 spin sources in all carriers. The full continuation reproduces original components;
 W uses common Born/virtual degrees 2/3, retaining odd suppression at NLC.
 Saved/public controls and subset rescue pass. Ordinary LC keeps signed Born anchors;
-inclusive source components are contracted. Other projected W directions,
-nonidentity formal histories and broader source composition remain open.
+inclusive source components are contracted. Nonidentity formal histories,
+EW/CMS sources and broader source composition remain open.
 
 == Exact mappings and the rectangular FFT boundary
 Exact flavour reuse preserves resolved four-quark output and complex histories.
@@ -932,7 +932,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
-  [Correlations / mapping], [Directed/joint sources cover photons, charged W and d/s reuse. gg and outgoing $W^+$ LC/NLC compose with identity spin. Other projected W directions, wider EW/CMS sources and nonidentity mappings remain open.],
+  [Correlations / mapping], [Directed/joint sources cover photons, charged W and d/s reuse. gg and exercised charged-W LC/NLC compose with identity spin. Wider EW/CMS sources, nonidentity histories and mappings remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Source rescue reaches Python, CLI, SDKs and real-mass W producers. Partial returns and grouped numerical CLI preserve exact values, positions and diagnostics.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
@@ -955,9 +955,9 @@ page 4 records precision evidence; the README details the cache/Gram controls. T
 new timing rows remain pending. Full-CKM four-quark QCD corrections now match
 MadLoop for three Born and three virtual orders at three points, including the
 charged chiral-$R_2$ source rules. This does not certify joint QCD/EW corrections.
-The seven-leg control has matched independent references. Its source build
-completed Born and first-family projection before the retained process disappeared
-with no recorded terminal cause. An unchanged detached recovery is underway;
+The seven-leg control has matched independent references. Its unchanged old
+producer remains active. A separate current-source construction now exercises
+shared Born weights and weighted family projectors, reusing the same exact inputs;
 no seven-leg numerical result is claimed. Required $2 -> 5$, FFT,
 broader spin/colour/mapping composition and general-model coverage remain open.
 

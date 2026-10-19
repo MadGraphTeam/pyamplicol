@@ -34,8 +34,8 @@ Public LC AP60/AP80 subset rescue, clear/empty transport and a packaged Rust SDK
 shape/source-ownership control pass. Inclusive correlated LC has one contracted
 component; ordinary LC still requires signed Born anchors and resolved payloads.
 Nonidentity formal-colour histories and LC/NLC flavour reuse remain open.
-Outgoing W+ LC/NLC composition is now validated as described below; other charged-vector
-directions remain separate gates. See `docs/development/LOOP_PUBLIC_SPIN.md`.
+Outgoing W± and incoming W+ LC/NLC composition is now validated as described
+below; broader source domains remain separate gates. See `docs/development/LOOP_PUBLIC_SPIN.md`.
 
 The authoritative formal projection now retains exact pre-Nc Born/loop matrices,
 common squared-order degrees and actual tensor/order columns (`0ca10348`, root
@@ -83,8 +83,8 @@ covers identity only. Three public controls pass coherent references, AP60/AP80
 subset rescue and clear, with two massless-photon regressions and a safe Rust SDK
 longitudinal/ownership check. Arbitrary nontransverse vectors are checked through
 literal transport and homogeneity, without an independent Recola oracle.
-Neutral axial/chiral source cases, EW corrections, complex external masses and
-projected incoming/charge-conjugate W sources remain separate gates. See
+Neutral axial/chiral source cases, EW corrections and complex external masses
+remain separate gates. See
 `tools/loop_reference/MASSIVE_VECTOR_SOURCES.md`. The provider grid now includes
 both W+ directions and the charge-conjugate W− case below with all timing cells
 pending; no measured observation changes.
@@ -114,10 +114,25 @@ source changes, resolved ordinary axes, empty/tail rows, original IDs and public
 AP60/AP80 subset rescue. Ordinary LC retains signed Born anchors; inclusive spin
 LC/NLC remains contracted. Missing actual tree/R2 declarations still reject.
 This evidence uses the isolated corrected Community package and adds no runtime
-or dependency pin change, benchmark observation, incoming/W− projected certificate
-or nonidentity formal-history claim. The final conditional component test and
+or dependency pin change, benchmark observation or nonidentity formal-history
+claim. The incoming/W− projected follow-up is described next. The final conditional component test and
 earlier harness/cancellation diagnostics are retained in workspace
 `reports/massive-projected-acceptance.md`.
+
+Crossed `d W+ -> u g` and outgoing `d u~ -> W- g` now independently compose
+LC/NLC with their actual incoming/antiparticle SourceIR (`5fcbdb3f`, `36c61691`).
+Their selected inventories add only the two original conjugate charged tree/R2
+keys, preserving complex-conjugated CKM11 and the original loop group. Each
+322-row projection retains the same P2/P3 degree and 60 odd-suppressed rows.
+All-carrier full-continuation component checks and missing-key rejection pass.
+Nineteen saved/source/public controls and twelve additional resolved controls
+pass three-state/joint completeness, exact inputs, original IDs, LC signed/NLC
+contracted axes and public AP60/AP80 subset rescue. Full coherent values retain
+the existing independent binary64 Recola agreement; projected values use the
+exact formal oracle. No new runtime/build, provider regeneration or timing
+measurement was needed. The corrected Community package and identity-history,
+real-mass QCD scope remain explicit. Evidence is in workspace
+`reports/massive-projected-crossings-acceptance.md`.
 
 Numerical grouped CLI requests now reuse the existing public correlated API
 (`5f545578`). Exact source vectors, per-request failure masks and named empty
@@ -884,3 +899,14 @@ an 80-digit physical oracle. Evidence is retained in workspace
 `fixtures/cms-provider-candidate/`. Normal dependency
 adoption and full CMS scheme certification remain pending; pyAmpliCol's normal
 dependency pins are unchanged. This isolated physical pass is not an adoption claim.
+
+
+A separate current-source seven-leg construction now runs at `eff09b6a` with
+the existing normal 049490 native module/NinjaRS0d0d7e7 and qualified corrected
+Community package. It exercises the accepted shared Born weights and weighted
+family projectors on the same exact `u u~ -> d d~ s s~ g` reference inputs.
+The older 48daa0e2 calculation remains untouched on its own CPU. Both are
+correctness construction runs; no seven-leg numerical result or new timing
+measurement is claimed. The current driver saves a complete ordinary PACBIN
+before evaluation and retains its owner; progress is recorded separately in
+workspace `reports/multiquark-sevenprop-current.json`.
