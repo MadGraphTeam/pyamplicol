@@ -21,13 +21,13 @@ This generation slice is full-colour, model-R2 and JIT; public helicity-resolved
 publication now also passes a fresh DY artifact in all three carriers
 (`0dd89d11`). The resolved axis has 16 helicities and one complete contracted
 full-colour component; `.total()` preserves orders, poles and original averaging. The observed 215.94 s is a correctness-test duration, not a
-benchmark. Directed correlation/mapping transport and normal SDK release packaging remain
-open; source Rust/C/C++/Fortran and the versioned UMAMI extension are delivered below.
+benchmark. Directed correlation/mapping transport and fresh public LC publication
+remain open; ordinary installed native/SDK evidence is recorded below.
 The subsequent signed-LC source milestone adds six canonical Born components
 and 16 helicities for gg in all carriers. Saved-source Python, Rust, C and UMAMI
 transport and subset rescue pass; these explicit fixture target stamps do not
-certify fresh public LC generation. Prepared-model continuation ingress remains
-active work.
+certify fresh public LC generation. Prepared-model continuation ingress passes local admission checks; fresh
+installed publication remains pending.
 Typed native failures retain physical identities and compact whole-point
 successes. State/scale compaction and exact-snapshot replay are delivered; public
 opt-in cross-precision verification/rescue now passes eight native cases across
@@ -90,8 +90,12 @@ reducer constructor admits its actual n+2 domain and rejects higher weighted
 ranks. An independent massless rank-four bubble control checks every Laurent
 coefficient, exact scales and empty/tail layouts in generic double, DoubleFloat,
 AP80 and both fast adapters. This is an analytic reduction control, not general
-higher-rank model certification. Owner accuracy limits remain explicit; no
-measured timing changes from this adoption work.
+higher-rank model certification. Saved loading now also removes its stale n+1
+ceiling (`1392c10f`); a genuine saved rank-four bubble passes double, DoubleFloat
+and AP80 at two exact scales, and an unsupported rank-five bubble loads cold but
+rejects at the selected reducer constructor. No numerator term is truncated and
+no replacement fixed cap is introduced. Owner accuracy limits remain explicit;
+no measured timing changes from this adoption work.
 
 The single process/provider grid continues across the first two pages and shows
 B=1 and B=128 totals, preparation and stage detail in each cell. The original
@@ -455,8 +459,15 @@ client evaluates an existing binary64 tree and the complete six-component virtua
 controls. Binary64-only tree artifacts continue to load; requests for unavailable
 exact evaluation reject without breaking later binary64 calls (`52ebf72b`).
 SM/HEFT portable assets were regenerated through loader1.0.1/v4 (`f9874045`).
-The new ordinary host wheel is compiling; its installed-package validation and
-fresh public LC generation are still pending. These source checks add no timings.
+The ordinary wheel frozen at source `bc78edbd` now passes installed checks: the
+actual `_rusticol._loop` module without a companion, the binary64 tree result
+142.10653372833232, LC resolved shape `(1,1,16,6,3)` with explicit DD agreement,
+and packaged SDK resources. A no-Python Rust client linked against the installed
+single archive independently checks three orders/all poles, resolved totals,
+sparse IDs, an actual numerical failure, verification and result lifetime. Fresh
+public gg LC generation from this installed wheel remains pending. This wheel
+predates the later opaque-ID, saved-rank and cold-directed-format changes; those
+have separate source/native gates. No benchmark numbers change.
 
 Immutable directed Born/family/CT-field/assembly projectors now bind the existing
 source owner and rebind carriers without repeating tensor algebra. Actual source
@@ -467,6 +478,17 @@ boundary without multiplying those IDs; ordinary native-core ID transport is a
 separate implementation boundary. Early state/
 current errors still expose legacy dense context; native/public correlated
 failure/rescue, source-spin transport and general mapping are not completed.
+
+Cold directed transport (`6b60eb6d`) now references the same prepared dependency
+bytes from the ordinary PACBIN plan. It retains explicit complex output kind,
+physical colour ports, named ColorCorrelator histories and one order-sum kernel
+that preserves each history separately. Schedules, scalar owner, families and
+order catalogue are shared. Exact source roundtrip, all-carrier complex assembly
+and multiple-order/history arithmetic controls pass; malformed shapes and
+unsupported domains reject. A previous compiled reader rejects the new field.
+New ordinary Python/native execution also explicitly refuses the descriptor
+until the directed scheduler exists. This is internal cold transport, not public
+correlated evaluation, spin/resolved/LC/NLC/direct-R2 support or new physics data.
 
 These milestones contribute no
 new benchmark measurements. Keep the source, PDF and coverage notes live after

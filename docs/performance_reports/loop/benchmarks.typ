@@ -763,9 +763,10 @@ For unequal histories this is not generally $2 Re(B_A^dagger G L_B)$; the
 result can be complex. Existing colour-connection metadata and native charge
 tensors provide the operator action. Immutable projectors now share source-owned
 currents and scalar state. Four-quark controls pass all carriers, complex swapped
-terms, order/field masks and exact updates. Reducer statuses retain original IDs;
-early state/current errors still use legacy context. Native correlated failure/
-rescue transport remains open.
+terms, order/field masks and exact updates. Cold artifacts now retain these
+complex states, named history columns and separate per-history order totals.
+Ordinary execution rejects this payload until the native directed scheduler is
+connected. Correlated failure/rescue and generic source-spin transport remain open.
 
 Literal complex spin-source vectors enter the admitted physical external ports
 without an implicit conjugation, normalization or projection. Spectator states
@@ -814,24 +815,23 @@ and carrier-appropriate inputs. Weighted rank counts $mu^2$ twice; explicit
 epsilon sectors combine by Laurent multiplication. The additive dense-$mu$
 adapter does not change the engine identified by each timing record.
 
-Selected source consumer `0d0d7e7` uses self-contained Git pins and passes
-compilation, analytic anchors, saved six-propagator physics and a seven-line
-rank-eight cancellation in all carriers. The reducer's authoritative constructor
-now admits its $n+2$ domain; an independent rank-four bubble passes all carriers
-and both fast adapters. General higher-rank models, complete seven-line physics
-and the AP CMS zero-width discrepancy remain open. The retained seven-leg
-producer stays on `e4c16a7`.
+Consumer `0d0d7e7` uses self-contained Git pins and passes saved six-propagator
+physics and seven-line rank-eight controls in all carriers. Its reducer owns
+rank admission at generation and loading. A saved rank-four bubble passes all
+carriers; unsupported rank rejects at binding. Complete seven-line physics,
+general higher-rank models and AP CMS zero-width accuracy remain open.
+The retained producer stays on `e4c16a7`.
 
 Public Runtime/CLI retains exact inputs, scales and every order/pole. Generic
 full-colour generation passes staged validation and all carriers. Explicit model
 colour declarations now enter LC/NLC generation with checked scheme ties;
 full colour retains its original path. Fresh installed LC publication is pending.
 
-The unified package uses one Rust workspace, one nested native loop module and
-one tree/virtual C archive. Mixed-order Rust, combined C, C++/Fortran and UMAMI
-source clients pass; optional exact state preserves binary64-only tree artifacts.
-Six-component transport and AP60/AP80 subset rescue pass. The new ordinary host
-wheel and fresh public LC proof are pending; directed/mapping/FFT remain open.
+The installed ordinary wheel (`bc78edbd` snapshot) uses `_rusticol._loop` and one
+tree/virtual C archive. Tree, LC 16×6 resolved output, DD agreement and the packaged
+no-Python Rust SDK pass; the latter preserves three orders, poles, failures and
+lifetime. Source C/C++/Fortran/UMAMI controls also pass. Fresh public LC generation
+remains pending; later rank, directed-format and ID changes have separate gates.
 
 == Successful completion is not established accuracy
 Native guards isolate state, scale, current, reduction and assembly failures with
@@ -932,8 +932,8 @@ complete answer cannot conceal a wrong component.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
-  [Correlations / mapping], [Immutable directed projectors bind the source owner in all carriers; complex terms and massive-field controls pass. Early failure context, native/public transport and general spin/mapping composition remain open.],
-  [Public delivery], [Full-colour generation and six-component source transport pass. Explicit model colour data now enters LC/NLC generation. Unified Python/native/SDK source delivery passes; the ordinary installed wheel and fresh public LC publication remain pending.],
+  [Correlations / mapping], [Cold directed artifacts retain exact source projectors and named histories; all-carrier complex assembly and per-history sums pass. Native execution, source spin and mapping remain open.],
+  [Public delivery], [The ordinary wheel and single-archive Rust SDK pass tree, LC 16×6 resolved output, DD agreement and mixed-order transport. Explicit model colour data enters generation; fresh installed LC publication remains pending.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
