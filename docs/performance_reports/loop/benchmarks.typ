@@ -768,10 +768,10 @@ Each direction is integrated before the saved final conjugation. Separate cross
 terms enter precision verification; a cancellation cannot conceal a bad direction.
 Partial failures and subset rescue preserve physical IDs and history labels.
 
-Independent Recola identity/Casimir controls agree in Born and all Laurent coefficients
-at two points/scales within $8.9 times 10^(-16)$ scaled absolute error. Public
-Recola single dipoles cannot certify the complex two-emission histories.
-Public correlated dispatch and generic source-spin transport remain open.
+Public Python/CLI histories now pass fresh quark-scattering publication.
+Identity, Casimir and nontrivial $T_1 dot T_2$ Born/Laurent values match binary64
+Recola at two points/scales in double, DD and AP70. This checks provider agreement,
+not 70 digits or complex two-emission histories; generic source spin remains open.
 
 Literal complex spin-source vectors enter the admitted physical external ports
 without an implicit conjugation, normalization or projection. Spectator states
@@ -834,10 +834,10 @@ DY LC separately requires the isolated PR 155 Community overlay. These correctne
 tests add no timing measurements. Later rank, directed execution and ID changes have
 separate source/native gates.
 
-Transactional API export now supplies Python, C, C++, Fortran, Rust and the
-versioned virtual UMAMI extension. All six installed clients agree on two-point
-mixed-order resolved output. The writer preserves the original complete raw model
-and defaults; it emits no tree flow/provider files for virtual requests.
+Transactional API export provides six installed mixed-order resolved clients.
+New source-built Rust/C/C++/Fortran and versioned UMAMI grouped clients preserve
+complex history/order/pole axes, compact IDs, statuses and owned diagnostics.
+Fresh correlated CLI uses a matching developer build, separate from installed `bc78`.
 
 == Successful completion is not established accuracy
 Native guards isolate state, scale, current, reduction and assembly failures with
@@ -937,7 +937,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
-  [Correlations / mapping], [Native complex histories, exact updates and rescue pass all carriers; Recola checks identity/Casimir. Public dispatch, source spin and mapping remain open.],
+  [Correlations / mapping], [Grouped public Python and fresh CLI colour-history generation pass all carriers; Recola checks a nontrivial dipole. Complex grouped SDK clients pass. Source spin and public mapping remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs the PR 155 overlay. Six API clients agree on mixed-order resolved output. Native ID/failure/verification checks pass.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
@@ -964,7 +964,7 @@ The seven-leg control has matched independent references. Its source build
 completed Born and first-family projection before the retained process disappeared
 with no recorded terminal cause. An unchanged detached recovery is underway;
 no seven-leg numerical result is claimed. Required $2 -> 5$, FFT,
-correlation/mapping transport and broader model coverage remain open.
+spin/correlation composition, public mapping and broader model coverage remain open.
 
 == Independent evidence and reproducibility
 `data/measurements.json` retains the samples, revisions and cold times behind the
