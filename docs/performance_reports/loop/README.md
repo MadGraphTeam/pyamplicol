@@ -301,9 +301,20 @@ local grade-zero propagation (`326e5045`, `31314297`, `f717f0fa`) now retain loc
 cancellations such as `(g1+g2)*J` with coefficients `(1,-1)`, without expanding
 whole currents. Common squared-sector projection (`baa222ac`) now combines
 bare/UV/R2/field and epsilon rows before selecting catalogue-aligned degrees;
-Born degrees remain independent and zero sectors retain their axes. Saved
-projected-state transport and certified source effective-rule continuation still
-gate public source LC/NLC.
+Born degrees remain independent and zero sectors retain their axes. Retained
+projected transport (`d53d871c`) now preserves full/LC/NLC model-rule plans across
+save, reload and exact-state rebinding, with native resolved sums in all three
+carriers. Descriptors report the actual colour policy; public artifacts claiming
+full colour for a projected plan are rejected. Certified source effective-rule
+continuation and signed LC resolved semantics still gate public source LC/NLC.
+
+The seven-leg formal-colour probe identifies a separate dependency limitation.
+After the trace-scope repair, the documented symbolic routes still retain a
+degree-five fundamental invariant; Idenso's dimension-invariant rewrite covers
+degrees three and four. Exact SU(3) component closure remains available and is
+used by the running physical producer. This does not justify substituting
+numerical colour values into LC/NLC. The focused audit is recorded in
+`workspace/reports/sevenprop-formal-color-audit.md`.
 
 Native point-stage failures (`6b8da611`) now include external states, scale values,
 currents, reduction and assembly. State/scale blocks compact before currents;

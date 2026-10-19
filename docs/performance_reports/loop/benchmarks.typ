@@ -741,18 +741,22 @@ retain explicit colour identities, exact grade coefficients and active diagnosti
 through saved evaluation in all carriers. Counterterm DAGs now retain scalar-alias
 incidence and exact local grade-zero cancellations without expanding whole
 currents. Common squared-sector projection now combines bare, UV, $R_2$, field
-and epsilon rows before selecting a degree. Saved transport and certified source
-continuations still gate public source LC/NLC.
+and epsilon rows before selecting a degree. Retained full/LC/NLC model-rule
+plans now save, reload and rebind in all carriers, with native resolved sums
+and truthful colour descriptors. Certified source continuation and signed LC
+resolved semantics still gate public source LC/NLC.
 
-Complete bounded quark-process colour projections have controls. The active
-`loop_sm` four-gluon $R_2$ model contains fixed-$N_c=3$ coefficients. Its
-full-SU(3) validity does not imply a formal continuation, and numerical constants
-are never promoted heuristically to $N_c$. Validated direct completion can
-provide a different continuation only within its certified domain. A published
-general-$N_c$ model-rule formula now matches every active SU(3) four-gluon entry
-and an independent general-$N_c$ formula: #link("https://arxiv.org/abs/0903.0356")[Fig. 2
+The active `loop_sm` four-gluon $R_2$ rule has fixed-$N_c=3$ coefficients;
+numbers are never promoted heuristically to $N_c$. A published general-$N_c$
+rule matches the complete active SU(3) tensor and an independent formal rule:
+#link("https://arxiv.org/abs/0903.0356")[Fig. 2
 of 0903.0356] and #link("https://arxiv.org/abs/2007.03713")[Eqs. 5.30–5.38 of
 2007.03713]. Source integration is next.
+
+A seven-leg colour network exposes a separate dependency boundary: exact
+SU(3) components close it, but symbolic reduction retains a degree-five
+fundamental invariant. The available dimension rewrite covers degrees three
+and four. Its trace-scope fix alone does not certify formal high-multiplicity colour.
 
 == Directed colour and spin sources
 Correlated virtual observables require both rectangular cross terms. For
