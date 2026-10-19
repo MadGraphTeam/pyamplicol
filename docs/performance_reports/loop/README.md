@@ -74,10 +74,19 @@ covers identity only. Three public controls pass coherent references, AP60/AP80
 subset rescue and clear, with two massless-photon regressions and a safe Rust SDK
 longitudinal/ownership check. Arbitrary nontransverse vectors are checked through
 literal transport and homogeneity, without an independent Recola oracle.
-W−, neutral axial/chiral source cases, EW corrections, complex external masses and
+Neutral axial/chiral source cases, EW corrections, complex external masses and
 massive-vector LC/NLC remain separate gates. See
 `tools/loop_reference/MASSIVE_VECTOR_SOURCES.md`. The provider grid now includes
-both W+ directions with all timing cells pending; no measured observation changes.
+both W+ directions and the charge-conjugate W− case below with all timing cells
+pending; no measured observation changes.
+
+The charge-conjugate `d u~ -> W- g` follow-up (`0d620b6b`) reuses the same native
+implementation and build. Its actual antiparticle SourceIR retains PDG −24,
+reciprocal PDG24 and model-declared phases. Complete ordinary values match MadLoop
+within `4.8e-15`; independently generated Recola physical-source values agree
+within `4.3e-13`. Four added controls pass three-carrier component/polarization
+reconstruction, exact literal-source and public coherent replay. This adds no
+W−-specific rescue/SDK or nonidentity-provider claim to the W+ evidence above.
 
 Existing correlated CLI coverage means generation and inspection. Numerical
 grouped source/correlation requests are not yet exposed by `evaluate`; Python and
@@ -120,7 +129,8 @@ Structural mass-shell binding (`e070f5fe`) fixes the demonstrated rounded-input
 DD/AP branch discrepancy in the six-leg control, with all components and carriers
 checked. Full-colour real-mass producer source rescue now includes field terms
 and captured-update replay within the structural domain described below. CLI
-policy transport, general input-consistency diagnostics and normal adoption
+policy/partial-return transport also passes; numerical grouped CLI,
+general input-consistency diagnostics and normal adoption
 of the isolated AP CMS master fix remain open. Charged chiral R2 source rules and
 full-CKM mixed-Born QCD corrections now pass (`886ffd74`); this is not a joint
 QCD/EW correction claim.
@@ -554,7 +564,21 @@ certification or performance measurement. No graph generation or timing campaign
 ran, and normal dependency pins remain unchanged. Detailed evidence:
 `workspace/reports/loop-source-binding-rescue-contract.md` and
 `workspace/reports/source-rescue-public-sdk-acceptance.md`.
-CLI policy transport and broader producer domains remain separate open gates.
+Numerical grouped CLI and broader producer domains remain separate open gates.
+
+CLI/TOML policy and partial-return transport (`7561bfa5`, typing follow-up
+`cdeefe17`) now passes configured stability to `Runtime.load` before model binding.
+The registered `[evaluation.stability]` fields construct the existing policy from
+explicit carrier levels and exact tolerance strings. `--on-failure return` uses
+the same original-position holes and diagnostics as the public API. Ordinary and
+resolved commands inherit the loaded policy; other actions and tree opt-in are
+rejected, while configuration inspection remains available. The actual saved CLI
+controls pass global-binding AP60/AP80 rescue and mixed16×6 resolved output with
+the corresponding exact per-point scales. Config/CLI tests, strict owned-file
+typing and exact JSON/human serialization pass. Evidence is in
+`workspace/reports/loop-cli-stability-acceptance.md`; no native build, new physics
+or timing observation was added. Numerical grouped correlation commands remain
+a separate active slice.
 
 Live-producer source-binding rescue (`0d80ea2e`, acceptance `b8948fa0`) now uses
 the same explicit policy before source realization. Default binding stays eager;

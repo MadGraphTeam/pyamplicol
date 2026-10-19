@@ -347,8 +347,8 @@ and $mu_R=1000$ GeV. Its full source counterterms are retained.]
   pending-provider([Matched\ every order / pole], provider: true, stage-note: [Numerator and reduction + masters: pending]),
   pending-provider([Not yet matched], provider: true),
   pending-provider([Not yet matched], provider: true),
-  [#text(size: 10pt, weight: "bold")[$u overline(d) -> W^+ g$\ $d W^+ -> u g$]
-   #v(5pt) #text(size: 7.6pt, fill: grey)[QCD correction\ stable real-mass $W^+$\ ordinary / three-state /\ joint source controls]],
+  [#text(size: 10pt, weight: "bold")[$u overline(d) -> W^+ g$\ $d W^+ -> u g$\ $d overline(u) -> W^- g$]
+   #v(5pt) #text(size: 7.6pt, fill: grey)[QCD correction\ stable real-mass $W^plus.minus$\ ordinary / three-state /\ joint source controls]],
   pending-provider([Validated\ double / DD / AP70]),
   pending-provider([Matched\ ordinary / fixed spin], provider: true, stage-note: [Numerator and reduction + masters: pending]),
   pending-provider([Matched\ physical spin sources], provider: true),
@@ -356,14 +356,13 @@ and $mu_R=1000$ GeV. Its full source counterterms are retained.]
 )
 #v(8pt)
 == Independent physics and precision evidence
-Six-leg DD pole/scaling controls pass $3 times 10^(-25)$; AP80 passes $10^(-60)$.
-Six-propagator DD/AP80 converges within $6.99 times 10^(-29)$ relative. Mixed-Born
-QCD matches MadLoop within $6.7 times 10^(-15)$ across orders and components.
-Stable $W^+$ physical sources match Recola within $2.9 times 10^(-13)$ outgoing
-and $3.2 times 10^(-9)$ incoming; provider accuracy is binary64. Internal complete
-three-state/joint sums and exact-source replay pass all carriers.
-Cache/exceptional-Gram discrepancies and failing controls remain recorded in the
-README; no provider sources or measured observations changed.
+Six-leg DD/AP80 pole/scaling controls pass $3 times 10^(-25)$ / $10^(-60)$;
+six-propagator values converge within $6.99 times 10^(-29)$. Mixed-Born QCD matches
+MadLoop within $6.7 times 10^(-15)$. Recola $W^+$ sources agree within
+$2.9 times 10^(-13)$ outgoing / $3.2 times 10^(-9)$ incoming; $W^-$ within
+$4.3 times 10^(-13)$, all binary64 comparisons. Three-state/joint sums and exact
+source replay pass all carriers. Cache/Gram failing controls remain in the README;
+timings are unchanged.
 
 #pagebreak()
 #section-label[MEASUREMENTS · MATCHED LEADING COLOUR]
@@ -755,7 +754,7 @@ Quark-scattering identity, Casimir and $T_1 dot T_2$ Born/Laurent values match
 Recola in double/DD/AP70; this is binary64 provider agreement. Complex
 multi-emission histories have separate controls. Model-owned photon/gluon source
 identities and phases survive fresh $u overline(u) -> gamma g$ and crossed
-$u gamma -> u g$ publication. Stable $W^+$ sources now pass outgoing/incoming
+$u gamma -> u g$ publication. Outgoing $W^plus.minus$ and incoming $W^+$ sources pass
 QCD controls, including longitudinal and joint $W$–gluon states in all carriers.
 Recola independently checks physical sources with identity colour; other ordered
 histories use internal component reconstruction. Arbitrary literal vectors use
@@ -844,7 +843,7 @@ inputs and rejected updates retain atomic rollback. Source admission does not
 establish accuracy. Rescue needs two complete higher results to agree across
 components, orders, poles, helicities and both directed terms, plus checked
 output conversion. Attempt histories survive; the $R_2$ strategy stays fixed.
-Native/public Python and standalone SDK source-rescue controls pass. Public
+Python, CLI and standalone SDK source-rescue controls pass. Public
 partial returns pass signed-LC $16 times 6$ in all carriers and complex joint-source
 controls. Full-colour real-mass producer rescue now includes external-field
 terms and captured-update replay. Physical evaluators and timing data stay unchanged.
@@ -852,7 +851,7 @@ terms and captured-update replay. Physical evaluators and timing data stay uncha
 #note[
   *Open boundaries.* Producer rescue is certified for massless external states,
   native physical frames and coherent source-scale ownership. Wider producer
-  domains, CLI policy transport, input-consistency diagnostics and normal adoption
+  domains, grouped CLI requests, input-consistency diagnostics and normal adoption
   of the tested CMS master fix remain open.
 ]
 
@@ -931,8 +930,8 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
-  [Correlations / mapping], [Directed/joint sources include crossed photons, stable outgoing/incoming $W^+$ and exact d/s reuse. Projected gg LC/NLC identity histories compose with spin. $W^-$, wider EW/CMS sources, massive-vector LC/NLC and nonidentity mappings remain open.],
-  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Source-binding rescue reaches saved/public Python, SDKs and the bounded physical producer. Public partial returns retain original positions and diagnostics; CLI policy remains open.],
+  [Correlations / mapping], [Directed/joint sources include crossed photons, outgoing $W^plus.minus$, incoming $W^+$ and exact d/s reuse. Projected gg LC/NLC identity histories compose with spin. Wider EW/CMS sources, massive-vector LC/NLC and nonidentity mappings remain open.],
+  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Source-binding rescue reaches Python, CLI, SDKs and the bounded producer. Public/CLI partial returns preserve positions and diagnostics; numerical grouped CLI remains open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
@@ -964,7 +963,7 @@ broader spin/colour/mapping composition and general-model coverage remain open.
 `data/measurements.json` retains the samples, revisions and cold times behind the
 unchanged tables; `tools/loop_reference/` contains frozen points and drivers.
 Timing covers complete `evaluate_ordered_native` calls, excluding checks and
-output conversion. New $W^+$, partial-return, source-binding, projected-spin, photon, six-leg and shared-weight checks
+output conversion. New $W^plus.minus$, partial-return, source-binding, projected-spin, photon, six-leg and shared-weight checks
 add no timings. The new schedule is unretimed; original timing identities are retained.
 
 Providers are MadLoop 3.7.0, Recola2 2.3.0 with matched SM/Collier, and OpenLoops
