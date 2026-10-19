@@ -23,6 +23,11 @@ publication now also passes a fresh DY artifact in all three carriers
 full-colour component; `.total()` preserves orders, poles and original averaging. The observed 215.94 s is a correctness-test duration, not a
 benchmark. Directed correlation/mapping transport and normal SDK release packaging remain
 open; source Rust/C/C++/Fortran and the versioned UMAMI extension are delivered below.
+The subsequent signed-LC source milestone adds six canonical Born components
+and 16 helicities for gg in all carriers. Saved-source Python, Rust, C and UMAMI
+transport and subset rescue pass; these explicit fixture target stamps do not
+certify fresh public LC generation. Prepared-model continuation ingress remains
+active work.
 Typed native failures retain physical identities and compact whole-point
 successes. State/scale compaction and exact-snapshot replay are delivered; public
 opt-in cross-precision verification/rescue now passes eight native cases across
@@ -79,10 +84,14 @@ control passes all four generic/fast configurations too. All focused adoption
 gates are complete and integrated. The AP zero-width complex-mass reproducer still
 disagrees across numerically equivalent mass constructions. The selected
 retained seven-leg producer remains on `e4c16a7`; its installed dependencies were
-not replaced during construction. Rank-n+2 callbacks and master behavior changed;
-source admission remains at the independently validated rank-n+1 boundary and
-owner accuracy limits stay explicit. No measured timing or advertised physics
-capability changes from this adoption work.
+not replaced during construction. Rank-n+2 callbacks and master behavior changed.
+The obsolete source n+1 ceiling is now removed (`9878d8ea`): the authoritative
+reducer constructor admits its actual n+2 domain and rejects higher weighted
+ranks. An independent massless rank-four bubble control checks every Laurent
+coefficient, exact scales and empty/tail layouts in generic double, DoubleFloat,
+AP80 and both fast adapters. This is an analytic reduction control, not general
+higher-rank model certification. Owner accuracy limits remain explicit; no
+measured timing changes from this adoption work.
 
 The single process/provider grid continues across the first two pages and shows
 B=1 and B=128 totals, preparation and stage detail in each cell. The original
@@ -295,7 +304,8 @@ MadLoop UV/R2/field controls are frozen too. The original source build stopped o
 exact components give -1/9 for that network; a narrowly scoped physical-colour
 fallback now passes 11 focused controls, including the nonconjugated trace-square
 value -10/27. Formal Nc contraction remains symbolic. Source construction has
-restarted from the retained graph plan; no seven-leg physical result is claimed
+restarted from the retained graph plan and has completed the rectangular colour
+overlaps, reaching Born projection; no seven-leg physical result is claimed
 yet. The separate squared-trace dummy-scoping fix is submitted as
 [draft FeynKit PR #154](https://github.com/alphal00p/gammaloop/pull/154), with three
 focused trace tests passing. The broader shorthand run passes 191/192; its one
@@ -322,8 +332,9 @@ Born degrees remain independent and zero sectors retain their axes. Retained
 projected transport (`d53d871c`) now preserves full/LC/NLC model-rule plans across
 save, reload and exact-state rebinding, with native resolved sums in all three
 carriers. Descriptors report the actual colour policy; public artifacts claiming
-full colour for a projected plan are rejected. Certified source effective-rule
-continuation and signed LC resolved semantics still gate public source LC/NLC.
+full colour for a projected plan are rejected. The later whole-rule and signed
+resolved milestones below close these two local boundaries; prepared-model
+continuation ingress still gates fresh public source LC/NLC generation.
 
 Explicit source-owned continuation (`89e16576`, `04fd32d9`) now composes complete
 source Drell–Yan full/LC/NLC through all three carriers, exact parameter changes,
@@ -358,8 +369,41 @@ with the independent LC/full=9/8 Born and double-pole ratio. Original unused
 scalar diagnostics remain evaluated. Evidence is retained in
 `workspace/reports/source-four-gluon-colour-loaded.json`; the 567.52-second
 construction/check duration is not a benchmark. The existing timed gluon LC
-row still uses direct R2 and is unchanged. Public signed LC semantics and general
-model continuation remain separate requirements.
+row still uses direct R2 and is unchanged. General model continuation remains a
+separate requirement; signed LC source semantics are now delivered below.
+
+Canonical signed Born components (`3a0f7ea0`, `4a29b9ab`, `0de1e9e0`) retain a
+complete partition of coherent Born columns with stable IDs. The common colour
+degree is selected before anchor masking. Born components are
+`Re(B_anchor† G B)`; virtual components are `2 Re(B_anchor† G_BL L)` after complex
+integration. They can be negative or overcomplete and are never tree colour
+flows or sampling probabilities. Native point/helicity currents remain shared;
+only projector outputs expand to helicity × component. The genuine gg source
+has six components and 16 helicities. All three carriers reconstruct every
+inclusive component/order/pole, with sparse original IDs, real reducer failures,
+early state failures, isolated late projector failures, all-failed/empty batches
+and malformed-partition rejection (`6f19ce7a`).
+
+Python saved-source transport and exact subset rescue compare every h/c/pole
+against an independent AP80 execution; Rust, C and UMAMI exercise the same
+six-component source payload (`7618c8c1`). AP60/AP80 retries preserve whole
+physical-point identities, and native offset/stride controls keep failed slots
+and padding untouched. Synthetic negative, multi-order controls independently
+check transpose semantics. Evidence is in `workspace/reports/loop-color-components-native.log`,
+`loop-public-components-native.log`, and `loop-sdk-components-{native,c,umami}.log`.
+The artifact wrappers use explicit test target stamps: these prove source
+transport, not fresh public LC generation. Declaration-only model data
+(`f6375e34`) is integrated; its resolver and generation ingress remain active.
+
+An independent Idenso defect changed open fundamental/dual port identities during
+canonicalization. The minimal repair removes the lossy dual-strip/restore step,
+retaining the typed interface check, and is submitted as draft
+[gammaloop PR 155](https://github.com/alphal00p/gammaloop/pull/155). Focused Rust
+controls and an isolated full Community Python extension pass strict direct/crossed
+fundamental partition and port tests. The installed dependencies beneath the
+retained seven-leg producer were not replaced. This fixes a demonstrated local
+canonicalization boundary; it does not resolve the separate degree-five formal
+invariant limitation above.
 
 Native point-stage failures (`6b8da611`) now include external states, scale values,
 currents, reduction and assembly. State/scale blocks compact before currents;

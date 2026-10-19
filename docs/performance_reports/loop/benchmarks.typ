@@ -731,28 +731,30 @@ $
 The same $P$ spans helicities, epsilon sectors and bare/UV/$R_2$/field contributions,
 including odd suppression powers. Exact dependency algebra preserves semantic
 $C_A,C_F,T_R$, scalar-alias incidence, local cancellations and active diagnostics.
-Full/LC/NLC plans save, reload and rebind in all carriers with native resolved
-sums and truthful colour descriptors. Explicit source DY now passes all
-carriers, exact updates, scales and saved plans: LC/full is $9/8$ and NLC equals
-full. Mixed-order source controls match MadLoop, and an external-gluon field
-term is absent at LC and retained at NLC. Every selected source entry must be
-bound or exactly zero, including its diagnostic. General continuation and signed
-LC resolved semantics still gate public source LC/NLC.
+Full/LC/NLC source plans save, reload and rebind in all carriers. Source DY
+has LC/full $=9/8$ and NLC $=$ full; mixed orders match MadLoop. Every selected
+source entry must be bound or exactly zero, including its diagnostic. LC output uses
+signed coherent interferences anchored to canonical Born tensors. Equal tensors
+share a component; this partition need not be a minimal colour basis. The common
+sector degree is chosen before masking anchors. All components sum to the
+inclusive result; public source-colour generation still needs model ingress.
 
-The active `loop_sm` four-gluon $R_2$ rule has fixed-$N_c=3$ coefficients;
-numbers are never promoted heuristically to $N_c$. A published general-$N_c$
-rule matches the complete active SU(3) tensor and an independent formal rule:
+The `loop_sm` four-gluon $R_2$ coefficients are fixed at $N_c=3$. A published
+general-$N_c$ rule matches the complete source tensor and an independent rule:
 #link("https://arxiv.org/abs/0903.0356")[Fig. 2
 of 0903.0356] and #link("https://arxiv.org/abs/2007.03713")[Eqs. 5.30–5.38 of
 2007.03713]. Its explicit HV source profile now composes complete gluon
-full/LC/NLC plans in all carriers: exact updates, scales, saved views and
-16-helicity sums pass. Whole source groups and original diagnostics remain;
-the fixed scheme binding is checked. This does not certify arbitrary models.
+full/LC/NLC plans in all carriers, with exact updates, scales and 16-helicity sums.
+Whole source groups, diagnostics and the checked scheme binding remain.
+This does not certify arbitrary models or numerically fit colour constants.
 
 A seven-leg colour network exposes a separate dependency boundary: exact
 SU(3) components close it, but symbolic reduction retains a degree-five
 fundamental invariant. The available dimension rewrite covers degrees three
 and four. Its trace-scope fix alone does not certify formal high-multiplicity colour.
+An independent open-dual-index canonicalization fix is in
+#link("https://github.com/alphal00p/gammaloop/pull/155")[upstream PR 155]; an isolated
+Python build passes strict fundamental-port and canonical-partition controls.
 
 == Directed colour and spin sources
 Correlated virtual observables require both rectangular cross terms. For
@@ -802,13 +804,13 @@ scatter. One Rust call executes the complete batch using reusable native tiles;
 16 rows is a scheduling choice, not a capacity limit. Binary64 may use SymJIT;
 DD/AP remain native batches without an unsupported SIMD claim.
 
-Native resolved output now preserves point, squared order, helicity, one
-contracted full-colour component and epsilon axes. Single-helicity Born, family
-and UV/$R_2$ projectors execute in point-by-helicity batches; physical kinematics
-and source scalars are shared. Original averaging is retained, so `.total()`
-reconstructs inclusive values. Source gluon checks pass all carriers, including
-per-helicity poles; an independent mixed-order control checks every order column.
-The singleton colour axis is not a flow decomposition or a probability.
+Resolved output preserves point, order, helicity, colour component and epsilon.
+Actual source gluons pass with 16 helicities and six signed LC components in all
+carriers. Currents are shared across components; only projection rows expand.
+`.total()` retains original averaging and every order/pole. Full/NLC keep one
+contracted component. Sparse IDs and early/late failures preserve physical
+identities; a failed component removes or rescues the whole original point.
+The components are signed interference terms, never sampling probabilities.
 
 == Reduction and exact saved plans
 NinjaRS receives routed denominators, polynomial coefficients, exact invariants
@@ -818,8 +820,9 @@ adapter does not change the engine identified by each timing record.
 
 Selected source consumer `0d0d7e7` uses self-contained Git pins and passes
 compilation, analytic anchors, saved six-propagator physics and a seven-line
-rank-eight cancellation in all carriers. Physical source admission remains at
-validated rank $n+1$; owner $n+2$ callbacks are forwarded. The retained seven-leg
+rank-eight cancellation in all carriers. The reducer's authoritative constructor
+now admits its $n+2$ domain; an independent rank-four bubble passes all carriers
+and both fast adapters. This is not general higher-rank model certification. The seven-leg
 producer stays on `e4c16a7`. Complete seven-line physics and the AP CMS
 zero-width discrepancy remain open.
 
@@ -827,10 +830,10 @@ Public Runtime/CLI retains exact inputs, scales and every order/pole. Generic
 DY/gluon generation validates source against staged runtime before publishing
 full-colour/model-$R_2$/JIT artifacts; both views pass all carriers. An installed
 candidate also passes exact subset rescue, empty batches and clear.
-Rust/C/C++/Fortran clients and a versioned pyAmpliCol UMAMI extension reuse this
-runtime without Python, preserving orders, poles and statuses; UMAMI preserves
-bulk offsets and strides. Release packaging and public directed/mapping/LC/FFT
-delivery remain open.
+Rust/C/C++/Fortran and the UMAMI extension reuse this runtime. Python, Rust, C
+and UMAMI now pass six-component source transport and subset rescue, including
+AP60/AP80 retries. Their fixture target stamps do not certify fresh public LC
+generation. Model ingress, release packaging and directed/mapping/FFT remain open.
 
 == Successful completion is not established accuracy
 Native guards isolate state, scale, current, reduction and assembly failures with
@@ -932,7 +935,7 @@ complete answer cannot conceal a wrong component.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
-  [Public delivery], [Generic full-colour/model-$R_2$/JIT generation and both public views pass all carriers, including installed-candidate rescue. Source Rust/C/C++/Fortran and the versioned UMAMI extension pass; release packaging and directed/mapping transport remain open.],
+  [Public delivery], [Generic full-colour/model-$R_2$/JIT generation passes all carriers. Signed LC source transport passes Python/Rust/C/UMAMI with six components and subset rescue. Fresh public LC generation, release packaging and directed/mapping transport remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
@@ -955,9 +958,9 @@ page 4 records precision evidence and the independent cache/Gram audit. The
 new timing rows remain pending. Full-CKM four-quark QCD corrections now match
 MadLoop for three Born and three virtual orders at three points, including the
 charged chiral-$R_2$ source rules. This does not certify joint QCD/EW corrections.
-The seven-leg control has matched independent references. Source construction
-has restarted after an exact native-component colour fallback passed local
-controls; complete seven-leg physics is still pending. Required $2 -> 5$, FFT, correlation/mapping transport and broader
+The seven-leg control has matched independent references. Its restarted source
+build has completed rectangular colour overlaps and reached Born projection;
+complete seven-leg physics is pending. Required $2 -> 5$, FFT, correlation/mapping transport and broader
 model coverage remain open.
 
 == Independent evidence and reproducibility
