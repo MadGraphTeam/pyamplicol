@@ -21,8 +21,9 @@ This generation slice is full-colour, model-R2 and JIT; public helicity-resolved
 publication now also passes a fresh DY artifact in all three carriers
 (`0dd89d11`). The resolved axis has 16 helicities and one complete contracted
 full-colour component; `.total()` preserves orders, poles and original averaging. The observed 215.94 s is a correctness-test duration, not a
-benchmark. Directed correlation/mapping transport and SDK/UMAMI delivery remain
-open. Typed native failures retain physical identities and compact whole-point
+benchmark. Directed correlation/mapping transport and normal SDK release packaging remain
+open; source Rust/C/C++/Fortran and the versioned UMAMI extension are delivered below.
+Typed native failures retain physical identities and compact whole-point
 successes. State/scale compaction and exact-snapshot replay are delivered; public
 opt-in cross-precision verification/rescue now passes eight native cases across
 all carriers. Default evaluation performs no hidden precision retry.
@@ -71,11 +72,15 @@ are not event timings.
 
 An isolated audit of newer NinjaRS `0d0d7e7` passes locked dependency resolution
 without any `references/` path. Its Symbolica commit is still `e679e8c1`, with
-new FeynKit and oneloopmaster pins. The selected producer/consumer remain on
-`e4c16a7`: a coherent consumer compile and focused physics check are required
-before adoption. Rank-n+2 callbacks and master behavior changed; the owner also
-documents remaining accuracy limits. This audit changes no measured timing or
-advertised rank/physics capability.
+new FeynKit and oneloopmaster pins. The isolated consumer now compiles and passes
+the seven existing anchors and the new profiling callback control. Saved complete
+six-propagator physics also passes in double, DoubleFloat and AP80; the seven-line
+adoption gate remains pending. The AP zero-width complex-mass reproducer still
+disagrees across numerically equivalent mass constructions. The selected
+producer/consumer remain on `e4c16a7` pending the complete focused gate. Rank-n+2
+callbacks and master behavior changed; source admission remains rank-n+1 and
+owner accuracy limits stay explicit. No measured timing or advertised physics
+capability changes from this adoption work.
 
 The single process/provider grid continues across the first two pages and shows
 B=1 and B=128 totals, preparation and stage detail in each cell. The original
@@ -326,8 +331,9 @@ MadLoop after formal-full projection, and an external-gluon field control is
 absent at LC and retained at NLC. Every selected ordinary source entry must be
 bound or proved exactly zero in both value and diagnostic under the same fixed
 map. This rejects an Nc=3-only zero and an active zero-value diagnostic. These
-explicit prepared controls exclude the fixed-SU3 four-gluon rule; they do not
-enable automatic public LC/NLC or certify an entire model from its name.
+initial explicit controls exclude the fixed-SU3 four-gluon rule; the separate
+checked whole-rule composition below now adds it. Neither enables automatic
+public LC/NLC or certifies an entire model from its name.
 
 The seven-leg formal-colour probe identifies a separate dependency limitation.
 After the trace-scope repair, the documented symbolic routes still retain a
@@ -341,8 +347,17 @@ The explicit HV general-Nc four-gluon R2 asset (`7d0d3029`) now prepares a
 whole-rule replacement after exact conformance with the complete source tensor
 at Nc=3. A different published decomposition checks its formal continuation.
 Original groups, species alternatives, orders and scalar diagnostics remain
-source-owned. Process composition and consistent HV scheme bindings are still
-required; this is local preparation, not newly certified public LC coverage.
+source-owned. Complete source composition (`66457ab0`, author `f60ac3ac`) now
+proves HV and fixed `lhv=1` under the actual shared parameter map. The original
+complete source gg result matches the replacement full result; full/LC/NLC
+saved plans pass in double, DoubleFloat and AP70. Two points/scales, all
+components, 16-helicity sums and alpha_s updates at bits 20/70/160 pass, together
+with the independent LC/full=9/8 Born and double-pole ratio. Original unused
+scalar diagnostics remain evaluated. Evidence is retained in
+`workspace/reports/source-four-gluon-colour-loaded.json`; the 567.52-second
+construction/check duration is not a benchmark. The existing timed gluon LC
+row still uses direct R2 and is unchanged. Public signed LC semantics and general
+model continuation remain separate requirements.
 
 Native point-stage failures (`6b8da611`) now include external states, scale values,
 currents, reduction and assembly. State/scale blocks compact before currents;
@@ -373,10 +388,17 @@ Source Rust/C virtual SDK delivery (`d085b70d`) reuses the same `VirtualRuntime`
 without a Python library. Complete order/Laurent/resolved axes, compact successful
 IDs, statuses for all requested lanes, scalar/per-point scales and atomic source
 updates are retained. Actual gg verification/rescue, genuine three-order full-CKM
-transport, and shared/static C clients pass. Normal SDK packaging, C++/Fortran,
-UMAMI and correlated/mapped public operations remain open. The selected old
-NinjaRS packaging restriction still applies until the newer coherent consumer
-passes adoption checks.
+transport, and shared/static C clients pass. C++17 and Fortran2018 wrappers
+(`f9660886`) now pass the same actual source controls, including owned-result
+lifetime, exact parameters, resolved sums, sparse failures and explicit DD
+verification. The versioned pyAmpliCol UMAMI virtual extension (`f2374f8d`)
+preserves keyed bulk offset/count/stride layouts, all squared orders and Laurent
+coefficients, and mandatory lane statuses. Native one- and three-order controls
+check untouched padding/failed slots and resolved reconstruction. It is a
+pyAmpliCol extension, not a standard UMAMI virtual interface. Normal SDK release
+packaging, generated UMAMI bundles and correlated/mapped public operations remain
+open. The selected old NinjaRS packaging restriction still applies until the
+newer coherent consumer passes adoption checks.
 
 These milestones contribute no
 new benchmark measurements. Keep the source, PDF and coverage notes live after

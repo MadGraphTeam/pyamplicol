@@ -438,8 +438,9 @@ previous timing rows, and no provider source or measured observation changes.
   Fixed-$N_f$ LC keeps the common highest formal-$N_c$ power before setting $N_c=3$.
   Full and LC retain the current graph schedules; this is not yet numerator pruning.
   Quark controls use the fixed-SU(3) full path and formal LC path. The gluon control
-  uses the certified direct strategy and formal algebra for both paths, avoiding
-  an unsupported continuation of the model's four-gluon $R_2$ coefficients.
+  uses the certified direct strategy and formal algebra for both paths. New
+  source model-rule gluon checks pass full/LC/NLC in all carriers, with timings
+  pending; they do not relabel these observations.
   Full components pass independent references; LC checks use the certified Born,
   pole and UV/field relations, with complete component reconstruction.
 ]
@@ -743,8 +744,10 @@ numbers are never promoted heuristically to $N_c$. A published general-$N_c$
 rule matches the complete active SU(3) tensor and an independent formal rule:
 #link("https://arxiv.org/abs/0903.0356")[Fig. 2
 of 0903.0356] and #link("https://arxiv.org/abs/2007.03713")[Eqs. 5.30–5.38 of
-2007.03713]. The prepared local asset preserves whole source groups and checks
-exact tensor conformance; process integration is next.
+2007.03713]. Its explicit HV source profile now composes complete gluon
+full/LC/NLC plans in all carriers: exact updates, scales, saved views and
+16-helicity sums pass. Whole source groups and original diagnostics remain;
+the fixed scheme binding is checked. This does not certify arbitrary models.
 
 A seven-leg colour network exposes a separate dependency boundary: exact
 SU(3) components close it, but symbolic reduction retains a degree-five
@@ -783,9 +786,8 @@ other features remain acceptance gates.
 #section-label[ARCHITECTURE · NATIVE BATCHES AND PRECISION]
 = One numerical path, three real carriers
 Binary64, DoubleFloat and arbitrary precision run through coefficients, kinematics,
-NinjaRS, scalar masters, counterterms and contractions. Results are not computed
-in double and promoted. Fixed-carrier metadata describes the actual type;
-arbitrary precision carries its requested precision.
+NinjaRS, masters, counterterms and contractions. Values are never computed in
+double and promoted. Metadata records the actual carrier and requested precision.
 
 Exact decimal input and rational model coefficients precede conversion. Source
 mass/coupling formulas and diagnostics use the chosen native carrier. Controls
@@ -795,11 +797,10 @@ exact model mass outputs in the same carrier. This also covers the dependent
 external momentum; raw off-shell oracle evaluators remain unchanged.
 
 == Native batches, including resolved helicities
-Ordered point, helicity and coefficient layouts preserve lane identities through
-tails, compaction and scatter. The shared Rust coordinator executes complete
-validated source plans in one call. Kernels use reusable native row tiles; the
-present 16-row choice is not a capacity limit. Binary64 may use SymJIT; DD/AP
-remain native batches without an unsupported SIMD claim.
+Ordered layouts preserve point/helicity identities through tails, compaction and
+scatter. One Rust call executes the complete batch using reusable native tiles;
+16 rows is a scheduling choice, not a capacity limit. Binary64 may use SymJIT;
+DD/AP remain native batches without an unsupported SIMD claim.
 
 Native resolved output now preserves point, squared order, helicity, one
 contracted full-colour component and epsilon axes. Single-helicity Born, family
@@ -815,22 +816,20 @@ and carrier-appropriate inputs. Weighted rank counts $mu^2$ twice; explicit
 epsilon sectors combine by Laurent multiplication. The additive dense-$mu$
 adapter does not change the engine identified by each timing record.
 
-The generic-any-$n$ consumer (`e4c16a7`) removes the old six-propagator cap. A
-seven-propagator rank-eight numerator cancelling to a triangle master passes
-all carriers and the binary64 fast tensor path. Complete six-propagator QCD
-physics now passes separately; physical seven-propagator coverage remains open.
-The selected consumer rejects rank above $n+1$. New owner revision `0d0d7e7`
-passes locked Git dependency resolution; coherent consumer adoption and physics
-checks remain pending, including its changed masters and rank interfaces.
+Consumer `e4c16a7` admits arbitrary propagator counts through rank $n+1$. A
+seven-line rank-eight numerator cancelling to a triangle passes all carriers
+and fast tensors. Complete six-propagator physics passes; physical seven-line
+coverage remains open. Isolated owner revision `0d0d7e7` passes Git resolution,
+compilation, existing anchors and saved six-propagator checks in all carriers.
+The seven-line adoption gate remains pending; the AP CMS zero-width discrepancy persists.
 
-Public Runtime/CLI retains exact inputs, per-point scales and every order/pole;
-arithmetic binds before parameters, including `aS=1e400` in AP70. Generic DY and
-$g g -> g g$ generation validates source against staged runtime before publishing
-full-colour/model-$R_2$/JIT artifacts. Inclusive/resolved views pass all carriers.
-A genuine installed candidate also passes fresh generation, exact subset rescue,
-empty batches and clear. Source Rust/C SDK clients reuse this runtime without
-Python, retaining all orders, poles, resolved rows and lane statuses. Shared/static
-clients pass; SDK packaging, C++/Fortran/UMAMI and public directed/mapping/LC/FFT
+Public Runtime/CLI retains exact inputs, scales and every order/pole. Generic
+DY/gluon generation validates source against staged runtime before publishing
+full-colour/model-$R_2$/JIT artifacts; both views pass all carriers. An installed
+candidate also passes exact subset rescue, empty batches and clear.
+Rust/C/C++/Fortran clients and a versioned pyAmpliCol UMAMI extension reuse this
+runtime without Python, preserving orders, poles and statuses; UMAMI preserves
+bulk offsets and strides. Release packaging and public directed/mapping/LC/FFT
 delivery remain open.
 
 == Successful completion is not established accuracy
@@ -933,7 +932,7 @@ complete answer cannot conceal a wrong component.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
-  [Public delivery], [Generic full-colour/model-$R_2$/JIT generation and both public views pass all carriers, including an installed candidate and exact subset rescue. Source Rust/C SDK clients pass; SDK packaging, C++/Fortran/UMAMI and directed/mapping transport remain open.],
+  [Public delivery], [Generic full-colour/model-$R_2$/JIT generation and both public views pass all carriers, including installed-candidate rescue. Source Rust/C/C++/Fortran and the versioned UMAMI extension pass; release packaging and directed/mapping transport remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
