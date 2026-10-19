@@ -685,8 +685,8 @@ colour or coefficient preparation. Colour-weight changes invalidate the cached
 plan. The bounded full-colour direct-$R_2$ gluon plan also rebinds its retained
 dimensional DAG and physical/evanescent sectors, including UV and field completion.
 Source-owned complete QCD views also retain their exact scalar definitions and
-parameter snapshots across carrier rebinding. Formal-colour and correlated plan
-reuse remain outside this checkpoint; reducer Laurent preparation remains a cold binding cost.
+parameter snapshots across carrier rebinding. Saved directed projectors now use
+this same ownership boundary; reducer Laurent preparation remains a cold binding cost.
 
 #small[
   *Separate sharing experiment.* On distinct exact energy rescalings of gluon
@@ -733,8 +733,8 @@ including odd suppressions. Dependency algebra retains semantic invariants,
 alias cancellations and diagnostics. Full/LC/NLC source plans rebind in all
 carriers; DY has LC/full $=9/8$ and NLC $=$ full. Signed LC components use
 canonical Born tensors and a common sector degree before anchor masking.
-Their sum reconstructs the inclusive result. Fresh installed gg LC generation
-passes with explicit model data; DY LC passes with the isolated PR 155 overlay.
+Their sum reconstructs the inclusive result. Fresh installed gg LC and NLC generation
+pass with explicit model data; DY LC passes with the isolated PR 155 overlay.
 
 The `loop_sm` four-gluon $R_2$ coefficients are fixed at $N_c=3$. A published
 general-$N_c$ rule matches the complete source tensor and an independent rule:
@@ -761,12 +761,17 @@ $
 $
 For unequal histories this is not generally $2 Re(B_A^dagger G L_B)$; the
 result can be complex. Existing colour-connection metadata and native charge
-tensors provide the operator action. Immutable projectors now share source-owned
-currents and scalar state. Four-quark controls pass all carriers, complex swapped
-terms, order/field masks and exact updates. Cold artifacts now retain these
-complex states, named history columns and separate per-history order totals.
-Ordinary execution rejects this payload until the native directed scheduler is
-connected. Correlated failure/rescue and generic source-spin transport remain open.
+tensors provide the operator action. One native batch now executes the saved
+histories with shared source currents and scalar state. Four-quark controls pass
+all carriers, complex swapped terms, order/field masks and exact updates.
+Each direction is integrated before the saved final conjugation. Separate cross
+terms enter precision verification; a cancellation cannot conceal a bad direction.
+Partial failures and subset rescue preserve physical IDs and history labels.
+
+Independent Recola identity/Casimir controls agree in Born and all Laurent coefficients
+at two points/scales within $8.9 times 10^(-16)$ scaled absolute error. Public
+Recola single dipoles cannot certify the complex two-emission histories.
+Public correlated dispatch and generic source-spin transport remain open.
 
 Literal complex spin-source vectors enter the admitted physical external ports
 without an implicit conjugation, normalization or projection. Spectator states
@@ -824,9 +829,9 @@ The retained producer stays on `e4c16a7`.
 
 The ordinary wheel (`bc78edbd` snapshot) uses `_rusticol._loop` and one tree/virtual
 archive. Installed tree, LC 16×6 output, DD agreement and no-Python Rust checks pass.
-Fresh gg LC generation validates two points transactionally and reloads in AP70;
+Fresh gg LC/NLC generation validates two points transactionally and reloads in AP70;
 DY LC separately requires the isolated PR 155 Community overlay. These correctness
-tests add no timing measurements. Later rank, directed-format and ID changes have
+tests add no timing measurements. Later rank, directed execution and ID changes have
 separate source/native gates.
 
 Transactional API export now supplies Python, C, C++, Fortran, Rust and the
@@ -842,6 +847,7 @@ evaluation rejects failures by default. An explicit stability policy batches
 original rows at higher precision under the same snapshot. Rescue requires two
 higher results to agree and checked conversion to the requested output carrier;
 all components, orders, poles and requested helicities enter the comparison.
+Directed calls also retain each complex cross term and history independently.
 Per-attempt histories distinguish failure, agreement and unresolved accuracy.
 Empirical agreement is not independent physics proof. No headline timing enables
 rescue or verification, and the selected $R_2$ strategy stays fixed.
@@ -922,27 +928,24 @@ assumed for massive EW or general models.
 #pagebreak()
 #section-label[VALIDATION · NEXT GATES]
 = What this snapshot establishes
-The measured controls are useful working vertical slices: model import,
-graphs, local recurrence, full colour, native states, reduction, UV/$R_2$ and
-ordered physical output all run together. Independent reference comparisons
-separate bare, local UV, external-field UV and $R_2$ so cancellations in the
-complete answer cannot conceal a wrong component.
+The controls run model import, graphs, recurrence, reduction, UV/$R_2$ and ordered
+physical output together. Independent references separate bare, local UV,
+external-field UV and $R_2$, testing components before their complete sum.
 
 #tab((1.4fr, 2.6fr), left-columns: (0, 1),
   table.header(th[Area], th[Current boundary]),
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
-  [Correlations / mapping], [Cold directed artifacts retain exact source projectors and named histories; all-carrier complex assembly and per-history sums pass. Native execution, source spin and mapping remain open.],
-  [Public delivery], [Installed gg LC generation and AP70 reload pass; DY LC requires the isolated PR 155 overlay. Six exported API clients agree on mixed-order resolved outputs. Native opaque-ID, failures and verification checks pass.],
+  [Correlations / mapping], [Native complex histories, exact updates and rescue pass all carriers; Recola checks identity/Casimir. Public dispatch, source spin and mapping remain open.],
+  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs the PR 155 overlay. Six API clients agree on mixed-order resolved output. Native ID/failure/verification checks pass.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
 == Required multiplicity and acceptance
-Selected $2 -> 5$ processes remain mandatory; $2 -> 6$ is a stretch goal.
-Matched channels include gluon jets, heavy quarks and lepton pairs plus jets.
-Five-final-parton gluon channels require MadLoop/Recola controls; unavailable
-public OpenLoops channels are not invented for comparison.
+Selected $2 -> 5$ gluon, heavy-quark and dilepton channels remain mandatory;
+$2 -> 6$ is a stretch goal. Five-final-parton gluon channels require
+MadLoop/Recola controls; unavailable OpenLoops channels are explicitly excluded.
 
 Full $gamma$/$Z$ $u overline(u) -> e^- e^+ g g$ passes all carriers at three exact
 on-shell points: 16 Born graphs, 528 loops, 71 families, 406 local counterterms,
@@ -957,10 +960,11 @@ page 4 records precision evidence and the independent cache/Gram audit. The
 new timing rows remain pending. Full-CKM four-quark QCD corrections now match
 MadLoop for three Born and three virtual orders at three points, including the
 charged chiral-$R_2$ source rules. This does not certify joint QCD/EW corrections.
-The seven-leg control has matched independent references. Its restarted source
-build has completed rectangular colour overlaps and reached Born projection;
-complete seven-leg physics is pending. Required $2 -> 5$, FFT, correlation/mapping transport and broader
-model coverage remain open.
+The seven-leg control has matched independent references. Its source build
+completed Born and first-family projection before the retained process disappeared
+with no recorded terminal cause. An unchanged detached recovery is underway;
+no seven-leg numerical result is claimed. Required $2 -> 5$, FFT,
+correlation/mapping transport and broader model coverage remain open.
 
 == Independent evidence and reproducibility
 `data/measurements.json` retains the samples, revisions and cold times behind the
