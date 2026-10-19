@@ -1,7 +1,7 @@
-# Stable W+ source controls
+# Stable W± source controls
 
 `wg_sources.json` records complete QCD Born–loop interference for
-`u d~ -> W+ g` and `d W+ -> u g`. Values are Born followed by finite, single-pole
+`u d~ -> W+ g`, `d W+ -> u g` and `d u~ -> W- g`. Values are Born followed by finite, single-pole
 and double-pole coefficients, with physical couplings and the original incoming
 spin/colour average. The common normalization is
 `Cepsilon=(4*pi)^epsilon/Gamma(1-epsilon)`.
@@ -30,6 +30,12 @@ complex mixture and its `(2+3i)` multiple are evaluated by
 and supports the single selected coupling order exercised here. It is not a
 production algebra or reduction implementation.
 
+`recola_wminus_sources_driver.f90` independently defines only the charge-conjugate
+W− process and its three fixed-helicity versions. It calls the same provider
+helper with the actual antiparticle species, rather than inferring coherent
+amplitudes or phases from W+ squared results. Its coherent diagonal/scaling/pole
+checks agree to `5.3e-14`, and its fixed-helicity MadLoop comparisons to `2.4e-13`.
+
 The supplied coherent getters use the same stored index for IR1 and IR2. Four
 calls with `(delta_IR1,delta_IR2)=(0,0),(1,0),(0,1),(2,3)` therefore extract and
 independently check the two actual poles. The finite coefficient is converted by
@@ -40,8 +46,7 @@ implicit source conjugation or guessed relative phase.
 
 `madloop_wg_driver.f90` uses `SET_LEG_POLARIZATION`, including `0`, and actual
 `sloopmatrix_thres` outputs. Generate processes in this order with
-`QCD=1 QED=1 [virt=QCD]`: outgoing W+, incoming W+, outgoing W−. The latter supplies
-a retained provider reference only; pyAmpliCol W− validation remains a follow-up.
+`QCD=1 QED=1 [virt=QCD]`: outgoing W+, incoming W+, outgoing W−.
 Set the matched parameters above. MadLoop's default six-digit parameter-card
 writer rounds `132.50698`; twelve fractional digits retain the selected values
 within its Fortran `CHARACTER*20` value parser. Driver path arguments use
@@ -62,6 +67,12 @@ ownership; native empty/tail/ID transport; public physical-reference agreement;
 AP60/AP80 subset rescue and `clear`. `massive_vector_sdk.rs` uses the unchanged
 standalone source ABI for an actual longitudinal state and verifies owned results.
 
+The W− follow-up reuses the same native build and tests only the added process:
+three-carrier physical and literal-source controls plus public coherent replay.
+Its source identity is the actual model antiparticle with PDG `-24`, reciprocal
+PDG `24` and the model's declared phase. No runtime whitelist or sign-derived
+phase was added.
+
 No independent 70-digit accuracy or arbitrary nontransverse Recola certification
-is claimed. Charge-conjugate W−, neutral axial/chiral cases, EW corrections,
+is claimed. Neutral axial/chiral cases, EW corrections,
 complex external masses and massive-vector LC/NLC composition are separate gates.
