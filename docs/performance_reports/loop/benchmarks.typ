@@ -714,10 +714,9 @@ this same ownership boundary; reducer Laurent preparation remains a cold binding
 #pagebreak()
 #section-label[ARCHITECTURE · COLOUR AND OBSERVABLES]
 = Full colour without dense event tensors
-Dependency algebra and exact SU(3) components contract scoped bra–ket colour
-expressions into cached rectangular weights at preparation. Residual contractions
-preserve the original network. Event evaluation uses these weights; no dense
-colour tensors, private group identities or numerical colour fits are needed.
+Dependency algebra contracts actual Born/loop tensors into cached rectangular
+weights, preserving residual networks. Events evaluate these weights without
+dense colour tensors or numerical colour fits.
 
 == LC and NLC are structural projections
 For a certified formal-$N_c$ model, all contributions belonging to one squared
@@ -727,11 +726,10 @@ $
   "LC": N_c^P, quad
   "NLC": N_c^P, N_c^(P-1), N_c^(P-2).
 $
-The common $P$ spans helicities, epsilon sectors and bare/UV/$R_2$/field terms,
-including odd suppressions. Exact invariants, alias cancellations and diagnostics
-survive. Full/LC/NLC plans rebind in all carriers; DY has LC/full $=9/8$ and
-NLC $=$ full. Signed Born anchors reconstruct the inclusive result. Fresh installed
-gg LC/NLC passes; DY LC uses the isolated PR 155 overlay.
+The common $P$ spans helicities, epsilon and bare/UV/$R_2$/field terms, including
+odd suppressions. All carriers retain exact invariants and diagnostics; signed
+Born anchors reconstruct inclusive results. Fresh gg LC/NLC passes. DY has
+LC/full $=9/8$ and NLC $=$ full; DY LC uses the isolated PR 155 overlay.
 
 An explicit general-$N_c$ replacement for `loop_sm`'s fixed-SU3 four-gluon
 $R_2$ matches its complete source tensor at $N_c=3$ and independent published rules:
@@ -752,39 +750,39 @@ operator histories $A$ and $B$, their generic form is
 $
   B_A^dagger G L_B + L_A^dagger G B_B.
 $
-For unequal histories this is not generally $2 Re(B_A^dagger G L_B)$; the
-result can be complex. Existing colour-connection metadata and native charge
-tensors provide the operator action. One native batch now executes the saved
-histories with shared source currents and scalar state. Four-quark controls pass
-all carriers, complex swapped terms, order/field masks and exact updates.
-Each direction is integrated before the saved final conjugation. Separate cross
-terms enter precision verification; a cancellation cannot conceal a bad direction.
-Partial failures and subset rescue preserve physical IDs and history labels.
+Unequal histories can give complex results, beyond $2 Re(B_A^dagger G L_B)$.
+Existing native charge tensors act on shared currents in one batch. Four-quark
+controls pass all carriers, swapped terms, order/field masks and exact updates.
+Each direction is integrated before conjugation and verified separately, so
+cancellation cannot hide a bad term. Subset rescue preserves physical IDs/history labels.
 
-Public quark-scattering identity, Casimir and $T_1 dot T_2$ Born/Laurent values
-match Recola at two points/scales in double, DD and AP70. This is binary64 provider
-agreement; complex two-emission histories use separate controls.
+Quark-scattering identity, Casimir and $T_1 dot T_2$ Born/Laurent values match
+Recola in double/DD/AP70; this is binary64 provider agreement. Complex
+multi-emission histories have separate controls. Model-owned photon/gluon source
+identities and phases survive fresh $u overline(u) -> gamma g$ and crossed
+$u gamma -> u g$ publication. Transverse-complex singleton sources match Recola;
+arbitrary literal vectors use recurrence/replay controls without projection.
+Joint sums, exact sources, empty batches, AP60/AP80 rescue and photon SDK pass.
 
-Fresh singleton/joint sources publish for $u overline(u) -> g g$, and now
-$u overline(u) -> gamma g$ and crossed $u gamma -> u g$. Model-owned source
-identities and crossing phases survive saving. Double/DD/AP70 Born/Laurent values
-match Recola; joint polarization sums, exact complex sources, empty batches and
-AP60/AP80 rescue pass. The fresh photon SDK control also passes. Recola checks
-transverse complex vectors; arbitrary literal vectors use recurrence/replay
-controls without projection. Massive-vector and LC/NLC spin composition remain open.
+Projected $g g -> g g$ LC/NLC now composes with singleton/joint spin for identity
+histories. Every complete component and both terms reconstruct ordinary results
+in all carriers, retaining the common colour degree. Fresh public NLC, saved LC,
+public LC subset rescue and contracted-component SDK shapes pass. Ordinary LC keeps its
+signed Born anchors; inclusive identity correlations have one contracted component.
+Massive vectors and nonidentity formal-colour histories remain open.
 
 == Exact mappings and the rectangular FFT boundary
-Exact flavour reuse already preserves resolved four-quark output and complex
-histories. It now composes with singleton/joint spin for $d overline(d) -> g g$ and
-$s overline(s) -> g g$ after paired source/phase proofs. All carriers, both directions,
-rescue and Rust SDK pass. LC/NLC mapping and nonidentity permutations remain open;
-no generation speedup is claimed.
+Exact flavour reuse preserves resolved four-quark output and complex histories.
+Paired source/phase proofs admit $d overline(d) -> g g$ / $s overline(s) -> g g$
+singleton/joint spin: all carriers, both terms, rescue and Rust SDK pass. LC/NLC
+mapping and nonidentity permutations remain open; no generation speedup is claimed.
 
-Native FFT adjoint/inverse pass 16 controls; six cold tensor-certificate checks
-cover noncentral complex $S_3$ kernels, full/LC/NLC and residual cross terms.
-Shared exact Born weights pass source/native/rescue comparisons with the original
-schedule, including gg LC’s six signed components in all carriers. Physical orbit
-attachment and public FFT remain open; all weights are still exact direct. No retiming.
+Native FFT adjoint/inverse and cold tensor certificates cover noncentral complex
+$S_3$, full/LC/NLC and residual cross terms. Cold projection retains exact pre-$N_c$
+rectangles, common degrees and physical tensor/order columns. Cold physical-orbit
+certificates and factories agree with direct ordinary/resolved weights. Shared
+Born weights pass all carriers, including gg LC’s six signed components. Public
+FFT attachment, selection and execution remain open; direct weights are unretimed.
 
 #pagebreak()
 #section-label[ARCHITECTURE · NATIVE BATCHES AND PRECISION]
@@ -936,7 +934,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
-  [Correlations / mapping], [Public directed/joint-spin delivery includes incoming/outgoing photons. Exact d/s flavour reuse now composes with singleton/joint spin and both complex directions in all carriers. LC/NLC mapping and nonidentity permutations remain open.],
+  [Correlations / mapping], [Directed/joint sources include crossed photons and exact d/s reuse in all carriers. Projected gg LC/NLC identity histories now compose with spin; ordered formal-colour operators, LC/NLC mappings and nonidentity permutations remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs the PR 155 overlay. Six API clients agree on mixed-order resolved output. Native ID/failure/verification checks pass.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
@@ -969,8 +967,8 @@ broader spin/colour/mapping composition and general-model coverage remain open.
 `data/measurements.json` retains the samples, revisions and cold times behind the
 unchanged tables; `tools/loop_reference/` contains frozen points and drivers.
 Timing covers complete `evaluate_ordered_native` calls, excluding checks and
-output conversion. New photon, delivery, six-leg and shared-weight checks add no
-timings. The new schedule is unretimed; original timing identities are retained.
+output conversion. New projected-spin, photon, six-leg and shared-weight checks
+add no timings. The new schedule is unretimed; original timing identities are retained.
 
 Providers are MadLoop 3.7.0, Recola2 2.3.0 with matched SM/Collier, and OpenLoops
 2.1.5. Tables use matched-host control timings with input and rescue asymmetries

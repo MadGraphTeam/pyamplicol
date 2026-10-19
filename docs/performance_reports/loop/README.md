@@ -23,6 +23,27 @@ reconstruction (`4b1eb550`). Nine focused mixed-order/projector controls and the
 physical photon producer pass separately. The new feature snapshot has not been
 retimed: every timing cell retains its recorded revision and original schedule.
 
+
+Projected identity histories now compose with singleton/joint spin for actual
+four-gluon LC and NLC model-rule programs. Their original common degree spans
+bare, UV, R2 and field terms; source projection reuses those complete weights.
+Saved LC and independently generated public NLC pass component/polarization
+reconstruction in double, DoubleFloat and AP70, including both directions,
+complex scaling/zero sources and exact source changes below binary64 resolution.
+Public LC AP60/AP80 subset rescue, clear/empty transport and a packaged Rust SDK
+shape/source-ownership control pass. Inclusive correlated LC has one contracted
+component; ordinary LC still requires signed Born anchors and resolved payloads.
+Nonidentity formal-colour histories, LC/NLC flavour reuse and massive-vector
+sources remain open. See `docs/development/LOOP_PUBLIC_SPIN.md`.
+
+The authoritative formal projection now retains exact pre-Nc Born/loop matrices,
+common squared-order degrees and actual tensor/order columns (`0ca10348`, root
+`4b36d496`). Cold actual physical-orbit certificates and factories are checked against
+ordinary/resolved direct weights. This supplies physical ownership; public FFT
+attachment, selection and execution remain open. The schedule remains unretimed.
+Every measured table value, recorded timing revision and provider comparison is
+unchanged.
+
 The photon source milestone (`d9597cec`, `a52fea60`) adds fresh public `u u~ -> a g` and crossed
 `u a -> u g` QCD artifacts, with photon/gluon/joint source classes owned by the
 actual model SourceIR. Complete ordinary and transverse-complex singleton
