@@ -733,8 +733,8 @@ including odd suppressions. Dependency algebra retains semantic invariants,
 alias cancellations and diagnostics. Full/LC/NLC source plans rebind in all
 carriers; DY has LC/full $=9/8$ and NLC $=$ full. Signed LC components use
 canonical Born tensors and a common sector degree before anchor masking.
-Their sum reconstructs the inclusive result. Explicit model data now enters
-public LC/NLC generation; fresh installed publication remains pending.
+Their sum reconstructs the inclusive result. Fresh installed gg LC generation
+passes with explicit model data; DY LC passes with the isolated PR 155 overlay.
 
 The `loop_sm` four-gluon $R_2$ coefficients are fixed at $N_c=3$. A published
 general-$N_c$ rule matches the complete source tensor and an independent rule:
@@ -805,8 +805,8 @@ Resolved output preserves point, order, helicity, colour component and epsilon.
 Actual source gluons pass with 16 helicities and six signed LC components in all
 carriers. Currents are shared across components; only projection rows expand.
 `.total()` retains original averaging and every order/pole. Full/NLC keep one
-contracted component. Sparse IDs and early/late failures preserve physical
-identities; a failed component removes or rescues the whole original point.
+contracted component. Opaque IDs through the full native integer range pass
+Python and SDK checks. Early/late failures remove or rescue whole points.
 The components are signed interference terms, never sampling probabilities.
 
 == Reduction and exact saved plans
@@ -822,16 +822,17 @@ carriers; unsupported rank rejects at binding. Complete seven-line physics,
 general higher-rank models and AP CMS zero-width accuracy remain open.
 The retained producer stays on `e4c16a7`.
 
-Public Runtime/CLI retains exact inputs, scales and every order/pole. Generic
-full-colour generation passes staged validation and all carriers. Explicit model
-colour declarations now enter LC/NLC generation with checked scheme ties;
-full colour retains its original path. Fresh installed LC publication is pending.
+The ordinary wheel (`bc78edbd` snapshot) uses `_rusticol._loop` and one tree/virtual
+archive. Installed tree, LC 16×6 output, DD agreement and no-Python Rust checks pass.
+Fresh gg LC generation validates two points transactionally and reloads in AP70;
+DY LC separately requires the isolated PR 155 Community overlay. These correctness
+tests add no timing measurements. Later rank, directed-format and ID changes have
+separate source/native gates.
 
-The installed ordinary wheel (`bc78edbd` snapshot) uses `_rusticol._loop` and one
-tree/virtual C archive. Tree, LC 16×6 resolved output, DD agreement and the packaged
-no-Python Rust SDK pass; the latter preserves three orders, poles, failures and
-lifetime. Source C/C++/Fortran/UMAMI controls also pass. Fresh public LC generation
-remains pending; later rank, directed-format and ID changes have separate gates.
+Transactional API export now supplies Python, C, C++, Fortran, Rust and the
+versioned virtual UMAMI extension. All six installed clients agree on two-point
+mixed-order resolved output. The writer preserves the original complete raw model
+and defaults; it emits no tree flow/provider files for virtual requests.
 
 == Successful completion is not established accuracy
 Native guards isolate state, scale, current, reduction and assembly failures with
@@ -933,7 +934,7 @@ complete answer cannot conceal a wrong component.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Cold directed artifacts retain exact source projectors and named histories; all-carrier complex assembly and per-history sums pass. Native execution, source spin and mapping remain open.],
-  [Public delivery], [The ordinary wheel and single-archive Rust SDK pass tree, LC 16×6 resolved output, DD agreement and mixed-order transport. Explicit model colour data enters generation; fresh installed LC publication remains pending.],
+  [Public delivery], [Installed gg LC generation and AP70 reload pass; DY LC requires the isolated PR 155 overlay. Six exported API clients agree on mixed-order resolved outputs. Native opaque-ID, failures and verification checks pass.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 

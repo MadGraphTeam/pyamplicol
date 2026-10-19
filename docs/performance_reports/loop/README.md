@@ -21,13 +21,14 @@ This generation slice is full-colour, model-R2 and JIT; public helicity-resolved
 publication now also passes a fresh DY artifact in all three carriers
 (`0dd89d11`). The resolved axis has 16 helicities and one complete contracted
 full-colour component; `.total()` preserves orders, poles and original averaging. The observed 215.94 s is a correctness-test duration, not a
-benchmark. Directed correlation/mapping transport and fresh public LC publication
-remain open; ordinary installed native/SDK evidence is recorded below.
+benchmark. Directed correlation/mapping transport remains open. Fresh installed gg
+LC publication now passes; DY LC requires the isolated PR 155 Community overlay,
+as detailed below. Ordinary installed native/SDK evidence is also recorded below.
 The subsequent signed-LC source milestone adds six canonical Born components
 and 16 helicities for gg in all carriers. Saved-source Python, Rust, C and UMAMI
-transport and subset rescue pass; these explicit fixture target stamps do not
-certify fresh public LC generation. Prepared-model continuation ingress passes local admission checks; fresh
-installed publication remains pending.
+transport and subset rescue pass. Those earlier fixture target stamps remain
+transport evidence; the separate fresh installed generation checks below close
+the public gg LC gate without relabelling the earlier fixtures.
 Typed native failures retain physical identities and compact whole-point
 successes. State/scale compaction and exact-snapshot replay are delivered; public
 opt-in cross-precision verification/rescue now passes eight native cases across
@@ -400,7 +401,10 @@ transport, not fresh public LC generation. Explicit model colour declarations no
 and enter public LC/NLC generation (`a4723935`, author `cfa96d3f`). Required scheme
 constants cannot undo a source restriction; complete rule groups and original
 diagnostics survive. The actual raw-model JSON and request-scope preflights pass.
-Fresh installed-package LC publication remains a separate pending gate.
+Fresh installed gg LC publication subsequently passes with the ordinary installed
+package alone. DY LC passes separately using the explicitly isolated PR 155
+Community correction; the ordinary dependency set is not thereby certified for
+that fundamental-colour path.
 
 An independent Idenso defect changed open fundamental/dual port identities during
 canonicalization. The minimal repair removes the lossy dual-strip/restore step,
@@ -448,7 +452,9 @@ verification. The versioned pyAmpliCol UMAMI virtual extension (`f2374f8d`)
 preserves keyed bulk offset/count/stride layouts, all squared orders and Laurent
 coefficients, and mandatory lane statuses. Native one- and three-order controls
 check untouched padding/failed slots and resolved reconstruction. It is a
-pyAmpliCol extension, not a standard UMAMI virtual interface. Generated UMAMI bundles and correlated/mapped public operations remain open.
+pyAmpliCol extension, not a standard UMAMI virtual interface. Transactional API
+bundle export now includes this extension, with all six installed clients checked
+as detailed below. Correlated/mapped public operations remain open.
 The unified source package (`904829bb`) now uses one root Cargo workspace/lock,
 one `_rusticol._loop` module behind the lazy authoritative loader, and one C
 archive carrying tree and virtual APIs. SDK staging includes the existing native
@@ -464,18 +470,42 @@ actual `_rusticol._loop` module without a companion, the binary64 tree result
 142.10653372833232, LC resolved shape `(1,1,16,6,3)` with explicit DD agreement,
 and packaged SDK resources. A no-Python Rust client linked against the installed
 single archive independently checks three orders/all poles, resolved totals,
-sparse IDs, an actual numerical failure, verification and result lifetime. Fresh
-public gg LC generation from this installed wheel remains pending. This wheel
-predates the later opaque-ID, saved-rank and cold-directed-format changes; those
-have separate source/native gates. No benchmark numbers change.
+sparse IDs, an actual numerical failure, verification and result lifetime.
+Fresh gg LC generation from this installed wheel now passes normal explicit model
+preparation, CLI dry-run, transactional two-point validation, C=6/H=16 inclusive
+and resolved output and AP70 reload. The 215.10 s test duration is not a calibrated
+generation measurement. DY LC passes the analogous check in 10.45 s using the
+same installed package with the explicitly isolated corrected PR 155 Community
+overlay. Evidence: `installed-public-gg-lc.log` and
+`installed-public-dy-lc-overlay.log`. This wheel predates the later opaque-ID,
+saved-rank and cold-directed-format changes; those have separate source/native
+gates. No benchmark numbers change.
+
+Transactional `emit_api_bundle` now exports Python, C, C++, Fortran, Rust and the
+explicitly versioned virtual UMAMI extension (`58637367`, author `99b4abdf`).
+Two-point mixed-order resolved outputs agree across all six actual installed
+clients. The full writer preserves the original `loop_sm/full` raw source and
+parameter defaults and emits no tree flow/provider files for virtual requests.
+Evidence: `loop-virtual-api-installed-final.log` (3 passed) and
+`loop-virtual-api-writer-identity.log` (1 passed). These are correctness checks,
+not new performance observations.
+
+Opaque original IDs now pass through the complete native integer domain
+(`4f181202`). Numerical PH/PHC/order channels use dense local IDs with explicit
+mapping back to physical rows; successful and rescued status rows stay aligned.
+Five actual native cases, eleven facade controls and the focused SDK maximum-ID
+partial/resolved case pass. An initial SDK failure was traced to a reused stale
+core object; a targeted core-only clean/relink passed without a source change.
+The original failure log remains available. This closes ordinary native/SDK ID
+transport; it does not certify the still-pending directed scheduler.
 
 Immutable directed Born/family/CT-field/assembly projectors now bind the existing
 source owner and rebind carriers without repeating tensor algebra. Actual source
 `u u~ > d d~ [QCD]` identity, Casimir and complex swapped histories pass double,
 DoubleFloat and AP70 with exact updates and independent analytic Born/UV controls.
 Legacy massive-field controls also pass. The internal directed wrapper retains original point IDs at the native integer
-boundary without multiplying those IDs; ordinary native-core ID transport is a
-separate implementation boundary. Early state/
+boundary without multiplying those IDs; the separate ordinary native-core ID
+repair is now validated as described above. Early state/
 current errors still expose legacy dense context; native/public correlated
 failure/rescue, source-spin transport and general mapping are not completed.
 
