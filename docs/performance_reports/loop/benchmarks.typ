@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-19 · 23:16 UTC"
+#let report-date = "2026-10-19 · 23:40 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -760,20 +760,20 @@ Recola independently checks physical sources with identity colour; other ordered
 histories use internal component reconstruction. Arbitrary literal vectors use
 homogeneity/replay, without projection. Public subset rescue and Rust SDK pass.
 
-Projected gg/W LC/NLC identity sources pass all carriers and rescue; ordinary LC
-keeps signed anchors. Complete-family nonidentity cold projection now spans all
-compatible histories and bare/UV/$R_2$/field rows, including physical splits.
-Rectangular oracles and retained W controls pass components, charges and three
-source classes in every carrier. Saved/public family transport and wider EW/CMS
-sources remain open.
+Projected gg/W identity sources pass; ordinary LC keeps signed anchors.
+Complete-family degrees span compatible histories and all components, including
+physical splits. Outgoing $W^+$ saved full/LC/NLC passes every carrier; public
+LC/NLC grouped sources, rescue and SDK pass. A separate rectangular oracle checks
+non-Hermitian interference. Other nonidentity crossings and EW/CMS sources remain open.
 
 == Exact mappings and the rectangular FFT boundary
 Exact flavour reuse preserves resolved four-quark output and complex histories.
-Paired source/phase proofs admit $d overline(d) -> g g$ / $s overline(s) -> g g$
-singleton/joint spin: all carriers, both terms, rescue and Rust SDK pass. The formal
-source prerequisite now proves d/s symmetry over all 9 ordinary, 64 UV/$R_2$ and
-6 field rules, with exact $N_c$ values, diagnostics and whole-rule ownership.
-LC/NLC process transport and nonidentity permutations remain open; no speed claim.
+Paired $d overline(d) -> g g$ / $s overline(s) -> g g$ source/phase proofs now admit
+formal full/LC/NLC identity-history reuse through saved/public/SDK paths. The exact
+source proof covers 9 ordinary, 64 UV/$R_2$ and 6 field rules. Three signed LC axes
+survive different raw column orders; sources and both terms pass every carrier,
+with separate subset rescue. Projected nonidentity histories and external
+permutations remain open; no speed claim.
 
 Certified ordinary/resolved full/NLC weights now execute binary64 FFT plus every
 residual. Exact pre-$N_c$ ownership, noncentral $S_3$ controls and complete physical
@@ -934,7 +934,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
-  [Correlations / mapping], [Photon/W/d/s and gg/W LC/NLC identity sources pass. Nonidentity complete-family cold W controls pass; saved/public transport remains open. Formal d/s symmetry covers 9/64/6 rules; projected mapping and EW/CMS sources remain open.],
+  [Correlations / mapping], [Outgoing W+ complete-family histories and formal d/s full/LC/NLC identity mapping pass saved/public/SDK checks. Signed LC axes and sources compose. Projected nonidentity mapping, other nonidentity crossings and EW/CMS sources remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Full/NLC ordinary/resolved binary64 FFT and exact DD/AP fallback pass. Source rescue, partial returns and grouped CLI retain IDs, precision and diagnostics.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )

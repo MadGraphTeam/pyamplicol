@@ -45,9 +45,8 @@ formal inequalities hidden at Nc=3. Exact formal preparation is separate from
 numerical grading, whose existing restrictions remain unchanged. The cold check
 has 39 passing controls and a separate strengthened positive-epsilon regression;
 eight legacy `_loop_reduction` import checks are explicitly skipped.
-This prerequisite creates no process graphs and certifies no numerical mapping;
-LC/NLC process transport remains open.
-No timing observations change.
+This prerequisite creates no process graphs and is distinct from the subsequent
+numerical projected-mapping milestone below. No timing observations change.
 
 Complete-family nonidentity formal-colour preparation now passes
 (`40261bce`, `baf5fcd8`). One structural degree per squared-order sector spans
@@ -60,9 +59,41 @@ double/DoubleFloat/AP70, including both terms, all components and poles, charge
 rows, CA/TR identities, W/gluon singleton and joint sources, precision-sensitive
 source changes, opaque IDs, empty/tail batches and owner negatives. Arithmetic
 rebind shares the actual bank without repeated colour algebra. Original owners,
-modules and native binaries are preserved. Saved/public family transport and
-projected flavour reuse remain separate gates. No graphs, native build or timing
-observations were added. See `docs/development/LOOP_ORDERED_COLOR_PROJECTION.md`.
+modules and native binaries are preserved. This cold/producer milestone added no
+graphs, native build or timing observations. See
+`docs/development/LOOP_ORDERED_COLOR_PROJECTION.md`.
+
+Saved/public complete-family transport now passes on one coordinated normal
+Python/SDK build (`d786f694`, native digest `56153295…`), shared with the mapping
+milestone below. The retained outgoing W+ owner supplies full/LC/NLC ×
+double/DoubleFloat/AP70 comparisons of every complete component, Laurent/order
+axis and both directed terms for ordinary, W, gluon and joint source classes.
+Twenty-six native/saved cases and two public LC/NLC cases pass; the latter cover
+grouped dipole/splitting requests, actual AP60/AP80 subset rescue, clear and empty
+reuse. Typed operation/family corruption rejects, while fresh operation labels
+include positive u64 values. Original point IDs independently include u64::MAX.
+The linked Rust SDK preserves contracted shape and owned string history/source
+labels. This one-colour physical control supplements the independent rectangular
+non-Hermitian oracle; it does not establish a new nonzero-imaginary physical
+observable. Incoming W+ and outgoing W− nonidentity families were not tested in
+this slice. Evidence: workspace `reports/ordered-projection-acceptance.md`.
+
+Projected exact d/s reuse now passes through saved/public/SDK interfaces
+(`d786f694`, final acceptance `32a19214`). Actual source continuations, captured
+formal metrics, common degrees and canonical tensor/order multiplicities prove
+the three signed LC axes even though the two members enumerate raw Born columns
+differently. Formal-full coefficients match the older independently saved
+fixed-full owners after explicit matching of MB=ymb=0 and common inputs. LC/NLC
+ordinary/resolved outputs and identity-history singleton/joint source classes
+match independently saved members in double, DoubleFloat and AP70, including
+every component and both terms. Eighteen staged runtime cases, 36 service checks
+and the linked SDK pass; actual fresh LC service preparation establishes the
+partition before capturing source owners. Public full/LC/NLC selection, clear,
+empty/tail rows, opaque IDs and LC source subset rescue are covered. The new
+mapping scope is identity histories with unchanged external ports; nonidentity
+projected mapping and permutations remain open. Evidence: workspace
+`reports/loop-projected-flavor-acceptance.md`. These are correctness checks, not
+new performance measurements; all original owners/modules remain intact.
 
 Outgoing W± and incoming W+ LC/NLC composition is now validated as described
 below; broader source domains remain separate gates. See `docs/development/LOOP_PUBLIC_SPIN.md`.
@@ -182,7 +213,9 @@ full-colour component; `.total()` preserves orders, poles and original averaging
 benchmark. Public directed generation and grouped complex SDK transport now pass. Public
 joint spin ingress and exact identity-order flavour grouping now also pass;
 full-colour d/s grouping additionally composes with singleton/joint spin as
-described below. LC/NLC mapping and nonidentity permutations remain follow-ups. Fresh installed gg
+described below. The later formal LC/NLC identity-history mapping milestone is
+recorded above; nonidentity projected mapping and external permutations remain
+follow-ups. Fresh installed gg
 LC publication now passes; DY LC requires the isolated PR 155 Community overlay,
 as detailed below. Ordinary installed native/SDK evidence is also recorded below.
 The subsequent signed-LC source milestone adds six canonical Born components
@@ -887,8 +920,10 @@ Five physical/public tests pass in double, DoubleFloat and AP70, covering every
 Born/order/pole/bare/UV/R2/field component and both complex directions, exact
 scalar/source updates, empty batches, original IDs, clear and AP60/AP80 subset
 rescue. Cold selected-vector species corruption is rejected. Other unproved
-flavour relations, LC/NLC mapping and nonidentity permutations retain independent
-generation. The safe Rust SDK client also passes selected-member evaluation,
+flavour relations and nonidentity permutations retain independent generation.
+The later formal LC/NLC identity-history extension is recorded at the top of
+this report; nonidentity projected reuse remains separate. The safe Rust SDK
+client also passes selected-member evaluation,
 reversed unequal joint source labels, rejection and owned results. Evidence is
 recorded in `docs/development/LOOP_FLAVOR_TRANSPORT.md` and workspace
 `reports/loop-spin-flavor-acceptance.md` (authors `b7872a17`, `780f65ed`, `a96a6f09`).
