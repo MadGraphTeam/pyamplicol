@@ -738,11 +738,11 @@ cap. A seven-propagator rank-eight numerator cancelling to a triangle master
 passes generic double/DD/AP80 and binary64 fast-tensor evaluation; broader
 physical multiplicity remains a separate gate. Rank above $n+1$ still rejects.
 
-Ordinary schema-v3 artifacts now connect `Runtime.load` to the shared Rust
-coordinator without producer graphs or source imports. The loader checks order,
-state, normalization and strategy declarations against the retained PACBIN.
-Complete source gluon controls pass in double, DoubleFloat and AP70, including
-independent Born/double-pole checks, exact updates and native workspace lifecycle.
+`Runtime.load` uses checked schema-v3/PACBIN artifacts and the Rust coordinator,
+without producer imports. Source gluon controls pass double/DD/AP70, independent
+Born/double-pole checks, exact updates and native lifecycle tests. Load-time
+arithmetic/precision/$R_2$ defaults precede parameter binding: AP70 accepts exact
+`aS="1e400"`; empty batches retain AP.
 
 The public slice requires full-colour inclusive model-rule $R_2$ plus UV and
 explicit positive scalar or per-point $mu_R^2$. Generation must retain exact
