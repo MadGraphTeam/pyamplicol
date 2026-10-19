@@ -765,12 +765,13 @@ Identity, Casimir and nontrivial $T_1 dot T_2$ Born/Laurent values match binary6
 Recola at two points/scales in double, DD and AP70. This checks provider agreement,
 not 70 digits or complex two-emission histories.
 
-Fresh Python/CLI singleton and joint gluon sources now publish for
-$u overline(u) -> g g$. Double/DD/AP70 singleton Born/Laurent values match Recola; joint
-polarization sums reconstruct ordinary output. Exact complex sources, setter
-snapshots, empty batches and AP60/AP80 rescue pass. Internal controls additionally
-cover Ward shifts and imaginary ordered histories. Massive-vector and LC/NLC
-spin composition remain open.
+Fresh singleton/joint sources publish for $u overline(u) -> g g$, and now
+$u overline(u) -> gamma g$ and crossed $u gamma -> u g$. Model-owned source
+identities and crossing phases survive saving. Double/DD/AP70 Born/Laurent values
+match Recola; joint polarization sums, exact complex sources, empty batches and
+AP60/AP80 rescue pass. The fresh photon SDK control also passes. Recola checks
+transverse complex vectors; arbitrary literal vectors use recurrence/replay
+controls without projection. Massive-vector and LC/NLC spin composition remain open.
 
 == Exact mappings and the rectangular FFT boundary
 Public $u overline(u) -> d overline(d)$ and $u overline(u) -> s overline(s)$ share an
@@ -936,7 +937,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
-  [Correlations / mapping], [Public directed/joint-spin generation and native SDK ingress pass; Recola checks dipoles and singleton spin. Public exact flavour reuse preserves resolved and complex histories. Spin/LC/NLC mapping composition remains independent.],
+  [Correlations / mapping], [Public directed/joint-spin generation and SDK ingress pass, including outgoing/incoming photons in all carriers. Recola checks dipoles and transverse singleton sources. Exact flavour reuse preserves resolved/complex histories; spin/LC/NLC composition remains open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs the PR 155 overlay. Six API clients agree on mixed-order resolved output. Native ID/failure/verification checks pass.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
@@ -969,7 +970,8 @@ broader spin/colour/mapping composition and general-model coverage remain open.
 `data/measurements.json` retains the samples, revisions and cold times behind the
 unchanged tables; `tools/loop_reference/` contains frozen points and drivers.
 Timing covers complete `evaluate_ordered_native` calls, excluding checks and
-output conversion. New delivery and six-leg tests add no timing measurements.
+output conversion. New photon-source, delivery and six-leg controls add no timing
+measurements; photon generation and B1/B128 runtime timings remain pending.
 
 Providers are MadLoop 3.7.0, Recola2 2.3.0 with matched SM/Collier, and OpenLoops
 2.1.5. Tables use matched-host control timings with input and rescue asymmetries

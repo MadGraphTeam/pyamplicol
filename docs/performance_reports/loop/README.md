@@ -11,6 +11,18 @@ six-propagator families. Independent references remain binary64; analytic pole,
 exact coupling-update and cross-carrier convergence checks establish the separate
 high-precision evidence.
 
+The photon source milestone (`d9597cec`, `a52fea60`) adds fresh public `u u~ -> a g` and crossed
+`u a -> u g` QCD artifacts, with photon/gluon/joint source classes owned by the
+actual model SourceIR. Complete ordinary and transverse-complex singleton
+Born/Laurent controls match Recola in double, DoubleFloat and AP70; joint
+polarization sums, literal exact-source changes, empty/tail batches and AP60/AP80
+subset rescue pass. Native contract rejection and a safe-Rust client against the
+new artifact also pass. Recola's helicity projection is not an arbitrary
+nontransverse source oracle. See `docs/development/LOOP_PUBLIC_SPIN.md` and
+`tools/loop_reference/PHOTON_SOURCES.md`. Photon timing rows remain pending; the
+135.05 s test duration is not a generation/runtime measurement. Existing measured
+tables and JSON are unchanged.
+
 Native helicity-resolved full-colour output is delivered (`ede24fad`, finite-guard
 follow-up `182f06c3`). Its singleton colour axis is a complete contracted component,
 not a colour-flow decomposition. `.total()` retains every order/pole and the
