@@ -274,9 +274,12 @@ Detailed source/component/status evidence and provider audit remain under
 The next seven-leg six-fermion-plus-gluon catalogue has 751 families, including
 48 seven-propagator families. Three exact-decimal points/scales now match
 MadLoop/Ninja, MadLoop/Collier and cached/uncached Recola within 1.11e-10; separate
-MadLoop UV/R2/field controls are frozen too. Complete source construction stopped before reduction on an unresolved exact
-colour contraction. The failed network is being isolated with dependency APIs;
-no seven-leg pyAmpliCol physical result is claimed yet.
+MadLoop UV/R2/field controls are frozen too. The original source build stopped on a symbolic colour residual. Existing native
+exact components give -1/9 for that network; a narrowly scoped physical-colour
+fallback now passes 11 focused controls, including the nonconjugated trace-square
+value -10/27. Formal Nc contraction remains symbolic. Source construction has
+restarted from the retained graph plan; no seven-leg physical result is claimed
+yet. A separate squared-trace dummy-scoping defect is being addressed upstream.
 
 Full unrestricted-CKM `u u~ -> d d~ [QCD]` now matches MadLoop for every one of
 three Born orders and three virtual orders/poles at three exact points, within
