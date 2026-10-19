@@ -70,15 +70,17 @@ the later provider audit adds a matched Recola DY observation without replacing
 the original provider timings. Validation durations
 are not event timings.
 
-An isolated audit of newer NinjaRS `0d0d7e7` passes locked dependency resolution
+The selected source consumer now uses NinjaRS `0d0d7e7` (`4dfa281b`), with locked dependency resolution
 without any `references/` path. Its Symbolica commit is still `e679e8c1`, with
 new FeynKit and oneloopmaster pins. The isolated consumer now compiles and passes
 the seven existing anchors and the new profiling callback control. Saved complete
 six-propagator physics also passes in double, DoubleFloat and AP80; the seven-line
-adoption gate remains pending. The AP zero-width complex-mass reproducer still
+control passes all four generic/fast configurations too. All focused adoption
+gates are complete and integrated. The AP zero-width complex-mass reproducer still
 disagrees across numerically equivalent mass constructions. The selected
-producer/consumer remain on `e4c16a7` pending the complete focused gate. Rank-n+2
-callbacks and master behavior changed; source admission remains rank-n+1 and
+retained seven-leg producer remains on `e4c16a7`; its installed dependencies were
+not replaced during construction. Rank-n+2 callbacks and master behavior changed;
+source admission remains at the independently validated rank-n+1 boundary and
 owner accuracy limits stay explicit. No measured timing or advertised physics
 capability changes from this adoption work.
 
@@ -397,8 +399,9 @@ coefficients, and mandatory lane statuses. Native one- and three-order controls
 check untouched padding/failed slots and resolved reconstruction. It is a
 pyAmpliCol extension, not a standard UMAMI virtual interface. Normal SDK release
 packaging, generated UMAMI bundles and correlated/mapped public operations remain
-open. The selected old NinjaRS packaging restriction still applies until the
-newer coherent consumer passes adoption checks.
+open. The new self-contained NinjaRS source pin removes the former untracked
+dependency-directory requirement; ordinary release packaging remains its own
+delivery step.
 
 These milestones contribute no
 new benchmark measurements. Keep the source, PDF and coverage notes live after

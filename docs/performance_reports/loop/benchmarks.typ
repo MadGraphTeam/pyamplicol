@@ -816,12 +816,12 @@ and carrier-appropriate inputs. Weighted rank counts $mu^2$ twice; explicit
 epsilon sectors combine by Laurent multiplication. The additive dense-$mu$
 adapter does not change the engine identified by each timing record.
 
-Consumer `e4c16a7` admits arbitrary propagator counts through rank $n+1$. A
-seven-line rank-eight numerator cancelling to a triangle passes all carriers
-and fast tensors. Complete six-propagator physics passes; physical seven-line
-coverage remains open. Isolated owner revision `0d0d7e7` passes Git resolution,
-compilation, existing anchors and saved six-propagator checks in all carriers.
-The seven-line adoption gate remains pending; the AP CMS zero-width discrepancy persists.
+Selected source consumer `0d0d7e7` uses self-contained Git pins and passes
+compilation, analytic anchors, saved six-propagator physics and a seven-line
+rank-eight cancellation in all carriers. Physical source admission remains at
+validated rank $n+1$; owner $n+2$ callbacks are forwarded. The retained seven-leg
+producer stays on `e4c16a7`. Complete seven-line physics and the AP CMS
+zero-width discrepancy remain open.
 
 Public Runtime/CLI retains exact inputs, scales and every order/pole. Generic
 DY/gluon generation validates source against staged runtime before publishing
