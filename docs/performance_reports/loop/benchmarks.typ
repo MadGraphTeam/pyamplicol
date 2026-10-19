@@ -747,7 +747,9 @@ full-SU(3) validity does not imply a formal continuation, and numerical constant
 are never promoted heuristically to $N_c$. Validated direct completion can
 provide a different continuation only within its certified domain. A published
 general-$N_c$ model-rule formula now matches every active SU(3) four-gluon entry
-and an independent general-$N_c$ formula; source integration is next.
+and an independent general-$N_c$ formula: #link("https://arxiv.org/abs/0903.0356")[Fig. 2
+of 0903.0356] and #link("https://arxiv.org/abs/2007.03713")[Eqs. 5.30–5.38 of
+2007.03713]. Source integration is next.
 
 == Directed colour and spin sources
 Correlated virtual observables require both rectangular cross terms. For
