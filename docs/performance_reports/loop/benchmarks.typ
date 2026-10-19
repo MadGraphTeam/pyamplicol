@@ -945,8 +945,8 @@ page 4 records precision evidence and the independent cache/Gram audit. The
 new timing rows remain pending. Full-CKM four-quark QCD corrections now match
 MadLoop for three Born and three virtual orders at three points, including the
 charged chiral-$R_2$ source rules. This does not certify joint QCD/EW corrections.
-The seven-leg source build has matched independent references but no physical
-result yet. Required $2 -> 5$, FFT, correlation/mapping transport and broader
+The seven-leg control has matched independent references; source construction
+currently stops on an unresolved exact colour contraction before reduction. Required $2 -> 5$, FFT, correlation/mapping transport and broader
 model coverage remain open.
 
 == Independent evidence and reproducibility
