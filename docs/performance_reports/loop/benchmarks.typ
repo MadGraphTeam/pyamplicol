@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-19 · 22:47 UTC"
+#let report-date = "2026-10-19 · 23:06 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -770,8 +770,10 @@ EW/CMS sources and broader source composition remain open.
 == Exact mappings and the rectangular FFT boundary
 Exact flavour reuse preserves resolved four-quark output and complex histories.
 Paired source/phase proofs admit $d overline(d) -> g g$ / $s overline(s) -> g g$
-singleton/joint spin: all carriers, both terms, rescue and Rust SDK pass. LC/NLC
-mapping and nonidentity permutations remain open; no generation speedup is claimed.
+singleton/joint spin: all carriers, both terms, rescue and Rust SDK pass. The formal
+source prerequisite now proves d/s symmetry over all 9 ordinary, 64 UV/$R_2$ and
+6 field rules, with exact $N_c$ values, diagnostics and whole-rule ownership.
+LC/NLC process transport and nonidentity permutations remain open; no speed claim.
 
 Certified ordinary/resolved full/NLC weights now execute binary64 FFT plus every
 residual. Exact pre-$N_c$ ownership, noncentral $S_3$ controls and complete physical
@@ -932,7 +934,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
-  [Correlations / mapping], [Directed/joint sources cover photons, charged W and d/s reuse. gg and exercised charged-W LC/NLC compose with identity spin. Wider EW/CMS sources, nonidentity histories and mappings remain open.],
+  [Correlations / mapping], [Photon/W/d/s sources and gg/W LC/NLC identity spin pass. Formal d/s source symmetry covers all 9/64/6 retained rules; projected process transport, nonidentity histories and wider EW/CMS sources remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Full/NLC ordinary/resolved binary64 FFT and exact DD/AP fallback pass. Source rescue, partial returns and grouped CLI retain IDs, precision and diagnostics.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )

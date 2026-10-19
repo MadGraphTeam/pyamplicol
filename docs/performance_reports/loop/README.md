@@ -33,7 +33,21 @@ complex scaling/zero sources and exact source changes below binary64 resolution.
 Public LC AP60/AP80 subset rescue, clear/empty transport and a packaged Rust SDK
 shape/source-ownership control pass. Inclusive correlated LC has one contracted
 component; ordinary LC still requires signed Born anchors and resolved payloads.
-Nonidentity formal-colour histories and LC/NLC flavour reuse remain open.
+The exact formal-colour species prerequisite now passes over the complete
+retained QCD source: 9 ordinary, 64 UV/R2 and 6 external-field rules
+(`08d6e345`, explicit model data `aed6d589`). The declaration adds 34 elementary
+quark CT keys and three heavy-field keys, retaining separate loop groups and
+original mass/logarithm diagnostics. Source-owned formal values, all Laurent
+powers and diagnostics are compared before Nc=3; whole-rule replacements retain
+28/29 source entries and their distinct 12/24 native terms. Foreign/altered
+coefficients, tensors, aliases, multiplicities and coupling powers reject, as do
+formal inequalities hidden at Nc=3. Exact formal preparation is separate from
+numerical grading, whose existing restrictions remain unchanged. The cold check
+has 39 passing controls and a separate strengthened positive-epsilon regression;
+eight legacy `_loop_reduction` import checks are explicitly skipped.
+Nonidentity formal-colour histories and LC/NLC process transport remain open;
+this prerequisite creates no process graphs and certifies no numerical mapping.
+No timing observations change.
 Outgoing W± and incoming W+ LC/NLC composition is now validated as described
 below; broader source domains remain separate gates. See `docs/development/LOOP_PUBLIC_SPIN.md`.
 
