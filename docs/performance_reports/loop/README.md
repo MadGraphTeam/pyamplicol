@@ -69,6 +69,14 @@ the later provider audit adds a matched Recola DY observation without replacing
 the original provider timings. Validation durations
 are not event timings.
 
+An isolated audit of newer NinjaRS `0d0d7e7` passes locked dependency resolution
+without any `references/` path. Its Symbolica commit is still `e679e8c1`, with
+new FeynKit and oneloopmaster pins. The selected producer/consumer remain on
+`e4c16a7`: a coherent consumer compile and focused physics check are required
+before adoption. Rank-n+2 callbacks and master behavior changed; the owner also
+documents remaining accuracy limits. This audit changes no measured timing or
+advertised rank/physics capability.
+
 The single process/provider grid continues across the first two pages and shows
 B=1 and B=128 totals, preparation and stage detail in each cell. The original
 five controls retain B=32 stage clocks; the five-leg row uses separate B=128 clocks.
@@ -315,6 +323,13 @@ degrees three and four. Exact SU(3) component closure remains available and is
 used by the running physical producer. This does not justify substituting
 numerical colour values into LC/NLC. The focused audit is recorded in
 `workspace/reports/sevenprop-formal-color-audit.md`.
+
+The explicit HV general-Nc four-gluon R2 asset (`7d0d3029`) now prepares a
+whole-rule replacement after exact conformance with the complete source tensor
+at Nc=3. A different published decomposition checks its formal continuation.
+Original groups, species alternatives, orders and scalar diagnostics remain
+source-owned. Process composition and consistent HV scheme bindings are still
+required; this is local preparation, not newly certified public LC coverage.
 
 Native point-stage failures (`6b8da611`) now include external states, scale values,
 currents, reduction and assembly. State/scale blocks compact before currents;

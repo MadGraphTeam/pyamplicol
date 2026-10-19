@@ -751,7 +751,8 @@ numbers are never promoted heuristically to $N_c$. A published general-$N_c$
 rule matches the complete active SU(3) tensor and an independent formal rule:
 #link("https://arxiv.org/abs/0903.0356")[Fig. 2
 of 0903.0356] and #link("https://arxiv.org/abs/2007.03713")[Eqs. 5.30–5.38 of
-2007.03713]. Source integration is next.
+2007.03713]. The prepared local asset preserves whole source groups and checks
+exact tensor conformance; process integration is next.
 
 A seven-leg colour network exposes a separate dependency boundary: exact
 SU(3) components close it, but symbolic reduction retains a degree-five
@@ -826,7 +827,9 @@ The generic-any-$n$ consumer (`e4c16a7`) removes the old six-propagator cap. A
 seven-propagator rank-eight numerator cancelling to a triangle master passes
 all carriers and the binary64 fast tensor path. Complete six-propagator QCD
 physics now passes separately; physical seven-propagator coverage remains open.
-Rank above $n+1$ rejects. NinjaRS packaging remains an owner follow-up.
+The selected consumer rejects rank above $n+1$. New owner revision `0d0d7e7`
+passes locked Git dependency resolution; coherent consumer adoption and physics
+checks remain pending, including its changed masters and rank interfaces.
 
 `Runtime.load` and CLI/TOML evaluation retain checked PACBIN instructions, exact
 parameters, per-point scales and every order/pole. Arithmetic binds before
