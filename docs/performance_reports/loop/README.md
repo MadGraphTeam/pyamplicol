@@ -1,6 +1,25 @@
 # Live one-loop report
 
 `benchmarks.pdf` is the rendered report; `benchmarks.typ` is its source.
+
+Current physics coverage includes complete model-rule UV/R2 controls through two
+six-leg processes in double, DoubleFloat and AP80. The provider grid keeps their
+B1/B128, generation and stage timing cells explicitly pending; earlier measured
+observations are unchanged. The six-fermion case exercises eight true
+six-propagator families. Independent references remain binary64; analytic pole,
+exact coupling-update and cross-carrier convergence checks establish the separate
+high-precision evidence.
+
+Native helicity-resolved full-colour output is delivered (`ede24fad`, finite-guard
+follow-up `182f06c3`). Its singleton colour axis is a complete contracted component,
+not a colour-flow decomposition. `.total()` retains every order/pole and the
+original averaging. Public generic generation is undergoing final real-artifact
+validation. Directed correlation/mapping transport, SDK/UMAMI delivery and the
+full rescue contract remain open. Early reducer exceptions retain encoded channel
+IDs; returned statuses and nonfinite guards identify physical point/helicity.
+Rounded-input structural mass-shell binding, two mixed-source chiral-R2 tensor
+correspondences, and the AP CMS zero-width master gate remain visible limitations.
+
 Build with Typst 0.15.1 from this directory:
 
 ```sh
@@ -24,8 +43,8 @@ explicit Gmu helper convention, exact Bose-symmetric counterterm witness
 matching (`fcb5aa8b`), and the adopted NinjaRS `e4c16a7` consumer (`02922947`).
 The seven-propagator rank-eight numerator cancelling exactly to a triangle
 master passes generic double/DoubleFloat/AP80 and binary64 fast-tensor evaluation.
-That removes the old six-propagator consumer cap; higher-multiplicity
-physical validation remains separate. The five-leg counterterm fix recovers
+That removes the old six-propagator consumer cap. Complete six-propagator
+physical validation now passes separately; seven-propagator physical coverage remains open. The five-leg counterterm fix recovers
 39 missed insertions; complete five-leg Born/bare/UV/R2/full components now
 pass in double, DoubleFloat and AP80 at the external reference accuracy
 (`f89249d2`), with separate exact parameter-update controls.
@@ -92,8 +111,8 @@ which preserves full-source species eligibility before bounded pruning, and the
 internal portable checkpoints (`94340682`, extended by `95c4ed50`). Existing
 PACBIN envelopes and validated Rust-owned layouts now cover complete model-rule
 four-quark/top controls and direct gluon controls, including nonzero external
-fields. Fresh source-free views pass in all three carriers. Source-model, formal
-and correlated portable plans, rescue, public artifact activation and standalone
+fields. Fresh source-free views pass in all three carriers. Source-model portable plans and public activation have subsequently been
+validated. Formal/correlated portable composition, complete rescue and standalone
 SDK dispatch remain separate.
 The shared source compiler (`43d22a52`) also prepares complete bounded QCD and
 neutral-current Gmu controls from retained raw models and exact restrictions,
@@ -161,8 +180,9 @@ validated processes. Pending measurements are never inferred from test durations
 Shared typed buffers, saved evaluators, tiled schedules, exact ingress,
 wavefunctions and the polynomial reduction facade now live outside PyO3
 (`d3883dea` through `e90ab9f5`), retaining thin wrappers and validated native
-shapes. These are shared native primitive checkpoints; complete native process
-coordination and SDK activation remain open. Shared timing modules were unchanged.
+shapes. Those primitive checkpoints now underpin complete native source coordination
+and helicity-resolved evaluation. SDK activation remains open. Shared timing
+modules were unchanged.
 
 The seventh row adds real-mass full-EW Gmu `e- e+ -> mu- mu+` through the generic
 source compiler at `85fb0900`, on CPU382. Fresh source capture/complete plan,
@@ -173,8 +193,8 @@ Cepsilon conversion inside the clock. Every timed Born/pole value is checked
 against the independent MadLoop capture. The B1 fresh Recola constructor supplies
 the neutral generation cell; both constructor observations remain in raw data.
 No MadLoop/OpenLoops runtime is inferred. All earlier six cases and provider
-observations remain unchanged. The single provider grid now continues over
-three pages, followed by two LC pages and seven architecture pages. Drivers:
+observations remain unchanged. The measured provider grid continues over three pages, followed by its new
+six-leg rows with timings pending, two LC pages and seven architecture pages. Drivers:
 `workspace/experiments/loop_live_ew.py`,
 `workspace/reference/recola_electroweak_timing.f90`, and
 `workspace/reference/benchmark_recola_electroweak.py`.
@@ -199,12 +219,42 @@ new engine or provider acceptance claim. Driver:
 Source-owned complete gluon plans now pass the internal PACBIN v3 roundtrip
 (`e09f19f5`) in double, DoubleFloat and AP70, with nonzero external-field terms,
 exact parameter overlays, shared ordinary/CT scale snapshots and a fresh process
-without source producers. Native source coordination, public artifact dispatch
-and the remaining portable feature combinations remain open.
+without source producers. Native source coordination and public artifact dispatch are now delivered;
+remaining portable feature combinations are still separate milestones.
 
-The current priority is feature coverage and higher multiplicity, as requested
-on 2026-10-18; further two-to-two optimization is deferred. The next full
-neutral-current `u u~ -> e- e+ g g [QCD]` control has independent MadLoop/Recola
-Born and Laurent agreement at three distinct points and scales (maximum relative
-difference1.69e-12). pyAmpliCol source/kernel validation is still in progress, so
-this is not yet a measured row. Earlier timing data are unchanged.
+The current priority is feature coverage and higher multiplicity; further
+small-process optimization is deferred. Complete full gamma/Z
+`u u~ -> e- e+ g g [QCD]` now passes all carriers at exact on-shell points,
+with 528 loops, 71 families and separate bare/UV/R2/field controls. Rounded
+RAMBO inputs pass double but retain an unresolved DD/AP on-shell branch issue.
+
+Complete pure-QCD `u u~ -> d d~ s s~ [QCD]` (`ec2fb7f5`, author `287df96a`)
+adds 7 Born graphs, 275 loops, 94 families (eight with six propagators), and 341
+CT matches. Three distinct exact-decimal points/scales match MadLoop/Ninja,
+MadLoop/Collier and Recola within 1.53e-11 relative. Every emitted family/order
+status, empty and permuted batches, and separate physical components are checked.
+DD pole/scaling tests pass 3e-25 and AP80 tests pass 1e-60, with relative alpha_s
+updates 2^-70 and 2^-180 respectively. Full DD/AP80 convergence is 6.99e-29;
+this is not an independent high-precision provider comparison. Frozen tests and
+fixtures are in `tests/unit/test_loop_physical_multiquark_six_propagator.py` and
+`tests/fixtures/loop/multiquark-six-propagator.json`.
+
+The new six-fermion provider audit separates two issues. MadLoop/Ninja disagrees
+with agreeing Collier/Recola on a symmetric Gram configuration despite a small
+reported accuracy estimate; pyAmpliCol/NinjaRS matches that pair within 7.71e-14
+in double. Recola already resets Collier per event, but initialization on special
+exact configurations can affect subsequent cached results. Priming with asymmetric
+points restores cached/uncached agreement. Equivalence learning is an inferred
+mechanism, not a fully isolated upstream defect; no provider source was changed.
+The failing external results remain recorded. This audit supplies no evidence
+that previous published timings are invalid, and no timing observations change.
+
+Detailed source/component/status evidence and provider audit remain under
+`workspace/reports/multiquark-sixprop-validation-summary.json`,
+`workspace/reports/multiquark-provider-audit.md` and
+`workspace/reference/runs/multiquark-sixleg-decimal-control/`.
+The next seven-leg six-fermion-plus-gluon catalogue has 751 families, including
+48 seven-propagator families; independent references are being prepared. A graph
+catalogue is not a complete physical validation. These milestones contribute no
+new benchmark measurements. Keep the source, PDF and coverage notes live after
+each accepted feature milestone.

@@ -294,6 +294,82 @@ and $mu_R=1000$ GeV. Its full source counterterms are retained.]
 ]
 
 #pagebreak()
+#section-label[MEASUREMENTS · SAME GRID, NEXT VALIDATED ROWS]
+= Six-leg physics · timings pending
+#note[
+  *New complete controls.* Both processes pass double, DoubleFloat and AP80 with
+  effective-rule $R_2$ and UV. The same provider grid records their validation
+  status below. Runtime, generation and stage measurements remain pending;
+  instrumented correctness durations are not benchmark observations.
+]
+#let pending-provider(status, provider: false, stage-note: none) = table.cell(inset: (x: 7pt, y: 12pt), {
+  set par(justify: false, leading: 0.35em)
+  text(size: 8.4pt, weight: "bold", fill: navy, status)
+  v(9pt)
+  text(size: 7.8pt, fill: grey)[Runtime $B=1,128$]
+  linebreak()
+  text(size: 9pt)[Pending]
+  v(8pt)
+  text(size: 7.8pt, fill: grey)[Generation / setup]
+  linebreak()
+  text(size: 9pt)[Pending]
+  if not provider {
+    v(8pt)
+    text(size: 7.2pt, fill: grey)[Numerator, NinjaRS and masters: pending]
+  } else if stage-note != none {
+    v(8pt)
+    text(size: 7.2pt, fill: grey, stage-note)
+  }
+})
+#v(8pt)
+#table(columns: (1.1fr, 1.13fr, 1.13fr, 1.13fr, 1.13fr), align: top,
+  inset: (x: 5pt, y: 9pt),
+  stroke: (x,y) => (top: if y > 1 { 0.6pt + rule } else { none }, left: if x > 0 and y > 0 { 0.45pt + luma(224) } else { none }),
+  fill: (x,y) => if y == 0 { navy } else { none },
+  table.header(header[Process], header[pyAmpliCol], header[MadLoop], header[Recola], header[OpenLoops]),
+  [#text(size: 10pt, weight: "bold")[$u overline(u)$\ $-> e^- e^+ g g$]
+   #v(5pt) #text(size: 7.6pt, fill: grey)[full $gamma$/$Z$\ 528 loops\ 71 families\ up to 5 propagators]],
+  pending-provider([Validated\ double / DD / AP80]),
+  pending-provider([Matched\ Born and poles], provider: true, stage-note: [Numerator and reduction + masters: pending]),
+  pending-provider([Matched\ Born and poles], provider: true),
+  pending-provider([Not yet matched], provider: true),
+  [#text(size: 10pt, weight: "bold")[$u overline(u)$\ $-> d overline(d) s overline(s)$]
+   #v(5pt) #text(size: 7.6pt, fill: grey)[pure QCD\ 275 loops\ 94 families\ 8 six-propagator families]],
+  pending-provider([Validated\ double / DD / AP80]),
+  pending-provider([Matched\ Ninja and Collier], provider: true, stage-note: [Numerator and reduction + masters: pending]),
+  pending-provider([Matched\ cache checked], provider: true),
+  pending-provider([Not yet matched], provider: true),
+)
+#v(12pt)
+== Independent physics and precision evidence
+Three exact on-shell points and scales per process test Born and every Laurent
+coefficient, with separate bare, UV, $R_2$ and field contributions. DD analytic
+pole and exact coupling-scaling controls pass $3 times 10^(-25)$; AP80 controls
+pass $10^(-60)$. These identities do not turn binary64 provider values into
+high-precision references. In the six-propagator control, full DD/AP80 outputs
+converge within $6.99 times 10^(-29)$ relative. Every emitted reduction channel,
+empty batches and lane permutations are checked.
+
+== Provider cache and exceptional Gram configurations
+The new six-fermion audit found that starting Recola directly on a special
+symmetric configuration can disagree with uncached evaluation at later points.
+Recola already resets Collier per event. An equivalence-cache explanation is
+inferred from its implementation; priming with asymmetric points demonstrably
+restores cached/uncached agreement. No provider source was changed.
+
+At the symmetric control, MadLoop/Ninja disagrees with Collier/Recola despite a
+small reported accuracy estimate. pyAmpliCol/NinjaRS matches the agreeing pair
+within $7.71 times 10^(-14)$ in double. Generic controls match all four runs
+within $1.53 times 10^(-11)$. The exceptional outputs remain recorded; they are
+not hidden inside an average. This new audit supplies no evidence that earlier
+published timing rows are wrong, and their observations are unchanged.
+
+#v(6pt)
+#small[Next: $u overline(u) -> d overline(d) s overline(s) g$ has a graph-only catalogue
+with 751 families, including 48 seven-propagator families. Independent references
+are being prepared; complete pyAmpliCol physics is not yet validated.]
+
+#pagebreak()
 #section-label[MEASUREMENTS · MATCHED LEADING COLOUR]
 = Leading colour and its full-colour counterpart
 #note[
@@ -698,77 +774,65 @@ other features remain acceptance gates.
 #pagebreak()
 #section-label[ARCHITECTURE · NATIVE BATCHES AND PRECISION]
 = One numerical path, three real carriers
-The internal numerical core uses binary64, DoubleFloat and arbitrary-precision
-carriers throughout coefficient evaluation, kinematics, NinjaRS reduction,
-scalar masters, counterterms and contractions. It does not compute a binary64
-answer and promote it afterward. Fixed-carrier precision metadata follows the
-actual numerical types; arbitrary precision carries its requested precision.
+Binary64, DoubleFloat and arbitrary precision run through coefficients, kinematics,
+NinjaRS, scalar masters, counterterms and contractions. Results are not computed
+in double and promoted. Fixed-carrier metadata describes the actual type;
+arbitrary precision carries its requested precision.
 
-Exact decimal or rational input is parsed before carrier conversion. S-matrix
-and admitted on-shell invariants are constructed through the exact input boundary;
-source mass/coupling formulas are evaluated natively in the chosen carrier.
-Controls with differences below binary64 resolution verify that DoubleFloat
-and arbitrary precision retain the input information through the output.
-Source scalar callbacks and their diagnostics use those same carriers.
+Exact decimal input and rational model coefficients precede conversion. Source
+mass/coupling formulas and diagnostics use the chosen native carrier. Controls
+with changes below binary64 resolution test that information through the output.
+Rounded physical input still needs a consistent structural on-shell contract.
 
-== Batching is an execution contract
-Points, helicities and coefficient components have explicit ordered layouts.
-Native buffers retain original point identities through compaction, tail batches,
-failure masks and result scatter. Changing sizes, empty batches and repeated
-calls are covered. Headline timings use Python to coordinate native batch plans.
-The shared Rust coordinator now executes complete validated QCD plans in one call,
-including source-model gluon controls checked in all three carriers.
+== Native batches, including resolved helicities
+Ordered point, helicity and coefficient layouts preserve lane identities through
+tails, compaction and scatter. The shared Rust coordinator executes complete
+validated source plans in one call. Kernels use reusable native row tiles; the
+present 16-row choice is not a capacity limit. Binary64 may use SymJIT; DD/AP
+remain native batches without an unsupported SIMD claim.
 
-The coefficient scheduler uses bounded row tiles and reusable scratch storage.
-Its present 16-row default is a measured development choice, not a universal
-optimum. Dependency evaluators own their arithmetic workspaces. Binary64 can
-use SymJIT; high-precision paths remain native batches without an unsupported
-SIMD claim. Public standalone SDK integration is a separate unfinished layer.
+Native resolved output now preserves point, squared order, helicity, one
+contracted full-colour component and epsilon axes. Single-helicity Born, family
+and UV/$R_2$ projectors execute in point-by-helicity batches; physical kinematics
+and source scalars are shared. Original averaging is retained, so `.total()`
+reconstructs inclusive values. Source gluon checks pass all carriers, including
+per-helicity poles; an independent mixed-order control checks every order column.
+The singleton colour axis is not a flow decomposition or a probability.
 
-== Reducer and master interfaces
-NinjaRS receives the polynomial layout, routed denominator data, exact kinematic
-invariants and carrier-appropriate inputs. The adapter retains weighted rank:
-$mu^2$ counts as two powers of loop momentum. Separate explicit-epsilon sectors
-reduce independently and combine by Laurent multiplication. A newer dense-$mu$
-numerator adapter is available as an additive internal option; the headline
-timings specify the actual `fast` engine they use.
+== Reduction and exact saved plans
+NinjaRS receives routed denominators, polynomial coefficients, exact invariants
+and carrier-appropriate inputs. Weighted rank counts $mu^2$ twice; explicit
+epsilon sectors combine by Laurent multiplication. The additive dense-$mu$
+adapter does not change the engine identified by each timing record.
 
-The staged generic-any-$n$ consumer (`e4c16a7`) removes the old six-propagator
-cap. A seven-propagator rank-eight numerator cancelling to a triangle master
-passes generic double/DD/AP80 and binary64 fast-tensor evaluation; broader
-physical multiplicity remains a separate gate. Rank above $n+1$ still rejects.
+The generic-any-$n$ consumer (`e4c16a7`) removes the old six-propagator cap. A
+seven-propagator rank-eight numerator cancelling to a triangle master passes
+all carriers and the binary64 fast tensor path. Complete six-propagator QCD
+physics now passes separately; physical seven-propagator coverage remains open.
+Rank above $n+1$ rejects. NinjaRS packaging remains an owner follow-up.
 
-`Runtime.load` and CLI/TOML evaluation use checked schema-v3/PACBIN artifacts and
-the Rust coordinator. Source gluon controls pass double/DD/AP70, independent
-Born/double-pole checks and native lifecycle tests. Load-time arithmetic precedes
-parameter binding: the CLI accepts numeric `aS=1e400` in AP70. Decimal JSON inputs,
-per-point scale files and all order/pole axes survive text and JSON output.
+`Runtime.load` and CLI/TOML evaluation retain checked PACBIN instructions, exact
+parameters, per-point scales and every order/pole. Arithmetic binds before
+parameters, including `aS=1e400` in AP70. The public slice uses full colour,
+model-rule $R_2$ and UV, with explicit positive $mu_R^2$. Generic generation awaits
+final real-artifact validation. Directed correlation/mapping transport, LC/FFT,
+complete rescue and SDK/UMAMI remain separate work.
 
-The public slice requires full-colour inclusive model-rule $R_2$ plus UV and
-explicit positive scalar or per-point $mu_R^2$. Generation must retain exact
-source, completion and scheme metadata; model names confer no certification.
-Generation commands, resolved/correlated output, LC/FFT, rescue and SDK/UMAMI remain open.
-NinjaRS packaging remains an owner follow-up.
-
-== Success, accuracy and rescue are different facts
-A reducer's success flag is not an accuracy certificate. Native checks reject
-nonfinite input, state, coefficient and counterterm values, preserve the original
-failed point identity, and permit an explicit partial-result contract. Optional
-cross-precision checks compare complete outputs and can rescue selected failed
-or disagreeing points at higher precision without changing $R_2$ strategy.
-
-The result records requested/evaluated precision, strategy, status and available
-agreement evidence. Failed points cannot silently appear as zero or be declared
-accurate. Existing bounded rescue controls are not a universal stability policy:
-threshold choices, complete feature composition and adversarial tests remain
-open. None of the headline runtime cells enables rescue or cross-precision
-verification, and each is labelled accordingly.
+== Successful completion is not established accuracy
+Native guards reject nonfinite stages and retain failed point identities.
+Internal bounded cross-precision checks and subset rescue recompute complete
+outputs without switching $R_2$ strategy. Their existence does not certify every
+physical domain or the public rescue contract. Diagnostics separate precision,
+strategy, status and agreement evidence. No headline timing enables rescue or
+cross-precision verification.
 
 #note[
-  *Known numerical gate.* An equal-value, differently tracked arbitrary-precision
-  mass construction exposed a scalar-box branch discrepancy in a CMS zero-width
-  control. This is retained as a dependency-owner accuracy issue. Extra digits
-  alone are not evidence that a branch-sensitive result is correct.
+  *Known numerical gates.* Rounded input can select different massless-integral
+  branches in DD/AP despite success. Exact structural mass-shell bindings are in
+  progress; no numerical snapping is proposed. A separate AP CMS zero-width box
+  discrepancy remains with the dependency owner. Resolved finite guards identify
+  physical point/helicity; early reducer exceptions still expose encoded channel
+  IDs pending structured failure/rescue context.
 ]
 
 #pagebreak()
@@ -845,11 +909,11 @@ complete answer cannot conceal a wrong component.
 
 #tab((1.4fr, 2.6fr), left-columns: (0, 1),
   table.header(th[Area], th[Current boundary]),
-  [Complete QCD], [Two-to-two controls and the five-leg quark-to-three-gluon process pass all three carriers. The six-leg dilepton-plus-two-gluon source plan now passes double/DD/AP80 at exact on-shell points; timing remains pending.],
+  [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all three carriers. The six-fermion case includes eight actual six-propagator families; new timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
-  [Public delivery], [Runtime.load and CLI/TOML preserve exact inputs, all orders/poles and scale files. Explicit model/scheme declarations are integrated; generic generation, resolved/correlated transport and SDK/UMAMI remain open.],
+  [Public delivery], [Native ordinary and helicity-resolved full-colour output retain every order/pole. Generic generation awaits final real-artifact checks; directed correlation, mapping and SDK/UMAMI transport remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
@@ -859,21 +923,18 @@ Matched channels include gluon jets, heavy quarks and lepton pairs plus jets.
 Five-final-parton gluon channels require MadLoop/Recola controls; unavailable
 public OpenLoops channels are not invented for comparison.
 
-The complete $gamma$ and $Z$ contributions to $u overline(u) -> e^- e^+ g g$ pass
-double, DoubleFloat and AP80 at three exact on-shell rational points: 16 Born
-graphs, 528 loops, 71 families, 406 local counterterms and 96 field insertions,
-with normalization $1/72$. Complete and separate bare/UV/$R_2$/field components
-match binary64 MadLoop/Recola within $2 times 10^(-8)$ relative, with a separate
-Born-scaled tolerance near zero. This is not a high-precision provider comparison.
-Exact double-pole and coupling-scaling identities pass $3 times 10^(-25)$ in DD
-and $10^(-60)$ in AP80. Double also passes three distinct RAMBO points, with
-maximum full-result relative difference $6.56 times 10^(-13)$.
-Rounded RAMBO inputs still expose a DD/AP on-shell classification discrepancy;
-input handling and rescue remain open. No timing row is added before benchmarking.
+Full $gamma$/$Z$ $u overline(u) -> e^- e^+ g g$ passes all carriers at three exact
+on-shell points: 16 Born graphs, 528 loops, 71 families, 406 local counterterms,
+96 field insertions and normalization $1/72$. Separate components match binary64
+references; double also passes distinct RAMBO points within $6.56 times 10^(-13)$
+relative. Rounded DD/AP input remains an open on-shell/rescue gate.
 
-A seven-propagator algebraic anchor passes all carriers; required $2 -> 5$
-physics, broader portable plans, FFT, correlation/mapping transport and model
-coverage remain open. Rank above the reducer's $n+1$ domain must reject.
+The six-fermion control adds 7 Born graphs, 275 loops, 94 families and 341 CT
+matches, with normalization $1/36$. Its complete components pass all carriers;
+page 4 records precision evidence and the independent cache/Gram audit. Both
+six-leg timing rows remain pending. Full-source mixed QCD/EW four-quark completion
+still needs two source chiral-$R_2$ tensor correspondences. Required $2 -> 5$
+physics, FFT, correlation/mapping transport and broader model coverage remain open.
 
 == Independent evidence and reproducibility
 `data/measurements.json` retains the samples, revisions and cold times behind the
