@@ -411,3 +411,32 @@ factors, then compares their interference using reference Born values. The three
 heavy-quark groups and four external legs retain their source multiplicity;
 mass-zero branches are evaluated by the native conditional evaluator. This is
 an independent field-factor control, not a full amplitude calculation.
+
+## Flavour-changing FFV and full-source mixed-order control
+
+The local charged-current fixture can be regenerated independently with:
+
+```bash
+python tools/loop_reference/charged_ffv_oracle.py \
+  --ufo "$LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0/models/loop_sm" \
+  --madgraph "$LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0" \
+  --build-dir "$LOOP_REFERENCE_ROOT/builds/charged-ffv-local" \
+  --output "$LOOP_REFERENCE_ROOT/runs/charged_ffv_local.json"
+```
+
+The script generates unchanged ALOHA routines. Independent complex Yukawas and
+unequal masses feed two off-shell scalar/fermion currents into the chiral vector
+vertex. `charged_ffv_local.json` contains those current components and the final
+contraction with its common ALOHA `-i` removed. It is a local tensor/frame control,
+not a model or dimensional gamma-five certificate.
+
+`uudd_mixed_sm_qcd.json` is a separate complete MadLoop 3.7 control for
+`u u~ > d d~ QCD<=4 QED<=4 [virt=QCD]`, with native
+`Process.split_orders=['QCD','QED']`. It uses `loop_sm-full`, Feynman gauge,
+unrestricted Wolfenstein CKM, the explicit parameters in the fixture, native
+Laurent outputs and initial spin/colour averaging 1/36. All widths and light
+fermion masses/Yukawas are zero; the top mass is 173 GeV and its independent
+Yukawa mass is 172 GeV. Helicity filtering is disabled and `ImprovePSPoint=-1`
+preserves the supplied exact points. It includes all source W/Z/photon/gluon
+Born diagrams and QCD loop corrections. It does not establish joint QCD+QED
+correction coverage or any performance target.
