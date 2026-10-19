@@ -842,7 +842,7 @@ Native guards retain original point IDs and exact snapshots. Public evaluation
 rejects unrecovered failures by default. A policy configured before binding can
 retain exact inputs after numerical overflow if a higher carrier succeeds.
 Default binding stays eager; invalid inputs and failed updates keep atomic rollback.
-Source admission does not establish amplitude accuracy. Two complete higher
+Source admission does not establish accuracy. For rescue, two complete higher
 results must agree across components, orders, poles, helicities and both directed
 terms, followed by checked output conversion. Attempt histories survive and
 the $R_2$ strategy stays fixed.

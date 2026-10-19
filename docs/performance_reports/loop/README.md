@@ -498,8 +498,8 @@ real/complex declarations and fixed ties are validated before retry; only an
 explicit nonfinite numerical realization can be admitted through a configured
 higher carrier. The published owner retains the original exact declaration and
 revision, with failed numerical buffers inaccessible. Invalid or unadmitted
-updates retain atomic rollback; snapshots and arithmetic rebind preserve owner
-identity and effective policy. Complete evaluation still requires two successful
+updates retain atomic rollback; snapshots and arithmetic rebind preserve exact
+source state, snapshot ownership and effective policy. Rescue still requires two successful
 higher results and checked conversion, retaining original IDs and per-attempt
 diagnostics. Raw result methods cannot silently discard those diagnostics.
 
