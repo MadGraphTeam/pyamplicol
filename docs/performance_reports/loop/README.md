@@ -11,6 +11,18 @@ six-propagator families. Independent references remain binary64; analytic pole,
 exact coupling-update and cross-carrier convergence checks establish the separate
 high-precision evidence.
 
+The shared exact dual-Born schedule is validated in double, DoubleFloat and
+arbitrary precision. It computes separate direction/order/loop-term weight banks
+before selecting each denominator family's columns, with resolved and spin-source
+banks kept distinct. Native PACBIN comparisons with the original bilinear schedule
+pass every complete component and both directed terms, failure isolation and
+original-input AP60/AP80 rescue (14 tests); graph-free Python binding adds three
+carrier checks. Three further native tests cover actual gg LC with six signed
+Born components and 16 helicities in all carriers, empty/tail rows and inclusive
+reconstruction (`4b1eb550`). Nine focused mixed-order/projector controls and the retained
+physical photon producer pass separately. The new feature snapshot has not been
+retimed: every timing cell retains its recorded revision and original schedule.
+
 The photon source milestone (`d9597cec`, `a52fea60`) adds fresh public `u u~ -> a g` and crossed
 `u a -> u g` QCD artifacts, with photon/gluon/joint source classes owned by the
 actual model SourceIR. Complete ordinary and transverse-complex singleton
@@ -35,7 +47,8 @@ publication now also passes a fresh DY artifact in all three carriers
 full-colour component; `.total()` preserves orders, poles and original averaging. The observed 215.94 s is a correctness-test duration, not a
 benchmark. Public directed generation and grouped complex SDK transport now pass. Public
 joint spin ingress and exact identity-order flavour grouping now also pass;
-spin/LC/NLC mapping composition and nonidentity permutations remain follow-ups. Fresh installed gg
+full-colour d/s grouping additionally composes with singleton/joint spin as
+described below. LC/NLC mapping and nonidentity permutations remain follow-ups. Fresh installed gg
 LC publication now passes; DY LC requires the isolated PR 155 Community overlay,
 as detailed below. Ordinary installed native/SDK evidence is also recorded below.
 The subsequent signed-LC source milestone adds six canonical Born components
@@ -50,7 +63,7 @@ all carriers. Default evaluation performs no hidden precision retry.
 Structural mass-shell binding (`e070f5fe`) fixes the demonstrated rounded-input
 DD/AP branch discrepancy in the six-leg control, with all components and carriers
 checked. General input-consistency diagnostics, global source-owner binding
-overflow and the separate AP CMS zero-width master gate remain open. Charged chiral R2 source rules and
+overflow and normal adoption of the isolated AP CMS master fix remain open. Charged chiral R2 source rules and
 full-CKM mixed-Born QCD corrections now pass (`886ffd74`); this is not a joint
 QCD/EW correction claim.
 
@@ -96,8 +109,9 @@ new FeynKit and oneloopmaster pins. The isolated consumer now compiles and passe
 the seven existing anchors and the new profiling callback control. Saved complete
 six-propagator physics also passes in double, DoubleFloat and AP80; the seven-line
 control passes all four generic/fast configurations too. All focused adoption
-gates are complete and integrated. The AP zero-width complex-mass reproducer still
-disagrees across numerically equivalent mass constructions. The selected
+gates are complete and integrated. The normal pinned AP zero-width complex-mass
+reproducer disagrees across equivalent mass constructions; the isolated PR 9
+override now passes the scalar and complete source controls described below. The selected
 retained seven-leg producer remains on `e4c16a7`; its installed dependencies were
 not replaced during construction. Rank-n+2 callbacks and master behavior changed.
 The obsolete source n+1 ceiling is now removed (`9878d8ea`): the authoritative
@@ -579,8 +593,21 @@ adapter proofs, separate from the earlier installed ordinary wheel.
 Public flavour grouping compares independently generated source owners and exact
 rule/parameter ties before saving the admission in the existing immutable plan.
 Full-colour fixed external ordering passes inclusive/resolved and complex directed
-outputs in all carriers. Spin/LC/NLC requests retain independently generated
-processes and report that outcome. No generation-time speedup is claimed.
+outputs in all carriers. The new public d/dbar→gg and s/sbar→gg proof additionally
+admits ordinary, singleton legs `(3,)`, `(4,)` and joint `(3,4)` sources with four
+identity/Casimir/ordered/swapped histories. Actual owner SourceIR, phases and
+spectator/history catalogues are checked; selected vector species stay fixed.
+Five physical/public tests pass in double, DoubleFloat and AP70, covering every
+Born/order/pole/bare/UV/R2/field component and both complex directions, exact
+scalar/source updates, empty batches, original IDs, clear and AP60/AP80 subset
+rescue. Cold selected-vector species corruption is rejected. Other unproved
+flavour relations, LC/NLC mapping and nonidentity permutations retain independent
+generation. The safe Rust SDK client also passes selected-member evaluation,
+reversed unequal joint source labels, rejection and owned results. Evidence is
+recorded in `docs/development/LOOP_FLAVOR_TRANSPORT.md` and workspace
+`reports/loop-spin-flavor-acceptance.md` (authors `b7872a17`, `780f65ed`, `a96a6f09`).
+No generation-time speedup is claimed; the 847.63 s correctness run
+includes construction and is not a benchmark measurement.
 
 
 The native rectangular-FFT prerequisite (`0f450dc8`, author `0b1d91fc`) now
@@ -593,10 +620,24 @@ The arbitrary native degree-ten cap was removed in favour of actual checked
 factorial/u32 storage admission; separate old tree wire/UI bounds are unchanged.
 
 This is a mathematical execution primitive, not public loop FFT acceptance.
-Cold actual-tensor orbit certificates now pass six full/LC/NLC controls, including
-noncentral complex S3 kernels and residual aliases (`0039536e`). Actual process
-producer integration, shared dual-Born-weight scheduling, saved plans and
-physical/precision composition remain required. Exact high-precision direct
-contraction is retained; no binary64 transform is promoted into DD/AP. See
+Cold actual-tensor orbit certificates pass six full/LC/NLC controls, including
+noncentral complex S3 kernels and residual aliases (`0039536e`). Shared exact
+dual-Born scheduling and its saved/native transport now pass (`a881ece1`,
+`0aa1d8b8`, `3f65915f`, `4b1eb550`). Actual physical orbit attachment, Fourier execution and
+public policy remain required. All carriers currently use the exact direct
+weights; no binary64 transform is promoted into DD/AP. See
 `docs/development/LOOP_RECTANGULAR_FFT.md`. The report remains 13 pages and all
 measured tables/data are unchanged. Test duration is not a benchmark result.
+
+[Scalar-master PR 9](https://github.com/alphal00p/oneloopmaster/pull/9) fixes the
+demonstrated signed branch-discontinuity defect. An isolated transitive override,
+with normal source-identity staging, passes the NinjaRS AP80 exact-input scalar
+gate (including the opposite sheet and independent real128 anchor) and a complete
+98-graph zero-width `e- e+ -> mu- mu+` source control at three retained points.
+Every Born/bare/UV/R2/total Laurent component matches the retained independent
+MadLoop 3.7 optimized zero-width reference at its binary64 accuracy; this is not
+an 80-digit physical oracle. Evidence is retained in workspace
+`reports/cms-provider-candidate-consumer-validation.md` and
+`fixtures/cms-provider-candidate/`. Normal dependency
+adoption and full CMS scheme certification remain pending; pyAmpliCol's normal
+dependency pins are unchanged. This isolated physical pass is not an adoption claim.

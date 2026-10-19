@@ -243,7 +243,8 @@ Instrumented stage lines: $B=32$ for two-to-two, $B=128$ for five-leg; no stage 
 #v(7pt)
 #small[Original five processes retain revision #data.revision; the five-leg row uses
 f89249d2. These are complete model-rule development observations; see the continued
-grid and measurement boundaries on the next page.]
+grid and measurement boundaries on the next page. The new shared-weight feature
+snapshot has not been retimed; these cells retain their original schedules.]
 
 #pagebreak()
 #section-label[MEASUREMENTS · SAME GRID, CONTINUED]
@@ -658,11 +659,11 @@ remain intact. This separates a numerical reuse opportunity from a physical
 multiplicity or symmetry factor.
 
 == Contract before reducing when linearity permits
-For an interference observable, Born amplitudes and the rectangular colour
-weights can multiply numerator coefficients before integration. Compatible
-graphs, helicities and colour terms then share a reduction within their family
-and coupling sector. The reducer sees the coefficient combination needed by
-the observable, rather than every independent loop amplitude.
+One exact dual-Born map now computes complex weights once per point/helicity or
+source row. Its columns retain direction, squared order and original loop term.
+Families select these columns independently of colour orbits, then assemble
+routed numerator coefficients before reduction. Resolved component and directed
+banks preserve their own metrics; UV/$R_2$/field completion is unchanged.
 
 Complex weights are retained until the correctly directed bilinear is formed.
 Taking a real part too early loses information needed by colour histories and
@@ -760,10 +761,9 @@ Each direction is integrated before the saved final conjugation. Separate cross
 terms enter precision verification; a cancellation cannot conceal a bad direction.
 Partial failures and subset rescue preserve physical IDs and history labels.
 
-Public Python/CLI histories now pass fresh quark-scattering publication.
-Identity, Casimir and nontrivial $T_1 dot T_2$ Born/Laurent values match binary64
-Recola at two points/scales in double, DD and AP70. This checks provider agreement,
-not 70 digits or complex two-emission histories.
+Public quark-scattering identity, Casimir and $T_1 dot T_2$ Born/Laurent values
+match Recola at two points/scales in double, DD and AP70. This is binary64 provider
+agreement; complex two-emission histories use separate controls.
 
 Fresh singleton/joint sources publish for $u overline(u) -> g g$, and now
 $u overline(u) -> gamma g$ and crossed $u gamma -> u g$. Model-owned source
@@ -774,16 +774,17 @@ transverse complex vectors; arbitrary literal vectors use recurrence/replay
 controls without projection. Massive-vector and LC/NLC spin composition remain open.
 
 == Exact mappings and the rectangular FFT boundary
-Public $u overline(u) -> d overline(d)$ and $u overline(u) -> s overline(s)$ share an
-immutable plan after independent generation and exact rule/parameter proofs.
-All carriers, resolved axes, complex histories and updates agree. No generation
-speedup is claimed; permutations and spin/LC/NLC composition remain open.
+Exact flavour reuse already preserves resolved four-quark output and complex
+histories. It now composes with singleton/joint spin for $d overline(d) -> g g$ and
+$s overline(s) -> g g$ after paired source/phase proofs. All carriers, both directions,
+rescue and Rust SDK pass. LC/NLC mapping and nonidentity permutations remain open;
+no generation speedup is claimed.
 
-Native FFT’s batched adjoint/inverse pass 16 controls, including complex
-$13 times 20$ operators and both residual cross terms. Six cold tensor-certificate
-tests cover noncentral complex $S_3$ kernels, full/LC/NLC and residual aliases.
-Process-producer integration, shared Born weights and public FFT remain open.
-No speedup is claimed; higher precision retains exact direct contraction.
+Native FFT adjoint/inverse pass 16 controls; six cold tensor-certificate checks
+cover noncentral complex $S_3$ kernels, full/LC/NLC and residual cross terms.
+Shared exact Born weights pass source/native/rescue comparisons with the original
+schedule, including gg LC’s six signed components in all carriers. Physical orbit
+attachment and public FFT remain open; all weights are still exact direct. No retiming.
 
 #pagebreak()
 #section-label[ARCHITECTURE · NATIVE BATCHES AND PRECISION]
@@ -821,17 +822,16 @@ adapter does not change the engine identified by each timing record.
 
 Consumer `0d0d7e7` uses self-contained Git pins and passes saved six-propagator
 physics and seven-line rank-eight controls in all carriers. Its reducer owns
-rank admission at generation and loading. A saved rank-four bubble passes all
-carriers; unsupported rank rejects at binding. Complete seven-line physics,
-general higher-rank models and AP CMS zero-width accuracy remain open.
-The retained producer stays on `e4c16a7`.
+rank admission; a saved rank-four bubble passes all carriers. Complete seven-line
+physics and general higher-rank models remain open. The retained producer stays
+on `e4c16a7`. #link("https://github.com/alphal00p/oneloopmaster/pull/9")[Scalar-master PR 9]
+passes isolated AP80 scalar and complete zero-width CMS controls. Normal pins
+are unchanged; dependency adoption and full CMS scheme certification remain open.
 
-The ordinary wheel (`bc78edbd` snapshot) uses `_rusticol._loop` and one tree/virtual
-archive. Installed tree, LC 16×6 output, DD agreement and no-Python Rust checks pass.
-Fresh gg LC/NLC generation validates two points transactionally and reloads in AP70;
-DY LC separately requires the isolated PR 155 Community overlay. These correctness
-tests add no timing measurements. Later rank, directed execution and ID changes have
-separate source/native gates.
+The installed `bc78edbd` wheel passes tree, LC 16×6, DD and no-Python Rust checks.
+Fresh gg LC/NLC publication validates two points and reloads in AP70; DY LC needs
+the PR 155 Community overlay. Later rank, directed execution and ID changes have
+separate source/native gates; these checks add no timing measurements.
 
 Transactional API export provides six installed mixed-order resolved clients.
 New source-built Rust/C/C++/Fortran and versioned UMAMI grouped clients preserve
@@ -840,13 +840,12 @@ and owned diagnostics. Source layouts, empty/partial batches and rescue pass.
 Fresh correlated CLI uses a matching developer build, separate from installed `bc78`.
 
 == Successful completion is not established accuracy
-Native guards isolate state, scale, current, reduction and assembly failures with
-physical identities. Successful whole points remain compact; late failures replay
-survivors from original inputs under one exact parameter snapshot. Public
-evaluation rejects failures by default. An explicit stability policy batches
-original rows at higher precision under the same snapshot. Rescue requires two
-higher results to agree and checked conversion to the requested output carrier;
-all components, orders, poles and requested helicities enter the comparison.
+Native guards isolate failures with physical identities, now including shared
+weights. Successful whole points remain compact; late failures replay original
+inputs under one exact parameter snapshot. Public evaluation rejects failures
+by default. Opt-in rescue batches original rows at higher precision; two higher
+results must agree before checked conversion to the requested carrier.
+All components, orders, poles and requested helicities enter the comparison.
 Directed calls also retain each complex cross term and history independently.
 Per-attempt histories distinguish failure, agreement and unresolved accuracy.
 Empirical agreement is not independent physics proof. No headline timing enables
@@ -858,8 +857,8 @@ rescue or verification, and the selected $R_2$ strategy stays fixed.
   rounded inputs, exact controls and lane permutations now pass all carriers.
   Opt-in public verification/rescue now passes eight native controls across all
   carriers. Global source-owner binding overflow remains unrecovered. General
-  input-consistency diagnostics, broader domain certification and a separate AP
-  CMS zero-width master gate remain open.
+  input-consistency diagnostics, broader domain certification and production
+  adoption of the tested CMS master fix remain open.
 ]
 
 #pagebreak()
@@ -936,8 +935,8 @@ external-field UV and $R_2$, testing components before their complete sum.
   table.header(th[Area], th[Current boundary]),
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
-  [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
-  [Correlations / mapping], [Public directed/joint-spin generation and SDK ingress pass, including outgoing/incoming photons in all carriers. Recola checks dipoles and transverse singleton sources. Exact flavour reuse preserves resolved/complex histories; spin/LC/NLC composition remains open.],
+  [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
+  [Correlations / mapping], [Public directed/joint-spin delivery includes incoming/outgoing photons. Exact d/s flavour reuse now composes with singleton/joint spin and both complex directions in all carriers. LC/NLC mapping and nonidentity permutations remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs the PR 155 overlay. Six API clients agree on mixed-order resolved output. Native ID/failure/verification checks pass.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
@@ -970,8 +969,8 @@ broader spin/colour/mapping composition and general-model coverage remain open.
 `data/measurements.json` retains the samples, revisions and cold times behind the
 unchanged tables; `tools/loop_reference/` contains frozen points and drivers.
 Timing covers complete `evaluate_ordered_native` calls, excluding checks and
-output conversion. New photon-source, delivery and six-leg controls add no timing
-measurements; photon generation and B1/B128 runtime timings remain pending.
+output conversion. New photon, delivery, six-leg and shared-weight checks add no
+timings. The new schedule is unretimed; original timing identities are retained.
 
 Providers are MadLoop 3.7.0, Recola2 2.3.0 with matched SM/Collier, and OpenLoops
 2.1.5. Tables use matched-host control timings with input and rescue asymmetries
