@@ -472,9 +472,9 @@ external helicities are summed. Two final gluons include $1/2$, three include $1
 = Preserve the model before lowering it
 Loop models contain information that a tree-only loader can discard:
 Laurent-valued parameters and couplings, UV and $R_2$ categories, loop-particle
-groups, external-field factors and duplicate vertex names. The new raw model
-retains positional declaration identities and these fields before constructing
-the exact scalar and covariant-kernel representations.
+groups, external-field factors and duplicate vertex names. The upstream loader's
+raw source model retains these fields and positional identities in ordinary model
+JSON. pyAmpliCol consumes it through a thin adapter, with one stored source copy.
 
 #v(5pt)
 #grid(columns: (1fr, auto, 1fr, auto, 1fr), gutter: 6pt,
@@ -540,9 +540,9 @@ convention. The default preserves the source helper; either choice retains
 the original model and does not certify complete CMS physics.
 
 #note[
-  *Loader repair.* Upstream 1.0.1 (`67c7a1b`, main) restores Python `sqrt (2)`
-  call parsing. Independent SM audits found no affected packaged sources or
-  derived assets. PyPI publication awaits the loop-UFO metadata audit.
+  *Loader #link("https://pypi.org/project/ufo-model-loader/1.0.1/")[1.0.1 is published].* Lossless source import, JSON and finite tree projection pass
+  QCD/EW controls. `sqrt (2)` and real/imaginary parsing are repaired; SM assets
+  need no changes. pyAmpliCol uses the released source API.
 ]
 
 #pagebreak()
@@ -845,7 +845,7 @@ complete answer cannot conceal a wrong component.
 
 #tab((1.4fr, 2.6fr), left-columns: (0, 1),
   table.header(th[Area], th[Current boundary]),
-  [Complete QCD], [Internal two-to-two DY, four-quark, top-pair, quark/gluon and gluon controls; all three carriers. The complete five-leg quark-to-three-gluon control passes after the counterterm witness fix and now has a separate measured row.],
+  [Complete QCD], [Two-to-two controls and the five-leg quark-to-three-gluon process pass all three carriers. The six-leg dilepton-plus-two-gluon source plan now passes double/DD/AP80 at exact on-shell points; timing remains pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
@@ -854,38 +854,36 @@ complete answer cannot conceal a wrong component.
 )
 
 == Required multiplicity and acceptance
-The target includes selected $2 -> 5$ processes, with $2 -> 6$ as a stretch
-goal. The common-provider set includes gluon jets, heavy-quark plus jets,
-lepton-pair plus jets, and heavy-quark/lepton-pair production with a jet.
-Five-final-parton gluon channels also require MadLoop/Recola controls; an
-unavailable public OpenLoops channel is not invented for comparison.
+Selected $2 -> 5$ processes remain mandatory; $2 -> 6$ is a stretch goal.
+Matched channels include gluon jets, heavy quarks and lepton pairs plus jets.
+Five-final-parton gluon channels require MadLoop/Recola controls; unavailable
+public OpenLoops channels are not invented for comparison.
 
-The first complete $u overline(u) -> e^- e^+ g g$ double-precision comparison
-passes at three points: 16 Born graphs, 528 loops, 71 families, 406 local
-counterterms and 96 field insertions, with normalization $1/72$. The maximum
-full-result relative difference is $6.56 times 10^(-13)$ against the matched
-MadLoop/Recola controls; separate local components also pass. DD/AP on rounded
-RAMBO inputs exposes an on-shell classification discrepancy; exact-point checks
-are underway. Six-leg high precision is *not yet validated*. No timing row is
-added before a proper benchmark.
+The complete $gamma$ and $Z$ contributions to $u overline(u) -> e^- e^+ g g$ pass
+double, DoubleFloat and AP80 at three exact on-shell rational points: 16 Born
+graphs, 528 loops, 71 families, 406 local counterterms and 96 field insertions,
+with normalization $1/72$. Complete and separate bare/UV/$R_2$/field components
+match binary64 MadLoop/Recola within $2 times 10^(-8)$ relative, with a separate
+Born-scaled tolerance near zero. This is not a high-precision provider comparison.
+Exact double-pole and coupling-scaling identities pass $3 times 10^(-25)$ in DD
+and $10^(-60)$ in AP80. Double also passes three distinct RAMBO points, with
+maximum full-result relative difference $6.56 times 10^(-13)$.
+Rounded RAMBO inputs still expose a DD/AP on-shell classification discrepancy;
+input handling and rescue remain open. No timing row is added before benchmarking.
 
 A seven-propagator algebraic anchor passes all carriers; required $2 -> 5$
 physics, broader portable plans, FFT, correlation/mapping transport and model
 coverage remain open. Rank above the reducer's $n+1$ domain must reject.
 
 == Independent evidence and reproducibility
-`data/measurements.json` retains the five timing samples, revisions, counts and
-cold times behind the unchanged headline tables. Frozen points and native
-reference drivers live in `tools/loop_reference/`. Timed calls use the complete
-internal `evaluate_ordered_native` path, excluding checks and output conversion.
-New delivery tests and six-leg validation are not additional timing measurements.
+`data/measurements.json` retains the samples, revisions and cold times behind the
+unchanged tables; `tools/loop_reference/` contains frozen points and drivers.
+Timing covers complete `evaluate_ordered_native` calls, excluding checks and
+output conversion. New delivery and six-leg tests add no timing measurements.
 
-Provider controls use MadLoop 3.7.0, Recola2 2.3.0 with its matched SM/Collier
-model, and OpenLoops 2.1.5. Their independent component tests establish the
-bounded normalization comparisons; only the fresh matched-host control timings enter
-the current performance table, with their input and rescue asymmetries declared. This report follows the visual structure of
-the NinjaRS benchmark while measuring a different object: a complete physical
-interference, not a single diagram and helicity.
+Providers are MadLoop 3.7.0, Recola2 2.3.0 with matched SM/Collier, and OpenLoops
+2.1.5. Tables use matched-host control timings with input and rescue asymmetries
+declared. Their measured object is complete physical interference.
 
 #small[
   Further reading: repository `docs/development/LOOP_MODEL_IR.md`,
