@@ -495,13 +495,13 @@ expression preparation. Source helpers retain their branches; native evaluation
 checks each value and active diagnostic. A nonfinite or unsupported branch cannot
 silently succeed. Per-point scales reach the same counterterm scalar program.
 
-Request-scoped lowering can omit a basis only when exact declared coupling
-bounds prove it irrelevant. The full source and species-correction eligibility
-remain retained; pruning does not certify a model or its counterterm completion.
-The shared source compiler now prepares bounded complete QCD and neutral-current
-Gmu controls through retained raw models, exact restrictions and model-derived
-states, without named-process dispatch or rounded defaults. Source gluon controls
-include external fields and owned scale snapshots in all three carriers.
+Lowering omits a basis only when exact coupling bounds prove it irrelevant;
+source, restrictions and species eligibility remain retained. The explicit
+`loop.model` contract declares joint correction coverage, UV/$R_2$ completeness,
+dimensional regularization, external states, gamma-five, renormalization, masses
+and finite restoration. It remains `declared-not-certified`: model names and
+counterterm presence do not prove completeness. Public generation is still being
+connected.
 
 == Tensor structure and physical frame
 Each basis entry retains its scalar coefficient, native Lorentz tensor,
@@ -510,12 +510,11 @@ remain sums of local terms. There is no reconstruction of tensor algebra in
 pyAmpliCol: Idenso/Spenso/FeynKit own contractions, traces, component libraries
 and index transformations.
 
-Source spinor slots and the native physical wavefunction convention require an
-explicit, bounded frame map. The FFV map renames typed external Dirac
-ports simultaneously. The newly admitted bounded FFS map also exchanges
-`ProjP`/`ProjM`, with 580 independent ALOHA controls; the FFV map and propagators
-remain unchanged. Neither map rewrites momentum labels or supplies a universal
-gamma-five transpose. Unvalidated source structures retain an explicit boundary.
+Source spinor slots require an explicit map to native wavefunctions. The FFV map
+renames typed external Dirac ports simultaneously; the FFS map also exchanges
+`ProjP`/`ProjM`, with 580 independent ALOHA controls. Neither rewrites momentum
+labels or supplies a universal gamma-five transpose. Unvalidated structures
+remain unsupported.
 
 == Counterterms follow admitted loops
 UV-tree terms, local loop counterterms and external-field factors have different
@@ -541,8 +540,9 @@ convention. The default preserves the source helper; either choice retains
 the original model and does not certify complete CMS physics.
 
 #note[
-  *Evidence boundary.* Bounded QCD and real-mass neutral-current EW controls
-  do not certify arbitrary UFO rules, restrictions, gauges or BSM renormalization.
+  *Loader repair.* Upstream 1.0.1 (`67c7a1b`, main) restores Python `sqrt (2)`
+  call parsing. Independent SM audits found no affected packaged sources or
+  derived assets. PyPI publication awaits the loop-UFO metadata audit.
 ]
 
 #pagebreak()
@@ -738,16 +738,16 @@ cap. A seven-propagator rank-eight numerator cancelling to a triangle master
 passes generic double/DD/AP80 and binary64 fast-tensor evaluation; broader
 physical multiplicity remains a separate gate. Rank above $n+1$ still rejects.
 
-`Runtime.load` uses checked schema-v3/PACBIN artifacts and the Rust coordinator,
-without producer imports. Source gluon controls pass double/DD/AP70, independent
-Born/double-pole checks, exact updates and native lifecycle tests. Load-time
-arithmetic/precision/$R_2$ defaults precede parameter binding: AP70 accepts exact
-`aS="1e400"`; empty batches retain AP.
+`Runtime.load` and CLI/TOML evaluation use checked schema-v3/PACBIN artifacts and
+the Rust coordinator. Source gluon controls pass double/DD/AP70, independent
+Born/double-pole checks and native lifecycle tests. Load-time arithmetic precedes
+parameter binding: the CLI accepts numeric `aS=1e400` in AP70. Decimal JSON inputs,
+per-point scale files and all order/pole axes survive text and JSON output.
 
 The public slice requires full-colour inclusive model-rule $R_2$ plus UV and
 explicit positive scalar or per-point $mu_R^2$. Generation must retain exact
 source, completion and scheme metadata; model names confer no certification.
-Commands, resolved/correlated output, LC/FFT, rescue and SDK/UMAMI remain open.
+Generation commands, resolved/correlated output, LC/FFT, rescue and SDK/UMAMI remain open.
 NinjaRS packaging remains an owner follow-up.
 
 == Success, accuracy and rescue are different facts
@@ -849,7 +849,7 @@ complete answer cannot conceal a wrong component.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
   [Correlations / mapping], [Bounded directed/spin controls and exact species symmetry; general composition and mapping transport remain open.],
-  [Public delivery], [Saved source artifacts execute through Runtime.load and the shared Rust coordinator in double/DD/AP70. Typed orders/poles, exact updates and explicit per-point scales pass; generation commands and SDK/UMAMI remain open.],
+  [Public delivery], [Runtime.load and CLI/TOML preserve exact inputs, all orders/poles and scale files. Explicit model/scheme declarations are integrated; generic generation, resolved/correlated transport and SDK/UMAMI remain open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
@@ -860,23 +860,25 @@ lepton-pair plus jets, and heavy-quark/lepton-pair production with a jet.
 Five-final-parton gluon channels also require MadLoop/Recola controls; an
 unavailable public OpenLoops channel is not invented for comparison.
 
-The generic-any-$n$ consumer is adopted after a seven-propagator anchor in all
-three carriers; high-multiplicity physical validation is still a separate gate.
-For $u overline(u) -> e^- e^+ g g$, MadLoop/Recola reference points and the
-additional local counterterm tensor checks pass; complete pyAmpliCol validation
-is pending, so this process has no timing row yet.
-Rank above the supported $n+1$ domain must reject. Required progress also includes broader cold-plan and portable-plan coverage, optional FFT,
-complete correlation/mapping transport and broader certified model coverage.
-These requirements remain visible even when a smaller control is fast.
+The first complete $u overline(u) -> e^- e^+ g g$ double-precision comparison
+passes at three points: 16 Born graphs, 528 loops, 71 families, 406 local
+counterterms and 96 field insertions, with normalization $1/72$. The maximum
+full-result relative difference is $6.56 times 10^(-13)$ against the matched
+MadLoop/Recola controls; separate local components also pass. DD/AP on rounded
+RAMBO inputs exposes an on-shell classification discrepancy; exact-point checks
+are underway. Six-leg high precision is *not yet validated*. No timing row is
+added before a proper benchmark.
+
+A seven-propagator algebraic anchor passes all carriers; required $2 -> 5$
+physics, broader portable plans, FFT, correlation/mapping transport and model
+coverage remain open. Rank above the reducer's $n+1$ domain must reject.
 
 == Independent evidence and reproducibility
-The accompanying `data/measurements.json` contains the actual five timing samples,
-revision, process counts, cold times and checksums behind the headline tables.
-The frozen point fixtures and native reference drivers live in
-`tools/loop_reference/`. The measured driver calls the complete internal
-`evaluate_ordered_native` path; checks and decimal result conversion occur after
-the event timer. Test durations and earlier bare-only profiles are not event
-timings in this report.
+`data/measurements.json` retains the five timing samples, revisions, counts and
+cold times behind the unchanged headline tables. Frozen points and native
+reference drivers live in `tools/loop_reference/`. Timed calls use the complete
+internal `evaluate_ordered_native` path, excluding checks and output conversion.
+New delivery tests and six-leg validation are not additional timing measurements.
 
 Provider controls use MadLoop 3.7.0, Recola2 2.3.0 with its matched SM/Collier
 model, and OpenLoops 2.1.5. Their independent component tests establish the
