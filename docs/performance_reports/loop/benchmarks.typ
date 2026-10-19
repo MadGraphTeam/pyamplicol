@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-19"
+#let report-date = "2026-10-19 · 22:05 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -831,7 +831,7 @@ Transactional API export provides six installed mixed-order resolved clients.
 New source-built Rust/C/C++/Fortran and versioned UMAMI grouped clients preserve
 complex history/order/pole axes, literal joint spin sources, physical IDs, statuses
 and owned diagnostics. Source layouts, empty/partial batches and rescue pass.
-Correlated CLI currently covers generation/inspection only.
+Numerical grouped CLI now preserves exact sources, named masks and empty shapes.
 
 == Successful completion is not established accuracy
 Native guards retain original point IDs and exact snapshots. Public evaluation
@@ -845,14 +845,15 @@ components, orders, poles, helicities and both directed terms, plus checked
 output conversion. Attempt histories survive; the $R_2$ strategy stays fixed.
 Python, CLI and standalone SDK source-rescue controls pass. Public
 partial returns pass signed-LC $16 times 6$ in all carriers and complex joint-source
-controls. Full-colour real-mass producer rescue now includes external-field
-terms and captured-update replay. Physical evaluators and timing data stay unchanged.
+controls. Full-colour real-mass producer rescue includes external fields and
+stable massive W states, with captured-update replay and genuine state-failure
+compaction. Physical evaluators and timing data stay unchanged.
 
 #note[
-  *Open boundaries.* Producer rescue is certified for massless external states,
-  native physical frames and coherent source-scale ownership. Wider producer
-  domains, grouped CLI requests, input-consistency diagnostics and normal adoption
-  of the tested CMS master fix remain open.
+  *Open boundaries.* Producer rescue requires native physical frames and coherent
+  source-scale ownership. CMS, projected/correlated producer domains, maximum-u64
+  producer lane packing, input-consistency diagnostics and normal adoption of the
+  tested CMS master fix remain open.
 ]
 
 #pagebreak()
@@ -931,7 +932,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
   [Correlations / mapping], [Directed/joint sources include crossed photons, outgoing $W^plus.minus$, incoming $W^+$ and exact d/s reuse. Projected gg LC/NLC identity histories compose with spin. Wider EW/CMS sources, massive-vector LC/NLC and nonidentity mappings remain open.],
-  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Source-binding rescue reaches Python, CLI, SDKs and the bounded producer. Public/CLI partial returns preserve positions and diagnostics; numerical grouped CLI remains open.],
+  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Source rescue reaches Python, CLI, SDKs and real-mass W producers. Partial returns and grouped numerical CLI preserve exact values, positions and diagnostics.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
@@ -963,8 +964,8 @@ broader spin/colour/mapping composition and general-model coverage remain open.
 `data/measurements.json` retains the samples, revisions and cold times behind the
 unchanged tables; `tools/loop_reference/` contains frozen points and drivers.
 Timing covers complete `evaluate_ordered_native` calls, excluding checks and
-output conversion. New $W^plus.minus$, partial-return, source-binding, projected-spin, photon, six-leg and shared-weight checks
-add no timings. The new schedule is unretimed; original timing identities are retained.
+output conversion. New feature controls add no timing observations; the shared
+weight schedule is unretimed. Original timing identities are retained.
 
 Providers are MadLoop 3.7.0, Recola2 2.3.0 with matched SM/Collier, and OpenLoops
 2.1.5. Tables use matched-host control timings with input and rescue asymmetries

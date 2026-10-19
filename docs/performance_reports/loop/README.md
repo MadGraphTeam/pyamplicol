@@ -88,9 +88,10 @@ within `4.3e-13`. Four added controls pass three-carrier component/polarization
 reconstruction, exact literal-source and public coherent replay. This adds no
 W−-specific rescue/SDK or nonidentity-provider claim to the W+ evidence above.
 
-Existing correlated CLI coverage means generation and inspection. Numerical
-grouped source/correlation requests are not yet exposed by `evaluate`; Python and
-SDK paths supply the numerical controls above.
+Numerical grouped CLI requests now reuse the existing public correlated API
+(`5f545578`). Exact source vectors, per-request failure masks and named empty
+results pass the retained saved-artifact control described below. Generation-time
+correlation declarations remain separate from numerical request selection.
 
 Native helicity-resolved full-colour output is delivered (`ede24fad`, finite-guard
 follow-up `182f06c3`). Its singleton colour axis is a complete contracted component,
@@ -128,9 +129,9 @@ accuracy-unestablished values are not exposed as numerical results.
 Structural mass-shell binding (`e070f5fe`) fixes the demonstrated rounded-input
 DD/AP branch discrepancy in the six-leg control, with all components and carriers
 checked. Full-colour real-mass producer source rescue now includes field terms
-and captured-update replay within the structural domain described below. CLI
-policy/partial-return transport also passes; numerical grouped CLI,
-general input-consistency diagnostics and normal adoption
+and captured-update replay, now including stable massive W states. CLI policy,
+partial-return and numerical grouped transport also pass. Wider producer domains,
+maximum-u64 producer lane packing, general input-consistency diagnostics and normal adoption
 of the isolated AP CMS master fix remain open. Charged chiral R2 source rules and
 full-CKM mixed-Born QCD corrections now pass (`886ffd74`); this is not a joint
 QCD/EW correction claim.
@@ -564,7 +565,8 @@ certification or performance measurement. No graph generation or timing campaign
 ran, and normal dependency pins remain unchanged. Detailed evidence:
 `workspace/reports/loop-source-binding-rescue-contract.md` and
 `workspace/reports/source-rescue-public-sdk-acceptance.md`.
-Numerical grouped CLI and broader producer domains remain separate open gates.
+Numerical grouped CLI now passes as described below; broader producer domains
+remain separate open gates.
 
 CLI/TOML policy and partial-return transport (`7561bfa5`, typing follow-up
 `cdeefe17`) now passes configured stability to `Runtime.load` before model binding.
@@ -577,8 +579,27 @@ controls pass global-binding AP60/AP80 rescue and mixed16×6 resolved output wit
 the corresponding exact per-point scales. Config/CLI tests, strict owned-file
 typing and exact JSON/human serialization pass. Evidence is in
 `workspace/reports/loop-cli-stability-acceptance.md`; no native build, new physics
-or timing observation was added. Numerical grouped correlation commands remain
-a separate active slice.
+or timing observation was added.
+
+Numerical grouped CLI/TOML transport (`5f545578`, author `7af3a029`) adds
+`evaluation.correlated_requests` / `--correlated-requests` as an exact JSON path
+mapping labels to existing `CorrelatedRequest` fields. One grouped public call
+receives the whole request/point batch. Missing/null sources preserve default
+semantics; `{}` selects physical states. Duplicate JSON fields and colliding
+integer leg spellings fail; actual vector/capability checks remain runtime-owned.
+Tree correlated arithmetic and virtual load-time policy use their existing APIs.
+Resolved/colour-flow axes and other incompatible options fail explicitly.
+
+Existing JSON and per-result human rendering retain complex/exact values,
+orders, poles, diagnostics and independent masks. Ninety-three focused checks,
+two final renderer/template checks and strict typing of five changed modules
+pass. One actual saved LC identity-history control passes in 13.37 s: physical,
+singleton, joint, zero and failing requests exactly match the public grouped API,
+including the original failed ID, proper zero versus unavailable value and named
+empty shapes. This certifies command transport, not new colour histories or tree
+arithmetic. Normal native digest `049490b8…` is reused with no build, graph
+construction or timing measurement. Evidence:
+`workspace/reports/loop-cli-correlated-acceptance.md` and independent read audit.
 
 Live-producer source-binding rescue (`0d80ea2e`, acceptance `b8948fa0`) now uses
 the same explicit policy before source realization. Default binding stays eager;
@@ -587,8 +608,9 @@ failed snapshots retain exact defaults and overrides without accessible numerica
 buffers. Updates publish atomically. Complete attempts preserve original point
 IDs and include UV, model R2 and external-field columns; higher attempts reconstruct
 the captured exact source, with two-result agreement and checked output conversion.
-The current certified producer domain is full colour, real masses, massless
-external states, native physical frames and coherent source-scale ownership.
+The current certified producer domain is full colour, real masses, native physical
+frames and coherent source-scale ownership, including the stable massive W
+control below.
 CMS, projected-colour and broader correlated producer rescue remain open.
 
 The retained photon owner (23 loops, six field insertions) passes complete
@@ -603,6 +625,22 @@ scalar checks do not certify physical CMS rescue. Evidence is in
 `workspace/reports/producer-source-policy-acceptance.md`. Diagnostic-stress
 fixtures preserve physical evaluators; no graphs, native builds or benchmarks
 were added for this delivery.
+
+Massive producer admission (`dbdb1f3f`, raw-ingress fixture `8d1e33e7`) removes
+only the massless-external restriction, retaining the same native physical frame,
+source-scale ownership and real-mass/full-colour conditions. Eight retained
+`u d~ -> W+ g` controls pass in 42.53 s over 11 loops and six field insertions:
+complete components in double, DoubleFloat and AP80, exact AP60/AP80 rescue,
+captured-snapshot updates and late field failure isolation. A genuine dependency
+longitudinal-rest failure removes its entire original point; the surviving
+point matches the unchanged AP80 control. This diagnostic rest point is not a
+physical scattering reference. Original owners, caches and native modules stay
+intact. The raw port-packing check requires actual model-owned SourceIR; no
+wavefunction convention was added. Evidence:
+`workspace/reports/producer-massive-state-physical.log` and independent read audit.
+A separate valid maximum-u64 producer-ID overflow remains open in arithmetic
+point/helicity packing; no smaller ID limit is imposed. The saved native opaque-ID
+checks remain valid. These correctness-test durations add no benchmark data.
 
 Explicit public partial-value return (`8ebd1af6`, acceptance `48327639`) reuses
 the immutable virtual result types. The per-call `on_failure="return"` option
