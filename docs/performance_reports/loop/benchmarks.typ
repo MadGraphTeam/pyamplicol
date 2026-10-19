@@ -738,8 +738,11 @@ epsilon sectors and source contributions; choosing a different leading power
 for each term would change the approximation. Exact native algebra handles
 Laurent coefficients and semantic $C_A,C_F,T_R$ relations. Source scalar views now
 retain explicit colour identities, exact grade coefficients and active diagnostics
-through saved evaluation in all carriers. This does not yet enable source LC/NLC:
-tensor-alias incidence and common process-sector projection remain open.
+through saved evaluation in all carriers. Counterterm DAGs now retain scalar-alias
+incidence and exact local grade-zero cancellations without expanding whole
+currents. Common squared-sector projection now combines bare, UV, $R_2$, field
+and epsilon rows before selecting a degree. Saved transport and certified source
+continuations still gate public source LC/NLC.
 
 Complete bounded quark-process colour projections have controls. The active
 `loop_sm` four-gluon $R_2$ model contains fixed-$N_c=3$ coefficients. Its
@@ -829,28 +832,29 @@ generation now passes source-to-staged-runtime checks before transactional
 publication, then public Runtime/CLI and DD32/AP70 evaluation. This first
 generation slice is full-colour/model-$R_2$/JIT, with inclusive and
 helicity-resolved publication. A fresh DY artifact passes both views in all three
-carriers. Directed correlation/mapping transport, LC/FFT, complete rescue and
+carriers. Directed correlation/mapping transport, LC/FFT and
 SDK/UMAMI remain separate work.
 
 == Successful completion is not established accuracy
 Native guards isolate state, scale, current, reduction and assembly failures with
 physical identities. Successful whole points remain compact; late failures replay
 survivors from original inputs under one exact parameter snapshot. Public
-evaluation rejects failures by default; this is not a hidden precision retry.
-Internal bounded cross-precision checks and subset rescue recompute complete
-outputs without switching $R_2$ strategy. Their existence does not certify every
-physical domain or the public rescue contract. Diagnostics separate precision,
-strategy, status and agreement evidence. No headline timing enables rescue or
-cross-precision verification.
+evaluation rejects failures by default. An explicit stability policy batches
+original rows at higher precision under the same snapshot. Rescue requires two
+higher results to agree and checked conversion to the requested output carrier;
+all components, orders, poles and requested helicities enter the comparison.
+Per-attempt histories distinguish failure, agreement and unresolved accuracy.
+Empirical agreement is not independent physics proof. No headline timing enables
+rescue or verification, and the selected $R_2$ strategy stays fixed.
 
 #note[
   *Numerical boundary.* Structural mass-shell assignments fix the demonstrated
   rounded six-leg DD/AP branch discrepancy without numerical snapping. Original
   rounded inputs, exact controls and lane permutations now pass all carriers.
-  General input-consistency diagnostics and the public rescue contract remain
-  open, as does a separate AP CMS zero-width master gate. Native state/scale
-  compaction and same-carrier replay are delivered; public precision rescue and
-  empirical accuracy certification remain separate delivery gates.
+  Opt-in public verification/rescue now passes eight native controls across all
+  carriers. Global source-owner binding overflow remains unrecovered. General
+  input-consistency diagnostics, broader domain certification and a separate AP
+  CMS zero-width master gate remain open.
 ]
 
 #pagebreak()
@@ -946,7 +950,7 @@ on-shell points: 16 Born graphs, 528 loops, 71 families, 406 local counterterms,
 96 field insertions and normalization $1/72$. Separate components match binary64
 references; double also passes distinct RAMBO points within $6.56 times 10^(-13)$
 relative. Structural mass-shell bindings now make the original rounded points
-and their separate components pass DD/AP80 too; public rescue remains open.
+and their separate components pass DD/AP80 too.
 
 The six-fermion control adds 7 Born graphs, 275 loops, 94 families and 341 CT
 matches, with normalization $1/36$. Its complete components pass all carriers;

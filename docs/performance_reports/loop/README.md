@@ -21,15 +21,15 @@ This generation slice is full-colour, model-R2 and JIT; public helicity-resolved
 publication now also passes a fresh DY artifact in all three carriers
 (`0dd89d11`). The resolved axis has 16 helicities and one complete contracted
 full-colour component; `.total()` preserves orders, poles and original averaging. The observed 215.94 s is a correctness-test duration, not a
-benchmark. Directed correlation/mapping transport, SDK/UMAMI delivery and the
-full rescue contract remain open. Typed native reducer failures (`b92461c7`) now
-retain physical point/helicity/order/family identities with compact complete-point
-successes; default public evaluation rejects failures. State/scale lane compaction
-and subset rescue remain open.
+benchmark. Directed correlation/mapping transport and SDK/UMAMI delivery remain
+open. Typed native failures retain physical identities and compact whole-point
+successes. State/scale compaction and exact-snapshot replay are delivered; public
+opt-in cross-precision verification/rescue now passes eight native cases across
+all carriers. Default evaluation performs no hidden precision retry.
 Structural mass-shell binding (`e070f5fe`) fixes the demonstrated rounded-input
 DD/AP branch discrepancy in the six-leg control, with all components and carriers
-checked. General input-consistency diagnostics, public rescue and the separate
-AP CMS zero-width master gate remain open. Charged chiral R2 source rules and
+checked. General input-consistency diagnostics, global source-owner binding
+overflow and the separate AP CMS zero-width master gate remain open. Charged chiral R2 source rules and
 full-CKM mixed-Born QCD corrections now pass (`886ffd74`); this is not a joint
 QCD/EW correction claim.
 
@@ -125,8 +125,8 @@ internal portable checkpoints (`94340682`, extended by `95c4ed50`). Existing
 PACBIN envelopes and validated Rust-owned layouts now cover complete model-rule
 four-quark/top controls and direct gluon controls, including nonzero external
 fields. Fresh source-free views pass in all three carriers. Source-model portable plans and public activation have subsequently been
-validated. Formal/correlated portable composition, complete rescue and standalone
-SDK dispatch remain separate.
+validated. Formal/correlated portable composition and standalone SDK dispatch
+remain separate; explicit public numerical rescue is now delivered below.
 The shared source compiler (`43d22a52`) also prepares complete bounded QCD and
 neutral-current Gmu controls from retained raw models and exact restrictions,
 without named-process dispatch or rounded normalized defaults. Source gg fields
@@ -243,8 +243,8 @@ external mass-shell bindings now make the original three rounded RAMBO points
 pass all components in double, DoubleFloat and AP80. Exact old/new controls,
 empty batches and permuted lanes also pass. The raw off-shell evaluator is
 unchanged; there is no numerical snapping. This closes the demonstrated branch
-discrepancy, while general input-consistency diagnostics and public rescue remain
-separate requirements.
+discrepancy, while general input-consistency diagnostics and unrecovered global
+source-binding overflow remain separate requirements.
 
 Complete pure-QCD `u u~ -> d d~ s s~ [QCD]` (`ec2fb7f5`, author `287df96a`)
 adds 7 Born graphs, 275 loops, 94 families (eight with six propagators), and 341
@@ -279,7 +279,11 @@ exact components give -1/9 for that network; a narrowly scoped physical-colour
 fallback now passes 11 focused controls, including the nonconjugated trace-square
 value -10/27. Formal Nc contraction remains symbolic. Source construction has
 restarted from the retained graph plan; no seven-leg physical result is claimed
-yet. A separate squared-trace dummy-scoping defect is being addressed upstream.
+yet. The separate squared-trace dummy-scoping fix is submitted as
+[draft FeynKit PR #154](https://github.com/alphal00p/gammaloop/pull/154), with three
+focused trace tests passing. The broader shorthand run passes 191/192; its one
+finite-dot assertion failure is reproduced on the unchanged dependency base.
+Shared installed modules remain unchanged beneath the retained source producer.
 
 Full unrestricted-CKM `u u~ -> d d~ [QCD]` now matches MadLoop for every one of
 three Born orders and three virtual orders/poles at three exact points, within
@@ -292,16 +296,33 @@ made. The consolidated grid records this new control with pending timings.
 Source scalar colour preparation (`2693ab28`) now retains explicitly supplied
 semantic identities, exact formal grades and active diagnostics through saved
 native evaluation in all carriers. It neither guesses numerical colour constants
-nor enables public source LC/NLC: local tensor-alias incidence, common sector
-projection and certified effective-rule continuation remain necessary.
+nor enables public source LC/NLC. Counterterm scalar-alias incidence and exact
+local grade-zero propagation (`326e5045`, `31314297`, `f717f0fa`) now retain local
+cancellations such as `(g1+g2)*J` with coefficients `(1,-1)`, without expanding
+whole currents. Common squared-sector projection (`baa222ac`) now combines
+bare/UV/R2/field and epsilon rows before selecting catalogue-aligned degrees;
+Born degrees remain independent and zero sectors retain their axes. Saved
+projected-state transport and certified source effective-rule continuation still
+gate public source LC/NLC.
 
 Native point-stage failures (`6b8da611`) now include external states, scale values,
 currents, reduction and assembly. State/scale blocks compact before currents;
 later failures remove whole physical points and replay surviving original exact
 inputs under one captured source snapshot. Typed diagnostics retain physical
 identities. Public evaluation still rejects failures by default. This supplies
-same-carrier failure isolation, not public precision rescue or accuracy proof;
-failed global parameter binding remains a separate boundary.
+same-carrier failure isolation; failed global parameter binding remains a
+separate boundary.
+
+Explicit public precision verification/rescue (`43ae3254`, `cdac4326`) captures
+one exact source snapshot and retries original decimal rows in native batches.
+Rescue needs two higher-carrier results to agree across all Born/component/order/
+pole/helicity values and a checked conversion to the requested output carrier.
+Eight actual native cases pass across all three carriers, including sparse
+failures, resolved results, output-bound rejection, exact parameter updates and
+per-attempt diagnostic history. Initially successful points remain accuracy-
+unestablished unless verification is requested. This is empirical numerical
+evidence, not independent physics certification; no timing row enables it.
+Global source-owner construction/update overflow remains unrecovered.
 
 These milestones contribute no
 new benchmark measurements. Keep the source, PDF and coverage notes live after
