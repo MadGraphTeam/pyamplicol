@@ -85,10 +85,15 @@ Configured source-binding rescue now also passes saved/native Python, public
 resolved and joint-spin, and standalone SDK controls, as detailed below. Its
 synthetic guard fixture tests failure routing with unchanged physical evaluators;
 it adds no model certification or benchmark observation.
+Public `on_failure="return"` now preserves whole-point holes and typed diagnostics
+at original input positions, including signed-LC resolved and complex joint-spin
+results. Signed-LC output passes all three carriers. Default evaluation continues to raise; unavailable or
+accuracy-unestablished values are not exposed as numerical results.
 Structural mass-shell binding (`e070f5fe`) fixes the demonstrated rounded-input
 DD/AP branch discrepancy in the six-leg control, with all components and carriers
-checked. Producer policy composition, CLI policy transport, explicit public
-partial-value return, general input-consistency diagnostics and normal adoption
+checked. Full-colour real-mass producer source rescue now includes field terms
+and captured-update replay within the structural domain described below. CLI
+policy transport, general input-consistency diagnostics and normal adoption
 of the isolated AP CMS master fix remain open. Charged chiral R2 source rules and
 full-CKM mixed-Born QCD corrections now pass (`886ffd74`); this is not a joint
 QCD/EW correction claim.
@@ -330,7 +335,7 @@ empty batches and permuted lanes also pass. The raw off-shell evaluator is
 unchanged; there is no numerical snapping. This closes the demonstrated branch
 discrepancy; general input-consistency diagnostics remain a separate requirement.
 Configured global source-binding rescue is now covered below for saved/public
-Python and standalone SDK execution, with producer composition still pending.
+Python, standalone SDK execution and the bounded physical producer.
 
 Complete pure-QCD `u u~ -> d d~ s s~ [QCD]` (`ec2fb7f5`, author `287df96a`)
 adds 7 Born graphs, 275 loops, 94 families (eight with six propagators), and 341
@@ -522,8 +527,53 @@ certification or performance measurement. No graph generation or timing campaign
 ran, and normal dependency pins remain unchanged. Detailed evidence:
 `workspace/reports/loop-source-binding-rescue-contract.md` and
 `workspace/reports/source-rescue-public-sdk-acceptance.md`.
-Producer scalar/stability composition, CLI policy transport and explicit public
-partial-value return remain separate open gates.
+CLI policy transport and broader producer domains remain separate open gates.
+
+Live-producer source-binding rescue (`0d80ea2e`, acceptance `b8948fa0`) now uses
+the same explicit policy before source realization. Default binding stays eager;
+malformed inputs, ownership and unsupported-capability errors stay hard. Admitted
+failed snapshots retain exact defaults and overrides without accessible numerical
+buffers. Updates publish atomically. Complete attempts preserve original point
+IDs and include UV, model R2 and external-field columns; higher attempts reconstruct
+the captured exact source, with two-result agreement and checked output conversion.
+The current certified producer domain is full colour, real masses, massless
+external states, native physical frames and coherent source-scale ownership.
+CMS, projected-colour and broader correlated producer rescue remain open.
+
+The retained photon owner (23 loops, six field insertions) passes complete
+Born/bare/UV/R2/field/total comparisons in double, DoubleFloat and AP80 against its
+unchanged original-projector control. Five physical controls pass, including
+AP60/AP80 global-binding rescue, empty/original-ID ingress, replacement-policy
+validation and late field-column failure isolation. A sixth control passes
+captured-snapshot updates: the current call uses its original exact snapshot,
+while the next call reuses cached higher views with the new exact overrides.
+Scalar/scale/owner and separately enabled EW/CMS scalar controls also pass; those
+scalar checks do not certify physical CMS rescue. Evidence is in
+`workspace/reports/producer-source-policy-acceptance.md`. Diagnostic-stress
+fixtures preserve physical evaluators; no graphs, native builds or benchmarks
+were added for this delivery.
+
+Explicit public partial-value return (`8ebd1af6`, acceptance `48327639`) reuses
+the immutable virtual result types. The per-call `on_failure="return"` option
+scatters compact successful native blocks to their original point positions;
+unavailable Born and virtual values remain `None` with typed failure diagnostics.
+All order, pole, helicity and colour axes remain intact. Complex directed values
+and high-precision decimal containers are preserved. Default exceptions and hard
+input/capability errors are unchanged; order selection and `.total()` retain
+point validity and diagnostics. A successful higher attempt without the required
+agreement remains `accuracy-not-established` and exposes no numerical values.
+
+Fifty transport/result/source-policy controls and two below-binary64 exact-decimal
+controls pass, alongside the API service suite and strict typing. Six retained
+physical-artifact tests pass without graph generation or a native rebuild: mixed,
+empty and all-failed signed-LC 16×6 output in double/DoubleFloat/AP70; inclusive
+reconstruction; grouped joint sources with independent masks and valid exactly-
+zero results; insufficient agreement; and accepted AP60/AP80 subset rescue with
+full history. The existing guard-only fixture tests failure routing, not new
+physics. Detailed evidence is in
+`workspace/reports/loop-public-partial-acceptance.md`. Timings and dependency pins
+are unchanged; standalone SDK compact successful-ID/status arrays retain their
+existing contract.
 
 The genuine installed candidate `9fc5556ec4a8` and its matching loop companion
 pass fresh transactional source DY generation, Runtime loading, inclusive and

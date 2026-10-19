@@ -839,22 +839,24 @@ Fresh correlated CLI uses a matching developer build, separate from installed `b
 
 == Successful completion is not established accuracy
 Native guards retain original point IDs and exact snapshots. Public evaluation
-rejects unrecovered failures by default. A policy configured before binding can
-retain exact inputs after numerical overflow if a higher carrier succeeds.
-Default binding stays eager; invalid inputs and failed updates keep atomic rollback.
-Source admission does not establish accuracy. For rescue, two complete higher
-results must agree across components, orders, poles, helicities and both directed
-terms, followed by checked output conversion. Attempt histories survive and
-the $R_2$ strategy stays fixed.
-Guard-only controls pass native/public Python signed-LC resolved and joint-spin
-results, Rust rescue and C/C++/Fortran policy transport. Physical evaluators are
-unchanged; these checks add no physics certification or timing observations.
+raises by default; `on_failure="return"` preserves unavailable points as `None`
+with typed diagnostics, retaining order, pole and resolved axes.
+A policy configured before binding can retain exact inputs after numerical
+overflow if a higher carrier succeeds. Default binding stays eager; invalid
+inputs and rejected updates retain atomic rollback. Source admission does not
+establish accuracy. Rescue needs two complete higher results to agree across
+components, orders, poles, helicities and both directed terms, plus checked
+output conversion. Attempt histories survive; the $R_2$ strategy stays fixed.
+Native/public Python and standalone SDK source-rescue controls pass. Public
+partial returns pass signed-LC $16 times 6$ in all carriers and complex joint-source
+controls. Full-colour real-mass producer rescue now includes external-field
+terms and captured-update replay. Physical evaluators and timing data stay unchanged.
 
 #note[
-  *Open boundaries.* Producer policy composition, CLI policy transport and
-  explicit public partial-value return remain pending. General input-consistency
-  diagnostics, wider physics certification and normal adoption of the tested
-  CMS master fix remain open.
+  *Open boundaries.* Producer rescue is certified for massless external states,
+  native physical frames and coherent source-scale ownership. Wider producer
+  domains, CLI policy transport, input-consistency diagnostics and normal adoption
+  of the tested CMS master fix remain open.
 ]
 
 #pagebreak()
@@ -933,7 +935,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
   [Correlations / mapping], [Directed/joint sources include crossed photons and exact d/s reuse in all carriers. Projected gg LC/NLC identity histories now compose with spin; ordered formal-colour operators, LC/NLC mappings and nonidentity permutations remain open.],
-  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Saved/public Python and standalone SDK configured source-binding rescue pass; producer composition, CLI policy and public partial returns remain open.],
+  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Source-binding rescue reaches saved/public Python, SDKs and the bounded physical producer. Public partial returns retain original positions and diagnostics; CLI policy remains open.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
@@ -965,7 +967,7 @@ broader spin/colour/mapping composition and general-model coverage remain open.
 `data/measurements.json` retains the samples, revisions and cold times behind the
 unchanged tables; `tools/loop_reference/` contains frozen points and drivers.
 Timing covers complete `evaluate_ordered_native` calls, excluding checks and
-output conversion. New source-binding, projected-spin, photon, six-leg and shared-weight checks
+output conversion. New partial-return, source-binding, projected-spin, photon, six-leg and shared-weight checks
 add no timings. The new schedule is unretimed; original timing identities are retained.
 
 Providers are MadLoop 3.7.0, Recola2 2.3.0 with matched SM/Collier, and OpenLoops
