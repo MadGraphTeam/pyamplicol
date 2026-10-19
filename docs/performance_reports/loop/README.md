@@ -44,8 +44,8 @@ ordinary/resolved direct weights. A fresh actual full-colour gg owner now proves
 2 Born / 54 loop regular orbits, 108 nonzero kernels and 360 residual pairs:
 every formal matrix entry reconstructs exactly before Nc substitution, and its
 258 weight columns match the direct state. Actual NLC cold proof is separate.
-This supplies physical ownership; numerical FFT attachment, selection and execution
-acceptance remain pending. PR 155 is now merged upstream;
+This supplies physical ownership. Ordinary/resolved full/NLC numerical FFT
+attachment, selection and execution now pass the controls detailed below. PR 155 is now merged upstream;
 the selected native FeynKit already contains its canonicalizer repair. The normal
 Python Community package still needs adoption; its isolated corrected complete
 wheel supplies the qualified DY/open-fundamental and fresh full-colour cold
@@ -875,17 +875,54 @@ changing batch tails. No second Fourier representation algebra was introduced.
 The arbitrary native degree-ten cap was removed in favour of actual checked
 factorial/u32 storage admission; separate old tree wire/UI bounds are unchanged.
 
-This is a mathematical execution primitive, not public loop FFT acceptance.
-Cold actual-tensor orbit certificates pass six full/LC/NLC controls, including
+These original primitive tests remain distinct from the complete public-loop
+acceptance below. Cold actual-tensor orbit certificates pass six full/LC/NLC controls, including
 noncentral complex S3 kernels and residual aliases (`0039536e`). Shared exact
 dual-Born scheduling and its saved/native transport now pass (`a881ece1`,
 `0aa1d8b8`, `3f65915f`, `4b1eb550`). Actual full-colour and NLC gg cold certificates
 now establish physical orbit ownership and exact direct-weight reconstruction.
-Numerical Fourier execution, artifact attachment and public-policy acceptance remain
-pending. Existing measurements use exact direct weights; no binary64 transform
-is promoted into DD/AP. See
+The accepted numerical boundary now covers ordinary/resolved full/NLC binary64
+Fourier execution, artifact attachment and public policy. Existing measurements
+still use their recorded direct weights; no binary64 transform is promoted into DD/AP. See
 `docs/development/LOOP_RECTANGULAR_FFT.md`. The report remains 13 pages and all
 measured tables/data are unchanged. Test duration is not a benchmark result.
+
+The public rectangular FFT milestone (`b3b3745f` through `e2e0d14e`) connects the
+existing transform to shared dual-Born weights, with every residual cross term.
+The selected actual NLC action has 2 Born / 45 loop regular orbits, 90 kernels
+and 1,062 residual alias pairs; the full action has 2/54, 108 and 360. This chosen
+NLC action is distinct from earlier manual cold certificates. Exact absolute-order
+aliases, common formal degrees and family columns remain owned by the process.
+UV, model R2, external fields and Born square remain complete/direct.
+
+Eight new native-operation controls cover noncentral complex S3 tensors,
+independent direction/component banks, mixed orders, residuals and malformed
+coverage. Fifteen physical/public/portable controls pass across their recorded
+split runs: complete full/NLC ordinary/resolved values in all carriers, empty and
+irregular rows/opaque IDs, exact saved weights, repeated resolved export,
+graph-free Python binding, normal artifact loading and AP60/AP80 subset rescue.
+The final standalone Rust SDK control adds owned shapes/values and attempt
+diagnostics. The repeated-export writer fix retains the existing three ordinary
+model roles while keeping the helicity projector in its dedicated descriptor.
+
+Binary64 uses the certified FFT. DoubleFloat and arbitrary precision bind the
+original exact direct evaluator, including rescue; they never promote binary64
+kernel constants. The existing `auto` / `direct` / `symmetric-group-fft` policy
+reports the actual ordinary/resolved bank operation. A result’s
+`primary_color_contraction` describes the initial attempt, and each verification
+attempt records its own operation. Full auto can fall back at typed missing
+capability/proof boundaries; malformed owner/scheme/algebra inputs remain errors.
+LC auto and declared correlated/source banks stay direct; forced LC/correlated
+FFT is still unsupported. General action coverage, high-precision Fourier
+execution and all performance targets remain open.
+
+This milestone uses the normal coherent native build
+`b6caaf70f488869f8c9564b23dbfc0048d964e3029bf0c249032935e28053a9c`.
+Retained older owners stay on their original modules. The qualified corrected
+Community preparation of the full-colour fixture is separate from normal public
+package adoption. Evidence, individual logs and preserved initial failures are
+listed in workspace `reports/loop-public-fft-acceptance.md`. No benchmark data,
+generation/runtime observation or provider timing has changed.
 
 [Scalar-master PR 9](https://github.com/alphal00p/oneloopmaster/pull/9) fixes the
 demonstrated signed branch-discontinuity defect. An isolated transitive override,

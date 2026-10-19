@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-19 · 22:42 UTC"
+#let report-date = "2026-10-19 · 22:47 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -773,12 +773,12 @@ Paired source/phase proofs admit $d overline(d) -> g g$ / $s overline(s) -> g g$
 singleton/joint spin: all carriers, both terms, rescue and Rust SDK pass. LC/NLC
 mapping and nonidentity permutations remain open; no generation speedup is claimed.
 
-Native adjoint/inverse and cold tensor certificates cover noncentral complex
-$S_3$ and residual cross terms. Actual full-colour/NLC gg cold certificates
-reconstruct exact pre-$N_c$ metrics and direct weights with their owned tensor/order
-columns. Shared Born weights pass all carriers, including gg LC’s six components.
-Numerical FFT attachment, selection and execution acceptance remain pending;
-existing direct-weight measurements are unchanged.
+Certified ordinary/resolved full/NLC weights now execute binary64 FFT plus every
+residual. Exact pre-$N_c$ ownership, noncentral $S_3$ controls and complete physical
+comparisons pass. DD/AP and rescue use the original exact direct map, with each
+attempt’s operation reported. Saved, public and SDK checks pass; LC and correlated
+FFT remain open. UV/$R_2$/fields stay direct and complete. No speed claim or new
+measurement follows from these controls.
 
 #pagebreak()
 #section-label[ARCHITECTURE · NATIVE BATCHES AND PRECISION]
@@ -933,7 +933,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
   [Correlations / mapping], [Directed/joint sources cover photons, charged W and d/s reuse. gg and exercised charged-W LC/NLC compose with identity spin. Wider EW/CMS sources, nonidentity histories and mappings remain open.],
-  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Source rescue reaches Python, CLI, SDKs and real-mass W producers. Partial returns and grouped numerical CLI preserve exact values, positions and diagnostics.],
+  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Full/NLC ordinary/resolved binary64 FFT and exact DD/AP fallback pass. Source rescue, partial returns and grouped CLI retain IDs, precision and diagnostics.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
@@ -958,7 +958,7 @@ charged chiral-$R_2$ source rules. This does not certify joint QCD/EW correction
 The seven-leg control has matched independent references. Its unchanged old
 producer remains active. A separate current-source construction now exercises
 shared Born weights and weighted family projectors, reusing the same exact inputs;
-no seven-leg numerical result is claimed. Required $2 -> 5$, FFT,
+no seven-leg numerical result is claimed. Required $2 -> 5$, correlated/LC FFT,
 broader spin/colour/mapping composition and general-model coverage remain open.
 
 == Independent evidence and reproducibility
