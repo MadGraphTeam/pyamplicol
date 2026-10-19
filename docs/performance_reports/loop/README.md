@@ -593,7 +593,9 @@ The arbitrary native degree-ten cap was removed in favour of actual checked
 factorial/u32 storage admission; separate old tree wire/UI bounds are unchanged.
 
 This is a mathematical execution primitive, not public loop FFT acceptance.
-Producer orbit certificates, shared dual-Born-weight scheduling, saved plans and
+Cold actual-tensor orbit certificates now pass six full/LC/NLC controls, including
+noncentral complex S3 kernels and residual aliases (`0039536e`). Actual process
+producer integration, shared dual-Born-weight scheduling, saved plans and
 physical/precision composition remain required. Exact high-precision direct
 contraction is retained; no binary64 transform is promoted into DD/AP. See
 `docs/development/LOOP_RECTANGULAR_FFT.md`. The report remains 13 pages and all

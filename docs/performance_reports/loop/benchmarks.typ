@@ -779,11 +779,11 @@ immutable plan after independent generation and exact rule/parameter proofs.
 All carriers, resolved axes, complex histories and updates agree. No generation
 speedup is claimed; permutations and spin/LC/NLC composition remain open.
 
-Native FFT now has a batched adjoint and normalized inverse. Independent complex
-$13 times 20$ controls cover distinct Born/loop orbits and both residual cross
-terms; all 16 transform checks pass. Actual loop orbit certification and shared
-Born-weight scheduling remain open: public loop FFT and speedups are not claimed.
-Higher precision retains exact direct contraction.
+Native FFT’s batched adjoint/inverse pass 16 controls, including complex
+$13 times 20$ operators and both residual cross terms. Six cold tensor-certificate
+tests cover noncentral complex $S_3$ kernels, full/LC/NLC and residual aliases.
+Process-producer integration, shared Born weights and public FFT remain open.
+No speedup is claimed; higher precision retains exact direct contraction.
 
 #pagebreak()
 #section-label[ARCHITECTURE · NATIVE BATCHES AND PRECISION]
