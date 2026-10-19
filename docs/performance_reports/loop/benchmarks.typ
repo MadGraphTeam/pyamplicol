@@ -773,18 +773,20 @@ Identity, Casimir and nontrivial $T_1 dot T_2$ Born/Laurent values match binary6
 Recola at two points/scales in double, DD and AP70. This checks provider agreement,
 not 70 digits or complex two-emission histories.
 
-Saved singleton/joint gluon spin classes pass $u overline(u) -> g g$ in all carriers.
-Literal complex sources enter shared Born/loop/CT currents; compact spectator sums
-preserve averaging. Joint polarization reconstruction, Ward shifts, complex ordered
-histories, sub-double input changes and AP60/AP80 subset rescue pass. Public/SDK
-ingress and massive-vector support remain open.
+Fresh Python/CLI singleton and joint gluon sources now publish for
+$u overline(u) -> g g$. Double/DD/AP70 singleton Born/Laurent values match Recola; joint
+polarization sums reconstruct ordinary output. Exact complex sources, setter
+snapshots, empty batches and AP60/AP80 rescue pass. Internal controls additionally
+cover Ward shifts and imaginary ordered histories. Massive-vector and LC/NLC
+spin composition remain open.
 
 == Flavour mapping and FFT remain distinct work
-Independently generated $u overline(u) -> d overline(d)$ and $u overline(u) -> s overline(s)$
-pass exact identity-port reuse in all carriers, including complex histories and
-updates. Ordinary/UV/$R_2$/field rules and bindings prove the relation; unequal
-masses, Yukawas or UV logs reject. Public grouping, permutations, spin composition
-and optional FFT remain open.
+Public $u overline(u) -> d overline(d)$ and $u overline(u) -> s overline(s)$ now share
+an immutable admitted plan at fixed external ordering. Independently generated
+members agree in all carriers, resolved axes, complex histories and exact updates.
+Rule/parameter ties prove reuse; all members are generated first, so no generation
+speedup is claimed. Spin/LC/NLC requests stay independent. Permutations and FFT
+remain open.
 
 #pagebreak()
 #section-label[ARCHITECTURE · NATIVE BATCHES AND PRECISION]
@@ -836,7 +838,8 @@ separate source/native gates.
 
 Transactional API export provides six installed mixed-order resolved clients.
 New source-built Rust/C/C++/Fortran and versioned UMAMI grouped clients preserve
-complex history/order/pole axes, physical IDs, statuses and owned diagnostics.
+complex history/order/pole axes, literal joint spin sources, physical IDs, statuses
+and owned diagnostics. Source layouts, empty/partial batches and rescue pass.
 Fresh correlated CLI uses a matching developer build, separate from installed `bc78`.
 
 == Successful completion is not established accuracy
@@ -937,7 +940,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
   [CMS], [Explicit Gmu log choice matches MadLoop components: double/DD across widths, AP80 at finite/small widths. The AP80 zero-width master gate and Recola finite-UV convention remain separate.],
-  [Correlations / mapping], [Grouped public Python and fresh CLI colour-history generation pass all carriers; Recola checks a nontrivial dipole. Complex grouped SDK clients pass. Internal joint spin and identity-order flavour transport pass all carriers; public ingress/grouping remain open.],
+  [Correlations / mapping], [Public directed/joint-spin generation and native SDK ingress pass; Recola checks dipoles and singleton spin. Public exact flavour reuse preserves resolved and complex histories. Spin/LC/NLC mapping composition remains independent.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs the PR 155 overlay. Six API clients agree on mixed-order resolved output. Native ID/failure/verification checks pass.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
@@ -964,7 +967,7 @@ The seven-leg control has matched independent references. Its source build
 completed Born and first-family projection before the retained process disappeared
 with no recorded terminal cause. An unchanged detached recovery is underway;
 no seven-leg numerical result is claimed. Required $2 -> 5$, FFT,
-broader spin/colour composition, public mapping and broader model coverage remain open.
+broader spin/colour/mapping composition and general-model coverage remain open.
 
 == Independent evidence and reproducibility
 `data/measurements.json` retains the samples, revisions and cold times behind the

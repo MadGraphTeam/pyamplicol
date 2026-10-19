@@ -21,9 +21,9 @@ This generation slice is full-colour, model-R2 and JIT; public helicity-resolved
 publication now also passes a fresh DY artifact in all three carriers
 (`0dd89d11`). The resolved axis has 16 helicities and one complete contracted
 full-colour component; `.total()` preserves orders, poles and original averaging. The observed 215.94 s is a correctness-test duration, not a
-benchmark. Public directed generation and grouped complex SDK transport now pass. Internal
-joint spin and exact identity-order flavour transport also pass; public spin
-ingress, flavour grouping and their composition remain follow-ups. Fresh installed gg
+benchmark. Public directed generation and grouped complex SDK transport now pass. Public
+joint spin ingress and exact identity-order flavour grouping now also pass;
+spin/LC/NLC mapping composition and nonidentity permutations remain follow-ups. Fresh installed gg
 LC publication now passes; DY LC requires the isolated PR 155 Community overlay,
 as detailed below. Ordinary installed native/SDK evidence is also recorded below.
 The subsequent signed-LC source milestone adds six canonical Born components
@@ -531,8 +531,10 @@ Internal source-spin and flavour transport now pass (2026-10-19). Saved singleto
 and joint massless-gluon classes preserve exact inputs, compact spectator sums,
 complex histories and AP60/AP80 subset rescue. Joint polarization reconstruction
 checks absolute normalization. Independently generated uudd/uuss controls establish
-identity-port flavour reuse, including exact updates; public spin ingress and
-mapping publication are separate follow-ups. Timings are unchanged.
+identity-port flavour reuse, including exact updates. Public Python/CLI source
+generation, all-carrier source evaluation and immutable public flavour grouping
+now pass. Standalone Rust/C/C++/Fortran and UMAMI spin clients pass against the
+separately published retained three-history artifact. Timings are unchanged.
 
 The reproducible local compiler is isolated in
 `workspace/tools/typst-python` (Python package `typst==0.15.0`). From this report
@@ -542,3 +544,28 @@ directory, with workspace cache variables set, render with:
 /shared/external/pyLoopAmpliCol/workspace/tools/typst-python/bin/python -c \
   'import typst; typst.compile("benchmarks.typ", output="benchmarks.pdf")'
 ```
+
+
+Public spin publication now checks every ordinary and declared-class Born/order/
+Laurent column before publication. A fresh uugg artifact passes Recola singleton
+spin Born/all poles in double/DD/AP70 at relative 3e-11 / absolute 2e-13, joint
+polarization reconstruction, exact setter/default isolation, empty batches and
+AP60/AP80 subset rescue. Recola remains a binary64 reference. The fixture states
+binary64 loop transaction tolerances 3e-9 / 2e-12; the earlier tree-default rejection
+(residual 1.117e-12) is retained in workspace evidence, and production defaults are
+unchanged. A metadata-order assertion was fixed using the already published
+artifact, without regenerating graphs.
+
+The source-native SDK controls use a different, normally published saved PACBIN
+with identity/ordered/swapped histories to exercise nonzero imaginary components.
+They check broadcast/per-point sources, reversed joint leg ordering, UMAMI
+component/leg/event layouts with nonzero offset, empty/partial/max-ID cases and
+precision rescue. The Fortran executable needed a host-link correction for the
+existing libc mismatch; no source workaround was applied. These are source-build
+adapter proofs, separate from the earlier installed ordinary wheel.
+
+Public flavour grouping compares independently generated source owners and exact
+rule/parameter ties before saving the admission in the existing immutable plan.
+Full-colour fixed external ordering passes inclusive/resolved and complex directed
+outputs in all carriers. Spin/LC/NLC requests retain independently generated
+processes and report that outcome. No generation-time speedup is claimed.
