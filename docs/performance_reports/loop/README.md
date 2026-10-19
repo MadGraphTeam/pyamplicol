@@ -33,17 +33,23 @@ complex scaling/zero sources and exact source changes below binary64 resolution.
 Public LC AP60/AP80 subset rescue, clear/empty transport and a packaged Rust SDK
 shape/source-ownership control pass. Inclusive correlated LC has one contracted
 component; ordinary LC still requires signed Born anchors and resolved payloads.
-Nonidentity formal-colour histories, LC/NLC flavour reuse and massive-vector
-LC/NLC composition remain open. See `docs/development/LOOP_PUBLIC_SPIN.md`.
+Nonidentity formal-colour histories and LC/NLC flavour reuse remain open.
+Outgoing W+ LC/NLC composition is now validated as described below; other charged-vector
+directions remain separate gates. See `docs/development/LOOP_PUBLIC_SPIN.md`.
 
 The authoritative formal projection now retains exact pre-Nc Born/loop matrices,
 common squared-order degrees and actual tensor/order columns (`0ca10348`, root
 `4b36d496`). Cold actual physical-orbit certificates and factories are checked against
-ordinary/resolved direct weights. This supplies physical ownership; public FFT
-attachment, selection and execution remain open. PR 155 is now merged upstream;
+ordinary/resolved direct weights. A fresh actual full-colour gg owner now proves
+2 Born / 54 loop regular orbits, 108 nonzero kernels and 360 residual pairs:
+every formal matrix entry reconstructs exactly before Nc substitution, and its
+258 weight columns match the direct state. Actual NLC cold proof is separate.
+This supplies physical ownership; numerical FFT attachment, selection and execution
+acceptance remain pending. PR 155 is now merged upstream;
 the selected native FeynKit already contains its canonicalizer repair. The normal
 Python Community package still needs adoption; its isolated corrected complete
-wheel remains the qualified DY/open-fundamental evidence. The schedule remains unretimed.
+wheel supplies the qualified DY/open-fundamental and fresh full-colour cold
+proofs. This does not establish normal public-package adoption. The schedule remains unretimed.
 Every measured table value, recorded timing revision and provider comparison is
 unchanged.
 
@@ -78,7 +84,7 @@ subset rescue and clear, with two massless-photon regressions and a safe Rust SD
 longitudinal/ownership check. Arbitrary nontransverse vectors are checked through
 literal transport and homogeneity, without an independent Recola oracle.
 Neutral axial/chiral source cases, EW corrections, complex external masses and
-massive-vector LC/NLC remain separate gates. See
+projected incoming/charge-conjugate W sources remain separate gates. See
 `tools/loop_reference/MASSIVE_VECTOR_SOURCES.md`. The provider grid now includes
 both W+ directions and the charge-conjugate W− case below with all timing cells
 pending; no measured observation changes.
@@ -90,6 +96,28 @@ within `4.8e-15`; independently generated Recola physical-source values agree
 within `4.3e-13`. Four added controls pass three-carrier component/polarization
 reconstruction, exact literal-source and public coherent replay. This adds no
 W−-specific rescue/SDK or nonidentity-provider claim to the W+ evidence above.
+
+Outgoing `u d~ -> W+ g` now composes the actual model-rule LC/NLC projections with
+identity spin sources (`db7705f2`, `e869db5a`). The explicit model declaration adds
+only its 16 selected elementary Identity/T keys; original named invariants,
+loop groups, field rules and HV tie remain unchanged. The common Born/virtual
+degrees are 2/3. Of 322 exact formal rows, 60 contain the odd suppression retained
+by NLC and excluded by LC. The full continuation reconstructs physical, UV, R2 and field components of
+the untouched full-colour owner in double, DoubleFloat and AP70, with maximum
+component-normalized differences `4.87e-16`, `3.29e-32` and `1.30e-69`. These are
+internal consistency controls, not an independent high-precision or projected
+provider oracle.
+
+Six saved-source controls and nine public/declaration controls pass. They cover
+three W polarizations and six joint W–gluon states, both directed terms, exact
+source changes, resolved ordinary axes, empty/tail rows, original IDs and public
+AP60/AP80 subset rescue. Ordinary LC retains signed Born anchors; inclusive spin
+LC/NLC remains contracted. Missing actual tree/R2 declarations still reject.
+This evidence uses the isolated corrected Community package and adds no runtime
+or dependency pin change, benchmark observation, incoming/W− projected certificate
+or nonidentity formal-history claim. The final conditional component test and
+earlier harness/cancellation diagnostics are retained in workspace
+`reports/massive-projected-acceptance.md`.
 
 Numerical grouped CLI requests now reuse the existing public correlated API
 (`5f545578`). Exact source vectors, per-request failure masks and named empty
@@ -836,9 +864,11 @@ This is a mathematical execution primitive, not public loop FFT acceptance.
 Cold actual-tensor orbit certificates pass six full/LC/NLC controls, including
 noncentral complex S3 kernels and residual aliases (`0039536e`). Shared exact
 dual-Born scheduling and its saved/native transport now pass (`a881ece1`,
-`0aa1d8b8`, `3f65915f`, `4b1eb550`). Actual physical orbit attachment, Fourier execution and
-public policy remain required. All carriers currently use the exact direct
-weights; no binary64 transform is promoted into DD/AP. See
+`0aa1d8b8`, `3f65915f`, `4b1eb550`). Actual full-colour and NLC gg cold certificates
+now establish physical orbit ownership and exact direct-weight reconstruction.
+Numerical Fourier execution, artifact attachment and public-policy acceptance remain
+pending. Existing measurements use exact direct weights; no binary64 transform
+is promoted into DD/AP. See
 `docs/development/LOOP_RECTANGULAR_FFT.md`. The report remains 13 pages and all
 measured tables/data are unchanged. Test duration is not a benchmark result.
 
