@@ -836,7 +836,7 @@ separate source/native gates.
 
 Transactional API export provides six installed mixed-order resolved clients.
 New source-built Rust/C/C++/Fortran and versioned UMAMI grouped clients preserve
-complex history/order/pole axes, compact IDs, statuses and owned diagnostics.
+complex history/order/pole axes, physical IDs, statuses and owned diagnostics.
 Fresh correlated CLI uses a matching developer build, separate from installed `bc78`.
 
 == Successful completion is not established accuracy
