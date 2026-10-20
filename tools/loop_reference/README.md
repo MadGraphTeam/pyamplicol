@@ -570,18 +570,29 @@ the tree path.
   and 2e-8 (six legs); rotated points reproduce Recola to 1e-12, so the earlier
   difference was not numerical.
 * MadLoop with the converted `loop_qcd_qed_sm_Gmu` (`[virt=QCD QED]`, real
-  masses) agrees with both on `g g -> t t~` EW (6e-14) and `u u~ -> e- e+ g` EW
-  (9e-13), but differs from the agreeing Recola/OpenLoops pair on
-  `g g -> t t~ e- e+` EW by 1e-7 to 3e-7 in the finite part only (poles agree
-  to 1e-11). The offset depends on the Higgs mass (1e-4 to 2e-4 at
-  `MH=700`, where Recola and OpenLoops still agree with each other) and on
-  `mu_R` (1.2e-7 and 1e-6 at points 2 and 3 when all scales are 1000 GeV).
-  **The cause is not established.** The Higgs-mass and scale dependence are
-  equally compatible with a convention of the UFO's EW counterterms (e.g.
-  tadpoles or Higgs-sector renormalization) and with a difference in the
-  one-loop graph content (e.g. Higgs-mediated or tadpole graphs that MG5
-  generates or drops differently). This is an open physics item: pyAmpliCol
-  takes its counterterms from the same UFO, so which one is right decides
-  whether pyAmpliCol should match Recola/OpenLoops or MadLoop here. MadLoop is
-  recorded with all values and differences but excluded (`exclusions.json`)
-  from the EW agreement check until the cause is found.
+  masses) first differed from the agreeing Recola/OpenLoops pair on
+  `g g -> t t~ e- e+` EW by 1e-7 to 3e-7 in the finite part only (poles agreed
+  to 1e-11; Higgs-mass and `mu_R` dependent). **Cause established: an MG5_aMC
+  3.7.0 defect in MadLoop's quadruple-precision path, not a UFO counterterm
+  convention.** MadLoop at its production stability setting (double precision,
+  return code 216) agreed with OpenLoops to 1e-10, while the reference run
+  (quadruple-precision rescue, code 328) did not; comparing every double- and
+  quadruple-precision model parameter after the same card read isolated the EW
+  on-shell renormalization constants (e.g. `ZAWCFT_UV_EW_FIN`, relative 4.8e-9;
+  `C_UVTXTA2EW` 5.5e-7), and the exported `MP_REGLOG` returns
+  `log(MW^2/MU_R^2)` with relative error 4.8e-9: the MP model functions
+  (`MP_REGLOG`, `MP_REGLOGP/M`, `MP_REGSQRT`, `MP_GRREGLOG`, template in
+  `madgraph/iolibs/export_v4.py`) call `CMPLX(...)` without `KIND=16`, which
+  rounds real arguments to single precision; their `TWOPII` also uses the pi
+  literal `3.14169258...` (branch terms only, no effect here). The defect also
+  touches QCD: the top-decoupling counterterm `log(MU_R^2/MT^2)` gave the 5e-9
+  MadLoop spread of `g g -> t t~ g g`. `references.py` compiles a repaired copy
+  of the export's `model_functions.f` into the run directory and links it
+  before `libmodel.a` (the export is untouched; repairs are listed in
+  `settings.mg5_quadruple_precision_model_function_repairs`). With it the
+  quadruple-precision MadLoop agrees with OpenLoops to 1.5e-13..2.4e-12 on
+  `g g -> t t~ e- e+` EW, and MadLoop is a validated provider for every
+  process. The defect is in MG5's exported Fortran, not in the UFO: evaluated
+  correctly, the UFO EW counterterms agree with Recola/OpenLoops.
+  `exclusions.json` remains available for documented exclusions but none is
+  in use.
