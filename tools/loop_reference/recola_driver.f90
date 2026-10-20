@@ -4,6 +4,8 @@
 !   alpha0 <alpha> | alphaz <alpha> | gfermi <G_F>      (EW input/renormalization scheme)
 !   alphas <alpha_s> <mu> <nf>                           (alpha_s at mu, nf light flavours)
 !   cache <mode>                                         (set_cache_mode_rcl)
+!   collier_mode <k>                    (set_collier_mode_rcl: 1 COLI, 2 DD, 3 COLI+DD)
+!   tis_accuracy <required> <critical>  (COLLIER TI accuracies; after generate)
 !   onshell | complex_mass                               (mass renormalization scheme)
 !   legs <n>    born_gs <n>    loop_gs <n>    pow_lo <n>    pow_nlo <n>
 !   process <Recola process string>
@@ -57,6 +59,13 @@ program recola_reference
     case ('cache')
       read(line, *) keyword, k
       call set_cache_mode_rcl(k)
+    case ('collier_mode')
+      read(line, *) keyword, k
+      call set_collier_mode_rcl(k)
+    case ('tis_accuracy')
+      read(line, *) keyword, value, mu
+      call set_TIs_required_accuracy_rcl(value)
+      call set_TIs_critical_accuracy_rcl(mu)
     case ('legs')
       read(line, *) keyword, legs
     case ('born_gs')

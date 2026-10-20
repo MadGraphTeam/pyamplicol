@@ -513,6 +513,7 @@ def command_run(args):
                     f"{flags['mg5_production']}; rebuild it with madloop_export.py --recompile")
             binary, repairs = build_madloop(export, run_dir, flags["export_make_opts"]["GLOBAL_FLAG"])
             result["settings"] = prepare_madloop_run(spec, export, run_dir, args.mg5, legs)
+            result["settings"]["export"] = str(export)
             result["settings"]["fortran_flags"] = flags
             result["settings"]["mg5_quadruple_precision_model_function_repairs"] = repairs
             result["generation"] = json.loads(generation.read_text()) if generation.exists() else None
