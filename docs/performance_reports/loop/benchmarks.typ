@@ -358,13 +358,15 @@ timed (@tab:untimed); validation durations are not used as runtimes.
     - pyAmpliCol rescue off; providers keep their stability checks, rescue and
       caches (item 6). OpenLoops actual-pole mode reruns the amplitude three times.
     - Development-profile native builds, not release builds. DD/AP not timed.
-      #let rb = procs.development_facts.release_builds
-      A release A/B (#rb.date, not retimed here) was faster by
-      #times(rb.native_eval_speedup) for native #math-label(rb.native_eval_process)
-      at $B = #rb.native_eval_batch$, by
-      #times(rb.colour_overlap_speedup.first())–#times(rb.colour_overlap_speedup.last())
-      for colour overlaps and by
-      #times(rb.generation_speedup.first())–#times(rb.generation_speedup.last()) for generation.
+      #let rb = procs.at("development_facts", default: (:)).at("release_builds", default: none)
+      #if rb != none [
+        A release A/B (#rb.date, not retimed here) was faster by
+        #times(rb.native_eval_speedup) for native #math-label(rb.native_eval_process)
+        at $B = #rb.native_eval_batch$, by
+        #times(rb.colour_overlap_speedup.first())–#times(rb.colour_overlap_speedup.last())
+        for colour overlaps and by
+        #times(rb.generation_speedup.first())–#times(rb.generation_speedup.last()) for generation.
+      ]
     - Repeat runs drift: an audit at $B = 128$ gave OpenLoops $g g -> g g$
       #sig(audit.openloops_gg_o3.median_us_per_point.ol0) µs and MadLoop
       #sig(audit.openloops_gg_o3.median_us_per_point.madloop) µs, against
@@ -567,11 +569,11 @@ memory grow faster than linearly with the number of loop graphs
 // Label placement per case and panel; unlisted cases use the default offset.
 #let label-place(panel, key) = (
   time: (
-    uudd: (off: (4pt, 4pt)), tt: (off: (4pt, -6pt)), gg: (off: (4pt, 5pt)),
+    uudd: (off: (4pt, 4pt)), tt: (off: (4pt, -6pt)), gg: (off: (4pt, -7pt)),
     "ee-mumu-ew": (off: (-4pt, -5pt), anchor: right),
   ),
   rss: (
-    uudd: (off: (4pt, 4pt)), tt: (off: (-4pt, -12pt), anchor: right),
+    uudd: (off: (4pt, 4pt)), tt: (off: (-1pt, -7pt), anchor: right),
     gg: (off: (4pt, 5pt)), "ee-mumu-ew": (off: (-4pt, -5pt), anchor: right),
   ),
 ).at(panel).at(key, default: (:))
@@ -968,7 +970,7 @@ executor and the public interfaces are kept.
     [Pairwise colour overlaps], [Canonical overlap cache, then a fixed trace or colour-flow basis], [Seven-gluon full colour; LC/NLC at seven legs],
     [Per-diagram numerator programs], [Shared open-loop recursion on the tree engine], [Speed gates; $g g -> g g g g$, $g g -> g g g g g$, $u overline(u) -> g g g g g$],
     [All $2^n$ helicities], [Selection of non-vanishing helicities], [Two- to eightfold saving in every stage],
-    [Listed counterterm structures], [Generic tensor lowering for admission; CMS as a model transformation], [Both $t overline(t)$ targets; EW and CMS],
+    [Listed counterterm structures], [Generic tensor lowering for admission; CMS as a model transformation], [The EW $g g -> t overline(t) e^- e^+ g$ target; other EW and CMS processes],
   )),
 ) <tab:plan>
 
@@ -987,10 +989,13 @@ executor and the public interfaces are kept.
   - *Process status:* `data/processes.json`, from the plan's §5.7, the
     continuation handoff (§3, §6, §7) and the 2026-10-20 resumption assessment
     (§1, §2.3, §8), which is also the source of the probe and stack-sample
-    values in @tab:walls. Required-process provider references:
-    #raw(procs.sources.required_references.split(" ").first()). Case labels,
-    missing-value markers and the release-build A/B
-    (#raw(procs.sources.release_builds)) are also recorded there.
+    values in @tab:walls.
+    #let srcs = procs.at("sources", default: (:))
+    #let req-src = srcs.at("required_references", default: none)
+    #let rb-src = srcs.at("release_builds", default: none)
+    #if req-src != none [Required-process provider references: #raw(req-src.split(" ").first()).]
+    Case labels, missing-value markers and development facts such as the
+    release-build A/B#if rb-src != none [ (#raw(rb-src))] are also recorded there.
   - *Generation:* `data/generation.json`, written by
     `scripts/collect_generation.py` from the retained correctness-run records
     and the seven-leg stage log. Graph drawings: `scripts/draw_graphs.py`.
