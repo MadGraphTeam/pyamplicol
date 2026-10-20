@@ -390,7 +390,17 @@ def command_merge(args):
             results[provider] = json.loads(path.read_text())
     if not results:
         raise SystemExit("no provider results")
-    primary = next(iter(results))
+    # Persistent, documented exclusions live next to the results so that later
+    # automatic merges (run_required.sh) keep them.
+    record = work / "exclusions.json"
+    excluded = json.loads(record.read_text()) if record.exists() else {}
+    excluded.update(dict(item.split("=", 1) for item in args.exclude))
+    if set(excluded) - set(results):
+        raise SystemExit(f"excluded provider without result: {set(excluded) - set(results)}")
+    validated = [p for p in results if p not in excluded]
+    if not validated:
+        raise SystemExit("every provider is excluded")
+    primary = validated[0]
     scheme = spec["scheme_data"]
     derived = derived_parameters(scheme)
     coupling = float(Decimal(value(scheme, "aS"))) if spec["correction"] == "QCD" else float(Decimal(derived["alpha"]))
@@ -406,7 +416,8 @@ def command_merge(args):
             unit = abs(values["born"]) * coupling / (2 * math.pi)
             pole_error = relative(values["double_pole"], pole_factor * values["born"], unit)
             row["providers"][provider]["universal_double_pole_relative_error"] = pole_error
-            pole_errors.append(pole_error)
+            if provider not in excluded:
+                pole_errors.append(pole_error)
             if provider != primary:
                 unit = abs(row["born"]) * coupling / (2 * math.pi)
                 rel = {key: relative(values[key], row[key], 0.0 if key == "born" else unit)
@@ -414,10 +425,11 @@ def command_merge(args):
                 strict = {key: relative(values[key], row[key]) for key in COEFFICIENTS}
                 row["provider_relative_errors"][provider] = rel
                 row.setdefault("provider_strict_relative_errors", {})[provider] = strict
-                errors.extend(rel.values())
+                if provider not in excluded:
+                    errors.extend(rel.values())
         rows.append(row)
     max_error = max(errors) if errors else None
-    passed = (len(results) >= 2 and max_error < args.tolerance and max(pole_errors) < args.tolerance)
+    passed = (len(validated) >= 2 and max_error < args.tolerance and max(pole_errors) < args.tolerance)
     normalization = required_spec.normalization(spec)
     providers = {}
     for provider, result in results.items():
@@ -457,12 +469,14 @@ def command_merge(args):
         "maximum_universal_double_pole_relative_error": max(pole_errors),
         "tolerance": args.tolerance,
         "validation_status": "passed" if passed else (
-            "single provider; no cross-check" if len(results) < 2 else "FAILED"),
+            "single provider; no cross-check" if len(validated) < 2 else "FAILED"),
+        "validated_providers": validated,
+        "excluded_providers": excluded,
         "providers": providers,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
-    print(f"{spec['name']}: providers={list(results)} max_rel={max_error} "
+    print(f"{spec['name']}: providers={validated} excluded={list(excluded)} max_rel={max_error} "
           f"max_pole_identity={max(pole_errors):.3g} status={report['validation_status']}")
     if not passed:
         sys.exit(2)
@@ -517,6 +531,8 @@ def main():
     merge = sub.choices["merge"]
     merge.add_argument("--output", type=Path, required=True)
     merge.add_argument("--tolerance", type=float, default=2e-8)
+    merge.add_argument("--exclude", action="append", default=[], metavar="PROVIDER=REASON",
+                       help="keep a provider's values but leave it out of the agreement check")
     summary = sub.add_parser("summary")
     summary.add_argument("references", nargs="+", type=Path)
     args = parser.parse_args()
