@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-20 · 00:16 UTC"
+#let report-date = "2026-10-20 · 00:50 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -298,28 +298,29 @@ and $mu_R=1000$ GeV. Its full source counterterms are retained.]
 #section-label[MEASUREMENTS · SAME GRID, NEXT VALIDATED ROWS]
 = New physics controls · timings pending
 #note[
-  *New complete controls.* Six-leg, mixed-Born four-quark and stable charged-vector processes
+  *New complete controls.* Six-leg, mixed-Born, charged-vector and EW quark processes
   pass double, DoubleFloat and arbitrary precision with
   effective-rule $R_2$ and UV. The same provider grid records their validation
   status below. Runtime, generation and stage measurements remain pending;
   instrumented correctness durations are not benchmark observations.
 ]
-#let pending-provider(status, provider: false, stage-note: none) = table.cell(inset: (x: 7pt, y: 8pt), {
-  set par(justify: false, leading: 0.35em)
+#let pending-provider(status, provider: false, stage-note: none) = table.cell(inset: (x: 7pt, y: 6pt), {
+  set par(justify: false, leading: 0.35em, spacing: 0pt)
+  set block(spacing: 0pt)
   text(size: 8.4pt, weight: "bold", fill: navy, status)
   v(6pt)
   text(size: 7.8pt, fill: grey)[Runtime $B=1,128$]
   linebreak()
   text(size: 9pt)[Pending]
-  v(5pt)
+  v(4pt)
   text(size: 7.8pt, fill: grey)[Generation / setup]
   linebreak()
   text(size: 9pt)[Pending]
   if not provider {
-    v(5pt)
+    v(4pt)
     text(size: 7.2pt, fill: grey)[Numerator, NinjaRS and masters: pending]
   } else if stage-note != none {
-    v(5pt)
+    v(4pt)
     text(size: 7.2pt, fill: grey, stage-note)
   }
 })
@@ -352,6 +353,12 @@ and $mu_R=1000$ GeV. Its full source counterterms are retained.]
   pending-provider([Validated\ double / DD / AP70]),
   pending-provider([Matched\ ordinary / fixed spin], provider: true, stage-note: [Numerator and reduction + masters: pending]),
   pending-provider([Matched\ physical spin sources], provider: true),
+  pending-provider([Not yet matched], provider: true),
+  [#text(size: 10pt, weight: "bold")[$e^- e^+ -> u overline(u)$]
+   #v(5pt) #text(size: 7.6pt, fill: grey)[full EW · Gmu\ 99 loops / 24 families\ complete components\ and directed charges]],
+  pending-provider([Validated\ double / DD / AP70]),
+  pending-provider([Matched\ every component], provider: true, stage-note: [Numerator and reduction + masters: pending]),
+  pending-provider([Matched\ Born / all Laurents], provider: true),
   pending-provider([Not yet matched], provider: true),
 )
 #v(8pt)
@@ -751,8 +758,9 @@ $e^- e^+ -> u overline(u)$ EW colour insertions now pass all components and both
 terms in double/DD/AP70. Ordinary components match MadLoop within
 $3.85 times 10^(-14)$ and Born/poles/finite match Recola within
 $8.51 times 10^(-14)$. These are binary64 references; the explicit source repair
-is retained. Saved/public, subset rescue and binary64 SDK pass; the full source's
-tree diagnostics remain unchanged.
+is retained. Saved/public, subset rescue and binary64 SDK pass. Explicit public
+source preparation passes graph-free checks; tree diagnostics and downstream
+matched-tensor gates remain unchanged. Fresh public process generation is separate.
 
 Photon/gluon phases survive outgoing/crossed publication. Outgoing $W^plus.minus$
 and incoming $W^+$ QCD sources pass longitudinal/joint states in all carriers.
@@ -929,7 +937,7 @@ external-field UV and $R_2$, testing components before their complete sum.
 #tab((1.4fr, 2.6fr), left-columns: (0, 1),
   table.header(th[Area], th[Current boundary]),
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
-  [Real-mass EW], [Source-owned charged leptons, bounded massive muons and quarks pass complete references. Quark charge rows pass both terms and all carriers; saved/public and binary64 SDK transport pass. Generic full-Gmu preparation remains open.],
+  [Real-mass EW], [Source-owned charged leptons, bounded massive muons and quarks pass complete references. Quark charge rows pass both terms and all carriers; saved/public and binary64 SDK transport pass. Explicit Gmu preparation passes; fresh public process generation remains open.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
   [Correlations / mapping], [Outgoing W+ complete-family histories and formal d/s full/LC/NLC identity mapping pass saved/public/SDK checks. Signed LC axes and sources compose. Projected nonidentity mapping, other nonidentity crossings and EW/CMS vector sources remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Full/NLC ordinary/resolved binary64 FFT and exact DD/AP fallback pass. Source rescue, partial returns and grouped CLI retain IDs, precision and diagnostics.],

@@ -13,9 +13,17 @@ Three fresh saved-native cases also pass all components and both terms in the
 three carriers. Public grouped charges, actual AP60/AP80 subset rescue and a
 binary64 Rust SDK ownership/axis control pass. Virtual-only publication preserves
 the normalized model's `supported=false` diagnostics and complete raw sidecar;
-generic preparation of this full Gmu source remains open. No tree function or
-preflight flag is changed. EW vector sources, formal colour, mixed correction
-selection and CMS remain separate gates.
+explicit public source preparation now passes sixteen graph-free controls.
+Compatibility, covariant partners and exact fixed values survive planning,
+generation preparation and eligible fallback. Omission inherits the source
+record; explicit empty/partial records replace it. Active unsupported functions
+and shared exclusions still fail. This tests `_prepare`, not a fresh public
+process build or the later graph planning of full dry-run. The broad source
+catalogue retains deferred tensor certificates; actual matched insertions retain
+their independent physical gate. No tree function or preflight flag is changed.
+EW vector sources, formal colour, mixed correction selection and CMS remain
+separate gates. The consolidated provider grid now includes this EW quark case
+with B1/B128, generation and stages explicitly pending.
 See `docs/development/LOOP_EW_COLOR_CORRELATIONS.md` and the exact provider
 fixture `tools/loop_reference/real_mass_ew_quarks.json`. No timing cells change.
 
