@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-20 · 02:53 UTC"
+#let report-date = "2026-10-20 · 03:22 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -298,11 +298,10 @@ and $mu_R=1000$ GeV. Its full source counterterms are retained.]
 #section-label[MEASUREMENTS · SAME GRID, NEXT VALIDATED ROWS]
 = New physics controls · timings pending
 #note[
-  *New complete controls.* Six-leg, mixed-Born, charged-vector and EW quark processes
-  pass double, DoubleFloat and arbitrary precision with
-  effective-rule $R_2$ and UV. The same provider grid records their validation
-  status below. Runtime, generation and stage measurements remain pending;
-  instrumented correctness durations are not benchmark observations.
+  *New complete controls.* These processes pass double, DoubleFloat and arbitrary
+  precision with effective-rule $R_2$ and UV. The scalar row uses isolated provider
+  PR 10 and loader PR 3; normal pins are unchanged. Runtime, generation and stage
+  measurements remain pending; correctness durations are not benchmark observations.
 ]
 #let pending-provider(status, provider: false, stage-note: none) = table.cell(inset: (x: 7pt, y: 6pt), {
   set par(justify: false, leading: 0.35em, spacing: 0pt)
@@ -360,17 +359,21 @@ and $mu_R=1000$ GeV. Its full source counterterms are retained.]
   pending-provider([Matched\ every component], provider: true, stage-note: [Numerator and reduction + masters: pending]),
   pending-provider([Matched\ Born / all Laurents], provider: true),
   pending-provider([Not yet matched], provider: true),
+  [#text(size: 10pt, weight: "bold")[$u overline(u)$\ $-> sigma_8 sigma_8 g$]
+   #v(5pt) #text(size: 7.6pt, fill: grey)[scalar QCD\ $N P=Q E D=0$\ 201 loops / 58 families\ 283 CT insertions\ isolated dependencies]],
+  pending-provider([Validated · isolated\ double / DD / AP60/80]),
+  pending-provider([Matched\ every component], provider: true, stage-note: [Numerator and reduction + masters: pending]),
+  pending-provider([Not yet matched], provider: true),
+  pending-provider([Not yet matched], provider: true),
 )
-#v(8pt)
-== Independent physics and precision evidence
-Six-leg DD/AP80 pole/scaling controls pass $3 times 10^(-25)$ / $10^(-60)$;
-six-propagator values converge within $6.99 times 10^(-29)$. Mixed-Born QCD matches
-MadLoop within $6.7 times 10^(-15)$. Recola $W^+$ sources agree within
-$2.9 times 10^(-13)$ outgoing / $3.2 times 10^(-9)$ incoming; $W^-$ within
-$4.3 times 10^(-13)$. EW quarks match MadLoop / Recola within
-$3.85 times 10^(-14)$ / $8.51 times 10^(-14)$, all binary64 comparisons.
-Three-state/joint sums and exact source replay pass all carriers.
-Cache/Gram failing controls remain in the README; timings are unchanged.
+#v(4pt)
+#text(size: 8.6pt)[
+  *Reference accuracy.* EW quarks match MadLoop / Recola within
+  $3.85 times 10^(-14)$ / $8.51 times 10^(-14)$; scalar components within
+  $2.01 times 10^(-14)$, all binary64 references. Scalar DD/AP80 and AP60/AP80
+  converge to $2.30 times 10^(-31)$ / $6.42 times 10^(-60)$ internally.
+  Six-leg and vector precision, source, cache and Gram controls remain in the README.
+]
 
 #pagebreak()
 #section-label[MEASUREMENTS · MATCHED LEADING COLOUR]
@@ -597,8 +600,9 @@ certify chiral scalar mass terms or a universal gamma-five transpose.
 
 Adjoint-scalar SS/VSS/VVSS and typed Identity-VV/f-VVV local tensors pass ALOHA
 and exact SU(3) colour controls. The latter add 950 Lorentz checks and 18 colour
-overlaps. Original coefficients, Laurent orders and loop groups remain intact;
-UV conventions and complete BSM amplitudes are separate gates.
+overlaps. Original coefficients, Laurent orders and loop groups remain intact.
+The complete scalar-QCD control now passes with isolated dependencies (page 4);
+general BSM and formal-colour certification remain separate.
 
 == Counterterms follow admitted loops
 UV-tree, local loop and external-field terms retain distinct eligibility.
@@ -767,9 +771,10 @@ Public rescue and Rust SDK pass.
 Projected gg/W identity sources and $W^+$ full/LC/NLC saved/public/SDK pass;
 ordinary LC retains signed anchors. Formal-full ddgg matches an independent
 fixed-full source and retains 28 histories / 784 pairs. Its exact support and
-common degrees now produce same-process LC/NLC: 32 tensor checks pass; 14
-owner/source checks cover all carriers, both terms and singleton/joint sums. NLC keeps complex
-output. Their saved/public validation, species transport and EW/CMS vectors remain open.
+common degrees produce LC/NLC: 32 tensor checks pass; 14 same-process checks
+cover all carriers. Independent ss reuse adds 15 owner/averaging and 12 projected
+current/source checks; full ss matches its separate fixed-full oracle. New-bank
+saved/public validation, numerical flavour transport and EW/CMS vectors remain open.
 
 == Exact mappings and the rectangular FFT boundary
 Exact d/s identity reuse covers formal full/LC/NLC, signed Born axes, complex
@@ -828,13 +833,12 @@ rank admission; a saved rank-four bubble passes all carriers. General higher-ran
 models remain open. The current seven-leg producer has completed bare assembly
 and is matching counterterms; final physics is pending. #link("https://github.com/alphal00p/oneloopmaster/pull/9")[Scalar-master PR 9]
 passes isolated AP80 scalar and complete zero-width CMS controls.
-#link("https://github.com/alphal00p/oneloopmaster/pull/10")[PR 10]'s expanded chart fixes pass 1,536 reference checks. The isolated consumer
-now passes Born/bare; missing local UV/$R_2$ insertions prevent BSM acceptance.
-Normal pins and wider CMS gates remain unchanged.
+#link("https://github.com/alphal00p/oneloopmaster/pull/10")[PR 10] passes 1,536 scalar checks; with exact CT attachment proofs, the isolated
+scalar process passes every component in double/DD/AP60/80 (page 4).
+Normal pins and wider CMS/BSM delivery remain unchanged.
 
-The installed `bc78edbd` wheel passes tree, LC 16×6, DD and no-Python Rust checks.
-Fresh gg LC/NLC publication reloads in AP70; DY LC needs the PR 155 overlay.
-Later rank/directed/ID changes have separate source/native gates, without new timings.
+Historical wheel `bc78edbd` passes tree/LC/DD/Rust; its DY LC needs the PR 155
+overlay. Fresh gg LC/NLC reloads in AP70. Later native gates add no timings.
 
 Six installed mixed-order resolved clients pass. Source-built Rust/C/C++/Fortran
 and versioned UMAMI grouped clients retain complex axes, literal sources, IDs,
@@ -942,9 +946,9 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned charged leptons, bounded massive muons and quarks pass complete references. Quark charge rows pass both terms and all carriers; saved/public and binary64 SDK transport pass. Explicit Gmu preparation passes; fresh public process generation remains open.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
-  [Correlations / mapping], [W+ and d/s identity transport pass full/LC/NLC saved/public/SDK; Bose history/source subsets pass full colour. Full dd ordered terms pass independently. Same-process LC/NLC terms/sources pass all carriers; their saved/public and species transport, resolved Bose axes and EW/CMS vectors remain open.],
-  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Full/NLC ordinary/resolved binary64 FFT and exact DD/AP fallback pass. Source rescue, partial returns and grouped CLI retain IDs, precision and diagnostics.],
-  [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
+  [Correlations / mapping], [W+ and d/s identity transport pass full/LC/NLC saved/public/SDK; Bose subsets pass full colour. Exact colour reuse and independent d/s currents pass full/LC/NLC in all carriers. New-bank delivery, numerical flavour transport, resolved Bose axes and EW/CMS vectors remain open.],
+  [Scalar QCD], [$u overline(u) -> sigma_8 sigma_8 g$ passes all components in double/DD/AP60/AP80 with isolated PR 10 and loader PR 3. Normal dependency adoption, public general BSM and projected/correlated scalars remain open.],
+  [Public delivery], [Installed gg LC/NLC and AP70 reload pass; historical-wheel DY LC needs the PR 155 overlay. Full/NLC ordinary/resolved binary64 FFT and exact DD/AP fallback pass. Source rescue, partial returns and grouped CLI retain IDs, precision and diagnostics.],
 )
 
 == Required multiplicity and acceptance
@@ -952,15 +956,12 @@ Selected $2 -> 5$ gluon, heavy-quark and dilepton channels remain mandatory;
 $2 -> 6$ is a stretch goal. Five-final-parton gluons require MadLoop/Recola;
 unavailable OpenLoops channels are excluded.
 
-Full $gamma$/$Z$ $u overline(u) -> e^- e^+ g g$ passes all carriers at three points:
-16 Born graphs, 528 loops, 71 families, 406 local counterterms, 96 field insertions,
-normalization $1/72$. Components match binary64 references; double also passes
-distinct RAMBO points within $6.56 times 10^(-13)$. Exact structural mass shells
-make the original rounded points pass DD/AP80 too.
-
-Six fermions add 7 Born graphs, 275 loops, 94 families and 341 CT matches,
-normalization $1/36$. Components pass all carriers; page 4 records precision
-evidence and the README details cache/Gram controls. Timings remain pending.
+Full $gamma$/$Z$ dilepton plus two-jet and six-fermion controls pass all carriers
+at three points. Dilepton double also passes distinct RAMBO points within
+$6.56 times 10^(-13)$; exact structural mass shells preserve DD/AP80 inputs.
+The six-fermion control includes eight genuine six-propagator families. Page 4
+lists both processes; the README retains precision, cache and Gram evidence.
+Matched distinct-point timings and required high-multiplicity gates remain open.
 Full-CKM four-quark QCD matches MadLoop for three Born/virtual orders at three
 points, including charged chiral-$R_2$ rules, without certifying joint QCD/EW.
 The seven-leg control has matched independent references. Its unchanged old

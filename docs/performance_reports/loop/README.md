@@ -55,12 +55,32 @@ changes. NLC retains a nonzero imaginary term. These physical checks share their
 reused colour bank; the separate complete tensor projections provide the
 independent colour oracle. Original models, native module and snapshots survive.
 
-Normal LC/NLC PACBIN checkpoints were saved before assertions, but saved/public/
-SDK numerical acceptance for these new banks remains open. Cross-species colour
-reuse and nonidentity projected flavour admission remain separate; existing
-guards are unchanged. Evidence: `reports/loop-ordered-color-reuse-acceptance.md`.
-Preparation/test costs are development evidence, not benchmark observations;
-all measured cells remain unchanged.
+The colour-only factory now also accepts independently prepared owners when
+each retains its own coherent process, scalar preparation, source declaration
+and formal record. Cross-owner scalar/process identity and equal initial
+averages are not colour-algebra premises. Complete exact support and family
+degrees are still proved; each target binds its own averaging exactly once.
+Fifteen focused checks pass, including twelve actual owner controls and three
+independent rational-average controls. The independent ss full owner matches
+its earlier fixed-full source oracle in all three carriers, with all nine
+blocks, both terms and singleton/joint sources. No complete family is rebuilt.
+
+Normal full/LC/NLC ss PACBIN checkpoints are saved. Twelve projected cases pass:
+six compare independent d/s currents and six reconstruct ss ordinary identity
+and singleton/joint sources, across LC/NLC and all three carriers. All nine
+blocks, both terms, swapped conjugation, exact updates, complex/zero sources,
+opaque IDs and empty/tail batches pass; NLC retains imaginary terms. These
+physical comparisons share proved colour rectangles; the separate tensor
+controls remain the independent colour-projection oracle. The first attempt
+correctly rejected a retained helper-class mismatch before numerical comparison;
+an identical-field immutable test-record replay fixed the context, with
+original owners and snapshots preserved and no production/tolerance change.
+Saved/public/SDK numerical validation of the new banks and nonidentity projected
+flavour admission remain separate gates; numerical flavour guards are unchanged.
+Evidence: `reports/loop-ordered-color-reuse-acceptance.md` and
+`reports/loop-independent-owner-color-reuse-acceptance.md`. Preparation/test
+costs are development evidence, not benchmark observations; measured cells
+remain unchanged.
 
 Explicit source-admitted ordinary full-colour Bose members now pass
 (`e2f3e3ac`, normal native digest `a42231c8…`). Independently generated fixed-full
@@ -102,9 +122,9 @@ scaled difference `2.54e-16`) and exact MadGraph SU(3) colour checks, including
 complex mixed-tensor overlaps. Seven actual-source catalogue tests preserve
 all 17 scalar CT rules and 63 entries, loop alternatives, Laurent data and
 diagnostics. Exact `NP=QED=0` selection retains the excluded effective source
-vertices; no arity cap is introduced. This is local tensor/import coverage,
-not a physical BSM amplitude or a formal-Nc certificate. Scalar-coefficient,
-UV/field-normalization and process gates remain separate. Actual sgluon source
+vertices; no arity cap is introduced. This establishes local tensor/import
+coverage; the separately completed physical scalar control is described below.
+It is not a formal-Nc certificate. Actual sgluon source
 preparation uses the isolated [loader PR 3](https://github.com/alphal00p/ufo_model_loader/pull/3)
 candidate for legacy Goldstone aliases; the normal loader pin is unchanged.
 See `tools/loop_reference/ADJOINT_SCALAR_LOCAL.md`. No timing data or process
@@ -121,27 +141,28 @@ do not admit chiral scalar mass terms or establish a complete BSM amplitude.
 See `tools/loop_reference/ADJOINT_VECTOR_LOCAL.md` and
 `tools/loop_reference/CHIRAL_FERMION_TWO_POINT.md`.
 
-The retained scalar-QCD `u u~ -> sig8 sig8 g` candidate has 6 Born graphs,
-201 loops, 58 families and 251 matched CT insertions, but its initial binary64
-evaluation fails on a valid one-mass scalar box. Independent OneLOop and both
-Collier implementations establish all Laurent coefficients, including the
-absorptive parts. [Scalar-master PR 10](https://github.com/alphal00p/oneloopmaster/pull/10)
-reclassifies exact post-chart one-/two-mass cases through existing formulas.
-The first coherent consumer fixes the original box but exposes three further
-failing families, traced to two adjacent-mass boxes with independently confirmed
-nonzero double poles. The expanded PR10 revision `cd945f` passes 1,536 complete
-transparent/generated, permutation/scale and carrier evaluations plus existing
-controls. The expanded isolated consumer now evaluates the complete process:
-Born and bare components pass the independent reference, but local UV/R2
-components still disagree. Independent attribution of 392 MadGraph counterterm
-amplitudes reconstructs all four UV/R2 totals to 7.96e-15 and identifies missing
-insertion placements near a Born triple-gluon current: one VSS R2 insertion and
-two adjacent two-point UV/R2 insertions. The actual triple-gluon counterterm
-coefficients agree; an earlier aggregate-factor hypothesis was ruled out. A
-matching correction is under audit, not yet accepted. This local insertion gap,
-not a remaining master failure, blocks complete BSM acceptance. Normal pins are
-unchanged and no performance claim follows. PR10 is separate from CMS sheet-sign
-PR9.
+The retained scalar-QCD `u u~ -> sig8 sig8 g` process now passes complete
+full-colour model-rule UV/R2 checks in double, DoubleFloat, AP60 and AP80.
+All seven component blocks, Laurent coefficients, three points and a changed
+scale match the independent binary64 MadLoop reference within `2.01e-14`.
+Internal DD/AP80 and AP60/AP80 differences are `2.30e-31` and `6.42e-60`;
+AP80 is a convergence reference, not an independent high-precision oracle.
+The exact `NP=QED=0` source has 6 Born graphs, 201 loops, 58 families, 283
+matched CT insertions and 408 numerical CT currents.
+
+The source-owned ordinary-coupling proof (`41ccde87`) resolves the missed local
+attachments without changing coefficients, signs or symmetry factors.
+Thirty-two recovered source alternatives correspond to nineteen placements in
+thirteen groups; an independent decomposition of 392 MadGraph CT amplitudes
+checks the correspondence. The initial master failures are resolved by the
+isolated [scalar-master PR 10](https://github.com/alphal00p/oneloopmaster/pull/10)
+revision `cd945f4568961706ac4fe5cc0c406a7a6560711a`, whose separate scalar suite
+passes 1,536 reference checks. Actual source preparation also uses isolated
+loader PR3. Normal dependency pins are unchanged; normal adoption, public
+general-BSM delivery and projected/correlated scalar observables remain open.
+No generation/runtime measurement is claimed. Evidence:
+`reports/sgluon-matched-process-acceptance.md`. PR10 is separate from CMS
+sheet-sign PR9.
 
 Real-mass Gmu `e- e+ -> u u~ [QED]` now passes complete ordinary component
 checks against MadLoop (3.85e-14) and Born/Laurent checks against Recola
