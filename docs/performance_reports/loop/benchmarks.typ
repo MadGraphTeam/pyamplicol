@@ -823,9 +823,9 @@ adapter does not change the engine identified by each timing record.
 
 Consumer `0d0d7e7` uses self-contained Git pins and passes saved six-propagator
 physics and seven-line rank-eight controls in all carriers. Its reducer owns
-rank admission; a saved rank-four bubble passes all carriers. Complete seven-line
-physics and general higher-rank models remain open. The retained producer stays
-on `e4c16a7`. #link("https://github.com/alphal00p/oneloopmaster/pull/9")[Scalar-master PR 9]
+rank admission; a saved rank-four bubble passes all carriers. General higher-rank
+models remain open. The current seven-leg producer has completed bare assembly
+and is matching counterterms; final physics is pending. #link("https://github.com/alphal00p/oneloopmaster/pull/9")[Scalar-master PR 9]
 passes isolated AP80 scalar and complete zero-width CMS controls.
 #link("https://github.com/alphal00p/oneloopmaster/pull/10")[PR 10] repairs exact one-mass box classification after a chart change;
 768 independent-reference evaluations pass all carriers. The complete scalar-QCD
