@@ -209,7 +209,10 @@ def build_madloop(export, work):
     subprocess.run(
         ["gfortran", "-O2", "-ffree-line-length-none", "-I", str(process_dir), str(driver),
          str(export / "lib/libMadLoop.a"), "-L" + str(export / "lib"), "-ldhelas", "-lmodel",
-         *map(str, madloop_libraries(export)), "-lstdc++", "-o", str(binary)],
+         *map(str, madloop_libraries(export)), "-lstdc++",
+         # Large exports (g g -> 6 g: 7.7 GB of static arrays) put PIC data
+         # beyond the range of relaxed GOTPCREL loads; keep GOT loads.
+         "-Wl,--no-relax", "-o", str(binary)],
         check=True, cwd=work,
     )
     return binary
