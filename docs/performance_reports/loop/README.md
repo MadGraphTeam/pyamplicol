@@ -2,6 +2,15 @@
 
 `benchmarks.pdf` is the rendered report; `benchmarks.typ` is its source.
 
+**Current checkpoint — 20 October 2026.** Projected ordered d/s flavour
+transport now passes source admission, nine saved full/LC/NLC all-carrier cases,
+three public LC/NLC/rescue checks and the NLC binary64 SDK. The published joint
+scalar-provider candidate passes its provider tests but is not built into or
+adopted by the normal consumer. Seven-leg physics and the required higher
+multiplicities remain pending. The report is now 12 pages; measured tables,
+data and timing identities are unchanged. Detailed accepted domains, evidence
+and open qualifications follow.
+
 The explicit Bose source/history composition now passes the complete saved,
 public Python and SDK boundary (`f14cdead`; normal native digest `12d0185c…`).
 The independently generated fixed-full d/s pair retains the original named
@@ -75,10 +84,27 @@ controls remain the independent colour-projection oracle. The first attempt
 correctly rejected a retained helper-class mismatch before numerical comparison;
 an identical-field immutable test-record replay fixed the context, with
 original owners and snapshots preserved and no production/tolerance change.
-Saved/public/SDK numerical validation of the new banks and nonidentity projected
-flavour admission remain separate gates; numerical flavour guards are unchanged.
-Evidence: `reports/loop-ordered-color-reuse-acceptance.md` and
-`reports/loop-independent-owner-color-reuse-acceptance.md`. Preparation/test
+Projected nonidentity flavour admission now checks the actual paired complete
+families and source banks in addition to the existing exact species/scalar
+proof. Thirty owner, source, writer and compatibility checks pass; safe
+fixed-full and projected-identity composition remains available. Six mapped
+LC/NLC cases pass all nine blocks, both terms and sources in all three carriers
+against independently prepared member currents. An ordinary-only relation
+cannot acquire projected nonidentity capability, and retained paired plans
+cannot be replaced by equal-valued records. Native ingress passes actual
+identity/complete plans and seven malformed-family controls. The unified
+Python/SDK build and normal staging pass. Nine saved full/LC/NLC cases pass all
+three carriers, complete components and totals. Two public LC/NLC cases and one
+genuine AP subset-rescue case pass; the NLC binary64 SDK client preserves complex
+totals, source/history/order/pole axes, opaque IDs and owned outputs. All six
+mapped/independent artifacts use normal publication and immutable admission.
+The historical compiled model was refreshed with identical model, raw loop
+sidecar, IR and defaults; group expressions now come from the actual saved
+admission. Failed fixture/API attempts remain recorded; no numerical tolerance
+or production physics changed.
+Evidence: `reports/loop-ordered-color-reuse-acceptance.md`,
+`reports/loop-independent-owner-color-reuse-acceptance.md` and
+`reports/loop-projected-ordered-flavor-admission-acceptance.md`. Preparation/test
 costs are development evidence, not benchmark observations; measured cells
 remain unchanged.
 
@@ -101,7 +127,7 @@ Independent exact three-cycle tests detect missing/inverse/doubled input
 transport, which Bose-invariant physical amplitudes alone cannot detect.
 
 This is explicit retained-source admission and saved-member transport. Automatic
-flavour grouping still proposes unchanged ports. Nonidentity projected mapping
+flavour grouping still proposes unchanged ports. Projected Bose permutations
 and resolved member axes remain separate proofs; the explicit source/history
 subset above now has its own saved/public/SDK admission. Existing typed
 records and normal artifact publication are used;
@@ -162,7 +188,13 @@ loader PR3. Normal dependency pins are unchanged; normal adoption, public
 general-BSM delivery and projected/correlated scalar observables remain open.
 No generation/runtime measurement is claimed. Evidence:
 `reports/sgluon-matched-process-acceptance.md`. PR10 is separate from CMS
-sheet-sign PR9.
+sheet-sign PR9. Its published follow-up `2595ed5` fixes the complex-mass
+high-precision branch predicate. The public joint provider branch
+`ValentinHirschi/oneloopmaster:integration/real-sheet-and-ir-charts` at `7edfaf5`
+passes the provider gates with PR10 `cd945f4`; its combined consumer is neither
+built nor adopted. The accepted isolated scalar evidence above is unchanged.
+Evidence: `reports/combined-provider-sheet-diagnosis.md` and
+`reports/combined-provider-consumer-build-proposal.md`.
 
 Real-mass Gmu `e- e+ -> u u~ [QED]` now passes complete ordinary component
 checks against MadLoop (3.85e-14) and Born/Laurent checks against Recola
@@ -638,7 +670,7 @@ against the independent MadLoop capture. The B1 fresh Recola constructor supplie
 the neutral generation cell; both constructor observations remain in raw data.
 No MadLoop/OpenLoops runtime is inferred. All earlier six cases and provider
 observations remain unchanged. The measured provider grid continues over three pages, followed by its new
-six-leg rows with timings pending, two LC pages and seven architecture pages. Drivers:
+six-leg rows with timings pending, two LC pages and six architecture/validation pages. Drivers:
 `workspace/experiments/loop_live_ew.py`,
 `workspace/reference/recola_electroweak_timing.f90`, and
 `workspace/reference/benchmark_recola_electroweak.py`.
@@ -1144,7 +1176,7 @@ now establish physical orbit ownership and exact direct-weight reconstruction.
 The accepted numerical boundary now covers ordinary/resolved full/NLC binary64
 Fourier execution, artifact attachment and public policy. Existing measurements
 still use their recorded direct weights; no binary64 transform is promoted into DD/AP. See
-`docs/development/LOOP_RECTANGULAR_FFT.md`. The report remains 13 pages and all
+`docs/development/LOOP_RECTANGULAR_FFT.md`. The report is condensed to 12 pages and all
 measured tables/data are unchanged. Test duration is not a benchmark result.
 
 The public rectangular FFT milestone (`b3b3745f` through `e2e0d14e`) connects the

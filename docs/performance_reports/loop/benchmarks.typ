@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-20 · 03:22 UTC"
+#let report-date = "2026-10-20 · 05:29 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -769,24 +769,23 @@ reconstruction. Literal vectors use homogeneity/replay without projection.
 Public rescue and Rust SDK pass.
 
 Projected gg/W identity sources and $W^+$ full/LC/NLC saved/public/SDK pass;
-ordinary LC retains signed anchors. Formal-full ddgg matches an independent
-fixed-full source and retains 28 histories / 784 pairs. Its exact support and
-common degrees produce LC/NLC: 32 tensor checks pass; 14 same-process checks
-cover all carriers. Independent ss reuse adds 15 owner/averaging and 12 projected
-current/source checks; full ss matches its separate fixed-full oracle. New-bank
-saved/public validation, numerical flavour transport and EW/CMS vectors remain open.
+ordinary LC retains signed anchors. Formal-full d/s matches independent
+fixed-full sources. Complete 28-history / 784-pair anchors support LC/NLC reuse:
+32 tensor checks, 14 same-process, 15 owner/averaging and 12 independent-current/source
+checks pass. Paired flavour admission adds 30 checks and six mapped all-carrier
+cases. Nine saved full/LC/NLC cases, three public LC/NLC/subset-rescue checks and
+the NLC SDK pass. EW/CMS vectors remain open.
 
 == Exact mappings and the rectangular FFT boundary
 Exact d/s identity reuse covers formal full/LC/NLC, signed Born axes, complex
 full-colour histories and identity sources through saved/public/SDK interfaces.
-Projected nonidentity flavour transport remains open.
+Projected nonidentity source sharing now passes saved/public/SDK delivery.
 
 Fixed-full Bose exchange proves local rules, fields and named source/history
-subsets. Nine blocks and both terms match independent members in all carriers;
-16 saved/public cases, five routing controls and the SDK pass. Literal vectors,
-selected aliases and rescue preserve IDs; unselected failures remain failures.
-Explicit routing detects actions hidden by Bose symmetry. Representatives keep
-richer plans; unclosed histories, projected and resolved member axes remain open.
+subsets: all carriers, 16 saved/public cases, five routing controls and the SDK
+pass. Literal sources, aliases and rescue preserve IDs; unselected failures remain
+failures. Representatives keep richer plans. Bose projected/resolved axes and
+unclosed histories remain open.
 
 Certified ordinary/resolved full/NLC binary64 FFT includes every residual.
 Exact pre-$N_c$ ownership, noncentral $S_3$ and physical checks pass. DD/AP/rescue
@@ -827,15 +826,16 @@ and carrier-appropriate inputs. Weighted rank counts $mu^2$ twice; explicit
 epsilon sectors combine by Laurent multiplication. The additive dense-$mu$
 adapter does not change the engine identified by each timing record.
 
-Consumer `0d0d7e7` uses self-contained Git pins and passes saved six-propagator
-physics and seven-line rank-eight controls in all carriers. Its reducer owns
-rank admission; a saved rank-four bubble passes all carriers. General higher-rank
-models remain open. The current seven-leg producer has completed bare assembly
-and is matching counterterms; final physics is pending. #link("https://github.com/alphal00p/oneloopmaster/pull/9")[Scalar-master PR 9]
+Self-contained Git pins pass saved six-propagator physics, seven-line rank-eight
+and rank-four bubble controls in all carriers. The reducer owns rank admission;
+general higher-rank models remain open. Seven-leg exact UV/$R_2$ assembly is active.
+#link("https://github.com/alphal00p/oneloopmaster/pull/9")[Scalar-master PR 9]
 passes isolated AP80 scalar and complete zero-width CMS controls.
 #link("https://github.com/alphal00p/oneloopmaster/pull/10")[PR 10] passes 1,536 scalar checks; with exact CT attachment proofs, the isolated
 scalar process passes every component in double/DD/AP60/80 (page 4).
-Normal pins and wider CMS/BSM delivery remain unchanged.
+PR 9's published follow-up repairs the complex-mass high-precision branch
+predicate; the joint provider gates pass. The combined consumer is neither built
+nor adopted. Normal pins and wider CMS/BSM delivery remain unchanged.
 
 Historical wheel `bc78edbd` passes tree/LC/DD/Rust; its DY LC needs the PR 155
 overlay. Fresh gg LC/NLC reloads in AP70. Later native gates add no timings.
@@ -872,81 +872,37 @@ Timing data stay unchanged.
 ]
 
 #pagebreak()
-#section-label[ARCHITECTURE · RATIONAL TERMS]
-= Two complete strategies, one observable
-The model strategy combines the four-dimensional numerator contribution with
-the model's effective $R_2$ rules and UV terms. The direct strategy instead
-computes the required evanescent numerator remainder and retains the same UV
-completion. The strategy is explicit in the result; a caller cannot relabel
-an executed model result as direct.
+#section-label[ARCHITECTURE AND VALIDATION · RATIONAL TERMS]
+= Rational terms and acceptance
+The model strategy adds effective $R_2$ rules and UV to the four-dimensional
+numerator. Direct completion instead computes its evanescent remainder, retaining
+UV. Results identify the executed strategy. Denominator rational terms or $mu^2$
+support alone do not certify numerator $R_2$; HV effective rules must not be
+double-counted, and FDH has a different prescription.
 
-Four-dimensional reduction already produces denominator-related rational terms.
-The presence of $mu^2$ in a reducer interface therefore does not, on its own,
-prove that numerator-origin $R_2$ is complete. In the target HV scheme, effective
-rules already include the missing spin-dimension terms. They must not also be
-added to the four-dimensional numerator. FDH has a different prescription.
-
-== Local evanescent state, not a whole-loop trace engine
-For a certified closed vectorlike fermion cycle, the local component construction
-uses dependency gamma matrices with one auxiliary evanescent slash. Odd auxiliary
-powers survive every open transition; only the closed trace selects even parity.
-Independent full-$D$ local-graph oracles check routed bubbles, triangles and boxes.
-The auxiliary gamma-five realization is not a general physical chiral or
-dimensional gamma-five prescription.
-
-For the admitted massless Yang–Mills cycles, dependency metric and momentum
-rules are continued to an explicit physical/aligned/spectator state space.
-The remaining transverse-state multiplicity is retained symbolically in
-$D=4-2epsilon$. Local cubic and quartic colour terms, closure, routing and
-spectator weighting are checked independently. Ghost cycles keep their native
-statistics and their ordinary bare contribution.
-
-== Epsilon sectors matter after integration
+Certified vectorlike cycles retain odd evanescent powers through open transitions;
+admitted Yang–Mills cycles retain symbolic transverse multiplicity. Dependency
+gamma/metric tensors and independent full-$D$ local oracles check this construction.
 If the numerator is $N_0+epsilon N_1+epsilon^2 N_2$ and each reduced sector
 has finite/single/double coefficients $(F_j,S_j,D_j)$, the assembled result is
 $
   V_0 = F_0+S_1+D_2, quad
   V_(-1)=S_0+D_1, quad V_(-2)=D_0.
 $
-Dropping explicit epsilon terms can therefore change the finite answer even
-when the mu-dependent terms are retained. Native reduction controls exercise
-this convolution in all three carriers. Source templates, full-graph algebra
-and integrated physical results have separate checks.
+Complete direct full-colour $g g -> g g$, UV and rescue pass all carriers against
+model-rule components and independent references; public direct dispatch remains
+gated. Open fermion chains, mixed-spin loops, massive gauge/Goldstone sectors,
+axial/anomaly-sensitive structures and general BSM dimensional continuation need
+separate proofs. Model-rule completion and higher multiplicities remain the priority.
 
-== What is supported internally today
-The complete retained full-colour $g g -> g g$ control admits the local direct
-kernels, includes UV completion, and agrees with model-rule components and
-independent reference results in all three arithmetic modes. Bounded
-cross-precision verification and direct-strategy rescue are also implemented.
-Public direct dispatch remains behind its integration gates.
-
-Open fermion chains, general mixed-spin loops, massive gauge/Goldstone sectors,
-physical axial or anomaly-sensitive structures and arbitrary BSM dimensional
-extensions are not inferred from that success. Unsupported direct domains need
-compatible model-rule completion. No universal massless FDH-to-HV shift is
-assumed for massive EW or general models.
-
-#note[
-  *Current priority.* Complete effective-rule $R_2$ plus UV, feature coverage and
-  higher multiplicities. Further generic direct development and strategy timing
-  are deferred; existing bounded controls and interfaces are retained. Headline
-  timings use model rules. The historical paired gluon LC/full cells use direct
-  completion. Scheme distinction: #link("https://arxiv.org/html/0903.0356v2#S2")[QCD rational rules, §2].
-]
-
-#pagebreak()
-#section-label[VALIDATION · NEXT GATES]
-= What this snapshot establishes
-The controls run model import, graphs, recurrence, reduction, UV/$R_2$ and ordered
-physical output together. Independent references separate bare, local UV,
-external-field UV and $R_2$, testing components before their complete sum.
+== Accepted scope and remaining gates
 
 #tab((1.4fr, 2.6fr), left-columns: (0, 1),
   table.header(th[Area], th[Current boundary]),
-  [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
-  [Real-mass EW], [Source-owned charged leptons, bounded massive muons and quarks pass complete references. Quark charge rows pass both terms and all carriers; saved/public and binary64 SDK transport pass. Explicit Gmu preparation passes; fresh public process generation remains open.],
+  [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM QCD passes all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
+  [Real-mass EW], [Charged leptons, bounded massive muons and quarks pass complete references. Quark charge rows pass both terms, all carriers and saved/public/SDK transport. Explicit Gmu preparation passes; fresh public process generation remains open.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
-  [Correlations / mapping], [W+ and d/s identity transport pass full/LC/NLC saved/public/SDK; Bose subsets pass full colour. Exact colour reuse and independent d/s currents pass full/LC/NLC in all carriers. New-bank delivery, numerical flavour transport, resolved Bose axes and EW/CMS vectors remain open.],
+  [Correlations / mapping], [Outgoing W+ ordered histories and d/s transport pass full/LC/NLC; projected nonidentity d/s now passes saved/public/SDK. Bose subsets pass full colour. Resolved Bose axes, broader massive/EW/CMS sources remain open.],
   [Scalar QCD], [$u overline(u) -> sigma_8 sigma_8 g$ passes all components in double/DD/AP60/AP80 with isolated PR 10 and loader PR 3. Normal dependency adoption, public general BSM and projected/correlated scalars remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; historical-wheel DY LC needs the PR 155 overlay. Full/NLC ordinary/resolved binary64 FFT and exact DD/AP fallback pass. Source rescue, partial returns and grouped CLI retain IDs, precision and diagnostics.],
 )
@@ -954,32 +910,19 @@ external-field UV and $R_2$, testing components before their complete sum.
 == Required multiplicity and acceptance
 Selected $2 -> 5$ gluon, heavy-quark and dilepton channels remain mandatory;
 $2 -> 6$ is a stretch goal. Five-final-parton gluons require MadLoop/Recola;
-unavailable OpenLoops channels are excluded.
-
-Full $gamma$/$Z$ dilepton plus two-jet and six-fermion controls pass all carriers
-at three points. Dilepton double also passes distinct RAMBO points within
-$6.56 times 10^(-13)$; exact structural mass shells preserve DD/AP80 inputs.
-The six-fermion control includes eight genuine six-propagator families. Page 4
-lists both processes; the README retains precision, cache and Gram evidence.
-Matched distinct-point timings and required high-multiplicity gates remain open.
-Full-CKM four-quark QCD matches MadLoop for three Born/virtual orders at three
-points, including charged chiral-$R_2$ rules, without certifying joint QCD/EW.
-The seven-leg control has matched independent references. Its unchanged old
-producer remains active. A separate current-source construction now exercises
-shared Born weights and weighted family projectors, reusing the same exact inputs;
-no seven-leg numerical result is claimed. Required $2 -> 5$, correlated/LC FFT,
-broader spin/colour/mapping composition and general-model coverage remain open.
+unavailable OpenLoops channels are excluded. Full $gamma$/$Z$ dilepton plus
+two-jet and six-fermion controls pass all carriers (page 4). Full-CKM QCD does not
+certify joint QCD/EW. Seven-leg producers remain active, including a current-source
+run with shared Born weights; no final numerical result or new timing is claimed.
+Correlated/LC FFT and broader spin/colour/mapping and general-model gates remain open.
+Feature coverage precedes optimization; actual dependency limits replace arbitrary caps.
 
 == Independent evidence and reproducibility
-`data/measurements.json` retains the samples, revisions and cold times behind the
-unchanged tables; `tools/loop_reference/` contains frozen points and drivers.
-Timing covers complete `evaluate_ordered_native` calls, excluding checks and
-output conversion. New feature controls add no timing observations; the shared
-weight schedule is unretimed. Original timing identities are retained.
-
-Providers are MadLoop 3.7.0, Recola2 2.3.0 with matched SM/Collier, and OpenLoops
-2.1.5. Tables use matched-host control timings with input and rescue asymmetries
-declared. Their measured object is complete physical interference.
+`data/measurements.json` retains original samples, revisions and cold times;
+`tools/loop_reference/` contains frozen points and drivers. Timing covers complete
+`evaluate_ordered_native` interference calls, excluding checks and output conversion.
+Provider versions, matched inputs and rescue asymmetries accompany the tables.
+Feature controls add no timings; the shared weight schedule remains unretimed.
 
 #small[
   Further reading: repository `docs/development/LOOP_MODEL_IR.md`,
@@ -989,13 +932,4 @@ declared. Their measured object is complete physical interference.
   #link("https://arxiv.org/abs/1605.01090")[Recola] ·
   #link("https://arxiv.org/abs/1404.4783")[four-dimensional formulation] ·
   #link("https://cp3.irmp.ucl.ac.be/projects/madgraph/wiki/MadLoopStandaloneLibrary")[MadLoop standalone convention].
-]
-
-#v(5pt)
-#note[
-  *Living document.* Update source, data and PDF after each milestone. Current
-  priority is requested feature coverage and validated two-to-four/two-to-five
-  processes; further two-to-two optimization is deferred. Add timing rows only
-  after physical validation. No arbitrary caps on process size or current count;
-  report actual dependency limits explicitly.
 ]
