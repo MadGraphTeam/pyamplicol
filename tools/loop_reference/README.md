@@ -440,3 +440,25 @@ Yukawa mass is 172 GeV. Helicity filtering is disabled and `ImprovePSPoint=-1`
 preserves the supplied exact points. It includes all source W/Z/photon/gluon
 Born diagrams and QCD loop corrections. It does not establish joint QCD+QED
 correction coverage or any performance target.
+
+The model-rule top-pair fixtures `tests/fixtures/loop/top-pair-model.json`
+(`g g > t t~`, `u u~ > t t~`) and `top-pair-higgs-model.json`
+(`e+ e- > t t~ h`) are regenerated from an unmodified MG5_aMC checkout:
+
+```bash
+for set in top-pair top-pair-higgs; do
+  python3 tools/loop_reference/madloop_top_pair_model.py generate --set $set \
+    --mg5 "$LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0" \
+    --builds "$LOOP_REFERENCE_ROOT/builds"
+  python3 tools/loop_reference/madloop_top_pair_model.py run --set $set \
+    --mg5 "$LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0" \
+    --builds "$LOOP_REFERENCE_ROOT/builds" --runs "$LOOP_REFERENCE_ROOT/runs/$set-model" \
+    --fixture tests/fixtures/loop/$set-model.json
+done
+```
+
+The points are exact on-shell terminating decimals, built deterministically.
+The counterterm split (UV vertex, wave function, R2, isolated top-mass UV and
+R2 quark two-point insertions) only sets the generated `SKIPLOOPEVAL` switch
+and skips counterterm interference indices in copies of `loop_matrix.f`; bare
+is full minus the counterterm sum. Binary64 references, no timing claim.
