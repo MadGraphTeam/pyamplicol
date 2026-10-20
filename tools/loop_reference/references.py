@@ -27,7 +27,6 @@ import os
 from pathlib import Path
 import platform
 import re
-import resource
 import shutil
 import subprocess
 import sys
@@ -223,9 +222,6 @@ def run_native(command, stdin_text, cwd, log, cpu):
     env.update({"OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"})
 
     def pin():
-        # Deep provider recursions (e.g. Recola skeleton generation at seven
-        # legs) need more than the default 8 MiB stack.
-        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
         if cpu is not None:
             os.sched_setaffinity(0, {cpu})
 
@@ -335,7 +331,8 @@ def command_run(args):
                             "-lrecola", "-o", str(binary)], check=True, cwd=run_dir)
             uncached = legs >= UNCACHED_LEG_THRESHOLD or args.recola_uncached
             commands = recola_commands(spec, points, uncached)
-            result["settings"] = {"commands": commands, "collier_cache": "off" if uncached else "on",
+            result["settings"] = {"recola_tree": str(root), "commands": commands,
+                                  "collier_cache": "off" if uncached else "on",
                                   "dynamic_settings": 1, "compute_ir_poles": 1,
                                   "delta_uv": 0, "delta_ir": [0, 0], "mu_uv=mu_ir=mu_r": True}
             stdin = "\n".join(commands + [f"points {count}", *point_lines(points)]) + "\n"

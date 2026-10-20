@@ -440,3 +440,89 @@ Yukawa mass is 172 GeV. Helicity filtering is disabled and `ImprovePSPoint=-1`
 preserves the supplied exact points. It includes all source W/Z/photon/gluon
 Born diagrams and QCD loop corrections. It does not establish joint QCD+QED
 correction coverage or any performance target.
+
+## Required-process references (MASTER_PLAN 5.6-5.7)
+
+One parameterised toolkit produces independent provider references for any
+process listed in `required_processes.json`; nothing in it is process-specific.
+
+| File | Role |
+|---|---|
+| `required_processes.json` | Process specifications: PDGs, Born amplitude orders (powers of `g_s`, `e`), correction type, scheme, MG5/Recola/OpenLoops process strings and OpenLoops library. Schemes hold the exact decimal parameters shared by all providers. |
+| `required_spec.py` | Loader (derives loop orders), external masses, averaging/symmetry metadata, universal double-pole factor. |
+| `exact_points.py` | Deterministic exact on-shell 2->n points with terminating decimals (massive pairs included); see its docstring for the construction and its representability limit. |
+| `madloop_export.py` | MG5_aMC standalone export (optimized output, external Ninja/Collier, split orders `QCD,QED`) and `make OLP_static`; writes `<export>.generation.json` with graph counts, observed orders and generation/export/compile times. |
+| `madloop_driver.f90`, `recola_driver.f90`, `openloops_driver.cpp` | Generic native drivers (no Python per point): Born and Laurent coefficients selected by squared split order (MadLoop) or coupling power (Recola/OpenLoops). |
+| `references.py` | `run` one provider (builds its driver, sets matched parameters, pins one CPU, records times) and `merge` the available providers into one JSON with cross-checks. |
+| `run_required.sh` | Convenience wrapper: points (if absent) + `run` + `merge` under `$LOOP_REFERENCE_ROOT/runs/required/<process>/`. |
+
+Typical use (licence not needed; run from any directory):
+
+```bash
+source workspace/reference/env.sh
+export LOOP_REFERENCE_ROOT=workspace/reference LOOP_REFERENCE_PYTHON=python
+python tools/loop_reference/madloop_export.py --spec tools/loop_reference/required_processes.json \
+  --process gg_ttxgg --mg5 $LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0 \
+  --output $LOOP_REFERENCE_ROOT/runs/required/gg_ttxgg/madloop-export
+for provider in madloop recola openloops; do
+  tools/loop_reference/run_required.sh gg_ttxgg $provider <cpu>
+done
+```
+
+Each provider writes `status-<provider>.json` (`running`/`done`/`failed: ...`),
+`<provider>-run/output.log` and `<provider>-result.json`; `reference.json` is the
+merge. A failed or interrupted provider is resumed by rerunning the same
+`run_required.sh` line; a MadLoop export is resumed by deleting the incomplete
+export directory and rerunning `madloop_export.py` (it refuses to overwrite).
+
+### Matched settings
+
+Both schemes: Feynman gauge, all widths zero (stable top; the complex-mass
+scheme then reduces to real on-shell masses), massless `b`, `tau` and light
+fermions, diagonal CKM, `alpha_s=0.118` at `mu_R` with five active flavours
+(top decoupled) and six quark flavours in loops, `mu_UV=mu_IR=mu_R` per point,
+UV counterterms and complete R2 on, actual poles from every provider.
+
+* `qcd` (MG5 `loop_sm-no_b_mass`): `alpha=1/132.507` fixed, `G_F=1.16639e-5`,
+  `MZ=91.188`, `MW` derived at tree level (`80.419002...`), `MH=125`,
+  `MT=ymt=173`. Recola: `use_alpha0_scheme(alpha)` with derived `MW`;
+  OpenLoops: `ew_scheme=1` with the same `G_F`, `MZ` and derived `MW`, which
+  reproduces `alpha` exactly. EW renormalization is absent in QCD corrections.
+* `ew-gmu` (converted `loop_qcd_qed_sm_Gmu`, default restriction): G_mu input
+  and renormalization scheme, `G_F=1.16639e-5`, `MW=80.419`, `MZ=91.188`,
+  `MH=125`, `MT=ymt=173`. MadLoop generates `[virt=QCD QED]` with squared-order
+  selection of the Born-virtual interference, i.e. every one-loop graph of the
+  selected coupling order (EW and QCD-EW mixed, closed fermion loops), which is
+  how OpenLoops `*_ew` libraries (`EW=n,1`) and Recola (`select_gs_power_LoopAmpl`)
+  define the NLO EW virtual. Recola: `use_gfermi_scheme`; OpenLoops:
+  `ew_scheme=1`, `ew_renorm_scheme=1`, `ew_renorm=1` (EW counterterms are off by
+  default for a directly registered EW library).
+
+Conventions: MadLoop/BLHA `C_eps=(4 pi)^eps/Gamma(1-eps)`; OpenLoops
+`truepoles=1`, `polenorm=0`, `iop_on=0`, used directly; Recola finite part
+converted by `+pi^2/6 * D`. MadLoop requests relative accuracy `1e-11`, forces
+its stability check on each timed call and keeps its production
+`ImprovePSPoint=2`; Recola uses `dynamic_settings=1`, `compute_ir_poles=1`.
+At seven or more external legs the COLLIER global cache is disabled in both
+MadLoop (Collier 1.2.9, `COLLIERGlobalCache=0`) and Recola (Collier 1.2.8,
+`set_cache_mode_rcl(0)`), following the NinjaRS owners' report of a wrong
+global-cache result at `N=7`, rank 9.
+
+The merge checks every pair of providers coefficient by coefficient with
+`|a-b|/max(|a|,|b|,|Born| coupling/(2 pi))` (no floor for the Born; strict
+relative errors are listed too) and the universal double pole
+`D = -(coupling/2pi) * sum_i C_i * Born` (QCD: `C_F`/`C_A` per massless
+coloured leg; EW: `Q_i^2` per massless charged leg). Tolerance `2e-8`, as for
+the earlier seven-leg controls. Timings are single-thread by-products: point 1
+is evaluated untimed for initialization, then each point once.
+
+Recola defect at seven gluons: `makeSkeleton` declares the automatic array
+`colorBranch(bLDef)`, but `reallocate_bLDef` enlarges `bLDef` beyond the
+initial 500000 branches during generation of `g g -> g g g g g`; the following
+`colorBranch(b)` writes overflow the array and glibc aborts with "double free or
+corruption" in `reallocate_bLDef` (also with an unlimited stack).
+`recola_colorbranch.patch` makes the array allocatable and grows it with
+`bLDef`; it changes nothing while no reallocation happens (bitwise identical
+`g g -> t t~` results). The patched copy is built separately in
+`workspace/reference/builds/recola2-2.3.0-colorbranch-fix` (same CMake options,
+Collier 1.2.8, SM 2.2.3) and selected with `LOOP_REFERENCE_RECOLA`.

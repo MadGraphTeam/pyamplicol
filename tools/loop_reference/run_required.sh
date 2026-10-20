@@ -4,7 +4,9 @@
 #   run_required.sh <process> <madloop|recola|openloops> [cpu]
 # Work directory: $LOOP_REFERENCE_ROOT/runs/required/<process>/ holding
 # points.json (created if absent), madloop-export/ (from madloop_export.py),
-# <provider>-run/ logs, <provider>-result.json, status.json, reference.json.
+# <provider>-run/ logs, <provider>-result.json, status-<provider>.json and
+# reference.json. LOOP_REFERENCE_RECOLA / LOOP_REFERENCE_OPENLOOPS override the
+# provider trees (e.g. a patched Recola build).
 set -euo pipefail
 process=$1
 provider=$2
@@ -19,7 +21,8 @@ if [ ! -f "$work/points.json" ]; then
 fi
 "$python" "$here/references.py" run --process "$process" --points "$work/points.json" \
   --work-dir "$work" --provider "$provider" --mg5 "$root/sources/MG5_aMC_v3_7_0" \
-  --madloop-export "$work/madloop-export" --recola "$root/sources/recola2-2.3.0" \
-  --openloops "$root/sources/OpenLoops-2.1.5" ${cpu:+--cpu "$cpu"}
+  --madloop-export "$work/madloop-export" \
+  --recola "${LOOP_REFERENCE_RECOLA:-$root/sources/recola2-2.3.0}" \
+  --openloops "${LOOP_REFERENCE_OPENLOOPS:-$root/sources/OpenLoops-2.1.5}" ${cpu:+--cpu "$cpu"}
 "$python" "$here/references.py" merge --process "$process" --points "$work/points.json" \
   --work-dir "$work" --output "$work/reference.json" || true
