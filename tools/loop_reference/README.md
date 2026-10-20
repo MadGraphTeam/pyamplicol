@@ -691,3 +691,37 @@ the tree path.
   correctly, the UFO EW counterterms agree with Recola/OpenLoops.
   `exclusions.json` remains available for documented exclusions but none is
   in use.
+
+## Legacy-engine oracles for the v2 engine (WP0.1)
+
+`legacy_capture.py` freezes the legacy per-diagram engine before the v2 engine
+replaces it (oracles O1 and O2 of `docs/development/loop_v2/DESIGN.md` section
+14) for the control set gg->gg, uu~->dd~g, uu~->ggg, Drell-Yan (photon only),
+uu~->dd~, uu~->tt~, uu~->uu~ and uu~->uu~g, in binary64 and in 200-bit
+arbitrary precision:
+
+* `tests/fixtures/loop/legacy/<name>.json` (O1): Born and the six virtual
+  components per squared order and Laurent coefficient at every point, the
+  matched counterterm and external-field insertion multisets, and for gg->gg
+  the leading-colour projection with its colour degrees;
+* `tests/fixtures/loop/legacy/<name>.families.json.gz` (O2): per denominator
+  family (shifts as external-momentum combinations, squared masses, monomial
+  powers) the Born-weighted numerator coefficients the legacy engine reduces,
+  at the first point.
+
+It uses the generic source compiler on MG5_aMC `loop_sm` with `MB=0` (the
+providers' `loop_sm-no_b_mass` scheme), the points of the committed provider
+references, and stores the engine's own decimal strings, so a rerun reproduces
+the files byte for byte:
+
+```bash
+python tools/loop_reference/legacy_capture.py --ufo <MG5>/models/loop_sm [--process ...] [--check]
+```
+
+`tests/unit/test_loop_v2_oracles.py` checks the regeneration and the agreement
+of the providers with each other and with the legacy engine (<= 1e-9 in the
+metric of the required references). The three slice processes `uux_ddxg`,
+`uux_uux` and `uux_uuxg` (role `slice` in `required_processes.json`) were
+produced with `run_required.sh` like every other required process. For a
+massless 2->2 final state `exact_points.py` uses the seed parameter for the
+scale and the scattering axis; larger final states keep their points.
