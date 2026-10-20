@@ -155,6 +155,14 @@ def construct(masses, parameters, seed_scale):
         momenta[b] = [momentum, *(-momentum * x for x in n)]
         mass = masses[a] * k
     else:
+        if not additions:
+            # A massless 2->2 final state has no addition to vary, so the otherwise
+            # unused seed parameter sets its scale and scattering axis. Larger final
+            # states keep their points unchanged.
+            index = _K_SEED.index(k)
+            n = _rotate(_matmul(_rotation(index % 3, _PYTHAGOREAN[index // 3 % 5]),
+                                _rotation((index + 1) % 3, _PYTHAGOREAN[index % 5])), [0, *z])[1:]
+            seed_scale *= k
         energy = seed_scale / 2
         momenta[a] = [energy, *(energy * x for x in n)]
         momenta[b] = [energy, *(-energy * x for x in n)]

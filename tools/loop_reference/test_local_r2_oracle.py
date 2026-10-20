@@ -27,6 +27,14 @@ MODES = [
 
 
 @pytest.fixture(scope="module")
+def backend():
+    """The loop core of the staged pyamplicol._rusticol (formerly _loop_reduction)."""
+    from pyamplicol.loops.native import load_loop_native
+
+    return load_loop_native()
+
+
+@pytest.fixture(scope="module")
 def chains():
     return [build_chain(orientation) for orientation in (1, -1)]
 
@@ -176,9 +184,8 @@ def native_batch(backend, rows, columns, values, options, ids):
 
 @pytest.mark.parametrize("arithmetic,precision,tolerance", MODES)
 def test_both_local_orientations_reduce_natively_in_three_precisions(
-    chains, arithmetic, precision, tolerance
+    backend, chains, arithmetic, precision, tolerance
 ):
-    backend = pytest.importorskip("_loop_reduction")
     options = {"arithmetic": arithmetic, "precision": precision}
     native = [
         NativeCoefficientDAG(c.dag, output_nodes=(c.projected,), **options)
@@ -270,9 +277,8 @@ def test_both_local_orientations_reduce_natively_in_three_precisions(
 
 @pytest.mark.parametrize("arithmetic,precision,tolerance", MODES)
 def test_local_epsilon_factor_convolves_with_bubble_pole(
-    arithmetic, precision, tolerance
+    backend, arithmetic, precision, tolerance
 ):
-    backend = pytest.importorskip("_loop_reduction")
     dag, closed, _eps = build_epsilon_transition()
     assert dag.nodes[closed].rank == 0
     labels = dag.nodes[closed].output_labels
