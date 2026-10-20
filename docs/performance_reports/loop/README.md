@@ -2,6 +2,23 @@
 
 `benchmarks.pdf` is the rendered report; `benchmarks.typ` is its source.
 
+The next Bose composition milestone (`3dd21ac9`) now passes at the **producer**
+boundary. The same independently generated fixed-full d/s owners retain a
+proved subset of their original named histories (`born`, `casimir`) together
+with both singleton and joint gluon sources. Twelve cold controls check exact
+inverse routing, complete SourceIR/phase/spectator ownership, foreign records
+and direct-construction bypasses. All nine complete result blocks, including
+both integrated terms, match the independent member in double, DoubleFloat
+and AP70, with exact updates, opaque IDs, empty/tail rows and raw native output.
+The one binary64 test failure was a list-versus-tuple ID assertion; only that
+case reran after correcting the test, without a tolerance or production change.
+Momenta-only and source-only wrong actions differ; consistent omission of both
+is invisible to Bose symmetry, so an explicit non-involutive routing oracle
+checks that action. Original source/native owners remain intact. The member's
+unclosed ordered requests remain unavailable, and its new saved/public/SDK
+scope is still pending. Evidence: workspace
+`reports/loop-bose-source-history-acceptance.md`. No timing observations change.
+
 Explicit source-admitted ordinary full-colour Bose members now pass
 (`e2f3e3ac`, normal native digest `a42231c8…`). Independently generated fixed-full
 QCD `d d~ -> g g` and `s s~ -> g g` owners prove the outgoing-gluon exchange through
@@ -21,9 +38,10 @@ Independent exact three-cycle tests detect missing/inverse/doubled input
 transport, which Bose-invariant physical amplitudes alone cannot detect.
 
 This is explicit retained-source admission and saved-member transport. Automatic
-flavour grouping still proposes unchanged ports. Nonidentity projected mapping,
-resolved member axes, directed histories and vector-source transport remain
-separate proofs. Existing typed records and normal artifact publication are used;
+flavour grouping still proposes unchanged ports. Nonidentity projected mapping
+and resolved member axes remain separate proofs; the source/history producer
+milestone above does not yet extend saved/public/SDK admissions. Existing typed
+records and normal artifact publication are used;
 old typed readers reject the new permutation field. Original source owners and
 native modules remain intact. The old compiled-model fingerprint correctly
 rejects; normal recompilation produces exactly equal model/raw sidecar/IR/default
@@ -48,6 +66,28 @@ preparation uses the isolated [loader PR 3](https://github.com/alphal00p/ufo_mod
 candidate for legacy Goldstone aliases; the normal loader pin is unchanged.
 See `tools/loop_reference/ADJOINT_SCALAR_LOCAL.md`. No timing data or process
 rows are added by this milestone.
+
+Further local counterterm coverage now passes independently: eleven typed
+Identity-VV/f-VVV bases (57 actual source keys) have 950 ALOHA controls and 18
+exact colour overlaps; exact unprojected and chiral two-point Dirac slashes
+retain the source momentum label and calibrated typed endpoint exchange.
+The two chiral kernels pass 68 separate ALOHA controls, 96 exact calibrated
+FFV-contraction identities and 16 additional slash-sum identities. These local
+certificates preserve scalar coefficients, loop groups and diagnostics; they
+do not admit chiral scalar mass terms or establish a complete BSM amplitude.
+See `tools/loop_reference/ADJOINT_VECTOR_LOCAL.md` and
+`tools/loop_reference/CHIRAL_FERMION_TWO_POINT.md`.
+
+The retained scalar-QCD `u u~ -> sig8 sig8 g` candidate has 6 Born graphs,
+201 loops, 58 families and 251 matched CT insertions, but its initial binary64
+evaluation fails on a valid one-mass scalar box. Independent OneLOop and both
+Collier implementations establish all Laurent coefficients, including the
+absorptive parts. [Scalar-master PR 10](https://github.com/alphal00p/oneloopmaster/pull/10)
+reclassifies an exact post-chart mass-shell case through an existing formula.
+The isolated fix passes 768 transparent/generated evaluations across all three
+carriers plus existing controls. An isolated coherent consumer replay is still
+pending; normal pins are unchanged and no complete scalar-process or performance
+claim follows. PR 10 is separate from the pending CMS sheet-sign PR 9.
 
 Real-mass Gmu `e- e+ -> u u~ [QED]` now passes complete ordinary component
 checks against MadLoop (3.85e-14) and Born/Laurent checks against Recola
