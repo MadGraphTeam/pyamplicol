@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-20 · 01:25 UTC"
+#let report-date = "2026-10-20 · 01:38 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -367,9 +367,10 @@ Six-leg DD/AP80 pole/scaling controls pass $3 times 10^(-25)$ / $10^(-60)$;
 six-propagator values converge within $6.99 times 10^(-29)$. Mixed-Born QCD matches
 MadLoop within $6.7 times 10^(-15)$. Recola $W^+$ sources agree within
 $2.9 times 10^(-13)$ outgoing / $3.2 times 10^(-9)$ incoming; $W^-$ within
-$4.3 times 10^(-13)$, all binary64 comparisons. Three-state/joint sums and exact
-source replay pass all carriers. Cache/Gram failing controls remain in the README;
-timings are unchanged.
+$4.3 times 10^(-13)$. EW quarks match MadLoop / Recola within
+$3.85 times 10^(-14)$ / $8.51 times 10^(-14)$, all binary64 comparisons.
+Three-state/joint sums and exact source replay pass all carriers.
+Cache/Gram failing controls remain in the README; timings are unchanged.
 
 #pagebreak()
 #section-label[MEASUREMENTS · MATCHED LEADING COLOUR]
@@ -752,15 +753,11 @@ Native charge tensors act on batched shared currents. Four-quark controls pass
 all carriers, swapped terms, order/field masks and exact updates. Each term is
 integrated before conjugation and checked separately; rescue retains IDs and labels.
 
-Quark identity, Casimir and $T_1 dot T_2$ match binary64 Recola; complex
-multi-emission histories have separate controls. Real-mass Gmu
-$e^- e^+ -> u overline(u)$ EW colour insertions now pass all components and both
-terms in double/DD/AP70. Ordinary components match MadLoop within
-$3.85 times 10^(-14)$ and Born/poles/finite match Recola within
-$8.51 times 10^(-14)$. These are binary64 references; the explicit source repair
-is retained. Saved/public, subset rescue and binary64 SDK pass. Explicit public
-source preparation passes graph-free checks; tree diagnostics and downstream
-matched-tensor gates remain unchanged. Fresh public process generation is separate.
+Quark identity, Casimir and $T_1 dot T_2$ match binary64 Recola; complex histories
+have separate controls. Real-mass Gmu $e^- e^+ -> u overline(u)$ passes all
+components and both terms in double/DD/AP70. MadLoop/Recola comparisons are
+binary64 (page 4). Saved/public, subset rescue, SDK and explicit graph-free
+source preparation pass; fresh public process generation remains separate.
 
 Photon/gluon phases survive outgoing/crossed publication. Outgoing $W^plus.minus$
 and incoming $W^+$ QCD sources pass longitudinal/joint states in all carriers.
@@ -775,11 +772,16 @@ pass. A rectangular oracle checks non-Hermitian interference. Other nonidentity
 crossings and EW/CMS vector sources remain open.
 
 == Exact mappings and the rectangular FFT boundary
-Exact reuse preserves resolved four-quark output and complex histories. Paired
-$d overline(d) -> g g$ / $s overline(s) -> g g$ proofs admit formal full/LC/NLC
-identity reuse through saved/public/SDK paths: 9 ordinary, 64 UV/$R_2$ and 6 field
-rules. Three signed LC axes survive different column orders. Sources, both terms
-and subset rescue pass. Projected nonidentity reuse and permutations remain open.
+Exact d/s identity reuse covers formal full/LC/NLC, signed Born axes, complex
+full-colour histories and identity sources through saved/public/SDK interfaces.
+Projected nonidentity histories remain open.
+
+Explicit ordinary full-colour Bose members now exchange outgoing gluons after
+complete local-rule and field proofs. Exact dependency components resolve fixed
+colour identities; formal owners keep symbolic proof. All-carrier components,
+native input transport, subset rescue and SDK pass. Members reject unproved
+resolved/history/source operations while representatives keep them. Automatic
+flavour grouping still uses unchanged ports; no new timing claim follows.
 
 Certified ordinary/resolved full/NLC executes binary64 FFT plus every residual.
 Exact pre-$N_c$ ownership, noncentral $S_3$ and complete physical checks pass.
@@ -939,7 +941,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned charged leptons, bounded massive muons and quarks pass complete references. Quark charge rows pass both terms and all carriers; saved/public and binary64 SDK transport pass. Explicit Gmu preparation passes; fresh public process generation remains open.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
-  [Correlations / mapping], [Outgoing W+ complete-family histories and formal d/s full/LC/NLC identity mapping pass saved/public/SDK checks. Signed LC axes and sources compose. Projected nonidentity mapping, other nonidentity crossings and EW/CMS vector sources remain open.],
+  [Correlations / mapping], [Outgoing W+ complete families and formal d/s identity reuse pass full/LC/NLC saved/public/SDK. Explicit ordinary full-colour Bose members now pass all carriers; representatives retain their richer plans. Projected/nonidentity-source reuse and EW/CMS vector sources remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Full/NLC ordinary/resolved binary64 FFT and exact DD/AP fallback pass. Source rescue, partial returns and grouped CLI retain IDs, precision and diagnostics.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )

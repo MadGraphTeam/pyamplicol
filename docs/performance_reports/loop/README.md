@@ -2,6 +2,37 @@
 
 `benchmarks.pdf` is the rendered report; `benchmarks.typ` is its source.
 
+Explicit source-admitted ordinary full-colour Bose members now pass
+(`e2f3e3ac`, normal native digest `a42231c8…`). Independently generated fixed-full
+QCD `d d~ -> g g` and `s s~ -> g g` owners prove the outgoing-gluon exchange through
+complete ordinary/UV/R2 local groups and both actual 18-insertion field multisets.
+Exact dependency components establish fixed-representation identities without
+specializing scalar or epsilon data; formal owners retain symbolic proof.
+Physical asymmetry, changed typed interfaces, hidden epsilon/formal-colour
+inequality and symmetric field-orbit omission/duplication are rejected.
+
+Complete seven-component source comparisons pass double, DoubleFloat and AP70.
+Six saved-runtime cases cover all components/orders/poles, irregular rows,
+opaque IDs and invalid permutations. Public ordinary-only member capabilities,
+actual AP60/AP80 subset rescue, clear and selected PDG/leg metadata pass; the
+real representative's resolved/history/source plans remain available. The linked
+binary64 Rust SDK checks values, capabilities, denials and result ownership.
+Independent exact three-cycle tests detect missing/inverse/doubled input
+transport, which Bose-invariant physical amplitudes alone cannot detect.
+
+This is explicit retained-source admission and saved-member transport. Automatic
+flavour grouping still proposes unchanged ports. Nonidentity projected mapping,
+resolved member axes, directed histories and vector-source transport remain
+separate proofs. Existing typed records and normal artifact publication are used;
+old typed readers reject the new permutation field. Original source owners and
+native modules remain intact. The old compiled-model fingerprint correctly
+rejects; normal recompilation produces exactly equal model/raw sidecar/IR/default
+semantics with a current fingerprint. Evidence is in
+`docs/development/LOOP_FLAVOR_TRANSPORT.md` and workspace
+`reports/loop-bose-permutation-acceptance.md`. These correctness tests are not
+performance measurements; every measured table cell and timing identity is
+unchanged.
+
 Adjoint-scalar local preparation (`b8390984`, `efb5f233`, `4ae8095e`) now accepts
 unused propagator declarations while still rejecting actual custom bindings,
 and preserves explicitly zero hypercharge metadata without inferring charges.
@@ -138,7 +169,8 @@ and the linked SDK pass; actual fresh LC service preparation establishes the
 partition before capturing source owners. Public full/LC/NLC selection, clear,
 empty/tail rows, opaque IDs and LC source subset rescue are covered. The new
 mapping scope is identity histories with unchanged external ports; nonidentity
-projected mapping and permutations remain open. Evidence: workspace
+projected mapping remains open. Explicit ordinary Bose transport is a separate
+later milestone described above. Evidence: workspace
 `reports/loop-projected-flavor-acceptance.md`. These are correctness checks, not
 new performance measurements; all original owners/modules remain intact.
 
@@ -261,8 +293,8 @@ benchmark. Public directed generation and grouped complex SDK transport now pass
 joint spin ingress and exact identity-order flavour grouping now also pass;
 full-colour d/s grouping additionally composes with singleton/joint spin as
 described below. The later formal LC/NLC identity-history mapping milestone is
-recorded above; nonidentity projected mapping and external permutations remain
-follow-ups. Fresh installed gg
+recorded above; nonidentity projected mapping remains a follow-up. Explicit
+ordinary Bose members are covered by the later milestone at the top. Fresh installed gg
 LC publication now passes; DY LC requires the isolated PR 155 Community overlay,
 as detailed below. Ordinary installed native/SDK evidence is also recorded below.
 The subsequent signed-LC source milestone adds six canonical Born components
@@ -967,7 +999,8 @@ Five physical/public tests pass in double, DoubleFloat and AP70, covering every
 Born/order/pole/bare/UV/R2/field component and both complex directions, exact
 scalar/source updates, empty batches, original IDs, clear and AP60/AP80 subset
 rescue. Cold selected-vector species corruption is rejected. Other unproved
-flavour relations and nonidentity permutations retain independent generation.
+flavour relations retain independent generation. Automatic grouping still uses
+unchanged ports; explicit ordinary Bose members are described at the top.
 The later formal LC/NLC identity-history extension is recorded at the top of
 this report; nonidentity projected reuse remains separate. The safe Rust SDK
 client also passes selected-member evaluation,
