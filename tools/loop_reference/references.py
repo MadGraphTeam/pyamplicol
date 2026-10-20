@@ -311,9 +311,20 @@ def command_run(args):
     try:
         if provider == "madloop":
             export = args.madloop_export.resolve()
+            generation = export.parent / f"{export.name}.generation.json"
+            while args.wait_for_export:
+                state = json.loads(generation.read_text())["status"] if generation.exists() else "absent"
+                if state == "compiled":
+                    break
+                if state not in ("generating", "exporting", "compiling"):
+                    raise RuntimeError(f"MadLoop export state {state!r}; not waiting")
+                pid = json.loads(generation.read_text()).get("pid")
+                if pid is not None and not Path(f"/proc/{pid}").exists():
+                    raise RuntimeError(f"MadLoop export process {pid} ended in state {state!r}")
+                status_update(work, provider, f"waiting for MadLoop export ({state})")
+                time.sleep(300)
             binary = build_madloop(export, run_dir)
             result["settings"] = prepare_madloop_run(spec, export, run_dir, args.mg5, legs)
-            generation = export.parent / f"{export.name}.generation.json"
             result["generation"] = json.loads(generation.read_text()) if generation.exists() else None
             result["version"] = "MadLoop/MG5_aMC " + re.search(
                 r"version = (\S+)", (args.mg5 / "VERSION").read_text()).group(1)
@@ -524,6 +535,8 @@ def main():
     run.add_argument("--reference-root", type=Path)
     run.add_argument("--madloop-export", type=Path)
     run.add_argument("--madloop-accuracy", type=float, default=1e-11)
+    run.add_argument("--wait-for-export", action="store_true",
+                     help="poll the export's generation.json until it is compiled")
     run.add_argument("--recola", type=Path, help="Recola2 source/build tree with librecola.so")
     run.add_argument("--recola-uncached", action="store_true")
     run.add_argument("--openloops", type=Path, help="OpenLoops installation")

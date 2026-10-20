@@ -60,6 +60,7 @@ def main():
         "model": madloop["model"],
         "command": madloop["process"],
         "host": platform.node(),
+        "pid": os.getpid(),
         "status": "generating",
     }
 
