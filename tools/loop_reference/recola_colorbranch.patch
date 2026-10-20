@@ -1,0 +1,50 @@
+--- a/src/core/skeleton_rcl.f90	2026-10-20 09:09:52.557726870 +0000
++++ b/src/core/skeleton_rcl.f90
+@@ -63,7 +63,9 @@
+ 
+   integer                    :: el1,el2,eb,sumex,b,b0,legsE,ib, &
+                                 par(legs),check,w,xTmin,xTmax,x,i,j,ii
+-  integer, dimension (bLDef) :: colorBranch
++  ! Grows with bLDef: an automatic array sized at entry overflows once
++  ! reallocate_bLDef enlarges the branch tables inside routerN.
++  integer, allocatable       :: colorBranch(:)
+   logical                    :: doubleCounting, last
+   integer                    :: eN,n,l,nMax,s
+   integer                    :: binOut
+@@ -82,6 +84,8 @@
+   integer                            :: nbranches
+   integer, allocatable, dimension(:) :: select_branch
+ 
++  allocate (colorBranch(bLDef))
++
+   ! Init couplings and vertices
+   if ( .not. is_model_init_mdl()) then
+     call init_vertices_mdl
+@@ -196,6 +200,15 @@
+ 
+ !------------------------------------------------------------------------------!
+ 
++  subroutine grow_colorBranch
++    integer, allocatable :: tmp(:)
++    allocate (tmp(bLDef))
++    tmp(:size(colorBranch)) = colorBranch
++    call move_alloc(tmp, colorBranch)
++  end subroutine grow_colorBranch
++
++!------------------------------------------------------------------------------!
++
+   recursive subroutine branch_partition(up,lo,np)
+   integer, intent(in) :: up,lo,np
+   integer             :: ee
+@@ -820,7 +833,10 @@
+             end if
+ 
+             b = b + 1
+-            if (b .gt. bLDef) call reallocate_bLDef
++            if (b .gt. bLDef) then
++              call reallocate_bLDef
++              call grow_colorBranch
++            end if
+ 
+             nMaxT(b) = nMax
+             do i = 1, n_In, 1

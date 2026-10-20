@@ -462,3 +462,159 @@ The counterterm split (UV vertex, wave function, R2, isolated top-mass UV and
 R2 quark two-point insertions) only sets the generated `SKIPLOOPEVAL` switch
 and skips counterterm interference indices in copies of `loop_matrix.f`; bare
 is full minus the counterterm sum. Binary64 references, no timing claim.
+
+## Required-process references (MASTER_PLAN 5.6-5.7)
+
+One parameterised toolkit produces independent provider references for any
+process listed in `required_processes.json`; nothing in it is process-specific.
+
+| File | Role |
+|---|---|
+| `required_processes.json` | Process specifications: PDGs, Born amplitude orders (powers of `g_s`, `e`), correction type, scheme, MG5/Recola/OpenLoops process strings and OpenLoops library. Schemes hold the exact decimal parameters shared by all providers. |
+| `required_spec.py` | Loader (derives loop orders), external masses, averaging/symmetry metadata, universal double-pole factor. |
+| `exact_points.py` | Deterministic exact on-shell 2->n points with terminating decimals (massive pairs included); see its docstring for the construction and its representability limit. |
+| `madloop_export.py` | MG5_aMC standalone export (optimized output, external Ninja/Collier, split orders `QCD,QED`) and `make OLP_static`; writes `<export>.generation.json` with graph counts, observed orders and generation/export/compile times. |
+| `madloop_driver.f90`, `recola_driver.f90`, `openloops_driver.cpp` | Generic native drivers (no Python per point): Born and Laurent coefficients selected by squared split order (MadLoop) or coupling power (Recola/OpenLoops). |
+| `references.py` | `run` one provider (builds its driver, sets matched parameters, pins one CPU, records times and the provider versions read from the trees/libraries actually used), `merge` the available providers into one JSON with all-pairs cross-checks, `summary` (Markdown table) and `watch` (periodic re-merge of long runs that exits once every expected run has finished, failed or died). |
+| `run_required.sh` | Convenience wrapper: points (if absent) + `run` + `merge` under `$LOOP_REFERENCE_ROOT/runs/required/<process>/`. |
+| `build_recola_patched.sh`, `recola_colorbranch.patch` | Isolated Recola build with the seven-gluon `colorBranch` fix (below). |
+
+Typical use (licence not needed; run from any directory):
+
+```bash
+source workspace/reference/env.sh
+export LOOP_REFERENCE_ROOT=workspace/reference LOOP_REFERENCE_PYTHON=python
+python tools/loop_reference/madloop_export.py --spec tools/loop_reference/required_processes.json \
+  --process gg_ttxgg --mg5 $LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0 \
+  --output $LOOP_REFERENCE_ROOT/runs/required/gg_ttxgg/madloop-export
+for provider in madloop recola openloops; do
+  tools/loop_reference/run_required.sh gg_ttxgg $provider <cpu>
+done
+```
+
+Each provider writes `status-<provider>.json` (`running`/`done`/`failed: ...`),
+`<provider>-run/output.log` and `<provider>-result.json`; `reference.json` is the
+merge. `run --tag <t>` writes a secondary run (`<provider>-<t>-result.json`)
+whose timings and deviations from the reference run are attached to the merge
+(`providers.<provider>.secondary_runs.<t>`) but never used as values; it is used
+for MadLoop at its production stability setting (below). MadLoop runs can wait
+for a long export with `--wait-for-export`; they fail as soon as no live
+`madloop_export.py` process for that export remains. A failed or interrupted provider is resumed by rerunning the same
+`run_required.sh` line; a MadLoop export is resumed by deleting the incomplete
+export directory and rerunning `madloop_export.py` (it refuses to overwrite).
+
+### Matched settings
+
+Both schemes: Feynman gauge, all widths zero (stable top; the complex-mass
+scheme then reduces to real on-shell masses), massless `b`, `tau` and light
+fermions, diagonal CKM, `alpha_s=0.118` at `mu_R` with five active flavours
+(top decoupled) and six quark flavours in loops, `mu_UV=mu_IR=mu_R` per point,
+UV counterterms and complete R2 on, actual poles from every provider.
+
+* `qcd` (MG5 `loop_sm-no_b_mass`): `alpha=1/132.507` fixed, `G_F=1.16639e-5`,
+  `MZ=91.188`, `MW` derived at tree level (`80.419002...`), `MH=125`,
+  `MT=ymt=173`. Recola: `use_alpha0_scheme(alpha)` with derived `MW`;
+  OpenLoops: `ew_scheme=1` with the same `G_F`, `MZ` and derived `MW`, which
+  reproduces `alpha` exactly. EW renormalization is absent in QCD corrections.
+* `ew-gmu` (converted `loop_qcd_qed_sm_Gmu`, default restriction): G_mu input
+  and renormalization scheme, `G_F=1.16639e-5`, `MW=80.419`, `MZ=91.188`,
+  `MH=125`, `MT=ymt=173`. MadLoop generates `[virt=QCD QED]` with squared-order
+  selection of the Born-virtual interference, i.e. every one-loop graph of the
+  selected coupling order (EW and QCD-EW mixed, closed fermion loops), which is
+  how OpenLoops `*_ew` libraries (`EW=n,1`) and Recola (`select_gs_power_LoopAmpl`)
+  define the NLO EW virtual. Recola: `use_gfermi_scheme`; OpenLoops:
+  `ew_scheme=1`, `ew_renorm_scheme=1`, `ew_renorm=1` (EW counterterms are off by
+  default for a directly registered EW library).
+
+Conventions: MadLoop/BLHA `C_eps=(4 pi)^eps/Gamma(1-eps)`; OpenLoops
+`truepoles=1`, `polenorm=0`, `iop_on=0`, used directly; Recola finite part
+converted by `+pi^2/6 * D`. The MadLoop reference run requests relative
+accuracy `1e-11` (its stability test then sends most 6- and 7-leg top points to
+the quadruple-precision Ninja rescue, return code 328) and forces the stability
+test on every call; its times are therefore not a production baseline. A second
+MadLoop run (`--tag production --madloop-accuracy -1`) keeps MadLoop's own
+`MLStabThres=1e-3` and default stability test (`CTModeRun=-1`) and records the
+production per-point times and return codes, plus its deviation from the
+reference run; this is the MadLoop timing to use for the speed gate. Both keep
+`ImprovePSPoint=2`. MadLoop's parameter card receives each scheme value as its
+exact decimal text (checked to reproduce the same binary64 on re-reading). Recola
+uses `dynamic_settings=1`, `compute_ir_poles=1`.
+At seven or more external legs the COLLIER global cache is disabled in both
+MadLoop (Collier 1.2.9, `COLLIERGlobalCache=0`) and Recola (Collier 1.2.8,
+`set_cache_mode_rcl(0)`), following the NinjaRS owners' report of a wrong
+global-cache result at `N=7`, rank 9.
+
+The merge compares every unordered pair of providers (per row:
+`provider_pair_relative_errors`, `provider_pair_strict_relative_errors`; the
+reported maximum is over pairs of validated providers) coefficient by coefficient with
+`|a-b|/max(|a|,|b|,|Born| coupling/(2 pi))` (no floor for the Born; strict
+relative errors are listed too) and the universal double pole
+`D = -(coupling/2pi) * sum_i C_i * Born` (QCD: `C_F`/`C_A` per massless
+coloured leg; EW: `Q_i^2` per massless charged leg). Tolerance `2e-8`, as for
+the earlier seven-leg controls. Timings are single-thread by-products: point 1
+is evaluated untimed for initialization, then each point once.
+
+Recola defect at seven gluons: `makeSkeleton` declares the automatic array
+`colorBranch(bLDef)`, but `reallocate_bLDef` enlarges `bLDef` beyond the
+initial 500000 branches during generation of `g g -> g g g g g`; the following
+`colorBranch(b)` writes overflow the array and glibc aborts with "double free or
+corruption" in `reallocate_bLDef` (also with an unlimited stack).
+`recola_colorbranch.patch` makes the array allocatable and grows it with
+`bLDef`; it changes nothing while no reallocation happens (bitwise identical
+`g g -> t t~` results). The patched copy is built separately in
+`workspace/reference/builds/recola2-2.3.0-colorbranch-fix` and selected with
+`LOOP_REFERENCE_RECOLA`; reproduce it with
+
+```bash
+tools/loop_reference/build_recola_patched.sh workspace/reference/sources/recola2-2.3.0 \
+  workspace/reference/sources/COLLIER-1.2.8 workspace/reference/models/SM_2.2.3 <new-dir>
+```
+
+(a fresh build from this script gives bitwise identical `g g -> t t~` values).
+The supplied "2.3.0" tree reports version 2.2.5 itself (banner and
+`recolaConfigVersion.cmake`); result files record that self-reported version and
+the tree path.
+
+### EW matching findings (g g -> t t~ e- e+ g, `ew-gmu`)
+
+* OpenLoops `ppllttj_ew` (channel `eexttxggg`, `EW=2,1 QCD=3,0`, `nf=6`,
+  massless leptons) computes every one-loop graph of order `g_s^3 e^4`
+  interfered with the `g_s^3 e^2` Born, in the G_mu input and renormalization
+  scheme (`ew_scheme=1`, `ew_renorm_scheme=1`) with on-shell masses. EW
+  counterterms must be enabled with `ew_renorm=1` when the EW library is
+  registered directly. Its default `complex_mass_scheme=1` gives results identical
+  (1e-14) to `complex_mass_scheme=0` at zero widths.
+* Recola's default complex-mass scheme is not equivalent at zero widths: it
+  changed the finite part by 4e-4 (`g g -> t t~ e- e+`) and 2.7e-3
+  (`g g -> t t~ e- e+ g`) while leaving `g g -> t t~` and `u u~ -> e- e+ g`
+  unchanged, i.e. it enters through the top-Z couplings. With
+  `set_on_shell_scheme_rcl` Recola agrees with OpenLoops to 1e-9 (seven legs)
+  and 2e-8 (six legs); rotated points reproduce Recola to 1e-12, so the earlier
+  difference was not numerical.
+* MadLoop with the converted `loop_qcd_qed_sm_Gmu` (`[virt=QCD QED]`, real
+  masses) first differed from the agreeing Recola/OpenLoops pair on
+  `g g -> t t~ e- e+` EW by 1e-7 to 3e-7 in the finite part only (poles agreed
+  to 1e-11; Higgs-mass and `mu_R` dependent). **Cause established: an MG5_aMC
+  3.7.0 defect in MadLoop's quadruple-precision path, not a UFO counterterm
+  convention.** MadLoop at its production stability setting (double precision,
+  return code 216) agreed with OpenLoops to 1e-10, while the reference run
+  (quadruple-precision rescue, code 328) did not; comparing every double- and
+  quadruple-precision model parameter after the same card read isolated the EW
+  on-shell renormalization constants (e.g. `ZAWCFT_UV_EW_FIN`, relative 4.8e-9;
+  `C_UVTXTA2EW` 5.5e-7), and the exported `MP_REGLOG` returns
+  `log(MW^2/MU_R^2)` with relative error 4.8e-9: the MP model functions
+  (`MP_REGLOG`, `MP_REGLOGP/M`, `MP_REGSQRT`, `MP_GRREGLOG`, template in
+  `madgraph/iolibs/export_v4.py`) call `CMPLX(...)` without `KIND=16`, which
+  rounds real arguments to single precision; their `TWOPII` also uses the pi
+  literal `3.14169258...` (branch terms only, no effect here). The defect also
+  touches QCD: the top-decoupling counterterm `log(MU_R^2/MT^2)` gave the 5e-9
+  MadLoop spread of `g g -> t t~ g g`. `references.py` compiles a repaired copy
+  of the export's `model_functions.f` into the run directory and links it
+  before `libmodel.a` (the export is untouched; repairs are listed in
+  `settings.mg5_quadruple_precision_model_function_repairs`). With it the
+  quadruple-precision MadLoop agrees with OpenLoops to 1.5e-13..2.4e-12 on
+  `g g -> t t~ e- e+` EW, and MadLoop is a validated provider for every
+  process. The defect is in MG5's exported Fortran, not in the UFO: evaluated
+  correctly, the UFO EW counterterms agree with Recola/OpenLoops.
+  `exclusions.json` remains available for documented exclusions but none is
+  in use.
