@@ -638,26 +638,38 @@ def command_merge(args):
         providers[provider]["evaluation_seconds"] = [r["seconds"] for r in result["rows"]]
     # Secondary timing runs (e.g. MadLoop at its production stability setting):
     # timings and their deviation from the accurate run only, never reference values.
+    # Without the provider's own reference run (still running) the secondary run
+    # is reported separately and compared with the merged reference values.
+    timing_only = {}
     for path in sorted(work.glob("*-*-result.json")):
         label = path.name[: -len("-result.json")]
         provider, _, tag = label.partition("-")
-        if provider not in results:
+        if provider not in ("madloop", "recola", "openloops"):
             continue
         secondary = json.loads(path.read_text())
+        own = provider in results
+        against = results[provider]["rows"] if own else rows
         deviation = []
-        for accurate, other in zip(results[provider]["rows"], secondary["rows"], strict=True):
+        for accurate, other in zip(against, secondary["rows"], strict=True):
             unit = abs(accurate["born"]) * coupling / (2 * math.pi)
             deviation.append({key: relative(other[key], accurate[key], 0.0 if key == "born" else unit)
                               for key in COEFFICIENTS})
-        providers[provider].setdefault("secondary_runs", {})[tag] = {
+        entry = {
             "settings": {k: secondary["settings"][k] for k in ("requested_relative_accuracy", "stability_check")
                          if k in secondary.get("settings", {})},
+            "version": secondary.get("version"),
             "evaluation_seconds": [r["seconds"] for r in secondary["rows"]],
             "statuses": [r.get("status") for r in secondary["rows"]],
-            "relative_deviation_from_reference_run": deviation,
+            "estimated_accuracies": [r.get("accuracy") for r in secondary["rows"]],
+            ("relative_deviation_from_reference_run" if own
+             else "relative_deviation_from_merged_reference"): deviation,
             "initial_call_seconds": secondary.get("initial_call_seconds"),
             "cpu": secondary.get("cpu"),
         }
+        if own:
+            providers[provider].setdefault("secondary_runs", {})[tag] = entry
+        else:
+            timing_only[label] = entry
     report = {
         "process": spec["madloop"]["process"] if "madloop" in spec else spec["name"],
         "name": spec["name"],
@@ -697,6 +709,7 @@ def command_merge(args):
         "validated_providers": validated,
         "excluded_providers": excluded,
         "providers": providers,
+        "timing_only_runs": timing_only,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
@@ -734,6 +747,9 @@ def command_summary(args):
             for tag, run in result.get("secondary_runs", {}).items():
                 t = run["evaluation_seconds"]
                 per.append(f"{provider}-{tag} {sum(t) / len(t):.3g}")
+        for label, run in d.get("timing_only_runs", {}).items():
+            t = run["evaluation_seconds"]
+            per.append(f"{label} {sum(t) / len(t):.3g} (timing only)")
         err = d["maximum_provider_relative_error"]
         print(f"| {d['name']} | {', '.join(d['validated_providers'])} | "
               f"{', '.join(d['excluded_providers']) or '-'} | {err if err is None else f'{err:.2g}'} | "
