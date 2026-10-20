@@ -2,6 +2,22 @@
 
 `benchmarks.pdf` is the rendered report; `benchmarks.typ` is its source.
 
+Adjoint-scalar local preparation (`b8390984`, `efb5f233`, `4ae8095e`) now accepts
+unused propagator declarations while still rejecting actual custom bindings,
+and preserves explicitly zero hypercharge metadata without inferring charges.
+SS/VSS/VVSS local tensors pass independent binary64 ALOHA controls (maximum
+scaled difference `2.54e-16`) and exact MadGraph SU(3) colour checks, including
+complex mixed-tensor overlaps. Seven actual-source catalogue tests preserve
+all 17 scalar CT rules and 63 entries, loop alternatives, Laurent data and
+diagnostics. Exact `NP=QED=0` selection retains the excluded effective source
+vertices; no arity cap is introduced. This is local tensor/import coverage,
+not a physical BSM amplitude or a formal-Nc certificate. Scalar-coefficient,
+UV/field-normalization and process gates remain separate. Actual sgluon source
+preparation uses the isolated [loader PR 3](https://github.com/alphal00p/ufo_model_loader/pull/3)
+candidate for legacy Goldstone aliases; the normal loader pin is unchanged.
+See `tools/loop_reference/ADJOINT_SCALAR_LOCAL.md`. No timing data or process
+rows are added by this milestone.
+
 Real-mass Gmu `e- e+ -> u u~ [QED]` now passes complete ordinary component
 checks against MadLoop (3.85e-14) and Born/Laurent checks against Recola
 (8.51e-14), at three points and a changed scale. Both references are binary64.

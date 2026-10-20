@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-20 · 00:50 UTC"
+#let report-date = "2026-10-20 · 01:25 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -595,19 +595,18 @@ renames typed external Dirac ports simultaneously; the FFS map also exchanges
 labels or supplies a universal gamma-five transpose. Unvalidated structures
 remain unsupported.
 
+Adjoint-scalar SS/VSS/VVSS local tensors now pass independent ALOHA and exact
+SU(3) colour controls. The catalogue retains all 63 entries of 17 scalar CT rules;
+scalar coefficients, UV conventions and complete BSM amplitudes are separate gates.
+
 == Counterterms follow admitted loops
-UV-tree terms, local loop counterterms and external-field factors have different
-eligibility rules. A standalone counterterm tree is insufficient evidence that
-its loop correction belongs to the request. Local $R_2$/UV matching retains the
-actual attachment currents, ordered binding legs, local coupling order and
-allowed loop-species alternatives. Wildcards and repeated alternatives preserve
-their source semantics and multiplicity. Fresh native tree graphs provide the
-insertion signs and propagators. Ordinary Bose slot classes are identified only
-after exact native tests of the complete vertex under generating transpositions.
-This repairs 39 missed insertions in the five-leg $u overline(u) -> g g g$
-control. Complete Born, bare, UV and $R_2$ components now agree with MadLoop
-at the reference accuracy in double, DoubleFloat and AP80; exact parameter-update
-controls also pass.
+UV-tree, local loop and external-field terms retain distinct eligibility.
+Local $R_2$/UV matching keeps attachment currents, ordered legs, coupling orders
+and loop-species alternatives, including wildcard and repeated-group semantics.
+Fresh native tree graphs supply insertion signs and propagators. Exact vertex
+transposition tests identify Bose slot classes, repairing 39 missed insertions
+in $u overline(u) -> g g g$. Complete components match MadLoop in double,
+DoubleFloat and AP80; exact parameter updates also pass.
 
 External-field factors multiply the applicable Born currents with each physical
 leg retained. Local and field UV remain separately inspectable, then join the
@@ -621,7 +620,8 @@ the original model and does not certify complete CMS physics.
 #note[
   *Loader #link("https://pypi.org/project/ufo-model-loader/1.0.1/")[1.0.1 is published].* Lossless source import, JSON and finite tree projection pass
   QCD/EW controls. `sqrt (2)` and real/imaginary parsing are repaired; SM assets
-  need no changes. pyAmpliCol uses the released source API.
+  need no changes. Actual sgluon preparation separately needs pending
+  #link("https://github.com/alphal00p/ufo_model_loader/pull/3")[Goldstone-alias PR 3]. The installed pin is unchanged.
 ]
 
 #pagebreak()
