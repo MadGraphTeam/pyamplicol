@@ -82,7 +82,7 @@ def main():
         f"collier {mg5}/HEPTools/collier",
         "output_dependencies external",
         "loop_optimized_output True",
-        f"complex_mass_scheme {madloop.get('complex_mass_scheme', False)}",
+        f"complex_mass_scheme {bool(spec['scheme_data'].get('complex_mass_scheme', False))}",
     ):
         command.exec_cmd("set " + setting)
     start = time.perf_counter()

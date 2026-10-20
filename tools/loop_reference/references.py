@@ -86,6 +86,7 @@ def recola_commands(spec, points, uncached):
         lines.append(f"alpha0 {derived['alpha']}")
     else:
         lines.append(f"gfermi {value(scheme, 'Gf')}")
+    lines.append("complex_mass" if scheme.get("complex_mass_scheme") else "onshell")
     lines.append(f"alphas {value(scheme, 'aS')} {points['mu_r'][0]} {scheme['active_flavours']}")
     if uncached:
         lines.append("cache 0")
@@ -109,6 +110,7 @@ def openloops_commands(spec):
         f"int coupling_qcd_0 {born['QCD']}", f"int coupling_qcd_1 {(loop['QCD'] - born['QCD']) // 2}",
         f"int coupling_ew_0 {born['QED']}", f"int coupling_ew_1 {(loop['QED'] - born['QED']) // 2}",
         "int ew_scheme 1", "int ew_renorm_scheme 1",
+        f"int complex_mass_scheme {1 if scheme.get('complex_mass_scheme') else 0}",
         f"double gmu {value(scheme, 'Gf')}",
         f"double mass(23) {value(scheme, 'MZ')}", f"double width(23) {width(scheme, 'WZ')}",
         f"double mass(24) {derived['MW']}", f"double width(24) {width(scheme, 'WW')}",
@@ -466,6 +468,33 @@ def command_merge(args):
         sys.exit(2)
 
 
+def generation_seconds(provider, result):
+    if provider == "madloop":
+        g = result.get("generation") or {}
+        parts = [g.get(k) for k in ("graph_generation_s", "source_export_s", "compile_s")]
+        return sum(parts) if all(x is not None for x in parts) else None
+    if provider == "recola":
+        return result.get("generation_seconds")
+    return None  # OpenLoops: precompiled public library (installation recorded separately)
+
+
+def command_summary(args):
+    """Markdown table of merged references (generation and per-point times)."""
+    print("| process | providers | max rel. diff | status | generation [s] | s/point (mean) |")
+    print("|---|---|---|---|---|---|")
+    for path in args.references:
+        d = json.loads(Path(path).read_text())
+        gen, per = [], []
+        for provider, result in d["providers"].items():
+            g = generation_seconds(provider, result)
+            gen.append(f"{provider} {g:.4g}" if g is not None else f"{provider} -")
+            t = result["evaluation_seconds"]
+            per.append(f"{provider} {sum(t) / len(t):.3g}")
+        err = d["maximum_provider_relative_error"]
+        print(f"| {d['name']} | {', '.join(d['providers'])} | {err if err is None else f'{err:.2g}'} | "
+              f"{d['validation_status']} | {'; '.join(gen)} | {'; '.join(per)} |")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -488,7 +517,12 @@ def main():
     merge = sub.choices["merge"]
     merge.add_argument("--output", type=Path, required=True)
     merge.add_argument("--tolerance", type=float, default=2e-8)
+    summary = sub.add_parser("summary")
+    summary.add_argument("references", nargs="+", type=Path)
     args = parser.parse_args()
+    if args.command == "summary":
+        command_summary(args)
+        return
     if args.command == "run":
         if args.mg5:
             args.mg5 = args.mg5.resolve()

@@ -4,6 +4,7 @@
 !   alpha0 <alpha> | alphaz <alpha> | gfermi <G_F>      (EW input/renormalization scheme)
 !   alphas <alpha_s> <mu> <nf>                           (alpha_s at mu, nf light flavours)
 !   cache <mode>                                         (set_cache_mode_rcl)
+!   onshell | complex_mass                               (mass renormalization scheme)
 !   legs <n>    born_gs <n>    loop_gs <n>    pow_lo <n>    pow_nlo <n>
 !   process <Recola process string>
 !   generate
@@ -49,6 +50,10 @@ program recola_reference
       call set_alphas_rcl(value, mu, nf)
       call set_mu_uv_rcl(mu)
       call set_mu_ir_rcl(mu)
+    case ('onshell')
+      call set_on_shell_scheme_rcl()
+    case ('complex_mass')
+      call set_complex_mass_scheme_rcl()
     case ('cache')
       read(line, *) keyword, k
       call set_cache_mode_rcl(k)
