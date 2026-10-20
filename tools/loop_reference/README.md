@@ -451,7 +451,7 @@ process listed in `required_processes.json`; nothing in it is process-specific.
 | `required_processes.json` | Process specifications: PDGs, Born amplitude orders (powers of `g_s`, `e`), correction type, scheme, MG5/Recola/OpenLoops process strings and OpenLoops library. Schemes hold the exact decimal parameters shared by all providers. |
 | `required_spec.py` | Loader (derives loop orders), external masses, averaging/symmetry metadata, universal double-pole factor. |
 | `exact_points.py` | Deterministic exact on-shell 2->n points with terminating decimals (massive pairs included); see its docstring for the construction and its representability limit. |
-| `madloop_export.py` | MG5_aMC standalone export (optimized output, external Ninja/Collier, split orders `QCD,QED`) and `make OLP_static`; writes `<export>.generation.json` with graph counts, observed orders and generation/export/compile times. |
+| `madloop_export.py` | MG5_aMC standalone export (optimized output, external Ninja/Collier, split orders `QCD,QED`), built with MG5's production Fortran flags (Source libraries and `make OLP_static`; `--recompile` rebuilds an existing export); writes `<export>.generation.json` with graph counts, observed orders, `fortran_flags` and generation/export/compile times. |
 | `madloop_driver.f90`, `recola_driver.f90`, `openloops_driver.cpp` | Generic native drivers (no Python per point): Born and Laurent coefficients selected by squared split order (MadLoop) or coupling power (Recola/OpenLoops). |
 | `references.py` | `run` one provider (builds its driver, sets matched parameters, pins one CPU, records times and the provider versions read from the trees/libraries actually used), `merge` the available providers into one JSON with all-pairs cross-checks, `summary` (Markdown table) and `watch` (periodic re-merge of long runs that exits once every expected run has finished, failed or died). |
 | `run_required.sh` | Convenience wrapper: points (if absent) + `run` + `merge` under `$LOOP_REFERENCE_ROOT/runs/required/<process>/`. |
@@ -514,13 +514,86 @@ MadLoop run (`--tag production --madloop-accuracy -1`) keeps MadLoop's own
 `MLStabThres=1e-3` and default stability test (`CTModeRun=-1`) and records the
 production per-point times and return codes, plus its deviation from the
 reference run; this is the MadLoop timing to use for the speed gate. Both keep
-`ImprovePSPoint=2`. MadLoop's parameter card receives each scheme value as its
+`ImprovePSPoint=2`.
+
+MadLoop build flags. A bare `output standalone` leaves `GLOBAL_FLAG` unset in
+`Source/make_opts`, i.e. gfortran `-O0` for everything except `polynomial.f`
+(MadLoop's own makefile always uses `-O3` there). MG5_aMC's production flags are
+its run-card defaults `global_flag=-O`, `aloha_flag=`, `matrix_flag=` (3.7.0),
+which `CommonRunCmd.update_make_opts` writes into `make_opts` whenever MG5 runs
+optimised (`bin/mg5_aMC` re-executes itself with `python -O` unless `--debug`;
+the NLO template likewise uses `FFLAGS=-O`); `-O3`/`-ffast-math` appear only as
+run-card suggestions. `madloop_export.py` reads these defaults through MG5's
+`RunCardLO`, writes them with MG5's `update_make_opts_full`, rebuilds DHELAS/MODEL
+and `OLP_static`, and records them as `fortran_flags`. `references.py run`
+records the export's flags in `settings.fortran_flags` (with
+`production_build`), compiles the quadruple-precision model repair with the same
+`GLOBAL_FLAG`, and refuses a production-timing run (`--madloop-accuracy <= 0`) on
+an export not built with them. The exports of the first campaign were `-O0`;
+their production timings were re-measured on rebuilt copies
+(`<process>/madloop-export-production-flags`, same CPU, previous driver
+re-timed right before as a control in `pre-production-flags/`): values agree
+with the `-O0` build to rounding and the times drop by the factors listed under
+"Production-flag re-timing" below. The reference-value runs (`madloop-result.json`,
+quadruple-precision rescue forced) keep their `-O0` build; their times are not
+speed-gate timings.
+
+Production-flag re-timing (MadLoop production setting, mean seconds per point,
+one pinned CPU, 2026-10-20; "control" is the previous `-O0` driver re-timed on
+the same CPU just before the `-O` run; value change in the merge metric against
+the `-O0` production values; every point return code 216). Initial calls are not
+compared: the `-O` runs started from a fresh run directory (helicity filter
+computed again).
+
+| process | `-O0` as recorded | `-O0` control | `-O` (production) | control / `-O` | max value change |
+|---|---|---|---|---|---|
+| gg_ttx | 0.001178 | 0.001097 | 0.000961 | 1.14 | 0.0e+00 |
+| gg_ttx_ew | 0.004276 | 0.002313 | 0.001996 | 1.16 | 0.0e+00 |
+| uux_emepg_ew | 0.007876 | 0.004941 | 0.004443 | 1.11 | 5.4e-15 |
+| uux_emepddxg | 0.1822 | 0.1741 | 0.1427 | 1.22 | 0.0e+00 |
+| gg_ttxemep_ew | 0.2861 | 0.2573 | 0.2382 | 1.08 | 5.1e-15 |
+| uux_emepggg | 1.833 | 1.723 | 1.409 | 1.22 | 0.0e+00 |
+| gg_ttxemepg_qcd | 3.765 | 3.738 | 3.031 | 1.23 | 0.0e+00 |
+| gg_ttxgg | 7.5 | 7.001 | 5.263 | 1.33 | 0.0e+00 |
+| gg_ttxemepg_ew | 8.444 | 7.896 | 6.975 | 1.13 | 1.4e-14 |
+| gg_gggg | 52.98 | 52.41 | 37.18 | 1.41 | 0.0e+00 |
+
+The gain is modest (not profiled; the reduction libraries Ninja, Collier and
+CutTools are prebuilt by the MG5 installation independently of these flags, and
+`polynomial.f` was already `-O3`).
+
+Stress from the point cut: `exact_points.py` admits every point with
+`2|p_i.p_j| >= s/1000` (`--cut`, default `1/1000`), so the required points include
+nearly soft/collinear configurations. At the reference request (`1e-11`) many
+6- and 7-leg points fail MadLoop's double-precision stability test and need the
+quadruple-precision rescue (return code 328, at 50-80x the double-precision
+time on the 6- and 7-leg top processes); at the production `MLStabThres=1e-3`
+every required point passes in double precision (code 216). The default cut
+therefore deliberately stresses MadLoop's stability test: reference-run times
+measure the quadruple-precision rescue, production-run times only the
+double-precision path (no rescue was triggered at these points).
+
+MadLoop's parameter card receives each scheme value as its
 exact decimal text (checked to reproduce the same binary64 on re-reading). Recola
 uses `dynamic_settings=1`, `compute_ir_poles=1`.
 At seven or more external legs the COLLIER global cache is disabled in both
 MadLoop (Collier 1.2.9, `COLLIERGlobalCache=0`) and Recola (Collier 1.2.8,
 `set_cache_mode_rcl(0)`), following the NinjaRS owners' report of a wrong
 global-cache result at `N=7`, rank 9.
+
+Recola near-tolerance rows. In `g g -> t t~ e- e+ g` (QCD) and
+`g g -> t t~ e- e+` (EW) the largest pairwise differences (`1.0e-8` and
+`1.8e-8` in the finite part of point 3) come from Recola alone: MadLoop and
+OpenLoops agree there to `6e-13` and `1.6e-12`, while Recola differs from both
+by the same amount. Recola leaves COLLIER at its default required accuracy for
+tensor integrals, `1e-8` (critical `1e-1`, mode COLI). With the driver commands
+`tis_accuracy 1e-12 1e-6` (after `generate`; `set_TIs_required/critical_accuracy_rcl`)
+Recola agrees with OpenLoops to `1.7e-11` (QCD) and `2.9e-12` (EW) at a cost of
+~1.5x per point; `collier_mode 3` (COLI+DD) alone does not help, pure DD
+(`collier_mode 2`) fixes the EW case but breaks the 7-point QCD poles
+(`workspace/reference/runs/required/recola-settings-study/`). The references keep Recola's
+defaults (all processes pass `2e-8`); the agreement reported for these two
+processes is limited by COLLIER's default accuracy, not by a convention.
 
 The merge compares every unordered pair of providers (per row:
 `provider_pair_relative_errors`, `provider_pair_strict_relative_errors`; the
