@@ -526,3 +526,30 @@ corruption" in `reallocate_bLDef` (also with an unlimited stack).
 `g g -> t t~` results). The patched copy is built separately in
 `workspace/reference/builds/recola2-2.3.0-colorbranch-fix` (same CMake options,
 Collier 1.2.8, SM 2.2.3) and selected with `LOOP_REFERENCE_RECOLA`.
+
+### EW matching findings (g g -> t t~ e- e+ g, `ew-gmu`)
+
+* OpenLoops `ppllttj_ew` (channel `eexttxggg`, `EW=2,1 QCD=3,0`, `nf=6`,
+  massless leptons) computes every one-loop graph of order `g_s^3 e^4`
+  interfered with the `g_s^3 e^2` Born, in the G_mu input and renormalization
+  scheme (`ew_scheme=1`, `ew_renorm_scheme=1`) with on-shell masses. EW
+  counterterms must be enabled with `ew_renorm=1` when the EW library is
+  registered directly. Its default `complex_mass_scheme=1` gives results identical
+  (1e-14) to `complex_mass_scheme=0` at zero widths.
+* Recola's default complex-mass scheme is not equivalent at zero widths: it
+  changed the finite part by 4e-4 (`g g -> t t~ e- e+`) and 2.7e-3
+  (`g g -> t t~ e- e+ g`) while leaving `g g -> t t~` and `u u~ -> e- e+ g`
+  unchanged, i.e. it enters through the top-Z couplings. With
+  `set_on_shell_scheme_rcl` Recola agrees with OpenLoops to 1e-9 (seven legs)
+  and 2e-8 (six legs); rotated points reproduce Recola to 1e-12, so the earlier
+  difference was not numerical.
+* MadLoop with the converted `loop_qcd_qed_sm_Gmu` (`[virt=QCD QED]`, real
+  masses) agrees with both on `g g -> t t~` EW (6e-14) and `u u~ -> e- e+ g` EW
+  (9e-13), but differs from the agreeing Recola/OpenLoops pair on
+  `g g -> t t~ e- e+` EW by 1e-7 to 3e-7 in the finite part only (poles agree
+  to 1e-11). The offset depends on the Higgs mass (1e-4 to 2e-4 at
+  `MH=700`, where Recola and OpenLoops still agree with each other) and on
+  `mu_R` (1.2e-7 and 1e-6 at points 2 and 3 when all scales are 1000 GeV).
+  It is unresolved and points to a Higgs-sector/tadpole convention of the UFO
+  EW counterterms, which pyAmpliCol consumes as well. MadLoop is therefore
+  recorded but excluded (`exclusions.json`) from the EW agreement check.
