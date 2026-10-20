@@ -605,8 +605,8 @@ Local $R_2$/UV matching keeps attachment currents, ordered legs, coupling orders
 and loop-species alternatives, including wildcard and repeated-group semantics.
 Fresh native tree graphs supply insertion signs and propagators. Exact vertex
 transposition tests identify Bose slot classes, repairing 39 missed insertions
-in $u overline(u) -> g g g$. Complete components match MadLoop in double,
-DoubleFloat and AP80; exact parameter updates also pass.
+in $u overline(u) -> g g g$. Complete components match the MadLoop reference at
+its accuracy in double, DoubleFloat and AP80; exact parameter updates also pass.
 
 External-field factors multiply the applicable Born currents with each physical
 leg retained. Local and field UV remain separately inspectable, then join the
