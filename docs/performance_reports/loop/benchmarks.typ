@@ -730,7 +730,7 @@ SU(3) source and independent published rules:
 groups, diagnostics and HV bindings survive; full/LC/NLC passes exact updates and
 16-helicity sums in all carriers. Arbitrary model continuation remains uncertified.
 
-Seven-leg formal degree-five invariants remain open despite exact SU(3) success.
+Seven-leg exact SU(3) colour contractions pass; formal degree-five invariants remain open.
 #link("https://github.com/alphal00p/gammaloop/pull/155")[PR 155] fixes open-dual
 canonicalization; isolated fundamental-port controls pass.
 
