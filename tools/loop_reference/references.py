@@ -27,6 +27,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import resource
 import shutil
 import subprocess
 import sys
@@ -222,6 +223,9 @@ def run_native(command, stdin_text, cwd, log, cpu):
     env.update({"OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"})
 
     def pin():
+        # Deep provider recursions (e.g. Recola skeleton generation at seven
+        # legs) need more than the default 8 MiB stack.
+        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
         if cpu is not None:
             os.sched_setaffinity(0, {cpu})
 
