@@ -2,22 +2,39 @@
 
 `benchmarks.pdf` is the rendered report; `benchmarks.typ` is its source.
 
-The next Bose composition milestone (`3dd21ac9`) now passes at the **producer**
-boundary. The same independently generated fixed-full d/s owners retain a
-proved subset of their original named histories (`born`, `casimir`) together
-with both singleton and joint gluon sources. Twelve cold controls check exact
-inverse routing, complete SourceIR/phase/spectator ownership, foreign records
-and direct-construction bypasses. All nine complete result blocks, including
-both integrated terms, match the independent member in double, DoubleFloat
-and AP70, with exact updates, opaque IDs, empty/tail rows and raw native output.
-The one binary64 test failure was a list-versus-tuple ID assertion; only that
-case reran after correcting the test, without a tolerance or production change.
-Momenta-only and source-only wrong actions differ; consistent omission of both
-is invisible to Bose symmetry, so an explicit non-involutive routing oracle
-checks that action. Original source/native owners remain intact. The member's
-unclosed ordered requests remain unavailable, and its new saved/public/SDK
-scope is still pending. Evidence: workspace
+The explicit Bose source/history composition now passes the complete saved,
+public Python and SDK boundary (`f14cdead`; normal native digest `12d0185c…`).
+The independently generated fixed-full d/s pair retains the original named
+`born`/`casimir` definitions, both singleton and joint sources, nine complete
+blocks and both integrated terms in double, DoubleFloat and AP70. Normal
+artifacts also exercise representative source `(3,)` alone mapped to member
+`(4,)`; no unjustified source-class closure is required. Extra representative
+plans stay available, while selected unclosed histories and resolved/projected
+axes remain unavailable.
+
+All sixteen saved/public checks pass as fifteen plus one focused retry. That
+retry corrected a test's nonexistent `VirtualEvaluation.orders` access to the
+actual `born_orders` and `sectors`; no production or tolerance changed. Five
+native routing controls cover non-involutive exact inputs, original-ID subset
+replay, selected aliases and conservative unselected whole-bank failures.
+Actual AP60/AP80 subset rescue and the linked binary64 SDK pass literal sources,
+complete values, selected/richer discovery, maximum-u64 IDs and result ownership.
+The actual serializer accepts required source objects alone or with richer
+catalogues, and rejects their omission or equal-valued substitution. Original
+source/native owners remain intact. Evidence:
 `reports/loop-bose-source-history-acceptance.md`. No timing observations change.
+
+The separate retained formal-full dd control now passes its independent
+fixed-full source oracle in all three carriers. Its complete order-two family
+contains 28 histories / 784 pairs, retaining all actual UV/R2/field columns and common
+sector degrees. Ordinary, singleton and joint sources compare all components
+and separate non-Hermitian terms, including nonzero imaginary witnesses and
+swapped conjugation. The initial fixture-ID assertion was corrected from
+`identity` to the actual saved `born`; coefficients and tolerances were unchanged.
+LC/NLC and the independently generated species member remain separate gates;
+this result does not admit projected ordered flavour transport. The normal
+checkpoint and all owners are retained. Evidence:
+`reports/loop-ordered-dd-full-acceptance.md`.
 
 Explicit source-admitted ordinary full-colour Bose members now pass
 (`e2f3e3ac`, normal native digest `a42231c8…`). Independently generated fixed-full
@@ -39,8 +56,8 @@ transport, which Bose-invariant physical amplitudes alone cannot detect.
 
 This is explicit retained-source admission and saved-member transport. Automatic
 flavour grouping still proposes unchanged ports. Nonidentity projected mapping
-and resolved member axes remain separate proofs; the source/history producer
-milestone above does not yet extend saved/public/SDK admissions. Existing typed
+and resolved member axes remain separate proofs; the explicit source/history
+subset above now has its own saved/public/SDK admission. Existing typed
 records and normal artifact publication are used;
 old typed readers reject the new permutation field. Original source owners and
 native modules remain intact. The old compiled-model fingerprint correctly
@@ -83,11 +100,14 @@ The retained scalar-QCD `u u~ -> sig8 sig8 g` candidate has 6 Born graphs,
 evaluation fails on a valid one-mass scalar box. Independent OneLOop and both
 Collier implementations establish all Laurent coefficients, including the
 absorptive parts. [Scalar-master PR 10](https://github.com/alphal00p/oneloopmaster/pull/10)
-reclassifies an exact post-chart mass-shell case through an existing formula.
-The isolated fix passes 768 transparent/generated evaluations across all three
-carriers plus existing controls. An isolated coherent consumer replay is still
-pending; normal pins are unchanged and no complete scalar-process or performance
-claim follows. PR 10 is separate from the pending CMS sheet-sign PR 9.
+reclassifies exact post-chart one-/two-mass cases through existing formulas.
+The first coherent consumer fixes the original box but exposes three further
+failing families, traced to two adjacent-mass boxes with independently confirmed
+nonzero double poles. The expanded PR10 revision `cd945f` passes 1,536 complete
+transparent/generated, permutation/scale and carrier evaluations plus existing
+controls. Its complete scalar-process replay is pending; normal pins remain
+unchanged. Neither a complete scalar amplitude nor performance acceptance follows
+from the isolated master controls. PR10 is separate from CMS sheet-sign PR9.
 
 Real-mass Gmu `e- e+ -> u u~ [QED]` now passes complete ordinary component
 checks against MadLoop (3.85e-14) and Born/Laurent checks against Recola
