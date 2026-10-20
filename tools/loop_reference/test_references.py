@@ -34,3 +34,12 @@ def test_repair_adds_kind_only_where_missing_and_fixes_pi():
     assert references.QP_PI_TYPO not in fixed and references.QP_PI in fixed
     assert repairs[0] == "added KIND=16 to 2 CMPLX calls in MP_ functions"
     assert references.fix_qp_model_functions(fixed) == (fixed, [])
+
+
+def test_make_opts_variables_reads_only_the_variable_block(tmp_path):
+    from madloop_export import make_opts_variables
+
+    (tmp_path / "Source").mkdir()
+    (tmp_path / "Source/make_opts").write_text(
+        "GLOBAL_FLAG=-O\nALOHA_FLAG=\nFC=gfortran\n#end_of_make_opts_variables\n\nFFLAGS= -w -fPIC\n")
+    assert make_opts_variables(tmp_path) == {"GLOBAL_FLAG": "-O", "ALOHA_FLAG": "", "FC": "gfortran"}

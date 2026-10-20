@@ -27,6 +27,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -253,9 +254,10 @@ def fix_qp_model_functions(text):
     return head + body, repairs
 
 
-def madloop_model_fix(export, work):
+def madloop_model_fix(export, work, global_flag):
     """Compile a repaired model_functions.f into ``work`` (the export is never
-    modified); its object is linked before libmodel.a. Returns (objects, repairs)."""
+    modified) with the export's ``GLOBAL_FLAG``; its object is linked before
+    libmodel.a. Returns (objects, repairs)."""
     source = export / "Source/MODEL/model_functions.f"
     text, repairs = fix_qp_model_functions(source.read_text())
     if not repairs:
@@ -264,12 +266,28 @@ def madloop_model_fix(export, work):
     fixed.write_text(text)
     obj = work / "model_functions_qpfix.o"
     subprocess.run(["gfortran", "-w", "-fPIC", "-fno-common", "-ffixed-line-length-none",
+                    *shlex.split(global_flag),
                     "-I", str(source.parent), "-J", str(work), "-c", str(fixed), "-o", str(obj)],
                    check=True, cwd=work)
     return [obj], repairs
 
 
-def build_madloop(export, work):
+def madloop_build_flags(export, mg5):
+    """The export's Fortran flags (its ``Source/make_opts``) next to MG5_aMC's
+    production flags; ``production_build`` tells whether they coincide."""
+    from madloop_export import make_opts_variables, production_make_opts
+
+    production = production_make_opts(mg5)
+    variables = make_opts_variables(export)
+    used = {key: variables.get(key, "") for key in production}
+    return {"export_make_opts": used, "mg5_production": production,
+            "production_build": used == production,
+            "source": "MG5_aMC run-card defaults global_flag/aloha_flag/matrix_flag "
+                      "(CommonRunCmd.update_make_opts of an optimised MG5 run); "
+                      "MadLoop's own makefile adds -O3 for polynomial.f"}
+
+
+def build_madloop(export, work, global_flag):
     from build import madloop_libraries
 
     process_dir = madloop_process_dir(export)
@@ -277,7 +295,7 @@ def build_madloop(export, work):
     driver = work / "madloop_driver.f90"
     driver.write_text(source)
     binary = work / "madloop-driver"
-    fixes, repairs = madloop_model_fix(export, work)
+    fixes, repairs = madloop_model_fix(export, work, global_flag)
     subprocess.run(
         ["gfortran", "-O2", "-ffree-line-length-none", "-I", str(process_dir), str(driver),
          *map(str, fixes), str(export / "lib/libMadLoop.a"), "-L" + str(export / "lib"), "-ldhelas", "-lmodel",
@@ -487,8 +505,16 @@ def command_run(args):
                     raise RuntimeError(f"no live MadLoop export process for {export} (state {state!r})")
                 status_update(work, label, f"waiting for MadLoop export ({state}; pid {pids[0]})")
                 time.sleep(args.wait_interval)
-            binary, repairs = build_madloop(export, run_dir)
+            production = args.madloop_accuracy <= 0
+            flags = madloop_build_flags(export, args.mg5)
+            if production and not flags["production_build"]:
+                raise RuntimeError(
+                    f"export built with {flags['export_make_opts']}, not MG5's production flags "
+                    f"{flags['mg5_production']}; rebuild it with madloop_export.py --recompile")
+            binary, repairs = build_madloop(export, run_dir, flags["export_make_opts"]["GLOBAL_FLAG"])
             result["settings"] = prepare_madloop_run(spec, export, run_dir, args.mg5, legs)
+            result["settings"]["export"] = str(export)
+            result["settings"]["fortran_flags"] = flags
             result["settings"]["mg5_quadruple_precision_model_function_repairs"] = repairs
             result["generation"] = json.loads(generation.read_text()) if generation.exists() else None
             mg5_version = re.search(r"version = (\S+)", (args.mg5 / "VERSION").read_text()).group(1)
@@ -498,7 +524,6 @@ def command_run(args):
             result["version"] = f"MadLoop/MG5_aMC {mg5_version}"
             result["provenance"] = {"MG5_aMC": {"path": str(args.mg5), "version": mg5_version},
                                     "reducer_libraries": reducers}
-            production = args.madloop_accuracy <= 0
             result["settings"]["requested_relative_accuracy"] = (
                 "MadLoop MLStabThres (production setting)" if production else args.madloop_accuracy)
             result["settings"]["stability_check"] = (
@@ -655,7 +680,7 @@ def command_merge(args):
             deviation.append({key: relative(other[key], accurate[key], 0.0 if key == "born" else unit)
                               for key in COEFFICIENTS})
         entry = {
-            "settings": {k: secondary["settings"][k] for k in ("requested_relative_accuracy", "stability_check")
+            "settings": {k: secondary["settings"][k] for k in ("requested_relative_accuracy", "stability_check", "fortran_flags")
                          if k in secondary.get("settings", {})},
             "version": secondary.get("version"),
             "evaluation_seconds": [r["seconds"] for r in secondary["rows"]],
