@@ -198,6 +198,77 @@ def madloop_prefix(process_dir):
     return match.group(1)
 
 
+QP_PI_TYPO = "3.14169258478796109557151794433593750E0_16"
+QP_PI = "3.14159265358979323846264338327950288E0_16"
+
+
+def fix_qp_model_functions(text):
+    """Repair two MG5_aMC 3.7.0 defects in the quadruple-precision (MP_*) model
+    functions of an export's ``Source/MODEL/model_functions.f``:
+
+    * ``CMPLX(...)`` without ``KIND=16`` returns default (single-precision)
+      complex, so MP_REGLOG/REGLOGP/REGLOGM/REGSQRT/GRREGLOG truncate real
+      arguments to ~7 digits. Every UFO parameter built from them (EW on-shell
+      counterterms, the top-decoupling log of the QCD counterterm) is then off
+      by 1e-9..5e-7 in MadLoop's quadruple-precision rescue only.
+    * ``TWOPII`` uses 3.14169258... instead of pi (branch terms only).
+
+    Returns the repaired text and the list of applied repairs. Continuation
+    markers (newline + 5 columns + ``$``) are transparent to the parser."""
+    start = re.search(r"^\s*COMPLEX\*32 FUNCTION MP_", text, re.MULTILINE)
+    if start is None:
+        return text, []
+    head, body = text[:start.start()], text[start.start():]
+    out, i, fixed = [], 0, 0
+    for match in re.finditer(r"(?<![A-Z0-9_])CMPLX\(", body):
+        if match.start() < i:
+            continue
+        depth, j, args, current = 1, match.end(), [], []
+        while depth:
+            continuation = re.match(r"\n {5}\S", body[j:j + 7])
+            if continuation:  # fixed-form continuation line: transparent
+                j += 7
+                continue
+            c = body[j]
+            if c == "\n":
+                raise RuntimeError("unterminated CMPLX( in model_functions.f")
+            depth += (c == "(") - (c == ")")
+            if depth == 1 and c == ",":
+                args.append("".join(current))
+                current = []
+            elif depth >= 1:
+                current.append(c)
+            j += 1
+        args.append("".join(current))
+        if not any(re.match(r"\s*KIND\s*=", arg, re.IGNORECASE) for arg in args):
+            out.append(body[i:j - 1] + ",KIND=16")
+            i = j - 1
+            fixed += 1
+    out.append(body[i:])
+    body = "".join(out)
+    repairs = [f"added KIND=16 to {fixed} CMPLX calls in MP_ functions"] if fixed else []
+    if QP_PI_TYPO in body:
+        repairs.append(f"replaced {body.count(QP_PI_TYPO)} TWOPII pi literals {QP_PI_TYPO} by {QP_PI}")
+        body = body.replace(QP_PI_TYPO, QP_PI)
+    return head + body, repairs
+
+
+def madloop_model_fix(export, work):
+    """Compile a repaired model_functions.f into ``work`` (the export is never
+    modified); its object is linked before libmodel.a. Returns (objects, repairs)."""
+    source = export / "Source/MODEL/model_functions.f"
+    text, repairs = fix_qp_model_functions(source.read_text())
+    if not repairs:
+        return [], []
+    fixed = work / "model_functions_qpfix.f"
+    fixed.write_text(text)
+    obj = work / "model_functions_qpfix.o"
+    subprocess.run(["gfortran", "-w", "-fPIC", "-fno-common", "-ffixed-line-length-none",
+                    "-I", str(source.parent), "-J", str(work), "-c", str(fixed), "-o", str(obj)],
+                   check=True, cwd=work)
+    return [obj], repairs
+
+
 def build_madloop(export, work):
     from build import madloop_libraries
 
@@ -206,16 +277,17 @@ def build_madloop(export, work):
     driver = work / "madloop_driver.f90"
     driver.write_text(source)
     binary = work / "madloop-driver"
+    fixes, repairs = madloop_model_fix(export, work)
     subprocess.run(
         ["gfortran", "-O2", "-ffree-line-length-none", "-I", str(process_dir), str(driver),
-         str(export / "lib/libMadLoop.a"), "-L" + str(export / "lib"), "-ldhelas", "-lmodel",
+         *map(str, fixes), str(export / "lib/libMadLoop.a"), "-L" + str(export / "lib"), "-ldhelas", "-lmodel",
          *map(str, madloop_libraries(export)), "-lstdc++",
          # Large exports (g g -> 6 g: 7.7 GB of static arrays) put PIC data
          # beyond the range of relaxed GOTPCREL loads; keep GOT loads.
          "-Wl,--no-relax", "-o", str(binary)],
         check=True, cwd=work,
     )
-    return binary
+    return binary, repairs
 
 
 def prepare_madloop_run(spec, export, run_dir, mg5, legs):
@@ -415,8 +487,9 @@ def command_run(args):
                     raise RuntimeError(f"no live MadLoop export process for {export} (state {state!r})")
                 status_update(work, label, f"waiting for MadLoop export ({state}; pid {pids[0]})")
                 time.sleep(args.wait_interval)
-            binary = build_madloop(export, run_dir)
+            binary, repairs = build_madloop(export, run_dir)
             result["settings"] = prepare_madloop_run(spec, export, run_dir, args.mg5, legs)
+            result["settings"]["mg5_quadruple_precision_model_function_repairs"] = repairs
             result["generation"] = json.loads(generation.read_text()) if generation.exists() else None
             mg5_version = re.search(r"version = (\S+)", (args.mg5 / "VERSION").read_text()).group(1)
             from build import madloop_libraries
