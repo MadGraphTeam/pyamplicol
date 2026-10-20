@@ -31,10 +31,36 @@ sector degrees. Ordinary, singleton and joint sources compare all components
 and separate non-Hermitian terms, including nonzero imaginary witnesses and
 swapped conjugation. The initial fixture-ID assertion was corrected from
 `identity` to the actual saved `born`; coefficients and tolerances were unchanged.
-LC/NLC and the independently generated species member remain separate gates;
-this result does not admit projected ordered flavour transport. The normal
-checkpoint and all owners are retained. Evidence:
+The normal checkpoint and all owners are retained. Evidence:
 `reports/loop-ordered-dd-full-acceptance.md`.
+
+Same-process exact directed-colour reprojection now passes (`95de97d1`). The
+actual full bank supplies its retained complete-family degrees; a shared actual
+column assembler proves identical complete support separately for Born, bare,
+UV, R2 and fields using exact canonical tensors, typed ports, absolute orders and
+formal grade/mask factors. Explicit target indices preserve reordering and every
+duplicate column. Existing Symbolica projection creates fresh LC/NLC banks owned
+by the normally projected target models, with their actual process, scalar plan,
+source declaration and formal owner checked. No Nc=3 fit or owner relabelling is
+used, and the complete 784-pair family is not recalculated.
+
+One cold run passes 32 cases (24 new plus eight affected), including independent
+complete target projections, non-Hermitian rectangles, odd/suppressed/zero
+sectors and 18 support/shape negatives. All 14 retained cases pass: eight owner
+checks and six LC/NLC × double/DoubleFloat/AP70 physical checks. Identity rows
+match the ordinary projected model; all nine directed blocks, both terms,
+swapped conjugation and singleton/joint polarization sums pass exact updates,
+complex and zero sources, opaque IDs, empty/tail batches and precision-sensitive
+changes. NLC retains a nonzero imaginary term. These physical checks share their
+reused colour bank; the separate complete tensor projections provide the
+independent colour oracle. Original models, native module and snapshots survive.
+
+Normal LC/NLC PACBIN checkpoints were saved before assertions, but saved/public/
+SDK numerical acceptance for these new banks remains open. Cross-species colour
+reuse and nonidentity projected flavour admission remain separate; existing
+guards are unchanged. Evidence: `reports/loop-ordered-color-reuse-acceptance.md`.
+Preparation/test costs are development evidence, not benchmark observations;
+all measured cells remain unchanged.
 
 Explicit source-admitted ordinary full-colour Bose members now pass
 (`e2f3e3ac`, normal native digest `a42231c8…`). Independently generated fixed-full
@@ -105,9 +131,17 @@ The first coherent consumer fixes the original box but exposes three further
 failing families, traced to two adjacent-mass boxes with independently confirmed
 nonzero double poles. The expanded PR10 revision `cd945f` passes 1,536 complete
 transparent/generated, permutation/scale and carrier evaluations plus existing
-controls. Its complete scalar-process replay is pending; normal pins remain
-unchanged. Neither a complete scalar amplitude nor performance acceptance follows
-from the isolated master controls. PR10 is separate from CMS sheet-sign PR9.
+controls. The expanded isolated consumer now evaluates the complete process:
+Born and bare components pass the independent reference, but local UV/R2
+components still disagree. Independent attribution of 392 MadGraph counterterm
+amplitudes reconstructs all four UV/R2 totals to 7.96e-15 and identifies missing
+insertion placements near a Born triple-gluon current: one VSS R2 insertion and
+two adjacent two-point UV/R2 insertions. The actual triple-gluon counterterm
+coefficients agree; an earlier aggregate-factor hypothesis was ruled out. A
+matching correction is under audit, not yet accepted. This local insertion gap,
+not a remaining master failure, blocks complete BSM acceptance. Normal pins are
+unchanged and no performance claim follows. PR10 is separate from CMS sheet-sign
+PR9.
 
 Real-mass Gmu `e- e+ -> u u~ [QED]` now passes complete ordinary component
 checks against MadLoop (3.85e-14) and Born/Laurent checks against Recola

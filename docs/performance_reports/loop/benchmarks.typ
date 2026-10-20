@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-20 · 02:32 UTC"
+#let report-date = "2026-10-20 · 02:53 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -764,17 +764,17 @@ Recola checks physical sources with identity colour; other histories use interna
 reconstruction. Literal vectors use homogeneity/replay without projection.
 Public rescue and Rust SDK pass.
 
-Projected gg/W identity sources pass; ordinary LC retains signed anchors. Complete
-families include physical splits and all components. Outgoing $W^+$ saved
-full/LC/NLC, public sources, rescue and SDK pass. A formal-full ddgg bank spans
-28 histories / 784 pairs; its selected non-Hermitian outputs match the independent
-fixed-full source in all carriers. Ordered LC/NLC/member composition and EW/CMS
-vector sources remain open. A rectangular oracle checks the complex terms.
+Projected gg/W identity sources and $W^+$ full/LC/NLC saved/public/SDK pass;
+ordinary LC retains signed anchors. Formal-full ddgg matches an independent
+fixed-full source and retains 28 histories / 784 pairs. Its exact support and
+common degrees now produce same-process LC/NLC: 32 tensor checks pass; 14
+owner/source checks cover all carriers, both terms and singleton/joint sums. NLC keeps complex
+output. Their saved/public validation, species transport and EW/CMS vectors remain open.
 
 == Exact mappings and the rectangular FFT boundary
 Exact d/s identity reuse covers formal full/LC/NLC, signed Born axes, complex
 full-colour histories and identity sources through saved/public/SDK interfaces.
-Projected nonidentity histories remain open.
+Projected nonidentity flavour transport remains open.
 
 Fixed-full Bose exchange proves local rules, fields and named source/history
 subsets. Nine blocks and both terms match independent members in all carriers;
@@ -828,8 +828,8 @@ rank admission; a saved rank-four bubble passes all carriers. General higher-ran
 models remain open. The current seven-leg producer has completed bare assembly
 and is matching counterterms; final physics is pending. #link("https://github.com/alphal00p/oneloopmaster/pull/9")[Scalar-master PR 9]
 passes isolated AP80 scalar and complete zero-width CMS controls.
-#link("https://github.com/alphal00p/oneloopmaster/pull/10")[PR 10]'s one-/two-mass chart fixes pass 1,536 reference checks. Initial consumer
-replay exposed further boxes; the expanded fix awaits complete scalar-QCD replay.
+#link("https://github.com/alphal00p/oneloopmaster/pull/10")[PR 10]'s expanded chart fixes pass 1,536 reference checks. The isolated consumer
+now passes Born/bare; missing local UV/$R_2$ insertions prevent BSM acceptance.
 Normal pins and wider CMS gates remain unchanged.
 
 The installed `bc78edbd` wheel passes tree, LC 16×6, DD and no-Python Rust checks.
@@ -942,7 +942,7 @@ external-field UV and $R_2$, testing components before their complete sum.
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
   [Real-mass EW], [Source-owned charged leptons, bounded massive muons and quarks pass complete references. Quark charge rows pass both terms and all carriers; saved/public and binary64 SDK transport pass. Explicit Gmu preparation passes; fresh public process generation remains open.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
-  [Correlations / mapping], [W+ families and formal d/s identity reuse pass full/LC/NLC saved/public/SDK. Bose named-history/source subsets now pass saved/public/SDK and all carriers. Formal-full dd ordered terms pass independently; projected member composition, resolved Bose axes and EW/CMS vector sources remain open.],
+  [Correlations / mapping], [W+ and d/s identity transport pass full/LC/NLC saved/public/SDK; Bose history/source subsets pass full colour. Full dd ordered terms pass independently. Same-process LC/NLC terms/sources pass all carriers; their saved/public and species transport, resolved Bose axes and EW/CMS vectors remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Full/NLC ordinary/resolved binary64 FFT and exact DD/AP fallback pass. Source rescue, partial returns and grouped CLI retain IDs, precision and diagnostics.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
