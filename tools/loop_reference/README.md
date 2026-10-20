@@ -453,8 +453,9 @@ process listed in `required_processes.json`; nothing in it is process-specific.
 | `exact_points.py` | Deterministic exact on-shell 2->n points with terminating decimals (massive pairs included); see its docstring for the construction and its representability limit. |
 | `madloop_export.py` | MG5_aMC standalone export (optimized output, external Ninja/Collier, split orders `QCD,QED`) and `make OLP_static`; writes `<export>.generation.json` with graph counts, observed orders and generation/export/compile times. |
 | `madloop_driver.f90`, `recola_driver.f90`, `openloops_driver.cpp` | Generic native drivers (no Python per point): Born and Laurent coefficients selected by squared split order (MadLoop) or coupling power (Recola/OpenLoops). |
-| `references.py` | `run` one provider (builds its driver, sets matched parameters, pins one CPU, records times) and `merge` the available providers into one JSON with cross-checks. |
+| `references.py` | `run` one provider (builds its driver, sets matched parameters, pins one CPU, records times and the provider versions read from the trees/libraries actually used), `merge` the available providers into one JSON with all-pairs cross-checks, `summary` (Markdown table) and `watch` (periodic re-merge of long runs that exits once every expected run has finished, failed or died). |
 | `run_required.sh` | Convenience wrapper: points (if absent) + `run` + `merge` under `$LOOP_REFERENCE_ROOT/runs/required/<process>/`. |
+| `build_recola_patched.sh`, `recola_colorbranch.patch` | Isolated Recola build with the seven-gluon `colorBranch` fix (below). |
 
 Typical use (licence not needed; run from any directory):
 
@@ -471,7 +472,12 @@ done
 
 Each provider writes `status-<provider>.json` (`running`/`done`/`failed: ...`),
 `<provider>-run/output.log` and `<provider>-result.json`; `reference.json` is the
-merge. A failed or interrupted provider is resumed by rerunning the same
+merge. `run --tag <t>` writes a secondary run (`<provider>-<t>-result.json`)
+whose timings and deviations from the reference run are attached to the merge
+(`providers.<provider>.secondary_runs.<t>`) but never used as values; it is used
+for MadLoop at its production stability setting (below). MadLoop runs can wait
+for a long export with `--wait-for-export`; they fail as soon as no live
+`madloop_export.py` process for that export remains. A failed or interrupted provider is resumed by rerunning the same
 `run_required.sh` line; a MadLoop export is resumed by deleting the incomplete
 export directory and rerunning `madloop_export.py` (it refuses to overwrite).
 
@@ -500,15 +506,25 @@ UV counterterms and complete R2 on, actual poles from every provider.
 
 Conventions: MadLoop/BLHA `C_eps=(4 pi)^eps/Gamma(1-eps)`; OpenLoops
 `truepoles=1`, `polenorm=0`, `iop_on=0`, used directly; Recola finite part
-converted by `+pi^2/6 * D`. MadLoop requests relative accuracy `1e-11`, forces
-its stability check on each timed call and keeps its production
-`ImprovePSPoint=2`; Recola uses `dynamic_settings=1`, `compute_ir_poles=1`.
+converted by `+pi^2/6 * D`. The MadLoop reference run requests relative
+accuracy `1e-11` (its stability test then sends most 6- and 7-leg top points to
+the quadruple-precision Ninja rescue, return code 328) and forces the stability
+test on every call; its times are therefore not a production baseline. A second
+MadLoop run (`--tag production --madloop-accuracy -1`) keeps MadLoop's own
+`MLStabThres=1e-3` and default stability test (`CTModeRun=-1`) and records the
+production per-point times and return codes, plus its deviation from the
+reference run; this is the MadLoop timing to use for the speed gate. Both keep
+`ImprovePSPoint=2`. MadLoop's parameter card receives each scheme value as its
+exact decimal text (checked to reproduce the same binary64 on re-reading). Recola
+uses `dynamic_settings=1`, `compute_ir_poles=1`.
 At seven or more external legs the COLLIER global cache is disabled in both
 MadLoop (Collier 1.2.9, `COLLIERGlobalCache=0`) and Recola (Collier 1.2.8,
 `set_cache_mode_rcl(0)`), following the NinjaRS owners' report of a wrong
 global-cache result at `N=7`, rank 9.
 
-The merge checks every pair of providers coefficient by coefficient with
+The merge compares every unordered pair of providers (per row:
+`provider_pair_relative_errors`, `provider_pair_strict_relative_errors`; the
+reported maximum is over pairs of validated providers) coefficient by coefficient with
 `|a-b|/max(|a|,|b|,|Born| coupling/(2 pi))` (no floor for the Born; strict
 relative errors are listed too) and the universal double pole
 `D = -(coupling/2pi) * sum_i C_i * Born` (QCD: `C_F`/`C_A` per massless
@@ -524,8 +540,18 @@ corruption" in `reallocate_bLDef` (also with an unlimited stack).
 `recola_colorbranch.patch` makes the array allocatable and grows it with
 `bLDef`; it changes nothing while no reallocation happens (bitwise identical
 `g g -> t t~` results). The patched copy is built separately in
-`workspace/reference/builds/recola2-2.3.0-colorbranch-fix` (same CMake options,
-Collier 1.2.8, SM 2.2.3) and selected with `LOOP_REFERENCE_RECOLA`.
+`workspace/reference/builds/recola2-2.3.0-colorbranch-fix` and selected with
+`LOOP_REFERENCE_RECOLA`; reproduce it with
+
+```bash
+tools/loop_reference/build_recola_patched.sh workspace/reference/sources/recola2-2.3.0 \
+  workspace/reference/sources/COLLIER-1.2.8 workspace/reference/models/SM_2.2.3 <new-dir>
+```
+
+(a fresh build from this script gives bitwise identical `g g -> t t~` values).
+The supplied "2.3.0" tree reports version 2.2.5 itself (banner and
+`recolaConfigVersion.cmake`); result files record that self-reported version and
+the tree path.
 
 ### EW matching findings (g g -> t t~ e- e+ g, `ew-gmu`)
 
@@ -550,6 +576,12 @@ Collier 1.2.8, SM 2.2.3) and selected with `LOOP_REFERENCE_RECOLA`.
   to 1e-11). The offset depends on the Higgs mass (1e-4 to 2e-4 at
   `MH=700`, where Recola and OpenLoops still agree with each other) and on
   `mu_R` (1.2e-7 and 1e-6 at points 2 and 3 when all scales are 1000 GeV).
-  It is unresolved and points to a Higgs-sector/tadpole convention of the UFO
-  EW counterterms, which pyAmpliCol consumes as well. MadLoop is therefore
-  recorded but excluded (`exclusions.json`) from the EW agreement check.
+  **The cause is not established.** The Higgs-mass and scale dependence are
+  equally compatible with a convention of the UFO's EW counterterms (e.g.
+  tadpoles or Higgs-sector renormalization) and with a difference in the
+  one-loop graph content (e.g. Higgs-mediated or tadpole graphs that MG5
+  generates or drops differently). This is an open physics item: pyAmpliCol
+  takes its counterterms from the same UFO, so which one is right decides
+  whether pyAmpliCol should match Recola/OpenLoops or MadLoop here. MadLoop is
+  recorded with all values and differences but excluded (`exclusions.json`)
+  from the EW agreement check until the cause is found.

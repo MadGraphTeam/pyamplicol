@@ -40,6 +40,7 @@ COEFFICIENTS = ("born", "finite", "single_pole", "double_pole")
 PI = Decimal("3.14159265358979323846264338327950288419716939937510582097494")
 getcontext().prec = 50
 UNCACHED_LEG_THRESHOLD = 7  # COLLIER 1.2.9/1.2.10 global cache defect at N=7 (NinjaRS owners)
+LHA_VALUE_CHARACTERS = 20  # character*20 value buffer of MadLoop's lha_read.f
 
 
 def derived_parameters(scheme):
@@ -126,6 +127,50 @@ def openloops_commands(spec):
     return lines
 
 
+def openloops_release(root):
+    """OpenLoops release string of the installation actually used."""
+    text = (root / "pyol/config/default.cfg").read_text()
+    match = re.search(r"^release\s*=\s*(\S+)", text, re.MULTILINE)
+    if not match:
+        raise RuntimeError(f"cannot read the OpenLoops release from {root}")
+    return match.group(1)
+
+
+# ---------------------------------------------------------- provenance
+
+def library_version(library):
+    """Best-effort version of the package that ships ``library``: a CMake
+    ``*ConfigVersion.cmake``, a ``VERSION`` file or a ``<NAME>-<version>``
+    directory next to it or one level up. Returns None when none is found."""
+    for directory in (library.parent, library.parent.parent):
+        for config in sorted(directory.glob("*ConfigVersion.cmake")):
+            match = re.search(r'set\(PACKAGE_VERSION "([^"]+)"\)', config.read_text())
+            if match:
+                return match.group(1)
+        version_file = directory / "VERSION"
+        if version_file.is_file():
+            first = version_file.read_text().split()
+            if first and re.fullmatch(r"\d+(\.\d+)+", first[0]):
+                return first[0]
+        for child in sorted(directory.iterdir()):
+            match = re.fullmatch(r"[A-Za-z]+-(\d+(\.\d+)+)", child.name)
+            if child.is_dir() and match:
+                return match.group(1)
+    return None
+
+
+def linked_libraries(binary, pattern):
+    """Resolved shared libraries of ``binary`` whose soname matches ``pattern``."""
+    text = subprocess.run(["ldd", str(binary)], capture_output=True, text=True, check=True).stdout
+    found = {}
+    for line in text.splitlines():
+        match = re.match(r"\s*(\S+) => (\S+)", line)
+        if match and re.search(pattern, match.group(1)):
+            path = Path(match.group(2)).resolve()
+            found[match.group(1)] = {"path": str(path), "version": library_version(path)}
+    return found
+
+
 def openloops_library_version(root, library):
     info = {}
     path = root / "process_src" / library / "version.info"
@@ -195,8 +240,21 @@ def prepare_madloop_run(spec, export, run_dir, mg5, legs):
                 raise RuntimeError(f"MadLoop card has no parameter {name} (value {text})")
             absent.append(name)  # removed by the model restriction, i.e. fixed to zero
             continue
-        param.value = float(Decimal(text))
+        # Write the scheme's exact decimal text (MG5's default %.6e would silently
+        # truncate longer inputs for MadLoop only). MadLoop's LHA reader keeps 20
+        # characters per value; fall back to the shortest round-trip binary64
+        # text, and refuse anything that would not reproduce the same double.
+        exact = float(Decimal(text))
+        written = text.strip() if len(text.strip()) <= LHA_VALUE_CHARACTERS else repr(exact)
+        if len(written) > LHA_VALUE_CHARACTERS or float(written) != exact:
+            raise RuntimeError(f"cannot write {name}={text} exactly into a MadLoop param_card")
+        param.value, param.format = written, "str"
     card.write(str(run_dir / "Cards/param_card.dat"))
+    reread = ParamCard(str(run_dir / "Cards/param_card.dat"))
+    for name, text in {**scheme["parameters"], **scheme["fixed_parameters"]}.items():
+        param = by_name.get(name.lower())
+        if param is not None and float(reread[param.lhablock].get(param.lhacode).value) != float(Decimal(text)):
+            raise RuntimeError(f"MadLoop card does not reproduce {name}={text}")
     params = run_dir / "SubProcesses/MadLoop5_resources/MadLoopParams.dat"
     text = params.read_text()
     settings = {}
@@ -282,10 +340,36 @@ def parse_rows(stdout, provider, count):
     return rows, extra
 
 
-def status_update(work, provider, state):
-    """One status file per provider, so concurrent provider runs never race."""
-    path = work / f"status-{provider}.json"
-    path.write_text(json.dumps({"provider": provider, "state": state, "pid": os.getpid(),
+EXPORT_IN_PROGRESS = ("generating", "exporting", "exported", "compiling")
+
+
+def export_processes(generation, export):
+    """Live processes producing ``export``: the pid recorded by madloop_export.py
+    or, for exports started without one, every live madloop_export.py whose
+    command line names ``export`` as its ``--output``."""
+    pid = json.loads(generation.read_text()).get("pid")
+    if pid is not None:
+        return [pid] if Path(f"/proc/{pid}").exists() else []
+    found = []
+    for proc in Path("/proc").iterdir():
+        if not proc.name.isdigit():
+            continue
+        try:
+            argv = [a.decode(errors="replace") for a in (proc / "cmdline").read_bytes().split(b"\0")]
+        except OSError:
+            continue
+        if not any(a.endswith("madloop_export.py") for a in argv):
+            continue
+        targets = [argv[i + 1] for i, a in enumerate(argv[:-1]) if a == "--output"]
+        if any(Path(t).resolve() == export for t in targets):
+            found.append(int(proc.name))
+    return found
+
+
+def status_update(work, label, state):
+    """One status file per provider run label, so concurrent runs never race."""
+    path = work / f"status-{label}.json"
+    path.write_text(json.dumps({"provider": label, "state": state, "pid": os.getpid(),
                                 "updated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}) + "\n")
 
 
@@ -298,11 +382,12 @@ def command_run(args):
     work = args.work_dir.resolve()
     work.mkdir(parents=True, exist_ok=True)
     provider = args.provider
-    run_dir = work / f"{provider}-run"
+    label = f"{provider}-{args.tag}" if args.tag else provider
+    run_dir = work / f"{label}-run"
     run_dir.mkdir(exist_ok=True)
     legs = len(spec["pdgs"])
     count = len(points["points"])
-    status_update(work, provider, "running")
+    status_update(work, label, "running")
     result = {"provider": provider, "process_name": spec["name"], "host": platform.node(),
               "cpu": args.cpu, "points_file": str(args.points.resolve()),
               "timing_scope": "single thread pinned; point 1 evaluated once untimed for "
@@ -316,24 +401,38 @@ def command_run(args):
                 state = json.loads(generation.read_text())["status"] if generation.exists() else "absent"
                 if state == "compiled":
                     break
-                if state not in ("generating", "exporting", "compiling"):
+                if state not in EXPORT_IN_PROGRESS:
                     raise RuntimeError(f"MadLoop export state {state!r}; not waiting")
-                pid = json.loads(generation.read_text()).get("pid")
-                if pid is not None and not Path(f"/proc/{pid}").exists():
-                    raise RuntimeError(f"MadLoop export process {pid} ended in state {state!r}")
-                status_update(work, provider, f"waiting for MadLoop export ({state})")
-                time.sleep(300)
+                pids = export_processes(generation, export)
+                if not pids:
+                    # Re-read: the export may have finished between the two reads.
+                    state = json.loads(generation.read_text())["status"]
+                    if state == "compiled":
+                        break
+                    raise RuntimeError(f"no live MadLoop export process for {export} (state {state!r})")
+                status_update(work, label, f"waiting for MadLoop export ({state}; pid {pids[0]})")
+                time.sleep(args.wait_interval)
             binary = build_madloop(export, run_dir)
             result["settings"] = prepare_madloop_run(spec, export, run_dir, args.mg5, legs)
             result["generation"] = json.loads(generation.read_text()) if generation.exists() else None
-            result["version"] = "MadLoop/MG5_aMC " + re.search(
-                r"version = (\S+)", (args.mg5 / "VERSION").read_text()).group(1)
-            result["settings"]["requested_relative_accuracy"] = args.madloop_accuracy
-            result["settings"]["stability_check"] = "forced on every timed call"
+            mg5_version = re.search(r"version = (\S+)", (args.mg5 / "VERSION").read_text()).group(1)
+            from build import madloop_libraries
+            reducers = {lib.name: {"path": str(lib.resolve()), "version": library_version(lib.resolve())}
+                        for lib in madloop_libraries(export)}
+            result["version"] = f"MadLoop/MG5_aMC {mg5_version}"
+            result["provenance"] = {"MG5_aMC": {"path": str(args.mg5), "version": mg5_version},
+                                    "reducer_libraries": reducers}
+            production = args.madloop_accuracy <= 0
+            result["settings"]["requested_relative_accuracy"] = (
+                "MadLoop MLStabThres (production setting)" if production else args.madloop_accuracy)
+            result["settings"]["stability_check"] = (
+                "MadLoop default (CTModeRun=-1 after initialization)" if production
+                else "forced on every call")
             orders = spec["born_orders"], spec["loop_orders"]
             header = (f"{2 * orders[0]['QCD']} {2 * orders[0]['QED']} "
                       f"{orders[0]['QCD'] + orders[1]['QCD']} {orders[0]['QED'] + orders[1]['QED']} "
-                      f"{value(spec['scheme_data'], 'aS')} {args.madloop_accuracy} 64\n{count}\n")
+                      f"{value(spec['scheme_data'], 'aS')} {args.madloop_accuracy} "
+                      f"{0 if production else 1}\n{count}\n")
             stdin = header + "\n".join(point_lines(points)) + "\n"
             stdout, wall = run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu)
         elif provider == "recola":
@@ -360,24 +459,32 @@ def command_run(args):
             commands = openloops_commands(spec)
             library = spec["openloops"]["library"]
             result["settings"] = {"commands": commands}
-            result["version"] = "OpenLoops 2.1.5"
+            result["version"] = f"OpenLoops {openloops_release(root)}"
+            result["provenance"] = {"openloops": {"path": str(root), "release": openloops_release(root)},
+                                    "linked": linked_libraries(binary, r"openloops")}
             result["library"] = {"name": library, **openloops_library_version(root, library)}
             stdin = "\n".join(commands + [f"points {count}", *point_lines(points)]) + "\n"
             stdout, wall = run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu)
         rows, extra = parse_rows(stdout, provider, count)
         if provider == "recola":
             banner = re.search(r"Version (\S+)", stdout)
-            result["version"] = (f"Recola2 (supplied 2.3.0 tree, self-reported {banner.group(1) if banner else '?'})"
-                                 " / SM model 2.2.3 / Collier 1.2.8")
+            linked = linked_libraries(binary, r"recola|collier|modelfile")
+            versions = {re.sub(r"^lib|\.so.*$", "", name): info["version"] for name, info in linked.items()}
+            result["provenance"] = {"recola_tree": str(root),
+                                    "self_reported_version": banner.group(1) if banner else None,
+                                    "linked": linked}
+            result["version"] = (f"Recola2 {result['provenance']['self_reported_version']} "
+                                 f"(tree {root}) / " + " / ".join(
+                                     f"{k} {v}" for k, v in sorted(versions.items()) if k != "recola"))
         result.update(extra)
         result["rows"] = rows
         result["process_wall_seconds"] = wall
     except Exception as error:
-        status_update(work, provider, f"failed: {error}")
+        status_update(work, label, f"failed: {error}")
         raise
-    out = work / f"{provider}-result.json"
+    out = work / f"{label}-result.json"
     out.write_text(json.dumps(result, indent=2) + "\n")
-    status_update(work, provider, "done")
+    status_update(work, label, "done")
     print(out)
 
 
@@ -417,10 +524,12 @@ def command_merge(args):
     coupling = float(Decimal(value(scheme, "aS"))) if spec["correction"] == "QCD" else float(Decimal(derived["alpha"]))
     pole_factor = required_spec.double_pole_factor(spec, coupling)
     rows, errors, pole_errors = [], [], []
+    names = list(results)
     for index in range(len(points["points"])):
         row = {key: results[primary]["rows"][index][key] for key in COEFFICIENTS}
         row["providers"] = {}
-        row["provider_relative_errors"] = {}
+        row["provider_pair_relative_errors"] = {}
+        row["provider_pair_strict_relative_errors"] = {}
         for provider, result in results.items():
             values = result["rows"][index]
             row["providers"][provider] = {k: v for k, v in values.items() if k != "total_all_orders"}
@@ -429,14 +538,19 @@ def command_merge(args):
             row["providers"][provider]["universal_double_pole_relative_error"] = pole_error
             if provider not in excluded:
                 pole_errors.append(pole_error)
-            if provider != primary:
-                unit = abs(row["born"]) * coupling / (2 * math.pi)
-                rel = {key: relative(values[key], row[key], 0.0 if key == "born" else unit)
+        # Every unordered provider pair; excluded providers are compared too but
+        # never enter the agreement check.
+        for i, a in enumerate(names):
+            for b in names[i + 1:]:
+                va, vb = results[a]["rows"][index], results[b]["rows"][index]
+                unit = max(abs(va["born"]), abs(vb["born"])) * coupling / (2 * math.pi)
+                pair = f"{a}-{b}"
+                rel = {key: relative(va[key], vb[key], 0.0 if key == "born" else unit)
                        for key in COEFFICIENTS}
-                strict = {key: relative(values[key], row[key]) for key in COEFFICIENTS}
-                row["provider_relative_errors"][provider] = rel
-                row.setdefault("provider_strict_relative_errors", {})[provider] = strict
-                if provider not in excluded:
+                row["provider_pair_relative_errors"][pair] = rel
+                row["provider_pair_strict_relative_errors"][pair] = {
+                    key: relative(va[key], vb[key]) for key in COEFFICIENTS}
+                if a not in excluded and b not in excluded:
                     errors.extend(rel.values())
         rows.append(row)
     max_error = max(errors) if errors else None
@@ -446,6 +560,28 @@ def command_merge(args):
     for provider, result in results.items():
         providers[provider] = {k: v for k, v in result.items() if k not in ("rows",)}
         providers[provider]["evaluation_seconds"] = [r["seconds"] for r in result["rows"]]
+    # Secondary timing runs (e.g. MadLoop at its production stability setting):
+    # timings and their deviation from the accurate run only, never reference values.
+    for path in sorted(work.glob("*-*-result.json")):
+        label = path.name[: -len("-result.json")]
+        provider, _, tag = label.partition("-")
+        if provider not in results:
+            continue
+        secondary = json.loads(path.read_text())
+        deviation = []
+        for accurate, other in zip(results[provider]["rows"], secondary["rows"], strict=True):
+            unit = abs(accurate["born"]) * coupling / (2 * math.pi)
+            deviation.append({key: relative(other[key], accurate[key], 0.0 if key == "born" else unit)
+                              for key in COEFFICIENTS})
+        providers[provider].setdefault("secondary_runs", {})[tag] = {
+            "settings": {k: secondary["settings"][k] for k in ("requested_relative_accuracy", "stability_check")
+                         if k in secondary.get("settings", {})},
+            "evaluation_seconds": [r["seconds"] for r in secondary["rows"]],
+            "statuses": [r.get("status") for r in secondary["rows"]],
+            "relative_deviation_from_reference_run": deviation,
+            "initial_call_seconds": secondary.get("initial_call_seconds"),
+            "cpu": secondary.get("cpu"),
+        }
     report = {
         "process": spec["madloop"]["process"] if "madloop" in spec else spec["name"],
         "name": spec["name"],
@@ -455,7 +591,8 @@ def command_merge(args):
         "loop_orders": spec["loop_orders"],
         "scheme": spec["scheme"],
         "scheme_description": scheme["description"],
-        "source": "MG5_aMC_v3_7_0 / Recola2 2.3.0 / OpenLoops 2.1.5 independent references",
+        "source": "independent references: " + "; ".join(
+            results[p].get("version", p) for p in results),
         "scope": "Independent provider references at exact on-shell decimal points; binary64 "
                  "provider arithmetic; timings are single-run by-products, not benchmarks.",
         "convention": "MadLoop/BLHA C_eps=(4pi)^eps/Gamma(1-eps); F_MadLoop=F_Recola+pi^2/6*D; "
@@ -504,9 +641,12 @@ def generation_seconds(provider, result):
 
 
 def command_summary(args):
-    """Markdown table of merged references (generation and per-point times)."""
-    print("| process | providers | max rel. diff | status | generation [s] | s/point (mean) |")
-    print("|---|---|---|---|---|---|")
+    """Markdown table of merged references (generation and per-point times).
+    The agreement column is the largest difference over all pairs of validated
+    providers; excluded providers are listed separately."""
+    print("| process | validated | excluded | max pairwise rel. diff (validated) | status | "
+          "generation [s] | s/point (mean) |")
+    print("|---|---|---|---|---|---|---|")
     for path in args.references:
         d = json.loads(Path(path).read_text())
         gen, per = [], []
@@ -515,9 +655,64 @@ def command_summary(args):
             gen.append(f"{provider} {g:.4g}" if g is not None else f"{provider} -")
             t = result["evaluation_seconds"]
             per.append(f"{provider} {sum(t) / len(t):.3g}")
+            for tag, run in result.get("secondary_runs", {}).items():
+                t = run["evaluation_seconds"]
+                per.append(f"{provider}-{tag} {sum(t) / len(t):.3g}")
         err = d["maximum_provider_relative_error"]
-        print(f"| {d['name']} | {', '.join(d['providers'])} | {err if err is None else f'{err:.2g}'} | "
+        print(f"| {d['name']} | {', '.join(d['validated_providers'])} | "
+              f"{', '.join(d['excluded_providers']) or '-'} | {err if err is None else f'{err:.2g}'} | "
               f"{d['validation_status']} | {'; '.join(gen)} | {'; '.join(per)} |")
+
+
+def provider_state(work, label):
+    """'done', 'failed: ...', 'dead: ...' (status claims a live run whose process
+    is gone) or 'running: <state>' for one provider run label."""
+    if (work / f"{label}-result.json").exists():
+        return "done"
+    status = work / f"status-{label}.json"
+    if not status.exists():
+        return "dead: no status file"
+    record = json.loads(status.read_text())
+    if record["state"].startswith("failed"):
+        return record["state"]
+    if not Path(f"/proc/{record['pid']}").exists():
+        return f"dead: process {record['pid']} gone in state {record['state']!r}"
+    if record["state"].startswith("waiting for MadLoop export"):
+        # Waiters started by older toolkit versions cannot see a dead export themselves.
+        export = work / "madloop-export"
+        generation = work / "madloop-export.generation.json"
+        alive = generation.exists() and export_processes(generation, export)
+        export_state = json.loads(generation.read_text())["status"] if generation.exists() else "absent"
+        if export_state != "compiled" and not alive:
+            return f"dead: MadLoop export ended in state {export_state!r}; waiter {record['pid']} cannot finish"
+    return f"running: {record['state']}"
+
+
+def command_watch(args):
+    """Re-merge long-running processes periodically until every expected
+    provider run has finished, failed or died; then report and exit (status 1
+    if any expected run did not produce a result)."""
+    expected = {}
+    for item in args.expect:
+        process, _, labels = item.partition(":")
+        expected[process] = labels.split(",")
+    while True:
+        states = {}
+        for process, labels in expected.items():
+            work = args.root / process
+            states[process] = {label: provider_state(work, label) for label in labels}
+            if any(work.glob("*-result.json")):
+                subprocess.run([sys.executable, str(Path(__file__).resolve()), "merge", "--spec", str(args.spec),
+                                "--process", process, "--points", str(work / "points.json"),
+                                "--work-dir", str(work), "--output", str(work / "reference.json")])
+        print(time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), json.dumps(states), flush=True)
+        pending = [s for d in states.values() for s in d.values() if s.startswith("running")]
+        if not pending:
+            failed = {p: {l: s for l, s in d.items() if s != "done"} for p, d in states.items()}
+            failed = {p: d for p, d in failed.items() if d}
+            print("WATCH_FINISHED", json.dumps(failed) if failed else "all expected results present", flush=True)
+            sys.exit(1 if failed else 0)
+        time.sleep(args.interval)
 
 
 def main():
@@ -534,9 +729,15 @@ def main():
     run.add_argument("--mg5", type=Path, help="MG5_aMC tree (MadLoop card handling, version)")
     run.add_argument("--reference-root", type=Path)
     run.add_argument("--madloop-export", type=Path)
-    run.add_argument("--madloop-accuracy", type=float, default=1e-11)
+    run.add_argument("--madloop-accuracy", type=float, default=1e-11,
+                     help="relative accuracy target forcing quadruple-precision rescue; <= 0 keeps "
+                     "MadLoop's production MLStabThres and its default stability test")
+    run.add_argument("--tag", help="suffix for a secondary run of the same provider, e.g. "
+                     "'production' (writes <provider>-<tag>-result.json; never merged as values)")
     run.add_argument("--wait-for-export", action="store_true",
-                     help="poll the export's generation.json until it is compiled")
+                     help="poll the export's generation.json until it is compiled; fail as "
+                     "soon as no live export process remains")
+    run.add_argument("--wait-interval", type=float, default=300.0, help="seconds between polls")
     run.add_argument("--recola", type=Path, help="Recola2 source/build tree with librecola.so")
     run.add_argument("--recola-uncached", action="store_true")
     run.add_argument("--openloops", type=Path, help="OpenLoops installation")
@@ -546,11 +747,20 @@ def main():
     merge.add_argument("--tolerance", type=float, default=2e-8)
     merge.add_argument("--exclude", action="append", default=[], metavar="PROVIDER=REASON",
                        help="keep a provider's values but leave it out of the agreement check")
+    watch = sub.add_parser("watch")
+    watch.add_argument("--spec", type=Path, default=required_spec.DEFAULT_SPEC)
+    watch.add_argument("--root", type=Path, required=True, help="directory holding <process>/ work dirs")
+    watch.add_argument("--interval", type=float, default=900.0)
+    watch.add_argument("expect", nargs="+", metavar="PROCESS:LABEL[,LABEL...]",
+                       help="expected provider run labels, e.g. gg_ggggg:madloop-production,madloop,recola")
     summary = sub.add_parser("summary")
     summary.add_argument("references", nargs="+", type=Path)
     args = parser.parse_args()
     if args.command == "summary":
         command_summary(args)
+        return
+    if args.command == "watch":
+        command_watch(args)
         return
     if args.command == "run":
         if args.mg5:

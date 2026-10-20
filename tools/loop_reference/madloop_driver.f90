@@ -3,31 +3,37 @@
 ! export's single SubProcesses/P* directory (for nexternal.inc); the Python
 ! runner substitutes the export's routine prefix for ML5_0_.
 ! Input on stdin:
-!   born_qcd born_qed loop_qcd loop_qed alpha_s target_accuracy max_init_calls
+!   born_qcd born_qed loop_qcd loop_qed alpha_s target_accuracy force_check
 !   count
 !   count lines: mu E1 px1 py1 pz1 ... En pxn pyn pzn
+! target_accuracy > 0 overrides MLStabThres (quadruple-precision rescue when the
+! estimated accuracy is worse); target_accuracy <= 0 keeps MadLoop's own
+! MLStabThres (production setting). force_check /= 0 forces the stability test
+! on every call, including the initialization phase.
 ! Run in a directory holding Cards/param_card.dat and
 ! SubProcesses/MadLoop5_resources. Born and Laurent coefficients are selected
 ! by squared split orders [QCD, QED]; physical couplings, no alpha extraction.
-! Point 1 is evaluated untimed until initialization finishes, then points
-! 2..n,1 are timed with the stability check forced (correctness priority).
+! Point 1 is evaluated untimed until MadLoop leaves its initialization phase
+! (return-code tens digit 3 or 4; MadLoop ends it after a fixed number of
+! calls set in MadLoopParams.dat), then points 2..n,1 are timed once each.
 program madloop_reference
   implicit none
   include 'nexternal.inc'
   integer, parameter :: dp = kind(1d0)
   integer :: nanswer, nloop, born_orders(2), loop_orders(2), born_index, loop_index
-  integer :: count, i, k, status, attempt, max_init
+  integer :: count, i, k, status, attempt, force_check
   integer :: ML5_0_soindex_for_squared_orders, ML5_0_ml5soindex_for_squared_orders
   integer(8) :: c0, c1, rate
   real(dp) :: alpha_s, target, seconds
   real(dp), allocatable :: answer(:,:), accuracy(:), p(:,:,:), scales(:)
   character(512) :: card_path, resource_path
-  read(*, *) born_orders, loop_orders, alpha_s, target, max_init
+  read(*, *) born_orders, loop_orders, alpha_s, target, force_check
   read(*, *) count
   allocate(p(0:3, nexternal, count), scales(count))
   do i = 1, count
     read(*, *) scales(i), p(:, :, i)
   end do
+  if (target <= 0d0) target = -1d0
   card_path = 'Cards/param_card.dat'
   resource_path = 'SubProcesses/MadLoop5_resources'
   call setpara2(card_path)
@@ -40,8 +46,10 @@ program madloop_reference
   loop_index = ML5_0_ml5soindex_for_squared_orders(loop_orders)
   write(*, '(A,4I6)') 'SPLIT_ORDER_INDICES ', born_index, loop_index, nanswer, nloop
   call system_clock(c0, rate)
-  do attempt = 1, max_init
-    call ML5_0_force_stability_check(.true.)
+  attempt = 0
+  do
+    attempt = attempt + 1
+    call ML5_0_force_stability_check(force_check /= 0)
     call ML5_0_sloopmatrix_thres(p(:, :, 1), answer, target, accuracy, status)
     if (mod(status / 10, 10) /= 3 .and. mod(status / 10, 10) /= 4) exit
   end do
@@ -50,7 +58,7 @@ program madloop_reference
   do k = 2, count + 1
     i = merge(1, k, k > count)
     call update_as_param2(scales(i)**2, alpha_s)
-    call ML5_0_force_stability_check(.true.)
+    call ML5_0_force_stability_check(force_check /= 0)
     call system_clock(c0)
     call ML5_0_sloopmatrix_thres(p(:, :, i), answer, target, accuracy, status)
     call system_clock(c1)

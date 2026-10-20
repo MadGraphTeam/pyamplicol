@@ -35,6 +35,7 @@ from fractions import Fraction as F
 import itertools
 import json
 import random
+import sys
 from pathlib import Path
 
 # Rotations about the x, y, z axes with terminating cos/sin.
@@ -183,9 +184,11 @@ def generate(masses, count=3, cut=F(1, 1000), resonances=(), scale_window=(F(800
     accepted = []
     seen_scales = set()
     chooser = random.Random(20261020)
-    for trial in itertools.count():
-        if trial > 20000:
-            raise RuntimeError("no admissible candidates found; relax cuts explicitly")
+    for trial in itertools.count(1):
+        # No trial limit: report progress instead, so a too-strict cut is
+        # visible without silently capping the search.
+        if trial % 100000 == 0:
+            print(f"exact_points: {trial} candidates tried, {len(accepted)} accepted", file=sys.stderr)
         parameters = [chooser.choice(_K_SEED)] + [chooser.choice(_K_ADD) for _ in additions]
         seed_scale = F(100)
         try:
