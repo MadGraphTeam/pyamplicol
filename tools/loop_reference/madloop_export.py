@@ -6,8 +6,13 @@ The specification (see ``required_processes.json``) names the MG5 model and
 process string. The export uses optimized loop output with the installed
 Ninja/Collier reducers and records split orders ``QCD, QED`` so the driver can
 select the Born-virtual interference by squared coupling order. Graph counts,
-the observed Born/loop amplitude orders and the generation, export and
-compilation wall times are written to ``generation.json`` next to the export.
+the observed Born/loop amplitude orders, the compilation flags and the
+generation, export and compilation wall times are written to
+``generation.json`` next to the export.
+
+The export is compiled with MG5_aMC's production flags (``production_make_opts``),
+not with the unset ``GLOBAL_FLAG`` (gfortran ``-O0``) of a bare standalone output.
+``--recompile`` rebuilds an existing export (e.g. a copy) the same way.
 
 Run with the Python that runs MG5_aMC (it imports MG5 from ``--mg5``). The
 script refuses to overwrite an existing export.
@@ -20,6 +25,7 @@ import logging
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -30,10 +36,88 @@ def _orders(diagram):
     return diagram["orders"].get("QCD", 0), diagram["orders"].get("QED", 0)
 
 
+def _import_mg5(mg5):
+    sys.dont_write_bytecode = True
+    if str(mg5) not in sys.path:
+        sys.path.insert(0, str(mg5))
+
+
+def production_make_opts(mg5):
+    """MG5_aMC's production Fortran flags: the run-card defaults (``global_flag``,
+    ``aloha_flag``, ``matrix_flag``) that ``CommonRunCmd.update_make_opts`` writes
+    into ``Source/make_opts`` when MG5 runs optimised, as ``bin/mg5_aMC`` always
+    does unless ``--debug`` (MG5 3.7.0: ``GLOBAL_FLAG=-O``). A standalone output
+    never sets them, so its default build is unoptimised."""
+    _import_mg5(mg5)
+    from madgraph.various.banner import RunCardLO
+
+    card = RunCardLO()
+    return {"GLOBAL_FLAG": card["global_flag"], "ALOHA_FLAG": card["aloha_flag"],
+            "MATRIX_FLAG": card["matrix_flag"]}
+
+
+def make_opts_variables(export):
+    """Variable block of an export's ``Source/make_opts`` (what make compiles with)."""
+    variables = {}
+    for line in (Path(export) / "Source/make_opts").read_text().splitlines():
+        if line.startswith("#end_of_make_opts_variables"):
+            break
+        match = re.match(r"^(\w+)\s*=\s*(.*)$", line.strip())
+        if match:
+            variables[match.group(1)] = match.group(2)
+    return variables
+
+
+def apply_production_flags(export, mg5):
+    """Write the production flags into the export's ``Source/make_opts`` with
+    MG5's own updater (idempotent); returns them."""
+    flags = production_make_opts(mg5)
+    from madgraph.interface.common_run_interface import CommonRunCmd
+
+    CommonRunCmd.update_make_opts_full(str(Path(export) / "Source/make_opts"), flags)
+    return flags
+
+
+def compile_export(export, mg5, jobs, log_path):
+    """Build the export with the production flags, as MG5 does after a
+    ``global_flag`` change: clean and rebuild the Source libraries (DHELAS,
+    MODEL; MG5's ``Running make for Source directory`` target), then every
+    MadLoop object and ``libMadLoop.a`` (``OLP_static``). Returns the flags."""
+    flags = apply_production_flags(export, mg5)
+    make = ["make", f"SHELL={shutil.which('bash') or 'bash'}"]
+    sub = export / "SubProcesses"
+    with open(log_path, "w") as log:
+        def run(arguments, cwd):
+            subprocess.run(make + arguments, cwd=cwd, stdout=log, stderr=subprocess.STDOUT, check=True)
+
+        for directory in ("Source/DHELAS", "Source/MODEL"):
+            run(["clean"], export / directory)
+        run([f"-j{jobs}"], export / "Source")
+        for directory in (sub, *sorted(p for p in sub.glob("P*") if p.is_dir())):
+            run(["clean"], directory)
+        run([f"-j{jobs}", "OLP_static"], sub)
+    return flags
+
+
+def recompile(args):
+    output = args.output.resolve()
+    status_path = output.parent / f"{output.name}.generation.json"
+    report = json.loads(status_path.read_text()) if status_path.exists() else {}
+    report.update({"status": "compiling", "recompiled_from_existing_export": True})
+    status_path.write_text(json.dumps(report, indent=2) + "\n")
+    start = time.perf_counter()
+    report["fortran_flags"] = compile_export(output, args.mg5.resolve(), args.compile_jobs,
+                                             output.parent / f"{output.name}.compile.log")
+    report.update({"compile_s": time.perf_counter() - start, "compile_jobs": args.compile_jobs,
+                   "status": "compiled"})
+    status_path.write_text(json.dumps(report, indent=2) + "\n")
+    print("MADLOOP_EXPORT_DONE", output, flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--spec", type=Path, required=True, help="process specification JSON")
-    parser.add_argument("--process", required=True, help="process name inside the specification")
+    parser.add_argument("--spec", type=Path, help="process specification JSON")
+    parser.add_argument("--process", help="process name inside the specification")
     parser.add_argument("--mg5", type=Path, required=True, help="MG5_aMC source tree")
     parser.add_argument("--output", type=Path, required=True, help="new export directory")
     parser.add_argument(
@@ -42,7 +126,16 @@ def main():
     )
     parser.add_argument("--compile-jobs", type=int, default=8)
     parser.add_argument("--no-compile", action="store_true")
+    parser.add_argument("--recompile", action="store_true",
+                        help="rebuild the existing export --output with the production flags")
     args = parser.parse_args()
+    if args.recompile:
+        if not args.output.is_dir():
+            parser.error(f"no export to recompile at {args.output}")
+        recompile(args)
+        return
+    if args.spec is None or args.process is None:
+        parser.error("--spec and --process are required to generate an export")
 
     from required_spec import load_process
 
@@ -68,8 +161,7 @@ def main():
         status_path.write_text(json.dumps(report, indent=2) + "\n")
 
     write()
-    sys.dont_write_bytecode = True
-    sys.path.insert(0, str(mg5))
+    _import_mg5(mg5)
     logging.basicConfig(level=logging.INFO)
     from models import import_ufo
     from madgraph.interface.master_interface import MasterCmd
@@ -132,14 +224,8 @@ def main():
         report["status"] = "compiling"
         write()
         compile_start = time.perf_counter()
-        with open(output.parent / f"{output.name}.compile.log", "w") as log:
-            subprocess.run(
-                ["make", f"-j{args.compile_jobs}", "OLP_static", f"SHELL={shutil.which('bash') or 'bash'}"],
-                cwd=output / "SubProcesses",
-                stdout=log,
-                stderr=subprocess.STDOUT,
-                check=True,
-            )
+        report["fortran_flags"] = compile_export(output, mg5, args.compile_jobs,
+                                                 output.parent / f"{output.name}.compile.log")
         report["compile_s"] = time.perf_counter() - compile_start
         report["compile_jobs"] = args.compile_jobs
         report["status"] = "compiled"
