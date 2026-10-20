@@ -101,15 +101,11 @@
 #let dim(body) = text(fill: ink2, body)
 #let tiny(body) = text(6.6pt, fill: ink2, body)
 #let math-label(s) = eval(s, mode: "math")
-#let plabel(key) = (
-  dy: $u overline(u) -> e^- e^+$,
-  uudd: $u overline(u) -> d overline(d)$,
-  tt: $u overline(u) -> t overline(t)$,
-  qqgg: $u overline(u) -> g g$,
-  gg: $g g -> g g$,
-  qqggg: $u overline(u) -> g g g$,
-  "ee-mumu-ew": $e^- e^+ -> mu^- mu^+$,
-).at(key)
+// Standard process notation from processes.json; an unlisted case prints its key.
+#let plabel(key) = {
+  let label = procs.at("case_labels", default: (:)).at(key, default: none)
+  if label == none { raw(key) } else { math-label(label) }
+}
 #let case-note(key) = (dy: "photon only", "ee-mumu-ew": [full EW, $G_mu$]).at(key, default: "QCD")
 #let box-note(fill: pale, stroke: none, body) = block(width: 100%, fill: fill, stroke: stroke, inset: 9pt, radius: 3pt, text(9.2pt, body))
 
@@ -134,11 +130,9 @@
   let found = providers.map(p => (p: p, v: median(c, b, p))).filter(r => r.v != none)
   if found.len() == 0 { none } else { found.sorted(key: r => r.v).first() }
 }
-// Explicit markers for absent provider observations (reference_protocol fields).
-#let missing(c, p) = (
-  "dy/openloops": "no matched control",
-  "ee-mumu-ew/madloop": "validated, not timed",
-).at(c.case + "/" + p, default: "not timed")
+// Explicit markers for absent provider observations, from processes.json.
+#let missing-markers = procs.at("missing_markers", default: (:))
+#let missing(c, p) = missing-markers.at(c.case + "/" + p, default: missing-markers.at("default", default: "not timed"))
 #let ratios(p, ref) = {
   let out = ()
   for c in m.cases { for b in (1, 128) {
@@ -174,10 +168,13 @@ measured, not validated or not working as such.
     *Status of the timing data.* All runtimes were measured on #m.date, at
     revisions #m.revision, #m.additional_revisions.qqggg.slice(0, 8) ($u overline(u) -> g g g$)
     and #m.additional_revisions.at("ee-mumu-ew").slice(0, 8) (EW). They time the
-    _pre-shared-weight_ engine through its Python coordinator, including exact
-    decimal input, on repeated three-point streams. These are development
-    observations, not the frozen acceptance campaign; later features have not
-    been retimed (protocol box in @runtime).
+    _pre-shared-weight_ engine through its Python coordinator with
+    #m.cases.map(c => upper(c.coefficient_engine)).dedup().join("/") coefficient evaluators,
+    including exact decimal input, on repeated three-point streams. The delivered
+    runtime (artifacts, CLI, SDKs) instead runs the interpreted evaluator in the
+    Rust executor, which is not timed here. These are development observations,
+    not the frozen acceptance campaign; later features have not been retimed
+    (protocol box in @runtime).
   ],
   {
     let gate(name, value) = (text(weight: "semibold", name), align(right, text(weight: "bold", value)))
@@ -284,7 +281,7 @@ per call.
   })
 }
 #let gen-cell(c, p) = {
-  let s = if p == "pyamplicol" { c.generation_s } else { cold.cases.at(c.case).at(p, default: (:)).at("seconds", default: none) }
+  let s = if p == "pyamplicol" { c.generation_s } else { cold.cases.at(c.case, default: (:)).at(p, default: (:)).at("seconds", default: none) }
   table.cell(text(6.8pt, fill: ink2, {
     if s == none { [—] } else { [#if p == "openloops" [setup ]#sig(s) s] }
     if p == "pyamplicol" [ · #mem(c.peak_rss_mib)]
@@ -354,12 +351,20 @@ timed (@tab:untimed); validation durations are not used as runtimes.
       blocks or uncertainty estimate (protocol item 9).
     - _Repeated_ three-point streams, not distinct frozen points (item 1).
     - pyAmpliCol includes Python batch scheduling and exact decimal ingress
-      (item 3); providers start from binary64 arrays.
+      (item 3); providers start from binary64 arrays. The delivered runtime
+      and SDKs use the interpreted evaluator instead.
   ],
   [
     - pyAmpliCol rescue off; providers keep their stability checks, rescue and
       caches (item 6). OpenLoops actual-pole mode reruns the amplitude three times.
     - Development-profile native builds, not release builds. DD/AP not timed.
+      #let rb = procs.development_facts.release_builds
+      A release A/B (#rb.date, not retimed here) was faster by
+      #times(rb.native_eval_speedup) for native #math-label(rb.native_eval_process)
+      at $B = #rb.native_eval_batch$, by
+      #times(rb.colour_overlap_speedup.first())–#times(rb.colour_overlap_speedup.last())
+      for colour overlaps and by
+      #times(rb.generation_speedup.first())–#times(rb.generation_speedup.last()) for generation.
     - Repeat runs drift: an audit at $B = 128$ gave OpenLoops $g g -> g g$
       #sig(audit.openloops_gg_o3.median_us_per_point.ol0) µs and MadLoop
       #sig(audit.openloops_gg_o3.median_us_per_point.madloop) µs, against
@@ -397,6 +402,8 @@ currents dominate, followed by work no clock attributes.
    s.reduction_masters.median_us_per_point, s.residual.median_us_per_point, r.median_us_per_point)
 }
 #let num(x) = sig(x)
+// Cases with an instrumented stage run; a timed case without one is omitted.
+#let staged = m.cases.filter(c => c.case in m.stages)
 #figure(kind: table,
   caption: [*Stage decomposition*, µs per point at the batch $B$ of the
     instrumented run, which is separate from the warm runs of @tab:runtime.
@@ -418,7 +425,7 @@ currents dominate, followed by work no clock attributes.
     stroke: (x, y) => (top: if y <= 1 { none } else if calc.odd(y) { 0.6pt + luma(190) } else { none }),
     fill: (x, y) => if y == 0 { navy } else if calc.even(y) and y > 0 { rgb("#f3f4f6") } else { none },
     table.header[Process][$B$][Numerator][Born weighting][Counter-terms][NinjaRS][Masters][Other clocked][Unattrib.][Total][Red.+mast.],
-    ..m.cases.map(c => {
+    ..staged.map(c => {
       let st = m.stages.at(c.case)
       let b = st.batch_size
       let p = py-split(st)
@@ -440,37 +447,43 @@ currents dominate, followed by work no clock attributes.
   )),
 ) <tab:stages>
 
-#let stack(parts, colours, scale, width) = box(width: width, height: 7pt, {
+// One bar of length total/scale: the stage medians, then the explicit residual
+// total - sum(stages). Medians need not add up; stages exceeding the total are
+// scaled down to it, so every bar ends exactly at its total.
+#let stack(parts, colours, total, scale, width) = box(width: width, height: 7pt, {
+  let s = parts.sum()
+  let (drawn, rest) = if s <= total { (parts, total - s) } else { (parts.map(v => v * total / s), 0) }
   let x = 0pt
-  for (i, v) in parts.enumerate() {
-    let w = calc.min(width * v / scale, width - x)
-    if w > 0pt { place(dx: x, rect(width: calc.max(w - 0.6pt, 0.4pt), height: 7pt, fill: colours.at(i))) }
+  for (v, col) in (..drawn, rest).zip((..colours, c-rest)) {
+    let w = width * v / scale
+    if w > 0pt { place(dx: x, rect(width: calc.max(w - 0.6pt, 0.4pt), height: 7pt, fill: col)) }
     x += w
   }
 })
 #figure(
   caption: [*Composition of one evaluation*, pyAmpliCol (upper bar) and
-    MadLoop (lower bar) for each process, drawn to the scale of the pyAmpliCol
-    clocked total at the batch of @tab:stages. The label is the ratio of the
-    clocked totals. The thin purple and vermilion slivers are the entire
-    reduction and scalar-master cost.],
+    MadLoop (lower bar) at the batch of @tab:stages, to the scale of the larger
+    clocked total. Each bar ends at its median total; the grey end is the total
+    minus the drawn stage medians. The label is the ratio of the totals. The
+    thin purple and vermilion slivers are all of reduction and masters.],
   {
     set text(7.4pt, font: sans)
     let width = 10.6cm
-    let py-col = (c-num, c-born, c-ct, c-red, c-mast, c-other, c-rest)
-    let ml-col = (c-num, c-ct, c-red, c-rest)
+    let py-col = (c-num, c-born, c-ct, c-red, c-mast, c-other)
+    let ml-col = (c-num, c-ct, c-red)
     grid(columns: (2.6cm, auto, 2.3cm), column-gutter: 6pt,
-      row-gutter: range(2 * m.cases.len()).map(i => if calc.even(i) { 2pt } else { 7pt }),
+      row-gutter: range(2 * staged.len()).map(i => if calc.even(i) { 2pt } else { 7pt }),
       align: (right + horizon, left + horizon, left + horizon),
-      ..m.cases.map(c => {
+      ..staged.map(c => {
         let st = m.stages.at(c.case)
         let p = py-split(st)
         let q = ml-split(c, st.batch_size)
+        let scale = if q == none { p.at(7) } else { calc.max(p.at(7), q.at(4)) }
         (
           grid.cell(rowspan: 2, [#text(8.4pt, font: "Libertinus Serif", plabel(c.case)) \ #text(6.6pt, fill: ink2)[$B = #st.batch_size$]]),
-          stack(p.slice(0, 7), py-col, p.at(7), width),
+          stack(p.slice(0, 6), py-col, p.at(7), scale, width),
           [pyAmpliCol #if q != none { text(weight: "bold", times(p.at(7) / q.at(4))) }],
-          if q == none { text(6.8pt, fill: ink2, style: "italic")[MadLoop not timed] } else { stack(q.slice(0, 4), ml-col, p.at(7), width) },
+          if q == none { text(6.8pt, fill: ink2, style: "italic")[MadLoop not timed] } else { stack(q.slice(0, 3), ml-col, q.at(4), scale, width) },
           text(fill: ink2)[MadLoop],
         )
       }).flatten(),
@@ -493,9 +506,18 @@ memory grow faster than linearly with the number of loop graphs
 (@fig:sevenleg).
 
 // --------------------------------------------------- generation scaling --
-#let loglog(w, h, xr, yr, xticks, yticks, xlabel, ylabel, points, hlines: ()) = {
-  let px(x) = w * (calc.log(x, base: 10) - xr.at(0)) / (xr.at(1) - xr.at(0))
-  let py(y) = h - h * (calc.log(y, base: 10) - yr.at(0)) / (yr.at(1) - yr.at(0))
+// Log-log scatter. Both axes span whole decades around the data and the
+// reference lines, with headroom above the highest value, so a new case cannot
+// leave the frame. Labels are clamped inside the frame; a lower bound
+// (kind "open") carries an upward tick that also stays inside.
+#let loglog(w, h, xlabel, ylabel, points, hlines: (), ytick: e => [$10^#e$]) = context {
+  let lg(v) = calc.log(v, base: 10)
+  let xs = points.map(p => lg(p.x))
+  let ys = points.map(p => lg(p.y)) + hlines.map(l => lg(l.at(0)))
+  let xr = (calc.floor(calc.min(..xs)), calc.ceil(calc.max(..xs) + 0.25))
+  let yr = (calc.floor(calc.min(..ys)), calc.ceil(calc.max(..ys) + 0.5))
+  let px(x) = w * (lg(x) - xr.at(0)) / (xr.at(1) - xr.at(0))
+  let py(y) = h - h * (lg(y) - yr.at(0)) / (yr.at(1) - yr.at(0))
   set text(7pt, font: sans)
   let top = 0.45cm
   box(width: w + 1.25cm, height: h + 0.95cm + top, {
@@ -505,13 +527,15 @@ memory grow faster than linearly with the number of loop graphs
         place(dx: w - 1.2cm, dy: py(y) - 8pt, box(width: 1.15cm, align(right, text(6.3pt, fill: luma(120), t))))
       }
       place(rect(width: w, height: h, stroke: 0.5pt + luma(150)))
-      for (x, t) in xticks {
-        place(dx: px(x), dy: h, line(angle: 90deg, length: 3pt, stroke: 0.5pt + luma(150)))
-        place(dx: px(x) - 0.5cm, dy: h + 4pt, box(width: 1cm, align(center, t)))
+      for e in range(xr.at(0), xr.at(1) + 1) {
+        let x = w * (e - xr.at(0)) / (xr.at(1) - xr.at(0))
+        place(dx: x, dy: h, line(angle: 90deg, length: 3pt, stroke: 0.5pt + luma(150)))
+        place(dx: x - 0.5cm, dy: h + 4pt, box(width: 1cm, align(center, [$10^#e$])))
       }
-      for (y, t) in yticks {
-        place(dx: -3pt, dy: py(y), line(length: 3pt, stroke: 0.5pt + luma(150)))
-        place(dx: -1.05cm, dy: py(y) - 4pt, box(width: 0.95cm, align(right, t)))
+      for e in range(yr.at(0), yr.at(1) + 1) {
+        let y = h - h * (e - yr.at(0)) / (yr.at(1) - yr.at(0))
+        place(dx: -3pt, dy: y, line(length: 3pt, stroke: 0.5pt + luma(150)))
+        place(dx: -1.05cm, dy: y - 4pt, box(width: 0.95cm, align(right, ytick(e))))
       }
       for p in points {
         let (x, y) = (px(p.x), py(p.y))
@@ -522,51 +546,59 @@ memory grow faster than linearly with the number of loop graphs
           place(dx: x - s, dy: y - s, circle(radius: s, fill: white, stroke: 1pt + navy))
         } else {
           place(dx: x - s, dy: y - s, polygon(fill: rgb("#d6604d"), stroke: none, (0pt, 2 * s), (2 * s, 2 * s), (s, 0pt)))
-          place(dx: x - 0.25pt, dy: y - 13pt, line(angle: 90deg, length: 9pt, stroke: 0.8pt + rgb("#d6604d")))
+          let tick = calc.min(9pt, y - s - 1pt)
+          if tick > 0pt {
+            place(dx: x - 0.25pt, dy: y - s - tick, line(angle: 90deg, length: tick, stroke: 0.8pt + rgb("#d6604d")))
+          }
         }
+        let label = text(6.5pt, p.label)
+        let size = measure(label)
         let (dx, dy) = p.at("off", default: (4pt, -4pt))
-        let anchor = p.at("anchor", default: left)
-        if anchor == left {
-          place(dx: x + dx, dy: y + dy - 3pt, text(6.5pt, p.label))
-        } else {
-          place(dx: x + dx - 3cm, dy: y + dy - 3pt, box(width: 3cm, align(right, text(6.5pt, p.label))))
-        }
+        let lx = if p.at("anchor", default: left) == left { x + dx } else { x + dx - size.width }
+        let ly = y + dy - 3pt
+        let inside(v, hi) = calc.max(1pt, calc.min(v, hi - 1pt))
+        place(dx: inside(lx, w - size.width), dy: inside(ly, h - size.height), label)
       }
     }))
     place(dx: 1.1cm, dy: top + h + 0.55cm, box(width: w, align(center, xlabel)))
     place(dx: 0.35cm, dy: 0pt, text(fill: ink2, ylabel))
   })
 }
-#let short(key) = (dy: [DY], uudd: [$d overline(d)$], tt: [$t overline(t)$], qqgg: [$q overline(q) g g$], gg: [$g g g g$], qqggg: [$q overline(q) g g g$], "ee-mumu-ew": [EW $mu mu$]).at(key)
-#let offs = (dy: (4pt, -4pt), uudd: (4pt, 4pt), tt: (4pt, -6pt), qqgg: (4pt, -3pt), gg: (4pt, 5pt), qqggg: (4pt, 2pt), "ee-mumu-ew": (-4pt, -5pt))
-#let anchors = ("ee-mumu-ew": right)
+// Label placement per case and panel; unlisted cases use the default offset.
+#let label-place(panel, key) = (
+  time: (
+    uudd: (off: (4pt, 4pt)), tt: (off: (4pt, -6pt)), gg: (off: (4pt, 5pt)),
+    "ee-mumu-ew": (off: (-4pt, -5pt), anchor: right),
+  ),
+  rss: (
+    uudd: (off: (4pt, 4pt)), tt: (off: (-4pt, -12pt), anchor: right),
+    gg: (off: (4pt, 5pt)), "ee-mumu-ew": (off: (-4pt, -5pt), anchor: right),
+  ),
+).at(panel).at(key, default: (:))
 #let sev = gen.seven_leg
+#let case-point(c, panel, y) = (x: c.counts.loop_graphs, y: y, kind: "filled", label: plabel(c.case)) + label-place(panel, c.case)
 #let time-points = (
-  ..m.cases.map(c => (x: c.counts.loop_graphs, y: c.generation_s, kind: "filled", label: short(c.case), off: offs.at(c.case), anchor: anchors.at(c.case, default: left))),
-  ..gen.correctness_runs.map(r => (x: r.loop_graphs, y: r.generation_s, kind: "hollow", label: math-label(r.label.split("->").at(1)), off: (-4pt, -2pt), anchor: right)),
-  (x: sev.loop_graphs, y: sev.last_observed_s, kind: "open", label: [7 legs: stopped], off: (-6pt, -6pt), anchor: right),
+  ..m.cases.map(c => case-point(c, "time", c.generation_s)),
+  ..gen.correctness_runs.map(r => (x: r.loop_graphs, y: r.generation_s, kind: "hollow", label: math-label(r.label), off: (-4pt, -2pt), anchor: right)),
+  (x: sev.loop_graphs, y: sev.last_observed_s, kind: "open", label: [#math-label(sev.label): stopped], off: (-6pt, 6pt), anchor: right),
 )
 #let rss-points = (
-  ..m.cases.map(c => (x: c.counts.loop_graphs, y: c.peak_rss_mib / 1024, kind: "filled", label: short(c.case), off: offs.at(c.case), anchor: anchors.at(c.case, default: left))),
-  (x: sev.loop_graphs, y: gib(sev.peak_rss_kib), kind: "open", label: [7 legs: #sig(gib(sev.peak_rss_kib)) GiB], off: (-6pt, -6pt), anchor: right),
+  ..m.cases.map(c => case-point(c, "rss", c.peak_rss_mib / 1024)),
+  (x: sev.loop_graphs, y: gib(sev.peak_rss_kib), kind: "open", label: [#math-label(sev.label): #sig(gib(sev.peak_rss_kib)) GiB], off: (-6pt, 6pt), anchor: right),
 )
-#let decades(lo, hi, f) = range(lo, hi + 1).map(e => (calc.pow(10.0, e), f(e)))
 #figure(
   caption: [*Generation time and peak memory against loop-graph count.*
     Filled: the timed processes of @tab:runtime (fresh process, source capture
     to complete plan). Open circles: cold generation observed during the
-    complete correctness runs of $u overline(u) -> e^- e^+ g g$ and
-    $u overline(u) -> d overline(d) s overline(s)$ (no memory record). Triangle:
-    the seven-leg control, which ended without a result; its time and memory are
-    lower bounds. Generation grows faster than linearly in the graph count.],
+    complete correctness runs of #gen.correctness_runs.map(r => math-label(r.label)).join([ and ])
+    (no memory record). Triangle with tick: the seven-leg control, which ended
+    without a result; its time and memory are lower bounds. Generation grows
+    faster than linearly in the graph count.],
   grid(columns: 2, gutter: 0.4cm,
-    loglog(6.4cm, 4.6cm, (0, 4), (0, 5),
-      decades(0, 4, e => [$10^#e$]), decades(0, 5, e => [$10^#e$]),
-      [loop graphs], [seconds], time-points,
+    loglog(7.0cm, 5.0cm, [loop graphs], [seconds], time-points,
       hlines: ((60, [1 min]), (3600, [1 h]), (86400, [1 day]))),
-    loglog(6.4cm, 4.6cm, (0, 4), (-1, 2),
-      decades(0, 4, e => [$10^#e$]), ((0.1, [0.1]), (1, [1]), (10, [10]), (100, [100])),
-      [loop graphs], [peak RSS, GiB], rss-points),
+    loglog(7.0cm, 5.0cm, [loop graphs], [peak RSS, GiB], rss-points,
+      ytick: e => if e >= 0 [#calc.pow(10, e)] else [0.#("0" * (-e - 1))1]),
   ),
 ) <fig:scaling>
 
@@ -668,12 +700,13 @@ direct-versus-model cost comparison is made, because the model-$R_2$ row of
 #let caps = (
   ([Model import], "supported", [Lossless UFO loop models (Laurent parameters, UV/$R_2$ categories, loop groups) via the published loader 1.0.1; Goldstone-alias loader PR 3 and a coherent Community package are pending.]),
   ([QCD interference, massless and external tops], "supported", [Validated to $2 -> 4$ against MadLoop/Recola in binary64, DD and AP (@tab:runtime, @tab:untimed).]),
-  ([Internal massive quarks], "open", [The internal top mass counterterm is uncertified; $g g -> t overline(t)$ stops, which blocks both $t overline(t)$ targets.]),
+  ([Internal massive quarks], "supported", [Complete $g g -> t overline(t)$ (internal top loops, top-mass UV and $R_2$ two-points), $u overline(u) -> t overline(t)$ (top-loop gluon self-energy) and $e^- e^+ -> t overline(t) h$ (top Yukawa and Goldstone counterterms) match MadLoop in binary64, DD and AP. Not timed.]),
   ([Model UV and $R_2$], "supported", [Consumed from the UFO model for QCD; no completeness check of counterterm matching; tadpoles, one-point counterterms and bivalent mixing unsupported.]),
   ([Direct $R_2$], "deferred", [Deferred by the user; certified bounded controls only (full-colour $g g -> g g$); public dispatch gated.]),
   ([Coupling orders], "supported", [Joint QCD/QED eligibility as in MadLoop; every squared order and all three Laurent coefficients returned.]),
   ([Electroweak], "partial", [Real-mass $e^- e^+ -> mu^- mu^+$ and $e^- e^+ -> u overline(u)$ ($G_mu$); 1351 of 1918 $G_mu$ counterterm bases uncertified; no joint QCD+EW.]),
-  ([Complex-mass scheme], "open", [Matched component controls only; not wired into generation; shipped EW restriction cards rejected.]),
+  ([Restriction cards], "supported", [Every shipped card of `loop_sm` (incl. `-ckm`), `loop_qcd_qed_sm` and `loop_qcd_qed_sm_Gmu` loads through the production simplification with MadGraph semantics; entries without a model parameter are ignored and recorded, cards MadGraph rejects are rejected.]),
+  ([Complex-mass scheme], "open", [Matched component controls only; not wired into generation.]),
   ([General models], "partial", [Scalar QCD $u overline(u) -> sigma_8 sigma_8 g$ with isolated dependency candidates.]),
   ([Full colour], "partial", [To six legs; pairwise exact overlaps make seven gluons infeasible.]),
   ([LC / NLC], "partial", [Fixed-$N_f$ LC/NLC validated to six legs; formal $"SU"(N_c)$ fails on generic seven-leg networks.]),
@@ -684,7 +717,7 @@ direct-versus-model cost comparison is made, because the model-$R_2$ row of
   ([Batching and rescue], "partial", [Native Rust executor; timings use the Python coordinator; rescue on hard failure only, with no accuracy trigger and two implementations.]),
   ([Helicity selection], "open", [All $2^n$ helicities are evaluated, including structurally zero ones.]),
   ([Interfaces], "partial", [Python, TOML/CLI, artifacts, Rust/C/C++/Fortran/UMAMI SDKs; delivered runtime uses the interpreted evaluator; benchmark/profile commands broken; no wheel of the current source.]),
-  ([Required $2 -> 5$ set], "open", [0 of 8 validated or timed (@tab:required).]),
+  ([Required $2 -> 5$ set], "open", [0 of 8 validated or timed; provider references exist for #procs.required.filter(r => r.references != "none generated").len() of #procs.required.len() (@tab:required).]),
   ([Performance gates], "open", [No timed process is faster than MadLoop (front page).]),
   ([NinjaRS and oneloopmaster], "partial", [Generic reduction up to seven propagators; scalar-master fixes (PR 9, PR 10) not yet adopted.]),
 )
@@ -826,7 +859,7 @@ $
 $
 One reduction per point, coupling sector and family replaces one per graph,
 helicity and colour term; @tab:stages shows reduction plus masters at
-#fixed(calc.min(..m.cases.map(c => { let p = py-split(m.stages.at(c.case)); 100 * (p.at(3) + p.at(4)) / p.at(7) })), 1)–#fixed(calc.max(..m.cases.map(c => { let p = py-split(m.stages.at(c.case)); 100 * (p.at(3) + p.at(4)) / p.at(7) })), 1) %
+#fixed(calc.min(..staged.map(c => { let p = py-split(m.stages.at(c.case)); 100 * (p.at(3) + p.at(4)) / p.at(7) })), 1)–#fixed(calc.max(..staged.map(c => { let p = py-split(m.stages.at(c.case)); 100 * (p.at(3) + p.at(4)) / p.at(7) })), 1) %
 of the clocked time. Weights stay complex until the directed bilinear is formed,
 because colour histories and other off-diagonal observables need both cross terms.
 
@@ -894,8 +927,8 @@ assessment (@sources).
     columns: (3.9cm, 1fr, 4.1cm), align: left + horizon,
     inset: (x: 4.5pt, y: 3.2pt), stroke: tstroke, fill: thead-fill,
     table.header[Wall][Measured][Consequence],
-    [Symbolic whole-process projectors (Born, families, UV/$R_2$), unrolled over helicities and built by quadratic accumulation],
-    [Seven legs: Born projector #group(int(calc.round(sev.stages.at(2).end_s - sev.stages.at(2).begin_s))) s; family projectors #group(int(calc.round(sev.stages.at(3).end_s - sev.stages.at(3).begin_s))) s; UV/$R_2$ projector unfinished after #sig((sev.last_observed_s - sev.stages.last().begin_s) / 3600) h. Family and counterterm projectors take 90.5 % and 8.4 % of the 394 MB six-leg artifact.],
+    [Symbolic whole-process projectors (Born, families, UV/$R_2$), unrolled over helicities],
+    [Seven legs: Born projector #group(int(calc.round(sev.stages.at(2).end_s - sev.stages.at(2).begin_s))) s; family projectors #group(int(calc.round(sev.stages.at(3).end_s - sev.stages.at(3).begin_s))) s; UV/$R_2$ projector unfinished after #sig((sev.last_observed_s - sev.stages.last().begin_s) / 3600) h. Family and counterterm projectors take 90.5 % and 8.4 % of the 394 MB six-leg artifact. Measured with the former quadratic term accumulation; one-pass sums now build the six-leg $u overline(u) -> d overline(d) s overline(s)$ counterterm projector expression in 2.2 s instead of 85.6 s.],
     [Blocks every $2 -> 5$ process; recompiled per colour mode, spin class and correlation.],
     [Enumeration of all one-counterterm trees, then matching to loops],
     [$u overline(u) -> d overline(d) s overline(s)$: 50 s, 832 MB; $g g -> g g g$: 86 s, 1.28 GB; $g g -> g g g g$: over 8 GB within 165 s; seven legs: #group(int(calc.round(sev.stages.at(4).end_s - sev.stages.at(4).begin_s))) s up to #sig(gib(sev.peak_rss_kib)) GiB.],
@@ -954,7 +987,10 @@ executor and the public interfaces are kept.
   - *Process status:* `data/processes.json`, from the plan's §5.7, the
     continuation handoff (§3, §6, §7) and the 2026-10-20 resumption assessment
     (§1, §2.3, §8), which is also the source of the probe and stack-sample
-    values in @tab:walls.
+    values in @tab:walls. Required-process provider references:
+    #raw(procs.sources.required_references.split(" ").first()). Case labels,
+    missing-value markers and the release-build A/B
+    (#raw(procs.sources.release_builds)) are also recorded there.
   - *Generation:* `data/generation.json`, written by
     `scripts/collect_generation.py` from the retained correctness-run records
     and the seven-leg stage log. Graph drawings: `scripts/draw_graphs.py`.

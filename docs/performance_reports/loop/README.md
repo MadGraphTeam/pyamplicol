@@ -25,7 +25,7 @@ table), whose source the report names.
 | `provider-cold.json` | MadLoop export and compilation, Recola generation and OpenLoops setup times. |
 | `colour-measurements.json` | Matched leading-colour and full-colour runs (warm samples and stages). |
 | `provider-audit.json` | Recola Drell–Yan observation and the OpenLoops build/settings audit; used for the run-to-run drift note. |
-| `processes.json` | Status registry: required 2→5 processes, the seven-leg control and the validated but untimed processes, with sources. Labels and notes are Typst markup. |
+| `processes.json` | Status registry: required 2→5 processes, the seven-leg control and the validated but untimed processes, with sources; standard-notation labels of the timed cases (`case_labels`), the markers printed for absent provider observations (`missing_markers`, with a `default`) and development facts that are not benchmark rows (`development_facts`, e.g. the release-build A/B). Labels and notes are Typst markup. |
 | `generation.json` | Generation observations outside the timing snapshot: cold generation from correctness runs and the seven-leg stage timeline. |
 
 Missing observations stay absent; the report prints an explicit marker

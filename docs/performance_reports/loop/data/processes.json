@@ -3,7 +3,9 @@
  "sources": {
   "assessment": "workspace/reports/claude-resume-assessment-20261020.md (sections 1, 2.3, 8)",
   "handoff": "HANDOFF.md sections 3, 6, 7",
-  "plan": "MASTER_PLAN.md section 5.7"
+  "plan": "MASTER_PLAN.md section 5.7",
+  "required_references": "tests/fixtures/loop/required/*.json (provider references at exact on-shell points)",
+  "release_builds": "workspace/reports/release-build-ab.md"
  },
  "required": [
   {
@@ -17,7 +19,7 @@
    "generation": "no result",
    "generation_note": "counterterm probe: over 8 GB within 165 s",
    "validated": false,
-   "references": "none generated",
+   "references": "Recola, OpenLoops",
    "timed": false,
    "blocker": "all scaling walls; needs a colour basis and shared recursion"
   },
@@ -29,12 +31,12 @@
    "born_graphs": 123,
    "loop_graphs": 7356,
    "loop_count": "source unstated",
-   "generation": "blocked",
-   "generation_note": "internal top mass counterterm uncertified; $g g -> t overline(t)$ stops after 17 s",
+   "generation": "no result",
+   "generation_note": "",
    "validated": false,
-   "references": "none generated",
+   "references": "MadLoop, Recola, OpenLoops",
    "timed": false,
-   "blocker": "massive-quark counterterms, then the walls"
+   "blocker": "the scaling walls; massive-quark counterterms are validated on $g g -> t overline(t)$"
   },
   {
    "id": "uu-eeggg",
@@ -47,7 +49,7 @@
    "generation": "no result",
    "generation_note": "",
    "validated": false,
-   "references": "none generated",
+   "references": "MadLoop, Recola, OpenLoops",
    "timed": false,
    "blocker": "symbolic projectors, counterterm enumeration, colour overlaps"
   },
@@ -62,7 +64,7 @@
    "generation": "no result",
    "generation_note": "",
    "validated": false,
-   "references": "none generated",
+   "references": "MadLoop, Recola, OpenLoops",
    "timed": false,
    "blocker": "symbolic projectors, counterterm enumeration, colour overlaps"
   },
@@ -74,12 +76,12 @@
    "born_graphs": null,
    "loop_graphs": null,
    "loop_count": "",
-   "generation": "blocked",
-   "generation_note": "internal top mass counterterm uncertified",
+   "generation": "no result",
+   "generation_note": "",
    "validated": false,
-   "references": "none generated",
+   "references": "MadLoop, Recola, OpenLoops",
    "timed": false,
-   "blocker": "massive-quark counterterms, then the walls"
+   "blocker": "the scaling walls; massive-quark counterterms are validated on $g g -> t overline(t)$"
   },
   {
    "id": "gg-tteeg-ew",
@@ -92,7 +94,7 @@
    "generation": "blocked",
    "generation_note": "1351 of 1918 $G_mu$ counterterm bases uncertified; CMS not wired in",
    "validated": false,
-   "references": "none generated",
+   "references": "MadLoop, Recola, OpenLoops",
    "timed": false,
    "blocker": "generic EW counterterms, CMS, joint QCD+EW selection"
   },
@@ -204,5 +206,41 @@
    "references": "MadLoop",
    "source": "workspace/reports/sgluon-qcd-adjacent-acceptance.json"
   }
- ]
+ ],
+ "case_labels": {
+  "dy": "u overline(u) -> e^- e^+",
+  "uudd": "u overline(u) -> d overline(d)",
+  "tt": "u overline(u) -> t overline(t)",
+  "qqgg": "u overline(u) -> g g",
+  "gg": "g g -> g g",
+  "qqggg": "u overline(u) -> g g g",
+  "ee-mumu-ew": "e^- e^+ -> mu^- mu^+"
+ },
+ "missing_markers": {
+  "default": "not timed",
+  "dy/openloops": "no matched control",
+  "ee-mumu-ew/madloop": "validated, not timed"
+ },
+ "development_facts": {
+  "release_builds": {
+   "date": "2026-10-20",
+   "source": "workspace/reports/release-build-ab.md",
+   "native_eval_speedup": 5.9,
+   "native_eval_process": "g g -> g g",
+   "native_eval_batch": 32,
+   "colour_overlap_speedup": [
+    5.3,
+    5.7
+   ],
+   "colour_overlap_gluons": [
+    5,
+    6
+   ],
+   "generation_speedup": [
+    3.5,
+    4.0
+   ],
+   "note": "release against development-profile builds of the same sources, one pinned core each; physics outputs bitwise identical"
+  }
+ }
 }
