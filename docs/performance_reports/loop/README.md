@@ -2,6 +2,29 @@
 
 `benchmarks.pdf` is the rendered report; `benchmarks.typ` is its source.
 
+Real-mass Gmu `e- e+ -> u u~ [QED]` now passes complete ordinary component
+checks against MadLoop (3.85e-14) and Born/Laurent checks against Recola
+(8.51e-14), at three points and a changed scale. Both references are binary64.
+Source-owned identity, Casimir and opposite-leg colour insertions pass every
+component and both integrated terms in double, DoubleFloat and AP70 (three
+tests), with exact Gf changes, scales, opaque IDs and empty/tail reuse. The
+explicit Goldstone source repair and covariant ghost multiplets remain recorded.
+Three fresh saved-native cases also pass all components and both terms in the
+three carriers. Public grouped charges, actual AP60/AP80 subset rescue and a
+binary64 Rust SDK ownership/axis control pass. Virtual-only publication preserves
+the normalized model's `supported=false` diagnostics and complete raw sidecar;
+generic preparation of this full Gmu source remains open. No tree function or
+preflight flag is changed. EW vector sources, formal colour, mixed correction
+selection and CMS remain separate gates.
+See `docs/development/LOOP_EW_COLOR_CORRELATIONS.md` and the exact provider
+fixture `tools/loop_reference/real_mass_ew_quarks.json`. No timing cells change.
+
+Typed artifact inspection now distinguishes the two-term directed interference
+from ordinary `2Re` (`43ff0634`); missing declarations are derived and explicit
+mismatches reject. Ten Python checks and actual ordinary/directed native/public
+inspection pass on normal build `2536c0a7…`. This changes inspection accuracy,
+not numerical physics or ABI.
+
 Current physics coverage includes complete model-rule UV/R2 controls through two
 six-leg processes in double, DoubleFloat and AP80, and full-CKM mixed-Born
 four-quark scattering with QCD corrections in double, DoubleFloat and AP70. The provider grid keeps their

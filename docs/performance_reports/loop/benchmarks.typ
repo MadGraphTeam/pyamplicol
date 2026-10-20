@@ -1,7 +1,7 @@
 // Live report. Measured values are read from the accompanying JSON snapshot.
 // Compile from this directory: typst compile benchmarks.typ benchmarks.pdf
 #let data = json("data/measurements.json")
-#let report-date = "2026-10-19 · 23:40 UTC"
+#let report-date = "2026-10-20 · 00:16 UTC"
 #let sharing = json("data/local-sharing-experiment.json")
 #let arena = json("data/local-arena-experiment.json")
 #let cold = json("data/provider-cold.json")
@@ -709,8 +709,7 @@ this same ownership boundary; reducer Laurent preparation remains a cold binding
 #section-label[ARCHITECTURE · COLOUR AND OBSERVABLES]
 = Full colour without dense event tensors
 Dependency algebra contracts actual Born/loop tensors into cached rectangular
-weights, preserving residual networks. Events evaluate these weights without
-dense colour tensors or numerical colour fits.
+weights and residual networks, without dense event tensors or numerical colour fits.
 
 == LC and NLC are structural projections
 For a certified formal-$N_c$ model, all contributions belonging to one squared
@@ -720,23 +719,20 @@ $
   "LC": N_c^P, quad
   "NLC": N_c^P, N_c^(P-1), N_c^(P-2).
 $
-The common $P$ spans helicities, epsilon and bare/UV/$R_2$/field terms, including
-odd suppressions. All carriers retain exact invariants and diagnostics; signed
-Born anchors reconstruct inclusive results. Fresh gg LC/NLC passes. DY has
-LC/full $=9/8$ and NLC $=$ full; DY LC uses the isolated PR 155 overlay.
+The common $P$ spans helicities, epsilon and bare/UV/$R_2$/fields, including odd
+suppressions. Exact invariants and signed Born anchors survive all carriers.
+Fresh gg LC/NLC passes. DY LC/full $=9/8$, NLC $=$ full; DY LC uses the PR 155 overlay.
 
-An explicit general-$N_c$ replacement for `loop_sm`'s fixed-SU3 four-gluon
-$R_2$ matches its complete source tensor at $N_c=3$ and independent published rules:
+The general-$N_c$ replacement for `loop_sm`'s four-gluon $R_2$ matches its full
+SU(3) source and independent published rules:
 #link("https://arxiv.org/abs/0903.0356")[Fig. 2 of 0903.0356] and
 #link("https://arxiv.org/abs/2007.03713")[Eqs. 5.30–5.38 of 2007.03713]. Source
 groups, diagnostics and HV bindings survive; full/LC/NLC passes exact updates and
 16-helicity sums in all carriers. Arbitrary model continuation remains uncertified.
 
-Seven-leg exact SU(3) components close a colour network whose formal reduction
-retains a degree-five invariant; existing rewrites cover degrees three and four.
-Its trace-scope repair therefore does not certify formal colour.
-#link("https://github.com/alphal00p/gammaloop/pull/155")[Upstream PR 155] separately
-fixes open-dual canonicalization; isolated fundamental-port controls pass.
+Seven-leg formal degree-five invariants remain open despite exact SU(3) success.
+#link("https://github.com/alphal00p/gammaloop/pull/155")[PR 155] fixes open-dual
+canonicalization; isolated fundamental-port controls pass.
 
 == Directed colour and spin sources
 Correlated virtual observables require both rectangular cross terms. For
@@ -745,49 +741,50 @@ $
   B_A^dagger G L_B + L_A^dagger G B_B.
 $
 Unequal histories can give complex results, beyond $2 Re(B_A^dagger G L_B)$.
-Existing native charge tensors act on shared currents in one batch. Four-quark
-controls pass all carriers, swapped terms, order/field masks and exact updates.
-Each direction is integrated before conjugation and verified separately, so
-cancellation cannot hide a bad term. Subset rescue preserves physical IDs/history labels.
+Native charge tensors act on batched shared currents. Four-quark controls pass
+all carriers, swapped terms, order/field masks and exact updates. Each term is
+integrated before conjugation and checked separately; rescue retains IDs and labels.
 
-Quark-scattering identity, Casimir and $T_1 dot T_2$ Born/Laurent values match
-Recola in double/DD/AP70; this is binary64 provider agreement. Complex
-multi-emission histories have separate controls. Model-owned photon/gluon source
-identities and phases survive fresh $u overline(u) -> gamma g$ and crossed
-$u gamma -> u g$ publication. Outgoing $W^plus.minus$ and incoming $W^+$ sources pass
-QCD controls, including longitudinal and joint $W$–gluon states in all carriers.
-Recola independently checks physical sources with identity colour; other ordered
-histories use internal component reconstruction. Arbitrary literal vectors use
-homogeneity/replay, without projection. Public subset rescue and Rust SDK pass.
+Quark identity, Casimir and $T_1 dot T_2$ match binary64 Recola; complex
+multi-emission histories have separate controls. Real-mass Gmu
+$e^- e^+ -> u overline(u)$ EW colour insertions now pass all components and both
+terms in double/DD/AP70. Ordinary components match MadLoop within
+$3.85 times 10^(-14)$ and Born/poles/finite match Recola within
+$8.51 times 10^(-14)$. These are binary64 references; the explicit source repair
+is retained. Saved/public, subset rescue and binary64 SDK pass; the full source's
+tree diagnostics remain unchanged.
 
-Projected gg/W identity sources pass; ordinary LC keeps signed anchors.
-Complete-family degrees span compatible histories and all components, including
-physical splits. Outgoing $W^+$ saved full/LC/NLC passes every carrier; public
-LC/NLC grouped sources, rescue and SDK pass. A separate rectangular oracle checks
-non-Hermitian interference. Other nonidentity crossings and EW/CMS sources remain open.
+Photon/gluon phases survive outgoing/crossed publication. Outgoing $W^plus.minus$
+and incoming $W^+$ QCD sources pass longitudinal/joint states in all carriers.
+Recola checks physical sources with identity colour; other histories use internal
+reconstruction. Literal vectors use homogeneity/replay without projection.
+Public rescue and Rust SDK pass.
+
+Projected gg/W identity sources pass; ordinary LC keeps signed anchors. Complete
+families span compatible histories, physical splits and all components. Outgoing
+$W^+$ saved full/LC/NLC passes every carrier; public LC/NLC sources, rescue and SDK
+pass. A rectangular oracle checks non-Hermitian interference. Other nonidentity
+crossings and EW/CMS vector sources remain open.
 
 == Exact mappings and the rectangular FFT boundary
-Exact flavour reuse preserves resolved four-quark output and complex histories.
-Paired $d overline(d) -> g g$ / $s overline(s) -> g g$ source/phase proofs now admit
-formal full/LC/NLC identity-history reuse through saved/public/SDK paths. The exact
-source proof covers 9 ordinary, 64 UV/$R_2$ and 6 field rules. Three signed LC axes
-survive different raw column orders; sources and both terms pass every carrier,
-with separate subset rescue. Projected nonidentity histories and external
-permutations remain open; no speed claim.
+Exact reuse preserves resolved four-quark output and complex histories. Paired
+$d overline(d) -> g g$ / $s overline(s) -> g g$ proofs admit formal full/LC/NLC
+identity reuse through saved/public/SDK paths: 9 ordinary, 64 UV/$R_2$ and 6 field
+rules. Three signed LC axes survive different column orders. Sources, both terms
+and subset rescue pass. Projected nonidentity reuse and permutations remain open.
 
-Certified ordinary/resolved full/NLC weights now execute binary64 FFT plus every
-residual. Exact pre-$N_c$ ownership, noncentral $S_3$ controls and complete physical
-comparisons pass. DD/AP and rescue use the original exact direct map, with each
-attempt’s operation reported. Saved, public and SDK checks pass; LC and correlated
-FFT remain open. UV/$R_2$/fields stay direct and complete. No speed claim or new
-measurement follows from these controls.
+Certified ordinary/resolved full/NLC executes binary64 FFT plus every residual.
+Exact pre-$N_c$ ownership, noncentral $S_3$ and complete physical checks pass.
+DD/AP/rescue uses exact direct weights; each attempt reports its operation.
+Saved/public/SDK pass; LC/correlated FFT remains open. UV/$R_2$/fields stay direct.
+No new timing or speed claim follows.
 
 #pagebreak()
 #section-label[ARCHITECTURE · NATIVE BATCHES AND PRECISION]
 = One numerical path, three real carriers
 Binary64, DoubleFloat and arbitrary precision run through coefficients, kinematics,
-NinjaRS, masters, counterterms and contractions. Values are never computed in
-double and promoted. Metadata records the actual carrier and requested precision.
+NinjaRS, masters, counterterms and contractions, without binary64 promotion.
+Metadata records the actual carrier and precision.
 
 Exact decimal input and rational model coefficients precede conversion. Source
 mass/coupling formulas and diagnostics use the chosen native carrier. Controls
@@ -825,20 +822,20 @@ passes isolated AP80 scalar and complete zero-width CMS controls. Normal pins
 are unchanged; dependency adoption and full CMS scheme certification remain open.
 
 The installed `bc78edbd` wheel passes tree, LC 16×6, DD and no-Python Rust checks.
-Fresh gg LC/NLC publication validates two points and reloads in AP70; DY LC needs
-the PR 155 Community overlay. Later rank, directed execution and ID changes have
-separate source/native gates; these checks add no timing measurements.
+Fresh gg LC/NLC publication reloads in AP70; DY LC needs the PR 155 overlay.
+Later rank/directed/ID changes have separate source/native gates, without new timings.
 
-Transactional API export provides six installed mixed-order resolved clients.
-New source-built Rust/C/C++/Fortran and versioned UMAMI grouped clients preserve
-complex history/order/pole axes, literal joint spin sources, physical IDs, statuses
-and owned diagnostics. Source layouts, empty/partial batches and rescue pass.
-Numerical grouped CLI now preserves exact sources, named masks and empty shapes.
+Six installed mixed-order resolved clients pass. Source-built Rust/C/C++/Fortran
+and versioned UMAMI grouped clients retain complex axes, literal sources, IDs,
+statuses and owned diagnostics, including empty/partial batches and rescue.
+Grouped CLI preserves exact sources, named masks and empty shapes.
+Typed native/public inspection now reports the actual directed two-term
+interference or ordinary $2 Re$, without changing numerical physics.
 
 == Successful completion is not established accuracy
-Native guards retain original point IDs and exact snapshots. Public evaluation
-raises by default; `on_failure="return"` preserves unavailable points as `None`
-with typed diagnostics, retaining order, pole and resolved axes.
+Native guards retain IDs and exact snapshots. Public evaluation raises by default;
+`on_failure="return"` preserves unavailable points as `None` with typed diagnostics
+and original order, pole and resolved axes.
 A policy configured before binding can retain exact inputs after numerical
 overflow if a higher carrier succeeds. Default binding stays eager; invalid
 inputs and rejected updates retain atomic rollback. Source admission does not
@@ -850,7 +847,7 @@ partial returns pass signed-LC $16 times 6$ in all carriers and complex joint-so
 controls. Full-colour real-mass producer rescue includes external fields and
 stable massive W states, with captured-update replay and genuine state-failure
 compaction. Producer state/reduction rows also preserve maximum-u64 caller IDs.
-Physical evaluators and timing data stay unchanged.
+Timing data stay unchanged.
 
 #note[
   *Open boundaries.* Producer rescue requires native physical frames and coherent
@@ -932,31 +929,29 @@ external-field UV and $R_2$, testing components before their complete sum.
 #tab((1.4fr, 2.6fr), left-columns: (0, 1),
   table.header(th[Area], th[Current boundary]),
   [Complete QCD], [Two-to-two, five-leg gluon and both six-leg controls pass all carriers, including eight true six-propagator families. Full-CKM four-quark QCD corrections also pass all mixed Born orders with charged chiral $R_2$. New timings remain pending.],
-  [Real-mass EW], [Source-owned neutral-current charged-lepton controls, including bounded massive muons; complete components and scale/parameter changes.],
+  [Real-mass EW], [Source-owned charged leptons, bounded massive muons and quarks pass complete references. Quark charge rows pass both terms and all carriers; saved/public and binary64 SDK transport pass. Generic full-Gmu preparation remains open.],
   [CMS], [Gmu controls match MadLoop components across widths; isolated PR 9 now passes AP80 zero-width scalar and complete source checks. Normal adoption and wider scheme certification remain open.],
-  [Correlations / mapping], [Outgoing W+ complete-family histories and formal d/s full/LC/NLC identity mapping pass saved/public/SDK checks. Signed LC axes and sources compose. Projected nonidentity mapping, other nonidentity crossings and EW/CMS sources remain open.],
+  [Correlations / mapping], [Outgoing W+ complete-family histories and formal d/s full/LC/NLC identity mapping pass saved/public/SDK checks. Signed LC axes and sources compose. Projected nonidentity mapping, other nonidentity crossings and EW/CMS vector sources remain open.],
   [Public delivery], [Installed gg LC/NLC and AP70 reload pass; DY LC needs PR 155. Full/NLC ordinary/resolved binary64 FFT and exact DD/AP fallback pass. Source rescue, partial returns and grouped CLI retain IDs, precision and diagnostics.],
   [Performance], [Current development timings only; distinct-point matched provider gates and required high multiplicity remain open.],
 )
 
 == Required multiplicity and acceptance
 Selected $2 -> 5$ gluon, heavy-quark and dilepton channels remain mandatory;
-$2 -> 6$ is a stretch goal. Five-final-parton gluon channels require
-MadLoop/Recola controls; unavailable OpenLoops channels are explicitly excluded.
+$2 -> 6$ is a stretch goal. Five-final-parton gluons require MadLoop/Recola;
+unavailable OpenLoops channels are excluded.
 
-Full $gamma$/$Z$ $u overline(u) -> e^- e^+ g g$ passes all carriers at three exact
-on-shell points: 16 Born graphs, 528 loops, 71 families, 406 local counterterms,
-96 field insertions and normalization $1/72$. Separate components match binary64
-references; double also passes distinct RAMBO points within $6.56 times 10^(-13)$
-relative. Structural mass-shell bindings now make the original rounded points
-and their separate components pass DD/AP80 too.
+Full $gamma$/$Z$ $u overline(u) -> e^- e^+ g g$ passes all carriers at three points:
+16 Born graphs, 528 loops, 71 families, 406 local counterterms, 96 field insertions,
+normalization $1/72$. Components match binary64 references; double also passes
+distinct RAMBO points within $6.56 times 10^(-13)$. Exact structural mass shells
+make the original rounded points pass DD/AP80 too.
 
-The six-fermion control adds 7 Born graphs, 275 loops, 94 families and 341 CT
-matches, with normalization $1/36$. Its complete components pass all carriers;
-page 4 records precision evidence; the README details the cache/Gram controls. The
-new timing rows remain pending. Full-CKM four-quark QCD corrections now match
-MadLoop for three Born and three virtual orders at three points, including the
-charged chiral-$R_2$ source rules. This does not certify joint QCD/EW corrections.
+Six fermions add 7 Born graphs, 275 loops, 94 families and 341 CT matches,
+normalization $1/36$. Components pass all carriers; page 4 records precision
+evidence and the README details cache/Gram controls. Timings remain pending.
+Full-CKM four-quark QCD matches MadLoop for three Born/virtual orders at three
+points, including charged chiral-$R_2$ rules, without certifying joint QCD/EW.
 The seven-leg control has matched independent references. Its unchanged old
 producer remains active. A separate current-source construction now exercises
 shared Born weights and weighted family projectors, reusing the same exact inputs;
