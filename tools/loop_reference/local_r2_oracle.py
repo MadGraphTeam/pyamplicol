@@ -196,11 +196,15 @@ def full_dimension_trace(chain):
         * gamma(3, 4, photons[1])
         * prop(order[2], 4, 0)
     )
+    # contract="dots" reports Deferred whenever an open-index metric multiplies a
+    # surviving scalar product, although nothing is left to reduce; "fully"
+    # certifies completion and to_dots() only changes the notation.
     trace = t.TensorExpression(expression).simplify_algebra(
-        color=False, contract="dots"
+        color=False, contract="fully"
     )
     if trace.reduction_status != t.ReductionStatus.Complete:
         raise ValueError("dependency D-dimensional trace was not reduced completely")
+    trace = trace.to_dots()
     replacements = [
         Replacement(
             t.dot(names[i](full), names[j](full)).to_expression(),
