@@ -111,7 +111,11 @@ def _prepared_numerator(diagram, model, dimension, indices, yukawa):
 
 
 def _contract(expression, kinematics):
-    result = tensor.TensorExpression(expression).contract().to_dots()
+    # contract() keeps products of tensor sums factored and reports Deferred on
+    # the reducer's projector output; expanding first lets it finish.
+    result = tensor.TensorExpression(expression).expand().contract()
+    assert result.reduction_status == tensor.ReductionStatus.Complete
+    result = result.to_dots()
     assert result.is_scalar
     return kinematics.apply(result).to_expression().together()
 
@@ -176,9 +180,12 @@ def diphoton_r2_oracle() -> dict:
     )
 
     def traces(dim):
+        # contract="dots" reports Deferred for the open (mu, nu) metric times a
+        # surviving scalar product although nothing is left to reduce; "fully"
+        # certifies completion and to_dots() only changes the notation.
         result = [
             _prepared_numerator(diagram, model, dim, (mu, nu), yukawa).simplify_algebra(
-                contract="dots", **algebra
+                contract="fully", **algebra
             )
             for diagram in generated.diagrams
         ]
@@ -186,7 +193,7 @@ def diphoton_r2_oracle() -> dict:
             trace.reduction_status == tensor.ReductionStatus.Complete
             for trace in result
         )
-        return result
+        return [trace.to_dots() for trace in result]
 
     full_traces, four_traces = traces(dimension), traces(E("4"))
     normalization = (
