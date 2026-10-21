@@ -21,6 +21,13 @@ gzip stream is written with a zero timestamp for the same reason, and every
 control is captured in a fresh interpreter: Symbolica orders terms by symbol
 creation, so earlier work in the same process changes the last bits.
 
+The binary64 capture is itself only accurate to the legacy reducer's binary64
+precision: on the five-leg controls it deviates from the 200-bit capture by up
+to about 9e-12 relative (uux_ddxg bare finite part; O2 coefficients of uux_uuxg
+up to 8.4e-12 of the family maximum). Comparisons tighter than that, such as
+the S1 tolerances of DESIGN section 16.3, take the ``arbitrary-200`` values as
+the reference for every carrier.
+
 The production legacy path is the generic source compiler
 (``prepare_loop_request_model(...).compile``) on MG5_aMC 3.7.0 ``loop_sm`` with
 ``MB`` fixed to zero, i.e. the providers' ``loop_sm-no_b_mass`` scheme of
