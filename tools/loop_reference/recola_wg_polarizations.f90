@@ -1,3 +1,4 @@
+! SPDX-License-Identifier: 0BSD
 ! Provider capability/control preparation only; no pyAmpliCol generation.
 program wg_polarizations
   use recola
