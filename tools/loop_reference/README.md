@@ -718,6 +718,18 @@ the files byte for byte:
 python tools/loop_reference/legacy_capture.py --ufo <MG5>/models/loop_sm [--process ...] [--check]
 ```
 
+The fixtures were last regenerated for the coordinated re-pin (b5c5e83b; native
+b71edd24: NinjaRS aa6a6307, oneloopmaster 8ec256fc, Symbolica 9cdc2949).
+binary64 values are bitwise unchanged. The 200-bit values moved at rounding
+level. O1, worst change relative to the largest modulus of its Laurent row:
+4.2e-60 (dy) to 1.9e-54 (uux_ggg bare). O2, worst change relative to the
+family's largest coefficient: dy 2.3e-60, uux_uux 3.0e-60, tt 3.5e-60, uudd
+4.5e-60, gg_gg 5.8e-60, uux_ggg 2.5e-58, uux_ddxg 9.3e-57 (family 5) and
+uux_uuxg 1.6e-56 (family 22). The b5c5e83b message gives 2.5e-58 as the O2
+maximum, which misses the two five-leg quark controls. The captures are
+byte-identical with the Community kernel at e679e8c1 or 9cdc2949: their
+arbitrary-precision arithmetic runs in the native.
+
 `tests/unit/test_loop_v2_oracles.py` checks the regeneration and the agreement
 of the providers with each other and with the legacy engine (<= 1e-9 in the
 metric of the required references). The three slice processes `uux_ddxg`,
