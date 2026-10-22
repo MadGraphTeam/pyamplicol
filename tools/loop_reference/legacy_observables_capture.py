@@ -60,6 +60,8 @@ ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "tests/fixtures/loop/legacy/observables"
 # carrier label -> (arithmetic, decimal digits)
 CARRIERS = {"double": ("double", 16), "arbitrary-200": ("arbitrary", 60)}
+# Decimal digits of the resolved colour sums (exact for 60-digit components).
+SUM_DIGITS = 200
 PARAMETERS = {"aS": "0.118", "MT": "173"}
 ENGINE = (
     "legacy public pipeline: Generator(...).generate(..., correlators=...); "
@@ -333,25 +335,29 @@ def _observables(runtime, control: Control, points, scales) -> dict[str, Any]:
 
 def _resolved(runtime, points, scales) -> dict[str, Any]:
     """Per Born helicity row, the Born [order] and the virtual [sector][eps]
-    summed over the legacy colour components."""
+    summed over the legacy colour components (Decimal sums at SUM_DIGITS, so
+    the 60-digit components are not rounded to the default 28 digits)."""
+
+    from decimal import localcontext
 
     result = runtime.evaluate_resolved(points, mu_r2=scales)
     helicities = [list(h.values) for h in runtime.physics.helicities]
     rows = range(len(helicities))
-    born = [
-        [[_pair(sum(order[h])) for h in rows] for order in point]
-        for point in result.born_values
-    ]
-    virtual = [
-        [
-            [
-                [_pair(sum(colour[e] for colour in sector[h])) for e in range(3)]
-                for h in rows
-            ]
-            for sector in point
+    with localcontext(prec=SUM_DIGITS):
+        born = [
+            [[_pair(sum(order[h])) for h in rows] for order in point]
+            for point in result.born_values
         ]
-        for point in result.values
-    ]
+        virtual = [
+            [
+                [
+                    [_pair(sum(colour[e] for colour in sector[h])) for e in range(3)]
+                    for h in rows
+                ]
+                for sector in point
+            ]
+            for point in result.values
+        ]
     return {
         "helicities": helicities,
         "born_colour_ids": list(result.born_color_ids),
