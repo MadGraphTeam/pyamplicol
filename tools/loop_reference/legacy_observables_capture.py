@@ -84,6 +84,8 @@ class Control:
     histories: tuple[dict[str, Any], ...] = ()
     spin_classes: tuple[tuple[int, ...], ...] = ()
     resolved: bool = False
+    # "full", or "lc"/"nlc" with the committed QCD colour continuation.
+    accuracy: str = "full"
 
     @property
     def flavour_group(self) -> bool:
@@ -129,7 +131,26 @@ CONTROLS = {
         ((3,), (4, 5)),
         resolved=True,
     ),
+    # Directed histories at LC and NLC (complete-family degree convention).
+    **{
+        f"gg_gg_{accuracy}": Control(
+            (("gg", "g g > g g"),),
+            2,
+            "gluon_scattering_qcd",
+            (_dipole("casimir", 1, 1), _dipole("T12", 1, 2), _dipole("T13", 1, 3)),
+            accuracy=accuracy,
+        )
+        for accuracy in ("lc", "nlc")
+    },
+    "uux_ggg_lc": Control(
+        (("uuggg", "u u~ > g g g"),),
+        3,
+        "quark_three_gluon_qcd",
+        (_dipole("T12", 1, 2), _dipole("T13", 1, 3), _dipole("T35", 3, 5)),
+        accuracy="lc",
+    ),
 }
+COLOUR_DECLARATION = ROOT / "examples/loop/source_colour/loop_sm_qcd_subset.json"
 
 
 def control_points(control: Control) -> tuple[list, list[str]]:
@@ -158,10 +179,27 @@ max_coupling_orders = {{QCD={control.born_qcd}, QED=0}}{flavour}
 loop_coupling_orders = ["QCD"]
 coupling_order_policy = "minimal"
 [color]
-accuracy = "full"
+accuracy = "{control.accuracy}"
 contraction = "direct"
 [loop]
-r2_strategy = "model"
+r2_strategy = "model"{_loop_model(control)}[generation]
+output = {json.dumps(str(output))}
+emit_api_bundle = false
+[generation.validation]
+post_build_validation = true
+samples = 2
+relative_tolerance = 3e-9
+absolute_tolerance = 2e-12
+"""
+
+
+def _loop_model(control: Control) -> str:
+    """The loop model declaration of a full-colour card (the colour-declared
+    model of an LC/NLC control carries its own)."""
+
+    if control.accuracy != "full":
+        return "\n"
+    return """
 [loop.model]
 loop_coupling_orders = ["QCD"]
 uv_complete = true
@@ -174,18 +212,14 @@ renormalization = "source-UFO mass-dependent decoupling"
 mass_scheme = "real-on-shell"
 finite_restoration = "source-UFO-local-rules"
 model_convention = "loop_sm lhv=1 supplied QCD rules"
-[generation]
-output = {json.dumps(str(output))}
-emit_api_bundle = false
-[generation.validation]
-post_build_validation = true
-samples = 2
-relative_tolerance = 3e-9
-absolute_tolerance = 2e-12
 """
 
 
-def _model(ufo: Path, root: Path) -> Path:
+def _model(ufo: Path, root: Path, control: Control) -> Path:
+    """loop_sm (MB = 0) with its scalar declarations; for an LC/NLC control
+    also the committed QCD colour continuation (as
+    ``examples/loop/source_colour/prepare_model.py`` declares it)."""
+
     from pyamplicol.loops.model_compatibility import prepare_loop_sm_scalar_declarations
     from pyamplicol.models.loading import compile_model_source
 
@@ -200,6 +234,23 @@ def _model(ufo: Path, root: Path) -> Path:
         _serialized_path=None,
         _prepared_bundle=None,
     )
+    if control.accuracy != "full":
+        from pyamplicol.models.loop_color_declaration import (
+            LoopColorDeclaration,
+            with_loop_color_declaration,
+        )
+        from pyamplicol.models.loop_declaration import (
+            LoopModelDeclaration,
+            with_loop_model_declaration,
+        )
+
+        data = LoopColorDeclaration.from_dict(
+            json.loads(COLOUR_DECLARATION.read_text())
+        )
+        model = with_loop_model_declaration(
+            model, LoopModelDeclaration(data.scheme, ("QCD",), True, True)
+        )
+        model = with_loop_color_declaration(model, data)
     return model.write(root / "model.json")
 
 
@@ -311,11 +362,15 @@ def capture(ufo: Path, name: str) -> dict[str, Any]:
         "histories": list(control.histories),
         "spin_classes": [list(legs) for legs in control.spin_classes],
         "spin_vectors": [[list(c) for c in vector] for vector in VECTORS],
+        "accuracy": control.accuracy,
+        "colour_declaration": None
+        if control.accuracy == "full"
+        else str(COLOUR_DECLARATION.relative_to(ROOT)),
         "results": {},
     }
     with tempfile.TemporaryDirectory(prefix="legacy-observables-") as temporary:
         root = Path(temporary)
-        model = _model(ufo, root)
+        model = _model(ufo, root, control)
         correlators = None
         if control.histories or control.spin_classes:
             correlators = CorrelatorConfig(
