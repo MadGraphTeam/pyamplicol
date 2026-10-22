@@ -9,8 +9,10 @@ must survive the engine swap; this tool captures both for a fixed control set
 * O1, ``<name>.json``: Born and the six virtual components (virtual, bare, uv,
   r2, uv_local, uv_external_fields) per squared coupling order and Laurent
   coefficient, at every point, in binary64 and in 200-bit arbitrary precision;
-  the multisets of matched counterterm and external-field insertions; for
-  gg -> gg also the leading-colour projection with its colour degrees.
+  the multisets of matched counterterm and external-field insertions; for the
+  controls with ``colour_projections`` also the leading- and next-to-leading
+  colour projections with their colour degrees (the committed QCD colour
+  declaration; Drell-Yan's control program continues its own couplings).
 * O2, ``<name>.families.json.gz``: per denominator family the Born-weighted,
   helicity- and colour-summed numerator coefficients that the legacy engine
   hands to its reducer, at the first point, in both carriers.
@@ -96,7 +98,7 @@ class Control:
     born: tuple[int, int]
     points: str
     drell_yan: bool = False
-    leading_colour: bool = False
+    colour_projections: tuple[str, ...] = ()
 
     @property
     def born_order_bounds(self):
@@ -116,13 +118,23 @@ CONTROLS = {
         (21, 21),
         (2, 0),
         "gluon_scattering_qcd",
-        leading_colour=True,
+        colour_projections=("lc", "nlc"),
     ),
     "uux_ddxg": Control(
-        "u u~ > d d~ g", (2, -2), (1, -1, 21), (3, 0), "required:uux_ddxg"
+        "u u~ > d d~ g",
+        (2, -2),
+        (1, -1, 21),
+        (3, 0),
+        "required:uux_ddxg",
+        colour_projections=("lc", "nlc"),
     ),
     "uux_ggg": Control(
-        "u u~ > g g g", (2, -2), (21, 21, 21), (3, 0), "quark_three_gluon_qcd"
+        "u u~ > g g g",
+        (2, -2),
+        (21, 21, 21),
+        (3, 0),
+        "quark_three_gluon_qcd",
+        colour_projections=("lc", "nlc"),
     ),
     "dy": Control(
         "u u~ > e- e+ / z",
@@ -131,9 +143,17 @@ CONTROLS = {
         (0, 2),
         "drell_yan_qcd",
         drell_yan=True,
+        colour_projections=("lc", "nlc"),
     ),
     "uudd": Control("u u~ > d d~", (2, -2), (1, -1), (2, 0), "uudd_qcd"),
-    "tt": Control("u u~ > t t~", (2, -2), (6, -6), (2, 0), "top_pair_qcd"),
+    "tt": Control(
+        "u u~ > t t~",
+        (2, -2),
+        (6, -6),
+        (2, 0),
+        "top_pair_qcd",
+        colour_projections=("lc", "nlc"),
+    ),
     "uux_uux": Control("u u~ > u u~", (2, -2), (2, -2), (2, 0), "required:uux_uux"),
     "uux_uuxg": Control(
         "u u~ > u u~ g", (2, -2), (2, -2, 21), (3, 0), "required:uux_uuxg"
@@ -206,7 +226,9 @@ def _program(ufo: Path, control: Control, *, color_accuracy: str = "full"):
         from pyamplicol.models.loop_import import load_raw_loop_model
 
         source = build_loop_model(load_raw_loop_model(str(ufo)))
-        program = drell_yan_model_virtual_program(source, **options)
+        program = drell_yan_model_virtual_program(
+            source, color_accuracy=color_accuracy, **options
+        )
         return program, program.insertions, program.external_fields
     colour = color_accuracy != "full"
     prepared, source_color = _source_model(ufo, control, colour=colour)
@@ -396,16 +418,18 @@ def capture(ufo: Path, name: str) -> tuple[dict[str, Any], dict[str, Any]]:
         o2["coefficients"][carrier] = _family_coefficients(
             virtual, control, points[0], scales[0]
         )
-    if control.leading_colour:
-        program, _, _ = _program(ufo, control, color_accuracy="lc")
+    for accuracy in control.colour_projections:
+        program, _, _ = _program(ufo, control, color_accuracy=accuracy)
         projected = {}
         for carrier in CARRIERS:
             virtual = _virtual(_rebind(program, carrier))
             projected[carrier], result = _o1_results(virtual, control, points, scales)
-        o1["leading_colour"] = {
+        o1.setdefault("colour_projections", {})[accuracy] = {
             "born_degree": result.born_color_degree,
             "virtual_degree": result.virtual_color_degree,
-            "colour_declaration": str(COLOUR_DECLARATION.relative_to(ROOT)),
+            "colour_declaration": (
+                None if control.drell_yan else str(COLOUR_DECLARATION.relative_to(ROOT))
+            ),
             "results": projected,
         }
     return o1, o2
