@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: 0BSD
 """Replay a saved scalar-QCD control with the normally installed native module.
 
 The PACBIN and exact input fixture are explicit arguments. This tool never
