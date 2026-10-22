@@ -1,3 +1,4 @@
+! SPDX-License-Identifier: 0BSD
 ! Independent ordinary/singleton source controls; no timing assertions.
 program photon_sources
   use recola

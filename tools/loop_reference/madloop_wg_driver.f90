@@ -1,3 +1,4 @@
+! SPDX-License-Identifier: 0BSD
 program wg_reference
   implicit none
   integer::pr,k,j,pol,nanswer,status

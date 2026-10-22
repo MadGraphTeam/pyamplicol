@@ -1,3 +1,4 @@
+! SPDX-License-Identifier: 0BSD
 ! Reference-only three-state contraction using Recola's own states,
 ! coherent matrix, colour coefficients and averaging factors.
 module wg_source_reference
