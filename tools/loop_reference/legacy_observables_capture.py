@@ -266,7 +266,7 @@ def _resolved(runtime, points, scales) -> dict[str, Any]:
     summed over the legacy colour components."""
 
     result = runtime.evaluate_resolved(points, mu_r2=scales)
-    helicities = [list(h.helicities) for h in runtime.physics.helicities]
+    helicities = [list(h.values) for h in runtime.physics.helicities]
     rows = range(len(helicities))
     born = [
         [[_pair(sum(order[h])) for h in rows] for order in point]
