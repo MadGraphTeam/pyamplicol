@@ -31,6 +31,14 @@ Values are the runtime's decimal strings, in binary64 and at 60 decimal digits
 restriction, alpha_s = 0.118 and MT = 173 (the defaults of the restricted card),
 model R2, full colour.
 
+Cost: the full-colour directed control of u u~ > g g g runs for hours in the
+legacy generation (its formal colour overlaps take about fifteen minutes; the
+rest of the legacy directed preparation dominates). Run long captures from a
+checkout that stays unchanged until they finish: the legacy generation
+re-checks the staged native runtime against the checkout's native build inputs
+when it writes the artifact, so a merge or restage there makes it fail at the
+end.
+
 Usage (licensed Symbolica and the staged native module are required)::
 
     python tools/loop_reference/legacy_observables_capture.py --ufo <MG5>/models/loop_sm
@@ -149,13 +157,16 @@ CONTROLS = {
         )
         for accuracy in ("lc", "nlc")
     },
-    "uux_ggg_lc": Control(
-        (("uuggg", "u u~ > g g g"),),
-        3,
-        "quark_three_gluon_qcd",
-        (_dipole("T12", 1, 2), _dipole("T13", 1, 3), _dipole("T35", 3, 5)),
-        accuracy="lc",
-    ),
+    **{
+        f"uux_ggg_{accuracy}": Control(
+            (("uuggg", "u u~ > g g g"),),
+            3,
+            "quark_three_gluon_qcd",
+            (_dipole("T12", 1, 2), _dipole("T13", 1, 3), _dipole("T35", 3, 5)),
+            accuracy=accuracy,
+        )
+        for accuracy in ("lc", "nlc")
+    },
 }
 COLOUR_DECLARATION = ROOT / "examples/loop/source_colour/loop_sm_qcd_subset.json"
 
