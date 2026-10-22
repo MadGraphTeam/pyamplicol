@@ -123,13 +123,20 @@ CONTROLS = {
         (_dipole("casimir", 1, 1), ORDERED, SWAPPED),
         ((3,), (3, 4)),
     ),
+    # uu~ -> ggg in two captures (the legacy generation of directed histories
+    # and spin classes together takes hours at five legs).
     "uux_ggg": Control(
         (("uuggg", "u u~ > g g g"),),
         3,
         "quark_three_gluon_qcd",
         (_dipole("T12", 1, 2), _dipole("T35", 3, 5)),
-        ((3,), (4, 5)),
         resolved=True,
+    ),
+    "uux_ggg_spin": Control(
+        (("uuggg", "u u~ > g g g"),),
+        3,
+        "quark_three_gluon_qcd",
+        spin_classes=((3,), (4, 5)),
     ),
     # Directed histories at LC and NLC (complete-family degree convention).
     **{
