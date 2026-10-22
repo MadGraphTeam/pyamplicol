@@ -22,9 +22,9 @@ with a ``CorrelatorConfig``, ``Runtime.evaluate_correlated_many`` and
 * ``members``: for a flavour-blind group, the member process's directed and
   spin outputs evaluated through the admitted representative.
 
-The legacy engine refuses ordered two-emission histories on gg -> gg ("formal
-color overlap retained unsupported tensors"), so ordered histories are
-captured on the quark controls.
+The legacy engine refuses ordered two-emission histories on gg -> gg and on
+uu~ -> ggg ("formal color overlap retained unsupported tensors"), so ordered
+histories are captured on d d~ > g g only.
 
 Values are the runtime's decimal strings, in binary64 and at 60 decimal digits
 (200 bits). Model: MG5_aMC 3.7.0 ``loop_sm`` with the ``no_b_mass``
@@ -125,7 +125,7 @@ CONTROLS = {
         (("uuggg", "u u~ > g g g"),),
         3,
         "quark_three_gluon_qcd",
-        (_dipole("T12", 1, 2), _dipole("T35", 3, 5), ORDERED),
+        (_dipole("T12", 1, 2), _dipole("T35", 3, 5)),
         ((3,), (4, 5)),
         resolved=True,
     ),
