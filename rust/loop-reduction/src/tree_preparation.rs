@@ -1,47 +1,115 @@
 // SPDX-License-Identifier: 0BSD
 
-//! Fresh native scalar tree preparation using FeynKit's existing amplitude
-//! generator, coherent square and Idenso tensor contraction. The result feeds
+//! Fresh native tree preparation using FeynKit's existing amplitude
+//! generator, exact color separation and Spenso tensor contraction. The result feeds
 //! the existing precision-generic coefficient runtime, without source code
 //! generation, Python preparation or a second numerical amplitude engine.
 //!
-//! Initial admitted class: every generated internal/external particle must be
-//! a color-singlet scalar. Unsupported participating fields are rejected, never
-//! dropped. This is a preparation stepping stone, not a complete QCD provider.
+//! Explicitly admitted classes share one generator, amplitude coefficient and
+//! numerical instruction path. Unsupported participating fields are rejected,
+//! never dropped.
 
 use std::{collections::BTreeMap, sync::Arc};
 
 use feynkit_amplitude::AmplitudeOptions;
 use feynkit_generator::{GenerationOptions, NumeratorGrouping, Process};
+use feynkit_graph::ExternalState;
 use feynkit_model::{Model, ParameterCard, ParameterType, Particle};
-use idenso::tensor::{AlgebraSettings, ContractSettings};
-use rusticol_core::{RusticolError, RusticolResult, preparation::encode_exact_evaluator_state};
-use spenso::{
-    network::{library::function_lib::INBUILTS, tags::SPENSO_TAG},
-    structure::representation::{Minkowski, RepName},
+use idenso::{representations::Bispinor, tensor::SymbolicTensor};
+use rusticol_core::{
+    RusticolError, RusticolResult,
+    color::{ColorLeg, ColorRepresentation, ConnectedColorTensor},
+    preparation::encode_exact_evaluator_state,
+};
+use spenso::structure::{
+    representation::{Minkowski, RepName},
+    slot::{DualSlotTo, IsAbstractSlot, ParseableAind},
 };
 use symbolica::{
     atom::{Atom, AtomCore, AtomView, Symbol},
     coefficient::CoefficientView,
-    symbol,
+    function, symbol,
 };
 
-use crate::runtime::{Arithmetic, CoefficientEvaluator};
+pub use crate::tree_runtime::{ExternalTreeState, TreeEvaluator};
+use crate::{
+    runtime::{Arithmetic, arithmetic_mode},
+    tree_color::{factor_tree_color, index_label},
+    tree_components::{TreeComponentVector, contract_tree_state_components},
+};
 
-/// Immutable instructions for one coherent tree norm. External momenta are
+/// Immutable instructions for coherent tree amplitudes and their color norm.
+/// Complex coefficients retain the complete color and external-state dependence.
+/// External momenta are
 /// physical incoming/outgoing momenta, in the FeynKit external-leg label order
 /// returned by [`Self::momentum_legs`], each with components `(E,px,py,pz)`.
-/// The Minkowski metric is +---. Inputs are unaveraged and unsymmetrized; scalar
-/// color/spin averages are one. Flux and identical-particle phase-space factors
+/// The Minkowski metric is +---. Inputs are unaveraged and unsymmetrized.
+/// Flux, initial spin/color averages and identical-particle phase-space factors
 /// belong to the consumer.
-pub struct ScalarTreeProgram {
+pub struct TreeProgram {
+    field_class: TreeFieldClass,
     momentum_legs: Vec<usize>,
     diagram_count: usize,
     evaluator_state: Vec<u8>,
+    norm_state: Vec<u8>,
+    scalar_norm_state: Option<Vec<u8>>,
+    states: Vec<ExternalTreeState>,
+    color_tensors: Vec<ConnectedColorTensor>,
+}
+
+/// Singlet-scalar entry point delegating to the common amplitude preparation.
+/// Its existing evaluation methods remain available through [`TreeProgram`].
+pub struct ScalarTreeProgram(TreeProgram);
+
+impl ScalarTreeProgram {
+    pub fn prepare(
+        model: Arc<Model>,
+        process: &Process,
+        options: &GenerationOptions,
+        card: Option<&ParameterCard>,
+        exact_overrides: &BTreeMap<Symbol, Atom>,
+    ) -> RusticolResult<Self> {
+        TreeProgram::prepare(
+            model,
+            process,
+            options,
+            card,
+            exact_overrides,
+            TreeFieldClass::SingletScalars,
+        )
+        .map(Self)
+    }
+
+    /// Preserve the scalar entry point's exact norm instructions. Inputs are
+    /// physical momentum components, with one coherent scalar-norm output.
+    pub fn evaluator_state(&self) -> &[u8] {
+        self.0
+            .scalar_norm_state
+            .as_deref()
+            .expect("scalar class prepared its norm")
+    }
+}
+
+impl std::ops::Deref for ScalarTreeProgram {
+    type Target = TreeProgram;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+/// Structural field domains certified by native preparation. Lorentz/color
+/// structures must also reduce to supported scalar instructions.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TreeFieldClass {
+    SingletScalars,
+    /// Singlet scalars, massless Dirac (anti)fundamental quarks, and massless
+    /// adjoint vectors. Majorana fields, ghosts and exotic color are rejected.
+    MasslessQcdAndSingletScalars,
 }
 
 fn error(message: impl std::fmt::Display) -> RusticolError {
-    RusticolError::invalid_argument(format!("native scalar tree preparation: {message}"))
+    RusticolError::invalid_argument(format!("native tree preparation: {message}"))
 }
 
 fn bind_scalars(expression: &Atom, bindings: &BTreeMap<Symbol, Atom>) -> Atom {
@@ -57,14 +125,14 @@ fn bind_scalars(expression: &Atom, bindings: &BTreeMap<Symbol, Atom>) -> Atom {
 // FeynKit's amplitude denominator currently represents only p²-m², while the
 // model permits arbitrary denominator templates. Check the exact specialization
 // before allowing that representation to replace a participating propagator.
-fn validate_scalar_pole(
+fn validate_canonical_pole(
     model: &Model,
     particle: &Particle,
     bindings: &BTreeMap<Symbol, Atom>,
 ) -> RusticolResult<()> {
     let unsupported = || {
         RusticolError::unsupported_runtime_capability(
-            "native-scalar-tree",
+            "native-tree",
             format!(
                 "particle {:?} requires a canonical zero-width vacuum propagator p^2-m^2; custom denominators and medium-dependent poles are unsupported",
                 particle.name
@@ -106,7 +174,7 @@ fn validate_scalar_pole(
     Ok(())
 }
 
-impl ScalarTreeProgram {
+impl TreeProgram {
     /// Prepare a new process from the in-memory model and exact parameter
     /// overrides. Model/card numeric defaults retain their binary64 values as
     /// exact rationals; extra precision requires exact overrides. Pass any
@@ -114,7 +182,7 @@ impl ScalarTreeProgram {
     ///
     /// Graph selection/veto filters are honored. The loop range is fixed to
     /// zero, and external symmetrization/numerator grouping are disabled so the
-    /// coherent square retains each labelled diagram. Overrides must name model
+    /// coherent amplitude retains each labelled diagram. Overrides must name model
     /// parameters and respect their declared reality and structural zeros.
     /// Unresolved symbols or unsupported scalar functions fail preparation.
     /// Participating internal poles must be canonical zero-width vacuum poles;
@@ -125,6 +193,7 @@ impl ScalarTreeProgram {
         options: &GenerationOptions,
         card: Option<&ParameterCard>,
         exact_overrides: &BTreeMap<Symbol, Atom>,
+        field_class: TreeFieldClass,
     ) -> RusticolResult<Self> {
         for key in exact_overrides.keys() {
             if !model
@@ -169,23 +238,39 @@ impl ScalarTreeProgram {
                     .model()
                     .particle_by_id(edge.particle)
                     .map_err(error)?;
-                if particle.spin != 1 || particle.color != 1 {
+                let singlet_scalar = particle.spin == 1 && particle.color == 1;
+                let qcd_field = match particle.spin {
+                    2 => {
+                        particle.color.unsigned_abs() == 3
+                            && !diagram.model().particle_is_self_conjugate(edge.particle)
+                            // The unpolarized Dirac sum is slash(p) ± m also
+                            // when m was adjustable at model import. An exact
+                            // frozen m=0 specialization therefore gives its
+                            // massless sum without changing the tensor basis.
+                            && bind_scalars(&particle.symbolic_mass(diagram.model()), &scalar_bindings).expand().is_zero()
+                    }
+                    3 => particle.color == 8 && particle.is_massless(diagram.model()),
+                    _ => false,
+                };
+                let supported = singlet_scalar
+                    || (field_class == TreeFieldClass::MasslessQcdAndSingletScalars && qcd_field);
+                if !supported || particle.ghost_number != 0 {
                     return Err(RusticolError::unsupported_runtime_capability(
-                        "native-scalar-tree",
+                        "native-tree",
                         format!(
-                            "participating field {:?} has spin {} and color {}; only color-singlet scalars are currently admitted",
-                            particle.name, particle.spin, particle.color
+                            "participating field {:?} has spin {} and color {}; it is outside the admitted {:?} class",
+                            particle.name, particle.spin, particle.color, field_class,
                         ),
                     ));
                 }
                 if edge.external.is_none() && !edge.is_dummy {
-                    validate_scalar_pole(diagram.model(), particle, &scalar_bindings)?;
+                    validate_canonical_pole(diagram.model(), particle, &scalar_bindings)?;
                 }
             }
         }
         let amplitude = generated
             .into_amplitude(AmplitudeOptions::default())
-            .map_err(error)?;
+            .map_err(|failure| error(format!("amplitude generation: {failure}")))?;
         let physical_expression = amplitude.expression().map_err(error)?;
         for parameter in amplitude.model().parameters() {
             let variable = symbol!(&format!("UFO::{}", parameter.name));
@@ -205,80 +290,179 @@ impl ScalarTreeProgram {
             }
         }
         let momentum_legs: Vec<_> = amplitude.legs().iter().map(|leg| leg.index).collect();
-        let squared = amplitude.squared().map_err(error)?;
-        let contracted = squared
-            .expression()
-            .simplify_algebra(&AlgebraSettings::default())
-            .map_err(error)?
-            .contract(ContractSettings::default())
+        let source = physical_expression
+            .with_checked_expression(bind_scalars(
+                physical_expression.expression(),
+                &scalar_bindings,
+            ))
             .map_err(error)?;
-        let mut expression = contracted.expression().clone();
-        // Literal symbol replacement avoids treating trailing underscores in
-        // model parameter names as wildcard patterns.
-        expression = bind_scalars(&expression, &scalar_bindings);
-        // Idenso leaves scalar adjoints in Spenso's symbolic wrapper. Once
-        // scalar values are bound, use Symbolica's ordinary scalar conjugation.
-        expression = expression.replace_map(|term, _, out| {
-            if let AtomView::Fun(function) = term {
-                if function.get_symbol() == INBUILTS.conj && function.get_nargs() == 1 {
-                    **out = function.iter().next().unwrap().conj();
-                }
-            }
-        });
-        let momenta: BTreeMap<_, _> = amplitude
-            .legs()
-            .iter()
-            .map(|leg| {
-                (
-                    Minkowski {}.new_rep(4).vector(leg.momentum().as_view(), []),
-                    leg.index,
-                )
-            })
-            .collect();
         let mut inputs = Vec::new();
-        let mut components = BTreeMap::new();
-        for &leg in &momentum_legs {
-            let row: Vec<_> = (0..4)
-                .map(|mu| Atom::var(symbol!(&format!("rusticol_native_tree::p_{leg}_{mu}"))))
-                .collect();
-            if row.iter().any(|value| expression.contains(value)) {
+        let mut vectors = BTreeMap::new();
+        let mut states = Vec::new();
+        let mut external_states = Vec::new();
+        let mut color_legs = Vec::new();
+        let mut external_color = BTreeMap::new();
+        for (position, leg) in amplitude.legs().iter().enumerate() {
+            let components: [Atom; 4] = std::array::from_fn(|mu| {
+                Atom::var(symbol!(&format!(
+                    "rusticol_native_tree::p_{}_{mu}",
+                    leg.index
+                )))
+            });
+            if components
+                .iter()
+                .any(|value| source.expression().contains(value))
+            {
                 return Err(error("model uses a reserved momentum input symbol"));
             }
-            inputs.extend(row.iter().cloned());
-            components.insert(leg, row);
+            inputs.extend(components.iter().cloned());
+            vectors.insert(
+                leg.momentum(),
+                TreeComponentVector {
+                    representation: Minkowski {}.new_rep(4).to_lib(),
+                    components,
+                },
+            );
+            let particle = amplitude
+                .model()
+                .particle_by_id(leg.particle)
+                .map_err(error)?;
+            let incoming = leg.state == ExternalState::Incoming;
+            let representation = match particle.color {
+                1 => ColorRepresentation::Singlet,
+                3 => ColorRepresentation::Fundamental,
+                -3 => ColorRepresentation::Antifundamental,
+                8 => ColorRepresentation::Adjoint,
+                _ => return Err(error("unsupported external color representation")),
+            };
+            let label = i64::try_from(leg.index).map_err(error)?;
+            color_legs.push(ColorLeg::all_outgoing(label, representation, incoming));
+            if representation != ColorRepresentation::Singlet {
+                external_color.insert(index_label(leg.tensor_index.to_atom()), label);
+            }
+            if particle.spin == 1 {
+                continue;
+            }
+            let spin = leg
+                .slots
+                .iter()
+                .copied()
+                .find(|slot| {
+                    slot.rep().rep.base() == (Bispinor {}).into()
+                        || slot.rep().rep.base() == (Minkowski {}).into()
+                })
+                .ok_or_else(|| error("external state has no admitted spin port"))?;
+            let head = spenso::vector_symbol!("rusticol_native_tree::external_state");
+            if source.expression().contains_symbol(head) {
+                return Err(error("model uses a reserved external-state symbol"));
+            }
+            let components: [Atom; 4] = std::array::from_fn(|mu| {
+                Atom::var(symbol!(&format!(
+                    "rusticol_native_tree::w_{}_{mu}",
+                    leg.index
+                )))
+            });
+            if components
+                .iter()
+                .any(|value| source.expression().contains(value))
+            {
+                return Err(error("model uses a reserved external-state input symbol"));
+            }
+            let kind = match (particle.spin, particle.is_antiparticle(), incoming) {
+                (2, false, true) => "u",
+                (2, false, false) => "u_bar",
+                (2, true, true) => "v_bar",
+                (2, true, false) => "v",
+                (3, _, true) => "epsilon",
+                (3, _, false) => "epsilon_bar",
+                _ => return Err(error("unsupported external wavefunction")),
+            };
+            let dual = spin.dual();
+            external_states.push((
+                SymbolicTensor::infer(function!(head, label, dual.to_atom())).map_err(error)?,
+                components.clone(),
+            ));
+            vectors.insert(
+                function!(head, label),
+                TreeComponentVector {
+                    representation: dual.rep(),
+                    components,
+                },
+            );
+            states.push(ExternalTreeState {
+                momentum_columns: std::array::from_fn(|mu| 4 * position + mu),
+                kind: kind.into(),
+                helicities: vec![-1, 1],
+            });
         }
-        expression = expression.replace_map(|term, _, out| {
-            let AtomView::Fun(function) = term else {
-                return;
-            };
-            if function.get_symbol() != SPENSO_TAG.dot {
-                return;
+        // Momentums precede all wavefunctions, independently of the interleaved
+        // external-leg spin/color metadata.
+        for (_, components) in &external_states {
+            inputs.extend(components.iter().cloned());
+        }
+        let factors = factor_tree_color(&source, &color_legs, &external_color)?;
+        let mut color_tensors = Vec::with_capacity(factors.len());
+        let mut coefficients = Vec::with_capacity(factors.len());
+        for (color, mut spin) in factors {
+            for (state, _) in &external_states {
+                spin = spin.multiply(state).map_err(error)?;
             }
-            let args: Vec<_> = function.iter().collect();
-            if args.len() != 2 {
-                return;
+            let coefficient = contract_tree_state_components(spin, &vectors)?;
+            color_tensors.push(color);
+            coefficients.push(coefficient);
+        }
+        let exact = Atom::evaluator_multiple(&coefficients, &inputs)
+            .cores(1)
+            .build()
+            .map_err(error)?;
+        let amplitude_inputs: Vec<_> = (0..color_tensors.len())
+            .map(|index| Atom::var(symbol!(&format!("rusticol_native_tree::amplitude_{index}"))))
+            .collect();
+        let mut norm = Atom::Zero;
+        for (bra, left) in color_tensors.iter().enumerate() {
+            for (ket, right) in color_tensors.iter().enumerate() {
+                let gram = left.overlap(right)?;
+                let coefficient = Atom::num(gram.re) + Atom::i() * Atom::num(gram.im);
+                norm += amplitude_inputs[bra].conj() * coefficient * &amplitude_inputs[ket];
             }
-            let (Some(left), Some(right)) = (
-                momenta.get(&Atom::from(args[0])),
-                momenta.get(&Atom::from(args[1])),
-            ) else {
-                return;
-            };
-            let (left, right) = (&components[left], &components[right]);
-            **out = &left[0] * &right[0]
-                - &left[1] * &right[1]
-                - &left[2] * &right[2]
-                - &left[3] * &right[3];
-        });
-        let exact = Atom::evaluator_multiple(&[expression], &inputs)
+        }
+        // Preserve the scalar entry point's direct-norm state by composing the
+        // already contracted coefficients. No diagrams or tensors are rebuilt.
+        let scalar_norm_state = if field_class == TreeFieldClass::SingletScalars {
+            let expression = norm.replace_map(|term, _, out| {
+                if let Some(index) = amplitude_inputs
+                    .iter()
+                    .position(|input| input.as_view() == term)
+                {
+                    **out = coefficients[index].clone();
+                }
+            });
+            let evaluator = Atom::evaluator_multiple(&[expression], &inputs)
+                .cores(1)
+                .build()
+                .map_err(error)?;
+            Some(encode_exact_evaluator_state(&evaluator)?)
+        } else {
+            None
+        };
+        let norm = Atom::evaluator_multiple(&[norm], &amplitude_inputs)
             .cores(1)
             .build()
             .map_err(error)?;
         Ok(Self {
+            field_class,
             momentum_legs,
             diagram_count: amplitude.diagrams().len(),
             evaluator_state: encode_exact_evaluator_state(&exact)?,
+            norm_state: encode_exact_evaluator_state(&norm)?,
+            scalar_norm_state,
+            states,
+            color_tensors,
         })
+    }
+
+    pub fn field_class(&self) -> TreeFieldClass {
+        self.field_class
     }
 
     pub fn momentum_legs(&self) -> &[usize] {
@@ -287,43 +471,63 @@ impl ScalarTreeProgram {
     pub fn diagram_count(&self) -> usize {
         self.diagram_count
     }
+    /// Exact raw amplitude-coefficient instructions, before the color norm.
+    /// Inputs are all physical momentum components, followed by four complex
+    /// external components per entry in [`TreeEvaluator::states`].
     pub fn evaluator_state(&self) -> &[u8] {
         &self.evaluator_state
     }
 
+    /// Exact complete SU(3) color tensors corresponding to the retained amplitude
+    /// coefficient columns. They may be redundant; no Gram inverse is used.
+    /// The reducer retains formal Nc polynomials, but this prepared model and
+    /// numerical norm are certified only for Nc=3 and TR=1/2.
+    pub fn color_tensors(&self) -> &[ConnectedColorTensor] {
+        &self.color_tensors
+    }
+
     /// Select binary64, double-double, or arbitrary decimal precision in the
     /// existing coefficient runtime. Batches remain typed in their carrier.
-    /// This is an unchecked coefficient evaluator: the caller must supply real,
-    /// finite physical momenta and verify finite outputs before interpreting a
-    /// result as a coherent norm. It does not validate the physical domain,
-    /// on-shell conditions or momentum conservation.
+    /// The runtime validates real finite momenta and finite outputs, then reuses
+    /// native wavefunctions and coefficient evaluation. On-shell consistency
+    /// with the model and momentum conservation remain caller requirements.
     pub fn evaluator(
         &self,
         arithmetic: &str,
         decimal_digits: Option<u32>,
-    ) -> RusticolResult<CoefficientEvaluator> {
-        CoefficientEvaluator::new(&self.evaluator_state, arithmetic, decimal_digits).map_err(error)
+    ) -> RusticolResult<TreeEvaluator> {
+        let (arithmetic, bits) = arithmetic_mode(arithmetic, decimal_digits).map_err(error)?;
+        self.evaluator_with_precision_bits(arithmetic, bits)
     }
 
-    /// Use an explicit initial working precision, including 113-bit Float.
-    /// This does not add guard bits or recover accuracy already lost in inputs.
+    /// Use an explicit initial working precision without hidden guard bits.
     /// The physical-domain requirements of [`Self::evaluator`] also apply.
     pub fn evaluator_with_precision_bits(
         &self,
         arithmetic: Arithmetic,
         bits: u32,
-    ) -> RusticolResult<CoefficientEvaluator> {
-        CoefficientEvaluator::with_precision_bits(&self.evaluator_state, arithmetic, bits)
-            .map_err(error)
+    ) -> RusticolResult<TreeEvaluator> {
+        TreeEvaluator::new(
+            &self.evaluator_state,
+            &self.norm_state,
+            self.states.clone(),
+            self.momentum_legs.len() * 4,
+            arithmetic,
+            bits,
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::runtime::{Batch, Data};
+    use crate::runtime::{Batch, Data, wavefunctions_batch};
+    use rusticol_core::color::{ColorConnection, ColorEmission};
     use symbolica::{
-        domains::float::{Complex, Float},
+        domains::{
+            float::{Complex, Float, FloatLike, Real},
+            rational::Rational,
+        },
         parse,
     };
 
@@ -352,6 +556,290 @@ mod tests {
         Model::from_json(&scalar_model_definition(arity).to_string()).unwrap()
     }
 
+    fn massless_qcd_model() -> Model {
+        // The native embedded model needs no Python/UFO import or file access.
+        Model::qcd()
+    }
+
+    fn massless_qcd_parameters(model: &Model, coupling: Atom) -> BTreeMap<Symbol, Atom> {
+        let mut exact_parameters = BTreeMap::from([(symbol!("UFO::G"), coupling)]);
+        for particle in model
+            .particles()
+            .iter()
+            .filter(|particle| particle.spin == 2)
+        {
+            let mass = model.parameter_by_id(particle.mass).unwrap();
+            exact_parameters.insert(symbol!(&format!("UFO::{}", mass.name)), Atom::Zero);
+        }
+        exact_parameters
+    }
+
+    fn check_massless_qcd_channel(case: usize) {
+        let model = Arc::new(massless_qcd_model());
+        let exact_parameters = massless_qcd_parameters(&model, Atom::one());
+        let (s, t, u) = (100.0_f64, -20.0_f64, -80.0_f64);
+        // Independent spin/color-averaged channel formulas: PDG 2024,
+        // Cross-Section Formulae, Eqs. 51.5, 51.7, 51.9, 51.10, 51.12.
+        // https://pdg.lbl.gov/2024/reviews/rpp2024-rev-cross-section-formulae.pdf
+        // Restore initial degeneracies 36, 36, 96, 256, 36 respectively;
+        // no final-state identical-particle factor belongs in an amplitude norm.
+        let cases = [
+            (["u", "d"], ["u", "d"], 16.0 * (s * s + u * u) / (t * t)),
+            (
+                ["u", "u"],
+                ["u", "u"],
+                16.0 * ((s * s + u * u) / (t * t) + (s * s + t * t) / (u * u))
+                    - 32.0 / 3.0 * s * s / (t * u),
+            ),
+            (
+                ["u", "g"],
+                ["u", "g"],
+                96.0 * ((s * s + u * u) / (t * t) - 4.0 / 9.0 * (s * s + u * u) / (s * u)),
+            ),
+            (
+                ["g", "g"],
+                ["g", "g"],
+                256.0 * 9.0 / 2.0 * (3.0 - u * t / (s * s) - s * u / (t * t) - s * t / (u * u)),
+            ),
+            (
+                ["u", "u~"],
+                ["g", "g"],
+                36.0 * (32.0 / 27.0 * (u / t + t / u) - 8.0 / 3.0 * (u * u + t * t) / (s * s)),
+            ),
+        ];
+        let momenta = [
+            5., 0., 0., 5., 5., 0., 0., -5., 5., 4., 0., 3., 5., -4., 0., -3.,
+        ];
+        // A boost with beta_z=3/5 changes the timelike projector's rest frame,
+        // while all three invariants and every physical norm remain unchanged.
+        let boosted = [
+            2.5, 0., 0., 2.5, 10., 0., 0., -10., 4., 4., 0., 0., 8.5, -4., 0., -7.5,
+        ];
+        // A transverse boost introduces genuinely complex helicity components.
+        let transverse = [
+            6.25, 0., -3.75, 5., 6.25, 0., -3.75, -5., 6.25, 4., -3.75, 3., 6.25, -4., -3.75, -3.,
+        ];
+        for (incoming, outgoing, expected) in cases.into_iter().skip(case).take(1) {
+            let program = TreeProgram::prepare(
+                model.clone(),
+                &Process::new(incoming, outgoing),
+                &GenerationOptions::default().threads(1),
+                None,
+                &exact_parameters,
+                TreeFieldClass::MasslessQcdAndSingletScalars,
+            )
+            .unwrap_or_else(|error| panic!("{incoming:?} -> {outgoing:?}: {error}"));
+            let input = Batch::typed(
+                momenta
+                    .into_iter()
+                    .chain(boosted)
+                    .chain(transverse)
+                    .map(|value| Complex::new(value, 0.0))
+                    .collect(),
+                vec![13, 14, 15],
+                16,
+                53,
+            )
+            .unwrap();
+            let output = program
+                .evaluator("double", None)
+                .unwrap()
+                .evaluate_batch(&input)
+                .unwrap();
+            let Data::Double(values) = output.data() else {
+                panic!("carrier changed")
+            };
+            for value in values.iter() {
+                assert!(
+                    (value.re - expected).abs() < 1e-9 * expected,
+                    "{incoming:?} -> {outgoing:?}: got {value}, expected {expected}"
+                );
+                assert!(value.im.abs() < 1e-9 * expected);
+            }
+            check_color_charge_conservation(&program);
+            check_gluon_ward_identities(&program, &input, expected);
+        }
+    }
+
+    fn check_color_charge_conservation(program: &TreeProgram) {
+        let basis = program.color_tensors();
+        let legs = basis[0].legs();
+        let connected: Vec<Vec<_>> = legs
+            .iter()
+            .map(|leg| {
+                let connection = ColorConnection::new(
+                    legs.to_vec(),
+                    vec![ColorEmission::EmitGluon {
+                        emitter: leg.label,
+                        emitted: 10_000,
+                    }],
+                )
+                .unwrap();
+                basis
+                    .iter()
+                    .map(|tensor| connection.apply_connected(tensor).unwrap())
+                    .collect()
+            })
+            .collect();
+        let zero = Complex::new(Rational::from(0), Rational::from(0));
+        for (i, leg) in legs.iter().enumerate() {
+            let casimir = match leg.representation {
+                ColorRepresentation::Adjoint => Rational::from(3),
+                _ => Rational::from((4, 3)),
+            };
+            for (a, bra) in basis.iter().enumerate() {
+                for (b, ket) in basis.iter().enumerate() {
+                    let gram = bra.overlap(ket).unwrap();
+                    let expected = Complex::new(&gram.re * &casimir, &gram.im * &casimir);
+                    assert_eq!(connected[i][a].overlap(&connected[i][b]).unwrap(), expected);
+                    let mut sum = zero.clone();
+                    for image in &connected {
+                        sum += &connected[i][a].overlap(&image[b]).unwrap();
+                    }
+                    assert_eq!(
+                        sum, zero,
+                        "all-outgoing charge conservation on leg {}",
+                        leg.label
+                    );
+                }
+            }
+        }
+    }
+
+    fn check_gluon_ward_identities(program: &TreeProgram, momenta: &Batch, scale: f64) {
+        let mut evaluator = program.evaluator("double", None).unwrap();
+        let states = evaluator.states().to_vec();
+        let basis = program.color_tensors();
+        let gram: Vec<Vec<_>> = basis
+            .iter()
+            .map(|bra| {
+                basis
+                    .iter()
+                    .map(|ket| {
+                        let value = bra.overlap(ket).unwrap();
+                        Complex::new(value.re.to_f64(), value.im.to_f64())
+                    })
+                    .collect()
+            })
+            .collect();
+        for replaced in states
+            .iter()
+            .enumerate()
+            .filter_map(|(i, s)| s.kind.starts_with("epsilon").then_some(i))
+        {
+            for assignment in 0..(1usize << states.len()) {
+                let components: Vec<_> = states
+                    .iter()
+                    .enumerate()
+                    .map(|(i, state)| {
+                        let p = momenta
+                            .take_columns(state.momentum_columns.to_vec())
+                            .unwrap();
+                        if i == replaced {
+                            return p;
+                        }
+                        let h = if assignment & (1 << i) == 0 { -1 } else { 1 };
+                        wavefunctions_batch(
+                            &p,
+                            vec![h; momenta.rows()],
+                            vec![state.kind.clone(); momenta.rows()],
+                            Some(4),
+                        )
+                        .unwrap()
+                    })
+                    .collect();
+                let coefficients = evaluator
+                    .evaluate_external_components(momenta, &components.iter().collect::<Vec<_>>())
+                    .unwrap();
+                let Data::Double(values) = coefficients.data() else {
+                    panic!("carrier changed")
+                };
+                // The retained basis may be redundant: a Ward cancellation
+                // concerns its full color norm, not each coefficient separately.
+                for row in values.chunks(basis.len()) {
+                    let mut norm = Complex::new(0., 0.);
+                    for (a, left) in row.iter().enumerate() {
+                        for (b, right) in row.iter().enumerate() {
+                            norm += &(left.conj() * gram[a][b] * right);
+                        }
+                    }
+                    assert!(
+                        norm.re.abs() + norm.im.abs() < 1e-10 * scale,
+                        "Ward leg {replaced}: {norm}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn four_gluon_amplitudes_keep_exact_sub_binary64_inputs_at_requested_bits() {
+        let model = Arc::new(massless_qcd_model());
+        let parameters = massless_qcd_parameters(&model, parse!("1+1/1208925819614629174706176"));
+        let program = TreeProgram::prepare(
+            model,
+            &Process::new(["g", "g"], ["g", "g"]),
+            &GenerationOptions::default().threads(1),
+            None,
+            &parameters,
+            TreeFieldClass::MasslessQcdAndSingletScalars,
+        )
+        .unwrap();
+        for bits in [113, 137, 256, 512, 1024] {
+            let values = [5, 0, 0, 5, 5, 0, 0, -5, 5, 4, 0, 3, 5, -4, 0, -3]
+                .into_iter()
+                .map(|value| Complex::new(Float::with_val(bits, value), Float::with_val(bits, 0)))
+                .collect();
+            let input = Batch::typed(values, vec![23], 16, bits).unwrap();
+            let mut evaluator = program
+                .evaluator_with_precision_bits(Arithmetic::Arbitrary, bits)
+                .unwrap();
+            let output = evaluator.evaluate_batch(&input).unwrap();
+            let Data::Arbitrary(values) = output.data() else {
+                panic!("carrier changed")
+            };
+            let two = Float::with_val(bits, 2);
+            let coupling = Float::with_val(bits, 1) + two.pow(80).inv();
+            let base = Float::with_val(bits, 666792) / Float::with_val(bits, 25);
+            let expected = base.clone() * coupling.pow(4);
+            assert!(values[0].re > base);
+            assert!(
+                (values[0].re.clone() - expected).norm() < two.pow(u64::from(bits - 32)).inv(),
+                "bits={bits}"
+            );
+            assert!(
+                values[0].im.norm() < two.pow(u64::from(bits - 32)).inv(),
+                "bits={bits}"
+            );
+            assert!(values[0].re.get_precision() > bits - 37, "bits={bits}");
+        }
+    }
+
+    #[test]
+    fn massless_qcd_distinct_quarks_match_pdg_and_boost() {
+        check_massless_qcd_channel(0);
+    }
+
+    #[test]
+    fn massless_qcd_identical_quarks_match_pdg_and_boost() {
+        check_massless_qcd_channel(1);
+    }
+
+    #[test]
+    fn massless_qcd_quark_gluon_match_pdg_and_boost() {
+        check_massless_qcd_channel(2);
+    }
+
+    #[test]
+    fn massless_qcd_four_gluons_match_pdg_and_boost() {
+        check_massless_qcd_channel(3);
+    }
+
+    #[test]
+    fn massless_qcd_annihilation_match_pdg_and_boost() {
+        check_massless_qcd_channel(4);
+    }
+
     #[test]
     fn fresh_scalar_contact_runs_in_double_and_arbitrary_without_codegen() {
         let model = scalar_model(4);
@@ -374,9 +862,7 @@ mod tests {
             panic!("carrier changed")
         };
         assert!((values[0].re - 1.0).abs() < 1e-14, "{}", values[0]);
-        let mut high = program
-            .evaluator_with_precision_bits(Arithmetic::Arbitrary, 233)
-            .unwrap();
+        let mut high = program.evaluator("arbitrary", Some(70)).unwrap();
         let bits = high.precision_bits();
         let batch = Batch::typed(
             vec![Complex::new(Float::with_val(bits, 0), Float::with_val(bits, 0)); 16],
@@ -386,6 +872,14 @@ mod tests {
         )
         .unwrap();
         let out = high.evaluate_batch(&batch).unwrap();
+        let direct = crate::runtime::CoefficientEvaluator::with_precision_bits(
+            program.evaluator_state(),
+            Arithmetic::Arbitrary,
+            bits,
+        )
+        .unwrap()
+        .evaluate_batch(&batch)
+        .unwrap();
         let Data::Arbitrary(values) = out.data() else {
             panic!("carrier changed")
         };
@@ -399,12 +893,18 @@ mod tests {
         assert!(residual > Float::with_val(bits, -1e-65));
         assert!(residual < Float::with_val(bits, 1e-65));
         assert_eq!(values[0].im, Float::with_val(bits, 0));
+        let Data::Arbitrary(direct_values) = direct.data() else {
+            panic!("carrier changed")
+        };
+        assert!(
+            (direct_values[0].re.clone() - &values[0].re).norm() < Float::with_val(bits, 1e-65)
+        );
     }
 
     #[test]
     fn fresh_cubic_tree_keeps_all_channel_interferences() {
         let model = scalar_model(3);
-        let program = ScalarTreeProgram::prepare(
+        let program = TreeProgram::prepare(
             Arc::new(model),
             &Process::new(["s", "s"], ["s", "s"]),
             &GenerationOptions::default()
@@ -413,6 +913,7 @@ mod tests {
                 .symmetrize_final(true),
             None,
             &BTreeMap::new(),
+            TreeFieldClass::SingletScalars,
         )
         .unwrap();
         assert_eq!(program.diagram_count(), 3);
@@ -456,12 +957,13 @@ mod tests {
             (symbol!("UFO::ZERO"), Atom::num(1), "structural-zero"),
             (symbol!("UFO::GC1"), Atom::num(2), "model parameter"),
         ] {
-            let result = ScalarTreeProgram::prepare(
+            let result = TreeProgram::prepare(
                 model.clone(),
                 &Process::new(["s", "s"], ["s", "s"]),
                 &GenerationOptions::default().threads(1),
                 None,
                 &BTreeMap::from([(key, value)]),
+                TreeFieldClass::SingletScalars,
             );
             let message = result.err().expect("must reject binding").to_string();
             assert!(message.contains(expected), "{message}");
@@ -473,12 +975,13 @@ mod tests {
         let mut definition = scalar_model_definition(4);
         definition["parameters"][1]["parameter_type"] = serde_json::json!("complex");
         let model = Model::from_json(&definition.to_string()).unwrap();
-        let program = ScalarTreeProgram::prepare(
+        let program = TreeProgram::prepare(
             Arc::new(model),
             &Process::new(["s", "s"], ["s", "s"]),
             &GenerationOptions::default().threads(1),
             None,
             &BTreeMap::from([(symbol!("UFO::g_"), Atom::num(1) + Atom::num(2) * Atom::i())]),
+            TreeFieldClass::SingletScalars,
         )
         .unwrap();
         let input = Batch::typed(vec![Complex::new(0.0, 0.0); 16], vec![9], 16, 53).unwrap();
@@ -506,12 +1009,13 @@ mod tests {
             }));
         definition["couplings"][0]["expression"] = serde_json::json!("h");
         let model = Model::from_json(&definition.to_string()).unwrap();
-        let program = ScalarTreeProgram::prepare(
+        let program = TreeProgram::prepare(
             Arc::new(model),
             &Process::new(["s", "s"], ["s", "s"]),
             &GenerationOptions::default().threads(1),
             None,
             &BTreeMap::new(),
+            TreeFieldClass::SingletScalars,
         )
         .unwrap();
         let input = Batch::typed(vec![Complex::new(0.0, 0.0); 16], vec![11], 16, 53).unwrap();
@@ -532,19 +1036,20 @@ mod tests {
         definition["particles"][0]["spin"] = serde_json::json!(3);
         definition["lorentz_structures"][0]["spins"] = serde_json::json!([3, 3, 3, 3]);
         let model = Model::from_json(&definition.to_string()).unwrap();
-        let result = ScalarTreeProgram::prepare(
+        let result = TreeProgram::prepare(
             Arc::new(model),
             &Process::new(["s", "s"], ["s", "s"]),
             &GenerationOptions::default().threads(1),
             None,
             &BTreeMap::new(),
+            TreeFieldClass::SingletScalars,
         );
         assert!(
             result
                 .err()
                 .expect("must reject participating vector")
                 .to_string()
-                .contains("only color-singlet scalars")
+                .contains("outside the admitted SingletScalars")
         );
     }
 
@@ -557,12 +1062,13 @@ mod tests {
         definition["particles"][0]["width"] = serde_json::json!("VACZERO");
         definition["propagators"][0]["denominator"] = serde_json::json!("P^2-ZERO^2");
         let model = Model::from_json(&definition.to_string()).unwrap();
-        let program = ScalarTreeProgram::prepare(
+        let program = TreeProgram::prepare(
             Arc::new(model),
             &Process::new(["s", "s"], ["s", "s"]),
             &GenerationOptions::default().threads(1),
             None,
             &BTreeMap::new(),
+            TreeFieldClass::SingletScalars,
         )
         .unwrap();
         let momenta = [
@@ -600,12 +1106,13 @@ mod tests {
                 _ => definition["particles"][0]["chemical_potential"] = serde_json::json!("g_"),
             }
             let model = Model::from_json(&definition.to_string()).unwrap();
-            let result = ScalarTreeProgram::prepare(
+            let result = TreeProgram::prepare(
                 Arc::new(model),
                 &Process::new(["s", "s"], ["s", "s"]),
                 &GenerationOptions::default().threads(1),
                 None,
                 &BTreeMap::new(),
+                TreeFieldClass::SingletScalars,
             );
             let message = result
                 .err()

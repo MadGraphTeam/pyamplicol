@@ -12,6 +12,9 @@
 
 pub mod preparation;
 pub mod runtime;
+mod tree_color;
+mod tree_components;
+mod tree_runtime;
 pub mod tree_preparation;
 pub mod scalar_loop;
 pub mod verification;

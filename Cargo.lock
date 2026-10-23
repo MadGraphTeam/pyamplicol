@@ -2363,6 +2363,7 @@ dependencies = [
  "serde",
  "serde_json",
  "spenso",
+ "spenso-hep-lib",
  "symbolica",
 ]
 

@@ -2,8 +2,10 @@
 
 This standalone Rust crate exercises the actual reducer and scalar master
 provider before they are integrated into the application's shared core. Native
-scalar tree preparation also reuses FeynKit's amplitude generator and Idenso's
-contraction, then feeds the existing coefficient runtime.
+tree preparation reuses FeynKit's amplitude generator, Idenso's typed color
+collector and Spenso's component contraction, then feeds the existing
+wavefunction and coefficient runtime. Scalar loops reuse the same owners and
+the existing Ninja reduction boundary.
 
 ## Native structural preparation
 
@@ -136,28 +138,51 @@ anchors cover three precision modes, scalar and explicit-μ² reductions, Lauren
 poles, rational terms, failed-lane handling and rank callbacks. Broader physical
 consumer results below are retained historical evidence at their stated pins.
 
-`tree_preparation::ScalarTreeProgram::prepare` accepts a native `Model`, process,
-generation options, optional parameter card and exact parameter overrides. It
-generates all selected labelled tree diagrams and their coherent norm in Rust,
-without Python preparation or process-specific compilation. Every participating
-field must currently be a color-singlet scalar; other fields are explicit
-capability errors. This is not yet a general Standard Model/QCD tree provider.
-Participating internal propagators must specialize exactly to a monic
-zero-width vacuum denominator `p²-m²`. Custom poles, nonzero widths and chemical
-potentials are rejected because the reused amplitude builder does not preserve
-those model denominators.
+`tree_preparation::TreeProgram::prepare` accepts a native `Model`, process,
+generation options, optional parameter card, exact parameter overrides and an
+explicit field class. It prepares all selected labelled tree amplitudes in Rust,
+without Python or process-specific compilation. `ScalarTreeProgram::prepare`
+retains the scalar entry point by delegating to this path.
 
-The program returns exact evaluator state and the external-leg input order.
-Its `evaluator` method uses the existing typed binary64, double-double or
-arbitrary-precision batch runtime. `evaluator_with_precision_bits` selects an
-explicit initial working precision, including 113-bit Float. Inputs are physical incoming/outgoing
-four-momenta `(E,px,py,pz)` with metric `+---`. The result has no flux, initial
-averaging or identical-particle phase-space factor. Exact parameter atoms retain
-their precision; numeric model/card defaults represent the original binary64
-values exactly and do not acquire extra input accuracy at higher precision.
-The returned coefficient evaluator assumes real, finite physical momenta; the
-consumer owns physical-domain checks and must reject nonfinite output before
-interpreting a value as a norm.
+`MasslessQcdAndSingletScalars` admits massless Dirac fundamental/antifundamental
+quarks, structurally massless adjoint vectors and singlet scalars. Internal poles
+must be canonical zero-width vacuum poles. Exotic color, Majorana fields,
+ghosts, colorless fermions/vectors and unsupported tensor components fail
+explicitly. The current component library does not supply Levi-Civita tensors.
+This class is a native QCD provider step, not complete Standard Model admission.
+
+The program retains complex coefficients of a possibly redundant exact color
+basis. `color_tensors()` exposes that basis; its Gram matrix is sesquilinear,
+and no inverse is taken. This model and numerical norm are certified for SU(3),
+Nc=3, TR=1/2. The color reducer's formal Nc polynomials do not establish a
+general-Nc model capability. Ordered color connections act on the retained
+tensors before contraction, so higher correlations do not multiply Gram matrices.
+
+`evaluator_with_precision_bits` constructs the existing typed binary64,
+double-double or arbitrary-precision runtime. Requested bits are initial working
+precision; values retain their propagated precision after cancellation. Quad
+precision means arbitrary `Float` at 113 bits, not 106-bit double-double.
+`evaluate_coefficients` returns complete color amplitudes at chosen helicities;
+`evaluate_external_components` accepts complex spinors/polarization components
+and can probe open spin indices. `evaluate_batch` streams the physical helicity
+sum and returns the exact-color norm. All outputs remain in the selected carrier.
+Inputs are physical incoming/outgoing four-momenta `(E,px,py,pz)` with metric
+`+---`. The result has no flux, initial averaging or identical-particle
+phase-space factor. Exact parameter atoms retain their precision; numeric
+model/card defaults represent their original binary64 values exactly and do
+not acquire extra input accuracy at higher precision. Shape, carrier, working
+bits, and finite real momenta are checked even for empty batches. On-shell
+conditions and conservation remain caller responsibilities. Numerical completion
+is not an independent accuracy certificate or automatic precision rescue.
+
+The 25 focused tree checks cover five independent PDG QCD channels with two
+boosts, exact Casimir/color-charge identities on every retained basis pair,
+gluon Ward replacements over all helicities, and a sub-binary64 coupling at
+113, 137, 256, 512 and 1024 working bits. They also cover scalar-state
+compatibility, complex coefficients, empty batches and admission failures.
+The combined native model/tree/loop/runtime suite passes 74 checks with the
+prebuilt test executable's PATH empty, so fresh process preparation cannot
+invoke Python or an external compiler.
 
 From this crate's directory, using the shared workspace environment:
 
