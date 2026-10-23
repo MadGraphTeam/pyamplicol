@@ -341,18 +341,7 @@ impl PolynomialPlan {
         bits: u32,
         engine: &str,
     ) -> ExecutionResult<Self> {
-        match arithmetic {
-            Arithmetic::Double if bits != 53 => {
-                return Err(error("double arithmetic requires exactly 53 bits"));
-            }
-            Arithmetic::DoubleDouble if bits != 106 => {
-                return Err(error("double-double arithmetic requires exactly 106 bits"));
-            }
-            Arithmetic::Arbitrary if bits < 2 => {
-                return Err(error("arbitrary arithmetic requires at least two bits"));
-            }
-            _ => {}
-        }
+        validate_working_precision(arithmetic, bits)?;
         if !matches!(engine, "generic" | "fast" | "fast-tensor") {
             return Err(error("engine must be generic, fast or fast-tensor"));
         }

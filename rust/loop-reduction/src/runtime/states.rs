@@ -60,20 +60,24 @@ fn state_components<T: BatchCarrier + KinematicScalar>(
     PhysicalMomentum::from(std::array::from_fn::<_, 4, _>(|i| p[i].re.clone()))
         .wavefunction(kind, helicity)
         .map(|wavefunction| wavefunction.into_components())
-        .map_err(|failure| match failure {
-            WavefunctionError::NonFinite => ExecutionError::nonfinite_result(failure),
-            WavefunctionError::InsufficientPrecision { reason, .. } => {
-                // Input components may have lower tracked precision after prior
-                // arithmetic. Preserve the batch's original working precision.
-                ExecutionError::insufficient_precision(
-                    working_bits,
-                    format!(
-                        "external-state chart needs more than {working_bits} working bits: {reason}"
-                    ),
-                )
-            }
-            _ => error(failure),
-        })
+        .map_err(|failure| wavefunction_error(failure, working_bits))
+}
+
+/// Preserve the original attempt precision and typed numerical category for
+/// both generic and constructive source-specific FeynKit external states.
+pub(crate) fn wavefunction_error(failure: WavefunctionError, working_bits: u32) -> ExecutionError {
+    match failure {
+        WavefunctionError::NonFinite => ExecutionError::nonfinite_result(failure),
+        WavefunctionError::InsufficientPrecision { reason, .. } => {
+            ExecutionError::insufficient_precision(
+                working_bits,
+                format!(
+                    "external-state chart needs more than {working_bits} working bits: {reason}"
+                ),
+            )
+        }
+        _ => error(failure),
+    }
 }
 
 fn evaluate<T: BatchCarrier + KinematicScalar>(

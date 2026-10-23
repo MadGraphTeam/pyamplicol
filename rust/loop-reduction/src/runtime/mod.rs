@@ -29,6 +29,7 @@ pub use master_cache::{MasterCache, MasterStatistics};
 pub use ninjars::fast::tensor_layout::monomials as tensor_monomials;
 pub use reduction::{DecimalMomentum, PolynomialPlan, RawLane, ReductionBatch};
 pub use schedule::{CoefficientKernelCache, CoefficientPlan};
+pub(crate) use states::wavefunction_error;
 pub use states::{
     PartialStates, on_shell_wavefunctions_batch, wavefunctions_batch, wavefunctions_partial_batch,
 };
@@ -45,6 +46,25 @@ pub fn register_scalar_primitives() {
 }
 pub type DecimalComplex = [String; 2];
 pub type ExecutionResult<T> = Result<T, ExecutionError>;
+
+// One shared working-carrier policy. This is declared attempt precision, not
+// a lower bound on the reliable bits of values after numerical cancellation.
+pub(crate) fn validate_working_precision(arithmetic: Arithmetic, bits: u32) -> ExecutionResult<()> {
+    match arithmetic {
+        Arithmetic::Double if bits != 53 => {
+            return Err(error("double arithmetic requires exactly 53 bits"));
+        }
+        Arithmetic::DoubleDouble if bits != 106 => {
+            return Err(error("double-double arithmetic requires exactly 106 bits"));
+        }
+        Arithmetic::Arbitrary if bits < 2 => {
+            return Err(error("arbitrary arithmetic requires at least two bits"));
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone)]
 pub struct ExecutionError(rusticol_core::RusticolError);
 impl ExecutionError {
@@ -63,7 +83,7 @@ impl ExecutionError {
             value.to_string(),
         ))
     }
-    fn context(self, value: impl Display) -> Self {
+    pub(crate) fn context(self, value: impl Display) -> Self {
         Self(rusticol_core::RusticolError::with_kind(
             self.kind(),
             value.to_string(),

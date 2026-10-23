@@ -19,7 +19,7 @@ use feynkit_generator::{
     FilterScope, GenerationFilter, GenerationOptions, NumeratorGrouping, Process,
 };
 use feynkit_graph::ExternalState;
-use feynkit_model::{Model, ParameterCard, ParameterType, Particle};
+use feynkit_model::{Model, ParameterCard, ParameterType, Particle, ParticleId};
 use idenso::{representations::Bispinor, tensor::SymbolicTensor};
 use rusticol_core::{
     RusticolError, RusticolResult,
@@ -53,6 +53,7 @@ use crate::{
 /// Flux, initial spin/color averages and identical-particle phase-space factors
 /// belong to the consumer.
 pub struct TreeProgram {
+    pub(crate) external_domain: PreparedExternalDomain,
     field_class: TreeFieldClass,
     momentum_legs: Vec<usize>,
     diagram_count: usize,
@@ -62,6 +63,23 @@ pub struct TreeProgram {
     states: Vec<ExternalTreeState>,
     runtime_parameters: Vec<RuntimeTreeParameter>,
     color_tensors: Vec<ConnectedColorTensor>,
+}
+
+// Created only while preparing the model-derived instructions. The shared
+// program owns the model namespace and complete external facts, including scalar
+// legs; arbitrary saved-instruction evaluators cannot manufacture this domain.
+pub(crate) struct PreparedExternalDomain {
+    pub(crate) model: Arc<Model>,
+    pub(crate) process: Process,
+    pub(crate) legs: Vec<PreparedExternalLeg>,
+}
+
+pub(crate) struct PreparedExternalLeg {
+    pub(crate) label: usize,
+    pub(crate) particle: ParticleId,
+    pub(crate) direction: ExternalState,
+    pub(crate) resolved_mass: Atom,
+    pub(crate) state_index: Option<usize>,
 }
 
 /// Singlet-scalar entry point delegating to the common amplitude preparation.
@@ -374,6 +392,7 @@ impl TreeProgram {
             .symmetrize_left_right(false)
             .symmetrize_external_fermions(false)
             .numerator_grouping(NumeratorGrouping::None);
+        let retained_model = Arc::clone(&model);
         let generated = process.generate_diagrams(model, &options).map_err(error)?;
         for diagram in &generated.diagrams {
             for (_, _, edge) in diagram.edges() {
@@ -441,6 +460,7 @@ impl TreeProgram {
             }
         }
         let momentum_legs: Vec<_> = amplitude.legs().iter().map(|leg| leg.index).collect();
+        let mut prepared_external_legs = Vec::with_capacity(momentum_legs.len());
         let source = physical_expression
             .with_checked_expression(bind_scalars(
                 physical_expression.expression(),
@@ -479,6 +499,19 @@ impl TreeProgram {
                 .particle_by_id(leg.particle)
                 .map_err(error)?;
             let incoming = leg.state == ExternalState::Incoming;
+            prepared_external_legs.push(PreparedExternalLeg {
+                label: leg.index,
+                particle: leg.particle,
+                direction: leg.state,
+                // Keep runtime placeholders free: a numerical zero default is
+                // not a masslessness proof for a parameter that may vary.
+                resolved_mass: bind_scalars(
+                    &particle.symbolic_mass(amplitude.model()),
+                    &scalar_bindings,
+                )
+                .expand(),
+                state_index: (particle.spin != 1).then_some(states.len()),
+            });
             let representation = match particle.color {
                 1 => ColorRepresentation::Singlet,
                 3 => ColorRepresentation::Fundamental,
@@ -606,6 +639,11 @@ impl TreeProgram {
             .build()
             .map_err(error)?;
         Ok(Self {
+            external_domain: PreparedExternalDomain {
+                model: retained_model,
+                process: process.clone(),
+                legs: prepared_external_legs,
+            },
             field_class,
             momentum_legs,
             diagram_count: amplitude.diagrams().len(),
@@ -618,8 +656,22 @@ impl TreeProgram {
         })
     }
 
+    /// Bind constructive future-null states to this exact immutable program.
+    /// Every external mass, including scalar masses, must resolve identically
+    /// to zero with runtime inputs left symbolic. This does not certify event
+    /// conservation, original exact-source precision, or gauge completeness.
+    pub fn future_null_domain(
+        self: &Arc<Self>,
+    ) -> RusticolResult<crate::tree_null_states::FutureNullTreeDomain> {
+        crate::tree_null_states::FutureNullTreeDomain::new(Arc::clone(self))
+    }
+
     pub fn field_class(&self) -> TreeFieldClass {
         self.field_class
+    }
+
+    pub(crate) fn external_states(&self) -> &[ExternalTreeState] {
+        &self.states
     }
 
     pub fn momentum_legs(&self) -> &[usize] {

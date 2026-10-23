@@ -26,6 +26,36 @@ pub struct ExternalTreeState {
     pub helicities: Vec<i32>,
 }
 
+// Only crate-owned sources enter the shared evaluator. Public raw entry points
+// keep their existing semantics; program-bound sources are validated by their
+// immutable wrapper before reaching this seam.
+pub(crate) trait TreeStateSource {
+    fn momenta(&self) -> &Batch;
+    fn components(&self, state: &ExternalTreeState, helicity: i32) -> RusticolResult<Batch>;
+}
+
+pub(crate) struct RawTreeStateSource<'a>(pub(crate) &'a Batch);
+
+impl TreeStateSource for RawTreeStateSource<'_> {
+    fn momenta(&self) -> &Batch {
+        self.0
+    }
+
+    fn components(&self, state: &ExternalTreeState, helicity: i32) -> RusticolResult<Batch> {
+        let p = self
+            .0
+            .take_columns(state.momentum_columns.to_vec())
+            .map_err(error)?;
+        wavefunctions_batch(
+            &p,
+            vec![helicity; self.0.rows()],
+            vec![state.kind.clone(); self.0.rows()],
+            Some(4),
+        )
+        .map_err(RusticolError::from)
+    }
+}
+
 /// Scalar domains assumed while preparing a runtime model parameter.
 /// Runtime batches must obey these assumptions before numerical evaluation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -405,6 +435,16 @@ impl TreeEvaluator {
         parameters: Option<&Batch>,
         helicities: &[i32],
     ) -> RusticolResult<Batch> {
+        self.evaluate_coefficients_from_source(&RawTreeStateSource(momenta), parameters, helicities)
+    }
+
+    pub(crate) fn evaluate_coefficients_from_source(
+        &mut self,
+        source: &dyn TreeStateSource,
+        parameters: Option<&Batch>,
+        helicities: &[i32],
+    ) -> RusticolResult<Batch> {
+        let momenta = source.momenta();
         self.validate_momenta(momenta)?;
         self.validate_parameters(momenta, parameters)?;
         if helicities.len() != self.states.len()
@@ -425,18 +465,7 @@ impl TreeEvaluator {
             .states
             .iter()
             .zip(helicities)
-            .map(|(state, &helicity)| {
-                let p = momenta
-                    .take_columns(state.momentum_columns.to_vec())
-                    .map_err(error)?;
-                wavefunctions_batch(
-                    &p,
-                    vec![helicity; momenta.rows()],
-                    vec![state.kind.clone(); momenta.rows()],
-                    Some(4),
-                )
-                .map_err(RusticolError::from)
-            })
+            .map(|(state, &helicity)| source.components(state, helicity))
             .collect::<RusticolResult<Vec<_>>>()?;
         for component in &components {
             finite_result(component)?;
@@ -531,6 +560,15 @@ impl TreeEvaluator {
         momenta: &Batch,
         parameters: Option<&Batch>,
     ) -> RusticolResult<Batch> {
+        self.evaluate_batch_from_source(&RawTreeStateSource(momenta), parameters)
+    }
+
+    pub(crate) fn evaluate_batch_from_source(
+        &mut self,
+        source: &dyn TreeStateSource,
+        parameters: Option<&Batch>,
+    ) -> RusticolResult<Batch> {
+        let momenta = source.momenta();
         self.validate_momenta(momenta)?;
         self.validate_parameters(momenta, parameters)?;
         if momenta.rows() == 0 {
@@ -546,7 +584,7 @@ impl TreeEvaluator {
                 .map(|(state, &position)| state.helicities[position])
                 .collect::<Vec<_>>();
             let coefficients =
-                self.evaluate_coefficients_inner(momenta, parameters, &helicities)?;
+                self.evaluate_coefficients_from_source(source, parameters, &helicities)?;
             let norm_inputs = if self.cartesian_norm {
                 cartesian_coefficients(&coefficients)?
             } else {
