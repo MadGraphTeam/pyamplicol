@@ -20,6 +20,7 @@ use symbolica::domains::{float::Complex, rational::Rational};
 
 use crate::{RusticolError, RusticolResult};
 
+pub mod network;
 #[cfg(test)]
 mod tests;
 mod trace;
