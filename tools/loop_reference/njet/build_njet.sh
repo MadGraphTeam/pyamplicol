@@ -94,10 +94,15 @@ if [ "$bundled_qd" = 0 ]; then
            --enable-f128 --disable-dependency-tracking --with-vc=no
            CXX=g++ CC=gcc FC=gfortran F77=gfortran)
 else
-  # NJet 2: double-double is always built with the bundled QD.
+  # NJet 2: double-double is always built with the bundled QD. Its bundled
+  # QCDLoop/FF Fortran passes a 2-element array section to a 3-element dummy
+  # in ffxd0p.f (two calls that NJet 3's copy comments out), which gfortran
+  # >= 10 rejects; -std=legacy turns that diagnostic back into a warning
+  # (code generation unchanged).
   nj_conf=("$njet_src/configure" --prefix="$out/njet/prefix" --enable-5jet
            --disable-dependency-tracking --with-vc=no
-           CXX=g++ CC=gcc FC=gfortran F77=gfortran)
+           CXX=g++ CC=gcc FC=gfortran F77=gfortran
+           FFLAGS="-g -O2 -std=legacy" FCFLAGS="-g -O2 -std=legacy")
 fi
 echo "njet_configure: ${nj_conf[*]}" >> "$info"
 (cd "$out/njet/build" && "${nj_conf[@]}") > "$out/njet/configure.log" 2>&1

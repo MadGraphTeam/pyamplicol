@@ -38,7 +38,7 @@ import time
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
-from exact_points import decimal_string, generate  # noqa: E402
+from exact_points import _matmul, _rotate, _rotation, check, decimal_string, generate  # noqa: E402
 
 COEFFICIENTS = ("born", "finite", "single_pole", "double_pole")
 PKG_CONFIG = "/nix/store/1c6lyixjky1pfr9ia3mvpy01sxxh307a-pkg-config-0.29.2/bin"
@@ -64,10 +64,22 @@ def command_points(args):
         source = f"points and mu_r of {Path(args.fixture).name}"
     else:
         found = generate([0] * args.legs, count=args.count, cut=Fraction(args.cut))
+        # exact_points accepts one point per sqrt(s), so only a handful exist
+        # per multiplicity; timing sets are filled with exactly rotated copies
+        # (rational rotation, mass shells and momentum conservation exact).
+        rotation = _matmul(_rotation(2, (Fraction(3, 5), Fraction(4, 5))),
+                           _rotation(0, (Fraction(7, 25), Fraction(24, 25))))
+        for point in found[:args.rotated]:
+            copy = [_rotate(rotation, p) for p in point]
+            check(copy, [0] * args.legs)
+            found.append(copy)
         points = [[[decimal_string(x) for x in leg] for leg in point] for point in found]
         mu_r = [args.mu_r[i % len(args.mu_r)] for i in range(len(points))]
         source = (f"tools/loop_reference/exact_points.generate([0]*{args.legs}, count={args.count}, "
                   f"cut={args.cut}) (the generator and order of pyAmpliCol's loop_v2_generate/campaign)")
+        if args.rotated:
+            source += (f"; points {args.count}..{args.count + args.rotated - 1} are points "
+                       f"0..{args.rotated - 1} rotated by Rz(3/5,4/5) Rx(7/25,24/25)")
     report = {"legs": len(points[0]), "source": source, "points": points, "mu_r": mu_r}
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     Path(args.output).write_text(json.dumps(report, indent=1) + "\n")
@@ -85,13 +97,21 @@ def points_text(points, mu_r):
 # --------------------------------------------------------------------- NJet
 
 def njet_install(build):
+    """(prefix, pkg-config file or None, version) of a build_njet.sh build."""
     prefix = Path(build) / "njet" / "prefix"
     pcs = sorted((prefix / "lib" / "pkgconfig").glob("njet*.pc"))
-    if not pcs:
-        raise SystemExit(f"no njet*.pc under {prefix}")
-    pc = pcs[0]
-    version = re.search(r"^Version:\s*(\S+)", pc.read_text(), re.M).group(1)
-    return prefix, pc, version
+    if pcs:
+        version = re.search(r"^Version:\s*(\S+)", pcs[0].read_text(), re.M).group(1)
+        return prefix, pcs[0], version
+    # NJet 2 installs neither a pkg-config file nor its internal headers.
+    config = (Path(build) / "njet" / "build" / "config.h").read_text()
+    version = re.search(r'PACKAGE_VERSION "([^"]+)"', config).group(1)
+    return prefix, None, version
+
+
+def njet_source(build):
+    info = (Path(build) / "build-info.txt").read_text()
+    return Path(re.search(r"^njet_source: (.+)$", info, re.M).group(1))
 
 
 def build_driver(build, out_dir):
@@ -101,15 +121,22 @@ def build_driver(build, out_dir):
     binary = Path(out_dir) / f"njet_driver-{version}-{digest}"
     if binary.exists():
         return binary, version
-    env = dict(os.environ)
-    paths = [str(pc.parent)]
     qd = Path(build) / "qd" / "prefix" / "lib"
-    if (qd / "pkgconfig").is_dir():
-        paths.insert(0, str(qd / "pkgconfig"))
-    env["PKG_CONFIG_PATH"] = ":".join(paths)
-    env["PATH"] = PKG_CONFIG + ":" + env["PATH"]
-    flags = subprocess.run(["pkg-config", "--cflags", "--libs", pc.stem], env=env, check=True,
-                           capture_output=True, text=True).stdout.split()
+    if pc is not None:
+        env = dict(os.environ)
+        paths = [str(pc.parent)]
+        if (qd / "pkgconfig").is_dir():
+            paths.insert(0, str(qd / "pkgconfig"))
+        env["PKG_CONFIG_PATH"] = ":".join(paths)
+        env["PATH"] = PKG_CONFIG + ":" + env["PATH"]
+        flags = subprocess.run(["pkg-config", "--cflags", "--libs", pc.stem], env=env,
+                               check=True, capture_output=True, text=True).stdout.split()
+    else:
+        # NJet 2: the internal headers of its own (unmodified) source tree,
+        # the build's config.h, the bundled QD installed with it.
+        flags = ["-DUSE_DD", f"-I{njet_source(build)}", f"-I{Path(build) / 'njet' / 'build'}",
+                 f"-I{prefix / 'include'}", f"-L{prefix / 'lib'}", "-lnjet2", "-lqd",
+                 "-lqcdloop1"]
     rpaths = [f"-Wl,-rpath,{prefix / 'lib'}"] + ([f"-Wl,-rpath,{qd}"] if qd.is_dir() else [])
     Path(out_dir).mkdir(parents=True, exist_ok=True)
     command = ["g++", "-std=c++17", "-O2", str(HERE / "njet_driver.cpp"), "-o", str(binary),
@@ -141,6 +168,9 @@ def sign_contract(build, run_dir, legs, amp, options):
 
 def command_run(args):
     pts = json.loads(Path(args.points).read_text())
+    indices = list(range(len(pts["points"]))) if args.indices is None else args.indices
+    pts["points"] = [pts["points"][i] for i in indices]
+    pts["mu_r"] = [pts["mu_r"][i] for i in indices]
     run_dir = Path(args.output).with_suffix("")
     run_dir.mkdir(parents=True, exist_ok=True)
     binary, version = build_driver(args.njet_build, Path(args.driver_dir))
@@ -176,6 +206,7 @@ def command_run(args):
             if "initialisation_seconds" in row:
                 init = row["initialisation_seconds"]
             elif "index" in row:
+                row["index"] = indices[row["index"]]
                 rows.append(row)
                 print(json.dumps({k: row[k] for k in ("index", "seconds", "finite")}), flush=True)
         code = proc.wait()
@@ -193,7 +224,8 @@ def command_run(args):
         "host": platform.node(), "cpu_model": cpu_model(), "cpu": args.cpu,
         "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(started)),
         "wall_seconds": round(time.time() - started, 3),
-        "legs": legs, "points_source": pts["source"], "points": pts["points"], "mu_r": pts["mu_r"],
+        "legs": legs, "points_source": pts["source"], "points_file": str(Path(args.points).resolve()),
+        "indices": indices, "points": pts["points"], "mu_r": pts["mu_r"],
         "initialisation_seconds": init,
         "rows": rows,
     }
@@ -291,6 +323,7 @@ def main():
     p.add_argument("--legs", type=int)
     p.add_argument("--count", type=int, default=3)
     p.add_argument("--cut", default="1/1000")
+    p.add_argument("--rotated", type=int, default=0, help="append rotated copies of the first K")
     p.add_argument("--mu-r", nargs="+", default=["1000"])
     p.add_argument("--fixture")
     p.add_argument("--output", required=True)
@@ -308,12 +341,13 @@ def main():
     r.add_argument("--alphas", default="0.118")
     r.add_argument("--multiprec", default="0", help="blha: NJetMultiPrec")
     r.add_argument("--precision", default="1e-5", help="blha: rescue threshold")
+    r.add_argument("--indices", type=int, nargs="+", help="evaluate only these points")
     r.add_argument("--cpu", type=int)
     r.add_argument("--output", required=True)
     o = sub.add_parser("openloops")
     o.add_argument("--openloops", required=True)
     o.add_argument("--points", required=True)
-    o.add_argument("--nf", choices=("5", "6"), required=True)
+    o.add_argument("--nf", choices=("0", "5", "6"), required=True)
     o.add_argument("--mt", default="173")
     o.add_argument("--alphas", default="0.118")
     o.add_argument("--cpu", type=int)
