@@ -2647,7 +2647,7 @@ pub(crate) fn decode_exact_evaluator_state(
     bytes: &[u8],
 ) -> RusticolResult<ExpressionEvaluator<Complex<Rational>>> {
     crate::source_scalar::register_scalar_primitives();
-    load_evaluator_state_bytes(bytes, "Python Evaluator.save()").map(|(_, evaluator, _)| evaluator)
+    load_evaluator_state_bytes(bytes, "Symbolica exact evaluator").map(|(_, evaluator, _)| evaluator)
 }
 
 #[cfg(feature = "symbolica-runtime")]
@@ -2667,7 +2667,7 @@ fn ensure_evaluator_state_consumed(
 }
 
 #[cfg(all(test, feature = "symbolica-runtime"))]
-mod python_serialization_tests {
+mod serialization_tests {
     use super::*;
 
     fn evaluate_saved<T>(
@@ -2703,6 +2703,32 @@ mod python_serialization_tests {
                 "serialized evaluator gave {actual}, expected {expected}"
             );
         }
+    }
+
+    #[test]
+    fn native_evaluator_roundtrips_in_three_precisions() {
+        use crate::preparation::{decode_exact_evaluator_state, encode_exact_evaluator_state};
+        use symbolica::{
+            atom::{Atom, AtomCore},
+            parse,
+        };
+
+        let expressions = [parse!("x+y/3"), parse!("x*y+1/7")];
+        let exact = Atom::evaluator_multiple(&expressions, &[parse!("x"), parse!("y")])
+            .cores(1)
+            .build()
+            .unwrap();
+        let mut bytes = encode_exact_evaluator_state(&exact).unwrap();
+        let decoded = decode_exact_evaluator_state(&bytes).unwrap();
+        evaluate_saved(&decoded, Rational::to_f64, 1e-14);
+        evaluate_saved(&decoded, |r| DoubleFloat::from(r), DoubleFloat::from(1e-28));
+        evaluate_saved(
+            &decoded,
+            |r| r.to_multi_prec_float(256),
+            Float::with_val(256, 1e-60),
+        );
+        bytes.push(0);
+        assert!(decode_exact_evaluator_state(&bytes).is_err());
     }
 
     /// Exercise the actual Python producer and this crate's production decoder.

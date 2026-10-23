@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: 0BSD
 
-//! Immutable shared native loop execution data in the existing PACBIN envelope.
+//! Immutable shared native loop execution data, prepared in memory or loaded
+//! from the existing PACBIN envelope.
 //! Public runtimes and SDKs use the same descriptor and evaluator boundary.
 
 use crate::pacbin::{PacbinMemberKind, PacbinReader};
@@ -792,12 +793,53 @@ impl LoopRuntimePlan {
     }
 }
 
-/// Keeps authenticated immutable payload ownership independent of any evaluator workspace.
+/// Keeps validated immutable instructions independent of any evaluator workspace.
+/// Native builders can use [`Self::from_evaluators`]; artifact loaders retain
+/// their authenticated PACBIN ownership without copying evaluator payloads.
 pub struct LoadedLoopRuntime {
     plan: LoopRuntimePlan,
-    reader: PacbinReader,
+    states: EvaluatorStates,
+}
+
+enum EvaluatorStates {
+    Pacbin(PacbinReader),
+    Native(BTreeMap<String, Vec<u8>>),
 }
 impl LoadedLoopRuntime {
+    /// Prepare a runtime from native exact instructions, entirely in memory.
+    ///
+    /// All evaluator dimensions and plan references are checked by the same
+    /// validator used for saved artifacts. No precision is selected here: the
+    /// resulting immutable plan can be shared by independent numerical backends.
+    /// The caller supplies the complete physical plan, including UV/R2 and
+    /// normalization; validation does not certify those physics declarations.
+    pub fn from_evaluators(
+        plan: LoopRuntimePlan,
+        evaluators: BTreeMap<String, crate::preparation::ExactEvaluator>,
+    ) -> RusticolResult<Self> {
+        let sizes = evaluators
+            .iter()
+            .map(|(name, evaluator)| {
+                (
+                    name.clone(),
+                    (evaluator.get_input_len(), evaluator.get_output_len()),
+                )
+            })
+            .collect();
+        plan.validate(&sizes)?;
+        let states = evaluators
+            .into_iter()
+            .map(|(name, evaluator)| {
+                crate::preparation::encode_exact_evaluator_state(&evaluator)
+                    .map(|bytes| (name, bytes))
+            })
+            .collect::<RusticolResult<_>>()?;
+        Ok(Self {
+            plan,
+            states: EvaluatorStates::Native(states),
+        })
+    }
+
     pub fn plan(&self) -> &LoopRuntimePlan {
         &self.plan
     }
@@ -805,25 +847,46 @@ impl LoadedLoopRuntime {
         serde_json::to_string(&self.plan).map_err(|e| invalid(e.to_string()))
     }
     pub fn evaluator_state(&self, name: &str) -> RusticolResult<&[u8]> {
-        require(
-            self.reader.member(name)?.kind() == PacbinMemberKind::SymbolicaExactState,
-            "member is not an exact evaluator",
-        )?;
-        self.reader.member_bytes(name)
+        match &self.states {
+            EvaluatorStates::Pacbin(reader) => {
+                require(
+                    reader.member(name)?.kind() == PacbinMemberKind::SymbolicaExactState,
+                    "member is not an exact evaluator",
+                )?;
+                reader.member_bytes(name)
+            }
+            EvaluatorStates::Native(states) => states
+                .get(name)
+                .map(Vec::as_slice)
+                .ok_or_else(|| invalid(format!("unknown evaluator {name}"))),
+        }
     }
     pub fn evaluator_states(&self) -> impl Iterator<Item = (&str, &[u8])> {
-        self.reader
-            .members()
-            .iter()
-            .filter(|m| m.kind() == PacbinMemberKind::SymbolicaExactState)
-            .map(|m| {
-                (
-                    m.logical_path(),
-                    self.reader
-                        .member_bytes(m.logical_path())
-                        .expect("validated member"),
-                )
+        let (pacbin, native) = match &self.states {
+            EvaluatorStates::Pacbin(reader) => (Some(reader), None),
+            EvaluatorStates::Native(states) => (None, Some(states)),
+        };
+        pacbin
+            .into_iter()
+            .flat_map(|reader| {
+                reader
+                    .members()
+                    .iter()
+                    .filter(|m| m.kind() == PacbinMemberKind::SymbolicaExactState)
+                    .map(move |m| {
+                        (
+                            m.logical_path(),
+                            reader
+                                .member_bytes(m.logical_path())
+                                .expect("validated member"),
+                        )
+                    })
             })
+            .chain(native.into_iter().flat_map(|states| {
+                states
+                    .iter()
+                    .map(|(name, bytes)| (name.as_str(), bytes.as_slice()))
+            }))
     }
 }
 fn invalid(message: impl Into<String>) -> RusticolError {
@@ -972,12 +1035,6 @@ pub fn load_loop_runtime_reader(reader: PacbinReader) -> RusticolResult<LoadedLo
     let bytes = reader.member_bytes(LOOP_RUNTIME_MEMBER)?;
     let plan: LoopRuntimePlan =
         serde_json::from_slice(bytes).map_err(|e| invalid(e.to_string()))?;
-    require(plan.schema == 3, "unsupported schema")?;
-    require(
-        (plan.r2_strategy == "model" && !plan.dimensional_numerators)
-            || (plan.r2_strategy == "direct" && plan.dimensional_numerators),
-        "inconsistent R2 strategy/dimensional numerator selection",
-    )?;
     let mut sizes = BTreeMap::new();
     for member in reader.members() {
         if member.logical_path() == LOOP_RUNTIME_MEMBER {
@@ -996,11 +1053,20 @@ pub fn load_loop_runtime_reader(reader: PacbinReader) -> RusticolResult<LoadedLo
         );
     }
     plan.validate(&sizes)?;
-    Ok(LoadedLoopRuntime { plan, reader })
+    Ok(LoadedLoopRuntime {
+        plan,
+        states: EvaluatorStates::Pacbin(reader),
+    })
 }
 
 impl LoopRuntimePlan {
     fn validate(&self, sizes: &BTreeMap<String, (usize, usize)>) -> RusticolResult<()> {
+        require(self.schema == 3, "unsupported schema")?;
+        require(
+            (self.r2_strategy == "model" && !self.dimensional_numerators)
+                || (self.r2_strategy == "direct" && self.dimensional_numerators),
+            "inconsistent R2 strategy/dimensional numerator selection",
+        )?;
         let mut used = BTreeSet::new();
         let mut shape = |name: &str, input: usize, output: usize| -> RusticolResult<()> {
             require(
