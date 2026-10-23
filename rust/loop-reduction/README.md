@@ -190,6 +190,14 @@ or promoted to an accuracy guarantee. Legacy saved norm programs consuming one
 complex column per coefficient remain accepted; new Hermitian norm programs
 consume adjacent real/imaginary columns instead.
 
+Computed nonfinite wavefunctions, coefficients, norms and helicity sums return
+`RusticolErrorKind::NonFiniteResult`. The runtime preserves this category from
+FeynKit state construction through `ExecutionError`, without parsing messages.
+Callers may reconstruct the same exact program and physical inputs in a wider
+scalar. Malformed supplied values and physical-domain violations remain
+separate errors. A finite represented zero alone does not prove that underflow
+occurred; exact-source provenance or an independent reconstruction is needed.
+
 `evaluator_with_precision_bits` constructs the existing typed binary64,
 double-double or arbitrary-precision runtime. Requested bits are initial working
 precision; values retain their propagated precision after cancellation. Quad

@@ -13,6 +13,10 @@ pub enum RusticolErrorKind {
     Compatibility,
     Serialization,
     Evaluation,
+    /// A computed numerical result is non-finite. Reconstructing the same
+    /// exact program and physical inputs in a wider scalar may recover it.
+    /// This category does not diagnose malformed caller-supplied values.
+    NonFiniteResult,
     Selector,
     ModelParameter,
     UnsupportedPrecision,
@@ -67,6 +71,10 @@ impl RusticolError {
 
     pub fn evaluation(message: impl Into<String>) -> Self {
         Self::with_kind(RusticolErrorKind::Evaluation, message)
+    }
+
+    pub fn nonfinite_result(message: impl Into<String>) -> Self {
+        Self::with_kind(RusticolErrorKind::NonFiniteResult, message)
     }
 
     pub fn selector(message: impl Into<String>) -> Self {

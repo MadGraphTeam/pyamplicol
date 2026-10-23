@@ -63,9 +63,11 @@ fn error(message: impl std::fmt::Display) -> RusticolError {
     RusticolError::evaluation(format!("native tree evaluation: {message}"))
 }
 
-fn finite(batch: &Batch) -> RusticolResult<()> {
+fn finite_result(batch: &Batch) -> RusticolResult<()> {
     if let Some(id) = batch.nonfinite_rows().first() {
-        return Err(error(format!("nonfinite value in row {id}")));
+        return Err(RusticolError::nonfinite_result(format!(
+            "native tree evaluation produced a nonfinite value in row {id}"
+        )));
     }
     Ok(())
 }
@@ -154,7 +156,7 @@ fn add_norms(left: &Batch, right: &Batch) -> RusticolResult<Batch> {
         (Data::Arbitrary(a), Data::Arbitrary(b)) => add_values(a, b, left),
         _ => unreachable!("same_rows checked the arithmetic"),
     }?;
-    finite(&sum)?;
+    finite_result(&sum)?;
     Ok(sum)
 }
 
@@ -433,9 +435,12 @@ impl TreeEvaluator {
                     vec![state.kind.clone(); momenta.rows()],
                     Some(4),
                 )
-                .map_err(error)
+                .map_err(RusticolError::from)
             })
             .collect::<RusticolResult<Vec<_>>>()?;
+        for component in &components {
+            finite_result(component)?;
+        }
         self.evaluate_external_components_inner(
             momenta,
             parameters,
@@ -485,7 +490,11 @@ impl TreeEvaluator {
             if state.columns() != 4 {
                 return Err(error("external component blocks require four columns"));
             }
-            finite(state)?;
+            if let Some(id) = state.nonfinite_rows().first() {
+                return Err(RusticolError::invalid_argument(format!(
+                    "supplied external component is nonfinite in row {id}"
+                )));
+            }
         }
         if momenta.rows() == 0 {
             return empty_like(momenta, self.coefficient_columns);
@@ -498,7 +507,7 @@ impl TreeEvaluator {
         }
         let input = Batch::concat_columns(&inputs).map_err(error)?;
         let coefficients = self.amplitude.evaluate_batch(&input).map_err(error)?;
-        finite(&coefficients)?;
+        finite_result(&coefficients)?;
         Ok(coefficients)
     }
 
@@ -544,7 +553,7 @@ impl TreeEvaluator {
                 coefficients
             };
             let norm = self.norm.evaluate_batch(&norm_inputs).map_err(error)?;
-            finite(&norm)?;
+            finite_result(&norm)?;
             accumulated = Some(match accumulated {
                 None => norm,
                 Some(previous) => add_norms(&previous, &norm)?,
@@ -573,7 +582,7 @@ mod tests {
     use rusticol_core::preparation::encode_exact_evaluator_state;
     use symbolica::{
         atom::{Atom, AtomCore},
-        domains::float::{Float, FloatLike, Real},
+        domains::float::{Float, FloatLike, Real, SingleFloat},
         parse, symbol,
     };
 
@@ -948,6 +957,90 @@ mod tests {
         assert!(values[0].im.norm() < two.pow(115).inv());
         assert_eq!(output.precision_bits(), bits);
         assert!(values[0].re.get_precision() > 100);
+    }
+
+    #[test]
+    fn computed_overflow_is_typed_and_reconstructs_in_a_wider_scalar() {
+        use rusticol_core::RusticolErrorKind;
+
+        let mut evaluator = parameter_evaluator(false, Arithmetic::Double, 53);
+        let p = Batch::typed(vec![Complex::new(0., 0.); 4], vec![31], 4, 53).unwrap();
+        let parameters = |g, h, z| {
+            Batch::typed(
+                vec![Complex::new(g, 0.), Complex::new(h, 0.), Complex::new(z, 0.)],
+                vec![31], 3, 53,
+            ).unwrap()
+        };
+        // The amplitude is finite, but its norm exceeds binary64.
+        let overflow = evaluator
+            .evaluate_batch_with_parameters(&p, &parameters(1e200, 1., 0.))
+            .err().unwrap();
+        assert_eq!(overflow.kind(), RusticolErrorKind::NonFiniteResult);
+        let overflow = evaluator
+            .evaluate_coefficients_with_parameters(&p, &parameters(1., 1e308, 1e308), &[])
+            .err().unwrap();
+        assert_eq!(overflow.kind(), RusticolErrorKind::NonFiniteResult);
+        let malformed = evaluator
+            .evaluate_batch_with_parameters(&p, &parameters(f64::INFINITY, 1., 0.))
+            .err().unwrap();
+        assert_ne!(malformed.kind(), RusticolErrorKind::NonFiniteResult);
+
+        let bits = 113;
+        let mut high = parameter_evaluator(false, Arithmetic::Arbitrary, bits);
+        let zero = Float::with_val(bits, 0);
+        let g = <Float as Carrier>::parse_decimal("1e200", bits).unwrap();
+        let high_p = Batch::typed(
+            vec![Complex::new(zero.clone(), zero.clone()); 4], vec![31], 4, bits,
+        ).unwrap();
+        let high_parameters = Batch::typed(
+            vec![
+                Complex::new(g.clone(), zero.clone()),
+                Complex::new(Float::with_val(bits, 1), zero.clone()),
+                Complex::new(zero.clone(), zero),
+            ], vec![31], 3, bits,
+        ).unwrap();
+        let result = high.evaluate_batch_with_parameters(&high_p, &high_parameters).unwrap();
+        let Data::Arbitrary(values) = result.data() else { panic!("wrong carrier") };
+        assert!(values[0].re.is_finite());
+        assert!(values[0].im.is_zero());
+        let expected = g.clone() * g;
+        let relative = (values[0].re.clone() / expected - Float::with_val(bits, 1)).norm();
+        assert!(relative < Float::with_val(bits, 2).pow(95).inv());
+
+        // Neither failure leaves stale output in the original executor.
+        let result = evaluator
+            .evaluate_batch_with_parameters(&p, &parameters(2., 1., 0.))
+            .unwrap();
+        let Data::Double(values) = result.data() else { panic!("wrong carrier") };
+        assert_eq!(values.as_slice(), &[Complex::new(4., 0.)]);
+
+        let (coefficient, norm) = programs();
+        let mut with_states = TreeEvaluator::new(
+            &coefficient, &norm, states(), 8, Arithmetic::Double, 53,
+        ).unwrap();
+        let bad_component = Batch::typed(
+            vec![Complex::new(f64::INFINITY, 0.); 4], vec![17], 4, 53,
+        ).unwrap();
+        let malformed = with_states.evaluate_external_components(
+            &momenta::<f64>(53), &[&bad_component, &bad_component],
+        ).err().unwrap();
+        assert_eq!(malformed.kind(), RusticolErrorKind::InvalidArgument);
+
+        let huge_momenta = Batch::typed(
+            [1e308, 0., 0., 1e308, 1e308, 0., 0., 1e308]
+                .map(|value| Complex::new(value, 0.)).to_vec(),
+            vec![17], 8, 53,
+        ).unwrap();
+        let generated = with_states.evaluate_coefficients(&huge_momenta, &[1, 1])
+            .err().unwrap();
+        assert_eq!(generated.kind(), RusticolErrorKind::NonFiniteResult);
+        let high_momentum = Batch::typed(
+            ["1e308", "0", "0", "1e308"].map(|value| Complex::new(
+                <Float as Carrier>::parse_decimal(value, bits).unwrap(), Float::with_val(bits, 0),
+            )).to_vec(), vec![17], 4, bits,
+        ).unwrap();
+        let high_state = wavefunctions_batch(&high_momentum, vec![1], vec!["u".into()], Some(4)).unwrap();
+        assert!(high_state.nonfinite_rows().is_empty());
     }
 
     #[test]

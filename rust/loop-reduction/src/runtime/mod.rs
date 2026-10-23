@@ -46,15 +46,32 @@ pub fn register_scalar_primitives() {
 pub type DecimalComplex = [String; 2];
 pub type ExecutionResult<T> = Result<T, ExecutionError>;
 #[derive(Debug, Clone)]
-pub struct ExecutionError(String);
+pub struct ExecutionError(rusticol_core::RusticolError);
+impl ExecutionError {
+    /// Preserve actionable numerical categories across runtime consumers.
+    pub fn kind(&self) -> rusticol_core::RusticolErrorKind {
+        self.0.kind()
+    }
+    fn nonfinite_result(value: impl Display) -> Self {
+        Self(rusticol_core::RusticolError::nonfinite_result(value.to_string()))
+    }
+    fn context(self, value: impl Display) -> Self {
+        Self(rusticol_core::RusticolError::with_kind(self.kind(), value.to_string()))
+    }
+}
+impl From<ExecutionError> for rusticol_core::RusticolError {
+    fn from(error: ExecutionError) -> Self {
+        error.0
+    }
+}
 impl Display for ExecutionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.0)
+        Display::fmt(&self.0, f)
     }
 }
 impl std::error::Error for ExecutionError {}
 fn error(value: impl Display) -> ExecutionError {
-    ExecutionError(value.to_string())
+    ExecutionError(rusticol_core::RusticolError::evaluation(value.to_string()))
 }
 
 pub trait Carrier: NativeFloat + LowerExp + From<f64> {
