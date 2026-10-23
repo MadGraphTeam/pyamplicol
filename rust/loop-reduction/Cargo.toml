@@ -9,16 +9,16 @@ license = "0BSD"
 publish = false
 
 [dependencies]
-feynkit-model = { git = "https://github.com/alphal00p/gammaloop.git", rev = "2adabf54b5e68af9def8df794f4d8f0b06ea33a8", default-features = false, features = ["native"] }
-feynkit-generator = { git = "https://github.com/alphal00p/gammaloop.git", rev = "2adabf54b5e68af9def8df794f4d8f0b06ea33a8", default-features = false, features = ["native"] }
-feynkit-amplitude = { git = "https://github.com/alphal00p/gammaloop.git", rev = "2adabf54b5e68af9def8df794f4d8f0b06ea33a8", default-features = false, features = ["native"] }
-idenso = { git = "https://github.com/alphal00p/gammaloop.git", rev = "2adabf54b5e68af9def8df794f4d8f0b06ea33a8", default-features = false, features = ["native"] }
-spenso = { git = "https://github.com/alphal00p/gammaloop.git", rev = "2adabf54b5e68af9def8df794f4d8f0b06ea33a8", default-features = false, features = ["native"] }
-feynkit-kinematics = { git = "https://github.com/alphal00p/gammaloop.git", rev = "2adabf54b5e68af9def8df794f4d8f0b06ea33a8", default-features = false, features = ["native"] }
+feynkit-model = { git = "https://github.com/alphal00p/gammaloop.git", rev = "4b8569c03f7498b13482bc954953e66f6de5ffc1", default-features = false, features = ["native"] }
+feynkit-generator = { git = "https://github.com/alphal00p/gammaloop.git", rev = "4b8569c03f7498b13482bc954953e66f6de5ffc1", default-features = false, features = ["native"] }
+feynkit-amplitude = { git = "https://github.com/alphal00p/gammaloop.git", rev = "4b8569c03f7498b13482bc954953e66f6de5ffc1", default-features = false, features = ["native"] }
+idenso = { git = "https://github.com/alphal00p/gammaloop.git", rev = "4b8569c03f7498b13482bc954953e66f6de5ffc1", default-features = false, features = ["native"] }
+spenso = { git = "https://github.com/alphal00p/gammaloop.git", rev = "4b8569c03f7498b13482bc954953e66f6de5ffc1", default-features = false, features = ["native"] }
+feynkit-kinematics = { git = "https://github.com/alphal00p/gammaloop.git", rev = "4b8569c03f7498b13482bc954953e66f6de5ffc1", default-features = false, features = ["native"] }
 rusticol-core = { path = "../crates/rusticol-core", features = ["symbolica-runtime", "python-generation-bridge", "loop-v2"] }
-ninjars = { git = "https://github.com/alphal00p/ninjars.git", rev = "c3534e66d81013b16919ee91bc794ae4392abfc0" }
-ninjars-graph = { git = "https://github.com/alphal00p/ninjars.git", rev = "c3534e66d81013b16919ee91bc794ae4392abfc0" }
-ninjars-symbolica = { git = "https://github.com/alphal00p/ninjars.git", rev = "c3534e66d81013b16919ee91bc794ae4392abfc0", features = ["native-masters"] }
+ninjars = { git = "https://github.com/alphal00p/ninjars.git", rev = "de858c88e81058623d53a16fa4400b414f3aa260" }
+ninjars-graph = { git = "https://github.com/alphal00p/ninjars.git", rev = "de858c88e81058623d53a16fa4400b414f3aa260" }
+ninjars-symbolica = { git = "https://github.com/alphal00p/ninjars.git", rev = "de858c88e81058623d53a16fa4400b414f3aa260", features = ["native-masters"] }
 oneloop = { git = "https://github.com/alphal00p/oneloopmaster.git", rev = "8ec256fc26cb361b20e10f59c19beb35717ef32c", default-features = false }
 symbolica = { version = "3.0.1", default-features = false, features = ["integer-gmp", "float-mpfr"] }
 serde = { version = "1", features = ["derive"] }
