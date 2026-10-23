@@ -717,7 +717,8 @@ NJet 2.1.1's bundled QCDLoop needs `FFLAGS=-std=legacy` with gfortran >= 10.
 Sources are under `workspace/reference/sources/njet-<version>`, builds under
 `workspace/builds/njet-<version>-release`.
 
-Two NJet defects, both visible in NJet's own `examples/runtest.py`:
+NJet defects and limits found here (the first is visible in NJet's own
+`examples/runtest.py`):
 
 * NJet 3.1.2's numerical five-gluon channel (`Amp0q5g`, used when the analytic
   `--enable-an0q5g` is off) returns the one-loop interference exactly 9/2 too
@@ -730,6 +731,19 @@ Two NJet defects, both visible in NJet's own `examples/runtest.py`:
   double-double. The scaling test flags them. The g g -> g g calibration set
   therefore uses the six exact points with generic orientation plus four
   exactly rotated copies.
+* More generally NJet's numerics depend on the event orientation. At the seven
+  gluon `exact_points` points as generated (beams along +-z), NJet 3.1.2 and
+  2.1.1 keep only 4-6 digits in double precision (single pole against the
+  Catani prediction: 3e-6 to 1e-4) and return NaN at 3 of 10 points; the
+  double-double mode with QCDLoop's double-only integrals is not better (1e-5
+  to 1.5e-2). At exactly rotated copies (`run --rotation R1|R2`) the same code
+  agrees with the Catani poles to <= 3e-9 and the two orientations agree in the
+  finite part to <= 7e-9. The seven-gluon reference therefore uses rotated
+  points; the virtual is a Lorentz scalar, so the values belong to the points
+  as given. For a double-double reference NJet is built `--with-oneloop`
+  (OneLOop's double-double integrals; QD built with its Fortran module).
+* NJet 3.1.2 returns zero colour-correlated Borns for six and seven gluons;
+  `run_njet.py catani` uses NJet 2.1.1's (colour conservation to 1e-15).
 
 Conventions (derived, no fitted factor). NJet's BLHA output with
 `IRregularisation CDR` and `NJetRenormalize yes` is 2 Re<M0|M1> with physical
