@@ -18,6 +18,7 @@
 pub mod closure;
 pub mod dress;
 pub mod forward;
+pub mod generate;
 pub mod kernels;
 pub mod plan;
 pub mod poly;
