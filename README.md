@@ -203,6 +203,15 @@ scope for each vertex. The ingress does not perform process crossing.
 Oriented current metrics with two equal fundamental roles require an explicit
 orientation adapter.
 
+Native coefficient consumers can select an exact bit precision with
+`runtime::CoefficientEvaluator::with_precision_bits(state, Arithmetic::Arbitrary, bits)`
+in `rusticol-loop-reduction`. This uses the existing executor without converting
+through decimal digit counts or adding hidden guard bits; 113 and any supported
+precision of at least two bits are accepted. `Double` and `DoubleDouble` require
+53 and 106 bits respectively.
+The existing string constructor continues to accept decimal digits. Float's
+propagated precision may decrease after cancellation.
+
 pyAmpliCol supports:
 
 - the packaged built-in Standard Model;
