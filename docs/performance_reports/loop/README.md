@@ -24,7 +24,8 @@ source in the report's last section.
 |---|---|
 | `milestone.json` | Hand-maintained registry, each block with its source: integrated packages at the pinned engine revision, provider generation times and the 45-minute rule (HANDOFF §0.1), provider production timings for the gate (DESIGN §1.3), the required-set generation and validation rows (DESIGN WP3.1 status), native loop-stage timings (DESIGN §5.5, §5.6), NJet Table 5 and the re-measured NJet timings (`njet-benchmark.md`), NJet validation figures. |
 | `measured.json` | Seven-gluon development records (generation, counterterm program, native bare loop, first virtual and its rotation, u u~ > g g g g g against MadLoop/Recola), written by `scripts/collect_milestone.py`. |
-| `history/measurements.json`, `history/provider-cold.json`, `history/labels.json` | The legacy per-diagram engine's timing snapshot of 2026-10-18 and its labels, shown only as history. |
+| `measurements.json`, `provider-cold.json`, `legacy-labels.json` | The legacy per-diagram engine's timing snapshot of 2026-10-18 (unchanged, cited by `docs/development/loop_v2/DESIGN.md`) and its labels, shown only as history. |
+| `colour-measurements.json` | The legacy engine's LC/FC runs; not shown, kept for the citations in DESIGN.md and `research-leading-colour-structure.md`. |
 
 Missing observations stay absent; the report prints an explicit marker
 instead of estimating them. Test durations are never used as event timings,
@@ -34,7 +35,8 @@ and development measurements are labelled with their branch.
 
 - `measured.json`: `python scripts/collect_milestone.py <workspace>` reads the
   run records under `<workspace>/tmp/generation-scale/runs/` and
-  `<workspace>/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs).
+  `<workspace>/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs: wall
+  time, peak memory, CPU share).
 - `milestone.json` is edited by hand when a package lands or a measurement is
   replaced; keep each block's `source`.
 - `figures/*.svg`: `python scripts/draw_graphs.py` draws example graphs with
@@ -42,6 +44,6 @@ and development measurements are labelled with their branch.
   `symbolica-fonts` bundle; set `SYMBOLICA_DATA_DIRECTORY` to its `fonts`
   directory when loading Symbolica from an overlay).
 
-Data the report no longer uses (the legacy status registry, leading-colour
-runs, provider audit and seven-leg stage log) are kept outside the repository
-in `workspace/reports/report-data-archive/`.
+Data the report no longer uses and nothing cites (the legacy status registry,
+provider audit and seven-leg stage log) are kept outside the repository in
+`workspace/reports/report-data-archive/`.

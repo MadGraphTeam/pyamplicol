@@ -1,14 +1,13 @@
 # SPDX-License-Identifier: 0BSD
-"""Write data/milestone.json for the live loop report.
+"""Write data/measured.json for the live loop report.
 
 Usage: python scripts/collect_milestone.py <workspace> [output]
 
 <workspace> is the development workspace that holds the run records
-(tmp/generation-scale/runs, tmp/ct-recursion/s4, reports/engine-v2,
-reference/runs/njet). Measured values are read from those records; values that
-exist only as text in DESIGN.md, the requirements addendum or the handoff are
-copied here with the section that states them. Every entry carries its source,
-relative to the workspace or the repository.
+(tmp/generation-scale/runs, tmp/ct-recursion/s4). Every value is read from
+those records (JSON and /usr/bin/time -v logs); nothing is copied from text.
+Each block carries its source, relative to the workspace. The hand-maintained
+registry data/milestone.json is not written here.
 """
 
 from __future__ import annotations
@@ -27,7 +26,7 @@ def _load(root: Path, rel: str) -> dict:
 
 
 def _time_v(root: Path, rel: str) -> dict:
-    """Wall time (s) and max RSS (KiB) from a /usr/bin/time -v log."""
+    """Wall time (s), max RSS (KiB) and CPU share (%) from a /usr/bin/time -v log."""
     text = (root / rel).read_text()
     wall = re.search(
         r"Elapsed \(wall clock\) time \(h:mm:ss or m:ss\): (\S+)", text
@@ -35,7 +34,8 @@ def _time_v(root: Path, rel: str) -> dict:
     parts = [float(x) for x in wall.split(":")]
     seconds = sum(v * 60**i for i, v in enumerate(reversed(parts)))
     rss = int(re.search(r"Maximum resident set size \(kbytes\): (\d+)", text).group(1))
-    return {"wall_s": round(seconds, 2), "max_rss_kib": rss}
+    cpu = int(re.search(r"Percent of CPU this job got: (\d+)%", text).group(1))
+    return {"wall_s": round(seconds, 2), "max_rss_kib": rss, "cpu_percent": cpu}
 
 
 def _events(record: dict) -> dict:
@@ -107,7 +107,10 @@ def collect(root: Path) -> dict:
                 **_time_v(root, f"{CT}/gg_ggggg.log"),
             },
             "native_bare": {
-                "source": f"workspace/{RUNS}/poles2_gg_ggggg.json",
+                "source": (
+                    f"workspace/{RUNS}/poles2_gg_ggggg.json,"
+                    f" workspace/{RUNS}/poles2_gg_ggggg.log"
+                ),
                 "what": (
                     "bare loop + Born on the native trees, binary64,"
                     " point and one rotation (two evaluations)"
@@ -120,6 +123,10 @@ def collect(root: Path) -> dict:
                 "expected_double_pole_over_born": poles[
                     "expected_double_pole_over_born"
                 ],
+                # Whole job: generation, export with trees and the points.
+                # The executor's thread count is not recorded (default: all
+                # cores unless RAYON_NUM_THREADS is set).
+                **_time_v(root, f"{RUNS}/poles2_gg_ggggg.log"),
             },
             "first_virtual": {
                 "source": (

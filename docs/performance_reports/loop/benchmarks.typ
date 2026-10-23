@@ -1,15 +1,16 @@
 // pyAmpliCol one-loop report, milestone of 2026-10-23. Table values are read
 // from data/*.json (milestone.json: registry with sources; measured.json:
-// written by scripts/collect_milestone.py from the run records; history/: the
-// legacy snapshot of 2026-10-18). Numbers quoted in prose name their source in
-// the last section. Build from this directory:
+// written by scripts/collect_milestone.py from the run records;
+// measurements.json, provider-cold.json, legacy-labels.json: the legacy
+// snapshot of 2026-10-18). Numbers quoted in prose name their source in the
+// last section. Build from this directory:
 //   typst compile benchmarks.typ benchmarks.pdf
 #let ms = json("data/milestone.json")
 #let meas = json("data/measured.json")
 #let sg = meas.seven_gluon
-#let hm = json("data/history/measurements.json")
-#let hcold = json("data/history/provider-cold.json")
-#let hlab = json("data/history/labels.json")
+#let hm = json("data/measurements.json")
+#let hcold = json("data/provider-cold.json")
+#let hlab = json("data/legacy-labels.json")
 
 // ------------------------------------------------------------------ style --
 #let navy = rgb("#1f3b63")
@@ -35,6 +36,7 @@
 #show figure.where(kind: table): set figure.caption(position: top)
 #show figure.caption: set text(9pt)
 #show figure.caption: set par(justify: true)
+#show figure.caption: set align(left)
 #set figure(gap: 0.55em)
 
 // ---------------------------------------------------------------- numbers --
@@ -137,8 +139,10 @@ Born amplitudes with the UV and $R_2$ counterterms of the UFO loop model, for
 every squared coupling order and all three Laurent coefficients, in binary64,
 double-double (DD) and arbitrary precision (AP). The engine is the recursive
 _v2_ engine: tree currents, loop topologies and loop numerators come from
-recursions, and no loop or counterterm Feynman diagram is enumerated
-(@arch). This report is the status of the intermediate push of
+recursions, and no loop Feynman diagram is enumerated (@arch). The public
+counterterm route at this push is still site closure, which the user reserves
+for test oracles; counterterms inside the recursion (WP2.2) are in flight.
+This report is the status of the intermediate push of
 #ms.date to the `loop` branch. It separates development measurements from the
 acceptance campaign, which has not run yet.
 
@@ -171,8 +175,9 @@ acceptance campaign, which has not run yet.
       - *Status.* The acceptance campaign (G1) has *not run*. No gate is claimed
         passed or failed. Provider references for the gate are in @tab:gateref.
       - *Seven gluons.* No matched provider timing exists for $g g -> g g g g g$
-        (@tab:provgen): its speed is reported only, with rotation and Ward checks
-        (addendum H; @sevenglue).
+        (@tab:provgen): its speed is reported without a gate, with rotation
+        checks; the Ward check that addendum H requires alongside is still
+        pending (@tab:sevencheck).
       - *History.* The timings of 2026-10-18 measure the superseded per-diagram
         engine and appear only in @history.
     ]
@@ -304,8 +309,8 @@ The cells stay neutral: they exclude work that a provider time includes.
   caption: [*Native loop stage*, ms per point, binary64, poles off, no
     stability check, 16 lanes, 16 points at $sqrt(s) = 1$ TeV, best of 3
     (DESIGN §5.6). Excludes trees, Born and counterterm scalars. B: per-family
-    suffix tries (default); M: merged primitive-seeded entries, M/B in
-    brackets. Reduction: share of the 8-thread time spent in the serial NinjaRS
+    suffix tries (default); M: merged primitive-seeded entries, M/B as the
+    source prints it (from unrounded times) in brackets. Reduction: share of the 8-thread time spent in the serial NinjaRS
     reduction with cached masters. $gamma^*$: photon exchange only.],
   tstyle(table(
     columns: (3.3cm, 0.8cm, 1.2cm, 1fr, 1fr, 1fr, 1fr, 1.5cm),
@@ -314,8 +319,8 @@ The cells stay neutral: they exclude work that a provider time includes.
     table.header[Process][Col.][Families][B, 1 thread][M, 1 thread][B, 8 threads][M, 8 threads][Reduction],
     ..ms.native_stage.rows.map(r => (
       plabel(r), r.colour, num(r.families),
-      text(weight: "bold", num(r.b1)), [#num(r.m1) #tiny[(#fixed(r.m1 / r.b1, 2))]],
-      num(r.b8), [#num(r.m8) #tiny[(#fixed(r.m8 / r.b8, 2))]],
+      text(weight: "bold", num(r.b1)), [#num(r.m1) #tiny[(#fixed(r.mb1, 2))]],
+      num(r.b8), [#num(r.m8) #tiny[(#fixed(r.mb8, 2))]],
       [#fixed(100 * r.red8, 0) %],
     )).flatten(),
   )),
@@ -346,8 +351,8 @@ The dressing dominates the native loop stage and the reduction follows
 Poles on or off cost the same there; the finite-only saving lies in the
 counterterm and Catani work that is still in Python. Schedule M gains only on
 pure-gluon classes, most at leading colour ($g g -> g g g g$ LC: 0.80 on one
-thread); classes with a quark line stay at $1.00 plus.minus 0.02$, so B stays the
-default for them. The Python inputs, two to three orders of magnitude above
+thread); classes with a quark line stay at $1.00 plus.minus 0.02$ on one
+thread (0.87–1.01 at 8 threads), so B stays the default for them. The Python inputs, two to three orders of magnitude above
 the native loop stage, are the open item: G1 measures end to end once they run
 natively.
 
@@ -413,16 +418,23 @@ the unrotated seven-gluon points NJet keeps only 4–6 digits in double precisio
 #let nb = sg.native_bare
 #box-note(fill: warm)[
   #set par(justify: false)
-  These are #flag[development] measurements on the branches named, at one
-  thread on the shared host. They are not part of the acceptance campaign and
-  not a like-for-like speed comparison: the native path below does not yet
-  include counterterms or $R_2$.
+  These are #flag[development] measurements on the branches named, on the
+  shared host. Generation and the counterterm program ran in one thread; the
+  thread count of the native bare-loop timing was not recorded (@tab:sevendev).
+  They are not part of the acceptance campaign and not a like-for-like speed
+  comparison: the native path below does not yet include counterterms or
+  $R_2$.
 ]
 
 #figure(kind: table,
   caption: [*$g g -> g g g g g$ in full colour, development runs.* Wall
-    times from `/usr/bin/time` for the whole process, including model loading;
-    peak resident memory. Counts of the generated slice:
+    times and peak resident memory from `/usr/bin/time` for the whole process,
+    including model loading. Generation and the counterterm program are
+    single-threaded (CPU share #g1.cpu_percent %, #g2.cpu_percent % and
+    #ctp.cpu_percent %; `RAYON_NUM_THREADS=1` for the counterterm program). The
+    bare-loop job did not record its thread count (the native executor's
+    default is all cores); the whole job, generation and export included,
+    averaged #nb.cpu_percent % CPU. Counts of the generated slice:
     #group(g1.counts.families) families, #group(g1.counts.skeletons) skeletons,
     #group(g1.counts.trie_nodes) trie nodes, #group(g1.counts.blocks) tree
     blocks, #group(g1.counts.seed_classes) colour-seed classes on a
@@ -440,11 +452,11 @@ the unrotated seven-gluon points NJet keeps only 4–6 digits in double precisio
     [`LoopSlice.generate` #minutes(g2.generate_s) (peak #fixed(g2.generate_peak_gib, 1) GiB), plan export #minutes(g2.export_s), JSON #sig(g2.plan_json_s) s; #sig(g2.plan_json_mb) MB plan (derived row links)],
     text(weight: "bold", minutes(g2.wall_s)), text(weight: "bold")[#fixed(kib-gib(g2.max_rss_kib), 1) GiB],
     [Counterterms in the recursion \ #tiny[`work/v2-ct-recursion`]],
-    [Plain blocks #minutes(ctp.plain_blocks_s), CT program #minutes(ctp.ct_program_s)\; #group(ctp.ct_currents) CT currents, #group(ctp.ct_interactions) interactions, #ctp.root_sites root sites, no rule left to site closure; script total #minutes(ctp.total_s)],
+    [Plain blocks #minutes(ctp.plain_blocks_s), CT program #minutes(ctp.ct_program_s)\; #group(ctp.ct_currents) CT currents, #group(ctp.ct_interactions) interactions, #ctp.root_sites root sites, no rule left to site closure; script total #minutes(ctp.total_s). Root-closure (bind) terms not measured; run before the request-scoped lowering (ct-recursion DESIGN §6.1)],
     text(weight: "bold", minutes(ctp.wall_s)), text(weight: "bold")[#fixed(kib-gib(ctp.max_rss_kib), 1) GiB],
     [Bare loop + Born, native trees \ #tiny[`work/v2-generation-scale`, 5 points]],
-    [Binary64; per point the point and one rotation (two evaluations); no counterterms, no $R_2$],
-    text(weight: "bold")[#sig(calc.min(..nb.seconds))–#sig(calc.max(..nb.seconds)) s/pt], dim[—],
+    [Binary64; per point the point and one rotation (two evaluations); no counterterms, no $R_2$; thread count not recorded],
+    text(weight: "bold")[#sig(calc.min(..nb.seconds))–#sig(calc.max(..nb.seconds)) s/pt], [#text(weight: "bold")[#fixed(kib-gib(nb.max_rss_kib), 1) GiB] #linebreak() #tiny[whole job]],
   )),
 ) <tab:sevendev>
 
@@ -453,10 +465,13 @@ Next to NJet on the same host (@tab:njet), the native path's
 evaluations compares with #num(ms.njet.rows.last().n312_std)~s for NJet's
 standard sum and #num(ms.njet.rows.last().n312_ds)~s for its de-symmetrised sum,
 both also two evaluations. The comparison is not like-for-like: counterterms and
-$R_2$ are missing on the pyAmpliCol side, and the de-symmetrised sum is not a
-point value. Generation fits addendum H's budget (O(hours), below 150 GB); the
-run records print the peaks as KiB/10⁶ ("#fixed(g1.max_rss_kib / 1e6, 1) GB",
-"#fixed(ctp.max_rss_kib / 1e6, 1) GB").
+$R_2$ are missing on the pyAmpliCol side; NJet ran on one pinned core of the idle
+host, while the pyAmpliCol job ran on the shared host with an unrecorded thread
+count and load; and the de-symmetrised sum is not a point value. Generation fits
+addendum H's budget (O(hours), below 150 GB). MASTER_PLAN quotes the same two
+peaks as KiB/10⁶ ("#fixed(g1.max_rss_kib / 1e6, 1) GB",
+"#fixed(ctp.max_rss_kib / 1e6, 1) GB"); of the run records, the counterterm
+record prints KiB/10⁶ and the generation record GiB.
 
 == Validation without a matched provider
 
@@ -468,7 +483,12 @@ run records print the peaks as KiB/10⁶ ("#fixed(g1.max_rss_kib / 1e6, 1) GB",
     @tab:validation). NJet values: fixture `gg_ggggg_njet.json` (NJet 3.1.2
     double-double at exactly rotated points, scaling-test estimates
     ≤ #sci(1.3e-24)). The bare single pole is compared after subtracting the
-    counterterm pole $(alpha_s slash 4 pi) B dot 119 slash 3$.],
+    counterterm pole of its request, as marked in each row:
+    $(alpha_s slash 4 pi) B \[(n - 2) beta_0^((5)) + 8 T_F slash 3\] = (alpha_s slash 4 pi) B dot 119 slash 3$
+    for loop_sm (five-flavour coupling renormalisation and the top's
+    decoupling term) and
+    $(alpha_s slash 4 pi)(n - 2) beta_0^((5)) B = (alpha_s slash 4 pi) B dot 115 slash 3$
+    for the top-free request.],
   tstyle(table(
     columns: (4.2cm, 1fr, 3.1cm),
     align: left + horizon, inset: (x: 4pt, y: 3.2pt), stroke: tstroke, fill: thead-fill,
@@ -476,10 +496,10 @@ run records print the peaks as KiB/10⁶ ("#fixed(g1.max_rss_kib / 1e6, 1) GB",
     [$g g -> g g g g g$, native bare loop, 5 points: double pole ÷ Born against $-(alpha_s slash 2 pi) dot 7 C_A$],
     [≤ #sci(calc.max(..nb.double_pole_deviation))\; rotation estimates #sci(calc.min(..nb.stability_estimate))–#sci(calc.max(..nb.stability_estimate))],
     [passed],
-    [$g g -> g g g g g$ against NJet, native bare loop (loop_sm)],
+    [$g g -> g g g g g$ against NJet, native bare loop (loop_sm, 5 points; shift 119/3)],
     [Born ≤ #sci(nv.native_bare_vs_njet.born, d: 0), double pole ≤ #sci(nv.native_bare_vs_njet.double_pole), single pole #sci(nv.native_bare_vs_njet.single_pole_points_0_3.first())–#sci(nv.native_bare_vs_njet.single_pole_points_0_3.last()) at points 0–3; #sci(nv.native_bare_vs_njet.single_pole_point_4) at point 4, which pyAmpliCol's estimate (#sci(nv.native_bare_vs_njet.estimate_point_4)) flags],
     [no deviation beyond the estimates],
-    [$g g -> g g g g g$ top-free (NJet's scheme) against NJet, native bare loop, 3 points],
+    [$g g -> g g g g g$ top-free (NJet's scheme) against NJet, native bare loop, 3 points; shift 115/3],
     [Born ≤ #sci(nv.topfree.born), double pole ≤ #sci(nv.topfree.double_pole), single pole #sci(nv.topfree.single_pole.at(0)) and #sci(nv.topfree.single_pole.at(1)) (estimates #sci(nv.topfree.estimates.at(0)), #sci(nv.topfree.estimates.at(1))), #sci(nv.topfree.single_pole.at(2))],
     [finite part needs the native counterterms],
     [Top-free full virtual against NJet at lower multiplicity (`test_loop_v2_topfree.py`)],
@@ -525,7 +545,7 @@ run records print the peaks as KiB/10⁶ ("#fixed(g1.max_rss_kib / 1e6, 1) GB",
 )
 #let badge(s) = { let (f, t, name) = st-style.at(s); box(fill: f, inset: (x: 4pt, y: 2pt), radius: 2pt, text(6.8pt, fill: t, weight: "bold", name)) }
 #let caps = (
-  ([Recursive engine], "supported", [Trees, families and loop numerators from recursions; no loop or counterterm diagram is enumerated (FeynKit graphs are test oracles only).]),
+  ([Recursive engine], "supported", [Trees, families and loop numerators from recursions; no loop diagram is enumerated (FeynKit graphs are test oracles only). Counterterms: see below.]),
   ([Full, NLC and LC colour], "supported", [Exact seed tables in $N_c$; LC/NLC by generated classes and truncated cells. LC is not yet cheaper to generate at seven legs.]),
   ([Colour and spin correlations], "supported", [Directed colour histories at LC/NLC/FC, spin sources, resolved helicities, flavour aliases, Ward sources (WP2.5). Seven-leg directed LC/NLC tables need the Rust seed tables (WP3.1).]),
   ([Per-order partials], "supported", [Every squared coupling order at tree level and at one loop, mixed Born orders, per-correction loop orders.]),
@@ -534,7 +554,7 @@ run records print the peaks as KiB/10⁶ ("#fixed(g1.max_rss_kib / 1e6, 1) GB",
   ([Precision carriers], "supported", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; DD/AP point inputs are formed in Python Decimal until WP3.1.]),
   ([Native executor, schedules], "supported", [Rust, 16 lanes, threads; schedule B by default, M native (adopted per class at G1), F as oracle. The NinjaRS reduction runs serially.]),
   ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; relocation to another path tested on the same host and CPU; loading regenerates the per-point inputs in Python, and the Rust/C/C++/Fortran SDK refuses v4 until WP3.1.]),
-  ([Counterterms (model UV, $R_2$)], "partial", [Site closure is the public route (QCD incl. massive quarks); counterterms inside the recursion are on `work/v2-ct-recursion` (WP2.2).]),
+  ([Counterterms (model UV, $R_2$)], "partial", [Site closure is the public route (QCD incl. massive quarks), a form the user reserves for test oracles; counterterms inside the recursion are on `work/v2-ct-recursion` (WP2.2).]),
   ([Direct $R_2$], "deferred", [A bonus by the user's rule; bounded controls only.]),
   ([Electroweak, complex mass], "open", [Tree EW lanes fixed, the Dirac–Weyl class refused; loop EW, Goldstones and CMS are WP3.2.]),
   ([Required $2 -> 5$ set], "progress", [On the WP3.1 branch seven of eight generate and six agree with their provider references in all coefficients (@tab:validation); $g g -> g g g g g$ is validated in Born and poles; the EW target is not started.]),
@@ -824,9 +844,11 @@ exact carriers and the public interfaces.
     column DESIGN WP3.1 third increment "Generation per process" on
     `work/v2-generation-scale` (201efa8b). *@tab:validation:* DESIGN WP3.1
     first to fourth increment, same branch (records
-    `workspace/tmp/generation-scale/runs/`). *@tab:gateref:* DESIGN §1.3 Table 1b.
+    `workspace/tmp/generation-scale/runs/`); the $g g -> g g g g$ row from
+    `cmp_gg_gggg.json`, `cmp_gg_gggg_p1_stab.json` and `cmp_gg_gggg_p1_dd.json`
+    there. *@tab:gateref:* DESIGN §1.3 Table 1b.
   - *@tab:native, @tab:split:* DESIGN §5.6 and §5.5 (data
-    `workspace/reports/engine-v2/wp28-g1/`).
+    `workspace/reports/engine-v2/wp28-g1/`); the M/B ratios as §5.6 prints them.
   - *@tab:njet* and NJet prose: `workspace/reports/engine-v2/njet-benchmark.md`
     §2, §5, §6 (raw `workspace/reference/runs/njet/timing/`); arXiv:1209.0100
     Table 5.
@@ -835,15 +857,20 @@ exact carriers and the public interfaces.
     `gen_gg_ggggg_final`, `gen_gg_ggggg_hash`, `poles2_gg_ggggg`,
     `eval2_gg_ggggg`, `eval2_gg_ggggg_rot` and `cmp_uux_ggggg` in
     `workspace/tmp/generation-scale/runs/` and `gg_ggggg` in
-    `workspace/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs); NJet
-    deviations from njet-benchmark.md §5.3 and the fixture
+    `workspace/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs: wall time,
+    peak memory, CPU share); thread settings from DESIGN WP3.1 (generation, one
+    thread) and ct-recursion DESIGN §6.1 (`RAYON_NUM_THREADS=1`, bind not
+    measured); the 119/3 shift and NJet deviations from njet-benchmark.md §5.3
+    and the fixture
     `tests/fixtures/loop/required/gg_ggggg_njet.json`; top-free values from
     DESIGN WP3.1 fourth increment and `tests/unit/test_loop_v2_topfree.py`
     (`work/v2-generation-scale`). Memory is shown in GiB = KiB/2²⁰.
   - *@tab:caps, @arch:* `docs/development/loop_v2/DESIGN.md` §1–§3, §5.5,
     §5.6, §10, §12 and the integration records above.
-  - *@tab:history:* `data/history/` (legacy snapshot of 2026-10-18 and its
-    labels); the legacy status registry, colour, audit and generation data are
+  - *@tab:history:* `data/measurements.json`, `data/provider-cold.json`
+    (legacy snapshot of 2026-10-18, unchanged) and `data/legacy-labels.json`.
+    `data/colour-measurements.json` (legacy LC/FC runs) stays for the DESIGN
+    citations; the legacy status registry, audit and generation data are
     archived outside the repository (`workspace/reports/report-data-archive/`).
   - *Conventions:*
     #link("https://cp3.irmp.ucl.ac.be/projects/madgraph/wiki/MadLoopStandaloneLibrary")[MadLoop standalone],

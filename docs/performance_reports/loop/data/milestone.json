@@ -195,8 +195,9 @@
     "export_s": 5.8,
     "plan_mb": 15,
     "peak_gib": 0.55,
-    "validation": "Recola, OpenLoops ≤ 9×10⁻¹² at two points; third point 8.4×10⁻⁹ in binary64 (flagged, estimate 3×10⁻⁶), 7×10⁻¹¹ in DoubleFloat",
-    "refs": "ML, Recola, OL"
+    "validation": "Recola, OpenLoops ≤ 8.9×10⁻¹² at point 0 and ≤ 4.4×10⁻¹¹ at point 2 (finite part); point 1 8.4×10⁻⁹ in binary64 (flagged, estimate 3.0×10⁻⁶), 7.1×10⁻¹¹ in DoubleFloat",
+    "refs": "Recola, OL",
+    "source": "workspace/tmp/generation-scale/runs/cmp_gg_gggg.json (points 0–2), cmp_gg_gggg_p1_stab.json (estimate), cmp_gg_gggg_p1_dd.json (DoubleFloat)"
    },
    {
     "label": "g g -> t overline(t) g g",
@@ -275,8 +276,10 @@
     "families": 42,
     "b1": 0.89,
     "m1": 0.89,
+    "mb1": 1.01,
     "b8": 0.62,
     "m8": 0.58,
+    "mb8": 0.93,
     "red8": 0.4
    },
    {
@@ -285,8 +288,10 @@
     "families": 90,
     "b1": 3.43,
     "m1": 3.52,
+    "mb1": 1.02,
     "b8": 1.39,
     "m8": 1.33,
+    "mb8": 0.96,
     "red8": 0.48
    },
    {
@@ -295,8 +300,10 @@
     "families": 154,
     "b1": 13.93,
     "m1": 13.63,
+    "mb1": 0.98,
     "b8": 4.52,
     "m8": 4.55,
+    "mb8": 1.01,
     "red8": 0.55
    },
    {
@@ -306,8 +313,10 @@
     "families": 69,
     "b1": 2.82,
     "m1": 2.83,
+    "mb1": 1.0,
     "b8": 1.43,
     "m8": 1.25,
+    "mb8": 0.87,
     "red8": 0.48
    },
    {
@@ -316,8 +325,10 @@
     "families": 628,
     "b1": 62.33,
     "m1": 63.12,
+    "mb1": 1.01,
     "b8": 19.43,
     "m8": 19.59,
+    "mb8": 1.01,
     "red8": 0.6
    },
    {
@@ -326,8 +337,10 @@
     "families": 1100,
     "b1": 275,
     "m1": 248,
+    "mb1": 0.9,
     "b8": 78.68,
     "m8": 72.51,
+    "mb8": 0.92,
     "red8": 0.59
    },
    {
@@ -336,8 +349,10 @@
     "families": 550,
     "b1": 95.82,
     "m1": 76.29,
+    "mb1": 0.8,
     "b8": 30.04,
     "m8": 27.03,
+    "mb8": 0.9,
     "red8": 0.6
    },
    {
@@ -347,8 +362,10 @@
     "families": 242,
     "b1": 9.74,
     "m1": 9.85,
+    "mb1": 1.01,
     "b8": 5.08,
     "m8": 4.97,
+    "mb8": 0.98,
     "red8": 0.63
    },
    {
@@ -358,11 +375,14 @@
     "families": 463,
     "b1": 41.47,
     "m1": 42.06,
+    "mb1": 1.01,
     "b8": 15.64,
     "m8": 15.68,
+    "mb8": 1.0,
     "red8": 0.66
    }
-  ]
+  ],
+  "ratios": "mb1, mb8: the M/B ratios as printed in the source table (computed there from unrounded times)"
  },
  "native_split": {
   "source": "DESIGN.md §5.5, development timings (WP2.1 native executor, 2026-10-22): binary64, one thread, 16 lanes, 16 points, release build without LTO, shared host, ms per point, best of 3, inputs prepared beforehand",

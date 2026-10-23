@@ -26,7 +26,8 @@
     "ct_sites": 4837
    },
    "wall_s": 813.35,
-   "max_rss_kib": 9738788
+   "max_rss_kib": 9738788,
+   "cpu_percent": 101
   },
   "generation_latest": {
    "source": "workspace/tmp/generation-scale/runs/gen_gg_ggggg_hash.json, workspace/tmp/generation-scale/runs/gen_gg_ggggg_hash.log",
@@ -50,7 +51,8 @@
     "ct_sites": 4837
    },
    "wall_s": 482.05,
-   "max_rss_kib": 6127984
+   "max_rss_kib": 6127984,
+   "cpu_percent": 101
   },
   "ct_program": {
    "source": "workspace/tmp/ct-recursion/s4/gg_ggggg.json, workspace/tmp/ct-recursion/s4/gg_ggggg.log",
@@ -62,10 +64,11 @@
    "root_sites": 847,
    "residual": 0,
    "wall_s": 3984.0,
-   "max_rss_kib": 54580912
+   "max_rss_kib": 54580912,
+   "cpu_percent": 99
   },
   "native_bare": {
-   "source": "workspace/tmp/generation-scale/runs/poles2_gg_ggggg.json",
+   "source": "workspace/tmp/generation-scale/runs/poles2_gg_ggggg.json, workspace/tmp/generation-scale/runs/poles2_gg_ggggg.log",
    "what": "bare loop + Born on the native trees, binary64, point and one rotation (two evaluations)",
    "seconds": [
     41.3,
@@ -88,7 +91,10 @@
     7.996303661773811e-10,
     2.922957176013514e-06
    ],
-   "expected_double_pole_over_born": -0.3943859489817167
+   "expected_double_pole_over_born": -0.3943859489817167,
+   "wall_s": 1047.03,
+   "max_rss_kib": 19352520,
+   "cpu_percent": 168
   },
   "first_virtual": {
    "source": "workspace/tmp/generation-scale/runs/eval2_gg_ggggg.json, workspace/tmp/generation-scale/runs/eval2_gg_ggggg_rot.json",
