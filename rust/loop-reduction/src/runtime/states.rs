@@ -52,6 +52,7 @@ fn state_components<T: BatchCarrier + KinematicScalar>(
     p: &[Complex<T>],
     helicity: Helicity,
     kind: WavefunctionKind,
+    working_bits: u32,
 ) -> ExecutionResult<Vec<Complex<T>>> {
     if !p.iter().all(real_finite) {
         return Err(error("momenta must be finite and real"));
@@ -61,6 +62,16 @@ fn state_components<T: BatchCarrier + KinematicScalar>(
         .map(|wavefunction| wavefunction.into_components())
         .map_err(|failure| match failure {
             WavefunctionError::NonFinite => ExecutionError::nonfinite_result(failure),
+            WavefunctionError::InsufficientPrecision { reason, .. } => {
+                // Input components may have lower tracked precision after prior
+                // arithmetic. Preserve the batch's original working precision.
+                ExecutionError::insufficient_precision(
+                    working_bits,
+                    format!(
+                        "external-state chart needs more than {working_bits} working bits: {reason}"
+                    ),
+                )
+            }
             _ => error(failure),
         })
 }
@@ -80,7 +91,9 @@ fn evaluate<T: BatchCarrier + KinematicScalar>(
             );
             failure.context(message)
         };
-        output.extend(state_components(p, helicity, kind).map_err(lane_error)?);
+        output.extend(
+            state_components(p, helicity, kind, input.precision_bits()).map_err(lane_error)?,
+        );
     }
     Batch::typed(
         output,
@@ -90,6 +103,11 @@ fn evaluate<T: BatchCarrier + KinematicScalar>(
     )
 }
 
+/// Sparse successful rows and legacy textual status for every input row.
+///
+/// Precision failures retain their lane identity and diagnostic text here, but
+/// not their typed category or working-bit metadata. Call the strict batch API
+/// when a caller needs machine-readable precision retry decisions.
 pub type PartialStates = (Batch, Vec<(u64, String)>);
 
 fn evaluate_partial<T: BatchCarrier + KinematicScalar>(
@@ -105,7 +123,7 @@ fn evaluate_partial<T: BatchCarrier + KinematicScalar>(
         .chunks_exact(4)
         .zip(input.ids().iter().zip(specifications))
     {
-        match state_components(p, helicity, kind) {
+        match state_components(p, helicity, kind, input.precision_bits()) {
             Ok(components) => {
                 output.extend(components);
                 ids.push(id);
@@ -139,7 +157,8 @@ fn on_shell<T: BatchCarrier + KinematicScalar>(
             .on_shell(Some(&mass.re));
         if (&momentum).into_iter().any(|value| !value.is_finite()) {
             return Err(ExecutionError::nonfinite_result(format!(
-                "on-shell construction produced nonfinite momentum in row {}", input.ids()[row]
+                "on-shell construction produced nonfinite momentum in row {}",
+                input.ids()[row]
             )));
         }
         momenta.extend(
@@ -226,5 +245,160 @@ pub fn on_shell_wavefunctions_batch(
             on_shell(p, m, spatial_momenta, &specifications, columns)
         }
         _ => unreachable!("same_rows checked carriers"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusticol_core::{RusticolError, RusticolErrorKind};
+    use symbolica::domains::float::{FloatLike, SingleFloat};
+
+    fn momentum<T: BatchCarrier>(prototype: &T, mixed_scales: bool) -> Vec<Complex<T>> {
+        let values = if mixed_scales {
+            let large = prototype.from_usize(2).pow(600);
+            [large.clone(), large.inv(), prototype.zero(), large]
+        } else {
+            let delta = prototype.from_usize(2).pow(30).inv();
+            let square = delta.clone() * delta.clone();
+            [
+                prototype.one() + square.clone(),
+                prototype.from_usize(2) * delta,
+                prototype.zero(),
+                -prototype.one() + square,
+            ]
+        };
+        values
+            .into_iter()
+            .map(|value| Complex::new(value, prototype.zero()))
+            .collect()
+    }
+
+    #[test]
+    fn wavefunction_chart_errors_preserve_lane_identity_and_allow_fresh_reconstruction() {
+        for mixed_scales in [false, true] {
+            let mut low = [2., 0., 0., 2.]
+                .map(|value| Complex::new(value, 0.))
+                .to_vec();
+            low.extend(momentum(&0.0_f64, mixed_scales));
+            let input = Batch::typed(low, vec![31, 907], 4, 53).unwrap();
+            let error = wavefunctions_batch(&input, vec![1, 1], vec!["u".into(); 2], Some(4))
+                .err()
+                .unwrap();
+            assert_eq!(
+                error.kind(),
+                RusticolErrorKind::InsufficientPrecision { bits: 53 }
+            );
+            assert!(error.to_string().contains("lane 907 (row 1)"));
+            let core: RusticolError = error.into();
+            assert_eq!(
+                core.kind(),
+                RusticolErrorKind::InsufficientPrecision { bits: 53 }
+            );
+
+            // Recreate both rows from exact integer/power-of-two source inputs.
+            // The wider request never promotes the rounded binary64 momentum.
+            let bits = 137;
+            let prototype = Float::with_val(bits, 0);
+            let mut high = [2, 0, 0, 2]
+                .map(|value| Complex::new(prototype.from_i64(value), prototype.zero()))
+                .to_vec();
+            high.extend(momentum(&prototype, mixed_scales));
+            let input = Batch::typed(high, vec![31, 907], 4, bits).unwrap();
+            let output =
+                wavefunctions_batch(&input, vec![1, 1], vec!["u".into(); 2], Some(4)).unwrap();
+            assert_eq!(output.ids(), &[31, 907]);
+            assert_eq!(output.precision_bits(), bits);
+            assert!(output.nonfinite_rows().is_empty());
+            let Data::Arbitrary(values) = output.data() else {
+                panic!("wrong carrier")
+            };
+            assert!(!values[6].re.is_zero());
+            assert!(!values[7].re.is_zero());
+            if mixed_scales {
+                let vectors =
+                    wavefunctions_batch(&input, vec![1, 1], vec!["epsilon".into(); 2], Some(4))
+                        .unwrap();
+                let Data::Arbitrary(values) = vectors.data() else {
+                    panic!("wrong carrier")
+                };
+                assert!(!values[7].re.is_zero());
+            }
+        }
+    }
+
+    #[test]
+    fn wavefunction_precision_category_uses_working_bits_not_component_bits() {
+        let tracked = Float::with_val(53, 0);
+        let values = momentum(&tracked, false);
+        let physical =
+            PhysicalMomentum::from(std::array::from_fn::<_, 4, _>(|i| values[i].re.clone()));
+        assert!(matches!(
+            physical.wavefunction(WavefunctionKind::U, Helicity::PLUS),
+            Err(WavefunctionError::InsufficientPrecision { bits, .. }) if bits < 137
+        ));
+        // The original attempt used 137 working bits; its stored intermediate
+        // components now have only 53 tracked bits. No precision is padded here.
+        let input = Batch::typed(values, vec![1021], 4, 137).unwrap();
+        let failure = wavefunctions_batch(&input, vec![1], vec!["u".into()], Some(4))
+            .err()
+            .unwrap();
+        assert_eq!(
+            failure.kind(),
+            RusticolErrorKind::InsufficientPrecision { bits: 137 }
+        );
+        assert!(failure.to_string().contains("lane 1021 (row 0)"));
+    }
+
+    #[test]
+    fn partial_chart_failure_keeps_successful_rows_without_a_zero_placeholder() {
+        let mut values = [2., 0., 0., 2.]
+            .map(|value| Complex::new(value, 0.))
+            .to_vec();
+        values.extend(momentum(&0.0_f64, false));
+        let input = Batch::typed(values, vec![31, 907], 4, 53).unwrap();
+        let (successful, statuses) =
+            wavefunctions_partial_batch(&input, vec![1, 1], vec!["u".into(); 2], Some(4)).unwrap();
+        assert_eq!(successful.ids(), &[31]);
+        assert_eq!(successful.rows(), 1);
+        assert_eq!(statuses[0], (31, "success".into()));
+        assert_eq!(statuses[1].0, 907);
+        assert!(statuses[1].1.contains("53 working bits"));
+        assert_ne!(statuses[1].1, "success");
+    }
+
+    #[test]
+    fn chart_precision_does_not_reclassify_nonfinite_results_or_bad_inputs() {
+        let make = |values: [f64; 4]| {
+            Batch::typed(
+                values.map(|value| Complex::new(value, 0.)).to_vec(),
+                vec![89],
+                4,
+                53,
+            )
+            .unwrap()
+        };
+        let overflow = make([1e308, 0., 0., 1e308]);
+        let failure = wavefunctions_batch(&overflow, vec![1], vec!["u".into()], Some(4))
+            .err()
+            .unwrap();
+        assert_eq!(failure.kind(), RusticolErrorKind::NonFiniteResult);
+
+        let malformed = make([f64::INFINITY, 0., 0., 1.]);
+        let failure = wavefunctions_batch(&malformed, vec![1], vec!["u".into()], Some(4))
+            .err()
+            .unwrap();
+        assert_eq!(failure.kind(), RusticolErrorKind::Evaluation);
+        let ordinary = make([2., 0., 0., 2.]);
+        for (helicities, kinds) in [
+            (vec![], vec!["u".into()]),
+            (vec![0], vec!["u".into()]),
+            (vec![1], vec!["unknown".into()]),
+        ] {
+            let failure = wavefunctions_batch(&ordinary, helicities, kinds, Some(4))
+                .err()
+                .unwrap();
+            assert_eq!(failure.kind(), RusticolErrorKind::Evaluation);
+        }
     }
 }
