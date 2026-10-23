@@ -42,6 +42,7 @@ use ninjars_symbolica::{
     SymbolicaHighCuts, SymbolicaMasters,
 };
 pub use oneloop::NativeFloat;
+pub use rusticol_core::{RusticolError, RusticolErrorKind};
 use symbolica::{atom::Atom, evaluate::EvaluationDomain};
 
 /// Named coefficients avoid confusing Ninja's finite-first convention with

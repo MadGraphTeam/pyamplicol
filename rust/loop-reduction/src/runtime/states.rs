@@ -4,7 +4,8 @@
 
 use super::*;
 use feynkit_kinematics::{
-    FourMomentum as PhysicalMomentum, Helicity, KinematicScalar, ThreeMomentum, WavefunctionKind,
+    FourMomentum as PhysicalMomentum, Helicity, KinematicScalar, ThreeMomentum, WavefunctionError,
+    WavefunctionKind,
 };
 
 fn specifications(
@@ -51,14 +52,17 @@ fn state_components<T: BatchCarrier + KinematicScalar>(
     p: &[Complex<T>],
     helicity: Helicity,
     kind: WavefunctionKind,
-) -> Result<Vec<Complex<T>>, String> {
+) -> ExecutionResult<Vec<Complex<T>>> {
     if !p.iter().all(real_finite) {
-        return Err("momenta must be finite and real".into());
+        return Err(error("momenta must be finite and real"));
     }
     PhysicalMomentum::from(std::array::from_fn::<_, 4, _>(|i| p[i].re.clone()))
         .wavefunction(kind, helicity)
         .map(|wavefunction| wavefunction.into_components())
-        .map_err(|failure| failure.to_string())
+        .map_err(|failure| match failure {
+            WavefunctionError::NonFinite => ExecutionError::nonfinite_result(failure),
+            _ => error(failure),
+        })
 }
 
 fn evaluate<T: BatchCarrier + KinematicScalar>(
@@ -69,11 +73,12 @@ fn evaluate<T: BatchCarrier + KinematicScalar>(
 ) -> ExecutionResult<Batch> {
     let mut output = Vec::with_capacity(input.rows() * columns);
     for (row, (p, &(helicity, kind))) in values.chunks_exact(4).zip(specifications).enumerate() {
-        let lane_error = |failure| {
-            error(format!(
+        let lane_error = |failure: ExecutionError| {
+            let message = format!(
                 "external state lane {} (row {row}): {failure}",
                 input.ids()[row]
-            ))
+            );
+            failure.context(message)
         };
         output.extend(state_components(p, helicity, kind).map_err(lane_error)?);
     }
@@ -106,7 +111,7 @@ fn evaluate_partial<T: BatchCarrier + KinematicScalar>(
                 ids.push(id);
                 statuses.push((id, "success".into()));
             }
-            Err(failure) => statuses.push((id, failure)),
+            Err(failure) => statuses.push((id, failure.to_string())),
         }
     }
     Ok((
@@ -132,6 +137,11 @@ fn on_shell<T: BatchCarrier + KinematicScalar>(
         }
         let momentum = ThreeMomentum::from(std::array::from_fn::<_, 3, _>(|i| p[i].re.clone()))
             .on_shell(Some(&mass.re));
+        if (&momentum).into_iter().any(|value| !value.is_finite()) {
+            return Err(ExecutionError::nonfinite_result(format!(
+                "on-shell construction produced nonfinite momentum in row {}", input.ids()[row]
+            )));
+        }
         momenta.extend(
             momentum
                 .into_iter()
