@@ -41,7 +41,11 @@ pub enum TreeParameterDomain {
 /// all momentum columns, four components per external state, then the runtime
 /// parameter columns in their declared order. Its outputs are the color-basis
 /// coefficients; the norm program consumes those outputs, including their
-/// complex phases, and returns one scalar column. Evaluation methods without
+/// complex phases, and returns one scalar column. Its input layout may contain
+/// one complex column per coefficient (legacy) or two real columns per
+/// coefficient, ordered real then imaginary (exact Hermitian norm lowering).
+/// The latter uses real arithmetic expressions before any numerical summation;
+/// no imaginary part of a computed contraction is discarded. Methods without
 /// a parameter batch require an empty runtime parameter domain.
 pub struct TreeEvaluator {
     amplitude: CoefficientEvaluator,
@@ -50,6 +54,7 @@ pub struct TreeEvaluator {
     parameter_domains: Vec<TreeParameterDomain>,
     momentum_columns: usize,
     coefficient_columns: usize,
+    cartesian_norm: bool,
     arithmetic: Arithmetic,
     bits: u32,
 }
@@ -153,6 +158,39 @@ fn add_norms(left: &Batch, right: &Batch) -> RusticolResult<Batch> {
     Ok(sum)
 }
 
+fn cartesian_values<T: BatchCarrier>(
+    values: &[Complex<T>],
+    metadata: &Batch,
+) -> RusticolResult<Batch> {
+    let values = values
+        .iter()
+        .flat_map(|value| {
+            [
+                Complex::new(value.re.clone(), value.re.zero()),
+                Complex::new(value.im.clone(), value.im.zero()),
+            ]
+        })
+        .collect();
+    Batch::typed(
+        values,
+        metadata.ids().to_vec(),
+        metadata
+            .columns()
+            .checked_mul(2)
+            .ok_or_else(|| error("Cartesian norm dimensions overflow"))?,
+        metadata.precision_bits(),
+    )
+    .map_err(error)
+}
+
+fn cartesian_coefficients(coefficients: &Batch) -> RusticolResult<Batch> {
+    match coefficients.data() {
+        Data::Double(values) => cartesian_values(values, coefficients),
+        Data::DoubleDouble(values) => cartesian_values(values, coefficients),
+        Data::Arbitrary(values) => cartesian_values(values, coefficients),
+    }
+}
+
 impl TreeEvaluator {
     pub fn new(
         coefficient_state: &[u8],
@@ -238,9 +276,12 @@ impl TreeEvaluator {
         let coefficient = exact_state(coefficient_state).map_err(error)?;
         let norm = exact_state(norm_state).map_err(error)?;
         let coefficient_columns = coefficient.get_output_len();
+        let cartesian_norm = coefficient_columns
+            .checked_mul(2)
+            .is_some_and(|columns| columns == norm.get_input_len());
         if coefficient.get_input_len() != inputs
             || coefficient_columns == 0
-            || norm.get_input_len() != coefficient_columns
+            || (!cartesian_norm && norm.get_input_len() != coefficient_columns)
             || norm.get_output_len() != 1
         {
             return Err(error(
@@ -260,6 +301,7 @@ impl TreeEvaluator {
             parameter_domains,
             momentum_columns,
             coefficient_columns,
+            cartesian_norm,
             arithmetic,
             bits,
         })
@@ -496,7 +538,12 @@ impl TreeEvaluator {
                 .collect::<Vec<_>>();
             let coefficients =
                 self.evaluate_coefficients_inner(momenta, parameters, &helicities)?;
-            let norm = self.norm.evaluate_batch(&coefficients).map_err(error)?;
+            let norm_inputs = if self.cartesian_norm {
+                cartesian_coefficients(&coefficients)?
+            } else {
+                coefficients
+            };
+            let norm = self.norm.evaluate_batch(&norm_inputs).map_err(error)?;
             finite(&norm)?;
             accumulated = Some(match accumulated {
                 None => norm,
