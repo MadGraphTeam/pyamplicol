@@ -170,6 +170,19 @@ drivers.
 
 ## Models and execution
 
+Native consumers with the `symbolica-runtime` feature can use
+`rusticol_core::color` to prepare exact ordered color connections directly from
+typed singlet, fundamental, antifundamental and adjoint legs. `ColorConnection`
+applies gluon emissions and gluon-to-quark-pair splittings to literal open
+strings and traces; `ConnectedColorTensor::overlap_nc_terms` retains the full
+complex Laurent polynomial in the number of colors, while `overlap` evaluates
+it exactly at SU(3). Coefficients are `Complex<Rational>` throughout. These
+operations need neither Python nor process-specific source compilation.
+The convention is all outgoing with physical charges `t = tau / sqrt(2)`;
+endpoint-pairing phases belong in the supplied tensor coefficients. Overlap
+matrices are Gram matrices and must not be multiplied as charge-action
+matrices. This is color algebra, not a model or numerical amplitude generator.
+
 pyAmpliCol supports:
 
 - the packaged built-in Standard Model;
