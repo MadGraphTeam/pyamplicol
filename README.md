@@ -182,6 +182,11 @@ The convention is all outgoing with physical charges `t = tau / sqrt(2)`;
 endpoint-pairing phases belong in the supplied tensor coefficients. Overlap
 matrices are Gram matrices and must not be multiplied as charge-action
 matrices. This is color algebra, not a model or numerical amplitude generator.
+The `color::network` module also lowers exact Spenso SU(3) vertex expressions
+(`f`, `t`, chains, traces and color metrics) to typed matrix products and
+contracts their internal indices with `reduce_network`. It retains complete
+external tensors, including components outside a Born color basis. Raw UFO
+model expressions require their usual typed Spenso translation first.
 
 pyAmpliCol supports:
 

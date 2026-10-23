@@ -43,6 +43,46 @@ fn overlap_traces(left: &ColorTensor, right: &ColorTensor) -> Vec<Vec<i64>> {
 
 type TraceTerms = BTreeMap<(i64, Vec<Vec<i64>>), Rational>;
 
+/// The two terms of the tau-generator Fierz identity. The second carries
+/// coefficient -1/Nc; this operation is shared by overlaps and open networks.
+pub(super) fn fierz_pair<T: Clone>(
+    traces: &[Vec<T>],
+    first_trace: usize,
+    first_position: usize,
+    second_trace: usize,
+    second_position: usize,
+) -> (Vec<Vec<T>>, Vec<Vec<T>>) {
+    let first = &traces[first_trace];
+    let concat = |parts: &[&[T]]| parts.iter().flat_map(|part| part.iter().cloned()).collect();
+    let mut direct: Vec<_> = traces
+        .iter()
+        .enumerate()
+        .filter(|&(index, _)| index != first_trace && index != second_trace)
+        .map(|(_, trace)| trace.clone())
+        .collect();
+    let mut suppressed = direct.clone();
+    if first_trace == second_trace {
+        let before = &first[..first_position];
+        let between = &first[first_position + 1..second_position];
+        let after = &first[second_position + 1..];
+        direct.extend([concat(&[before, after]), between.to_vec()]);
+        suppressed.push(concat(&[before, between, after]));
+    } else {
+        let second = &traces[second_trace];
+        direct.push(concat(&[
+            &first[..first_position],
+            &second[second_position + 1..],
+            &second[..second_position],
+            &first[first_position + 1..],
+        ]));
+        suppressed.extend([
+            concat(&[&first[..first_position], &first[first_position + 1..]]),
+            concat(&[&second[..second_position], &second[second_position + 1..]]),
+        ]);
+    }
+    (direct, suppressed)
+}
+
 fn add_term(
     terms: &mut TraceTerms,
     coefficient: Rational,
@@ -107,37 +147,9 @@ pub(super) fn contract(
                     RusticolError::internal("unpaired adjoint index in validated color overlap")
                 })?;
             let suppressed = add_power(power, -1)?;
-            if other_trace == 0 {
-                let between = &first[1..other_position];
-                let after = &first[other_position + 1..];
-                let mut direct = traces[1..].to_vec();
-                direct.extend([after.to_vec(), between.to_vec()]);
-                add_term(&mut next, coefficient.clone(), power, direct)?;
-                let mut subleading = traces[1..].to_vec();
-                subleading.push(concat(&[between, after]));
-                add_term(&mut next, -coefficient, suppressed, subleading)?;
-            } else {
-                let second = &traces[other_trace];
-                let rest: Vec<_> = traces
-                    .iter()
-                    .enumerate()
-                    .filter(|&(index, _)| index != 0 && index != other_trace)
-                    .map(|(_, trace)| trace.clone())
-                    .collect();
-                let mut direct = rest.clone();
-                direct.push(concat(&[
-                    &second[other_position + 1..],
-                    &second[..other_position],
-                    &first[1..],
-                ]));
-                add_term(&mut next, coefficient.clone(), power, direct)?;
-                let mut subleading = rest;
-                subleading.extend([
-                    first[1..].to_vec(),
-                    concat(&[&second[..other_position], &second[other_position + 1..]]),
-                ]);
-                add_term(&mut next, -coefficient, suppressed, subleading)?;
-            }
+            let (direct, subleading) = fierz_pair(&traces, 0, 0, other_trace, other_position);
+            add_term(&mut next, coefficient.clone(), power, direct)?;
+            add_term(&mut next, -coefficient, suppressed, subleading)?;
         }
         terms = next;
     }
