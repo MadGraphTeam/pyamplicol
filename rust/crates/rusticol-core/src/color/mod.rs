@@ -21,6 +21,8 @@ use symbolica::domains::{float::Complex, rational::Rational};
 use crate::{RusticolError, RusticolResult};
 
 pub mod network;
+mod operators;
+pub use operators::{ColorDipole, ColorDipoleProduct};
 mod splitting;
 pub use splitting::{GluonSplittingColorPair, SplitDaughterColorTerms};
 #[cfg(test)]
