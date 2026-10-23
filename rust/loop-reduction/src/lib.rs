@@ -13,6 +13,7 @@
 pub mod preparation;
 pub mod runtime;
 pub mod scalar_loop;
+pub mod tree_correlations;
 mod tree_color;
 mod tree_components;
 mod tree_norm;
