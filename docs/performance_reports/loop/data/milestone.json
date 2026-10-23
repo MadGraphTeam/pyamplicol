@@ -1,12 +1,12 @@
 {
  "date": "2026-10-23",
- "engine_revision": "45875b87",
+ "engine_revision": "e734b708",
  "previous_loop": "1df22af6",
  "native_build": {
   "name": "loop-native-v2-slice-45875b87",
   "digest": "2be17627",
   "profile": "release, codegen-units 1, thin LTO, rustc 1.97.1",
-  "source": "workspace/reports/engine-v2/slice-status.md, Current state"
+  "source": "workspace/reports/engine-v2/slice-status.md, Current state and the e734b708 update (no native input changed since 45875b87)"
  },
  "integrated": [
   {
@@ -46,11 +46,25 @@
    "detail": "engine selection, plan v4 artifacts, poles = all | none, per-point estimates"
   }
  ],
+ "integrated_tip": "45875b87",
+ "after_integration": [
+  {
+   "sha": "f21495ed",
+   "what": "Requirements addendum J",
+   "detail": "counterterms as plain tree-level insertions without loop matching; public particle_veto (user, 23 October)"
+  },
+  {
+   "sha": "e734b708",
+   "what": "Symbol-registry fix",
+   "detail": "canonical stage symbols created through the central registry (same names and order); no native input changed"
+  }
+ ],
  "already_on_loop": "v2 waves 0-1 with gate S1, dependency re-pin (NinjaRS aa6a6307, oneloopmaster 8ec256fc, Symbolica 9cdc2949), gate G0, tree-engine EW fixes and hygiene, native Rust executor (WP2.1), colour production (WP2.4)",
  "addendum_commits": [
   "b91d23a8",
   "2dd36f65",
-  "d20e1c15"
+  "d20e1c15",
+  "f21495ed"
  ],
  "provider_generation": {
   "source": "HANDOFF_22_10_2026.md §0.1; REQUIREMENTS_ADDENDUM F",

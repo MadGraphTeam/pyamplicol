@@ -34,6 +34,9 @@
 #show raw: set text(font: "DejaVu Sans Mono", size: 8pt)
 #show link: set text(fill: rgb("#1f5fa8"))
 #show figure.where(kind: table): set figure.caption(position: top)
+// Long tables continue on the next page (headers repeat) instead of leaving
+// a blank page end.
+#show figure.where(kind: table): set block(breakable: true)
 #show figure.caption: set text(9pt)
 #show figure.caption: set par(justify: true)
 #show figure.caption: set align(left)
@@ -141,7 +144,8 @@ double-double (DD) and arbitrary precision (AP). The engine is the recursive
 _v2_ engine: tree currents, loop topologies and loop numerators come from
 recursions, and no loop Feynman diagram is enumerated (@arch). The public
 counterterm route at this push is still site closure, which the user reserves
-for test oracles; counterterms inside the recursion (WP2.2) are in flight.
+for test oracles; in production the counterterms are plain tree vertices
+inserted exactly once, without loop matching (addendum J), work in flight.
 This report is the status of the intermediate push of
 #ms.date to the `loop` branch. It separates development measurements from the
 acceptance campaign, which has not run yet.
@@ -155,9 +159,14 @@ acceptance campaign, which has not run yet.
     #table(columns: (auto, auto, 1fr), stroke: none, inset: (x: 2pt, y: 2.4pt),
       ..ms.integrated.map(r => (raw(r.sha), text(weight: "semibold", r.wp), [*#r.title.* #text(fill: ink2, r.detail)])).flatten())
     #v(-0.3em)
-    #text(8.2pt)[*Already on `loop`:* #ms.already_on_loop. *Requirements addendum* F, G, H
-      (heavy processes and slow references, portable artifacts, high-multiplicity
-      budget). *Native build* #raw(ms.native_build.name) (digest #raw(ms.native_build.digest)…).]
+    #let (aj, fx) = (ms.after_integration.at(0), ms.after_integration.at(1))
+    #text(8.2pt)[*After #raw(ms.integrated_tip):* requirements addendum J
+      (#raw(aj.sha), counterterms) and the fix #raw(fx.sha) (canonical stage
+      symbols through the central registry). *Already on `loop`:*
+      #ms.already_on_loop. *Requirements addendum* F, G, H, J (heavy processes,
+      portable artifacts, generation budget, counterterms). *Native build*
+      #raw(ms.native_build.name) (digest #raw(ms.native_build.digest)…),
+      unchanged by the fix.]
   ],
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
     set text(9pt)
@@ -192,31 +201,39 @@ acceptance campaign, which has not run yet.
     #set par(justify: false)
     *In flight* (branches, not on `loop`)
     #set text(8.4pt)
-    - *Counterterms inside the recursion* (WP2.2, `work/v2-ct-recursion`): one
-      $"CT"=1$ order in the tree recursion; the six-gluon recursion route is being
-      profiled (a run was stopped as slower than the site-closure oracle).
-    - *Generation at scale* (WP3.1, `work/v2-generation-scale`): native trees and
-      Born per point, native counterterms, regeneration-free artifacts and SDK v4.
-    - *UV/IR pole selection* (`poles = "uv" | "ir"`; NinjaRS 41a4c00,
-      oneloopmaster 5b710437).
-    - *G1* end-to-end measurement and live report (WP2.7), not started.
-    - *Electroweak and complex-mass scheme* (WP3.2), pending.
-    - *The $2 -> 5$ set* (WP3.3/3.4) on the WP3.1 branch (@required).
+    - *Counterterms in the recursion* (WP2.2): on `work/v2-slice` since
+      a18b7599, after this push. After the request-scoped lowering
+      $g g -> g g g g$ generates in 257–275 s (sites 243–245 s), its second
+      point in 0.54× the sites' time (DESIGN §6.1 there).
+    - *`ct-simplify`* (running): removes the witness-table admission and loop
+      matching (addendum J); a public `particle_veto` replaces the internal
+      top-free switch.
+    - *Generation at scale* (WP3.1, `work/v2-generation-scale`): native trees,
+      Born and counterterms, regeneration-free artifacts, SDK v4; its Rust
+      ports (HANDOFF §0.4) are being split into packages.
+    - *UV/IR poles* (`work/v2-poles-uvir`, addendum I there).
+    - *G1* and the live report (WP2.7) not started; *electroweak* and complex
+      mass (WP3.2) pending; the *$2 -> 5$ set* on the WP3.1 branch (@required).
   ],
   box-note(fill: white, stroke: 0.6pt + luma(205))[
     #set par(justify: false)
     *User decisions of 23 October*
     #set text(8.4pt)
-    - Generation at high multiplicity may take O(hours) below 150 GB (addendum H).
-    - $g g -> g g g g g$: speed reported without a gate, with rotation and Ward checks.
-    - No $2 -> 6$ work until the $2 -> 5$ plan is complete.
-    - `poles = "uv"`: UV poles of the bare loop, with the counterterms' UV poles
-      separately; `"ir"`: Catani poles of the renormalised virtual; the finite
-      part is the same in all four modes.
+    - *Counterterms* (addendum J): model $R_2$ and UV vertices are plain tree
+      vertices inserted exactly once, admitted by coupling orders and a public
+      `particle_veto`; no witness table or loop matching in production (site
+      closure and witnesses: test oracles only).
+    - *Poles:* `"uv"` = UV poles of the bare loop, the counterterms' UV poles
+      separate; `"ir"` = Catani poles of the renormalised virtual; one finite part.
+    - *Rust* (HANDOFF §0.4): heavy, contained generation stages move to
+      rusticol (PyO3 API) with oracle equality; new heavy code in Rust.
+    - Generation may take O(hours) below 150 GB (addendum H); $g g -> g g g g g$
+      speed without a gate, with rotation and Ward checks; no $2 -> 6$ before
+      the $2 -> 5$ plan is complete.
     - Binary64 observables: $10^(-12)$ unless the own estimate $E > 10^(-12)$ (then
       $E$, capped at $10^(-9)$, plus DD within $10^(-24)$).
-    - Stability-estimate tests may use a tenfold margin; development first,
-      proportionate testing; push to `loop` at milestones with this report.
+    - Stability-estimate tests: tenfold margin (error ≤ 10 $E$). Development
+      first, proportionate testing; push to `loop` at milestones with this report.
   ],
 )
 
@@ -253,7 +270,7 @@ lower multiplicities and existing references.
     ..ms.provider_generation.rows.map(r => {
       let q = req-of(r.label, r.at("corr", default: none))
       (
-        if r.label.contains("controls") { text(8pt)[$2 -> 2$, $2 -> 3$ controls] } else { plabel(r) },
+        if r.label.contains("controls") { text(8.4pt, font: "Libertinus Serif")[$2 -> 2$, $2 -> 3$ controls] } else { plabel(r) },
         if q == none { dim[—] } else { gen-cell(q) },
         r.madloop, r.recola, r.openloops,
         if r.rule.starts-with("within") { r.rule } else { text(weight: "semibold", fill: rgb("#8a4b08"), r.rule) },
@@ -297,7 +314,9 @@ lower multiplicities and existing references.
 // ============================================================== RUNTIME ==
 = Native runtime of the loop stage (development) <runtime>
 
-No v2 process has an end-to-end timing yet. The native executor evaluates the
+No v2 process has an end-to-end timing under the gate protocol yet (native
+inputs, finite-only, checks off); development timings of the full virtual on
+the Python-input path exist (@sevenglue). The native executor evaluates the
 loop stage (seeds, dressing, NinjaRS reduction with cached oneloopmaster
 masters, scatter), while trees, Born amplitudes and counterterm scalars are
 still formed per point in Python and handed over (native lanes for them are
@@ -313,7 +332,7 @@ The cells stay neutral: they exclude work that a provider time includes.
     source prints it (from unrounded times) in brackets. Reduction: share of the 8-thread time spent in the serial NinjaRS
     reduction with cached masters. $gamma^*$: photon exchange only.],
   tstyle(table(
-    columns: (3.3cm, 0.8cm, 1.2cm, 1fr, 1fr, 1fr, 1fr, 1.5cm),
+    columns: (3.3cm, 0.8cm, 1.2cm, 1fr, 1fr, 1fr, 1fr, 1.9cm),
     align: (x, y) => if x < 2 { left + horizon } else { right + horizon },
     inset: (x: 4pt, y: 3.1pt), stroke: tstroke, fill: thead-fill,
     table.header[Process][Col.][Families][B, 1 thread][M, 1 thread][B, 8 threads][M, 8 threads][Reduction],
@@ -379,7 +398,7 @@ providers.
 #figure(kind: table,
   caption: [*NJet, s per point*, double precision, two evaluations each (NJet's
     scaling test). Paper: Xeon E3-1240 at 3.3 GHz, NJet 1.0. This host: one
-    pinned idle core, 10 frozen points per channel, mean (spread ≤ 2 %); the
+    pinned core, idle at launch, of the shared host; 10 frozen points per channel, mean (spread ≤ 2 %); the
     multiplier is time ÷ the paper's. De-symmetrised sums equal the standard
     sums only after phase-space integration; they are timing figures, not
     point values.],
@@ -428,10 +447,8 @@ the unrotated seven-gluon points NJet keeps only 4–6 digits in double precisio
   #set par(justify: false)
   These are #flag[development] measurements on the branches named, on the
   shared host. Generation and the counterterm program ran in one thread; the
-  thread count of the native bare-loop timing was not recorded, and its CPU
-  accounting allows up to about #fixed(nb-cores, 0) busy cores during the
-  evaluations, so its wall times are not per-core timings (@tab:sevendev).
-  They are not part of the acceptance campaign and not a like-for-like speed
+  bare-loop job's thread count was not recorded, so its wall times are not
+  per-core timings (@tab:sevendev). They are not part of the acceptance campaign and not a like-for-like speed
   comparison: the native path below does not yet include counterterms or
   $R_2$.
 ]
@@ -478,7 +495,8 @@ the unrotated seven-gluon points NJet keeps only 4–6 digits in double precisio
 
 On the same host (@tab:njet) NJet takes #num(ms.njet.rows.last().n312_std)~s
 per point for its standard sum and #num(ms.njet.rows.last().n312_ds)~s for its
-de-symmetrised sum, two evaluations each, on one pinned core of the idle host.
+de-symmetrised sum, two evaluations each, on one pinned core, idle at launch,
+of the shared host.
 The native path's #sig(calc.min(..nb.seconds))–#sig(calc.max(..nb.seconds))~s
 per point (also two evaluations) are wall times of a multi-threaded job: its CPU
 accounting allows up to ≈#fixed(nb-cores, 1) busy cores, ≈#sig(nb-cpu-pt)~CPU-s
@@ -486,8 +504,8 @@ per point, during the evaluations, which is above NJet's
 #num(ms.njet.rows.last().n312_std)~s. Whether the native bare path is faster
 than NJet's standard sum per core is therefore undetermined until a one-thread
 run exists. The comparison is not like-for-like either: counterterms and $R_2$
-are missing on the pyAmpliCol side, the job ran on the shared host under load,
-and the de-symmetrised sum is not a point value. Generation fits
+are missing on the pyAmpliCol side, its job ran unpinned and multi-threaded on
+the same shared host, and the de-symmetrised sum is not a point value. Generation fits
 addendum H's budget (O(hours), below 150 GB). MASTER_PLAN quotes the same two
 peaks as KiB/10⁶ ("#fixed(g1.max_rss_kib / 1e6, 1) GB",
 "#fixed(ctp.max_rss_kib / 1e6, 1) GB"); of the run records, the counterterm
@@ -513,7 +531,7 @@ record prints KiB/10⁶ and the generation record GiB.
     for the top-free request.],
   tstyle(table(
     columns: (4.2cm, 1fr, 3.1cm),
-    align: left + horizon, inset: (x: 4pt, y: 3.2pt), stroke: tstroke, fill: thead-fill,
+    align: left + horizon, inset: (x: 4pt, y: 2.8pt), stroke: tstroke, fill: thead-fill,
     table.header[Check][Result][Status],
     [$g g -> g g g g g$, native bare loop, 5 points: double pole ÷ Born against $-(alpha_s slash 2 pi) dot 7 C_A$],
     [≤ #sci(calc.max(..nb.double_pole_deviation))\; rotation estimates #sci(calc.min(..nb.stability_estimate))–#sci(calc.max(..nb.stability_estimate))],
@@ -577,10 +595,10 @@ record prints KiB/10⁶ and the generation record GiB.
   ([Precision carriers], "supported", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; DD/AP point inputs are formed in Python Decimal until WP3.1.]),
   ([Native executor, schedules], "supported", [Rust, 16 lanes, threads; schedule B by default, M native (adopted per class at G1), F as oracle. The NinjaRS reduction runs serially.]),
   ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; relocation to another path tested on the same host and CPU. Loading regenerates the process (the `LoopSlice`) in Python and checks the plan digest, which addendum G forbids for prepared artifacts; WP3.1 removes it. The Rust/C/C++/Fortran SDK refuses v4 until WP3.1.]),
-  ([Counterterms (model UV, $R_2$)], "partial", [Site closure is the public route (QCD incl. massive quarks), a form the user reserves for test oracles; counterterms inside the recursion are on `work/v2-ct-recursion` (WP2.2).]),
+  ([Counterterms (model UV, $R_2$)], "partial", [Site closure is the public route (QCD incl. massive quarks), a form the user reserves for test oracles; counterterms inside the recursion (WP2.2, still with witness-table admission) are on `work/v2-slice` since a18b7599, after this push. Production rule (addendum J): plain tree vertices inserted exactly once, admitted by coupling orders and `particle_veto`, no loop matching; `ct-simplify` removes the matching after WP2.2.]),
   ([Direct $R_2$], "deferred", [A bonus by the user's rule; bounded controls only.]),
   ([Electroweak, complex mass], "open", [Tree EW lanes fixed, the Dirac–Weyl class refused; loop EW, Goldstones and CMS are WP3.2.]),
-  ([Required $2 -> 5$ set], "progress", [On the WP3.1 branch seven of eight generate and six agree with their provider references in all coefficients (@tab:validation); $g g -> g g g g g$ is validated in Born and poles; the EW target is not started.]),
+  ([Required set], "progress", [On the WP3.1 branch seven of eight generate and six agree with their provider references in all coefficients (@tab:validation); $g g -> g g g g g$ is validated in Born and poles; the EW target is not started.]),
   ([Performance gates], "open", [G1 not run; no gate result (front page).]),
   ([$g g -> 6g$], "deferred", [No $2 -> 6$ work until the $2 -> 5$ plan is complete (user, 23 October).]),
 )
@@ -588,7 +606,7 @@ record prints KiB/10⁶ and the generation record GiB.
   caption: [*Capability matrix* of the v2 engine on `loop` at #ms.engine_revision, with branch work marked.],
   tstyle(table(
     columns: (3.5cm, 1.6cm, 1fr), align: (x, y) => if x == 1 { center + horizon } else { left + horizon },
-    inset: (x: 4.5pt, y: 3.0pt), stroke: tstroke, fill: thead-fill,
+    inset: (x: 4.5pt, y: 2.6pt), stroke: tstroke, fill: thead-fill,
     table.header[Feature][Status][Boundary],
     ..caps.map(((f, s, b)) => (text(weight: "semibold", f), badge(s), b)).flatten(),
   )),
@@ -599,11 +617,13 @@ record prints KiB/10⁶ and the generation record GiB.
 
 == The computed quantity
 
+#block(breakable: false)[
 For Born order $a$, loop order $b$ and squared coupling order $s = a + b$,
 $
   V_(s,k) = cal(N) sum_(a+b=s) 2 op("Re")[B_a^dagger G_(B L) L_(b,k)], quad k in {0, -1, -2},
   quad V = C_epsilon (V_0 + V_(-1) / epsilon + V_(-2) / epsilon^2), quad C_epsilon = (4 pi)^epsilon / Gamma(1 - epsilon),
 $
+]
 where $G_(B L)$ is the colour metric between Born and loop colour structures and
 $cal(N)$ holds the initial-state averages and identical-particle factors
 (MadLoop/BLHA convention; couplings included, nothing divided by the Born).
@@ -619,7 +639,7 @@ recursions that share all work (@fig:pipeline).
 
 #let stage-box(title, owner, kind) = {
   let (f, s) = if kind == "py" { (rgb("#fdf0e6"), 0.7pt + rgb("#d6604d")) } else if kind == "nat" { (rgb("#e8f1f8"), 0.7pt + rgb("#2166ac")) } else { (white, 0.7pt + luma(150)) }
-  block(width: 100%, height: 1.3cm, fill: f, stroke: s, inset: (x: 3pt, y: 3pt), radius: 2pt, align(center + horizon, {
+  block(width: 100%, height: 1.2cm, fill: f, stroke: s, inset: (x: 3pt, y: 3pt), radius: 2pt, align(center + horizon, {
     set par(justify: false, leading: 0.32em)
     set text(6.8pt, font: sans)
     text(weight: "bold", title)
@@ -679,7 +699,7 @@ restricted to 1PI.
     ring of four blocks, one of them the two-leg current, computed once per
     point and shared by every skeleton that contains that leg subset.],
   grid(columns: 3, gutter: 10pt,
-    ..("born", "pentagon", "box").map(n => box(height: 3.0cm, image("figures/" + n + ".svg", height: 100%, fit: "contain")))),
+    ..("born", "pentagon", "box").map(n => box(height: 2.8cm, image("figures/" + n + ".svg", height: 100%, fit: "contain")))),
 ) <fig:graphs>
 
 *Loop numerators and schedules.* An open-loop recursion dresses skeletons one
@@ -689,7 +709,7 @@ $O' = O dot Y + "raise"(O dot Z_mu, q^mu)$, in the NinjaRS monomial layout
 colour-summed Born interference, and each block's helicities are summed as it
 is attached. One generator feeds three schedules (@tab:schedules).
 
-#figure(kind: table,
+#block(breakable: false)[#figure(kind: table,
   caption: [*Three schedules on one generator* (DESIGN §2.2, §5.6).],
   tstyle(table(
     columns: (2.2cm, 1fr, 1fr, 1fr),
@@ -697,10 +717,10 @@ is attached. One generator feeds three schedules (@tab:schedules).
     table.header[][F: forward][B: suffix trie (default)][M: merged, primitive-seeded],
     [Born weighting], [at closure], [at the leaves (one seed per skeleton class)], [at the cut, one seed per colour ordering],
     [Shared], [prefixes across families], [all prefixes with equal family and remainder], [prefixes across families and compositions],
-    [Colour], [none needed], [none needed], [certified classes: adjoint rings, traces, quark rings],
+    [Colour certificate], [none needed], [none needed], [certified classes: adjoint rings, traces, quark rings],
     [Role], [oracle], [default; generic fallback], [pure-gluon classes; $n >= 8$ default],
   )),
-) <tab:schedules>
+) <tab:schedules>]
 
 *Colour.* Colour lives only in exact seed tables $K[c, b]$, Laurent polynomials
 in $N_c$ between seed classes $c$ (the colour vector obtained by closing the
@@ -718,12 +738,23 @@ with equal (propagators, rank) batched as lanes of one call, scalar masters
 from oneloopmaster cached per event. A second reduction in a relabelled frame
 reuses the numerators and the cached masters as the cheap stability check.
 
-*Counterterms.* The model's UV and $R_2$ vertices enter as counterterm sites
-admitted by a witness table with a power-counting completeness check; external
-field factors are separate sources. The slice form closes the sites over block
-currents (the public route today); the production form inserts one counterterm
-order into the tree recursion (WP2.2), whose $g g -> g g g g g$ program leaves
-no rule to site closure (@tab:sevendev).
+*Counterterms.* The model's UV and $R_2$ vertices, two-point ones included,
+are ordinary vertices of the tree recursion, and each contribution contains
+exactly one of them; external field factors are separate sources. Admission
+is the requested coupling orders, the exactly-once constraint and a public
+`particle_veto`: a coupling term whose loop particles include a vetoed
+particle is dropped, and a vetoed particle is removed from every tree vertex,
+loop line and propagator of the generation, so loops and counterterms stay
+consistent. Nothing is matched to the loop (user, 23 October; addendum J).
+At this push the code still admits counterterm sites by a witness table of
+divergent loop routings with a power-counting completeness check: the public
+route closes those sites over block currents, and the recursion form of WP2.2
+(one counterterm order in the tree recursion, whose $g g -> g g g g g$ program
+leaves no rule to site closure, @tab:sevendev) uses the same admission. The
+package `ct-simplify` removes the witness table and the matching from
+production and adds `particle_veto`, which replaces the internal top-free
+switch of @tab:sevencheck (then `particle_veto = [t]`); site closure and the
+witness machinery remain only as test oracles.
 
 *Precision, stability and assembly.* Every kernel is generic over binary64,
 DoubleFloat, arbitrary-precision floats and exact rationals. A failed lane
@@ -861,47 +892,46 @@ exact carriers and the public interfaces.
     `docs/performance_reports/loop/` (Typst 0.15).
   - *Status, gates, in-flight work, decisions:* `data/milestone.json`, from the
     `Integrate …` merges on the first-parent history of #ms.engine_revision
-    since #ms.previous_loop, `workspace/reports/engine-v2/slice-status.md`
-    (Current state, Integrated packages, DECISIONS 2026-10-23),
-    `HANDOFF_22_10_2026.md` §0–§3, MASTER_PLAN 2026-10-23 entries and
-    `docs/development/loop_v2/REQUIREMENTS_ADDENDUM.md` A, D, F, G, H.
+    since #ms.previous_loop and the two commits after #ms.integrated_tip\;
+    `workspace/reports/engine-v2/slice-status.md` (Current state, Integrated
+    packages, e734b708 update, DECISIONS 2026-10-23); `HANDOFF_22_10_2026.md`
+    §0–§3 (Rust: §0.4); MASTER_PLAN 2026-10-23 entries;
+    `docs/development/loop_v2/REQUIREMENTS_ADDENDUM.md` A, D, F, G, H, J (I on
+    `work/v2-poles-uvir`, d67ce126); DESIGN §6.1 on `work/v2-ct-recursion`
+    (ac76825d, integrated into the slice at a18b7599).
   - *@tab:provgen:* provider columns HANDOFF §0.1 (addendum F); pyAmpliCol
     column DESIGN WP3.1 third increment "Generation per process" on
     `work/v2-generation-scale` (201efa8b). *@tab:validation:* DESIGN WP3.1
     first to fourth increment, same branch (records
     `workspace/tmp/generation-scale/runs/`); the $g g -> g g g g$ row from
     `cmp_gg_gggg.json`, `cmp_gg_gggg_p1_stab.json` and `cmp_gg_gggg_p1_dd.json`
-    there. *@tab:gateref:* DESIGN §1.3 Table 1b.
+    there. *@tab:gateref:* DESIGN §1.3 Table 1b. *Conventions:*
+    #link("https://cp3.irmp.ucl.ac.be/projects/madgraph/wiki/MadLoopStandaloneLibrary")[MadLoop standalone],
+    #link("https://arxiv.org/abs/1605.01090")[Recola],
+    #link("https://arxiv.org/abs/1907.13071")[OpenLoops 2].
   - *@tab:native, @tab:split:* DESIGN §5.6 and §5.5 (data
     `workspace/reports/engine-v2/wp28-g1/`); the M/B ratios as §5.6 prints them.
   - *@tab:njet* and NJet prose: `workspace/reports/engine-v2/njet-benchmark.md`
-    §2, §5, §6 (raw `workspace/reference/runs/njet/timing/`); arXiv:1209.0100
-    Table 5.
+    §2, §5, §6 (raw `workspace/reference/runs/njet/timing/`);
+    #link("https://arxiv.org/abs/1209.0100")[NJet, arXiv:1209.0100] Table 5.
   - *@tab:sevendev, @tab:sevencheck, first virtual:* `data/measured.json`,
     written by `scripts/collect_milestone.py <workspace>` from the records
     `gen_gg_ggggg_final`, `gen_gg_ggggg_hash`, `poles2_gg_ggggg`,
     `eval2_gg_ggggg`, `eval2_gg_ggggg_rot` and `cmp_uux_ggggg` in
     `workspace/tmp/generation-scale/runs/` and `gg_ggggg` in
-    `workspace/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs: wall,
-    user and system time, peak memory, CPU share; the bare-loop CPU bound
-    subtracts one core over the record's `generate_s` and
-    `export_with_trees_s`); thread settings from DESIGN WP3.1 (generation, one
-    thread) and ct-recursion DESIGN §6.1 (`RAYON_NUM_THREADS=1`, bind not
-    measured); the 119/3 shift and NJet deviations from njet-benchmark.md §5.3
-    and the fixture
-    `tests/fixtures/loop/required/gg_ggggg_njet.json`; top-free values from
+    `workspace/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs); thread
+    settings from DESIGN WP3.1 and ct-recursion DESIGN §6.1; the 119/3 shift and NJet deviations from njet-benchmark.md §5.3
+    and the fixture `tests/fixtures/loop/required/gg_ggggg_njet.json`; top-free values from
     DESIGN WP3.1 fourth increment and `tests/unit/test_loop_v2_topfree.py`
     (`work/v2-generation-scale`). Memory is shown in GiB = KiB/2²⁰.
   - *@tab:caps, @arch:* `docs/development/loop_v2/DESIGN.md` §1–§3, §5.5,
-    §5.6, §10, §12 and the integration records above.
+    §5.6, §6, §10, §12, REQUIREMENTS_ADDENDUM J (counterterm rule) and the
+    integration records above.
   - *@tab:history:* `data/measurements.json`, `data/provider-cold.json`
-    (legacy snapshot of 2026-10-18, unchanged) and `data/legacy-labels.json`.
-    `data/colour-measurements.json` (legacy LC/FC runs) stays for the DESIGN
-    citations; the legacy status registry, audit and generation data are
-    archived outside the repository (`workspace/reports/report-data-archive/`).
-  - *Conventions:*
-    #link("https://cp3.irmp.ucl.ac.be/projects/madgraph/wiki/MadLoopStandaloneLibrary")[MadLoop standalone],
-    #link("https://arxiv.org/abs/1605.01090")[Recola],
-    #link("https://arxiv.org/abs/1907.13071")[OpenLoops 2],
-    #link("https://arxiv.org/abs/1209.0100")[NJet].
+    (legacy snapshot of 2026-10-18, unchanged) and `data/legacy-labels.json`;
+    `data/colour-measurements.json` stays for the DESIGN citations. Removed at
+    this milestone, in the git history at
+    `45875b87:docs/performance_reports/loop/data/`: `processes.json`,
+    `provider-audit.json` and `generation.json` (the 9.4 h and 77 GiB of
+    @history); see the README.
 ]

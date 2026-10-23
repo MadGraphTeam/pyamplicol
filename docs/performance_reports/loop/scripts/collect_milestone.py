@@ -95,7 +95,7 @@ def collect(root: Path) -> dict:
 
     return {
         "date": "2026-10-23",
-        "engine_revision": "45875b87",
+        "engine_revision": "e734b708",
         "native_build": (
             "loop-native-v2-slice-45875b87"
             " (digest 2be17627...; release, codegen-units 1, thin LTO)"
