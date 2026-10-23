@@ -1,0 +1,824 @@
+#!/usr/bin/env python3
+# SPDX-License-Identifier: 0BSD
+"""NJet references for the all-gluon ladder g g -> (n-2) g, n = 4..7.
+
+Subcommands
+-----------
+``points``     exact points JSON: ``exact_points.generate`` for n massless legs
+               (pyAmpliCol's generator and order) or the points of a
+               ``tests/fixtures/loop/required`` fixture.
+``run``        evaluate NJet (``njet_driver.cpp``) at a points JSON, one pinned
+               CPU, and write a result JSON with provenance.
+``openloops``  the matching OpenLoops 2 values (``../openloops_driver.cpp``)
+               with the top quark in the loops (``nf=6``, as the fixtures) or
+               without it (``nf=5``, massless five-flavour QCD as NJet).
+``compare``    coefficient-wise comparison of two result/reference JSONs.
+
+Conventions (README "NJet"): NJet's BLHA2 output in CDR with MS-bar
+renormalisation is the MadLoop/BLHA convention of the fixtures
+(``C_eps=(4 pi)^eps/Gamma(1-eps)``, physical couplings, initial average and
+final symmetry) with five massless quark flavours and no top quark. The
+driver's direct mode applies the BLHA normalisation of ``njet_olp.cpp``
+itself; ``run --mode blha`` goes through ``OLP_EvalSubProcess2``.
+"""
+
+import argparse
+import hashlib
+import json
+import math
+import os
+import platform
+import re
+import subprocess
+import sys
+import time
+from fractions import Fraction
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent))
+from exact_points import _matmul, _rotate, _rotation, check, decimal_string, generate  # noqa: E402
+
+COEFFICIENTS = ("born", "finite", "single_pole", "double_pole")
+PKG_CONFIG = "/nix/store/1c6lyixjky1pfr9ia3mvpy01sxxh307a-pkg-config-0.29.2/bin"
+
+
+def sha256(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def cpu_model():
+    for line in Path("/proc/cpuinfo").read_text().splitlines():
+        if line.startswith("model name"):
+            return line.split(":", 1)[1].strip()
+    return platform.processor()
+
+
+# ------------------------------------------------------------------ points
+
+
+def command_points(args):
+    if args.fixture:
+        ref = json.loads(Path(args.fixture).read_text())
+        points, mu_r = ref["points"], [str(m) for m in ref["mu_r"]]
+        source = f"points and mu_r of {Path(args.fixture).name}"
+    else:
+        found = generate([0] * args.legs, count=args.count, cut=Fraction(args.cut))
+        # exact_points accepts one point per sqrt(s), so only a handful exist
+        # per multiplicity; timing sets are filled with exactly rotated copies
+        # (rational rotation, mass shells and momentum conservation exact).
+        rotation = _matmul(
+            _rotation(2, (Fraction(3, 5), Fraction(4, 5))),
+            _rotation(0, (Fraction(7, 25), Fraction(24, 25))),
+        )
+        for point in found[: args.rotated]:
+            copy = [_rotate(rotation, p) for p in point]
+            check(copy, [0] * args.legs)
+            found.append(copy)
+        points = [
+            [[decimal_string(x) for x in leg] for leg in point] for point in found
+        ]
+        mu_r = [args.mu_r[i % len(args.mu_r)] for i in range(len(points))]
+        source = (
+            f"tools/loop_reference/exact_points.generate([0]*{args.legs}, count={args.count}, "
+            f"cut={args.cut}) (the generator and order of pyAmpliCol's loop_v2_generate/campaign)"
+        )
+        if args.rotated:
+            source += (
+                f"; points {args.count}..{args.count + args.rotated - 1} are points "
+                f"0..{args.rotated - 1} rotated by Rz(3/5,4/5) Rx(7/25,24/25)"
+            )
+    report = {"legs": len(points[0]), "source": source, "points": points, "mu_r": mu_r}
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+    Path(args.output).write_text(json.dumps(report, indent=1) + "\n")
+    print(args.output)
+
+
+# Exact rational rotations (Pythagorean cos/sin, terminating decimals). The
+# colour- and helicity-summed virtual is a Lorentz scalar, so NJet may be
+# evaluated at a rotated copy of a point; NJet's numerics are not
+# orientation-blind (README "NJet"), so references use generic orientations.
+ROTATIONS = {
+    "R1": ((2, (3, 5), (4, 5)), (0, (7, 25), (24, 25))),
+    "R2": ((1, (117, 125), (44, 125)), (2, (7, 25), (24, 25))),
+}
+
+
+def rotation_matrix(name):
+    matrix = ((1, 0, 0), (0, 1, 0), (0, 0, 1))
+    for axis, c, s_ in ROTATIONS[name]:
+        matrix = _matmul(matrix, _rotation(axis, (Fraction(*c), Fraction(*s_))))
+    return matrix
+
+
+def rotate_points(points, name):
+    matrix = rotation_matrix(name)
+    out = []
+    for point in points:
+        exact = [_rotate(matrix, [Fraction(x) for x in leg]) for leg in point]
+        check(exact, [0] * len(exact))
+        out.append([[decimal_string(x) for x in leg] for leg in exact])
+    return out
+
+
+def points_text(points, mu_r):
+    lines = [f"{len(points)} {len(points[0])}"]
+    for point, mu in zip(points, mu_r, strict=True):
+        lines.append(str(mu))
+        lines += [" ".join(str(x) for x in leg) for leg in point]
+    return "\n".join(lines) + "\n"
+
+
+# --------------------------------------------------------------------- NJet
+
+
+def njet_install(build):
+    """(prefix, pkg-config file or None, version) of a build_njet.sh build."""
+    prefix = Path(build) / "njet" / "prefix"
+    pcs = sorted((prefix / "lib" / "pkgconfig").glob("njet*.pc"))
+    if pcs:
+        version = re.search(r"^Version:\s*(\S+)", pcs[0].read_text(), re.M).group(1)
+        return prefix, pcs[0], version
+    # NJet 2 installs neither a pkg-config file nor its internal headers.
+    config = (Path(build) / "njet" / "build" / "config.h").read_text()
+    version = re.search(r'PACKAGE_VERSION "([^"]+)"', config).group(1)
+    return prefix, None, version
+
+
+def njet_source(build):
+    info = (Path(build) / "build-info.txt").read_text()
+    return Path(re.search(r"^njet_source: (.+)$", info, re.M).group(1))
+
+
+def build_driver(build, out_dir):
+    """Compile njet_driver.cpp against an NJet build (cached by source digest)."""
+    prefix, pc, version = njet_install(build)
+    digest = sha256(HERE / "njet_driver.cpp")[:12]
+    binary = Path(out_dir) / f"njet_driver-{Path(build).resolve().name}-{digest}"
+    if binary.exists():
+        return binary, version
+    qd = Path(build) / "qd" / "prefix" / "lib"
+    if pc is not None:
+        env = dict(os.environ)
+        paths = [str(pc.parent)]
+        if (qd / "pkgconfig").is_dir():
+            paths.insert(0, str(qd / "pkgconfig"))
+        env["PKG_CONFIG_PATH"] = ":".join(paths)
+        env["PATH"] = PKG_CONFIG + ":" + env["PATH"]
+        flags = subprocess.run(
+            ["pkg-config", "--cflags", "--libs", pc.stem],
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.split()
+    else:
+        # NJet 2: the internal headers of its own (unmodified) source tree,
+        # the build's config.h, the bundled QD installed with it.
+        flags = [
+            "-DUSE_DD",
+            f"-I{njet_source(build)}",
+            f"-I{Path(build) / 'njet' / 'build'}",
+            f"-I{prefix / 'include'}",
+            f"-L{prefix / 'lib'}",
+            "-lnjet2",
+            "-lqd",
+            "-lqcdloop1",
+        ]
+    if (qd / "libqdmod.so").exists():
+        # --with-oneloop: OneLOop's double-double integrals use QD's Fortran module.
+        gfortran = (
+            Path(
+                subprocess.run(
+                    ["gfortran", "-print-file-name=libgfortran.so"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+            )
+            .resolve()
+            .parent
+        )
+        flags += [
+            "-lqdmod",
+            "-lqd",
+            f"-L{gfortran}",
+            "-lgfortran",
+            f"-Wl,-rpath,{gfortran}",
+        ]
+    rpaths = [f"-Wl,-rpath,{prefix / 'lib'}"] + (
+        [f"-Wl,-rpath,{qd}"] if qd.is_dir() else []
+    )
+    Path(out_dir).mkdir(parents=True, exist_ok=True)
+    command = [
+        "g++",
+        "-std=c++17",
+        "-O2",
+        str(HERE / "njet_driver.cpp"),
+        "-o",
+        str(binary),
+        *flags,
+        *rpaths,
+    ]
+    subprocess.run(command, check=True)
+    (binary.parent / (binary.name + ".command")).write_text(" ".join(command) + "\n")
+    return binary, version
+
+
+def sign_contract(build, run_dir, legs, amp, options):
+    """Order file -> contract signed by the build's own njet.py."""
+    prefix, _, _ = njet_install(build)
+    amplitude = {"standard": "loop", "ds": "loopds"}[amp]
+    lines = [
+        "CorrectionType QCD",
+        "IRregularisation CDR",
+        f"AlphasPower {legs - 2}",
+        f"AmplitudeType {amplitude}",
+        "Extra NJetReturnAccuracy 2",
+        f"Extra NJetMultiPrec {options['multiprec']}",
+        f"Extra Precision {options['precision']}",
+        f"SetParameter qcd(Nf) {options['nf']}",
+        "21 21 -> " + " ".join(["21"] * (legs - 2)),
+    ]
+    order = run_dir / "OLE_order.lh"
+    order.write_text("\n".join(lines) + "\n")
+    contract = run_dir / "OLE_contract.lh"
+    subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            str(prefix / "bin" / "njet.py"),
+            str(order),
+            "-o",
+            str(contract),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    text = contract.read_text()
+    if "Error" in text or "| 1 1 #" not in text:
+        raise SystemExit(f"njet.py did not accept the order file:\n{text}")
+    return contract
+
+
+def command_run(args):
+    pts = json.loads(Path(args.points).read_text())
+    indices = list(range(len(pts["points"]))) if args.indices is None else args.indices
+    pts["points"] = [pts["points"][i] for i in indices]
+    pts["mu_r"] = [pts["mu_r"][i] for i in indices]
+    evaluated = (
+        rotate_points(pts["points"], args.rotation) if args.rotation else pts["points"]
+    )
+    run_dir = Path(args.output).with_suffix("")
+    run_dir.mkdir(parents=True, exist_ok=True)
+    binary, version = build_driver(args.njet_build, Path(args.driver_dir))
+    (run_dir / "points.txt").write_text(points_text(evaluated, pts["mu_r"]))
+    legs = pts["legs"]
+    options = {
+        "mode": args.mode,
+        "amp": args.amp,
+        "prec": args.prec,
+        "scaling": args.scaling,
+        "rotation": (
+            None
+            if not args.rotation
+            else {
+                "name": args.rotation,
+                "factors": ROTATIONS[args.rotation],
+                "note": "NJet evaluated at the exactly rotated points",
+            }
+        ),
+        "alphas": args.alphas,
+        "nf": args.nf,
+        "nc": "3",
+        "scheme": args.scheme,
+        "renorm": args.renorm,
+    }
+    command = [
+        str(binary),
+        args.mode,
+        f"points={run_dir / 'points.txt'}",
+        f"alphas={args.alphas}",
+    ]
+    if args.mode == "blha":
+        options.update(multiprec=args.multiprec, precision=args.precision)
+        for key in ("prec", "scaling", "scheme", "renorm"):
+            options.pop(key)
+        if args.scheme != "cdr" or args.renorm != "1":
+            raise SystemExit("blha mode uses the contract's CDR and renormalisation")
+        command.append(
+            f"contract={sign_contract(args.njet_build, run_dir, legs, args.amp, options)}"
+        )
+    else:
+        command += [
+            f"legs={legs}",
+            f"amp={args.amp}",
+            f"prec={args.prec}",
+            f"scaling={args.scaling}",
+            f"nf={args.nf}",
+            "nc=3",
+            f"scheme={args.scheme}",
+            f"renorm={args.renorm}",
+        ]
+    if args.cpu is not None:
+        command = ["taskset", "-c", str(args.cpu), *command]
+    started = time.time()
+    with open(run_dir / "driver.log", "w") as log:
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=log, text=True)
+        rows, init = [], None
+        for line in proc.stdout:
+            log.write(line)
+            log.flush()
+            if not line.startswith("{"):
+                continue
+            row = json.loads(line)
+            if "initialisation_seconds" in row:
+                init = row["initialisation_seconds"]
+            elif "index" in row:
+                row["index"] = indices[row["index"]]
+                rows.append(row)
+                print(
+                    json.dumps({k: row[k] for k in ("index", "seconds", "finite")}),
+                    flush=True,
+                )
+        code = proc.wait()
+    if code:
+        raise SystemExit(f"njet_driver failed ({code}); see {run_dir / 'driver.log'}")
+    build_info = Path(args.njet_build) / "build-info.txt"
+    result = {
+        "tool": f"NJet {version}",
+        "njet_build": str(Path(args.njet_build).resolve()),
+        "build_info": build_info.read_text() if build_info.exists() else None,
+        "driver": {
+            "binary": str(binary),
+            "source_sha256": sha256(HERE / "njet_driver.cpp"),
+            "compile": (binary.parent / (binary.name + ".command")).read_text().strip(),
+        },
+        "options": options,
+        "command": command,
+        "host": platform.node(),
+        "cpu_model": cpu_model(),
+        "cpu": args.cpu,
+        "started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(started)),
+        "wall_seconds": round(time.time() - started, 3),
+        "legs": legs,
+        "points_source": pts["source"],
+        "points_file": str(Path(args.points).resolve()),
+        "indices": indices,
+        "points": pts["points"],
+        "mu_r": pts["mu_r"],
+        "initialisation_seconds": init,
+        "rows": rows,
+    }
+    Path(args.output).write_text(json.dumps(result, indent=1) + "\n")
+    print(args.output)
+
+
+# ------------------------------------------------------------------- Catani
+
+
+def command_catani(args):
+    """IR-pole prediction from NJet's colour-correlated Borns (tree level only).
+
+    For massless gluons, MS-bar with n_f light flavours and the MadLoop/BLHA
+    C_eps normalisation (Catani-Seymour I operator, 2 Re<M0|M1> = -<M0|I|M0>
+    at the poles):
+      double = -(alpha_s/2pi) sum_i C_A B,
+      single = (alpha_s/2pi) [ -sum_i gamma_g B
+                               + sum_{i != j} <T_i.T_j> log(mu^2 / |2 p_i.p_j|) ],
+    gamma_g = 11/6 C_A - 2/3 T_F n_f. The i pi of timelike invariants is
+    imaginary at this order and drops out of the real part.
+    """
+    pts = json.loads(Path(args.points).read_text())
+    run_dir = Path(args.output).with_suffix("")
+    run_dir.mkdir(parents=True, exist_ok=True)
+    binary, version = build_driver(args.njet_build, Path(args.driver_dir))
+    (run_dir / "points.txt").write_text(points_text(pts["points"], pts["mu_r"]))
+    command = [
+        str(binary),
+        "cc",
+        f"points={run_dir / 'points.txt'}",
+        f"alphas={args.alphas}",
+        f"prec={args.prec}",
+    ]
+    proc = subprocess.run(command, capture_output=True, text=True, check=True)
+    (run_dir / "driver.log").write_text(proc.stdout + proc.stderr)
+    alphas = float(Fraction(args.alphas))
+    ca, tf, nf = 3.0, 0.5, int(args.nf)
+    gamma_g = 11.0 / 6.0 * ca - 2.0 / 3.0 * tf * nf
+    rows = []
+    for line in proc.stdout.splitlines():
+        if not line.startswith('{"index'):
+            continue
+        row = json.loads(line)
+        i = row["index"]
+        point = [[Fraction(x) for x in leg] for leg in pts["points"][i]]
+        legs = len(point)
+        born = float(row["born"])
+        mu2 = Fraction(pts["mu_r"][i]) ** 2
+        cc = {(a, b): float(v) for a, b, v in row["cc"]}
+        conservation = max(
+            abs(
+                sum(cc[tuple(sorted((a, b)))] for b in range(legs) if b != a)
+                + ca * born
+            )
+            / (ca * born)
+            for a in range(legs)
+        )
+        logs = 0.0
+        for (a, b), value in cc.items():
+            p, q = point[a], point[b]
+            dot = p[0] * q[0] - p[1] * q[1] - p[2] * q[2] - p[3] * q[3]
+            logs += 2 * value * math.log(float(mu2 / abs(2 * dot)))
+        single = alphas / (2 * math.pi) * (-legs * gamma_g * born + logs)
+        double = -alphas / (2 * math.pi) * legs * ca * born
+        rows.append(
+            {
+                "index": i,
+                "born": repr(born),
+                "double_pole": repr(double),
+                "single_pole": repr(single),
+                "colour_conservation": conservation,
+            }
+        )
+    result = {
+        "tool": f"NJet {version} colour-correlated Born + Catani I operator",
+        "nf": nf,
+        "alphas": args.alphas,
+        "prec": args.prec,
+        "points_source": pts["source"],
+        "points": pts["points"],
+        "mu_r": pts["mu_r"],
+        "rows": rows,
+    }
+    Path(args.output).write_text(json.dumps(result, indent=1) + "\n")
+    print(
+        args.output,
+        "max colour-conservation residual",
+        max(r["colour_conservation"] for r in rows),
+    )
+
+
+# ---------------------------------------------------------------- OpenLoops
+
+
+def command_openloops(args):
+    pts = json.loads(Path(args.points).read_text())
+    legs = pts["legs"]
+    root = Path(args.openloops).resolve()
+    work = Path(args.output).with_suffix("")
+    work.mkdir(parents=True, exist_ok=True)
+    binary = work / "openloops-driver"
+    if not binary.exists():
+        subprocess.run(
+            [
+                "g++",
+                "-O2",
+                "-std=c++17",
+                str(HERE.parent / "openloops_driver.cpp"),
+                f"-I{root / 'include'}",
+                f"-L{root / 'lib'}",
+                f"-Wl,-rpath,{root / 'lib'}",
+                "-lopenloops",
+                "-o",
+                str(binary),
+            ],
+            check=True,
+        )
+    # Matched to the fixtures' OpenLoops settings (references.openloops_commands,
+    # QCD scheme): only nf distinguishes the top-free configuration.
+    commands = [
+        "int truepoles 1",
+        "int polenorm 0",
+        "int ct_on 1",
+        "int r2_on 1",
+        "int iop_on 0",
+        f"int nf {args.nf}",
+        "int nq_nondecoupled 5",
+        f"int coupling_qcd_0 {legs - 2}",
+        "int coupling_qcd_1 1",
+        "int coupling_ew_0 0",
+        "int coupling_ew_1 0",
+        f"double mass(6) {args.mt}",
+        "double width(6) 0",
+        "double mass(5) 0",
+        "double width(5) 0",
+        f"double alpha_s {args.alphas}",
+        "register 11 21 21 -> " + " ".join(["21"] * (legs - 2)),
+        f"points {len(pts['points'])}",
+    ]
+    for point, mu in zip(pts["points"], pts["mu_r"], strict=True):
+        commands.append(f"{mu} " + " ".join(x for leg in point for x in leg))
+    command = (["taskset", "-c", str(args.cpu)] if args.cpu is not None else []) + [
+        str(binary)
+    ]
+    proc = subprocess.run(
+        command,
+        input="\n".join(commands) + "\n",
+        capture_output=True,
+        text=True,
+        cwd=work,
+    )
+    (work / "output.log").write_text(proc.stdout + proc.stderr)
+    rows = {}
+    for line in proc.stdout.splitlines():
+        if line.startswith("ROW"):
+            _, index, seconds, born, finite, single, double, _ = line.split()
+            rows[int(index) - 1] = {
+                "index": int(index) - 1,
+                "seconds": float(seconds),
+                "born": born,
+                "finite": finite,
+                "single_pole": single,
+                "double_pole": double,
+            }
+    if proc.returncode or len(rows) != len(pts["points"]):
+        raise SystemExit(f"OpenLoops failed; see {work / 'output.log'}")
+    result = {
+        "tool": "OpenLoops 2.1.5",
+        "openloops": str(root),
+        "commands": commands[: -len(pts["points"])],
+        "nf": args.nf,
+        "legs": legs,
+        "points_source": pts["source"],
+        "points": pts["points"],
+        "mu_r": pts["mu_r"],
+        "rows": [rows[i] for i in range(len(rows))],
+    }
+    Path(args.output).write_text(json.dumps(result, indent=1) + "\n")
+    print(args.output)
+
+
+# ------------------------------------------------------------------ compare
+
+
+def relative(a, b, floor=0.0):
+    """The merge metric of references.py: |a-b| / max(|a|, |b|, floor)."""
+    scale = max(abs(a), abs(b), floor)
+    return abs(a - b) / scale if scale else 0.0
+
+
+def load_rows(path, provider=None):
+    data = json.loads(Path(path).read_text())
+    if "rows" in data and data["rows"] and "providers" in data["rows"][0]:
+        rows = data["rows"]
+        if provider:
+            rows = [r["providers"][provider] for r in rows]
+        return data, [{k: float(r[k]) for k in COEFFICIENTS if k in r} for r in rows]
+    return data, [
+        {k: float(r[k]) for k in COEFFICIENTS if k in r} for r in data["rows"]
+    ]
+
+
+def compare_rows(a, b, alphas):
+    out = []
+    # Compared over the common leading points (a fixture may hold fewer).
+    for i, (x, y) in enumerate(zip(a, b, strict=False)):
+        floor = abs(y["born"]) * alphas / (2 * math.pi)
+        out.append(
+            {
+                "index": i,
+                **{
+                    k: relative(x[k], y[k], 0.0 if k == "born" else floor)
+                    for k in COEFFICIENTS
+                    if k in x and k in y
+                },
+            }
+        )
+    return out
+
+
+def command_compare(args):
+    _, a = load_rows(args.a, args.a_provider)
+    _, b = load_rows(args.b, args.b_provider)
+    table = compare_rows(a, b, float(args.alphas))
+    for row in table:
+        print(json.dumps(row))
+    worst = max(max(r[k] for k in COEFFICIENTS if k in r) for r in table)
+    print(json.dumps({"max_relative": worst}))
+
+
+def command_add_top(args):
+    """NJet (massless, N_f=5) + T, T = OpenLoops(nf=6) - OpenLoops(nf=5) per point.
+
+    T is the closed top-quark loop contribution with the top decoupled from
+    alpha_s (the fixtures' loop_sm scheme); the sum is comparable with the
+    fixtures' MadLoop/Recola/OpenLoops values.
+    """
+    nj = json.loads(Path(args.njet).read_text())
+    six = json.loads(Path(args.nf6).read_text())
+    five = json.loads(Path(args.nf5).read_text())
+    if not (
+        nj["points"]
+        == six["points"][: len(nj["points"])]
+        == five["points"][: len(nj["points"])]
+    ):
+        raise SystemExit("different points")
+    rows = []
+    for row in nj["rows"]:
+        i = row["index"]
+        top = {
+            k: float(six["rows"][i][k]) - float(five["rows"][i][k])
+            for k in COEFFICIENTS
+        }
+        rows.append(
+            {
+                "index": i,
+                **{k: repr(float(row[k]) + top[k]) for k in COEFFICIENTS},
+                "top": top,
+            }
+        )
+    out = {
+        "tool": f"{nj['tool']} + T(OpenLoops nf=6 - nf=5)",
+        "njet": str(Path(args.njet).resolve()),
+        "nf6": str(Path(args.nf6).resolve()),
+        "nf5": str(Path(args.nf5).resolve()),
+        "points": nj["points"],
+        "mu_r": nj["mu_r"],
+        "rows": rows,
+    }
+    Path(args.output).write_text(json.dumps(out, indent=1) + "\n")
+    print(args.output)
+
+
+def command_calibration(args):
+    """Summarise comparisons: entries "label|a.json|b.json[|b_provider]"."""
+    summary = {}
+    for spec in args.entry:
+        label, a_path, b_path, *rest = spec.split("|")
+        provider = rest[0] if rest and rest[0] else None
+        a_data, a = load_rows(a_path)
+        b_data, b = load_rows(b_path, provider)
+        n = min(len(a), len(b))
+        if a_data.get("points", [])[:n] != b_data.get("points", [])[:n]:
+            raise SystemExit(f"{label}: different points")
+        table = compare_rows(a[:n], b[:n], float(args.alphas))
+        entry = {
+            "a": str(Path(a_path).resolve()),
+            "b": str(Path(b_path).resolve()),
+            "a_tool": a_data.get("tool"),
+            "b_tool": b_data.get("tool", provider),
+            "b_provider": provider,
+            "points": n,
+            "max_relative_deviation": {
+                k: max(r[k] for r in table) for k in COEFFICIENTS if k in table[0]
+            },
+        }
+        if a_data.get("rows") and "errors" in a_data["rows"][0]:
+            estimates = []
+            for row in a_data["rows"][:n]:
+                floor = abs(float(row["born"])) * float(args.alphas) / (2 * math.pi)
+                estimates.append(
+                    max(
+                        abs(float(e)) / max(abs(float(row[k])), floor)
+                        for e, k in zip(
+                            row["errors"],
+                            ("double_pole", "single_pole", "finite"),
+                            strict=True,
+                        )
+                    )
+                )
+            entry["max_njet_estimated_relative_accuracy"] = max(estimates)
+            entry["per_point"] = [
+                {**r, "njet_estimate": e} for r, e in zip(table, estimates, strict=True)
+            ]
+        else:
+            entry["per_point"] = table
+        summary[label] = entry
+        print(
+            label,
+            json.dumps(entry["max_relative_deviation"]),
+            entry.get("max_njet_estimated_relative_accuracy"),
+        )
+    Path(args.output).write_text(json.dumps(summary, indent=1) + "\n")
+
+
+# ------------------------------------------------------------------- timing
+
+
+def command_timing(args):
+    """Markdown table of per-point seconds of ``run`` results (one pinned CPU each)."""
+    import statistics
+
+    rows = []
+    for path in args.results:
+        data = json.loads(Path(path).read_text())
+        seconds = [r["seconds"] for r in data["rows"]]
+        o = data["options"]
+        rows.append(
+            (
+                data["legs"],
+                data["tool"],
+                o.get("amp"),
+                o.get("scaling"),
+                o.get("prec"),
+                len(seconds),
+                statistics.mean(seconds),
+                statistics.median(seconds),
+                min(seconds),
+                max(seconds),
+                data.get("initialisation_seconds"),
+                data.get("cpu"),
+            )
+        )
+    print(
+        "| channel | NJet | sum | scaling test | precision | points | mean s/pt | median | "
+        "min | max | init s | cpu |"
+    )
+    print("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    for r in sorted(rows):
+        legs, tool, amp, sc, prec, n, mean, med, lo, hi, init, cpu = r
+        test = {"1": "yes (2 evaluations)", "0": "no (1 evaluation)"}.get(sc, sc)
+        init_text = f"{init:.4g}" if init is not None else "-"
+        print(
+            f"| gg->{legs - 2}g | {tool.split()[-1]} | {amp} | {test} | {prec} | {n} | "
+            f"{mean:.4g} | {med:.4g} | {lo:.4g} | {hi:.4g} | {init_text} | {cpu} |"
+        )
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    sub = parser.add_subparsers(dest="command", required=True)
+    p = sub.add_parser("points")
+    p.add_argument("--legs", type=int)
+    p.add_argument("--count", type=int, default=3)
+    p.add_argument("--cut", default="1/1000")
+    p.add_argument(
+        "--rotated", type=int, default=0, help="append rotated copies of the first K"
+    )
+    p.add_argument("--mu-r", nargs="+", default=["1000"])
+    p.add_argument("--fixture")
+    p.add_argument("--output", required=True)
+    r = sub.add_parser("run")
+    r.add_argument("--njet-build", required=True, help="build dir of build_njet.sh")
+    r.add_argument(
+        "--driver-dir", required=True, help="where compiled drivers are cached"
+    )
+    r.add_argument("--points", required=True)
+    r.add_argument("--mode", choices=("direct", "blha"), default="direct")
+    r.add_argument("--amp", choices=("standard", "ds"), default="standard")
+    r.add_argument("--prec", choices=("double", "dd"), default="double")
+    r.add_argument("--scaling", choices=("0", "1"), default="1")
+    r.add_argument("--scheme", choices=("cdr", "fdh", "none"), default="cdr")
+    r.add_argument("--renorm", choices=("0", "1"), default="1")
+    r.add_argument("--nf", default="5")
+    r.add_argument("--alphas", default="0.118")
+    r.add_argument("--multiprec", default="0", help="blha: NJetMultiPrec")
+    r.add_argument("--precision", default="1e-5", help="blha: rescue threshold")
+    r.add_argument("--indices", type=int, nargs="+", help="evaluate only these points")
+    r.add_argument(
+        "--rotation",
+        choices=sorted(ROTATIONS),
+        help="evaluate NJet at the exactly rotated points (values are invariant)",
+    )
+    r.add_argument("--cpu", type=int)
+    r.add_argument("--output", required=True)
+    o = sub.add_parser("openloops")
+    o.add_argument("--openloops", required=True)
+    o.add_argument("--points", required=True)
+    o.add_argument("--nf", choices=("0", "5", "6"), required=True)
+    o.add_argument("--mt", default="173")
+    o.add_argument("--alphas", default="0.118")
+    o.add_argument("--cpu", type=int)
+    o.add_argument("--output", required=True)
+    c = sub.add_parser("compare")
+    c.add_argument("a")
+    c.add_argument("b")
+    c.add_argument("--a-provider")
+    c.add_argument("--b-provider")
+    c.add_argument("--alphas", default="0.118")
+    ca = sub.add_parser("catani")
+    ca.add_argument("--njet-build", required=True)
+    ca.add_argument("--driver-dir", required=True)
+    ca.add_argument("--points", required=True)
+    ca.add_argument("--nf", default="5")
+    ca.add_argument("--alphas", default="0.118")
+    ca.add_argument("--prec", choices=("double", "dd"), default="double")
+    ca.add_argument("--output", required=True)
+    a = sub.add_parser("add-top")
+    a.add_argument("--njet", required=True)
+    a.add_argument("--nf6", required=True)
+    a.add_argument("--nf5", required=True)
+    a.add_argument("--output", required=True)
+    k = sub.add_parser("calibration")
+    k.add_argument("--entry", action="append", required=True)
+    k.add_argument("--alphas", default="0.118")
+    k.add_argument("--output", required=True)
+    t = sub.add_parser("timing")
+    t.add_argument("results", nargs="+")
+    args = parser.parse_args()
+    {
+        "points": command_points,
+        "run": command_run,
+        "openloops": command_openloops,
+        "compare": command_compare,
+        "calibration": command_calibration,
+        "add-top": command_add_top,
+        "catani": command_catani,
+        "timing": command_timing,
+    }[args.command](args)
+
+
+if __name__ == "__main__":
+    main()
