@@ -10,12 +10,13 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use feynkit_model::Model;
 use symbolica::{
-    atom::{Atom, AtomCore, AtomView},
+    atom::{Atom, AtomCore, AtomView, Symbol},
     domains::atom::AtomField,
     symbol,
 };
 
-use super::{MassId, Orders, mass_name, normalize_orders};
+use super::propagators::{PropagatorSignature, validated_propagator};
+use super::{MassId, Orders, mass_id, normalize_orders, structural_zeros};
 
 /// Perturbative species facts from the unpruned model, indexed by absolute PDG.
 /// Supplying an empty map intentionally marks every species nonperturbative.
@@ -30,6 +31,7 @@ pub struct LoopSpecies {
     pub colour: i64,
     pub mass: MassId,
     pub perturbative_orders: BTreeSet<String>,
+    pub(crate) propagator: PropagatorSignature,
 }
 
 /// Structural information used to identify interchangeable closed-loop fields.
@@ -86,6 +88,26 @@ impl ModelLoopCatalogue {
     /// or counterterm-augmented model, pass perturbative species facts retained
     /// from the original model. `None` derives them from single-order vertices.
     pub fn new(model: &Model, species_orders: Option<&SpeciesOrders>) -> Result<Self, String> {
+        Self::with_bindings(model, species_orders, None)
+    }
+
+    pub(crate) fn with_bindings(
+        model: &Model,
+        species_orders: Option<&SpeciesOrders>,
+        bindings: Option<&BTreeMap<Symbol, Atom>>,
+    ) -> Result<Self, String> {
+        let zeros = structural_zeros(model)?;
+        let mut pole_zeros = zeros.clone();
+        if let Some(bindings) = bindings {
+            for parameter in model.parameters() {
+                if bindings
+                    .get(&symbol!(&format!("UFO::{}", parameter.name)))
+                    .is_some_and(|value| value.expand().is_zero())
+                {
+                    pole_zeros.insert(parameter.name.clone());
+                }
+            }
+        }
         let mut rules = Vec::new();
         for rule in model.vertex_rules() {
             // Distinct order monomials remain distinct; taking the componentwise
@@ -139,12 +161,6 @@ impl ModelLoopCatalogue {
             if !particle.propagating {
                 continue;
             }
-            let mass = model
-                .parameter_by_id(particle.mass)
-                .map_err(|e| e.to_string())?;
-            let width = model
-                .parameter_by_id(particle.width)
-                .map_err(|e| e.to_string())?;
             species.insert(
                 particle.name.clone(),
                 LoopSpecies {
@@ -152,10 +168,8 @@ impl ModelLoopCatalogue {
                     antiname,
                     spin: particle.spin,
                     colour: particle.color,
-                    mass: MassId {
-                        mass: mass_name(&mass.name),
-                        width: mass_name(&width.name),
-                    },
+                    mass: mass_id(model, particle, &zeros)?,
+                    propagator: validated_propagator(model, particle, &pole_zeros)?,
                     perturbative_orders: species_orders
                         .get(&particle.pdg_code.unsigned_abs())
                         .cloned()
@@ -241,21 +255,7 @@ impl ModelLoopCatalogue {
                     let numerator_degree = if let Some(&degree) = numerator_degrees.get(loop_out) {
                         degree
                     } else {
-                        let particle = model.particle(loop_out).map_err(|e| e.to_string())?;
-                        // Unlike the Python field-name dictionary, native model
-                        // resolution honors explicit/default and conjugate
-                        // propagators. Reversing numerator slots and q -> -q
-                        // does not change its total polynomial degree.
-                        let (propagator, _reversed) = model
-                            .particle_propagator(particle)
-                            .map_err(|e| e.to_string())?
-                            .ok_or_else(|| {
-                                format!("particle {loop_out:?} has no propagator numerator")
-                            })?;
-                        let numerator = &model
-                            .propagator_by_id(propagator)
-                            .map_err(|e| e.to_string())?
-                            .numerator;
+                        let numerator = &species[loop_out].propagator.numerator;
                         let degree = momentum_degree(numerator, None)
                             .map_err(|e| format!("propagator {loop_out}: {e}"))?;
                         numerator_degrees.insert(loop_out.clone(), degree);
@@ -380,6 +380,9 @@ impl ModelLoopCatalogue {
 /// For a propagator (`None`), every `P` and `PSlash` is scaled by `t`.
 /// Unsupported vertex momentum forms and nonpolynomial dependence fail explicitly.
 pub fn momentum_degree(expression: &Atom, slots: Option<(usize, usize)>) -> Result<i64, String> {
+    if slots.is_none() {
+        require_polynomial_momentum_components(expression)?;
+    }
     if slots.is_some_and(|(first, second)| first == 0 || second == 0 || first == second) {
         return Err("loop slots must be distinct positive UFO leg numbers".into());
     }
@@ -391,6 +394,18 @@ pub fn momentum_degree(expression: &Atom, slots: Option<(usize, usize)>) -> Resu
     let t = Atom::var(t_symbol);
     let mut error = None;
     let shifted = expression.replace_map(|term, _, out| {
+        if let AtomView::Var(variable) = term {
+            if variable.get_symbol() == symbol!("UFO::P") {
+                if slots.is_some() {
+                    error = Some(format!(
+                        "bare scalar momentum is unsupported in a vertex: {expression}"
+                    ));
+                } else {
+                    **out = Atom::from(term) * &t;
+                }
+            }
+            return;
+        }
         let AtomView::Fun(function) = term else {
             return;
         };
@@ -465,6 +480,55 @@ pub fn momentum_degree(expression: &Atom, slots: Option<(usize, usize)>) -> Resu
     Ok(degree)
 }
 
+/// Homogeneous rational functions can have nonnegative scaling degree while
+/// retaining loop-dependent denominators. Admit a polynomial in the individual
+/// momentum tensors before using a common scaling marker to count its rank.
+fn require_polynomial_momentum_components(expression: &Atom) -> Result<(), String> {
+    let mut momenta = BTreeSet::new();
+    let _ = expression.replace_map(|term, _, _| {
+        let is_momentum = match term {
+            AtomView::Var(variable) => variable.get_symbol() == symbol!("UFO::P"),
+            AtomView::Fun(function) => matches!(
+                function.get_symbol().get_name().rsplit("::").next(),
+                Some("P" | "PSlash")
+            ),
+            _ => false,
+        };
+        if is_momentum {
+            momenta.insert(Atom::from(term));
+        }
+    });
+    if momenta.is_empty() {
+        return Ok(());
+    }
+    let momenta: Vec<_> = momenta.into_iter().collect();
+    let polynomial = expression.expand().to_polynomial_in_vars_with_field::<i32>(
+        &momenta,
+        &AtomField {
+            statistical_zero_test: false,
+            ..AtomField::new()
+        },
+    );
+    for (index, coefficient) in polynomial.coefficients.iter().enumerate() {
+        if coefficient.expand().is_zero() {
+            continue;
+        }
+        if polynomial
+            .exponents(index)
+            .iter()
+            .any(|exponent| *exponent < 0)
+            || momenta
+                .iter()
+                .any(|momentum| coefficient.contains(momentum.as_view()))
+        {
+            return Err(format!(
+                "propagator numerator is not polynomial in loop-momentum components: {expression}"
+            ));
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -504,6 +568,18 @@ mod tests {
         assert!(momentum_degree(&parse!("UFO::PSlash(1,2,3)"), Some((1, 2))).is_err());
         assert!(momentum_degree(&parse!("UFO::P(UFO::idx(1,3),2)"), Some((1, 2))).is_err());
         assert!(momentum_degree(&parse!("1/UFO::P(1)"), None).is_err());
+        assert!(momentum_degree(&parse!("UFO::P"), Some((1, 2))).is_err());
+        for expression in [
+            parse!("UFO::P(1)^2/UFO::P(2)^2"),
+            parse!("sin(UFO::P(1)/UFO::P(2))"),
+            parse!("UFO::P(1)^(1/2)"),
+        ] {
+            assert!(momentum_degree(&expression, None).is_err());
+        }
+        assert_eq!(
+            momentum_degree(&parse!("UFO::P(1)*UFO::P(2)/mass^2"), None).unwrap(),
+            2
+        );
     }
 
     #[test]
