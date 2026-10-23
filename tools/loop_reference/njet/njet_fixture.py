@@ -74,8 +74,7 @@ def merge_metric(a, b, floor=0.0):
 # ------------------------------------------------------------------ build
 
 def _rows_by_index(paths):
-    rows = {}
-    meta = None
+    rows, meta = {}, None
     for path in paths:
         data = json.loads(Path(path).read_text())
         meta = meta or data
@@ -84,7 +83,7 @@ def _rows_by_index(paths):
     return rows, meta
 
 
-def _value_entry(row, legs, alphas):
+def _value_entry(row, alphas):
     values = {k: row[k] for k in COEFFICIENTS}
     errors = dict(zip(("double_pole", "single_pole", "finite"), row["errors"], strict=True))
     floor = abs(_f(row["born"])) * float(alphas) / (2 * math.pi)
@@ -93,48 +92,66 @@ def _value_entry(row, legs, alphas):
     return values, estimate
 
 
+def _labelled(specs):
+    out = {}
+    for spec in specs or []:
+        label, pattern = spec.split("=", 1)
+        out[label] = _rows_by_index(sorted(Path("/").glob(pattern.lstrip("/"))))
+    return out
+
+
+def _run_summary(meta):
+    return {"tool": meta["tool"], "build": meta["njet_build"], "options": meta["options"],
+            "driver_source_sha256": meta["driver"]["source_sha256"], "host": meta["host"],
+            "cpu_model": meta["cpu_model"]}
+
+
 def build(args):
     points = json.loads(Path(args.points).read_text())
     calibration = json.loads(Path(args.calibration).read_text())
+    catani = {r["index"]: r for r in json.loads(Path(args.catani).read_text())["rows"]}
+    catani_meta = json.loads(Path(args.catani).read_text())
     alphas = args.alphas
     legs = points["legs"]
-    dd_rows, dd_meta = _rows_by_index(args.dd)
-    db_rows, db_meta = _rows_by_index([args.double])
-    extra = {}
-    for spec in args.extra or []:
-        label, path = spec.split("=", 1)
-        extra[label] = _rows_by_index([path])
+    (primary_label, (primary, primary_meta)), = _labelled([args.primary]).items()
+    secondary = _labelled(args.secondary)
     factor = universal_double_pole_factor(legs, alphas)
-    rows, worst_pole, worst_estimate, worst_dd_double = [], 0.0, 0.0, 0.0
+    rows = []
+    worst = {"universal_double_pole": 0.0, "catani_single_pole": 0.0, "estimate": 0.0,
+             "secondary": 0.0}
     for i in range(len(points["points"])):
-        if i not in dd_rows:
-            raise SystemExit(f"no double-double value for point {i}")
-        values, estimate = _value_entry(dd_rows[i][0], legs, alphas)
+        if i not in primary:
+            raise SystemExit(f"no {primary_label} value for point {i}")
+        values, estimate = _value_entry(primary[i][0], alphas)
         born = _f(values["born"])
         floor = abs(born) * float(alphas) / (2 * math.pi)
-        providers = {"njet_dd": {**values, "estimated_relative_accuracy": estimate,
-                                 "seconds": dd_rows[i][0]["seconds"]}}
-        if i in db_rows:
-            dvals, dest = _value_entry(db_rows[i][0], legs, alphas)
-            providers["njet_double"] = {**dvals, "estimated_relative_accuracy": dest,
-                                        "seconds": db_rows[i][0]["seconds"]}
-            dev = {k: merge_metric(_f(dvals[k]), _f(values[k]), 0.0 if k == "born" else floor)
+        providers = {primary_label: {**values, "estimated_relative_accuracy": estimate,
+                                     "seconds": primary[i][0]["seconds"]}}
+        for label, (srows, _) in secondary.items():
+            if i not in srows:
+                continue
+            svals, sest = _value_entry(srows[i][0], alphas)
+            dev = {k: merge_metric(_f(svals[k]), _f(values[k]), 0.0 if k == "born" else floor)
                    for k in COEFFICIENTS}
-            providers["njet_double"]["relative_deviation_from_dd"] = dev
-            worst_dd_double = max(worst_dd_double, *dev.values())
-        for label, (erows, _) in extra.items():
-            if i in erows:
-                evals, eest = _value_entry(erows[i][0], legs, alphas)
-                dev = {k: merge_metric(_f(evals[k]), _f(values[k]),
-                                       0.0 if k == "born" else floor) for k in COEFFICIENTS}
-                providers[label] = {**evals, "estimated_relative_accuracy": eest,
-                                    "relative_deviation_from_dd": dev}
+            providers[label] = {**svals, "estimated_relative_accuracy": sest,
+                                "seconds": srows[i][0]["seconds"],
+                                "relative_deviation_from_primary": dev}
+            worst["secondary"] = max(worst["secondary"], *dev.values())
+        c = catani[i]
+        catani_dev = {k: merge_metric(_f(values[k]), _f(c[k]), floor)
+                      for k in ("single_pole", "double_pole")}
+        providers["catani"] = {"born": c["born"], "single_pole": c["single_pole"],
+                               "double_pole": c["double_pole"],
+                               "colour_conservation_residual": c["colour_conservation"],
+                               "relative_deviation_of_primary": catani_dev}
         pole = merge_metric(_f(values["double_pole"]), factor * born)
-        worst_pole = max(worst_pole, pole)
-        worst_estimate = max(worst_estimate, *estimate.values())
+        worst["universal_double_pole"] = max(worst["universal_double_pole"], pole)
+        worst["catani_single_pole"] = max(worst["catani_single_pole"],
+                                          catani_dev["single_pole"])
+        worst["estimate"] = max(worst["estimate"], *estimate.values())
         rows.append({**values, "estimated_relative_accuracy": estimate,
                      "universal_double_pole_relative_error": pole, "providers": providers})
-    build_info = dd_meta["build_info"]
+    rotation = primary_meta["options"].get("rotation")
     fixture = {
         "schema_version": SCHEMA_VERSION,
         "process": "g g > g g g g g QED=0 [virt=QCD]",
@@ -149,13 +166,23 @@ def build(args):
             "the MS-bar running of alpha_s(mu_R); NO top quark (NJet has no massive quarks). "
             "pyAmpliCol's loop_sm (MT=173, top loops, top decoupled from alpha_s) differs from "
             "this only in the finite part; see comparison_rules."),
-        "source": (f"NJet {dd_meta['tool'].split()[-1]} (https://bitbucket.org/njet/njet, "
-                   "release tarball), numerical colour-summed Amp0q7g through NJetAccuracy, "
-                   "driver tools/loop_reference/njet/njet_driver.cpp"),
+        "source": (f"{primary_meta['tool']} (https://bitbucket.org/njet/njet, release tarball), "
+                   "numerical colour-summed Amp0q7g through NJetAccuracy, driver "
+                   "tools/loop_reference/njet/njet_driver.cpp; poles also from NJet 2.1.1's "
+                   "colour-correlated Borns and the Catani I operator"),
         "scope": (
             "Independent reference values at pyAmpliCol's exact g g > g g g g g points "
-            "(points 0-2 are those of the work/v2-generation-scale campaign); double-double "
-            "evaluation with NJet's scaling test; no pyAmpliCol code involved."),
+            "(points 0-2 are those of the work/v2-generation-scale campaign); no pyAmpliCol "
+            "code involved."),
+        "evaluation_orientation": (
+            None if not rotation else
+            {**rotation, "reason": (
+                "NJet's numerics depend on the orientation of the event: at the points as "
+                "given (beams along +-z) NJet 3.1.2 and 2.1.1 lose 4-6 digits in double "
+                "precision (NaN at points 7-9) and the QCDLoop double-double mode is no "
+                "better; at generic orientations the poles agree with the Catani "
+                "prediction to <= 3e-9 in double. The virtual is a Lorentz scalar, so the "
+                "values are those of the points as given.")}),
         "convention": (
             "MadLoop/BLHA C_eps=(4pi)^eps/Gamma(1-eps); CDR/HV ('t Hooft-Veltman) with MS-bar "
             "alpha_s(mu_R); physical couplings g_s^2=4 pi alpha_s; initial spin and colour "
@@ -186,31 +213,28 @@ def build(args):
                        "is the top-loop contribution, reported, not tested"),
         },
         "rows": rows,
-        "primary_provider": "njet_dd",
+        "primary_provider": primary_label,
         "universal_double_pole_factor": factor,
-        "maximum_universal_double_pole_relative_error": worst_pole,
-        "maximum_estimated_relative_accuracy": worst_estimate,
-        "maximum_double_vs_dd_relative_deviation": worst_dd_double,
+        "maximum_universal_double_pole_relative_error": worst["universal_double_pole"],
+        "maximum_catani_single_pole_relative_error": worst["catani_single_pole"],
+        "maximum_estimated_relative_accuracy": worst["estimate"],
+        "maximum_secondary_relative_deviation": worst["secondary"],
         "error_metric": ("|a-b|/max(|a|,|b|,|Born| alpha_s/(2pi)) for Laurent coefficients, "
                          "|a-b|/max(|a|,|b|) for the Born (references.py merge metric); "
                          "estimated_relative_accuracy = |NJet scaling-test difference| / "
                          "max(|value|, |Born| alpha_s/(2pi))"),
         "providers": {
-            "njet": {
-                "version": dd_meta["tool"],
-                "build": dd_meta["njet_build"],
-                "build_info": build_info,
-                "driver": dd_meta["driver"],
-                "options_dd": dd_meta["options"],
-                "options_double": db_meta["options"],
-                "host": dd_meta["host"], "cpu_model": dd_meta["cpu_model"],
-                "accuracy_estimate": (
-                    "NJet's scaling test (NJetAccuracy::virt): the amplitude is evaluated "
-                    "at the point and with all momenta (and mu_R) rescaled by "
-                    "1.2857142857142855; the value is their average, the estimate their "
-                    "difference. The double-double evaluation keeps QCDLoop's scalar "
-                    "integrals in double precision."),
-            },
+            primary_label: {**_run_summary(primary_meta),
+                            "build_info": primary_meta["build_info"]},
+            **{label: _run_summary(meta) for label, (_, meta) in secondary.items()},
+            "catani": {"tool": catani_meta["tool"], "nf": catani_meta["nf"],
+                       "formula": ("single = (alpha_s/2pi)[-n gamma_g B + sum_{i!=j} <T_i.T_j> "
+                                   "log(mu^2/|2p_i.p_j|)], gamma_g = 11/6 C_A - 2/3 T_F n_f; "
+                                   "double = -(alpha_s/2pi) n C_A B (run_njet.py catani)")},
+            "accuracy_estimate": (
+                "NJet's scaling test (NJetAccuracy::virt): the amplitude is evaluated at the "
+                "point and with all momenta (and mu_R) rescaled by 1.2857142857142855; the "
+                "value is their average, the estimate their difference."),
         },
         "calibration": calibration,
     }
@@ -257,6 +281,12 @@ def validate_fixture(data):
         need(set(estimate) == set(COEFFICIENTS), "estimates")
         pole = merge_metric(float(row["double_pole"]), factor * born)
         need(pole <= max(10 * estimate["double_pole"], 1e-13), "universal double pole")
+        need(data["primary_provider"] in row["providers"], "primary provider row")
+        catani = row["providers"]["catani"]
+        need(catani["colour_conservation_residual"] < 1e-13, "colour conservation")
+        floor = born * float(alphas) / (2 * math.pi)
+        single = merge_metric(float(row["single_pole"]), float(catani["single_pole"]), floor)
+        need(single <= max(10 * estimate["single_pole"], 1e-12), "Catani single pole")
     return True
 
 
@@ -317,9 +347,9 @@ def main():
     sub = parser.add_subparsers(dest="command", required=True)
     b = sub.add_parser("build")
     b.add_argument("--points", required=True)
-    b.add_argument("--dd", nargs="+", required=True, help="run_njet.py dd results")
-    b.add_argument("--double", required=True, help="run_njet.py double result")
-    b.add_argument("--extra", nargs="*", help="label=path of further double runs")
+    b.add_argument("--primary", required=True, help="label=glob of run_njet.py results")
+    b.add_argument("--secondary", nargs="*", help="label=glob of further results")
+    b.add_argument("--catani", required=True, help="run_njet.py catani result")
     b.add_argument("--calibration", required=True)
     b.add_argument("--alphas", default="0.118")
     b.add_argument("--output", required=True)

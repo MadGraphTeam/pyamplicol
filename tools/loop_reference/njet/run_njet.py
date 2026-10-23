@@ -186,7 +186,7 @@ def sign_contract(build, run_dir, legs, amp, options):
     lines = ["CorrectionType QCD", "IRregularisation CDR", f"AlphasPower {legs - 2}",
              f"AmplitudeType {amplitude}", "Extra NJetReturnAccuracy 2",
              f"Extra NJetMultiPrec {options['multiprec']}", f"Extra Precision {options['precision']}",
-             f"Extra NJetNf {options['nf']}",
+             f"SetParameter qcd(Nf) {options['nf']}",
              "21 21 -> " + " ".join(["21"] * (legs - 2))]
     order = run_dir / "OLE_order.lh"
     order.write_text("\n".join(lines) + "\n")

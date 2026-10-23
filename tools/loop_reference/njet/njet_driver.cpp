@@ -301,8 +301,13 @@ int run_blha(const std::vector<Point> &points, int legs,
   char name[BLHA_NAME_LEN + 1] = {}, version[BLHA_VERSION_LEN + 1] = {},
        message[BLHA_MESSAGE_LEN + 1] = {};
   OLP_Info(name, version, message);
+  std::string text(message), escaped;
+  for (const char ch : text) {
+    if (ch == '\\' || ch == '"') escaped += '\\';
+    escaped += ch;
+  }
   std::printf("{\"olp\": \"%s\", \"version\": \"%s\", \"message\": \"%s\"}\n", name, version,
-              message);
+              escaped.c_str());
   const double alphas = std::strtod(get(args, "alphas").c_str(), nullptr);
   const double zero = 0.;
   int rstatus = 0;
