@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import math
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -151,13 +152,40 @@ def build(paths: list[Path]) -> dict[str, Any]:
     for record in records:
         entry = processes.setdefault(
             record["process"],
-            {"key": record["process"], "pyamplicol": {}, "providers": None},
+            {
+                "key": record["process"],
+                "pyamplicol": {},
+                "providers": None,
+                "repeats": {},
+            },
         )
         if record["kind"] == "providers":
+            # A later record of the same provider (e.g. the run on the core
+            # that also timed pyAmpliCol) replaces an earlier one; every
+            # run's mean is kept as a repeat.
+            for name, result in record["providers"].items():
+                if "mean_seconds_per_point" in result:
+                    entry["repeats"].setdefault(name, []).append(
+                        {
+                            "cpu": record["cpu"],
+                            "mean_seconds_per_point": result["mean_seconds_per_point"],
+                            "points": result["points"],
+                        }
+                    )
             if entry["providers"] is None:
-                entry["providers"] = record
+                entry["providers"] = json.loads(json.dumps(record))
             else:
-                entry["providers"]["providers"].update(record["providers"])
+                known = entry["providers"]["providers"]
+                for name, result in record["providers"].items():
+                    if "mean_seconds_per_point" not in result:
+                        continue
+                    # Keep an earlier run's stage split (instrumented MadLoop).
+                    stages = known.get(name, {}).get("stages")
+                    known[name] = {
+                        **({"stages": stages} if stages else {}),
+                        **result,
+                    }
+                entry["providers"]["cpu"] = record["cpu"]
         else:
             entry["pyamplicol"][_configuration(record)] = record
     out = []
@@ -175,11 +203,13 @@ def build(paths: list[Path]) -> dict[str, Any]:
             batches = {}
             mine: dict[int, tuple] = {}
             for size, summary in record.get("batches", {}).items():
-                verdict = (
-                    gate_verdict(summary["median_seconds_per_point"], times)
-                    if legs >= 3
-                    else {"status": "no gate (2->2)"}
-                )
+                if legs < 3:
+                    verdict = {"status": "no gate (2->2)"}
+                elif record["accuracy"] != "full":
+                    # Providers time full colour: LC/NLC carry no ratio.
+                    verdict = {"status": "no gate (colour approximation)"}
+                else:
+                    verdict = gate_verdict(summary["median_seconds_per_point"], times)
                 batches[size] = {**summary, "gate": verdict}
                 for index, value in summary.get("values", {}).items():
                     mine.setdefault(int(index), tuple(value))
@@ -218,10 +248,17 @@ def build(paths: list[Path]) -> dict[str, Any]:
                 "provider_cpu": entry["providers"]["cpu"]
                 if entry["providers"]
                 else None,
+                "provider_repeats": entry["repeats"],
                 "pyamplicol": configurations,
             }
         )
-    return {"gate_factor": GATE_FACTOR, "processes": out}
+    document = {"gate_factor": GATE_FACTOR, "processes": out}
+    if str(streams.ROOT) not in sys.path:
+        sys.path.insert(0, str(streams.ROOT))
+    from tools.loop_v2_costmodel import g1_recalibration
+
+    document["recalibration"] = g1_recalibration(document)
+    return document
 
 
 def main(options: Any) -> int:

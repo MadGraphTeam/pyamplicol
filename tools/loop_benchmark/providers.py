@@ -43,6 +43,7 @@ import json
 import math
 import os
 import platform
+import re
 import statistics
 import subprocess
 import sys
@@ -277,6 +278,221 @@ def madloop(
     }
 
 
+# MadLoop's per-point call sites, grouped as the live report shows them:
+# 0 loop-numerator coefficients (COEF_CONSTRUCTION), 1 Born, counterterm and
+# shared wavefunction HELAS calls (HELAS_CALLS_AMPB, HELAS_CALLS_UVCT),
+# 2 reduction and masters (LOOP_CT_CALLS: the reducers and their integrals,
+# stability retries included); multiple-precision variants count alike.
+STAGE_CALL = re.compile(
+    r"\s+CALL ML5_\d+_(?:MP_)?(COEF_CONSTRUCTION|HELAS_CALLS_AMPB|HELAS_CALLS_UVCT"
+    r"|LOOP_CT_CALLS)_\d+\(.*\)\s*$"
+)
+STAGE_BUCKETS = {
+    "COEF_CONSTRUCTION": 0,
+    "HELAS_CALLS_AMPB": 1,
+    "HELAS_CALLS_UVCT": 1,
+    "LOOP_CT_CALLS": 2,
+}
+STAGE_NAMES = (
+    "loop numerator coefficients",
+    "Born and counterterm HELAS",
+    "reduction and masters",
+)
+STAGE_TIMER = r"""
+#include <stdio.h>
+#include <time.h>
+static double total[3], begin[3];
+static unsigned long long calls[3];
+static double now(void) {
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  return t.tv_sec + 1e-9 * t.tv_nsec;
+}
+void reference_stage_start_(const int *i) { begin[*i] = now(); }
+void reference_stage_stop_(const int *i) {
+  total[*i] += now() - begin[*i];
+  ++calls[*i];
+}
+__attribute__((destructor)) static void report(void) {
+  FILE *f = fopen("madloop-stages.json", "w");
+  if (!f) return;
+  fprintf(f, "{\"seconds\": [%.9e, %.9e, %.9e], \"calls\": [%llu, %llu, %llu]}\n",
+          total[0], total[1], total[2], calls[0], calls[1], calls[2]);
+  fclose(f);
+}
+"""
+
+
+def _instrumented_madloop(export: Path, run: Path, global_flag: str) -> Path:
+    """MadLoop's driver linked with copies of ``loop_matrix.f`` and
+    ``mp_compute_loop_coefs.f`` whose stage calls are bracketed by wall-clock
+    timers (``STAGE_CALL``); the export itself is never modified. The timers
+    write ``madloop-stages.json`` into the working directory at exit."""
+
+    import shlex
+
+    references = _references()
+    from build import madloop_libraries
+
+    process = references.madloop_process_dir(export)
+    objects = []
+    for name in ("loop_matrix.f", "mp_compute_loop_coefs.f"):
+        lines = []
+        count = 0
+        for line in (process / name).read_text().splitlines(keepends=True):
+            match = STAGE_CALL.match(line)
+            if match:
+                bucket = STAGE_BUCKETS[match.group(1)]
+                lines += [
+                    f"      CALL REFERENCE_STAGE_START({bucket})\n",
+                    line,
+                    f"      CALL REFERENCE_STAGE_STOP({bucket})\n",
+                ]
+                count += 1
+            else:
+                lines.append(line)
+        if not count:
+            raise RuntimeError(f"no MadLoop stage calls found in {name}")
+        source = run / name
+        source.write_text("".join(lines))
+        target = run / (name[:-2] + ".o")
+        subprocess.run(
+            [
+                "gfortran",
+                "-w",
+                "-fPIC",
+                "-fno-common",
+                "-ffixed-line-length-132",
+                "-fallow-argument-mismatch",
+                *shlex.split(global_flag),
+                "-I",
+                str(process),
+                "-I",
+                str(export / "SubProcesses"),
+                "-I",
+                str(export / "Source/MODEL"),
+                "-J",
+                str(run),
+                "-c",
+                str(source),
+                "-o",
+                str(target),
+            ],
+            check=True,
+            cwd=run,
+        )
+        objects.append(target)
+    timer = run / "stage_timer.c"
+    timer.write_text(STAGE_TIMER)
+    subprocess.run(
+        ["gcc", "-O2", "-c", str(timer), "-o", str(run / "stage_timer.o")],
+        check=True,
+        cwd=run,
+    )
+    objects.append(run / "stage_timer.o")
+    driver = run / "madloop_driver.f90"
+    driver.write_text(
+        (streams.REFERENCE / "madloop_driver.f90")
+        .read_text()
+        .replace("ML5_0_", references.madloop_prefix(process))
+    )
+    fixes, _ = references.madloop_model_fix(export, run, global_flag)
+    binary = run / "madloop-driver-stages"
+    subprocess.run(
+        [
+            "gfortran",
+            "-O2",
+            "-ffree-line-length-none",
+            "-I",
+            str(process),
+            str(driver),
+            *map(str, objects),
+            *map(str, fixes),
+            str(export / "lib/libMadLoop.a"),
+            "-L" + str(export / "lib"),
+            "-ldhelas",
+            "-lmodel",
+            *map(str, madloop_libraries(export)),
+            "-lstdc++",
+            "-Wl,--no-relax",
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=run,
+    )
+    return binary
+
+
+def madloop_stages(
+    spec: dict, points: dict, work: Path, cpu: int, export: Path
+) -> dict[str, Any]:
+    """MadLoop's numerator / Born-and-CT / reduction-and-masters split.
+
+    The instrumented driver runs the stream's points once and the first
+    point alone, after a warm-up that stores MadLoop's filters; both measured
+    runs initialise identically (point 1, untimed), so the difference of
+    their stage totals is the stage time of points 2..n, and the per-point
+    stage times are that difference over n - 1. The driver's own per-point
+    total (instrumented) is reported beside them; the timers cost one clock
+    read per call."""
+
+    references = _references()
+    run = work / "madloop-stages-run"
+    run.mkdir(parents=True, exist_ok=True)
+    flags = references.madloop_build_flags(export, MG5)
+    binary = _instrumented_madloop(
+        export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
+    )
+    references.prepare_madloop_run(spec, export, run, MG5, len(spec["pdgs"]))
+    born, loop = spec["born_orders"], spec["loop_orders"]
+    alpha_s = references.value(spec["scheme_data"], "aS")
+    totals = {}
+    rows = {}
+    # MadLoop stores its helicity and loop filters in the resources at the
+    # end of its initialisation; the untimed warm-up writes them, so both
+    # measured runs load them and initialise identically.
+    runs = (("warm-up", 1), ("all", len(points["points"])), ("first", 1))
+    for label, count in runs:
+        subset = {
+            **points,
+            "points": points["points"][:count],
+            "mu_r": points["mu_r"][:count],
+        }
+        header = (
+            f"{2 * born['QCD']} {2 * born['QED']} {born['QCD'] + loop['QCD']} "
+            f"{born['QED'] + loop['QED']} {alpha_s} -1 0\n{count}\n"
+        )
+        stdin = header + "\n".join(references.point_lines(subset)) + "\n"
+        stdout, _ = references.run_native(
+            [str(binary)], stdin, run, run / f"output-{label}.log", cpu
+        )
+        rows[label], _ = references.parse_rows(stdout, "madloop", count)
+        totals[label] = json.loads((run / "madloop-stages.json").read_text())
+    timed = len(points["points"]) - 1
+    if timed < 1:
+        raise RuntimeError("the stage split needs at least two points")
+    stage = [
+        (a - b) / timed
+        for a, b in zip(
+            totals["all"]["seconds"], totals["first"]["seconds"], strict=True
+        )
+    ]
+    per_point = statistics.fmean(row["seconds"] for row in rows["all"][:-1])
+    return {
+        "stages_seconds_per_point": dict(zip(STAGE_NAMES, stage, strict=True)),
+        "residual_seconds_per_point": per_point - sum(stage),
+        "instrumented_seconds_per_point": per_point,
+        "points": timed,
+        "calls_per_point": [
+            (a - b) / timed
+            for a, b in zip(
+                totals["all"]["calls"], totals["first"]["calls"], strict=True
+            )
+        ],
+    }
+
+
 def main(options: Any) -> int:
     key = options.process
     spec = streams.spec(key)
@@ -309,6 +525,10 @@ def main(options: Any) -> int:
                 if export is None:
                     raise RuntimeError("no MadLoop export for this process")
                 result = madloop(spec, points, work, options.cpu, Path(export))
+                if options.madloop_stages:
+                    result["stages"] = madloop_stages(
+                        spec, points, work, options.cpu, Path(export)
+                    )
         except Exception as error:  # recorded, never silently dropped
             result = {"provider": provider, "error": f"{type(error).__name__}: {error}"}
         result["harness_wall_seconds"] = time.perf_counter() - start

@@ -57,6 +57,11 @@ def main(argv: list[str] | None = None) -> int:
     providers.add_argument("--cpu", type=int, required=True)
     providers.add_argument("--work", type=Path, required=True)
     providers.add_argument("--madloop-export", type=Path)
+    providers.add_argument(
+        "--madloop-stages",
+        action="store_true",
+        help="also time MadLoop's stages with an instrumented driver",
+    )
     providers.add_argument("--json", type=Path)
 
     gate = commands.add_parser("gate", help="combine records into the gate table")
