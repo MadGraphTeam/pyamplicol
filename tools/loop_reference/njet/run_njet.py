@@ -316,6 +316,64 @@ def command_compare(args):
     print(json.dumps({"max_relative": worst}))
 
 
+def command_calibration(args):
+    """Summarise comparisons: entries "label|a.json|b.json[|b_provider]"."""
+    summary = {}
+    for spec in args.entry:
+        label, a_path, b_path, *rest = spec.split("|")
+        provider = rest[0] if rest and rest[0] else None
+        a_data, a = load_rows(a_path)
+        b_data, b = load_rows(b_path, provider)
+        n = min(len(a), len(b))
+        if a_data.get("points", [])[:n] != b_data.get("points", [])[:n]:
+            raise SystemExit(f"{label}: different points")
+        table = compare_rows(a[:n], b[:n], float(args.alphas))
+        entry = {"a": str(Path(a_path).resolve()), "b": str(Path(b_path).resolve()),
+                 "a_tool": a_data.get("tool"), "b_tool": b_data.get("tool", provider),
+                 "b_provider": provider, "points": n,
+                 "max_relative_deviation": {k: max(r[k] for r in table) for k in COEFFICIENTS}}
+        if a_data.get("rows") and "errors" in a_data["rows"][0]:
+            estimates = []
+            for row in a_data["rows"][:n]:
+                floor = abs(float(row["born"])) * float(args.alphas) / (2 * math.pi)
+                estimates.append(max(abs(float(e)) / max(abs(float(row[k])), floor) for e, k in
+                                     zip(row["errors"], ("double_pole", "single_pole", "finite"))))
+            entry["max_njet_estimated_relative_accuracy"] = max(estimates)
+            entry["per_point"] = [{**r, "njet_estimate": e} for r, e in zip(table, estimates)]
+        else:
+            entry["per_point"] = table
+        summary[label] = entry
+        print(label, json.dumps(entry["max_relative_deviation"]),
+              entry.get("max_njet_estimated_relative_accuracy"))
+    Path(args.output).write_text(json.dumps(summary, indent=1) + "\n")
+
+
+# ------------------------------------------------------------------- timing
+
+def command_timing(args):
+    """Markdown table of per-point seconds of ``run`` results (one pinned CPU each)."""
+    import statistics
+
+    rows = []
+    for path in args.results:
+        data = json.loads(Path(path).read_text())
+        seconds = [r["seconds"] for r in data["rows"]]
+        o = data["options"]
+        rows.append((data["legs"], data["tool"], o.get("amp"), o.get("scaling"), o.get("prec"),
+                     len(seconds), statistics.mean(seconds), statistics.median(seconds),
+                     min(seconds), max(seconds), data.get("initialisation_seconds"),
+                     data.get("cpu")))
+    print("| channel | NJet | sum | scaling test | precision | points | mean s/pt | median | "
+          "min | max | init s | cpu |")
+    print("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    for r in sorted(rows):
+        legs, tool, amp, sc, prec, n, mean, med, lo, hi, init, cpu = r
+        test = {"1": "yes (2 evaluations)", "0": "no (1 evaluation)"}.get(sc, sc)
+        init_text = f"{init:.4g}" if init is not None else "-"
+        print(f"| gg->{legs - 2}g | {tool.split()[-1]} | {amp} | {test} | {prec} | {n} | "
+              f"{mean:.4g} | {med:.4g} | {lo:.4g} | {hi:.4g} | {init_text} | {cpu} |")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -358,9 +416,16 @@ def main():
     c.add_argument("--a-provider")
     c.add_argument("--b-provider")
     c.add_argument("--alphas", default="0.118")
+    k = sub.add_parser("calibration")
+    k.add_argument("--entry", action="append", required=True)
+    k.add_argument("--alphas", default="0.118")
+    k.add_argument("--output", required=True)
+    t = sub.add_parser("timing")
+    t.add_argument("results", nargs="+")
     args = parser.parse_args()
     {"points": command_points, "run": command_run, "openloops": command_openloops,
-     "compare": command_compare}[args.command](args)
+     "compare": command_compare, "calibration": command_calibration,
+     "timing": command_timing}[args.command](args)
 
 
 if __name__ == "__main__":
