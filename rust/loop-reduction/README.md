@@ -1,8 +1,9 @@
 # NinjaRS consumer boundary
 
 This standalone Rust crate exercises the actual reducer and scalar master
-provider before they are integrated into the application's shared core. It
-does not generate physical amplitudes or implement a second reduction method.
+provider before they are integrated into the application's shared core. Native
+scalar tree preparation also reuses FeynKit's amplitude generator and Idenso's
+contraction, then feeds the existing coefficient runtime.
 
 ## Native structural preparation
 
@@ -85,6 +86,21 @@ one source revision for every FeynKit, Ninja and Symbolica-family package. The
 anchors cover three precision modes, scalar and explicit-μ² reductions, Laurent
 poles, rational terms, failed-lane handling and rank callbacks. Broader physical
 consumer results below are retained historical evidence at their stated pins.
+
+`tree_preparation::ScalarTreeProgram::prepare` accepts a native `Model`, process,
+generation options, optional parameter card and exact parameter overrides. It
+generates all selected labelled tree diagrams and their coherent norm in Rust,
+without Python preparation or process-specific compilation. Every participating
+field must currently be a color-singlet scalar; other fields are explicit
+capability errors. This is not yet a general Standard Model/QCD tree provider.
+
+The program returns exact evaluator state and the external-leg input order.
+Its `evaluator` method uses the existing typed binary64, double-double or
+arbitrary-precision batch runtime. Inputs are physical incoming/outgoing
+four-momenta `(E,px,py,pz)` with metric `+---`. The result has no flux, initial
+averaging or identical-particle phase-space factor. Exact parameter atoms retain
+their precision; numeric model/card defaults represent the original binary64
+values exactly and do not acquire extra input accuracy at higher precision.
 
 From this crate's directory, using the shared workspace environment:
 
