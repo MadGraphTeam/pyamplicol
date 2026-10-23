@@ -14,6 +14,8 @@ use super::*;
 
 mod spenso;
 pub use spenso::spenso_color_network;
+mod ufo;
+pub use ufo::{UfoColorIndex, ufo_color_network};
 #[cfg(test)]
 mod tests;
 
