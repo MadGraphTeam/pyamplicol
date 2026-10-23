@@ -692,6 +692,19 @@ the tree path.
   `exclusions.json` remains available for documented exclusions but none is
   in use.
 
+### Seven-leg QCD references
+
+`tests/fixtures/loop/required/uux_ggggg.json` is the merged reference of
+`workspace/reference/runs/required/uux_ggggg/` (`reference.json`, copied
+unchanged on 2026-10-23): MadLoop and Recola at three points, validated to
+`6.2e-10` (tolerance `2e-8`). Generation on this host: MadLoop 12.2 h
+(5,793 s graphs + 38,040 s export + 122 s compile), Recola 2.8 h (10,220 s);
+per point MadLoop 558 s (production stability setting, return code 216) and
+Recola 182 s. OpenLoops has no public library for this process. No
+`g g -> g g g g g` reference exists: its MadLoop (colour factors ~89 days by
+MG5's estimate) and Recola (> 57 h) runs were stopped and are not restarted
+(REQUIREMENTS_ADDENDUM F).
+
 ## Legacy-engine oracles for the v2 engine (WP0.1)
 
 `legacy_capture.py` freezes the legacy per-diagram engine before the v2 engine
