@@ -2349,8 +2349,12 @@ dependencies = [
 name = "rusticol-loop-reduction"
 version = "0.1.0"
 dependencies = [
+ "feynkit-amplitude",
+ "feynkit-generator",
+ "feynkit-graph",
  "feynkit-kinematics",
  "feynkit-model",
+ "idenso",
  "ninjars",
  "ninjars-graph",
  "ninjars-symbolica",
@@ -2358,6 +2362,7 @@ dependencies = [
  "rusticol-core",
  "serde",
  "serde_json",
+ "spenso",
  "symbolica",
 ]
 
