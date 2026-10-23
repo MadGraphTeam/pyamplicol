@@ -12,6 +12,7 @@
 
 pub mod preparation;
 pub mod runtime;
+pub mod scalar_loop;
 pub mod verification;
 pub mod virtual_runtime;
 

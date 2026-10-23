@@ -1,8 +1,8 @@
 # NinjaRS consumer boundary
 
-This standalone Rust crate exercises the actual reducer and scalar master
-provider before they are integrated into the application's shared core. It
-does not generate physical amplitudes or implement a second reduction method.
+This Rust crate consumes the actual reducer and scalar master provider. It also
+prepares native bare one-loop amplitudes within the declared scalar class below;
+it does not implement a second reduction method.
 
 ## Native structural preparation
 
@@ -41,6 +41,55 @@ These APIs prepare structural loop families. They do not construct numerical
 tree currents, Lorentz/colour kernels, UV/R2 terms, or complete physical
 amplitudes. Focused checks run with
 `cargo test -p rusticol-loop-reduction preparation:: --lib -- --test-threads=1`.
+
+## Native coherent scalar loops
+
+`scalar_loop::ScalarLoopProgram::prepare` accepts a typed FeynKit model, process,
+generation options, optional parameter card and exact parameter overrides. FeynKit
+owns the labelled diagrams, model factors, symmetry factors, momentum routing and
+quadratic-pole extraction. Exact coefficient instructions then feed the existing
+`CoefficientEvaluator`, `PolynomialPlan`, NinjaRS and OneLOop implementations.
+Preparation and evaluation require neither Python nor process-specific compilation.
+
+The admitted class has participating color-singlet scalar fields and
+momentum-independent scalar interaction/propagator numerators. Internal poles
+must be monic `q²-m²` vacuum poles with real bound masses, zero widths and zero
+chemical potentials. Repeated loop poles, derivative interactions, unresolved
+tensor or dimension dependence, and nontrivial projectors fail explicitly.
+Extending the class requires preparing the corresponding polynomial/tensor
+numerators or propagator powers through their upstream contracts. Field names,
+coupling values and benchmark processes do not choose an implementation.
+
+Tadpoles and zero-flow bridges are retained unless the caller supplies an
+explicit graph filter. Bridge denominators remain in exact coefficients; a
+singular bridge produces an evaluation failure rather than a dropped diagram.
+Inputs contain real finite momenta in `momentum_legs()` order and positive
+`mu_squared`, with matching unique lane identities. The caller owns signed
+momentum conservation and, for scattering, on-shell validation. Off-shell Green
+functions are also admitted. Flux, initial-state averages and final-state
+phase-space factorials belong to the consumer.
+
+The evaluator sums complete complex diagram amplitudes in the chosen native
+carrier, before any Born contraction. Successful outputs are the finite,
+single-pole and double-pole Laurent coefficients in the existing MadLoop/BLHA
+`C_epsilon`-stripped **bare** convention, multiplying Ninja integrals by
+`i/(16*pi²)` at the requested working precision. There are no UV counterterms or
+infrared remainder conversions here: the finite entry is not an NSC `R1`, and
+its square is not a finite one-loop norm. Failed lanes expose no partial sum.
+
+`evaluator_with_precision_bits(Arithmetic::Arbitrary, bits)` uses exactly that
+starting working precision for coefficient instructions, normalization, sampling
+and reduction; reliable Float precision may decrease under cancellation. The
+existing `evaluator` constructor accepts decimal digits for compatibility.
+
+All ten `scalar_loop::tests` pass on the dependency pair below. They check
+analytical complex tadpole and bubble Laurent coefficients, distinct masses,
+retained bridges, unsupported poles/numerators, nonzero masses named `ZERO`,
+an exact 2^-80 momentum difference at 173 working bits, independent precision
+between lanes, and malformed-input recovery. These are bare scalar Green-function
+fixtures, without UV renormalization or an NSC finite-remainder claim.
+
+## Numerical reducer boundary
 
 `PolynomialReducer<T>` binds lane-major polynomial parameters and carries
 `Complex<T>` through NinjaRS, Symbolica and the master provider. `T` can be
