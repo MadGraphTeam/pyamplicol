@@ -81,6 +81,25 @@ fn malformed_native_batches_fail_without_reusing_a_successful_result() {
     )
     .unwrap();
     let mut evaluator = program.evaluator("double", None).unwrap();
+    let mut arbitrary = program
+        .evaluator_with_precision_bits(Arithmetic::Arbitrary, 173)
+        .unwrap();
+    let empty_double = Batch::typed::<f64>(vec![], vec![], 8, 53).unwrap();
+    assert!(
+        arbitrary
+            .evaluate_batch(&empty_double, &double_scale(4.0, &[]))
+            .is_err()
+    );
+    let empty_arbitrary = Batch::typed::<Float>(vec![], vec![], 8, 173).unwrap();
+    let empty_scale = Batch::typed::<Float>(vec![], vec![], 1, 173).unwrap();
+    assert_eq!(
+        arbitrary
+            .evaluate_batch(&empty_arbitrary, &empty_scale)
+            .unwrap()
+            .successful_values()
+            .rows(),
+        0
+    );
     let momenta = two_point_momenta(&program, &[1.0], &[42]);
     let valid = evaluator
         .evaluate_batch(&momenta, &double_scale(4.0, &[42]))
