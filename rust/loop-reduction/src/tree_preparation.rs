@@ -41,6 +41,7 @@ use crate::{
     runtime::{Arithmetic, arithmetic_mode},
     tree_color::{factor_tree_color, index_label},
     tree_components::{TreeComponentVector, contract_tree_state_components},
+    tree_norm::hermitian_norm,
 };
 
 /// Immutable instructions for coherent tree amplitudes and their color norm.
@@ -566,17 +567,16 @@ impl TreeProgram {
             .cores(1)
             .build()
             .map_err(error)?;
-        let amplitude_inputs: Vec<_> = (0..color_tensors.len())
-            .map(|index| Atom::var(symbol!(&format!("rusticol_native_tree::amplitude_{index}"))))
-            .collect();
-        let mut norm = Atom::Zero;
-        for (bra, left) in color_tensors.iter().enumerate() {
-            for (ket, right) in color_tensors.iter().enumerate() {
-                let gram = left.overlap(right)?;
-                let coefficient = Atom::num(gram.re) + Atom::i() * Atom::num(gram.im);
-                norm += amplitude_inputs[bra].conj() * coefficient * &amplitude_inputs[ket];
-            }
-        }
+        let gram = color_tensors
+            .iter()
+            .map(|left| {
+                color_tensors
+                    .iter()
+                    .map(|right| left.overlap(right))
+                    .collect::<RusticolResult<Vec<_>>>()
+            })
+            .collect::<RusticolResult<Vec<_>>>()?;
+        let (norm, amplitude_inputs) = hermitian_norm(&gram)?;
         // Preserve the scalar entry point's direct-norm state by composing the
         // already contracted coefficients. No diagrams or tensors are rebuilt.
         let scalar_norm_state = if field_class == TreeFieldClass::SingletScalars {
@@ -585,7 +585,12 @@ impl TreeProgram {
                     .iter()
                     .position(|input| input.as_view() == term)
                 {
-                    **out = coefficients[index].clone();
+                    let coefficient = &coefficients[index / 2];
+                    **out = if index % 2 == 0 {
+                        (coefficient + coefficient.conj()) * Atom::num((1, 2))
+                    } else {
+                        (coefficient - coefficient.conj()) * Atom::i() * Atom::num((-1, 2))
+                    };
                 }
             });
             let evaluator = Atom::evaluator_multiple(&[expression], &inputs)
@@ -814,7 +819,10 @@ mod tests {
                     (value.re - expected).abs() < 1e-9 * expected,
                     "{incoming:?} -> {outgoing:?}: got {value}, expected {expected}"
                 );
-                assert!(value.im.abs() < 1e-9 * expected);
+                assert_eq!(
+                    value.im, 0.,
+                    "Hermitian norm is constructed as a real quadratic form"
+                );
             }
             check_color_charge_conservation(&program);
             check_gluon_ward_identities(&program, &input, expected);

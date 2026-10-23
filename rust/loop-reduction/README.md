@@ -180,6 +180,16 @@ Nc=3, TR=1/2. The color reducer's formal Nc polynomials do not establish a
 general-Nc model capability. Ordered color connections act on the retained
 tensors before contraction, so higher correlations do not multiply Gram matrices.
 
+Identity norms verify exact Gram Hermiticity and lower the quadratic form to
+real/imaginary coefficient components before numerical evaluation. Thus a norm
+is real by construction, including complex color bases and helicity phases;
+no computed imaginary residue is clipped. The same coefficient executor is
+used, and complete directed complex amplitudes remain available unchanged.
+Real cancellation error and possible negative numerical results are not hidden
+or promoted to an accuracy guarantee. Legacy saved norm programs consuming one
+complex column per coefficient remain accepted; new Hermitian norm programs
+consume adjacent real/imaginary columns instead.
+
 `evaluator_with_precision_bits` constructs the existing typed binary64,
 double-double or arbitrary-precision runtime. Requested bits are initial working
 precision; values retain their propagated precision after cancellation. Quad
