@@ -5,7 +5,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use feynkit_model::Model;
 use rusticol_core::loop_v2::generate::families::LegSet;
 
-use super::{MassId, Orders, mass_id, normalize_orders, orders_within, vertex_orders};
+use super::{
+    MassId, Orders, mass_id, normalize_orders, orders_within, structural_zeros, vertex_orders,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExternalLeg {
@@ -52,7 +54,16 @@ impl ModelBlockTable {
                     .into(),
             );
         }
+        if cap.iter().any(|(name, power)| {
+            *power < 0 || !model.orders().iter().any(|order| order.name == *name)
+        }) {
+            return Err(
+                "current coupling-order caps must name declared orders with nonnegative powers"
+                    .into(),
+            );
+        }
         let cap = normalize_orders(cap)?;
+        let zeros = structural_zeros(model)?;
         let mut legs = Vec::with_capacity(count);
         for (index, name) in incoming.iter().chain(outgoing).enumerate() {
             let particle = model.particle(name).map_err(|e| e.to_string())?;
@@ -66,7 +77,7 @@ impl ModelBlockTable {
             legs.push(ExternalLeg {
                 index,
                 field: particle.name.clone(),
-                mass: mass_id(model, particle)?,
+                mass: mass_id(model, particle, &zeros)?,
                 colour: particle.color,
             });
         }

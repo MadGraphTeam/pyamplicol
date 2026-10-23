@@ -20,6 +20,7 @@ use super::{
 #[derive(Clone, Debug)]
 pub struct LoopOrderSelection {
     corrections: BTreeSet<String>,
+    requested_order_names: BTreeSet<String>,
     loop_orders: BTreeSet<Orders>,
     cap: Orders,
 }
@@ -30,10 +31,19 @@ impl LoopOrderSelection {
         loop_orders: impl IntoIterator<Item = Orders>,
     ) -> Result<Self, String> {
         let corrections: BTreeSet<_> = corrections.into_iter().collect();
+        let mut requested_order_names = BTreeSet::new();
         let loop_orders = loop_orders
             .into_iter()
-            .map(normalize_orders)
-            .collect::<Result<BTreeSet<_>, _>>()?;
+            .map(|order| {
+                for (name, power) in &order {
+                    if *power < 0 {
+                        return Err("loop coupling-order powers must be nonnegative".into());
+                    }
+                    requested_order_names.insert(name.clone());
+                }
+                normalize_orders(order)
+            })
+            .collect::<Result<BTreeSet<_>, String>>()?;
         if corrections.is_empty() || loop_orders.is_empty() {
             return Err("a loop selection needs corrections and loop orders".into());
         }
@@ -44,6 +54,7 @@ impl LoopOrderSelection {
         }
         Ok(Self {
             corrections,
+            requested_order_names,
             loop_orders,
             cap: cap.into_iter().collect(),
         })
@@ -67,6 +78,8 @@ impl LoopOrderSelection {
 /// Symbolic mass identities remain the model's identities even when an override
 /// numerically sets a mass to zero; restrictions that change those identities
 /// must be applied to the model before constructing this owner.
+/// Conversely, effective scalar bindings may not change any already proved
+/// structural zero, since normalization may have eliminated its occurrences.
 pub struct PreparedModel {
     model: Model,
     scalars: BTreeMap<Symbol, Atom>,
@@ -100,7 +113,14 @@ impl PreparedModel {
         selection: &LoopOrderSelection,
         species_orders: Option<&SpeciesOrders>,
     ) -> Result<PreparedFamilies, String> {
-        PreparedFamilies::new(&self.model, incoming, outgoing, selection, species_orders)
+        PreparedFamilies::from_model(
+            &self.model,
+            incoming,
+            outgoing,
+            selection,
+            species_orders,
+            Some(&self.scalars),
+        )
     }
 }
 
@@ -125,9 +145,30 @@ impl PreparedFamilies {
         selection: &LoopOrderSelection,
         species_orders: Option<&SpeciesOrders>,
     ) -> Result<Self, String> {
+        Self::from_model(model, incoming, outgoing, selection, species_orders, None)
+    }
+
+    fn from_model(
+        model: &Model,
+        incoming: &[&str],
+        outgoing: &[&str],
+        selection: &LoopOrderSelection,
+        species_orders: Option<&SpeciesOrders>,
+        bindings: Option<&BTreeMap<Symbol, Atom>>,
+    ) -> Result<Self, String> {
+        let known: BTreeSet<_> = model.orders().iter().map(|order| &order.name).collect();
+        for name in selection
+            .corrections
+            .iter()
+            .chain(selection.requested_order_names.iter())
+        {
+            if !known.contains(name) {
+                return Err(format!("unknown coupling-order name {name:?}"));
+            }
+        }
         let mut blocks = ModelBlockTable::new(model, incoming, outgoing, selection.cap.clone())?;
         let currents = blocks.all_currents()?;
-        let catalogue = ModelLoopCatalogue::new(model, species_orders)?;
+        let catalogue = ModelLoopCatalogue::with_bindings(model, species_orders, bindings)?;
         let eligible: BTreeSet<_> = catalogue
             .species
             .iter()
@@ -356,45 +397,90 @@ fn closed_loop_classes(
                 .insert(name.clone());
         }
     }
-    type Signature = BTreeSet<(VertexSignature, Vec<String>, bool, Orders, i64)>;
-    type Key = (MassId, i64, i64, Signature);
+    type Signature = Vec<(VertexSignature, Vec<String>, bool, Orders, i64)>;
+    let signature = |name: &str| -> Option<Signature> {
+        let species = catalogue.species.get(name)?;
+        let own = BTreeSet::from([name, species.antiname.as_str()]);
+        if entering
+            .get(name)
+            .is_some_and(|sources| sources.iter().any(|source| !own.contains(source.as_str())))
+        {
+            return None;
+        }
+        let mut found = Signature::new();
+        for vertex in vertices(name).filter(|vertex| usable(vertex)) {
+            if !own.contains(vertex.loop_out.as_str())
+                || vertex
+                    .attached
+                    .iter()
+                    .any(|field| own.contains(field.as_str()))
+            {
+                return None;
+            }
+            found.push((
+                vertex.signature.clone(),
+                vertex.attached.clone(),
+                vertex.loop_out == name,
+                vertex.orders.clone(),
+                vertex.q_degree,
+            ));
+        }
+        if found.is_empty() {
+            return None;
+        }
+        // Distinct rules with identical tensors still represent distinct
+        // interactions. Preserve their multiplicities when comparing species.
+        found.sort();
+        Some(found)
+    };
+    type Key = (
+        MassId,
+        i64,
+        i64,
+        bool,
+        super::propagators::PropagatorSignature,
+        super::propagators::PropagatorSignature,
+        Signature,
+        Signature,
+    );
     let mut groups = BTreeMap::<Key, Vec<String>>::new();
     // Preserve insertion order of groups from sorted species, just as Python's
     // dict does; conjugate groups must choose mutually conjugate representatives.
     let mut group_order = Vec::new();
     for name in eligible {
         let species = &catalogue.species[name];
-        let own = BTreeSet::from([name, &species.antiname]);
-        if entering
-            .get(name)
-            .is_some_and(|sources| sources.iter().any(|source| !own.contains(source)))
-        {
+        // Treat a particle/antiparticle pair as one candidate. Otherwise equal
+        // orientations can put both members in one class and overwrite their
+        // representatives with a cycle, dropping both from eligible fields.
+        if name > &species.antiname {
             continue;
         }
-        let mut found = Signature::new();
-        let mut admissible = true;
-        for vertex in vertices(name).filter(|vertex| usable(vertex)) {
-            if !own.contains(&vertex.loop_out)
-                || vertex.attached.iter().any(|field| own.contains(field))
-            {
-                admissible = false;
-                break;
-            }
-            found.insert((
-                vertex.signature.clone(),
-                vertex.attached.clone(),
-                vertex.loop_out == *name,
-                vertex.orders.clone(),
-                vertex.q_degree,
-            ));
+        let Some(found) = signature(name) else {
+            continue;
+        };
+        let Some(conjugate) = catalogue.species.get(&species.antiname) else {
+            continue;
+        };
+        // Pair-changing vertices such as a*a*h do not determine the separate
+        // a~*a~*h interaction. Both orientations must agree before assigning
+        // representatives to a species and its antiparticle together.
+        let Some(conjugate_signature) = signature(&species.antiname) else {
+            continue;
+        };
+        let key = (
+            species.mass.clone(),
+            species.spin,
+            species.colour,
+            species.name == species.antiname,
+            species.propagator.clone(),
+            conjugate.propagator.clone(),
+            found,
+            conjugate_signature,
+        );
+        if !groups.contains_key(&key) {
+            group_order.push(key.clone());
         }
-        if admissible && !found.is_empty() {
-            let key = (species.mass.clone(), species.spin, species.colour, found);
-            if !groups.contains_key(&key) {
-                group_order.push(key.clone());
-            }
-            groups.entry(key).or_default().push(name.clone());
-        }
+        groups.entry(key).or_default().push(name.clone());
     }
     let mut output = BTreeMap::new();
     for key in group_order {
@@ -414,11 +500,35 @@ fn closed_loop_classes(
 
 #[cfg(test)]
 mod tests {
+    use super::super::structural_zeros;
     use super::*;
     use symbolica::{parse, symbol};
 
     fn qcd(power: i64) -> LoopOrderSelection {
         LoopOrderSelection::new(["QCD".into()], [vec![("QCD".into(), power)]]).unwrap()
+    }
+
+    fn vacuum_qcd_definition() -> serde_json::Value {
+        let mut definition: serde_json::Value =
+            serde_json::from_str(&Model::qcd().to_json().unwrap()).unwrap();
+        let mut zeros = BTreeSet::new();
+        for particle in definition["particles"].as_array().unwrap() {
+            if particle["pdg_code"].as_i64().unwrap().unsigned_abs() <= 4 {
+                zeros.insert(particle["mass"].as_str().unwrap().to_owned());
+            }
+            zeros.insert(particle["width"].as_str().unwrap().to_owned());
+            if let Some(name) = particle["chemical_potential"].as_str() {
+                zeros.insert(name.to_owned());
+            }
+        }
+        for parameter in definition["parameters"].as_array_mut().unwrap() {
+            if zeros.contains(parameter["name"].as_str().unwrap()) {
+                parameter["nature"] = "internal".into();
+                parameter["expression"] = "0".into();
+                parameter["value"] = serde_json::json!([0.0, 0.0]);
+            }
+        }
+        definition
     }
 
     #[test]
@@ -451,6 +561,157 @@ mod tests {
         assert_eq!(selected.cap(), &vec![("QCD".into(), 4), ("QED".into(), 2)]);
         assert_eq!(selected.loop_orders().len(), 2);
         assert!(LoopOrderSelection::new([], [vec![]]).is_err());
+        assert!(LoopOrderSelection::new(["QCD".into()], [vec![("QCD".into(), -1)]]).is_err());
+        assert!(
+            LoopOrderSelection::new(
+                ["QCD".into()],
+                [vec![("QCD".into(), -1), ("QCD".into(), 2)]]
+            )
+            .is_err()
+        );
+        let model = Model::phi4();
+        let typo =
+            LoopOrderSelection::new(["UNKNOWN".into()], [vec![("UNKNOWN".into(), 2)]]).unwrap();
+        assert!(
+            PreparedFamilies::new(&model, &["phi", "phi"], &["phi", "phi"], &typo, None)
+                .unwrap_err()
+                .contains("unknown coupling-order")
+        );
+        let typo_zero = LoopOrderSelection::new(
+            ["SCALAR".into()],
+            [vec![("SCALAR".into(), 2), ("UNKNOWN".into(), 0)]],
+        )
+        .unwrap();
+        assert!(
+            PreparedFamilies::new(&model, &["phi"; 2], &["phi"; 2], &typo_zero, None)
+                .unwrap_err()
+                .contains("unknown coupling-order")
+        );
+        assert!(
+            ModelBlockTable::new(&model, &["phi"; 3], &[], vec![("UNKNOWN".into(), 0)]).is_err()
+        );
+    }
+
+    #[test]
+    fn names_are_not_zero_proofs_and_structural_zero_overrides_are_rejected() {
+        for (nature, expression) in [("internal", "1"), ("external", "0")] {
+            let mut definition: serde_json::Value =
+                serde_json::from_str(&Model::phi3().to_json().unwrap()).unwrap();
+            let zero = definition["parameters"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .find(|parameter| parameter["name"] == "ZERO")
+                .unwrap();
+            zero["nature"] = nature.into();
+            zero["expression"] = expression.into();
+            let model = Model::from_json(&definition.to_string()).unwrap();
+            assert!(PreparedModel::new(model.clone(), None, &BTreeMap::new()).is_ok());
+            let blocks = ModelBlockTable::new(&model, &["phi"; 3], &[], vec![]).unwrap();
+            assert_eq!(blocks.legs()[0].mass.width, "ZERO");
+            assert!(!structural_zeros(&model).unwrap().contains("ZERO"));
+            // A bare real denominator does not represent this unbound width.
+            assert!(ModelLoopCatalogue::new(&model, None).is_err());
+        }
+        let model = Model::phi3();
+        assert!(
+            PreparedModel::new(
+                model.clone(),
+                None,
+                &BTreeMap::from([(symbol!("UFO::ZERO"), Atom::one())])
+            )
+            .is_err()
+        );
+        let card = ParameterCard::from_json(r#"{"ZERO":[1.0,0.0]}"#).unwrap();
+        assert!(PreparedModel::new(model, Some(&card), &BTreeMap::new()).is_err());
+    }
+
+    #[test]
+    fn general_exact_zero_names_are_supported_and_cannot_be_redefined() {
+        let json = Model::phi3()
+            .to_json()
+            .unwrap()
+            .replace("ZERO", "null_parameter");
+        let mut definition: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let mass = definition["parameters"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|parameter| parameter["name"] == "mass")
+            .unwrap();
+        mass["nature"] = "internal".into();
+        mass["expression"] = "2*null_parameter".into();
+        let model = Model::from_json(&definition.to_string()).unwrap();
+        let catalogue = ModelLoopCatalogue::new(&model, None).unwrap();
+        assert!(catalogue.species["phi"].mass.massless());
+        assert!(PreparedModel::new(model.clone(), None, &BTreeMap::new()).is_ok());
+        assert!(
+            PreparedModel::new(
+                model,
+                None,
+                &BTreeMap::from([(symbol!("UFO::null_parameter"), Atom::one())])
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn zero_proofs_treat_trailing_underscores_as_literal_symbols() {
+        let mut definition: serde_json::Value =
+            serde_json::from_str(&Model::phi3().to_json().unwrap()).unwrap();
+        definition["parameters"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({
+                "name": "null_", "nature": "internal", "parameter_type": "real", "expression": "0"
+            }));
+        definition["parameters"].as_array_mut().unwrap().push(serde_json::json!({
+            "name": "mass_copy", "nature": "internal", "parameter_type": "real", "expression": "mass"
+        }));
+        let model = Model::from_json(&definition.to_string()).unwrap();
+        let zeros = structural_zeros(&model).unwrap();
+        assert!(zeros.contains("null_"));
+        assert!(!zeros.contains("mass_copy"));
+        assert!(PreparedModel::new(model, None, &BTreeMap::new()).is_ok());
+    }
+
+    #[test]
+    fn immutable_exact_binding_can_certify_vacuum_without_using_unbound_defaults() {
+        let mut definition: serde_json::Value =
+            serde_json::from_str(&Model::phi4().to_json().unwrap()).unwrap();
+        definition["parameters"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({
+                "name": "medium", "nature": "external", "parameter_type": "real", "value": [0.0,0.0]
+            }));
+        definition["particles"][0]["chemical_potential"] = "medium".into();
+        let model = Model::from_json(&definition.to_string()).unwrap();
+        let order = model.couplings()[0].orders.keys().next().unwrap().clone();
+        let selection = LoopOrderSelection::new([order.clone()], [vec![(order, 2)]]).unwrap();
+        assert!(PreparedFamilies::new(&model, &["phi"; 2], &["phi"; 2], &selection, None).is_err());
+        let vacuum = PreparedModel::new(model.clone(), None, &BTreeMap::new()).unwrap();
+        assert_eq!(
+            vacuum
+                .families(&["phi"; 2], &["phi"; 2], &selection, None)
+                .unwrap()
+                .generate()
+                .unwrap()
+                .families
+                .len(),
+            3
+        );
+        let medium = PreparedModel::new(
+            model,
+            None,
+            &BTreeMap::from([(symbol!("UFO::medium"), Atom::one())]),
+        )
+        .unwrap();
+        assert!(
+            medium
+                .families(&["phi"; 2], &["phi"; 2], &selection, None)
+                .is_err()
+        );
     }
 
     #[test]
@@ -479,14 +740,7 @@ mod tests {
     fn fresh_model_generates_families_and_process_dependent_flavour_classes() {
         // Make the symbolic light-flavour restriction explicit. Numerically
         // small/default-zero values must never cause structural mass merging.
-        let mut definition: serde_json::Value =
-            serde_json::from_str(&Model::qcd().to_json().unwrap()).unwrap();
-        for particle in definition["particles"].as_array_mut().unwrap() {
-            if particle["pdg_code"].as_i64().unwrap().unsigned_abs() <= 4 {
-                particle["mass"] = "ZERO".into();
-                particle["width"] = "ZERO".into();
-            }
-        }
+        let definition = vacuum_qcd_definition();
         let model = Model::from_json(&definition.to_string()).unwrap();
         let gluons =
             PreparedFamilies::new(&model, &["g", "g"], &["g", "g"], &qcd(4), None).unwrap();
@@ -504,5 +758,181 @@ mod tests {
             PreparedFamilies::new(&model, &["d", "d~"], &["g", "g"], &qcd(4), None).unwrap();
         assert!(!quarks.closed_loop_representatives.contains_key("d"));
         assert!(!quarks.generate().unwrap().families.is_empty());
+    }
+
+    #[test]
+    fn same_rank_unequal_propagator_numerators_do_not_merge_flavours() {
+        let mut definition = vacuum_qcd_definition();
+        for propagator in definition["propagators"].as_array_mut().unwrap() {
+            if matches!(propagator["particle"].as_str(), Some("d" | "d~")) {
+                propagator["numerator"] =
+                    format!("2*({})", propagator["numerator"].as_str().unwrap()).into();
+            }
+        }
+        let model = Model::from_json(&definition.to_string()).unwrap();
+        let prepared =
+            PreparedFamilies::new(&model, &["g", "g"], &["g", "g"], &qcd(4), None).unwrap();
+        assert!(!prepared.closed_loop_representatives.contains_key("d"));
+        assert!(!prepared.closed_loop_representatives.contains_key("d~"));
+        assert!(prepared.closed_loop_representatives.contains_key("s"));
+    }
+
+    #[test]
+    fn distinct_identical_vertex_rules_retain_their_interaction_multiplicity() {
+        let mut definition = vacuum_qcd_definition();
+        let rules = definition["vertex_rules"].as_array_mut().unwrap();
+        let mut duplicate = rules
+            .iter()
+            .find(|rule| {
+                let fields = rule["particles"].as_array().unwrap();
+                fields.len() == 3
+                    && ["d", "d~", "g"]
+                        .iter()
+                        .all(|field| fields.iter().any(|entry| entry == field))
+            })
+            .unwrap()
+            .clone();
+        duplicate["name"] = format!("{}_duplicate", duplicate["name"].as_str().unwrap()).into();
+        rules.push(duplicate);
+        let model = Model::from_json(&definition.to_string()).unwrap();
+        let prepared =
+            PreparedFamilies::new(&model, &["g", "g"], &["g", "g"], &qcd(4), None).unwrap();
+        assert!(!prepared.closed_loop_representatives.contains_key("d"));
+        assert!(!prepared.closed_loop_representatives.contains_key("d~"));
+        assert!(prepared.closed_loop_representatives.contains_key("s"));
+    }
+
+    #[test]
+    fn flavour_classes_preserve_real_and_complex_conjugation_types() {
+        let mut definition: serde_json::Value =
+            serde_json::from_str(&Model::phi3().to_json().unwrap()).unwrap();
+        let prototype_particle = definition["particles"][0].clone();
+        let prototype_propagator = definition["propagators"][0].clone();
+        let prototype_rule = definition["vertex_rules"][0].clone();
+        for (name, anti, pdg) in [
+            ("a", "a~", 9000002),
+            ("a~", "a", -9000002),
+            ("r", "r", 9000003),
+        ] {
+            let mut particle = prototype_particle.clone();
+            particle["name"] = name.into();
+            particle["antiname"] = anti.into();
+            particle["pdg_code"] = pdg.into();
+            particle["propagator"] = format!("{name}_prop").into();
+            definition["particles"]
+                .as_array_mut()
+                .unwrap()
+                .push(particle);
+            let mut propagator = prototype_propagator.clone();
+            propagator["name"] = format!("{name}_prop").into();
+            propagator["particle"] = name.into();
+            definition["propagators"]
+                .as_array_mut()
+                .unwrap()
+                .push(propagator);
+        }
+        for (name, fields) in [
+            ("V_COMPLEX", ["a", "a~", "phi"]),
+            ("V_REAL", ["r", "r", "phi"]),
+        ] {
+            let mut rule = prototype_rule.clone();
+            rule["name"] = name.into();
+            rule["particles"] = serde_json::json!(fields);
+            definition["vertex_rules"]
+                .as_array_mut()
+                .unwrap()
+                .push(rule);
+        }
+        let model = Model::from_json(&definition.to_string()).unwrap();
+        let selection =
+            LoopOrderSelection::new(["SCALAR".into()], [vec![("SCALAR".into(), 4)]]).unwrap();
+        let prepared =
+            PreparedFamilies::new(&model, &["phi"; 2], &["phi"; 2], &selection, None).unwrap();
+        assert!(!prepared.closed_loop_representatives.contains_key("r"));
+        for (name, representative) in &prepared.closed_loop_representatives {
+            let conjugate = &prepared.catalogue.species[name].antiname;
+            let conjugate_representative = prepared
+                .closed_loop_representatives
+                .get(conjugate)
+                .unwrap_or(conjugate);
+            assert_eq!(
+                conjugate_representative,
+                &prepared.catalogue.species[representative].antiname
+            );
+        }
+    }
+
+    #[test]
+    fn pair_changing_vertices_compare_both_conjugate_interactions() {
+        let mut definition: serde_json::Value =
+            serde_json::from_str(&Model::phi3().to_json().unwrap()).unwrap();
+        let prototype_particle = definition["particles"][0].clone();
+        let prototype_propagator = definition["propagators"][0].clone();
+        let prototype_rule = definition["vertex_rules"][0].clone();
+        let mut unequal_coupling = definition["couplings"][0].clone();
+        unequal_coupling["name"] = "UNEQUAL_PAIR".into();
+        unequal_coupling["expression"] =
+            format!("2*({})", unequal_coupling["expression"].as_str().unwrap()).into();
+        definition["couplings"]
+            .as_array_mut()
+            .unwrap()
+            .push(unequal_coupling);
+        for (name, anti, pdg) in [
+            ("a", "a~", 9000002),
+            ("a~", "a", -9000002),
+            ("b", "b~", 9000003),
+            ("b~", "b", -9000003),
+        ] {
+            let mut particle = prototype_particle.clone();
+            particle["name"] = name.into();
+            particle["antiname"] = anti.into();
+            particle["pdg_code"] = pdg.into();
+            particle["propagator"] = format!("{name}_prop").into();
+            definition["particles"]
+                .as_array_mut()
+                .unwrap()
+                .push(particle);
+            let mut propagator = prototype_propagator.clone();
+            propagator["name"] = format!("{name}_prop").into();
+            propagator["particle"] = name.into();
+            definition["propagators"]
+                .as_array_mut()
+                .unwrap()
+                .push(propagator);
+            let mut rule = prototype_rule.clone();
+            rule["name"] = format!("PAIR_{pdg}").into();
+            rule["particles"] = serde_json::json!([name, name, "phi"]);
+            if name == "b~" {
+                rule["couplings"][0][0] = "UNEQUAL_PAIR".into();
+            }
+            definition["vertex_rules"]
+                .as_array_mut()
+                .unwrap()
+                .push(rule);
+        }
+        let model = Model::from_json(&definition.to_string()).unwrap();
+        let selection =
+            LoopOrderSelection::new(["SCALAR".into()], [vec![("SCALAR".into(), 4)]]).unwrap();
+        let prepared =
+            PreparedFamilies::new(&model, &["phi"; 2], &["phi"; 2], &selection, None).unwrap();
+        for name in ["a", "a~", "b", "b~"] {
+            assert!(!prepared.closed_loop_representatives.contains_key(name));
+        }
+        // Equal conjugate interactions do permit the two complete pairs to
+        // merge, while each representative must remain a fixed point.
+        let unequal_rule = definition["vertex_rules"]
+            .as_array_mut()
+            .unwrap()
+            .iter_mut()
+            .find(|rule| rule["name"] == "PAIR_-9000003")
+            .unwrap();
+        unequal_rule["couplings"] = prototype_rule["couplings"].clone();
+        let equal_model = Model::from_json(&definition.to_string()).unwrap();
+        let equal = PreparedFamilies::new(&equal_model, &["phi"; 2], &["phi"; 2], &selection, None)
+            .unwrap();
+        assert_eq!(equal.closed_loop_representatives["a"], "a");
+        assert_eq!(equal.closed_loop_representatives["b"], "a");
+        assert_eq!(equal.closed_loop_representatives["a~"], "a~");
+        assert_eq!(equal.closed_loop_representatives["b~"], "a~");
     }
 }
