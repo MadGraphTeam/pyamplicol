@@ -13,7 +13,7 @@ use std::{collections::BTreeMap, sync::Arc};
 
 use feynkit_amplitude::AmplitudeOptions;
 use feynkit_generator::{GenerationOptions, NumeratorGrouping, Process};
-use feynkit_model::{Model, ParameterCard, ParameterType};
+use feynkit_model::{Model, ParameterCard, ParameterType, Particle};
 use idenso::tensor::{AlgebraSettings, ContractSettings};
 use rusticol_core::{RusticolError, RusticolResult, preparation::encode_exact_evaluator_state};
 use spenso::{
@@ -26,7 +26,7 @@ use symbolica::{
     symbol,
 };
 
-use crate::runtime::CoefficientEvaluator;
+use crate::runtime::{Arithmetic, CoefficientEvaluator};
 
 /// Immutable instructions for one coherent tree norm. External momenta are
 /// physical incoming/outgoing momenta, in the FeynKit external-leg label order
@@ -44,6 +44,68 @@ fn error(message: impl std::fmt::Display) -> RusticolError {
     RusticolError::invalid_argument(format!("native scalar tree preparation: {message}"))
 }
 
+fn bind_scalars(expression: &Atom, bindings: &BTreeMap<Symbol, Atom>) -> Atom {
+    expression.replace_map(|term, _, out| {
+        if let AtomView::Var(var) = term {
+            if let Some(value) = bindings.get(&var.get_symbol()) {
+                **out = value.clone();
+            }
+        }
+    })
+}
+
+// FeynKit's amplitude denominator currently represents only p²-m², while the
+// model permits arbitrary denominator templates. Check the exact specialization
+// before allowing that representation to replace a participating propagator.
+fn validate_scalar_pole(
+    model: &Model,
+    particle: &Particle,
+    bindings: &BTreeMap<Symbol, Atom>,
+) -> RusticolResult<()> {
+    let unsupported = || {
+        RusticolError::unsupported_runtime_capability(
+            "native-scalar-tree",
+            format!(
+                "particle {:?} requires a canonical zero-width vacuum propagator p^2-m^2; custom denominators and medium-dependent poles are unsupported",
+                particle.name
+            ),
+        )
+    };
+    let (id, _) = model
+        .particle_propagator(particle)
+        .map_err(error)?
+        .ok_or_else(unsupported)?;
+    let propagator = model.propagator_by_id(id).map_err(error)?;
+    let owner = model.particle_by_id(propagator.particle).map_err(error)?;
+    for field in [particle, owner] {
+        for id in Some(field.width)
+            .into_iter()
+            .chain(field.chemical_potential)
+        {
+            let parameter = model.parameter_by_id(id).map_err(error)?;
+            if !bindings
+                .get(&symbol!(&format!("UFO::{}", parameter.name)))
+                .is_some_and(|value| value.expand().is_zero())
+            {
+                return Err(unsupported());
+            }
+        }
+    }
+    let mass = bind_scalars(&particle.symbolic_mass(model), bindings);
+    let denominator = bind_scalars(&propagator.denominator, bindings);
+    let p = symbol!("UFO::P");
+    let idx = symbol!("UFO::idx");
+    let momenta = [Atom::var(p), p.call_args([idx.call_args([1i64, 1i64])])];
+    if !momenta.iter().any(|momentum| {
+        (&denominator - (momentum.clone().pow(2) - mass.clone().pow(2)))
+            .expand()
+            .is_zero()
+    }) {
+        return Err(unsupported());
+    }
+    Ok(())
+}
+
 impl ScalarTreeProgram {
     /// Prepare a new process from the in-memory model and exact parameter
     /// overrides. Model/card numeric defaults retain their binary64 values as
@@ -55,6 +117,8 @@ impl ScalarTreeProgram {
     /// coherent square retains each labelled diagram. Overrides must name model
     /// parameters and respect their declared reality and structural zeros.
     /// Unresolved symbols or unsupported scalar functions fail preparation.
+    /// Participating internal poles must be canonical zero-width vacuum poles;
+    /// FeynKit's amplitude path does not yet preserve arbitrary denominators.
     pub fn prepare(
         model: Arc<Model>,
         process: &Process,
@@ -89,20 +153,6 @@ impl ScalarTreeProgram {
                 )));
             }
         }
-        for parameter in model.parameters() {
-            if parameter.parameter_type == ParameterType::Real {
-                if let Some(value) =
-                    scalar_bindings.get(&symbol!(&format!("UFO::{}", parameter.name)))
-                {
-                    if !value.is_real().is_true() {
-                        return Err(error(format!(
-                            "parameter {} must have a provably real binding",
-                            parameter.name
-                        )));
-                    }
-                }
-            }
-        }
         let options = options
             .clone()
             .with_loop_count(0, 0)
@@ -128,11 +178,32 @@ impl ScalarTreeProgram {
                         ),
                     ));
                 }
+                if edge.external.is_none() && !edge.is_dummy {
+                    validate_scalar_pole(diagram.model(), particle, &scalar_bindings)?;
+                }
             }
         }
         let amplitude = generated
             .into_amplitude(AmplitudeOptions::default())
             .map_err(error)?;
+        let physical_expression = amplitude.expression().map_err(error)?;
+        for parameter in amplitude.model().parameters() {
+            let variable = symbol!(&format!("UFO::{}", parameter.name));
+            if parameter.parameter_type == ParameterType::Real
+                && physical_expression
+                    .expression()
+                    .contains(Atom::var(variable))
+            {
+                if let Some(value) = scalar_bindings.get(&variable) {
+                    if !value.is_real().is_true() {
+                        return Err(error(format!(
+                            "parameter {} must have a provably real binding",
+                            parameter.name
+                        )));
+                    }
+                }
+            }
+        }
         let momentum_legs: Vec<_> = amplitude.legs().iter().map(|leg| leg.index).collect();
         let squared = amplitude.squared().map_err(error)?;
         let contracted = squared
@@ -144,13 +215,7 @@ impl ScalarTreeProgram {
         let mut expression = contracted.expression().clone();
         // Literal symbol replacement avoids treating trailing underscores in
         // model parameter names as wildcard patterns.
-        expression = expression.replace_map(|term, _, out| {
-            if let AtomView::Var(var) = term {
-                if let Some(value) = scalar_bindings.get(&var.get_symbol()) {
-                    **out = value.clone();
-                }
-            }
-        });
+        expression = bind_scalars(&expression, &scalar_bindings);
         // Idenso leaves scalar adjoints in Spenso's symbolic wrapper. Once
         // scalar values are bound, use Symbolica's ordinary scalar conjugation.
         expression = expression.replace_map(|term, _, out| {
@@ -227,13 +292,29 @@ impl ScalarTreeProgram {
     }
 
     /// Select binary64, double-double, or arbitrary decimal precision in the
-    /// existing runtime. Input/output batches remain typed in their carrier.
+    /// existing coefficient runtime. Batches remain typed in their carrier.
+    /// This is an unchecked coefficient evaluator: the caller must supply real,
+    /// finite physical momenta and verify finite outputs before interpreting a
+    /// result as a coherent norm. It does not validate the physical domain,
+    /// on-shell conditions or momentum conservation.
     pub fn evaluator(
         &self,
         arithmetic: &str,
         decimal_digits: Option<u32>,
     ) -> RusticolResult<CoefficientEvaluator> {
         CoefficientEvaluator::new(&self.evaluator_state, arithmetic, decimal_digits).map_err(error)
+    }
+
+    /// Use an explicit initial working precision, including 113-bit Float.
+    /// This does not add guard bits or recover accuracy already lost in inputs.
+    /// The physical-domain requirements of [`Self::evaluator`] also apply.
+    pub fn evaluator_with_precision_bits(
+        &self,
+        arithmetic: Arithmetic,
+        bits: u32,
+    ) -> RusticolResult<CoefficientEvaluator> {
+        CoefficientEvaluator::with_precision_bits(&self.evaluator_state, arithmetic, bits)
+            .map_err(error)
     }
 }
 
@@ -293,7 +374,9 @@ mod tests {
             panic!("carrier changed")
         };
         assert!((values[0].re - 1.0).abs() < 1e-14, "{}", values[0]);
-        let mut high = program.evaluator("arbitrary", Some(70)).unwrap();
+        let mut high = program
+            .evaluator_with_precision_bits(Arithmetic::Arbitrary, 233)
+            .unwrap();
         let bits = high.precision_bits();
         let batch = Batch::typed(
             vec![Complex::new(Float::with_val(bits, 0), Float::with_val(bits, 0)); 16],
@@ -411,6 +494,39 @@ mod tests {
     }
 
     #[test]
+    fn real_underscore_parameter_does_not_remove_an_unrelated_adjoint() {
+        let mut definition = scalar_model_definition(4);
+        definition["parameters"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({
+                "name":"h", "lhablock":"SCALAR", "lhacode":[3],
+                "nature":"external", "parameter_type":"complex",
+                "value":[1.0,2.0], "expression":null
+            }));
+        definition["couplings"][0]["expression"] = serde_json::json!("h");
+        let model = Model::from_json(&definition.to_string()).unwrap();
+        let program = ScalarTreeProgram::prepare(
+            Arc::new(model),
+            &Process::new(["s", "s"], ["s", "s"]),
+            &GenerationOptions::default().threads(1),
+            None,
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        let input = Batch::typed(vec![Complex::new(0.0, 0.0); 16], vec![11], 16, 53).unwrap();
+        let output = program
+            .evaluator("double", None)
+            .unwrap()
+            .evaluate_batch(&input)
+            .unwrap();
+        let Data::Double(values) = output.data() else {
+            panic!("carrier changed")
+        };
+        assert_eq!(values.as_slice(), &[Complex::new(5.0, 0.0)]);
+    }
+
+    #[test]
     fn participating_vector_fields_are_explicitly_unsupported() {
         let mut definition = scalar_model_definition(4);
         definition["particles"][0]["spin"] = serde_json::json!(3);
@@ -430,5 +546,75 @@ mod tests {
                 .to_string()
                 .contains("only color-singlet scalars")
         );
+    }
+
+    #[test]
+    fn nonzero_mass_named_zero_is_not_silently_massless() {
+        let mut definition = scalar_model_definition(3);
+        definition["parameters"][0]["name"] = serde_json::json!("VACZERO");
+        definition["parameters"][2]["name"] = serde_json::json!("ZERO");
+        definition["particles"][0]["mass"] = serde_json::json!("ZERO");
+        definition["particles"][0]["width"] = serde_json::json!("VACZERO");
+        definition["propagators"][0]["denominator"] = serde_json::json!("P^2-ZERO^2");
+        let model = Model::from_json(&definition.to_string()).unwrap();
+        let program = ScalarTreeProgram::prepare(
+            Arc::new(model),
+            &Process::new(["s", "s"], ["s", "s"]),
+            &GenerationOptions::default().threads(1),
+            None,
+            &BTreeMap::new(),
+        )
+        .unwrap();
+        let momenta = [
+            5., 0., 0., 3., 5., 0., 0., -3., 5., 3., 0., 0., 5., -3., 0., 0.,
+        ];
+        let input = Batch::typed(
+            momenta
+                .into_iter()
+                .map(|value| Complex::new(value, 0.0))
+                .collect(),
+            vec![15],
+            16,
+            53,
+        )
+        .unwrap();
+        let output = program
+            .evaluator("double", None)
+            .unwrap()
+            .evaluate_batch(&input)
+            .unwrap();
+        let Data::Double(values) = output.data() else {
+            panic!("carrier changed")
+        };
+        let expected = (1.0_f64 / 84.0 - 2.0 / 34.0).powi(2);
+        assert!((values[0].re - expected).abs() < 1e-14, "{}", values[0]);
+    }
+
+    #[test]
+    fn custom_poles_widths_and_chemical_potentials_are_explicitly_unsupported() {
+        for mutation in 0..3 {
+            let mut definition = scalar_model_definition(3);
+            match mutation {
+                0 => definition["propagators"][0]["denominator"] = serde_json::json!("2*(P^2-m^2)"),
+                1 => definition["particles"][0]["width"] = serde_json::json!("g_"),
+                _ => definition["particles"][0]["chemical_potential"] = serde_json::json!("g_"),
+            }
+            let model = Model::from_json(&definition.to_string()).unwrap();
+            let result = ScalarTreeProgram::prepare(
+                Arc::new(model),
+                &Process::new(["s", "s"], ["s", "s"]),
+                &GenerationOptions::default().threads(1),
+                None,
+                &BTreeMap::new(),
+            );
+            let message = result
+                .err()
+                .expect("must reject unrepresented pole")
+                .to_string();
+            assert!(
+                message.contains("canonical zero-width vacuum propagator"),
+                "{message}"
+            );
+        }
     }
 }

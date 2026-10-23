@@ -93,14 +93,22 @@ generates all selected labelled tree diagrams and their coherent norm in Rust,
 without Python preparation or process-specific compilation. Every participating
 field must currently be a color-singlet scalar; other fields are explicit
 capability errors. This is not yet a general Standard Model/QCD tree provider.
+Participating internal propagators must specialize exactly to a monic
+zero-width vacuum denominator `p²-m²`. Custom poles, nonzero widths and chemical
+potentials are rejected because the reused amplitude builder does not preserve
+those model denominators.
 
 The program returns exact evaluator state and the external-leg input order.
 Its `evaluator` method uses the existing typed binary64, double-double or
-arbitrary-precision batch runtime. Inputs are physical incoming/outgoing
+arbitrary-precision batch runtime. `evaluator_with_precision_bits` selects an
+explicit initial working precision, including 113-bit Float. Inputs are physical incoming/outgoing
 four-momenta `(E,px,py,pz)` with metric `+---`. The result has no flux, initial
 averaging or identical-particle phase-space factor. Exact parameter atoms retain
 their precision; numeric model/card defaults represent the original binary64
 values exactly and do not acquire extra input accuracy at higher precision.
+The returned coefficient evaluator assumes real, finite physical momenta; the
+consumer owns physical-domain checks and must reject nonfinite output before
+interpreting a value as a norm.
 
 From this crate's directory, using the shared workspace environment:
 
