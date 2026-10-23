@@ -114,6 +114,7 @@ impl ScalarLoopProgram {
             coefficients,
             diagrams,
             momentum_columns: self.momentum_legs().len() * 4,
+            arithmetic,
         })
     }
 }
@@ -123,6 +124,7 @@ pub struct ScalarLoopEvaluator {
     coefficients: CoefficientEvaluator,
     diagrams: Vec<(usize, usize, PolynomialPlan)>,
     momentum_columns: usize,
+    arithmetic: Arithmetic,
 }
 
 /// Full coherent complex bare Laurent coefficients, ordered finite, 1/epsilon,
@@ -227,6 +229,18 @@ impl ScalarLoopEvaluator {
         mu_squared: &Batch,
     ) -> RusticolResult<BareScalarLoopBatch> {
         momenta.same_rows(mu_squared).map_err(error)?;
+        if momenta.precision_bits() != self.coefficients.precision_bits()
+            || !matches!(
+                (self.arithmetic, momenta.data()),
+                (Arithmetic::Double, Data::Double(_))
+                    | (Arithmetic::DoubleDouble, Data::DoubleDouble(_))
+                    | (Arithmetic::Arbitrary, Data::Arbitrary(_))
+            )
+        {
+            return Err(error(
+                "batch arithmetic or precision differs from the evaluator",
+            ));
+        }
         if momenta.columns() != self.momentum_columns || mu_squared.columns() != 1 {
             return Err(error("momentum or renormalization-scale dimensions differ"));
         }
