@@ -17,6 +17,12 @@ pub enum RusticolErrorKind {
     /// exact program and physical inputs in a wider scalar may recover it.
     /// This category does not diagnose malformed caller-supplied values.
     NonFiniteResult,
+    /// A valid numerical operation lost information at this working precision.
+    /// Reconstruct the original inputs in a wider scalar before retrying; the
+    /// bit count describes the attempt, not a component's tracked precision.
+    InsufficientPrecision {
+        bits: u32,
+    },
     Selector,
     ModelParameter,
     UnsupportedPrecision,
@@ -75,6 +81,10 @@ impl RusticolError {
 
     pub fn nonfinite_result(message: impl Into<String>) -> Self {
         Self::with_kind(RusticolErrorKind::NonFiniteResult, message)
+    }
+
+    pub fn insufficient_precision(bits: u32, message: impl Into<String>) -> Self {
+        Self::with_kind(RusticolErrorKind::InsufficientPrecision { bits }, message)
     }
 
     pub fn selector(message: impl Into<String>) -> Self {

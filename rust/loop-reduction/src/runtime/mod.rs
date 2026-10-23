@@ -53,10 +53,21 @@ impl ExecutionError {
         self.0.kind()
     }
     fn nonfinite_result(value: impl Display) -> Self {
-        Self(rusticol_core::RusticolError::nonfinite_result(value.to_string()))
+        Self(rusticol_core::RusticolError::nonfinite_result(
+            value.to_string(),
+        ))
+    }
+    fn insufficient_precision(bits: u32, value: impl Display) -> Self {
+        Self(rusticol_core::RusticolError::insufficient_precision(
+            bits,
+            value.to_string(),
+        ))
     }
     fn context(self, value: impl Display) -> Self {
-        Self(rusticol_core::RusticolError::with_kind(self.kind(), value.to_string()))
+        Self(rusticol_core::RusticolError::with_kind(
+            self.kind(),
+            value.to_string(),
+        ))
     }
 }
 impl From<ExecutionError> for rusticol_core::RusticolError {
