@@ -2350,6 +2350,7 @@ name = "rusticol-loop-reduction"
 version = "0.1.0"
 dependencies = [
  "feynkit-kinematics",
+ "feynkit-model",
  "ninjars",
  "ninjars-graph",
  "ninjars-symbolica",
