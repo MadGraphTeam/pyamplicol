@@ -32,18 +32,27 @@ def main(argv: list[str] | None = None) -> int:
     v2.add_argument("--lanes", type=int, default=16)
     v2.add_argument("--batches", type=int, nargs="+", default=[1, 8, 32, 128])
     v2.add_argument("--reps", type=int, default=3)
-    v2.add_argument("--min-points", type=int, default=8,
-                    help="points per B and round (several blocks of a small B)")
-    v2.add_argument("--budget", type=float, default=900.0,
-                    help="seconds a B may take over all rounds; larger B are skipped")
+    v2.add_argument(
+        "--min-points",
+        type=int,
+        default=8,
+        help="points per B and round (several blocks of a small B)",
+    )
+    v2.add_argument(
+        "--budget",
+        type=float,
+        default=900.0,
+        help="seconds a B may take over all rounds; larger B are skipped",
+    )
     v2.add_argument("--native-build", type=Path, help="staged native build directory")
     v2.add_argument("--scratch", type=Path, default=Path("/tmp"))
     v2.add_argument("--json", type=Path)
 
     providers = commands.add_parser("providers", help="time the providers")
     providers.add_argument("process")
-    providers.add_argument("--providers", nargs="+",
-                           default=["openloops", "recola", "madloop"])
+    providers.add_argument(
+        "--providers", nargs="+", default=["openloops", "recola", "madloop"]
+    )
     providers.add_argument("--points", type=int, default=16)
     providers.add_argument("--cpu", type=int, required=True)
     providers.add_argument("--work", type=Path, required=True)

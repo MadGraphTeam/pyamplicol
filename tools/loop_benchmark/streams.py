@@ -95,7 +95,9 @@ def _massive_grid(
             chooser.choice(exact_points._K_ADD) for _ in additions
         ]
         try:
-            final, sqrt_s = exact_points.construct(final_masses, parameters, Fraction(100))
+            final, sqrt_s = exact_points.construct(
+                final_masses, parameters, Fraction(100)
+            )
         except ZeroDivisionError:
             continue
         if not window[0] <= sqrt_s <= window[1]:
@@ -123,7 +125,9 @@ def _resonant(final, pdgs, resonances) -> bool:
             continue
         pair = [x + y for x, y in zip(p, q, strict=True)]
         pair_s = exact_points._dot(pair, pair)
-        if any(abs(pair_s - Fraction(r) ** 2) < Fraction(r) ** 2 / 10 for r in resonances):
+        if any(
+            abs(pair_s - Fraction(r) ** 2) < Fraction(r) ** 2 / 10 for r in resonances
+        ):
             return True
     return False
 

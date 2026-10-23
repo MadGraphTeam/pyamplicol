@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import platform
 import statistics
 import subprocess
@@ -106,10 +107,22 @@ def openloops(spec: dict, points: dict, work: Path, cpu: int) -> dict[str, Any]:
     binary = run / "openloops-driver"
     if not binary.exists():
         subprocess.run(
-            ["g++", "-O2", "-std=c++17", str(streams.REFERENCE / "openloops_driver.cpp"),
-             "-I", str(OPENLOOPS / "include"), "-L", str(OPENLOOPS / "lib"),
-             f"-Wl,-rpath,{OPENLOOPS / 'lib'}", "-lopenloops", "-o", str(binary)],
-            check=True, cwd=run,
+            [
+                "g++",
+                "-O2",
+                "-std=c++17",
+                str(streams.REFERENCE / "openloops_driver.cpp"),
+                "-I",
+                str(OPENLOOPS / "include"),
+                "-L",
+                str(OPENLOOPS / "lib"),
+                f"-Wl,-rpath,{OPENLOOPS / 'lib'}",
+                "-lopenloops",
+                "-o",
+                str(binary),
+            ],
+            check=True,
+            cwd=run,
         )
     commands = [
         "int truepoles 0" if c == "int truepoles 1" else c
@@ -118,9 +131,8 @@ def openloops(spec: dict, points: dict, work: Path, cpu: int) -> dict[str, Any]:
     if "int truepoles 0" not in commands:
         raise RuntimeError("the toolkit's OpenLoops commands changed")
     count = len(points["points"])
-    stdin = "\n".join(
-        commands + [f"points {count}", *references.point_lines(points)]
-    ) + "\n"
+    lines = [*commands, f"points {count}", *references.point_lines(points)]
+    stdin = "\n".join(lines) + "\n"
     stdout, wall = references.run_native(
         [str(binary)], stdin, run, run / "output.log", cpu
     )
@@ -128,9 +140,13 @@ def openloops(spec: dict, points: dict, work: Path, cpu: int) -> dict[str, Any]:
     library = spec["openloops"]["library"]
     return {
         "provider": "openloops",
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "mode": "production: truepoles 0 (Collier cache, I-operator poles, "
+        "default stability)",
         "version": f"OpenLoops {references.openloops_release(OPENLOOPS)}",
-        "library": {"name": library, **references.openloops_library_version(OPENLOOPS, library)},
+        "library": {
+            "name": library,
+            **references.openloops_library_version(OPENLOOPS, library),
+        },
         "commands": commands,
         **_summary(rows, extra, wall),
     }
@@ -141,9 +157,19 @@ def _recola_driver(run: Path) -> Path:
 
     source = (streams.REFERENCE / "recola_driver.f90").read_text()
     patches = (
-        ("  integer :: stored_nf = -1\n", "  integer :: stored_nf = -1\n  integer :: irpoles = 1\n"),
-        ("    case ('cache')", "    case ('irpoles')\n      read(line, *) keyword, irpoles\n    case ('cache')"),
-        ("      call set_compute_ir_poles_rcl(1)", "      call set_compute_ir_poles_rcl(irpoles)"),
+        (
+            "  integer :: stored_nf = -1\n",
+            "  integer :: stored_nf = -1\n  integer :: irpoles = 1\n",
+        ),
+        (
+            "    case ('cache')",
+            "    case ('irpoles')\n      read(line, *) keyword, irpoles\n"
+            "    case ('cache')",
+        ),
+        (
+            "      call set_compute_ir_poles_rcl(1)",
+            "      call set_compute_ir_poles_rcl(irpoles)",
+        ),
         (
             "    call get_squared_amplitude_rcl(1, pow_nlo, 'NLO-IR1', result(3))\n"
             "    call get_squared_amplitude_rcl(1, pow_nlo, 'NLO-IR2', result(4))",
@@ -155,15 +181,30 @@ def _recola_driver(run: Path) -> Path:
     )
     for old, new in patches:
         if source.count(old) != 1:
-            raise RuntimeError(f"the toolkit's Recola driver changed near {old.strip()!r}")
+            raise RuntimeError(
+                f"the toolkit's Recola driver changed near {old.strip()!r}"
+            )
         source = source.replace(old, new)
     path = run / "recola_driver_production.f90"
     path.write_text(source)
     binary = run / "recola-driver-production"
     subprocess.run(
-        ["gfortran", "-O2", "-ffree-line-length-none", str(path), "-I", str(RECOLA / "include"),
-         "-L", str(RECOLA), f"-Wl,-rpath,{RECOLA}", "-lrecola", "-o", str(binary)],
-        check=True, cwd=run,
+        [
+            "gfortran",
+            "-O2",
+            "-ffree-line-length-none",
+            str(path),
+            "-I",
+            str(RECOLA / "include"),
+            "-L",
+            str(RECOLA),
+            f"-Wl,-rpath,{RECOLA}",
+            "-lrecola",
+            "-o",
+            str(binary),
+        ],
+        check=True,
+        cwd=run,
     )
     return binary
 
@@ -177,9 +218,8 @@ def recola(spec: dict, points: dict, work: Path, cpu: int) -> dict[str, Any]:
     commands = references.recola_commands(spec, points, uncached)
     commands.insert(commands.index("generate"), "irpoles 0")
     count = len(points["points"])
-    stdin = "\n".join(
-        commands + [f"points {count}", *references.point_lines(points)]
-    ) + "\n"
+    lines = [*commands, f"points {count}", *references.point_lines(points)]
+    stdin = "\n".join(lines) + "\n"
     stdout, wall = references.run_native(
         [str(binary)], stdin, run, run / "output.log", cpu
     )
@@ -189,7 +229,9 @@ def recola(spec: dict, points: dict, work: Path, cpu: int) -> dict[str, Any]:
         "provider": "recola",
         "mode": "production: compute_ir_poles 0, Collier global cache "
         + ("off (seven legs, COLLIER cache defect)" if uncached else "on"),
-        "version": "Recola2 (tree " + RECOLA.name + ") / "
+        "version": "Recola2 (tree "
+        + RECOLA.name
+        + ") / "
         + " / ".join(f"{k} {v['version']}" for k, v in sorted(linked.items())),
         "commands": commands,
         "finite_convention": "Recola (Gamma(1+eps)); MadLoop's adds pi^2/6 D",
@@ -197,7 +239,9 @@ def recola(spec: dict, points: dict, work: Path, cpu: int) -> dict[str, Any]:
     }
 
 
-def madloop(spec: dict, points: dict, work: Path, cpu: int, export: Path) -> dict[str, Any]:
+def madloop(
+    spec: dict, points: dict, work: Path, cpu: int, export: Path
+) -> dict[str, Any]:
     references = _references()
     run = work / "madloop-run"
     run.mkdir(parents=True, exist_ok=True)
@@ -239,6 +283,8 @@ def main(options: Any) -> int:
     points = _points(key, options.points)
     work = options.work.resolve()
     work.mkdir(parents=True, exist_ok=True)
+    # MG5_aMC writes py.py and additional_command into the working directory.
+    os.chdir(work)
     record: dict[str, Any] = {
         "kind": "providers",
         "process": key,
@@ -271,7 +317,9 @@ def main(options: Any) -> int:
         print(
             key,
             provider,
-            "error " + result["error"] if "error" in result else f"{mean * 1e3:.3f} ms/pt",
+            "error " + result["error"]
+            if "error" in result
+            else f"{mean * 1e3:.3f} ms/pt",
             flush=True,
         )
         if options.json:

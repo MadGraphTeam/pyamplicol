@@ -54,6 +54,7 @@ Usage:
 
 from __future__ import annotations
 
+import contextlib
 import inspect
 import json
 import math
@@ -99,10 +100,8 @@ def _status(field: str) -> int:
 
 
 def _reset_peak() -> None:
-    try:
+    with contextlib.suppress(OSError):
         Path("/proc/self/clear_refs").write_text("5")
-    except OSError:
-        pass
 
 
 def _gib(value: int) -> float:
@@ -289,7 +288,9 @@ class Run:
         self.record["generation"] = stages
         self.record["structure"] = {
             "families": len(slice_.plan.schedules),
-            "b_trie_nodes": sum(len(s.trie.nodes) for s in slice_.plan.schedules.values()),
+            "b_trie_nodes": sum(
+                len(s.trie.nodes) for s in slice_.plan.schedules.values()
+            ),
         }
         self._install_timers()
         print(self.key, "generation", json.dumps(stages), flush=True)
@@ -303,7 +304,9 @@ class Run:
         wrap(type(slice_.tree_rows), "evaluate", "python trees")
         wrap(assemble.LoopSlice, "scalars", "python scalars")
         if slice_.counterterm_program is not None:
-            wrap(type(slice_.counterterm_program), "point", "python counterterm program")
+            wrap(
+                type(slice_.counterterm_program), "point", "python counterterm program"
+            )
         wrap(
             assemble._PointEvaluation,
             "_born_and_counterterms",
@@ -378,7 +381,9 @@ class Run:
                     "finite": _relative(finite, float(values["finite"]), floor),
                 }
                 worst = max(worst, *errors[provider].values())
-            rows.append({"index": index, "born": born, "finite": finite, "errors": errors})
+            rows.append(
+                {"index": index, "born": born, "finite": finite, "errors": errors}
+            )
         self.record["accuracy_check"] = {
             "points": count,
             "metric": fixture["error_metric"],
@@ -432,7 +437,10 @@ class Run:
                 self.key,
                 f"B={size}: {summary['median_seconds_per_point'] * 1e3:.3f} ms/pt",
                 json.dumps(
-                    {k: round(v * 1e3, 3) for k, v in summary["stages_per_point"].items()}
+                    {
+                        k: round(v * 1e3, 3)
+                        for k, v in summary["stages_per_point"].items()
+                    }
                 ),
                 flush=True,
             )
