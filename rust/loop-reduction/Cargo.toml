@@ -14,6 +14,7 @@ feynkit-generator = { git = "https://github.com/alphal00p/gammaloop.git", rev = 
 feynkit-graph = { git = "https://github.com/alphal00p/gammaloop.git", rev = "4b8569c03f7498b13482bc954953e66f6de5ffc1", default-features = false, features = ["native"] }
 idenso = { git = "https://github.com/alphal00p/gammaloop.git", rev = "4b8569c03f7498b13482bc954953e66f6de5ffc1", default-features = false, features = ["native"] }
 spenso = { git = "https://github.com/alphal00p/gammaloop.git", rev = "4b8569c03f7498b13482bc954953e66f6de5ffc1", default-features = false, features = ["native", "shadowing"] }
+spenso-hep-lib = { git = "https://github.com/alphal00p/gammaloop.git", rev = "4b8569c03f7498b13482bc954953e66f6de5ffc1", default-features = false, features = ["native"] }
 feynkit-model = { git = "https://github.com/alphal00p/gammaloop.git", rev = "4b8569c03f7498b13482bc954953e66f6de5ffc1", default-features = false, features = ["native"] }
 feynkit-kinematics = { git = "https://github.com/alphal00p/gammaloop.git", rev = "4b8569c03f7498b13482bc954953e66f6de5ffc1", default-features = false, features = ["native"] }
 rusticol-core = { path = "../crates/rusticol-core", features = ["symbolica-runtime", "python-generation-bridge", "loop-v2"] }
