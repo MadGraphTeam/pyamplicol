@@ -26,6 +26,8 @@
     "ct_sites": 4837
    },
    "wall_s": 813.35,
+   "user_s": 802.49,
+   "system_s": 20.03,
    "max_rss_kib": 9738788,
    "cpu_percent": 101
   },
@@ -51,6 +53,8 @@
     "ct_sites": 4837
    },
    "wall_s": 482.05,
+   "user_s": 476.89,
+   "system_s": 14.63,
    "max_rss_kib": 6127984,
    "cpu_percent": 101
   },
@@ -64,6 +68,8 @@
    "root_sites": 847,
    "residual": 0,
    "wall_s": 3984.0,
+   "user_s": 3656.23,
+   "system_s": 301.78,
    "max_rss_kib": 54580912,
    "cpu_percent": 99
   },
@@ -92,7 +98,11 @@
     2.922957176013514e-06
    ],
    "expected_double_pole_over_born": -0.3943859489817167,
+   "generate_s": 471.4,
+   "export_with_trees_s": 418.2,
    "wall_s": 1047.03,
+   "user_s": 1700.01,
+   "system_s": 68.51,
    "max_rss_kib": 19352520,
    "cpu_percent": 168
   },

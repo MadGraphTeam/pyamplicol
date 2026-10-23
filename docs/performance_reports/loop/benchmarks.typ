@@ -121,7 +121,7 @@
   let n = r.at("note", default: none)
   if c != none or n != none { h(3pt); tiny[#if c != none [#c]#if n != none [#n]] }
 }
-#let box-note(fill: pale, stroke: none, body) = block(width: 100%, fill: fill, stroke: stroke, inset: 9pt, radius: 3pt, text(9pt, body))
+#let box-note(fill: pale, stroke: none, breakable: true, body) = block(width: 100%, fill: fill, stroke: stroke, breakable: breakable, inset: 9pt, radius: 3pt, text(9pt, body))
 #let flag(body) = box(fill: warm, inset: (x: 3pt, y: 1.5pt), radius: 2pt, text(6.6pt, weight: "bold", fill: rgb("#8a4b08"), body))
 
 // ================================================================ PAGE 1 ==
@@ -352,7 +352,8 @@ Poles on or off cost the same there; the finite-only saving lies in the
 counterterm and Catani work that is still in Python. Schedule M gains only on
 pure-gluon classes, most at leading colour ($g g -> g g g g$ LC: 0.80 on one
 thread); classes with a quark line stay at $1.00 plus.minus 0.02$ on one
-thread (0.87–1.01 at 8 threads), so B stays the default for them. The Python inputs, two to three orders of magnitude above
+thread (0.85–1.01 at 8 threads over all quark-line classes of DESIGN §5.6),
+so B stays the default for them. The Python inputs, two to three orders of magnitude above
 the native loop stage, are the open item: G1 measures end to end once they run
 natively.
 
@@ -416,11 +417,20 @@ the unrotated seven-gluon points NJet keeps only 4–6 digits in double precisio
 #let g2 = sg.generation_latest
 #let ctp = sg.ct_program
 #let nb = sg.native_bare
+// CPU-time bound of the five bare-loop evaluations: the job's user + system
+// time less one busy core over generation and over the export with trees.
+#let nb-cpu = nb.user_s + nb.system_s
+#let nb-eval-wall = nb.seconds.sum()
+#let nb-cpu-eval = nb-cpu - nb.generate_s - nb.export_with_trees_s
+#let nb-cores = nb-cpu-eval / nb-eval-wall
+#let nb-cpu-pt = nb-cpu-eval / nb.seconds.len()
 #box-note(fill: warm)[
   #set par(justify: false)
   These are #flag[development] measurements on the branches named, on the
   shared host. Generation and the counterterm program ran in one thread; the
-  thread count of the native bare-loop timing was not recorded (@tab:sevendev).
+  thread count of the native bare-loop timing was not recorded, and its CPU
+  accounting allows up to about #fixed(nb-cores, 0) busy cores during the
+  evaluations, so its wall times are not per-core timings (@tab:sevendev).
   They are not part of the acceptance campaign and not a like-for-like speed
   comparison: the native path below does not yet include counterterms or
   $R_2$.
@@ -434,7 +444,13 @@ the unrotated seven-gluon points NJet keeps only 4–6 digits in double precisio
     #ctp.cpu_percent %; `RAYON_NUM_THREADS=1` for the counterterm program). The
     bare-loop job did not record its thread count (the native executor's
     default is all cores); the whole job, generation and export included,
-    averaged #nb.cpu_percent % CPU. Counts of the generated slice:
+    averaged #nb.cpu_percent % CPU. Its #group(int(calc.round(nb-cpu))) CPU-s
+    (user + system), less one core over generation (#sig(nb.generate_s) s) and
+    export with trees (#sig(nb.export_with_trees_s) s), leave at most
+    #sig(nb-cpu-eval) CPU-s for the #sig(nb-eval-wall) s of evaluations: up to
+    #fixed(nb-cores, 1) busy cores on average and up to #sig(nb-cpu-pt) CPU-s per
+    point, so the per-core comparison with NJet is undetermined. Counts of the
+    generated slice:
     #group(g1.counts.families) families, #group(g1.counts.skeletons) skeletons,
     #group(g1.counts.trie_nodes) trie nodes, #group(g1.counts.blocks) tree
     blocks, #group(g1.counts.seed_classes) colour-seed classes on a
@@ -455,19 +471,23 @@ the unrotated seven-gluon points NJet keeps only 4–6 digits in double precisio
     [Plain blocks #minutes(ctp.plain_blocks_s), CT program #minutes(ctp.ct_program_s)\; #group(ctp.ct_currents) CT currents, #group(ctp.ct_interactions) interactions, #ctp.root_sites root sites, no rule left to site closure; script total #minutes(ctp.total_s). Root-closure (bind) terms not measured; run before the request-scoped lowering (ct-recursion DESIGN §6.1)],
     text(weight: "bold", minutes(ctp.wall_s)), text(weight: "bold")[#fixed(kib-gib(ctp.max_rss_kib), 1) GiB],
     [Bare loop + Born, native trees \ #tiny[`work/v2-generation-scale`, 5 points]],
-    [Binary64; per point the point and one rotation (two evaluations); no counterterms, no $R_2$; thread count not recorded],
+    [Binary64; per point the point and one rotation (two evaluations); no counterterms, no $R_2$; thread count not recorded (up to #fixed(nb-cores, 1) cores, ≤ #sig(nb-cpu-pt) CPU-s per point)],
     text(weight: "bold")[#sig(calc.min(..nb.seconds))–#sig(calc.max(..nb.seconds)) s/pt], [#text(weight: "bold")[#fixed(kib-gib(nb.max_rss_kib), 1) GiB] #linebreak() #tiny[whole job]],
   )),
 ) <tab:sevendev>
 
-Next to NJet on the same host (@tab:njet), the native path's
-#sig(calc.min(..nb.seconds))–#sig(calc.max(..nb.seconds))~s per point for two
-evaluations compares with #num(ms.njet.rows.last().n312_std)~s for NJet's
-standard sum and #num(ms.njet.rows.last().n312_ds)~s for its de-symmetrised sum,
-both also two evaluations. The comparison is not like-for-like: counterterms and
-$R_2$ are missing on the pyAmpliCol side; NJet ran on one pinned core of the idle
-host, while the pyAmpliCol job ran on the shared host with an unrecorded thread
-count and load; and the de-symmetrised sum is not a point value. Generation fits
+On the same host (@tab:njet) NJet takes #num(ms.njet.rows.last().n312_std)~s
+per point for its standard sum and #num(ms.njet.rows.last().n312_ds)~s for its
+de-symmetrised sum, two evaluations each, on one pinned core of the idle host.
+The native path's #sig(calc.min(..nb.seconds))–#sig(calc.max(..nb.seconds))~s
+per point (also two evaluations) are wall times of a multi-threaded job: its CPU
+accounting allows up to ≈#fixed(nb-cores, 1) busy cores, ≈#sig(nb-cpu-pt)~CPU-s
+per point, during the evaluations, which is above NJet's
+#num(ms.njet.rows.last().n312_std)~s. Whether the native bare path is faster
+than NJet's standard sum per core is therefore undetermined until a one-thread
+run exists. The comparison is not like-for-like either: counterterms and $R_2$
+are missing on the pyAmpliCol side, the job ran on the shared host under load,
+and the de-symmetrised sum is not a point value. Generation fits
 addendum H's budget (O(hours), below 150 GB). MASTER_PLAN quotes the same two
 peaks as KiB/10⁶ ("#fixed(g1.max_rss_kib / 1e6, 1) GB",
 "#fixed(ctp.max_rss_kib / 1e6, 1) GB"); of the run records, the counterterm
@@ -479,8 +499,10 @@ record prints KiB/10⁶ and the generation record GiB.
 #let nv = ms.njet_validation
 #let ux = sg.uux_ggggg_vs_providers.max_relative_deviation
 #figure(kind: table,
-  caption: [*Checks of the seven-leg QCD results* (binary64; deviation metric of
-    @tab:validation). NJet values: fixture `gg_ggggg_njet.json` (NJet 3.1.2
+  caption: [*Checks of the seven-leg QCD results*, #flag[development]
+    measurements on `work/v2-generation-scale`, not part of the acceptance
+    campaign, except the Ward row (WP2.5 on `loop`); binary64, deviation metric
+    of @tab:validation. NJet values: fixture `gg_ggggg_njet.json` (NJet 3.1.2
     double-double at exactly rotated points, scaling-test estimates
     ≤ #sci(1.3e-24)). The bare single pole is compared after subtracting the
     counterterm pole of its request, as marked in each row:
@@ -502,8 +524,8 @@ record prints KiB/10⁶ and the generation record GiB.
     [$g g -> g g g g g$ top-free (NJet's scheme) against NJet, native bare loop, 3 points; shift 115/3],
     [Born ≤ #sci(nv.topfree.born), double pole ≤ #sci(nv.topfree.double_pole), single pole #sci(nv.topfree.single_pole.at(0)) and #sci(nv.topfree.single_pole.at(1)) (estimates #sci(nv.topfree.estimates.at(0)), #sci(nv.topfree.estimates.at(1))), #sci(nv.topfree.single_pole.at(2))],
     [finite part needs the native counterterms],
-    [Top-free full virtual against NJet at lower multiplicity (`test_loop_v2_topfree.py`)],
-    [#nv.topfree.lower.map(l => [#math-label(l.label): #l.value]).join([; ])],
+    [Top-free full virtual against NJet at lower multiplicity],
+    [#nv.topfree.lower.map(l => [#math-label(l.label): #l.value]).join([; ]) (`test_loop_v2_topfree.py`)],
     [passed],
     [$u overline(u) -> g g g g g$ full virtual against MadLoop and Recola, 3 points],
     [MadLoop ≤ #sci(calc.max(..ux.madloop.values())), Recola ≤ #sci(calc.max(..ux.recola.values())) (finite ≤ #sci(ux.recola.finite)); the providers agree to 6.2×10⁻¹⁰],
@@ -514,9 +536,10 @@ record prints KiB/10⁶ and the generation record GiB.
   )),
 ) <tab:sevencheck>
 
-#box-note[
+#box-note(breakable: false)[
   #set par(justify: false)
-  *First $g g -> g g g g g$ virtual* (full colour, Born $alpha_s^5$, loop_sm with
+  *First $g g -> g g g g g$ virtual* #flag[development] `work/v2-generation-scale`,
+  not part of the acceptance campaign (full colour, Born $alpha_s^5$, loop_sm with
   top loops, point #fv.point, $mu = 1$ TeV; Python per-point inputs with
   counterterms, about 3 h per evaluation on that development path):
   #v(-0.2em)
@@ -553,7 +576,7 @@ record prints KiB/10⁶ and the generation record GiB.
   ([Stability estimates], "supported", [Rotation checks (any number, 0 = estimate absent), reduction direction, exact rescaling, in any combination; no automatic escalation (WP2.3).]),
   ([Precision carriers], "supported", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; DD/AP point inputs are formed in Python Decimal until WP3.1.]),
   ([Native executor, schedules], "supported", [Rust, 16 lanes, threads; schedule B by default, M native (adopted per class at G1), F as oracle. The NinjaRS reduction runs serially.]),
-  ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; relocation to another path tested on the same host and CPU; loading regenerates the per-point inputs in Python, and the Rust/C/C++/Fortran SDK refuses v4 until WP3.1.]),
+  ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; relocation to another path tested on the same host and CPU. Loading regenerates the process (the `LoopSlice`) in Python and checks the plan digest, which addendum G forbids for prepared artifacts; WP3.1 removes it. The Rust/C/C++/Fortran SDK refuses v4 until WP3.1.]),
   ([Counterterms (model UV, $R_2$)], "partial", [Site closure is the public route (QCD incl. massive quarks), a form the user reserves for test oracles; counterterms inside the recursion are on `work/v2-ct-recursion` (WP2.2).]),
   ([Direct $R_2$], "deferred", [A bonus by the user's rule; bounded controls only.]),
   ([Electroweak, complex mass], "open", [Tree EW lanes fixed, the Dirac–Weyl class refused; loop EW, Goldstones and CMS are WP3.2.]),
@@ -714,7 +737,9 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
 #figure(kind: table,
   caption: [*Asymptotic classes per event* for $n$ gluons, full colour (DESIGN
     §1.4): $F_n approx (n - 1)! (1 / ln 2)^n \/ 2$ families, $2^n$ helicities.
-    The required set ($n <= 7$) is far below the B/M crossover.],
+    The required set ($n <= 7$) is far below the crossover of schedule B with
+    the unitarity class ($n approx 30$–$50$); schedule M is planned as the
+    default from $n >= 8$.],
   tstyle(table(
     columns: (4.2cm, 1fr),
     align: left + horizon, inset: (x: 4pt, y: 3pt), stroke: tstroke, fill: thead-fill,
@@ -857,8 +882,10 @@ exact carriers and the public interfaces.
     `gen_gg_ggggg_final`, `gen_gg_ggggg_hash`, `poles2_gg_ggggg`,
     `eval2_gg_ggggg`, `eval2_gg_ggggg_rot` and `cmp_uux_ggggg` in
     `workspace/tmp/generation-scale/runs/` and `gg_ggggg` in
-    `workspace/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs: wall time,
-    peak memory, CPU share); thread settings from DESIGN WP3.1 (generation, one
+    `workspace/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs: wall,
+    user and system time, peak memory, CPU share; the bare-loop CPU bound
+    subtracts one core over the record's `generate_s` and
+    `export_with_trees_s`); thread settings from DESIGN WP3.1 (generation, one
     thread) and ct-recursion DESIGN §6.1 (`RAYON_NUM_THREADS=1`, bind not
     measured); the 119/3 shift and NJet deviations from njet-benchmark.md §5.3
     and the fixture

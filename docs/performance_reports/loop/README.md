@@ -35,8 +35,8 @@ and development measurements are labelled with their branch.
 
 - `measured.json`: `python scripts/collect_milestone.py <workspace>` reads the
   run records under `<workspace>/tmp/generation-scale/runs/` and
-  `<workspace>/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs: wall
-  time, peak memory, CPU share).
+  `<workspace>/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs: wall,
+  user and system time, peak memory, CPU share).
 - `milestone.json` is edited by hand when a package lands or a measurement is
   replaced; keep each block's `source`.
 - `figures/*.svg`: `python scripts/draw_graphs.py` draws example graphs with

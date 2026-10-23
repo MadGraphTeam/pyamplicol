@@ -74,7 +74,7 @@
     "madloop": "2.4 h (285 + 8 354 + 21 s)",
     "recola": "34 min (2 036 s)",
     "openloops": "prebuilt ppjjjj",
-    "rule": "results exist and are used"
+    "rule": "MadLoop over 45 min; results exist and are used"
    },
    {
     "label": "g g -> t overline(t) e^- e^+ g",
@@ -195,7 +195,7 @@
     "export_s": 5.8,
     "plan_mb": 15,
     "peak_gib": 0.55,
-    "validation": "Recola, OpenLoops ≤ 8.9×10⁻¹² at point 0 and ≤ 4.4×10⁻¹¹ at point 2 (finite part); point 1 8.4×10⁻⁹ in binary64 (flagged, estimate 3.0×10⁻⁶), 7.1×10⁻¹¹ in DoubleFloat",
+    "validation": "Recola, OpenLoops, all coefficients: ≤ 8.9×10⁻¹² at point 0 and ≤ 4.4×10⁻¹¹ at point 2 (largest: finite part); point 1: 8.4×10⁻⁹ in binary64 (flagged, estimate 3.0×10⁻⁶), 7.1×10⁻¹¹ in DoubleFloat",
     "refs": "Recola, OL",
     "source": "workspace/tmp/generation-scale/runs/cmp_gg_gggg.json (points 0–2), cmp_gg_gggg_p1_stab.json (estimate), cmp_gg_gggg_p1_dd.json (DoubleFloat)"
    },

@@ -26,7 +26,8 @@ def _load(root: Path, rel: str) -> dict:
 
 
 def _time_v(root: Path, rel: str) -> dict:
-    """Wall time (s), max RSS (KiB) and CPU share (%) from a /usr/bin/time -v log."""
+    """Wall, user and system time (s), max RSS (KiB) and CPU share (%) from a
+    /usr/bin/time -v log."""
     text = (root / rel).read_text()
     wall = re.search(
         r"Elapsed \(wall clock\) time \(h:mm:ss or m:ss\): (\S+)", text
@@ -35,7 +36,15 @@ def _time_v(root: Path, rel: str) -> dict:
     seconds = sum(v * 60**i for i, v in enumerate(reversed(parts)))
     rss = int(re.search(r"Maximum resident set size \(kbytes\): (\d+)", text).group(1))
     cpu = int(re.search(r"Percent of CPU this job got: (\d+)%", text).group(1))
-    return {"wall_s": round(seconds, 2), "max_rss_kib": rss, "cpu_percent": cpu}
+    user = float(re.search(r"User time \(seconds\): (\S+)", text).group(1))
+    system = float(re.search(r"System time \(seconds\): (\S+)", text).group(1))
+    return {
+        "wall_s": round(seconds, 2),
+        "user_s": user,
+        "system_s": system,
+        "max_rss_kib": rss,
+        "cpu_percent": cpu,
+    }
 
 
 def _events(record: dict) -> dict:
@@ -123,6 +132,10 @@ def collect(root: Path) -> dict:
                 "expected_double_pole_over_born": poles[
                     "expected_double_pole_over_born"
                 ],
+                # Stage walls of the same job, for the CPU-time bound of the
+                # evaluations (the report subtracts one core over each).
+                "generate_s": poles["generate_s"],
+                "export_with_trees_s": poles["export_with_trees_s"],
                 # Whole job: generation, export with trees and the points.
                 # The executor's thread count is not recorded (default: all
                 # cores unless RAYON_NUM_THREADS is set).
