@@ -1,0 +1,153 @@
+{
+ "date": "2026-10-23",
+ "engine_revision": "e734b708",
+ "native_build": "loop-native-v2-slice-45875b87 (digest 2be17627...; release, codegen-units 1, thin LTO)",
+ "host": "AMD EPYC 9754 (shared, 384 logical CPUs)",
+ "seven_gluon": {
+  "generation_first": {
+   "source": "workspace/tmp/generation-scale/runs/gen_gg_ggggg_final.json, workspace/tmp/generation-scale/runs/gen_gg_ggggg_final.log",
+   "process": "g g > g g g g g",
+   "generate_s": 446.067,
+   "generate_peak_gib": 4.24,
+   "export_s": 321.426,
+   "plan_json_s": 38.748,
+   "plan_json_mb": 948.87,
+   "counts": {
+    "families": 9414,
+    "routings": 52682,
+    "prefix_states": 109179,
+    "scheduled_families": 9414,
+    "skeletons": 810495,
+    "trie_nodes": 197539,
+    "contents": 44926,
+    "blocks": 4718,
+    "seed_classes": 1080,
+    "born_basis": 720,
+    "ct_sites": 4837
+   },
+   "wall_s": 813.35,
+   "user_s": 802.49,
+   "system_s": 20.03,
+   "max_rss_kib": 9738788,
+   "cpu_percent": 101
+  },
+  "generation_latest": {
+   "source": "workspace/tmp/generation-scale/runs/gen_gg_ggggg_hash.json, workspace/tmp/generation-scale/runs/gen_gg_ggggg_hash.log",
+   "process": "g g > g g g g g",
+   "generate_s": 358.144,
+   "generate_peak_gib": 4.15,
+   "export_s": 109.36,
+   "plan_json_s": 9.05,
+   "plan_json_mb": 184.67,
+   "counts": {
+    "families": 9414,
+    "routings": 52682,
+    "prefix_states": 109179,
+    "scheduled_families": 9414,
+    "skeletons": 810495,
+    "trie_nodes": 197539,
+    "contents": 44926,
+    "blocks": 4718,
+    "seed_classes": 1080,
+    "born_basis": 720,
+    "ct_sites": 4837
+   },
+   "wall_s": 482.05,
+   "user_s": 476.89,
+   "system_s": 14.63,
+   "max_rss_kib": 6127984,
+   "cpu_percent": 101
+  },
+  "ct_program": {
+   "source": "workspace/tmp/ct-recursion/s4/gg_ggggg.json, workspace/tmp/ct-recursion/s4/gg_ggggg.log",
+   "total_s": 3801.0868413448334,
+   "ct_program_s": 3210.148643016815,
+   "plain_blocks_s": 561.1251866817474,
+   "ct_currents": 3070042,
+   "ct_interactions": 34781532,
+   "root_sites": 847,
+   "residual": 0,
+   "wall_s": 3984.0,
+   "user_s": 3656.23,
+   "system_s": 301.78,
+   "max_rss_kib": 54580912,
+   "cpu_percent": 99
+  },
+  "native_bare": {
+   "source": "workspace/tmp/generation-scale/runs/poles2_gg_ggggg.json, workspace/tmp/generation-scale/runs/poles2_gg_ggggg.log",
+   "what": "bare loop + Born on the native trees, binary64, point and one rotation (two evaluations)",
+   "seconds": [
+    41.3,
+    25.83,
+    27.33,
+    25.47,
+    25.81
+   ],
+   "double_pole_deviation": [
+    1.0094831665745724e-12,
+    3.2537956444094243e-12,
+    5.367348241911346e-12,
+    4.4858098882782517e-13,
+    4.194450413263003e-14
+   ],
+   "stability_estimate": [
+    3.868114893987414e-08,
+    1.160564438745227e-07,
+    1.5740424671392346e-10,
+    7.996303661773811e-10,
+    2.922957176013514e-06
+   ],
+   "expected_double_pole_over_born": -0.3943859489817167,
+   "generate_s": 471.4,
+   "export_with_trees_s": 418.2,
+   "wall_s": 1047.03,
+   "user_s": 1700.01,
+   "system_s": 68.51,
+   "max_rss_kib": 19352520,
+   "cpu_percent": 168
+  },
+  "first_virtual": {
+   "source": "workspace/tmp/generation-scale/runs/eval2_gg_ggggg.json, workspace/tmp/generation-scale/runs/eval2_gg_ggggg_rot.json",
+   "point": 0,
+   "born": 3.6232581037920616e-06,
+   "virtual": [
+    -1.302233686995196e-05,
+    -6.9387421504102316e-06,
+    -1.4289620856712027e-06
+   ],
+   "virtual_rotated": [
+    -1.3022336946219005e-05,
+    -6.9387421683414794e-06,
+    -1.4289620856715665e-06
+   ],
+   "rotation_relative": {
+    "finite": 5.85663276400622e-09,
+    "single_pole": 2.584221678018945e-09,
+    "double_pole": 2.5459083518989236e-13
+   },
+   "double_pole_over_born": -0.3943859489821238,
+   "evaluate_s": [
+    10799.45,
+    10672.69
+   ]
+  },
+  "uux_ggggg_vs_providers": {
+   "source": "workspace/tmp/generation-scale/runs/cmp_uux_ggggg.json",
+   "points": 3,
+   "max_relative_deviation": {
+    "madloop": {
+     "born": 4.71501853207469e-14,
+     "finite": 1.8731545550582678e-12,
+     "single_pole": 2.5683715762595885e-12,
+     "double_pole": 6.716839143177721e-13
+    },
+    "recola": {
+     "born": 1.8229848878959578e-13,
+     "finite": 2.8732766428186575e-10,
+     "single_pole": 6.140840990775537e-10,
+     "double_pole": 4.351247791834972e-11
+    }
+   }
+  }
+ }
+}
