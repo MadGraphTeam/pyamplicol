@@ -182,6 +182,15 @@ The convention is all outgoing with physical charges `t = tau / sqrt(2)`;
 endpoint-pairing phases belong in the supplied tensor coefficients. Overlap
 matrices are Gram matrices and must not be multiplied as charge-action
 matrices. This is color algebra, not a model or numerical amplitude generator.
+`ColorConnection::apply_connected` extends an existing exact tensor sum while
+preserving its complex coefficients, Laurent powers and root-two normalization.
+`GluonSplittingColorPair` supplies daughter-spectator insertions after `g -> q qbar`
+and the symmetric-adjoint pair `D_parent . T_spectator`, with
+`(D^c)_AB = d^{AcB}` (no factor of `i`). For the physical splitting tensor
+`S_ij,B = t^B_ij`, its raw daughter overlaps include `T_R=1/2`; the symmetric
+pair is exactly twice their difference, with no extra `T_R`. The parent must be
+adjoint and the spectator a distinct colored leg; callers supply fresh daughter
+and emission labels. Mixed spin densities and kinematic kernels remain separate.
 The `color::network` module also lowers exact Spenso SU(3) vertex expressions
 (`f`, `t`, chains, traces and color metrics) to typed matrix products and
 contracts their internal indices with `reduce_network`. It retains complete

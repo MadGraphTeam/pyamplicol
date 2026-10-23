@@ -21,6 +21,8 @@ use symbolica::domains::{float::Complex, rational::Rational};
 use crate::{RusticolError, RusticolResult};
 
 pub mod network;
+mod splitting;
+pub use splitting::{GluonSplittingColorPair, SplitDaughterColorTerms};
 #[cfg(test)]
 mod tests;
 mod trace;
@@ -259,12 +261,34 @@ impl ColorConnection {
         tensor: &ColorTensor,
         coefficient: ExactColorCoefficient,
     ) -> RusticolResult<ConnectedColorTensor> {
-        tensor.validate_legs(&self.initial_legs)?;
-        let mut terms = vec![TensorTerm {
-            coefficient,
-            tensor: tensor.clone(),
-            nc_power: 0,
-        }];
+        self.apply_connected(&ConnectedColorTensor::new(
+            self.initial_legs.clone(),
+            vec![TensorTerm {
+                coefficient,
+                tensor: tensor.clone(),
+                nc_power: 0,
+            }],
+            0,
+        )?)
+    }
+
+    /// Apply this ordered connection to an existing exact linear combination.
+    /// Complex coefficients, Laurent powers and the input's common inverse
+    /// square root of two normalization are preserved.
+    pub fn apply_connected(
+        &self,
+        tensor: &ConnectedColorTensor,
+    ) -> RusticolResult<ConnectedColorTensor> {
+        if tensor.legs != self.initial_legs {
+            return Err(invalid(
+                "connection input must have identical typed color legs",
+            ));
+        }
+        let normalization_power = tensor
+            .normalization_power
+            .checked_add(self.order)
+            .ok_or_else(|| invalid("color normalization power overflows"))?;
+        let mut terms = tensor.terms.clone();
         for &emission in &self.emissions {
             let mut transformed = Vec::new();
             for term in terms {
@@ -278,7 +302,7 @@ impl ColorConnection {
             }
             terms = combine_terms(transformed)?;
         }
-        ConnectedColorTensor::new(self.output_legs.clone(), terms, self.order)
+        ConnectedColorTensor::new(self.output_legs.clone(), terms, normalization_power)
     }
 }
 
