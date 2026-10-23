@@ -31,6 +31,8 @@ pub mod loop_runtime;
 pub mod loop_v2;
 mod metadata;
 pub mod pacbin;
+#[cfg(feature = "symbolica-runtime")]
+pub mod preparation;
 pub mod recurrence;
 #[cfg(feature = "symbolica-runtime")]
 pub mod source_bindings;

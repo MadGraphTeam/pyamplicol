@@ -502,6 +502,15 @@ field components, and the executed R2 strategy. No PyO3 or Python callback is
 needed by the standalone executor. The experimental Python `NativeLoopProgram`
 wraps that same core executor; public artifact and SDK dispatch remain separate.
 
+Native producers can also pass a `LoopRuntimePlan` and a map of exact Symbolica
+evaluators to `LoadedLoopRuntime::from_evaluators`. This constructor validates
+the same dimensions and references as the artifact loader and binds the same
+`LoopExecutor`, without Python, an intermediate file, or process-specific source
+compilation. `rusticol_core::preparation` exposes the exact evaluator type and
+state encoder/decoder. Constants remain rational until a numerical backend is
+chosen. This is a preparation boundary for producers that already construct
+the physical plan; it does not yet generate that plan from a model and process.
+
 The current native admission is full-colour legacy/source model-R2 and the
 certified legacy four-gluon direct-R2 descriptor. Source owners publish checked
 immutable snapshots; each evaluation shares one revision across ordinary
