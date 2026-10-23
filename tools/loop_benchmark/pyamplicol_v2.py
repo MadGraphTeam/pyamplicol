@@ -179,6 +179,16 @@ def _native_inputs_supported() -> bool:
     return "inputs" in inspect.signature(NativeExecutor).parameters
 
 
+def _finite_only() -> Any:
+    """``NativeExecutor.evaluate``'s finite-only pole argument: the pole
+    selection ``"none"`` (poles-uvir, WP2.10), or ``False`` before it."""
+
+    from pyamplicol.loops.v2.plan_export import NativeExecutor
+
+    default = inspect.signature(NativeExecutor.evaluate).parameters["poles"].default
+    return False if isinstance(default, bool) else "none"
+
+
 def _totals(result: Any) -> tuple[float, float]:
     born = sum(complex(v).real for v in result.born.values())
     virtual = result.components["virtual"]
@@ -329,7 +339,10 @@ class Run:
     def evaluate(self, start: int, size: int) -> dict[str, Any]:
         points, scales = self._batch(start, size)
         self.timers.clear()
-        options: dict[str, Any] = {"parameters": self.parameters, "poles": False}
+        options: dict[str, Any] = {
+            "parameters": self.parameters,
+            "poles": _finite_only(),
+        }
         if self.options.schedule == "M":
             options["schedule"] = "M"
         begin = time.perf_counter()
