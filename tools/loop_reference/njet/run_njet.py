@@ -86,6 +86,33 @@ def command_points(args):
     print(args.output)
 
 
+# Exact rational rotations (Pythagorean cos/sin, terminating decimals). The
+# colour- and helicity-summed virtual is a Lorentz scalar, so NJet may be
+# evaluated at a rotated copy of a point; NJet's numerics are not
+# orientation-blind (README "NJet"), so references use generic orientations.
+ROTATIONS = {
+    "R1": ((2, (3, 5), (4, 5)), (0, (7, 25), (24, 25))),
+    "R2": ((1, (117, 125), (44, 125)), (2, (7, 25), (24, 25))),
+}
+
+
+def rotation_matrix(name):
+    matrix = ((1, 0, 0), (0, 1, 0), (0, 0, 1))
+    for axis, c, s_ in ROTATIONS[name]:
+        matrix = _matmul(matrix, _rotation(axis, (Fraction(*c), Fraction(*s_))))
+    return matrix
+
+
+def rotate_points(points, name):
+    matrix = rotation_matrix(name)
+    out = []
+    for point in points:
+        exact = [_rotate(matrix, [Fraction(x) for x in leg]) for leg in point]
+        check(exact, [0] * len(exact))
+        out.append([[decimal_string(x) for x in leg] for leg in exact])
+    return out
+
+
 def points_text(points, mu_r):
     lines = [f"{len(points)} {len(points[0])}"]
     for point, mu in zip(points, mu_r, strict=True):
@@ -118,7 +145,7 @@ def build_driver(build, out_dir):
     """Compile njet_driver.cpp against an NJet build (cached by source digest)."""
     prefix, pc, version = njet_install(build)
     digest = sha256(HERE / "njet_driver.cpp")[:12]
-    binary = Path(out_dir) / f"njet_driver-{version}-{digest}"
+    binary = Path(out_dir) / f"njet_driver-{Path(build).resolve().name}-{digest}"
     if binary.exists():
         return binary, version
     qd = Path(build) / "qd" / "prefix" / "lib"
@@ -137,6 +164,12 @@ def build_driver(build, out_dir):
         flags = ["-DUSE_DD", f"-I{njet_source(build)}", f"-I{Path(build) / 'njet' / 'build'}",
                  f"-I{prefix / 'include'}", f"-L{prefix / 'lib'}", "-lnjet2", "-lqd",
                  "-lqcdloop1"]
+    if (qd / "libqdmod.so").exists():
+        # --with-oneloop: OneLOop's double-double integrals use QD's Fortran module.
+        gfortran = Path(subprocess.run(["gfortran", "-print-file-name=libgfortran.so"],
+                                       check=True, capture_output=True,
+                                       text=True).stdout.strip()).resolve().parent
+        flags += ["-lqdmod", "-lqd", f"-L{gfortran}", "-lgfortran", f"-Wl,-rpath,{gfortran}"]
     rpaths = [f"-Wl,-rpath,{prefix / 'lib'}"] + ([f"-Wl,-rpath,{qd}"] if qd.is_dir() else [])
     Path(out_dir).mkdir(parents=True, exist_ok=True)
     command = ["g++", "-std=c++17", "-O2", str(HERE / "njet_driver.cpp"), "-o", str(binary),
@@ -171,12 +204,16 @@ def command_run(args):
     indices = list(range(len(pts["points"]))) if args.indices is None else args.indices
     pts["points"] = [pts["points"][i] for i in indices]
     pts["mu_r"] = [pts["mu_r"][i] for i in indices]
+    evaluated = rotate_points(pts["points"], args.rotation) if args.rotation else pts["points"]
     run_dir = Path(args.output).with_suffix("")
     run_dir.mkdir(parents=True, exist_ok=True)
     binary, version = build_driver(args.njet_build, Path(args.driver_dir))
-    (run_dir / "points.txt").write_text(points_text(pts["points"], pts["mu_r"]))
+    (run_dir / "points.txt").write_text(points_text(evaluated, pts["mu_r"]))
     legs = pts["legs"]
     options = {"mode": args.mode, "amp": args.amp, "prec": args.prec, "scaling": args.scaling,
+               "rotation": (None if not args.rotation else
+                            {"name": args.rotation, "factors": ROTATIONS[args.rotation],
+                             "note": "NJet evaluated at the exactly rotated points"}),
                "alphas": args.alphas, "nf": args.nf, "nc": "3", "scheme": args.scheme,
                "renorm": args.renorm}
     command = [str(binary), args.mode, f"points={run_dir / 'points.txt'}", f"alphas={args.alphas}"]
@@ -231,6 +268,63 @@ def command_run(args):
     }
     Path(args.output).write_text(json.dumps(result, indent=1) + "\n")
     print(args.output)
+
+
+# ------------------------------------------------------------------- Catani
+
+def command_catani(args):
+    """IR-pole prediction from NJet's colour-correlated Borns (tree level only).
+
+    For massless gluons, MS-bar with n_f light flavours and the MadLoop/BLHA
+    C_eps normalisation (Catani-Seymour I operator, 2 Re<M0|M1> = -<M0|I|M0>
+    at the poles):
+      double = -(alpha_s/2pi) sum_i C_A B,
+      single = (alpha_s/2pi) [ -sum_i gamma_g B
+                               + sum_{i != j} <T_i.T_j> log(mu^2 / |2 p_i.p_j|) ],
+    gamma_g = 11/6 C_A - 2/3 T_F n_f. The i pi of timelike invariants is
+    imaginary at this order and drops out of the real part.
+    """
+    pts = json.loads(Path(args.points).read_text())
+    run_dir = Path(args.output).with_suffix("")
+    run_dir.mkdir(parents=True, exist_ok=True)
+    binary, version = build_driver(args.njet_build, Path(args.driver_dir))
+    (run_dir / "points.txt").write_text(points_text(pts["points"], pts["mu_r"]))
+    command = [str(binary), "cc", f"points={run_dir / 'points.txt'}", f"alphas={args.alphas}",
+               f"prec={args.prec}"]
+    proc = subprocess.run(command, capture_output=True, text=True, check=True)
+    (run_dir / "driver.log").write_text(proc.stdout + proc.stderr)
+    alphas = float(Fraction(args.alphas))
+    ca, tf, nf = 3.0, 0.5, int(args.nf)
+    gamma_g = 11.0 / 6.0 * ca - 2.0 / 3.0 * tf * nf
+    rows = []
+    for line in proc.stdout.splitlines():
+        if not line.startswith('{"index'):
+            continue
+        row = json.loads(line)
+        i = row["index"]
+        point = [[Fraction(x) for x in leg] for leg in pts["points"][i]]
+        legs = len(point)
+        born = float(row["born"])
+        mu2 = Fraction(pts["mu_r"][i]) ** 2
+        cc = {(a, b): float(v) for a, b, v in row["cc"]}
+        conservation = max(abs(sum(cc[tuple(sorted((a, b)))] for b in range(legs) if b != a)
+                               + ca * born) / (ca * born) for a in range(legs))
+        logs = 0.0
+        for (a, b), value in cc.items():
+            p, q = point[a], point[b]
+            dot = p[0] * q[0] - p[1] * q[1] - p[2] * q[2] - p[3] * q[3]
+            logs += 2 * value * math.log(float(mu2 / abs(2 * dot)))
+        single = alphas / (2 * math.pi) * (-legs * gamma_g * born + logs)
+        double = -alphas / (2 * math.pi) * legs * ca * born
+        rows.append({"index": i, "born": repr(born), "double_pole": repr(double),
+                     "single_pole": repr(single), "colour_conservation": conservation})
+    result = {"tool": f"NJet {version} colour-correlated Born + Catani I operator",
+              "nf": nf, "alphas": args.alphas, "prec": args.prec,
+              "points_source": pts["source"], "points": pts["points"], "mu_r": pts["mu_r"],
+              "rows": rows}
+    Path(args.output).write_text(json.dumps(result, indent=1) + "\n")
+    print(args.output, "max colour-conservation residual",
+          max(r["colour_conservation"] for r in rows))
 
 
 # ---------------------------------------------------------------- OpenLoops
@@ -293,8 +387,8 @@ def load_rows(path, provider=None):
         rows = data["rows"]
         if provider:
             rows = [r["providers"][provider] for r in rows]
-        return data, [{k: float(r[k]) for k in COEFFICIENTS} for r in rows]
-    return data, [{k: float(r[k]) for k in COEFFICIENTS} for r in data["rows"]]
+        return data, [{k: float(r[k]) for k in COEFFICIENTS if k in r} for r in rows]
+    return data, [{k: float(r[k]) for k in COEFFICIENTS if k in r} for r in data["rows"]]
 
 
 def compare_rows(a, b, alphas):
@@ -302,7 +396,7 @@ def compare_rows(a, b, alphas):
     for i, (x, y) in enumerate(zip(a, b)):
         floor = abs(y["born"]) * alphas / (2 * math.pi)
         out.append({"index": i, **{k: relative(x[k], y[k], 0.0 if k == "born" else floor)
-                                   for k in COEFFICIENTS}})
+                                   for k in COEFFICIENTS if k in x and k in y}})
     return out
 
 
@@ -312,8 +406,33 @@ def command_compare(args):
     table = compare_rows(a, b, float(args.alphas))
     for row in table:
         print(json.dumps(row))
-    worst = max(max(r[k] for k in COEFFICIENTS) for r in table)
+    worst = max(max(r[k] for k in COEFFICIENTS if k in r) for r in table)
     print(json.dumps({"max_relative": worst}))
+
+
+def command_add_top(args):
+    """NJet (massless, N_f=5) + T, T = OpenLoops(nf=6) - OpenLoops(nf=5) per point.
+
+    T is the closed top-quark loop contribution with the top decoupled from
+    alpha_s (the fixtures' loop_sm scheme); the sum is comparable with the
+    fixtures' MadLoop/Recola/OpenLoops values.
+    """
+    nj = json.loads(Path(args.njet).read_text())
+    six = json.loads(Path(args.nf6).read_text())
+    five = json.loads(Path(args.nf5).read_text())
+    if not (nj["points"] == six["points"][:len(nj["points"])] == five["points"][:len(nj["points"])]):
+        raise SystemExit("different points")
+    rows = []
+    for row in nj["rows"]:
+        i = row["index"]
+        top = {k: float(six["rows"][i][k]) - float(five["rows"][i][k]) for k in COEFFICIENTS}
+        rows.append({"index": i, **{k: repr(float(row[k]) + top[k]) for k in COEFFICIENTS},
+                     "top": top})
+    out = {"tool": f"{nj['tool']} + T(OpenLoops nf=6 - nf=5)", "njet": str(Path(args.njet).resolve()),
+           "nf6": str(Path(args.nf6).resolve()), "nf5": str(Path(args.nf5).resolve()),
+           "points": nj["points"], "mu_r": nj["mu_r"], "rows": rows}
+    Path(args.output).write_text(json.dumps(out, indent=1) + "\n")
+    print(args.output)
 
 
 def command_calibration(args):
@@ -331,7 +450,8 @@ def command_calibration(args):
         entry = {"a": str(Path(a_path).resolve()), "b": str(Path(b_path).resolve()),
                  "a_tool": a_data.get("tool"), "b_tool": b_data.get("tool", provider),
                  "b_provider": provider, "points": n,
-                 "max_relative_deviation": {k: max(r[k] for r in table) for k in COEFFICIENTS}}
+                 "max_relative_deviation": {k: max(r[k] for r in table) for k in COEFFICIENTS
+                                            if k in table[0]}}
         if a_data.get("rows") and "errors" in a_data["rows"][0]:
             estimates = []
             for row in a_data["rows"][:n]:
@@ -400,6 +520,8 @@ def main():
     r.add_argument("--multiprec", default="0", help="blha: NJetMultiPrec")
     r.add_argument("--precision", default="1e-5", help="blha: rescue threshold")
     r.add_argument("--indices", type=int, nargs="+", help="evaluate only these points")
+    r.add_argument("--rotation", choices=sorted(ROTATIONS),
+                   help="evaluate NJet at the exactly rotated points (values are invariant)")
     r.add_argument("--cpu", type=int)
     r.add_argument("--output", required=True)
     o = sub.add_parser("openloops")
@@ -416,6 +538,19 @@ def main():
     c.add_argument("--a-provider")
     c.add_argument("--b-provider")
     c.add_argument("--alphas", default="0.118")
+    ca = sub.add_parser("catani")
+    ca.add_argument("--njet-build", required=True)
+    ca.add_argument("--driver-dir", required=True)
+    ca.add_argument("--points", required=True)
+    ca.add_argument("--nf", default="5")
+    ca.add_argument("--alphas", default="0.118")
+    ca.add_argument("--prec", choices=("double", "dd"), default="double")
+    ca.add_argument("--output", required=True)
+    a = sub.add_parser("add-top")
+    a.add_argument("--njet", required=True)
+    a.add_argument("--nf6", required=True)
+    a.add_argument("--nf5", required=True)
+    a.add_argument("--output", required=True)
     k = sub.add_parser("calibration")
     k.add_argument("--entry", action="append", required=True)
     k.add_argument("--alphas", default="0.118")
@@ -424,7 +559,8 @@ def main():
     t.add_argument("results", nargs="+")
     args = parser.parse_args()
     {"points": command_points, "run": command_run, "openloops": command_openloops,
-     "compare": command_compare, "calibration": command_calibration,
+     "compare": command_compare, "calibration": command_calibration, "add-top": command_add_top,
+     "catani": command_catani,
      "timing": command_timing}[args.command](args)
 
 

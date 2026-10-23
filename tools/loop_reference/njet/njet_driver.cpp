@@ -9,6 +9,10 @@
 //       NJet always runs its scaling test in double precision here and may
 //       rescue in double-double (contract options NJetMultiPrec / Precision).
 //
+//   njet_driver cc points=FILE alphas=0.118 [prec=double|dd]
+//       colour-correlated Borns <T_i.T_j> (BLHA 'cctree' normalisation), for
+//       the IR-pole prediction of the single pole.
+//
 //   njet_driver direct points=FILE legs=N amp=standard|ds prec=double|dd
 //       scaling=0|1 alphas=0.118 nf=5 nc=3 scheme=cdr|fdh|none renorm=1|0
 //       NJet's colour-summed classes (Amp0q<n-2>g and the de-symmetrised
@@ -247,6 +251,44 @@ int run_direct(const std::vector<Point> &points, int legs,
   return 0;
 }
 
+// Colour-correlated Borns <M0|T_i.T_j|M0> (BLHA cctree convention, i.e. minus
+// NJet's internal value, times the Born normalisation), i < j in the input leg
+// order; for the IR-pole (Catani) prediction of the single pole.
+template <typename T>
+int run_cc(const std::vector<Point> &points, int legs,
+           const std::map<std::string, std::string> &args) {
+  const T alphas = parse<T>(get(args, "alphas"));
+  NJetAccuracy<T> *amp = make_amp<T>(legs, false);
+  amp->setNc(3.);
+  const T pi = pi_value<T>();
+  const T gs2 = T(4.) * pi * alphas;
+  T tree_cpl = T(1.);
+  for (int i = 0; i < legs - 2; ++i) tree_cpl *= gs2;
+  tree_cpl /= T(256. * factorial(legs - 2));
+  std::vector<T> cc(legs * (legs - 1) / 2);
+  for (std::size_t n = 0; n < points.size(); ++n) {
+    amp->setMomenta(momenta<T>(points[n]));
+    const T born = amp->born_single() * tree_cpl;
+    amp->born_cc_single(cc.data());
+    std::printf("{\"index\": %zu, \"born\": \"%s\", \"cc\": [", n, fmt(born).c_str());
+    bool first = true;
+    for (int a = 0; a < legs; ++a) {
+      for (int b = a + 1; b < legs; ++b) {
+        // input leg a is NJet leg (a < 2 ? 1 - a : a); nis(i, j) for i > j.
+        int i = a < 2 ? 1 - a : a, j = b < 2 ? 1 - b : b;
+        if (i < j) std::swap(i, j);
+        const T value = -cc[j + i * (i - 1) / 2] * tree_cpl;
+        std::printf("%s[%d, %d, \"%s\"]", first ? "" : ", ", a, b, fmt(value).c_str());
+        first = false;
+      }
+    }
+    std::printf("]}\n");
+    std::fflush(stdout);
+  }
+  delete amp;
+  return 0;
+}
+
 int run_blha(const std::vector<Point> &points, int legs,
              const std::map<std::string, std::string> &args) {
   const std::string contract = get(args, "contract");
@@ -314,6 +356,10 @@ int main(int argc, char **argv) {
   int legs = 0;
   const auto points = read_points(get(args, "points"), legs);
   if (mode == "blha") return run_blha(points, legs, args);
+  if (mode == "cc") {
+    return get(args, "prec", "double") == "dd" ? run_cc<dd_real>(points, legs, args)
+                                               : run_cc<double>(points, legs, args);
+  }
   if (mode != "direct") {
     std::cerr << "mode must be blha or direct\n";
     return 2;

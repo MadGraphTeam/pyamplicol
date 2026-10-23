@@ -2,7 +2,7 @@
 # Release build of QD and NJet (one-loop numerical library, 2->5 channels and
 # double-double precision enabled; no analytic or two-loop parts).
 #
-#   build_njet.sh <njet-source> <qd-source|-> <new-build-dir> [jobs]
+#   build_njet.sh <njet-source> <qd-source|-> <new-build-dir> [jobs] [extra configure args]
 #
 # <njet-source> and <qd-source> are extracted release tarballs from
 # https://bitbucket.org/njet/njet/downloads/ and
@@ -34,6 +34,10 @@ else
 fi
 out=$3
 jobs=${4:-32}
+shift $(( $# < 4 ? $# : 4 ))
+# Further NJet configure arguments, e.g. --with-oneloop: OneLOop's
+# double-double scalar integrals instead of QCDLoop's double-only ones.
+extra_conf=("$@")
 if [ -e "$out" ]; then
   echo "refusing to overwrite existing build dir $out" >&2
   exit 3
@@ -68,9 +72,15 @@ if [ "$bundled_qd" = 0 ]; then
 # QD: shared + PIC (NJet links it into a shared library), C++ only.
 mkdir -p "$out/qd/build" "$out/qd/prefix"
 stage "qd configure"
+# OneLOop's double-double integrals (NJet --with-oneloop) use QD's Fortran 90
+# module, so QD's Fortran interface is built only then.
+qd_fortran=--disable-fortran
+for arg in "${extra_conf[@]}"; do
+  [ "$arg" = --with-oneloop ] && qd_fortran="--enable-fortran"
+done
 qd_conf=("$qd_src/configure" --prefix="$out/qd/prefix" --with-pic=yes
-         --enable-shared=yes --enable-static=no --disable-fortran
-         CXX=g++ CC=gcc CXXFLAGS="-O2" CFLAGS="-O2")
+         --enable-shared=yes --enable-static=no "$qd_fortran"
+         CXX=g++ CC=gcc FC=gfortran CXXFLAGS="-O2" CFLAGS="-O2" FCFLAGS="-O2")
 echo "qd_configure: ${qd_conf[*]}" >> "$info"
 (cd "$out/qd/build" && "${qd_conf[@]}") > "$out/qd/configure.log" 2>&1
 stage "qd make"
@@ -104,6 +114,7 @@ else
            CXX=g++ CC=gcc FC=gfortran F77=gfortran
            FFLAGS="-g -O2 -std=legacy" FCFLAGS="-g -O2 -std=legacy")
 fi
+nj_conf+=("${extra_conf[@]}")
 echo "njet_configure: ${nj_conf[*]}" >> "$info"
 (cd "$out/njet/build" && "${nj_conf[@]}") > "$out/njet/configure.log" 2>&1
 grep -E "^NJET_CXXFLAGS|^CXXFLAGS|^FFLAGS|^FCFLAGS|^CFLAGS" "$out/njet/build/Makefile" \
