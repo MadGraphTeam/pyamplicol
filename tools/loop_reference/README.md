@@ -701,9 +701,100 @@ unchanged on 2026-10-23): MadLoop and Recola at three points, validated to
 (5,793 s graphs + 38,040 s export + 122 s compile), Recola 2.8 h (10,220 s);
 per point MadLoop 558 s (production stability setting, return code 216) and
 Recola 182 s. OpenLoops has no public library for this process. No
-`g g -> g g g g g` reference exists: its MadLoop (colour factors ~89 days by
-MG5's estimate) and Recola (> 57 h) runs were stopped and are not restarted
-(REQUIREMENTS_ADDENDUM F).
+MadLoop, Recola or OpenLoops `g g -> g g g g g` reference exists: its MadLoop
+(colour factors ~89 days by MG5's estimate) and Recola (> 57 h) runs were
+stopped and are not restarted (REQUIREMENTS_ADDENDUM F); NJet is its
+independent reference (below).
+
+## NJet: the all-gluon ladder up to g g -> g g g g g (`njet/`)
+
+NJet ([arXiv:1209.0100](https://arxiv.org/abs/1209.0100); home
+<https://bitbucket.org/njet/njet>) is an independent reference for
+g g -> (n-2) g, n = 4..7, in massless QCD. It is used because MadLoop and Recola
+cannot generate g g > g g g g g within MASTER_PLAN 0.1 and OpenLoops has no
+library for it. NJet needs no per-process generation: its colour sums are
+compiled into the library.
+
+| File | Role |
+|---|---|
+| `njet/build_njet.sh` | Release build of QD and NJet out of tree into a new build directory, with `--enable-5jet` (the 2->5 channels) and double-double (`--enable-f128`, NJet 3; NJet 2 always builds it with its bundled QD). It writes `build-info.txt` with the compiler, configure lines and the flags actually used. |
+| `njet/njet_driver.cpp` | Driver. `blha` mode goes through NJet's BLHA2 interface (`OLP_Start`/`OLP_EvalSubProcess2`, contract signed by the build's own `njet.py`). `direct` mode uses `NJetAccuracy` with the standard (`Amp0q<n-2>g`) or de-symmetrised (`..._ds<n-2>`) sum, with (`virt`, two evaluations) or without (`virt_single`, one evaluation) the scaling test, in `double` or `dd` (`dd_real`). It applies the BLHA normalisation of `njet_olp.cpp` verbatim and the same leg order and axis handling. |
+| `njet/run_njet.py` | `points` (exact points: `exact_points.generate` in pyAmpliCol's order, or a fixture's points); `run` (pinned CPU, result JSON with provenance); `openloops` (the matching OpenLoops 2 values with `nf` 6 (top loops, as the fixtures), 5 or 0); `compare`; `calibration`; `timing` (Markdown table). |
+| `njet/njet_fixture.py` | `build` writes `tests/fixtures/loop/required/gg_ggggg_njet.json`; `compare` compares a pyAmpliCol record (`campaign.py` `virtual` or `loop_v2_generate.py poles` `bare`) with it. |
+
+Versions. NJet 3.1.2 (latest release, `njet-3.1.2.tar.gz`, sha256 `b1d49355...`)
+with QD 2.3.24, and NJet 2.1.1 (`njet-2.1.1.tar.gz`, sha256 `3858ad37...`, bundled
+QD). Both use gcc/gfortran 15.2.0 (workspace `env.sh`) and NJet's own flags
+`-std=c++17 -O2 -march=native -mtune=native` (host-tuned; the shipped Makefiles
+lower the 2->5 colour sums to `-O1` in double and `-O0` in double-double).
+NJet 2.1.1's bundled QCDLoop needs `FFLAGS=-std=legacy` with gfortran >= 10.
+Sources are under `workspace/reference/sources/njet-<version>`, builds under
+`workspace/builds/njet-<version>-release`.
+
+NJet defects and limits found here (the first is visible in NJet's own
+`examples/runtest.py`):
+
+* NJet 3.1.2's numerical five-gluon channel (`Amp0q5g`, used when the analytic
+  `--enable-an0q5g` is off) returns the one-loop interference exactly 9/2 too
+  large in all three Laurent coefficients (`runtest.py -r NJ_3j`: A1_2 = -135
+  instead of -2 n N_c = -30; Born correct). NJet 2.1.1 is correct there, so
+  g g -> g g g uses NJet 2.1.1. The four-, six- and seven-gluon channels of
+  3.1.2 pass (`NJ_2j`, `NJ_4j`, `NJ_5j`).
+* Exactly planar 2->2 points whose scattering plane contains NJet's spinor axis
+  (y; e.g. all p_y = 0 or all p_x = 0) give wrong values or NaN in double and
+  double-double. The scaling test flags them. The g g -> g g calibration set
+  therefore uses the six exact points with generic orientation plus four
+  exactly rotated copies.
+* More generally NJet's numerics depend on the event orientation. At the seven
+  gluon `exact_points` points as generated (beams along +-z), NJet 3.1.2 and
+  2.1.1 keep only 4-6 digits in double precision (single pole against the
+  Catani prediction: 3e-6 to 1e-4) and return NaN at 3 of 10 points; the
+  double-double mode with QCDLoop's double-only integrals is not better (1e-5
+  to 1.5e-2). At exactly rotated copies (`run --rotation R1|R2`) the same code
+  agrees with the Catani poles to <= 3e-9 and the two orientations agree in the
+  finite part to <= 7e-9. The seven-gluon reference therefore uses rotated
+  points; the virtual is a Lorentz scalar, so the values belong to the points
+  as given. For a double-double reference NJet is built `--with-oneloop`
+  (OneLOop's double-double integrals; QD built with its Fortran module).
+* NJet 3.1.2 returns zero colour-correlated Borns for six and seven gluons;
+  `run_njet.py catani` uses NJet 2.1.1's (colour conservation to 1e-15).
+
+Conventions (derived, no fitted factor). NJet's BLHA output with
+`IRregularisation CDR` and `NJetRenormalize yes` is 2 Re<M0|M1> with physical
+couplings: `born * g_s^(2(n-2)) / rfactor`, loop times `g_s^2/(16 pi^2)`, where
+`rfactor = 4 * 64 * (n-2)!` is the initial helicity and colour average times
+the final symmetry factor (`njet.py`). Its primitives are FDH, unrenormalised,
+normalised with c_Gamma; `NJetRenorm` adds the FDH->HV conversion
+`-(n_g N_c/3 + n_q C_F)` plus `(n-2) N_c/3` and the MS-bar counterterm
+`-(n-2) beta_0/eps` with `beta_0 = (11 N_c - 2 N_f)/3`, in units of
+`alpha_s/(4 pi) B`. Since `c_Gamma = 1/Gamma(1-eps) + O(eps^3)` this is the
+MadLoop/BLHA `C_eps=(4pi)^eps/Gamma(1-eps)` convention of the required fixtures.
+The calibration confirms it with no conversion: NJet (CDR, `N_f`) equals
+OpenLoops with the same quark content. OpenLoops' libraries ship separate
+process variants with `nf=6` (massive top in the loops, the fixtures), `nf=5`
+(massless five-flavour QCD, available for g g -> g g and g g -> g g g g) and
+`nf=0` (no quark loops).
+
+NJet has no massive quark: the fixtures' and pyAmpliCol's `loop_sm` (MT=173,
+top decoupled from alpha_s) differ from NJet's five-flavour QCD by the
+top-loop contribution T, which changes only the finite part. The
+`gg_gggg` fixture is reproduced as NJet + T with T = OpenLoops(nf=6) -
+OpenLoops(nf=5); the decoupled top shifts no pole. For a bare (no counterterm,
+no R2) `loop_sm` virtual, the single pole is shifted by
+`(alpha_s/4pi) B [(n-2) beta_0(5) + (8/3) T_F]` (`njet_fixture.py` derives it).
+
+Typical use (`LOOP_REFERENCE_ROOT=workspace/reference`, any directory):
+
+```bash
+tools/loop_reference/njet/build_njet.sh $SRC/njet-3.1.2 $SRC/qd-2.3.24 workspace/builds/njet-3.1.2-release 48
+python tools/loop_reference/njet/run_njet.py points --legs 7 --count 10 --mu-r 1000 --output gg_5g.json
+python tools/loop_reference/njet/run_njet.py run --njet-build workspace/builds/njet-3.1.2-release \
+  --driver-dir $LOOP_REFERENCE_ROOT/runs/njet/drivers --points gg_5g.json --prec dd --cpu 230 --output dd.json
+python tools/loop_reference/njet/njet_fixture.py compare tests/fixtures/loop/required/gg_ggggg_njet.json <pyAmpliCol record>
+```
+
+Runs, calibration and timings are under `workspace/reference/runs/njet/`; the
+report is `workspace/reports/engine-v2/njet-benchmark.md`.
 
 ## Legacy-engine oracles for the v2 engine (WP0.1)
 
