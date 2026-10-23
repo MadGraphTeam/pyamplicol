@@ -1,8 +1,9 @@
 # NinjaRS consumer boundary
 
 This standalone Rust crate exercises the actual reducer and scalar master
-provider before they are integrated into the application's shared core. It
-does not generate physical amplitudes or implement a second reduction method.
+provider before they are integrated into the application's shared core. Native
+scalar tree preparation also reuses FeynKit's amplitude generator and Idenso's
+contraction, then feeds the existing coefficient runtime.
 
 `PolynomialReducer<T>` binds lane-major polynomial parameters and carries
 `Complex<T>` through NinjaRS, Symbolica and the master provider. `T` can be
@@ -31,13 +32,36 @@ Dependencies use ordinary pinned Git revisions and Cargo's lockfile. No ignored
 reference directory or `upstream` symlink is needed. The standalone workspace
 aligns Symbolica with the application's shared core and uses:
 
-- NinjaRS `aa6a6307dd081dc3714f9accebc0df9e5561ae73`.
+- NinjaRS `de858c88e81058623d53a16fa4400b414f3aa260`.
 - Symbolica, Numerica and Graphica `9cdc2949cdb153478c1eca0d40690dc0abfc616e`,
   the owner's integration revision published on
   `https://github.com/alphal00p/symbolica`.
-- FeynKit `d1904bf2bd5bf4f26969a73b415095e941a55610`, the owner's coherent
-  dependency revision recorded by NinjaRS.
+- FeynKit `4b8569c03f7498b13482bc954953e66f6de5ffc1`, including structural-zero,
+  literal substitution/conjugation and mass-name fixes, aligned with NinjaRS.
 - oneloopmaster `8ec256fc26cb361b20e10f59c19beb35717ef32c`.
+
+`tree_preparation::ScalarTreeProgram::prepare` accepts a native `Model`, process,
+generation options, optional parameter card and exact parameter overrides. It
+generates all selected labelled tree diagrams and their coherent norm in Rust,
+without Python preparation or process-specific compilation. Every participating
+field must currently be a color-singlet scalar; other fields are explicit
+capability errors. This is not yet a general Standard Model/QCD tree provider.
+Participating internal propagators must specialize exactly to a monic
+zero-width vacuum denominator `p²-m²`. Custom poles, nonzero widths and chemical
+potentials are rejected because the reused amplitude builder does not preserve
+those model denominators.
+
+The program returns exact evaluator state and the external-leg input order.
+Its `evaluator` method uses the existing typed binary64, double-double or
+arbitrary-precision batch runtime. `evaluator_with_precision_bits` selects an
+explicit initial working precision, including 113-bit Float. Inputs are physical incoming/outgoing
+four-momenta `(E,px,py,pz)` with metric `+---`. The result has no flux, initial
+averaging or identical-particle phase-space factor. Exact parameter atoms retain
+their precision; numeric model/card defaults represent the original binary64
+values exactly and do not acquire extra input accuracy at higher precision.
+The returned coefficient evaluator assumes real, finite physical momenta; the
+consumer owns physical-domain checks and must reject nonfinite output before
+interpreting a value as a norm.
 
 From this crate's directory, using the shared workspace environment:
 
