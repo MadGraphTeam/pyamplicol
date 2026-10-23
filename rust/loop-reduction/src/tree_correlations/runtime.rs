@@ -2,6 +2,8 @@
 
 use std::sync::Arc;
 
+use feynkit_kinematics::KinematicScalar;
+
 use rusticol_core::{
     RusticolError, RusticolResult, color::ExactColorCoefficient,
     preparation::encode_exact_evaluator_state,
@@ -16,7 +18,9 @@ use crate::{
     Complex,
     runtime::{Arithmetic, Batch, BatchCarrier, CoefficientEvaluator, Data},
     tree_norm::hermitian_norm,
+    tree_null_states::FutureNullTreeBatch,
     tree_preparation::{TreeEvaluator, TreeProgram},
+    tree_runtime::{RawTreeStateSource, TreeStateSource},
 };
 
 fn invalid(message: impl Into<String>) -> RusticolError {
@@ -304,13 +308,43 @@ impl TreeColorEvaluator {
         parameters: Option<&Batch>,
         helicities: &[i32],
     ) -> RusticolResult<Batch> {
-        let coefficients = match parameters {
-            Some(p) => self
-                .tree
-                .evaluate_coefficients_with_parameters(momenta, p, helicities)?,
-            None => self.tree.evaluate_coefficients(momenta, helicities)?,
-        };
+        self.fixed_source(&RawTreeStateSource(momenta), parameters, helicities)
+    }
+
+    fn fixed_source(
+        &mut self,
+        source: &dyn TreeStateSource,
+        parameters: Option<&Batch>,
+        helicities: &[i32],
+    ) -> RusticolResult<Batch> {
+        let coefficients = self
+            .tree
+            .evaluate_coefficients_from_source(source, parameters, helicities)?;
         self.self_contract(&coefficients)
+    }
+
+    /// One physical helicity assignment from a constructive future-null batch
+    /// bound to this same immutable tree. The result retains directed complex
+    /// operator values; no source precision or conservation certificate is implied.
+    pub fn evaluate_future_null_fixed_helicities<T: BatchCarrier + KinematicScalar>(
+        &mut self,
+        source: &FutureNullTreeBatch<T>,
+        parameters: Option<&Batch>,
+        helicities: &[i32],
+    ) -> RusticolResult<Batch> {
+        source.validate_program(&self.program)?;
+        self.fixed_source(source, parameters, helicities)
+    }
+
+    /// Stream the existing helicity product for program-bound future-null rows.
+    /// All external masses were proved identically zero at preparation.
+    pub fn evaluate_future_null_batch<T: BatchCarrier + KinematicScalar>(
+        &mut self,
+        source: &FutureNullTreeBatch<T>,
+        parameters: Option<&Batch>,
+    ) -> RusticolResult<Batch> {
+        source.validate_program(&self.program)?;
+        self.sum_source(source, parameters)
     }
 
     /// Directed `<bra|O|ket>` for independent supplied external component blocks.
@@ -366,6 +400,15 @@ impl TreeColorEvaluator {
         self.sum(momenta, Some(parameters))
     }
     fn sum(&mut self, momenta: &Batch, parameters: Option<&Batch>) -> RusticolResult<Batch> {
+        self.sum_source(&RawTreeStateSource(momenta), parameters)
+    }
+
+    fn sum_source(
+        &mut self,
+        source: &dyn TreeStateSource,
+        parameters: Option<&Batch>,
+    ) -> RusticolResult<Batch> {
+        let momenta = source.momenta();
         let helicities: Vec<_> = self
             .tree
             .states()
@@ -380,7 +423,7 @@ impl TreeColorEvaluator {
                 .zip(&positions)
                 .map(|(h, &p)| h[p])
                 .collect();
-            let value = self.fixed(momenta, parameters, &assignment)?;
+            let value = self.fixed_source(source, parameters, &assignment)?;
             // Validate all tree metadata even for zero rows, then return a
             // correctly shaped typed empty result without enumerating spins.
             if momenta.rows() == 0 {

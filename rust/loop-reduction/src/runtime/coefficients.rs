@@ -96,18 +96,7 @@ impl CoefficientEvaluator {
         arithmetic: Arithmetic,
         bits: u32,
     ) -> ExecutionResult<Self> {
-        match arithmetic {
-            Arithmetic::Double if bits != 53 => {
-                return Err(error("double arithmetic requires exactly 53 bits"));
-            }
-            Arithmetic::DoubleDouble if bits != 106 => {
-                return Err(error("double-double arithmetic requires exactly 106 bits"));
-            }
-            Arithmetic::Arbitrary if bits < 2 => {
-                return Err(error("arbitrary arithmetic requires at least two bits"));
-            }
-            _ => {}
-        }
+        validate_working_precision(arithmetic, bits)?;
         let exact = exact_state(state)?;
         let evaluator = match arithmetic {
             Arithmetic::Double => Coefficients::Double(batch_evaluator(exact, &0_f64)),

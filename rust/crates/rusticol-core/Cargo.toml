@@ -29,7 +29,7 @@ loop-v2 = ["dep:ninjars", "symbolica-runtime"]
 bincode.workspace = true
 libloading = { version = "0.9", optional = true }
 libc.workspace = true
-ninjars = { git = "https://github.com/alphal00p/ninjars.git", rev = "a069504e3dc884d6e2682aadc75fb12a7f4e7c07", optional = true }
+ninjars = { git = "https://github.com/alphal00p/ninjars.git", rev = "084e466bd464bf4cf847fe5708503d62bc835ca9", optional = true }
 num-complex = { version = "0.4", optional = true }
 rayon.workspace = true
 serde.workspace = true
