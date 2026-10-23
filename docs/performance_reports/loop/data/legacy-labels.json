@@ -1,0 +1,18 @@
+{
+ "date": "2026-10-18",
+ "note": "Labels and absent-value markers of the legacy (per-diagram) timing snapshot of 2026-10-18 shown as history; the legacy status registry is archived outside the repository.",
+ "case_labels": {
+  "dy": "u overline(u) -> e^- e^+",
+  "uudd": "u overline(u) -> d overline(d)",
+  "tt": "u overline(u) -> t overline(t)",
+  "qqgg": "u overline(u) -> g g",
+  "gg": "g g -> g g",
+  "qqggg": "u overline(u) -> g g g",
+  "ee-mumu-ew": "e^- e^+ -> mu^- mu^+"
+ },
+ "missing_markers": {
+  "default": "not timed",
+  "dy/openloops": "no matched control",
+  "ee-mumu-ew/madloop": "validated, not timed"
+ }
+}
