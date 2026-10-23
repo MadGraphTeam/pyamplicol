@@ -185,8 +185,14 @@ matrices. This is color algebra, not a model or numerical amplitude generator.
 The `color::network` module also lowers exact Spenso SU(3) vertex expressions
 (`f`, `t`, chains, traces and color metrics) to typed matrix products and
 contracts their internal indices with `reduce_network`. It retains complete
-external tensors, including components outside a Born color basis. Raw UFO
-model expressions require their usual typed Spenso translation first.
+external tensors, including components outside a Born color basis.
+`color::network::ufo_color_network` accepts raw UFO `Identity`, `T`, `f` and `d`
+expressions with the signed representations in model vertex order, producing
+the same exact networks directly. Relabel every vertex's indices when attaching
+process currents: connect model slots and give internal dummy labels a separate
+scope for each vertex. The ingress does not perform process crossing.
+Oriented current metrics with two equal fundamental roles require an explicit
+orientation adapter.
 
 pyAmpliCol supports:
 
