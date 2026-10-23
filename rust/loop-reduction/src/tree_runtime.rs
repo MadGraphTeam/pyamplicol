@@ -26,16 +26,28 @@ pub struct ExternalTreeState {
     pub helicities: Vec<i32>,
 }
 
+/// Scalar domains assumed while preparing a runtime model parameter.
+/// Runtime batches must obey these assumptions before numerical evaluation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TreeParameterDomain {
+    Real,
+    PositiveReal,
+    Complex,
+}
+
 /// Reusable coherent amplitudes and their exact-color one-helicity norm.
 ///
 /// Both programs use the shared coefficient evaluator. Amplitude inputs are
-/// all momentum columns followed by four components per external state. Its
-/// outputs are the color-basis coefficients; the norm program consumes those
-/// outputs, including their complex phases, and returns one scalar column.
+/// all momentum columns, four components per external state, then the runtime
+/// parameter columns in their declared order. Its outputs are the color-basis
+/// coefficients; the norm program consumes those outputs, including their
+/// complex phases, and returns one scalar column. Evaluation methods without
+/// a parameter batch require an empty runtime parameter domain.
 pub struct TreeEvaluator {
     amplitude: CoefficientEvaluator,
     norm: CoefficientEvaluator,
     states: Vec<ExternalTreeState>,
+    parameter_domains: Vec<TreeParameterDomain>,
     momentum_columns: usize,
     coefficient_columns: usize,
     arithmetic: Arithmetic,
@@ -57,6 +69,31 @@ fn real_finite<T: Carrier>(values: &[Complex<T>]) -> bool {
     values
         .iter()
         .all(|value| value.im.is_fully_zero() && value.re.is_finite())
+}
+
+fn parameter_values<T: Carrier>(
+    values: &[Complex<T>],
+    domains: &[TreeParameterDomain],
+) -> RusticolResult<()> {
+    for (index, value) in values.iter().enumerate() {
+        let column = index % domains.len();
+        let valid = value.re.is_finite()
+            && value.im.is_finite()
+            && match domains[column] {
+                TreeParameterDomain::Complex => true,
+                TreeParameterDomain::Real => value.im.is_fully_zero(),
+                TreeParameterDomain::PositiveReal => {
+                    value.im.is_fully_zero() && value.re > value.re.zero()
+                }
+            };
+        if !valid {
+            return Err(error(format!(
+                "runtime parameter column {column} violates its finite {:?} domain",
+                domains[column]
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn empty_like(batch: &Batch, columns: usize) -> RusticolResult<Batch> {
@@ -125,6 +162,29 @@ impl TreeEvaluator {
         arithmetic: Arithmetic,
         bits: u32,
     ) -> RusticolResult<Self> {
+        Self::with_parameter_domains(
+            coefficient_state,
+            norm_state,
+            states,
+            momentum_columns,
+            Vec::new(),
+            arithmetic,
+            bits,
+        )
+    }
+
+    /// Decode exact instructions with ordered runtime parameter columns.
+    /// Parameter rows must share the momentum rows, carrier and working precision;
+    /// each supplied value must be finite and obey its declared scalar domain.
+    pub fn with_parameter_domains(
+        coefficient_state: &[u8],
+        norm_state: &[u8],
+        states: Vec<ExternalTreeState>,
+        momentum_columns: usize,
+        parameter_domains: Vec<TreeParameterDomain>,
+        arithmetic: Arithmetic,
+        bits: u32,
+    ) -> RusticolResult<Self> {
         for state in &states {
             if state
                 .momentum_columns
@@ -173,6 +233,7 @@ impl TreeEvaluator {
             .len()
             .checked_mul(4)
             .and_then(|count| momentum_columns.checked_add(count))
+            .and_then(|count| count.checked_add(parameter_domains.len()))
             .ok_or_else(|| error("amplitude input dimensions overflow"))?;
         let coefficient = exact_state(coefficient_state).map_err(error)?;
         let norm = exact_state(norm_state).map_err(error)?;
@@ -196,6 +257,7 @@ impl TreeEvaluator {
             norm: CoefficientEvaluator::with_precision_bits(norm_state, arithmetic, bits)
                 .map_err(error)?,
             states,
+            parameter_domains,
             momentum_columns,
             coefficient_columns,
             arithmetic,
@@ -205,6 +267,10 @@ impl TreeEvaluator {
 
     pub fn states(&self) -> &[ExternalTreeState] {
         &self.states
+    }
+
+    pub fn parameter_domains(&self) -> &[TreeParameterDomain] {
+        &self.parameter_domains
     }
 
     pub fn precision_bits(&self) -> u32 {
@@ -239,6 +305,33 @@ impl TreeEvaluator {
         Ok(())
     }
 
+    fn validate_parameters(
+        &self,
+        momenta: &Batch,
+        parameters: Option<&Batch>,
+    ) -> RusticolResult<()> {
+        let Some(parameters) = parameters else {
+            return if self.parameter_domains.is_empty() {
+                Ok(())
+            } else {
+                Err(error(
+                    "prepared runtime parameters require an explicit parameter batch",
+                ))
+            };
+        };
+        momenta.same_rows(parameters).map_err(error)?;
+        if parameters.columns() != self.parameter_domains.len() {
+            return Err(error(
+                "runtime parameter columns differ from the prepared domain",
+            ));
+        }
+        match parameters.data() {
+            Data::Double(values) => parameter_values(values, &self.parameter_domains),
+            Data::DoubleDouble(values) => parameter_values(values, &self.parameter_domains),
+            Data::Arbitrary(values) => parameter_values(values, &self.parameter_domains),
+        }
+    }
+
     /// Evaluate coherent color coefficients for one declared helicity per state.
     ///
     /// Momentum components must be real and finite in the selected carrier.
@@ -249,7 +342,27 @@ impl TreeEvaluator {
         momenta: &Batch,
         helicities: &[i32],
     ) -> RusticolResult<Batch> {
+        self.evaluate_coefficients_inner(momenta, None, helicities)
+    }
+
+    /// Evaluate chosen helicities with a typed runtime parameter row per momentum row.
+    pub fn evaluate_coefficients_with_parameters(
+        &mut self,
+        momenta: &Batch,
+        parameters: &Batch,
+        helicities: &[i32],
+    ) -> RusticolResult<Batch> {
+        self.evaluate_coefficients_inner(momenta, Some(parameters), helicities)
+    }
+
+    fn evaluate_coefficients_inner(
+        &mut self,
+        momenta: &Batch,
+        parameters: Option<&Batch>,
+        helicities: &[i32],
+    ) -> RusticolResult<Batch> {
         self.validate_momenta(momenta)?;
+        self.validate_parameters(momenta, parameters)?;
         if helicities.len() != self.states.len()
             || self
                 .states
@@ -281,7 +394,11 @@ impl TreeEvaluator {
                 .map_err(error)
             })
             .collect::<RusticolResult<Vec<_>>>()?;
-        self.evaluate_external_components(momenta, &components.iter().collect::<Vec<_>>())
+        self.evaluate_external_components_inner(
+            momenta,
+            parameters,
+            &components.iter().collect::<Vec<_>>(),
+        )
     }
 
     /// Evaluate with caller-supplied complex external vectors or spinors.
@@ -295,7 +412,27 @@ impl TreeEvaluator {
         momenta: &Batch,
         components: &[&Batch],
     ) -> RusticolResult<Batch> {
+        self.evaluate_external_components_inner(momenta, None, components)
+    }
+
+    /// Evaluate supplied external components with runtime parameter columns.
+    pub fn evaluate_external_components_with_parameters(
+        &mut self,
+        momenta: &Batch,
+        parameters: &Batch,
+        components: &[&Batch],
+    ) -> RusticolResult<Batch> {
+        self.evaluate_external_components_inner(momenta, Some(parameters), components)
+    }
+
+    fn evaluate_external_components_inner(
+        &mut self,
+        momenta: &Batch,
+        parameters: Option<&Batch>,
+        components: &[&Batch],
+    ) -> RusticolResult<Batch> {
         self.validate_momenta(momenta)?;
+        self.validate_parameters(momenta, parameters)?;
         if components.len() != self.states.len() {
             return Err(error(
                 "external component block count differs from the declared states",
@@ -311,9 +448,12 @@ impl TreeEvaluator {
         if momenta.rows() == 0 {
             return empty_like(momenta, self.coefficient_columns);
         }
-        let mut inputs = Vec::with_capacity(1 + components.len());
+        let mut inputs = Vec::with_capacity(2 + components.len());
         inputs.push(momenta);
         inputs.extend_from_slice(components);
+        if let Some(parameters) = parameters {
+            inputs.push(parameters);
+        }
         let input = Batch::concat_columns(&inputs).map_err(error)?;
         let coefficients = self.amplitude.evaluate_batch(&input).map_err(error)?;
         finite(&coefficients)?;
@@ -323,7 +463,25 @@ impl TreeEvaluator {
     /// Sum the exact-color norm over the declared Cartesian helicity domain.
     /// No averaging, flux, or identical-particle factors are included.
     pub fn evaluate_batch(&mut self, momenta: &Batch) -> RusticolResult<Batch> {
+        self.evaluate_batch_inner(momenta, None)
+    }
+
+    /// Sum physical helicities with one typed parameter row for each momentum row.
+    pub fn evaluate_batch_with_parameters(
+        &mut self,
+        momenta: &Batch,
+        parameters: &Batch,
+    ) -> RusticolResult<Batch> {
+        self.evaluate_batch_inner(momenta, Some(parameters))
+    }
+
+    fn evaluate_batch_inner(
+        &mut self,
+        momenta: &Batch,
+        parameters: Option<&Batch>,
+    ) -> RusticolResult<Batch> {
         self.validate_momenta(momenta)?;
+        self.validate_parameters(momenta, parameters)?;
         if momenta.rows() == 0 {
             return empty_like(momenta, 1);
         }
@@ -336,7 +494,8 @@ impl TreeEvaluator {
                 .zip(&positions)
                 .map(|(state, &position)| state.helicities[position])
                 .collect::<Vec<_>>();
-            let coefficients = self.evaluate_coefficients(momenta, &helicities)?;
+            let coefficients =
+                self.evaluate_coefficients_inner(momenta, parameters, &helicities)?;
             let norm = self.norm.evaluate_batch(&coefficients).map_err(error)?;
             finite(&norm)?;
             accumulated = Some(match accumulated {
@@ -550,5 +709,268 @@ mod tests {
         };
         assert_eq!(values.as_slice(), &[Complex::new(5., 0.)]);
         assert_eq!(output.ids(), &[31]);
+    }
+
+    fn parameter_evaluator(with_state: bool, arithmetic: Arithmetic, bits: u32) -> TreeEvaluator {
+        let parameter_start = if with_state { 8 } else { 4 };
+        let inputs: Vec<_> = (0..parameter_start + 3)
+            .map(|i| Atom::var(symbol!(&format!("native_tree_runtime_parameters::x{i}"))))
+            .collect();
+        let state = if with_state {
+            &inputs[4] + Atom::num(2) * &inputs[7]
+        } else {
+            Atom::num(1)
+        };
+        let coefficient = state * &inputs[parameter_start]
+            + &inputs[parameter_start + 1] * &inputs[parameter_start + 2];
+        let exact = Atom::evaluator_multiple(&[coefficient], &inputs)
+            .cores(1)
+            .build()
+            .unwrap();
+        let a = Atom::var(symbol!("native_tree_runtime_parameters::a"));
+        let norm = Atom::evaluator_multiple(&[a.clone().conj() * &a], &[a])
+            .cores(1)
+            .build()
+            .unwrap();
+        TreeEvaluator::with_parameter_domains(
+            &encode_exact_evaluator_state(&exact).unwrap(),
+            &encode_exact_evaluator_state(&norm).unwrap(),
+            if with_state {
+                vec![states().remove(0)]
+            } else {
+                vec![]
+            },
+            4,
+            vec![
+                TreeParameterDomain::Real,
+                TreeParameterDomain::PositiveReal,
+                TreeParameterDomain::Complex,
+            ],
+            arithmetic,
+            bits,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn runtime_parameters_follow_states_and_preserve_row_identity() {
+        let mut evaluator = parameter_evaluator(true, Arithmetic::Double, 53);
+        assert_eq!(
+            evaluator.parameter_domains(),
+            &[
+                TreeParameterDomain::Real,
+                TreeParameterDomain::PositiveReal,
+                TreeParameterDomain::Complex,
+            ]
+        );
+        let p = Batch::typed(
+            [2., 0., 0., -2., 2., 0., 0., -2.]
+                .map(|value| Complex::new(value, 0.))
+                .to_vec(),
+            vec![17, 23],
+            4,
+            53,
+        )
+        .unwrap();
+        let parameters = Batch::typed(
+            vec![
+                Complex::new(3., 0.),
+                Complex::new(2., 0.),
+                Complex::new(1., 1.),
+                Complex::new(1., 0.),
+                Complex::new(3., 0.),
+                Complex::new(2., -1.),
+            ],
+            vec![17, 23],
+            3,
+            53,
+        )
+        .unwrap();
+        let coefficients = evaluator
+            .evaluate_coefficients_with_parameters(&p, &parameters, &[-1])
+            .unwrap();
+        let Data::Double(values) = coefficients.data() else {
+            panic!("wrong carrier")
+        };
+        assert_eq!(
+            values.as_slice(),
+            &[Complex::new(8., 2.), Complex::new(8., -3.)]
+        );
+        let output = evaluator
+            .evaluate_batch_with_parameters(&p, &parameters)
+            .unwrap();
+        let Data::Double(values) = output.data() else {
+            panic!("wrong carrier")
+        };
+        assert_eq!(
+            values.as_slice(),
+            &[Complex::new(172., 0.), Complex::new(86., 0.)]
+        );
+
+        let components = Batch::typed(
+            vec![
+                Complex::new(2., 1.),
+                Complex::new(0., 0.),
+                Complex::new(0., 0.),
+                Complex::new(0., 0.),
+                Complex::new(3., -2.),
+                Complex::new(0., 0.),
+                Complex::new(0., 0.),
+                Complex::new(0., 0.),
+            ],
+            vec![17, 23],
+            4,
+            53,
+        )
+        .unwrap();
+        let output = evaluator
+            .evaluate_external_components_with_parameters(&p, &parameters, &[&components])
+            .unwrap();
+        let Data::Double(values) = output.data() else {
+            panic!("wrong carrier")
+        };
+        assert_eq!(
+            values.as_slice(),
+            &[Complex::new(8., 5.), Complex::new(9., -5.)]
+        );
+
+        let reversed_p = p.take_rows(vec![1, 0], None).unwrap();
+        assert!(
+            evaluator
+                .evaluate_batch_with_parameters(&reversed_p, &parameters)
+                .is_err()
+        );
+        let reversed_parameters = parameters.take_rows(vec![1, 0], None).unwrap();
+        let output = evaluator
+            .evaluate_batch_with_parameters(&reversed_p, &reversed_parameters)
+            .unwrap();
+        let Data::Double(values) = output.data() else {
+            panic!("wrong carrier")
+        };
+        assert_eq!(
+            values.as_slice(),
+            &[Complex::new(86., 0.), Complex::new(172., 0.)]
+        );
+        assert_eq!(output.ids(), &[23, 17]);
+    }
+
+    #[test]
+    fn runtime_parameters_preserve_subbinary64_complex_values() {
+        let bits = 137;
+        let mut evaluator = parameter_evaluator(false, Arithmetic::Arbitrary, bits);
+        let zero = Float::with_val(bits, 0);
+        let two = Float::with_val(bits, 2);
+        let delta = two.pow(80).inv();
+        let p = Batch::typed(
+            vec![Complex::new(zero.clone(), zero.clone()); 4],
+            vec![31],
+            4,
+            bits,
+        )
+        .unwrap();
+        let parameters = Batch::typed(
+            vec![
+                Complex::new(Float::with_val(bits, 1) + &delta, zero.clone()),
+                Complex::new(two.clone(), zero.clone()),
+                Complex::new(Float::with_val(bits, 3), two.clone()),
+            ],
+            vec![31],
+            3,
+            bits,
+        )
+        .unwrap();
+        let coefficients = evaluator
+            .evaluate_coefficients_with_parameters(&p, &parameters, &[])
+            .unwrap();
+        let Data::Arbitrary(values) = coefficients.data() else {
+            panic!("wrong carrier")
+        };
+        assert!(values[0].re > Float::with_val(bits, 7));
+        let expected_real = Float::with_val(bits, 7) + &delta;
+        assert!((values[0].re.clone() - &expected_real).norm() < two.pow(115).inv());
+        assert!((values[0].im.clone() - Float::with_val(bits, 4)).norm() < two.pow(115).inv());
+        let output = evaluator
+            .evaluate_batch_with_parameters(&p, &parameters)
+            .unwrap();
+        let Data::Arbitrary(values) = output.data() else {
+            panic!("wrong carrier")
+        };
+        let expected = expected_real.clone() * &expected_real + Float::with_val(bits, 16);
+        assert!(values[0].re > Float::with_val(bits, 65));
+        assert!((values[0].re.clone() - expected).norm() < two.pow(115).inv());
+        assert!(values[0].im.norm() < two.pow(115).inv());
+        assert_eq!(output.precision_bits(), bits);
+        assert!(values[0].re.get_precision() > 100);
+    }
+
+    #[test]
+    fn runtime_parameter_domains_and_empty_batches_are_checked_before_evaluation() {
+        let mut evaluator = parameter_evaluator(false, Arithmetic::Double, 53);
+        let p = Batch::typed(vec![Complex::new(0., 0.); 4], vec![31], 4, 53).unwrap();
+        let valid = vec![
+            Complex::new(1., 0.),
+            Complex::new(2., 0.),
+            Complex::new(3., 4.),
+        ];
+        for (column, value) in [
+            (0, Complex::new(1., 1.)),
+            (1, Complex::new(0., 0.)),
+            (1, Complex::new(-1., 0.)),
+            (1, Complex::new(1., 1.)),
+            (0, Complex::new(f64::INFINITY, 0.)),
+            (1, Complex::new(f64::INFINITY, 0.)),
+            (2, Complex::new(f64::NAN, 0.)),
+            (2, Complex::new(1., f64::INFINITY)),
+        ] {
+            let mut values = valid.clone();
+            values[column] = value;
+            let parameters = Batch::typed(values, vec![31], 3, 53).unwrap();
+            assert!(
+                evaluator
+                    .evaluate_batch_with_parameters(&p, &parameters)
+                    .is_err()
+            );
+        }
+        let valid = Batch::typed(valid, vec![31], 3, 53).unwrap();
+        assert!(evaluator.evaluate_batch_with_parameters(&p, &valid).is_ok());
+
+        let empty = Batch::typed::<f64>(vec![], vec![], 4, 53).unwrap();
+        assert!(evaluator.evaluate_batch(&empty).is_err());
+        assert!(evaluator.evaluate_coefficients(&empty, &[]).is_err());
+        assert!(evaluator.evaluate_external_components(&empty, &[]).is_err());
+        let parameters = Batch::typed::<f64>(vec![], vec![], 3, 53).unwrap();
+        assert_eq!(
+            evaluator
+                .evaluate_batch_with_parameters(&empty, &parameters)
+                .unwrap()
+                .rows(),
+            0
+        );
+        assert_eq!(
+            evaluator
+                .evaluate_coefficients_with_parameters(&empty, &parameters, &[])
+                .unwrap()
+                .rows(),
+            0
+        );
+        assert_eq!(
+            evaluator
+                .evaluate_external_components_with_parameters(&empty, &parameters, &[])
+                .unwrap()
+                .rows(),
+            0
+        );
+        for invalid in [
+            Batch::typed::<Float>(vec![], vec![], 3, 53).unwrap(),
+            Batch::typed::<f64>(vec![], vec![], 3, 106).unwrap(),
+            Batch::typed::<f64>(vec![], vec![], 2, 53).unwrap(),
+            valid,
+        ] {
+            assert!(
+                evaluator
+                    .evaluate_batch_with_parameters(&empty, &invalid)
+                    .is_err()
+            );
+        }
     }
 }
