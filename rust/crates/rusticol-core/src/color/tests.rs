@@ -309,3 +309,202 @@ fn invalid_connections_and_mismatched_domains_are_errors() {
         Adjoint
     );
 }
+
+fn ufo_qqg(value: &str) -> ConnectedColorTensor {
+    use network::{UfoColorIndex, reduce_network, ufo_color_network};
+    let expression = symbolica::atom::Atom::parse(value, "UFO", Default::default()).unwrap();
+    reduce_network(
+        &ufo_color_network(&expression, &[Antifundamental, Fundamental, Adjoint]).unwrap(),
+        vec![
+            leg(1, Fundamental),
+            leg(2, Antifundamental),
+            leg(3, Adjoint),
+        ],
+        &BTreeMap::from([
+            (UfoColorIndex::Leg(1), 1),
+            (UfoColorIndex::Leg(2), 2),
+            (UfoColorIndex::Leg(3), 3),
+        ]),
+    )
+    .unwrap()
+}
+
+#[test]
+fn splitting_color_matches_direct_symmetric_ufo_network() {
+    // This oracle inserts d^{AcB} and t^c directly, independently of the
+    // splitting connections. The physical-t basis has norm (Nc²-1)/2.
+    let base = ufo_qqg("T(3,2,1)");
+    let direct_d = ufo_qqg("d(3,-1,-2)*T(-1,2,-3)*T(-2,-3,1)");
+    let pair = GluonSplittingColorPair::new(base.legs().to_vec(), 3, 1, 4, 5, 6).unwrap();
+    let raw = pair.raw_daughter_nc_terms(&base, &base).unwrap();
+    assert_eq!(raw.quark, polynomial(&[(1, -1, 4), (-1, 1, 4)]));
+    assert_eq!(
+        raw.antiquark,
+        polynomial(&[(3, -1, 8), (1, 3, 8), (-1, -1, 4)])
+    );
+    let result = pair.symmetric_adjoint_nc_terms(&base, &base).unwrap();
+    assert_eq!(result, base.overlap_nc_terms(&direct_d).unwrap());
+    assert_eq!(result, polynomial(&[(3, 1, 4), (1, -5, 4), (-1, 1, 1)]));
+    assert_eq!(evaluate_nc_terms(&result, 3).unwrap(), real(10, 3));
+    assert_eq!(evaluate_nc_terms(&result, 2).unwrap(), real(0, 1));
+    let anti_pair = GluonSplittingColorPair::new(base.legs().to_vec(), 3, 2, 4, 5, 6).unwrap();
+    assert_eq!(
+        evaluate_nc_terms(
+            &anti_pair.symmetric_adjoint_nc_terms(&base, &base).unwrap(),
+            3
+        )
+        .unwrap(),
+        real(-10, 3)
+    );
+}
+
+#[test]
+fn splitting_color_normalized_daughter_sum_is_parent_dipole() {
+    let legs = vec![
+        leg(1, Fundamental),
+        leg(2, Antifundamental),
+        leg(3, Adjoint),
+        leg(4, Adjoint),
+    ];
+    let forward = ColorTensor::new(vec![string(1, &[3, 4], 2)], vec![]);
+    let reverse = ColorTensor::new(vec![string(1, &[4, 3], 2)], vec![]);
+    let bra = ConnectedColorTensor::new(
+        legs.clone(),
+        vec![
+            TensorTerm {
+                coefficient: coefficient(1, 2),
+                tensor: forward.clone(),
+                nc_power: 2,
+            },
+            TensorTerm {
+                coefficient: coefficient(2, -1),
+                tensor: reverse.clone(),
+                nc_power: -1,
+            },
+        ],
+        3,
+    )
+    .unwrap();
+    let ket = ConnectedColorTensor::new(
+        legs.clone(),
+        vec![
+            TensorTerm {
+                coefficient: coefficient(3, -1),
+                tensor: reverse,
+                nc_power: -3,
+            },
+            TensorTerm {
+                coefficient: coefficient(-1, 3),
+                tensor: forward,
+                nc_power: 1,
+            },
+        ],
+        1,
+    )
+    .unwrap();
+    for spectator in [1, 2, 4] {
+        let pair = GluonSplittingColorPair::new(legs.clone(), 3, spectator, 5, 6, 7).unwrap();
+        let raw = pair.raw_daughter_nc_terms(&bra, &ket).unwrap();
+        let mut normalized_sum = ColorNcTerms::new();
+        for terms in [&raw.quark, &raw.antiquark] {
+            for (&power, value) in terms {
+                add_coefficient(&mut normalized_sum, power, scale(value, &Rational::from(2)));
+            }
+        }
+        normalized_sum.retain(|_, value| !is_zero(value));
+        let parent = ColorConnection::new(legs.clone(), vec![emit(3, 7)]).unwrap();
+        let spectator = ColorConnection::new(legs.clone(), vec![emit(spectator, 7)]).unwrap();
+        assert_eq!(
+            normalized_sum,
+            parent
+                .apply_connected(&bra)
+                .unwrap()
+                .overlap_nc_terms(&spectator.apply_connected(&ket).unwrap())
+                .unwrap()
+        );
+    }
+}
+
+#[test]
+fn splitting_color_preserves_directed_phases_laurent_powers_and_normalizations() {
+    let base = ufo_qqg("T(3,2,1)");
+    let input = |value, nc_power| {
+        ConnectedColorTensor::new(
+            base.legs().to_vec(),
+            vec![TensorTerm {
+                coefficient: value,
+                tensor: base.terms()[0].tensor.clone(),
+                nc_power,
+            }],
+            base.normalization_power() + 2,
+        )
+        .unwrap()
+    };
+    let bra = input(coefficient(1, 2), 2);
+    let ket = input(coefficient(3, -1), -1);
+    let pair = GluonSplittingColorPair::new(base.legs().to_vec(), 3, 1, -1, -2, -3).unwrap();
+    let result = pair.symmetric_adjoint_nc_terms(&bra, &ket).unwrap();
+    // conj(1+2i)*(3-i)=1-7i, Laurent shift 2-1=1, and four extra
+    // inverse-sqrt(2) powers give a factor 1/4 relative to physical t.
+    let expected: ColorNcTerms = [(4, 1, 16), (2, -5, 16), (0, 1, 4)]
+        .into_iter()
+        .map(|(power, numerator, denominator)| {
+            (
+                power,
+                Complex::new(
+                    Rational::from((numerator, denominator)),
+                    Rational::from((-7 * numerator, denominator)),
+                ),
+            )
+        })
+        .collect();
+    assert_eq!(result, expected);
+    assert_eq!(
+        evaluate_nc_terms(&result, 3).unwrap(),
+        Complex::new(Rational::from((5, 2)), Rational::from((-35, 2)),)
+    );
+    let reversed = pair.symmetric_adjoint_nc_terms(&ket, &bra).unwrap();
+    for (&power, value) in &result {
+        assert_eq!(
+            reversed.get(&power).unwrap(),
+            &Complex::new(value.re.clone(), -value.im.clone())
+        );
+    }
+}
+
+#[test]
+fn splitting_color_rejects_invalid_domains_and_normalizations() {
+    let base = ufo_qqg("T(3,2,1)");
+    let legs = base.legs().to_vec();
+    for (parent, spectator, q, qbar, emitted) in [
+        (1, 2, 4, 5, 6), // parent is fundamental
+        (3, 3, 4, 5, 6), // coincident parent and spectator
+        (3, 9, 4, 5, 6), // absent spectator
+        (3, 1, 3, 5, 6), // a retired label is not fresh
+        (3, 1, 4, 4, 6), // daughters coincide
+        (3, 1, 4, 5, 4), // emission reuses a daughter
+    ] {
+        assert!(
+            GluonSplittingColorPair::new(legs.clone(), parent, spectator, q, qbar, emitted)
+                .is_err()
+        );
+    }
+    let mut singlet_legs = legs.clone();
+    singlet_legs.push(leg(9, Singlet));
+    assert!(GluonSplittingColorPair::new(singlet_legs, 3, 9, 4, 5, 6).is_err());
+    let pair = GluonSplittingColorPair::new(legs.clone(), 3, 1, 4, 5, 6).unwrap();
+    let odd = ConnectedColorTensor::new(legs.clone(), base.terms().to_vec(), 0).unwrap();
+    assert!(pair.symmetric_adjoint_nc_terms(&base, &odd).is_err());
+    let overflow =
+        ConnectedColorTensor::new(legs.clone(), base.terms().to_vec(), u32::MAX).unwrap();
+    assert!(pair.symmetric_adjoint_nc_terms(&overflow, &base).is_err());
+    let (other_legs, other_tensor) = qq();
+    let other = image(&other_legs, &other_tensor, vec![]);
+    assert!(pair.symmetric_adjoint_nc_terms(&base, &other).is_err());
+    assert!(
+        ColorConnection::new(other_legs, vec![])
+            .unwrap()
+            .apply_connected(&base)
+            .is_err()
+    );
+}
