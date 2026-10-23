@@ -35,11 +35,11 @@ Cost: the full-colour directed control of u u~ > g g g runs for hours in the
 legacy generation (its formal colour overlaps take about fifteen minutes; the
 rest of the legacy directed preparation dominates); the LC/NLC d d~ > g g
 group with its ordered histories takes about an hour (the legacy complete
-family of a two-emission history), the other four-leg controls minutes. Run long captures from a
-checkout that stays unchanged until they finish: the legacy generation
-re-checks the staged native runtime against the checkout's native build inputs
-when it writes the artifact, so a merge or restage there makes it fail at the
-end.
+family of a two-emission history), the other four-leg controls minutes. Run
+long captures from a checkout that stays unchanged until they finish: the
+legacy generation re-checks the staged native runtime against the checkout's
+native build inputs when it writes the artifact, so a merge or restage there
+makes it fail at the end.
 
 Usage (licensed Symbolica and the staged native module are required)::
 
