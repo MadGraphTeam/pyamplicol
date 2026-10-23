@@ -4,6 +4,44 @@ This standalone Rust crate exercises the actual reducer and scalar master
 provider before they are integrated into the application's shared core. It
 does not generate physical amplitudes or implement a second reduction method.
 
+## Native structural preparation
+
+`preparation::PreparedModel` owns a typed FeynKit `Model` and its exact scalar
+bindings. Construct it with an optional restriction card and exact Symbolica
+overrides, then call `families(incoming, outgoing, selection, species_orders)`
+and `generate()` on the result. The model can come from `Model::from_json` or
+a native built-in. No Python runtime or process-specific compilation is used.
+
+Preparation derives proper-subset tree-current reachability, crossed outgoing
+fields, distinct coupling-order monomials, loop templates, polynomial momentum
+ranks, and canonical family-generator input. Closed-loop flavour multiplicities
+require matching reachable interaction multisets, conjugation type, and exact
+oriented propagator facts in both conjugate orientations.
+The model's parameters and fields determine admission; benchmark processes do
+not select production algorithms.
+
+The current pole domain is a monic simple vacuum denominator
+`q²-m²+i*m*width`, using the model's declared mass and width. Nonzero chemical
+potentials, different poles, propagator powers, and unrepresented denominator
+normalizations fail explicitly; supporting them requires extending both the
+family key and reduction contract. A nonzero width is never added to a real
+denominator. Exact internal zero declarations establish structural masslessness.
+The owned model's immutable exact bindings may additionally establish a vacuum
+or zero-width specialization. Overrides cannot change an already normalized
+structural zero. Bare model tables cannot infer these facts from adjustable
+numeric defaults.
+
+The compact generator currently supports at most 64 external legs and 64
+coupling-order names. Enumerating proper subsets is exponential, so the mask
+width is a representation limit, not a practical multiplicity guarantee.
+Removing these bounds requires larger compact index representations and a
+different current-table traversal.
+
+These APIs prepare structural loop families. They do not construct numerical
+tree currents, Lorentz/colour kernels, UV/R2 terms, or complete physical
+amplitudes. Focused checks run with
+`cargo test -p rusticol-loop-reduction preparation:: --lib -- --test-threads=1`.
+
 `PolynomialReducer<T>` binds lane-major polynomial parameters and carries
 `Complex<T>` through NinjaRS, Symbolica and the master provider. `T` can be
 `f64`, `DoubleFloat`, or arbitrary-precision `Float`. Its fifth polynomial
@@ -31,13 +69,22 @@ Dependencies use ordinary pinned Git revisions and Cargo's lockfile. No ignored
 reference directory or `upstream` symlink is needed. The standalone workspace
 aligns Symbolica with the application's shared core and uses:
 
-- NinjaRS `aa6a6307dd081dc3714f9accebc0df9e5561ae73`.
+- NinjaRS `de858c88e81058623d53a16fa4400b414f3aa260`.
 - Symbolica, Numerica and Graphica `9cdc2949cdb153478c1eca0d40690dc0abfc616e`,
   the owner's integration revision published on
   `https://github.com/alphal00p/symbolica`.
-- FeynKit `d1904bf2bd5bf4f26969a73b415095e941a55610`, the owner's coherent
-  dependency revision recorded by NinjaRS.
+- FeynKit `4b8569c03f7498b13482bc954953e66f6de5ffc1`, with retained exact
+  structural-zero proofs, checked scalar specialization, proof-based graph/spin
+  masses and literal complex-reality assumptions. NinjaRS uses the
+  same revision throughout its dependency graph.
 - oneloopmaster `8ec256fc26cb361b20e10f59c19beb35717ef32c`.
+
+On the aligned FeynKit/Ninja revisions above, 27 native structural-preparation
+regressions and all nine existing reducer anchors pass. The dependency tree has
+one source revision for every FeynKit, Ninja and Symbolica-family package. The
+anchors cover three precision modes, scalar and explicit-μ² reductions, Laurent
+poles, rational terms, failed-lane handling and rank callbacks. Broader physical
+consumer results below are retained historical evidence at their stated pins.
 
 From this crate's directory, using the shared workspace environment:
 
@@ -75,9 +122,10 @@ branch: a `Float` product with an exact ±1 no longer rounds the one extra bit o
 a square root away. The AP80 zero-width physical test passes. No numerical
 snapping or local master replacement is used.
 
-Focused consumer adoption checks pass on these pins: the seven existing analytic
-and adapter anchors, profiling on/off for a screened rank-n+2 A0-cancellation
-control, and the seven-line rank-eight C0 control below in generic double,
+The previous NinjaRS `aa6a6307` / FeynKit `d1904bf2` integration recorded the
+following consumer adoption checks: seven analytic and adapter anchors, profiling
+on/off for a screened rank-n+2 A0-cancellation control, and the seven-line
+rank-eight C0 control below in generic double,
 DoubleFloat, AP80 and binary64 fast-tensor evaluation. The existing saved complete
 six-fermion QCD plan also passes all three carriers at three exact points/scales:
 all Born/bare/UV/R2/full components agree with the independent binary64 references,

@@ -10,6 +10,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod preparation;
 pub mod runtime;
 pub mod verification;
 pub mod virtual_runtime;
