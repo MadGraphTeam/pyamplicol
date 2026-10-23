@@ -175,7 +175,7 @@ impl RectangularDualWeights {
         }
         let requested: BTreeSet<_> = columns.iter().map(|c| [c[0], c[1]]).collect();
         require(
-            requested == self.banks.iter().copied().collect(),
+            requested == self.banks.iter().copied().collect::<BTreeSet<_>>(),
             "rectangular banks differ from weight direction/sector keys",
         )?;
         let mut covered = BTreeSet::new();
@@ -1191,7 +1191,7 @@ impl LoopRuntimePlan {
                         && ids.insert(&member.process_id)
                         && member.external_pdgs.len() == legs
                         && map.len() == member.species.len()
-                        && targets == map.keys().copied().collect()
+                        && targets == map.keys().copied().collect::<BTreeSet<_>>()
                         && map.iter().all(|(&a, &b)| {
                             a != 0
                                 && a != b
