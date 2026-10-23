@@ -9,10 +9,15 @@
 //! numerical instruction path. Unsupported participating fields are rejected,
 //! never dropped.
 
-use std::{collections::BTreeMap, sync::Arc};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
+};
 
 use feynkit_amplitude::AmplitudeOptions;
-use feynkit_generator::{GenerationOptions, NumeratorGrouping, Process};
+use feynkit_generator::{
+    FilterScope, GenerationFilter, GenerationOptions, NumeratorGrouping, Process,
+};
 use feynkit_graph::ExternalState;
 use feynkit_model::{Model, ParameterCard, ParameterType, Particle};
 use idenso::{representations::Bispinor, tensor::SymbolicTensor};
@@ -26,12 +31,12 @@ use spenso::structure::{
     slot::{DualSlotTo, IsAbstractSlot, ParseableAind},
 };
 use symbolica::{
-    atom::{Atom, AtomCore, AtomView, Symbol},
+    atom::{Atom, AtomCore, AtomView, Symbol, SymbolAttribute, SymbolBuilder},
     coefficient::CoefficientView,
     function, symbol,
 };
 
-pub use crate::tree_runtime::{ExternalTreeState, TreeEvaluator};
+pub use crate::tree_runtime::{ExternalTreeState, TreeEvaluator, TreeParameterDomain};
 use crate::{
     runtime::{Arithmetic, arithmetic_mode},
     tree_color::{factor_tree_color, index_label},
@@ -54,6 +59,7 @@ pub struct TreeProgram {
     norm_state: Vec<u8>,
     scalar_norm_state: Option<Vec<u8>>,
     states: Vec<ExternalTreeState>,
+    runtime_parameters: Vec<RuntimeTreeParameter>,
     color_tensors: Vec<ConnectedColorTensor>,
 }
 
@@ -108,6 +114,14 @@ pub enum TreeFieldClass {
     MasslessQcdAndSingletScalars,
 }
 
+/// One model parameter retained as a numerical input. Column order is explicit;
+/// analytic dependent parameters/couplings are resolved by the native model.
+#[derive(Clone, Debug)]
+pub struct RuntimeTreeParameter {
+    pub symbol: Symbol,
+    pub domain: TreeParameterDomain,
+}
+
 fn error(message: impl std::fmt::Display) -> RusticolError {
     RusticolError::invalid_argument(format!("native tree preparation: {message}"))
 }
@@ -120,6 +134,43 @@ fn bind_scalars(expression: &Atom, bindings: &BTreeMap<Symbol, Atom>) -> Atom {
             }
         }
     })
+}
+
+fn validate_order_filter(model: &Model, options: &GenerationOptions) -> RusticolResult<()> {
+    if !options.filters(FilterScope::Graph).iter().any(
+        |filter| matches!(filter, GenerationFilter::CouplingOrders(orders) if !orders.is_empty()),
+    ) {
+        return Ok(());
+    }
+    // FeynKit currently labels a vertex by componentwise maximum orders. Exact
+    // filtering of mixed vertices requires upstream termwise order projection.
+    for vertex in model.vertex_rules() {
+        let mut expected = None;
+        for &id in vertex.couplings.iter().flatten().flatten() {
+            let orders: BTreeMap<_, _> = model
+                .coupling_by_id(id)
+                .map_err(error)?
+                .orders
+                .iter()
+                .filter(|(_, power)| **power != 0)
+                .map(|(name, &power)| (name.clone(), power))
+                .collect();
+            if expected
+                .as_ref()
+                .is_some_and(|previous| previous != &orders)
+            {
+                return Err(RusticolError::unsupported_runtime_capability(
+                    "native-tree-orders",
+                    format!(
+                        "vertex {} mixes coupling-order vectors; order-filtered preparation requires homogeneous vertex orders",
+                        vertex.name
+                    ),
+                ));
+            }
+            expected = Some(orders);
+        }
+    }
+    Ok(())
 }
 
 // FeynKit's amplitude denominator currently represents only p²-m², while the
@@ -195,6 +246,32 @@ impl TreeProgram {
         exact_overrides: &BTreeMap<Symbol, Atom>,
         field_class: TreeFieldClass,
     ) -> RusticolResult<Self> {
+        Self::prepare_with_runtime_parameters(
+            model,
+            process,
+            options,
+            card,
+            exact_overrides,
+            field_class,
+            &[],
+        )
+    }
+
+    /// Retain ordered model parameters as typed per-row evaluator inputs.
+    /// Use the unrestricted model for parameters intended to vary: interactions
+    /// already removed by model restriction cannot be reconstructed here.
+    /// Domain assumptions are enforced on every runtime parameter batch.
+    /// Dynamic masses/widths must still satisfy this class's admission proofs.
+    pub fn prepare_with_runtime_parameters(
+        model: Arc<Model>,
+        process: &Process,
+        options: &GenerationOptions,
+        card: Option<&ParameterCard>,
+        exact_overrides: &BTreeMap<Symbol, Atom>,
+        field_class: TreeFieldClass,
+        runtime_parameters: &[RuntimeTreeParameter],
+    ) -> RusticolResult<Self> {
+        validate_order_filter(&model, options)?;
         for key in exact_overrides.keys() {
             if !model
                 .parameters()
@@ -206,9 +283,74 @@ impl TreeProgram {
                 )));
             }
         }
-        let scalar_bindings = model
-            .scalar_bindings(card, exact_overrides)
-            .map_err(error)?;
+        let mut overrides = exact_overrides.clone();
+        let mut parameter_inputs = Vec::with_capacity(runtime_parameters.len());
+        let mut names = BTreeSet::new();
+        for (index, input) in runtime_parameters.iter().enumerate() {
+            if !names.insert(input.symbol) || overrides.contains_key(&input.symbol) {
+                return Err(error(
+                    "runtime parameters must be distinct and cannot also have frozen overrides",
+                ));
+            }
+            let parameter = model
+                .parameters()
+                .iter()
+                .find(|parameter| input.symbol == symbol!(&format!("UFO::{}", parameter.name)))
+                .ok_or_else(|| {
+                    error(format!(
+                        "runtime input {} does not name a model parameter",
+                        input.symbol
+                    ))
+                })?;
+            if parameter.parameter_type == ParameterType::Real
+                && input.domain == TreeParameterDomain::Complex
+            {
+                return Err(error(format!(
+                    "real model parameter {} requires a real runtime domain",
+                    parameter.name
+                )));
+            }
+            // Domains are part of the interned symbol name: Symbolica correctly
+            // rejects conflicting assumptions on a previously created symbol.
+            let (domain, attributes) = match input.domain {
+                TreeParameterDomain::Real => ("real", vec![SymbolAttribute::Real]),
+                TreeParameterDomain::PositiveReal => ("positive", vec![SymbolAttribute::Positive]),
+                TreeParameterDomain::Complex => ("complex", vec![]),
+            };
+            let name = format!("rusticol_native_tree::runtime_{domain}_{index}");
+            let free = SymbolBuilder::new(symbolica::wrap_symbol!(&name))
+                .with_attributes(attributes)
+                .build()
+                .map_err(error)?;
+            let free = Atom::var(free);
+            overrides.insert(input.symbol, free.clone());
+            parameter_inputs.push(free);
+        }
+        if exact_overrides
+            .values()
+            .chain(
+                model
+                    .parameters()
+                    .iter()
+                    .filter_map(|parameter| parameter.expression.as_ref()),
+            )
+            .chain(
+                model
+                    .couplings()
+                    .iter()
+                    .map(|coupling| &coupling.expression),
+            )
+            .any(|expression| {
+                parameter_inputs
+                    .iter()
+                    .any(|input| expression.contains(input))
+            })
+        {
+            return Err(error(
+                "model scalar definitions use a reserved runtime parameter input symbol",
+            ));
+        }
+        let scalar_bindings = model.scalar_bindings(card, &overrides).map_err(error)?;
         for (key, binding) in &scalar_bindings {
             let mut approximate = false;
             let _ = binding.replace_map(|term, _, _| {
@@ -272,6 +414,14 @@ impl TreeProgram {
             .into_amplitude(AmplitudeOptions::default())
             .map_err(|failure| error(format!("amplitude generation: {failure}")))?;
         let physical_expression = amplitude.expression().map_err(error)?;
+        if parameter_inputs
+            .iter()
+            .any(|input| physical_expression.expression().contains(input))
+        {
+            return Err(error(
+                "model uses a reserved runtime parameter input symbol",
+            ));
+        }
         for parameter in amplitude.model().parameters() {
             let variable = symbol!(&format!("UFO::{}", parameter.name));
             if parameter.parameter_type == ParameterType::Real
@@ -400,6 +550,7 @@ impl TreeProgram {
         for (_, components) in &external_states {
             inputs.extend(components.iter().cloned());
         }
+        inputs.extend(parameter_inputs);
         let factors = factor_tree_color(&source, &color_legs, &external_color)?;
         let mut color_tensors = Vec::with_capacity(factors.len());
         let mut coefficients = Vec::with_capacity(factors.len());
@@ -457,6 +608,7 @@ impl TreeProgram {
             norm_state: encode_exact_evaluator_state(&norm)?,
             scalar_norm_state,
             states,
+            runtime_parameters: runtime_parameters.to_vec(),
             color_tensors,
         })
     }
@@ -471,9 +623,13 @@ impl TreeProgram {
     pub fn diagram_count(&self) -> usize {
         self.diagram_count
     }
+    pub fn runtime_parameters(&self) -> &[RuntimeTreeParameter] {
+        &self.runtime_parameters
+    }
     /// Exact raw amplitude-coefficient instructions, before the color norm.
     /// Inputs are all physical momentum components, followed by four complex
-    /// external components per entry in [`TreeEvaluator::states`].
+    /// external components per entry in [`TreeEvaluator::states`], then the
+    /// ordered [`Self::runtime_parameters`] columns.
     pub fn evaluator_state(&self) -> &[u8] {
         &self.evaluator_state
     }
@@ -507,11 +663,15 @@ impl TreeProgram {
         arithmetic: Arithmetic,
         bits: u32,
     ) -> RusticolResult<TreeEvaluator> {
-        TreeEvaluator::new(
+        TreeEvaluator::with_parameter_domains(
             &self.evaluator_state,
             &self.norm_state,
             self.states.clone(),
             self.momentum_legs.len() * 4,
+            self.runtime_parameters
+                .iter()
+                .map(|input| input.domain)
+                .collect(),
             arithmetic,
             bits,
         )
@@ -813,6 +973,266 @@ mod tests {
             );
             assert!(values[0].re.get_precision() > bits - 37, "bits={bits}");
         }
+    }
+
+    #[test]
+    fn runtime_alpha_s_resolves_analytic_couplings_without_repreparation() {
+        // Cached coupling zeros must not delete analytic interactions: only a
+        // caller's prior explicit model restriction may do that.
+        let mut definition = serde_json::to_value(Model::qcd()).unwrap();
+        for coupling in definition["couplings"].as_array_mut().unwrap() {
+            coupling["value"] = serde_json::json!([0., 0.]);
+        }
+        let model = Arc::new(Model::from_json(&definition.to_string()).unwrap());
+        let program = TreeProgram::prepare_with_runtime_parameters(
+            model,
+            &Process::new(["g", "g"], ["g", "g"]),
+            &GenerationOptions::default().threads(1),
+            None,
+            &BTreeMap::new(),
+            TreeFieldClass::MasslessQcdAndSingletScalars,
+            &[RuntimeTreeParameter {
+                symbol: symbol!("UFO::aS"),
+                domain: TreeParameterDomain::PositiveReal,
+            }],
+        )
+        .unwrap();
+        let bits = 173;
+        let zero = Float::with_val(bits, 0);
+        let two = Float::with_val(bits, 2);
+        let first = two.pow(4).inv();
+        let second = first.clone() + two.pow(90).inv();
+        let momenta = Batch::typed(
+            [5, 0, 0, 5, 5, 0, 0, -5, 5, 4, 0, 3, 5, -4, 0, -3]
+                .into_iter()
+                .cycle()
+                .take(32)
+                .map(|value| Complex::new(Float::with_val(bits, value), zero.clone()))
+                .collect(),
+            vec![7, 3],
+            16,
+            bits,
+        )
+        .unwrap();
+        let parameters = Batch::typed(
+            [first.clone(), second.clone()]
+                .into_iter()
+                .map(|value| Complex::new(value, zero.clone()))
+                .collect(),
+            vec![7, 3],
+            1,
+            bits,
+        )
+        .unwrap();
+        let mut evaluator = program
+            .evaluator_with_precision_bits(Arithmetic::Arbitrary, bits)
+            .unwrap();
+        assert!(evaluator.evaluate_batch(&momenta).is_err());
+        let output = evaluator
+            .evaluate_batch_with_parameters(&momenta, &parameters)
+            .unwrap();
+        let Data::Arbitrary(values) = output.data() else {
+            panic!("carrier changed")
+        };
+        let base = Float::with_val(bits, 666792) / Float::with_val(bits, 25);
+        for (value, alpha) in values.iter().zip([first, second]) {
+            let g_squared = Float::with_val(bits, 4) * zero.pi() * alpha;
+            let expected = base.clone() * g_squared.pow(2);
+            assert!((value.re.clone() - expected).norm() < two.pow(135).inv());
+            assert!(value.im.norm() < two.pow(135).inv());
+        }
+        assert!(
+            values[1].re > values[0].re,
+            "per-row sub-binary64 alpha_s survives"
+        );
+        let permuted = parameters.take_rows(vec![1, 0], None).unwrap();
+        assert!(
+            evaluator
+                .evaluate_batch_with_parameters(&momenta, &permuted)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn runtime_complex_coefficients_keep_phases_and_zero_default_vertices() {
+        let mut definition = scalar_model_definition(4);
+        definition["parameters"][1]["parameter_type"] = serde_json::json!("complex");
+        definition["parameters"][1]["value"] = serde_json::json!([0., 0.]);
+        definition["couplings"][0]["value"] = serde_json::json!([0., 0.]);
+        let program = TreeProgram::prepare_with_runtime_parameters(
+            Arc::new(Model::from_json(&definition.to_string()).unwrap()),
+            &Process::new(["s", "s"], ["s", "s"]),
+            &GenerationOptions::default().threads(1),
+            None,
+            &BTreeMap::new(),
+            TreeFieldClass::SingletScalars,
+            &[RuntimeTreeParameter {
+                symbol: symbol!("UFO::g_"),
+                domain: TreeParameterDomain::Complex,
+            }],
+        )
+        .unwrap();
+        assert_eq!(program.diagram_count(), 1);
+        let momenta = Batch::typed(vec![Complex::new(0., 0.); 32], vec![11, 19], 16, 53).unwrap();
+        let parameters = Batch::typed(
+            vec![Complex::new(1., 2.), Complex::new(3., -4.)],
+            vec![11, 19],
+            1,
+            53,
+        )
+        .unwrap();
+        let mut evaluator = program.evaluator("double", None).unwrap();
+        let amplitudes = evaluator
+            .evaluate_coefficients_with_parameters(&momenta, &parameters, &[])
+            .unwrap();
+        let Data::Double(amplitudes) = amplitudes.data() else {
+            panic!("carrier changed")
+        };
+        assert_eq!(
+            amplitudes[0].conj() * amplitudes[1],
+            Complex::new(-5., -10.)
+        );
+        let norms = evaluator
+            .evaluate_batch_with_parameters(&momenta, &parameters)
+            .unwrap();
+        let Data::Double(norms) = norms.data() else {
+            panic!("carrier changed")
+        };
+        assert_eq!(
+            norms.as_slice(),
+            &[Complex::new(5., 0.), Complex::new(25., 0.)]
+        );
+    }
+
+    #[test]
+    fn runtime_parameter_domains_do_not_erase_model_admission_proofs() {
+        let model = Arc::new(scalar_model(4));
+        for inputs in [
+            vec![RuntimeTreeParameter {
+                symbol: symbol!("UFO::missing"),
+                domain: TreeParameterDomain::Real,
+            }],
+            vec![RuntimeTreeParameter {
+                symbol: symbol!("UFO::ZERO"),
+                domain: TreeParameterDomain::Real,
+            }],
+            vec![RuntimeTreeParameter {
+                symbol: symbol!("UFO::g_"),
+                domain: TreeParameterDomain::Complex,
+            }],
+            vec![
+                RuntimeTreeParameter {
+                    symbol: symbol!("UFO::g_"),
+                    domain: TreeParameterDomain::Real
+                };
+                2
+            ],
+        ] {
+            assert!(
+                TreeProgram::prepare_with_runtime_parameters(
+                    model.clone(),
+                    &Process::new(["s", "s"], ["s", "s"]),
+                    &GenerationOptions::default().threads(1),
+                    None,
+                    &BTreeMap::new(),
+                    TreeFieldClass::SingletScalars,
+                    &inputs
+                )
+                .is_err()
+            );
+        }
+        let alias = Atom::var(symbol!("rusticol_native_tree::runtime_real_0"; Real));
+        assert!(
+            TreeProgram::prepare_with_runtime_parameters(
+                model.clone(),
+                &Process::new(["s", "s"], ["s", "s"]),
+                &GenerationOptions::default().threads(1),
+                None,
+                &BTreeMap::from([(symbol!("UFO::m"), alias)]),
+                TreeFieldClass::SingletScalars,
+                &[RuntimeTreeParameter {
+                    symbol: symbol!("UFO::g_"),
+                    domain: TreeParameterDomain::Real
+                }]
+            )
+            .is_err()
+        );
+        let qcd = Arc::new(Model::qcd());
+        let mass = qcd
+            .parameter_by_id(qcd.particle("u").unwrap().mass)
+            .unwrap()
+            .name
+            .clone();
+        assert!(
+            TreeProgram::prepare_with_runtime_parameters(
+                qcd,
+                &Process::new(["u", "d"], ["u", "d"]),
+                &GenerationOptions::default().threads(1),
+                None,
+                &BTreeMap::new(),
+                TreeFieldClass::MasslessQcdAndSingletScalars,
+                &[RuntimeTreeParameter {
+                    symbol: symbol!(&format!("UFO::{mass}")),
+                    domain: TreeParameterDomain::Real
+                }]
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn order_filters_reject_mixed_vertex_orders_without_discarding_terms() {
+        let mut definition = scalar_model_definition(4);
+        definition["couplings"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({
+                "name":"GC2", "expression":"g_", "orders":[["SELF",2]], "value":[1.,0.]
+            }));
+        definition["lorentz_structures"]
+            .as_array_mut()
+            .unwrap()
+            .push(serde_json::json!({
+                "name":"SSSS2", "spins":[1,1,1,1], "structure":"1"
+            }));
+        definition["vertex_rules"][0]["lorentz_structures"] = serde_json::json!(["SSSS", "SSSS2"]);
+        definition["vertex_rules"][0]["couplings"] = serde_json::json!([["GC1", "GC2"]]);
+        let mixed = Arc::new(Model::from_json(&definition.to_string()).unwrap());
+        let process = Process::new(["s", "s"], ["s", "s"]);
+        let options = GenerationOptions::default().threads(1).with_graph_filter(
+            GenerationFilter::CouplingOrders(BTreeMap::from([("SELF".into(), (1, Some(1)))])),
+        );
+        assert!(
+            TreeProgram::prepare(
+                mixed.clone(),
+                &process,
+                &options,
+                None,
+                &BTreeMap::new(),
+                TreeFieldClass::SingletScalars
+            )
+            .is_err()
+        );
+        // Without an order projection both terms form a valid coherent sum.
+        let complete = TreeProgram::prepare(
+            mixed,
+            &process,
+            &GenerationOptions::default().threads(1),
+            None,
+            &BTreeMap::new(),
+            TreeFieldClass::SingletScalars,
+        )
+        .unwrap();
+        let input = Batch::typed(vec![Complex::new(0., 0.); 16], vec![4], 16, 53).unwrap();
+        let output = complete
+            .evaluator("double", None)
+            .unwrap()
+            .evaluate_batch(&input)
+            .unwrap();
+        let Data::Double(values) = output.data() else {
+            panic!("carrier changed")
+        };
+        assert_eq!(values[0], Complex::new(4., 0.));
     }
 
     #[test]

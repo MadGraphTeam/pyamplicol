@@ -144,6 +144,28 @@ explicit field class. It prepares all selected labelled tree amplitudes in Rust,
 without Python or process-specific compilation. `ScalarTreeProgram::prepare`
 retains the scalar entry point by delegating to this path.
 
+`TreeProgram::prepare_with_runtime_parameters` additionally accepts ordered
+`RuntimeTreeParameter` declarations. Each parameter names a native model symbol
+and a `Real`, `PositiveReal` or `Complex` domain. The existing model scalar
+resolver keeps all analytic dependencies on those inputs: for example a runtime
+`aS` updates `G=2*sqrt(pi*aS)` and every dependent coupling without regenerating
+the process. Frozen exact overrides remain separate. The declared domains are
+checked for every lane, including carrier, working precision and row identity.
+Runtime parameter batches contain one column per declaration and are supplied
+to `evaluate_batch_with_parameters`, `evaluate_coefficients_with_parameters`
+or `evaluate_external_components_with_parameters`. Evaluator instructions place
+these columns after the momenta and external-state components. No parameter is
+converted through binary64.
+
+Runtime parameters cannot invalidate structural masslessness, zero-width or
+vacuum proofs. A previously restricted model that has deleted interactions
+cannot recover them by changing a runtime value; use the original model for
+varying parameters. Exact graph coupling-order filters currently require each
+vertex to have homogeneous coupling-order vectors, because FeynKit labels a
+mixed vertex by its componentwise maximum. Mixed vertices are accepted without
+that filter and retain their full coherent contribution; requesting the
+unsupported order projection fails explicitly.
+
 `MasslessQcdAndSingletScalars` admits massless Dirac fundamental/antifundamental
 quarks, structurally massless adjoint vectors and singlet scalars. Internal poles
 must be canonical zero-width vacuum poles. Exotic color, Majorana fields,
