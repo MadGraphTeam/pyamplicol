@@ -148,13 +148,30 @@ CONTROLS = {
         "quark_three_gluon_qcd",
         spin_classes=((3,), (4, 5)),
     ),
-    # Directed histories at LC and NLC (complete-family degree convention).
+    # Directed histories (complete-family degree convention), spin sources and
+    # helicity-resolved outputs at LC and NLC.
     **{
         f"gg_gg_{accuracy}": Control(
             (("gg", "g g > g g"),),
             2,
             "gluon_scattering_qcd",
             (_dipole("casimir", 1, 1), _dipole("T12", 1, 2), _dipole("T13", 1, 3)),
+            ((3,), (3, 4)),
+            resolved=True,
+            accuracy=accuracy,
+        )
+        for accuracy in ("lc", "nlc")
+    },
+    # A flavour group at LC and NLC: s s~ > g g through d d~ > g g (directed
+    # histories, ordered two-emission ones included, spin and resolved outputs).
+    **{
+        f"ddgg_ssgg_{accuracy}": Control(
+            (("ddgg", "d d~ > g g"), ("ssgg", "s s~ > g g")),
+            2,
+            "uudd_qcd",
+            (_dipole("casimir", 1, 1), _dipole("T12", 1, 2), ORDERED, SWAPPED),
+            ((3,), (3, 4)),
+            resolved=True,
             accuracy=accuracy,
         )
         for accuracy in ("lc", "nlc")
