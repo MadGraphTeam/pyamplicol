@@ -80,6 +80,34 @@ impl CoefficientEvaluator {
     }
     pub fn new(state: &[u8], arithmetic: &str, precision: Option<u32>) -> ExecutionResult<Self> {
         let (arithmetic, bits) = arithmetic_mode(arithmetic, precision)?;
+        Self::with_precision_bits(state, arithmetic, bits)
+    }
+
+    /// Execute the same saved instructions with an explicit working precision.
+    ///
+    /// `Double` requires 53 bits and `DoubleDouble` requires 106 bits.
+    /// `Arbitrary` uses exactly the requested initial `Float` precision (at
+    /// least two bits), with no decimal conversion or hidden guard bits; use
+    /// 113 bits for that multiprecision tier. Float's own propagated precision
+    /// can decrease after cancellation. Typed inputs must use the selected
+    /// carrier and working precision.
+    pub fn with_precision_bits(
+        state: &[u8],
+        arithmetic: Arithmetic,
+        bits: u32,
+    ) -> ExecutionResult<Self> {
+        match arithmetic {
+            Arithmetic::Double if bits != 53 => {
+                return Err(error("double arithmetic requires exactly 53 bits"));
+            }
+            Arithmetic::DoubleDouble if bits != 106 => {
+                return Err(error("double-double arithmetic requires exactly 106 bits"));
+            }
+            Arithmetic::Arbitrary if bits < 2 => {
+                return Err(error("arbitrary arithmetic requires at least two bits"));
+            }
+            _ => {}
+        }
         let exact = exact_state(state)?;
         let evaluator = match arithmetic {
             Arithmetic::Double => Coefficients::Double(batch_evaluator(exact, &0_f64)),
