@@ -23,7 +23,7 @@
 #set page(paper: "a4", margin: (x: 1.6cm, top: 1.7cm, bottom: 1.6cm), numbering: "1 / 1",
   header: context if counter(page).get().first() > 1 {
     set text(8pt, fill: luma(110))
-    [pyAmpliCol at one loop #h(1fr) milestone #ms.date · engine #ms.engine_revision on `loop` · G1 timed at #g.slice_revision]
+    [pyAmpliCol at one loop #h(1fr) milestone #ms.date · engine #ms.engine_revision on `loop` · G1 timed at #g.slice_revision (`loop`)#if g.at("native_revision", default: none) != none [ and #g.native_revision (development)]]
   })
 #set text(font: "Libertinus Serif", size: 10.5pt, lang: "en")
 #set par(justify: true, leading: 0.62em)
@@ -283,6 +283,121 @@
 // "native" / "Python": the per-point inputs of a configuration.
 #let inputs-word(c) = { let i = c.at("inputs", default: none); if i == none { "inputs not recorded" } else { (native: "native", python: "Python").at(i, default: i) } }
 
+// Provenance (main-configuration rule of scripts/build_summary.py): every
+// cell shows the most recent configuration that measured it (git ancestry of
+// the configurations' revisions, and a G1 campaign's own roles);
+// summary.json names it per cell, and meta.configurations lists the
+// candidates with the rows (main_rows) and cells (main_cells) where each
+// supplies a main value. Stated once (title line, reading guide, column
+// header); within a row, a cell from another configuration than the row's
+// timing is marked: quietly with its revision (and its run conditions) if it
+// is a newer record of the same branch, in amber with its origin otherwise.
+#let C = sm.configurations
+// A configuration's label with the branch name `loop` set as code.
+#let lab(x) = { let t = x.label; if t.ends-with(" loop") [#t.slice(0, t.len() - 4)`loop`] else [#t] }
+#let cfg-used(id) = id in C and C.at(id).main_rows.len() > 0
+#let all-rows = S.groups.map(g => g.rows).flatten()
+#let row-span(keys) = {
+  let n = all-rows.filter(r => r.key in keys).map(r => r.outgoing)
+  if n.len() == 0 { none } else if calc.min(..n) == calc.max(..n) [#box[$2 -> #calc.min(..n)$]] else [#box[$2 -> #calc.min(..n)$] to #box[$2 -> #calc.max(..n)$]]
+}
+// Rows named one by one, in table order.
+#let row-names(keys) = all-rows.filter(r => r.key in keys).map(r => box(math-label(r.math))).join([, ], last: [ and ])
+// A configuration's rows by kind: G1 rows and rows without a G1 record.
+#let kind-keys(keys, kind) = all-rows.filter(r => r.key in keys and r.kind == kind).map(r => r.key)
+// The configurations that supply measured main values, in row order.
+#let first-row(id) = all-rows.position(r => r.key in C.at(id).main_rows)
+#let measured-ids = ("development", "development_records", "integrated").filter(cfg-used).sorted(key: first-row)
+#let dev-used = measured-ids.any(id => id != "integrated")
+#let dev-rows = measured-ids.filter(id => id != "integrated").map(id => C.at(id).main_rows).flatten().dedup()
+#let branch-of(id) = if id == "integrated" { "loop" } else { C.at(id).branch }
+#let inputs-text(x) = x.inputs.map(i => inputs-word((inputs: i))).join(", ")
+// A configuration's revisions: G1's, or the newest of the records.
+#let rev-text(id) = {
+  let x = C.at(id)
+  if id == "development_records" {
+    let rs = x.records.map(r => r.revision)
+    if rs.len() == 1 [validation record #raw(rs.first())] else [validation records up to #raw(rs.first())]
+  } else [G1 at #raw(x.revision)]
+}
+#let branch-text(b) = {
+  let ids = measured-ids.filter(i => branch-of(i) == b)
+  let x = C.at(ids.first())
+  if b == "loop" [`loop`, #ids.map(rev-text).join(", ")] else [#raw(b) (#lab(x)#if x.at("integration", default: none) != none [ as #x.integration]): #ids.map(rev-text).join(", ")]
+}
+#let prov-title = measured-ids.map(branch-of).dedup().map(branch-text).join([ and ])
+// The cells where the records supply values (main_cells): G1 rows by name
+// and by cell (generation, validation or both), the other rows by
+// multiplicity (generation and validation). Compact: the multiplicity alone.
+#let rec-rows-text(x, compact: false, cap: false) = {
+  let (g, o) = (kind-keys(x.main_rows, "g1"), kind-keys(x.main_rows, "records"))
+  let (gen, val) = (x.main_cells.generation, x.main_cells.validation)
+  let names(keys) = all-rows.filter(r => r.key in keys).map(r => box(math-label(r.math)))
+  let both = names(g.filter(k => k in gen and k in val))
+  if o.len() > 0 { both.push(if compact { row-span(o) } else [the #row-span(o) rows]) }
+  let parts = (
+    (names(g.filter(k => k in gen and k not in val)), "generation"),
+    (names(g.filter(k => k in val and k not in gen)), "validation"),
+    (both, "generation and validation"),
+  ).filter(((items, _)) => items.len() > 0)
+  parts.enumerate().map(((i, (items, what))) => {
+    let w = if cap and i == 0 { upper(what.first()) + what.slice(1) } else { what }
+    [#w of #items.join([, ], last: [ and ])]
+  }).join([, ])
+}
+// One clause per configuration that supplies main values, with its rows.
+#let cfg-clause(id) = {
+  let x = C.at(id)
+  let rows = row-span(x.main_rows)
+  if id == "development" [#rows: #raw(x.branch) #raw(x.revision) with #inputs-text(x) per-point inputs, gate G1 (#x.date)]
+  else if id == "development_records" [#rec-rows-text(x): the validation records of #raw(x.branch)#if x.records.len() > 1 [ up to] #raw(x.records.first().revision) (#if kind-keys(x.main_rows, "g1").len() > 0 [newer revisions than G1's\; ]fixture points, #x.conditions_short, no batched timing)]
+  else if id == "integrated" [#rows: the engine on `loop`, gate G1 at #raw(x.revision) (#x.date)]
+}
+// The column header's compact form: the branch once, then per configuration
+// its rows and revision.
+#let one-branch = measured-ids.map(branch-of).dedup().len() == 1
+#let cfg-short(id) = {
+  let x = C.at(id)
+  let rows = row-span(x.main_rows)
+  let b = if one-branch { none } else if id == "integrated" [`loop` ] else [#raw(x.branch) ]
+  if id == "development" [#rows: #b#raw(x.revision), #inputs-text(x) per-point inputs, G1 #x.date]
+  else if id == "development_records" [#rec-rows-text(x, compact: true): #b#rev-text(id)]
+  else if id == "integrated" [#rows: #b#raw(x.revision), G1 #x.date]
+}
+#let header-prov = {
+  let lead-in = if not one-branch [] else if measured-ids.first() == "integrated" [`loop`] else { let x = C.at(measured-ids.first()); [#raw(x.branch) (#lab(x))] }
+  [*pyAmpliCol values: the most recent measured configuration*#if one-branch [ — #lead-in] · #measured-ids.map(cfg-short).join([ · ])]
+}
+// Where a status applies: the registry attributes refusals to loop.
+#let where(c) = if c.at("configuration", default: none) in ("integrated", "registry") [on `loop`] else if c.at("configuration", default: none) == none [] else [on the development branch]
+// The configuration of a row's timing, else of its generation.
+#let row-lead(r) = { let m = r.full_colour.main; if m.status == "measured" { m.configuration } else { r.generation.main.at("configuration", default: none) } }
+#let row-lead-rev(r) = { let m = r.full_colour.main; if m.status == "measured" { m.at("revision", default: none) } else { r.generation.main.at("revision", default: none) } }
+#let origin(r, c) = {
+  let id = c.at("configuration", default: none)
+  let lead = row-lead(r)
+  // An older record of the row's configuration kept by VALIDATION_RULE
+  // (a newer one only repeats part of it): its revision, quietly.
+  if id != none and id == lead and id == "development_records" and c.at("revision", default: none) != row-lead-rev(r) { dim[record #raw(c.revision)] }
+  else if id == none or lead == none or id == lead { none }
+  else if id == "development_records" and C.at(lead).at("branch", default: none) == C.development_records.branch {
+    dim[newer record #raw(c.revision)#if "conditions_short" in c [, #c.conditions_short]]
+  } else {
+    let x = C.at(id)
+    text(fill: amber, weight: "bold", if id == "integrated" [from `loop` (#raw(c.at("revision", default: x.revision)))] else if "branch" in x [from #raw(x.branch) (#lab(x))] else [from #lab(x)])
+  }
+}
+#let status-title(c) = {
+  let s = c.status
+  if s == "refused" [refused #where(c)]
+  else if s == "not started" [not started#if c.at("package", default: none) != none [ (#c.package)]]
+  else if s == "pending" [batched timing pending #box[(#c.package)]]
+  else if s == "not timed" [not timed]
+  else if s == "not batched" [no batched run]
+  else [not measured]
+}
+#let status-reason(c) = if c.status == "refused" { c.at("reason", default: c.at("error", default: none)) } else if c.status == "not started" [#c.reason: no configuration generates it yet] else { none }
+
 // Process column: label, legs, corrections, families, validation.
 #let t1-process(r) = table.cell(breakable: false, {
   set par(leading: 0.34em, justify: false)
@@ -297,8 +412,8 @@
   let val = r.validation
   v(3.4pt)
   if val.status != "compared" {
-    let ls = r.at("loop_status", default: none)
-    block(spacing: 0pt, text(6.4pt, fill: amber, weight: "bold", if ls != none [#ls.status on `loop`: #ls.reason] else { val.note }))
+    let rs = r.at("row_status", default: none)
+    block(spacing: 0pt, text(6.4pt, fill: amber, weight: "bold", if rs != none [#status-title(rs)#if rs.at("reason", default: none) != none [: #rs.reason]] else { val.at("note", default: [not compared]) }))
   } else {
     // References whose largest deviations lie within a factor 10 share one
     // bound: "ML·OL ≤ 9.2e−13 · Rc 3.3e−10".
@@ -310,14 +425,15 @@
     v(2.2pt)
     let wp = val.at("worst_point", default: none)
     let within = if wp != none { wp.within_estimate } else { val.at("within_estimate", default: false) }
-    block(spacing: 0pt, text(6.2pt, fill: ink2)[#if val.configuration != "integrated" [#dev-tag ]#val.points pts#if "median_finite" in val [ · median #esci(val.median_finite)]#if within [ · †]#if val.at("note", default: none) != none [ · #val.note]])
+    let o = origin(r, val)
+    block(spacing: 0pt, text(6.2pt, fill: ink2)[#if o != none [#o · ]#val.points #if val.points == 1 [pt] else [pts]#if "median_finite" in val [ · median #esci(val.median_finite)]#if within [ · †]#if val.at("note", default: none) != none [ · #val.note]])
   }
 })
 
 // Generation column: the fastest provider in bold (the multiplier's reference).
 #let t1-generation(r) = {
   let g = r.generation
-  let (m, d, f) = (g.main, g.dev, g.fastest)
+  let (m, f) = (g.main, g.fastest)
   let unf = g.at("unfinished", default: (:))
   let parts = ()
   if f != none { parts.push(text(weight: "bold")[#pkey(f.key) #dur(f.seconds)]) }
@@ -325,32 +441,29 @@
   if "madloop" in unf { parts.push([ML diagrams #dur(unf.madloop.graph_generation_s), stopped in export]) }
   if "recola" in unf { parts.push([Rc unfinished]) }
   let prov-line = if parts.len() == 0 [no provider generation recorded] else { parts.join([~· ]) }
-  let dev-line(full) = if d.status != "measured" { none } else {
-    [#dev-tag #inputs-word(d) #dur(d.seconds)#if ratio-of(d) != none [ #mult2(ratio-of(d))]#if full [ · #gib(d.peak_gib) · #box[#sig(d.plan_mb)~MB]]]
-  }
   if m.status == "measured" {
+    // GENERATION_RULE: a newer record in a G1 row has no multiplier (its
+    // conditions differ from the providers' G1 runs, listed beside it).
+    let o = origin(r, m)
+    let unmatched = "no_ratio" in m
     valued(fill: ratio-fill(ratio-of(m)), dur(m.seconds), mult: if ratio-of(m) != none { mult2(ratio-of(m)) },
-      [#gib(m.peak_gib) peak · plan #box[#sig(m.plan_mb)~MB]], prov-line, dev-line(false))
-  } else if m.status == "refused" {
-    absent([refused on `loop`], m.at("basis", default: none), prov-line, dev-line(true))
-  } else if m.status == "not started" {
-    absent([not started on `loop`: #m.reason], prov-line, dev-line(true))
+      [#gib(m.peak_gib) peak · plan #box[#sig(m.plan_mb)~MB]], prov-line,
+      if unmatched [#if o != none [#o: ]#dim[no multiplier]] else { o })
   } else {
-    absent([not measured on `loop`], prov-line, dev-line(true))
+    absent(status-title(m), status-reason(m), m.at("basis", default: none), prov-line)
   }
 }
 
 // Full-colour column.
 #let t1-fc(r) = {
   let c = r.full_colour
-  let (m, d, f) = (c.main, c.dev, c.at("fastest", default: none))
+  let (m, f) = (c.main, c.at("fastest", default: none))
   let prov-line = if f == none { none } else {
     let rest = c.providers.pairs().filter(((k, x)) => k != f.key and "seconds_per_point" in x).sorted(key: ((k, x)) => x.seconds_per_point).map(((k, x)) => [#pkey(k) #dur(x.seconds_per_point)])
     let gone = c.providers.pairs().filter(((k, x)) => x.status == "unavailable").map(((k, x)) => [#pkey(k) no library])
     let nr = c.providers.pairs().filter(((k, x)) => x.status == "not run").map(((k, x)) => [#pkey(k) not exported])
     ((text(weight: "bold")[#pkey(f.key) #dur(f.seconds_per_point)],) + rest + gone + nr).join([~· ])
   }
-  let dev-line = if d.status != "measured" { none } else [#dev-tag #inputs-word(d) #dur(d.seconds_per_point) #mult2(ratio-of(d))#if "gate" in d [ #h(2pt) #gate-chip(d.gate)]]
   // Rows without a G1 record: the providers' production references (text
   // of DESIGN Table 1b), the computed gate limit, or the unmatched
   // alternative.
@@ -376,46 +489,45 @@
     valued(fill: ratio-fill(ratio-of(m)), dur(m.seconds_per_point), mult: mult2(ratio-of(m)),
       [#prov-line #h(1fr) $B = #m.batch$],
       [#if "gate" in m { gate-chip(m.gate) } else { plain-chip[#c.gate_rule.replace("->", "→")] } #h(4pt) #stage-bar(m.stages)],
-      dev-line)
-  } else if m.status == "refused" {
-    absent([refused on `loop`: #if "reason" in m { m.reason } else { m.error }], prov-line, ..ref-lines, dev-line, if d.status == "measured" [#dev-tag #stage-bar(d.stages)])
-  } else if m.status == "not started" {
-    absent([not started on `loop`: #m.reason], ..ref-lines)
+      origin(r, m))
   } else if m.status == "not batched" {
-    absent([no batched run on `loop`], [G1 timed $B = #m.timed_batches.map(str).join(", ")$ only (#inputs-word(m) inputs) · #prov-line], dev-line, if d.status == "measured" [#dev-tag #stage-bar(d.stages)])
+    absent(status-title(m), [G1 timed $B = #m.timed_batches.map(str).join(", ")$ only · #prov-line])
   } else {
-    absent([not measured], ..ref-lines)
+    absent(status-title(m), if m.status == "refused" { status-reason(m) }, prov-line, ..ref-lines)
   }
 }
 
 // Leading-colour column (neutral: no provider ratio).
 #let t1-lc(r) = {
-  let c = r.leading_colour
-  let (m, d) = (c.main, c.dev)
+  let m = r.leading_colour.main
   // The schedule G1 adopted for the class, where it is not the protocol's B.
   let alt(x) = if "adopted_schedule" not in x { none } else [ · #box[#x.adopted_schedule.schedule: #dur(x.adopted_schedule.seconds_per_point)]]
-  let dev-line = if d.status != "measured" { none } else [#dev-tag #inputs-word(d) #dur(d.seconds_per_point)#if "lc_over_fc" in d [ · LC/FC #fixed(d.lc_over_fc, 2)]#if d.batch != 128 [ · $B = #d.batch$]#alt(d)]
   if m.status == "measured" {
-    valued(fill: none, dur(m.seconds_per_point), mult: [#text(6.8pt)[LC/FC] #fixed(m.lc_over_fc, 2)],
-      [$B = #m.batch$#if "fc_seconds_per_point" in m [ · FC #dur(m.fc_seconds_per_point)]#alt(m)], dev-line)
-  } else if m.status == "refused" {
-    absent([refused on `loop`], dev-line)
-  } else if m.status == "not started" {
-    absent([not started on `loop`], dev-line)
+    valued(fill: none, dur(m.seconds_per_point), mult: if "lc_over_fc" in m [#text(6.8pt)[LC/FC] #fixed(m.lc_over_fc, 2)],
+      [$B = #m.batch$#if "fc_seconds_per_point" in m [ · FC #dur(m.fc_seconds_per_point)]#alt(m)], origin(r, m))
+  } else if m.status == "not timed" {
+    absent(status-title(m), [G1 timed full colour only])
   } else {
-    absent([not timed on `loop`], dev-line)
+    absent(status-title(m))
   }
 }
 
-// The DESIGN records of the 2 -> 5 development validations, the first (most
-// rows) plain, the others with their rows.
-#let records-text = sm.dev_required.records.enumerate().map(((i, x)) => [#x.record.split(",").first()#if i > 0 [ for #x.rows.map(math-label).join([, ])]]).join([\; ])
 #let group-title = ("2->2": [$2 -> 2$], "2->3": [$2 -> 3$], "2->4": [$2 -> 4$], "2->5": [$2 -> 5$])
+// The DESIGN records of the development validations shown in Table 1,
+// newest first, each with its rows.
+#let records-text = C.development_records.records.map(x => [#x.record.split(",").first() for #x.rows.map(r => box(math-label(r))).join([, ])]).join([\; ])
+// Their short form: the increments and revisions only.
+// A DESIGN record's increment ("ninth"), from its record string.
+#let inc-name(rec) = rec.split(",").first().replace("DESIGN.md WP3.1 ", "").replace(" increment", "").split(" (").first()
+#let records-short = [DESIGN WP3.1, #C.development_records.records.map(x => inc-name(x.record)).join([, ], last: [ and ]) increments]
+// The generation threads each record's increment states (milestone.json
+// development_records.threads, through summary.json), newest first.
+#let threads-text = C.development_records.records.map(x => [#inc-name(x.record): #C.development_records.threads.at(x.revision)]).join([\; ])
 // Rows whose gate verdict is a user decision (legend of Table 1).
-#let decided-gate(r) = (r.full_colour.main, r.full_colour.dev).map(c => c.at("gate", default: none)).find(x => x != none and "decision" in x)
-#let decided-rows = S.groups.map(g => g.rows).flatten().filter(r => decided-gate(r) != none)
+#let decided-gate(r) = r.full_colour.main.at("gate", default: none)
+#let decided-rows = all-rows.filter(r => { let x = decided-gate(r); x != none and "decision" in x })
 // Rows with a gate limit but no G1 timing yet (the seven-leg rows).
-#let seven-untimed = S.groups.map(g => g.rows).flatten().filter(r => r.full_colour.gate_rule.starts-with("G1 (seven-leg") or r.full_colour.gate_rule.starts-with("G1 (no complete"))
+#let seven-untimed = all-rows.filter(r => r.full_colour.gate_rule.starts-with("G1 (seven-leg") or r.full_colour.gate_rule.starts-with("G1 (no complete"))
 
 // ================================================================ PAGE 1 ==
 #align(center)[
@@ -424,7 +536,7 @@
   #v(-0.6em)
   #text(11.5pt, fill: luma(80))[The recursive one-loop engine against MadLoop, Recola, OpenLoops and NJet]
   #v(-0.4em)
-  #text(8.6pt, fill: luma(105))[#sm.date · engine #raw(sm.engine_on_loop) on `loop`, timed at #raw(sm.integrated.revision) · #sm.host.split(",").first(), shared host · binary64 · one pinned thread · batches of $B = 128$]
+  #text(8.6pt, fill: luma(105))[#sm.date · values from #prov-title · engine #raw(sm.engine_on_loop) on `loop` · #sm.host.split(",").first(), shared host · binary64 · one pinned thread · batches of $B = 128$]
 ]
 
 #block(fill: pale, inset: (x: 9pt, y: 7pt), radius: 3pt, width: 100%, {
@@ -432,8 +544,7 @@
   set par(justify: true, leading: 0.5em)
   [*Reading guide.* One row per test process, by multiplicity. A cell gives pyAmpliCol's value in bold and, at its right, the
   multiplier _pyAmpliCol ÷ the fastest provider_ on this host (in bold among the provider values); the colour encodes it (blue
-  faster, red slower). Main values are the engine on `loop` (gate-G1 campaign, #sm.date); lines tagged #dev-tag are the WP3.1
-  development configuration with native per-point inputs and never set a colour. Grey cells say why a value is missing. Run times:
+  faster, red slower). Every value is the *most recent measured configuration* of its cell (by git ancestry of the revisions; a newer check that only repeats part of an older comparison does not replace it): #measured-ids.map(cfg-clause).join([\; ])#if dev-used [. #if cfg-used("integrated") [The values of #row-span(dev-rows) are] else [These are] *development measurements* of a branch being integrated into `loop`#if C.development_records.at("integration", default: none) != none [ (#C.development_records.integration)], not yet on `loop`]. #if not cfg-used("integrated") [The engine on `loop` (#inputs-text(C.integrated) per-point inputs, G1 at #raw(C.integrated.revision)) is not shown here: @g1 (gate-G1 details) keeps its timings for history. ]Grey cells say why a value is missing. Run times:
   per phase-space point in batches, finite part, stability checks off; providers in production mode (@status).]
 })
 
@@ -447,10 +558,13 @@
       columns: (0.5cm, 3.95cm, 3.75cm, 5.75cm, 1fr),
       align: left + std.top,
       inset: (x: 4.5pt, y: 4.2pt),
-      stroke: (x, y) => (top: if y <= 2 { none } else { 0.6pt + white }, left: if x > 0 { 0.6pt + white } else { none }),
-      fill: (x, y) => if y == 0 { navy } else if y == 1 { pale } else { none },
+      stroke: (x, y) => (top: if y <= 3 { none } else { 0.6pt + white }, left: if x > 0 and y != 1 { 0.6pt + white } else { none }),
+      fill: (x, y) => if y == 0 { navy } else if y == 1 { warm } else if y == 2 { pale } else { none },
       table.header(
         [], [Process · validation], [Generation], [Full colour · per point, batched], [Leading colour (LC)],
+        // Provenance of every value below, stated once (main-configuration
+        // rule; per cell in data/summary.json).
+        table.cell(colspan: 5, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, header-prov) }),
         [],
         ..(
           [legs · corrections · loop families; largest deviation of the finite part per reference],
@@ -479,7 +593,7 @@
       v(-0.6em)
       text(fill: ink2)[faster #h(1fr) pyAmpliCol ÷ fastest provider #h(1fr) slower]
       v(0.1em)
-      text(fill: ink2)[RdBu, log₂ scale, clamped. Grey: missing (reason given). White without a multiplier: no provider ratio.]
+      text(fill: ink2)[RdBu, log₂ scale, clamped. Grey: missing (reason given). White without a multiplier: no provider ratio (leading colour\; a newer record's generation in a G1 row, whose provider generation is G1's).]
     },
     {
       [*Stage shares* (bar; the largest is named): ]
@@ -497,13 +611,35 @@
 })
 #v(0.1em)
 #[#show raw: set text(6.8pt)
-#text(7.4pt, fill: ink2)[*Configurations.* Main values: _integrated_, the engine on `loop` as timed by gate G1 at
-#raw(sm.integrated.revision) (LC: #raw(sm.integrated.lc_revision)\; both ancestors of `loop`; the later ct-simplify merge was not
-re-timed): #sm.integrated.inputs.map(i => inputs-word((inputs: i))).join(", ") per-point trees, Born and counterterm inputs, native loop stage (#raw(sm.integrated.native_build)).
-#if sm.dev != none [#dev-tag in the G1 rows (#box[$2 -> 2$] to #box[$2 -> 4$]): #raw(sm.dev.branch) #raw(sm.dev.revision) with #sm.dev.inputs.map(i => inputs-word((inputs: i))).join(", ") per-point inputs (timers
-#raw(sm.dev.commit), #raw(sm.dev.native_build)); ]#dev-tag in the #box[$2 -> 5$] rows: the validations of #raw(sm.dev_required.branch) with its
-production counterterm route, #records-text (generation, then single points)#if seven-untimed.len() > 0 [; G1 has not timed these rows yet, so their gate limits come from the providers' production times (20 Oct, DESIGN §1.3 Table 1b)]. Generation excludes model loading. Unbatched
-development timings, such as a seven-gluon point with its rotation check, are not in this table (@sevenglue).]]
+// G1 rows whose newer validation record only repeats part of G1's
+// comparison (summary.json validation.partial_repeats).
+#let repeat-rows = all-rows.filter(r => r.validation.at("partial_repeats", default: ()).len() > 0)
+// Those where G1's comparison stays, and those where an older record stays.
+#let g1-repeats = repeat-rows.filter(r => r.validation.configuration != "development_records")
+#let rec-repeats = repeat-rows.filter(r => r.validation.configuration == "development_records")
+#let and-list(xs) = xs.join(", ", last: " and ")
+#let repeat-text(r) = {
+  let v = r.validation
+  let x = v.partial_repeats.first()
+  let lost = v.references.map(y => y.short).filter(s => s not in x.references)
+  [#box(math-label(r.math)) (#x.points of #v.points#if lost.len() > 0 [, without #and-list(lost)])]
+}
+#let cfg-detail(id) = {
+  let x = C.at(id)
+  if id == "development" [#row-span(x.main_rows): #raw(x.branch) #raw(x.revision) with #inputs-text(x) per-point trees, Born and counterterm inputs; timers in scratch commit #raw(x.commit), build #raw(x.native_build)]
+  else if id == "development_records" {
+    let g = kind-keys(x.main_rows, "g1")
+    let same = cfg-used("development") and C.development.branch == x.branch
+    [#rec-rows-text(x, cap: true): #if same [that branch's validations] else [the validations of #raw(x.branch)] with #inputs-text(x) inputs and the production counterterm route (#records-short\; @tab:validation)#if g.len() > 0 [, newer than G1's revision], #x.conditions#if repeat-rows.len() > 0 [. Partial repeats leave the more complete comparison in the table: #(
+      (if g1-repeats.len() > 0 { ([#g1-repeats.map(repeat-text).join([ and ]) keep G1's (@tab:g1values)],) } else { () })
+      + rec-repeats.map(r => { let v = r.validation; let y = v.partial_repeats.first(); [#box(math-label(r.math)) (#inc-name(y.record), #y.points of #v.points points) the #inc-name(v.record) increment's (#raw(v.revision))] })
+    ).join([, ])]#if seven-untimed.len() > 0 [. G1 has not timed the #row-span(kind-keys(x.main_rows, "records")) rows yet (#raw(ms.pending.batched)): their gate limits come from the providers' production times (20 Oct, DESIGN §1.3 Table 1b)]]
+  }
+  else if id == "integrated" [#row-span(x.main_rows): the engine on `loop` as timed by gate G1 at #raw(x.revision)#if x.lc_revision != none [ (LC: #raw(x.lc_revision))], build #raw(x.native_build)]
+}
+#text(7.4pt, fill: ink2)[*Configurations* (main-configuration rule of `scripts/build_summary.py`; `data/summary.json` names the
+configuration and source of every value). #measured-ids.map(cfg-detail).join([. ]). Generation excludes model loading;
+unbatched development timings (e.g. a seven-gluon point with its rotation check) are not in this table (@sevenglue).]]
 
 // Figure 1: the batched full-colour time of each G1 row against its gate
 // limit and the providers, on a log scale (data/summary.json).
@@ -513,12 +649,13 @@ development timings, such as a seven-gluon point with its rotation check, are no
 #let fig-h = 12pt
 #let xpos(t) = fig-w * (calc.log(t, base: 10) - fig-lo) / (fig-hi - fig-lo)
 #let fig-ticks = ((0.001, [1 ms]), (0.01, [10 ms]), (0.1, [100 ms]), (1.0, [1 s]), (10.0, [10 s]))
-#let fig-rows = S.groups.map(g => g.rows).flatten().filter(r => r.full_colour.at("fastest", default: none) != none)
+#let fig-rows = all-rows.filter(r => r.full_colour.at("fastest", default: none) != none)
 #let fig-dot(fill: none, stroke: none) = circle(radius: 2.9pt, fill: fill, stroke: stroke)
+// One value per row: Table 1's main value (the most recent configuration).
 #let fig-row(r) = {
   let c = r.full_colour
-  let (m, d) = (c.main, c.dev)
-  let g = if "gate" in m { m.gate } else if "gate" in d { d.gate } else { none }
+  let m = c.main
+  let g = m.at("gate", default: none)
   box(width: fig-w, height: fig-h, {
     for (t, _) in fig-ticks { place(dx: xpos(t), line(start: (0pt, 0pt), end: (0pt, fig-h), stroke: 0.4pt + luma(222))) }
     place(dy: fig-h / 2, line(start: (0pt, 0pt), end: (fig-w, 0pt), stroke: 0.4pt + luma(205)))
@@ -534,28 +671,20 @@ development timings, such as a seven-gluon point with its rotation check, are no
           rotate(45deg, square(size: 3.4pt, fill: if fast { luma(40) } else { luma(165) }, stroke: 0.4pt + white)))
       }
     }
-    let ms = if m.status == "measured" { m.seconds_per_point } else { none }
-    let ds = if d.status == "measured" { d.seconds_per_point } else { none }
-    if ms != none and ds != none {
-      place(dx: xpos(ds), dy: fig-h / 2 - 0.5pt, line(start: (0pt, 0pt), end: (xpos(ms) - xpos(ds), 0pt), stroke: 1pt + luma(130)))
-    }
-    if ds != none { place(dx: xpos(ds) - 2.9pt, dy: fig-h / 2 - 2.9pt, fig-dot(fill: white, stroke: 1.3pt + rgb("#e08214"))) }
-    if ms != none { place(dx: xpos(ms) - 2.9pt, dy: fig-h / 2 - 2.9pt, fig-dot(fill: navy, stroke: 0.6pt + white)) }
+    if m.status == "measured" { place(dx: xpos(m.seconds_per_point) - 2.9pt, dy: fig-h / 2 - 2.9pt, fig-dot(fill: navy, stroke: 0.6pt + white)) }
   })
 }
 #figure(
   caption: [*Batched full colour against the gate* ($B = 128$ or the largest batch, finite part; the rows of @tab:summary with a
-    matched provider). Filled: the engine on `loop` (integrated; absent where G1 timed only $B = 1$ or the process is refused);
-    open: native inputs (#dev-tag); diamonds: the providers, the darkest the fastest; red line: the gate limit, the shaded side
-    fails. Values: @tab:summary; the ratios and bands: @tab:g1batch.],
+    matched provider). Dots: pyAmpliCol's values of @tab:summary, the most recent measured configuration (#measured-ids.filter(id => C.at(id).main_cells.full_colour.len() > 0 and C.at(id).kind == "g1").map(cfg-clause).join([\; ])#if C.at("development", default: none) != none and C.development.main_cells.full_colour.len() > 0 [\; development, not yet on `loop`]); diamonds: the providers, the darkest the fastest; red line: the gate limit, the shaded side
+    fails. The ratios and bands of both G1 configurations: @tab:g1batch.],
   {
     set text(7pt, font: sans, stretch: 87.5%)
     grid(columns: (3.2cm, fig-w, 1fr), column-gutter: 6pt, row-gutter: 3pt, align: (right + horizon, left + horizon, left + horizon),
       ..fig-rows.map(r => {
-        let c = r.full_colour
-        let mark(x) = if x == c.main { box(baseline: -0.5pt, circle(radius: 2.4pt, fill: navy)) } else { box(baseline: -0.5pt, circle(radius: 2.1pt, fill: white, stroke: 1.1pt + rgb("#e08214"))) }
-        let chips = (c.main, c.dev).filter(x => "gate" in x).map(x => [#mark(x) #gate-chip(x.gate)])
-        (text(8.6pt, font: "Libertinus Serif", math-label(r.math)), fig-row(r), if chips.len() == 0 { plain-chip[no gate] } else { chips.join(h(2pt)) })
+        let m = r.full_colour.main
+        let chip = if m.status != "measured" { plain-chip[#status-title(m)] } else if "gate" in m { gate-chip(m.gate) } else { plain-chip[no gate] }
+        (text(8.6pt, font: "Libertinus Serif", math-label(r.math)), fig-row(r), chip)
       }).flatten(),
       [], box(width: fig-w, height: 9pt, for (t, l) in fig-ticks { place(dx: xpos(t) - 1cm, box(width: 2cm, align(center, text(fill: ink2, l)))) }), [],
     )
@@ -567,7 +696,30 @@ development timings, such as a seven-gluon point with its rotation check, are no
 // =============================================================== STATUS ==
 = Status at this milestone <status>
 
-#let int-gen = gated.filter(p => slice-c(p) != none and not refused(slice-c(p)))
+// The gate box reads Table 1's values (data/summary.json): the gated G1
+// rows' full-colour main cells, their configuration and verdicts, and for
+// B = 1 the same G1 configuration's records (and its one-lane twin).
+#let s-gated = all-rows.filter(r => r.kind == "g1" and r.full_colour.gate_rule == "G1")
+// Rows whose batched timing is pending, and rows without a matched provider
+// (summary.json full_colour.main.status, full_colour.gate_rule).
+#let s-pending = all-rows.filter(r => r.full_colour.main.status == "pending")
+#let s-no-gate = all-rows.filter(r => r.full_colour.gate_rule == "no gate (no matched provider)")
+#let s-main(r) = r.full_colour.main
+#let s-gate(r) = { let m = s-main(r); if m.status == "measured" { m.at("gate", default: none) } else { none } }
+#let s-ids = s-gated.filter(r => s-main(r).status == "measured").map(r => s-main(r).configuration).dedup()
+#let s-with(st) = s-gated.filter(r => s-gate(r) != none and s-gate(r).status == st)
+#let s-decided = s-gated.filter(r => s-gate(r) != none and "decision" in s-gate(r))
+#let s-at-one(suffix, st) = s-gated.filter(r => {
+  let m = s-main(r)
+  let name = m.at("g1_configuration", default: none)
+  name != none and status(gproc(r.key), cfg(gproc(r.key), name + suffix), "1") == st
+})
+#let s-lanes = s-gated.any(r => { let n = s-main(r).at("g1_configuration", default: none); n != none and cfg(gproc(r.key), n + "/L1") != none })
+#let s-config(id) = {
+  let x = C.at(id)
+  if id == "integrated" [#inputs-text(x) per-point inputs on `loop` (G1 at #raw(x.revision))]
+  else [#inputs-text(x) per-point inputs on #raw(x.branch) #raw(x.revision) (#lab(x)#if x.at("integration", default: none) != none [ as #x.integration])]
+}
 #grid(columns: (1fr, 1fr), gutter: 8pt,
   box-note[
     #set par(justify: false)
@@ -585,15 +737,19 @@ development timings, such as a seven-gluon point with its rotation check, are no
     set par(justify: false)
     [*Gate G1* (@g1; finite part, $2 -> 3$ and beyond)]
     [
-      - *On `loop` (integrated): not met.* It fails every gated process it generates: at $B = 128$ at #ratio-range(int-big)
-        of the binding limit (Python per-point inputs take #pct-range(inputs-share) of the
-        time), and at #ratio-range(int-one-only-lim) for #names(int-one-only), timed at $B = 1$ only. It refuses
-        #names(int-refused) ($Z$ fermion signs, WP3.2; Furry zeros, WP3.5).
-      - *Native inputs* #dev-tag (WP3.1, not yet integrated) at $B = 128$: #dev-pass.len() of #gated.len() pass#if dev-decided.len() > 0 [
-        (#decided-text(dev-decided))]#if dev-open.len() > 0 [, #names(dev-open) open], #names(dev-fail) fails
-        (#dev-fail.map(p => [×#fixed(lim(p, dev-c(p), big), 2)]).join([, ]) of its limit).
-        At $B = 1$ #if one-pass.len() == 0 [no process passes] else [#one-pass.len() pass] with 16 lanes (#l1-pass.len() with one lane).
-      - *$2 -> 5$:* not timed yet (`measure-g1-7leg`)#for r in S.groups.map(g => g.rows).flatten().filter(r => r.full_colour.at("reference", default: none) != none and r.full_colour.reference.missing_production.len() > 0) [\; #math-label(r.math) has no complete gate limit (#r.full_colour.reference.missing_production.join(", ") production not measured)]\; $g g -> g g g g g$ has no matched provider and is reported without a gate.
+      - *Most recent configuration* (Table 1 and Figure 1): #s-ids.map(s-config).join([; ]) at $B = 128$:
+        #s-with("pass").len() of #s-gated.len() pass#if s-decided.len() > 0 [ (#s-decided.map(r => { let x = s-gate(r); [#math-label(r.math) by #x.decision (#fixed(x.ratio_to_limit, 2) of its limit, band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2))] }).join([, ]))]#if s-with("open").len() > 0 [, #row-names(s-with("open").map(r => r.key)) open]#if s-with("fail").len() > 0 [, #row-names(s-with("fail").map(r => r.key)) #if s-with("fail").len() == 1 [fails] else [fail]
+        (#s-with("fail").map(r => [×#fixed(s-gate(r).ratio_to_limit, 2)]).join([, ]) of the limit)].
+        At $B = 1$ #if s-at-one("", "pass").len() == 0 [no process passes] else [#s-at-one("", "pass").len() pass] with 16 lanes#if s-lanes [ (#s-at-one("/L1", "pass").len() with one lane)].
+#if not cfg-used("integrated") [
+      - *On `loop` (integrated, #inputs-text(C.integrated) per-point inputs): not met* (history, @g1). It fails every gated process it
+        generates, at #ratio-range(int-big) of the binding limit at $B = 128$ (the Python inputs take
+        #pct-range(inputs-share) of the time) and at #ratio-range(int-one-only-lim) for #names(int-one-only), timed at $B = 1$ only,
+        and refuses #names(int-refused) ($Z$ fermion signs, WP3.2; Furry zeros, WP3.5). G-int brings the native inputs to `loop`.
+]
+#if s-pending.len() > 0 [
+      - *#row-span(s-pending.map(r => r.key)):* not timed yet (#s-pending.map(r => r.full_colour.main.package).dedup().map(raw).join(", "))#for r in s-pending.filter(r => r.full_colour.at("reference", default: none) != none and r.full_colour.reference.missing_production.len() > 0) [\; #math-label(r.math) has no complete gate limit (#r.full_colour.reference.missing_production.join(", ") production not measured)]#if s-no-gate.len() > 0 [\; #row-names(s-no-gate.map(r => r.key)) #if s-no-gate.len() == 1 [has] else [have] no matched provider and #if s-no-gate.len() == 1 [is] else [are] reported without a gate].
+]
     ]
   }),
 )
@@ -604,10 +760,12 @@ development timings, such as a seven-gluon point with its rotation check, are no
     *In development* (branches, not on `loop`; HANDOFF §6)
     #set text(8.3pt)
     - *Generation at scale* (WP3.1 G-int, `work/v2-generation-scale`): native trees, Born and counterterm inputs per point,
-      native families and schedules, regeneration-free artifacts. Its validations are the #dev-tag lines of the $2 -> 5$ rows
-      of @tab:summary; integrating it is the next milestone, after which G1 is re-measured on the integrated configuration.
+      native families and schedules, regeneration-free artifacts. Its G1 timings and validations are the values of
+      @tab:summary and @fig:gate; integrating it is the next milestone, after which G1 is re-measured on `loop` and
+      @tab:summary shows `loop`'s values (the most recent then).
     - *Rust ports* (HANDOFF §0.4): A0 and A1–A2 are on `loop` (not switched on); seeds (B) and cells (C) passed their phase-0
-      audits and wait for G-int; lowering (D) is in a fix round; A3 (counterterm-lowered model in the native DAG) is open.
+      audits and wait for G-int; lowering (D) is in a fix round; A3 (native DAG of the counterterm-lowered model) is integrated
+      into `work/v2-slice` (`c29d5899`, not switched on), not yet on `loop`.
     - *Artifact portability* (partial branch) and the seven-leg G1 rows (`measure-g1-7leg`, specifications and streams).
   ],
   box-note(fill: white, stroke: 0.6pt + luma(205))[
@@ -615,7 +773,8 @@ development timings, such as a seven-gluon point with its rotation check, are no
     *Missing or incomplete*
     #set text(8.3pt)
     - Electroweak loops, Goldstones and the complex-mass scheme (WP3.2): $g g -> t overline(t) e^- e^+ g$ (EW) not started;
-      $Z$ couplings on loop quark lines refused on `loop` ($V$+jets; $g g -> t overline(t) e^- e^+ g$ (QCD) by inference).
+      $Z$ couplings on loop quark lines refused on `loop` ($V$+jets; $g g -> t overline(t) e^- e^+ g$ (QCD) by inference),
+      generated on the development branch.
     - Batched timings of the $2 -> 5$ set; LC timings of the $V$+jets rows; provider protocol-mode columns.
     - Seven-gluon generation cost on the WP3.1 branch: #let g7r = meas.required_native.processes.gg_ggggg
       #minutes(g7r.generate_s + g7r.export_s) with the plan export (generation #minutes(g7r.generate_s), mostly the
@@ -638,12 +797,15 @@ development timings, such as a seven-gluon point with its rotation check, are no
       pyAmpliCol's block spread and the provider's repeat spread; a gate whose band contains the limit is *open*.
     - *Timing boundary.* pyAmpliCol: the public v2 runtime call (`NativeExecutor.evaluate`) for a batch of $B$ distinct
       points, everything included (per-point inputs, loop stage, assembly). Providers have no batch API: one time per point
-      serves every $B$. Generation: pyAmpliCol `LoopSlice.generate` plus the plan export, one thread; MadLoop graph
-      generation, export and compilation; Recola process generation; OpenLoops libraries are prebuilt (no generation time).
-    - *Labels.* Development measurements carry the branch and commit. In @tab:summary they are secondary lines
-      (#dev-tag) and never a main value, a colour or a verdict chip of the main value; the detailed G1 tables colour both
-      configurations, each labelled. Missing values are marked, never estimated or extrapolated; test durations are never
-      used as event timings. The legacy per-diagram engine's timings of 18 October are history (data kept in
+      serves every $B$. Generation: pyAmpliCol `LoopSlice.generate` plus the plan export, in G1 on one idle pinned core; a
+      development record's generation in @tab:summary ran on the #C.development_records.conditions_short (threads per increment:
+      @tab:validation), without a multiplier in a G1 row; MadLoop graph generation, export and compilation; Recola process
+      generation; OpenLoops libraries are prebuilt (no generation time).
+    - *Labels.* @tab:summary and @fig:gate show the most recent measured configuration of each cell
+      (main-configuration rule of `scripts/build_summary.py`; `data/summary.json` names the configuration and source of every
+      value); their title line, reading guide and column header state it once, with branch and commit, and say when it is a
+      development measurement not yet on `loop`. The detailed G1 tables (@g1) colour both configurations, each labelled.
+      Missing values are marked, never estimated or extrapolated; test durations are never used as event timings. The legacy per-diagram engine's timings of 18 October are history (data kept in
       `data/measurements.json`, not shown).
   ]
 })
@@ -913,8 +1075,8 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
   - Seven-leg rows ($u overline(u) -> e^- e^+ d overline(d) g$, $u overline(u) -> e^- e^+ g g g$,
     $g g -> t overline(t) e^- e^+ g$, $u overline(u) -> g g g g g$, $g g -> g g g g g$)
     need the WP3.1 generator and are added by the follow-on package
-    `measure-g1-7leg`; $g g -> g g g g g$ has no matched provider timing
-    (addendum F, H): reported without a gate.
+    `measure-g1-7leg`#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) #if s-no-gate.len() == 1 [has] else [have] no matched provider timing
+    (addendum F, H): reported without a gate].
 ]
 
 #let sp-int = speedup-at("1")
@@ -1266,9 +1428,15 @@ lower multiplicities and existing references.
 #let rn-max(rec, k) = { let v = rec.max_deviation.values().filter(d => k in d).map(d => d.at(k)); if v.len() == 0 { none } else { calc.max(..v) } }
 #let rn-refs(rec) = rec.max_deviation.keys().map(k => (madloop: "ML", recola: "Rc", openloops: "OL", njet_dd_oneloop_R1: "NJet DD", njet_double_R1: "NJet R1", njet_double_R2: "NJet R2", catani: "Catani").at(k, default: k)).join(", ")
 #let rn-label(key) = { let r = S.groups.map(g => g.rows).flatten().find(r => r.key == key); math-label(r.math) + if key.ends-with("_qcd") [ (QCD)] }
+// The records of this table's rows (the newest per process), each with its
+// revision, the generation threads its increment states and its rows.
+#let rn-records-text = rn.processes.values().map(x => x.record).dedup().map(rec => {
+  let x = rn.processes.values().find(y => y.record == rec)
+  [#inc-name(rec) increment (#raw(x.revision)\; #C.development_records.threads.at(x.revision, default: "threads not recorded")) for #rn.processes.pairs().filter(((k, y)) => y.record == rec).map(((k, y)) => box(rn-label(k))).join([, ])]
+}).join([\; ])
 #block(breakable: false)[#figure(kind: table,
-  caption: [*Native validation of the required set* #dev-tag (#raw(rn.branch)\; #records-text): generation in one thread
-    (`LoopSlice.generate`, then the plan export; peaks of each stage), then binary64 virtuals with native per-point inputs and
+  caption: [*Native validation of the required set* #dev-tag (#raw(rn.branch), DESIGN WP3.1: #rn-records-text): generation
+    (`LoopSlice.generate`, then the plan export; peaks of each stage; #C.development_records.conditions_short), then binary64 virtuals with native per-point inputs and
     the production counterterm route at the fixture points, against the references committed on that branch
     (`tests/fixtures/loop/required`; fixture tolerance #sci(rn.processes.values().first().tolerance, d: 0)). Largest deviation
     over the references and points, metric of @tab:summary; the per-reference values are in `data/measured.json`. For
@@ -1281,7 +1449,7 @@ lower multiplicities and existing references.
     table.header[Process][References][Born][Finite][$1 slash epsilon$][$1 slash epsilon^2$][Estimate $E$][Generation + export],
     ..rn.processes.pairs().map(((key, rec)) => (
       text(8.4pt, font: "Libertinus Serif", rn-label(key)),
-      tiny[#rn-refs(rec) · #rec.points.len() pts],
+      tiny[#rn-refs(rec) · #rec.points.len() #if rec.points.len() == 1 [pt] else [pts]],
       ..coeff.map(k => sci(rn-max(rec, k))),
       if rec.stability_estimate_per_point.all(e => e != none) { rec.stability_estimate_per_point.map(e => sci(e)).join(", ") } else { dim[—] },
       [#dur(rec.generate_s + rec.export_s) #tiny[#fixed(calc.max(rec.generate_peak_gib, rec.export_peak_gib), 1) GiB]],
@@ -1295,8 +1463,8 @@ lower multiplicities and existing references.
 The $g g -> t overline(t) e^- e^+ g$ (QCD) finite part deviates by #sci(ttq-errs.last()) at one of its three points and by at
 most #sci(ttq-errs.at(-2)) at the others: the point's known binary64 conditioning (earlier record, DESIGN WP3.1 fourth
 increment: #ttq-old.validation). The electroweak target is not started (WP3.2). The $u overline(u) -> g g g g g$ row comes
-from #rn.processes.uux_ggggg.record.split(",").first(), the newest record of that process: the eighth increment's re-run on
-the merged head does not include it. It uses the same production counterterm route; its check is in @tab:sevencheck.
+from #rn.processes.uux_ggggg.record.split(",").first(), the newest record of that process: the later re-runs on the merged
+heads (eighth and ninth increments) do not include it. It uses the same production counterterm route; its check is in @tab:sevencheck.
 
 // ========================================================== SEVEN GLUONS ==
 = Seven gluons: NJet and pyAmpliCol <sevenglue>
@@ -1356,20 +1524,33 @@ the unrotated seven-gluon points NJet keeps only 4–6 digits in double precisio
 
 #let g7 = rn.processes.gg_ggggg
 #let g7-dd = g7.max_deviation.njet_dd_oneloop_R1
+// An earlier record with more points (measured.json required_native
+// superseded), cited beside the newest one.
+#let g7-old = rn.at("superseded", default: (:)).at("gg_ggggg", default: none)
+#let pts-word(n) = if n == 1 [point] else [points]
+// The comparison Table 1 keeps (VALIDATION_RULE of scripts/build_summary.py):
+// the newest record, or the older, more complete one it only repeats part of.
+#let g7-row = all-rows.find(r => r.key == "gg_ggggg")
+#let g7v = (g7, ..if g7-old != none { (g7-old,) } else { () }).find(x => x.revision == g7-row.validation.revision)
+#let g7v-dd = g7v.max_deviation.njet_dd_oneloop_R1
+#let g7v-within = g7v.stability_estimate_per_point.zip(g7v.max_error_per_point).all(((e, d)) => e != none and e >= d)
+// The newest record's deviations at the points it re-ran, against the kept ones.
+#let g7-same = g7.points.enumerate().all(((i, q)) => q in g7v.points and g7.max_error_per_point.at(i) == g7v.max_error_per_point.at(g7v.points.position(x => x == q)))
 On the WP3.1 branch (@tab:validation) the full $g g -> g g g g g$ virtual, with the counterterms of the recursion and native
-per-point inputs, top-free with $N_f = 5$, agrees with NJet's double-double values to #sci(g7-dd.finite) in the finite part
-(per point: #g7.max_error_per_point.map(e => sci(e)).join(", ") over all references) and to #sci(g7-dd.double_pole) in the
-double pole; each point's rotation plus reduction-direction estimate bounds its difference. Generation took
+per-point inputs, top-free with $N_f = 5$, agrees with NJet's double-double values to #sci(g7v-dd.finite) in the finite part
+(per point: #g7v.max_error_per_point.map(e => sci(e)).join(", ") over all references, #pts-word(g7v.points.len()) #g7v.points.map(str).join(", "), #inc-name(g7v.record) increment) and to #sci(g7v-dd.double_pole) in the
+double pole; #if g7v-within [each point's rotation plus reduction-direction estimate bounds its difference] else [estimates #g7v.stability_estimate_per_point.map(e => if e == none [—] else { sci(e) }).join(", ")].#if g7v != g7 [ The
+#inc-name(g7.record) increment re-ran #pts-word(g7.points.len()) #g7.points.map(str).join(", ")#if g7-same [ with equal deviations]\; @tab:summary keeps the more complete comparison.] Generation (#inc-name(g7.record) increment) took
 #minutes(g7.generate_s) at #fixed(g7.generate_peak_gib, 1) GiB and the plan export #minutes(g7.export_s) at
 #fixed(g7.export_peak_gib, 1) GiB (peak RSS of each stage; #sig(g7.plan_json_mb) MB of plan JSON; the whole validation run, point
 evaluations included, peaked at #fixed(g7.max_rss_gib, 1) GiB), inside
-addendum H's budget (hours, below 150 GB). DESIGN WP3.1 (eighth increment) attributes the cost: 325 s before the
-counterterm recursion, 1,122 s with its counterterm program, 2,766 s once poles-uvir's always-generated companion merged (its
-seed table builds generic seeds; making it lean is open). A point with its rotation and reduction-direction checks took
-#g7.seconds_per_point_unbatched.map(t => sig(t)).join(", ") s: single-point development evaluations, unpinned, with up to
-eight threads (the workspace sets `RAYON_NUM_THREADS=8`), so not a batched one-thread time and not comparable with NJet's
-#sig(meas.njet_single_evaluation.standard.mean_s) s per evaluation on one pinned core. No batched seven-gluon timing exists yet;
-@tab:summary therefore has none.
+addendum H's budget (hours, below 150 GB). DESIGN WP3.1 attributes the cost: 325 s before the counterterm recursion,
+1,122 s with its counterterm program, 2,766 s once poles-uvir's always-generated companion merged (eighth increment), and
+2,652 s after the ct-simplify merge (ninth increment, this record), 1,843 s of it the companion's seed table, which builds
+generic seeds (making it lean is open). A point with its rotation and reduction-direction checks took
+#g7.seconds_per_point_unbatched.map(t => sig(t)).join(", ") s, a single-point development evaluation (#C.development_records.threads.at(g7.revision, default: "threads not recorded")):
+not a batched one-thread time and not comparable with NJet's
+#sig(meas.njet_single_evaluation.standard.mean_s) s per evaluation on one pinned core. No batched seven-gluon timing exists yet.
 
 == Validation without a matched provider
 
@@ -1377,7 +1558,7 @@ eight threads (the workspace sets `RAYON_NUM_THREADS=8`), so not a batched one-t
 #let uxr = rn.processes.uux_ggggg
 #let ux = uxr.max_deviation
 #let ux-agree = meas.provider_generation.processes.uux_ggggg.reference.maximum_provider_relative_error
-#let g7-cat = g7.max_deviation.catani
+#let g7-cat = g7v.max_deviation.catani
 #block(breakable: false)[#figure(kind: table,
   caption: [*Checks of the seven-leg QCD results*, #dev-tag on `work/v2-generation-scale`, except the Ward row (WP2.5 on
     `loop`); binary64, all three Laurent coefficients, deviation metric of @tab:summary. NJet values: fixture
@@ -1386,10 +1567,10 @@ eight threads (the workspace sets `RAYON_NUM_THREADS=8`), so not a batched one-t
     columns: (4.4cm, 1fr, 2.9cm),
     align: left + horizon, inset: (x: 4pt, y: 2.8pt), stroke: tstroke, fill: thead-fill,
     table.header[Check][Result][Status],
-    [$g g -> g g g g g$ full virtual against NJet (top-free, $N_f = 5$), #g7.points.len() points (#g7.record.split(",").first())],
-    [Born ≤ #sci(g7-dd.born), finite ≤ #sci(g7-dd.finite), single pole ≤ #sci(g7-dd.single_pole), double pole ≤ #sci(g7-dd.double_pole)\;
-      Catani poles: single ≤ #sci(g7-cat.single_pole), double ≤ #sci(g7-cat.double_pole)\; estimates #g7.stability_estimate_per_point.map(e => sci(e)).join(", ")],
-    [#if g7.passed [passed] else [failed] (tolerance #sci(g7.tolerance, d: 0))],
+    [$g g -> g g g g g$ full virtual against NJet (top-free, $N_f = 5$), #g7v.points.len() #pts-word(g7v.points.len()) (#inc-name(g7v.record) increment#if g7v != g7 [\; #inc-name(g7.record): #pts-word(g7.points.len()) #g7.points.map(str).join(", ")])],
+    [Born ≤ #sci(g7v-dd.born), finite ≤ #sci(g7v-dd.finite), single pole ≤ #sci(g7v-dd.single_pole), double pole ≤ #sci(g7v-dd.double_pole)\;
+      Catani poles: single ≤ #sci(g7-cat.single_pole), double ≤ #sci(g7-cat.double_pole)\; estimates #g7v.stability_estimate_per_point.map(e => sci(e)).join(", ")],
+    [#if g7v.passed [passed] else [failed] (tolerance #sci(g7v.tolerance, d: 0))],
     [Top-free full virtual against NJet at lower multiplicity],
     [#nv.topfree.lower.map(l => [#math-label(l.label): #l.value]).join([; ]) (`test_loop_v2_topfree.py`)],
     [passed],
@@ -1433,8 +1614,8 @@ eight threads (the workspace sets `RAYON_NUM_THREADS=8`), so not a batched one-t
 #figure(kind: table,
   caption: [*Capability matrix* of the v2 engine on `loop` at #ms.engine_revision, with branch work marked.],
   tstyle(table(
-    columns: (3.5cm, 1.85cm, 1fr), align: (x, y) => if x == 1 { center + horizon } else { left + horizon },
-    inset: (x: 4.5pt, y: 2.6pt), stroke: tstroke, fill: thead-fill,
+    columns: (3.2cm, 1.75cm, 1fr), align: (x, y) => if x == 1 { center + horizon } else { left + horizon },
+    inset: (x: 4.5pt, y: 2.2pt), stroke: tstroke, fill: thead-fill,
     table.header[Feature][Status][Boundary],
     ..caps.map(((f, s, b)) => (text(weight: "semibold", f), badge(s), b)).flatten(),
   )),
@@ -1648,17 +1829,20 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
     gates in slice-status.md).
   - *@tab:summary, @fig:gate:* `data/summary.json`, written by
     `scripts/build_summary.py` from `data/g1.json`, `data/measured.json`,
-    `data/milestone.json` and `tools/loop_benchmark/processes.json`; every
-    entry names its source (README).
+    `data/milestone.json` and `tools/loop_benchmark/processes.json` by its
+    main-configuration rule (the most recent measured configuration of each
+    cell; a newer check that only repeats part of an older comparison does not
+    replace it; revision ancestry from `data/milestone.json`); every entry
+    names its configuration and source (README).
   - *@tab:provgen:* HANDOFF §0.1 (addendum F); the provider generation records of
     @tab:summary (`data/summary.json`): `data/g1.json` for the G1 rows and the
     reference runs' records (`workspace/reference/runs/required/<process>/`,
     collected into `data/measured.json`) for the $2 -> 5$ rows; MadLoop's production-build times of the $2 -> 5$ rows: the
     same runs' `madloop-production-result.json`. *@tab:validation, @required, @sevenglue:* the native
     validations on `work/v2-generation-scale` (#records-text), records
-    `workspace/tmp/generation-scale/gint/val1/`, `val2/` and `i7/val/`, collected into
-    `data/measured.json`; the earlier $g g -> t overline(t) e^- e^+ g$ record: DESIGN WP3.1 fourth
-    increment. *Conventions:*
+    `workspace/tmp/generation-scale/gint2/after/`, `gint/val1/` and `i7/val/` (the earlier seven-gluon
+    points: `gint/val1/`), collected into `data/measured.json`; the earlier $g g -> t overline(t) e^- e^+ g$ record:
+    DESIGN WP3.1 fourth increment. *Conventions:*
     #link("https://cp3.irmp.ucl.ac.be/projects/madgraph/wiki/MadLoopStandaloneLibrary")[MadLoop standalone],
     #link("https://arxiv.org/abs/1605.01090")[Recola],
     #link("https://arxiv.org/abs/1907.13071")[OpenLoops 2].
@@ -1682,7 +1866,7 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
   - *@tab:sevencheck:* `data/measured.json`
     (`scripts/collect_milestone.py <workspace>`); top-free values at lower multiplicity: DESIGN WP3.1 and
     `test_loop_v2_topfree.py`; the seven-gluon generation history: DESIGN WP3.1
-    eighth increment. Memory in GiB = 2³⁰ bytes.
+    eighth and ninth increments. Memory in GiB = 2³⁰ bytes.
   - *@tab:caps, @arch:* `docs/development/loop_v2/DESIGN.md` §1–§3, §5.5,
     §5.6, §6, §10, §12, REQUIREMENTS_ADDENDUM J (counterterm rule) and the
     integration records above.
