@@ -8,6 +8,14 @@
   "profile": "release, codegen-units 1, thin LTO, rustc 1.97.1",
   "source": "workspace/reports/engine-v2/slice-status.md, measure-g1 integration (6c44c9f7): integrator release build of the merge commit; ct-simplify (b4d76cc3) changed no native input (stage --source accepted the build)"
  },
+ "development": {
+  "source": "git: 889af02c is on work/v2-generation-scale; 39824f9b is the G1 scratch commit on it (tag g1-native-inputs-39824f9b); workspace/reports/engine-v2/slice-status.md, measure-g1 integration block",
+  "what": "branch of the development revisions the G1 campaign timed (the gate tool records the scratch checkout as branch 'HEAD')",
+  "revisions": {
+   "889af02c": "work/v2-generation-scale",
+   "39824f9b": "work/v2-generation-scale"
+  }
+ },
  "integrated": [
   {
    "sha": "b71cf0e0",
@@ -37,208 +45,93 @@
   "d20e1c15",
   "f21495ed"
  ],
- "provider_generation": {
-  "source": "HANDOFF_22_10_2026.md \u00a70.1; REQUIREMENTS_ADDENDUM F",
-  "rows": [
-   {
-    "label": "g g -> g g g g g",
-    "madloop": "> 17 h graph generation alone; colour factors \u2248 89 days (MG5 estimate)",
-    "recola": "> 57 h, unfinished",
-    "openloops": "no public library",
-    "rule": "stopped 22 Oct; not to be restarted"
-   },
-   {
-    "label": "u overline(u) -> g g g g g",
-    "madloop": "12.2 h (5\u202f793 + 38\u202f040 + 122 s)",
-    "recola": "2.8 h (10\u202f220 s)",
-    "openloops": "no public library",
-    "rule": "over 45 min; results exist and are used"
-   },
-   {
-    "label": "g g -> g g g g",
-    "madloop": "2.4 h (285 + 8\u202f354 + 21 s)",
-    "recola": "34 min (2\u202f036 s)",
-    "openloops": "prebuilt ppjjjj",
-    "rule": "MadLoop over 45 min; results exist and are used"
-   },
-   {
-    "label": "g g -> t overline(t) e^- e^+ g",
-    "corr": "EW",
-    "madloop": "11 min",
-    "recola": "22 s",
-    "openloops": "ppllttj_ew",
-    "rule": "within 45 min"
-   },
-   {
-    "label": "g g -> t overline(t) e^- e^+ g",
-    "corr": "QCD",
-    "madloop": "2.7 min",
-    "recola": "29 s",
-    "openloops": "ppllttj",
-    "rule": "within 45 min"
-   },
-   {
-    "label": "g g -> t overline(t) g g",
-    "madloop": "3.6 min",
-    "recola": "63 s",
-    "openloops": "ppttjj",
-    "rule": "within 45 min"
-   },
-   {
-    "label": "u overline(u) -> e^- e^+ g g g",
-    "madloop": "2.4 min",
-    "recola": "16 s",
-    "openloops": "pplljjj",
-    "rule": "within 45 min"
-   },
-   {
-    "label": "u overline(u) -> e^- e^+ d overline(d) g",
-    "madloop": "56 s",
-    "recola": "8 s",
-    "openloops": "pplljjj",
-    "rule": "within 45 min"
-   },
-   {
-    "label": "2 -> 2, 2 -> 3 controls",
-    "madloop": "< 1 min",
-    "recola": "< 2 s",
-    "openloops": "\u2014",
-    "rule": "within 45 min"
-   }
-  ]
- },
  "gate_references": {
-  "source": "docs/development/loop_v2/DESIGN.md \u00a71.3 Table 1b (production mode, one pinned core, this host, measured 2026-10-20 for the design); the 2->4 rows are re-measured by G1 (data/g1.json), the seven-leg rows wait for measure-g1-7leg",
+  "source": "docs/development/loop_v2/DESIGN.md \u00a71.3 Table 1b (production mode, one pinned core, this host, measured 2026-10-20 for the design), OpenLoops and Recola transcribed as text; MadLoop's production-build times are read from the reference runs' records (data/measured.json provider_generation, madloop-production-result.json); scripts/build_summary.py computes the gate limit from the lower ends (MadLoop, 1.30 \u00d7 Recola, 1.30 \u00d7 OpenLoops) when every matched provider has a production time; the 2->4 rows are re-measured by G1 (data/g1.json), the seven-leg rows wait for measure-g1-7leg",
   "rows": [
    {
     "label": "u overline(u) -> e^- e^+ g g g",
     "openloops": "0.348\u20130.353",
-    "recola": "0.246\u20130.259",
-    "madloop": "1.41",
-    "threshold": "0.32"
+    "recola": "0.246\u20130.259"
    },
    {
     "label": "u overline(u) -> e^- e^+ d overline(d) g",
     "openloops": "0.053\u20130.055",
-    "recola": "0.035",
-    "madloop": "0.143",
-    "threshold": "0.045"
+    "recola": "0.035"
    },
    {
     "label": "g g -> t overline(t) e^- e^+ g",
     "corr": "QCD",
     "openloops": "0.425\u20130.433",
-    "recola": "0.59\u20130.67",
-    "madloop": "3.03\u20133.04",
-    "threshold": "0.55"
+    "recola": "0.59\u20130.67"
    },
    {
     "label": "g g -> t overline(t) e^- e^+ g",
     "corr": "EW",
     "openloops": "0.96\u20131.12",
-    "recola": "0.95\u20131.02",
-    "madloop": "6.90\u20137.09",
-    "threshold": "1.24"
+    "recola": "0.95\u20131.02"
    },
    {
     "label": "u overline(u) -> g g g g g",
     "openloops": "no library",
-    "recola": "not measured",
-    "madloop": "not measured",
-    "threshold": "\u2014"
+    "recola": "not measured"
    },
    {
     "label": "g g -> g g g g g",
     "openloops": "no library",
-    "recola": "none (\u00a70.1)",
-    "madloop": "none (\u00a70.1)",
-    "threshold": "no gate"
+    "recola": "none (\u00a70.1)"
    }
   ]
  },
  "required": {
-  "source_generation": "DESIGN.md WP3.1 status, third increment, 'Generation per process' (branch work/v2-generation-scale at 201efa8b; tools/loop_v2_generate.py measure --export, one thread, shared host at load 50\u201380)",
-  "source_validation": "DESIGN.md WP3.1 status, first to fourth increment (same branch); workspace/reports/engine-v2/njet-benchmark.md \u00a75.3",
+  "source_validation": "DESIGN.md WP3.1 status, first to fourth increment (branch work/v2-generation-scale); workspace/reports/engine-v2/njet-benchmark.md \u00a75.3",
   "rows": [
    {
     "label": "g g -> g g g g",
-    "gen_s": 26.7,
-    "export_s": 5.8,
-    "plan_mb": 15,
-    "peak_gib": 0.55,
     "validation": "Recola, OpenLoops, all coefficients: \u2264 8.9\u00d710\u207b\u00b9\u00b2 at point 0 and \u2264 4.4\u00d710\u207b\u00b9\u00b9 at point 2 (largest: finite part); point 1: 8.4\u00d710\u207b\u2079 in binary64 (flagged, estimate 3.0\u00d710\u207b\u2076), 7.1\u00d710\u207b\u00b9\u00b9 in DoubleFloat",
     "refs": "Recola, OL",
     "source": "workspace/tmp/generation-scale/runs/cmp_gg_gggg.json (points 0\u20132), cmp_gg_gggg_p1_stab.json (estimate), cmp_gg_gggg_p1_dd.json (DoubleFloat)"
    },
    {
     "label": "g g -> t overline(t) g g",
-    "gen_s": 20.9,
-    "export_s": 2.9,
-    "plan_mb": 5.0,
-    "peak_gib": 0.29,
     "validation": "MadLoop, OpenLoops \u2264 2.1\u00d710\u207b\u00b9\u00b9; Recola \u2264 1.0\u00d710\u207b\u00b9\u2070",
     "refs": "ML, Recola, OL"
    },
    {
     "label": "u overline(u) -> e^- e^+ g g g",
-    "gen_s": 9.9,
-    "export_s": 3.7,
-    "plan_mb": 2.3,
-    "peak_gib": 0.22,
     "validation": "all three providers \u2264 6.9\u00d710\u207b\u00b9\u00b3",
     "refs": "ML, Recola, OL"
    },
    {
     "label": "u overline(u) -> e^- e^+ d overline(d) g",
-    "gen_s": 9.5,
-    "export_s": 3.4,
-    "plan_mb": 1.1,
-    "peak_gib": 0.2,
     "validation": "all three providers \u2264 8.5\u00d710\u207b\u00b9\u00b3",
     "refs": "ML, Recola, OL"
    },
    {
     "label": "g g -> t overline(t) e^- e^+ g",
     "corr": "QCD",
-    "gen_s": 10.1,
-    "export_s": 3.6,
-    "plan_mb": 2.0,
-    "peak_gib": 0.2,
     "validation": "\u2264 3.6\u00d710\u207b\u00b9\u00b2 at two points; third point 5.7\u00d710\u207b\u2079 in binary64 (estimate 1.7\u00d710\u207b\u2079), MadLoop to 1.9\u00d710\u207b\u00b9\u2074 in DoubleFloat",
     "refs": "ML, Recola, OL"
    },
    {
     "label": "g g -> t overline(t) e^- e^+ g",
     "corr": "EW",
-    "gen_s": null,
-    "export_s": null,
-    "plan_mb": null,
-    "peak_gib": null,
     "validation": "not started: Feynman-gauge massive vectors, Goldstones, complex-mass scheme, generic EW counterterms (WP3.2)",
     "refs": "ML, Recola, OL"
    },
    {
     "label": "u overline(u) -> g g g g g",
-    "gen_s": 193,
-    "export_s": 69,
-    "plan_mb": 70,
-    "peak_gib": 2.4,
     "validation": "MadLoop \u2264 2.6\u00d710\u207b\u00b9\u00b2, Recola \u2264 6.1\u00d710\u207b\u00b9\u2070 (finite \u2264 2.9\u00d710\u207b\u00b9\u2070), all coefficients, three points",
     "refs": "ML, Recola"
    },
    {
     "label": "g g -> g g g g g",
-    "gen_s": 358,
-    "export_s": 109,
-    "plan_mb": 185,
-    "peak_gib": 5.8,
     "validation": "Born and poles against NJet (\u00a73); finite part waits for the native counterterms",
     "refs": "NJet (no gate)"
    }
   ]
  },
  "njet": {
-  "source": "workspace/reports/engine-v2/njet-benchmark.md \u00a76 (raw: workspace/reference/runs/njet/timing/*.json); paper arXiv:1209.0100 Table 5 (Xeon E3-1240, 3.3 GHz, NJet 1.0)",
+  "source": "workspace/reports/engine-v2/njet-benchmark.md \u00a76 (raw: workspace/reference/runs/njet/timing/*.json; the seven-gluon single evaluations are read from those records into data/measured.json njet_single_evaluation); paper arXiv:1209.0100 Table 5 (Xeon E3-1240, 3.3 GHz, NJet 1.0)",
   "protocol": "double precision, one pinned idle core of the shared EPYC 9754, 10 frozen points per channel, mean s/pt (spread \u2264 2 %), NJet's own -O2 -march=native build (gcc 15.2); every time includes the two evaluations of NJet's scaling test",
   "rows": [
    {
@@ -280,10 +173,6 @@
     "n211_ds": 4.19
    }
   ],
-  "single_evaluation": {
-   "standard": 71.2,
-   "desymmetrised": 1.22
-  },
   "double_double_s": 1990,
   "rss_mb": 69
  },
@@ -342,5 +231,56 @@
    ]
   },
   "catani_native_vs_njet": 2.3e-14
+ },
+ "status_notes": {
+  "source": "HANDOFF_24_10_2026.md sections 0.1, 2 (the integrated engine refuses V+jets) and 9 items 2 and 4; HANDOFF_22_10_2026.md section 0.1 (provider jobs stopped); data/g1.json (generation_error of the integrated rows); DESIGN.md WP3.2, WP3.5; DESIGN.md WP3.1 eighth increment (0ea83af2); src/pyamplicol/loops/v2/conventions.py on loop (FermionSignError for a loop-fermion vertex that is not a pure vector coupling: the Z on the loop quark lines of g g > t t~ e- e+ g, as in the V+jets rows); the configuration of the gg_ggggg validation: tests/fixtures/loop/required/gg_ggggg_njet.json names the scheme massless-qcd-nf5, for which tools/loop_v2_generate.py validate (work/v2-generation-scale, 0ea83af2) vetoes the top",
+  "what": "short attributions printed in Table 1 where the engine on loop refuses a process or a capability is not started, short labels of records and the configuration of a development record where the record does not carry it; measured numbers never come from here",
+  "notes": {
+   "uux_emepg": {
+    "refused": "Z fermion signs (WP3.2), Furry zeros (WP3.5)"
+   },
+   "uux_emepgg": {
+    "refused": "Z fermion signs (WP3.2), Furry zeros (WP3.5)"
+   },
+   "uux_emepddxg": {
+    "refused": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+    "refused_basis": "not run; as the V+jets rows of G1"
+   },
+   "uux_emepggg": {
+    "refused": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+    "refused_basis": "not run; as the V+jets rows of G1"
+   },
+   "gg_ttxemepg_qcd": {
+    "refused": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+    "refused_basis": "not run; Z on loop quark lines, as in the V+jets rows of G1"
+   },
+   "gg_ttxemepg_ew": {
+    "not_started": "EW loops (WP3.2)"
+   },
+   "uux_gggg": {
+    "madloop": "not exported: the g g > g g g g export took 2.4 h (HANDOFF section 0.1)"
+   },
+   "gg_ggggg": {
+    "validation": "top-free (particle_veto = [t]), Nf = 5",
+    "particle_veto": [
+     6
+    ],
+    "providers": "stopped 22 Oct; not to be restarted (HANDOFF section 0.1)"
+   }
+  }
+ },
+ "gate_decisions": {
+  "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~16:05 UTC (user answers to HANDOFF_24 section 10)",
+  "what": "user verdicts that replace a measured open (inconclusive) gate verdict; the measured ratio and band stay as measured",
+  "decisions": [
+   {
+    "process": "uux_uuxg",
+    "batch": "128",
+    "measured": "inconclusive",
+    "verdict": "pass",
+    "label": "user decision 2026-10-24",
+    "reason": "parity within the band (1.00 of the limit, band 0.90-1.10, after the single repeat of plan 5.8) is judged a pass"
+   }
+  ]
  }
 }
