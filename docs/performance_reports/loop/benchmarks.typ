@@ -226,13 +226,14 @@ every squared coupling order and all three Laurent coefficients, in binary64,
 double-double (DD) and arbitrary precision (AP). The engine is the recursive
 _v2_ engine: tree currents, loop topologies and loop numerators come from
 recursions, and no loop Feynman diagram is enumerated (@arch). Counterterms
-come from the tree recursion (WP2.2); in production they will be plain tree
-vertices inserted exactly once, without loop matching (addendum J; `ct-simplify`
-in flight). This report records *gate G1*, the first end-to-end measurement of
-v2 against MadLoop, Recola and OpenLoops (@g1), on the engine published on
-`loop` on 24 October (#ms.engine_revision, measured with the native-DAG merge
-that switches no production call site) and, as a development configuration,
-on the WP3.1 branch whose native per-point inputs are being integrated.
+come from the tree recursion (WP2.2) as plain tree vertices inserted exactly
+once, admitted by coupling orders and a public `particle_veto`, without loop
+matching (addendum J, on `loop` since #ms.engine_revision). This report records
+*gate G1*, the first end-to-end measurement of v2 against MadLoop, Recola and
+OpenLoops (@g1), measured on the engine of the first 24 October push (59badc7a)
+with the native-DAG merge (b71cf0e0, no production call site switched) and,
+as a development configuration, on the WP3.1 branch whose native per-point
+inputs are not yet integrated.
 
 #let g1-badge = {
   let n = gated.len()
@@ -284,18 +285,21 @@ on the WP3.1 branch whose native per-point inputs are being integrated.
 #grid(columns: (1fr, 1fr), gutter: 8pt,
   box-note(fill: white, stroke: 0.6pt + luma(205))[
     #set par(justify: false)
-    *In flight* (branches, not on `loop`)
+    *Paused 24 October, about 03:30 UTC* (agent quota until 27 October;
+    resume from `HANDOFF_24_10_2026.md`). On branches, not on `loop`:
     #set text(8.4pt)
     - *Generation at scale* (WP3.1 G-int, `work/v2-generation-scale`): native
       trees, Born and counterterm inputs, regeneration-free artifacts; timed
-      here as the native-input configuration; audit and integration next.
-    - *Rust ports* (HANDOFF §0.4): native loop DAG (A1–A2), seeds (B), cells
-      (C) and lowering (D), phase 0.
-    - *`ct-simplify`* (fix round after a refused integration): removes the
-      witness-table admission and loop matching (addendum J); a public
-      `particle_veto` replaces the internal top-free switch.
-    - *`measure-g1-7leg`*: the seven-leg G1 rows after WP3.1; *electroweak*
-      and complex mass (WP3.2) pending.
+      here as the native-input configuration. Not yet audited: after the slice
+      merge its $g g -> g g g g g$ (recursion counterterms, native inputs) still
+      matches NJet (finite $<= 4 times 10^(-9)$ at three points), but generation
+      took 46 min against 5.4 min before the merge (development measurement;
+      the cause is open).
+    - *Rust ports* (HANDOFF §0.4): A0 and A1–A2 are on `loop`, not yet switched
+      on; seeds (B) and cells (C) passed their phase-0 audits and wait for
+      G-int; lowering (D) is in an audit fix round.
+    - *Not started or partial:* `artifact-portability` (partial branch),
+      `measure-g1-7leg`; *electroweak* and complex mass (WP3.2).
   ],
   box-note(fill: white, stroke: 0.6pt + luma(205))[
     #set par(justify: false)
@@ -601,7 +605,7 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
     [*Native per-point inputs* (WP3.1 I3–I6: trees, Born, counterterm scalars in the executor)],
     [Python inputs #pct(calc.min(..inputs-share))–#pct(calc.max(..inputs-share)) of the integrated time],
     [measured, integrated ÷ native at equal $B$: #ratio-range(sp-int) at $B = 1$, #ratio-range(sp-big) at $B = 128$ ($2 -> 3$)],
-    [`generation-scale` (G-int, under integration)],
+    [`generation-scale` (G-int, branch; audit pending)],
     [*Compiled native trees* (kernels as the tree engine's SymJIT planes, lanes batched)],
     [native trees #pct(calc.min(..trees-share.map(t => t.s)))–#pct(calc.max(..trees-share.map(t => t.s))) of the native-input time; #gname(trees-share.sorted(key: t => t.s).last().p.key) #pct(trees-share.sorted(key: t => t.s).last().s)],
     [up to the share; ×#fixed(1 / (1 - calc.max(..trees-share.map(t => t.s))), 1) for the largest],
@@ -1170,7 +1174,7 @@ record prints KiB/10⁶ and the generation record GiB.
   ([Precision carriers], "supported", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; DD/AP point inputs are formed in Python Decimal until WP3.1.]),
   ([Native executor, schedules], "supported", [Rust, 16 lanes (also for a one-point call, a G1 lever), threads; G1 decision on the schedule-dependent stages (@tab:g1bm, provisional until compiled trees): M for pure-gluon LC from $n = 6$, B for every other class at $n <= 6$; F as oracle. The NinjaRS reduction runs serially. Development report: stage times, modelled kernel work, master-integral time.]),
   ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; relocation to another path tested on the same host and CPU. Loading regenerates the process (the `LoopSlice`) in Python and checks the plan digest, which addendum G forbids for prepared artifacts; WP3.1 removes it. The Rust/C/C++/Fortran SDK refuses v4 until WP3.1.]),
-  ([Counterterms (model UV, $R_2$)], "partial", [Counterterms from the tree recursion are the default route on `loop` since 24 October (WP2.2, a18b7599; constant-argument fix 59badc7a), site closure the test oracle; both still admit sites by the witness table. Production rule (addendum J): plain tree vertices inserted exactly once, admitted by coupling orders and `particle_veto`, no loop matching; `ct-simplify` removes the matching. Per point they are formed in Python on the slice, natively on the WP3.1 branch.]),
+  ([Counterterms (model UV, $R_2$)], "supported", [Plain tree vertices of the recursion inserted exactly once (WP2.2, a18b7599; addendum J, b4d76cc3), admitted by coupling orders and the public `particle_veto`; no witness table or loop matching in production. An unlowerable counterterm vertex that no tree of the request reaches is inert and recorded in the artifact; a reachable one is refused. Site closure is the test oracle. Per point they are formed in Python on `loop`, natively on the WP3.1 branch.]),
   ([Direct $R_2$], "deferred", [A bonus by the user's rule; bounded controls only.]),
   ([Electroweak, complex mass], "open", [Tree EW lanes fixed, the Dirac–Weyl class refused; loop EW, Goldstones and CMS are WP3.2.]),
   ([Required set], "progress", [On the WP3.1 branch seven of eight generate and six agree with their provider references in all coefficients (@tab:validation); $g g -> g g g g g$ is validated in Born and poles; the EW target is not started.]),
@@ -1321,15 +1325,16 @@ is the requested coupling orders, the exactly-once constraint and a public
 particle is dropped, and a vetoed particle is removed from every tree vertex,
 loop line and propagator of the generation, so loops and counterterms stay
 consistent. Nothing is matched to the loop (user, 23 October; addendum J).
-On `loop` (since 24 October) the counterterms come from the WP2.2 recursion
-(one counterterm order in the tree recursion, the default route, whose
-$g g -> g g g g g$ program leaves no rule to site closure, @tab:sevendev); it
-still admits counterterm sites by a witness table of divergent loop routings
-with a power-counting completeness check, as the site closure (the test
-oracle) does. The package `ct-simplify` removes the witness table and the matching from
-production and adds `particle_veto`, which replaces the internal top-free
-switch of @tab:sevencheck (then `particle_veto = [t]`); site closure and the
-witness machinery remain only as test oracles.
+On `loop` the counterterms come from the WP2.2 recursion (one counterterm
+order in the tree recursion, the default route, whose $g g -> g g g g g$
+program leaves no rule to site closure, @tab:sevendev) with this admission
+(`ct-simplify`, b4d76cc3): no witness table and no loop matching. A
+counterterm vertex that the model cannot lower and that no tree of the request
+reaches (the tree engine's own reachability, with the program's order limits
+and `particle_veto`) is inert and recorded in the artifact; a reachable one is
+refused. `particle_veto = [t]` replaces the internal top-free switch of
+@tab:sevencheck; site closure and the witness machinery remain only as test
+oracles.
 
 *Precision, stability and assembly.* Every kernel is generic over binary64,
 DoubleFloat, arbitrary-precision floats and exact rationals. A failed lane
@@ -1468,9 +1473,10 @@ exact carriers and the public interfaces.
   - *Status, in-flight work, decisions:* `data/milestone.json`, from the
     `Integrate …` merges of #ms.engine_revision since #ms.previous_loop;
     `workspace/reports/engine-v2/slice-status.md` (integration blocks,
-    DECISIONS 2026-10-23); `HANDOFF_22_10_2026.md` §0–§3; MASTER_PLAN
-    2026-10-23 entries; REQUIREMENTS_ADDENDUM A, D, F, G, H, I, J; DESIGN §5.7
-    (G1), §6.1, §12.4; the 24 October push (59badc7a, gate in slice-status.md).
+    DECISIONS 2026-10-23/24); `HANDOFF_24_10_2026.md`; MASTER_PLAN
+    2026-10-23/24 entries; REQUIREMENTS_ADDENDUM A, D, F, G, H, I, J; DESIGN §5.7
+    (G1), §6.1, §6.2, §12.4; the 24 October pushes (59badc7a and b4d76cc3,
+    gates in slice-status.md).
   - *@tab:provgen:* provider columns HANDOFF §0.1 (addendum F); pyAmpliCol
     column DESIGN WP3.1 third increment "Generation per process" on
     `work/v2-generation-scale` (201efa8b). *@tab:validation:* DESIGN WP3.1
