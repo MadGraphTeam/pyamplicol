@@ -314,8 +314,12 @@ def _values_of(summary: dict[str, Any]) -> dict[int, tuple]:
     return {int(i): tuple(v) for i, v in summary.get("values", {}).items()}
 
 
-def build(paths: list[Path]) -> tuple[dict[str, Any], dict[str, Any]]:
-    """The gate document and the per-point values document."""
+def build(
+    paths: list[Path], reference_root: Path | None = None
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """The gate document and the per-point values document. A MadLoop export
+    that moved since its run is found through ``madloop.export`` of the
+    specification under ``reference_root``."""
 
     records = [json.loads(path.read_text()) for path in paths]
     order = streams.keys()
@@ -518,8 +522,9 @@ def build(paths: list[Path]) -> tuple[dict[str, Any], dict[str, Any]]:
             }
             madloop = provider_summary.get("madloop")
             if madloop and "export" in madloop:
-                madloop["generation"] = _madloop_generation(Path(madloop["export"]))
-                madloop["export"] = _relative_export(madloop["export"])
+                export, name = _export_of(key, madloop["export"], reference_root)
+                madloop["generation"] = _madloop_generation(export)
+                madloop["export"] = name
         values_document["processes"][key] = {
             "pyamplicol": point_values,
             "providers": [
@@ -580,6 +585,20 @@ def build(paths: list[Path]) -> tuple[dict[str, Any], dict[str, Any]]:
     return document, values_document
 
 
+def _export_of(key: str, recorded: str, root: Path | None) -> tuple[Path, str]:
+    """The MadLoop export of a provider run and its name relative to the
+    reference root (the specification's ``madloop.export`` where the run's
+    export is that one, or moved there)."""
+
+    relative = streams.spec(key).get("madloop", {}).get("export")
+    path = Path(recorded)
+    if root is not None and relative:
+        archived = root / relative
+        if not path.exists() or path.resolve() == archived.resolve():
+            return archived, relative
+    return path, _relative_export(recorded)
+
+
 def _relative_export(path: str) -> str:
     """A MadLoop export path relative to the reference root (``runs/...``)."""
 
@@ -588,7 +607,10 @@ def _relative_export(path: str) -> str:
 
 
 def main(options: Any) -> int:
-    document, values = build(options.records)
+    import os
+
+    root = options.reference_root or os.environ.get("LOOP_REFERENCE_ROOT")
+    document, values = build(options.records, Path(root) if root else None)
     for item in options.meta or ():
         key, _, value = item.partition("=")
         document[key] = value

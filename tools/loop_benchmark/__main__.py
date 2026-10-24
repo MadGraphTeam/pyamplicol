@@ -106,6 +106,12 @@ def main(argv: list[str] | None = None) -> int:
         "--values-json", type=Path, help="also write the per-point values"
     )
     gate.add_argument(
+        "--reference-root",
+        type=Path,
+        help="provider reference root for MadLoop exports that moved "
+        "(default: $LOOP_REFERENCE_ROOT)",
+    )
+    gate.add_argument(
         "--meta",
         nargs="*",
         metavar="KEY=VALUE",
