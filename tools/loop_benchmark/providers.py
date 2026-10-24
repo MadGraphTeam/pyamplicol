@@ -531,6 +531,80 @@ def madloop_stages(
     }
 
 
+def imported(spec: dict, provider: str, trees: Trees) -> dict[str, Any]:
+    """An existing timing of the reference campaign (``timing`` of the
+    provider's specification, relative to the reference root), for a process
+    whose provider generation HANDOFF §0.1 forbids repeating. Its rows are the
+    campaign's points, which are the stream's first points (``streams.py``);
+    the record keeps the run's own core, settings and timing scope.
+    ``protocol_mode`` says whether its settings are the gate protocol's
+    (MadLoop: the production stability setting on a production build, poles
+    included as always; Recola: no IR-pole evaluation); a run outside the
+    protocol is reported beside the gate, never in it (``gate.py``)."""
+
+    relative = spec[provider]["timing"]
+    path = trees.root / relative
+    data = json.loads(path.read_text())
+    if data.get("provider") != provider or data.get("process_name") != spec["name"]:
+        raise RuntimeError(f"{relative} is not a {provider} result of {spec['name']}")
+    stream = streams.load(spec["name"])
+    reference = json.loads((path.parent / "points.json").read_text())
+    count = len(data["rows"])
+    if (
+        reference["points"][:count] != stream["points"][:count]
+        or reference["mu_r"][:count] != stream["mu_r"][:count]
+    ):
+        raise RuntimeError(f"{relative}: its points are not the stream's first points")
+    settings = data.get("settings", {})
+    if provider == "madloop":
+        flags = settings.get("fortran_flags", {})
+        protocol = bool(flags.get("production_build")) and "production" in str(
+            settings.get("requested_relative_accuracy", "")
+        )
+        mode = (
+            f"reference campaign: {settings.get('requested_relative_accuracy')}, "
+            f"{settings.get('stability_check')}, production build "
+            f"{flags.get('production_build')}"
+        )
+    elif provider == "recola":
+        poles = settings.get("compute_ir_poles")
+        protocol = poles == 0
+        mode = (
+            f"reference campaign: compute_ir_poles {poles}, Collier cache "
+            f"{settings.get('collier_cache')}"
+        )
+    else:
+        raise RuntimeError(f"no import of {provider} timings")
+    rows = [
+        {key: row[key] for key in ("born", "finite", "seconds", "raw") if key in row}
+        for row in data["rows"]
+    ]
+    out = {
+        "provider": provider,
+        "mode": mode,
+        "protocol_mode": protocol,
+        "version": data.get("version"),
+        "imported_from": relative,
+        "measured": _modified(path),
+        "timing_scope": data.get("timing_scope"),
+        "cpu": data.get("cpu"),
+        **_summary(rows, {}, data.get("process_wall_seconds", 0.0)),
+    }
+    out["setup"] = {
+        key: data[key]
+        for key in ("initial_call_seconds", "generation_seconds")
+        if key in data
+    }
+    return out
+
+
+def _modified(path: Path) -> str:
+    import datetime
+
+    stamp = datetime.datetime.fromtimestamp(path.stat().st_mtime, datetime.UTC)
+    return stamp.strftime("%Y-%m-%d %H:%M UTC")
+
+
 def main(options: Any) -> int:
     key = options.process
     spec = streams.spec(key)
@@ -556,7 +630,11 @@ def main(options: Any) -> int:
         start = time.perf_counter()
         reason = unavailable(spec, provider)
         try:
-            if reason is not None:
+            if "timing" in spec.get(provider, {}):
+                result = imported(spec, provider, trees)
+                if reason is not None:
+                    result["unavailable"] = reason
+            elif reason is not None:
                 result = {"provider": provider, "unavailable": reason}
             elif provider == "openloops":
                 result = openloops(spec, points, work, options.cpu, trees)

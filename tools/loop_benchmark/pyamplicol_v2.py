@@ -28,6 +28,14 @@ One run measures one process at one colour accuracy on one checkout:
    completed record has no failed point; rescue is off (no stability check,
    no escalation), so its rescue rate is zero by construction.
 
+After the timing, the same generated process can also be checked
+(``--stability-points``: stability estimates as ``check_points`` makes
+them, written to ``--stability-json``; ``--physical-points``: one evaluation
+with every pole, its components per Laurent coefficient and Catani's
+prediction of the poles), so a seven-leg process is generated once. The
+``ward`` subcommand (``ward``) probes the Ward identity: one external
+gluon's polarisation replaced by its momentum on the loop side.
+
 The compiled model lives in a temporary directory under ``--scratch`` (the
 system's temporary directory by default) that the run removes at its end.
 
@@ -219,6 +227,73 @@ def _finite_only() -> Any:
 
     default = inspect.signature(NativeExecutor.evaluate).parameters["poles"].default
     return False if isinstance(default, bool) else "none"
+
+
+def _all_poles() -> Any:
+    """``NativeExecutor.evaluate``'s pole argument with every pole."""
+
+    from pyamplicol.loops.v2.plan_export import NativeExecutor
+
+    default = inspect.signature(NativeExecutor.evaluate).parameters["poles"].default
+    return True if isinstance(default, bool) else "all"
+
+
+def components(result: Any) -> dict[str, list[float]]:
+    """Per component of a point result (``assemble.COMPONENTS``) and Laurent
+    coefficient (finite, single, double pole): the largest magnitude over its
+    squared-order sectors."""
+
+    from pyamplicol.loops.v2.assemble import COMPONENTS
+
+    out = {}
+    for name in COMPONENTS:
+        sectors = result.components.get(name)
+        if not sectors:
+            continue
+        width = max(len(laurent.coefficients) for laurent in sectors.values())
+        out[name] = [
+            max(
+                abs(complex(laurent.coefficients[k]))
+                for laurent in sectors.values()
+                if k < len(laurent.coefficients)
+            )
+            for k in range(width)
+        ]
+    return out
+
+
+def lane_scale(result: Any, average: int) -> list[float]:
+    """Per Laurent coefficient the absolute sum of the reduction lanes' bare
+    contributions, 2 |Omega| / (16 pi^2 average): the conditioning of a
+    cancellation across families (``test_loop_v2_observables._lane_scale``)."""
+
+    from pyamplicol.loops.v2.conventions import LOOP_FACTOR_DENOMINATOR
+
+    factor = 2 / (LOOP_FACTOR_DENOMINATOR * math.pi**2 * average)
+    lanes = list(result.families.values())
+    width = max((len(lane.coefficients) for lane in lanes), default=0)
+    return [
+        factor * sum(abs(complex(lane.coefficients[k])) for lane in lanes)
+        for k in range(width)
+    ]
+
+
+def catani(result: Any) -> dict[str, float] | None:
+    """The virtual's poles against Catani's prediction (``ir_poles``): the
+    largest relative deviation of the single and the double pole over the
+    sectors."""
+
+    poles = getattr(result, "ir_poles", None)
+    if not poles:
+        return None
+    single = double = 0.0
+    for sector, (c1, c2) in poles.items():
+        laurent = result.components["virtual"][sector]
+        v1, v2 = complex(laurent.single_pole), complex(laurent.double_pole)
+        c1, c2 = complex(c1), complex(c2)
+        single = max(single, abs(v1 - c1) / max(abs(v1), abs(c1), 1e-300))
+        double = max(double, abs(v2 - c2) / max(abs(v2), abs(c2), 1e-300))
+    return {"single_pole": single, "double_pole": double}
 
 
 def _totals(result: Any) -> tuple[float, float]:
@@ -491,6 +566,48 @@ class Run:
                 flush=True,
             )
 
+    def physical(self, indices: list[int]) -> None:
+        """One binary64 evaluation with every pole per stream point: the
+        components per Laurent coefficient (the scale of the Ward check) and
+        the poles against Catani's prediction."""
+
+        rows = []
+        for index in indices:
+            points, scales = self._batch(index, 1)
+            begin = time.perf_counter()
+            (result,) = self.executor.evaluate(
+                points, scales, parameters=self.parameters, poles=_all_poles()
+            )
+            born, finite = _totals(result)
+            rows.append(
+                {
+                    "index": index,
+                    "born": born,
+                    "finite": finite,
+                    "components": components(result),
+                    "catani": catani(result),
+                    "seconds": time.perf_counter() - begin,
+                }
+            )
+            print(self.key, "physical", json.dumps(rows[-1]), flush=True)
+        self.record["physical"] = rows
+
+    def stability(self, indices: list[int]) -> None:
+        """``check_points`` on this run's generated process; the record goes
+        to ``--stability-json``."""
+
+        rows = stability_rows(self, indices, self.options.stability_arithmetic)
+        record = {
+            **{k: v for k, v in self.record.items() if k not in ("batches",)},
+            "kind": "stability",
+            "checks": CHECKS,
+            "rows": rows,
+        }
+        target = self.options.stability_json
+        if target is not None:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps(record, indent=1) + "\n")
+
     def close(self) -> None:
         """Remove the run's compiled-model directory."""
 
@@ -513,6 +630,10 @@ class Run:
                 return self.record
             self.accuracy()
             self.timing()
+            if getattr(self.options, "physical_points", None):
+                self.physical(self.options.physical_points)
+            if getattr(self.options, "stability_points", None):
+                self.stability(self.options.stability_points)
         finally:
             self.close()
         self.record["max_rss_gib"] = _gib(
@@ -573,6 +694,62 @@ def _summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
     return out
 
 
+CHECKS = "rotation about z by (3/5, 4/5) and the reduction direction"
+
+
+def stability_rows(run: Run, indices: list[int], arithmetics: list[str]) -> list:
+    """Stream points of a generated run evaluated with one rotation about z
+    by (3/5, 4/5) and the reduction-direction check, finite part only: the
+    estimate E and each check's relative deviation (``checks``: the rotated
+    evaluation's is the rotational-invariance test)."""
+
+    from pyamplicol.loops.v2.assemble import Precision
+    from pyamplicol.loops.v2.stability import Rotation, StabilityChecks
+
+    precisions = {
+        "double": Precision.double(),
+        "double-double": Precision.double_double(),
+    }
+    checks = StabilityChecks(
+        rotations=(Rotation.about("z", "3/5", "4/5"),), reduction_direction=True
+    )
+    rows = []
+    for index in indices:
+        points, scales = run._batch(index, 1)
+        for arithmetic in arithmetics:
+            begin = time.perf_counter()
+            (result,) = run.executor.evaluate(
+                points,
+                scales,
+                parameters=run.parameters,
+                precision=precisions[arithmetic],
+                poles=_finite_only(),
+                stability=checks,
+            )
+            born, finite = _totals(result)
+            rows.append(
+                {
+                    "index": index,
+                    "arithmetic": arithmetic,
+                    "born": born,
+                    "finite": finite,
+                    "estimate": result.stability.relative,
+                    "estimate_finite": (
+                        getattr(result.stability, "coefficients", None) or [None]
+                    )[0],
+                    "checks": {
+                        str(name): float(value)
+                        for name, value in dict(
+                            getattr(result.stability, "checks", {}) or {}
+                        ).items()
+                    },
+                    "seconds_with_checks": time.perf_counter() - begin,
+                }
+            )
+            print(run.key, json.dumps(rows[-1]), flush=True)
+    return rows
+
+
 def check_points(options: Any) -> int:
     """Evaluate chosen stream points with stability checks (one rotation about
     z by (3/5, 4/5) and the reduction-direction check) in the configuration
@@ -582,54 +759,123 @@ def check_points(options: Any) -> int:
     double-double values separate pyAmpliCol's binary64 loss from the
     providers' own (they read the points rounded to binary64)."""
 
-    from pyamplicol.loops.v2.assemble import Precision
-    from pyamplicol.loops.v2.stability import Rotation, StabilityChecks
-
-    precisions = {
-        "double": Precision.double(),
-        "double-double": Precision.double_double(),
-    }
     run = Run(options)
     try:
         run.generate()
-        checks = StabilityChecks(
-            rotations=(Rotation.about("z", "3/5", "4/5"),), reduction_direction=True
-        )
-        rows = []
-        for index in options.points:
-            points, scales = run._batch(index, 1)
-            for arithmetic in options.arithmetic:
-                begin = time.perf_counter()
-                (result,) = run.executor.evaluate(
-                    points,
-                    scales,
-                    parameters=run.parameters,
-                    precision=precisions[arithmetic],
-                    poles=_finite_only(),
-                    stability=checks,
-                )
-                born, finite = _totals(result)
-                rows.append(
-                    {
-                        "index": index,
-                        "arithmetic": arithmetic,
-                        "born": born,
-                        "finite": finite,
-                        "estimate": result.stability.relative,
-                        "estimate_finite": (
-                            getattr(result.stability, "coefficients", None) or [None]
-                        )[0],
-                        "seconds_with_checks": time.perf_counter() - begin,
-                    }
-                )
-                print(run.key, json.dumps(rows[-1]), flush=True)
+        rows = stability_rows(run, options.points, options.arithmetic)
     finally:
         run.close()
     run.record["kind"] = "stability"
-    run.record["checks"] = "rotation about z by (3/5, 4/5) and the reduction direction"
+    run.record["checks"] = CHECKS
     run.record["rows"] = rows
     if options.json:
         options.json.write_text(json.dumps(run.record, indent=1) + "\n")
+    return 0
+
+
+WARD_FACTORS = {"1": (1, 0), "i": (0, 1)}
+
+
+def ward(options: Any) -> int:
+    """The Ward identity at chosen stream points (ADDENDUM H: one external
+    gluon's polarisation replaced by its momentum).
+
+    The process is generated in the asymmetric Ward mode of WP2.5
+    (``ObservableSlice.generate(..., ward=True)``: full tree kernels) and its
+    inclusive column runs natively (``NativeObservables``); epsilon_j -> c p_j
+    acts on the loop side only (blocks, counterterm currents, field
+    insertions) against the physical Born, so each part of the renormalised
+    interference (bare, UV, R2, local UV, fields) must vanish per Laurent
+    coefficient, c = 1 and c = i covering its real and imaginary part. The
+    per-point inputs of the Ward mode are formed in Python (the native trees
+    take no literal sources), binary64, every pole. Each row keeps the parts'
+    magnitudes, the physical Born and the lanes' absolute sum (the
+    cancellation's conditioning); ``gate.py`` divides by the physical scale of
+    a ``--physical-points`` evaluation of the same point."""
+
+    from pyamplicol.loops.native import load_loop_native
+    from pyamplicol.loops.v2.assemble import Precision
+    from pyamplicol.loops.v2.observables import (
+        INCLUSIVE,
+        NativeObservables,
+        ObservableSlice,
+    )
+
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from tools.loop_v2_operation_counts import UFO, compile_loop_sm
+
+    options.accuracy, options.inputs, options.schedule = "full", "python", "B"
+    run = Run(options)
+    record = run.record
+    record["kind"] = "ward"
+    record["native"] = _native_build(options.native_build)
+    stages: dict[str, Any] = {}
+    scratch = Path(tempfile.mkdtemp(prefix="g1-model-", dir=options.scratch))
+    run.scratch = scratch
+    rows = []
+    try:
+        native = load_loop_native()
+        compiled = compile_loop_sm(UFO, scratch)
+        _reset_peak()
+        start = time.perf_counter()
+        request = _request(run.key, "full", compiled)
+        record["process_text"] = request.process
+        observables = ObservableSlice.generate(compiled, request, native, ward=True)
+        stages["generate"] = {
+            "seconds": time.perf_counter() - start,
+            "peak_gib": _gib(_status("VmHWM")),
+        }
+        print(run.key, "ward generation", json.dumps(stages["generate"]), flush=True)
+        _reset_peak()
+        start = time.perf_counter()
+        columns = NativeObservables.correlated(
+            observables, (INCLUSIVE,), lanes=options.lanes, threads=1
+        )
+        stages["export"] = {
+            "seconds": time.perf_counter() - start,
+            "peak_gib": _gib(_status("VmHWM")),
+        }
+        record["generation"] = stages
+        average = observables.slice.normalisation.average
+        for index in options.points:
+            points, scales = run._batch(index, 1)
+            for leg in options.legs:
+                for name in options.factors:
+                    begin = time.perf_counter()
+                    (result,) = columns.evaluate(
+                        points,
+                        scales,
+                        ward=(leg, WARD_FACTORS[name]),
+                        parameters=run.parameters,
+                        precision=Precision.double(),
+                    )
+                    value = result[INCLUSIVE]
+                    rows.append(
+                        {
+                            "index": index,
+                            "leg": leg,
+                            "factor": name,
+                            "born": float(complex(value.totals[0]).real),
+                            "components": components(value),
+                            "lanes": lane_scale(value, average),
+                            "seconds": time.perf_counter() - begin,
+                        }
+                    )
+                    print(run.key, "ward", json.dumps(rows[-1]), flush=True)
+                    record["rows"] = rows
+                    if options.json:
+                        options.json.parent.mkdir(parents=True, exist_ok=True)
+                        options.json.write_text(json.dumps(record, indent=1) + "\n")
+    finally:
+        run.close()
+    record["rows"] = rows
+    record["max_rss_gib"] = _gib(
+        resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
+    )
+    if options.json:
+        options.json.parent.mkdir(parents=True, exist_ok=True)
+        options.json.write_text(json.dumps(record, indent=1) + "\n")
     return 0
 
 

@@ -18,7 +18,13 @@ tools.loop_benchmark``) and writes one JSON document for the live report
   paired with the pyAmpliCol configuration, the last run of the provider in
   the record list). The gate is t < t_MadLoop and t <= 1.30 t for each
   matched Recola and OpenLoops time; with no matched provider it is "no
-  matched provider timing" (never extrapolated, addendum F);
+  matched provider timing" (never extrapolated, addendum F). A provider
+  that could compute the process but whose production-mode timing is not
+  obtainable under HANDOFF §0.1 (``matched`` in its specification, or an
+  imported campaign timing outside the protocol, ``protocol_mode`` false) is
+  *missing*: a verdict that passes every obtainable check is then "partial"
+  (the user judges it, addendum F), and the timing outside the protocol is
+  kept beside the verdict as ``outside_protocol``, never in it;
 - its **uncertainty** (MASTER_PLAN §5.8 item 9): the relative standard error
   of pyAmpliCol's median over its blocks (1.2533 x 1.4826 MAD / sqrt(n);
   half the range for fewer than five blocks) plus each provider's relative
@@ -39,6 +45,13 @@ tools.loop_benchmark``) and writes one JSON document for the live report
 - the schedule B/M comparison on the schedule-dependent stages (seeds,
   factors, dressing, scatter, reduction) and end to end, with the design's
   adoption rule (M where at least 15 % faster, the reduction included);
+- the Ward rows (``ward`` records: one gluon's polarisation replaced by its
+  momentum on the loop side) divided by the physical scale of the same
+  point (``physical`` rows of a pyAmpliCol record: the largest component per
+  Laurent coefficient), with the binary64 bound of the O10 test
+  (``WARD_RELATIVE`` of the scale, or of the R2 part where it is larger,
+  plus ``WARD_LANES`` of the lanes' absolute sum), and the physical rows
+  themselves (the poles against Catani's prediction);
 - with ``--values-json``, a second document with the per-point values of
   every configuration and provider run, from which the comparison and the
   provider statistics can be re-derived.
@@ -62,6 +75,10 @@ from . import streams
 
 GATE_FACTOR = 1.30
 ADOPT_M = 0.85
+# The binary64 bound of the Ward test (test_loop_v2_observables, O10).
+WARD_RELATIVE = 1e-11
+WARD_LANES = 1e-12
+WARD_PARTS = ("virtual", "uv_local", "fields")
 SCHEDULE_STAGES = ("seeds", "factors", "dressing", "scatter", "reduction")
 
 
@@ -105,15 +122,29 @@ def gate_verdict(
     uncertainty: float = 0.0,
     reference_uncertainty: dict[str, tuple[float, bool]] | None = None,
     means: dict[str, float] | None = None,
+    missing: dict[str, str] | None = None,
+    outside: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """The speed gate of one pyAmpliCol time against the matched providers.
 
     ``uncertainty``: pyAmpliCol's relative uncertainty; ``reference_uncertainty``:
     per provider (relative uncertainty, assumed). The verdict of each check is
-    taken on the band ratio x (1 -+ u), u the sum of both."""
+    taken on the band ratio x (1 -+ u), u the sum of both. ``missing``: the
+    matched providers without a protocol-mode timing (reason); ``outside``:
+    their timings outside the protocol (seconds, mode), reported as ratios
+    beside the verdict."""
 
+    missing = missing or {}
+    extra: dict[str, Any] = {}
+    if missing:
+        extra["missing"] = dict(missing)
+    if outside:
+        extra["outside_protocol"] = {
+            name: {**value, "ratio": seconds / value["seconds"]}
+            for name, value in outside.items()
+        }
     if not times:
-        return {"status": "no matched provider timing"}
+        return {"status": "no matched provider timing", **extra}
     reference_uncertainty = reference_uncertainty or {}
     checks = {}
     for provider, reference in times.items():
@@ -145,12 +176,15 @@ def gate_verdict(
         status = "fail"
     elif "inconclusive" in states:
         status = "inconclusive"
+    elif missing:
+        status = "partial"
     else:
         status = "pass"
     fastest = min(times, key=times.get)
     binding = min(checks, key=lambda name: checks[name]["limit"])
     verdict = {
         "status": status,
+        **extra,
         "central": "pass" if all(c["passed"] for c in checks.values()) else "fail",
         "statistic": "median per point (pyAmpliCol blocks, provider points)",
         "checks": checks,
@@ -243,12 +277,47 @@ def compare_values(
 
 
 def _times(record: dict[str, Any] | None, field: str) -> dict[str, float]:
+    """Protocol-mode times (an imported campaign timing outside the protocol
+    is not one, ``providers.imported``)."""
+
     if record is None:
         return {}
     return {
         name: result[field]
         for name, result in record["providers"].items()
-        if field in result
+        if field in result and result.get("protocol_mode", True)
+    }
+
+
+def missing_providers(key: str, record: dict[str, Any] | None) -> dict[str, str]:
+    """Matched providers without a protocol-mode timing, with the reason
+    (module docstring): ``matched`` and ``unavailable`` in the specification,
+    or only a timing outside the protocol."""
+
+    spec = streams.spec(key)
+    known = record["providers"] if record else {}
+    out = {}
+    for name in ("madloop", "recola", "openloops"):
+        entry = spec.get(name, {})
+        result = known.get(name, {})
+        if "median_seconds_per_point" in result and result.get("protocol_mode", True):
+            continue
+        if entry.get("matched") and "unavailable" in entry:
+            out[name] = entry["unavailable"]
+        elif result.get("protocol_mode") is False:
+            out[name] = result.get("mode", "timing outside the protocol")
+    return out
+
+
+def outside_protocol(record: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
+    """Imported timings outside the protocol: median seconds and mode."""
+
+    if record is None:
+        return {}
+    return {
+        name: {"seconds": result["median_seconds_per_point"], "mode": result["mode"]}
+        for name, result in record["providers"].items()
+        if result.get("protocol_mode") is False and "median_seconds_per_point" in result
     }
 
 
@@ -310,6 +379,49 @@ def schedule_comparison(entry: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+def ward_rows(rows: list[dict[str, Any]], physical: list[dict[str, Any]]) -> list:
+    """The Ward rows against the physical scale of their point (module
+    docstring); a row without a physical evaluation of its point keeps no
+    ratio."""
+
+    scales = {}
+    for row in physical:
+        width = max(len(v) for v in row["components"].values())
+        scales[row["index"]] = [
+            max(v[k] for v in row["components"].values() if k < len(v))
+            for k in range(width)
+        ]
+    out = []
+    for row in rows:
+        scale = scales.get(row["index"])
+        entry = {**row, "scale": scale}
+        if scale is not None:
+            parts = row["components"]
+            r2 = parts.get("r2", [0.0] * len(scale))
+            lanes = row.get("lanes") or [0.0] * len(scale)
+            bound = [
+                WARD_RELATIVE * max(scale[k], r2[k] if k < len(r2) else 0.0)
+                + WARD_LANES * (lanes[k] if k < len(lanes) else 0.0)
+                for k in range(len(scale))
+            ]
+            entry["bound"] = bound
+            entry["ratios"] = {
+                name: [v / scale[k] for k, v in enumerate(values) if k < len(scale)]
+                for name, values in parts.items()
+            }
+            entry["lanes_ratio"] = [
+                v / scale[k] for k, v in enumerate(lanes) if k < len(scale)
+            ]
+            entry["passed"] = all(
+                parts[name][k] <= bound[k]
+                for name in WARD_PARTS
+                if name in parts
+                for k in range(min(len(scale), len(parts[name])))
+            )
+        out.append(entry)
+    return out
+
+
 def _values_of(summary: dict[str, Any]) -> dict[int, tuple]:
     return {int(i): tuple(v) for i, v in summary.get("values", {}).items()}
 
@@ -339,6 +451,19 @@ def build(
                 "provider_runs": [],
             },
         )
+        if record["kind"] == "ward":
+            entry.setdefault("ward", []).extend(
+                {**row, "revision": record["revision"]} for row in record["rows"]
+            )
+            entry.setdefault("ward_runs", []).append(
+                {
+                    "revision": record["revision"],
+                    "native": record.get("native"),
+                    "generation": record.get("generation"),
+                    "max_rss_gib": record.get("max_rss_gib"),
+                }
+            )
+            continue
         if record["kind"] == "stability":
             # A later record's row of the same point, arithmetic and
             # configuration replaces an earlier one.
@@ -367,7 +492,7 @@ def build(
                 if "mean_seconds_per_point" in result:
                     entry["repeats"].setdefault(name, []).append(
                         {
-                            "cpu": record["cpu"],
+                            "cpu": result.get("cpu", record["cpu"]),
                             "median_seconds_per_point": result[
                                 "median_seconds_per_point"
                             ],
@@ -388,7 +513,7 @@ def build(
                     known[name] = {
                         **({"stages": stages} if stages else {}),
                         **result,
-                        "cpu": record["cpu"],
+                        "cpu": result.get("cpu", record["cpu"]),
                     }
                 entry["providers"]["cpu"] = record["cpu"]
             for result in entry["providers"]["providers"].values():
@@ -433,6 +558,8 @@ def build(
         legs = multiplicity(key)
         times = _times(entry["providers"], "median_seconds_per_point")
         means = _times(entry["providers"], "mean_seconds_per_point")
+        missing = missing_providers(key, entry["providers"])
+        outside = outside_protocol(entry["providers"])
         reference_uncertainty = {}
         for name in times:
             spread = half_range(
@@ -464,6 +591,8 @@ def build(
                         uncertainty=uncertainty,
                         reference_uncertainty=reference_uncertainty,
                         means=means,
+                        missing=missing,
+                        outside=outside,
                     )
                 for index, value in _values_of(summary).items():
                     mine.setdefault(index, value)
@@ -488,6 +617,7 @@ def build(
                 "generation": record.get("generation"),
                 "structure": record.get("structure"),
                 "accuracy_check": accuracy_check,
+                "physical": record.get("physical", []),
                 "skipped_batches": record.get("skipped_batches", {}),
                 "max_rss_gib": record.get("max_rss_gib"),
                 "generation_error": record.get("generation_error"),
@@ -568,6 +698,15 @@ def build(
                     for name, (u, assumed) in reference_uncertainty.items()
                 },
                 "stability": entry.get("stability", []),
+                "ward": ward_rows(
+                    entry.get("ward", []),
+                    [
+                        row
+                        for config in configurations.values()
+                        for row in config["physical"]
+                    ],
+                ),
+                "ward_runs": entry.get("ward_runs", []),
                 "schedules": schedule_comparison(configurations),
                 "pyamplicol": configurations,
             }

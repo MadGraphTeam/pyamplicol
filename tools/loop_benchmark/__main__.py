@@ -4,7 +4,11 @@
 Subcommands:
 
 - ``streams``: freeze the phase-space streams (``streams.py``);
-- ``pyamplicol``: time pyAmpliCol v2 on one process (``pyamplicol_v2.py``);
+- ``pyamplicol``: time pyAmpliCol v2 on one process (``pyamplicol_v2.py``),
+  optionally followed by stability and every-pole checks of the same
+  generation;
+- ``stability``: stability estimates at chosen stream points;
+- ``ward``: the Ward identity at chosen stream points (``pyamplicol_v2.ward``);
 - ``providers``: time MadLoop, Recola and OpenLoops in production mode on the
   same stream (``providers.py``);
 - ``gate``: combine the records into the gate table (``gate.py``).
@@ -52,6 +56,38 @@ def main(argv: list[str] | None = None) -> int:
         "system's temporary directory)",
     )
     v2.add_argument("--json", type=Path)
+    v2.add_argument(
+        "--stability-points",
+        type=int,
+        nargs="+",
+        help="after the timing: stability estimates at these stream points",
+    )
+    v2.add_argument(
+        "--stability-arithmetic",
+        nargs="+",
+        choices=("double", "double-double"),
+        default=["double"],
+    )
+    v2.add_argument("--stability-json", type=Path, help="the stability record")
+    v2.add_argument(
+        "--physical-points",
+        type=int,
+        nargs="+",
+        help="after the timing: one evaluation with every pole at these points "
+        "(components, Catani's poles)",
+    )
+
+    wardp = commands.add_parser(
+        "ward", help="the Ward identity at chosen stream points"
+    )
+    wardp.add_argument("process")
+    wardp.add_argument("--points", type=int, nargs="+", required=True)
+    wardp.add_argument("--legs", type=int, nargs="+", required=True)
+    wardp.add_argument("--factors", nargs="+", choices=("1", "i"), default=["1", "i"])
+    wardp.add_argument("--lanes", type=int, default=16)
+    wardp.add_argument("--native-build", type=Path)
+    wardp.add_argument("--scratch", type=Path, help="parent of the model directory")
+    wardp.add_argument("--json", type=Path)
 
     stable = commands.add_parser(
         "stability", help="stability estimates at chosen stream points"
@@ -132,6 +168,10 @@ def main(argv: list[str] | None = None) -> int:
         from . import pyamplicol_v2
 
         return pyamplicol_v2.check_points(options)
+    if options.command == "ward":
+        from . import pyamplicol_v2
+
+        return pyamplicol_v2.ward(options)
     if options.command == "providers":
         from . import providers as module
 
