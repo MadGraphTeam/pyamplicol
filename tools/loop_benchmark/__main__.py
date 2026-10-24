@@ -48,6 +48,12 @@ def main(argv: list[str] | None = None) -> int:
         default=900.0,
         help="seconds a B may take over all rounds; larger B are skipped",
     )
+    v2.add_argument(
+        "--warm-up",
+        type=int,
+        help="points of each B's untimed warm-up (default: the whole block; "
+        "one chunk of lanes compiles every kernel)",
+    )
     v2.add_argument("--native-build", type=Path, help="staged native build directory")
     v2.add_argument(
         "--scratch",
@@ -85,6 +91,12 @@ def main(argv: list[str] | None = None) -> int:
     wardp.add_argument("--legs", type=int, nargs="+", required=True)
     wardp.add_argument("--factors", nargs="+", choices=("1", "i"), default=["1", "i"])
     wardp.add_argument("--lanes", type=int, default=16)
+    wardp.add_argument(
+        "--physical",
+        action="store_true",
+        help="also evaluate each point without the substitution (its physical "
+        "scale for the gate's Ward bound)",
+    )
     wardp.add_argument("--native-build", type=Path)
     wardp.add_argument("--scratch", type=Path, help="parent of the model directory")
     wardp.add_argument("--json", type=Path)

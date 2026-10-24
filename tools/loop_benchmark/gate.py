@@ -463,6 +463,9 @@ def build(
                     "max_rss_gib": record.get("max_rss_gib"),
                 }
             )
+            # A Ward run's own evaluations without the substitution (``ward
+            # --physical``) are physical scales of its points too.
+            entry.setdefault("ward_physical", []).extend(record.get("physical", []))
             continue
         if record["kind"] == "stability":
             # A later record's row of the same point, arithmetic and
@@ -703,8 +706,10 @@ def build(
                     [
                         row
                         for config in configurations.values()
+                        if config["accuracy"] == "full"
                         for row in config["physical"]
-                    ],
+                    ]
+                    + entry.get("ward_physical", []),
                 ),
                 "ward_runs": entry.get("ward_runs", []),
                 "schedules": schedule_comparison(configurations),

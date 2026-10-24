@@ -106,6 +106,9 @@ NATIVE = ("seeds", "factors", "dressing", "scatter", "reduction")
 MASTERS = "reduction: masters"
 ONELOOPMASTER = "reduction: masters (oneloopmaster)"
 WORK = "dressing work (modelled complex MAC per lane)"
+# The required fixtures' tolerance (``tools/loop_v2_generate.py validate``),
+# for a reference fixture that states none (NJet's).
+REQUIRED_TOLERANCE = "2e-8"
 
 
 def _status(field: str) -> int:
@@ -204,6 +207,9 @@ def _request(key: str, accuracy: str, compiled: Any) -> Any:
         dict(process["born_orders"]),
         dict(process["loop_orders"]),
         fixed_parameters=dict(process["scheme_data"]["fixed_parameters"]),
+        # The public particle_veto (``particle_veto`` of the specification):
+        # g g > g g g g g without the top is NJet's massless five-flavour QCD.
+        particle_veto=tuple(int(p) for p in process.get("particle_veto", ())),
         accuracy=accuracy,
         colour_declaration=declaration,
     )
@@ -306,6 +312,34 @@ def _totals(result: Any) -> tuple[float, float]:
 def _relative(a: float, b: float, floor: float = 0.0) -> float:
     scale = max(abs(a), abs(b), floor)
     return 0.0 if scale == 0 else abs(a - b) / scale
+
+
+# Quadratic Casimirs of the massless coloured legs by SU(3) representation
+# and their leading-colour parts (C_F = N_c/2 - 1/(2 N_c) -> 3/2, C_A = N_c):
+# the universal double pole of the virtual over the Born at full and at
+# leading colour (``tools/loop_v2_generate.py poles``).
+CASIMIRS = {
+    "full": {1: Fraction(0), 3: Fraction(4, 3), 8: Fraction(3)},
+    "lc": {1: Fraction(0), 3: Fraction(3, 2), 8: Fraction(3)},
+}
+
+
+def universal_double_pole(key: str, accuracy: str) -> float | None:
+    """D / Born = -(alpha_s/2pi) sum_i C_i over the massless coloured legs of
+    ``key`` at colour ``accuracy`` (None at NLC, where it holds only with
+    adjoint legs)."""
+
+    table = CASIMIRS.get(accuracy)
+    if table is None:
+        return None
+    _, required_spec = streams._toolkit()
+    process = streams.spec(key)
+    total = Fraction(0)
+    for pdg, mass in zip(process["pdgs"], required_spec.masses(process), strict=True):
+        if not mass:
+            total += table[abs(required_spec.particle(pdg)["colour"])]
+    alpha = Fraction(process["scheme_data"]["parameters"]["aS"])
+    return -float(alpha * total) / (2 * math.pi)
 
 
 def _git(*args: str) -> str:
@@ -483,50 +517,104 @@ class Run:
         }
 
     def accuracy(self) -> None:
-        fixture_path = streams.FIXTURES / f"{self.key}.json"
+        """The Born and finite part at the reference fixture's points
+        (``streams.fixture_name``: the required fixture of the process, or the
+        specification's ``reference_fixture``, e.g. NJet's) against each of
+        its providers, at the fixture's own points and scales in one batch of
+        at most one chunk of lanes. The required fixtures' points and scales
+        are the stream's first points (``streams.campaign_agreement``); an
+        NJet fixture's points are the stream's first points at its own
+        scale (``points_are_stream_points``)."""
+
+        name = streams.fixture_name(self.key)
+        fixture_path = streams.FIXTURES / f"{name}.json"
         if not fixture_path.exists() or self.options.accuracy != "full":
             self.record["accuracy_check"] = None
             return
         fixture = json.loads(fixture_path.read_text())
-        count = len(fixture["points"])
-        block = self.evaluate(0, count)
+        count = min(len(fixture["points"]), self.options.lanes)
+        points = [
+            [[Fraction(x) for x in leg] for leg in point]
+            for point in fixture["points"][:count]
+        ]
+        scales = [str(Fraction(mu) ** 2) for mu in fixture["mu_r"][:count]]
+        options: dict[str, Any] = {"parameters": self.parameters, "poles": _finite_only()}
+        if self.options.schedule == "M":
+            options["schedule"] = "M"
+        results = self.executor.evaluate(points, scales, **options)
+        values = {index: _totals(result) for index, result in enumerate(results)}
+        same = [
+            index
+            for index in range(count)
+            if index < len(self.stream["points"])
+            and self.stream["points"][index] == fixture["points"][index]
+        ]
         alpha = float(self.parameters["aS"])
         rows = []
         worst = 0.0
-        for index, (born, finite) in sorted(block["values"].items()):
+        for index, (born, finite) in sorted(values.items()):
             floor = abs(born) * alpha / (2 * math.pi)
             errors = {}
-            for provider, values in fixture["rows"][index]["providers"].items():
+            for provider, reference in fixture["rows"][index]["providers"].items():
                 errors[provider] = {
-                    "born": _relative(born, float(values["born"])),
-                    "finite": _relative(finite, float(values["finite"]), floor),
+                    "born": _relative(born, float(reference["born"])),
+                    "finite": _relative(finite, float(reference["finite"]), floor),
                 }
                 worst = max(worst, *errors[provider].values())
             rows.append(
-                {"index": index, "born": born, "finite": finite, "errors": errors}
+                {
+                    "index": index,
+                    "mu_r": fixture["mu_r"][index],
+                    "born": born,
+                    "finite": finite,
+                    "errors": errors,
+                }
             )
+        # NJet fixtures state no tolerance: the required fixtures' (2e-8,
+        # tools/loop_v2_generate.py validate).
+        tolerance = float(fixture.get("tolerance", REQUIRED_TOLERANCE))
         self.record["accuracy_check"] = {
+            "fixture": name,
             "points": count,
+            "points_are_stream_points": same,
             "metric": fixture["error_metric"],
-            "tolerance": float(fixture["tolerance"]),
+            "tolerance": tolerance,
+            "tolerance_source": "fixture" if "tolerance" in fixture else "required",
             "max_error": worst,
-            "passed": worst <= float(fixture["tolerance"]),
+            "passed": worst <= tolerance,
             "rows": rows,
         }
         print(self.key, "accuracy vs providers: max", f"{worst:.2e}", flush=True)
 
     def timing(self) -> None:
+        """Paired blocks of every B (module docstring). The warm-up of a B
+        evaluates ``--warm-up`` points of it (default: the whole block; one
+        chunk of lanes already compiles every kernel, which the heavy rows
+        use), and its time per point estimates each B's cost against
+        ``--budget``. Every block prints its time (stage-level progress), and
+        the record is written after every round (``partial``) when a JSON
+        target is given."""
+
         options = self.options
         batches = sorted(set(options.batches))
         warm: dict[int, float] = {}
+        warm_points: dict[int, int] = {}
         skipped: dict[int, str] = {}
+        limit = getattr(options, "warm_up", None)
         for size in batches:
+            count = size if not limit else min(size, limit)
             start = time.perf_counter()
-            self.evaluate(0, size)
+            self.evaluate(0, count)
             warm[size] = time.perf_counter() - start
+            warm_points[size] = count
+            print(
+                self.key,
+                f"warm-up B={size} ({count} points): {warm[size]:.3f} s",
+                flush=True,
+            )
             # The warm-up includes lazy compilation; the estimate scales the
             # cheapest B per point.
-        per_point = min(warm[b] / b for b in batches)
+        per_point = min(warm[b] / warm_points[b] for b in batches)
         planned = []
         for size in batches:
             blocks = max(1, math.ceil(options.min_points / size))
@@ -538,6 +626,9 @@ class Run:
                 )
                 continue
             planned.append((size, blocks))
+        self.record["warm_up_seconds"] = warm
+        self.record["warm_up_points"] = warm_points
+        self.record["skipped_batches"] = skipped
         runs: dict[int, list[dict[str, Any]]] = {size: [] for size, _ in planned}
         offsets = {size: 0 for size, _ in planned}
         for _round in range(options.reps):
@@ -546,12 +637,18 @@ class Run:
                     run = self.evaluate(offsets[size], size)
                     offsets[size] += size
                     runs[size].append(run)
+                    print(
+                        self.key,
+                        f"round {_round + 1} B={size} block at {run['start']}: "
+                        f"{run['wall'] / size * 1e3:.3f} ms/pt",
+                        flush=True,
+                    )
             print(self.key, "round", _round + 1, "done", flush=True)
-        self.record["warm_up_seconds"] = warm
-        self.record["skipped_batches"] = skipped
-        self.record["batches"] = {
-            str(size): _summary(runs[size]) for size, _ in planned
-        }
+            self.record["batches"] = {
+                str(size): _summary(runs[size]) for size, _ in planned
+            }
+            if _round + 1 < options.reps:
+                self.checkpoint(partial=True)
         for size, _ in planned:
             summary = self.record["batches"][str(size)]
             print(
@@ -566,30 +663,58 @@ class Run:
                 flush=True,
             )
 
-    def physical(self, indices: list[int]) -> None:
-        """One binary64 evaluation with every pole per stream point: the
-        components per Laurent coefficient (the scale of the Ward check) and
-        the poles against Catani's prediction."""
+    def checkpoint(self, *, partial: bool) -> None:
+        """Write the record so far to ``--json`` (``partial`` while the run
+        goes on; the final record replaces it)."""
 
+        target = getattr(self.options, "json", None)
+        if target is None:
+            return
+        record = {**self.record, "partial": partial}
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(record, indent=1) + "\n")
+
+    def physical(self, indices: list[int]) -> None:
+        """One binary64 evaluation with every pole of the stream points
+        ``indices`` (one batch): the components per Laurent coefficient (the
+        scale of the Ward check), the poles against Catani's prediction where
+        the executor forms it, and the virtual's double pole over the Born
+        against the universal -(alpha_s/2pi) sum_i C_i of the massless
+        coloured legs at the run's colour accuracy
+        (``universal_double_pole``)."""
+
+        expected = universal_double_pole(self.key, self.options.accuracy)
         rows = []
-        for index in indices:
-            points, scales = self._batch(index, 1)
+        for start in range(0, len(indices), self.options.lanes):
+            chunk = indices[start : start + self.options.lanes]
+            batches = [self._batch(index, 1) for index in chunk]
+            points = [p for batch in batches for p in batch[0]]
+            scales = [mu for batch in batches for mu in batch[1]]
             begin = time.perf_counter()
-            (result,) = self.executor.evaluate(
+            results = self.executor.evaluate(
                 points, scales, parameters=self.parameters, poles=_all_poles()
             )
-            born, finite = _totals(result)
-            rows.append(
-                {
-                    "index": index,
-                    "born": born,
-                    "finite": finite,
-                    "components": components(result),
-                    "catani": catani(result),
-                    "seconds": time.perf_counter() - begin,
-                }
-            )
-            print(self.key, "physical", json.dumps(rows[-1]), flush=True)
+            seconds = (time.perf_counter() - begin) / len(chunk)
+            for index, result in zip(chunk, results, strict=True):
+                born, finite = _totals(result)
+                double = float(complex(result.totals[3]).real)
+                ratio = double / born if born else None
+                rows.append(
+                    {
+                        "index": index,
+                        "born": born,
+                        "finite": finite,
+                        "components": components(result),
+                        "catani": catani(result),
+                        "double_pole_over_born": ratio,
+                        "universal_double_pole": expected,
+                        "double_pole_deviation": None
+                        if ratio is None or expected is None
+                        else abs(ratio - expected) / abs(expected),
+                        "seconds": seconds,
+                    }
+                )
+                print(self.key, "physical", json.dumps(rows[-1]), flush=True)
         self.record["physical"] = rows
 
     def stability(self, indices: list[int]) -> None:
@@ -714,11 +839,17 @@ def stability_rows(run: Run, indices: list[int], arithmetics: list[str]) -> list
         rotations=(Rotation.about("z", "3/5", "4/5"),), reduction_direction=True
     )
     rows = []
-    for index in indices:
-        points, scales = run._batch(index, 1)
+    # One batch of at most one chunk of lanes per arithmetic: at seven legs
+    # a chunk costs as much as one of its points.
+    lanes = run.options.lanes
+    for start in range(0, len(indices), lanes):
+        chunk = indices[start : start + lanes]
+        batches = [run._batch(index, 1) for index in chunk]
+        points = [p for batch in batches for p in batch[0]]
+        scales = [mu for batch in batches for mu in batch[1]]
         for arithmetic in arithmetics:
             begin = time.perf_counter()
-            (result,) = run.executor.evaluate(
+            results = run.executor.evaluate(
                 points,
                 scales,
                 parameters=run.parameters,
@@ -726,27 +857,30 @@ def stability_rows(run: Run, indices: list[int], arithmetics: list[str]) -> list
                 poles=_finite_only(),
                 stability=checks,
             )
-            born, finite = _totals(result)
-            rows.append(
-                {
-                    "index": index,
-                    "arithmetic": arithmetic,
-                    "born": born,
-                    "finite": finite,
-                    "estimate": result.stability.relative,
-                    "estimate_finite": (
-                        getattr(result.stability, "coefficients", None) or [None]
-                    )[0],
-                    "checks": {
-                        str(name): float(value)
-                        for name, value in dict(
-                            getattr(result.stability, "checks", {}) or {}
-                        ).items()
-                    },
-                    "seconds_with_checks": time.perf_counter() - begin,
-                }
-            )
-            print(run.key, json.dumps(rows[-1]), flush=True)
+            seconds = (time.perf_counter() - begin) / len(chunk)
+            for index, result in zip(chunk, results, strict=True):
+                born, finite = _totals(result)
+                rows.append(
+                    {
+                        "index": index,
+                        "arithmetic": arithmetic,
+                        "born": born,
+                        "finite": finite,
+                        "estimate": result.stability.relative,
+                        "estimate_finite": (
+                            getattr(result.stability, "coefficients", None) or [None]
+                        )[0],
+                        "checks": {
+                            str(name): float(value)
+                            for name, value in dict(
+                                getattr(result.stability, "checks", {}) or {}
+                            ).items()
+                        },
+                        "seconds_with_checks": seconds,
+                        "batch": len(chunk),
+                    }
+                )
+                print(run.key, json.dumps(rows[-1]), flush=True)
     return rows
 
 
@@ -838,8 +972,31 @@ def ward(options: Any) -> int:
         }
         record["generation"] = stages
         average = observables.slice.normalisation.average
+        physical = []
         for index in options.points:
             points, scales = run._batch(index, 1)
+            if getattr(options, "physical", False):
+                # The physical scale of the point in the same generation
+                # (no substitution), for ``gate.ward_rows``.
+                begin = time.perf_counter()
+                (result,) = columns.evaluate(
+                    points,
+                    scales,
+                    parameters=run.parameters,
+                    precision=Precision.double(),
+                )
+                value = result[INCLUSIVE]
+                physical.append(
+                    {
+                        "index": index,
+                        "born": float(complex(value.totals[0]).real),
+                        "finite": float(complex(value.totals[1]).real),
+                        "components": components(value),
+                        "seconds": time.perf_counter() - begin,
+                    }
+                )
+                record["physical"] = physical
+                print(run.key, "ward physical", json.dumps(physical[-1]), flush=True)
             for leg in options.legs:
                 for name in options.factors:
                     begin = time.perf_counter()
