@@ -127,10 +127,40 @@ VALIDATION_RULE = (
     " partial_repeats; a newer comparison with a larger deviation, or at"
     " least as many points and every reference, replaces it"
 )
+# Generation multipliers (GENERATION_RULE) pair pyAmpliCol's and the
+# providers' generation timed under the same kind of conditions: in a G1 row
+# the campaign's provider generation (idle pinned cores) with a G1 side; a
+# newer development record of such a row (shared host under load) is shown
+# without a multiplier, the providers' G1 values listed beside it. In the
+# rows without a G1 record, the development record pairs with the providers'
+# reference runs (measured.json provider_generation): both are run records on
+# this shared host outside the G1 protocol.
+GENERATION_RULE = (
+    "a generation multiplier pairs values timed under the same kind of"
+    " conditions: in a G1 row the campaign's provider generation with a G1"
+    " configuration; a newer development record there (shared host under"
+    " load) has no multiplier; in the other rows the development record"
+    " with the providers' reference runs, both run records on this shared"
+    " host outside the G1 protocol"
+)
+GENERATION_BASIS = {
+    "g1": "G1 campaign on both sides (pinned cores of the G1 protocol)",
+    "unmatched": "no multiplier: a development record on the shared host"
+    " under load against the providers' G1 generation on idle pinned cores"
+    " (GENERATION_RULE)",
+    "records": "the development record and the providers' reference runs,"
+    " both run records on this shared host outside the G1 protocol",
+}
 ROLE_BASIS = (
     "G1 campaign roles: the development side (gate --meta native_revision)"
     " is ahead of the integrated side (slice_revision)"
 )
+
+
+def _base(cid: str) -> str:
+    """The configuration of a candidate id ("development_records@0ea83af2",
+    an older record of the development records, is "development_records")."""
+    return cid.split("@")[0]
 
 
 class Recency:
@@ -197,7 +227,8 @@ class Recency:
         first."""
         rev = dict(cands)
         ids = [c for c, _ in cands]
-        label = {c: f"{c} {r}" for c, r in cands}
+        # An older record of a configuration is "<configuration>@<revision>".
+        label = {c: f"{_base(c)} {r}" for c, r in cands}
         newer: set[tuple[str, str]] = set()
         if "development" in rev and "integrated" in rev:
             newer.add(("development", "integrated"))
@@ -228,7 +259,7 @@ class Recency:
                         " neither revision contains the other"
                     )
         rank = {a: sum((a, b) in newer for b in ids) for a in ids}
-        return sorted(ids, key=lambda a: (-rank[a], KIND_ORDER.index(a)))
+        return sorted(ids, key=lambda a: (-rank[a], KIND_ORDER.index(_base(a))))
 
     def newest_first(self, revisions: list[str]) -> list[str]:
         """Distinct revisions on one line of history, newest first."""
@@ -777,6 +808,7 @@ def _newest_validation(cells: list[tuple[str, str | None, dict | None]]) -> dict
                 "references": [SHORT[k] for k in _ref_keys(cur)],
                 "max_finite": cur["max_finite"],
                 "repeats": old_cid,
+                "repeats_revision": old_rev,
                 "why": why,
                 "source": cur["source"],
             }
@@ -841,6 +873,16 @@ def _sides(g1: dict) -> dict:
     return {"predicates": side, "revisions": revisions}
 
 
+def _threads(ms: dict, revision: str) -> str:
+    """The generation threads of a development record, as its DESIGN
+    increment states them (milestone.json development_records.threads)."""
+    return (
+        ms["development_records"]
+        .get("threads", {})
+        .get(revision, "thread count not recorded")
+    )
+
+
 def _record_cells(ms: dict, meas: dict, key: str) -> dict | None:
     """The development validation record of a process (measured.json
     required_native) as candidate cells: generation and validation, and the
@@ -855,6 +897,8 @@ def _record_cells(ms: dict, meas: dict, key: str) -> dict | None:
     conditions = {
         "conditions": cond["conditions"],
         "conditions_short": cond["short"],
+        # The generation threads the record's DESIGN increment states.
+        "threads": _threads(ms, rec["revision"]),
         "conditions_source": "milestone.json development_records",
     }
     generation = {
@@ -878,6 +922,19 @@ def _record_cells(ms: dict, meas: dict, key: str) -> dict | None:
     }
     validation = _validation_native(rec, src)
     validation.update(record=rec["record"], revision=rec["revision"])
+    # Earlier records of the process (measured.json required_native
+    # superseded): older candidates of the validation cell only
+    # (VALIDATION_RULE), never of its generation, which the newest record
+    # measured.
+    older = meas["required_native"].get("superseded", {}).get(key, [])
+    older_validations = []
+    for i, old in enumerate(older if isinstance(older, list) else [older]):
+        osrc = f"measured.json required_native.superseded[{key}]" + (
+            f"[{i}]" if isinstance(older, list) else ""
+        )
+        cell = _validation_native(old, osrc)
+        cell.update(record=old["record"], revision=old["revision"])
+        older_validations.append(cell)
     timing = {
         "status": "pending",
         "package": ms["pending"]["batched"],
@@ -890,8 +947,37 @@ def _record_cells(ms: dict, meas: dict, key: str) -> dict | None:
         "revision": rec["revision"],
         "generation": generation,
         "validation": validation,
+        "older_validations": older_validations,
         "timing": timing,
     }
+
+
+def _validation_cells(
+    recency: Recency,
+    cands: list[tuple[str, str]],
+    side_cells: dict[str, dict | None],
+    rec: dict | None,
+) -> list[tuple[str, str | None, dict | None]]:
+    """The validation cell's candidates newest first (MAIN_RULE): the row's
+    configurations (cands; a G1 side's comparison from side_cells, the
+    newest record's for the development records) and the process's older
+    records, so that VALIDATION_RULE can keep an older, more complete
+    comparison."""
+    older = (
+        {}
+        if rec is None
+        else {
+            f"development_records@{c['revision']}": c for c in rec["older_validations"]
+        }
+    )
+    vcands = cands + [(cid, c["revision"]) for cid, c in older.items()]
+    rev = dict(vcands)
+    cells = {
+        **side_cells,
+        **older,
+        "development_records": None if rec is None else rec["validation"],
+    }
+    return [(_base(cid), rev[cid], cells.get(cid)) for cid in recency.order(vcands)]
 
 
 def _ordered(
@@ -943,7 +1029,6 @@ def _g1_rows(
         gen_fastest = _fastest_generation(gens)
 
         rec_gen = None if rec is None else rec["generation"]
-        rec_val = None if rec is None else rec["validation"]
         gen = _newest(
             _ordered(
                 order,
@@ -958,7 +1043,13 @@ def _g1_rows(
             )
         )
         if gen["status"] == "measured" and gen_fastest is not None:
-            gen["ratio_to_fastest"] = gen["seconds"] / gen_fastest["seconds"]
+            # GENERATION_RULE: G1's provider generation pairs with a G1 side
+            # only; a newer record ran under other conditions.
+            if gen["configuration"] in side:
+                gen["ratio_to_fastest"] = gen["seconds"] / gen_fastest["seconds"]
+                gen["ratio_basis"] = GENERATION_BASIS["g1"]
+            else:
+                gen["no_ratio"] = GENERATION_BASIS["unmatched"]
         fc_main = _newest(
             _ordered(
                 order,
@@ -996,11 +1087,11 @@ def _g1_rows(
         # Validation: the newest configuration compared with the references,
         # unless it only repeats part of an older comparison (VALIDATION_RULE).
         validation = _newest_validation(
-            _ordered(
-                order,
-                rev,
+            _validation_cells(
+                recency,
+                cands,
                 {cid: _g1_validation(proc, cid, *fc[cid], base) for cid in g1_order},
-                rec_val,
+                rec,
             )
         )
         if validation["status"] == "not measured":
@@ -1201,10 +1292,18 @@ def _required_rows(
         note = notes.get(key, {})
         rec = records.get(key)
         dev_gen = None if rec is None else rec["generation"]
+        # The newest record's comparison, unless it only repeats part of an
+        # older record's (VALIDATION_RULE).
         validation = (
             {"status": "not compared", "note": req["validation"]}
             if rec is None
-            else dict(rec["validation"])
+            else dict(
+                _newest_validation(
+                    _validation_cells(
+                        recency, [("development_records", rec["revision"])], {}, rec
+                    )
+                )
+            )
         )
         pg = prov_gen.get(key)
         gens: dict = {n: None for n in PROVIDERS}
@@ -1231,7 +1330,9 @@ def _required_rows(
             unfinished["note"] = note["providers"]
         gen_fastest = _fastest_generation(gens)
         if dev_gen is not None and gen_fastest is not None:
+            # GENERATION_RULE: the record and the providers' reference runs.
             dev_gen["ratio_to_fastest"] = dev_gen["seconds"] / gen_fastest["seconds"]
+            dev_gen["ratio_basis"] = GENERATION_BASIS["records"]
         # Matched providers: those with a generated process (a completed
         # generation or a prebuilt library); a gate needs one.
         matched = [n for n in PROVIDERS if gens[n] is not None]
@@ -1423,6 +1524,7 @@ def _configurations(
     }
     branch = meas["required_native"]["branch"]
     in_development = branch in (development.get("revisions") or {}).values()
+    records_used = _records(rows, recency)
     out["development_records"] = {
         "kind": "records",
         "label": label if in_development else "development records",
@@ -1433,9 +1535,11 @@ def _configurations(
         ),
         "conditions": ms["development_records"]["conditions"],
         "conditions_short": ms["development_records"]["short"],
+        # Generation threads per record revision (as each increment states).
+        "threads": {r["revision"]: _threads(ms, r["revision"]) for r in records_used},
         # The DESIGN records of the development validations, each with the
         # rows it covers.
-        "records": _records(rows, recency),
+        "records": records_used,
         "main_rows": main_rows("development_records"),
         "main_cells": main_cells("development_records"),
         "source": "measured.json required_native; label: milestone.json"
@@ -1520,12 +1624,14 @@ def build() -> tuple[dict, Recency]:
             "main_rule": {
                 "rule": MAIN_RULE,
                 "validation_rule": VALIDATION_RULE,
+                "generation_rule": GENERATION_RULE,
                 "kinds": list(KIND_ORDER),
                 # Every recency fact the rule used: the newer and older
                 # configuration with its revision, and the basis.
                 "recency": recency.facts(),
                 "source": "scripts/build_summary.py MAIN_RULE,"
-                " VALIDATION_RULE, Recency; ancestry: milestone.json ancestry",
+                " VALIDATION_RULE, GENERATION_RULE, Recency; ancestry:"
+                " milestone.json ancestry",
             },
             "configurations": _configurations(g1, ms, meas, rows, recency),
             "gate_decisions": decisions,

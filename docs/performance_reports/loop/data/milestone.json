@@ -60,10 +60,15 @@
   ]
  },
  "development_records": {
-  "source": "DESIGN.md WP3.1 seventh increment (fef92189, native complete virtual against the providers: 'one thread for generation, shared host'), eighth increment (0ea83af2: 'measured under a shared host (load 50-130 on 384 cores)'), ninth increment (6f5a64cc, generation cost: 'both trees in parallel on the shared host, one process each, 8 pinned cores')",
-  "what": "run conditions of the development validation records (measured.json required_native, tools/loop_v2_generate.py validate), stated wherever a record supplies a main value of Table 1, since the G1 protocol differs",
-  "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
-  "short": "shared host under load"
+  "source": "DESIGN.md WP3.1 seventh increment (fef92189, 'I5 proper, the interim production route', cost of the production route: 'one generation thread'), eighth increment (0ea83af2, native validations on the merged head: 'measured under a shared host (load 50-130 on 384 cores)', no thread count), ninth increment (6f5a64cc, generation cost after the merge: 'both trees in parallel on the shared host, one process each, 8 pinned cores'); native generation stages are rayon-parallel (rust/crates/rusticol-core/src/loop_v2/generate/schedules.rs at 6f5a64cc, into_par_iter)",
+  "what": "run conditions of the development validation records (measured.json required_native, tools/loop_v2_generate.py validate), stated wherever a record supplies a main value of Table 1, since the G1 protocol differs; threads: the generation threads each record's DESIGN increment states (by revision)",
+  "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
+  "short": "shared host under load",
+  "threads": {
+   "fef92189": "one generation thread",
+   "0ea83af2": "thread count not recorded",
+   "6f5a64cc": "8 pinned cores, native stages rayon-parallel"
+  }
  },
  "integrated": [
   {

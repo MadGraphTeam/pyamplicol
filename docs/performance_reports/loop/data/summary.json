@@ -9,6 +9,7 @@
   "main_rule": {
    "rule": "every cell shows the most recent configuration that measured it; A is newer than B if B's revision is an ancestor of A's (git merge-base --is-ancestor, recorded in milestone.json ancestry) or if A is the development side and B the integrated side of one G1 campaign, transitively; equal revisions keep the order development, integrated, development_records; the registry (no run) comes last; without a measurement, the status of the newest configuration with a record of the row",
    "validation_rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it",
+   "generation_rule": "a generation multiplier pairs values timed under the same kind of conditions: in a G1 row the campaign's provider generation with a G1 configuration; a newer development record there (shared host under load) has no multiplier; in the other rows the development record with the providers' reference runs, both run records on this shared host outside the G1 protocol",
    "kinds": [
     "development",
     "integrated",
@@ -33,11 +34,16 @@
     },
     {
      "newer": "development_records 6f5a64cc",
+     "older": "development_records 0ea83af2",
+     "basis": "git merge-base --is-ancestor 0ea83af2 6f5a64cc (milestone.json ancestry)"
+    },
+    {
+     "newer": "development_records 6f5a64cc",
      "older": "integrated 1c971289",
      "basis": "git merge-base --is-ancestor 1c971289 6f5a64cc (milestone.json ancestry)"
     }
    ],
-   "source": "scripts/build_summary.py MAIN_RULE, VALIDATION_RULE, Recency; ancestry: milestone.json ancestry"
+   "source": "scripts/build_summary.py MAIN_RULE, VALIDATION_RULE, GENERATION_RULE, Recency; ancestry: milestone.json ancestry"
   },
   "configurations": {
    "development": {
@@ -141,8 +147,13 @@
     "inputs": [
      "native"
     ],
-    "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+    "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
     "conditions_short": "shared host under load",
+    "threads": {
+     "6f5a64cc": "8 pinned cores, native stages rayon-parallel",
+     "0ea83af2": "thread count not recorded",
+     "fef92189": "one generation thread"
+    },
     "records": [
      {
       "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
@@ -159,7 +170,8 @@
       "rows": [
        "g g -> t overline(t) g g",
        "u overline(u) -> e^- e^+ g g g",
-       "g g -> t overline(t) e^- e^+ g"
+       "g g -> t overline(t) e^- e^+ g",
+       "g g -> g g g g g"
       ]
      },
      {
@@ -338,7 +350,8 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 69.03477935356116
+       "ratio_to_fastest": 69.03477935356116,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
        "madloop": {
@@ -543,7 +556,8 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 26.043493729513607
+       "ratio_to_fastest": 26.043493729513607,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
        "madloop": {
@@ -760,7 +774,8 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 23.57956508285684
+       "ratio_to_fastest": 23.57956508285684,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
        "madloop": {
@@ -973,7 +988,8 @@
          "status": "refused"
         }
        ],
-       "ratio_to_fastest": 37.12628744697728
+       "ratio_to_fastest": 37.12628744697728,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
        "madloop": {
@@ -1178,7 +1194,8 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 19.176209526620127
+       "ratio_to_fastest": 19.176209526620127,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
        "madloop": {
@@ -1395,7 +1412,8 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 2.235479398549292
+       "ratio_to_fastest": 2.235479398549292,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
        "madloop": {
@@ -1609,7 +1627,8 @@
          "status": "refused"
         }
        ],
-       "ratio_to_fastest": 33.808828462744
+       "ratio_to_fastest": 33.808828462744,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
        "madloop": {
@@ -1811,6 +1830,7 @@
         ],
         "max_finite": 1.1389380682685916e-11,
         "repeats": "development",
+        "repeats_revision": "889af02c",
         "why": "3 of 16 points; largest deviation 1.14e-11 <= 7.63e-09",
         "source": "measured.json required_native.processes[gg_ttxgg]"
        }
@@ -1832,8 +1852,9 @@
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "revision": "0ea83af2",
        "source": "measured.json required_native.processes[gg_ttxgg]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
        "conditions_short": "shared host under load",
+       "threads": "thread count not recorded",
        "conditions_source": "milestone.json development_records",
        "configuration": "development_records",
        "considered": [
@@ -1853,7 +1874,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.6271742675917141
+       "no_ratio": "no multiplier: a development record on the shared host under load against the providers' G1 generation on idle pinned cores (GENERATION_RULE)"
       },
       "providers": {
        "madloop": {
@@ -2072,7 +2093,8 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 1.20205331412947
+       "ratio_to_fastest": 1.20205331412947,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
        "madloop": null,
@@ -2277,6 +2299,7 @@
         ],
         "max_finite": 4.484224562336883e-11,
         "repeats": "development",
+        "repeats_revision": "889af02c",
         "why": "2 of 8 points; without ML; largest deviation 4.48e-11 <= 4.04e-07",
         "source": "measured.json required_native.processes[gg_gggg]"
        }
@@ -2298,8 +2321,9 @@
        "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
        "revision": "6f5a64cc",
        "source": "measured.json required_native.processes[gg_gggg]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
        "conditions_short": "shared host under load",
+       "threads": "8 pinned cores, native stages rayon-parallel",
        "conditions_source": "milestone.json development_records",
        "configuration": "development_records",
        "considered": [
@@ -2319,7 +2343,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.07261003129087654
+       "no_ratio": "no multiplier: a development record on the shared host under load against the providers' G1 generation on idle pinned cores (GENERATION_RULE)"
       },
       "providers": {
        "madloop": {
@@ -2514,7 +2538,14 @@
       "source": "measured.json required_native.processes[uux_emepddxg]",
       "within_estimate": true,
       "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
-      "revision": "6f5a64cc"
+      "revision": "6f5a64cc",
+      "considered": [
+       {
+        "configuration": "development_records",
+        "revision": "6f5a64cc",
+        "status": "compared"
+       }
+      ]
      },
      "row_status": null,
      "generation": {
@@ -2532,10 +2563,12 @@
        "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
        "revision": "6f5a64cc",
        "source": "measured.json required_native.processes[uux_emepddxg]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
        "conditions_short": "shared host under load",
+       "threads": "8 pinned cores, native stages rayon-parallel",
        "conditions_source": "milestone.json development_records",
        "ratio_to_fastest": 4.489228950112028,
+       "ratio_basis": "the development record and the providers' reference runs, both run records on this shared host outside the G1 protocol",
        "configuration": "development_records",
        "considered": [
         {
@@ -2697,7 +2730,14 @@
       "passed": true,
       "source": "measured.json required_native.processes[uux_emepggg]",
       "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
-      "revision": "0ea83af2"
+      "revision": "0ea83af2",
+      "considered": [
+       {
+        "configuration": "development_records",
+        "revision": "0ea83af2",
+        "status": "compared"
+       }
+      ]
      },
      "row_status": null,
      "generation": {
@@ -2715,10 +2755,12 @@
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "revision": "0ea83af2",
        "source": "measured.json required_native.processes[uux_emepggg]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
        "conditions_short": "shared host under load",
+       "threads": "thread count not recorded",
        "conditions_source": "milestone.json development_records",
        "ratio_to_fastest": 2.309976560283896,
+       "ratio_basis": "the development record and the providers' reference runs, both run records on this shared host outside the G1 protocol",
        "configuration": "development_records",
        "considered": [
         {
@@ -2880,7 +2922,14 @@
       "passed": true,
       "source": "measured.json required_native.processes[gg_ttxemepg_qcd]",
       "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
-      "revision": "0ea83af2"
+      "revision": "0ea83af2",
+      "considered": [
+       {
+        "configuration": "development_records",
+        "revision": "0ea83af2",
+        "status": "compared"
+       }
+      ]
      },
      "row_status": null,
      "generation": {
@@ -2898,10 +2947,12 @@
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "revision": "0ea83af2",
        "source": "measured.json required_native.processes[gg_ttxemepg_qcd]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
        "conditions_short": "shared host under load",
+       "threads": "thread count not recorded",
        "conditions_source": "milestone.json development_records",
        "ratio_to_fastest": 1.5238129244512035,
+       "ratio_basis": "the development record and the providers' reference runs, both run records on this shared host outside the G1 protocol",
        "configuration": "development_records",
        "considered": [
         {
@@ -3182,7 +3233,14 @@
       "passed": true,
       "source": "measured.json required_native.processes[uux_ggggg]",
       "record": "DESIGN.md WP3.1 seventh increment (fef92189), 'I5 proper, the interim production route'",
-      "revision": "fef92189"
+      "revision": "fef92189",
+      "considered": [
+       {
+        "configuration": "development_records",
+        "revision": "fef92189",
+        "status": "compared"
+       }
+      ]
      },
      "row_status": null,
      "generation": {
@@ -3200,10 +3258,12 @@
        "record": "DESIGN.md WP3.1 seventh increment (fef92189), 'I5 proper, the interim production route'",
        "revision": "fef92189",
        "source": "measured.json required_native.processes[uux_ggggg]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
        "conditions_short": "shared host under load",
+       "threads": "one generation thread",
        "conditions_source": "milestone.json development_records",
        "ratio_to_fastest": 0.05062602940530824,
+       "ratio_basis": "the development record and the providers' reference runs, both run records on this shared host outside the G1 protocol",
        "configuration": "development_records",
        "considered": [
         {
@@ -3348,25 +3408,59 @@
       "status": "compared",
       "configuration": "development_records",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
-      "points": 1,
+      "points": 3,
       "point_indices": [
-       0
+       0,
+       1,
+       2
       ],
       "references": [
        {
         "key": "njet_dd_oneloop_R1",
         "short": "NJet DD",
-        "points": 1,
+        "points": 3,
         "max_finite": 3.764212455416529e-09
        }
       ],
       "max_finite": 3.764212455416529e-09,
       "tolerance": 2e-08,
       "passed": true,
-      "source": "measured.json required_native.processes[gg_ggggg]",
+      "source": "measured.json required_native.superseded[gg_ggggg]",
       "within_estimate": true,
-      "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
-      "revision": "6f5a64cc",
+      "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
+      "revision": "0ea83af2",
+      "considered": [
+       {
+        "configuration": "development_records",
+        "revision": "6f5a64cc",
+        "status": "compared"
+       },
+       {
+        "configuration": "development_records",
+        "revision": "0ea83af2",
+        "status": "compared"
+       }
+      ],
+      "partial_repeats": [
+       {
+        "configuration": "development_records",
+        "revision": "6f5a64cc",
+        "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
+        "points": 1,
+        "point_indices": [
+         0
+        ],
+        "references": [
+         "NJet DD"
+        ],
+        "max_finite": 3.764212455416529e-09,
+        "repeats": "development_records",
+        "repeats_revision": "0ea83af2",
+        "why": "1 of 3 points; largest deviation 3.76e-09 <= 3.76e-09",
+        "source": "measured.json required_native.processes[gg_ggggg]"
+       }
+      ],
+      "rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it",
       "note": "top-free (particle_veto = [t]), Nf = 5"
      },
      "row_status": null,
@@ -3385,8 +3479,9 @@
        "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
        "revision": "6f5a64cc",
        "source": "measured.json required_native.processes[gg_ggggg]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
        "conditions_short": "shared host under load",
+       "threads": "8 pinned cores, native stages rayon-parallel",
        "conditions_source": "milestone.json development_records",
        "configuration": "development_records",
        "considered": [

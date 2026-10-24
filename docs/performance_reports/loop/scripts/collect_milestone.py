@@ -63,7 +63,9 @@ GINT_RECORDS = {
 # Earlier records of a process whose newest record re-ran fewer points: the
 # ninth increment re-ran g g > g g g g g at point 0 only (bitwise the eighth
 # increment's values there); the eighth increment's record keeps points 1
-# and 2. The report cites them beside the newest record, never in its place.
+# and 2. They are older candidates of Table 1's validation cell only: the
+# newest record replaces them unless it only repeats part of them
+# (VALIDATION_RULE of scripts/build_summary.py), never in the generation cell.
 SUPERSEDED = {
     "gg_ggggg": ("gint/val1/gg_ggggg_njet.json", EIGHTH),
 }
@@ -355,7 +357,9 @@ def collect(root: Path) -> dict:
         "required_native": {
             "branch": GENSCALE_BRANCH,
             "what": (
-                "generation (LoopSlice.generate, one thread) and plan export,"
+                "generation (LoopSlice.generate; threads as each DESIGN increment"
+                " states them, milestone.json development_records.threads) and"
+                " plan export,"
                 " then binary64 virtuals with native per-point inputs and the"
                 " production counterterm route at the fixture points, against"
                 " the committed references (tests/fixtures/loop/required)"

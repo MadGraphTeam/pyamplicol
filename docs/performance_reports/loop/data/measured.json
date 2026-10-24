@@ -136,7 +136,7 @@
  },
  "required_native": {
   "branch": "work/v2-generation-scale",
-  "what": "generation (LoopSlice.generate, one thread) and plan export, then binary64 virtuals with native per-point inputs and the production counterterm route at the fixture points, against the committed references (tests/fixtures/loop/required)",
+  "what": "generation (LoopSlice.generate; threads as each DESIGN increment states them, milestone.json development_records.threads) and plan export, then binary64 virtuals with native per-point inputs and the production counterterm route at the fixture points, against the committed references (tests/fixtures/loop/required)",
   "processes": {
    "uux_emepddxg": {
     "source": "workspace/tmp/generation-scale/gint2/after/uux_emepddxg.json",
