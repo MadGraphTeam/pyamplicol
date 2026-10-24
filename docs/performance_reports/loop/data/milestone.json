@@ -342,5 +342,32 @@
    ]
   },
   "catani_native_vs_njet": 2.3e-14
+ },
+ "status_notes": {
+  "source": "HANDOFF_24_10_2026.md section 9 items 2 and 4; data/g1.json (generation_error of the integrated rows); DESIGN.md WP3.2, WP3.5; DESIGN.md WP3.1 eighth increment (0ea83af2)",
+  "what": "short attributions printed in Table 1 where the engine on loop refuses a process or a capability is not started; numbers never come from here",
+  "notes": {
+   "uux_emepg": {
+    "refused": "Z fermion signs (WP3.2), Furry zeros (WP3.5)"
+   },
+   "uux_emepgg": {
+    "refused": "Z fermion signs (WP3.2), Furry zeros (WP3.5)"
+   },
+   "uux_emepddxg": {
+    "loop": "V+jets refused on loop (WP3.2, WP3.5)"
+   },
+   "uux_emepggg": {
+    "loop": "V+jets refused on loop (WP3.2, WP3.5)"
+   },
+   "gg_ttxemepg_ew": {
+    "loop": "EW loops not started (WP3.2)"
+   },
+   "uux_gggg": {
+    "madloop": "not exported: the g g > g g g g export took 2.4 h (HANDOFF section 0.1)"
+   },
+   "gg_ggggg": {
+    "validation": "top-free (particle_veto = [t]), Nf = 5, NJet 3.1.2 double-double at rotated points"
+   }
+  }
  }
 }

@@ -149,5 +149,437 @@
     }
    }
   }
+ },
+ "required_native": {
+  "branch": "work/v2-generation-scale",
+  "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
+  "what": "generation (LoopSlice.generate, one thread) and plan export, then binary64 virtuals with native per-point inputs and the production counterterm route at the fixture points, against the committed references (tests/fixtures/loop/required)",
+  "processes": {
+   "uux_emepddxg": {
+    "source": "workspace/tmp/generation-scale/gint/val1/uux_emepddxg.json",
+    "process": "u u~ > e- e+ d d~ g",
+    "counterterms": "recursion",
+    "inputs": "native",
+    "generate_s": 28.1,
+    "generate_peak_gib": 0.355,
+    "export_s": 8.0,
+    "export_peak_gib": 0.437,
+    "plan_json_mb": 1.13,
+    "max_rss_gib": 0.499,
+    "tolerance": 2e-08,
+    "passed": true,
+    "points": [
+     0,
+     1,
+     2
+    ],
+    "max_deviation": {
+     "madloop": {
+      "born": 6.471980070514253e-15,
+      "finite": 8.24556399977019e-13,
+      "single_pole": 1.5715409723926185e-13,
+      "double_pole": 1.8908518160628318e-14
+     },
+     "recola": {
+      "born": 1.3404350496262832e-14,
+      "finite": 8.480896209301004e-13,
+      "single_pole": 2.2656304608920996e-13,
+      "double_pole": 1.0335589899295102e-13
+     },
+     "openloops": {
+      "born": 1.93331978311482e-14,
+      "finite": 8.652182311174691e-13,
+      "single_pole": 1.1133162828181479e-13,
+      "double_pole": 5.985430209119833e-15
+     }
+    },
+    "max_error_per_point": [
+     3.80785672917389e-13,
+     8.652182311174691e-13,
+     6.014448438428271e-13
+    ],
+    "stability_estimate_per_point": [
+     null,
+     null,
+     null
+    ],
+    "seconds_per_point_unbatched": [
+     0.1,
+     0.0,
+     0.0
+    ]
+   },
+   "uux_emepggg": {
+    "source": "workspace/tmp/generation-scale/gint/val1/uux_emepggg.json",
+    "process": "u u~ > e- e+ g g g",
+    "counterterms": "recursion",
+    "inputs": "native",
+    "generate_s": 29.6,
+    "generate_peak_gib": 0.366,
+    "export_s": 7.1,
+    "export_peak_gib": 0.48,
+    "plan_json_mb": 2.45,
+    "max_rss_gib": 0.627,
+    "tolerance": 2e-08,
+    "passed": true,
+    "points": [
+     0,
+     1,
+     2
+    ],
+    "max_deviation": {
+     "madloop": {
+      "born": 7.51056586376934e-15,
+      "finite": 5.992247980553336e-13,
+      "single_pole": 2.7373953203181496e-13,
+      "double_pole": 6.784316469377726e-15
+     },
+     "recola": {
+      "born": 1.9715235392394276e-14,
+      "finite": 8.531650900460978e-13,
+      "single_pole": 4.584820821549813e-13,
+      "double_pole": 1.969237122558476e-13
+     },
+     "openloops": {
+      "born": 2.2688167713469536e-14,
+      "finite": 4.585783464407682e-13,
+      "single_pole": 1.1767847370859225e-13,
+      "double_pole": 7.177092686025444e-14
+     }
+    },
+    "max_error_per_point": [
+     3.206543481017846e-13,
+     8.531650900460978e-13,
+     1.679607927215052e-13
+    ],
+    "stability_estimate_per_point": [
+     null,
+     null,
+     null
+    ],
+    "seconds_per_point_unbatched": [
+     0.4,
+     0.2,
+     0.2
+    ]
+   },
+   "gg_ttxemepg_qcd": {
+    "source": "workspace/tmp/generation-scale/gint/val1/gg_ttxemepg_qcd.json",
+    "process": "g g > t t~ e- e+ g",
+    "counterterms": "recursion",
+    "inputs": "native",
+    "generate_s": 31.7,
+    "generate_peak_gib": 0.399,
+    "export_s": 12.0,
+    "export_peak_gib": 0.587,
+    "plan_json_mb": 2.13,
+    "max_rss_gib": 0.886,
+    "tolerance": 2e-08,
+    "passed": true,
+    "points": [
+     0,
+     1,
+     2
+    ],
+    "max_deviation": {
+     "madloop": {
+      "born": 1.1881445348140302e-14,
+      "finite": 5.670694602310801e-09,
+      "single_pole": 1.2192008459404169e-12,
+      "double_pole": 8.03530529513484e-13
+     },
+     "recola": {
+      "born": 8.961908423234237e-15,
+      "finite": 4.377966389939275e-09,
+      "single_pole": 3.700804203231065e-12,
+      "double_pole": 5.290539900225074e-12
+     },
+     "openloops": {
+      "born": 1.4188522114769455e-14,
+      "finite": 5.67129728297627e-09,
+      "single_pole": 1.2437094830479074e-12,
+      "double_pole": 7.832837689072648e-13
+     }
+    },
+    "max_error_per_point": [
+     2.6441367375839288e-12,
+     3.700804203231065e-12,
+     5.67129728297627e-09
+    ],
+    "stability_estimate_per_point": [
+     null,
+     null,
+     null
+    ],
+    "seconds_per_point_unbatched": [
+     0.5,
+     0.2,
+     0.2
+    ]
+   },
+   "gg_ttxgg": {
+    "source": "workspace/tmp/generation-scale/gint/val1/gg_ttxgg.json",
+    "process": "g g > t t~ g g",
+    "counterterms": "recursion",
+    "inputs": "native",
+    "generate_s": 28.8,
+    "generate_peak_gib": 0.403,
+    "export_s": 9.7,
+    "export_peak_gib": 0.687,
+    "plan_json_mb": 3.71,
+    "max_rss_gib": 1.01,
+    "tolerance": 2e-08,
+    "passed": true,
+    "points": [
+     0,
+     1,
+     2
+    ],
+    "max_deviation": {
+     "madloop": {
+      "born": 2.1003273468838754e-14,
+      "finite": 8.54738073265877e-12,
+      "single_pole": 4.0928869755673144e-11,
+      "double_pole": 6.134904195856546e-13
+     },
+     "recola": {
+      "born": 1.8377864285233956e-14,
+      "finite": 1.1389380682685916e-11,
+      "single_pole": 1.0225094470590749e-10,
+      "double_pole": 1.637758146732531e-11
+     },
+     "openloops": {
+      "born": 1.3627123857758578e-14,
+      "finite": 8.553844720414708e-12,
+      "single_pole": 4.219981349683161e-11,
+      "double_pole": 5.371181478600039e-13
+     }
+    },
+    "max_error_per_point": [
+     1.0225094470590749e-10,
+     4.219981349683161e-11,
+     1.637758146732531e-11
+    ],
+    "stability_estimate_per_point": [
+     null,
+     null,
+     null
+    ],
+    "seconds_per_point_unbatched": [
+     0.7,
+     0.2,
+     0.2
+    ]
+   },
+   "gg_gggg": {
+    "source": "workspace/tmp/generation-scale/gint/val2/gg_gggg.json",
+    "process": "g g > g g g g",
+    "counterterms": "recursion",
+    "inputs": "native",
+    "generate_s": 118.4,
+    "generate_peak_gib": 0.932,
+    "export_s": 32.9,
+    "export_peak_gib": 2.198,
+    "plan_json_mb": 16.1,
+    "max_rss_gib": 3.355,
+    "tolerance": 2e-08,
+    "passed": true,
+    "points": [
+     0,
+     2
+    ],
+    "max_deviation": {
+     "recola": {
+      "born": 9.832813513855612e-15,
+      "finite": 3.8853934891666336e-11,
+      "single_pole": 1.151480635814188e-11,
+      "double_pole": 5.218579667735554e-12
+     },
+     "openloops": {
+      "born": 4.681922467062852e-14,
+      "finite": 4.484224562336883e-11,
+      "single_pole": 7.538188368836578e-12,
+      "double_pole": 2.548084053976872e-12
+     }
+    },
+    "max_error_per_point": [
+     1.1769630488772044e-11,
+     4.484224562336883e-11
+    ],
+    "stability_estimate_per_point": [
+     null,
+     null
+    ],
+    "seconds_per_point_unbatched": [
+     3.5,
+     1.1
+    ]
+   },
+   "gg_ggggg": {
+    "source": "workspace/tmp/generation-scale/gint/val1/gg_ggggg_njet.json",
+    "process": "g g > g g g g g",
+    "counterterms": "recursion",
+    "inputs": "native",
+    "generate_s": 2765.5,
+    "generate_peak_gib": 15.793,
+    "export_s": 527.5,
+    "export_peak_gib": 31.9,
+    "plan_json_mb": 159.87,
+    "max_rss_gib": 42.155,
+    "tolerance": 2e-08,
+    "passed": true,
+    "points": [
+     0,
+     1,
+     2
+    ],
+    "max_deviation": {
+     "njet_dd_oneloop_R1": {
+      "born": 7.510073158207184e-13,
+      "finite": 3.764212455416529e-09,
+      "single_pole": 2.360940267731546e-09,
+      "double_pole": 5.336192728536748e-12
+     },
+     "njet_double_R1": {
+      "born": 7.887188261273916e-13,
+      "finite": 3.7248380817641904e-09,
+      "single_pole": 2.3694466847669894e-09,
+      "double_pole": 5.32465343320199e-12
+     },
+     "njet_double_R2": {
+      "born": 7.929044590302365e-13,
+      "finite": 3.6048147459444145e-09,
+      "single_pole": 2.4877411245399646e-09,
+      "double_pole": 5.3462692962938605e-12
+     },
+     "catani": {
+      "born": 8.10854124489963e-13,
+      "single_pole": 2.360966226922628e-09,
+      "double_pole": 5.336842829682368e-12
+     }
+    },
+    "max_error_per_point": [
+     3.764212455416529e-09,
+     3.1022519589013017e-09,
+     4.28593593904434e-11
+    ],
+    "stability_estimate_per_point": [
+     1.986717591778569e-08,
+     5.983419619149955e-08,
+     1.4455581818310384e-10
+    ],
+    "seconds_per_point_unbatched": [
+     84.3,
+     41.2,
+     39.1
+    ]
+   }
+  }
+ },
+ "provider_generation": {
+  "what": "MadLoop: graph generation, source export and compilation (madloop-export.generation.json); Recola: process generation (recola-result.json, or the run status if unfinished); OpenLoops: the prebuilt library of the reference run",
+  "processes": {
+   "uux_emepddxg": {
+    "source": "workspace/reference/runs/required/uux_emepddxg/",
+    "madloop": {
+     "status": "compiled",
+     "loops": 1668,
+     "graph_generation_s": 24.522084772994276,
+     "source_export_s": 26.717296938004438,
+     "compile_s": 4.509116383967921,
+     "total_s": 55.748498094966635
+    },
+    "recola": {
+     "status": "done",
+     "generation_s": 8.39787866
+    },
+    "openloops": {
+     "library": "pplljjj"
+    }
+   },
+   "uux_emepggg": {
+    "source": "workspace/reference/runs/required/uux_emepggg/",
+    "madloop": {
+     "status": "compiled",
+     "loops": 5538,
+     "graph_generation_s": 76.61233418004122,
+     "source_export_s": 58.18535616499139,
+     "compile_s": 6.724375152029097,
+     "total_s": 141.5220654970617
+    },
+    "recola": {
+     "status": "done",
+     "generation_s": 15.8876071
+    },
+    "openloops": {
+     "library": "pplljjj"
+    }
+   },
+   "gg_ttxemepg_qcd": {
+    "source": "workspace/reference/runs/required/gg_ttxemepg_qcd/",
+    "madloop": {
+     "status": "compiled",
+     "loops": 5538,
+     "graph_generation_s": 87.49735189595958,
+     "source_export_s": 62.39196990203345,
+     "compile_s": 11.206919477961492,
+     "total_s": 161.09624127595453
+    },
+    "recola": {
+     "status": "done",
+     "generation_s": 28.678061
+    },
+    "openloops": {
+     "library": "ppllttj"
+    }
+   },
+   "gg_ttxemepg_ew": {
+    "source": "workspace/reference/runs/required/gg_ttxemepg_ew/",
+    "madloop": {
+     "status": "compiled",
+     "loops": 17848,
+     "graph_generation_s": 405.2487154210103,
+     "source_export_s": 236.73276926897233,
+     "compile_s": 10.103176024975255,
+     "total_s": 652.0846607149579
+    },
+    "recola": {
+     "status": "done",
+     "generation_s": 21.8859307
+    },
+    "openloops": {
+     "library": "ppllttj_ew"
+    }
+   },
+   "uux_ggggg": {
+    "source": "workspace/reference/runs/required/uux_ggggg/",
+    "madloop": {
+     "status": "compiled",
+     "loops": 110475,
+     "graph_generation_s": 5792.987055428035,
+     "source_export_s": 38040.019540841924,
+     "compile_s": 121.58262162806932,
+     "total_s": 43954.58921789803
+    },
+    "recola": {
+     "status": "done",
+     "generation_s": 10220.0391
+    },
+    "openloops": null
+   },
+   "gg_ggggg": {
+    "source": "workspace/reference/runs/required/gg_ggggg/",
+    "madloop": {
+     "status": "exporting",
+     "loops": 410560,
+     "graph_generation_s": 62538.53792525001
+    },
+    "recola": {
+     "status": "running",
+     "updated": "2026-10-20T09:10:49Z"
+    },
+    "openloops": null
+   }
+  }
  }
 }

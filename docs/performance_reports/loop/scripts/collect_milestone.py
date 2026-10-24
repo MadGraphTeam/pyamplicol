@@ -4,8 +4,10 @@
 Usage: python scripts/collect_milestone.py <workspace> [output]
 
 <workspace> is the development workspace that holds the run records
-(tmp/generation-scale/runs, tmp/ct-recursion/s4). Every value is read from
-those records (JSON and /usr/bin/time -v logs); nothing is copied from text.
+(tmp/generation-scale/runs, tmp/ct-recursion/s4, the WP3.1 native validations
+in tmp/generation-scale/gint, the provider reference runs in
+reference/runs/required). Every value is read from those records (JSON and
+/usr/bin/time -v logs); nothing is copied from text.
 Each block carries its source, relative to the workspace. The hand-maintained
 registry data/milestone.json is not written here.
 """
@@ -19,6 +21,31 @@ from pathlib import Path
 
 RUNS = "tmp/generation-scale/runs"
 CT = "tmp/ct-recursion/s4"
+# Native validations of the WP3.1 branch (work/v2-generation-scale) on its
+# merged head, recorded by DESIGN WP3.1 "eighth increment" (0ea83af2):
+# tools/loop_v2_generate.py validate --inputs native, production counterterm
+# route, binary64, one record per process.
+GINT = "tmp/generation-scale/gint"
+GINT_RECORDS = {
+    "uux_emepddxg": "val1/uux_emepddxg.json",
+    "uux_emepggg": "val1/uux_emepggg.json",
+    "gg_ttxemepg_qcd": "val1/gg_ttxemepg_qcd.json",
+    "gg_ttxgg": "val1/gg_ttxgg.json",
+    "gg_gggg": "val2/gg_gggg.json",
+    "gg_ggggg": "val1/gg_ggggg_njet.json",
+}
+# Provider reference runs of the required set (HANDOFF section 0.1): MadLoop
+# export records (graph generation, source export, compilation) and the
+# Recola/OpenLoops result records of the reference campaign.
+REFS = "reference/runs/required"
+REF_PROCESSES = (
+    "uux_emepddxg",
+    "uux_emepggg",
+    "gg_ttxemepg_qcd",
+    "gg_ttxemepg_ew",
+    "uux_ggggg",
+    "gg_ggggg",
+)
 
 
 def _load(root: Path, rel: str) -> dict:
@@ -66,6 +93,74 @@ def _generation(root: Path, name: str) -> dict:
         "counts": rec["counts"],
     }
     out.update(_time_v(root, f"{RUNS}/{name}.log"))
+    return out
+
+
+def _native_validation(root: Path, key: str, rel: str) -> dict:
+    """One WP3.1 native validation record: generation and export cost, and
+    per reference the largest deviation of every coefficient over the points
+    (the record's own metric, |a-b|/max(|a|,|b|,|Born| coupling/2pi))."""
+    path = f"{GINT}/{rel}"
+    rec = _load(root, path)
+    worst: dict[str, dict[str, float]] = {}
+    for point in rec["points"]:
+        for ref, errors in point["errors"].items():
+            for coefficient, value in errors.items():
+                slot = worst.setdefault(ref, {})
+                slot[coefficient] = max(slot.get(coefficient, 0.0), value)
+    return {
+        "source": f"workspace/{path}",
+        "process": rec["process"],
+        "counterterms": rec["counterterms"],
+        "inputs": rec["inputs"],
+        "generate_s": rec["generate_s"],
+        "generate_peak_gib": rec["generate_peak_gb"],
+        "export_s": rec["export_s"],
+        "export_peak_gib": rec["export_peak_gb"],
+        "plan_json_mb": rec["plan_json_mb"],
+        "max_rss_gib": rec["max_rss_gb"],
+        "tolerance": rec["tolerance"],
+        "passed": rec["passed"],
+        "points": [p["index"] for p in rec["points"]],
+        "max_deviation": worst,
+        "max_error_per_point": [p["max_error"] for p in rec["points"]],
+        "stability_estimate_per_point": [
+            p.get("stability_relative") for p in rec["points"]
+        ],
+        # Single-point development evaluations (one point per call, with the
+        # rotation check where a stability estimate is recorded); not batched
+        # timings.
+        "seconds_per_point_unbatched": [p["seconds"] for p in rec["points"]],
+    }
+
+
+def _provider_generation(root: Path, key: str) -> dict:
+    """MadLoop export and Recola generation records of one required process,
+    and the OpenLoops library its reference run used."""
+    base = root / REFS / key
+    out: dict = {"source": f"workspace/{REFS}/{key}/"}
+    ml = json.loads((base / "madloop-export.generation.json").read_text())
+    stages = ("graph_generation_s", "source_export_s", "compile_s")
+    madloop = {"status": ml["status"], "loops": ml.get("loops")}
+    madloop.update({s: ml[s] for s in stages if s in ml})
+    if ml["status"] == "compiled":
+        madloop["total_s"] = sum(ml[s] for s in stages)
+    out["madloop"] = madloop
+    recola = base / "recola-result.json"
+    if recola.exists():
+        out["recola"] = {
+            "status": "done",
+            "generation_s": json.loads(recola.read_text())["generation_seconds"],
+        }
+    else:
+        state = json.loads((base / "status-recola.json").read_text())
+        out["recola"] = {"status": state["state"], "updated": state["updated"]}
+    openloops = base / "openloops-result.json"
+    out["openloops"] = (
+        {"library": json.loads(openloops.read_text())["library"]["name"]}
+        if openloops.exists()
+        else None
+    )
     return out
 
 
@@ -158,6 +253,32 @@ def collect(root: Path) -> dict:
                 "source": f"workspace/{RUNS}/cmp_uux_ggggg.json",
                 "points": len(uux["points"]),
                 "max_relative_deviation": worst,
+            },
+        },
+        "required_native": {
+            "branch": "work/v2-generation-scale",
+            "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), "
+            "'Native validations on the merged head'",
+            "what": (
+                "generation (LoopSlice.generate, one thread) and plan export,"
+                " then binary64 virtuals with native per-point inputs and the"
+                " production counterterm route at the fixture points, against"
+                " the committed references (tests/fixtures/loop/required)"
+            ),
+            "processes": {
+                key: _native_validation(root, key, rel)
+                for key, rel in GINT_RECORDS.items()
+            },
+        },
+        "provider_generation": {
+            "what": (
+                "MadLoop: graph generation, source export and compilation"
+                " (madloop-export.generation.json); Recola: process generation"
+                " (recola-result.json, or the run status if unfinished);"
+                " OpenLoops: the prebuilt library of the reference run"
+            ),
+            "processes": {
+                key: _provider_generation(root, key) for key in REF_PROCESSES
             },
         },
     }
