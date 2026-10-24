@@ -100,15 +100,11 @@ INPUTS_PREFERENCE = ("native", "python")
 # so the older, more complete comparison stays in the cell and the repeat is
 # recorded with it (partial_repeats). A check that omits a point cannot
 # improve the cell this way; one that finds a larger deviation replaces it.
-# Today the newer validation records of g g > g g g g (ninth increment,
-# fixture points 0 and 2 against Recola and OpenLoops) and g g > t t~ g g
-# (eighth increment, 3 points) repeat part of G1's comparison (8 and 16
-# points against three providers) and supply only those rows' generation;
-# G1 supplies their validation and batched timings. At the next milestone
-# (G-int integrated and G1 re-measured on loop, whose revision then descends
-# from the records' and has no development side) loop's configuration
-# becomes the main value without code changes (its revision added to
-# milestone.json ancestry).
+# Since the G-int milestone (G1 re-measured on loop at 4e9b5a9e, without a
+# development side) loop's revision descends from every development record,
+# so loop's configuration supplies every cell of the G1 rows, generation
+# included; the 2 -> 5 rows keep the development records (measured on
+# work/v2-generation-scale before its integration) until G1 times them.
 KIND_ORDER = ("development", "integrated", "development_records", "registry")
 MAIN_RULE = (
     "every cell shows the most recent configuration that measured it; A is"
@@ -541,6 +537,9 @@ def _adopted_schedule(proc: dict, name: str | None, batch: str) -> dict | None:
         return {
             "schedule": "M",
             "seconds_per_point": rec["median_seconds_per_point"],
+            # The schedule-M run's own revision (an earlier campaign's run
+            # where G1 did not repeat it): printed where it differs.
+            "revision": alt["revision"][:8],
             "decision": f"g1.json processes[{proc['key']}].schedules ({name}: adopt_m)",
             "source": f"g1.json processes[{proc['key']}].pyamplicol"
             f"['{name}/M'].batches['{batch}']",
@@ -648,6 +647,9 @@ def _validation_g1(
             "dd_closest": None
             if dd is None
             else min(dd["deviation_vs_providers"].values()),
+            # The stability run's revision (printed where it differs from
+            # the validated configuration's).
+            "revision": (b64.get("revision") or "")[:8] or None,
             "source": f"g1.json processes[{proc['key']}].stability ({checked})",
         }
     return out
@@ -1529,6 +1531,10 @@ def _configurations(
         "kind": "records",
         "label": label if in_development else "development records",
         "integration": development.get("integration") if in_development else None,
+        # The revision that integrated the branch into loop (milestone.json
+        # development.integrated_at): its records then measured the
+        # integrated code on the branch, before the integration.
+        "integrated_at": development.get("integrated_at") if in_development else None,
         "branch": branch,
         "inputs": sorted(
             {r["inputs"] for r in meas["required_native"]["processes"].values()}
