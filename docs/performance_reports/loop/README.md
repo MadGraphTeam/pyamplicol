@@ -1,9 +1,10 @@
 # pyAmpliCol one-loop report
 
 `benchmarks.typ` is the source of the live report `benchmarks.pdf`: the
-milestone status of the `loop` branch, the performance-gate policy and status,
-measured generation and runtime (development measurements kept apart from the
-acceptance campaign), the seven-gluon comparison with NJet, the capability
+milestone status, the performance gates and the gate-G1 measurement of the v2
+engine against MadLoop, Recola and OpenLoops (end-to-end timings, stage split,
+leading colour, throughput and recalibration, schedule B against M, levers),
+the required processes, the seven-gluon comparison with NJet, the capability
 matrix and the architecture of the recursive v2 engine.
 
 ## Build
@@ -22,6 +23,7 @@ source in the report's last section.
 
 | File | Content |
 |---|---|
+| `g1.json` | The gate-G1 campaign: per process the providers' production-mode times (and MadLoop's stage split), every pyAmpliCol configuration (integrated slice, native inputs, LC, schedule M, one lane) per batch with its stage split, counts, throughput and gate verdict, the value comparison with the providers, stability estimates at the worst points and the cost-model recalibration. Written by `python -m tools.loop_benchmark gate` (see `tools/loop_benchmark`). |
 | `milestone.json` | Hand-maintained registry, each block with its source: integrated packages at the pinned engine revision and the commits after the last integration, provider generation times and the 45-minute rule (HANDOFF §0.1), provider production timings for the gate (DESIGN §1.3), the required-set generation and validation rows (DESIGN WP3.1 status), native loop-stage timings (DESIGN §5.5, §5.6), NJet Table 5 and the re-measured NJet timings (`njet-benchmark.md`), NJet validation figures. |
 | `measured.json` | Seven-gluon development records (generation, counterterm program, native bare loop, first virtual and its rotation, u u~ > g g g g g against MadLoop/Recola), written by `scripts/collect_milestone.py`. |
 | `measurements.json`, `provider-cold.json`, `legacy-labels.json` | The legacy per-diagram engine's timing snapshot of 2026-10-18 (unchanged, cited by `docs/development/loop_v2/DESIGN.md`) and its labels, shown only as history. |
@@ -32,6 +34,14 @@ instead of estimating them. Test durations are never used as event timings,
 and development measurements are labelled with their branch.
 
 ## Regenerate
+
+- `g1.json`: run `python -m tools.loop_benchmark pyamplicol <process>` (options
+  `--inputs native`, `--accuracy lc`, `--schedule M`, `--lanes 1`),
+  `… providers <process> --cpu N --work DIR [--madloop-stages]` and
+  `… stability <process> --points I …` on pinned idle cores, then
+  `… gate <records> --json data/g1.json --meta date=… slice_revision=…
+  native_revision=… slice_build=… native_build=…` (the report prints these
+  labels). The module docstrings of `tools/loop_benchmark` give the protocol.
 
 - `measured.json`: `python scripts/collect_milestone.py <workspace>` reads the
   run records under `<workspace>/tmp/generation-scale/runs/` and
