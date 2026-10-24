@@ -2,7 +2,7 @@
 """Provider timing for gate G1 in production mode (REQUIREMENTS_ADDENDUM D).
 
 MadLoop, Recola and OpenLoops evaluate the first ``--points`` points of the
-frozen stream (``streams.py``; decimal text ``points_binary64``) on one
+frozen stream (``streams.py``; decimal text ``streams.binary64``) on one
 pinned core, through the drivers and settings of the required-references
 toolkit (``tools/loop_reference/references.py``, ``required_spec``) with the
 process specification of ``processes.json``. Only the pole settings differ
@@ -82,7 +82,7 @@ def _points(key: str, count: int) -> dict[str, Any]:
     stream = streams.load(key)
     return {
         "pdgs": stream["pdgs"],
-        "points": stream["points_binary64"][:count],
+        "points": streams.binary64(stream, count),
         "mu_r": stream["mu_r"][:count],
     }
 

@@ -18,9 +18,9 @@ points per process, with mu_R cycling through 1000, 700 and 1400 GeV:
   has only 12 points at 2->3 and 144 at 2->4.
 
 pyAmpliCol reads the exact rationals (``points``); the Fortran and C++
-provider drivers read decimal text, ``points_binary64`` (17 significant
-digits; equal to ``points`` for the terminating campaign prefix), as every
-binary64 caller does. ``write`` freezes the streams as ``streams/<key>.json``.
+provider drivers read decimal text, ``binary64`` (the shortest text of the
+correctly rounded double), as every binary64 caller does. ``write`` freezes
+the streams as ``streams/<key>.json``.
 """
 
 from __future__ import annotations
@@ -205,9 +205,6 @@ def make_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
         },
         "campaign_prefix": CAMPAIGN_PREFIX,
         "points": [[[_text(x) for x in leg] for leg in point] for point in points],
-        "points_binary64": [
-            [[repr(float(x)) for x in leg] for leg in point] for point in points
-        ],
         "mu_r": list(itertools.islice(itertools.cycle(MU_R), count)),
     }
 
@@ -224,6 +221,16 @@ def load(key: str) -> dict[str, Any]:
 
 def exact(stream: dict[str, Any], index: int) -> list[list[Fraction]]:
     return [[Fraction(x) for x in leg] for leg in stream["points"][index]]
+
+
+def binary64(stream: dict[str, Any], count: int) -> list[list[list[str]]]:
+    """The first ``count`` points as the providers read them: the shortest
+    decimal text of each component's correctly rounded double."""
+
+    return [
+        [[repr(float(Fraction(x))) for x in leg] for leg in point]
+        for point in stream["points"][:count]
+    ]
 
 
 def campaign_agreement(key: str, stream: dict[str, Any]) -> bool | None:
@@ -248,7 +255,7 @@ def write(keys: list[str], count: int = STREAM_LENGTH) -> None:
         agreement = campaign_agreement(key, stream)
         if agreement is False:
             raise AssertionError(f"{key}: the stream does not start with the campaign")
-        path(key).write_text(json.dumps(stream, indent=1) + "\n")
+        path(key).write_text(json.dumps(stream, separators=(",", ":")) + "\n")
         print(key, len(stream["points"]), "points; campaign prefix:", agreement)
 
 

@@ -230,9 +230,14 @@ def build(paths: list[Path]) -> dict[str, Any]:
                     verdict = {"status": "no gate (colour approximation)"}
                 else:
                     verdict = gate_verdict(summary["median_seconds_per_point"], times)
-                batches[size] = {**summary, "gate": verdict}
                 for index, value in summary.get("values", {}).items():
                     mine.setdefault(int(index), tuple(value))
+                # The per-point values stay in the records; the document keeps
+                # their comparison with the providers (values_vs_providers).
+                batches[size] = {
+                    **{k: v for k, v in summary.items() if k != "values"},
+                    "gate": verdict,
+                }
             configurations[name] = {
                 "revision": record["revision"],
                 "branch": record["branch"],
