@@ -215,10 +215,10 @@ recursions, and no loop Feynman diagram is enumerated (@arch). Counterterms
 come from the tree recursion (WP2.2); in production they will be plain tree
 vertices inserted exactly once, without loop matching (addendum J; `ct-simplify`
 in flight). This report records *gate G1*, the first end-to-end measurement of
-v2 against MadLoop, Recola and OpenLoops (@g1), on the integration branch at
-#ms.engine_revision (not yet on `loop`, which is at #ms.previous_loop) and, as a
-development configuration, on the WP3.1 branch whose native per-point inputs
-are being integrated.
+v2 against MadLoop, Recola and OpenLoops (@g1), on the engine published on
+`loop` on 24 October (measured at dfa6bf7c; #ms.engine_revision adds a
+generation-only counterterm fix) and, as a development configuration, on the
+WP3.1 branch whose native per-point inputs are being integrated.
 
 #let g1-badge = {
   let n = gated.len()
@@ -227,18 +227,15 @@ are being integrated.
 #grid(columns: (1.2fr, 1fr), gutter: 8pt,
   box-note[
     #set par(justify: false)
-    *What the slice adds to `loop`* (engine #ms.engine_revision\; merges since #ms.previous_loop)
+    *Published on `loop` on 24 October* (engine #ms.engine_revision\; merges since #ms.previous_loop)
     #v(-0.2em)
     #set text(8.2pt)
     #table(columns: (auto, auto, 1fr), stroke: none, inset: (x: 2pt, y: 2.4pt),
       ..ms.integrated.map(r => (raw(r.sha), text(weight: "semibold", r.wp), [*#r.title.* #text(fill: ink2, r.detail)])).flatten())
     #v(-0.3em)
-    #text(8.2pt)[*On `loop` (#ms.previous_loop):* #ms.already_on_loop.
+    #text(8.2pt)[*Before (#ms.previous_loop):* #ms.already_on_loop.
       *Native build* #raw(ms.native_build.name) (digest
-      #raw(ms.native_build.digest)…). *Measured here:* the slice with this
-      package's timers (`work/v2-measure-g1`, build #raw(g.slice_build)) and the
-      WP3.1 branch at #raw(g.native_revision) (native inputs, build
-      #raw(g.native_build)).]
+      #raw(ms.native_build.digest)…).]
   ],
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
     set text(9pt)
@@ -274,16 +271,16 @@ are being integrated.
 #grid(columns: (1fr, 1fr), gutter: 8pt,
   box-note(fill: white, stroke: 0.6pt + luma(205))[
     #set par(justify: false)
-    *In flight* (branches, not on the slice)
+    *In flight* (branches, not on `loop`)
     #set text(8.4pt)
     - *Generation at scale* (WP3.1 G-int, `work/v2-generation-scale`): native
       trees, Born and counterterm inputs, regeneration-free artifacts; timed
       here as the native-input configuration; audit and integration next.
     - *Rust ports* (HANDOFF §0.4): native loop DAG (A1–A2), seeds (B), cells
       (C) and lowering (D), phase 0.
-    - *`ct-simplify`* (addendum J: no witness table or loop matching,
-      `particle_veto`) and *`ct-assume-fix`* (the QED counterterm regression
-      of a18b7599, found by the push gate).
+    - *`ct-simplify`* (fix round after a refused integration): removes the
+      witness-table admission and loop matching (addendum J); a public
+      `particle_veto` replaces the internal top-free switch.
     - *`measure-g1-7leg`*: the seven-leg G1 rows after WP3.1; *electroweak*
       and complex mass (WP3.2) pending.
   ],
@@ -318,8 +315,8 @@ one thread, binary64, 16 SIMD lanes, in batches of $B$ distinct points of a
 frozen stream (REQUIREMENTS_ADDENDUM D, plan §5.8). Two pyAmpliCol
 configurations are timed:
 
-- *integrated* — the integration branch as it stands (`work/v2-slice`
-  #raw(g.slice_revision), with this package's timers): trees, Born amplitudes
+- *integrated* — the published engine (`work/v2-slice` #raw(g.slice_revision),
+  on `loop` since 24 October, with this package's timers): trees, Born amplitudes
   and counterterm scalars are still formed per point in Python, then the loop
   stage runs natively;
 - *native inputs* #flag[development] — `work/v2-generation-scale`
@@ -402,7 +399,7 @@ common points (@tab:g1values).
     integrated, lower line native inputs; the number is the time over the binding
     limit (MadLoop's time or 1.30× the faster of Recola and OpenLoops), so
     below 1 passes. Provider times repeated on a second core agree within
-    #pct(repeat-spread); pyAmpliCol's blocks spread by #pct(block-spread) at most
+    #pct(repeat-spread)\; pyAmpliCol's blocks spread by #pct(block-spread) at most
     around their median (largest batch, native inputs).],
   tstyle(table(
     columns: (2.75cm, 0.75cm, 1fr, 1fr, 1fr, 1fr, 1fr, 1.65cm),
@@ -1037,12 +1034,12 @@ record prints KiB/10⁶ and the generation record GiB.
   ([Full, NLC and LC colour], "supported", [Exact seed tables in $N_c$; LC/NLC by generated classes and truncated cells. LC is cheaper in the loop stage but not yet end to end at large batches (its native trees cost more, @tab:g1lc), nor to generate at seven legs.]),
   ([Colour and spin correlations], "supported", [Directed colour histories at LC/NLC/FC, spin sources, resolved helicities, flavour aliases, Ward sources (WP2.5). Seven-leg directed LC/NLC tables need the Rust seed tables (WP3.1).]),
   ([Per-order partials], "supported", [Every squared coupling order at tree level and at one loop, mixed Born orders, per-correction loop orders.]),
-  ([Poles at runtime], "supported", [`poles = "all" | "none" | "uv" | "ir" | "split"` (WP2.10, on the slice since 6735d3a5): finite-only mode with the finite part bitwise unchanged and the pole work skipped; UV poles of the bare loop and IR (Catani) poles of the renormalised virtual with the user's semantics of 23 October.]),
+  ([Poles at runtime], "supported", [`poles = "all" | "none" | "uv" | "ir" | "split"` (WP2.10, on `loop` since 24 October): finite-only mode with the finite part bitwise unchanged and the pole work skipped; `"uv"` and `"ir"` with the user's semantics of 23 October. The UV residue comes from an interim local module until the NinjaRS re-pin; a `"uv"` estimate needs a rotation check.]),
   ([Stability estimates], "supported", [Rotation checks (any number, 0 = estimate absent), reduction direction, exact rescaling, in any combination; no automatic escalation (WP2.3).]),
   ([Precision carriers], "supported", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; DD/AP point inputs are formed in Python Decimal until WP3.1.]),
   ([Native executor, schedules], "supported", [Rust, 16 lanes (also for a one-point call, a G1 lever), threads; schedule B for every class at $n <= 6$ (G1 decision, @tab:g1bm), M native, F as oracle. The NinjaRS reduction runs serially. Development report: stage times, modelled kernel work, master-integral time.]),
   ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; relocation to another path tested on the same host and CPU. Loading regenerates the process (the `LoopSlice`) in Python and checks the plan digest, which addendum G forbids for prepared artifacts; WP3.1 removes it. The Rust/C/C++/Fortran SDK refuses v4 until WP3.1.]),
-  ([Counterterms (model UV, $R_2$)], "partial", [Counterterms from the tree recursion are the production route on the slice (WP2.2, a18b7599), site closure the test oracle; both still admit sites by the witness table. Production rule (addendum J): plain tree vertices inserted exactly once, admitted by coupling orders and `particle_veto`, no loop matching; `ct-simplify` removes the matching. Per point they are formed in Python on the slice, natively on the WP3.1 branch.]),
+  ([Counterterms (model UV, $R_2$)], "partial", [Counterterms from the tree recursion are the default route on `loop` since 24 October (WP2.2, a18b7599; constant-argument fix 59badc7a), site closure the test oracle; both still admit sites by the witness table. Production rule (addendum J): plain tree vertices inserted exactly once, admitted by coupling orders and `particle_veto`, no loop matching; `ct-simplify` removes the matching. Per point they are formed in Python on the slice, natively on the WP3.1 branch.]),
   ([Direct $R_2$], "deferred", [A bonus by the user's rule; bounded controls only.]),
   ([Electroweak, complex mass], "open", [Tree EW lanes fixed, the Dirac–Weyl class refused; loop EW, Goldstones and CMS are WP3.2.]),
   ([Required set], "progress", [On the WP3.1 branch seven of eight generate and six agree with their provider references in all coefficients (@tab:validation); $g g -> g g g g g$ is validated in Born and poles; the EW target is not started.]),
@@ -1050,7 +1047,7 @@ record prints KiB/10⁶ and the generation record GiB.
   ([$g g -> 6g$], "deferred", [No $2 -> 6$ work until the $2 -> 5$ plan is complete (user, 23 October).]),
 )
 #figure(kind: table,
-  caption: [*Capability matrix* of the v2 engine on the slice at #ms.engine_revision, with branch work marked.],
+  caption: [*Capability matrix* of the v2 engine on `loop` at #ms.engine_revision, with branch work marked.],
   tstyle(table(
     columns: (3.5cm, 1.6cm, 1fr), align: (x, y) => if x == 1 { center + horizon } else { left + horizon },
     inset: (x: 4.5pt, y: 2.6pt), stroke: tstroke, fill: thead-fill,
@@ -1193,8 +1190,8 @@ is the requested coupling orders, the exactly-once constraint and a public
 particle is dropped, and a vetoed particle is removed from every tree vertex,
 loop line and propagator of the generation, so loops and counterterms stay
 consistent. Nothing is matched to the loop (user, 23 October; addendum J).
-On the slice the counterterms come from the WP2.2 recursion (one counterterm
-order in the tree recursion, the default route since a18b7599, whose
+On `loop` (since 24 October) the counterterms come from the WP2.2 recursion
+(one counterterm order in the tree recursion, the default route, whose
 $g g -> g g g g g$ program leaves no rule to site closure, @tab:sevendev); it
 still admits counterterm sites by a witness table of divergent loop routings
 with a power-counting completeness check, as the site closure (the test
@@ -1341,8 +1338,8 @@ exact carriers and the public interfaces.
     `Integrate …` merges of #ms.engine_revision since #ms.previous_loop;
     `workspace/reports/engine-v2/slice-status.md` (integration blocks,
     DECISIONS 2026-10-23); `HANDOFF_22_10_2026.md` §0–§3; MASTER_PLAN
-    2026-10-23 entries; REQUIREMENTS_ADDENDUM A, D, F, G, H, J; DESIGN §5.7
-    (G1), §6.1, §12.4.
+    2026-10-23 entries; REQUIREMENTS_ADDENDUM A, D, F, G, H, I, J; DESIGN §5.7
+    (G1), §6.1, §12.4; the 24 October push (59badc7a, gate in slice-status.md).
   - *@tab:provgen:* provider columns HANDOFF §0.1 (addendum F); pyAmpliCol
     column DESIGN WP3.1 third increment "Generation per process" on
     `work/v2-generation-scale` (201efa8b). *@tab:validation:* DESIGN WP3.1
@@ -1364,24 +1361,16 @@ exact carriers and the public interfaces.
   - *@tab:njet* and NJet prose: `workspace/reports/engine-v2/njet-benchmark.md`
     §2, §5, §6 (raw `workspace/reference/runs/njet/timing/`);
     #link("https://arxiv.org/abs/1209.0100")[NJet, arXiv:1209.0100] Table 5.
-  - *@tab:sevendev, @tab:sevencheck, first virtual:* `data/measured.json`,
-    written by `scripts/collect_milestone.py <workspace>` from the records
-    `gen_gg_ggggg_final`, `gen_gg_ggggg_hash`, `poles2_gg_ggggg`,
-    `eval2_gg_ggggg`, `eval2_gg_ggggg_rot` and `cmp_uux_ggggg` in
-    `workspace/tmp/generation-scale/runs/` and `gg_ggggg` in
-    `workspace/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs); thread
-    settings from DESIGN WP3.1 and ct-recursion DESIGN §6.1; the 119/3 shift and NJet deviations from njet-benchmark.md §5.3
-    and the fixture `tests/fixtures/loop/required/gg_ggggg_njet.json`; top-free values from
-    DESIGN WP3.1 fourth increment and `tests/unit/test_loop_v2_topfree.py`
-    (`work/v2-generation-scale`). Memory is shown in GiB = KiB/2²⁰.
+  - *@tab:sevendev, @tab:sevencheck, first virtual:* `data/measured.json`
+    (`scripts/collect_milestone.py <workspace>` from the records in
+    `workspace/tmp/generation-scale/runs/` and `workspace/tmp/ct-recursion/s4/`);
+    NJet deviations: njet-benchmark.md §5.3 and `gg_ggggg_njet.json`; top-free
+    values: DESIGN WP3.1 and `test_loop_v2_topfree.py`. Memory in GiB = KiB/2²⁰.
   - *@tab:caps, @arch:* `docs/development/loop_v2/DESIGN.md` §1–§3, §5.5,
     §5.6, §6, §10, §12, REQUIREMENTS_ADDENDUM J (counterterm rule) and the
     integration records above.
-  - *@tab:history:* `data/measurements.json`, `data/provider-cold.json`
-    (legacy snapshot of 2026-10-18, unchanged) and `data/legacy-labels.json`;
-    `data/colour-measurements.json` stays for the DESIGN citations. Removed at
-    this milestone, in the git history at
-    `45875b87:docs/performance_reports/loop/data/`: `processes.json`,
-    `provider-audit.json` and `generation.json` (the 9.4 h and 77 GiB of
-    @history); see the README.
+  - *@tab:history:* `data/measurements.json`, `data/provider-cold.json` and
+    `data/legacy-labels.json` (legacy snapshot of 2026-10-18, unchanged);
+    `data/colour-measurements.json` stays for the DESIGN citations; removed
+    data are in the git history (README).
 ]

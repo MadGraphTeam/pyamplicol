@@ -1,6 +1,6 @@
 {
  "date": "2026-10-24",
- "engine_revision": "dfa6bf7c",
+ "engine_revision": "59badc7a",
  "previous_loop": "f9edf1db",
  "native_build": {
   "name": "loop-native-poles-uvir-3dbd3a53",
@@ -13,7 +13,7 @@
    "sha": "a18b7599",
    "wp": "WP2.2",
    "title": "Counterterms in the recursion",
-   "detail": "R2 and UV counterterm trees from the tree recursion are the production route; site closure is the test oracle"
+   "detail": "counterterm trees from the tree recursion are the default route (site closure: test oracle), still admitted by a witness table"
   },
   {
    "sha": "6735d3a5",
@@ -26,11 +26,17 @@
    "wp": "Rust A0",
    "title": "Contract-class reuse pass",
    "detail": "value equivalences only between currents of one evaluation contract; gg\u2192ggggg CT-program reuse 190 \u2192 43 s"
+  },
+  {
+   "sha": "59badc7a",
+   "wp": "fix",
+   "title": "Constant counterterm arguments",
+   "detail": "parameter-free helper arguments decided, not assumed (QED-model regression of a18b7599)"
   }
  ],
- "integrated_tip": "dfa6bf7c",
+ "integrated_tip": "59badc7a",
  "after_integration": [],
- "already_on_loop": "everything up to f9edf1db: v2 waves 0-1 with gate S1, gate G0, the native Rust executor (WP2.1), colour production (WP2.4), stability API (WP2.3), schedule M in Rust (WP2.8), tree-EW follow-up (WP2.9 part), the NJet reference, observables (WP2.5), the public v2 engine with plan v4 artifacts (WP2.6), requirements addendum F, G, H, J and the previous report",
+ "already_on_loop": "v2 waves 0-1, gates S1 and G0, native executor (WP2.1), colour (WP2.4), stability API (WP2.3), schedule M (WP2.8), tree-EW follow-up, NJet reference, observables (WP2.5), public v2 engine with plan v4 artifacts (WP2.6), addendum F-J, the previous report",
  "addendum_commits": [
   "b91d23a8",
   "2dd36f65",
