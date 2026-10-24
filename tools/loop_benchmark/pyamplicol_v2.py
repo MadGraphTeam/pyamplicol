@@ -538,7 +538,10 @@ class Run:
             for point in fixture["points"][:count]
         ]
         scales = [str(Fraction(mu) ** 2) for mu in fixture["mu_r"][:count]]
-        options: dict[str, Any] = {"parameters": self.parameters, "poles": _finite_only()}
+        options: dict[str, Any] = {
+            "parameters": self.parameters,
+            "poles": _finite_only(),
+        }
         if self.options.schedule == "M":
             options["schedule"] = "M"
         results = self.executor.evaluate(points, scales, **options)
