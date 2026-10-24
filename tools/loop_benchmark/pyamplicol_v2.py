@@ -15,14 +15,21 @@ One run measures one process at one colour accuracy on one checkout:
    ``gate.py``'s comparison with the providers' own runs on the stream.
 3. **Event timing**: the public runtime's evaluation call
    (``NativeExecutor.evaluate``, which ``loops.v2.artifact.V2VirtualRuntime``
-   calls) in the speed-gate configuration: binary64, finite part only
-   (``poles=False``), no stability check, one thread (``threads=1`` and the
+   calls) in the speed-gate configuration: binary64, finite part only (the
+   pole selection ``poles="none"``, or ``poles=False`` on a checkout before
+   poles-uvir), no stability check, one thread (``threads=1`` and the
    process pinned to one core by the caller), the default 16 SIMD lanes,
    batches of ``B`` distinct points of the frozen stream
    (``streams.py``). Batches alternate between the B values in every round
    (paired blocks), after one untimed warm-up per B; per B the median per
    point over the blocks is reported with its spread. A B whose estimated
-   cost exceeds ``--budget`` seconds is skipped and recorded as such.
+   cost exceeds ``--budget`` seconds is skipped and recorded as such. A
+   failed point raises ``plan_export.FailedPoints`` and ends the run, so a
+   completed record has no failed point; rescue is off (no stability check,
+   no escalation), so its rescue rate is zero by construction.
+
+The compiled model lives in a temporary directory under ``--scratch`` (the
+system's temporary directory by default) that the run removes at its end.
 
 Stage split of each block (seconds per point; MASTER_PLAN's report rules):
 
@@ -59,6 +66,7 @@ import inspect
 import json
 import math
 import resource
+import shutil
 import statistics
 import sys
 import tempfile
@@ -142,14 +150,38 @@ class Timers:
         self.seconds.clear()
 
 
-def _request(key: str, accuracy: str) -> Any:
+def particle_names(compiled: Any) -> dict[int, str]:
+    """PDG code -> particle name of the compiled model (UFO ``name`` and
+    ``antiname``); auxiliary and ghost fields are not external states."""
+
+    names: dict[int, str] = {}
+    for record in compiled.ir.particles:
+        if record.ghost_number or record.auxiliary_kind:
+            continue
+        names.setdefault(record.pdg_code, record.name)
+        names.setdefault(-record.pdg_code, record.antiname)
+    return names
+
+
+def process_text(key: str, compiled: Any) -> str:
+    """The process of ``key`` as the slice's process text, from its PDG codes
+    and the model's particle names (``particle_names``)."""
+
+    names = particle_names(compiled)
+    pdgs = streams.spec(key)["pdgs"]
+    missing = [p for p in pdgs if p not in names]
+    if missing:
+        raise KeyError(f"{key}: PDG codes {missing} are not particles of the model")
+    legs = [names[p] for p in pdgs]
+    return " ".join(legs[:2]) + " > " + " ".join(legs[2:])
+
+
+def _request(key: str, accuracy: str, compiled: Any) -> Any:
     from pyamplicol.loops.v2.assemble import SliceRequest
     from pyamplicol.models.loop_color_declaration import LoopColorDeclaration
 
     process = streams.spec(key)
-    names = {21: "g", 1: "d", -1: "d~", 2: "u", -2: "u~", 6: "t", -6: "t~"}
-    legs = [names[p] for p in process["pdgs"]]
-    text = " ".join(legs[:2]) + " > " + " ".join(legs[2:])
+    text = process_text(key, compiled)
     declaration = None
     if accuracy != "full":
         if str(ROOT) not in sys.path:
@@ -262,6 +294,7 @@ class Run:
         self.record["native"] = _native_build(self.options.native_build)
         stages: dict[str, Any] = {}
         scratch = Path(tempfile.mkdtemp(prefix="g1-model-", dir=self.options.scratch))
+        self.scratch = scratch
         _reset_peak()
         start = time.perf_counter()
         compiled = compile_loop_sm(UFO, scratch)
@@ -271,9 +304,9 @@ class Run:
         }
         _reset_peak()
         start = time.perf_counter()
-        slice_ = LoopSlice.generate(
-            compiled, _request(self.key, self.options.accuracy), native
-        )
+        request = _request(self.key, self.options.accuracy, compiled)
+        self.record["process_text"] = request.process
+        slice_ = LoopSlice.generate(compiled, request, native)
         stages["generate"] = {
             "seconds": time.perf_counter() - start,
             "peak_gib": _gib(_status("VmHWM")),
@@ -458,10 +491,21 @@ class Run:
                 flush=True,
             )
 
+    def close(self) -> None:
+        """Remove the run's compiled-model directory."""
+
+        scratch = getattr(self, "scratch", None)
+        if scratch is not None:
+            shutil.rmtree(scratch, ignore_errors=True)
+            self.scratch = None
+
     def run(self) -> dict[str, Any]:
-        self.generate()
-        self.accuracy()
-        self.timing()
+        try:
+            self.generate()
+            self.accuracy()
+            self.timing()
+        finally:
+            self.close()
         self.record["max_rss_gib"] = _gib(
             resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
         )
@@ -523,40 +567,55 @@ def _summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
 def check_points(options: Any) -> int:
     """Evaluate chosen stream points with stability checks (one rotation about
     z by (3/5, 4/5) and the reduction-direction check) in the configuration
-    of a run: the estimate E beside the value, for the points where the
-    timed binary64 values deviate most from the providers (``gate.py``)."""
+    of a run, in each arithmetic of ``--arithmetic`` (binary64 and/or
+    double-double): the estimate E beside the value, for the points where the
+    timed binary64 values deviate most from the providers (``gate.py``). The
+    double-double values separate pyAmpliCol's binary64 loss from the
+    providers' own (they read the points rounded to binary64)."""
 
+    from pyamplicol.loops.v2.assemble import Precision
     from pyamplicol.loops.v2.stability import Rotation, StabilityChecks
 
+    precisions = {
+        "double": Precision.double(),
+        "double-double": Precision.double_double(),
+    }
     run = Run(options)
-    run.generate()
-    checks = StabilityChecks(
-        rotations=(Rotation.about("z", "3/5", "4/5"),), reduction_direction=True
-    )
-    rows = []
-    for index in options.points:
-        points, scales = run._batch(index, 1)
-        poles = _finite_only()
-        (result,) = run.executor.evaluate(
-            points,
-            scales,
-            parameters=run.parameters,
-            poles=poles,
-            stability=checks,
+    try:
+        run.generate()
+        checks = StabilityChecks(
+            rotations=(Rotation.about("z", "3/5", "4/5"),), reduction_direction=True
         )
-        born, finite = _totals(result)
-        rows.append(
-            {
-                "index": index,
-                "born": born,
-                "finite": finite,
-                "estimate": result.stability.relative,
-                "estimate_finite": (
-                    getattr(result.stability, "coefficients", None) or [None]
-                )[0],
-            }
-        )
-        print(run.key, json.dumps(rows[-1]), flush=True)
+        rows = []
+        for index in options.points:
+            points, scales = run._batch(index, 1)
+            for arithmetic in options.arithmetic:
+                begin = time.perf_counter()
+                (result,) = run.executor.evaluate(
+                    points,
+                    scales,
+                    parameters=run.parameters,
+                    precision=precisions[arithmetic],
+                    poles=_finite_only(),
+                    stability=checks,
+                )
+                born, finite = _totals(result)
+                rows.append(
+                    {
+                        "index": index,
+                        "arithmetic": arithmetic,
+                        "born": born,
+                        "finite": finite,
+                        "estimate": result.stability.relative,
+                        "estimate_finite": (
+                            getattr(result.stability, "coefficients", None) or [None]
+                        )[0],
+                        "seconds_with_checks": time.perf_counter() - begin,
+                    }
+                )
+                print(run.key, json.dumps(rows[-1]), flush=True)
+    finally:
+        run.close()
     run.record["kind"] = "stability"
     run.record["checks"] = "rotation about z by (3/5, 4/5) and the reduction direction"
     run.record["rows"] = rows

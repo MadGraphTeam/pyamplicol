@@ -31,16 +31,25 @@ have no batch API: the per-point time does not depend on B). Generation and
 initialisation (Recola's ``generate``, MadLoop's first call, OpenLoops'
 library load) are recorded separately.
 
+Provider trees follow the toolkit's layout (``run_required.sh``): the
+reference root (``--reference-root``, default ``$LOOP_REFERENCE_ROOT``) holds
+``sources/MG5_aMC_v3_7_0``, ``sources/recola2-2.3.0`` and
+``sources/OpenLoops-2.1.5`` (``--mg5``, ``--recola``, ``--openloops`` or
+``LOOP_REFERENCE_RECOLA`` / ``LOOP_REFERENCE_OPENLOOPS`` override them), and
+the MadLoop export of a process is ``madloop.export`` of ``processes.json``
+relative to that root (``--madloop-export`` overrides it). A provider that a
+process specification marks ``unavailable`` (no installed library, an export
+beyond HANDOFF §0.1) is recorded with that reason, never silently dropped.
+
 Usage:
     python -m tools.loop_benchmark providers gg_gggg --cpu 150 \\
         --work DIR --points 16 [--providers openloops recola madloop] \\
-        [--madloop-export EXPORT] --json OUT.json
+        [--reference-root ROOT] [--madloop-export EXPORT] --json OUT.json
 """
 
 from __future__ import annotations
 
 import json
-import math
 import os
 import platform
 import re
@@ -53,18 +62,39 @@ from typing import Any
 
 from . import streams
 
-WORKSPACE = Path("/shared/external/pyLoopAmpliCol/workspace")
-MG5 = WORKSPACE / "reference/sources/MG5_aMC_v3_7_0"
-OPENLOOPS = WORKSPACE / "reference/sources/OpenLoops-2.1.5"
-RECOLA = WORKSPACE / "reference/sources/recola2-2.3.0"
-# Campaign exports built with MG5's production flags, per process.
-REQUIRED = WORKSPACE / "reference/runs/required"
-MADLOOP_EXPORTS = {
-    "uux_ddxg": REQUIRED / "uux_ddxg/madloop-export",
-    "uux_uuxg": REQUIRED / "uux_uuxg/madloop-export",
-    "gg_gggg": REQUIRED / "gg_gggg/madloop-export-production-flags",
-    "gg_ttxgg": REQUIRED / "gg_ttxgg/madloop-export-production-flags",
-}
+
+class Trees:
+    """The provider trees of one run (module docstring)."""
+
+    def __init__(self, options: Any) -> None:
+        root = options.reference_root or os.environ.get("LOOP_REFERENCE_ROOT")
+        if root is None:
+            raise SystemExit("set --reference-root or LOOP_REFERENCE_ROOT")
+        self.root = Path(root).resolve()
+        sources = self.root / "sources"
+        self.mg5 = Path(options.mg5 or sources / "MG5_aMC_v3_7_0")
+        self.openloops = Path(
+            options.openloops
+            or os.environ.get("LOOP_REFERENCE_OPENLOOPS")
+            or sources / "OpenLoops-2.1.5"
+        )
+        self.recola = Path(
+            options.recola
+            or os.environ.get("LOOP_REFERENCE_RECOLA")
+            or sources / "recola2-2.3.0"
+        )
+
+    def madloop_export(self, spec: dict, override: Path | None) -> Path | None:
+        if override is not None:
+            return Path(override)
+        relative = spec.get("madloop", {}).get("export")
+        return self.root / relative if relative else None
+
+
+def unavailable(spec: dict, provider: str) -> str | None:
+    """The specification's reason why ``provider`` has no timing, if any."""
+
+    return spec.get(provider, {}).get("unavailable")
 
 
 def _references() -> Any:
@@ -101,8 +131,11 @@ def _summary(rows: list[dict[str, Any]], extra: dict[str, Any], wall: float) -> 
     }
 
 
-def openloops(spec: dict, points: dict, work: Path, cpu: int) -> dict[str, Any]:
+def openloops(
+    spec: dict, points: dict, work: Path, cpu: int, trees: Trees
+) -> dict[str, Any]:
     references = _references()
+    openloops_tree = trees.openloops
     run = work / "openloops-run"
     run.mkdir(parents=True, exist_ok=True)
     binary = run / "openloops-driver"
@@ -114,10 +147,10 @@ def openloops(spec: dict, points: dict, work: Path, cpu: int) -> dict[str, Any]:
                 "-std=c++17",
                 str(streams.REFERENCE / "openloops_driver.cpp"),
                 "-I",
-                str(OPENLOOPS / "include"),
+                str(openloops_tree / "include"),
                 "-L",
-                str(OPENLOOPS / "lib"),
-                f"-Wl,-rpath,{OPENLOOPS / 'lib'}",
+                str(openloops_tree / "lib"),
+                f"-Wl,-rpath,{openloops_tree / 'lib'}",
                 "-lopenloops",
                 "-o",
                 str(binary),
@@ -143,17 +176,17 @@ def openloops(spec: dict, points: dict, work: Path, cpu: int) -> dict[str, Any]:
         "provider": "openloops",
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, "
         "default stability)",
-        "version": f"OpenLoops {references.openloops_release(OPENLOOPS)}",
+        "version": f"OpenLoops {references.openloops_release(openloops_tree)}",
         "library": {
             "name": library,
-            **references.openloops_library_version(OPENLOOPS, library),
+            **references.openloops_library_version(openloops_tree, library),
         },
         "commands": commands,
         **_summary(rows, extra, wall),
     }
 
 
-def _recola_driver(run: Path) -> Path:
+def _recola_driver(run: Path, recola_tree: Path) -> Path:
     """The toolkit's Recola driver with an ``irpoles <0|1>`` command."""
 
     source = (streams.REFERENCE / "recola_driver.f90").read_text()
@@ -196,10 +229,10 @@ def _recola_driver(run: Path) -> Path:
             "-ffree-line-length-none",
             str(path),
             "-I",
-            str(RECOLA / "include"),
+            str(recola_tree / "include"),
             "-L",
-            str(RECOLA),
-            f"-Wl,-rpath,{RECOLA}",
+            str(recola_tree),
+            f"-Wl,-rpath,{recola_tree}",
             "-lrecola",
             "-o",
             str(binary),
@@ -210,11 +243,14 @@ def _recola_driver(run: Path) -> Path:
     return binary
 
 
-def recola(spec: dict, points: dict, work: Path, cpu: int) -> dict[str, Any]:
+def recola(
+    spec: dict, points: dict, work: Path, cpu: int, trees: Trees
+) -> dict[str, Any]:
     references = _references()
+    recola_tree = trees.recola
     run = work / "recola-run"
     run.mkdir(parents=True, exist_ok=True)
-    binary = _recola_driver(run)
+    binary = _recola_driver(run, recola_tree)
     uncached = len(spec["pdgs"]) >= references.UNCACHED_LEG_THRESHOLD
     commands = references.recola_commands(spec, points, uncached)
     commands.insert(commands.index("generate"), "irpoles 0")
@@ -231,7 +267,7 @@ def recola(spec: dict, points: dict, work: Path, cpu: int) -> dict[str, Any]:
         "mode": "production: compute_ir_poles 0, Collier global cache "
         + ("off (seven legs, COLLIER cache defect)" if uncached else "on"),
         "version": "Recola2 (tree "
-        + RECOLA.name
+        + recola_tree.name
         + ") / "
         + " / ".join(f"{k} {v['version']}" for k, v in sorted(linked.items())),
         "commands": commands,
@@ -241,18 +277,19 @@ def recola(spec: dict, points: dict, work: Path, cpu: int) -> dict[str, Any]:
 
 
 def madloop(
-    spec: dict, points: dict, work: Path, cpu: int, export: Path
+    spec: dict, points: dict, work: Path, cpu: int, export: Path, trees: Trees
 ) -> dict[str, Any]:
     references = _references()
+    mg5 = trees.mg5
     run = work / "madloop-run"
     run.mkdir(parents=True, exist_ok=True)
-    flags = references.madloop_build_flags(export, MG5)
+    flags = references.madloop_build_flags(export, mg5)
     if not flags["production_build"]:
         raise RuntimeError(f"{export} is not built with MG5's production flags")
     binary, repairs = references.build_madloop(
         export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
     )
-    settings = references.prepare_madloop_run(spec, export, run, MG5, len(spec["pdgs"]))
+    settings = references.prepare_madloop_run(spec, export, run, mg5, len(spec["pdgs"]))
     born, loop = spec["born_orders"], spec["loop_orders"]
     count = len(points["points"])
     alpha_s = references.value(spec["scheme_data"], "aS")
@@ -425,7 +462,7 @@ def _instrumented_madloop(export: Path, run: Path, global_flag: str) -> Path:
 
 
 def madloop_stages(
-    spec: dict, points: dict, work: Path, cpu: int, export: Path
+    spec: dict, points: dict, work: Path, cpu: int, export: Path, trees: Trees
 ) -> dict[str, Any]:
     """MadLoop's numerator / Born-and-CT / reduction-and-masters split.
 
@@ -438,13 +475,14 @@ def madloop_stages(
     read per call."""
 
     references = _references()
+    mg5 = trees.mg5
     run = work / "madloop-stages-run"
     run.mkdir(parents=True, exist_ok=True)
-    flags = references.madloop_build_flags(export, MG5)
+    flags = references.madloop_build_flags(export, mg5)
     binary = _instrumented_madloop(
         export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
     )
-    references.prepare_madloop_run(spec, export, run, MG5, len(spec["pdgs"]))
+    references.prepare_madloop_run(spec, export, run, mg5, len(spec["pdgs"]))
     born, loop = spec["born_orders"], spec["loop_orders"]
     alpha_s = references.value(spec["scheme_data"], "aS")
     totals = {}
@@ -513,35 +551,38 @@ def main(options: Any) -> int:
     }
     if options.json and options.json.exists():
         record = json.loads(options.json.read_text())
+    trees = Trees(options)
     for provider in options.providers:
         start = time.perf_counter()
+        reason = unavailable(spec, provider)
         try:
-            if provider == "openloops":
-                result = openloops(spec, points, work, options.cpu)
+            if reason is not None:
+                result = {"provider": provider, "unavailable": reason}
+            elif provider == "openloops":
+                result = openloops(spec, points, work, options.cpu, trees)
             elif provider == "recola":
-                result = recola(spec, points, work, options.cpu)
+                result = recola(spec, points, work, options.cpu, trees)
             else:
-                export = options.madloop_export or MADLOOP_EXPORTS.get(key)
+                export = trees.madloop_export(spec, options.madloop_export)
                 if export is None:
                     raise RuntimeError("no MadLoop export for this process")
-                result = madloop(spec, points, work, options.cpu, Path(export))
+                result = madloop(spec, points, work, options.cpu, export, trees)
                 if options.madloop_stages:
                     result["stages"] = madloop_stages(
-                        spec, points, work, options.cpu, Path(export)
+                        spec, points, work, options.cpu, export, trees
                     )
         except Exception as error:  # recorded, never silently dropped
             result = {"provider": provider, "error": f"{type(error).__name__}: {error}"}
         result["harness_wall_seconds"] = time.perf_counter() - start
         record["providers"][provider] = result
         mean = result.get("mean_seconds_per_point")
-        print(
-            key,
-            provider,
-            "error " + result["error"]
-            if "error" in result
-            else f"{mean * 1e3:.3f} ms/pt",
-            flush=True,
-        )
+        if "error" in result:
+            status = "error " + result["error"]
+        elif "unavailable" in result:
+            status = "unavailable: " + result["unavailable"]
+        else:
+            status = f"{mean * 1e3:.3f} ms/pt"
+        print(key, provider, status, flush=True)
         if options.json:
             options.json.parent.mkdir(parents=True, exist_ok=True)
             options.json.write_text(json.dumps(record, indent=1) + "\n")
@@ -549,17 +590,13 @@ def main(options: Any) -> int:
 
 
 def universal_double_pole(spec: dict) -> float:
-    """-(alpha_s/2pi) sum_i C_i over the massless coloured legs (D / Born)."""
+    """D / Born of the declared correction: -(alpha_s/2pi) sum_i C_i over the
+    massless coloured legs for QCD (the toolkit's ``double_pole_factor``,
+    from its particle metadata)."""
 
     references = _references()
+    _, required_spec = streams._toolkit()
+    if spec["correction"] != "QCD":
+        raise ValueError("the G1 value comparison converts QCD corrections only")
     alpha_s = float(references.value(spec["scheme_data"], "aS"))
-    masses = streams._toolkit()[1].masses(spec)
-    total = 0.0
-    for pdg, mass in zip(spec["pdgs"], masses, strict=True):
-        if mass:
-            continue
-        if pdg == 21:
-            total += 3.0
-        elif abs(pdg) <= 6:
-            total += 4.0 / 3.0
-    return -alpha_s / (2 * math.pi) * total
+    return required_spec.double_pole_factor(spec, alpha_s)

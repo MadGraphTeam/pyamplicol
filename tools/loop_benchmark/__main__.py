@@ -45,7 +45,12 @@ def main(argv: list[str] | None = None) -> int:
         help="seconds a B may take over all rounds; larger B are skipped",
     )
     v2.add_argument("--native-build", type=Path, help="staged native build directory")
-    v2.add_argument("--scratch", type=Path, default=Path("/tmp"))
+    v2.add_argument(
+        "--scratch",
+        type=Path,
+        help="parent of the run's temporary model directory (default: the "
+        "system's temporary directory)",
+    )
     v2.add_argument("--json", type=Path)
 
     stable = commands.add_parser(
@@ -55,8 +60,14 @@ def main(argv: list[str] | None = None) -> int:
     stable.add_argument("--points", type=int, nargs="+", required=True)
     stable.add_argument("--accuracy", choices=("full", "nlc", "lc"), default="full")
     stable.add_argument("--inputs", choices=("python", "native"), default="python")
+    stable.add_argument(
+        "--arithmetic",
+        nargs="+",
+        choices=("double", "double-double"),
+        default=["double"],
+    )
     stable.add_argument("--native-build", type=Path)
-    stable.add_argument("--scratch", type=Path, default=Path("/tmp"))
+    stable.add_argument("--scratch", type=Path, help="parent of the model directory")
     stable.add_argument("--json", type=Path)
     stable.set_defaults(lanes=16, schedule="B")
 
@@ -68,7 +79,19 @@ def main(argv: list[str] | None = None) -> int:
     providers.add_argument("--points", type=int, default=16)
     providers.add_argument("--cpu", type=int, required=True)
     providers.add_argument("--work", type=Path, required=True)
-    providers.add_argument("--madloop-export", type=Path)
+    providers.add_argument(
+        "--reference-root",
+        type=Path,
+        help="provider reference root (default: $LOOP_REFERENCE_ROOT)",
+    )
+    providers.add_argument("--mg5", type=Path, help="MG5_aMC tree")
+    providers.add_argument("--recola", type=Path, help="Recola2 tree")
+    providers.add_argument("--openloops", type=Path, help="OpenLoops installation")
+    providers.add_argument(
+        "--madloop-export",
+        type=Path,
+        help="MadLoop export (default: madloop.export of processes.json)",
+    )
     providers.add_argument(
         "--madloop-stages",
         action="store_true",
@@ -79,6 +102,9 @@ def main(argv: list[str] | None = None) -> int:
     gate = commands.add_parser("gate", help="combine records into the gate table")
     gate.add_argument("records", nargs="+", type=Path)
     gate.add_argument("--json", type=Path, required=True)
+    gate.add_argument(
+        "--values-json", type=Path, help="also write the per-point values"
+    )
     gate.add_argument(
         "--meta",
         nargs="*",
