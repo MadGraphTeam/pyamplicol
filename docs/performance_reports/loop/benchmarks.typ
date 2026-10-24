@@ -93,7 +93,6 @@
 // Diverging ColorBrewer RdBu (colour-blind safe): blue faster, red slower.
 #let palette = gradient.linear(rgb("#4393c3"), rgb("#d1e5f0"), white, rgb("#fddbc7"), rgb("#d6604d"))
 #let ratio-fill(r) = if r == none { none } else { palette.sample(calc.clamp(0.5 + calc.log(r, base: 2) / 8, 0, 1) * 100%) }
-})
 
 // Stage colours of the per-point split (Table 1 bars, the stage-split table):
 // categorical slots 1-5 and 7 of the dataviz reference palette, in stage
@@ -406,7 +405,7 @@
         ).map(t => text(6.1pt, fill: ink2, t)),
       ),
       ..S.groups.map(gr => (
-        table.cell(rowspan: gr.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon,
+        table.cell(rowspan: gr.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon, breakable: false,
           rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", group-title.at(gr.name)))),
         ..gr.rows.map(r => (t1-process(r), t1-generation(r), t1-fc(r), t1-lc(r))).flatten(),
       )).flatten(),
@@ -924,24 +923,24 @@ with the batch (#msec(glue(ud32)) ms per point at $B = 32$,
 #let lc-procs = g.processes.filter(p => cfg(p, "native/lc") != none or cfg(p, "python/lc") != none)
 #block(breakable: false)[#figure(kind: table,
   caption: [*Leading colour* (LC), ms per point, same protocol as @tab:g1; in
-    each cell the full-colour (FC) time of the same configuration and LC/FC.
+    each cell the full-colour (FC) time of the same configuration and batch, and LC/FC.
     No provider ratio: the providers time full colour. LC uses the committed
     QCD colour continuation (`examples/loop/source_colour`); the $V$+jets rows
     were not timed at LC.],
   tstyle(table(
-    columns: (2.9cm, 0.8cm, 1fr, 1fr),
-    align: left + horizon, inset: (x: 4pt, y: 2.7pt),
-    stroke: (x, y) => (top: if y <= 1 { none } else if calc.rem(y - 1, 2) == 0 { 0.6pt + luma(190) } else { hair }, left: if x >= 2 and y > 0 { hair } else { none }),
+    columns: (2.9cm, 1fr, 1fr, 1fr, 1fr),
+    align: left + horizon, inset: (x: 4pt, y: 2.6pt),
+    stroke: (x, y) => (top: if y <= 2 { none } else { hair }, left: if x in (1, 3) and y > 0 { 0.6pt + luma(190) } else if x > 0 and y > 0 { hair } else { none }),
     fill: thead-fill,
-    table.header[Process][$B$][Integrated][Native inputs#super[dev]],
+    table.header(
+      table.cell(rowspan: 2, align: left + horizon)[Process], table.cell(colspan: 2, align: center)[Integrated], table.cell(colspan: 2, align: center)[Native inputs#super[dev]],
+      table.cell(fill: pale, text(fill: ink2)[$B = 1$]), table.cell(fill: pale, text(fill: ink2)[largest batch]),
+      table.cell(fill: pale, text(fill: ink2)[$B = 1$]), table.cell(fill: pale, text(fill: ink2)[largest batch]),
+    ),
     ..lc-procs.map(p => {
       let (al, af, dl, df) = (cfg(p, "python/lc"), slice-c(p), cfg(p, "native/lc"), dev-c(p))
-      let bb = if top(dl) == none { top(al) } else { top(dl) }
-      (
-        table.cell(rowspan: 2, gname(p.key)),
-        [1], lc-cell(p, al, af, "1"), lc-cell(p, dl, df, "1"),
-        [#bb], lc-cell(p, al, af, bb), lc-cell(p, dl, df, bb),
-      )
+      let big-cell(lc, fc) = { let b = top(lc); if b == none { lc-cell(p, lc, fc, none) } else if b == "128" { lc-cell(p, lc, fc, b) } else { let c = lc-cell(p, lc, fc, b); table.cell[#c.body #tiny[($B = #b$)]] } }
+      (gname(p.key), lc-cell(p, al, af, "1"), big-cell(al, af), lc-cell(p, dl, df, "1"), big-cell(dl, df))
     }).flatten(),
   )),
 ) <tab:g1lc>]
@@ -1153,7 +1152,7 @@ or in a time comparable to pyAmpliCol's own generation of the process (HANDOFF
 identities, Catani poles, LC/NLC/FC and DD/AP consistency, stability checks,
 lower multiplicities and existing references.
 
-#figure(kind: table,
+#block(breakable: false)[#figure(kind: table,
   caption: [*Provider generation on this host and the 45-minute rule.* MadLoop
     graph generation, export and compilation; Recola process generation;
     OpenLoops: prebuilt public libraries (HANDOFF §0.1; the measured times of
@@ -1168,7 +1167,7 @@ lower multiplicities and existing references.
       if r.rule.starts-with("within") { r.rule } else { text(weight: "semibold", fill: rgb("#8a4b08"), r.rule) },
     )).flatten(),
   )),
-) <tab:provgen>
+) <tab:provgen>]
 
 #let rn = meas.required_native
 #let coeff = ("born", "finite", "single_pole", "double_pole")
@@ -1518,7 +1517,7 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
   )),
 ) <tab:complexity>]
 
-#figure(kind: table,
+#block(breakable: false)[#figure(kind: table,
   caption: [*Ownership of the mathematics.* pyAmpliCol reuses its dependencies
     for algebra, tensors, graphs and integrals and owns the recursions and the
     assembly.],
@@ -1534,7 +1533,7 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
     [pyAmpliCol tree engine], [Blocks, Born, coupling orders and colour flow (Python lane; Rust recurrence)],
     [pyAmpliCol loop v2], [Families, skeletons, schedules, seed tables, counterterm program, plan v4, native executor, API],
   )),
-) <tab:deps>
+) <tab:deps>]
 
 // ============================================================== SOURCES ==
 = Sources and reproducibility <sources>
