@@ -512,6 +512,13 @@ def _timing_of(
             "binding": NAMES[gate["binding_provider"]],
             "limit_seconds": gate["binding_limit"],
         }
+        if "floor_seconds" in gate:
+            # Below the user's 5 ms floor (2026-10-24) the gate does not
+            # block: the checks' own verdict stays beside it.
+            out["gate"]["measured_status"] = {"inconclusive": "open"}.get(
+                gate["measured_status"], gate["measured_status"]
+            )
+            out["gate"]["floor_seconds"] = gate["floor_seconds"]
         d = _decision(decisions, proc["key"], batch, gate["status"])
         if d is not None:
             out["gate"].update(
@@ -616,6 +623,15 @@ def _validation_g1(
         for n in PROVIDERS
         if n in vs
     ]
+    origin = f"{source}.values_vs_providers"
+    if not refs:
+        # No provider run on the stream (g g > g g g g g): the run's own
+        # check against its reference fixture (NJet's double-double values
+        # at the stream's first points, at the fixture's scale).
+        refs, origin = (
+            _fixture_refs(cfg.get("accuracy_check")),
+            f"{source}.accuracy_check",
+        )
     if not refs:
         return {"status": "not compared"}
     worst = max(refs, key=lambda r: r["max_finite"])
@@ -627,7 +643,7 @@ def _validation_g1(
         "references": refs,
         "max_finite": worst["max_finite"],
         "median_finite": max(r["median_finite"] for r in refs),
-        "source": f"{source}.values_vs_providers",
+        "source": origin,
     }
     # The worst point re-evaluated with the stability checks: binary64
     # estimate E and the double-double value's deviation from the closest
@@ -653,19 +669,81 @@ def _validation_g1(
     return out
 
 
+def _fixture_refs(check: dict | None) -> list[dict]:
+    """The references of a run's accuracy check against its reference
+    fixture (pyamplicol_v2.Run.accuracy) in the shape of _validation_g1's,
+    for the references Table 1 shows (SHOWN)."""
+    if not check:
+        return []
+    names = sorted({n for row in check["rows"] for n in row["errors"]} & SHOWN)
+    out = []
+    for n in names:
+        rows = [row for row in check["rows"] if n in row["errors"]]
+        finite = [row["errors"][n]["finite"] for row in rows]
+        worst = max(rows, key=lambda row: row["errors"][n]["finite"])
+        out.append(
+            {
+                "key": n,
+                "short": SHORT[n],
+                "points": len(rows),
+                "max_finite": max(finite),
+                "median_finite": sorted(finite)[len(finite) // 2],
+                "worst_point": worst["index"],
+                "fixture": check.get("fixture"),
+            }
+        )
+    return out
+
+
 def _meta_revisions(g1: dict, *keys: str) -> set[str]:
-    return {g1[k][:8] for k in keys if g1.get(k)}
+    """The revisions of meta keys (a key may list several, comma-separated)."""
+    return {
+        rev.strip()[:8]
+        for k in keys
+        if g1.get(k)
+        for rev in str(g1[k]).split(",")
+        if rev.strip()
+    }
+
+
+# Paths whose content is the engine: a tool revision of a campaign
+# (slice_tool_revisions) must equal slice_revision on them.
+ENGINE_PATHS = ("src", "rust")
+
+
+def _check_tool_revisions(g1: dict) -> None:
+    """Every slice_tool_revisions entry (the campaign's commits of the
+    benchmark tools on top of slice_revision, e.g. the seven-leg rows of
+    package measure-g1-7leg) runs slice_revision's engine: git diff over
+    ENGINE_PATHS is empty wherever both revisions are present."""
+    base = g1["slice_revision"][:8]
+    for rev in sorted(_meta_revisions(g1, "slice_tool_revisions")):
+        run = subprocess.run(
+            ["git", "-C", str(REPO), "diff", "--quiet", base, rev, "--", *ENGINE_PATHS],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if run.returncode == 1:
+            raise ValueError(
+                f"g1.json slice_tool_revisions {rev}: its engine"
+                f" ({', '.join(ENGINE_PATHS)}) differs from slice_revision {base}"
+            )
 
 
 def _roles(g1: dict) -> tuple[set[str], set[str], set[str]]:
     """The campaign's two sides, from its own metadata (the gate CLI's --meta
     keys): the integrated configuration (slice_revision, slice_lc_revision,
-    and any revision recorded on the same branch, e.g. a refusal recorded
-    earlier) and an optional development one (native_revision,
-    native_commit; absent, equal to the integrated revision or not timed
-    once the development work is integrated). A configuration on neither
-    side is not shown."""
-    integrated = _meta_revisions(g1, "slice_revision", "slice_lc_revision")
+    slice_tool_revisions -- tool commits on top of slice_revision with its
+    engine, _check_tool_revisions -- and any revision recorded on the same
+    branch, e.g. a refusal recorded earlier) and an optional development
+    one (native_revision, native_commit; absent, equal to the integrated
+    revision or not timed once the development work is integrated). A
+    configuration on neither side is not shown."""
+    integrated = _meta_revisions(
+        g1, "slice_revision", "slice_lc_revision", "slice_tool_revisions"
+    )
+    _check_tool_revisions(g1)
     timed = {
         cfg["revision"][:8]
         for proc in g1["processes"]
