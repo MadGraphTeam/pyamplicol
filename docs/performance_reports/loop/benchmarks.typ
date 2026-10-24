@@ -112,12 +112,6 @@
 #let dim(body) = text(fill: ink2, body)
 #let tiny(body) = text(6.6pt, fill: ink2, body)
 #let math-label(s) = eval(s, mode: "math")
-#let plabel(r) = {
-  text(8.4pt, font: "Libertinus Serif", math-label(r.label))
-  let c = r.at("corr", default: none)
-  let n = r.at("note", default: none)
-  if c != none or n != none { h(3pt); tiny[#if c != none [#c]#if n != none [#n]] }
-}
 #let box-note(fill: pale, stroke: none, breakable: true, body) = block(width: 100%, fill: fill, stroke: stroke, breakable: breakable, inset: 9pt, radius: 3pt, text(9pt, body))
 #let flag(body) = box(fill: warm, inset: (x: 3pt, y: 1.5pt), radius: 2pt, text(6.6pt, weight: "bold", fill: rgb("#8a4b08"), body))
 
@@ -152,8 +146,16 @@
 #let masters(x) = stage(x, "reduction: masters")
 #let ninjars(x) = stage(x, "reduction") - masters(x)
 #let verdict(x) = if x == none { none } else { x.gate }
+// User decisions that replace a measured open verdict (milestone.json
+// gate_decisions; Table 1 reads the same decisions through summary.json).
+#let decision(p, b, gt) = if gt == none or gt.status != "inconclusive" { none } else {
+  ms.gate_decisions.decisions.find(d => d.process == p.key and d.batch == b and d.measured == gt.status)
+}
+#let eff-status(p, b, gt) = { let d = decision(p, b, gt); if d != none { d.verdict } else if gt == none { none } else { gt.status } }
 #let amber = rgb("#8a4b08")
-#let gate-word(gt) = if gt == none [—] else if gt.status == "pass" {
+#let gate-word(p, b, gt) = if gt == none [—] else if decision(p, b, gt) != none {
+  text(fill: rgb("#2166ac"), weight: "bold")[#decision(p, b, gt).verdict‡] + [ #fixed(gt.ratio_to_binding_limit, 2)]
+} else if gt.status == "pass" {
   text(fill: rgb("#2166ac"), weight: "bold")[pass] + [ #fixed(gt.ratio_to_binding_limit, 2)]
 } else if gt.status == "fail" {
   text(fill: rgb("#b2182b"), weight: "bold")[fail] + [ #mult2(gt.ratio_to_binding_limit)]
@@ -169,20 +171,27 @@
 
 #let ratio-range(xs) = if xs.len() == 0 [—] else { let s = xs.sorted(); if s.len() == 1 [#mult2(s.first())] else [#mult2(s.first())–#fixed(s.last(), if s.last() >= 10 { 0 } else { 1 })] }
 #let lim(p, c, b) = { let x = bat(c, b); if x == none or "ratio_to_binding_limit" not in x.gate { none } else { x.gate.ratio_to_binding_limit } }
-#let status(c, b) = { let x = bat(c, b); if x == none { none } else { x.gate.status } }
+#let status(p, c, b) = { let x = bat(c, b); if x == none { none } else { eff-status(p, b, x.gate) } }
 #let int-timed = gated.filter(p => slice-c(p) != none and not refused(slice-c(p)))
 #let int-refused = gated.filter(p => refused(slice-c(p)))
-#let int-top = int-timed.map(p => lim(p, slice-c(p), top(slice-c(p)))).filter(r => r != none)
+// The integrated rows timed in batches (B = 128) and those timed at B = 1 only.
+#let int-batched = int-timed.filter(p => bat(slice-c(p), big) != none)
+#let int-one-only = int-timed.filter(p => top(slice-c(p)) == "1")
+#let int-big = int-batched.map(p => lim(p, slice-c(p), big)).filter(r => r != none)
+#let int-one-only-lim = int-one-only.map(p => lim(p, slice-c(p), "1")).filter(r => r != none)
 #let int-one = int-timed.map(p => lim(p, slice-c(p), "1")).filter(r => r != none)
-#let dev-at(c-of, b, s) = gated.filter(p => status(c-of(p), b) == s)
+#let dev-at(c-of, b, s) = gated.filter(p => status(p, c-of(p), b) == s)
 #let dev-pass = dev-at(dev-c, big, "pass")
 #let dev-fail = dev-at(dev-c, big, "fail")
 #let dev-open = dev-at(dev-c, big, "inconclusive")
+#let dev-decided = gated.filter(p => { let x = bat(dev-c(p), big); x != none and decision(p, big, x.gate) != none })
+#let decided-text(ps) = ps.map(p => { let x = bat(dev-c(p), big).gate; let (lo, hi) = x.band_to_binding_limit; [#gname(p.key) by #decision(p, big, x).label (#fixed(x.ratio_to_binding_limit, 2) of its limit, band #fixed(lo, 2)–#fixed(hi, 2))] }).join([, ])
 #let l1-pass = dev-at(l1-c, "1", "pass")
 #let one-pass = dev-at(dev-c, "1", "pass")
 #let share(x, v) = v / x.median_seconds_per_point
 #let pct(v) = [#fixed(100 * v, 0) %]
-#let inputs-share = int-timed.map(p => { let x = bat(slice-c(p), top(slice-c(p))); if x == none { none } else { share(x, python-inputs(x) + stage(x, "input conversion")) } }).filter(v => v != none)
+// Python per-point inputs' share of the integrated time at B = 128.
+#let inputs-share = int-batched.map(p => { let x = bat(slice-c(p), big); share(x, python-inputs(x) + stage(x, "input conversion")) })
 #let trees-share = gated.map(p => { let x = bat(dev-c(p), top(dev-c(p))); if x == none { none } else { (p: p, s: share(x, stage(x, "native trees"))) } }).filter(v => v != none)
 // Integrated over native inputs at equal batch size.
 #let speedup-at(b) = int-timed.map(p => { let (a, d) = (bat(slice-c(p), b), bat(dev-c(p), b)); if a == none or d == none { none } else { a.median_seconds_per_point / d.median_seconds_per_point } }).filter(v => v != none)
@@ -221,10 +230,12 @@
 }
 #let dev-tag = box(fill: warm, stroke: 0.3pt + rgb("#d9a066"), inset: (x: 1.6pt, y: 0.7pt), radius: 1.5pt, baseline: 0.6pt, text(5.2pt, weight: "bold", stretch: 100%, fill: amber)[DEV])
 #let chip-style = (pass: (rgb("#e1edf7"), rgb("#2166ac")), fail: (rgb("#f9e0da"), rgb("#b2182b")), open: (rgb("#fdf0dc"), amber))
+// ‡: a verdict set by a user decision (data/milestone.json gate_decisions);
+// the ratio is the measured one.
 #let gate-chip(g) = {
   let (f, c) = chip-style.at(g.status)
   box(fill: f, stroke: 0.4pt + c, inset: (x: 2pt, y: 0.8pt), radius: 1.5pt, baseline: 0.8pt,
-    text(5.9pt, fill: c, weight: "bold")[#g.status #mult2(g.ratio_to_limit)])
+    text(5.9pt, fill: c, weight: "bold")[#g.status#if "decision" in g [‡] #mult2(g.ratio_to_limit)])
 }
 #let plain-chip(body) = box(fill: white, stroke: 0.4pt + luma(150), inset: (x: 2pt, y: 0.8pt), radius: 1.5pt, baseline: 0.8pt, text(5.9pt, fill: luma(80), weight: "bold", body))
 #let stage-keys = ("inputs", "numerator", "scatter", "ninjars", "masters", "glue")
@@ -275,7 +286,8 @@
   let val = r.validation
   v(3.4pt)
   if val.status != "compared" {
-    block(spacing: 0pt, text(6.4pt, fill: amber, weight: "bold", if r.loop_note != none { r.loop_note } else { val.note }))
+    let ls = r.at("loop_status", default: none)
+    block(spacing: 0pt, text(6.4pt, fill: amber, weight: "bold", if ls != none [#ls.status on `loop`: #ls.reason] else { val.note }))
   } else {
     // References whose largest deviations lie within a factor 10 share one
     // bound: "ML·OL ≤ 9.2e−13 · Rc 3.3e−10".
@@ -307,13 +319,17 @@
     let rev = if "note" in d { d.revision } else { none }
     [#dev-tag #if rev != none [#rev] else [#inputs-word(d)] #dur(d.seconds)#if ratio-of(d) != none [ #mult2(ratio-of(d))]#if full [ · #fixed(d.peak_gib, 2) GiB · #sig(d.plan_mb) MB]]
   }
+  // An incomplete older generation has no ratio to a complete provider one.
+  let dev-note = if d.status != "measured" or "note" not in d { none } else [#d.note#if "ratio_omitted" in d [; no ratio (#d.ratio_omitted)]]
   if m.status == "measured" {
     valued(fill: ratio-fill(ratio-of(m)), dur(m.seconds), mult: if ratio-of(m) != none { mult2(ratio-of(m)) },
       [#fixed(m.peak_gib, 2) GiB peak · plan #sig(m.plan_mb) MB], prov-line, dev-line(false))
   } else if m.status == "refused" {
-    absent([refused on `loop`], prov-line, dev-line(true))
+    absent([refused on `loop`], m.at("basis", default: none), prov-line, dev-line(true))
+  } else if m.status == "not started" {
+    absent([not started on `loop`: #m.reason], prov-line, dev-line(true), dev-note)
   } else {
-    absent([not measured on `loop`], prov-line, dev-line(true), d.at("note", default: none))
+    absent([not measured on `loop`], prov-line, dev-line(true), dev-note)
   }
 }
 
@@ -328,22 +344,30 @@
     ((text(weight: "bold")[#pkey(f.key) #dur(f.seconds_per_point)],) + rest + gone + nr).join([ · ])
   }
   let dev-line = if d.status != "measured" { none } else [#dev-tag #inputs-word(d) #dur(d.seconds_per_point) #mult2(ratio-of(d))#if "gate" in d [ #h(2pt) #gate-chip(d.gate)]]
+  // Rows without a G1 record: the providers' production references (text
+  // of DESIGN Table 1b), the computed gate limit, or the unmatched
+  // alternative.
+  let rt = c.at("reference", default: none)
+  let alt = c.at("alternative", default: none)
+  let no-gate = c.gate_rule.starts-with("no gate")
+  let ref-lines = (
+    if alt == none { none } else [#alt.name #dur(alt.seconds_per_evaluation) per evaluation (one core; not matched)],
+    if rt == none { none } else if no-gate [no matched provider: reported without a gate (addendum H)] else [providers, s/pt (20 Oct): #("openloops", "recola", "madloop").map(k => [#pkey(k) #rt.providers.at(k).text]).join([ · ])],
+    if rt == none or no-gate { none } else if rt.limit_seconds == none [no production-mode provider time; seven-leg G1 rows not yet timed] else [gate limit #str(rt.limit_seconds) s/pt (#rt.binding) · seven-leg G1 rows not yet timed],
+  )
   if m.status == "measured" {
     valued(fill: ratio-fill(ratio-of(m)), dur(m.seconds_per_point), mult: mult2(ratio-of(m)),
       [#prov-line #h(1fr) $B = #m.batch$],
       [#if "gate" in m { gate-chip(m.gate) } else { plain-chip[#c.gate_rule.replace("->", "→")] } #h(4pt) #stage-bar(m.stages)],
       dev-line)
   } else if m.status == "refused" {
-    absent([refused on `loop`: #m.at("reason", default: m.error)], prov-line, dev-line, if d.status == "measured" [#dev-tag #stage-bar(d.stages)])
+    absent([refused on `loop`: #if "reason" in m { m.reason } else { m.error }], m.at("basis", default: none), prov-line, ..ref-lines, dev-line, if d.status == "measured" [#dev-tag #stage-bar(d.stages)])
+  } else if m.status == "not started" {
+    absent([not started on `loop`: #m.reason], ..ref-lines)
   } else if m.status == "not batched" {
     absent([no batched run on `loop`], [G1 timed $B = #m.timed_batches.map(str).join(", ")$ only (#inputs-word(m) inputs) · #prov-line], dev-line, if d.status == "measured" [#dev-tag #stage-bar(d.stages)])
   } else {
-    let rt = c.at("reference_text", default: none)
-    let alt = c.at("alternative", default: none)
-    absent([not measured],
-      if alt == none { none } else [#alt.name #dur(alt.seconds_per_evaluation) per evaluation (one core; not matched)],
-      if rt == none { none } else if rt.threshold == "no gate" [no matched provider: reported without a gate (addendum H)] else [providers, s/pt (20 Oct): OL #rt.openloops · Rc #rt.recola · ML #rt.madloop],
-      if rt == none or rt.threshold == "no gate" { none } else if rt.threshold == "—" [no production-mode provider time; seven-leg G1 rows not yet timed] else [gate limit #rt.threshold s/pt · seven-leg G1 rows not yet timed])
+    absent([not measured], ..ref-lines)
   }
 }
 
@@ -355,12 +379,19 @@
   if m.status == "measured" {
     valued(fill: none, dur(m.seconds_per_point), mult: [#text(6.8pt)[LC/FC] #fixed(m.lc_over_fc, 2)],
       [$B = #m.batch$#if "fc_seconds_per_point" in m [ · FC #dur(m.fc_seconds_per_point)]], dev-line)
+  } else if m.status == "refused" {
+    absent([refused on `loop`], dev-line)
+  } else if m.status == "not started" {
+    absent([not started on `loop`], dev-line)
   } else {
     absent([not timed on `loop`], dev-line)
   }
 }
 
 #let group-title = ("2->2": [$2 -> 2$], "2->3": [$2 -> 3$], "2->4": [$2 -> 4$], "2->5": [$2 -> 5$])
+// Rows whose gate verdict is a user decision (legend of Table 1).
+#let decided-gate(r) = (r.full_colour.main, r.full_colour.dev).map(c => c.at("gate", default: none)).find(x => x != none and "decision" in x)
+#let decided-rows = S.groups.map(g => g.rows).flatten().filter(r => decided-gate(r) != none)
 
 // ================================================================ PAGE 1 ==
 #align(center)[
@@ -428,14 +459,14 @@
     },
     {
       [*Stage shares* (bar; the largest is named): ]
-      for (k, n) in stage-keys.enumerate() { box(baseline: 0.5pt, rect(width: 5pt, height: 5pt, fill: seg-colours.at(k), stroke: none)); h(1.5pt); stage-label.at(n); h(5pt) }
+      for (k, n) in stage-keys.enumerate() { box[#box(baseline: 0.5pt, rect(width: 5pt, height: 5pt, fill: seg-colours.at(k), stroke: none))#h(1.5pt)#stage-label.at(n)]; h(5pt) }
       [(@tab:g1split).]
       linebreak()
       [*References:* ML MadLoop 3.7.0, Rc Recola 2.2.5 (COLLIER), OL OpenLoops 2.1.5 (prebuilt libraries: no generation
       time), NJet DD NJet 3.1.2 in double-double. Deviation $|a - b| slash max(|a|, |b|, |B| alpha_s slash 2 pi)$ of the
-      binary64 finite part at the timed points (median: over the points, the largest over the references); † the largest lies within pyAmpliCol's own binary64 stability estimate at that
-      point. *Gate chip:* time ÷ binding limit (MadLoop, or 1.30 × the faster of Recola and OpenLoops); pass or fail when the
-      whole uncertainty band is below or above 1, else open.]
+      binary64 finite part at the timed points (median: over the points, the largest over the references); † the largest lies within
+      the binary64 stability estimate of the same configuration at that point. *Gate chip:* time ÷ binding limit (MadLoop, or 1.30 × the faster of Recola and OpenLoops); pass or fail when the
+      whole uncertainty band is below or above 1, else open#for r in decided-rows { let x = decided-gate(r); [; ‡ #math-label(r.math): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }.]
     },
   )
 })
@@ -444,8 +475,8 @@
 #text(7.4pt, fill: ink2)[*Configurations.* Main values: _integrated_, the engine on `loop` as timed by gate G1 at
 #raw(sm.integrated.revision) (LC: #raw(sm.integrated.lc_revision); both ancestors of `loop`; the later ct-simplify merge was not
 re-timed): #sm.integrated.inputs.map(i => inputs-word((inputs: i))).join(", ") per-point trees, Born and counterterm inputs, native loop stage (#raw(sm.integrated.native_build)).
-#dev-tag in the $2 -> 3$ and $2 -> 4$ rows: #raw(sm.dev.branch) #raw(sm.dev.revision) with #sm.dev.inputs.map(i => inputs-word((inputs: i))).join(", ") per-point inputs (timers
-#raw(sm.dev.commit), #raw(sm.dev.native_build)); in the $2 -> 5$ rows: that branch's validations of
+#if sm.dev != none [#dev-tag in the G1 rows (#box[$2 -> 2$] to #box[$2 -> 4$]): #raw(sm.dev.branch) #raw(sm.dev.revision) with #sm.dev.inputs.map(i => inputs-word((inputs: i))).join(", ") per-point inputs (timers
+#raw(sm.dev.commit), #raw(sm.dev.native_build)); ]#dev-tag in the #box[$2 -> 5$] rows: the validations of #raw(sm.dev_required.branch),
 #sm.dev_required.record.split(",").first() (generation, then single points). Generation excludes model loading. Unbatched
 development timings, such as a seven-gluon point with its rotation check, are not in this table (@sevenglue).]]
 
@@ -458,7 +489,7 @@ development timings, such as a seven-gluon point with its rotation check, are no
 #let xpos(t) = fig-w * (calc.log(t, base: 10) - fig-lo) / (fig-hi - fig-lo)
 #let fig-ticks = ((0.001, [1 ms]), (0.01, [10 ms]), (0.1, [100 ms]), (1.0, [1 s]), (10.0, [10 s]))
 #let fig-rows = S.groups.map(g => g.rows).flatten().filter(r => r.full_colour.at("fastest", default: none) != none)
-#let dot(fill: none, stroke: none) = circle(radius: 2.9pt, fill: fill, stroke: stroke)
+#let fig-dot(fill: none, stroke: none) = circle(radius: 2.9pt, fill: fill, stroke: stroke)
 #let fig-row(r) = {
   let c = r.full_colour
   let (m, d) = (c.main, c.dev)
@@ -483,8 +514,8 @@ development timings, such as a seven-gluon point with its rotation check, are no
     if ms != none and ds != none {
       place(dx: xpos(ds), dy: fig-h / 2 - 0.5pt, line(start: (0pt, 0pt), end: (xpos(ms) - xpos(ds), 0pt), stroke: 1pt + luma(130)))
     }
-    if ds != none { place(dx: xpos(ds) - 2.9pt, dy: fig-h / 2 - 2.9pt, dot(fill: white, stroke: 1.3pt + rgb("#e08214"))) }
-    if ms != none { place(dx: xpos(ms) - 2.9pt, dy: fig-h / 2 - 2.9pt, dot(fill: navy, stroke: 0.6pt + white)) }
+    if ds != none { place(dx: xpos(ds) - 2.9pt, dy: fig-h / 2 - 2.9pt, fig-dot(fill: white, stroke: 1.3pt + rgb("#e08214"))) }
+    if ms != none { place(dx: xpos(ms) - 2.9pt, dy: fig-h / 2 - 2.9pt, fig-dot(fill: navy, stroke: 0.6pt + white)) }
   })
 }
 #figure(
@@ -529,12 +560,13 @@ development timings, such as a seven-gluon point with its rotation check, are no
     set par(justify: false)
     [*Gate G1* (@g1; finite part, $2 -> 3$ and beyond)]
     [
-      - *On `loop` (integrated): not met.* It fails every gated process it generates, at #ratio-range(int-top) of the
-        binding limit at the largest batch (Python per-point inputs take #pct(calc.min(..inputs-share))–#pct(calc.max(..inputs-share))
-        of the time), refuses #names(int-refused) ($Z$ fermion signs, WP3.2; Furry zeros, WP3.5), and the $2 -> 4$ rows
-        #names(gated.filter(p => slice-c(p) != none and not refused(slice-c(p)) and top(slice-c(p)) == "1")) were timed at $B = 1$ only.
-      - *Native inputs* #dev-tag (WP3.1, not yet integrated) at $B = 128$: #dev-pass.len() of #gated.len() pass,
-        #names(dev-open) open, #names(dev-fail) fails (×#fixed(lim(gproc("uux_ddxg"), dev-c(gproc("uux_ddxg")), big), 2) of its limit).
+      - *On `loop` (integrated): not met.* It fails every gated process it generates: at $B = 128$ at #ratio-range(int-big)
+        of the binding limit (Python per-point inputs take #pct(calc.min(..inputs-share))–#pct(calc.max(..inputs-share)) of the
+        time), and at #ratio-range(int-one-only-lim) for #names(int-one-only), timed at $B = 1$ only. It refuses
+        #names(int-refused) ($Z$ fermion signs, WP3.2; Furry zeros, WP3.5).
+      - *Native inputs* #dev-tag (WP3.1, not yet integrated) at $B = 128$: #dev-pass.len() of #gated.len() pass#if dev-decided.len() > 0 [
+        (#decided-text(dev-decided))]#if dev-open.len() > 0 [, #names(dev-open) open], #names(dev-fail) fails
+        (#dev-fail.map(p => [×#fixed(lim(p, dev-c(p), big), 2)]).join([, ]) of its limit).
         At $B = 1$ #if one-pass.len() == 0 [no process passes] else [#one-pass.len() pass] with 16 lanes (#l1-pass.len() with one lane).
       - *$2 -> 5$:* not timed yet (`measure-g1-7leg`); $g g -> g g g g g$ has no matched provider and is reported without a gate.
     ]
@@ -560,8 +592,9 @@ development timings, such as a seven-gluon point with its rotation check, are no
     - Electroweak loops, Goldstones and the complex-mass scheme (WP3.2): $g g -> t overline(t) e^- e^+ g$ (EW) not started;
       $V$+jets refused on `loop`.
     - Batched timings of the $2 -> 5$ set; LC timings of the $V$+jets rows; provider protocol-mode columns.
-    - Seven-gluon generation cost on the WP3.1 branch: #minutes(meas.required_native.processes.gg_ggggg.generate_s), process
-      peak #fixed(meas.required_native.processes.gg_ggggg.max_rss_gib, 1) GiB, mostly the always-generated poles companion
+    - Seven-gluon generation cost on the WP3.1 branch: #let g7r = meas.required_native.processes.gg_ggggg
+      #minutes(g7r.generate_s + g7r.export_s) with the plan export (generation #minutes(g7r.generate_s), mostly the
+      always-generated poles companion), peak #fixed(calc.max(g7r.generate_peak_gib, g7r.export_peak_gib), 1) GiB
       (@sevenglue); inside addendum H, to be made lean.
     - Ward check at seven gluons; prepared-artifact portability without regeneration (addendum G).
   ],
@@ -684,7 +717,7 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
   if not p.gated { return table.cell(tiny[no gate]) }
   let a = if refused(slice-c(p)) { none } else { verdict(bat(slice-c(p), b)) }
   let d = verdict(bat(dev-c(p), b))
-  table.cell(text(6.8pt)[#if refused(slice-c(p)) { text(fill: ink2)[—] } else { gate-word(a) } #linebreak() #gate-word(d)])
+  table.cell(text(6.8pt)[#if refused(slice-c(p)) { text(fill: ink2)[—] } else { gate-word(p, b, a) } #linebreak() #gate-word(p, b, d)])
 }
 #figure(kind: table,
   caption: [*Gate G1, full colour*, ms per point (gate statistic: median),
@@ -699,8 +732,8 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
     $g g -> g g g g$ export took 2.4 h here (HANDOFF §0.1), and OpenLoops binds
     the gate. Gate: upper line integrated, lower line native inputs; the number
     is the time over the binding limit (MadLoop's time or 1.30× the faster of
-    Recola and OpenLoops); *open*: the uncertainty band contains the limit
-    (@tab:g1batch gives the bands).],
+    Recola and OpenLoops); *open*: the band contains the limit; ‡ pass by user
+    decision although it does (bands: @tab:g1batch).],
   tstyle(table(
     columns: (2.75cm, 0.75cm, 1fr, 1fr, 1fr, 1fr, 1fr, 1.7cm),
     align: left + horizon, inset: (x: 4pt, y: 2.6pt),
@@ -711,7 +744,7 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
       let (a, d) = (slice-c(p), dev-c(p))
       let bb = if top(d) == none { top(a) } else { top(d) }
       (
-        table.cell(rowspan: 3, align: left + horizon, {
+        table.cell(rowspan: 3, align: left + horizon, breakable: false, {
           gname(p.key)
           linebreak()
           tiny[#if p.gated [$2 -> #p.outgoing$] else [$2 -> 2$, no gate]]
@@ -724,14 +757,15 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
   )),
 ) <tab:g1>
 
-#let band-cell(c, b) = {
+#let band-cell(p, c, b) = {
   let x = bat(c, b)
   if x == none { return table.cell(dim[—]) }
   let gt = x.gate
   if "band_to_binding_limit" not in gt { return table.cell(tiny[#gt.status]) }
   let (lo, hi) = gt.band_to_binding_limit
-  table.cell(fill: if gt.status == "pass" { rgb("#e8f1f8") } else if gt.status == "fail" { rgb("#fbe3dd") } else { warm }, {
-    text(7.6pt, weight: "bold", fixed(gt.ratio_to_binding_limit, 2))
+  let st = eff-status(p, b, gt)
+  table.cell(fill: if st == "pass" { rgb("#e8f1f8") } else if st == "fail" { rgb("#fbe3dd") } else { warm }, {
+    text(7.6pt, weight: "bold")[#fixed(gt.ratio_to_binding_limit, 2)#if decision(p, b, gt) != none [‡]]
     h(1fr)
     tiny[#fixed(lo, 2)–#fixed(hi, 2)]
   })
@@ -739,7 +773,8 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
 #figure(kind: table,
   caption: [*The gate at every batch size* (native inputs#super[dev], full
     colour): time over the binding limit and its uncertainty band (cell
-    colour: blue pass, red fail, amber open). $B = 1$ is timed with the
+    colour: blue pass, red fail, amber open; ‡ pass by user decision, the
+    band containing the limit: #decided-text(dev-decided)). $B = 1$ is timed with the
     default 16 lanes (a one-point call pays a 16-lane chunk) and with one
     lane. #if dev-c(gproc("uux_uuxg")).earlier_runs.len() > 0 [The
     $u overline(u) -> u overline(u) g$ and $u overline(u) -> d overline(d) g$
@@ -749,8 +784,8 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
     columns: (2.9cm, 1fr, 1fr, 1fr, 1fr, 1fr),
     align: left + horizon, inset: (x: 4pt, y: 2.6pt), stroke: tstroke, fill: thead-fill,
     table.header[Process][$B = 1$, 16 lanes][$B = 1$, 1 lane][$B = 8$][$B = 32$][$B = 128$],
-    ..gated.map(p => (gname(p.key), band-cell(dev-c(p), "1"), band-cell(l1-c(p), "1"),
-      band-cell(dev-c(p), "8"), band-cell(dev-c(p), "32"), band-cell(dev-c(p), "128"))).flatten(),
+    ..gated.map(p => (gname(p.key), band-cell(p, dev-c(p), "1"), band-cell(p, l1-c(p), "1"),
+      band-cell(p, dev-c(p), "8"), band-cell(p, dev-c(p), "32"), band-cell(p, dev-c(p), "128"))).flatten(),
   )),
 ) <tab:g1batch>
 
@@ -825,16 +860,16 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
 #box-note(fill: warm, breakable: false)[
   #set par(justify: true)
   *Verdict of gate G1* (processes from $2 -> 3$; $2 -> 2$ without a gate).
-  - *Integrated slice: fails* every process it generates, at
-    #ratio-range(int-top) of the binding limit at the largest batch and
-    #ratio-range(int-one) at $B = 1$; the per-point Python inputs take
-    #pct(calc.min(..inputs-share))–#pct(calc.max(..inputs-share)) of its time
-    (@tab:g1split). It does not generate #names(int-refused) (counterterm
-    coverage: Furry zeros, WP3.5; $Z$ fermion signs, WP3.2).
+  - *Integrated slice: fails* every process it generates: at $B = 128$ at
+    #ratio-range(int-big) of the binding limit, the per-point Python inputs
+    taking #pct(calc.min(..inputs-share))–#pct(calc.max(..inputs-share)) of
+    its time (@tab:g1split); at $B = 1$ at #ratio-range(int-one), where
+    #names(int-one-only) were timed only. It does not generate
+    #names(int-refused) (counterterm coverage: Furry zeros, WP3.5; $Z$
+    fermion signs, WP3.2).
   - *Native inputs* #flag[development] at $B = 128$: *pass* for
-    #names(dev-pass); *fail* for #names(dev-fail)
-    (#dev-fail.map(p => [#mult2(lim(p, dev-c(p), big))]).join([, ]) of the limit,
-    OpenLoops binding)#if dev-open.len() > 0 [; *open* for #names(dev-open)
+    #names(dev-pass)#if dev-decided.len() > 0 [ (#decided-text(dev-decided))]\; *fail* for #names(dev-fail)
+    (#dev-fail.map(p => [#mult2(lim(p, dev-c(p), big)), #pshort(bat(dev-c(p), big).gate.binding_provider) binding]).join([; ]))#if dev-open.len() > 0 [; *open* for #names(dev-open)
     (#dev-open.map(p => fixed(lim(p, dev-c(p), big), 2)).join([, ]) of its limit
     after the single repeat; #dev-open.map(p => [#fixed(lim(p, dev-c(p), "32"), 2) at $B = 32$]).join([, ]))].
     The gate holds for every $B$ (@tab:g1batch): at $B = 1$ with 16 lanes
@@ -866,7 +901,7 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
     align: left + horizon, inset: (x: 4pt, y: 3pt), stroke: tstroke, fill: thead-fill,
     table.header[Lever][Evidence][Expected gain][Owner],
     [*Native per-point inputs* (WP3.1 I3–I6: trees, Born, counterterm scalars in the executor)],
-    [Python inputs #pct(calc.min(..inputs-share))–#pct(calc.max(..inputs-share)) of the integrated time],
+    [Python inputs #pct(calc.min(..inputs-share))–#pct(calc.max(..inputs-share)) of the integrated time at $B = 128$],
     [measured, integrated ÷ native at equal $B$: #ratio-range(sp-int) at $B = 1$, #ratio-range(sp-big) at $B = 128$ ($2 -> 3$)],
     [`generation-scale` (G-int, branch; audit pending)],
     [*Compiled native trees* (kernels as the tree engine's SymJIT planes, lanes batched)],
@@ -940,7 +975,7 @@ with the batch (#msec(glue(ud32)) ms per point at $B = 32$,
     ),
     ..lc-procs.map(p => {
       let (al, af, dl, df) = (cfg(p, "python/lc"), slice-c(p), cfg(p, "native/lc"), dev-c(p))
-      let big-cell(lc, fc) = { let b = top(lc); if b == none { lc-cell(p, lc, fc, none) } else if b == "128" { lc-cell(p, lc, fc, b) } else { let c = lc-cell(p, lc, fc, b); table.cell[#c.body #tiny[($B = #b$)]] } }
+      let big-cell(lc, fc) = { let b = top(lc); if b == none { lc-cell(p, lc, fc, none) } else if b == "128" { lc-cell(p, lc, fc, b) } else { let c = lc-cell(p, lc, fc, b); table.cell[#c.body #box(tiny[($B = #b$)])] } }
       (gname(p.key), lc-cell(p, al, af, "1"), big-cell(al, af), lc-cell(p, dl, df, "1"), big-cell(dl, df))
     }).flatten(),
   )),
@@ -1153,20 +1188,47 @@ or in a time comparable to pyAmpliCol's own generation of the process (HANDOFF
 identities, Catani poles, LC/NLC/FC and DD/AP consistency, stability checks,
 lower multiplicities and existing references.
 
+// Provider generation records of every row of Table 1 (data/summary.json:
+// g1.json for the G1 rows, measured.json for the seven-leg rows): the rows
+// with a provider generation over 45 minutes or unfinished, then the others.
+#let rule-s = 2700
+#let s-rows = S.groups.map(g => g.rows).flatten()
+#let gen-times(r) = r.generation.providers.pairs().filter(((k, x)) => x != none and "seconds" in x)
+#let over-rule(r) = gen-times(r).any(((k, x)) => x.seconds > rule-s) or r.generation.at("unfinished", default: (:)).keys().filter(k => k != "note").len() > 0
+#let pg-rows = s-rows.filter(over-rule)
+#let pg-rest = s-rows.filter(r => not over-rule(r))
+#let pg-longest = pg-rest.map(r => gen-times(r).map(((k, x)) => (r: r, k: k, s: x.seconds))).flatten().sorted(key: x => x.s).last()
+#let pg-dur(s) = if s >= 3600 [#fixed(s / 3600, 1) h] else { dur(s) }
+#let pg-ml(r) = {
+  let x = r.generation.providers.madloop
+  let u = r.generation.at("unfinished", default: (:)).at("madloop", default: none)
+  if x != none and "seconds" in x [#pg-dur(x.seconds) #tiny[(#group(int(calc.round(x.graph_s))) + #group(int(calc.round(x.export_s))) + #group(int(calc.round(x.compile_s))) s)]]
+  else if u != none [diagrams #pg-dur(u.graph_generation_s); unfinished #tiny[(last state: #u.status)]]
+  else { dim[not exported] }
+}
+#let pg-rc(r) = {
+  let x = r.generation.providers.recola
+  let u = r.generation.at("unfinished", default: (:)).at("recola", default: none)
+  if x != none and "seconds" in x { pg-dur(x.seconds) } else if u != none [unfinished #tiny[(last state: #u.status, #u.since.slice(0, 10))]] else { dim[—] }
+}
+#let pg-ol(r) = { let x = r.generation.providers.openloops; if x == none [no public library] else [prebuilt #x.prebuilt] }
+#let pg-rule(r) = {
+  let u = r.generation.at("unfinished", default: (:))
+  let over = gen-times(r).filter(((k, x)) => x.seconds > rule-s).map(((k, x)) => pshort(k))
+  text(weight: "semibold", fill: amber, if u.at("note", default: none) != none [#u.note] else if over.len() > 0 [#over.join(", ") over 45 min; results exist and are used] else [unfinished])
+}
 #block(breakable: false)[#figure(kind: table,
-  caption: [*Provider generation on this host and the 45-minute rule.* MadLoop
-    graph generation, export and compilation; Recola process generation;
-    OpenLoops: prebuilt public libraries (HANDOFF §0.1; the measured times of
-    the $2 -> 5$ rows are in @tab:summary).],
+  caption: [*Provider generation on this host and the 45-minute rule* (HANDOFF §0.1): the rows of @tab:summary where a
+    provider generation takes more than 45 minutes or did not finish. MadLoop: graph generation + source export + compilation;
+    Recola: process generation; OpenLoops: prebuilt public libraries (no generation time). Records: `data/g1.json` (G1 rows)
+    and `data/measured.json` (`provider_generation`, the reference runs of the $2 -> 5$ rows), through `data/summary.json`.
+    Every other row of @tab:summary generates within 45 minutes with every provider (longest:
+    #pshort(pg-longest.k) #dur(pg-longest.s) for #math-label(pg-longest.r.math)#if pg-longest.r.corrections != "QCD" [ (#pg-longest.r.corrections)]).],
   tstyle(table(
-    columns: (3.4cm, 3.9cm, 2.2cm, 1.9cm, 1fr),
+    columns: (2.9cm, 4.1cm, 3.0cm, 2.0cm, 1fr),
     align: left + horizon, inset: (x: 4pt, y: 3.1pt), stroke: tstroke, fill: thead-fill,
     table.header[Process][MadLoop][Recola][OpenLoops][45-minute rule],
-    ..ms.provider_generation.rows.map(r => (
-      if r.label.contains("controls") { text(8.4pt, font: "Libertinus Serif")[$2 -> 2$, $2 -> 3$ controls] } else { plabel(r) },
-      r.madloop, r.recola, r.openloops,
-      if r.rule.starts-with("within") { r.rule } else { text(weight: "semibold", fill: rgb("#8a4b08"), r.rule) },
-    )).flatten(),
+    ..pg-rows.map(r => (text(8.4pt, font: "Libertinus Serif", math-label(r.math)), pg-ml(r), pg-rc(r), pg-ol(r), pg-rule(r))).flatten(),
   )),
 ) <tab:provgen>]
 
@@ -1269,7 +1331,8 @@ per-point inputs, top-free with $N_f = 5$, agrees with NJet's double-double valu
 (per point: #g7.max_error_per_point.map(e => sci(e)).join(", ") over all references) and to #sci(g7-dd.double_pole) in the
 double pole; each point's rotation plus reduction-direction estimate bounds its difference. Generation took
 #minutes(g7.generate_s) at #fixed(g7.generate_peak_gib, 1) GiB and the plan export #minutes(g7.export_s) at
-#fixed(g7.export_peak_gib, 1) GiB (process peak #fixed(g7.max_rss_gib, 1) GiB, #sig(g7.plan_json_mb) MB of plan JSON), inside
+#fixed(g7.export_peak_gib, 1) GiB (peak RSS of each stage; #sig(g7.plan_json_mb) MB of plan JSON; the whole validation run, point
+evaluations included, peaked at #fixed(g7.max_rss_gib, 1) GiB), inside
 addendum H's budget (hours, below 150 GB). DESIGN WP3.1 (eighth increment) attributes the cost: 325 s before the
 counterterm recursion, 1,122 s with its counterterm program, 2,766 s once poles-uvir's always-generated companion merged (its
 seed table builds generic seeds; making it lean is open). A point with its rotation and reduction-direction checks took
@@ -1283,7 +1346,7 @@ eight threads (the workspace sets `RAYON_NUM_THREADS=8`), so not a batched one-t
 #let nv = ms.njet_validation
 #let ux = sg.uux_ggggg_vs_providers.max_relative_deviation
 #let g7-cat = g7.max_deviation.catani
-#figure(kind: table,
+#block(breakable: false)[#figure(kind: table,
   caption: [*Checks of the seven-leg QCD results*, #dev-tag on `work/v2-generation-scale`, except the Ward row (WP2.5 on
     `loop`); binary64, all three Laurent coefficients, deviation metric of @tab:summary. NJet values: fixture
     `gg_ggggg_njet.json` (NJet 3.1.2 double-double at exactly rotated points, scaling-test estimates ≤ #sci(1.3e-24)).],
@@ -1305,7 +1368,7 @@ eight threads (the workspace sets `RAYON_NUM_THREADS=8`), so not a batched one-t
     [asymmetric Ward mode of WP2.5 (loop side only, bare + UV + $R_2$); passes on $g g -> g g$ and $u overline(u) -> g g g$ (`test_loop_v2_observables.py`)],
     text(fill: rgb("#8a4b08"), weight: "semibold")[not yet run at seven gluons (addendum H)],
   )),
-) <tab:sevencheck>
+) <tab:sevencheck>]
 
 // ============================================================ CAPABILITY ==
 = Capabilities at this milestone <capabilities>
@@ -1332,13 +1395,13 @@ eight threads (the workspace sets `RAYON_NUM_THREADS=8`), so not a batched one-t
   ([Direct $R_2$], "deferred", [A bonus by the user's rule; bounded controls only.]),
   ([Electroweak, complex mass], "open", [Tree EW lanes fixed, the Dirac–Weyl class refused; loop EW, Goldstones and CMS are WP3.2.]),
   ([Required set], "progress", [On the WP3.1 branch seven of eight generate and agree with their references in all coefficients with native inputs (@tab:validation), $g g -> g g g g g$ against NJet's double-double values; the EW target is not started. Not on `loop` yet; no batched $2 -> 5$ timing.]),
-  ([Performance gates], "progress", [G1 measured (@g1): the integrated slice fails every $2 -> 3$ and $2 -> 4$ gate it generates (Python per-point inputs) and does not generate $V$+jets (WP3.5, WP3.2). With the WP3.1 native inputs at $B = 128$: #dev-pass.len() of #gated.len() pass, #names(dev-open) open, #names(dev-fail) fails; $B = 1$ needs lane adaptation (@tab:g1batch). Missing: provider protocol-mode columns, LC for $V$+jets, seven legs (`measure-g1-7leg`).]),
+  ([Performance gates], "progress", [G1 measured (@g1): the integrated slice fails every $2 -> 3$ and $2 -> 4$ gate it generates (Python per-point inputs) and does not generate $V$+jets (WP3.5, WP3.2). With the WP3.1 native inputs at $B = 128$: #dev-pass.len() of #gated.len() pass#if dev-decided.len() > 0 [ (#names(dev-decided) by user decision, #dev-decided.map(p => decision(p, big, bat(dev-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if dev-open.len() > 0 [, #names(dev-open) open], #names(dev-fail) fails; $B = 1$ needs lane adaptation (@tab:g1batch). Missing: provider protocol-mode columns, LC for $V$+jets, seven legs (`measure-g1-7leg`).]),
   ([$g g -> 6g$], "deferred", [No $2 -> 6$ work until the $2 -> 5$ plan is complete (user, 23 October).]),
 )
 #figure(kind: table,
   caption: [*Capability matrix* of the v2 engine on `loop` at #ms.engine_revision, with branch work marked.],
   tstyle(table(
-    columns: (3.5cm, 1.6cm, 1fr), align: (x, y) => if x == 1 { center + horizon } else { left + horizon },
+    columns: (3.5cm, 1.85cm, 1fr), align: (x, y) => if x == 1 { center + horizon } else { left + horizon },
     inset: (x: 4.5pt, y: 2.6pt), stroke: tstroke, fill: thead-fill,
     table.header[Feature][Status][Boundary],
     ..caps.map(((f, s, b)) => (text(weight: "semibold", f), badge(s), b)).flatten(),
@@ -1501,7 +1564,7 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
 
 #block(breakable: false)[#figure(kind: table,
   caption: [*Asymptotic classes per event* for $n$ gluons, full colour (DESIGN
-    §1.4): $F_n approx (n - 1)! (1 / ln 2)^n \/ 2$ families, $2^n$ helicities.
+    §1.4): $F_n approx (n - 1)! (1 / (ln 2))^n \/ 2$ families, $2^n$ helicities.
     The required set ($n <= 7$) is far below the crossover of schedule B with
     the unitarity class ($n approx 30$–$50$); schedule M is planned as the
     default from $n >= 8$.],
@@ -1546,7 +1609,8 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
   - *Status, in-flight work, decisions:* `data/milestone.json`, from the
     `Integrate …` merges of #ms.engine_revision since #ms.previous_loop;
     `workspace/reports/engine-v2/slice-status.md` (integration blocks,
-    DECISIONS 2026-10-23/24); `HANDOFF_24_10_2026.md`; MASTER_PLAN
+    DECISIONS 2026-10-23/24; the user's gate decision of 2026-10-24, 16:05 UTC, is
+    recorded in `data/milestone.json` `gate_decisions`); `HANDOFF_24_10_2026.md`; MASTER_PLAN
     2026-10-23/24 entries; REQUIREMENTS_ADDENDUM A, D, F, G, H, I, J; DESIGN §5.7
     (G1), §6.1, §6.2, §12.4; the 24 October pushes (59badc7a and b4d76cc3,
     gates in slice-status.md).
@@ -1554,10 +1618,10 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
     `scripts/build_summary.py` from `data/g1.json`, `data/measured.json`,
     `data/milestone.json` and `tools/loop_benchmark/processes.json`; every
     entry names its source (README).
-  - *@tab:provgen:* HANDOFF §0.1 (addendum F); the measured provider generation
-    times of @tab:summary from the reference runs' records
-    (`workspace/reference/runs/required/<process>/`, collected into
-    `data/measured.json`). *@tab:validation, @required, @sevenglue:* the native
+  - *@tab:provgen:* HANDOFF §0.1 (addendum F); the provider generation records of
+    @tab:summary (`data/summary.json`): `data/g1.json` for the G1 rows and the
+    reference runs' records (`workspace/reference/runs/required/<process>/`,
+    collected into `data/measured.json`) for the $2 -> 5$ rows. *@tab:validation, @required, @sevenglue:* the native
     validations of DESIGN WP3.1 eighth increment (0ea83af2) on
     `work/v2-generation-scale`, records
     `workspace/tmp/generation-scale/gint/val1/` and `val2/`, collected into
