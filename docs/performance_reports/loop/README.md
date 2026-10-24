@@ -6,7 +6,13 @@ of 2026-10-24): one row per test process by multiplicity, with generation
 cost, batched full-colour and leading-colour time per point against the
 fastest provider, the gate-G1 verdict, stage shares and the validation line,
 followed by its legend and Figure 1 (the batched full-colour times against
-the gate limits on a log scale). Then a status page (what is on `loop`, the
+the gate limits on a log scale). Table 1 and Figure 1 show only the **most
+recent measured configuration** of each cell (user request of 2026-10-24:
+"remove legacy timings and only focus on the most recent ones"); its
+provenance (branch, commit, and whether it is a development measurement not
+yet on `loop`) is stated once in the title line, the reading guide and the
+column header. Older configurations (today the integrated engine with Python
+per-point inputs) stay in the gate-G1 details for history. Then a status page (what is on `loop`, the
 gate, what is in development or missing, the timing protocol), the gate-G1
 details (provider grid with B = 1 and the largest batch, gate bands, stage
 split, levers, leading colour, throughput and recalibration, schedule B
@@ -29,19 +35,38 @@ source in the report's last section. Table 1 and Figure 1 read only
 `data/summary.json`, which `scripts/build_summary.py` assembles from the other
 files: never edit it by hand.
 
+**Main-configuration rule** (`MAIN_ORDER` in `scripts/build_summary.py`):
+every cell (generation, validation, full colour, leading colour) shows the
+most recent configuration that measured it. The candidates, newest first:
+rows with a G1 record take the campaign's *development* side (gate `--meta
+native_revision`, `native_commit`: work ahead of `loop`, being integrated)
+before its *integrated* side (`slice_revision`, `slice_lc_revision`: the
+engine on `loop`); rows without one (the 2 → 5 set until `measure-g1-7leg`
+times it) take the development branch's validation records
+(`measured.json` `required_native`: generation and validation; their batched
+timing is "pending" with the package named in `milestone.json` `pending`)
+before the registry (`milestone.json` `status_notes`: a refusal attributed to
+`loop`, or a capability nobody has started). Without a measurement a cell
+shows the status of the newest configuration with a record of the row
+(refused, not timed, not batched, pending, not started), so "refused" appears
+only where the most recent configuration refuses. A cell taken from an older
+configuration than the leading one of its rows is marked in Table 1 with its
+origin.
+
 | File | Content |
 |---|---|
-| `summary.json` | The data of Table 1, Figure 1 and the provider-generation table, written by `scripts/build_summary.py` from `g1.json`, `measured.json`, `milestone.json` and `tools/loop_benchmark/processes.json`. Per row (grouped by multiplicity, then by number of gluons): process, legs, corrections, loop families (only a count of the row's own configuration; a count recorded only with another particle veto — the seven-gluon generation with top loops against the top-free validation — sits in `other_configuration` and is printed as that configuration's); `loop_status` (refused or not started on `loop`, with its reason and source); the validation of the configuration whose batched full-colour time is the row's main value (the integrated one where it was timed in batches, else the development one; largest finite-part deviation per reference, points, median, and whether the worst point lies within the binary64 stability estimate of the same configuration, only where the campaign re-evaluated it in that configuration; for the seven-leg rows the development record named in `record`); generation (`main` = the integrated configuration, `dev` = the WP3.1 native-input configuration or, for the seven-leg rows, the newest native validation record of the process with its DESIGN record; provider generation times with MadLoop's graph, export and compile stages, unfinished provider runs, the fastest; ratios); full colour (`main`/`dev` at the largest batch > 1 with median, uncertainty, stage shares — `inputs`: trees, Born and counterterm inputs; `glue`: point parameters, input conversion, assembly — gate verdict and ratio to the fastest provider; a verdict set by a user decision keeps the measured ratio, band and status; refused, not started, not batched or not measured otherwise; the providers' production times; for the seven-leg rows the production references — OpenLoops and Recola from DESIGN Table 1b as text, MadLoop from its production-build timing record, Recola's protocol run where it has no production time — and the gate limit computed from them only when every matched provider has a production time (else `missing_production` names the missing ones), and, without a matched provider, NJet as an unmatched alternative, its single-evaluation time from `measured.json`); leading colour (`main`/`dev`, LC/FC, schedule, and `adopted_schedule` where G1 adopted schedule M for the class: shown next to the protocol's schedule-B value, which stays the main one). `meta.dev_required.records` lists the DESIGN records of the seven-leg development validations with their rows. Every entry names its `source`; a value without a record is `null` or a status, never an estimate. |
+| `summary.json` | The data of Table 1, Figure 1 and the provider-generation table, written by `scripts/build_summary.py` from `g1.json`, `measured.json`, `milestone.json` and `tools/loop_benchmark/processes.json`. `meta.main_rule` states the main-configuration rule and its order; `meta.configurations` lists the candidates (`development`, `integrated`, `development_records`, `registry`) with branch, revision, commit, native build, per-point inputs, label (e.g. "development, being integrated into loop" and the integration package, from `milestone.json` `development`), the DESIGN records of the development validations (`records`) and `main_rows`, the rows where each supplies a main value. Per row (grouped by multiplicity, then by number of gluons; `kind` `g1` or `records`): process, legs, corrections, loop families of the main value's configuration (a count recorded only with another particle veto — the seven-gluon generation with top loops against the top-free validation — sits in `other_configuration` and is printed as that configuration's); `row_status` (the newest configuration's refusal, or a capability not started, with reason and source); the validation of the newest configuration compared with references (largest finite-part deviation per reference, points, median, and whether the worst point lies within the binary64 stability estimate of the same configuration, only where the campaign re-evaluated it in that configuration; for the records rows the DESIGN record); `generation.main` (generate + export, peak memory, plan size, ratio to the fastest provider generation; provider generation times with MadLoop's graph, export and compilation stages, unfinished provider runs, the fastest); `full_colour.main` (at the largest batch > 1: median, uncertainty, stage shares — `inputs`: trees, Born and counterterm inputs; `glue`: point parameters, input conversion, assembly — gate verdict and ratio to the fastest provider; a verdict set by a user decision keeps the measured ratio, band and status; otherwise refused, not batched, pending, not started or not measured; the providers' production times; for the seven-leg rows the production references — OpenLoops and Recola from DESIGN Table 1b as text, MadLoop from its production-build timing record, Recola's protocol run where it has no production time — and the gate limit computed from them only when every matched provider has a production time (else `missing_production` names the missing ones), and, without a matched provider, NJet as an unmatched alternative, its single-evaluation time from `measured.json`); `leading_colour.main` (LC/FC, schedule, and `adopted_schedule` where G1 adopted schedule M for the class: shown next to the protocol's schedule-B value, which stays the main one). Every main cell names its `configuration`, its `source` and `considered`, the status of every candidate in order (so the choice can be audited); a value without a record is `null` or a status, never an estimate. |
 | `g1.json` | The gate-G1 campaign: per process the providers' production-mode times (median and mean per point, repeats, setup, MadLoop's stage split; a provider without a library or export keeps the reason), every pyAmpliCol configuration (integrated slice, native inputs, LC, schedule M, one lane; a refused generation keeps its error) per batch with its stage split, counts, throughput, uncertainty and gate verdict (pass, fail or open from the band), schedule M against B, the value comparison with the providers, binary64 and double-double values at the worst points, the cost-model terms and the G1-recalibrated design estimates. Written by `python -m tools.loop_benchmark gate` (see `tools/loop_benchmark`). |
 | `g1-values.json` | The per-point values behind `g1.json`: pyAmpliCol's Born and finite part per configuration and stream point, and every provider run's per-point Born, finite part and time, from which the value comparison and the provider statistics can be re-derived. Recola's `finite` is stored as Recola returns it (equal to its `raw_finite`, Recola's own normalisation): the comparison first converts it to MadLoop's convention, finite + π²/6 × D × Born with D the universal double-pole coefficient of the process (`tools/loop_benchmark/gate.py` `_provider_values`, D from `providers.universal_double_pole`); compared as stored it differs at O(1). |
-| `milestone.json` | Hand-maintained registry, each block with its source: integrated packages at the pinned engine revision and the commits after the last integration, `development` (the branch of the development revisions G1 timed: the gate tool records a detached checkout as `HEAD`), OpenLoops and Recola production timings of the seven-leg gates as transcribed from DESIGN §1.3 Table 1b (text; MadLoop's come from its records in `measured.json`; the gate limit is computed by `build_summary.py`), the required-set validation notes (DESIGN WP3.1 status), NJet Table 5 and the re-measured NJet timings (`njet-benchmark.md`), NJet validation figures, `gate_decisions` (user verdicts replacing a measured open gate verdict, e.g. u u~ > u u~ g: pass, user decision 2026-10-24) and `status_notes`: the short refusal and status attributions Table 1 prints, with their basis where a refusal is inferred rather than run (the 2 → 5 rows with a Z on loop quark lines), and the configuration of a development record that does not carry it (`particle_veto` of the top-free seven-gluon validation); no measured numbers. |
+| `milestone.json` | Hand-maintained registry, each block with its source: integrated packages at the pinned engine revision and the commits after the last integration, `development` (the branch of the development revisions G1 timed: the gate tool records a detached checkout as `HEAD`), OpenLoops and Recola production timings of the seven-leg gates as transcribed from DESIGN §1.3 Table 1b (text; MadLoop's come from its records in `measured.json`; the gate limit is computed by `build_summary.py`), the required-set validation notes (DESIGN WP3.1 status), NJet Table 5 and the re-measured NJet timings (`njet-benchmark.md`), NJet validation figures, `gate_decisions` (user verdicts replacing a measured open gate verdict, e.g. u u~ > u u~ g: pass, user decision 2026-10-24), `status_notes`: the registry's short refusal and status attributions (a refusal attributed to `loop`, with its basis where it is inferred rather than run, e.g. the 2 → 5 rows with a Z on loop quark lines; a capability not started, with its work package), printed in Table 1 only where the most recent configuration refuses or nobody has a record, and the configuration of a development record that does not carry it (`particle_veto` of the top-free seven-gluon validation), and `pending`: the package that will time a row whose most recent configuration has no batched timing (`measure-g1-7leg`); `development` also gives the label and integration package of the development branch (Table 1's provenance); no measured numbers. |
 | `measured.json` | Development records written by `scripts/collect_milestone.py`: the seven-gluon records of 23 October (generation with its counts and `particle_veto`, read from the run's command line — empty, so top loops included —, counterterm program, native bare loop, first virtual and its rotation); `njet_single_evaluation`, the mean time of one NJet 3.1.2 seven-gluon evaluation without the scaling test (standard and de-symmetrised) from NJet's raw timing records; `required_native`, the WP3.1 native validations of the required set, the newest record per process with the DESIGN record that reports it (`record`: the eighth increment, 0ea83af2, re-ran the set on the merged head; u u~ > g g g g g's newest record is the seventh increment's, fef92189), each with generation and export cost, largest deviation per reference and coefficient, per-point estimates and single-point evaluation times; `provider_generation`, the provider reference runs' records of the seven-leg rows (MadLoop export, MadLoop's production-build times per point from `madloop-production-result.json` or its run state, Recola generation and its protocol run's times per point or its unfinished status, the OpenLoops library, and the reference merge's largest provider-to-provider distance). |
 | `measurements.json`, `provider-cold.json`, `legacy-labels.json` | The legacy per-diagram engine's timing snapshot of 2026-10-18 (unchanged, cited by `docs/development/loop_v2/DESIGN.md`) and its labels; no longer shown (the history table is in the report revisions up to `ba7d510d`). |
 | `colour-measurements.json` | The legacy engine's LC/FC runs; not shown, kept for the citations in DESIGN.md and `research-leading-colour-structure.md`. |
 
 Missing observations stay absent; the report prints an explicit marker
 instead of estimating them. Test durations are never used as event timings,
-and development measurements are labelled with their branch.
+and development measurements are labelled with their branch and commit (in
+Table 1 once, in its title line, reading guide and column header).
 
 ## Regenerate
 
@@ -66,21 +91,31 @@ and development measurements are labelled with their branch.
   `<workspace>/reference/runs/required/` and NJet's timing records under
   `<workspace>/reference/runs/njet/timing/`.
 - `summary.json`: `python scripts/build_summary.py` after any of the files
-  above changed, then recompile. The main values are the configurations the
-  gate's `--meta slice_revision=… slice_lc_revision=…` name (native per-point
-  inputs first where several qualify); `native_revision`, `native_commit`
-  (and optionally `native_branch`, else `milestone.json` `development`) name
-  an optional development side, ignored when absent, integrated or not timed.
-  At the next milestone (G-int integrated, G1 re-measured on the integrated
-  configuration) the regenerated `g1.json` therefore makes the native-input
-  numbers the main values without code changes (checked on a scratch copy of
-  `g1.json` with `slice_revision` set to the native-input revision; with the
-  `native_*` keys removed the builder drops the development side and the
-  report still compiles); the seven-leg G1 rows (`measure-g1-7leg`) fill
-  the 2 → 5 cells once their gate records are added to the builder's inputs.
-  Keep the `status_notes` (they explain grey cells and refusals),
-  `development` and `gate_decisions` of `milestone.json` current; a decision
-  applies to a measured open verdict of its process and batch only.
+  above changed, then recompile. The main values follow the
+  main-configuration rule above. The gate's `--meta slice_revision=…
+  slice_lc_revision=…` name the integrated side (native per-point inputs
+  first where several configurations of one side qualify); `native_revision`,
+  `native_commit` (and optionally `native_branch`, else `milestone.json`
+  `development`) name an optional development side, which is newer and
+  supplies the main values where it measured them, and is ignored when
+  absent, equal to the integrated revision or not timed. At the next
+  milestone (G-int integrated, G1 re-measured on `loop` without a
+  development side) the regenerated `g1.json` therefore makes `loop`'s
+  configuration the most recent and the main values switch to it without code
+  changes; the 2 → 5 rows keep the development validation records until the
+  seven-leg G1 rows (`measure-g1-7leg`) are added to `g1.json`, which then
+  supplies their cells. Checked on scratch copies (2026-10-24, package
+  report-dev): `g1.json` with `slice_revision` set to the native-input
+  revision and the `native_*` keys removed (all G1 cells from `integrated`,
+  2 → 5 rows from the records; the report compiles and states both
+  configurations); a development configuration that refuses a process
+  (Table 1 and Figure 1 say "refused on the development branch"; the
+  stage-split table of the gate-G1 details still assumes a generable
+  native-input configuration); a cell only the integrated side measured
+  (shown with its origin). Keep the `status_notes`,
+  `pending`, `development` (label, integration package, revisions) and
+  `gate_decisions` of `milestone.json` current; a decision applies to a
+  measured open verdict of its process and batch only.
 - `milestone.json` is edited by hand when a package lands or a measurement is
   replaced; keep each block's `source`.
 - `figures/*.svg`: `python scripts/draw_graphs.py` draws example graphs with

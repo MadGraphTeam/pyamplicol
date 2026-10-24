@@ -299,8 +299,11 @@
   let n = all-rows.filter(r => r.key in keys).map(r => r.outgoing)
   if n.len() == 0 { none } else if calc.min(..n) == calc.max(..n) [#box[$2 -> #calc.min(..n)$]] else [#box[$2 -> #calc.min(..n)$] to #box[$2 -> #calc.max(..n)$]]
 }
-#let measured-ids = ("development", "development_records", "integrated").filter(cfg-used)
+// The configurations that supply measured main values, in row order.
+#let first-row(id) = all-rows.position(r => r.key in C.at(id).main_rows)
+#let measured-ids = ("development", "development_records", "integrated").filter(cfg-used).sorted(key: first-row)
 #let dev-used = measured-ids.any(id => id != "integrated")
+#let dev-rows = measured-ids.filter(id => id != "integrated").map(id => C.at(id).main_rows).flatten()
 #let branch-of(id) = if id == "integrated" { "loop" } else { C.at(id).branch }
 #let branch-text(b) = {
   let id = measured-ids.find(i => branch-of(i) == b)
@@ -335,7 +338,10 @@
 #let where(c) = if c.at("configuration", default: none) in ("integrated", "registry") [on `loop`] else if c.at("configuration", default: none) == none [] else [on the development branch]
 #let origin(r, c) = {
   let id = c.at("configuration", default: none)
-  if id == none or id == lead(r.kind) { none } else { text(fill: amber, weight: "bold")[from #lab(C.at(id))] }
+  if id == none or id == lead(r.kind) { none } else {
+    let x = C.at(id)
+    text(fill: amber, weight: "bold", if id == "integrated" [from `loop` (#raw(c.at("revision", default: x.revision)))] else if "branch" in x [from #raw(x.branch) (#lab(x))] else [from #lab(x)])
+  }
 }
 #let status-title(c) = {
   let s = c.status
@@ -482,7 +488,7 @@
   set par(justify: true, leading: 0.5em)
   [*Reading guide.* One row per test process, by multiplicity. A cell gives pyAmpliCol's value in bold and, at its right, the
   multiplier _pyAmpliCol ÷ the fastest provider_ on this host (in bold among the provider values); the colour encodes it (blue
-  faster, red slower). Every value is the *most recent measured configuration* of its cell: #measured-ids.map(cfg-clause).join([\; ])#if dev-used [. These are *development measurements* of a branch being integrated into `loop`#if C.development_records.at("integration", default: none) != none [ (#C.development_records.integration)], not yet on `loop`]. #if not cfg-used("integrated") [The engine on `loop` (Python per-point inputs, G1 at #raw(C.integrated.revision)) is not shown here: @g1 (gate-G1 details) keeps its timings for history. ]Grey cells say why a value is missing. Run times:
+  faster, red slower). Every value is the *most recent measured configuration* of its cell: #measured-ids.map(cfg-clause).join([\; ])#if dev-used [. #if cfg-used("integrated") [The values of #row-span(dev-rows) are] else [These are] *development measurements* of a branch being integrated into `loop`#if C.development_records.at("integration", default: none) != none [ (#C.development_records.integration)], not yet on `loop`]. #if not cfg-used("integrated") [The engine on `loop` (Python per-point inputs, G1 at #raw(C.integrated.revision)) is not shown here: @g1 (gate-G1 details) keeps its timings for history. ]Grey cells say why a value is missing. Run times:
   per phase-space point in batches, finite part, stability checks off; providers in production mode (@status).]
 })
 
@@ -1702,8 +1708,9 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
     gates in slice-status.md).
   - *@tab:summary, @fig:gate:* `data/summary.json`, written by
     `scripts/build_summary.py` from `data/g1.json`, `data/measured.json`,
-    `data/milestone.json` and `tools/loop_benchmark/processes.json`; every
-    entry names its source (README).
+    `data/milestone.json` and `tools/loop_benchmark/processes.json` by its
+    main-configuration rule (the most recent measured configuration of each
+    cell); every entry names its configuration and source (README).
   - *@tab:provgen:* HANDOFF §0.1 (addendum F); the provider generation records of
     @tab:summary (`data/summary.json`): `data/g1.json` for the G1 rows and the
     reference runs' records (`workspace/reference/runs/required/<process>/`,
