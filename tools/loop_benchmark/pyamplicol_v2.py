@@ -501,7 +501,16 @@ class Run:
 
     def run(self) -> dict[str, Any]:
         try:
-            self.generate()
+            try:
+                self.generate()
+            except Exception as error:
+                # A process this checkout cannot generate is a result: the
+                # record keeps the refusal instead of dropping the row.
+                self.record["generation_error"] = (
+                    f"{type(error).__name__}: {str(error)[:600]}"
+                )
+                self.record["batches"] = {}
+                return self.record
             self.accuracy()
             self.timing()
         finally:
@@ -631,4 +640,7 @@ def main(options: Any) -> int:
     if options.json:
         options.json.parent.mkdir(parents=True, exist_ok=True)
         options.json.write_text(json.dumps(record, indent=1) + "\n")
+    if "generation_error" in record:
+        print(record["process"], "not generated:", record["generation_error"])
+        return 3
     return 0

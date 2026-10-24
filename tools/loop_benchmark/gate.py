@@ -478,6 +478,7 @@ def build(paths: list[Path]) -> tuple[dict[str, Any], dict[str, Any]]:
                 "accuracy_check": accuracy_check,
                 "skipped_batches": record.get("skipped_batches", {}),
                 "max_rss_gib": record.get("max_rss_gib"),
+                "generation_error": record.get("generation_error"),
                 "failed_points": 0,
                 "rescue": "off (no stability check, no escalation)",
                 "earlier_runs": record.get("earlier_runs", []),
