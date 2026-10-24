@@ -131,7 +131,7 @@
      "families": {
       "fc": 24,
       "lc": null,
-      "source": "g1.json processes[gg_gg].pyamplicol[...].structure (configuration of the main value)"
+      "source": "g1.json processes[gg_gg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
@@ -310,7 +310,7 @@
      "families": {
       "fc": 42,
       "lc": 27,
-      "source": "g1.json processes[uux_ddxg].pyamplicol[...].structure (configuration of the main value)"
+      "source": "g1.json processes[uux_ddxg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
@@ -507,7 +507,7 @@
      "families": {
       "fc": 68,
       "lc": 42,
-      "source": "g1.json processes[uux_uuxg].pyamplicol[...].structure (configuration of the main value)"
+      "source": "g1.json processes[uux_uuxg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
@@ -708,7 +708,7 @@
      "families": {
       "fc": 11,
       "lc": null,
-      "source": "g1.json processes[uux_emepg].pyamplicol[...].structure (configuration of the main value)"
+      "source": "g1.json processes[uux_emepg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
@@ -886,7 +886,7 @@
      "families": {
       "fc": 90,
       "lc": 62,
-      "source": "g1.json processes[uux_ggg].pyamplicol[...].structure (configuration of the main value)"
+      "source": "g1.json processes[uux_ggg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
@@ -1083,7 +1083,7 @@
      "families": {
       "fc": 154,
       "lc": 77,
-      "source": "g1.json processes[gg_ggg].pyamplicol[...].structure (configuration of the main value)"
+      "source": "g1.json processes[gg_ggg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
@@ -1285,7 +1285,7 @@
      "families": {
       "fc": 69,
       "lc": null,
-      "source": "g1.json processes[uux_emepgg].pyamplicol[...].structure (configuration of the main value)"
+      "source": "g1.json processes[uux_emepgg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
@@ -1463,7 +1463,7 @@
      "families": {
       "fc": 1086,
       "lc": 375,
-      "source": "g1.json processes[gg_ttxgg].pyamplicol[...].structure (configuration of the main value)"
+      "source": "g1.json processes[gg_ttxgg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
@@ -1660,7 +1660,7 @@
      "families": {
       "fc": 628,
       "lc": 375,
-      "source": "g1.json processes[uux_gggg].pyamplicol[...].structure (configuration of the main value)"
+      "source": "g1.json processes[uux_gggg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
@@ -1842,7 +1842,7 @@
      "families": {
       "fc": 1100,
       "lc": 550,
-      "source": "g1.json processes[gg_gggg].pyamplicol[...].structure (configuration of the main value)"
+      "source": "g1.json processes[gg_gggg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",

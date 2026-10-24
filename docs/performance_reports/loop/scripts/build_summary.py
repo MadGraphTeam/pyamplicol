@@ -552,9 +552,24 @@ def _newest(cells: list[tuple[str, dict | None]]) -> dict:
     if chosen is None:
         chosen = next(((cid, c) for cid, c in cells if c is not None), None)
     if chosen is None:
-        return {"status": "not measured", "configuration": None, "considered": considered}
+        return {
+            "status": "not measured",
+            "configuration": None,
+            "considered": considered,
+        }
     cid, cell = chosen
     return {**cell, "configuration": cid, "considered": considered}
+
+
+def _families(pairs: dict, main: dict, order: tuple[str, ...]) -> int | None:
+    """Loop families: the configuration of the main full-colour (LC) value,
+    else the newest one that recorded them."""
+    for cid in (main.get("configuration"), *order):
+        cfg = pairs.get(cid, (None, None))[1]
+        count = ((cfg or {}).get("structure") or {}).get("families")
+        if count is not None:
+            return count
+    return None
 
 
 def _g1_rows(g1: dict, specs: dict, decisions: dict) -> list[dict]:
@@ -625,21 +640,8 @@ def _g1_rows(g1: dict, specs: dict, decisions: dict) -> list[dict]:
                 and not cfg.get("generation_error")
                 and cfg.get("values_vs_providers")
             ):
-                validation = _validation_g1(
-                    proc, cfg, cid, f"{base}['{name}']", name
-                )
+                validation = _validation_g1(proc, cfg, cid, f"{base}['{name}']", name)
                 break
-        # Loop families: the configuration of the main full-colour (LC)
-        # value, else the newest one that recorded them.
-        def families(pairs: dict, main: dict) -> int | None:
-            ids = [main.get("configuration")] + list(order)
-            for cid in ids:
-                cfg = pairs.get(cid, (None, None))[1]
-                count = ((cfg or {}).get("structure") or {}).get("families")
-                if count is not None:
-                    return count
-            return None
-
         rows.append(
             {
                 "key": key,
@@ -650,9 +652,9 @@ def _g1_rows(g1: dict, specs: dict, decisions: dict) -> list[dict]:
                 "corrections": specs[key]["correction"],
                 "kind": "g1",
                 "families": {
-                    "fc": families(fc, fc_main),
-                    "lc": families(lc, lc_main),
-                    "source": f"{base}[...].structure (configuration of the main value)",
+                    "fc": _families(fc, fc_main, order),
+                    "lc": _families(lc, lc_main, order),
+                    "source": f"{base}[...].structure (main value's configuration)",
                 },
                 "validation": validation,
                 "generation": {
@@ -938,10 +940,7 @@ def _required_rows(ms: dict, meas: dict, known: set[str], factor: float) -> list
                 "source": f"{src} (no batched timing); milestone.json pending",
             }
         order = MAIN_ORDER["records"]
-
-        def cells(dev: dict | None) -> list[tuple[str, dict | None]]:
-            return list(zip(order, (dev, None if status is None else dict(status))))
-
+        registry = None if status is None else dict(status)
         rows.append(
             {
                 "key": key,
@@ -957,7 +956,7 @@ def _required_rows(ms: dict, meas: dict, known: set[str], factor: float) -> list
                 # (none where the development records generate the process).
                 "row_status": None if rec is not None else status,
                 "generation": {
-                    "main": _newest(cells(dev_gen)),
+                    "main": _newest(list(zip(order, (dev_gen, registry), strict=True))),
                     "providers": gens,
                     "unfinished": unfinished,
                     "fastest": gen_fastest,
@@ -965,11 +964,13 @@ def _required_rows(ms: dict, meas: dict, known: set[str], factor: float) -> list
                 },
                 "full_colour": {
                     "gate_rule": gate_rule,
-                    "main": _newest(cells(timing)),
+                    "main": _newest(list(zip(order, (timing, registry), strict=True))),
                     "alternative": alternative,
                     "reference": reference,
                 },
-                "leading_colour": {"main": _newest(cells(timing))},
+                "leading_colour": {
+                    "main": _newest(list(zip(order, (timing, registry), strict=True)))
+                },
             }
         )
     return rows
