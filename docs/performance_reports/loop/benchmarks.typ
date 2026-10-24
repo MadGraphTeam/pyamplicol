@@ -1794,7 +1794,9 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
     `scripts/build_summary.py` from `data/g1.json`, `data/measured.json`,
     `data/milestone.json` and `tools/loop_benchmark/processes.json` by its
     main-configuration rule (the most recent measured configuration of each
-    cell); every entry names its configuration and source (README).
+    cell; a newer check that only repeats part of an older comparison does not
+    replace it; revision ancestry from `data/milestone.json`); every entry
+    names its configuration and source (README).
   - *@tab:provgen:* HANDOFF §0.1 (addendum F); the provider generation records of
     @tab:summary (`data/summary.json`): `data/g1.json` for the G1 rows and the
     reference runs' records (`workspace/reference/runs/required/<process>/`,
