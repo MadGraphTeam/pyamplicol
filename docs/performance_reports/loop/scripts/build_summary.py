@@ -340,7 +340,15 @@ def _split(stages: dict) -> dict:
     out["ninjars"] = stages.get("reduction", 0.0) - stages.get(
         "reduction: masters", 0.0
     )
-    order = ("inputs", "numerator", "scatter", "ninjars", "masters", "glue")
+    # A record without any per-point input timer (the build on loop: the
+    # native trees timer was a scratch commit of the development campaign)
+    # leaves its native trees, Born and counterterm inputs in "other", the
+    # untimed rest of the call: shown apart, never attributed to a stage.
+    out["untimed"] = 0.0
+    if not any(name in stages for name in STAGE_GROUPS["inputs"]):
+        out["untimed"] = stages.get("other", 0.0)
+        out["glue"] -= out["untimed"]
+    order = ("inputs", "numerator", "scatter", "ninjars", "masters", "glue", "untimed")
     return {k: out[k] for k in order}
 
 

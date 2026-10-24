@@ -12,7 +12,7 @@
  "development": {
   "source": "git: 889af02c and the G1 scratch commit 39824f9b (tag g1-native-inputs-39824f9b) are on work/v2-generation-scale; work/v2-generation-scale d7e40cfb was integrated into work/v2-slice at 4e9b5a9e (G-int; 889af02c, fef92189, 0ea83af2 and 6f5a64cc are ancestors of 4e9b5a9e, the scratch commit 39824f9b is not); workspace/reports/engine-v2/slice-status.md, G-int integration block and DECISIONS 2026-10-24 ~21:50 UTC; label and integration: HANDOFF_24_10_2026.md section 6.2 (WP3.1 generation-scale, integration package G-int)",
   "what": "branch of the development validation records (measured.json required_native) and of the previous G1 campaign's development side (889af02c with the timers of 39824f9b: in data/g1.json now earlier runs of the integrated configuration and the one-lane, schedule-M and stability history); integrated into loop at integrated_at, so its records are measurements of the integrated code made on the branch before the integration",
-  "label": "measured on the branch before its integration into loop",
+  "label": "before its integration into loop",
   "integration": "G-int",
   "revisions": {
    "889af02c": "work/v2-generation-scale",
