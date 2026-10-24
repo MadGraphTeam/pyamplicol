@@ -1258,7 +1258,7 @@ lower multiplicities and existing references.
 #let rn-max(rec, k) = { let v = rec.max_deviation.values().filter(d => k in d).map(d => d.at(k)); if v.len() == 0 { none } else { calc.max(..v) } }
 #let rn-refs(rec) = rec.max_deviation.keys().map(k => (madloop: "ML", recola: "Rc", openloops: "OL", njet_dd_oneloop_R1: "NJet DD", njet_double_R1: "NJet R1", njet_double_R2: "NJet R2", catani: "Catani").at(k, default: k)).join(", ")
 #let rn-label(key) = { let r = S.groups.map(g => g.rows).flatten().find(r => r.key == key); math-label(r.math) + if key.ends-with("_qcd") [ (QCD)] }
-#figure(kind: table,
+#block(breakable: false)[#figure(kind: table,
   caption: [*Native validation of the required set* #dev-tag (#raw(rn.branch)\; #records-text): generation in one thread
     (`LoopSlice.generate`, then the plan export; peaks of each stage), then binary64 virtuals with native per-point inputs and
     the production counterterm route at the fixture points, against the references committed on that branch
@@ -1279,7 +1279,7 @@ lower multiplicities and existing references.
       [#dur(rec.generate_s + rec.export_s) #tiny[#fixed(calc.max(rec.generate_peak_gib, rec.export_peak_gib), 1) GiB]],
     )).flatten(),
   )),
-) <tab:validation>
+) <tab:validation>]
 
 #let ttq = rn.processes.gg_ttxemepg_qcd
 #let ttq-old = ms.required.rows.find(r => r.label.starts-with("g g -> t overline(t) e^- e^+ g") and r.at("corr", default: none) == "QCD")
