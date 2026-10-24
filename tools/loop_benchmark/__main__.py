@@ -156,8 +156,9 @@ def main(argv: list[str] | None = None) -> int:
     gate.add_argument(
         "--reference-root",
         type=Path,
-        help="provider reference root for MadLoop exports that moved "
-        "(default: $LOOP_REFERENCE_ROOT)",
+        help="provider reference root: every provider file (MadLoop exports "
+        "and their generation times) is resolved relative to it, never through "
+        "the absolute paths of the records (default: $LOOP_REFERENCE_ROOT)",
     )
     gate.add_argument(
         "--meta",

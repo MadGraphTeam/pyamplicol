@@ -74,6 +74,11 @@ from . import providers as provider_module
 from . import streams
 
 GATE_FACTOR = 1.30
+# The user's rule of 2026-10-24 (slice-status DECISIONS ~22:35): a
+# pyAmpliCol time per point below 5 ms has no blocking gate; its ratio is
+# still shown.
+GATE_FLOOR_SECONDS = 5e-3
+GATE_FLOOR_STATUS = "below 5 ms: not gated (user 2026-10-24)"
 ADOPT_M = 0.85
 # The binary64 bound of the Ward test (test_loop_v2_observables, O10).
 WARD_RELATIVE = 1e-11
@@ -132,7 +137,42 @@ def gate_verdict(
     taken on the band ratio x (1 -+ u), u the sum of both. ``missing``: the
     matched providers without a protocol-mode timing (reason); ``outside``:
     their timings outside the protocol (seconds, mode), reported as ratios
-    beside the verdict."""
+    beside the verdict. A time below ``GATE_FLOOR_SECONDS`` is not gated (the
+    user's rule of 2026-10-24): its verdict is ``GATE_FLOOR_STATUS`` with every
+    check and ratio kept and the checks' own verdict as ``measured_status``."""
+
+    verdict = _verdict(
+        seconds,
+        times,
+        uncertainty=uncertainty,
+        reference_uncertainty=reference_uncertainty,
+        means=means,
+        missing=missing,
+        outside=outside,
+    )
+    if seconds < GATE_FLOOR_SECONDS:
+        # Below the floor the checks and ratios stay, the verdict does not
+        # block; ``measured_status`` keeps what the checks alone say.
+        return {
+            **verdict,
+            "status": GATE_FLOOR_STATUS,
+            "measured_status": verdict["status"],
+            "floor_seconds": GATE_FLOOR_SECONDS,
+        }
+    return verdict
+
+
+def _verdict(
+    seconds: float,
+    times: dict[str, float],
+    *,
+    uncertainty: float,
+    reference_uncertainty: dict[str, tuple[float, bool]] | None,
+    means: dict[str, float] | None,
+    missing: dict[str, str] | None,
+    outside: dict[str, dict[str, Any]] | None,
+) -> dict[str, Any]:
+    """The verdict of the checks alone (``gate_verdict`` without the floor)."""
 
     missing = missing or {}
     extra: dict[str, Any] = {}
@@ -227,10 +267,12 @@ def _provider_values(key: str, record: dict[str, Any]) -> dict[str, dict[int, tu
     return out
 
 
-def _madloop_generation(export: Path) -> dict[str, Any] | None:
+def _madloop_generation(export: Path | None) -> dict[str, Any] | None:
     """Graph generation, Fortran export and compilation seconds of a MadLoop
     export (``madloop_export.py``'s ``<export>.generation.json``)."""
 
+    if export is None:
+        return None
     path = export.parent / f"{export.name}.generation.json"
     if not path.exists():
         return None
@@ -429,9 +471,9 @@ def _values_of(summary: dict[str, Any]) -> dict[int, tuple]:
 def build(
     paths: list[Path], reference_root: Path | None = None
 ) -> tuple[dict[str, Any], dict[str, Any]]:
-    """The gate document and the per-point values document. A MadLoop export
-    that moved since its run is found through ``madloop.export`` of the
-    specification under ``reference_root``."""
+    """The gate document and the per-point values document. Provider files
+    are resolved relative to ``reference_root`` only (``_export_of``): the
+    absolute paths stored in the records are never read."""
 
     records = [json.loads(path.read_text()) for path in paths]
     order = streams.keys()
@@ -730,25 +772,38 @@ def build(
     return document, values_document
 
 
-def _export_of(key: str, recorded: str, root: Path | None) -> tuple[Path, str]:
-    """The MadLoop export of a provider run and its name relative to the
-    reference root (the specification's ``madloop.export`` where the run's
-    export is that one, or moved there)."""
+def _export_of(key: str, recorded: str, root: Path | None) -> tuple[Path | None, str]:
+    """The MadLoop export of a provider run under the reference root and its
+    name relative to that root.
 
-    relative = streams.spec(key).get("madloop", {}).get("export")
-    path = Path(recorded)
-    if root is not None and relative:
-        archived = root / relative
-        if not path.exists() or path.resolve() == archived.resolve():
-            return archived, relative
-    return path, _relative_export(recorded)
+    A record's ``export`` is the absolute path of the run, which may point
+    into a root that has moved (or must not be read): it is never opened or
+    stat'ed. Its ``runs/...`` part (``_relative_export``) under ``root`` is
+    the export, else the specification's ``madloop.export`` (an export that
+    moved since the run); without a root, or where neither exists under it,
+    only the name is kept (no generation times)."""
+
+    names = [
+        name
+        for name in (
+            _relative_export(recorded),
+            streams.spec(key).get("madloop", {}).get("export"),
+        )
+        if name
+    ]
+    if root is not None:
+        for name in names:
+            if (root / name).exists():
+                return root / name, name
+    return None, names[0] if names else Path(recorded).name
 
 
-def _relative_export(path: str) -> str:
-    """A MadLoop export path relative to the reference root (``runs/...``)."""
+def _relative_export(path: str) -> str | None:
+    """A MadLoop export path relative to the reference root (its ``runs/...``
+    part), or None for a path outside a reference root's ``runs``."""
 
     parts = Path(path).parts
-    return str(Path(*parts[parts.index("runs") :])) if "runs" in parts else path
+    return str(Path(*parts[parts.index("runs") :])) if "runs" in parts else None
 
 
 def main(options: Any) -> int:
