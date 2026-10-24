@@ -324,6 +324,28 @@ CASIMIRS = {
 }
 
 
+def reference_errors(
+    born: float, finite: float, providers: dict[str, Any], alpha: float
+) -> dict[str, dict[str, float]]:
+    """The Born and finite part against each provider entry of a fixture row,
+    with the fixture's metric (the finite part's floor |Born| alpha_s/2pi).
+    A quantity an entry does not state is not compared: the NJet fixture's
+    ``catani`` entry (Catani's poles from the colour-correlated Borns) has a
+    Born and the poles but no finite part."""
+
+    floor = abs(born) * alpha / (2 * math.pi)
+    errors: dict[str, dict[str, float]] = {}
+    for provider, reference in providers.items():
+        row = {}
+        if "born" in reference:
+            row["born"] = _relative(born, float(reference["born"]))
+        if "finite" in reference:
+            row["finite"] = _relative(finite, float(reference["finite"]), floor)
+        if row:
+            errors[provider] = row
+    return errors
+
+
 def universal_double_pole(key: str, accuracy: str) -> float | None:
     """D / Born = -(alpha_s/2pi) sum_i C_i over the massless coloured legs of
     ``key`` at colour ``accuracy`` (None at NLC, where it holds only with
@@ -556,14 +578,10 @@ class Run:
         rows = []
         worst = 0.0
         for index, (born, finite) in sorted(values.items()):
-            floor = abs(born) * alpha / (2 * math.pi)
-            errors = {}
-            for provider, reference in fixture["rows"][index]["providers"].items():
-                errors[provider] = {
-                    "born": _relative(born, float(reference["born"])),
-                    "finite": _relative(finite, float(reference["finite"]), floor),
-                }
-                worst = max(worst, *errors[provider].values())
+            errors = reference_errors(
+                born, finite, fixture["rows"][index]["providers"], alpha
+            )
+            worst = max(worst, *(e for row in errors.values() for e in row.values()))
             rows.append(
                 {
                     "index": index,
