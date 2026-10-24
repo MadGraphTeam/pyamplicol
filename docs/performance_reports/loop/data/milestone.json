@@ -366,7 +366,10 @@
     "madloop": "not exported: the g g > g g g g export took 2.4 h (HANDOFF section 0.1)"
    },
    "gg_ggggg": {
-    "validation": "top-free (particle_veto = [t]), Nf = 5, NJet 3.1.2 double-double at rotated points"
+    "validation": "top-free (particle_veto = [t]), Nf = 5"
+   },
+   "uux_ggggg": {
+    "generation": "before the counterterm recursion and the poles companion"
    }
   }
  }

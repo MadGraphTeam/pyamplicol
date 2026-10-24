@@ -1916,6 +1916,7 @@
       "dev": {
        "status": "not measured"
       },
+      "alternative": null,
       "reference_text": {
        "openloops": "0.053\u20130.055",
        "recola": "0.035",
@@ -2021,6 +2022,7 @@
       "dev": {
        "status": "not measured"
       },
+      "alternative": null,
       "reference_text": {
        "openloops": "0.348\u20130.353",
        "recola": "0.246\u20130.259",
@@ -2126,6 +2128,7 @@
       "dev": {
        "status": "not measured"
       },
+      "alternative": null,
       "reference_text": {
        "openloops": "0.425\u20130.433",
        "recola": "0.59\u20130.67",
@@ -2194,6 +2197,7 @@
       "dev": {
        "status": "not measured"
       },
+      "alternative": null,
       "reference_text": {
        "openloops": "0.96\u20131.12",
        "recola": "0.95\u20131.02",
@@ -2260,7 +2264,8 @@
        "record": "DESIGN.md WP3.1 status, third increment, 'Generation per process' (branch work/v2-generation-scale at 201efa8b; tools/loop_v2_generate.py measure --export, one thread, shared host at load 50\u201380)",
        "revision": "201efa8b",
        "source": "milestone.json required.rows[u overline(u) -> g g g g g]",
-       "ratio_to_fastest": 0.02563590974911241
+       "ratio_to_fastest": 0.02563590974911241,
+       "note": "before the counterterm recursion and the poles companion"
       },
       "providers": {
        "madloop": {
@@ -2287,6 +2292,7 @@
       "dev": {
        "status": "not measured"
       },
+      "alternative": null,
       "reference_text": {
        "openloops": "no library",
        "recola": "not measured",
@@ -2335,7 +2341,7 @@
       "source": "measured.json required_native.processes[gg_ggggg]",
       "median_finite": 3.1022519589013017e-09,
       "within_estimate": true,
-      "note": "top-free (particle_veto = [t]), Nf = 5, NJet 3.1.2 double-double at rotated points"
+      "note": "top-free (particle_veto = [t]), Nf = 5"
      },
      "loop_note": null,
      "generation": {
@@ -2379,6 +2385,12 @@
       },
       "dev": {
        "status": "not measured"
+      },
+      "alternative": {
+       "name": "NJet 3.1.2",
+       "seconds_per_evaluation": 71.2,
+       "what": "standard full-colour sum, one evaluation, double precision, one pinned core; not a matched provider",
+       "source": "milestone.json njet.single_evaluation"
       },
       "reference_text": {
        "openloops": "no library",

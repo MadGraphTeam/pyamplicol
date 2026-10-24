@@ -521,6 +521,18 @@ def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
         if dev_gen["status"] == "measured" and gen_fastest is not None:
             dev_gen["ratio_to_fastest"] = dev_gen["seconds"] / gen_fastest["seconds"]
         ref = refs.get((req["label"], corr))
+        # An existing alternative that is not a matched provider (NJet: massless
+        # five-flavour QCD), shown for orientation only: no ratio, no gate.
+        alternative = None
+        njet = {r["label"]: r for r in ms["njet"]["rows"]}.get(req["label"])
+        if njet is not None and ref is not None and ref["threshold"] == "no gate":
+            alternative = {
+                "name": "NJet 3.1.2",
+                "seconds_per_evaluation": ms["njet"]["single_evaluation"]["standard"],
+                "what": "standard full-colour sum, one evaluation, double precision,"
+                " one pinned core; not a matched provider",
+                "source": "milestone.json njet.single_evaluation",
+            }
         families = None
         counts = meas["seven_gluon"]["generation_latest"]
         if counts["process"] == text and corr is None:
@@ -560,6 +572,7 @@ def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
                     else "G1 (seven-leg rows not measured yet)",
                     "main": {"status": "not measured"},
                     "dev": {"status": "not measured"},
+                    "alternative": alternative,
                     "reference_text": None
                     if ref is None
                     else {
@@ -598,6 +611,8 @@ def build() -> dict:
                 cell["reason"] = note["refused"]
         if "madloop" in note:
             r["full_colour"]["madloop_note"] = note["madloop"]
+        if "generation" in note and r["generation"]["dev"].get("status") == "measured":
+            r["generation"]["dev"]["note"] = note["generation"]
     # Increasing multiplicity, then increasing colour complexity (number of
     # gluons) within a multiplicity; stable otherwise.
     rows.sort(key=lambda r: (r["outgoing"], r["label"].split().count("g")))
