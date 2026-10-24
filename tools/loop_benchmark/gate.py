@@ -78,7 +78,7 @@ ADOPT_M = 0.85
 # The binary64 bound of the Ward test (test_loop_v2_observables, O10).
 WARD_RELATIVE = 1e-11
 WARD_LANES = 1e-12
-WARD_PARTS = ("virtual", "uv_local", "fields")
+WARD_PARTS = ("virtual", "uv_local", "uv_external_fields")
 SCHEDULE_STAGES = ("seeds", "factors", "dressing", "scatter", "reduction")
 
 
