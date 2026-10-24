@@ -1,42 +1,36 @@
 {
  "date": "2026-10-24",
- "engine_revision": "59badc7a",
- "previous_loop": "f9edf1db",
+ "engine_revision": "b4d76cc3",
+ "previous_loop": "f132e53c",
  "native_build": {
-  "name": "loop-native-poles-uvir-3dbd3a53",
-  "digest": "d9f854ae",
+  "name": "loop-native-v2-slice-6c44c9f7",
+  "digest": "a9533f0e",
   "profile": "release, codegen-units 1, thin LTO, rustc 1.97.1",
-  "source": "workspace/reports/engine-v2/slice-status.md, poles-uvir integration (6735d3a5): the package build matches the merged tree; native-dag A0 (dfa6bf7c) changed no native input"
+  "source": "workspace/reports/engine-v2/slice-status.md, measure-g1 integration (6c44c9f7): integrator release build of the merge commit; ct-simplify (b4d76cc3) changed no native input (stage --source accepted the build)"
  },
  "integrated": [
   {
-   "sha": "a18b7599",
-   "wp": "WP2.2",
-   "title": "Counterterms in the recursion",
-   "detail": "counterterm trees from the tree recursion are the default route (site closure: test oracle), still admitted by a witness table"
+   "sha": "b71cf0e0",
+   "wp": "Rust A1-A2",
+   "title": "Native loop-request DAG builder",
+   "detail": "Rust builder for the loop-block DAG and blocks, equal to the Python builder (whole GenericDAG and Block records, flat-record digests at seven legs); no production call site switched yet"
   },
   {
-   "sha": "6735d3a5",
-   "wp": "WP2.10",
-   "title": "Runtime pole selection",
-   "detail": "poles = all | none | uv | ir | split with finite-only savings; NinjaRS 41a4c00 and oneloopmaster 5b710437"
+   "sha": "6c44c9f7",
+   "wp": "WP2.7",
+   "title": "Gate G1 harness and measurement",
+   "detail": "tools/loop_benchmark (specs, frozen streams, providers, median gate statistic with bands), cost model, this report's G1 section"
   },
   {
-   "sha": "dfa6bf7c",
-   "wp": "Rust A0",
-   "title": "Contract-class reuse pass",
-   "detail": "value equivalences only between currents of one evaluation contract; gg\u2192ggggg CT-program reuse 190 \u2192 43 s"
-  },
-  {
-   "sha": "59badc7a",
-   "wp": "fix",
-   "title": "Constant counterterm arguments",
-   "detail": "parameter-free helper arguments decided, not assumed (QED-model regression of a18b7599)"
+   "sha": "b4d76cc3",
+   "wp": "addendum J",
+   "title": "Counterterms as plain tree insertions",
+   "detail": "no witness table or loop matching in production; public particle_veto; an unlowerable counterterm vertex that no tree of the request reaches is inert and recorded"
   }
  ],
- "integrated_tip": "59badc7a",
+ "integrated_tip": "b4d76cc3",
  "after_integration": [],
- "already_on_loop": "v2 waves 0-1, gates S1 and G0, native executor (WP2.1), colour (WP2.4), stability API (WP2.3), schedule M (WP2.8), tree-EW follow-up, NJet reference, observables (WP2.5), public v2 engine with plan v4 artifacts (WP2.6), addendum F-J, the previous report",
+ "already_on_loop": "v2 waves 0-1, gates S1 and G0, native executor (WP2.1), colour (WP2.4), stability API (WP2.3), schedule M (WP2.8), tree-EW follow-up, NJet reference, observables (WP2.5), public v2 engine with plan v4 artifacts (WP2.6), counterterms in the recursion (WP2.2), runtime pole selection (WP2.10), Rust A0 (contract-class reuse pass), constant counterterm arguments (ct-assume-fix), addendum F-J, the previous report",
  "addendum_commits": [
   "b91d23a8",
   "2dd36f65",
