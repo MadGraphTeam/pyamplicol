@@ -27,7 +27,23 @@
   },
   "dev_required": {
    "branch": "work/v2-generation-scale",
-   "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
+   "records": [
+    {
+     "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
+     "rows": [
+      "u overline(u) -> e^- e^+ d overline(d) g",
+      "u overline(u) -> e^- e^+ g g g",
+      "g g -> t overline(t) e^- e^+ g",
+      "g g -> g g g g g"
+     ]
+    },
+    {
+     "record": "DESIGN.md WP3.1 seventh increment (fef92189), 'I5 proper, the interim production route'",
+     "rows": [
+      "u overline(u) -> g g g g g"
+     ]
+    }
+   ],
    "source": "measured.json required_native"
   },
   "gate_decisions": {
@@ -411,6 +427,7 @@
        "status": "measured",
        "batch": 128,
        "seconds_per_point": 0.03736066093824775,
+       "schedule": "B",
        "families": 27,
        "inputs": "python",
        "revision": "d591a2f7",
@@ -422,6 +439,7 @@
        "status": "measured",
        "batch": 128,
        "seconds_per_point": 0.001907137726448127,
+       "schedule": "B",
        "families": 27,
        "inputs": "native",
        "revision": "39824f9b",
@@ -625,6 +643,7 @@
        "status": "measured",
        "batch": 128,
        "seconds_per_point": 0.003163008769206499,
+       "schedule": "B",
        "families": 42,
        "inputs": "native",
        "revision": "39824f9b",
@@ -985,6 +1004,7 @@
        "status": "measured",
        "batch": 128,
        "seconds_per_point": 0.17148119853845856,
+       "schedule": "B",
        "families": 62,
        "inputs": "python",
        "revision": "d591a2f7",
@@ -996,6 +1016,7 @@
        "status": "measured",
        "batch": 128,
        "seconds_per_point": 0.012592590839631157,
+       "schedule": "B",
        "families": 62,
        "inputs": "native",
        "revision": "39824f9b",
@@ -1192,6 +1213,7 @@
        "status": "measured",
        "batch": 32,
        "seconds_per_point": 2.3044636375343543,
+       "schedule": "B",
        "families": 77,
        "inputs": "python",
        "revision": "d591a2f7",
@@ -1203,6 +1225,7 @@
        "status": "measured",
        "batch": 128,
        "seconds_per_point": 0.050716627913971024,
+       "schedule": "B",
        "families": 77,
        "inputs": "native",
        "revision": "39824f9b",
@@ -1396,38 +1419,45 @@
      },
      "validation": {
       "status": "compared",
-      "configuration": "integrated",
+      "configuration": "development",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
-      "points": 3,
+      "points": 16,
       "references": [
        {
         "key": "madloop",
         "short": "ML",
-        "points": 3,
-        "max_finite": 2.564346814418534e-11,
-        "median_finite": 2.169340217478829e-11,
-        "worst_point": 0
+        "points": 16,
+        "max_finite": 7.630497165589562e-09,
+        "median_finite": 1.9892323057708503e-11,
+        "worst_point": 13
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 3,
-        "max_finite": 1.2951676800314605e-11,
-        "median_finite": 6.580872378683068e-12,
-        "worst_point": 0
+        "points": 16,
+        "max_finite": 1.5108105621988155e-09,
+        "median_finite": 1.4679409478528918e-11,
+        "worst_point": 13
        },
        {
         "key": "openloops",
         "short": "OL",
-        "points": 3,
-        "max_finite": 8.44926071339004e-12,
-        "median_finite": 2.8578733411696407e-12,
-        "worst_point": 0
+        "points": 16,
+        "max_finite": 1.5047685901560914e-09,
+        "median_finite": 8.219428169712063e-12,
+        "worst_point": 13
        }
       ],
-      "max_finite": 2.564346814418534e-11,
-      "median_finite": 2.169340217478829e-11,
-      "source": "g1.json processes[gg_ttxgg].pyamplicol['python/full'].values_vs_providers"
+      "max_finite": 7.630497165589562e-09,
+      "median_finite": 1.9892323057708503e-11,
+      "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 13,
+       "estimate": 5.624253763935145e-08,
+       "within_estimate": true,
+       "dd_closest": 5.504855442237677e-15,
+       "source": "g1.json processes[gg_ttxgg].stability (native/full)"
+      }
      },
      "generation": {
       "main": {
@@ -1552,6 +1582,7 @@
        "status": "measured",
        "batch": 128,
        "seconds_per_point": 0.23102672280447223,
+       "schedule": "B",
        "families": 375,
        "inputs": "native",
        "revision": "39824f9b",
@@ -1576,30 +1607,37 @@
      },
      "validation": {
       "status": "compared",
-      "configuration": "integrated",
+      "configuration": "development",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
-      "points": 3,
+      "points": 16,
       "references": [
        {
         "key": "recola",
         "short": "Rc",
-        "points": 3,
-        "max_finite": 2.485909315433024e-12,
-        "median_finite": 2.0748079437284787e-12,
-        "worst_point": 1
+        "points": 8,
+        "max_finite": 9.353874152881173e-12,
+        "median_finite": 1.516381452356598e-12,
+        "worst_point": 7
        },
        {
         "key": "openloops",
         "short": "OL",
-        "points": 3,
-        "max_finite": 1.4101780129754546e-10,
-        "median_finite": 1.1545854852493566e-11,
-        "worst_point": 1
+        "points": 16,
+        "max_finite": 1.9263696467035303e-10,
+        "median_finite": 1.4384834032432862e-12,
+        "worst_point": 9
        }
       ],
-      "max_finite": 1.4101780129754546e-10,
-      "median_finite": 1.1545854852493566e-11,
-      "source": "g1.json processes[uux_gggg].pyamplicol['python/full'].values_vs_providers"
+      "max_finite": 1.9263696467035303e-10,
+      "median_finite": 1.516381452356598e-12,
+      "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 9,
+       "estimate": 2.6682178956142833e-09,
+       "within_estimate": true,
+       "dd_closest": 1.897028113555094e-13,
+       "source": "g1.json processes[uux_gggg].stability (native/full)"
+      }
      },
      "generation": {
       "main": {
@@ -1717,6 +1755,7 @@
        "status": "measured",
        "batch": 128,
        "seconds_per_point": 0.2470511812693985,
+       "schedule": "B",
        "families": 375,
        "inputs": "native",
        "revision": "39824f9b",
@@ -1741,38 +1780,45 @@
      },
      "validation": {
       "status": "compared",
-      "configuration": "integrated",
+      "configuration": "development",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
-      "points": 3,
+      "points": 8,
       "references": [
        {
         "key": "madloop",
         "short": "ML",
-        "points": 3,
-        "max_finite": 1.4874757653205835e-07,
-        "median_finite": 8.785875732174788e-11,
+        "points": 8,
+        "max_finite": 1.6860783211395883e-07,
+        "median_finite": 3.149660973653249e-11,
         "worst_point": 1
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 3,
-        "max_finite": 8.701495224009023e-08,
-        "median_finite": 4.4675527190732415e-11,
+        "points": 8,
+        "max_finite": 4.0437030819143746e-07,
+        "median_finite": 2.311799188316325e-11,
         "worst_point": 1
        },
        {
         "key": "openloops",
         "short": "OL",
-        "points": 3,
-        "max_finite": 8.709047799044025e-08,
-        "median_finite": 5.012933640026775e-11,
+        "points": 8,
+        "max_finite": 4.04445833917819e-07,
+        "median_finite": 9.921880065949504e-12,
         "worst_point": 1
        }
       ],
-      "max_finite": 1.4874757653205835e-07,
-      "median_finite": 8.785875732174788e-11,
-      "source": "g1.json processes[gg_gggg].pyamplicol['python/full'].values_vs_providers"
+      "max_finite": 4.04445833917819e-07,
+      "median_finite": 3.149660973653249e-11,
+      "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 1,
+       "estimate": 4.799662575085839e-06,
+       "within_estimate": true,
+       "dd_closest": 4.35793642888872e-12,
+       "source": "g1.json processes[gg_gggg].stability (native/full)"
+      }
      },
      "generation": {
       "main": {
@@ -1897,12 +1943,19 @@
        "status": "measured",
        "batch": 128,
        "seconds_per_point": 1.087672771949201,
+       "schedule": "B",
        "families": 550,
        "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/lc'].batches['128']",
        "fc_seconds_per_point": 0.9852571110932331,
-       "lc_over_fc": 1.1039481569864829
+       "lc_over_fc": 1.1039481569864829,
+       "adopted_schedule": {
+        "schedule": "M",
+        "seconds_per_point": 1.0199479628395238,
+        "decision": "g1.json processes[gg_gggg].schedules (native/lc: adopt_m)",
+        "source": "g1.json processes[gg_gggg].pyamplicol['native/lc/M'].batches['128']"
+       }
       }
      },
      "loop_status": null
@@ -1952,7 +2005,8 @@
       "max_finite": 8.652182311174691e-13,
       "tolerance": 2e-08,
       "passed": true,
-      "source": "measured.json required_native.processes[uux_emepddxg]"
+      "source": "measured.json required_native.processes[uux_emepddxg]",
+      "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'"
      },
      "loop_status": {
       "status": "refused",
@@ -1976,6 +2030,7 @@
        "process_peak_gib": 0.499,
        "plan_mb": 1.13,
        "inputs": "native",
+       "counterterms": "recursion",
        "branch": "work/v2-generation-scale",
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "source": "measured.json required_native.processes[uux_emepddxg]",
@@ -2019,20 +2074,31 @@
        "providers": {
         "openloops": {
          "text": "0.053\u20130.055",
-         "low": 0.053
+         "low": 0.053,
+         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
         },
         "recola": {
          "text": "0.035",
-         "low": 0.035
+         "low": 0.035,
+         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
         },
         "madloop": {
-         "text": "0.143",
-         "low": 0.143
+         "text": null,
+         "low": 0.142539069,
+         "high": 0.143045331,
+         "production_build": true,
+         "source": "workspace/reference/runs/required/uux_emepddxg/madloop-production-result.json"
         }
        },
+       "matched": [
+        "MadLoop",
+        "Recola",
+        "OpenLoops"
+       ],
+       "missing_production": [],
        "limit_seconds": 0.0455,
        "binding": "Recola",
-       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20); limit computed by scripts/build_summary.py"
+       "source": "milestone.json gate_references (OpenLoops, Recola); measured.json provider_generation (MadLoop production build); limit computed by scripts/build_summary.py"
       }
      },
      "leading_colour": {
@@ -2087,7 +2153,8 @@
       "max_finite": 8.531650900460978e-13,
       "tolerance": 2e-08,
       "passed": true,
-      "source": "measured.json required_native.processes[uux_emepggg]"
+      "source": "measured.json required_native.processes[uux_emepggg]",
+      "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'"
      },
      "loop_status": {
       "status": "refused",
@@ -2111,6 +2178,7 @@
        "process_peak_gib": 0.627,
        "plan_mb": 2.45,
        "inputs": "native",
+       "counterterms": "recursion",
        "branch": "work/v2-generation-scale",
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "source": "measured.json required_native.processes[uux_emepggg]",
@@ -2154,20 +2222,31 @@
        "providers": {
         "openloops": {
          "text": "0.348\u20130.353",
-         "low": 0.348
+         "low": 0.348,
+         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
         },
         "recola": {
          "text": "0.246\u20130.259",
-         "low": 0.246
+         "low": 0.246,
+         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
         },
         "madloop": {
-         "text": "1.41",
-         "low": 1.41
+         "text": null,
+         "low": 1.40528964,
+         "high": 1.41250834,
+         "production_build": true,
+         "source": "workspace/reference/runs/required/uux_emepggg/madloop-production-result.json"
         }
        },
+       "matched": [
+        "MadLoop",
+        "Recola",
+        "OpenLoops"
+       ],
+       "missing_production": [],
        "limit_seconds": 0.3198,
        "binding": "Recola",
-       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20); limit computed by scripts/build_summary.py"
+       "source": "milestone.json gate_references (OpenLoops, Recola); measured.json provider_generation (MadLoop production build); limit computed by scripts/build_summary.py"
       }
      },
      "leading_colour": {
@@ -2222,7 +2301,8 @@
       "max_finite": 5.67129728297627e-09,
       "tolerance": 2e-08,
       "passed": true,
-      "source": "measured.json required_native.processes[gg_ttxemepg_qcd]"
+      "source": "measured.json required_native.processes[gg_ttxemepg_qcd]",
+      "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'"
      },
      "loop_status": null,
      "generation": {
@@ -2238,6 +2318,7 @@
        "process_peak_gib": 0.886,
        "plan_mb": 2.13,
        "inputs": "native",
+       "counterterms": "recursion",
        "branch": "work/v2-generation-scale",
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "source": "measured.json required_native.processes[gg_ttxemepg_qcd]",
@@ -2278,20 +2359,31 @@
        "providers": {
         "openloops": {
          "text": "0.425\u20130.433",
-         "low": 0.425
+         "low": 0.425,
+         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
         },
         "recola": {
          "text": "0.59\u20130.67",
-         "low": 0.59
+         "low": 0.59,
+         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
         },
         "madloop": {
-         "text": "3.03\u20133.04",
-         "low": 3.03
+         "text": null,
+         "low": 3.02587716,
+         "high": 3.03565302,
+         "production_build": true,
+         "source": "workspace/reference/runs/required/gg_ttxemepg_qcd/madloop-production-result.json"
         }
        },
+       "matched": [
+        "MadLoop",
+        "Recola",
+        "OpenLoops"
+       ],
+       "missing_production": [],
        "limit_seconds": 0.5525,
        "binding": "OpenLoops",
-       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20); limit computed by scripts/build_summary.py"
+       "source": "milestone.json gate_references (OpenLoops, Recola); measured.json provider_generation (MadLoop production build); limit computed by scripts/build_summary.py"
       }
      },
      "leading_colour": {
@@ -2370,20 +2462,31 @@
        "providers": {
         "openloops": {
          "text": "0.96\u20131.12",
-         "low": 0.96
+         "low": 0.96,
+         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
         },
         "recola": {
          "text": "0.95\u20131.02",
-         "low": 0.95
+         "low": 0.95,
+         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
         },
         "madloop": {
-         "text": "6.90\u20137.09",
-         "low": 6.9
+         "text": null,
+         "low": 6.90379357,
+         "high": 7.08499731,
+         "production_build": true,
+         "source": "workspace/reference/runs/required/gg_ttxemepg_ew/madloop-production-result.json"
         }
        },
+       "matched": [
+        "MadLoop",
+        "Recola",
+        "OpenLoops"
+       ],
+       "missing_production": [],
        "limit_seconds": 1.235,
        "binding": "Recola",
-       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20); limit computed by scripts/build_summary.py"
+       "source": "milestone.json gate_references (OpenLoops, Recola); measured.json provider_generation (MadLoop production build); limit computed by scripts/build_summary.py"
       }
      },
      "leading_colour": {
@@ -2411,7 +2514,7 @@
      },
      "validation": {
       "status": "compared",
-      "configuration": "dev (work/v2-generation-scale)",
+      "configuration": "native inputs (dev)",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
       "points": 3,
       "references": [
@@ -2419,17 +2522,20 @@
         "key": "madloop",
         "short": "ML",
         "points": 3,
-        "max_finite": 1.8731545550582678e-12
+        "max_finite": 2.2439613080282422e-12
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 3,
-        "max_finite": 2.8732766428186575e-10
+        "max_finite": 2.872587153535746e-10
        }
       ],
-      "max_finite": 2.8732766428186575e-10,
-      "source": "measured.json seven_gluon.uux_ggggg_vs_providers"
+      "max_finite": 2.872587153535746e-10,
+      "tolerance": 2e-08,
+      "passed": true,
+      "source": "measured.json required_native.processes[uux_ggggg]",
+      "record": "DESIGN.md WP3.1 seventh increment (fef92189), 'I5 proper, the interim production route'"
      },
      "loop_status": null,
      "generation": {
@@ -2438,16 +2544,18 @@
       },
       "dev": {
        "status": "measured",
-       "seconds": 262,
-       "generate_s": 193,
-       "export_s": 69,
-       "peak_gib": 2.4,
-       "plan_mb": 70,
-       "record": "DESIGN.md WP3.1 status, third increment, 'Generation per process' (branch work/v2-generation-scale at 201efa8b; tools/loop_v2_generate.py measure --export, one thread, shared host at load 50\u201380)",
-       "revision": "201efa8b",
-       "source": "milestone.json required.rows[u overline(u) -> g g g g g]",
-       "note": "before the counterterm recursion and the poles companion",
-       "ratio_omitted": "incomplete generation"
+       "seconds": 517.4,
+       "generate_s": 365.3,
+       "export_s": 152.1,
+       "peak_gib": 6.098,
+       "process_peak_gib": 9.606,
+       "plan_mb": 69.18,
+       "inputs": "native",
+       "counterterms": "recursion",
+       "branch": "work/v2-generation-scale",
+       "record": "DESIGN.md WP3.1 seventh increment (fef92189), 'I5 proper, the interim production route'",
+       "source": "measured.json required_native.processes[uux_ggggg]",
+       "ratio_to_fastest": 0.05062602940530824
       },
       "providers": {
        "madloop": {
@@ -2470,7 +2578,7 @@
       "source": "measured.json provider_generation.processes[uux_ggggg]"
      },
      "full_colour": {
-      "gate_rule": "G1 (no production-mode provider time yet)",
+      "gate_rule": "G1 (no complete gate limit yet)",
       "main": {
        "status": "not measured"
       },
@@ -2482,20 +2590,39 @@
        "providers": {
         "openloops": {
          "text": "no library",
-         "low": null
+         "low": null,
+         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
         },
         "recola": {
          "text": "not measured",
-         "low": null
+         "low": null,
+         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)",
+         "protocol": {
+          "low": 180.106525,
+          "high": 184.204914,
+          "compute_ir_poles": 1,
+          "collier_cache": "off",
+          "source": "measured.json provider_generation.processes[uux_ggggg].recola.protocol"
+         }
         },
         "madloop": {
-         "text": "not measured",
-         "low": null
+         "text": null,
+         "low": 568.668892,
+         "high": 570.108667,
+         "production_build": true,
+         "source": "workspace/reference/runs/required/uux_ggggg/madloop-production-result.json"
         }
        },
+       "matched": [
+        "MadLoop",
+        "Recola"
+       ],
+       "missing_production": [
+        "Recola"
+       ],
        "limit_seconds": null,
        "binding": null,
-       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20); limit computed by scripts/build_summary.py"
+       "source": "milestone.json gate_references (OpenLoops, Recola); measured.json provider_generation (MadLoop production build); limit computed by scripts/build_summary.py"
       }
      },
      "leading_colour": {
@@ -2537,6 +2664,7 @@
       "passed": true,
       "source": "measured.json required_native.processes[gg_ggggg]",
       "within_estimate": true,
+      "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
       "note": "top-free (particle_veto = [t]), Nf = 5"
      },
      "loop_status": null,
@@ -2553,6 +2681,7 @@
        "process_peak_gib": 42.155,
        "plan_mb": 159.87,
        "inputs": "native",
+       "counterterms": "recursion",
        "branch": "work/v2-generation-scale",
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "source": "measured.json required_native.processes[gg_ggggg]"
@@ -2594,20 +2723,26 @@
        "providers": {
         "openloops": {
          "text": "no library",
-         "low": null
+         "low": null,
+         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
         },
         "recola": {
          "text": "none (\u00a70.1)",
-         "low": null
+         "low": null,
+         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
         },
         "madloop": {
-         "text": "none (\u00a70.1)",
-         "low": null
+         "text": null,
+         "low": null,
+         "status": "not measured (last run state: waiting for MadLoop export, 2026-10-22)",
+         "source": "measured.json provider_generation.processes[gg_ggggg].madloop.production"
         }
        },
+       "matched": [],
+       "missing_production": [],
        "limit_seconds": null,
        "binding": null,
-       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20); limit computed by scripts/build_summary.py"
+       "source": "milestone.json gate_references (OpenLoops, Recola); measured.json provider_generation (MadLoop production build); limit computed by scripts/build_summary.py"
       }
      },
      "leading_colour": {

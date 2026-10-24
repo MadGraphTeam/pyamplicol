@@ -130,34 +130,15 @@
     10799.45,
     10672.69
    ]
-  },
-  "uux_ggggg_vs_providers": {
-   "source": "workspace/tmp/generation-scale/runs/cmp_uux_ggggg.json",
-   "branch": "work/v2-generation-scale",
-   "points": 3,
-   "max_relative_deviation": {
-    "madloop": {
-     "born": 4.71501853207469e-14,
-     "finite": 1.8731545550582678e-12,
-     "single_pole": 2.5683715762595885e-12,
-     "double_pole": 6.716839143177721e-13
-    },
-    "recola": {
-     "born": 1.8229848878959578e-13,
-     "finite": 2.8732766428186575e-10,
-     "single_pole": 6.140840990775537e-10,
-     "double_pole": 4.351247791834972e-11
-    }
-   }
   }
  },
  "required_native": {
   "branch": "work/v2-generation-scale",
-  "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
   "what": "generation (LoopSlice.generate, one thread) and plan export, then binary64 virtuals with native per-point inputs and the production counterterm route at the fixture points, against the committed references (tests/fixtures/loop/required)",
   "processes": {
    "uux_emepddxg": {
     "source": "workspace/tmp/generation-scale/gint/val1/uux_emepddxg.json",
+    "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
     "process": "u u~ > e- e+ d d~ g",
     "counterterms": "recursion",
     "inputs": "native",
@@ -212,6 +193,7 @@
    },
    "uux_emepggg": {
     "source": "workspace/tmp/generation-scale/gint/val1/uux_emepggg.json",
+    "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
     "process": "u u~ > e- e+ g g g",
     "counterterms": "recursion",
     "inputs": "native",
@@ -266,6 +248,7 @@
    },
    "gg_ttxemepg_qcd": {
     "source": "workspace/tmp/generation-scale/gint/val1/gg_ttxemepg_qcd.json",
+    "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
     "process": "g g > t t~ e- e+ g",
     "counterterms": "recursion",
     "inputs": "native",
@@ -320,6 +303,7 @@
    },
    "gg_ttxgg": {
     "source": "workspace/tmp/generation-scale/gint/val1/gg_ttxgg.json",
+    "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
     "process": "g g > t t~ g g",
     "counterterms": "recursion",
     "inputs": "native",
@@ -374,6 +358,7 @@
    },
    "gg_gggg": {
     "source": "workspace/tmp/generation-scale/gint/val2/gg_gggg.json",
+    "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
     "process": "g g > g g g g",
     "counterterms": "recursion",
     "inputs": "native",
@@ -416,8 +401,58 @@
      1.1
     ]
    },
+   "uux_ggggg": {
+    "source": "workspace/tmp/generation-scale/i7/val/uux_ggggg.json",
+    "record": "DESIGN.md WP3.1 seventh increment (fef92189), 'I5 proper, the interim production route'",
+    "process": "u u~ > g g g g g",
+    "counterterms": "recursion",
+    "inputs": "native",
+    "generate_s": 365.3,
+    "generate_peak_gib": 3.51,
+    "export_s": 152.1,
+    "export_peak_gib": 6.098,
+    "plan_json_mb": 69.18,
+    "max_rss_gib": 9.606,
+    "tolerance": 2e-08,
+    "passed": true,
+    "points": [
+     0,
+     1,
+     2
+    ],
+    "max_deviation": {
+     "madloop": {
+      "born": 3.8507582857696155e-14,
+      "finite": 2.2439613080282422e-12,
+      "single_pole": 2.5717543953632443e-12,
+      "double_pole": 6.864577946012636e-13
+     },
+     "recola": {
+      "born": 1.7016081732089032e-13,
+      "finite": 2.872587153535746e-10,
+      "single_pole": 6.140807162584522e-10,
+      "double_pole": 4.3564758032874435e-11
+     }
+    },
+    "max_error_per_point": [
+     2.872587153535746e-10,
+     7.77673267558158e-11,
+     6.140807162584522e-10
+    ],
+    "stability_estimate_per_point": [
+     null,
+     null,
+     null
+    ],
+    "seconds_per_point_unbatched": [
+     13.4,
+     4.6,
+     4.7
+    ]
+   },
    "gg_ggggg": {
     "source": "workspace/tmp/generation-scale/gint/val1/gg_ggggg_njet.json",
+    "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
     "process": "g g > g g g g g",
     "counterterms": "recursion",
     "inputs": "native",
@@ -478,7 +513,7 @@
   }
  },
  "provider_generation": {
-  "what": "MadLoop: graph generation, source export and compilation (madloop-export.generation.json); Recola: process generation (recola-result.json, or the run status if unfinished); OpenLoops: the prebuilt library of the reference run",
+  "what": "MadLoop: graph generation, source export and compilation (madloop-export.generation.json) and the production-build timing (madloop-production-result.json, or its run status); Recola: process generation and the protocol run's times per point (recola-result.json, or the run status if unfinished); OpenLoops: the prebuilt library of the reference run",
   "processes": {
    "uux_emepddxg": {
     "source": "workspace/reference/runs/required/uux_emepddxg/",
@@ -488,11 +523,40 @@
      "graph_generation_s": 24.522084772994276,
      "source_export_s": 26.717296938004438,
      "compile_s": 4.509116383967921,
-     "total_s": 55.748498094966635
+     "total_s": 55.748498094966635,
+     "production": {
+      "source": "workspace/reference/runs/required/uux_emepddxg/madloop-production-result.json",
+      "seconds_per_point": [
+       0.142641269,
+       0.143045331,
+       0.142539069
+      ],
+      "stability_check": "MadLoop default (CTModeRun=-1 after initialization)",
+      "production_build": true,
+      "timing_scope": "single thread pinned; point 1 evaluated once untimed for initialization, then each point timed once (points 2..n,1); includes all actual poles; not a benchmark campaign"
+     }
     },
     "recola": {
      "status": "done",
-     "generation_s": 8.39787866
+     "generation_s": 8.39787866,
+     "protocol": {
+      "seconds_per_point": [
+       0.200782076,
+       0.21135497,
+       0.209317722
+      ],
+      "compute_ir_poles": 1,
+      "collier_cache": "off"
+     }
+    },
+    "reference": {
+     "validation_status": "passed",
+     "validated_providers": [
+      "madloop",
+      "recola",
+      "openloops"
+     ],
+     "maximum_provider_relative_error": 4.650787675564181e-13
     },
     "openloops": {
      "library": "pplljjj"
@@ -506,11 +570,40 @@
      "graph_generation_s": 76.61233418004122,
      "source_export_s": 58.18535616499139,
      "compile_s": 6.724375152029097,
-     "total_s": 141.5220654970617
+     "total_s": 141.5220654970617,
+     "production": {
+      "source": "workspace/reference/runs/required/uux_emepggg/madloop-production-result.json",
+      "seconds_per_point": [
+       1.40528964,
+       1.40886954,
+       1.41250834
+      ],
+      "stability_check": "MadLoop default (CTModeRun=-1 after initialization)",
+      "production_build": true,
+      "timing_scope": "single thread pinned; point 1 evaluated once untimed for initialization, then each point timed once (points 2..n,1); includes all actual poles; not a benchmark campaign"
+     }
     },
     "recola": {
      "status": "done",
-     "generation_s": 15.8876071
+     "generation_s": 15.8876071,
+     "protocol": {
+      "seconds_per_point": [
+       1.23766428,
+       1.22170115,
+       1.12853352
+      ],
+      "compute_ir_poles": 1,
+      "collier_cache": "off"
+     }
+    },
+    "reference": {
+     "validation_status": "passed",
+     "validated_providers": [
+      "madloop",
+      "recola",
+      "openloops"
+     ],
+     "maximum_provider_relative_error": 4.091191701611994e-13
     },
     "openloops": {
      "library": "pplljjj"
@@ -524,11 +617,40 @@
      "graph_generation_s": 87.49735189595958,
      "source_export_s": 62.39196990203345,
      "compile_s": 11.206919477961492,
-     "total_s": 161.09624127595453
+     "total_s": 161.09624127595453,
+     "production": {
+      "source": "workspace/reference/runs/required/gg_ttxemepg_qcd/madloop-production-result.json",
+      "seconds_per_point": [
+       3.02587716,
+       3.03565302,
+       3.0312525
+      ],
+      "stability_check": "MadLoop default (CTModeRun=-1 after initialization)",
+      "production_build": true,
+      "timing_scope": "single thread pinned; point 1 evaluated once untimed for initialization, then each point timed once (points 2..n,1); includes all actual poles; not a benchmark campaign"
+     }
     },
     "recola": {
      "status": "done",
-     "generation_s": 28.678061
+     "generation_s": 28.678061,
+     "protocol": {
+      "seconds_per_point": [
+       2.26714275,
+       2.3186245,
+       2.32421741
+      ],
+      "compute_ir_poles": 1,
+      "collier_cache": "off"
+     }
+    },
+    "reference": {
+     "validation_status": "passed",
+     "validated_providers": [
+      "madloop",
+      "recola",
+      "openloops"
+     ],
+     "maximum_provider_relative_error": 1.0049263648086796e-08
     },
     "openloops": {
      "library": "ppllttj"
@@ -542,11 +664,40 @@
      "graph_generation_s": 405.2487154210103,
      "source_export_s": 236.73276926897233,
      "compile_s": 10.103176024975255,
-     "total_s": 652.0846607149579
+     "total_s": 652.0846607149579,
+     "production": {
+      "source": "workspace/reference/runs/required/gg_ttxemepg_ew/madloop-production-result.json",
+      "seconds_per_point": [
+       6.93683784,
+       7.08499731,
+       6.90379357
+      ],
+      "stability_check": "MadLoop default (CTModeRun=-1 after initialization)",
+      "production_build": true,
+      "timing_scope": "single thread pinned; point 1 evaluated once untimed for initialization, then each point timed once (points 2..n,1); includes all actual poles; not a benchmark campaign"
+     }
     },
     "recola": {
      "status": "done",
-     "generation_s": 21.8859307
+     "generation_s": 21.8859307,
+     "protocol": {
+      "seconds_per_point": [
+       5.48531387,
+       5.52265542,
+       5.4482999
+      ],
+      "compute_ir_poles": 1,
+      "collier_cache": "off"
+     }
+    },
+    "reference": {
+     "validation_status": "passed",
+     "validated_providers": [
+      "madloop",
+      "recola",
+      "openloops"
+     ],
+     "maximum_provider_relative_error": 9.93587132634557e-10
     },
     "openloops": {
      "library": "ppllttj_ew"
@@ -560,11 +711,39 @@
      "graph_generation_s": 5792.987055428035,
      "source_export_s": 38040.019540841924,
      "compile_s": 121.58262162806932,
-     "total_s": 43954.58921789803
+     "total_s": 43954.58921789803,
+     "production": {
+      "source": "workspace/reference/runs/required/uux_ggggg/madloop-production-result.json",
+      "seconds_per_point": [
+       569.079265,
+       568.668892,
+       570.108667
+      ],
+      "stability_check": "MadLoop default (CTModeRun=-1 after initialization)",
+      "production_build": true,
+      "timing_scope": "single thread pinned; point 1 evaluated once untimed for initialization, then each point timed once (points 2..n,1); includes all actual poles; not a benchmark campaign"
+     }
     },
     "recola": {
      "status": "done",
-     "generation_s": 10220.0391
+     "generation_s": 10220.0391,
+     "protocol": {
+      "seconds_per_point": [
+       180.106525,
+       184.204914,
+       182.211351
+      ],
+      "compute_ir_poles": 1,
+      "collier_cache": "off"
+     }
+    },
+    "reference": {
+     "validation_status": "passed",
+     "validated_providers": [
+      "madloop",
+      "recola"
+     ],
+     "maximum_provider_relative_error": 6.166524706522361e-10
     },
     "openloops": null
    },
@@ -573,7 +752,11 @@
     "madloop": {
      "status": "exporting",
      "loops": 410560,
-     "graph_generation_s": 62538.53792525001
+     "graph_generation_s": 62538.53792525001,
+     "production": {
+      "status": "waiting for MadLoop export",
+      "updated": "2026-10-22T20:03:09Z"
+     }
     },
     "recola": {
      "status": "running",
