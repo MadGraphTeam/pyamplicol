@@ -134,7 +134,7 @@
   #v(-0.5em)
   #text(12pt, fill: luma(80))[Born–virtual interference: milestone status, benchmarks and architecture]
   #v(-0.3em)
-  #text(9pt, fill: luma(110))[Milestone #ms.date · engine revision #ms.engine_revision · AMD EPYC 9754 (shared host)]
+  #text(9pt, fill: luma(110))[Milestone #ms.date · engine revision #ms.engine_revision · status lines updated 2026-10-24 (59badc7a) · AMD EPYC 9754 (shared host)]
 ]
 
 pyAmpliCol computes the interference $2 op("Re")(B^dagger G L)$ of one-loop and
@@ -142,12 +142,13 @@ Born amplitudes with the UV and $R_2$ counterterms of the UFO loop model, for
 every squared coupling order and all three Laurent coefficients, in binary64,
 double-double (DD) and arbitrary precision (AP). The engine is the recursive
 _v2_ engine: tree currents, loop topologies and loop numerators come from
-recursions, and no loop Feynman diagram is enumerated (@arch). The public
-counterterm route at this push is still site closure, which the user reserves
-for test oracles; in production the counterterms are plain tree vertices
-inserted exactly once, without loop matching (addendum J), work in flight.
-This report is the status of the intermediate push of
-#ms.date to the `loop` branch. It separates development measurements from the
+recursions, and no loop Feynman diagram is enumerated (@arch). Since the push
+of 24 October (59badc7a; status updated, no new measurements) counterterms
+come from the tree recursion (WP2.2; site closure: test oracle),
+still admitted by a witness table; in production they will be plain
+tree vertices inserted exactly once, without loop matching (addendum J;
+`ct-simplify` in flight). This report is the status of the intermediate push of
+#ms.date to `loop`. It separates development measurements from the
 acceptance campaign, which has not run yet.
 
 #grid(columns: (1.2fr, 1fr), gutter: 8pt,
@@ -199,19 +200,20 @@ acceptance campaign, which has not run yet.
 #grid(columns: (1fr, 1fr), gutter: 8pt,
   box-note(fill: white, stroke: 0.6pt + luma(205))[
     #set par(justify: false)
-    *In flight* (branches, not on `loop`)
+    *Published 24 October, and in flight* (branches, not on `loop`)
     #set text(8.4pt)
-    - *Counterterms in the recursion* (WP2.2): on `work/v2-slice` since
-      a18b7599, after this push. After the request-scoped lowering
-      $g g -> g g g g$ generates in 257–275 s (sites 243–245 s), its second
-      point in 0.54× the sites' time (DESIGN §6.1 there).
-    - *`ct-simplify`* (running): removes the witness-table admission and loop
-      matching (addendum J); a public `particle_veto` replaces the internal
-      top-free switch.
+    - *On `loop` since 24 October* (engine 59badc7a, not re-measured here):
+      *counterterms in the recursion* (WP2.2, a18b7599; after the request-scoped
+      lowering $g g -> g g g g$ generates in 257–275 s, sites 243–245 s; second
+      CT-level point in 0.54× the sites' time, first point at parity; DESIGN
+      §6.1) with the constant-assumption fix (59badc7a); *UV/IR pole selection*
+      (WP2.10, 6735d3a5, addendum I); contract-scoped DAG reuse (WP3.1 A0, dfa6bf7c).
+    - *`ct-simplify`* (fix round after a refused integration): removes the
+      witness-table admission and loop matching (addendum J); a public
+      `particle_veto` replaces the internal top-free switch.
     - *Generation at scale* (WP3.1, `work/v2-generation-scale`): native trees,
       Born and counterterms, regeneration-free artifacts, SDK v4; its Rust
       ports (HANDOFF §0.4) are being split into packages.
-    - *UV/IR poles* (`work/v2-poles-uvir`, addendum I there).
     - *G1* and the live report (WP2.7) not started; *electroweak* and complex
       mass (WP3.2) pending; the *$2 -> 5$ set* on the WP3.1 branch (@required).
   ],
@@ -590,12 +592,12 @@ record prints KiB/10⁶ and the generation record GiB.
   ([Full, NLC and LC colour], "supported", [Exact seed tables in $N_c$; LC/NLC by generated classes and truncated cells. LC is not yet cheaper to generate at seven legs.]),
   ([Colour and spin correlations], "supported", [Directed colour histories at LC/NLC/FC, spin sources, resolved helicities, flavour aliases, Ward sources (WP2.5). Seven-leg directed LC/NLC tables need the Rust seed tables (WP3.1).]),
   ([Per-order partials], "supported", [Every squared coupling order at tree level and at one loop, mixed Born orders, per-correction loop orders.]),
-  ([Poles at runtime], "partial", [`poles = "all" | "none"`: finite-only mode with the finite part bitwise unchanged and the poles explicitly absent. `"uv" | "ir"` in progress with the user's semantics of 23 October.]),
+  ([Poles at runtime], "supported", [`poles = "all" | "none" | "uv" | "ir" | "split"` (WP2.10, on `loop` since 24 October): finite-only mode with the finite part bitwise unchanged and the poles explicitly absent; `"uv"` and `"ir"` with the user's semantics of 23 October. The UV residue comes from an interim local module until the NinjaRS re-pin; a `"uv"` estimate needs a rotation check.]),
   ([Stability estimates], "supported", [Rotation checks (any number, 0 = estimate absent), reduction direction, exact rescaling, in any combination; no automatic escalation (WP2.3).]),
   ([Precision carriers], "supported", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; DD/AP point inputs are formed in Python Decimal until WP3.1.]),
   ([Native executor, schedules], "supported", [Rust, 16 lanes, threads; schedule B by default, M native (adopted per class at G1), F as oracle. The NinjaRS reduction runs serially.]),
   ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; relocation to another path tested on the same host and CPU. Loading regenerates the process (the `LoopSlice`) in Python and checks the plan digest, which addendum G forbids for prepared artifacts; WP3.1 removes it. The Rust/C/C++/Fortran SDK refuses v4 until WP3.1.]),
-  ([Counterterms (model UV, $R_2$)], "partial", [Site closure is the public route (QCD incl. massive quarks), a form the user reserves for test oracles; counterterms inside the recursion (WP2.2, still with witness-table admission) are on `work/v2-slice` since a18b7599, after this push. Production rule (addendum J): plain tree vertices inserted exactly once, admitted by coupling orders and `particle_veto`, no loop matching; `ct-simplify` removes the matching after WP2.2.]),
+  ([Counterterms (model UV, $R_2$)], "partial", [Counterterms inside the recursion (WP2.2, the default route; QCD incl. massive quarks) are on `loop` since 24 October (a18b7599, constant-assumption fix 59badc7a), still with witness-table admission; site closure remains as a test oracle. Production rule (addendum J): plain tree vertices inserted exactly once, admitted by coupling orders and `particle_veto`, no loop matching; `ct-simplify` removes the matching.]),
   ([Direct $R_2$], "deferred", [A bonus by the user's rule; bounded controls only.]),
   ([Electroweak, complex mass], "open", [Tree EW lanes fixed, the Dirac–Weyl class refused; loop EW, Goldstones and CMS are WP3.2.]),
   ([Required set], "progress", [On the WP3.1 branch seven of eight generate and six agree with their provider references in all coefficients (@tab:validation); $g g -> g g g g g$ is validated in Born and poles; the EW target is not started.]),
@@ -603,7 +605,7 @@ record prints KiB/10⁶ and the generation record GiB.
   ([$g g -> 6g$], "deferred", [No $2 -> 6$ work until the $2 -> 5$ plan is complete (user, 23 October).]),
 )
 #figure(kind: table,
-  caption: [*Capability matrix* of the v2 engine on `loop` at #ms.engine_revision, with branch work marked.],
+  caption: [*Capability matrix* of the v2 engine on `loop` at #ms.engine_revision, with the rows for poles and counterterms updated to 59badc7a (24 October) and branch work marked.],
   tstyle(table(
     columns: (3.5cm, 1.6cm, 1fr), align: (x, y) => if x == 1 { center + horizon } else { left + horizon },
     inset: (x: 4.5pt, y: 2.6pt), stroke: tstroke, fill: thead-fill,
@@ -746,11 +748,12 @@ is the requested coupling orders, the exactly-once constraint and a public
 particle is dropped, and a vetoed particle is removed from every tree vertex,
 loop line and propagator of the generation, so loops and counterterms stay
 consistent. Nothing is matched to the loop (user, 23 October; addendum J).
-At this push the code still admits counterterm sites by a witness table of
-divergent loop routings with a power-counting completeness check: the public
-route closes those sites over block currents, and the recursion form of WP2.2
-(one counterterm order in the tree recursion, whose $g g -> g g g g g$ program
-leaves no rule to site closure, @tab:sevendev) uses the same admission. The
+On `loop` (since 24 October) the code still admits counterterm sites by a
+witness table of divergent loop routings with a power-counting completeness
+check: the recursion form of WP2.2, now the default route (one counterterm
+order in the tree recursion, whose $g g -> g g g g g$ program leaves no rule to
+site closure, @tab:sevendev), and the site-closure oracle, which closes those
+sites over block currents, use the same admission. The
 package `ct-simplify` removes the witness table and the matching from
 production and adds `particle_veto`, which replaces the internal top-free
 switch of @tab:sevencheck (then `particle_veto = [t]`); site closure and the
@@ -896,9 +899,9 @@ exact carriers and the public interfaces.
     `workspace/reports/engine-v2/slice-status.md` (Current state, Integrated
     packages, e734b708 update, DECISIONS 2026-10-23); `HANDOFF_22_10_2026.md`
     §0–§3 (Rust: §0.4); MASTER_PLAN 2026-10-23 entries;
-    `docs/development/loop_v2/REQUIREMENTS_ADDENDUM.md` A, D, F, G, H, J (I on
-    `work/v2-poles-uvir`, d67ce126); DESIGN §6.1 on `work/v2-ct-recursion`
-    (ac76825d, integrated into the slice at a18b7599).
+    `docs/development/loop_v2/REQUIREMENTS_ADDENDUM.md` A, D, F, G, H, I, J;
+    DESIGN §6.1 on `work/v2-ct-recursion` (ac76825d, integrated into the slice
+    at a18b7599); 24 October status lines: slice-status.md, 59badc7a gate.
   - *@tab:provgen:* provider columns HANDOFF §0.1 (addendum F); pyAmpliCol
     column DESIGN WP3.1 third increment "Generation per process" on
     `work/v2-generation-scale` (201efa8b). *@tab:validation:* DESIGN WP3.1
