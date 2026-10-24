@@ -30,8 +30,10 @@ fitted factor):
   i.e. -(alpha_s/4pi)(8/3) T_F B / eps in the interference, independent of n.
 * The finite part differs by the top-loop contribution T (top loops plus their
   decoupling counterterm); it is compared only for a pyAmpliCol record that
-  declares ``"top_quark_loops": false``. Otherwise the difference is reported
-  as ``finite_minus_reference`` and is NOT a test.
+  declares ``"top_quark_loops": false``, i.e. one generated with
+  ``particle_veto = ["t"]`` (the public generation option of v2 virtuals,
+  REQUIREMENTS_ADDENDUM J). Otherwise the difference is reported as
+  ``finite_minus_reference`` and is NOT a test.
 """
 
 import argparse
