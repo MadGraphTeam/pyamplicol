@@ -69,11 +69,11 @@ def multiplicity(key: str) -> int:
     return len(streams.spec(key)["pdgs"]) - 2
 
 
-def label(key: str, text: str | None = None) -> str:
-    """The process text: the generated one, else the specification's."""
+def label(key: str) -> str:
+    """The process in the specification's provider-independent particle
+    names (its Recola process string); the text the pyAmpliCol run generated
+    from the model's names is kept as ``process_text``."""
 
-    if text:
-        return text
     spec = streams.spec(key)
     return spec["recola"]["process"].replace("->", ">")
 
@@ -554,7 +554,8 @@ def build(
         out.append(
             {
                 "key": key,
-                "label": label(key, entry["text"]),
+                "label": label(key),
+                "process_text": entry["text"],
                 "outgoing": legs,
                 "gated": legs >= 3,
                 "providers": provider_summary,
