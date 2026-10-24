@@ -2011,14 +2011,14 @@
      "loop_status": {
       "status": "refused",
       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
-      "basis": "as the V+jets rows of G1; not run at this process",
+      "basis": "not run; as the V+jets rows of G1",
       "source": "milestone.json status_notes.notes[uux_emepddxg]"
      },
      "generation": {
       "main": {
        "status": "refused",
        "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
-       "basis": "as the V+jets rows of G1; not run at this process",
+       "basis": "not run; as the V+jets rows of G1",
        "source": "milestone.json status_notes.notes[uux_emepddxg]"
       },
       "dev": {
@@ -2063,7 +2063,7 @@
       "main": {
        "status": "refused",
        "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
-       "basis": "as the V+jets rows of G1; not run at this process",
+       "basis": "not run; as the V+jets rows of G1",
        "source": "milestone.json status_notes.notes[uux_emepddxg]"
       },
       "dev": {
@@ -2105,7 +2105,7 @@
       "main": {
        "status": "refused",
        "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
-       "basis": "as the V+jets rows of G1; not run at this process",
+       "basis": "not run; as the V+jets rows of G1",
        "source": "milestone.json status_notes.notes[uux_emepddxg]"
       },
       "dev": {
@@ -2159,14 +2159,14 @@
      "loop_status": {
       "status": "refused",
       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
-      "basis": "as the V+jets rows of G1; not run at this process",
+      "basis": "not run; as the V+jets rows of G1",
       "source": "milestone.json status_notes.notes[uux_emepggg]"
      },
      "generation": {
       "main": {
        "status": "refused",
        "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
-       "basis": "as the V+jets rows of G1; not run at this process",
+       "basis": "not run; as the V+jets rows of G1",
        "source": "milestone.json status_notes.notes[uux_emepggg]"
       },
       "dev": {
@@ -2211,7 +2211,7 @@
       "main": {
        "status": "refused",
        "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
-       "basis": "as the V+jets rows of G1; not run at this process",
+       "basis": "not run; as the V+jets rows of G1",
        "source": "milestone.json status_notes.notes[uux_emepggg]"
       },
       "dev": {
@@ -2253,7 +2253,7 @@
       "main": {
        "status": "refused",
        "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
-       "basis": "as the V+jets rows of G1; not run at this process",
+       "basis": "not run; as the V+jets rows of G1",
        "source": "milestone.json status_notes.notes[uux_emepggg]"
       },
       "dev": {
@@ -2304,10 +2304,18 @@
       "source": "measured.json required_native.processes[gg_ttxemepg_qcd]",
       "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'"
      },
-     "loop_status": null,
+     "loop_status": {
+      "status": "refused",
+      "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+      "basis": "not run; Z on loop quark lines, as in the V+jets rows of G1",
+      "source": "milestone.json status_notes.notes[gg_ttxemepg_qcd]"
+     },
      "generation": {
       "main": {
-       "status": "not measured"
+       "status": "refused",
+       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+       "basis": "not run; Z on loop quark lines, as in the V+jets rows of G1",
+       "source": "milestone.json status_notes.notes[gg_ttxemepg_qcd]"
       },
       "dev": {
        "status": "measured",
@@ -2349,7 +2357,10 @@
      "full_colour": {
       "gate_rule": "G1 (seven-leg rows not timed yet)",
       "main": {
-       "status": "not measured"
+       "status": "refused",
+       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+       "basis": "not run; Z on loop quark lines, as in the V+jets rows of G1",
+       "source": "milestone.json status_notes.notes[gg_ttxemepg_qcd]"
       },
       "dev": {
        "status": "not measured"
@@ -2388,7 +2399,10 @@
      },
      "leading_colour": {
       "main": {
-       "status": "not measured"
+       "status": "refused",
+       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+       "basis": "not run; Z on loop quark lines, as in the V+jets rows of G1",
+       "source": "milestone.json status_notes.notes[gg_ttxemepg_qcd]"
       },
       "dev": {
        "status": "not measured"
@@ -2642,9 +2656,17 @@
      "legs": 7,
      "corrections": "QCD",
      "families": {
-      "fc": 9414,
+      "fc": null,
       "lc": null,
-      "source": "measured.json seven_gluon.generation_latest.counts"
+      "source": null,
+      "other_configuration": {
+       "fc": 9414,
+       "particle_veto": [],
+       "row_particle_veto": [
+        6
+       ],
+       "source": "measured.json seven_gluon.generation_latest (counts, particle_veto); milestone.json status_notes.notes[gg_ggggg].particle_veto"
+      }
      },
      "validation": {
       "status": "compared",
@@ -2715,9 +2737,9 @@
       },
       "alternative": {
        "name": "NJet 3.1.2",
-       "seconds_per_evaluation": 71.2,
+       "seconds_per_evaluation": 71.2039,
        "what": "standard full-colour sum, one evaluation, double precision, one pinned core; not a matched provider",
-       "source": "milestone.json njet.single_evaluation"
+       "source": "measured.json njet_single_evaluation.standard"
       },
       "reference": {
        "providers": {

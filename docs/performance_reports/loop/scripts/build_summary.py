@@ -785,18 +785,32 @@ def _required_rows(ms: dict, meas: dict, known: set[str], factor: float) -> list
         alternative = None
         nj = njet.get(req["label"])
         if nj is not None and not matched:
-            one = ms["njet"]["single_evaluation"]
+            one = meas["njet_single_evaluation"]["standard"]
             alternative = {
                 "name": one["tool"],
-                "seconds_per_evaluation": one["standard"],
+                "seconds_per_evaluation": one["mean_s"],
                 "what": "standard full-colour sum, one evaluation, double precision,"
                 " one pinned core; not a matched provider",
-                "source": "milestone.json njet.single_evaluation",
+                "source": "measured.json njet_single_evaluation.standard",
             }
-        families = None
+        # The only family count of a seven-leg generation is the seven-gluon
+        # run of measured.json; it describes the row only with the row's
+        # particle veto (the validation's, by the registry). Otherwise it is
+        # printed as the other configuration's count, never as the row's.
+        families = {"fc": None, "lc": None, "source": None}
         counts = meas["seven_gluon"]["generation_latest"]
         if counts["process"] == text and corr is None:
-            families = counts["counts"]["families"]
+            source = "measured.json seven_gluon.generation_latest"
+            if counts["particle_veto"] == note.get("particle_veto", []):
+                families.update(fc=counts["counts"]["families"], source=source)
+            else:
+                families["other_configuration"] = {
+                    "fc": counts["counts"]["families"],
+                    "particle_veto": counts["particle_veto"],
+                    "row_particle_veto": note["particle_veto"],
+                    "source": f"{source} (counts, particle_veto);"
+                    f" milestone.json status_notes.notes[{key}].particle_veto",
+                }
         if "validation" in note and validation.get("status") == "compared":
             validation["note"] = note["validation"]
         status = _loop_status(note, key)
@@ -809,13 +823,7 @@ def _required_rows(ms: dict, meas: dict, known: set[str], factor: float) -> list
                 "outgoing": len(text.split(" > ")[1].split()),
                 "legs": len(text.split()) - 1,
                 "corrections": corr or "QCD",
-                "families": {
-                    "fc": families,
-                    "lc": None,
-                    "source": "measured.json seven_gluon.generation_latest.counts"
-                    if families
-                    else None,
-                },
+                "families": families,
                 "validation": validation,
                 "loop_status": status,
                 "generation": {

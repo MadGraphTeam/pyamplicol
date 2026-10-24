@@ -131,7 +131,7 @@
   ]
  },
  "njet": {
-  "source": "workspace/reports/engine-v2/njet-benchmark.md \u00a76 (raw: workspace/reference/runs/njet/timing/*.json); paper arXiv:1209.0100 Table 5 (Xeon E3-1240, 3.3 GHz, NJet 1.0)",
+  "source": "workspace/reports/engine-v2/njet-benchmark.md \u00a76 (raw: workspace/reference/runs/njet/timing/*.json; the seven-gluon single evaluations are read from those records into data/measured.json njet_single_evaluation); paper arXiv:1209.0100 Table 5 (Xeon E3-1240, 3.3 GHz, NJet 1.0)",
   "protocol": "double precision, one pinned idle core of the shared EPYC 9754, 10 frozen points per channel, mean s/pt (spread \u2264 2 %), NJet's own -O2 -march=native build (gcc 15.2); every time includes the two evaluations of NJet's scaling test",
   "rows": [
    {
@@ -173,11 +173,6 @@
     "n211_ds": 4.19
    }
   ],
-  "single_evaluation": {
-   "tool": "NJet 3.1.2",
-   "standard": 71.2,
-   "desymmetrised": 1.22
-  },
   "double_double_s": 1990,
   "rss_mb": 69
  },
@@ -238,8 +233,8 @@
   "catani_native_vs_njet": 2.3e-14
  },
  "status_notes": {
-  "source": "HANDOFF_24_10_2026.md sections 0.1, 2 (the integrated engine refuses V+jets) and 9 items 2 and 4; HANDOFF_22_10_2026.md section 0.1 (provider jobs stopped); data/g1.json (generation_error of the integrated rows); DESIGN.md WP3.2, WP3.5; DESIGN.md WP3.1 eighth increment (0ea83af2)",
-  "what": "short attributions printed in Table 1 where the engine on loop refuses a process or a capability is not started, and short labels of records; numbers never come from here",
+  "source": "HANDOFF_24_10_2026.md sections 0.1, 2 (the integrated engine refuses V+jets) and 9 items 2 and 4; HANDOFF_22_10_2026.md section 0.1 (provider jobs stopped); data/g1.json (generation_error of the integrated rows); DESIGN.md WP3.2, WP3.5; DESIGN.md WP3.1 eighth increment (0ea83af2); src/pyamplicol/loops/v2/conventions.py on loop (FermionSignError for a loop-fermion vertex that is not a pure vector coupling: the Z on the loop quark lines of g g > t t~ e- e+ g, as in the V+jets rows); the configuration of the gg_ggggg validation: tests/fixtures/loop/required/gg_ggggg_njet.json names the scheme massless-qcd-nf5, for which tools/loop_v2_generate.py validate (work/v2-generation-scale, 0ea83af2) vetoes the top",
+  "what": "short attributions printed in Table 1 where the engine on loop refuses a process or a capability is not started, short labels of records and the configuration of a development record where the record does not carry it; measured numbers never come from here",
   "notes": {
    "uux_emepg": {
     "refused": "Z fermion signs (WP3.2), Furry zeros (WP3.5)"
@@ -249,11 +244,15 @@
    },
    "uux_emepddxg": {
     "refused": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
-    "refused_basis": "as the V+jets rows of G1; not run at this process"
+    "refused_basis": "not run; as the V+jets rows of G1"
    },
    "uux_emepggg": {
     "refused": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
-    "refused_basis": "as the V+jets rows of G1; not run at this process"
+    "refused_basis": "not run; as the V+jets rows of G1"
+   },
+   "gg_ttxemepg_qcd": {
+    "refused": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+    "refused_basis": "not run; Z on loop quark lines, as in the V+jets rows of G1"
    },
    "gg_ttxemepg_ew": {
     "not_started": "EW loops (WP3.2)"
@@ -263,6 +262,9 @@
    },
    "gg_ggggg": {
     "validation": "top-free (particle_veto = [t]), Nf = 5",
+    "particle_veto": [
+     6
+    ],
     "providers": "stopped 22 Oct; not to be restarted (HANDOFF section 0.1)"
    }
   }

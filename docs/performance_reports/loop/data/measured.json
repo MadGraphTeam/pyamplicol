@@ -25,6 +25,7 @@
     "born_basis": 720,
     "ct_sites": 4837
    },
+   "particle_veto": [],
    "wall_s": 813.35,
    "user_s": 802.49,
    "system_s": 20.03,
@@ -52,6 +53,7 @@
     "born_basis": 720,
     "ct_sites": 4837
    },
+   "particle_veto": [],
    "wall_s": 482.05,
    "user_s": 476.89,
    "system_s": 14.63,
@@ -510,6 +512,27 @@
      39.1
     ]
    }
+  }
+ },
+ "njet_single_evaluation": {
+  "what": "one NJet evaluation at seven gluons without the scaling test, double precision, one pinned core: mean over the record's points",
+  "standard": {
+   "source": "workspace/reference/runs/njet/timing/njet312-double-standard-single-gg_5g.json",
+   "tool": "NJet 3.1.2",
+   "amplitude": "standard",
+   "precision": "double",
+   "scaling_test": false,
+   "points": 10,
+   "mean_s": 71.2039
+  },
+  "desymmetrised": {
+   "source": "workspace/reference/runs/njet/timing/njet312-double-ds-single-gg_5g.json",
+   "tool": "NJet 3.1.2",
+   "amplitude": "ds",
+   "precision": "double",
+   "scaling_test": false,
+   "points": 10,
+   "mean_s": 1.2227
   }
  },
  "provider_generation": {

@@ -6,8 +6,9 @@ Usage: python scripts/collect_milestone.py <workspace> [output]
 <workspace> is the development workspace that holds the run records
 (tmp/generation-scale/runs, tmp/ct-recursion/s4, the WP3.1 native validations
 in tmp/generation-scale/gint and i7, the provider reference runs in
-reference/runs/required). Every value is read from those records (JSON and
-/usr/bin/time -v logs); nothing is copied from text.
+reference/runs/required, NJet's timing records in reference/runs/njet/timing).
+Every value is read from those records (JSON and /usr/bin/time -v logs);
+nothing is copied from text.
 Each block carries its source, relative to the workspace. The hand-maintained
 registry data/milestone.json is not written here.
 """
@@ -61,6 +62,13 @@ REF_PROCESSES = (
     "uux_ggggg",
     "gg_ggggg",
 )
+# NJet 3.1.2's seven-gluon single evaluations (no scaling test): double
+# precision, one pinned core, the 10 frozen points of the timing campaign.
+NJET = "reference/runs/njet/timing"
+NJET_SINGLE = {
+    "standard": "njet312-double-standard-single-gg_5g",
+    "desymmetrised": "njet312-double-ds-single-gg_5g",
+}
 
 
 def _load(root: Path, rel: str) -> dict:
@@ -89,6 +97,32 @@ def _time_v(root: Path, rel: str) -> dict:
     }
 
 
+def _command_veto(root: Path, rel: str) -> list[int]:
+    """The vetoed particles (|PDG|) of a timed tools/loop_v2_generate.py run:
+    the --veto argument of the command line in its /usr/bin/time -v log;
+    none (top loops included) when the argument is absent."""
+    text = (root / rel).read_text()
+    command = re.search(r'Command being timed: "(.*)"', text).group(1)
+    veto = re.search(r"--veto[ =](\S+)", command)
+    return [] if veto is None else [int(x) for x in veto.group(1).split(",") if x]
+
+
+def _njet_single(root: Path, name: str) -> dict:
+    """Mean time of one NJet evaluation over the points of a timing record."""
+    rel = f"{NJET}/{name}.json"
+    rec = _load(root, rel)
+    seconds = [row["seconds"] for row in rec["rows"]]
+    return {
+        "source": f"workspace/{rel}",
+        "tool": rec["tool"],
+        "amplitude": rec["options"]["amp"],
+        "precision": rec["options"]["prec"],
+        "scaling_test": rec["options"]["scaling"] != "0",
+        "points": len(seconds),
+        "mean_s": round(sum(seconds) / len(seconds), 4),
+    }
+
+
 def _events(record: dict) -> dict:
     return {e["stage"]: e for e in record.get("events", [])}
 
@@ -106,6 +140,7 @@ def _generation(root: Path, name: str) -> dict:
         "plan_json_s": ev["plan_json"]["wall_s"],
         "plan_json_mb": rec["plan_json_mb"],
         "counts": rec["counts"],
+        "particle_veto": _command_veto(root, f"{RUNS}/{name}.log"),
     }
     out.update(_time_v(root, f"{RUNS}/{name}.log"))
     return out
@@ -309,6 +344,14 @@ def collect(root: Path) -> dict:
                 key: _native_validation(root, rel, record)
                 for key, (rel, record) in GINT_RECORDS.items()
             },
+        },
+        "njet_single_evaluation": {
+            "what": (
+                "one NJet evaluation at seven gluons without the scaling test,"
+                " double precision, one pinned core: mean over the record's"
+                " points"
+            ),
+            **{key: _njet_single(root, name) for key, name in NJET_SINGLE.items()},
         },
         "provider_generation": {
             "what": (
