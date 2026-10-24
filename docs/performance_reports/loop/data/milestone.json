@@ -1,65 +1,36 @@
 {
- "date": "2026-10-23",
- "engine_revision": "e734b708",
- "previous_loop": "1df22af6",
+ "date": "2026-10-24",
+ "engine_revision": "b4d76cc3",
+ "previous_loop": "f132e53c",
  "native_build": {
-  "name": "loop-native-v2-slice-45875b87",
-  "digest": "2be17627",
+  "name": "loop-native-v2-slice-6c44c9f7",
+  "digest": "a9533f0e",
   "profile": "release, codegen-units 1, thin LTO, rustc 1.97.1",
-  "source": "workspace/reports/engine-v2/slice-status.md, Current state and the e734b708 update (no native input changed since 45875b87)"
+  "source": "workspace/reports/engine-v2/slice-status.md, measure-g1 integration (6c44c9f7): integrator release build of the merge commit; ct-simplify (b4d76cc3) changed no native input (stage --source accepted the build)"
  },
  "integrated": [
   {
-   "sha": "06fa573b",
-   "wp": "WP2.3",
-   "title": "Stability API and precision carriers",
-   "detail": "rotation, reduction-direction and rescaling checks in any combination; DD and AP carriers natively"
+   "sha": "b71cf0e0",
+   "wp": "Rust A1-A2",
+   "title": "Native loop-request DAG builder",
+   "detail": "Rust builder for the loop-block DAG and blocks, equal to the Python builder (whole GenericDAG and Block records, flat-record digests at seven legs); no production call site switched yet"
   },
   {
-   "sha": "bda5e256",
-   "wp": "WP2.8",
-   "title": "Schedule M in Rust",
-   "detail": "merged, primitive-seeded tries; equal to B at FC, NLC and LC"
+   "sha": "6c44c9f7",
+   "wp": "WP2.7",
+   "title": "Gate G1 harness and measurement",
+   "detail": "tools/loop_benchmark (specs, frozen streams, providers, median gate statistic with bands), cost model, this report's G1 section"
   },
   {
-   "sha": "d456e789",
-   "wp": "WP2.9 part",
-   "title": "Tree electroweak follow-up",
-   "detail": "four-quark-line W pairing fixed; Dirac–Weyl class refused or pinned"
-  },
-  {
-   "sha": "2a56a0e7",
-   "wp": "reference",
-   "title": "NJet seven-gluon reference",
-   "detail": "NJet 3.1.2 / 2.1.1, calibration, fixture, Table 5 re-measured"
-  },
-  {
-   "sha": "42c6117d",
-   "wp": "WP2.5",
-   "title": "Observables",
-   "detail": "colour and spin correlations, resolved helicities, flavour aliases, Ward sources"
-  },
-  {
-   "sha": "45875b87",
-   "wp": "WP2.6",
-   "title": "Public v2 engine and plan v4 artifacts",
-   "detail": "engine selection, plan v4 artifacts, poles = all | none, per-point estimates"
+   "sha": "b4d76cc3",
+   "wp": "addendum J",
+   "title": "Counterterms as plain tree insertions",
+   "detail": "no witness table or loop matching in production; public particle_veto; an unlowerable counterterm vertex that no tree of the request reaches is inert and recorded"
   }
  ],
- "integrated_tip": "45875b87",
- "after_integration": [
-  {
-   "sha": "f21495ed",
-   "what": "Requirements addendum J",
-   "detail": "counterterms as plain tree-level insertions without loop matching; public particle_veto (user, 23 October)"
-  },
-  {
-   "sha": "e734b708",
-   "what": "Symbol-registry fix",
-   "detail": "canonical stage symbols created through the central registry (same names and order); no native input changed"
-  }
- ],
- "already_on_loop": "v2 waves 0-1 with gate S1, dependency re-pin (NinjaRS aa6a6307, oneloopmaster 8ec256fc, Symbolica 9cdc2949), gate G0, tree-engine EW fixes and hygiene, native Rust executor (WP2.1), colour production (WP2.4)",
+ "integrated_tip": "b4d76cc3",
+ "after_integration": [],
+ "already_on_loop": "v2 waves 0-1, gates S1 and G0, native executor (WP2.1), colour (WP2.4), stability API (WP2.3), schedule M (WP2.8), tree-EW follow-up, NJet reference, observables (WP2.5), public v2 engine with plan v4 artifacts (WP2.6), counterterms in the recursion (WP2.2), runtime pole selection (WP2.10), Rust A0 (contract-class reuse pass), constant counterterm arguments (ct-assume-fix), addendum F-J, the previous report",
  "addendum_commits": [
   "b91d23a8",
   "2dd36f65",
@@ -67,26 +38,26 @@
   "f21495ed"
  ],
  "provider_generation": {
-  "source": "HANDOFF_22_10_2026.md §0.1; REQUIREMENTS_ADDENDUM F",
+  "source": "HANDOFF_22_10_2026.md \u00a70.1; REQUIREMENTS_ADDENDUM F",
   "rows": [
    {
     "label": "g g -> g g g g g",
-    "madloop": "> 17 h graph generation alone; colour factors ≈ 89 days (MG5 estimate)",
+    "madloop": "> 17 h graph generation alone; colour factors \u2248 89 days (MG5 estimate)",
     "recola": "> 57 h, unfinished",
     "openloops": "no public library",
     "rule": "stopped 22 Oct; not to be restarted"
    },
    {
     "label": "u overline(u) -> g g g g g",
-    "madloop": "12.2 h (5 793 + 38 040 + 122 s)",
-    "recola": "2.8 h (10 220 s)",
+    "madloop": "12.2 h (5\u202f793 + 38\u202f040 + 122 s)",
+    "recola": "2.8 h (10\u202f220 s)",
     "openloops": "no public library",
     "rule": "over 45 min; results exist and are used"
    },
    {
     "label": "g g -> g g g g",
-    "madloop": "2.4 h (285 + 8 354 + 21 s)",
-    "recola": "34 min (2 036 s)",
+    "madloop": "2.4 h (285 + 8\u202f354 + 21 s)",
+    "recola": "34 min (2\u202f036 s)",
     "openloops": "prebuilt ppjjjj",
     "rule": "MadLoop over 45 min; results exist and are used"
    },
@@ -131,38 +102,24 @@
     "label": "2 -> 2, 2 -> 3 controls",
     "madloop": "< 1 min",
     "recola": "< 2 s",
-    "openloops": "—",
+    "openloops": "\u2014",
     "rule": "within 45 min"
    }
   ]
  },
  "gate_references": {
-  "source": "docs/development/loop_v2/DESIGN.md §1.3 Table 1b (production mode, one pinned core, this host, measured 2026-10-20 for the design; G1 re-freezes them)",
+  "source": "docs/development/loop_v2/DESIGN.md \u00a71.3 Table 1b (production mode, one pinned core, this host, measured 2026-10-20 for the design); the 2->4 rows are re-measured by G1 (data/g1.json), the seven-leg rows wait for measure-g1-7leg",
   "rows": [
    {
-    "label": "g g -> g g g g",
-    "openloops": "2.92–2.96",
-    "recola": "not measured",
-    "madloop": "not measured",
-    "threshold": "3.8"
-   },
-   {
-    "label": "g g -> t overline(t) g g",
-    "openloops": "0.487–0.492",
-    "recola": "2.02–2.05",
-    "madloop": "5.22–5.29",
-    "threshold": "0.63"
-   },
-   {
     "label": "u overline(u) -> e^- e^+ g g g",
-    "openloops": "0.348–0.353",
-    "recola": "0.246–0.259",
+    "openloops": "0.348\u20130.353",
+    "recola": "0.246\u20130.259",
     "madloop": "1.41",
     "threshold": "0.32"
    },
    {
     "label": "u overline(u) -> e^- e^+ d overline(d) g",
-    "openloops": "0.053–0.055",
+    "openloops": "0.053\u20130.055",
     "recola": "0.035",
     "madloop": "0.143",
     "threshold": "0.045"
@@ -170,17 +127,17 @@
    {
     "label": "g g -> t overline(t) e^- e^+ g",
     "corr": "QCD",
-    "openloops": "0.425–0.433",
-    "recola": "0.59–0.67",
-    "madloop": "3.03–3.04",
+    "openloops": "0.425\u20130.433",
+    "recola": "0.59\u20130.67",
+    "madloop": "3.03\u20133.04",
     "threshold": "0.55"
    },
    {
     "label": "g g -> t overline(t) e^- e^+ g",
     "corr": "EW",
-    "openloops": "0.96–1.12",
-    "recola": "0.95–1.02",
-    "madloop": "6.90–7.09",
+    "openloops": "0.96\u20131.12",
+    "recola": "0.95\u20131.02",
+    "madloop": "6.90\u20137.09",
     "threshold": "1.24"
    },
    {
@@ -188,20 +145,20 @@
     "openloops": "no library",
     "recola": "not measured",
     "madloop": "not measured",
-    "threshold": "—"
+    "threshold": "\u2014"
    },
    {
     "label": "g g -> g g g g g",
     "openloops": "no library",
-    "recola": "none (§0.1)",
-    "madloop": "none (§0.1)",
+    "recola": "none (\u00a70.1)",
+    "madloop": "none (\u00a70.1)",
     "threshold": "no gate"
    }
   ]
  },
  "required": {
-  "source_generation": "DESIGN.md WP3.1 status, third increment, 'Generation per process' (branch work/v2-generation-scale at 201efa8b; tools/loop_v2_generate.py measure --export, one thread, shared host at load 50–80)",
-  "source_validation": "DESIGN.md WP3.1 status, first to fourth increment (same branch); workspace/reports/engine-v2/njet-benchmark.md §5.3",
+  "source_generation": "DESIGN.md WP3.1 status, third increment, 'Generation per process' (branch work/v2-generation-scale at 201efa8b; tools/loop_v2_generate.py measure --export, one thread, shared host at load 50\u201380)",
+  "source_validation": "DESIGN.md WP3.1 status, first to fourth increment (same branch); workspace/reports/engine-v2/njet-benchmark.md \u00a75.3",
   "rows": [
    {
     "label": "g g -> g g g g",
@@ -209,9 +166,9 @@
     "export_s": 5.8,
     "plan_mb": 15,
     "peak_gib": 0.55,
-    "validation": "Recola, OpenLoops, all coefficients: ≤ 8.9×10⁻¹² at point 0 and ≤ 4.4×10⁻¹¹ at point 2 (largest: finite part); point 1: 8.4×10⁻⁹ in binary64 (flagged, estimate 3.0×10⁻⁶), 7.1×10⁻¹¹ in DoubleFloat",
+    "validation": "Recola, OpenLoops, all coefficients: \u2264 8.9\u00d710\u207b\u00b9\u00b2 at point 0 and \u2264 4.4\u00d710\u207b\u00b9\u00b9 at point 2 (largest: finite part); point 1: 8.4\u00d710\u207b\u2079 in binary64 (flagged, estimate 3.0\u00d710\u207b\u2076), 7.1\u00d710\u207b\u00b9\u00b9 in DoubleFloat",
     "refs": "Recola, OL",
-    "source": "workspace/tmp/generation-scale/runs/cmp_gg_gggg.json (points 0–2), cmp_gg_gggg_p1_stab.json (estimate), cmp_gg_gggg_p1_dd.json (DoubleFloat)"
+    "source": "workspace/tmp/generation-scale/runs/cmp_gg_gggg.json (points 0\u20132), cmp_gg_gggg_p1_stab.json (estimate), cmp_gg_gggg_p1_dd.json (DoubleFloat)"
    },
    {
     "label": "g g -> t overline(t) g g",
@@ -219,7 +176,7 @@
     "export_s": 2.9,
     "plan_mb": 5.0,
     "peak_gib": 0.29,
-    "validation": "MadLoop, OpenLoops ≤ 2.1×10⁻¹¹; Recola ≤ 1.0×10⁻¹⁰",
+    "validation": "MadLoop, OpenLoops \u2264 2.1\u00d710\u207b\u00b9\u00b9; Recola \u2264 1.0\u00d710\u207b\u00b9\u2070",
     "refs": "ML, Recola, OL"
    },
    {
@@ -228,7 +185,7 @@
     "export_s": 3.7,
     "plan_mb": 2.3,
     "peak_gib": 0.22,
-    "validation": "all three providers ≤ 6.9×10⁻¹³",
+    "validation": "all three providers \u2264 6.9\u00d710\u207b\u00b9\u00b3",
     "refs": "ML, Recola, OL"
    },
    {
@@ -237,7 +194,7 @@
     "export_s": 3.4,
     "plan_mb": 1.1,
     "peak_gib": 0.2,
-    "validation": "all three providers ≤ 8.5×10⁻¹³",
+    "validation": "all three providers \u2264 8.5\u00d710\u207b\u00b9\u00b3",
     "refs": "ML, Recola, OL"
    },
    {
@@ -247,7 +204,7 @@
     "export_s": 3.6,
     "plan_mb": 2.0,
     "peak_gib": 0.2,
-    "validation": "≤ 3.6×10⁻¹² at two points; third point 5.7×10⁻⁹ in binary64 (estimate 1.7×10⁻⁹), MadLoop to 1.9×10⁻¹⁴ in DoubleFloat",
+    "validation": "\u2264 3.6\u00d710\u207b\u00b9\u00b2 at two points; third point 5.7\u00d710\u207b\u2079 in binary64 (estimate 1.7\u00d710\u207b\u2079), MadLoop to 1.9\u00d710\u207b\u00b9\u2074 in DoubleFloat",
     "refs": "ML, Recola, OL"
    },
    {
@@ -266,7 +223,7 @@
     "export_s": 69,
     "plan_mb": 70,
     "peak_gib": 2.4,
-    "validation": "MadLoop ≤ 2.6×10⁻¹², Recola ≤ 6.1×10⁻¹⁰ (finite ≤ 2.9×10⁻¹⁰), all coefficients, three points",
+    "validation": "MadLoop \u2264 2.6\u00d710\u207b\u00b9\u00b2, Recola \u2264 6.1\u00d710\u207b\u00b9\u2070 (finite \u2264 2.9\u00d710\u207b\u00b9\u2070), all coefficients, three points",
     "refs": "ML, Recola"
    },
    {
@@ -275,198 +232,14 @@
     "export_s": 109,
     "plan_mb": 185,
     "peak_gib": 5.8,
-    "validation": "Born and poles against NJet (§3); finite part waits for the native counterterms",
+    "validation": "Born and poles against NJet (\u00a73); finite part waits for the native counterterms",
     "refs": "NJet (no gate)"
    }
   ]
  },
- "native_stage": {
-  "source": "DESIGN.md §5.6, 'B against M with the reduction' (data workspace/reports/engine-v2/wp28-g1/; tools/loop_v2_schedules.py measure)",
-  "protocol": "binary64, poles off, no stability check, 16 lanes, 16 RAMBO points at √s = 1 TeV, best of 3 after warm-up, release build, shared host (load 40–150 of 384 cores, repeats ±5 %); dressing, factors, seeds, scatter and the NinjaRS reduction with cached oneloopmaster masters; trees, Born and counterterm scalars excluded (Python per point until WP3.1); random block rows, Born components and kernel constants (the work does not depend on them)",
-  "rows": [
-   {
-    "label": "u overline(u) -> d overline(d) g",
-    "colour": "FC",
-    "families": 42,
-    "b1": 0.89,
-    "m1": 0.89,
-    "mb1": 1.01,
-    "b8": 0.62,
-    "m8": 0.58,
-    "mb8": 0.93,
-    "red8": 0.4
-   },
-   {
-    "label": "u overline(u) -> g g g",
-    "colour": "FC",
-    "families": 90,
-    "b1": 3.43,
-    "m1": 3.52,
-    "mb1": 1.02,
-    "b8": 1.39,
-    "m8": 1.33,
-    "mb8": 0.96,
-    "red8": 0.48
-   },
-   {
-    "label": "g g -> g g g",
-    "colour": "FC",
-    "families": 154,
-    "b1": 13.93,
-    "m1": 13.63,
-    "mb1": 0.98,
-    "b8": 4.52,
-    "m8": 4.55,
-    "mb8": 1.01,
-    "red8": 0.55
-   },
-   {
-    "label": "u overline(u) -> e^- e^+ g g",
-    "note": "γ*",
-    "colour": "FC",
-    "families": 69,
-    "b1": 2.82,
-    "m1": 2.83,
-    "mb1": 1.0,
-    "b8": 1.43,
-    "m8": 1.25,
-    "mb8": 0.87,
-    "red8": 0.48
-   },
-   {
-    "label": "u overline(u) -> g g g g",
-    "colour": "FC",
-    "families": 628,
-    "b1": 62.33,
-    "m1": 63.12,
-    "mb1": 1.01,
-    "b8": 19.43,
-    "m8": 19.59,
-    "mb8": 1.01,
-    "red8": 0.6
-   },
-   {
-    "label": "g g -> g g g g",
-    "colour": "FC",
-    "families": 1100,
-    "b1": 275,
-    "m1": 248,
-    "mb1": 0.9,
-    "b8": 78.68,
-    "m8": 72.51,
-    "mb8": 0.92,
-    "red8": 0.59
-   },
-   {
-    "label": "g g -> g g g g",
-    "colour": "LC",
-    "families": 550,
-    "b1": 95.82,
-    "m1": 76.29,
-    "mb1": 0.8,
-    "b8": 30.04,
-    "m8": 27.03,
-    "mb8": 0.9,
-    "red8": 0.6
-   },
-   {
-    "label": "u overline(u) -> e^- e^+ d overline(d) g",
-    "note": "γ*",
-    "colour": "FC",
-    "families": 242,
-    "b1": 9.74,
-    "m1": 9.85,
-    "mb1": 1.01,
-    "b8": 5.08,
-    "m8": 4.97,
-    "mb8": 0.98,
-    "red8": 0.63
-   },
-   {
-    "label": "u overline(u) -> e^- e^+ g g g",
-    "note": "γ*",
-    "colour": "FC",
-    "families": 463,
-    "b1": 41.47,
-    "m1": 42.06,
-    "mb1": 1.01,
-    "b8": 15.64,
-    "m8": 15.68,
-    "mb8": 1.0,
-    "red8": 0.66
-   }
-  ],
-  "ratios": "mb1, mb8: the M/B ratios as printed in the source table (computed there from unrounded times)"
- },
- "native_split": {
-  "source": "DESIGN.md §5.5, development timings (WP2.1 native executor, 2026-10-22): binary64, one thread, 16 lanes, 16 points, release build without LTO, shared host, ms per point, best of 3, inputs prepared beforehand",
-  "rows": [
-   {
-    "label": "u overline(u) -> d overline(d) g",
-    "families": 42,
-    "finite": 1.29,
-    "retest": 1.48,
-    "dressing": 0.45,
-    "factors": 0.21,
-    "reduction": 0.22,
-    "seeds": 0.02,
-    "scatter": 0.28,
-    "python_inputs": 129
-   },
-   {
-    "label": "u overline(u) -> u overline(u) g",
-    "families": 68,
-    "finite": 1.96,
-    "retest": 2.33,
-    "dressing": 0.86,
-    "factors": 0.26,
-    "reduction": 0.36,
-    "seeds": 0.03,
-    "scatter": 0.3,
-    "python_inputs": 225
-   },
-   {
-    "label": "u overline(u) -> g g g",
-    "families": 90,
-    "finite": 3.85,
-    "retest": 4.46,
-    "dressing": 2.36,
-    "factors": 0.32,
-    "reduction": 0.6,
-    "seeds": 0.1,
-    "scatter": 0.26,
-    "python_inputs": 1356
-   },
-   {
-    "label": "g g -> g g g",
-    "families": 154,
-    "finite": 15.3,
-    "retest": 17.9,
-    "dressing": 10.7,
-    "factors": 0.72,
-    "reduction": 2.32,
-    "seeds": 0.77,
-    "scatter": 0.34,
-    "python_inputs": 22485
-   },
-   {
-    "label": "u overline(u) -> e^- e^+ g g",
-    "note": "γ*",
-    "families": 69,
-    "finite": 3.35,
-    "retest": 3.92,
-    "dressing": 1.86,
-    "factors": 0.36,
-    "reduction": 0.59,
-    "seeds": 0.01,
-    "scatter": 0.38,
-    "python_inputs": 215
-   }
-  ]
- },
  "njet": {
-  "source": "workspace/reports/engine-v2/njet-benchmark.md §6 (raw: workspace/reference/runs/njet/timing/*.json); paper arXiv:1209.0100 Table 5 (Xeon E3-1240, 3.3 GHz, NJet 1.0)",
-  "protocol": "double precision, one pinned idle core of the shared EPYC 9754, 10 frozen points per channel, mean s/pt (spread ≤ 2 %), NJet's own -O2 -march=native build (gcc 15.2); every time includes the two evaluations of NJet's scaling test",
+  "source": "workspace/reports/engine-v2/njet-benchmark.md \u00a76 (raw: workspace/reference/runs/njet/timing/*.json); paper arXiv:1209.0100 Table 5 (Xeon E3-1240, 3.3 GHz, NJet 1.0)",
+  "protocol": "double precision, one pinned idle core of the shared EPYC 9754, 10 frozen points per channel, mean s/pt (spread \u2264 2 %), NJet's own -O2 -march=native build (gcc 15.2); every time includes the two evaluations of NJet's scaling test",
   "rows": [
    {
     "label": "g g -> g g",
@@ -515,7 +288,7 @@
   "rss_mb": 69
  },
  "njet_validation": {
-  "source": "workspace/reports/engine-v2/njet-benchmark.md §4, §5; fixture tests/fixtures/loop/required/gg_ggggg_njet.json",
+  "source": "workspace/reports/engine-v2/njet-benchmark.md \u00a74, \u00a75; fixture tests/fixtures/loop/required/gg_ggggg_njet.json",
   "point0": {
    "born": 3.6232581037919253e-06,
    "finite": -1.3008955026035413e-05,
@@ -556,15 +329,15 @@
    "lower": [
     {
      "label": "g g -> g g",
-     "value": "≤ 2.1×10⁻¹⁴ at 10 points, full virtual"
+     "value": "\u2264 2.1\u00d710\u207b\u00b9\u2074 at 10 points, full virtual"
     },
     {
      "label": "g g -> g g g",
-     "value": "≤ 2.3×10⁻¹³ at the stable points; the flagged point 3×10⁻¹⁴ in DoubleFloat"
+     "value": "\u2264 2.3\u00d710\u207b\u00b9\u00b3 at the stable points; the flagged point 3\u00d710\u207b\u00b9\u2074 in DoubleFloat"
     },
     {
      "label": "g g -> g g g g",
-     "value": "1.0×10⁻¹¹ at point 0; point 1 1.6×10⁻⁷ in binary64 (estimate 2.7×10⁻⁶), 4.7×10⁻¹⁵ in DoubleFloat"
+     "value": "1.0\u00d710\u207b\u00b9\u00b9 at point 0; point 1 1.6\u00d710\u207b\u2077 in binary64 (estimate 2.7\u00d710\u207b\u2076), 4.7\u00d710\u207b\u00b9\u2075 in DoubleFloat"
     }
    ]
   },
