@@ -10,6 +10,9 @@
    "revision": "1c971289",
    "lc_revision": "d591a2f7",
    "native_build": "loop-native-measure-g1-033edf15",
+   "inputs": [
+    "python"
+   ],
    "source": "g1.json slice_revision, slice_lc_revision, slice_build"
   },
   "dev": {
@@ -17,6 +20,9 @@
    "revision": "889af02c",
    "commit": "39824f9b",
    "native_build": "loop-native-measure-g1-genscale-39824f9b",
+   "inputs": [
+    "native"
+   ],
    "source": "g1.json native_revision, native_commit, native_build"
   },
   "dev_required": {
@@ -85,6 +91,7 @@
        "model_s": 3.6459857939044014,
        "peak_gib": 0.34,
        "plan_mb": 0.321,
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[gg_gg].pyamplicol['python/full'].generation",
        "ratio_to_fastest": 73.05189766699343
@@ -97,6 +104,7 @@
        "model_s": 3.7126598639879376,
        "peak_gib": 0.294,
        "plan_mb": 0.305,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[gg_gg].pyamplicol['native/full'].generation",
        "ratio_to_fastest": 69.03477935356116
@@ -134,6 +142,7 @@
         "masters": 3.811698437500001e-05,
         "glue": 0.002962511899299941
        },
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[gg_gg].pyamplicol['python/full'].batches['128']",
        "ratio_to_fastest": 65.53498018946576
@@ -151,6 +160,7 @@
         "masters": 3.778338281250001e-05,
         "glue": 0.0002062534144433169
        },
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[gg_gg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 1.0960373445348532
@@ -260,6 +270,7 @@
        "model_s": 3.650528716039844,
        "peak_gib": 0.336,
        "plan_mb": 0.3,
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[uux_ddxg].pyamplicol['python/full'].generation",
        "ratio_to_fastest": 24.480315546143537
@@ -272,6 +283,7 @@
        "model_s": 3.6741618900559843,
        "peak_gib": 0.324,
        "plan_mb": 0.282,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/full'].generation",
        "ratio_to_fastest": 26.043493729513607
@@ -309,6 +321,7 @@
         "masters": 0.00011132328906250003,
         "glue": 0.002657302206840559
        },
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[uux_ddxg].pyamplicol['python/full'].batches['128']",
        "ratio_to_fastest": 21.402089938691258,
@@ -336,6 +349,7 @@
         "masters": 0.000112371625,
         "glue": 0.0007849346802552898
        },
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 1.7512755517183334,
@@ -384,6 +398,7 @@
        "batch": 128,
        "seconds_per_point": 0.03736066093824775,
        "families": 27,
+       "inputs": "python",
        "revision": "d591a2f7",
        "source": "g1.json processes[uux_ddxg].pyamplicol['python/lc'].batches['128']",
        "fc_seconds_per_point": 0.032431517875011195,
@@ -394,6 +409,7 @@
        "batch": 128,
        "seconds_per_point": 0.001907137726448127,
        "families": 27,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/lc'].batches['128']",
        "fc_seconds_per_point": 0.00265378402400529,
@@ -464,6 +480,7 @@
        "model_s": 3.6437251470051706,
        "peak_gib": 0.341,
        "plan_mb": 0.424,
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[uux_uuxg].pyamplicol['python/full'].generation",
        "ratio_to_fastest": 22.614503471515977
@@ -476,6 +493,7 @@
        "model_s": 3.6359067719895393,
        "peak_gib": 0.33,
        "plan_mb": 0.388,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].generation",
        "ratio_to_fastest": 23.57956508285684
@@ -513,6 +531,7 @@
         "masters": 0.00017072088281250001,
         "glue": 0.00399378858961652
        },
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[uux_uuxg].pyamplicol['python/full'].batches['128']",
        "ratio_to_fastest": 18.637778986114814,
@@ -540,6 +559,7 @@
         "masters": 0.00016136097656250001,
         "glue": 0.0009695799865456923
        },
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 1.300009285878232,
@@ -591,6 +611,7 @@
        "batch": 128,
        "seconds_per_point": 0.003163008769206499,
        "families": 42,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/lc'].batches['128']",
        "fc_seconds_per_point": 0.0038008657493264764,
@@ -612,7 +633,7 @@
      },
      "validation": {
       "status": "compared",
-      "configuration": "native inputs (dev)",
+      "configuration": "development",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
       "points": 16,
       "references": [
@@ -660,6 +681,7 @@
        "model_s": 3.6314660910284147,
        "peak_gib": 0.353,
        "plan_mb": 0.31,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_emepg].pyamplicol['native/full'].generation",
        "ratio_to_fastest": 37.12628744697728
@@ -702,6 +724,7 @@
         "masters": 1.7916570312500004e-05,
         "glue": 0.00018211985988861833
        },
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_emepg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 0.8151410252938941,
@@ -813,6 +836,7 @@
        "model_s": 3.630412212922238,
        "peak_gib": 0.36,
        "plan_mb": 0.777,
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[uux_ggg].pyamplicol['python/full'].generation",
        "ratio_to_fastest": 19.34159898621089
@@ -825,6 +849,7 @@
        "model_s": 3.7239038619445637,
        "peak_gib": 0.33,
        "plan_mb": 0.656,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_ggg].pyamplicol['native/full'].generation",
        "ratio_to_fastest": 19.176209526620127
@@ -862,6 +887,7 @@
         "masters": 0.00022458579687500003,
         "glue": 0.00574810612203272
        },
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[uux_ggg].pyamplicol['python/full'].batches['128']",
        "ratio_to_fastest": 14.441658186593225,
@@ -889,6 +915,7 @@
         "masters": 0.0002278697421875,
         "glue": 0.0005346686867878717
        },
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_ggg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 0.9030835374750269,
@@ -937,6 +964,7 @@
        "batch": 128,
        "seconds_per_point": 0.17148119853845856,
        "families": 62,
+       "inputs": "python",
        "revision": "d591a2f7",
        "source": "g1.json processes[uux_ggg].pyamplicol['python/lc'].batches['128']",
        "fc_seconds_per_point": 0.1788824295235827,
@@ -947,6 +975,7 @@
        "batch": 128,
        "seconds_per_point": 0.012592590839631157,
        "families": 62,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_ggg].pyamplicol['native/lc'].batches['128']",
        "fc_seconds_per_point": 0.011186096164237824,
@@ -1017,6 +1046,7 @@
        "model_s": 3.6579982549883425,
        "peak_gib": 0.566,
        "plan_mb": 2.704,
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[gg_ggg].pyamplicol['python/full'].generation",
        "ratio_to_fastest": 4.204643613607547
@@ -1029,6 +1059,7 @@
        "model_s": 3.656365652102977,
        "peak_gib": 0.422,
        "plan_mb": 1.852,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[gg_ggg].pyamplicol['native/full'].generation",
        "ratio_to_fastest": 2.235479398549292
@@ -1066,6 +1097,7 @@
         "masters": 0.000483242375,
         "glue": 0.010522681333455797
        },
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[gg_ggg].pyamplicol['python/full'].batches['128']",
        "ratio_to_fastest": 26.352171717185925,
@@ -1093,6 +1125,7 @@
         "masters": 0.00048716278125000004,
         "glue": 0.002764726109331636
        },
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[gg_ggg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 0.4719773889458561,
@@ -1141,6 +1174,7 @@
        "batch": 32,
        "seconds_per_point": 2.3044636375343543,
        "families": 77,
+       "inputs": "python",
        "revision": "d591a2f7",
        "source": "g1.json processes[gg_ggg].pyamplicol['python/lc'].batches['32']",
        "fc_seconds_per_point": 2.5545763197478664,
@@ -1151,6 +1185,7 @@
        "batch": 128,
        "seconds_per_point": 0.050716627913971024,
        "families": 77,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[gg_ggg].pyamplicol['native/lc'].batches['128']",
        "fc_seconds_per_point": 0.04576716528117686,
@@ -1177,7 +1212,7 @@
      },
      "validation": {
       "status": "compared",
-      "configuration": "native inputs (dev)",
+      "configuration": "development",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
       "points": 16,
       "references": [
@@ -1225,6 +1260,7 @@
        "model_s": 3.6070549049181864,
        "peak_gib": 0.367,
        "plan_mb": 0.624,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_emepgg].pyamplicol['native/full'].generation",
        "ratio_to_fastest": 33.808828462744
@@ -1267,6 +1303,7 @@
         "masters": 0.00023288959375000003,
         "glue": 0.00045851191170323113
        },
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_emepgg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 0.5512330638893487,
@@ -1371,6 +1408,7 @@
        "model_s": 3.665076643927023,
        "peak_gib": 0.858,
        "plan_mb": 7.487,
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['python/full'].generation",
        "ratio_to_fastest": 1.018191573331895
@@ -1383,6 +1421,7 @@
        "model_s": 3.6768955120351166,
        "peak_gib": 0.655,
        "plan_mb": 3.712,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].generation",
        "ratio_to_fastest": 0.5955014272347908
@@ -1409,6 +1448,7 @@
       "gate_rule": "G1",
       "main": {
        "status": "not batched",
+       "inputs": "python",
        "timed_batches": [
         1
        ],
@@ -1428,6 +1468,7 @@
         "masters": 0.006308752710937502,
         "glue": 0.015045062034547113
        },
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 0.40341226940491504,
@@ -1479,6 +1520,7 @@
        "batch": 128,
        "seconds_per_point": 0.23102672280447223,
        "families": 375,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['native/lc'].batches['128']",
        "fc_seconds_per_point": 0.19032687706203433,
@@ -1534,6 +1576,7 @@
        "model_s": 3.6629119369899854,
        "peak_gib": 0.729,
        "plan_mb": 8.479,
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[uux_gggg].pyamplicol['python/full'].generation",
        "ratio_to_fastest": 1.7114119342786802
@@ -1546,6 +1589,7 @@
        "model_s": 3.758519941009581,
        "peak_gib": 0.72,
        "plan_mb": 4.537,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].generation",
        "ratio_to_fastest": 1.20205331412947
@@ -1570,6 +1614,7 @@
       "gate_rule": "G1",
       "main": {
        "status": "not batched",
+       "inputs": "python",
        "timed_batches": [
         1
        ],
@@ -1589,6 +1634,7 @@
         "masters": 0.002903733398437501,
         "glue": 0.00849219789008121
        },
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 0.5079930808642847,
@@ -1638,6 +1684,7 @@
        "batch": 128,
        "seconds_per_point": 0.2470511812693985,
        "families": 375,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[uux_gggg].pyamplicol['native/lc'].batches['128']",
        "fc_seconds_per_point": 0.18989709440666047,
@@ -1708,6 +1755,7 @@
        "model_s": 3.661499883979559,
        "peak_gib": 4.099,
        "plan_mb": 45.441,
+       "inputs": "python",
        "revision": "1c971289",
        "source": "g1.json processes[gg_gggg].pyamplicol['python/full'].generation",
        "ratio_to_fastest": 0.1576571093961053
@@ -1720,6 +1768,7 @@
        "model_s": 3.6744477439206094,
        "peak_gib": 1.966,
        "plan_mb": 16.103,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].generation",
        "ratio_to_fastest": 0.04522096651265606
@@ -1746,6 +1795,7 @@
       "gate_rule": "G1",
       "main": {
        "status": "not batched",
+       "inputs": "python",
        "timed_batches": [
         1
        ],
@@ -1765,6 +1815,7 @@
         "masters": 0.005854513101562499,
         "glue": 0.005347808319544178
        },
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 0.3468246440056793,
@@ -1816,6 +1867,7 @@
        "batch": 128,
        "seconds_per_point": 1.087672771949201,
        "families": 550,
+       "inputs": "native",
        "revision": "39824f9b",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/lc'].batches['128']",
        "fc_seconds_per_point": 0.9852571110932331,
@@ -1868,8 +1920,7 @@
       "max_finite": 8.652182311174691e-13,
       "tolerance": 2e-08,
       "passed": true,
-      "source": "measured.json required_native.processes[uux_emepddxg]",
-      "median_finite": 6.014448438428271e-13
+      "source": "measured.json required_native.processes[uux_emepddxg]"
      },
      "loop_note": "V+jets refused on loop (WP3.2, WP3.5)",
      "generation": {
@@ -1884,6 +1935,7 @@
        "peak_gib": 0.437,
        "process_peak_gib": 0.499,
        "plan_mb": 1.13,
+       "inputs": "native",
        "branch": "work/v2-generation-scale",
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "source": "measured.json required_native.processes[uux_emepddxg]",
@@ -1974,8 +2026,7 @@
       "max_finite": 8.531650900460978e-13,
       "tolerance": 2e-08,
       "passed": true,
-      "source": "measured.json required_native.processes[uux_emepggg]",
-      "median_finite": 3.206543481017846e-13
+      "source": "measured.json required_native.processes[uux_emepggg]"
      },
      "loop_note": "V+jets refused on loop (WP3.2, WP3.5)",
      "generation": {
@@ -1990,6 +2041,7 @@
        "peak_gib": 0.48,
        "process_peak_gib": 0.627,
        "plan_mb": 2.45,
+       "inputs": "native",
        "branch": "work/v2-generation-scale",
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "source": "measured.json required_native.processes[uux_emepggg]",
@@ -2080,8 +2132,7 @@
       "max_finite": 5.67129728297627e-09,
       "tolerance": 2e-08,
       "passed": true,
-      "source": "measured.json required_native.processes[gg_ttxemepg_qcd]",
-      "median_finite": 3.700804203231065e-12
+      "source": "measured.json required_native.processes[gg_ttxemepg_qcd]"
      },
      "loop_note": null,
      "generation": {
@@ -2096,6 +2147,7 @@
        "peak_gib": 0.587,
        "process_peak_gib": 0.886,
        "plan_mb": 2.13,
+       "inputs": "native",
        "branch": "work/v2-generation-scale",
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "source": "measured.json required_native.processes[gg_ttxemepg_qcd]",
@@ -2339,7 +2391,6 @@
       "tolerance": 2e-08,
       "passed": true,
       "source": "measured.json required_native.processes[gg_ggggg]",
-      "median_finite": 3.1022519589013017e-09,
       "within_estimate": true,
       "note": "top-free (particle_veto = [t]), Nf = 5"
      },
@@ -2356,6 +2407,7 @@
        "peak_gib": 31.9,
        "process_peak_gib": 42.155,
        "plan_mb": 159.87,
+       "inputs": "native",
        "branch": "work/v2-generation-scale",
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "source": "measured.json required_native.processes[gg_ggggg]"

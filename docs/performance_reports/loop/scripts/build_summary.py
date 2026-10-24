@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import json
 import re
-import statistics
 import sys
 from pathlib import Path
 
@@ -203,6 +202,7 @@ def _generation_of(cfg: dict | None, source: str) -> dict:
         "model_s": gen["model"]["seconds"],
         "peak_gib": max(gen["generate"]["peak_gib"], gen["export"]["peak_gib"]),
         "plan_mb": gen["export"]["plan_mb"],
+        "inputs": cfg["inputs"],
         "revision": cfg["revision"][:8],
         "source": source,
     }
@@ -223,6 +223,7 @@ def _timing_of(proc: dict, cfg: dict | None, source: str, fastest: dict | None) 
         sizes = sorted(int(b) for b in cfg["batches"])
         return {
             "status": "not batched",
+            "inputs": cfg["inputs"],
             "timed_batches": sizes,
             "revision": cfg["revision"][:8],
             "source": source,
@@ -235,6 +236,7 @@ def _timing_of(proc: dict, cfg: dict | None, source: str, fastest: dict | None) 
         "seconds_per_point": t,
         "uncertainty": rec["uncertainty"],
         "stages": _split(rec["stages_per_point"]),
+        "inputs": cfg["inputs"],
         "revision": cfg["revision"][:8],
         "source": f"{source}.batches['{batch}']",
     }
@@ -264,6 +266,7 @@ def _lc_of(lc: dict | None, fc: dict | None, source: str) -> dict:
         "batch": int(batch),
         "seconds_per_point": t,
         "families": (lc.get("structure") or {}).get("families"),
+        "inputs": lc["inputs"],
         "revision": lc["revision"][:8],
         "source": f"{source}.batches['{batch}']",
     }
@@ -274,7 +277,9 @@ def _lc_of(lc: dict | None, fc: dict | None, source: str) -> dict:
     return out
 
 
-def _validation_g1(proc: dict, cfg: dict, configuration: str, source: str) -> dict:
+def _validation_g1(
+    proc: dict, cfg: dict, configuration: str, source: str, checked: str | None
+) -> dict:
     vs = cfg.get("values_vs_providers") or {}
     refs = [
         {
@@ -307,7 +312,7 @@ def _validation_g1(proc: dict, cfg: dict, configuration: str, source: str) -> di
     rows = {
         (r["index"], r["arithmetic"]): r
         for r in proc.get("stability", [])
-        if r["configuration"] == "native/full"
+        if r["configuration"] == checked
     }
     b64 = rows.get((worst["worst_point"], "double"))
     dd = rows.get((worst["worst_point"], "double-double"))
@@ -319,24 +324,66 @@ def _validation_g1(proc: dict, cfg: dict, configuration: str, source: str) -> di
             "dd_closest": None
             if dd is None
             else min(dd["deviation_vs_providers"].values()),
-            "source": f"g1.json processes[{proc['key']}].stability (native/full)",
+            "source": f"g1.json processes[{proc['key']}].stability ({checked})",
         }
     return out
 
 
+def _roles(g1: dict) -> tuple[set[str], set[str], set[str]]:
+    """The campaign's two sides, from its own metadata: the integrated
+    configuration (slice revisions, and any revision recorded on the same
+    branch, e.g. a refusal recorded earlier) and the development one (the
+    native-input build). A configuration on neither side is not shown."""
+    integrated = {g1["slice_revision"], g1["slice_lc_revision"]}
+    dev = {g1["native_revision"], g1["native_commit"]}
+    branches = {
+        cfg["branch"]
+        for proc in g1["processes"]
+        for cfg in proc["pyamplicol"].values()
+        if cfg["revision"][:8] in integrated
+    }
+    return integrated, dev, branches
+
+
+def _pick(cfgs: dict, side, accuracy: str) -> tuple[str, dict] | tuple[None, None]:
+    """The default-protocol configuration (schedule B, 16 lanes) of one side
+    and colour accuracy."""
+    for name, cfg in cfgs.items():
+        if (
+            side(cfg)
+            and cfg["accuracy"] == accuracy
+            and cfg["schedule"] == "B"
+            and cfg["lanes"] == 16
+        ):
+            return name, cfg
+    return None, None
+
+
 def _g1_rows(g1: dict, specs: dict) -> list[dict]:
+    integrated, dev_revs, branches = _roles(g1)
+
+    def is_main(cfg: dict) -> bool:
+        rev = cfg["revision"][:8]
+        return rev not in dev_revs and (rev in integrated or cfg["branch"] in branches)
+
+    def is_dev(cfg: dict) -> bool:
+        return cfg["revision"][:8] in dev_revs
+
     rows = []
     for proc in g1["processes"]:
         key = proc["key"]
         base = f"g1.json processes[{key}].pyamplicol"
         cfgs = proc["pyamplicol"]
-        main, dev = cfgs.get("python/full"), cfgs.get("native/full")
+        main_name, main = _pick(cfgs, is_main, "full")
+        dev_name, dev = _pick(cfgs, is_dev, "full")
+        lc_main_name, lc_main_cfg = _pick(cfgs, is_main, "lc")
+        lc_dev_name, lc_dev_cfg = _pick(cfgs, is_dev, "lc")
         runtime = _provider_runtime(proc)
         fastest = runtime["fastest"]
         gens = _provider_generation_g1(proc)
         gen_fastest = _fastest_generation(gens)
-        gen_main = _generation_of(main, f"{base}['python/full'].generation")
-        gen_dev = _generation_of(dev, f"{base}['native/full'].generation")
+        gen_main = _generation_of(main, f"{base}['{main_name}'].generation")
+        gen_dev = _generation_of(dev, f"{base}['{dev_name}'].generation")
         for g in (gen_main, gen_dev):
             if g["status"] == "measured" and gen_fastest is not None:
                 g["ratio_to_fastest"] = g["seconds"] / gen_fastest["seconds"]
@@ -346,14 +393,12 @@ def _g1_rows(g1: dict, specs: dict) -> list[dict]:
             and main.get("values_vs_providers")
         ):
             validation = _validation_g1(
-                proc, main, "integrated", f"{base}['python/full']"
+                proc, main, "integrated", f"{base}['{main_name}']", dev_name
             )
         else:
             validation = _validation_g1(
-                proc, dev, "native inputs (dev)", f"{base}['native/full']"
+                proc, dev, "development", f"{base}['{dev_name}']", dev_name
             )
-        lc_main_cfg = cfgs.get("python/lc")
-        lc_dev_cfg = cfgs.get("native/lc")
         structure = (main or {}).get("structure") or (dev or {}).get("structure") or {}
         lc_structure = (lc_main_cfg or lc_dev_cfg or {}).get("structure") or {}
         rows.append(
@@ -380,15 +425,15 @@ def _g1_rows(g1: dict, specs: dict) -> list[dict]:
                 },
                 "full_colour": {
                     "gate_rule": "G1" if proc["gated"] else "no gate (2->2)",
-                    "main": _timing_of(proc, main, f"{base}['python/full']", fastest),
-                    "dev": _timing_of(proc, dev, f"{base}['native/full']", fastest),
+                    "main": _timing_of(proc, main, f"{base}['{main_name}']", fastest),
+                    "dev": _timing_of(proc, dev, f"{base}['{dev_name}']", fastest),
                     "providers": runtime["providers"],
                     "fastest": fastest,
                     "source": f"g1.json processes[{key}].providers (median s/pt)",
                 },
                 "leading_colour": {
-                    "main": _lc_of(lc_main_cfg, main, f"{base}['python/lc']"),
-                    "dev": _lc_of(lc_dev_cfg, dev, f"{base}['native/lc']"),
+                    "main": _lc_of(lc_main_cfg, main, f"{base}['{lc_main_name}']"),
+                    "dev": _lc_of(lc_dev_cfg, dev, f"{base}['{lc_dev_name}']"),
                 },
             }
         )
@@ -421,7 +466,6 @@ def _validation_native(rec: dict, source: str) -> dict:
         "source": source,
     }
     per_point = rec["max_error_per_point"]
-    out["median_finite"] = statistics.median(per_point)
     estimates = rec["stability_estimate_per_point"]
     if all(e is not None for e in estimates):
         out["within_estimate"] = all(
@@ -454,6 +498,7 @@ def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
                 "peak_gib": max(rec["generate_peak_gib"], rec["export_peak_gib"]),
                 "process_peak_gib": rec["max_rss_gib"],
                 "plan_mb": rec["plan_json_mb"],
+                "inputs": rec["inputs"],
                 "branch": meas["required_native"]["branch"],
                 "record": meas["required_native"]["record"],
                 "source": src,
@@ -616,6 +661,11 @@ def build() -> dict:
     # Increasing multiplicity, then increasing colour complexity (number of
     # gluons) within a multiplicity; stable otherwise.
     rows.sort(key=lambda r: (r["outgoing"], r["label"].split().count("g")))
+
+    def inputs(side: str) -> list[str]:
+        cells = [r[c][side] for r in rows for c in ("generation", "full_colour")]
+        return sorted({c["inputs"] for c in cells if "inputs" in c})
+
     groups = []
     for r in rows:
         name = f"2->{r['outgoing']}"
@@ -637,6 +687,7 @@ def build() -> dict:
                 "revision": g1["slice_revision"],
                 "lc_revision": g1["slice_lc_revision"],
                 "native_build": g1["slice_build"],
+                "inputs": inputs("main"),
                 "source": "g1.json slice_revision, slice_lc_revision, slice_build",
             },
             "dev": {
@@ -644,6 +695,7 @@ def build() -> dict:
                 "revision": g1["native_revision"],
                 "commit": g1["native_commit"],
                 "native_build": g1["native_build"],
+                "inputs": inputs("dev"),
                 "source": "g1.json native_revision, native_commit, native_build",
             },
             "dev_required": {

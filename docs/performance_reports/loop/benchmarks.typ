@@ -1,17 +1,14 @@
-// pyAmpliCol one-loop report, gate G1 of 2026-10-24. Table values are read
-// from data/*.json (g1.json: the G1 campaign, tools/loop_benchmark;
-// milestone.json: registry with sources; measured.json:
-// written by scripts/collect_milestone.py from the run records;
-// measurements.json, provider-cold.json, legacy-labels.json: the legacy
-// snapshot of 2026-10-18). Numbers quoted in prose name their source in the
-// last section. Build from this directory:
+// pyAmpliCol one-loop report, summary first. Table 1 and Figure 1 render
+// data/summary.json (scripts/build_summary.py, from the files below); the
+// other tables read data/*.json directly (g1.json: the G1 campaign,
+// tools/loop_benchmark; milestone.json: registry with sources; measured.json:
+// written by scripts/collect_milestone.py from the run records). Numbers
+// quoted in prose name their source in the last section. Build from this
+// directory:
 //   typst compile benchmarks.typ benchmarks.pdf
 #let ms = json("data/milestone.json")
 #let meas = json("data/measured.json")
 #let sg = meas.seven_gluon
-#let hm = json("data/measurements.json")
-#let hcold = json("data/provider-cold.json")
-#let hlab = json("data/legacy-labels.json")
 
 // ------------------------------------------------------------------ style --
 #let navy = rgb("#1f3b63")
@@ -96,15 +93,6 @@
 // Diverging ColorBrewer RdBu (colour-blind safe): blue faster, red slower.
 #let palette = gradient.linear(rgb("#4393c3"), rgb("#d1e5f0"), white, rgb("#fddbc7"), rgb("#d6604d"))
 #let ratio-fill(r) = if r == none { none } else { palette.sample(calc.clamp(0.5 + calc.log(r, base: 2) / 8, 0, 1) * 100%) }
-#let legend() = align(center, {
-  set text(7.2pt, font: sans)
-  box(width: 10cm, {
-    box(width: 10cm, height: 0.28cm, fill: palette, radius: 2pt)
-    v(-0.45em)
-    [×1/16 #h(1fr) ×1/4 #h(1fr) ×1 #h(1fr) ×4 #h(1fr) ×16]
-    v(-0.55em)
-    text(fill: ink2)[faster #h(1fr) time ÷ fastest reference, log scale, clamped #h(1fr) slower]
-  })
 })
 
 // Stage colours of the per-point split (Table 1 bars, the stage-split table):
@@ -275,6 +263,8 @@
 })
 #let pkey(k) = (madloop: "ML", recola: "Rc", openloops: "OL").at(k)
 #let ratio-of(c) = c.at("ratio_to_fastest", default: none)
+// "native" / "Python": the per-point inputs of a configuration.
+#let inputs-word(c) = { let i = c.at("inputs", default: none); if i == none { "inputs not recorded" } else { (native: "native", python: "Python").at(i, default: i) } }
 
 // Process column: label, legs, corrections, families, validation.
 #let t1-process(r) = table.cell(breakable: false, {
@@ -316,7 +306,7 @@
   let dev-line(full) = if d.status != "measured" { none } else {
     // An older record (no newer one exists) shows its revision and a note.
     let rev = if "note" in d { d.revision } else { none }
-    [#dev-tag #if rev != none [#rev] else [native] #dur(d.seconds)#if ratio-of(d) != none [ #mult2(ratio-of(d))]#if full [ · #fixed(d.peak_gib, 2) GiB · #sig(d.plan_mb) MB]]
+    [#dev-tag #if rev != none [#rev] else [#inputs-word(d)] #dur(d.seconds)#if ratio-of(d) != none [ #mult2(ratio-of(d))]#if full [ · #fixed(d.peak_gib, 2) GiB · #sig(d.plan_mb) MB]]
   }
   if m.status == "measured" {
     valued(fill: ratio-fill(ratio-of(m)), dur(m.seconds), mult: if ratio-of(m) != none { mult2(ratio-of(m)) },
@@ -338,7 +328,7 @@
     let nr = c.providers.pairs().filter(((k, x)) => x.status == "not run").map(((k, x)) => [#pkey(k) not exported])
     ((text(weight: "bold")[#pkey(f.key) #dur(f.seconds_per_point)],) + rest + gone + nr).join([ · ])
   }
-  let dev-line = if d.status != "measured" { none } else [#dev-tag native #dur(d.seconds_per_point) #mult2(ratio-of(d))#if "gate" in d [ #h(2pt) #gate-chip(d.gate)]]
+  let dev-line = if d.status != "measured" { none } else [#dev-tag #inputs-word(d) #dur(d.seconds_per_point) #mult2(ratio-of(d))#if "gate" in d [ #h(2pt) #gate-chip(d.gate)]]
   if m.status == "measured" {
     valued(fill: ratio-fill(ratio-of(m)), dur(m.seconds_per_point), mult: mult2(ratio-of(m)),
       [#prov-line #h(1fr) $B = #m.batch$],
@@ -347,7 +337,7 @@
   } else if m.status == "refused" {
     absent([refused on `loop`: #m.at("reason", default: m.error)], prov-line, dev-line, if d.status == "measured" [#dev-tag #stage-bar(d.stages)])
   } else if m.status == "not batched" {
-    absent([no batched run on `loop`], [G1 timed $B = #m.timed_batches.map(str).join(", ")$ only (Python inputs) · #prov-line], dev-line, if d.status == "measured" [#dev-tag #stage-bar(d.stages)])
+    absent([no batched run on `loop`], [G1 timed $B = #m.timed_batches.map(str).join(", ")$ only (#inputs-word(m) inputs) · #prov-line], dev-line, if d.status == "measured" [#dev-tag #stage-bar(d.stages)])
   } else {
     let rt = c.at("reference_text", default: none)
     let alt = c.at("alternative", default: none)
@@ -362,7 +352,7 @@
 #let t1-lc(r) = {
   let c = r.leading_colour
   let (m, d) = (c.main, c.dev)
-  let dev-line = if d.status != "measured" { none } else [#dev-tag native #dur(d.seconds_per_point)#if "lc_over_fc" in d [ · LC/FC #fixed(d.lc_over_fc, 2)]#if d.batch != 128 [ · $B = #d.batch$]]
+  let dev-line = if d.status != "measured" { none } else [#dev-tag #inputs-word(d) #dur(d.seconds_per_point)#if "lc_over_fc" in d [ · LC/FC #fixed(d.lc_over_fc, 2)]#if d.batch != 128 [ · $B = #d.batch$]]
   if m.status == "measured" {
     valued(fill: none, dur(m.seconds_per_point), mult: [#text(6.8pt)[LC/FC] #fixed(m.lc_over_fc, 2)],
       [$B = #m.batch$#if "fc_seconds_per_point" in m [ · FC #dur(m.fc_seconds_per_point)]], dev-line)
@@ -454,8 +444,8 @@
 #[#show raw: set text(6.8pt)
 #text(7.4pt, fill: ink2)[*Configurations.* Main values: _integrated_, the engine on `loop` as timed by gate G1 at
 #raw(sm.integrated.revision) (LC: #raw(sm.integrated.lc_revision); both ancestors of `loop`; the later ct-simplify merge was not
-re-timed): Python per-point trees, Born and counterterm inputs, native loop stage (#raw(sm.integrated.native_build)).
-#dev-tag in the $2 -> 3$ and $2 -> 4$ rows: #raw(sm.dev.branch) #raw(sm.dev.revision) with native per-point inputs (timers
+re-timed): #sm.integrated.inputs.map(i => inputs-word((inputs: i))).join(", ") per-point trees, Born and counterterm inputs, native loop stage (#raw(sm.integrated.native_build)).
+#dev-tag in the $2 -> 3$ and $2 -> 4$ rows: #raw(sm.dev.branch) #raw(sm.dev.revision) with #sm.dev.inputs.map(i => inputs-word((inputs: i))).join(", ") per-point inputs (timers
 #raw(sm.dev.commit), #raw(sm.dev.native_build)); in the $2 -> 5$ rows: that branch's validations of
 #sm.dev_required.record.split(",").first() (generation, then single points). Generation excludes model loading. Unbatched
 development timings, such as a seven-gluon point with its rotation check, are not in this table (@sevenglue).]]
@@ -700,8 +690,8 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
   caption: [*Gate G1, full colour*, ms per point (gate statistic: median),
     finite part, one thread. Rows $B = 1$ and $B = 128$ (the integrated $2 -> 4$
     rows only at $B = 1$: their Python inputs take seconds per point).
-    Multiplier and colour: time ÷ the fastest provider of the row (legend
-    below). Grey rows: generation — pyAmpliCol generation plus plan export with
+    Multiplier and colour: time ÷ the fastest provider of the row (legend of
+    @tab:summary). Grey rows: generation — pyAmpliCol generation plus plan export with
     its peak memory; MadLoop graph generation, export and compilation · the
     share of its loop-numerator coefficients in its time (@tab:g1split);
     Recola process generation; OpenLoops: the prebuilt library and its load
@@ -733,7 +723,6 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
     }).flatten(),
   )),
 ) <tab:g1>
-#legend()
 
 #let band-cell(c, b) = {
   let x = bat(c, b)
@@ -933,7 +922,7 @@ with the batch (#msec(glue(ud32)) ms per point at $B = 32$,
   })
 }
 #let lc-procs = g.processes.filter(p => cfg(p, "native/lc") != none or cfg(p, "python/lc") != none)
-#figure(kind: table,
+#block(breakable: false)[#figure(kind: table,
   caption: [*Leading colour* (LC), ms per point, same protocol as @tab:g1; in
     each cell the full-colour (FC) time of the same configuration and LC/FC.
     No provider ratio: the providers time full colour. LC uses the committed
@@ -955,7 +944,7 @@ with the batch (#msec(glue(ud32)) ms per point at $B = 32$,
       )
     }).flatten(),
   )),
-) <tab:g1lc>
+) <tab:g1lc>]
 
 LC is cheaper in the loop stage (fewer families and skeletons), but not yet
 end to end: with native inputs the trees at LC cost more than at full colour
@@ -1154,80 +1143,68 @@ its estimate $E$ = #sci(b64-row(gg4, 1).estimate)\; its DD value agrees with
 Recola to #sci(dd-of("gg_gggg", 1, "recola")).
 
 // ============================================================= REQUIRED ==
-= Required processes: references and generation <required>
+= Required processes: references and development validation <required>
 
-The plan requires the processes of @tab:provgen (plan §5.7), compared with
-MadLoop and Recola, and with OpenLoops where a public library exists. A
+The plan requires the $2 -> 5$ processes of @tab:summary (plan §5.7), compared
+with MadLoop and Recola, and with OpenLoops where a public library exists. A
 reference provider is run only if its generation completes in about 45 minutes,
 or in a time comparable to pyAmpliCol's own generation of the process (HANDOFF
 §0.1, addendum F). Otherwise pyAmpliCol is validated by Ward and gauge
 identities, Catani poles, LC/NLC/FC and DD/AP consistency, stability checks,
 lower multiplicities and existing references.
 
-#let gen-cell(r) = if r.gen_s == none { dim[not generated] } else {
-  text(8.2pt, weight: "bold")[#num(r.gen_s) s]
-  text(fill: ink2)[ #sym.plus #num(r.export_s) s]
-  linebreak()
-  tiny[#num(r.plan_mb) MB · #num(r.peak_gib) GiB]
-}
-#let req-of(label, corr) = ms.required.rows.find(r => r.label == label and r.at("corr", default: none) == corr)
 #figure(kind: table,
-  caption: [*Generation on this host.* Providers: MadLoop graph generation,
-    export and compilation; Recola process generation; OpenLoops library
-    availability (HANDOFF §0.1). pyAmpliCol: v2 generation + plan export
-    (`LoopSlice.generate`, then plan v4 JSON), plan size and peak resident
-    memory, one thread;
-    a #flag[development] measurement on `work/v2-generation-scale`, not part of
-    the acceptance campaign. Values stand side by side without a ratio.],
+  caption: [*Provider generation on this host and the 45-minute rule.* MadLoop
+    graph generation, export and compilation; Recola process generation;
+    OpenLoops: prebuilt public libraries (HANDOFF §0.1; the measured times of
+    the $2 -> 5$ rows are in @tab:summary).],
   tstyle(table(
-    columns: (3.2cm, 2.65cm, 3.4cm, 1.9cm, 1.75cm, 1fr),
+    columns: (3.4cm, 3.9cm, 2.2cm, 1.9cm, 1fr),
     align: left + horizon, inset: (x: 4pt, y: 3.1pt), stroke: tstroke, fill: thead-fill,
-    table.header[Process][pyAmpliCol v2, dev.][MadLoop][Recola][OpenLoops][45-minute rule],
-    ..ms.provider_generation.rows.map(r => {
-      let q = req-of(r.label, r.at("corr", default: none))
-      (
-        if r.label.contains("controls") { text(8.4pt, font: "Libertinus Serif")[$2 -> 2$, $2 -> 3$ controls] } else { plabel(r) },
-        if q == none { dim[—] } else { gen-cell(q) },
-        r.madloop, r.recola, r.openloops,
-        if r.rule.starts-with("within") { r.rule } else { text(weight: "semibold", fill: rgb("#8a4b08"), r.rule) },
-      )
-    }).flatten(),
+    table.header[Process][MadLoop][Recola][OpenLoops][45-minute rule],
+    ..ms.provider_generation.rows.map(r => (
+      if r.label.contains("controls") { text(8.4pt, font: "Libertinus Serif")[$2 -> 2$, $2 -> 3$ controls] } else { plabel(r) },
+      r.madloop, r.recola, r.openloops,
+      if r.rule.starts-with("within") { r.rule } else { text(weight: "semibold", fill: rgb("#8a4b08"), r.rule) },
+    )).flatten(),
   )),
 ) <tab:provgen>
 
+#let rn = meas.required_native
+#let coeff = ("born", "finite", "single_pole", "double_pole")
+#let rn-max(rec, k) = { let v = rec.max_deviation.values().filter(d => k in d).map(d => d.at(k)); if v.len() == 0 { none } else { calc.max(..v) } }
+#let rn-refs(rec) = rec.max_deviation.keys().map(k => (madloop: "ML", recola: "Rc", openloops: "OL", njet_dd_oneloop_R1: "NJet DD", njet_double_R1: "NJet R1", njet_double_R2: "NJet R2", catani: "Catani").at(k, default: k)).join(", ")
+#let rn-label(key) = { let r = S.groups.map(g => g.rows).flatten().find(r => r.key == key); math-label(r.math) + if key.ends-with("_qcd") [ (QCD)] }
 #figure(kind: table,
-  caption: [*Validation of the required set* (#flag[development], `work/v2-generation-scale`;
-    binary64, all three Laurent coefficients, three exact points per process,
-    trees, Born and counterterms from the Python per-point inputs). Deviation
-    metric $|a - b| slash max(|a|, |b|, |B| alpha_s slash 2 pi)$. Points that the
-    stability estimate flags in binary64 are resolved in DoubleFloat. ML:
-    MadLoop; OL: OpenLoops.],
+  caption: [*Native validation of the required set* #dev-tag (#raw(rn.branch), #rn.record): generation in one thread
+    (`LoopSlice.generate`, then the plan export; peaks of each stage), then binary64 virtuals with native per-point inputs and
+    the production counterterm route at the fixture points, against the committed references
+    (`tests/fixtures/loop/required`; fixture tolerance #sci(rn.processes.values().first().tolerance, d: 0)). Largest deviation
+    over the references and points, metric of @tab:summary; the per-reference values are in `data/measured.json`. For
+    $g g -> g g g g g$ the references are NJet (double-double and two binary64 runs) and the Catani operator for the poles,
+    top-free with $N_f = 5$; its estimate column is the rotation plus reduction-direction check per point.],
   tstyle(table(
-    columns: (3.2cm, 2.4cm, 1fr),
-    align: left + horizon, inset: (x: 4pt, y: 3.1pt), stroke: tstroke, fill: thead-fill,
-    table.header[Process][References][Agreement],
-    ..ms.required.rows.map(r => (plabel(r), r.refs, r.validation)).flatten(),
+    columns: (3.1cm, 2.3cm, 1fr, 1fr, 1fr, 1fr, 2.3cm, 2.4cm),
+    align: (x, y) => if x < 2 { left + horizon } else { right + horizon },
+    inset: (x: 3.5pt, y: 3pt), stroke: tstroke, fill: thead-fill,
+    table.header[Process][References][Born][Finite][$1 slash epsilon$][$1 slash epsilon^2$][Estimate $E$][Generation + export],
+    ..rn.processes.pairs().map(((key, rec)) => (
+      text(8.4pt, font: "Libertinus Serif", rn-label(key)),
+      tiny[#rn-refs(rec) · #rec.points.len() pts],
+      ..coeff.map(k => sci(rn-max(rec, k))),
+      if rec.stability_estimate_per_point.all(e => e != none) { rec.stability_estimate_per_point.map(e => sci(e)).join(", ") } else { dim[—] },
+      [#sig(rec.generate_s + rec.export_s) s #tiny[#fixed(calc.max(rec.generate_peak_gib, rec.export_peak_gib), 1) GiB]],
+    )).flatten(),
   )),
 ) <tab:validation>
 
-#figure(kind: table,
-  caption: [*Provider references for the seven-leg gates*, s per point, one
-    pinned core, production mode (finite part; OpenLoops `truepoles 0` with
-    I-operator poles, Recola without IR poles, MadLoop production build),
-    measured on 2026-10-20 for the design (DESIGN §1.3, Table 1b); inferred
-    values of that table are omitted. G1 re-measures them with the seven-leg
-    rows (`measure-g1-7leg`); the $2 -> 3$ and $2 -> 4$ references are in
-    @tab:g1. Threshold: the largest pyAmpliCol finite-only time that would
-    pass, 1.3× the fastest matched Recola/OpenLoops time where it is below
-    MadLoop's.],
-  tstyle(table(
-    columns: (3.2cm, 1fr, 1fr, 1fr, 1.9cm),
-    align: (x, y) => if x == 0 { left + horizon } else { right + horizon },
-    inset: (x: 4pt, y: 3.1pt), stroke: tstroke, fill: thead-fill,
-    table.header[Process][OpenLoops][Recola][MadLoop][Threshold],
-    ..ms.gate_references.rows.map(r => (plabel(r), r.openloops, r.recola, r.madloop, text(weight: "bold", r.threshold))).flatten(),
-  )),
-) <tab:gateref>
+#let ttq = rn.processes.gg_ttxemepg_qcd
+#let ttq-old = ms.required.rows.find(r => r.label.starts-with("g g -> t overline(t) e^- e^+ g") and r.at("corr", default: none) == "QCD")
+#let ttq-errs = ttq.max_error_per_point.sorted()
+The $g g -> t overline(t) e^- e^+ g$ (QCD) finite part deviates by #sci(ttq-errs.last()) at one of its three points and by at
+most #sci(ttq-errs.at(-2)) at the others: the point's known binary64 conditioning (earlier record, DESIGN WP3.1 fourth
+increment: #ttq-old.validation). The electroweak target is not started (WP3.2), and $u overline(u) -> g g g g g$ has no
+native validation record yet; its earlier development comparison is in @tab:sevencheck.
 
 // ========================================================== SEVEN GLUONS ==
 = Seven gluons: NJet and pyAmpliCol <sevenglue>
@@ -1283,122 +1260,45 @@ numerical five-gluon channel is 9/2 too large (NJet 2.1.1 is used there), and at
 the unrotated seven-gluon points NJet keeps only 4–6 digits in double precision
 (NaN at 3 of 10), so the reference values are taken at exactly rotated points.
 
-== pyAmpliCol development measurements
+== pyAmpliCol at seven gluons #dev-tag
 
-#let g1 = sg.generation_first
-#let g2 = sg.generation_latest
-#let ctp = sg.ct_program
-#let nb = sg.native_bare
-// CPU-time bound of the five bare-loop evaluations: the job's user + system
-// time less one busy core over generation and over the export with trees.
-#let nb-cpu = nb.user_s + nb.system_s
-#let nb-eval-wall = nb.seconds.sum()
-#let nb-cpu-eval = nb-cpu - nb.generate_s - nb.export_with_trees_s
-#let nb-cores = nb-cpu-eval / nb-eval-wall
-#let nb-cpu-pt = nb-cpu-eval / nb.seconds.len()
-#box-note(fill: warm)[
-  #set par(justify: false)
-  These are #flag[development] measurements on the branches named, on the
-  shared host. Generation and the counterterm program ran in one thread; the
-  bare-loop job's thread count was not recorded, so its wall times are not
-  per-core timings (@tab:sevendev). They are not part of the acceptance campaign and not a like-for-like speed
-  comparison: the native path below does not yet include counterterms or
-  $R_2$.
-]
-
-#figure(kind: table,
-  caption: [*$g g -> g g g g g$ in full colour, development runs.* Wall
-    times and peak resident memory from `/usr/bin/time` for the whole process,
-    including model loading. Generation and the counterterm program are
-    single-threaded (CPU share #g1.cpu_percent %, #g2.cpu_percent % and
-    #ctp.cpu_percent %; `RAYON_NUM_THREADS=1` for the counterterm program). The
-    bare-loop job did not record its thread count (the native executor's
-    default is all cores); the whole job, generation and export included,
-    averaged #nb.cpu_percent % CPU. Its #group(int(calc.round(nb-cpu))) CPU-s
-    (user + system), less one core over generation (#sig(nb.generate_s) s) and
-    export with trees (#sig(nb.export_with_trees_s) s), leave at most
-    #sig(nb-cpu-eval) CPU-s for the #sig(nb-eval-wall) s of evaluations: up to
-    #fixed(nb-cores, 1) busy cores on average and up to #sig(nb-cpu-pt) CPU-s per
-    point, so the per-core comparison with NJet is undetermined. Counts of the
-    generated slice:
-    #group(g1.counts.families) families, #group(g1.counts.skeletons) skeletons,
-    #group(g1.counts.trie_nodes) trie nodes, #group(g1.counts.blocks) tree
-    blocks, #group(g1.counts.seed_classes) colour-seed classes on a
-    #g1.counts.born_basis\-element Born basis, #group(g1.counts.ct_sites)
-    counterterm sites.],
-  tstyle(table(
-    columns: (4.4cm, 1fr, 2.5cm, 1.9cm),
-    align: (x, y) => if x < 2 { left + horizon } else { right + horizon },
-    inset: (x: 4pt, y: 3.2pt), stroke: tstroke, fill: thead-fill,
-    table.header[Run (branch)][Stages][Wall][Peak memory],
-    [Generation and plan, first run \ #tiny[`work/v2-generation-scale`, 03:55 UTC]],
-    [`LoopSlice.generate` #minutes(g1.generate_s) (peak #fixed(g1.generate_peak_gib, 1) GiB), plan export #minutes(g1.export_s), JSON #sig(g1.plan_json_s) s; #sig(g1.plan_json_mb) MB plan],
-    text(weight: "bold", minutes(g1.wall_s)), text(weight: "bold")[#fixed(kib-gib(g1.max_rss_kib), 1) GiB],
-    [Generation and plan, latest run \ #tiny[same branch, 10:42 UTC]],
-    [`LoopSlice.generate` #minutes(g2.generate_s) (peak #fixed(g2.generate_peak_gib, 1) GiB), plan export #minutes(g2.export_s), JSON #sig(g2.plan_json_s) s; #sig(g2.plan_json_mb) MB plan (derived row links)],
-    text(weight: "bold", minutes(g2.wall_s)), text(weight: "bold")[#fixed(kib-gib(g2.max_rss_kib), 1) GiB],
-    [Counterterms in the recursion \ #tiny[`work/v2-ct-recursion`]],
-    [Plain blocks #minutes(ctp.plain_blocks_s), CT program #minutes(ctp.ct_program_s)\; #group(ctp.ct_currents) CT currents, #group(ctp.ct_interactions) interactions, #ctp.root_sites root sites, no rule left to site closure; script total #minutes(ctp.total_s). Root-closure (bind) terms not measured; run before the request-scoped lowering (ct-recursion DESIGN §6.1)],
-    text(weight: "bold", minutes(ctp.wall_s)), text(weight: "bold")[#fixed(kib-gib(ctp.max_rss_kib), 1) GiB],
-    [Bare loop + Born, native trees \ #tiny[`work/v2-generation-scale`, 5 points]],
-    [Binary64; per point the point and one rotation (two evaluations); no counterterms, no $R_2$; thread count not recorded (up to #fixed(nb-cores, 1) cores, ≤ #sig(nb-cpu-pt) CPU-s per point)],
-    text(weight: "bold")[#sig(calc.min(..nb.seconds))–#sig(calc.max(..nb.seconds)) s/pt], [#text(weight: "bold")[#fixed(kib-gib(nb.max_rss_kib), 1) GiB] #linebreak() #tiny[whole job]],
-  )),
-) <tab:sevendev>
-
-On the same host (@tab:njet) NJet takes #num(ms.njet.rows.last().n312_std)~s
-per point for its standard sum and #num(ms.njet.rows.last().n312_ds)~s for its
-de-symmetrised sum, two evaluations each, on one pinned core, idle at launch,
-of the shared host.
-The native path's #sig(calc.min(..nb.seconds))–#sig(calc.max(..nb.seconds))~s
-per point (also two evaluations) are wall times of a multi-threaded job: its CPU
-accounting allows up to ≈#fixed(nb-cores, 1) busy cores, ≈#sig(nb-cpu-pt)~CPU-s
-per point, during the evaluations, which is above NJet's
-#num(ms.njet.rows.last().n312_std)~s. Whether the native bare path is faster
-than NJet's standard sum per core is therefore undetermined until a one-thread
-run exists. The comparison is not like-for-like either: counterterms and $R_2$
-are missing on the pyAmpliCol side, its job ran unpinned and multi-threaded on
-the same shared host, and the de-symmetrised sum is not a point value. Generation fits
-addendum H's budget (O(hours), below 150 GB). MASTER_PLAN quotes the same two
-peaks as KiB/10⁶ ("#fixed(g1.max_rss_kib / 1e6, 1) GB",
-"#fixed(ctp.max_rss_kib / 1e6, 1) GB"); of the run records, the counterterm
-record prints KiB/10⁶ and the generation record GiB.
+#let g7 = rn.processes.gg_ggggg
+#let g7-dd = g7.max_deviation.njet_dd_oneloop_R1
+On the WP3.1 branch (@tab:validation) the full $g g -> g g g g g$ virtual, with the counterterms of the recursion and native
+per-point inputs, top-free with $N_f = 5$, agrees with NJet's double-double values to #sci(g7-dd.finite) in the finite part
+(per point: #g7.max_error_per_point.map(e => sci(e)).join(", ") over all references) and to #sci(g7-dd.double_pole) in the
+double pole; each point's rotation plus reduction-direction estimate bounds its difference. Generation took
+#minutes(g7.generate_s) at #fixed(g7.generate_peak_gib, 1) GiB and the plan export #minutes(g7.export_s) at
+#fixed(g7.export_peak_gib, 1) GiB (process peak #fixed(g7.max_rss_gib, 1) GiB, #sig(g7.plan_json_mb) MB of plan JSON), inside
+addendum H's budget (hours, below 150 GB). DESIGN WP3.1 (eighth increment) attributes the cost: 325 s before the
+counterterm recursion, 1,122 s with its counterterm program, 2,766 s once poles-uvir's always-generated companion merged (its
+seed table builds generic seeds; making it lean is open). A point with its rotation and reduction-direction checks took
+#g7.seconds_per_point_unbatched.map(t => sig(t)).join(", ") s: single-point development evaluations, unpinned, with up to
+eight threads (the workspace sets `RAYON_NUM_THREADS=8`), so not a batched one-thread time and not comparable with NJet's
+#ms.njet.single_evaluation.standard s per evaluation on one pinned core. No batched seven-gluon timing exists yet;
+@tab:summary therefore has none.
 
 == Validation without a matched provider
 
-#let fv = sg.first_virtual
 #let nv = ms.njet_validation
 #let ux = sg.uux_ggggg_vs_providers.max_relative_deviation
+#let g7-cat = g7.max_deviation.catani
 #figure(kind: table,
-  caption: [*Checks of the seven-leg QCD results*, #flag[development]
-    measurements on `work/v2-generation-scale`, not part of the acceptance
-    campaign, except the Ward row (WP2.5 on `loop`); binary64, deviation metric
-    of @tab:validation. NJet values: fixture `gg_ggggg_njet.json` (NJet 3.1.2
-    double-double at exactly rotated points, scaling-test estimates
-    ≤ #sci(1.3e-24)). The bare single pole is compared after subtracting the
-    counterterm pole of its request, as marked in each row:
-    $(alpha_s slash 4 pi) B \[(n - 2) beta_0^((5)) + 8 T_F slash 3\] = (alpha_s slash 4 pi) B dot 119 slash 3$
-    for loop_sm (five-flavour coupling renormalisation and the top's
-    decoupling term) and
-    $(alpha_s slash 4 pi)(n - 2) beta_0^((5)) B = (alpha_s slash 4 pi) B dot 115 slash 3$
-    for the top-free request.],
+  caption: [*Checks of the seven-leg QCD results*, #dev-tag on `work/v2-generation-scale`, except the Ward row (WP2.5 on
+    `loop`); binary64, all three Laurent coefficients, deviation metric of @tab:summary. NJet values: fixture
+    `gg_ggggg_njet.json` (NJet 3.1.2 double-double at exactly rotated points, scaling-test estimates ≤ #sci(1.3e-24)).],
   tstyle(table(
-    columns: (4.2cm, 1fr, 3.1cm),
+    columns: (4.4cm, 1fr, 2.9cm),
     align: left + horizon, inset: (x: 4pt, y: 2.8pt), stroke: tstroke, fill: thead-fill,
     table.header[Check][Result][Status],
-    [$g g -> g g g g g$, native bare loop, 5 points: double pole ÷ Born against $-(alpha_s slash 2 pi) dot 7 C_A$],
-    [≤ #sci(calc.max(..nb.double_pole_deviation))\; rotation estimates #sci(calc.min(..nb.stability_estimate))–#sci(calc.max(..nb.stability_estimate))],
-    [passed],
-    [$g g -> g g g g g$ against NJet, native bare loop (loop_sm, 5 points; shift 119/3)],
-    [Born ≤ #sci(nv.native_bare_vs_njet.born, d: 0), double pole ≤ #sci(nv.native_bare_vs_njet.double_pole), single pole #sci(nv.native_bare_vs_njet.single_pole_points_0_3.first())–#sci(nv.native_bare_vs_njet.single_pole_points_0_3.last()) at points 0–3; #sci(nv.native_bare_vs_njet.single_pole_point_4) at point 4, which pyAmpliCol's estimate (#sci(nv.native_bare_vs_njet.estimate_point_4)) flags],
-    [no deviation beyond the estimates],
-    [$g g -> g g g g g$ top-free (NJet's scheme) against NJet, native bare loop, 3 points; shift 115/3],
-    [Born ≤ #sci(nv.topfree.born), double pole ≤ #sci(nv.topfree.double_pole), single pole #sci(nv.topfree.single_pole.at(0)) and #sci(nv.topfree.single_pole.at(1)) (estimates #sci(nv.topfree.estimates.at(0)), #sci(nv.topfree.estimates.at(1))), #sci(nv.topfree.single_pole.at(2))],
-    [finite part needs the native counterterms],
+    [$g g -> g g g g g$ full virtual against NJet (top-free, $N_f = 5$), #g7.points.len() points (#rn.record.split(",").first())],
+    [Born ≤ #sci(g7-dd.born), finite ≤ #sci(g7-dd.finite), single pole ≤ #sci(g7-dd.single_pole), double pole ≤ #sci(g7-dd.double_pole);
+      Catani poles: single ≤ #sci(g7-cat.single_pole), double ≤ #sci(g7-cat.double_pole); estimates #g7.stability_estimate_per_point.map(e => sci(e)).join(", ")],
+    [#if g7.passed [passed] else [failed] (tolerance #sci(g7.tolerance, d: 0))],
     [Top-free full virtual against NJet at lower multiplicity],
     [#nv.topfree.lower.map(l => [#math-label(l.label): #l.value]).join([; ]) (`test_loop_v2_topfree.py`)],
     [passed],
-    [$u overline(u) -> g g g g g$ full virtual against MadLoop and Recola, 3 points],
+    [$u overline(u) -> g g g g g$ full virtual against MadLoop and Recola, #sg.uux_ggggg_vs_providers.points points],
     [MadLoop ≤ #sci(calc.max(..ux.madloop.values())), Recola ≤ #sci(calc.max(..ux.recola.values())) (finite ≤ #sci(ux.recola.finite)); the providers agree to 6.2×10⁻¹⁰],
     [passed],
     [Ward identity, one gluon's $epsilon -> p$, at seven gluons],
@@ -1406,26 +1306,6 @@ record prints KiB/10⁶ and the generation record GiB.
     text(fill: rgb("#8a4b08"), weight: "semibold")[not yet run at seven gluons (addendum H)],
   )),
 ) <tab:sevencheck>
-
-#box-note(breakable: false)[
-  #set par(justify: false)
-  *First $g g -> g g g g g$ virtual* #flag[development] `work/v2-generation-scale`,
-  not part of the acceptance campaign (full colour, Born $alpha_s^5$, loop_sm with
-  top loops, point #fv.point, $mu = 1$ TeV; Python per-point inputs with
-  counterterms, about 3 h per evaluation on that development path):
-  #v(-0.2em)
-  #align(center, text(8.6pt, font: sans, table(columns: 5, stroke: none, inset: (x: 7pt, y: 2.5pt), align: right,
-    [], [Born], [finite], [$1 slash epsilon$], [$1 slash epsilon^2$],
-    [value, GeV#super[−6]], sci(fv.born, d: 5), sci(fv.virtual.at(0), d: 5), sci(fv.virtual.at(1), d: 5), sci(fv.virtual.at(2), d: 5),
-    [rotated copy, rel. diff.], [], sci(fv.rotation_relative.finite), sci(fv.rotation_relative.single_pole), sci(fv.rotation_relative.double_pole),
-    [NJet (no top), deviation], sci(nv.python_path_point0.born), [top loops], sci(nv.python_path_point0.single_pole), sci(nv.python_path_point0.double_pole),
-  )))
-  #v(-0.2em)
-  The finite part differs from NJet's by the top-loop contribution
-  (#sci(nv.python_path_point0.finite_difference, d: 2), i.e.
-  #fixed(nv.python_path_point0.finite_difference_floor_units, 3) $|B| alpha_s slash 2 pi$),
-  which continues the sign and size seen at four to six legs; it is not a test.
-]
 
 // ============================================================ CAPABILITY ==
 = Capabilities at this milestone <capabilities>
@@ -1451,7 +1331,7 @@ record prints KiB/10⁶ and the generation record GiB.
   ([Counterterms (model UV, $R_2$)], "supported", [Plain tree vertices of the recursion inserted exactly once (WP2.2, a18b7599; addendum J, b4d76cc3), admitted by coupling orders and the public `particle_veto`; no witness table or loop matching in production. An unlowerable counterterm vertex that no tree of the request reaches is inert and recorded in the artifact; a reachable one is refused. Site closure is the test oracle. Per point they are formed in Python on `loop`, natively on the WP3.1 branch.]),
   ([Direct $R_2$], "deferred", [A bonus by the user's rule; bounded controls only.]),
   ([Electroweak, complex mass], "open", [Tree EW lanes fixed, the Dirac–Weyl class refused; loop EW, Goldstones and CMS are WP3.2.]),
-  ([Required set], "progress", [On the WP3.1 branch seven of eight generate and six agree with their provider references in all coefficients (@tab:validation); $g g -> g g g g g$ is validated in Born and poles; the EW target is not started.]),
+  ([Required set], "progress", [On the WP3.1 branch seven of eight generate and agree with their references in all coefficients with native inputs (@tab:validation), $g g -> g g g g g$ against NJet's double-double values; the EW target is not started. Not on `loop` yet; no batched $2 -> 5$ timing.]),
   ([Performance gates], "progress", [G1 measured (@g1): the integrated slice fails every $2 -> 3$ and $2 -> 4$ gate it generates (Python per-point inputs) and does not generate $V$+jets (WP3.5, WP3.2). With the WP3.1 native inputs at $B = 128$: #dev-pass.len() of #gated.len() pass, #names(dev-open) open, #names(dev-fail) fails; $B = 1$ needs lane adaptation (@tab:g1batch). Missing: provider protocol-mode columns, LC for $V$+jets, seven legs (`measure-g1-7leg`).]),
   ([$g g -> 6g$], "deferred", [No $2 -> 6$ work until the $2 -> 5$ plan is complete (user, 23 October).]),
 )
@@ -1601,7 +1481,7 @@ loop line and propagator of the generation, so loops and counterterms stay
 consistent. Nothing is matched to the loop (user, 23 October; addendum J).
 On `loop` the counterterms come from the WP2.2 recursion (one counterterm
 order in the tree recursion, the default route, whose $g g -> g g g g g$
-program leaves no rule to site closure, @tab:sevendev) with this admission
+program leaves no rule to site closure) with this admission
 (`ct-simplify`, b4d76cc3): no witness table and no loop matching. A
 counterterm vertex that the model cannot lower and that no tree of the request
 reaches (the tree engine's own reachability, with the program's order limits
@@ -1619,7 +1499,7 @@ and the finite-only mode. The public API selects `loop_engine = "v2"` from
 TOML, CLI or Python and stores plan v4 as a relocatable PACBIN member (zlib
 JSON of exact kernel term lists, no compiled code, digest checked at load).
 
-#figure(kind: table,
+#block(breakable: false)[#figure(kind: table,
   caption: [*Asymptotic classes per event* for $n$ gluons, full colour (DESIGN
     §1.4): $F_n approx (n - 1)! (1 / ln 2)^n \/ 2$ families, $2^n$ helicities.
     The required set ($n <= 7$) is far below the crossover of schedule B with
@@ -1636,7 +1516,7 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
     [MadLoop (per diagram, per helicity)], [$Theta(D_n dot 2^n dot n^4)$, $D_n$ super-exponential ($g g -> g g g g$: 26 975 loop diagrams)],
     [Unitarity with exact helicity sums (NJet)], [$Theta((n - 1)! dot 2^n dot n^(6 dots 9))$],
   )),
-) <tab:complexity>
+) <tab:complexity>]
 
 #figure(kind: table,
   caption: [*Ownership of the mathematics.* pyAmpliCol reuses its dependencies
@@ -1656,87 +1536,6 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
   )),
 ) <tab:deps>
 
-// ============================================================== HISTORY ==
-= History: legacy per-diagram engine, 2026-10-18 <history>
-
-#box-note(fill: luma(244))[
-  #set par(justify: false)
-  *History only.* These timings measure the superseded per-diagram engine
-  (per-graph coefficient programs, pairwise colour overlaps, whole-process
-  symbolic projectors) through its Python coordinator with exact decimal
-  input, on repeated three-point streams, against providers that kept their
-  protocol settings (actual poles, stability checks and rescue). They are
-  neither the gate protocol nor the v2 engine, include $2 -> 2$ processes, and
-  are kept for reference without gate counts. Revisions #hm.revision.slice(0, 8)
-  and two follow-ups; #hm.reference_protocol.cpu_model.
-]
-
-#let providers = ("madloop", "recola", "openloops")
-#let pshort(p) = (madloop: "ML", recola: "Recola", openloops: "OL").at(p)
-#let record(c, b, p) = if p == "pyamplicol" {
-  c.timings.at(str(b), default: none)
-} else {
-  hm.references.at(c.case, default: (:)).at("timings", default: (:)).at(str(b), default: (:)).at(p, default: none)
-}
-#let median(c, b, p) = { let r = record(c, b, p); if r == none { none } else { r.median_us_per_point } }
-#let fastest(c, b) = {
-  let found = providers.map(p => (p: p, v: median(c, b, p))).filter(r => r.v != none)
-  if found.len() == 0 { none } else { found.sorted(key: r => r.v).first() }
-}
-#let missing(c, p) = hlab.missing_markers.at(c.case + "/" + p, default: hlab.missing_markers.at("default"))
-#let hlabel(key) = { let l = hlab.case_labels.at(key, default: none); if l == none { raw(key) } else { math-label(l) } }
-#let case-note(key) = (dy: "photon only", "ee-mumu-ew": [full EW, $G_mu$]).at(key, default: "QCD")
-#let rt-cell(c, b, p) = {
-  let r = record(c, b, p)
-  let best = fastest(c, b)
-  if r == none { return table.cell(text(6.8pt, fill: ink2, style: "italic", missing(c, p))) }
-  let v = r.median_us_per_point
-  let ml-timed = median(c, b, "madloop") != none
-  let ratio = if best == none { none } else { v / best.v }
-  table.cell(fill: if ml-timed { ratio-fill(ratio) } else { none }, {
-    text(8pt, weight: "bold", sig(v))
-    h(1fr)
-    if p != "pyamplicol" and best != none and best.p == p { text(6.6pt, fill: ink2)[fastest] } else if ratio != none { text(7.2pt, weight: "semibold", mult(ratio)) }
-  })
-}
-#let hgen(c, p) = {
-  let s = if p == "pyamplicol" { c.generation_s } else { hcold.cases.at(c.case, default: (:)).at(p, default: (:)).at("seconds", default: none) }
-  table.cell(text(6.6pt, fill: ink2, if s == none { [—] } else [#if p == "openloops" [setup ]#sig(s) s]))
-}
-#figure(kind: table,
-  caption: [*Legacy engine, µs per point* (#hm.date), binary64, full colour,
-    all three Laurent coefficients; median of five warm calls; multiplier: time
-    ÷ the fastest timed reference of that row, coloured only where MadLoop is
-    timed. Grey rows: generation (pyAmpliCol fresh process to plan; MadLoop
-    export and compilation; Recola generation; OpenLoops setup of a prebuilt
-    library). $B$: points per call.],
-  tstyle(table(
-    columns: (2.9cm, 0.7cm, 1fr, 1fr, 1fr, 1fr),
-    align: left + horizon, inset: (x: 4.5pt, y: 2.6pt),
-    stroke: (x, y) => (top: if y <= 1 { none } else if calc.rem(y - 1, 3) == 0 { 0.6pt + luma(190) } else { hair }, left: if x >= 2 and y > 0 { hair } else { none }),
-    fill: thead-fill,
-    table.header[Process][$B$][pyAmpliCol (legacy)][MadLoop][Recola][OpenLoops],
-    ..hm.cases.map(c => (
-      table.cell(rowspan: 3, align: left + horizon, {
-        text(8.6pt, font: "Libertinus Serif", hlabel(c.case))
-        linebreak()
-        tiny[#case-note(c.case) · #c.counts.loop_graphs loop graphs]
-      }),
-      [1], rt-cell(c, 1, "pyamplicol"), ..providers.map(p => rt-cell(c, 1, p)),
-      [128], rt-cell(c, 128, "pyamplicol"), ..providers.map(p => rt-cell(c, 128, p)),
-      tiny[gen.], hgen(c, "pyamplicol"), ..providers.map(p => hgen(c, p)),
-    )).flatten(),
-  )),
-) <tab:history>
-#legend()
-
-The per-diagram design could not reach the $2 -> 5$ set: a seven-leg
-generation ran for more than nine hours without a result, and its counterterm
-enumeration alone needed up to 77 GiB. The v2 engine replaced its numerator,
-colour and counterterm core (@arch) and keeps model import, the counterterm
-rules, Born weighting before reduction, the NinjaRS/oneloopmaster adapter, the
-exact carriers and the public interfaces.
-
 // ============================================================== SOURCES ==
 = Sources and reproducibility <sources>
 
@@ -1751,13 +1550,20 @@ exact carriers and the public interfaces.
     2026-10-23/24 entries; REQUIREMENTS_ADDENDUM A, D, F, G, H, I, J; DESIGN §5.7
     (G1), §6.1, §6.2, §12.4; the 24 October pushes (59badc7a and b4d76cc3,
     gates in slice-status.md).
-  - *@tab:provgen:* provider columns HANDOFF §0.1 (addendum F); pyAmpliCol
-    column DESIGN WP3.1 third increment "Generation per process" on
-    `work/v2-generation-scale` (201efa8b). *@tab:validation:* DESIGN WP3.1
-    first to fourth increment, same branch (records
-    `workspace/tmp/generation-scale/runs/`); the $g g -> g g g g$ row from
-    `cmp_gg_gggg.json`, `cmp_gg_gggg_p1_stab.json` and `cmp_gg_gggg_p1_dd.json`
-    there. *@tab:gateref:* DESIGN §1.3 Table 1b. *Conventions:*
+  - *@tab:summary, @fig:gate:* `data/summary.json`, written by
+    `scripts/build_summary.py` from `data/g1.json`, `data/measured.json`,
+    `data/milestone.json` and `tools/loop_benchmark/processes.json`; every
+    entry names its source (README).
+  - *@tab:provgen:* HANDOFF §0.1 (addendum F); the measured provider generation
+    times of @tab:summary from the reference runs' records
+    (`workspace/reference/runs/required/<process>/`, collected into
+    `data/measured.json`). *@tab:validation, @required, @sevenglue:* the native
+    validations of DESIGN WP3.1 eighth increment (0ea83af2) on
+    `work/v2-generation-scale`, records
+    `workspace/tmp/generation-scale/gint/val1/` and `val2/`, collected into
+    `data/measured.json`; the earlier $g g -> t overline(t) e^- e^+ g$ and
+    $u overline(u) -> g g g g g$ records: DESIGN WP3.1 first to fourth
+    increment. *Conventions:*
     #link("https://cp3.irmp.ucl.ac.be/projects/madgraph/wiki/MadLoopStandaloneLibrary")[MadLoop standalone],
     #link("https://arxiv.org/abs/1605.01090")[Recola],
     #link("https://arxiv.org/abs/1907.13071")[OpenLoops 2].
@@ -1777,16 +1583,15 @@ exact carriers and the public interfaces.
   - *@tab:njet* and NJet prose: `workspace/reports/engine-v2/njet-benchmark.md`
     §2, §5, §6 (raw `workspace/reference/runs/njet/timing/`);
     #link("https://arxiv.org/abs/1209.0100")[NJet, arXiv:1209.0100] Table 5.
-  - *@tab:sevendev, @tab:sevencheck, first virtual:* `data/measured.json`
-    (`scripts/collect_milestone.py <workspace>` from the records in
-    `workspace/tmp/generation-scale/runs/` and `workspace/tmp/ct-recursion/s4/`);
-    NJet deviations: njet-benchmark.md §5.3 and `gg_ggggg_njet.json`; top-free
-    values: DESIGN WP3.1 and `test_loop_v2_topfree.py`. Memory in GiB = KiB/2²⁰.
+  - *@tab:sevencheck:* `data/measured.json`
+    (`scripts/collect_milestone.py <workspace>`); top-free values at lower multiplicity: DESIGN WP3.1 and
+    `test_loop_v2_topfree.py`; the seven-gluon generation history: DESIGN WP3.1
+    eighth increment. Memory in GiB = 2³⁰ bytes.
   - *@tab:caps, @arch:* `docs/development/loop_v2/DESIGN.md` §1–§3, §5.5,
     §5.6, §6, §10, §12, REQUIREMENTS_ADDENDUM J (counterterm rule) and the
     integration records above.
-  - *@tab:history:* `data/measurements.json`, `data/provider-cold.json` and
-    `data/legacy-labels.json` (legacy snapshot of 2026-10-18, unchanged);
-    `data/colour-measurements.json` stays for the DESIGN citations; removed
-    data are in the git history (README).
+  - *History:* the legacy per-diagram engine's snapshot of 2026-10-18
+    (`data/measurements.json`, `provider-cold.json`, `legacy-labels.json`,
+    `colour-measurements.json`) stays for the DESIGN citations and is no longer
+    shown; its table is in the earlier report revisions (README).
 ]
