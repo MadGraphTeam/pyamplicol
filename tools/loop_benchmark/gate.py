@@ -336,15 +336,23 @@ def build(paths: list[Path]) -> tuple[dict[str, Any], dict[str, Any]]:
             },
         )
         if record["kind"] == "stability":
+            # A later record's row of the same point, arithmetic and
+            # configuration replaces an earlier one.
+            rows = entry.setdefault("stability", [])
             for row in record["rows"]:
-                entry.setdefault("stability", []).append(
-                    {
-                        "arithmetic": "double",
-                        **row,
-                        "configuration": _configuration(record),
-                        "revision": record["revision"],
-                    }
-                )
+                new = {
+                    "arithmetic": "double",
+                    **row,
+                    "configuration": _configuration(record),
+                    "revision": record["revision"],
+                }
+                same = (new["index"], new["arithmetic"], new["configuration"])
+                rows[:] = [
+                    r
+                    for r in rows
+                    if (r["index"], r["arithmetic"], r["configuration"]) != same
+                ]
+                rows.append(new)
             continue
         if record["kind"] == "providers":
             entry["provider_runs"].append(record)
@@ -487,6 +495,21 @@ def build(paths: list[Path]) -> tuple[dict[str, Any], dict[str, Any]]:
                 if record["accuracy"] == "full"
                 else None,
             }
+        alpha = float(streams.spec(key)["scheme_data"]["parameters"]["aS"])
+        for row in entry.get("stability", []):
+            # The finite part at this point against each provider (finite
+            # metric): binary64 and double-double separate pyAmpliCol's
+            # binary64 loss from the providers' own.
+            row["deviation_vs_providers"] = {
+                name: abs(row["finite"] - values[row["index"]][1])
+                / max(
+                    abs(row["finite"]),
+                    abs(values[row["index"]][1]),
+                    abs(row["born"]) * alpha / (2 * math.pi),
+                )
+                for name, values in provider_values.items()
+                if row["index"] in values
+            }
         provider_summary = None
         if entry["providers"] is not None:
             provider_summary = {
@@ -550,9 +573,10 @@ def build(paths: list[Path]) -> tuple[dict[str, Any], dict[str, Any]]:
     }
     if str(streams.ROOT) not in sys.path:
         sys.path.insert(0, str(streams.ROOT))
-    from tools.loop_v2_costmodel import g1_recalibration
+    from tools.loop_v2_costmodel import g1_estimates, g1_recalibration
 
     document["recalibration"] = g1_recalibration(document)
+    document["estimates"] = g1_estimates(document)
     return document, values_document
 
 
