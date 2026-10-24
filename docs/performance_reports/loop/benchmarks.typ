@@ -292,9 +292,11 @@ inputs are not yet integrated.
       trees, Born and counterterm inputs, regeneration-free artifacts; timed
       here as the native-input configuration. Not yet audited: after the slice
       merge its $g g -> g g g g g$ (recursion counterterms, native inputs) still
-      matches NJet (finite $<= 4 times 10^(-9)$ at three points), but generation
-      took 46 min against 5.4 min before the merge (development measurement;
-      the cause is open).
+      matches NJet (finite $<= 4 times 10^(-9)$ at three points); generation
+      took 46 min against 5.4 min before the merge: about 13 min for the
+      recursion counterterm program and 27 min for poles-uvir's always-generated
+      companion (its seed table builds generic seeds; making it lean is open).
+      Development measurements on a shared host.
     - *Rust ports* (HANDOFF §0.4): A0 and A1–A2 are on `loop`, not yet switched
       on; seeds (B) and cells (C) passed their phase-0 audits and wait for
       G-int; lowering (D) is in an audit fix round.
