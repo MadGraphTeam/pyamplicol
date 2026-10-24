@@ -23,8 +23,9 @@ source in the report's last section.
 
 | File | Content |
 |---|---|
-| `g1.json` | The gate-G1 campaign: per process the providers' production-mode times (and MadLoop's stage split), every pyAmpliCol configuration (integrated slice, native inputs, LC, schedule M, one lane) per batch with its stage split, counts, throughput and gate verdict, the value comparison with the providers, stability estimates at the worst points and the cost-model recalibration. Written by `python -m tools.loop_benchmark gate` (see `tools/loop_benchmark`). |
-| `milestone.json` | Hand-maintained registry, each block with its source: integrated packages at the pinned engine revision and the commits after the last integration, provider generation times and the 45-minute rule (HANDOFF §0.1), provider production timings for the gate (DESIGN §1.3), the required-set generation and validation rows (DESIGN WP3.1 status), native loop-stage timings (DESIGN §5.5, §5.6), NJet Table 5 and the re-measured NJet timings (`njet-benchmark.md`), NJet validation figures. |
+| `g1.json` | The gate-G1 campaign: per process the providers' production-mode times (median and mean per point, repeats, setup, MadLoop's stage split; a provider without a library or export keeps the reason), every pyAmpliCol configuration (integrated slice, native inputs, LC, schedule M, one lane; a refused generation keeps its error) per batch with its stage split, counts, throughput, uncertainty and gate verdict (pass, fail or open from the band), schedule M against B, the value comparison with the providers, binary64 and double-double values at the worst points, the cost-model terms and the G1-recalibrated design estimates. Written by `python -m tools.loop_benchmark gate` (see `tools/loop_benchmark`). |
+| `g1-values.json` | The per-point values behind `g1.json`: pyAmpliCol's Born and finite part per configuration and stream point, and every provider run's per-point Born, finite part (Recola's raw finite part too) and time, from which the value comparison and the provider statistics can be re-derived. |
+| `milestone.json` | Hand-maintained registry, each block with its source: integrated packages at the pinned engine revision and the commits after the last integration, provider generation times and the 45-minute rule (HANDOFF §0.1), provider production timings of the seven-leg gates (DESIGN §1.3), the required-set generation and validation rows (DESIGN WP3.1 status), NJet Table 5 and the re-measured NJet timings (`njet-benchmark.md`), NJet validation figures. |
 | `measured.json` | Seven-gluon development records (generation, counterterm program, native bare loop, first virtual and its rotation, u u~ > g g g g g against MadLoop/Recola), written by `scripts/collect_milestone.py`. |
 | `measurements.json`, `provider-cold.json`, `legacy-labels.json` | The legacy per-diagram engine's timing snapshot of 2026-10-18 (unchanged, cited by `docs/development/loop_v2/DESIGN.md`) and its labels, shown only as history. |
 | `colour-measurements.json` | The legacy engine's LC/FC runs; not shown, kept for the citations in DESIGN.md and `research-leading-colour-structure.md`. |
@@ -35,13 +36,16 @@ and development measurements are labelled with their branch.
 
 ## Regenerate
 
-- `g1.json`: run `python -m tools.loop_benchmark pyamplicol <process>` (options
-  `--inputs native`, `--accuracy lc`, `--schedule M`, `--lanes 1`),
-  `… providers <process> --cpu N --work DIR [--madloop-stages]` and
-  `… stability <process> --points I …` on pinned idle cores, then
-  `… gate <records> --json data/g1.json --meta date=… slice_revision=…
-  native_revision=… slice_build=… native_build=…` (the report prints these
-  labels). The module docstrings of `tools/loop_benchmark` give the protocol.
+- `g1.json`, `g1-values.json`: run `python -m tools.loop_benchmark pyamplicol
+  <process>` (options `--inputs native`, `--accuracy lc`, `--schedule M`,
+  `--lanes 1`), `… providers <process> --cpu N --work DIR --reference-root ROOT
+  [--madloop-stages]` and `… stability <process> --points I … --arithmetic
+  double double-double` on pinned idle cores, then `… gate <records> --json
+  data/g1.json --values-json data/g1-values.json --reference-root ROOT --meta
+  date=… slice_revision=… native_revision=… native_commit=… slice_build=…
+  native_build=…` (the report prints these labels). The module docstrings of
+  `tools/loop_benchmark` give the protocol; the records of the 2026-10-24
+  campaign are archived in `workspace/reports/engine-v2/measure-g1/records/`.
 
 - `measured.json`: `python scripts/collect_milestone.py <workspace>` reads the
   run records under `<workspace>/tmp/generation-scale/runs/` and
