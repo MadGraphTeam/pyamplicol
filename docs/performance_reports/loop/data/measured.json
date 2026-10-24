@@ -133,6 +133,7 @@
   },
   "uux_ggggg_vs_providers": {
    "source": "workspace/tmp/generation-scale/runs/cmp_uux_ggggg.json",
+   "branch": "work/v2-generation-scale",
    "points": 3,
    "max_relative_deviation": {
     "madloop": {

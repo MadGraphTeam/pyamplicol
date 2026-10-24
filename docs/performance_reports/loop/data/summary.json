@@ -23,12 +23,26 @@
    "inputs": [
     "native"
    ],
-   "source": "g1.json native_revision, native_commit, native_build"
+   "source": "g1.json native_revision, native_commit, native_build; branch: milestone.json development"
   },
   "dev_required": {
    "branch": "work/v2-generation-scale",
    "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
    "source": "measured.json required_native"
+  },
+  "gate_decisions": {
+   "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~16:05 UTC (user answers to HANDOFF_24 section 10)",
+   "what": "user verdicts that replace a measured open (inconclusive) gate verdict; the measured ratio and band stay as measured",
+   "decisions": [
+    {
+     "process": "uux_uuxg",
+     "batch": "128",
+     "measured": "inconclusive",
+     "verdict": "pass",
+     "label": "user decision 2026-10-24",
+     "reason": "parity within the band (1.00 of the limit, band 0.90-1.10, after the single repeat of plan 5.8) is judged a pass"
+    }
+   ]
   }
  },
  "groups": [
@@ -111,7 +125,10 @@
       },
       "providers": {
        "madloop": {
-        "seconds": 9.702266068081371
+        "seconds": 9.702266068081371,
+        "graph_s": 0.9691008549416438,
+        "export_s": 5.939069507061504,
+        "compile_s": 2.794095706078224
        },
        "recola": {
         "seconds": 0.142270268
@@ -200,7 +217,8 @@
       "dev": {
        "status": "not measured"
       }
-     }
+     },
+     "loop_status": null
     }
    ]
   },
@@ -252,14 +270,7 @@
       ],
       "max_finite": 3.279552057458359e-10,
       "median_finite": 8.064648335241935e-14,
-      "source": "g1.json processes[uux_ddxg].pyamplicol['python/full'].values_vs_providers",
-      "worst_point": {
-       "index": 1,
-       "estimate": 7.1609463589963336e-12,
-       "within_estimate": false,
-       "dd_closest": 3.188177722534943e-13,
-       "source": "g1.json processes[uux_ddxg].stability (native/full)"
-      }
+      "source": "g1.json processes[uux_ddxg].pyamplicol['python/full'].values_vs_providers"
      },
      "generation": {
       "main": {
@@ -290,7 +301,10 @@
       },
       "providers": {
        "madloop": {
-        "seconds": 9.868318763095886
+        "seconds": 9.868318763095886,
+        "graph_s": 0.9410586450248957,
+        "export_s": 5.8906534280395135,
+        "compile_s": 3.0366066900314763
        },
        "recola": {
         "seconds": 0.406198185
@@ -415,7 +429,8 @@
        "fc_seconds_per_point": 0.00265378402400529,
        "lc_over_fc": 0.7186484315214663
       }
-     }
+     },
+     "loop_status": null
     },
     {
      "key": "uux_uuxg",
@@ -462,14 +477,7 @@
       ],
       "max_finite": 7.224277710016056e-11,
       "median_finite": 1.2696915887799136e-13,
-      "source": "g1.json processes[uux_uuxg].pyamplicol['python/full'].values_vs_providers",
-      "worst_point": {
-       "index": 1,
-       "estimate": 9.16223677316454e-12,
-       "within_estimate": false,
-       "dd_closest": 2.428328642024099e-13,
-       "source": "g1.json processes[uux_uuxg].stability (native/full)"
-      }
+      "source": "g1.json processes[uux_uuxg].pyamplicol['python/full'].values_vs_providers"
      },
      "generation": {
       "main": {
@@ -500,7 +508,10 @@
       },
       "providers": {
        "madloop": {
-        "seconds": 10.90767359896563
+        "seconds": 10.90767359896563,
+        "graph_s": 1.561105164932087,
+        "export_s": 6.37893652508501,
+        "compile_s": 2.9676319089485332
        },
        "recola": {
         "seconds": 0.461741761
@@ -564,14 +575,18 @@
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 1.300009285878232,
        "gate": {
-        "status": "open",
+        "status": "pass",
         "ratio_to_limit": 1.0000071429832553,
         "band": [
          0.9015510102316263,
          1.0984632757348844
         ],
         "binding": "OpenLoops",
-        "limit_seconds": 0.0038008386
+        "limit_seconds": 0.0038008386,
+        "measured_status": "open",
+        "decision": "user decision 2026-10-24",
+        "decision_reason": "parity within the band (1.00 of the limit, band 0.90-1.10, after the single repeat of plan 5.8) is judged a pass",
+        "decision_source": "milestone.json gate_decisions (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~16:05 UTC (user answers to HANDOFF_24 section 10))"
        }
       },
       "providers": {
@@ -617,7 +632,8 @@
        "fc_seconds_per_point": 0.0038008657493264764,
        "lc_over_fc": 0.8321811339342866
       }
-     }
+     },
+     "loop_status": null
     },
     {
      "key": "uux_emepg",
@@ -688,7 +704,10 @@
       },
       "providers": {
        "madloop": {
-        "seconds": 14.025846887030639
+        "seconds": 14.025846887030639,
+        "graph_s": 0.6968696910189465,
+        "export_s": 10.322672724025324,
+        "compile_s": 3.0063044719863683
        },
        "recola": {
         "seconds": 0.701316656
@@ -766,11 +785,18 @@
      },
      "leading_colour": {
       "main": {
-       "status": "not measured"
+       "status": "refused",
+       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+       "source": "g1.json processes[uux_emepg].pyamplicol['python/full'].generation (generation_error CountertermCompletenessError); milestone.json status_notes.notes[uux_emepg]"
       },
       "dev": {
        "status": "not measured"
       }
+     },
+     "loop_status": {
+      "status": "refused",
+      "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+      "source": "g1.json processes[uux_emepg].pyamplicol['python/full'].generation (generation_error CountertermCompletenessError); milestone.json status_notes.notes[uux_emepg]"
      }
     },
     {
@@ -818,14 +844,7 @@
       ],
       "max_finite": 8.387619881137583e-11,
       "median_finite": 5.411691122537699e-14,
-      "source": "g1.json processes[uux_ggg].pyamplicol['python/full'].values_vs_providers",
-      "worst_point": {
-       "index": 2,
-       "estimate": 1.172467884351517e-12,
-       "within_estimate": false,
-       "dd_closest": 1.3348289027384224e-14,
-       "source": "g1.json processes[uux_ggg].stability (native/full)"
-      }
+      "source": "g1.json processes[uux_ggg].pyamplicol['python/full'].values_vs_providers"
      },
      "generation": {
       "main": {
@@ -856,7 +875,10 @@
       },
       "providers": {
        "madloop": {
-        "seconds": 17.635391826974228
+        "seconds": 17.635391826974228,
+        "graph_s": 3.2831132820574567,
+        "export_s": 10.231484605930746,
+        "compile_s": 4.120793938986026
        },
        "recola": {
         "seconds": 0.634350056
@@ -981,7 +1003,8 @@
        "fc_seconds_per_point": 0.011186096164237824,
        "lc_over_fc": 1.125735972115985
       }
-     }
+     },
+     "loop_status": null
     },
     {
      "key": "gg_ggg",
@@ -1028,14 +1051,7 @@
       ],
       "max_finite": 6.224048063178867e-07,
       "median_finite": 7.638919942748722e-13,
-      "source": "g1.json processes[gg_ggg].pyamplicol['python/full'].values_vs_providers",
-      "worst_point": {
-       "index": 10,
-       "estimate": 9.914292767817392e-06,
-       "within_estimate": true,
-       "dd_closest": 5.96903309784672e-12,
-       "source": "g1.json processes[gg_ggg].stability (native/full)"
-      }
+      "source": "g1.json processes[gg_ggg].pyamplicol['python/full'].values_vs_providers"
      },
      "generation": {
       "main": {
@@ -1066,7 +1082,10 @@
       },
       "providers": {
        "madloop": {
-        "seconds": 46.99168228299823
+        "seconds": 46.99168228299823,
+        "graph_s": 11.597355749108829,
+        "export_s": 28.751117693958804,
+        "compile_s": 6.643208839930594
        },
        "recola": {
         "seconds": 6.62908405
@@ -1191,7 +1210,8 @@
        "fc_seconds_per_point": 0.04576716528117686,
        "lc_over_fc": 1.1081444000821652
       }
-     }
+     },
+     "loop_status": null
     }
    ]
   },
@@ -1267,7 +1287,10 @@
       },
       "providers": {
        "madloop": {
-        "seconds": 24.77855655690655
+        "seconds": 24.77855655690655,
+        "graph_s": 5.55985903297551,
+        "export_s": 14.558906049001962,
+        "compile_s": 4.659791474929079
        },
        "recola": {
         "seconds": 0.832586724
@@ -1345,11 +1368,18 @@
      },
      "leading_colour": {
       "main": {
-       "status": "not measured"
+       "status": "refused",
+       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+       "source": "g1.json processes[uux_emepgg].pyamplicol['python/full'].generation (generation_error CountertermCompletenessError); milestone.json status_notes.notes[uux_emepgg]"
       },
       "dev": {
        "status": "not measured"
       }
+     },
+     "loop_status": {
+      "status": "refused",
+      "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+      "source": "g1.json processes[uux_emepgg].pyamplicol['python/full'].generation (generation_error CountertermCompletenessError); milestone.json status_notes.notes[uux_emepgg]"
      }
     },
     {
@@ -1428,7 +1458,10 @@
       },
       "providers": {
        "madloop": {
-        "seconds": 217.9359855009825
+        "seconds": 217.9359855009825,
+        "graph_s": 59.6832735670032,
+        "export_s": 142.029235555965,
+        "compile_s": 16.22347637801431
        },
        "recola": {
         "seconds": 61.3864471
@@ -1526,7 +1559,8 @@
        "fc_seconds_per_point": 0.19032687706203433,
        "lc_over_fc": 1.2138418197718464
       }
-     }
+     },
+     "loop_status": null
     },
     {
      "key": "uux_gggg",
@@ -1690,7 +1724,8 @@
        "fc_seconds_per_point": 0.18989709440666047,
        "lc_over_fc": 1.3009739935269564
       }
-     }
+     },
+     "loop_status": null
     },
     {
      "key": "gg_gggg",
@@ -1737,14 +1772,7 @@
       ],
       "max_finite": 1.4874757653205835e-07,
       "median_finite": 8.785875732174788e-11,
-      "source": "g1.json processes[gg_gggg].pyamplicol['python/full'].values_vs_providers",
-      "worst_point": {
-       "index": 1,
-       "estimate": 4.799662575085839e-06,
-       "within_estimate": true,
-       "dd_closest": 4.35793642888872e-12,
-       "source": "g1.json processes[gg_gggg].stability (native/full)"
-      }
+      "source": "g1.json processes[gg_gggg].pyamplicol['python/full'].values_vs_providers"
      },
      "generation": {
       "main": {
@@ -1775,7 +1803,10 @@
       },
       "providers": {
        "madloop": {
-        "seconds": 8675.731757467904
+        "seconds": 8675.731757467904,
+        "graph_s": 285.1546385609545,
+        "export_s": 8354.050280078023,
+        "compile_s": 36.526838828925975
        },
        "recola": {
         "seconds": 2125.05073
@@ -1873,7 +1904,8 @@
        "fc_seconds_per_point": 0.9852571110932331,
        "lc_over_fc": 1.1039481569864829
       }
-     }
+     },
+     "loop_status": null
     }
    ]
   },
@@ -1922,10 +1954,18 @@
       "passed": true,
       "source": "measured.json required_native.processes[uux_emepddxg]"
      },
-     "loop_note": "V+jets refused on loop (WP3.2, WP3.5)",
+     "loop_status": {
+      "status": "refused",
+      "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+      "basis": "as the V+jets rows of G1; not run at this process",
+      "source": "milestone.json status_notes.notes[uux_emepddxg]"
+     },
      "generation": {
       "main": {
-       "status": "not measured"
+       "status": "refused",
+       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+       "basis": "as the V+jets rows of G1; not run at this process",
+       "source": "milestone.json status_notes.notes[uux_emepddxg]"
       },
       "dev": {
        "status": "measured",
@@ -1943,7 +1983,10 @@
       },
       "providers": {
        "madloop": {
-        "seconds": 55.748498094966635
+        "seconds": 55.748498094966635,
+        "graph_s": 24.522084772994276,
+        "export_s": 26.717296938004438,
+        "compile_s": 4.509116383967921
        },
        "recola": {
         "seconds": 8.39787866
@@ -1961,25 +2004,43 @@
       "source": "measured.json provider_generation.processes[uux_emepddxg]"
      },
      "full_colour": {
-      "gate_rule": "G1 (seven-leg rows not measured yet)",
+      "gate_rule": "G1 (seven-leg rows not timed yet)",
       "main": {
-       "status": "not measured"
+       "status": "refused",
+       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+       "basis": "as the V+jets rows of G1; not run at this process",
+       "source": "milestone.json status_notes.notes[uux_emepddxg]"
       },
       "dev": {
        "status": "not measured"
       },
       "alternative": null,
-      "reference_text": {
-       "openloops": "0.053\u20130.055",
-       "recola": "0.035",
-       "madloop": "0.143",
-       "threshold": "0.045",
-       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
+      "reference": {
+       "providers": {
+        "openloops": {
+         "text": "0.053\u20130.055",
+         "low": 0.053
+        },
+        "recola": {
+         "text": "0.035",
+         "low": 0.035
+        },
+        "madloop": {
+         "text": "0.143",
+         "low": 0.143
+        }
+       },
+       "limit_seconds": 0.0455,
+       "binding": "Recola",
+       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20); limit computed by scripts/build_summary.py"
       }
      },
      "leading_colour": {
       "main": {
-       "status": "not measured"
+       "status": "refused",
+       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+       "basis": "as the V+jets rows of G1; not run at this process",
+       "source": "milestone.json status_notes.notes[uux_emepddxg]"
       },
       "dev": {
        "status": "not measured"
@@ -2028,10 +2089,18 @@
       "passed": true,
       "source": "measured.json required_native.processes[uux_emepggg]"
      },
-     "loop_note": "V+jets refused on loop (WP3.2, WP3.5)",
+     "loop_status": {
+      "status": "refused",
+      "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+      "basis": "as the V+jets rows of G1; not run at this process",
+      "source": "milestone.json status_notes.notes[uux_emepggg]"
+     },
      "generation": {
       "main": {
-       "status": "not measured"
+       "status": "refused",
+       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+       "basis": "as the V+jets rows of G1; not run at this process",
+       "source": "milestone.json status_notes.notes[uux_emepggg]"
       },
       "dev": {
        "status": "measured",
@@ -2049,7 +2118,10 @@
       },
       "providers": {
        "madloop": {
-        "seconds": 141.5220654970617
+        "seconds": 141.5220654970617,
+        "graph_s": 76.61233418004122,
+        "export_s": 58.18535616499139,
+        "compile_s": 6.724375152029097
        },
        "recola": {
         "seconds": 15.8876071
@@ -2067,25 +2139,43 @@
       "source": "measured.json provider_generation.processes[uux_emepggg]"
      },
      "full_colour": {
-      "gate_rule": "G1 (seven-leg rows not measured yet)",
+      "gate_rule": "G1 (seven-leg rows not timed yet)",
       "main": {
-       "status": "not measured"
+       "status": "refused",
+       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+       "basis": "as the V+jets rows of G1; not run at this process",
+       "source": "milestone.json status_notes.notes[uux_emepggg]"
       },
       "dev": {
        "status": "not measured"
       },
       "alternative": null,
-      "reference_text": {
-       "openloops": "0.348\u20130.353",
-       "recola": "0.246\u20130.259",
-       "madloop": "1.41",
-       "threshold": "0.32",
-       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
+      "reference": {
+       "providers": {
+        "openloops": {
+         "text": "0.348\u20130.353",
+         "low": 0.348
+        },
+        "recola": {
+         "text": "0.246\u20130.259",
+         "low": 0.246
+        },
+        "madloop": {
+         "text": "1.41",
+         "low": 1.41
+        }
+       },
+       "limit_seconds": 0.3198,
+       "binding": "Recola",
+       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20); limit computed by scripts/build_summary.py"
       }
      },
      "leading_colour": {
       "main": {
-       "status": "not measured"
+       "status": "refused",
+       "reason": "Z fermion signs (WP3.2), Furry zeros (WP3.5)",
+       "basis": "as the V+jets rows of G1; not run at this process",
+       "source": "milestone.json status_notes.notes[uux_emepggg]"
       },
       "dev": {
        "status": "not measured"
@@ -2134,7 +2224,7 @@
       "passed": true,
       "source": "measured.json required_native.processes[gg_ttxemepg_qcd]"
      },
-     "loop_note": null,
+     "loop_status": null,
      "generation": {
       "main": {
        "status": "not measured"
@@ -2155,7 +2245,10 @@
       },
       "providers": {
        "madloop": {
-        "seconds": 161.09624127595453
+        "seconds": 161.09624127595453,
+        "graph_s": 87.49735189595958,
+        "export_s": 62.39196990203345,
+        "compile_s": 11.206919477961492
        },
        "recola": {
         "seconds": 28.678061
@@ -2173,7 +2266,7 @@
       "source": "measured.json provider_generation.processes[gg_ttxemepg_qcd]"
      },
      "full_colour": {
-      "gate_rule": "G1 (seven-leg rows not measured yet)",
+      "gate_rule": "G1 (seven-leg rows not timed yet)",
       "main": {
        "status": "not measured"
       },
@@ -2181,12 +2274,24 @@
        "status": "not measured"
       },
       "alternative": null,
-      "reference_text": {
-       "openloops": "0.425\u20130.433",
-       "recola": "0.59\u20130.67",
-       "madloop": "3.03\u20133.04",
-       "threshold": "0.55",
-       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
+      "reference": {
+       "providers": {
+        "openloops": {
+         "text": "0.425\u20130.433",
+         "low": 0.425
+        },
+        "recola": {
+         "text": "0.59\u20130.67",
+         "low": 0.59
+        },
+        "madloop": {
+         "text": "3.03\u20133.04",
+         "low": 3.03
+        }
+       },
+       "limit_seconds": 0.5525,
+       "binding": "OpenLoops",
+       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20); limit computed by scripts/build_summary.py"
       }
      },
      "leading_colour": {
@@ -2214,17 +2319,26 @@
       "status": "not compared",
       "note": "not started: Feynman-gauge massive vectors, Goldstones, complex-mass scheme, generic EW counterterms (WP3.2)"
      },
-     "loop_note": "EW loops not started (WP3.2)",
+     "loop_status": {
+      "status": "not started",
+      "reason": "EW loops (WP3.2)",
+      "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]"
+     },
      "generation": {
       "main": {
-       "status": "not measured"
+       "status": "not started",
+       "reason": "EW loops (WP3.2)",
+       "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]"
       },
       "dev": {
        "status": "not measured"
       },
       "providers": {
        "madloop": {
-        "seconds": 652.0846607149579
+        "seconds": 652.0846607149579,
+        "graph_s": 405.2487154210103,
+        "export_s": 236.73276926897233,
+        "compile_s": 10.103176024975255
        },
        "recola": {
         "seconds": 21.8859307
@@ -2242,25 +2356,41 @@
       "source": "measured.json provider_generation.processes[gg_ttxemepg_ew]"
      },
      "full_colour": {
-      "gate_rule": "G1 (seven-leg rows not measured yet)",
+      "gate_rule": "G1 (seven-leg rows not timed yet)",
       "main": {
-       "status": "not measured"
+       "status": "not started",
+       "reason": "EW loops (WP3.2)",
+       "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]"
       },
       "dev": {
        "status": "not measured"
       },
       "alternative": null,
-      "reference_text": {
-       "openloops": "0.96\u20131.12",
-       "recola": "0.95\u20131.02",
-       "madloop": "6.90\u20137.09",
-       "threshold": "1.24",
-       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
+      "reference": {
+       "providers": {
+        "openloops": {
+         "text": "0.96\u20131.12",
+         "low": 0.96
+        },
+        "recola": {
+         "text": "0.95\u20131.02",
+         "low": 0.95
+        },
+        "madloop": {
+         "text": "6.90\u20137.09",
+         "low": 6.9
+        }
+       },
+       "limit_seconds": 1.235,
+       "binding": "Recola",
+       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20); limit computed by scripts/build_summary.py"
       }
      },
      "leading_colour": {
       "main": {
-       "status": "not measured"
+       "status": "not started",
+       "reason": "EW loops (WP3.2)",
+       "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]"
       },
       "dev": {
        "status": "not measured"
@@ -2301,7 +2431,7 @@
       "max_finite": 2.8732766428186575e-10,
       "source": "measured.json seven_gluon.uux_ggggg_vs_providers"
      },
-     "loop_note": null,
+     "loop_status": null,
      "generation": {
       "main": {
        "status": "not measured"
@@ -2316,12 +2446,15 @@
        "record": "DESIGN.md WP3.1 status, third increment, 'Generation per process' (branch work/v2-generation-scale at 201efa8b; tools/loop_v2_generate.py measure --export, one thread, shared host at load 50\u201380)",
        "revision": "201efa8b",
        "source": "milestone.json required.rows[u overline(u) -> g g g g g]",
-       "ratio_to_fastest": 0.02563590974911241,
-       "note": "before the counterterm recursion and the poles companion"
+       "note": "before the counterterm recursion and the poles companion",
+       "ratio_omitted": "incomplete generation"
       },
       "providers": {
        "madloop": {
-        "seconds": 43954.58921789803
+        "seconds": 43954.58921789803,
+        "graph_s": 5792.987055428035,
+        "export_s": 38040.019540841924,
+        "compile_s": 121.58262162806932
        },
        "recola": {
         "seconds": 10220.0391
@@ -2337,7 +2470,7 @@
       "source": "measured.json provider_generation.processes[uux_ggggg]"
      },
      "full_colour": {
-      "gate_rule": "G1 (seven-leg rows not measured yet)",
+      "gate_rule": "G1 (no production-mode provider time yet)",
       "main": {
        "status": "not measured"
       },
@@ -2345,12 +2478,24 @@
        "status": "not measured"
       },
       "alternative": null,
-      "reference_text": {
-       "openloops": "no library",
-       "recola": "not measured",
-       "madloop": "not measured",
-       "threshold": "\u2014",
-       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
+      "reference": {
+       "providers": {
+        "openloops": {
+         "text": "no library",
+         "low": null
+        },
+        "recola": {
+         "text": "not measured",
+         "low": null
+        },
+        "madloop": {
+         "text": "not measured",
+         "low": null
+        }
+       },
+       "limit_seconds": null,
+       "binding": null,
+       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20); limit computed by scripts/build_summary.py"
       }
      },
      "leading_colour": {
@@ -2394,7 +2539,7 @@
       "within_estimate": true,
       "note": "top-free (particle_veto = [t]), Nf = 5"
      },
-     "loop_note": null,
+     "loop_status": null,
      "generation": {
       "main": {
        "status": "not measured"
@@ -2425,7 +2570,8 @@
        "recola": {
         "status": "running",
         "since": "2026-10-20T09:10:49Z"
-       }
+       },
+       "note": "stopped 22 Oct; not to be restarted (HANDOFF section 0.1)"
       },
       "fastest": null,
       "source": "measured.json provider_generation.processes[gg_ggggg]"
@@ -2444,12 +2590,24 @@
        "what": "standard full-colour sum, one evaluation, double precision, one pinned core; not a matched provider",
        "source": "milestone.json njet.single_evaluation"
       },
-      "reference_text": {
-       "openloops": "no library",
-       "recola": "none (\u00a70.1)",
-       "madloop": "none (\u00a70.1)",
-       "threshold": "no gate",
-       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
+      "reference": {
+       "providers": {
+        "openloops": {
+         "text": "no library",
+         "low": null
+        },
+        "recola": {
+         "text": "none (\u00a70.1)",
+         "low": null
+        },
+        "madloop": {
+         "text": "none (\u00a70.1)",
+         "low": null
+        }
+       },
+       "limit_seconds": null,
+       "binding": null,
+       "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20); limit computed by scripts/build_summary.py"
       }
      },
      "leading_colour": {

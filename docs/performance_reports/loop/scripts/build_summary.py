@@ -13,7 +13,9 @@ and every entry names its source:
                           the provider reference runs' generation records
 - data/milestone.json     hand-maintained registry: the required set, the
                           provider production references of the seven-leg rows
-                          (DESIGN 1.3 Table 1b) and short status notes
+                          (DESIGN 1.3 Table 1b, as text: the gate limit is
+                          computed here), the branch of the development
+                          revisions, user gate decisions and short status notes
 - tools/loop_benchmark/processes.json  the G1 process specifications
 
 Nothing is estimated or extrapolated: a value without a record stays absent
@@ -43,6 +45,9 @@ SHORT = {
 # References shown in Table 1 (NJet: its double-double values; the record's
 # binary64 NJet runs are cross-checks and stay in measured.json).
 SHOWN = set(SHORT)
+# When several configurations of one side qualify, the engine's production
+# per-point inputs come first.
+INPUTS_PREFERENCE = ("native", "python")
 
 # Stage groups of the per-point split (the executor's stage names; see the
 # report's stage-split table for their definitions).
@@ -166,13 +171,23 @@ def _provider_generation_g1(proc: dict) -> dict:
             out[name] = None
         elif name == "madloop":
             gen = rec.get("generation")
-            out[name] = None if gen is None else {"seconds": gen["total_s"]}
+            out[name] = None if gen is None else _madloop_generation(gen)
         elif name == "recola":
             sec = rec.get("setup", {}).get("generation_seconds")
             out[name] = None if sec is None else {"seconds": sec}
         else:
             out[name] = {"prebuilt": rec["library"]["name"]}
     return out
+
+
+def _madloop_generation(gen: dict) -> dict:
+    """MadLoop's generation: graph generation, source export, compilation."""
+    return {
+        "seconds": gen["total_s"],
+        "graph_s": gen["graph_generation_s"],
+        "export_s": gen["source_export_s"],
+        "compile_s": gen["compile_s"],
+    }
 
 
 def _fastest_generation(gens: dict) -> dict | None:
@@ -208,7 +223,22 @@ def _generation_of(cfg: dict | None, source: str) -> dict:
     }
 
 
-def _timing_of(proc: dict, cfg: dict | None, source: str, fastest: dict | None) -> dict:
+def _decision(decisions: dict, key: str, batch: str, status: str) -> dict | None:
+    """A user verdict that replaces the measured open verdict of one process
+    at one batch size (milestone.json gate_decisions)."""
+    for d in decisions["decisions"]:
+        if d["process"] == key and d["batch"] == batch and d["measured"] == status:
+            return d
+    return None
+
+
+def _timing_of(
+    proc: dict,
+    cfg: dict | None,
+    source: str,
+    fastest: dict | None,
+    decisions: dict,
+) -> dict:
     if cfg is None:
         return {"status": "not measured"}
     if cfg.get("generation_error"):
@@ -244,13 +274,24 @@ def _timing_of(proc: dict, cfg: dict | None, source: str, fastest: dict | None) 
         out["ratio_to_fastest"] = t / fastest["seconds_per_point"]
     gate = rec.get("gate", {})
     if "ratio_to_binding_limit" in gate:
+        measured = {"inconclusive": "open"}.get(gate["status"], gate["status"])
         out["gate"] = {
-            "status": {"inconclusive": "open"}.get(gate["status"], gate["status"]),
+            "status": measured,
             "ratio_to_limit": gate["ratio_to_binding_limit"],
             "band": gate["band_to_binding_limit"],
             "binding": NAMES[gate["binding_provider"]],
             "limit_seconds": gate["binding_limit"],
         }
+        d = _decision(decisions, proc["key"], batch, gate["status"])
+        if d is not None:
+            out["gate"].update(
+                status=d["verdict"],
+                measured_status=measured,
+                decision=d["label"],
+                decision_reason=d["reason"],
+                decision_source="milestone.json gate_decisions"
+                f" ({decisions['source']})",
+            )
     return out
 
 
@@ -306,9 +347,10 @@ def _validation_g1(
         "median_finite": max(r["median_finite"] for r in refs),
         "source": f"{source}.values_vs_providers",
     }
-    # The worst point re-evaluated with the stability checks (native-input
-    # configuration of the campaign): binary64 estimate E and the
-    # double-double value's deviation from the closest provider.
+    # The worst point re-evaluated with the stability checks: binary64
+    # estimate E and the double-double value's deviation from the closest
+    # provider, only if the campaign re-evaluated it in the validated
+    # configuration itself (another configuration's estimate is not its own).
     rows = {
         (r["index"], r["arithmetic"]): r
         for r in proc.get("stability", [])
@@ -329,37 +371,75 @@ def _validation_g1(
     return out
 
 
+def _meta_revisions(g1: dict, *keys: str) -> set[str]:
+    return {g1[k][:8] for k in keys if g1.get(k)}
+
+
 def _roles(g1: dict) -> tuple[set[str], set[str], set[str]]:
-    """The campaign's two sides, from its own metadata: the integrated
-    configuration (slice revisions, and any revision recorded on the same
-    branch, e.g. a refusal recorded earlier) and the development one (the
-    native-input build). A configuration on neither side is not shown."""
-    integrated = {g1["slice_revision"], g1["slice_lc_revision"]}
-    dev = {g1["native_revision"], g1["native_commit"]}
+    """The campaign's two sides, from its own metadata (the gate CLI's --meta
+    keys): the integrated configuration (slice_revision, slice_lc_revision,
+    and any revision recorded on the same branch, e.g. a refusal recorded
+    earlier) and an optional development one (native_revision,
+    native_commit; absent, equal to the integrated revision or not timed
+    once the development work is integrated). A configuration on neither
+    side is not shown."""
+    integrated = _meta_revisions(g1, "slice_revision", "slice_lc_revision")
+    timed = {
+        cfg["revision"][:8]
+        for proc in g1["processes"]
+        for cfg in proc["pyamplicol"].values()
+    }
+    dev = (_meta_revisions(g1, "native_revision", "native_commit") - integrated) & timed
     branches = {
         cfg["branch"]
         for proc in g1["processes"]
         for cfg in proc["pyamplicol"].values()
-        if cfg["revision"][:8] in integrated
+        if cfg["revision"][:8] in integrated and cfg["branch"] != "HEAD"
     }
     return integrated, dev, branches
 
 
+def _dev_branch(g1: dict, ms: dict, dev: set[str]) -> str | None:
+    """The branch of the development revisions: the campaign's own
+    native_branch, else milestone.json development.revisions, else the
+    configurations' records (the gate tool records a detached checkout as
+    'HEAD', which names no branch)."""
+    if not dev:
+        return None
+    if g1.get("native_branch"):
+        return g1["native_branch"]
+    known = (ms.get("development") or {}).get("revisions", {})
+    names = {known[r] for r in dev if r in known}
+    if not names:
+        names = {
+            cfg["branch"]
+            for proc in g1["processes"]
+            for cfg in proc["pyamplicol"].values()
+            if cfg["revision"][:8] in dev and cfg["branch"] != "HEAD"
+        }
+    if len(names) != 1:
+        raise ValueError(f"development revisions {sorted(dev)}: branch {names}")
+    return names.pop()
+
+
 def _pick(cfgs: dict, side, accuracy: str) -> tuple[str, dict] | tuple[None, None]:
     """The default-protocol configuration (schedule B, 16 lanes) of one side
-    and colour accuracy."""
-    for name, cfg in cfgs.items():
-        if (
-            side(cfg)
-            and cfg["accuracy"] == accuracy
-            and cfg["schedule"] == "B"
-            and cfg["lanes"] == 16
-        ):
-            return name, cfg
-    return None, None
+    and colour accuracy; native per-point inputs first (INPUTS_PREFERENCE)."""
+    found = [
+        (name, cfg)
+        for name, cfg in cfgs.items()
+        if side(cfg)
+        and cfg["accuracy"] == accuracy
+        and cfg["schedule"] == "B"
+        and cfg["lanes"] == 16
+    ]
+    if not found:
+        return None, None
+    rank = {inputs: i for i, inputs in enumerate(INPUTS_PREFERENCE)}
+    return min(found, key=lambda x: rank.get(x[1]["inputs"], len(rank)))
 
 
-def _g1_rows(g1: dict, specs: dict) -> list[dict]:
+def _g1_rows(g1: dict, specs: dict, decisions: dict) -> list[dict]:
     integrated, dev_revs, branches = _roles(g1)
 
     def is_main(cfg: dict) -> bool:
@@ -393,12 +473,14 @@ def _g1_rows(g1: dict, specs: dict) -> list[dict]:
             and main.get("values_vs_providers")
         ):
             validation = _validation_g1(
-                proc, main, "integrated", f"{base}['{main_name}']", dev_name
+                proc, main, "integrated", f"{base}['{main_name}']", main_name
             )
-        else:
+        elif dev is not None:
             validation = _validation_g1(
                 proc, dev, "development", f"{base}['{dev_name}']", dev_name
             )
+        else:
+            validation = {"status": "not compared"}
         structure = (main or {}).get("structure") or (dev or {}).get("structure") or {}
         lc_structure = (lc_main_cfg or lc_dev_cfg or {}).get("structure") or {}
         rows.append(
@@ -425,8 +507,12 @@ def _g1_rows(g1: dict, specs: dict) -> list[dict]:
                 },
                 "full_colour": {
                     "gate_rule": "G1" if proc["gated"] else "no gate (2->2)",
-                    "main": _timing_of(proc, main, f"{base}['{main_name}']", fastest),
-                    "dev": _timing_of(proc, dev, f"{base}['{dev_name}']", fastest),
+                    "main": _timing_of(
+                        proc, main, f"{base}['{main_name}']", fastest, decisions
+                    ),
+                    "dev": _timing_of(
+                        proc, dev, f"{base}['{dev_name}']", fastest, decisions
+                    ),
                     "providers": runtime["providers"],
                     "fastest": fastest,
                     "source": f"g1.json processes[{key}].providers (median s/pt)",
@@ -474,10 +560,58 @@ def _validation_native(rec: dict, source: str) -> dict:
     return out
 
 
-def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
+def _seconds(text: str) -> list[float]:
+    """The times of a transcribed provider entry (a value or a range such as
+    '0.348-0.353' with an en dash); none for a status ('no library')."""
+    if not re.match(r"^\s*\d", text):
+        return []
+    return [float(x) for x in re.findall(r"\d+(?:\.\d+)?", text)]
+
+
+def _reference(ref: dict, factor: float) -> dict:
+    """The seven-leg provider production references (DESIGN Table 1b, text)
+    and the gate limit computed from them: faster than MadLoop and at most
+    factor x each of Recola and OpenLoops, at the lower end of each range."""
+    providers = {}
+    limits = []
+    for name in ("openloops", "recola", "madloop"):
+        values = _seconds(ref[name])
+        providers[name] = {"text": ref[name], "low": min(values) if values else None}
+        if values:
+            scale = 1.0 if name == "madloop" else factor
+            limits.append((round(scale * min(values), 10), NAMES[name]))
+    limit = min(limits) if limits else None
+    return {
+        "providers": providers,
+        "limit_seconds": None if limit is None else limit[0],
+        "binding": None if limit is None else limit[1],
+        "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20);"
+        " limit computed by scripts/build_summary.py",
+    }
+
+
+def _loop_status(note: dict, key: str) -> dict | None:
+    """The engine on loop for a process without a G1 record: refused or not
+    started, by the registry's short attribution (no record of a run)."""
+    src = f"milestone.json status_notes.notes[{key}]"
+    if "refused" in note:
+        return {
+            "status": "refused",
+            "reason": note["refused"],
+            "basis": note.get("refused_basis"),
+            "source": src,
+        }
+    if "not_started" in note:
+        return {"status": "not started", "reason": note["not_started"], "source": src}
+    return None
+
+
+def _required_rows(ms: dict, meas: dict, known: set[str], factor: float) -> list[dict]:
     native = meas["required_native"]["processes"]
     prov_gen = meas["provider_generation"]["processes"]
     refs = {(r["label"], r.get("corr")): r for r in ms["gate_references"]["rows"]}
+    notes = ms.get("status_notes", {}).get("notes", {})
+    njet = {r["label"]: r for r in ms["njet"]["rows"]}
     rows = []
     for req in ms["required"]["rows"]:
         corr = req.get("corr")
@@ -485,6 +619,7 @@ def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
         key = _key(text, corr)
         if _key(text) in known and corr is None:
             continue  # a G1 row (g g > g g g g, g g > t t~ g g)
+        note = notes.get(key, {})
         rec = native.get(key)
         src = f"measured.json required_native.processes[{key}]"
         dev_gen = {"status": "not measured"}
@@ -495,6 +630,9 @@ def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
                 "seconds": rec["generate_s"] + rec["export_s"],
                 "generate_s": rec["generate_s"],
                 "export_s": rec["export_s"],
+                # Generation memory: the larger of the two stages' peak RSS
+                # (VmHWM); the record's process peak also covers the point
+                # evaluations of the validation run.
                 "peak_gib": max(rec["generate_peak_gib"], rec["export_peak_gib"]),
                 "process_peak_gib": rec["max_rss_gib"],
                 "plan_mb": rec["plan_json_mb"],
@@ -520,11 +658,12 @@ def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
                 ).group(1),
                 "source": f"milestone.json required.rows[{req['label']}]",
             }
-        if rec is None and key == "uux_ggggg":
-            cmp = meas["seven_gluon"]["uux_ggggg_vs_providers"]
+        cmp = meas["seven_gluon"].get(f"{key}_vs_providers")
+        if rec is None and cmp is not None:
+            # An earlier development comparison with the providers.
             validation = {
                 "status": "compared",
-                "configuration": "dev (work/v2-generation-scale)",
+                "configuration": f"dev ({cmp['branch']})",
                 "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
                 "points": cmp["points"],
                 "references": [
@@ -539,7 +678,7 @@ def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
                 "max_finite": max(
                     v["finite"] for v in cmp["max_relative_deviation"].values()
                 ),
-                "source": "measured.json seven_gluon.uux_ggggg_vs_providers",
+                "source": f"measured.json seven_gluon.{key}_vs_providers",
             }
         pg = prov_gen.get(key)
         gens: dict = {n: None for n in PROVIDERS}
@@ -547,7 +686,7 @@ def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
         if pg is not None:
             ml, rc = pg["madloop"], pg["recola"]
             if "total_s" in ml:
-                gens["madloop"] = {"seconds": ml["total_s"]}
+                gens["madloop"] = _madloop_generation(ml)
             else:
                 unfinished["madloop"] = {
                     "status": ml["status"],
@@ -562,18 +701,41 @@ def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
                 }
             if pg["openloops"] is not None:
                 gens["openloops"] = {"prebuilt": pg["openloops"]["library"]}
+        if unfinished and "providers" in note:
+            unfinished["note"] = note["providers"]
         gen_fastest = _fastest_generation(gens)
-        if dev_gen["status"] == "measured" and gen_fastest is not None:
-            dev_gen["ratio_to_fastest"] = dev_gen["seconds"] / gen_fastest["seconds"]
+        if dev_gen["status"] == "measured":
+            if "generation" in note:
+                dev_gen["note"] = note["generation"]
+            if note.get("generation_incomplete"):
+                # Not the complete generation of today's production route:
+                # no ratio to a complete provider generation.
+                dev_gen["ratio_omitted"] = "incomplete generation"
+            elif gen_fastest is not None:
+                dev_gen["ratio_to_fastest"] = (
+                    dev_gen["seconds"] / gen_fastest["seconds"]
+                )
+        # Matched providers: those with a generated process (a completed
+        # generation or a prebuilt library); a gate needs one.
+        matched = [n for n in PROVIDERS if gens[n] is not None]
         ref = refs.get((req["label"], corr))
-        # An existing alternative that is not a matched provider (NJet: massless
-        # five-flavour QCD), shown for orientation only: no ratio, no gate.
+        reference = None if ref is None else _reference(ref, factor)
+        if not matched:
+            gate_rule = "no gate (no matched provider)"
+        elif reference is not None and reference["limit_seconds"] is not None:
+            gate_rule = "G1 (seven-leg rows not timed yet)"
+        else:
+            gate_rule = "G1 (no production-mode provider time yet)"
+        # An existing alternative that is not a matched provider (NJet:
+        # massless five-flavour QCD), shown for orientation only: no ratio,
+        # no gate.
         alternative = None
-        njet = {r["label"]: r for r in ms["njet"]["rows"]}.get(req["label"])
-        if njet is not None and ref is not None and ref["threshold"] == "no gate":
+        nj = njet.get(req["label"])
+        if nj is not None and not matched:
+            one = ms["njet"]["single_evaluation"]
             alternative = {
-                "name": "NJet 3.1.2",
-                "seconds_per_evaluation": ms["njet"]["single_evaluation"]["standard"],
+                "name": one["tool"],
+                "seconds_per_evaluation": one["standard"],
                 "what": "standard full-colour sum, one evaluation, double precision,"
                 " one pinned core; not a matched provider",
                 "source": "milestone.json njet.single_evaluation",
@@ -582,10 +744,10 @@ def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
         counts = meas["seven_gluon"]["generation_latest"]
         if counts["process"] == text and corr is None:
             families = counts["counts"]["families"]
-        note = ms.get("status_notes", {}).get("notes", {}).get(key, {})
-        loop_note = note.get("loop")
         if "validation" in note and validation.get("status") == "compared":
             validation["note"] = note["validation"]
+        status = _loop_status(note, key)
+        main = {"status": "not measured"} if status is None else dict(status)
         rows.append(
             {
                 "key": key,
@@ -602,9 +764,9 @@ def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
                     else None,
                 },
                 "validation": validation,
-                "loop_note": loop_note,
+                "loop_status": status,
                 "generation": {
-                    "main": {"status": "not measured"},
+                    "main": dict(main),
                     "dev": dev_gen,
                     "providers": gens,
                     "unfinished": unfinished,
@@ -612,25 +774,14 @@ def _required_rows(ms: dict, meas: dict, known: set[str]) -> list[dict]:
                     "source": f"measured.json provider_generation.processes[{key}]",
                 },
                 "full_colour": {
-                    "gate_rule": "no gate (no matched provider)"
-                    if ref is not None and ref["threshold"] == "no gate"
-                    else "G1 (seven-leg rows not measured yet)",
-                    "main": {"status": "not measured"},
+                    "gate_rule": gate_rule,
+                    "main": dict(main),
                     "dev": {"status": "not measured"},
                     "alternative": alternative,
-                    "reference_text": None
-                    if ref is None
-                    else {
-                        "openloops": ref["openloops"],
-                        "recola": ref["recola"],
-                        "madloop": ref["madloop"],
-                        "threshold": ref["threshold"],
-                        "source": "milestone.json gate_references"
-                        " (DESIGN 1.3 Table 1b, 2026-10-20)",
-                    },
+                    "reference": reference,
                 },
                 "leading_colour": {
-                    "main": {"status": "not measured"},
+                    "main": dict(main),
                     "dev": {"status": "not measured"},
                 },
             }
@@ -646,18 +797,35 @@ def build() -> dict:
         p["name"]: p
         for p in _load(REPO / "tools/loop_benchmark/processes.json")["processes"]
     }
-    rows = _g1_rows(g1, specs)
-    rows += _required_rows(ms, meas, {r["key"] for r in rows})
+    decisions = ms["gate_decisions"]
+    rows = _g1_rows(g1, specs, decisions)
+    rows += _required_rows(ms, meas, {r["key"] for r in rows}, g1["gate_factor"])
     notes = ms.get("status_notes", {}).get("notes", {})
     for r in rows:
         note = notes.get(r["key"], {})
-        for cell in (r["generation"]["main"], r["full_colour"]["main"]):
-            if cell.get("status") == "refused" and "refused" in note:
-                cell["reason"] = note["refused"]
+        r.setdefault("loop_status", None)
+        main = (r["generation"]["main"], r["full_colour"]["main"])
+        if any(c.get("status") == "refused" for c in main):
+            reason = note.get("refused")
+            for cell in main:
+                if cell.get("status") == "refused" and reason is not None:
+                    cell["reason"] = reason
+            if r["loop_status"] is None:
+                r["loop_status"] = {
+                    "status": "refused",
+                    "reason": reason,
+                    "source": f"{r['generation']['main']['source']}"
+                    f" (generation_error {r['generation']['main']['error']});"
+                    f" milestone.json status_notes.notes[{r['key']}]",
+                }
+            if r["leading_colour"]["main"].get("status") == "not measured":
+                r["leading_colour"]["main"] = {
+                    "status": "refused",
+                    "reason": reason,
+                    "source": r["loop_status"]["source"],
+                }
         if "madloop" in note:
             r["full_colour"]["madloop_note"] = note["madloop"]
-        if "generation" in note and r["generation"]["dev"].get("status") == "measured":
-            r["generation"]["dev"]["note"] = note["generation"]
     # Increasing multiplicity, then increasing colour complexity (number of
     # gluons) within a multiplicity; stable otherwise.
     rows.sort(key=lambda r: (r["outgoing"], r["label"].split().count("g")))
@@ -672,6 +840,18 @@ def build() -> dict:
         if not groups or groups[-1]["name"] != name:
             groups.append({"name": name, "rows": []})
         groups[-1]["rows"].append(r)
+    _, dev_revs, _ = _roles(g1)
+    dev = None
+    if dev_revs:
+        dev = {
+            "branch": _dev_branch(g1, ms, dev_revs),
+            "revision": g1.get("native_revision"),
+            "commit": g1.get("native_commit"),
+            "native_build": g1.get("native_build"),
+            "inputs": inputs("dev"),
+            "source": "g1.json native_revision, native_commit, native_build;"
+            " branch: milestone.json development",
+        }
     return {
         "what": (
             "Table 1 of docs/performance_reports/loop/benchmarks.typ, written by"
@@ -685,24 +865,18 @@ def build() -> dict:
             "native_build_on_loop": ms["native_build"]["name"],
             "integrated": {
                 "revision": g1["slice_revision"],
-                "lc_revision": g1["slice_lc_revision"],
-                "native_build": g1["slice_build"],
+                "lc_revision": g1.get("slice_lc_revision"),
+                "native_build": g1.get("slice_build"),
                 "inputs": inputs("main"),
                 "source": "g1.json slice_revision, slice_lc_revision, slice_build",
             },
-            "dev": {
-                "branch": "work/v2-generation-scale",
-                "revision": g1["native_revision"],
-                "commit": g1["native_commit"],
-                "native_build": g1["native_build"],
-                "inputs": inputs("dev"),
-                "source": "g1.json native_revision, native_commit, native_build",
-            },
+            "dev": dev,
             "dev_required": {
                 "branch": meas["required_native"]["branch"],
                 "record": meas["required_native"]["record"],
                 "source": "measured.json required_native",
             },
+            "gate_decisions": decisions,
         },
         "groups": groups,
     }

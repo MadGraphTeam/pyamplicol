@@ -20,6 +20,8 @@ import sys
 from pathlib import Path
 
 RUNS = "tmp/generation-scale/runs"
+# The branch whose development runs RUNS and GINT hold.
+GENSCALE_BRANCH = "work/v2-generation-scale"
 CT = "tmp/ct-recursion/s4"
 # Native validations of the WP3.1 branch (work/v2-generation-scale) on its
 # merged head, recorded by DESIGN WP3.1 "eighth increment" (0ea83af2):
@@ -251,12 +253,13 @@ def collect(root: Path) -> dict:
             },
             "uux_ggggg_vs_providers": {
                 "source": f"workspace/{RUNS}/cmp_uux_ggggg.json",
+                "branch": GENSCALE_BRANCH,
                 "points": len(uux["points"]),
                 "max_relative_deviation": worst,
             },
         },
         "required_native": {
-            "branch": "work/v2-generation-scale",
+            "branch": GENSCALE_BRANCH,
             "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), "
             "'Native validations on the merged head'",
             "what": (
