@@ -20,8 +20,8 @@ tools.loop_benchmark``) and writes one JSON document for the live report
   matched Recola and OpenLoops time; with no matched provider it is "no
   matched provider timing" (never extrapolated, addendum F);
 - its **uncertainty** (MASTER_PLAN §5.8 item 9): the relative standard error
-  of pyAmpliCol's median over its blocks (1.2533 x 1.4826 MAD / sqrt(n),
-  half the range for fewer than three blocks) plus each provider's relative
+  of pyAmpliCol's median over its blocks (1.2533 x 1.4826 MAD / sqrt(n);
+  half the range for fewer than five blocks) plus each provider's relative
   half-range over its repeated runs (for a single run, the largest
   half-range of any provider in the campaign, marked "assumed"). The time
   over the limit with that band decides: pass if the whole band passes, fail
@@ -85,7 +85,7 @@ def median_uncertainty(samples: list[float]) -> float:
     if len(samples) < 2:
         return 0.0
     median = statistics.median(samples)
-    if len(samples) < 3:
+    if len(samples) < 5:
         return (max(samples) - min(samples)) / (2 * median)
     mad = statistics.median(abs(x - median) for x in samples)
     return 1.2533 * 1.4826 * mad / math.sqrt(len(samples)) / median
