@@ -520,6 +520,51 @@ def _summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
     return out
 
 
+def check_points(options: Any) -> int:
+    """Evaluate chosen stream points with stability checks (one rotation about
+    z by (3/5, 4/5) and the reduction-direction check) in the configuration
+    of a run: the estimate E beside the value, for the points where the
+    timed binary64 values deviate most from the providers (``gate.py``)."""
+
+    from pyamplicol.loops.v2.stability import Rotation, StabilityChecks
+
+    run = Run(options)
+    run.generate()
+    checks = StabilityChecks(
+        rotations=(Rotation.about("z", "3/5", "4/5"),), reduction_direction=True
+    )
+    rows = []
+    for index in options.points:
+        points, scales = run._batch(index, 1)
+        poles = _finite_only()
+        (result,) = run.executor.evaluate(
+            points,
+            scales,
+            parameters=run.parameters,
+            poles=poles,
+            stability=checks,
+        )
+        born, finite = _totals(result)
+        rows.append(
+            {
+                "index": index,
+                "born": born,
+                "finite": finite,
+                "estimate": result.stability.relative,
+                "estimate_finite": (
+                    getattr(result.stability, "coefficients", None) or [None]
+                )[0],
+            }
+        )
+        print(run.key, json.dumps(rows[-1]), flush=True)
+    run.record["kind"] = "stability"
+    run.record["checks"] = "rotation about z by (3/5, 4/5) and the reduction direction"
+    run.record["rows"] = rows
+    if options.json:
+        options.json.write_text(json.dumps(run.record, indent=1) + "\n")
+    return 0
+
+
 def main(options: Any) -> int:
     if options.inputs == "native" and not _native_inputs_supported():
         raise SystemExit("this checkout has no native point inputs (WP3.1)")

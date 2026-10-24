@@ -48,6 +48,18 @@ def main(argv: list[str] | None = None) -> int:
     v2.add_argument("--scratch", type=Path, default=Path("/tmp"))
     v2.add_argument("--json", type=Path)
 
+    stable = commands.add_parser(
+        "stability", help="stability estimates at chosen stream points"
+    )
+    stable.add_argument("process")
+    stable.add_argument("--points", type=int, nargs="+", required=True)
+    stable.add_argument("--accuracy", choices=("full", "nlc", "lc"), default="full")
+    stable.add_argument("--inputs", choices=("python", "native"), default="python")
+    stable.add_argument("--native-build", type=Path)
+    stable.add_argument("--scratch", type=Path, default=Path("/tmp"))
+    stable.add_argument("--json", type=Path)
+    stable.set_defaults(lanes=16, schedule="B")
+
     providers = commands.add_parser("providers", help="time the providers")
     providers.add_argument("process")
     providers.add_argument(
@@ -67,6 +79,12 @@ def main(argv: list[str] | None = None) -> int:
     gate = commands.add_parser("gate", help="combine records into the gate table")
     gate.add_argument("records", nargs="+", type=Path)
     gate.add_argument("--json", type=Path, required=True)
+    gate.add_argument(
+        "--meta",
+        nargs="*",
+        metavar="KEY=VALUE",
+        help="labels for the report (revisions, date, host)",
+    )
 
     options = parser.parse_args(argv)
     if options.command == "streams":
@@ -78,6 +96,10 @@ def main(argv: list[str] | None = None) -> int:
         from . import pyamplicol_v2
 
         return pyamplicol_v2.main(options)
+    if options.command == "stability":
+        from . import pyamplicol_v2
+
+        return pyamplicol_v2.check_points(options)
     if options.command == "providers":
         from . import providers as module
 

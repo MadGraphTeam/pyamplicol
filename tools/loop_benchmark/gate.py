@@ -98,6 +98,23 @@ def _provider_values(key: str, record: dict[str, Any]) -> dict[str, dict[int, tu
     return out
 
 
+def _madloop_generation(export: Path) -> dict[str, Any] | None:
+    """Graph generation, Fortran export and compilation seconds of a MadLoop
+    export (``madloop_export.py``'s ``<export>.generation.json``)."""
+
+    path = export.parent / f"{export.name}.generation.json"
+    if not path.exists():
+        return None
+    data = json.loads(path.read_text())
+    keys = ("graph_generation_s", "source_export_s", "compile_s")
+    if not all(isinstance(data.get(key), int | float) for key in keys):
+        return None
+    return {key: data[key] for key in keys} | {
+        "total_s": sum(data[key] for key in keys),
+        "loops": data.get("loops"),
+    }
+
+
 def compare_values(
     key: str, mine: dict[int, tuple], theirs: dict[str, dict[int, tuple]]
 ) -> dict[str, Any]:
@@ -159,6 +176,9 @@ def build(paths: list[Path]) -> dict[str, Any]:
                 "repeats": {},
             },
         )
+        if record["kind"] == "stability":
+            entry.setdefault("stability", []).extend(record["rows"])
+            continue
         if record["kind"] == "providers":
             # A later record of the same provider (e.g. the run on the core
             # that also timed pyAmpliCol) replaces an earlier one; every
@@ -238,6 +258,9 @@ def build(paths: list[Path]) -> dict[str, Any]:
                 name: {k: v for k, v in result.items() if k != "rows"}
                 for name, result in entry["providers"]["providers"].items()
             }
+            madloop = provider_summary.get("madloop")
+            if madloop and "export" in madloop:
+                madloop["generation"] = _madloop_generation(Path(madloop["export"]))
         out.append(
             {
                 "key": key,
@@ -249,6 +272,7 @@ def build(paths: list[Path]) -> dict[str, Any]:
                 if entry["providers"]
                 else None,
                 "provider_repeats": entry["repeats"],
+                "stability": entry.get("stability", []),
                 "pyamplicol": configurations,
             }
         )
@@ -263,6 +287,9 @@ def build(paths: list[Path]) -> dict[str, Any]:
 
 def main(options: Any) -> int:
     document = build(options.records)
+    for item in options.meta or ():
+        key, _, value = item.partition("=")
+        document[key] = value
     options.json.parent.mkdir(parents=True, exist_ok=True)
     options.json.write_text(json.dumps(document, indent=1) + "\n")
     for process in document["processes"]:
