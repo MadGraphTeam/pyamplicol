@@ -433,7 +433,7 @@
       linebreak()
       [*References:* ML MadLoop 3.7.0, Rc Recola 2.2.5 (COLLIER), OL OpenLoops 2.1.5 (prebuilt libraries: no generation
       time), NJet DD NJet 3.1.2 in double-double. Deviation $|a - b| slash max(|a|, |b|, |B| alpha_s slash 2 pi)$ of the
-      binary64 finite part at the timed points; † the largest lies within pyAmpliCol's own binary64 stability estimate at that
+      binary64 finite part at the timed points (median: over the points, the largest over the references); † the largest lies within pyAmpliCol's own binary64 stability estimate at that
       point. *Gate chip:* time ÷ binding limit (MadLoop, or 1.30 × the faster of Recola and OpenLoops); pass or fail when the
       whole uncertainty band is below or above 1, else open.]
     },
@@ -535,7 +535,7 @@ development timings, such as a seven-gluon point with its rotation check, are no
         #names(gated.filter(p => slice-c(p) != none and not refused(slice-c(p)) and top(slice-c(p)) == "1")) were timed at $B = 1$ only.
       - *Native inputs* #dev-tag (WP3.1, not yet integrated) at $B = 128$: #dev-pass.len() of #gated.len() pass,
         #names(dev-open) open, #names(dev-fail) fails (×#fixed(lim(gproc("uux_ddxg"), dev-c(gproc("uux_ddxg")), big), 2) of its limit).
-        At $B = 1$ no process passes with 16 lanes (#l1-pass.len() with one lane).
+        At $B = 1$ #if one-pass.len() == 0 [no process passes] else [#one-pass.len() pass] with 16 lanes (#l1-pass.len() with one lane).
       - *$2 -> 5$:* not timed yet (`measure-g1-7leg`); $g g -> g g g g g$ has no matched provider and is reported without a gate.
     ]
   }),
@@ -560,7 +560,8 @@ development timings, such as a seven-gluon point with its rotation check, are no
     - Electroweak loops, Goldstones and the complex-mass scheme (WP3.2): $g g -> t overline(t) e^- e^+ g$ (EW) not started;
       $V$+jets refused on `loop`.
     - Batched timings of the $2 -> 5$ set; LC timings of the $V$+jets rows; provider protocol-mode columns.
-    - Seven-gluon generation cost: 46 min and 42 GiB at peak on the WP3.1 branch, mostly the always-generated poles companion
+    - Seven-gluon generation cost on the WP3.1 branch: #minutes(meas.required_native.processes.gg_ggggg.generate_s), process
+      peak #fixed(meas.required_native.processes.gg_ggggg.max_rss_gib, 1) GiB, mostly the always-generated poles companion
       (@sevenglue); inside addendum H, to be made lean.
     - Ward check at seven gluons; prepared-artifact portability without regeneration (addendum G).
   ],
