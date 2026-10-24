@@ -224,7 +224,9 @@
 #let S = json("data/summary.json")
 #let sm = S.meta
 #let neutral = luma(243)
-#let dur(s) = if s == none [—] else if s < 1 [#sig(s * 1000) ms] else if s < 600 [#sig(s) s] else if s < 10800 [#fixed(s / 60, 1) min] else [#fixed(s / 3600, 1) h]
+#let dur(s) = if s == none [—] else if s < 1 [#sig(s * 1000)~ms] else if s < 600 [#sig(s)~s] else if s < 10800 [#fixed(s / 60, 1)~min] else [#fixed(s / 3600, 1)~h]
+// Peak memory: two decimals below 10 GiB, one above; never broken.
+#let gib(x) = box[#fixed(x, if x >= 10 { 1 } else { 2 })~GiB]
 // Compact scientific notation for deviations: 7.7e−13.
 #let esci(x) = {
   if x == none or x == 0 { return [—] }
@@ -287,7 +289,11 @@
   block(spacing: 0pt, text(10pt, font: "Libertinus Serif", math-label(r.math)))
   v(3.6pt)
   let f = r.families
-  block(spacing: 0pt, text(6.4pt, fill: ink2)[#r.legs legs · #r.corrections · #if f.fc == none [families not recorded] else [#group(f.fc) families]#if f.lc != none [ (LC #group(f.lc))]])
+  // A count recorded only for another particle veto (e.g. with top loops)
+  // is printed as that configuration's, never as the row's.
+  let other = f.at("other_configuration", default: none)
+  let veto-text(v) = if v.len() == 0 [with top loops] else [veto #v.map(x => (str(6): "t").at(str(x), default: str(x))).join(",")]
+  block(spacing: 0pt, text(6.4pt, fill: ink2)[#r.legs legs · #r.corrections · #if f.fc == none [families not recorded#if other != none [ #box[(#group(other.fc) #veto-text(other.particle_veto))]]] else [#box[#group(f.fc) families]]#if f.lc != none [ #box[(LC #group(f.lc))]]])
   let val = r.validation
   v(3.4pt)
   if val.status != "compared" {
@@ -300,7 +306,7 @@
     for x in val.references.sorted(key: x => x.max_finite) {
       if groups.len() > 0 and x.max_finite <= 10 * groups.last().first().max_finite { groups.last().push(x) } else { groups.push((x,)) }
     }
-    block(spacing: 0pt, text(6.6pt)[#groups.map(g => if g.len() == 1 [#g.first().short #esci(g.first().max_finite)] else [#g.map(x => x.short).join("·") ≤ #esci(g.last().max_finite)]).join([ · ])])
+    block(spacing: 0pt, text(6.6pt)[#groups.map(g => if g.len() == 1 [#g.first().short #esci(g.first().max_finite)] else [#g.map(x => x.short).join("·") ≤ #esci(g.last().max_finite)]).join([~· ])])
     v(2.2pt)
     let wp = val.at("worst_point", default: none)
     let within = if wp != none { wp.within_estimate } else { val.at("within_estimate", default: false) }
@@ -318,13 +324,13 @@
   parts += g.providers.pairs().filter(((k, x)) => x != none and "seconds" in x and (f == none or k != f.key)).sorted(key: ((k, x)) => x.seconds).map(((k, x)) => [#pkey(k) #dur(x.seconds)])
   if "madloop" in unf { parts.push([ML diagrams #dur(unf.madloop.graph_generation_s), stopped in export]) }
   if "recola" in unf { parts.push([Rc unfinished]) }
-  let prov-line = if parts.len() == 0 [no provider generation recorded] else { parts.join([ · ]) }
+  let prov-line = if parts.len() == 0 [no provider generation recorded] else { parts.join([~· ]) }
   let dev-line(full) = if d.status != "measured" { none } else {
-    [#dev-tag #inputs-word(d) #dur(d.seconds)#if ratio-of(d) != none [ #mult2(ratio-of(d))]#if full [ · #fixed(d.peak_gib, 2) GiB · #sig(d.plan_mb) MB]]
+    [#dev-tag #inputs-word(d) #dur(d.seconds)#if ratio-of(d) != none [ #mult2(ratio-of(d))]#if full [ · #gib(d.peak_gib) · #box[#sig(d.plan_mb)~MB]]]
   }
   if m.status == "measured" {
     valued(fill: ratio-fill(ratio-of(m)), dur(m.seconds), mult: if ratio-of(m) != none { mult2(ratio-of(m)) },
-      [#fixed(m.peak_gib, 2) GiB peak · plan #sig(m.plan_mb) MB], prov-line, dev-line(false))
+      [#gib(m.peak_gib) peak · plan #box[#sig(m.plan_mb)~MB]], prov-line, dev-line(false))
   } else if m.status == "refused" {
     absent([refused on `loop`], m.at("basis", default: none), prov-line, dev-line(true))
   } else if m.status == "not started" {
@@ -342,7 +348,7 @@
     let rest = c.providers.pairs().filter(((k, x)) => k != f.key and "seconds_per_point" in x).sorted(key: ((k, x)) => x.seconds_per_point).map(((k, x)) => [#pkey(k) #dur(x.seconds_per_point)])
     let gone = c.providers.pairs().filter(((k, x)) => x.status == "unavailable").map(((k, x)) => [#pkey(k) no library])
     let nr = c.providers.pairs().filter(((k, x)) => x.status == "not run").map(((k, x)) => [#pkey(k) not exported])
-    ((text(weight: "bold")[#pkey(f.key) #dur(f.seconds_per_point)],) + rest + gone + nr).join([ · ])
+    ((text(weight: "bold")[#pkey(f.key) #dur(f.seconds_per_point)],) + rest + gone + nr).join([~· ])
   }
   let dev-line = if d.status != "measured" { none } else [#dev-tag #inputs-word(d) #dur(d.seconds_per_point) #mult2(ratio-of(d))#if "gate" in d [ #h(2pt) #gate-chip(d.gate)]]
   // Rows without a G1 record: the providers' production references (text
@@ -363,8 +369,8 @@
   }
   let ref-lines = (
     if alt == none { none } else [#alt.name #dur(alt.seconds_per_evaluation) per evaluation (one core; not matched)],
-    if rt == none { none } else if no-gate [no matched provider: reported without a gate (addendum H)] else [production, s/pt (20 Oct): #("openloops", "recola", "madloop").map(pentry).join([ · ])],
-    if rt == none or no-gate { none } else if rt.limit_seconds == none [no complete gate limit (#rt.missing_production.join(", ") production not measured) · seven-leg G1 rows not yet timed] else [gate limit #str(rt.limit_seconds) s/pt (#rt.binding) · seven-leg G1 rows not yet timed],
+    if rt == none { none } else if no-gate [no matched provider: reported without a gate (addendum H)] else [production, s/pt (20 Oct): #("openloops", "recola", "madloop").map(pentry).join([~· ])],
+    if rt == none or no-gate { none } else if rt.limit_seconds == none [no complete gate limit (#rt.missing_production.join(", ") production not measured)] else [gate limit #str(rt.limit_seconds) s/pt (#rt.binding)],
   )
   if m.status == "measured" {
     valued(fill: ratio-fill(ratio-of(m)), dur(m.seconds_per_point), mult: mult2(ratio-of(m)),
@@ -372,7 +378,7 @@
       [#if "gate" in m { gate-chip(m.gate) } else { plain-chip[#c.gate_rule.replace("->", "→")] } #h(4pt) #stage-bar(m.stages)],
       dev-line)
   } else if m.status == "refused" {
-    absent([refused on `loop`: #if "reason" in m { m.reason } else { m.error }], m.at("basis", default: none), prov-line, ..ref-lines, dev-line, if d.status == "measured" [#dev-tag #stage-bar(d.stages)])
+    absent([refused on `loop`: #if "reason" in m { m.reason } else { m.error }], prov-line, ..ref-lines, dev-line, if d.status == "measured" [#dev-tag #stage-bar(d.stages)])
   } else if m.status == "not started" {
     absent([not started on `loop`: #m.reason], ..ref-lines)
   } else if m.status == "not batched" {
@@ -408,6 +414,8 @@
 // Rows whose gate verdict is a user decision (legend of Table 1).
 #let decided-gate(r) = (r.full_colour.main, r.full_colour.dev).map(c => c.at("gate", default: none)).find(x => x != none and "decision" in x)
 #let decided-rows = S.groups.map(g => g.rows).flatten().filter(r => decided-gate(r) != none)
+// Rows with a gate limit but no G1 timing yet (the seven-leg rows).
+#let seven-untimed = S.groups.map(g => g.rows).flatten().filter(r => r.full_colour.gate_rule.starts-with("G1 (seven-leg") or r.full_colour.gate_rule.starts-with("G1 (no complete"))
 
 // ================================================================ PAGE 1 ==
 #align(center)[
@@ -494,7 +502,7 @@
 re-timed): #sm.integrated.inputs.map(i => inputs-word((inputs: i))).join(", ") per-point trees, Born and counterterm inputs, native loop stage (#raw(sm.integrated.native_build)).
 #if sm.dev != none [#dev-tag in the G1 rows (#box[$2 -> 2$] to #box[$2 -> 4$]): #raw(sm.dev.branch) #raw(sm.dev.revision) with #sm.dev.inputs.map(i => inputs-word((inputs: i))).join(", ") per-point inputs (timers
 #raw(sm.dev.commit), #raw(sm.dev.native_build)); ]#dev-tag in the #box[$2 -> 5$] rows: the validations of #raw(sm.dev_required.branch) with its
-production counterterm route, #records-text (generation, then single points). Generation excludes model loading. Unbatched
+production counterterm route, #records-text (generation, then single points)#if seven-untimed.len() > 0 [; G1 has not timed these rows yet, so their gate limits come from the providers' production times (20 Oct, DESIGN §1.3 Table 1b)]. Generation excludes model loading. Unbatched
 development timings, such as a seven-gluon point with its rotation check, are not in this table (@sevenglue).]]
 
 // Figure 1: the batched full-colour time of each G1 row against its gate
@@ -607,7 +615,7 @@ development timings, such as a seven-gluon point with its rotation check, are no
     *Missing or incomplete*
     #set text(8.3pt)
     - Electroweak loops, Goldstones and the complex-mass scheme (WP3.2): $g g -> t overline(t) e^- e^+ g$ (EW) not started;
-      $V$+jets refused on `loop`.
+      $Z$ couplings on loop quark lines refused on `loop` ($V$+jets; $g g -> t overline(t) e^- e^+ g$ (QCD) by inference).
     - Batched timings of the $2 -> 5$ set; LC timings of the $V$+jets rows; provider protocol-mode columns.
     - Seven-gluon generation cost on the WP3.1 branch: #let g7r = meas.required_native.processes.gg_ggggg
       #minutes(g7r.generate_s + g7r.export_s) with the plan export (generation #minutes(g7r.generate_s), mostly the
@@ -662,25 +670,6 @@ configurations are timed:
   #raw(g.native_commit) adds the timers]), where the executor also forms the
   trees, the Born and the counterterm inputs. It generates the $V$+jets rows
   with $gamma$ and $Z$ exchange.
-
-The providers run in production mode on the same stream: OpenLoops with
-`truepoles 0`, Recola without IR poles (one amplitude call per point), MadLoop
-at its production stability setting on exports built with MG5's production
-flags. OpenLoops has no installed library with QCD corrections to
-$ell^+ ell^-$ + 1 or 2 jets (`ppllj_ew` carries electroweak corrections only;
-existing provider builds only), so the $V$+jets gates bind on MadLoop and
-Recola. Providers have no batch API: one time per point serves every $B$.
-*Gate statistic:* the median per point on both sides — over pyAmpliCol's
-timed blocks of one $B$, and over the provider's timed points (the stream's
-first 16; 8 for #pairs-text(short-points)) in its run on the core that timed
-the native-input configuration#if off-core.len() > 0 [ (other cores: #pairs-text(off-core))].
-Its uncertainty is pyAmpliCol's block spread (half the range of three blocks,
-the median's standard error from five) plus the provider's half-range over its
-repeated runs (#pct(host-spread), the campaign's largest, for the single runs
-of #pairs-text(single-runs)). A gate passes or fails only if the whole band
-does; otherwise it is *open* and the configuration is repeated once (plan §5.8
-item 10). Every timed call returned all its points (failed points: 0); rescue
-is off by protocol (no checks, no escalation), so the rescue rate is 0.
 
 #let g1-cell(p, c, b) = {
   if refused(c) { return table.cell(text(6.4pt, fill: amber, style: "italic")[not generable]) }
@@ -775,6 +764,25 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
     }).flatten(),
   )),
 ) <tab:g1>
+
+The providers run in production mode on the same stream: OpenLoops with
+`truepoles 0`, Recola without IR poles (one amplitude call per point), MadLoop
+at its production stability setting on exports built with MG5's production
+flags. OpenLoops has no installed library with QCD corrections to
+$ell^+ ell^-$ + 1 or 2 jets (`ppllj_ew` carries electroweak corrections only;
+existing provider builds only), so the $V$+jets gates bind on MadLoop and
+Recola. Providers have no batch API: one time per point serves every $B$.
+*Gate statistic:* the median per point on both sides — over pyAmpliCol's
+timed blocks of one $B$, and over the provider's timed points (the stream's
+first 16; 8 for #pairs-text(short-points)) in its run on the core that timed
+the native-input configuration#if off-core.len() > 0 [ (other cores: #pairs-text(off-core))].
+Its uncertainty is pyAmpliCol's block spread (half the range of three blocks,
+the median's standard error from five) plus the provider's half-range over its
+repeated runs (#pct(host-spread), the campaign's largest, for the single runs
+of #pairs-text(single-runs)). A gate passes or fails only if the whole band
+does; otherwise it is *open* and the configuration is repeated once (plan §5.8
+item 10). Every timed call returned all its points (failed points: 0); rescue
+is off by protocol (no checks, no escalation), so the rescue rate is 0.
 
 #let band-cell(p, c, b) = {
   let x = bat(c, b)
@@ -1337,8 +1345,8 @@ providers.
 ) <tab:njet>
 
 At seven gluons one NJet 3.1.2 evaluation without the scaling test takes
-#ms.njet.single_evaluation.standard s (standard) and
-#ms.njet.single_evaluation.desymmetrised s (de-symmetrised), at #ms.njet.rss_mb MB;
+#sig(meas.njet_single_evaluation.standard.mean_s) s (standard) and
+#sig(meas.njet_single_evaluation.desymmetrised.mean_s) s (de-symmetrised; means over #meas.njet_single_evaluation.standard.points points), at #ms.njet.rss_mb MB;
 double-double costs #group(ms.njet.double_double_s) s per point. NJet 3.1.2's
 numerical five-gluon channel is 9/2 too large (NJet 2.1.1 is used there), and at
 the unrotated seven-gluon points NJet keeps only 4–6 digits in double precision
@@ -1360,7 +1368,7 @@ counterterm recursion, 1,122 s with its counterterm program, 2,766 s once poles-
 seed table builds generic seeds; making it lean is open). A point with its rotation and reduction-direction checks took
 #g7.seconds_per_point_unbatched.map(t => sig(t)).join(", ") s: single-point development evaluations, unpinned, with up to
 eight threads (the workspace sets `RAYON_NUM_THREADS=8`), so not a batched one-thread time and not comparable with NJet's
-#ms.njet.single_evaluation.standard s per evaluation on one pinned core. No batched seven-gluon timing exists yet;
+#sig(meas.njet_single_evaluation.standard.mean_s) s per evaluation on one pinned core. No batched seven-gluon timing exists yet;
 @tab:summary therefore has none.
 
 == Validation without a matched provider
@@ -1668,7 +1676,8 @@ JSON of exact kernel term lists, no compiled code, digest checked at load).
     release with one codegen unit and thin LTO; the native-input harness is this
     branch's `tools/loop_benchmark`. Schedule M at seven legs: DESIGN §5.6.
   - *@tab:njet* and NJet prose: `workspace/reports/engine-v2/njet-benchmark.md`
-    §2, §5, §6 (raw `workspace/reference/runs/njet/timing/`);
+    §2, §5, §6 (raw `workspace/reference/runs/njet/timing/`; the seven-gluon single evaluations are read from
+    those records into `data/measured.json`);
     #link("https://arxiv.org/abs/1209.0100")[NJet, arXiv:1209.0100] Table 5.
   - *@tab:sevencheck:* `data/measured.json`
     (`scripts/collect_milestone.py <workspace>`); top-free values at lower multiplicity: DESIGN WP3.1 and
