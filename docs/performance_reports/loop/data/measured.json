@@ -139,17 +139,18 @@
   "what": "generation (LoopSlice.generate, one thread) and plan export, then binary64 virtuals with native per-point inputs and the production counterterm route at the fixture points, against the committed references (tests/fixtures/loop/required)",
   "processes": {
    "uux_emepddxg": {
-    "source": "workspace/tmp/generation-scale/gint/val1/uux_emepddxg.json",
-    "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
+    "source": "workspace/tmp/generation-scale/gint2/after/uux_emepddxg.json",
+    "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
+    "revision": "6f5a64cc",
     "process": "u u~ > e- e+ d d~ g",
     "counterterms": "recursion",
     "inputs": "native",
-    "generate_s": 28.1,
-    "generate_peak_gib": 0.355,
-    "export_s": 8.0,
-    "export_peak_gib": 0.437,
+    "generate_s": 28.9,
+    "generate_peak_gib": 0.24,
+    "export_s": 8.8,
+    "export_peak_gib": 0.409,
     "plan_json_mb": 1.13,
-    "max_rss_gib": 0.499,
+    "max_rss_gib": 0.489,
     "tolerance": 2e-08,
     "passed": true,
     "points": [
@@ -183,19 +184,20 @@
      6.014448438428271e-13
     ],
     "stability_estimate_per_point": [
-     null,
-     null,
-     null
+     1.2006998091190964e-12,
+     2.771339701706045e-12,
+     1.1267246089646086e-12
     ],
     "seconds_per_point_unbatched": [
+     0.2,
      0.1,
-     0.0,
-     0.0
+     0.1
     ]
    },
    "uux_emepggg": {
     "source": "workspace/tmp/generation-scale/gint/val1/uux_emepggg.json",
     "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
+    "revision": "0ea83af2",
     "process": "u u~ > e- e+ g g g",
     "counterterms": "recursion",
     "inputs": "native",
@@ -251,6 +253,7 @@
    "gg_ttxemepg_qcd": {
     "source": "workspace/tmp/generation-scale/gint/val1/gg_ttxemepg_qcd.json",
     "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
+    "revision": "0ea83af2",
     "process": "g g > t t~ e- e+ g",
     "counterterms": "recursion",
     "inputs": "native",
@@ -306,6 +309,7 @@
    "gg_ttxgg": {
     "source": "workspace/tmp/generation-scale/gint/val1/gg_ttxgg.json",
     "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
+    "revision": "0ea83af2",
     "process": "g g > t t~ g g",
     "counterterms": "recursion",
     "inputs": "native",
@@ -359,17 +363,18 @@
     ]
    },
    "gg_gggg": {
-    "source": "workspace/tmp/generation-scale/gint/val2/gg_gggg.json",
-    "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
+    "source": "workspace/tmp/generation-scale/gint2/after/gg_gggg.json",
+    "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
+    "revision": "6f5a64cc",
     "process": "g g > g g g g",
     "counterterms": "recursion",
     "inputs": "native",
-    "generate_s": 118.4,
-    "generate_peak_gib": 0.932,
-    "export_s": 32.9,
-    "export_peak_gib": 2.198,
+    "generate_s": 119.7,
+    "generate_peak_gib": 0.921,
+    "export_s": 34.6,
+    "export_peak_gib": 2.197,
     "plan_json_mb": 16.1,
-    "max_rss_gib": 3.355,
+    "max_rss_gib": 3.446,
     "tolerance": 2e-08,
     "passed": true,
     "points": [
@@ -395,17 +400,18 @@
      4.484224562336883e-11
     ],
     "stability_estimate_per_point": [
-     null,
-     null
+     1.500034873861528e-10,
+     1.3588904935774442e-10
     ],
     "seconds_per_point_unbatched": [
-     3.5,
-     1.1
+     6.0,
+     3.2
     ]
    },
    "uux_ggggg": {
     "source": "workspace/tmp/generation-scale/i7/val/uux_ggggg.json",
     "record": "DESIGN.md WP3.1 seventh increment (fef92189), 'I5 proper, the interim production route'",
+    "revision": "fef92189",
     "process": "u u~ > g g g g g",
     "counterterms": "recursion",
     "inputs": "native",
@@ -453,8 +459,64 @@
     ]
    },
    "gg_ggggg": {
+    "source": "workspace/tmp/generation-scale/gint2/after/gg_ggggg_njet.json",
+    "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
+    "revision": "6f5a64cc",
+    "process": "g g > g g g g g",
+    "counterterms": "recursion",
+    "inputs": "native",
+    "generate_s": 2652.0,
+    "generate_peak_gib": 14.65,
+    "export_s": 440.7,
+    "export_peak_gib": 28.668,
+    "plan_json_mb": 159.87,
+    "max_rss_gib": 38.616,
+    "tolerance": 2e-08,
+    "passed": true,
+    "points": [
+     0
+    ],
+    "max_deviation": {
+     "njet_dd_oneloop_R1": {
+      "born": 7.510073158207184e-13,
+      "finite": 3.764212455416529e-09,
+      "single_pole": 1.5223343170044203e-09,
+      "double_pole": 1.073934681385997e-12
+     },
+     "njet_double_R1": {
+      "born": 7.659690179880302e-13,
+      "finite": 3.7248380817641904e-09,
+      "single_pole": 1.5009677609085138e-09,
+      "double_pole": 1.073638300902656e-12
+     },
+     "njet_double_R2": {
+      "born": 7.540464115734537e-13,
+      "finite": 3.6048147459444145e-09,
+      "single_pole": 1.5370588821543154e-09,
+      "double_pole": 1.08401161781959e-12
+     },
+     "catani": {
+      "born": 8.10854124489963e-13,
+      "single_pole": 1.5223947431304621e-09,
+      "double_pole": 1.0140658237511214e-12
+     }
+    },
+    "max_error_per_point": [
+     3.764212455416529e-09
+    ],
+    "stability_estimate_per_point": [
+     1.986717591778569e-08
+    ],
+    "seconds_per_point_unbatched": [
+     82.3
+    ]
+   }
+  },
+  "superseded": {
+   "gg_ggggg": {
     "source": "workspace/tmp/generation-scale/gint/val1/gg_ggggg_njet.json",
     "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
+    "revision": "0ea83af2",
     "process": "g g > g g g g g",
     "counterterms": "recursion",
     "inputs": "native",

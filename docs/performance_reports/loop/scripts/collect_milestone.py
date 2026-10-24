@@ -5,7 +5,7 @@ Usage: python scripts/collect_milestone.py <workspace> [output]
 
 <workspace> is the development workspace that holds the run records
 (tmp/generation-scale/runs, tmp/ct-recursion/s4, the WP3.1 native validations
-in tmp/generation-scale/gint and i7, the provider reference runs in
+in tmp/generation-scale/gint2/after, gint and i7, the provider reference runs in
 reference/runs/required, NJet's timing records in reference/runs/njet/timing).
 Every value is read from those records (JSON and /usr/bin/time -v logs);
 nothing is copied from text.
@@ -27,26 +27,44 @@ CT = "tmp/ct-recursion/s4"
 # Native validations of the WP3.1 branch (work/v2-generation-scale):
 # tools/loop_v2_generate.py validate --inputs native, production counterterm
 # route, binary64, one record per process. Each process takes the newest
-# record, with the DESIGN WP3.1 increment that reports it: the eighth
-# increment (0ea83af2) re-ran the set on the merged head ("the results equal
-# the seventh increment's") except u u~ > g g g g g, whose newest record is
-# the seventh increment's (fef92189).
+# record, with the DESIGN WP3.1 increment that reports it and that
+# increment's commit (`revision`: a docs-only commit on the measured tree,
+# which scripts/build_summary.py orders by git ancestry against the G1
+# campaign's revisions). The ninth increment (6f5a64cc) re-ran three
+# processes on the head after the ct-simplify merge; the eighth (0ea83af2)
+# re-ran the set on its merged head ("the results equal the seventh
+# increment's") except u u~ > g g g g g, whose newest record is the seventh
+# increment's (fef92189).
 GENSCALE = "tmp/generation-scale"
+NINTH = (
+    "DESIGN.md WP3.1 ninth increment (6f5a64cc),"
+    " 'Native validations on the merged head'",
+    "6f5a64cc",
+)
 EIGHTH = (
     "DESIGN.md WP3.1 eighth increment (0ea83af2),"
-    " 'Native validations on the merged head'"
+    " 'Native validations on the merged head'",
+    "0ea83af2",
 )
 SEVENTH = (
     "DESIGN.md WP3.1 seventh increment (fef92189),"
-    " 'I5 proper, the interim production route'"
+    " 'I5 proper, the interim production route'",
+    "fef92189",
 )
 GINT_RECORDS = {
-    "uux_emepddxg": ("gint/val1/uux_emepddxg.json", EIGHTH),
+    "uux_emepddxg": ("gint2/after/uux_emepddxg.json", NINTH),
     "uux_emepggg": ("gint/val1/uux_emepggg.json", EIGHTH),
     "gg_ttxemepg_qcd": ("gint/val1/gg_ttxemepg_qcd.json", EIGHTH),
     "gg_ttxgg": ("gint/val1/gg_ttxgg.json", EIGHTH),
-    "gg_gggg": ("gint/val2/gg_gggg.json", EIGHTH),
+    "gg_gggg": ("gint2/after/gg_gggg.json", NINTH),
     "uux_ggggg": ("i7/val/uux_ggggg.json", SEVENTH),
+    "gg_ggggg": ("gint2/after/gg_ggggg_njet.json", NINTH),
+}
+# Earlier records of a process whose newest record re-ran fewer points: the
+# ninth increment re-ran g g > g g g g g at point 0 only (bitwise the eighth
+# increment's values there); the eighth increment's record keeps points 1
+# and 2. The report cites them beside the newest record, never in its place.
+SUPERSEDED = {
     "gg_ggggg": ("gint/val1/gg_ggggg_njet.json", EIGHTH),
 }
 # Provider reference runs of the required set (HANDOFF section 0.1): MadLoop
@@ -146,12 +164,13 @@ def _generation(root: Path, name: str) -> dict:
     return out
 
 
-def _native_validation(root: Path, rel: str, record: str) -> dict:
+def _native_validation(root: Path, rel: str, record: tuple[str, str]) -> dict:
     """One WP3.1 native validation record: generation and export cost, and
     per reference the largest deviation of every coefficient over the points
     (the record's own metric, |a-b|/max(|a|,|b|,|Born| coupling/2pi))."""
     path = f"{GENSCALE}/{rel}"
     rec = _load(root, path)
+    label, revision = record
     worst: dict[str, dict[str, float]] = {}
     for point in rec["points"]:
         for ref, errors in point["errors"].items():
@@ -160,7 +179,8 @@ def _native_validation(root: Path, rel: str, record: str) -> dict:
                 slot[coefficient] = max(slot.get(coefficient, 0.0), value)
     return {
         "source": f"workspace/{path}",
-        "record": record,
+        "record": label,
+        "revision": revision,
         "process": rec["process"],
         "counterterms": rec["counterterms"],
         "inputs": rec["inputs"],
@@ -343,6 +363,10 @@ def collect(root: Path) -> dict:
             "processes": {
                 key: _native_validation(root, rel, record)
                 for key, (rel, record) in GINT_RECORDS.items()
+            },
+            "superseded": {
+                key: _native_validation(root, rel, record)
+                for key, (rel, record) in SUPERSEDED.items()
             },
         },
         "njet_single_evaluation": {
