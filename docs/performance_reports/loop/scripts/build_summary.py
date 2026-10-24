@@ -25,9 +25,10 @@ Main-configuration rule (MAIN_RULE below): every cell of Table 1 and Figure
 1 shows the most recent configuration that measured it, recency by git
 ancestry of the configurations' revisions (and a G1 campaign's own roles),
 and summary.json records that configuration, its source and the recency
-facts with the cell. The builder therefore runs in a checkout that has the
-revisions of the data (a development worktree; loop's history once the
-development work is integrated).
+facts with the cell. A validation that only repeats part of an older,
+more complete comparison does not replace it (VALIDATION_RULE). The
+ancestry is recorded in milestone.json and checked against git wherever the
+revisions are present, so the builder runs in any checkout of the report.
 
 Nothing is estimated or extrapolated: a value without a record stays absent
 (null) and Table 1 prints an explicit marker. The report renders summary.json
@@ -83,7 +84,8 @@ INPUTS_PREFERENCE = ("native", "python")
 #                        to loop, or a capability nobody has started (no run,
 #                        so always the last candidate).
 # Recency (class Recency): A is newer than B if B's revision is an ancestor
-# of A's (git merge-base --is-ancestor in this repository), or if A and B
+# of A's (git merge-base --is-ancestor, recorded in milestone.json ancestry
+# and checked against git where the revisions are present), or if A and B
 # are the development and integrated sides of one G1 campaign (the campaign
 # declares its development side ahead of loop), and transitively. Equal
 # revisions keep KIND_ORDER (the G1 campaign first); two candidates that no
@@ -91,22 +93,39 @@ INPUTS_PREFERENCE = ("native", "python")
 # is never guessed. A cell takes the newest candidate that measured it; if
 # none did, the status of the newest candidate with a record of the row
 # (refused, not timed, not batched, pending, not started), so "refused"
-# appears only where the most recent configuration refuses. Today a newer
-# validation record (e.g. the ninth increment's g g > g g g g, whose revision
-# descends from the G1 development revision) supplies the generation and
-# validation of a G1 row while G1 supplies its batched timings. At the next
-# milestone (G-int integrated and G1 re-measured on loop, whose revision then
-# descends from the records' and has no development side) loop's
-# configuration becomes the main value without code changes.
+# appears only where the most recent configuration refuses.
+# The validation cell has one more condition (VALIDATION_RULE): a newer
+# comparison that is less complete than an older one (fewer points, or
+# fewer references) and finds no larger deviation only repeats part of it,
+# so the older, more complete comparison stays in the cell and the repeat is
+# recorded with it (partial_repeats). A check that omits a point cannot
+# improve the cell this way; one that finds a larger deviation replaces it.
+# Today the newer validation records of g g > g g g g (ninth increment,
+# fixture points 0 and 2 against Recola and OpenLoops) and g g > t t~ g g
+# (eighth increment, 3 points) repeat part of G1's comparison (8 and 16
+# points against three providers) and supply only those rows' generation;
+# G1 supplies their validation and batched timings. At the next milestone
+# (G-int integrated and G1 re-measured on loop, whose revision then descends
+# from the records' and has no development side) loop's configuration
+# becomes the main value without code changes (its revision added to
+# milestone.json ancestry).
 KIND_ORDER = ("development", "integrated", "development_records", "registry")
 MAIN_RULE = (
     "every cell shows the most recent configuration that measured it; A is"
     " newer than B if B's revision is an ancestor of A's (git merge-base"
-    " --is-ancestor) or if A is the development side and B the integrated"
-    " side of one G1 campaign, transitively; equal revisions keep the order"
-    " development, integrated, development_records; the registry (no run)"
-    " comes last; without a measurement, the status of the newest"
-    " configuration with a record of the row"
+    " --is-ancestor, recorded in milestone.json ancestry) or if A is the"
+    " development side and B the integrated side of one G1 campaign,"
+    " transitively; equal revisions keep the order development, integrated,"
+    " development_records; the registry (no run) comes last; without a"
+    " measurement, the status of the newest configuration with a record of"
+    " the row"
+)
+VALIDATION_RULE = (
+    "a newer comparison with fewer points or fewer references than an older"
+    " one and no larger deviation repeats part of it: the older, more"
+    " complete comparison stays in the cell and the repeat is listed in"
+    " partial_repeats; a newer comparison with a larger deviation, or at"
+    " least as many points and every reference, replaces it"
 )
 ROLE_BASIS = (
     "G1 campaign roles: the development side (gate --meta native_revision)"
@@ -117,30 +136,56 @@ ROLE_BASIS = (
 class Recency:
     """Orders the candidate configurations of a row, newest first (the
     main-configuration rule), and keeps every fact it used for
-    summary.json meta.main_rule.recency."""
+    summary.json meta.main_rule.recency.
 
-    def __init__(self, repo: Path) -> None:
+    The ancestry of the data's revisions is recorded in milestone.json
+    ancestry (git merge-base --is-ancestor, as data), so summary.json
+    rebuilds identically in a checkout without the development revisions
+    (a clone of loop before the development work is integrated). Every
+    fact used is checked against git wherever both revisions are present;
+    a contradiction, or a revision the registry does not list, stops the
+    build (the order is never guessed)."""
+
+    def __init__(self, repo: Path, ancestry: dict) -> None:
         self.repo = repo
+        self._listed = set(ancestry["revisions"])
+        self._recorded = {tuple(pair) for pair in ancestry["ancestors"]}
         self._ancestor: dict[tuple[str, str], bool] = {}
         self._facts: dict[tuple[str, str], dict] = {}
+        self.checked = 0
+
+    def _git(self, old: str, new: str) -> bool | None:
+        """git's answer, None where this checkout lacks a revision."""
+        run = subprocess.run(
+            ["git", "-C", str(self.repo), "merge-base", "--is-ancestor", old, new],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return {0: True, 1: False}.get(run.returncode)
 
     def _is_ancestor(self, old: str, new: str) -> bool:
         key = (old, new)
         if key not in self._ancestor:
-            run = subprocess.run(
-                ["git", "-C", str(self.repo), "merge-base", "--is-ancestor", old, new],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if run.returncode not in (0, 1):
+            missing = sorted({old, new} - self._listed)
+            git = self._git(old, new)
+            if missing:
                 raise ValueError(
-                    f"cannot order revisions {old} and {new}"
-                    f" ({run.stderr.strip()}): run the builder in a checkout"
-                    " that has both (a development worktree, or loop once the"
-                    " development work is integrated)"
+                    f"revisions {missing} are not in milestone.json"
+                    " ancestry.revisions: add them with their ancestry facts"
+                    f" (git merge-base --is-ancestor {old} {new}: "
+                    f"{'not available here' if git is None else git})"
                 )
-            self._ancestor[key] = run.returncode == 0
+            recorded = key in self._recorded
+            if git is not None:
+                self.checked += 1
+                if git != recorded:
+                    raise ValueError(
+                        f"milestone.json ancestry says {old} is"
+                        f"{'' if recorded else ' not'} an ancestor of {new};"
+                        " git says the opposite"
+                    )
+            self._ancestor[key] = recorded
         return self._ancestor[key]
 
     def _fact(self, newer: str, older: str, basis: str) -> None:
@@ -164,7 +209,8 @@ class Recency:
                     self._fact(
                         label[a],
                         label[b],
-                        f"git merge-base --is-ancestor {rev[b]} {rev[a]}",
+                        f"git merge-base --is-ancestor {rev[b]} {rev[a]}"
+                        " (milestone.json ancestry)",
                     )
         while True:
             extra = {(a, d) for a, b in newer for c, d in newer if b == c} - newer
@@ -679,6 +725,74 @@ def _newest(cells: list[tuple[str, str | None, dict | None]]) -> dict:
     return {**cell, "configuration": cid, "considered": considered}
 
 
+def _ref_keys(val: dict) -> list[str]:
+    return [r["key"] for r in val["references"]]
+
+
+def _partial_repeat(new: dict, old: dict) -> str | None:
+    """Why a newer comparison only repeats part of an older one
+    (VALIDATION_RULE), or None if it replaces it: less complete (fewer
+    points or fewer references) and no larger deviation."""
+    fewer = []
+    if new["points"] < old["points"]:
+        fewer.append(f"{new['points']} of {old['points']} points")
+    lost = [SHORT[k] for k in _ref_keys(old) if k not in _ref_keys(new)]
+    if lost:
+        fewer.append(f"without {', '.join(lost)}")
+    if not fewer or new["max_finite"] > old["max_finite"]:
+        return None
+    return (
+        f"{'; '.join(fewer)}; largest deviation {new['max_finite']:.2e}"
+        f" <= {old['max_finite']:.2e}"
+    )
+
+
+def _newest_validation(cells: list[tuple[str, str | None, dict | None]]) -> dict:
+    """The main-configuration rule for the validation cell (MAIN_RULE with
+    VALIDATION_RULE): from the newest comparison, step back to an older one
+    while the current one only repeats part of it. The repeats stay with
+    the cell (partial_repeats: configuration, revision, record, points,
+    references, deviation and why), so the choice can be audited."""
+    main = _newest(cells)
+    compared = [
+        (cid, rev, c)
+        for cid, rev, c in cells
+        if c is not None and c["status"] == "compared"
+    ]
+    if not compared:
+        return main
+    cid, rev, cur = compared[0]
+    repeats = []
+    for old_cid, old_rev, old in compared[1:]:
+        why = _partial_repeat(cur, old)
+        if why is None:
+            continue
+        repeats.append(
+            {
+                "configuration": cid,
+                "revision": rev,
+                "record": cur.get("record"),
+                "points": cur["points"],
+                "point_indices": cur.get("point_indices"),
+                "references": [SHORT[k] for k in _ref_keys(cur)],
+                "max_finite": cur["max_finite"],
+                "repeats": old_cid,
+                "why": why,
+                "source": cur["source"],
+            }
+        )
+        cid, rev, cur = old_cid, old_rev, old
+    if not repeats:
+        return main
+    return {
+        **cur,
+        "configuration": cid,
+        "considered": main["considered"],
+        "partial_repeats": repeats,
+        "rule": VALIDATION_RULE,
+    }
+
+
 def _families(pairs: dict, main: dict, order: tuple[str, ...]) -> int | None:
     """Loop families: the configuration of the main full-colour (LC) value,
     else the newest one that recorded them."""
@@ -722,6 +836,14 @@ def _record_cells(ms: dict, meas: dict, key: str) -> dict | None:
     if rec is None:
         return None
     src = f"measured.json required_native.processes[{key}]"
+    # The records' run conditions differ from G1's protocol (shared host
+    # under load against idle pinned cores): stated with every value.
+    cond = ms["development_records"]
+    conditions = {
+        "conditions": cond["conditions"],
+        "conditions_short": cond["short"],
+        "conditions_source": "milestone.json development_records",
+    }
     generation = {
         "status": "measured",
         "seconds": rec["generate_s"] + rec["export_s"],
@@ -739,6 +861,7 @@ def _record_cells(ms: dict, meas: dict, key: str) -> dict | None:
         "record": rec["record"],
         "revision": rec["revision"],
         "source": src,
+        **conditions,
     }
     validation = _validation_native(rec, src)
     validation.update(record=rec["record"], revision=rec["revision"])
@@ -857,8 +980,9 @@ def _g1_rows(
                 },
             )
         )
-        # Validation: the newest configuration compared with the references.
-        validation = _newest(
+        # Validation: the newest configuration compared with the references,
+        # unless it only repeats part of an older comparison (VALIDATION_RULE).
+        validation = _newest_validation(
             _ordered(
                 order,
                 rev,
@@ -867,7 +991,10 @@ def _g1_rows(
             )
         )
         if validation["status"] == "not measured":
-            validation["status"] = "not compared"
+            validation.update(
+                status="not compared",
+                note="no configuration compared it with the providers",
+            )
         rows.append(
             {
                 "key": key,
@@ -922,6 +1049,7 @@ def _validation_native(rec: dict, source: str) -> dict:
         "configuration": "development_records",
         "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
         "points": len(rec["points"]),
+        "point_indices": rec["points"],
         "references": refs,
         "max_finite": worst["max_finite"],
         "tolerance": rec["tolerance"],
@@ -1290,12 +1418,15 @@ def _configurations(
         "inputs": sorted(
             {r["inputs"] for r in meas["required_native"]["processes"].values()}
         ),
+        "conditions": ms["development_records"]["conditions"],
+        "conditions_short": ms["development_records"]["short"],
         # The DESIGN records of the development validations, each with the
         # rows it covers.
         "records": _records(rows, recency),
         "main_rows": main_rows("development_records"),
         "main_cells": main_cells("development_records"),
-        "source": "measured.json required_native; label: milestone.json development",
+        "source": "measured.json required_native; label: milestone.json"
+        " development; conditions: milestone.json development_records",
     }
     out["registry"] = {
         "kind": "records",
@@ -1307,7 +1438,8 @@ def _configurations(
     return out
 
 
-def build() -> dict:
+def build() -> tuple[dict, Recency]:
+    """summary.json, and the recency order it used (for the build log)."""
     g1 = _load(DATA / "g1.json")
     ms = _load(DATA / "milestone.json")
     meas = _load(DATA / "measured.json")
@@ -1316,7 +1448,7 @@ def build() -> dict:
         for p in _load(REPO / "tools/loop_benchmark/processes.json")["processes"]
     }
     decisions = ms["gate_decisions"]
-    recency = Recency(REPO)
+    recency = Recency(REPO, ms["ancestry"])
     records = {
         key: _record_cells(ms, meas, key)
         for key in meas["required_native"]["processes"]
@@ -1361,7 +1493,7 @@ def build() -> dict:
         if not groups or groups[-1]["name"] != name:
             groups.append({"name": name, "rows": []})
         groups[-1]["rows"].append(r)
-    return {
+    summary = {
         "what": (
             "Table 1 of docs/performance_reports/loop/benchmarks.typ, written by"
             " scripts/build_summary.py; do not edit by hand"
@@ -1374,22 +1506,31 @@ def build() -> dict:
             "native_build_on_loop": ms["native_build"]["name"],
             "main_rule": {
                 "rule": MAIN_RULE,
+                "validation_rule": VALIDATION_RULE,
                 "kinds": list(KIND_ORDER),
                 # Every recency fact the rule used: the newer and older
                 # configuration with its revision, and the basis.
                 "recency": recency.facts(),
-                "source": "scripts/build_summary.py MAIN_RULE, Recency",
+                "source": "scripts/build_summary.py MAIN_RULE,"
+                " VALIDATION_RULE, Recency; ancestry: milestone.json ancestry",
             },
             "configurations": _configurations(g1, ms, meas, rows, recency),
             "gate_decisions": decisions,
         },
         "groups": groups,
     }
+    return summary, recency
 
 
 def main() -> None:
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else DATA / "summary.json"
-    out.write_text(json.dumps(build(), indent=1) + "\n")
+    summary, recency = build()
+    out.write_text(json.dumps(summary, indent=1) + "\n")
+    print(
+        f"recency: {len(recency.facts())} facts used;"
+        f" {recency.checked} ancestry queries checked against git",
+        file=sys.stderr,
+    )
 
 
 if __name__ == "__main__":

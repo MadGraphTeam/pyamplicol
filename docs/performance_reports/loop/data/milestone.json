@@ -18,6 +18,53 @@
    "39824f9b": "work/v2-generation-scale"
   }
  },
+ "ancestry": {
+  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below, in a checkout with work/v2-generation-scale (2026-10-24, package report-dev); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
+  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records): every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions (a clone of loop before the development work is integrated)",
+  "revisions": [
+   "1c971289",
+   "889af02c",
+   "fef92189",
+   "0ea83af2",
+   "6f5a64cc"
+  ],
+  "ancestors": [
+   [
+    "1c971289",
+    "6f5a64cc"
+   ],
+   [
+    "889af02c",
+    "fef92189"
+   ],
+   [
+    "889af02c",
+    "0ea83af2"
+   ],
+   [
+    "889af02c",
+    "6f5a64cc"
+   ],
+   [
+    "fef92189",
+    "0ea83af2"
+   ],
+   [
+    "fef92189",
+    "6f5a64cc"
+   ],
+   [
+    "0ea83af2",
+    "6f5a64cc"
+   ]
+  ]
+ },
+ "development_records": {
+  "source": "DESIGN.md WP3.1 seventh increment (fef92189, native complete virtual against the providers: 'one thread for generation, shared host'), eighth increment (0ea83af2: 'measured under a shared host (load 50-130 on 384 cores)'), ninth increment (6f5a64cc, generation cost: 'both trees in parallel on the shared host, one process each, 8 pinned cores')",
+  "what": "run conditions of the development validation records (measured.json required_native, tools/loop_v2_generate.py validate), stated wherever a record supplies a main value of Table 1, since the G1 protocol differs",
+  "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+  "short": "shared host under load"
+ },
  "integrated": [
   {
    "sha": "b71cf0e0",

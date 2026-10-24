@@ -7,7 +7,8 @@
   "engine_on_loop": "b4d76cc3",
   "native_build_on_loop": "loop-native-v2-slice-6c44c9f7",
   "main_rule": {
-   "rule": "every cell shows the most recent configuration that measured it; A is newer than B if B's revision is an ancestor of A's (git merge-base --is-ancestor) or if A is the development side and B the integrated side of one G1 campaign, transitively; equal revisions keep the order development, integrated, development_records; the registry (no run) comes last; without a measurement, the status of the newest configuration with a record of the row",
+   "rule": "every cell shows the most recent configuration that measured it; A is newer than B if B's revision is an ancestor of A's (git merge-base --is-ancestor, recorded in milestone.json ancestry) or if A is the development side and B the integrated side of one G1 campaign, transitively; equal revisions keep the order development, integrated, development_records; the registry (no run) comes last; without a measurement, the status of the newest configuration with a record of the row",
+   "validation_rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it",
    "kinds": [
     "development",
     "integrated",
@@ -23,20 +24,20 @@
     {
      "newer": "development_records 0ea83af2",
      "older": "development 889af02c",
-     "basis": "git merge-base --is-ancestor 889af02c 0ea83af2"
+     "basis": "git merge-base --is-ancestor 889af02c 0ea83af2 (milestone.json ancestry)"
     },
     {
      "newer": "development_records 6f5a64cc",
      "older": "development 889af02c",
-     "basis": "git merge-base --is-ancestor 889af02c 6f5a64cc"
+     "basis": "git merge-base --is-ancestor 889af02c 6f5a64cc (milestone.json ancestry)"
     },
     {
      "newer": "development_records 6f5a64cc",
      "older": "integrated 1c971289",
-     "basis": "git merge-base --is-ancestor 1c971289 6f5a64cc"
+     "basis": "git merge-base --is-ancestor 1c971289 6f5a64cc (milestone.json ancestry)"
     }
    ],
-   "source": "scripts/build_summary.py MAIN_RULE, Recency"
+   "source": "scripts/build_summary.py MAIN_RULE, VALIDATION_RULE, Recency; ancestry: milestone.json ancestry"
   },
   "configurations": {
    "development": {
@@ -82,7 +83,9 @@
       "uux_ggg",
       "gg_ggg",
       "uux_emepgg",
-      "uux_gggg"
+      "gg_ttxgg",
+      "uux_gggg",
+      "gg_gggg"
      ],
      "full_colour": [
       "gg_gg",
@@ -138,6 +141,8 @@
     "inputs": [
      "native"
     ],
+    "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+    "conditions_short": "shared host under load",
     "records": [
      {
       "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
@@ -185,8 +190,6 @@
       "gg_ggggg"
      ],
      "validation": [
-      "gg_ttxgg",
-      "gg_gggg",
       "uux_emepddxg",
       "uux_emepggg",
       "gg_ttxemepg_qcd",
@@ -208,7 +211,7 @@
       "gg_ggggg"
      ]
     },
-    "source": "measured.json required_native; label: milestone.json development"
+    "source": "measured.json required_native; label: milestone.json development; conditions: milestone.json development_records"
    },
    "registry": {
     "kind": "records",
@@ -1734,35 +1737,45 @@
      },
      "validation": {
       "status": "compared",
-      "configuration": "development_records",
+      "configuration": "development",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
-      "points": 3,
+      "points": 16,
       "references": [
        {
         "key": "madloop",
         "short": "ML",
-        "points": 3,
-        "max_finite": 8.54738073265877e-12
+        "points": 16,
+        "max_finite": 7.630497165589562e-09,
+        "median_finite": 1.9892323057708503e-11,
+        "worst_point": 13
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 3,
-        "max_finite": 1.1389380682685916e-11
+        "points": 16,
+        "max_finite": 1.5108105621988155e-09,
+        "median_finite": 1.4679409478528918e-11,
+        "worst_point": 13
        },
        {
         "key": "openloops",
         "short": "OL",
-        "points": 3,
-        "max_finite": 8.553844720414708e-12
+        "points": 16,
+        "max_finite": 1.5047685901560914e-09,
+        "median_finite": 8.219428169712063e-12,
+        "worst_point": 13
        }
       ],
-      "max_finite": 1.1389380682685916e-11,
-      "tolerance": 2e-08,
-      "passed": true,
-      "source": "measured.json required_native.processes[gg_ttxgg]",
-      "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
-      "revision": "0ea83af2",
+      "max_finite": 7.630497165589562e-09,
+      "median_finite": 1.9892323057708503e-11,
+      "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 13,
+       "estimate": 5.624253763935145e-08,
+       "within_estimate": true,
+       "dd_closest": 5.504855442237677e-15,
+       "source": "g1.json processes[gg_ttxgg].stability (native/full)"
+      },
       "considered": [
        {
         "configuration": "development_records",
@@ -1779,7 +1792,30 @@
         "revision": "1c971289",
         "status": "compared"
        }
-      ]
+      ],
+      "partial_repeats": [
+       {
+        "configuration": "development_records",
+        "revision": "0ea83af2",
+        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
+        "points": 3,
+        "point_indices": [
+         0,
+         1,
+         2
+        ],
+        "references": [
+         "ML",
+         "Rc",
+         "OL"
+        ],
+        "max_finite": 1.1389380682685916e-11,
+        "repeats": "development",
+        "why": "3 of 16 points; largest deviation 1.14e-11 <= 7.63e-09",
+        "source": "measured.json required_native.processes[gg_ttxgg]"
+       }
+      ],
+      "rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it"
      },
      "generation": {
       "main": {
@@ -1796,6 +1832,9 @@
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "revision": "0ea83af2",
        "source": "measured.json required_native.processes[gg_ttxgg]",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions_short": "shared host under load",
+       "conditions_source": "milestone.json development_records",
        "configuration": "development_records",
        "considered": [
         {
@@ -2166,30 +2205,45 @@
      },
      "validation": {
       "status": "compared",
-      "configuration": "development_records",
+      "configuration": "development",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
-      "points": 2,
+      "points": 8,
       "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "points": 8,
+        "max_finite": 1.6860783211395883e-07,
+        "median_finite": 3.149660973653249e-11,
+        "worst_point": 1
+       },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 2,
-        "max_finite": 3.8853934891666336e-11
+        "points": 8,
+        "max_finite": 4.0437030819143746e-07,
+        "median_finite": 2.311799188316325e-11,
+        "worst_point": 1
        },
        {
         "key": "openloops",
         "short": "OL",
-        "points": 2,
-        "max_finite": 4.484224562336883e-11
+        "points": 8,
+        "max_finite": 4.04445833917819e-07,
+        "median_finite": 9.921880065949504e-12,
+        "worst_point": 1
        }
       ],
-      "max_finite": 4.484224562336883e-11,
-      "tolerance": 2e-08,
-      "passed": true,
-      "source": "measured.json required_native.processes[gg_gggg]",
-      "within_estimate": true,
-      "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
-      "revision": "6f5a64cc",
+      "max_finite": 4.04445833917819e-07,
+      "median_finite": 3.149660973653249e-11,
+      "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 1,
+       "estimate": 4.799662575085839e-06,
+       "within_estimate": true,
+       "dd_closest": 4.35793642888872e-12,
+       "source": "g1.json processes[gg_gggg].stability (native/full)"
+      },
       "considered": [
        {
         "configuration": "development_records",
@@ -2206,7 +2260,28 @@
         "revision": "1c971289",
         "status": "compared"
        }
-      ]
+      ],
+      "partial_repeats": [
+       {
+        "configuration": "development_records",
+        "revision": "6f5a64cc",
+        "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
+        "points": 2,
+        "point_indices": [
+         0,
+         2
+        ],
+        "references": [
+         "Rc",
+         "OL"
+        ],
+        "max_finite": 4.484224562336883e-11,
+        "repeats": "development",
+        "why": "2 of 8 points; without ML; largest deviation 4.48e-11 <= 4.04e-07",
+        "source": "measured.json required_native.processes[gg_gggg]"
+       }
+      ],
+      "rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it"
      },
      "generation": {
       "main": {
@@ -2223,6 +2298,9 @@
        "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
        "revision": "6f5a64cc",
        "source": "measured.json required_native.processes[gg_gggg]",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions_short": "shared host under load",
+       "conditions_source": "milestone.json development_records",
        "configuration": "development_records",
        "considered": [
         {
@@ -2405,6 +2483,11 @@
       "configuration": "development_records",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
       "points": 3,
+      "point_indices": [
+       0,
+       1,
+       2
+      ],
       "references": [
        {
         "key": "madloop",
@@ -2449,6 +2532,9 @@
        "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
        "revision": "6f5a64cc",
        "source": "measured.json required_native.processes[uux_emepddxg]",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions_short": "shared host under load",
+       "conditions_source": "milestone.json development_records",
        "ratio_to_fastest": 4.489228950112028,
        "configuration": "development_records",
        "considered": [
@@ -2581,6 +2667,11 @@
       "configuration": "development_records",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
       "points": 3,
+      "point_indices": [
+       0,
+       1,
+       2
+      ],
       "references": [
        {
         "key": "madloop",
@@ -2624,6 +2715,9 @@
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "revision": "0ea83af2",
        "source": "measured.json required_native.processes[uux_emepggg]",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions_short": "shared host under load",
+       "conditions_source": "milestone.json development_records",
        "ratio_to_fastest": 2.309976560283896,
        "configuration": "development_records",
        "considered": [
@@ -2756,6 +2850,11 @@
       "configuration": "development_records",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
       "points": 3,
+      "point_indices": [
+       0,
+       1,
+       2
+      ],
       "references": [
        {
         "key": "madloop",
@@ -2799,6 +2898,9 @@
        "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
        "revision": "0ea83af2",
        "source": "measured.json required_native.processes[gg_ttxemepg_qcd]",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions_short": "shared host under load",
+       "conditions_source": "milestone.json development_records",
        "ratio_to_fastest": 1.5238129244512035,
        "configuration": "development_records",
        "considered": [
@@ -3056,6 +3158,11 @@
       "configuration": "development_records",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
       "points": 3,
+      "point_indices": [
+       0,
+       1,
+       2
+      ],
       "references": [
        {
         "key": "madloop",
@@ -3093,6 +3200,9 @@
        "record": "DESIGN.md WP3.1 seventh increment (fef92189), 'I5 proper, the interim production route'",
        "revision": "fef92189",
        "source": "measured.json required_native.processes[uux_ggggg]",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions_short": "shared host under load",
+       "conditions_source": "milestone.json development_records",
        "ratio_to_fastest": 0.05062602940530824,
        "configuration": "development_records",
        "considered": [
@@ -3239,6 +3349,9 @@
       "configuration": "development_records",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
       "points": 1,
+      "point_indices": [
+       0
+      ],
       "references": [
        {
         "key": "njet_dd_oneloop_R1",
@@ -3272,6 +3385,9 @@
        "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
        "revision": "6f5a64cc",
        "source": "measured.json required_native.processes[gg_ggggg]",
+       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol (both generate in one thread)",
+       "conditions_short": "shared host under load",
+       "conditions_source": "milestone.json development_records",
        "configuration": "development_records",
        "considered": [
         {
