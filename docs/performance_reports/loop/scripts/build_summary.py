@@ -21,6 +21,10 @@ and every entry names its source:
                           status notes
 - tools/loop_benchmark/processes.json  the G1 process specifications
 
+Main-configuration rule (MAIN_ORDER below): every cell of Table 1 and Figure
+1 shows the most recent measured configuration of its row, and summary.json
+records that configuration and its source with the cell.
+
 Nothing is estimated or extrapolated: a value without a record stays absent
 (null) and Table 1 prints an explicit marker. The report renders summary.json
 as is; re-run this script after regenerating any input.
@@ -51,6 +55,42 @@ SHOWN = set(SHORT)
 # When several configurations of one side qualify, the engine's production
 # per-point inputs come first.
 INPUTS_PREFERENCE = ("native", "python")
+
+# Main-configuration rule (user request of 2026-10-24: Table 1 shows only the
+# most recent measurements). Every cell of a row (generation, validation, full
+# colour, leading colour) shows the MOST RECENT configuration that measured
+# it. The candidates, newest first:
+#   rows with a G1 record (data/g1.json):
+#     development          the campaign's development side (gate --meta
+#                          native_revision, native_commit): work ahead of
+#                          loop, being integrated into it;
+#     integrated           the campaign's integrated side (--meta
+#                          slice_revision, slice_lc_revision): the engine on
+#                          loop;
+#   rows without one (the 2 -> 5 set until measure-g1-7leg times it):
+#     development_records  the development branch's native validation records
+#                          (measured.json required_native): generation and
+#                          validation, no batched timing ("pending");
+#     registry             milestone.json status_notes: a refusal attributed
+#                          to loop, or a capability nobody has started.
+# A cell takes the newest candidate that measured it; if none did, the status
+# of the newest candidate with a record of the row (refused, not timed, not
+# batched, pending, not started). "refused" therefore appears only where the
+# most recent configuration refuses. At the next milestone (G-int integrated,
+# G1 re-measured on loop, so the campaign has no development side, or only a
+# newer one) loop's configuration becomes the main value without code
+# changes; rows timed by a later G1 campaign leave the records' kind.
+MAIN_ORDER = {
+    "g1": ("development", "integrated"),
+    "records": ("development_records", "registry"),
+}
+MAIN_RULE = (
+    "every cell shows the most recent configuration that measured it"
+    " (G1 rows: development side, then integrated; other rows: the"
+    " development validation records, then the registry); without a"
+    " measurement, the status of the newest configuration with a record of"
+    " the row"
+)
 
 # Stage groups of the per-point split (the executor's stage names; see the
 # report's stage-split table for their definitions).
@@ -201,9 +241,10 @@ def _fastest_generation(gens: dict) -> dict | None:
     return {"name": NAMES[name], "key": name, "seconds": sec}
 
 
-def _generation_of(cfg: dict | None, source: str) -> dict:
+def _generation_of(cfg: dict | None, source: str) -> dict | None:
+    """One configuration's generation cell; None without a record."""
     if cfg is None:
-        return {"status": "not measured"}
+        return None
     if cfg.get("generation_error"):
         return {
             "status": "refused",
@@ -241,9 +282,10 @@ def _timing_of(
     source: str,
     fastest: dict | None,
     decisions: dict,
-) -> dict:
+) -> dict | None:
+    """One configuration's batched full-colour cell; None without a record."""
     if cfg is None:
-        return {"status": "not measured"}
+        return None
     if cfg.get("generation_error"):
         return {
             "status": "refused",
@@ -322,10 +364,32 @@ def _adopted_schedule(proc: dict, name: str | None, batch: str) -> dict | None:
 
 
 def _lc_of(
-    proc: dict, name: str | None, lc: dict | None, fc: dict | None, source: str
-) -> dict:
+    proc: dict,
+    name: str | None,
+    lc: dict | None,
+    fc: dict | None,
+    source: str,
+    fc_source: str,
+) -> dict | None:
+    """One configuration's leading-colour cell; None if the configuration has
+    no record of the row. A configuration that generated the process in full
+    colour without an LC run says 'not timed'; one that refused it, 'refused'."""
     if lc is None:
-        return {"status": "not measured"}
+        if fc is None:
+            return None
+        if fc.get("generation_error"):
+            return {
+                "status": "refused",
+                "error": fc["generation_error"].split(":")[0],
+                "revision": fc["revision"][:8],
+                "source": f"{fc_source}.generation",
+            }
+        return {
+            "status": "not timed",
+            "what": "G1 timed this configuration in full colour only",
+            "revision": fc["revision"][:8],
+            "source": fc_source,
+        }
     batch = _largest_batch(lc)
     if batch is None:
         return {"status": "not batched", "source": source}
@@ -471,60 +535,111 @@ def _pick(cfgs: dict, side, accuracy: str) -> tuple[str, dict] | tuple[None, Non
     return min(found, key=lambda x: rank.get(x[1]["inputs"], len(rank)))
 
 
+def _newest(cells: list[tuple[str, dict | None]]) -> dict:
+    """The main-configuration rule for one cell: the newest candidate that
+    measured it, else the status of the newest candidate with a record of
+    the row (cells are (configuration, cell or None), newest first). The
+    chosen cell names its configuration; 'considered' lists every
+    candidate's status in order, so the choice can be audited."""
+    considered = [
+        {"configuration": cid, "status": "no record" if c is None else c["status"]}
+        for cid, c in cells
+    ]
+    chosen = next(
+        ((cid, c) for cid, c in cells if c is not None and c["status"] == "measured"),
+        None,
+    )
+    if chosen is None:
+        chosen = next(((cid, c) for cid, c in cells if c is not None), None)
+    if chosen is None:
+        return {"status": "not measured", "configuration": None, "considered": considered}
+    cid, cell = chosen
+    return {**cell, "configuration": cid, "considered": considered}
+
+
 def _g1_rows(g1: dict, specs: dict, decisions: dict) -> list[dict]:
     integrated, dev_revs, branches = _roles(g1)
 
-    def is_main(cfg: dict) -> bool:
+    def is_integrated(cfg: dict) -> bool:
         rev = cfg["revision"][:8]
         return rev not in dev_revs and (rev in integrated or cfg["branch"] in branches)
 
     def is_dev(cfg: dict) -> bool:
         return cfg["revision"][:8] in dev_revs
 
+    side = {"development": is_dev, "integrated": is_integrated}
+    order = MAIN_ORDER["g1"]
     rows = []
     for proc in g1["processes"]:
         key = proc["key"]
         base = f"g1.json processes[{key}].pyamplicol"
         cfgs = proc["pyamplicol"]
-        main_name, main = _pick(cfgs, is_main, "full")
-        dev_name, dev = _pick(cfgs, is_dev, "full")
-        lc_main_name, lc_main_cfg = _pick(cfgs, is_main, "lc")
-        lc_dev_name, lc_dev_cfg = _pick(cfgs, is_dev, "lc")
+        # Per configuration (newest first): its full-colour and LC entries.
+        fc = {cid: _pick(cfgs, side[cid], "full") for cid in order}
+        lc = {cid: _pick(cfgs, side[cid], "lc") for cid in order}
         runtime = _provider_runtime(proc)
         fastest = runtime["fastest"]
         gens = _provider_generation_g1(proc)
         gen_fastest = _fastest_generation(gens)
-        gen_main = _generation_of(main, f"{base}['{main_name}'].generation")
-        gen_dev = _generation_of(dev, f"{base}['{dev_name}'].generation")
-        for g in (gen_main, gen_dev):
-            if g["status"] == "measured" and gen_fastest is not None:
-                g["ratio_to_fastest"] = g["seconds"] / gen_fastest["seconds"]
-        fc_main = _timing_of(proc, main, f"{base}['{main_name}']", fastest, decisions)
-        fc_dev = _timing_of(proc, dev, f"{base}['{dev_name}']", fastest, decisions)
-        # The validation line belongs to the configuration whose batched
-        # full-colour time Table 1 shows as the main value: the integrated
-        # one where it was timed in batches, else the development one (its
-        # time is then the only batched one), else whichever was compared.
-        compared_main = (
-            main is not None
-            and not main.get("generation_error")
-            and main.get("values_vs_providers")
+        gen = _newest(
+            [
+                (cid, _generation_of(fc[cid][1], f"{base}['{fc[cid][0]}'].generation"))
+                for cid in order
+            ]
         )
-        compared_dev = dev is not None and dev.get("values_vs_providers")
-        if compared_main and (
-            fc_main["status"] == "measured" or fc_dev["status"] != "measured"
-        ):
-            validation = _validation_g1(
-                proc, main, "integrated", f"{base}['{main_name}']", main_name
-            )
-        elif compared_dev:
-            validation = _validation_g1(
-                proc, dev, "development", f"{base}['{dev_name}']", dev_name
-            )
-        else:
-            validation = {"status": "not compared"}
-        structure = (main or {}).get("structure") or (dev or {}).get("structure") or {}
-        lc_structure = (lc_main_cfg or lc_dev_cfg or {}).get("structure") or {}
+        if gen["status"] == "measured" and gen_fastest is not None:
+            gen["ratio_to_fastest"] = gen["seconds"] / gen_fastest["seconds"]
+        fc_main = _newest(
+            [
+                (
+                    cid,
+                    _timing_of(
+                        proc, fc[cid][1], f"{base}['{fc[cid][0]}']", fastest, decisions
+                    ),
+                )
+                for cid in order
+            ]
+        )
+        lc_main = _newest(
+            [
+                (
+                    cid,
+                    _lc_of(
+                        proc,
+                        lc[cid][0],
+                        lc[cid][1],
+                        fc[cid][1],
+                        f"{base}['{lc[cid][0]}']",
+                        f"{base}['{fc[cid][0]}']",
+                    ),
+                )
+                for cid in order
+            ]
+        )
+        # Validation: the newest configuration compared with the providers.
+        validation = {"status": "not compared"}
+        for cid in order:
+            name, cfg = fc[cid]
+            if (
+                cfg is not None
+                and not cfg.get("generation_error")
+                and cfg.get("values_vs_providers")
+            ):
+                validation = _validation_g1(
+                    proc, cfg, cid, f"{base}['{name}']", name
+                )
+                break
+        # Loop families: the configuration of the main full-colour (LC)
+        # value, else the newest one that recorded them.
+        def families(pairs: dict, main: dict) -> int | None:
+            ids = [main.get("configuration")] + list(order)
+            for cid in ids:
+                cfg = pairs.get(cid, (None, None))[1]
+                count = ((cfg or {}).get("structure") or {}).get("families")
+                if count is not None:
+                    return count
+            return None
+
         rows.append(
             {
                 "key": key,
@@ -533,15 +648,15 @@ def _g1_rows(g1: dict, specs: dict, decisions: dict) -> list[dict]:
                 "outgoing": proc["outgoing"],
                 "legs": 2 + proc["outgoing"],
                 "corrections": specs[key]["correction"],
+                "kind": "g1",
                 "families": {
-                    "fc": structure.get("families"),
-                    "lc": lc_structure.get("families"),
-                    "source": f"{base}[...].structure",
+                    "fc": families(fc, fc_main),
+                    "lc": families(lc, lc_main),
+                    "source": f"{base}[...].structure (configuration of the main value)",
                 },
                 "validation": validation,
                 "generation": {
-                    "main": gen_main,
-                    "dev": gen_dev,
+                    "main": gen,
                     "providers": gens,
                     "fastest": gen_fastest,
                     "source": f"g1.json processes[{key}].providers"
@@ -550,23 +665,11 @@ def _g1_rows(g1: dict, specs: dict, decisions: dict) -> list[dict]:
                 "full_colour": {
                     "gate_rule": "G1" if proc["gated"] else "no gate (2->2)",
                     "main": fc_main,
-                    "dev": fc_dev,
                     "providers": runtime["providers"],
                     "fastest": fastest,
                     "source": f"g1.json processes[{key}].providers (median s/pt)",
                 },
-                "leading_colour": {
-                    "main": _lc_of(
-                        proc,
-                        lc_main_name,
-                        lc_main_cfg,
-                        main,
-                        f"{base}['{lc_main_name}']",
-                    ),
-                    "dev": _lc_of(
-                        proc, lc_dev_name, lc_dev_cfg, dev, f"{base}['{lc_dev_name}']"
-                    ),
-                },
+                "leading_colour": {"main": lc_main},
             }
         )
     return rows
@@ -588,7 +691,7 @@ def _validation_native(rec: dict, source: str) -> dict:
     worst = max(refs, key=lambda r: r["max_finite"])
     out = {
         "status": "compared",
-        "configuration": "native inputs (dev)",
+        "configuration": "development_records",
         "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
         "points": len(rec["points"]),
         "references": refs,
@@ -682,9 +785,10 @@ def _reference(ref: dict, prov: dict | None, matched: list[str], factor: float) 
     }
 
 
-def _loop_status(note: dict, key: str) -> dict | None:
-    """The engine on loop for a process without a G1 record: refused or not
-    started, by the registry's short attribution (no record of a run)."""
+def _registry_status(note: dict, key: str) -> dict | None:
+    """The registry's status of a process without a G1 record: refused on
+    loop (inferred, the basis says why) or not started anywhere, by its short
+    attribution (no record of a run)."""
     src = f"milestone.json status_notes.notes[{key}]"
     if "refused" in note:
         return {
@@ -694,12 +798,20 @@ def _loop_status(note: dict, key: str) -> dict | None:
             "source": src,
         }
     if "not_started" in note:
-        return {"status": "not started", "reason": note["not_started"], "source": src}
+        return {
+            "status": "not started",
+            "reason": note["not_started"],
+            "package": note.get("package"),
+            "source": src,
+        }
     return None
 
 
 def _required_rows(ms: dict, meas: dict, known: set[str], factor: float) -> list[dict]:
+    """The required rows without a G1 record (the 2 -> 5 set): newest first
+    the development validation records, then the registry (MAIN_ORDER)."""
     native = meas["required_native"]["processes"]
+    pending = ms["pending"]
     prov_gen = meas["provider_generation"]["processes"]
     refs = {(r["label"], r.get("corr")): r for r in ms["gate_references"]["rows"]}
     notes = ms.get("status_notes", {}).get("notes", {})
@@ -714,7 +826,7 @@ def _required_rows(ms: dict, meas: dict, known: set[str], factor: float) -> list
         note = notes.get(key, {})
         rec = native.get(key)
         src = f"measured.json required_native.processes[{key}]"
-        dev_gen = {"status": "not measured"}
+        dev_gen = None
         validation = {"status": "not compared", "note": req["validation"]}
         if rec is not None:
             dev_gen = {
@@ -760,7 +872,7 @@ def _required_rows(ms: dict, meas: dict, known: set[str], factor: float) -> list
         if unfinished and "providers" in note:
             unfinished["note"] = note["providers"]
         gen_fastest = _fastest_generation(gens)
-        if dev_gen["status"] == "measured" and gen_fastest is not None:
+        if dev_gen is not None and gen_fastest is not None:
             dev_gen["ratio_to_fastest"] = dev_gen["seconds"] / gen_fastest["seconds"]
         # Matched providers: those with a generated process (a completed
         # generation or a prebuilt library); a gate needs one.
@@ -813,8 +925,23 @@ def _required_rows(ms: dict, meas: dict, known: set[str], factor: float) -> list
                 }
         if "validation" in note and validation.get("status") == "compared":
             validation["note"] = note["validation"]
-        status = _loop_status(note, key)
-        main = {"status": "not measured"} if status is None else dict(status)
+        status = _registry_status(note, key)
+        # The records time single points only: a row they cover waits for
+        # its batched timing (the package named in milestone.json pending).
+        timing = None
+        if rec is not None:
+            timing = {
+                "status": "pending",
+                "package": pending["batched"],
+                "what": "the development validation records time single points"
+                " only; batched timings come from G1",
+                "source": f"{src} (no batched timing); milestone.json pending",
+            }
+        order = MAIN_ORDER["records"]
+
+        def cells(dev: dict | None) -> list[tuple[str, dict | None]]:
+            return list(zip(order, (dev, None if status is None else dict(status))))
+
         rows.append(
             {
                 "key": key,
@@ -823,12 +950,14 @@ def _required_rows(ms: dict, meas: dict, known: set[str], factor: float) -> list
                 "outgoing": len(text.split(" > ")[1].split()),
                 "legs": len(text.split()) - 1,
                 "corrections": corr or "QCD",
+                "kind": "records",
                 "families": families,
                 "validation": validation,
-                "loop_status": status,
+                # Row-level status of the newest configuration with a record
+                # (none where the development records generate the process).
+                "row_status": None if rec is not None else status,
                 "generation": {
-                    "main": dict(main),
-                    "dev": dev_gen,
+                    "main": _newest(cells(dev_gen)),
                     "providers": gens,
                     "unfinished": unfinished,
                     "fastest": gen_fastest,
@@ -836,31 +965,105 @@ def _required_rows(ms: dict, meas: dict, known: set[str], factor: float) -> list
                 },
                 "full_colour": {
                     "gate_rule": gate_rule,
-                    "main": dict(main),
-                    "dev": {"status": "not measured"},
+                    "main": _newest(cells(timing)),
                     "alternative": alternative,
                     "reference": reference,
                 },
-                "leading_colour": {
-                    "main": dict(main),
-                    "dev": {"status": "not measured"},
-                },
+                "leading_colour": {"main": _newest(cells(timing))},
             }
         )
     return rows
 
 
 def _records(rows: list[dict]) -> list[dict]:
+    """The DESIGN records of the main values from the development records,
+    each with the rows it covers."""
     out: list[dict] = []
     for r in rows:
-        record = r["generation"]["dev"].get("record")
-        if record is None:
-            continue  # G1 rows: their records are g1.json's
+        main = r["generation"]["main"]
+        if main.get("configuration") != "development_records":
+            continue
+        record = main["record"]
         found = next((x for x in out if x["record"] == record), None)
         if found is None:
             out.append({"record": record, "rows": [r["math"]]})
         else:
             found["rows"].append(r["math"])
+    return out
+
+
+def _configurations(g1: dict, ms: dict, meas: dict, rows: list[dict]) -> dict:
+    """The candidate configurations of the main-configuration rule, each with
+    its provenance and the rows where it supplies a main value (main_rows)."""
+    cells = ("generation", "full_colour", "leading_colour")
+
+    def main_rows(cid: str) -> list[str]:
+        return [
+            r["key"]
+            for r in rows
+            if any(r[c]["main"].get("configuration") == cid for c in cells)
+            or r["validation"].get("configuration") == cid
+        ]
+
+    def inputs(cid: str) -> list[str]:
+        found = {
+            r[c]["main"]["inputs"]
+            for r in rows
+            for c in cells
+            if r[c]["main"].get("configuration") == cid and "inputs" in r[c]["main"]
+        }
+        return sorted(found)
+
+    development = ms.get("development") or {}
+    label = development.get("label", "development")
+    _, dev_revs, _ = _roles(g1)
+    out: dict = {}
+    if dev_revs:
+        out["development"] = {
+            "kind": "g1",
+            "label": label,
+            "integration": development.get("integration"),
+            "branch": _dev_branch(g1, ms, dev_revs),
+            "revision": g1.get("native_revision"),
+            "commit": g1.get("native_commit"),
+            "native_build": g1.get("native_build"),
+            "date": g1["date"],
+            "inputs": inputs("development"),
+            "main_rows": main_rows("development"),
+            "source": "g1.json native_revision, native_commit, native_build, date;"
+            " label, integration and branch: milestone.json development",
+        }
+    out["integrated"] = {
+        "kind": "g1",
+        "label": "on loop",
+        "revision": g1["slice_revision"],
+        "lc_revision": g1.get("slice_lc_revision"),
+        "native_build": g1.get("slice_build"),
+        "date": g1["date"],
+        "inputs": inputs("integrated"),
+        "main_rows": main_rows("integrated"),
+        "source": "g1.json slice_revision, slice_lc_revision, slice_build, date",
+    }
+    branch = meas["required_native"]["branch"]
+    in_development = branch in (development.get("revisions") or {}).values()
+    out["development_records"] = {
+        "kind": "records",
+        "label": label if in_development else "development records",
+        "integration": development.get("integration") if in_development else None,
+        "branch": branch,
+        "inputs": inputs("development_records"),
+        # The DESIGN records of the development validations, each with the
+        # rows it covers.
+        "records": _records(rows),
+        "main_rows": main_rows("development_records"),
+        "source": "measured.json required_native; label: milestone.json development",
+    }
+    out["registry"] = {
+        "kind": "records",
+        "label": "registry (no run)",
+        "main_rows": main_rows("registry"),
+        "source": "milestone.json status_notes",
+    }
     return out
 
 
@@ -878,36 +1081,32 @@ def build() -> dict:
     notes = ms.get("status_notes", {}).get("notes", {})
     for r in rows:
         note = notes.get(r["key"], {})
-        r.setdefault("loop_status", None)
-        main = (r["generation"]["main"], r["full_colour"]["main"])
-        if any(c.get("status") == "refused" for c in main):
-            reason = note.get("refused")
-            for cell in main:
-                if cell.get("status") == "refused" and reason is not None:
-                    cell["reason"] = reason
-            if r["loop_status"] is None:
-                r["loop_status"] = {
-                    "status": "refused",
-                    "reason": reason,
-                    "source": f"{r['generation']['main']['source']}"
-                    f" (generation_error {r['generation']['main']['error']});"
-                    f" milestone.json status_notes.notes[{r['key']}]",
-                }
-            if r["leading_colour"]["main"].get("status") == "not measured":
-                r["leading_colour"]["main"] = {
-                    "status": "refused",
-                    "reason": reason,
-                    "source": r["loop_status"]["source"],
-                }
+        r.setdefault("row_status", None)
+        main = (
+            r["generation"]["main"],
+            r["full_colour"]["main"],
+            r["leading_colour"]["main"],
+        )
+        # A refusal of the newest configuration: the registry's short
+        # attribution where it has one (else the error class is printed).
+        reason = note.get("refused")
+        for cell in main:
+            if cell.get("status") == "refused" and "reason" not in cell and reason:
+                cell["reason"] = reason
+        gen = r["generation"]["main"]
+        if r["row_status"] is None and gen.get("status") == "refused":
+            r["row_status"] = {
+                "status": "refused",
+                "reason": gen.get("reason", gen.get("error")),
+                "configuration": gen["configuration"],
+                "source": f"{gen['source']} (generation_error {gen['error']});"
+                f" milestone.json status_notes.notes[{r['key']}]",
+            }
         if "madloop" in note:
             r["full_colour"]["madloop_note"] = note["madloop"]
     # Increasing multiplicity, then increasing colour complexity (number of
     # gluons) within a multiplicity; stable otherwise.
     rows.sort(key=lambda r: (r["outgoing"], r["label"].split().count("g")))
-
-    def inputs(side: str) -> list[str]:
-        cells = [r[c][side] for r in rows for c in ("generation", "full_colour")]
-        return sorted({c["inputs"] for c in cells if "inputs" in c})
 
     groups = []
     for r in rows:
@@ -915,18 +1114,6 @@ def build() -> dict:
         if not groups or groups[-1]["name"] != name:
             groups.append({"name": name, "rows": []})
         groups[-1]["rows"].append(r)
-    _, dev_revs, _ = _roles(g1)
-    dev = None
-    if dev_revs:
-        dev = {
-            "branch": _dev_branch(g1, ms, dev_revs),
-            "revision": g1.get("native_revision"),
-            "commit": g1.get("native_commit"),
-            "native_build": g1.get("native_build"),
-            "inputs": inputs("dev"),
-            "source": "g1.json native_revision, native_commit, native_build;"
-            " branch: milestone.json development",
-        }
     return {
         "what": (
             "Table 1 of docs/performance_reports/loop/benchmarks.typ, written by"
@@ -938,21 +1125,12 @@ def build() -> dict:
             "gate_factor": g1["gate_factor"],
             "engine_on_loop": ms["engine_revision"],
             "native_build_on_loop": ms["native_build"]["name"],
-            "integrated": {
-                "revision": g1["slice_revision"],
-                "lc_revision": g1.get("slice_lc_revision"),
-                "native_build": g1.get("slice_build"),
-                "inputs": inputs("main"),
-                "source": "g1.json slice_revision, slice_lc_revision, slice_build",
+            "main_rule": {
+                "rule": MAIN_RULE,
+                "order": {k: list(v) for k, v in MAIN_ORDER.items()},
+                "source": "scripts/build_summary.py MAIN_ORDER",
             },
-            "dev": dev,
-            "dev_required": {
-                "branch": meas["required_native"]["branch"],
-                # The DESIGN records of the development validations, each
-                # with the rows it covers.
-                "records": _records(rows),
-                "source": "measured.json required_native",
-            },
+            "configurations": _configurations(g1, ms, meas, rows),
             "gate_decisions": decisions,
         },
         "groups": groups,

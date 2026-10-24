@@ -9,8 +9,10 @@
   "source": "workspace/reports/engine-v2/slice-status.md, measure-g1 integration (6c44c9f7): integrator release build of the merge commit; ct-simplify (b4d76cc3) changed no native input (stage --source accepted the build)"
  },
  "development": {
-  "source": "git: 889af02c is on work/v2-generation-scale; 39824f9b is the G1 scratch commit on it (tag g1-native-inputs-39824f9b); workspace/reports/engine-v2/slice-status.md, measure-g1 integration block",
+  "source": "git: 889af02c is on work/v2-generation-scale; 39824f9b is the G1 scratch commit on it (tag g1-native-inputs-39824f9b); workspace/reports/engine-v2/slice-status.md, measure-g1 integration block; label and integration: HANDOFF_24_10_2026.md section 6.2 (WP3.1 generation-scale, integration package G-int), slice-status.md DECISIONS 2026-10-24 ~18:35 UTC",
   "what": "branch of the development revisions the G1 campaign timed (the gate tool records the scratch checkout as branch 'HEAD')",
+  "label": "development, being integrated into loop",
+  "integration": "G-int",
   "revisions": {
    "889af02c": "work/v2-generation-scale",
    "39824f9b": "work/v2-generation-scale"
@@ -234,7 +236,7 @@
  },
  "status_notes": {
   "source": "HANDOFF_24_10_2026.md sections 0.1, 2 (the integrated engine refuses V+jets) and 9 items 2 and 4; HANDOFF_22_10_2026.md section 0.1 (provider jobs stopped); data/g1.json (generation_error of the integrated rows); DESIGN.md WP3.2, WP3.5; DESIGN.md WP3.1 eighth increment (0ea83af2); src/pyamplicol/loops/v2/conventions.py on loop (FermionSignError for a loop-fermion vertex that is not a pure vector coupling: the Z on the loop quark lines of g g > t t~ e- e+ g, as in the V+jets rows); the configuration of the gg_ggggg validation: tests/fixtures/loop/required/gg_ggggg_njet.json names the scheme massless-qcd-nf5, for which tools/loop_v2_generate.py validate (work/v2-generation-scale, 0ea83af2) vetoes the top",
-  "what": "short attributions printed in Table 1 where the engine on loop refuses a process or a capability is not started, short labels of records and the configuration of a development record where the record does not carry it; measured numbers never come from here",
+  "what": "short attributions of the registry: a refusal attributed to the engine on loop (with its basis where it is inferred) or a capability nobody has started, printed in Table 1 only where the most recent configuration of the row refuses or no configuration has a record (scripts/build_summary.py, main-configuration rule); short labels of records and the configuration of a development record where the record does not carry it; measured numbers never come from here",
   "notes": {
    "uux_emepg": {
     "refused": "Z fermion signs (WP3.2), Furry zeros (WP3.5)"
@@ -255,7 +257,8 @@
     "refused_basis": "not run; Z on loop quark lines, as in the V+jets rows of G1"
    },
    "gg_ttxemepg_ew": {
-    "not_started": "EW loops (WP3.2)"
+    "not_started": "EW loops",
+    "package": "WP3.2"
    },
    "uux_gggg": {
     "madloop": "not exported: the g g > g g g g export took 2.4 h (HANDOFF section 0.1)"
@@ -268,6 +271,11 @@
     "providers": "stopped 22 Oct; not to be restarted (HANDOFF section 0.1)"
    }
   }
+ },
+ "pending": {
+  "source": "HANDOFF_24_10_2026.md section 6.5 (measure-g1-7leg: seven-leg G1 specifications and frozen streams, no measurement yet); workspace/reports/engine-v2/slice-status.md, measure-g1 integration block (open: seven-leg rows)",
+  "what": "the package that will time, in batches, a row whose most recent configuration has no batched timing (the development validation records time single points only)",
+  "batched": "measure-g1-7leg"
  },
  "gate_decisions": {
   "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~16:05 UTC (user answers to HANDOFF_24 section 10)",
