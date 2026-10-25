@@ -675,7 +675,8 @@ def _validation_g1(
         if n in vs
     ]
     origin = f"{source}.values_vs_providers"
-    if not refs:
+    fixture = not refs
+    if fixture:
         # No provider run on the stream (g g > g g g g g): the run's own
         # check against its reference fixture (NJet's double-double values
         # at the stream's first points, at the fixture's scale).
@@ -700,10 +701,13 @@ def _validation_g1(
     # estimate E and the double-double value's deviation from the closest
     # provider, only if the campaign re-evaluated it in the validated
     # configuration itself (another configuration's estimate is not its own).
+    # A fixture's worst point is indexed by the fixture, at its own scale
+    # (NJet's mu_R = 1000 GeV, not the stream's): the stability rows of the
+    # stream points are not its estimate.
     rows = {
         (r["index"], r["arithmetic"]): r
         for r in proc.get("stability", [])
-        if r["configuration"] == checked
+        if r["configuration"] == checked and not fixture
     }
     b64 = rows.get((worst["worst_point"], "double"))
     dd = rows.get((worst["worst_point"], "double-double"))
@@ -1290,11 +1294,11 @@ def _alternative(njet: dict, meas: dict, label: str) -> dict | None:
     }
 
 
-def _no_matched_provider(rows: list[dict], ms: dict, meas: dict) -> None:
+def _no_matched_provider(rows: list[dict], ms: dict, meas: dict, g1: dict) -> None:
     """A G1 row without any provider timing (g g > g g g g g: every provider
     beyond HANDOFF 0.1; g1.json gated false) is reported without a gate
     (ADDENDUM H), as its required row was: the registry's alternative and
-    validation note stay with it."""
+    validation note stay with it, and its sanity checks (_sanity_checks)."""
     njet = {r["label"]: r for r in ms["njet"]["rows"]}
     notes = ms.get("status_notes", {}).get("notes", {})
     for r in rows:
@@ -1305,6 +1309,70 @@ def _no_matched_provider(rows: list[dict], ms: dict, meas: dict) -> None:
         note = notes.get(r["key"], {})
         if "validation" in note and r["validation"].get("status") == "compared":
             r["validation"]["note"] = note["validation"]
+        fc["sanity_checks"] = _sanity_checks(g1, r["key"], note)
+
+
+def _sanity_checks(g1: dict, key: str, note: dict) -> dict:
+    """ADDENDUM H's checks of a speed reported without a gate: rotational
+    invariance (the binary64 stability rows of g1.json: one rotation and the
+    reduction direction at stream points, per configuration) and the Ward
+    identity (one gluon's polarisation replaced by its momentum: the row's own
+    Ward rows, else every G1 row's at lower multiplicity with the registry's
+    reason, milestone.json status_notes.notes[key].ward)."""
+    procs = {p["key"]: p for p in g1["processes"]}
+    proc = procs[key]
+    base = f"g1.json processes[{key}]"
+    rotation: dict = {}
+    for row in proc.get("stability", []):
+        if row["arithmetic"] != "double":
+            continue
+        rot = [v for name, v in row["checks"].items() if name.startswith("rotation")]
+        c = rotation.setdefault(
+            row["configuration"],
+            {"points": [], "max_rotation": 0.0, "max_estimate": 0.0, "revision": None},
+        )
+        c["points"].append(row["index"])
+        c["max_rotation"] = max(c["max_rotation"], *rot)
+        c["max_estimate"] = max(c["max_estimate"], row["estimate"])
+        c["revision"] = row["revision"][:8]
+    out: dict = {
+        "rotation": {
+            "status": "measured" if rotation else "not run",
+            "configurations": rotation,
+            "what": "binary64 finite part: relative deviation under one rotation"
+            " about z by (3/5, 4/5), and the estimate E (rotation plus reduction"
+            " direction)",
+            "source": f"{base}.stability",
+        }
+    }
+
+    def ward_of(p: dict) -> dict:
+        rows = [w for w in p.get("ward", []) if "passed" in w]
+        return {
+            "key": p["key"],
+            "legs": p["outgoing"] + 2,
+            "rows": len(rows),
+            "passed": bool(rows) and all(w["passed"] for w in rows),
+            "max_virtual_ratio": max(max(w["ratios"]["virtual"]) for w in rows)
+            if rows
+            else None,
+            "source": f"g1.json processes[{p['key']}].ward",
+        }
+
+    if proc.get("ward"):
+        out["ward"] = {"status": "measured", **ward_of(proc)}
+    else:
+        out["ward"] = {
+            "status": "not run",
+            "reason": note.get("ward"),
+            "reason_source": f"milestone.json status_notes.notes[{key}].ward",
+            "lower_multiplicity": [
+                ward_of(p)
+                for p in g1["processes"]
+                if p.get("ward") and p["outgoing"] < proc["outgoing"]
+            ],
+        }
+    return out
 
 
 def _validation_native(rec: dict, source: str) -> dict:
@@ -1737,7 +1805,7 @@ def build() -> tuple[dict, Recency]:
         for key in meas["required_native"]["processes"]
     }
     rows = _g1_rows(g1, specs, decisions, records, recency)
-    _no_matched_provider(rows, ms, meas)
+    _no_matched_provider(rows, ms, meas, g1)
     rows += _required_rows(
         ms, meas, {r["key"] for r in rows}, g1["gate_factor"], records, recency
     )

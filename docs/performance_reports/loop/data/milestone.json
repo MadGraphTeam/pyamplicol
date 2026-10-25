@@ -117,7 +117,7 @@
   "f21495ed"
  ],
  "gate_references": {
-  "source": "docs/development/loop_v2/DESIGN.md \u00a71.3 Table 1b (production mode, one pinned core, this host, measured 2026-10-20 for the design), OpenLoops and Recola transcribed as text; MadLoop's production-build times are read from the reference runs' records (data/measured.json provider_generation, madloop-production-result.json); scripts/build_summary.py computes the gate limit from the lower ends (MadLoop, 1.30 \u00d7 Recola, 1.30 \u00d7 OpenLoops) when every matched provider has a production time; the 2->4 rows are re-measured by G1 (data/g1.json), the seven-leg rows wait for measure-g1-7leg",
+  "source": "docs/development/loop_v2/DESIGN.md \u00a71.3 Table 1b (production mode, one pinned core, this host, measured 2026-10-20 for the design), OpenLoops and Recola transcribed as text; MadLoop's production-build times are read from the reference runs' records (data/measured.json provider_generation, madloop-production-result.json); scripts/build_summary.py computes the gate limit from the lower ends (MadLoop, 1.30 \u00d7 Recola, 1.30 \u00d7 OpenLoops) when every matched provider has a production time; the 2->4 rows and the seven-leg QCD rows are measured by G1 (data/g1.json; the seven-leg rows by package measure-g1-7leg), so these references serve the rows G1 does not time (the EW row)",
   "rows": [
    {
     "label": "u overline(u) -> e^- e^+ g g g",
@@ -319,7 +319,8 @@
     "particle_veto": [
      6
     ],
-    "providers": "stopped 22 Oct; not to be restarted (HANDOFF section 0.1)"
+    "providers": "stopped 22 Oct; not to be restarted (HANDOFF section 0.1)",
+    "ward": "not run at seven legs: the Ward mode (WP2.5) forms its per-point inputs in Python with full tree kernels (the native trees take no literal sources); one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs (package measure-g1-7leg), so seven gluons need native Ward inputs (generation-scale-2); the 5- and 6-gluon Ward rows pass"
    }
   }
  },

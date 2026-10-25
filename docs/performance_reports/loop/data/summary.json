@@ -3326,6 +3326,37 @@
        "seconds_per_evaluation": 71.2039,
        "what": "standard full-colour sum, one evaluation, double precision, one pinned core; not a matched provider",
        "source": "measured.json njet_single_evaluation.standard"
+      },
+      "sanity_checks": {
+       "rotation": {
+        "status": "not run",
+        "configurations": {},
+        "what": "binary64 finite part: relative deviation under one rotation about z by (3/5, 4/5), and the estimate E (rotation plus reduction direction)",
+        "source": "g1.json processes[gg_ggggg].stability"
+       },
+       "ward": {
+        "status": "not run",
+        "reason": "not run at seven legs: the Ward mode (WP2.5) forms its per-point inputs in Python with full tree kernels (the native trees take no literal sources); one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs (package measure-g1-7leg), so seven gluons need native Ward inputs (generation-scale-2); the 5- and 6-gluon Ward rows pass",
+        "reason_source": "milestone.json status_notes.notes[gg_ggggg].ward",
+        "lower_multiplicity": [
+         {
+          "key": "gg_ggg",
+          "legs": 5,
+          "rows": 2,
+          "passed": true,
+          "max_virtual_ratio": 1.7228640465066138e-12,
+          "source": "g1.json processes[gg_ggg].ward"
+         },
+         {
+          "key": "gg_gggg",
+          "legs": 6,
+          "rows": 1,
+          "passed": true,
+          "max_virtual_ratio": 2.8385304913362043e-10,
+          "source": "g1.json processes[gg_gggg].ward"
+         }
+        ]
+       }
       }
      },
      "leading_colour": {
