@@ -42,7 +42,7 @@ campaign timing, `timing` of the specification, names none: its generation
 is that of the specification's export). An imported timing outside the
 protocol (`protocol_mode` false) is never a gate limit; where it does the
 production work and more (a Recola run that also evaluates the IR poles,
-with the protocol's Collier cache) the import records
+with the protocol's Collier cache or without one) the import records
 `production_upper_bound`, and the report takes it as an upper bound of that
 provider's production time (u u~ > g g g g g: the ratio to the fastest
 provider is then a lower bound). A new process needs only its specification in
@@ -95,3 +95,33 @@ point from them.
 Run the `pyamplicol` jobs under `taskset -c N` with `RAYON_NUM_THREADS=1`.
 Respect HANDOFF §0.1 for provider generations (no generation expected to
 exceed about 45 minutes).
+
+Provider caches are those of production (REQUIREMENTS_ADDENDUM D):
+`providers.collier_cache` switches the COLLIER global cache off only at
+seven legs or more and only for a linked release with the documented N = 7
+cache defect (`COLLIER_CACHE_DEFECT`: 1.2.9, 1.2.10). Recola links COLLIER
+1.2.8 (cache on at every multiplicity); MadLoop's HEPTools COLLIER is 1.2.9
+(`COLLIERGlobalCache 0` at seven legs); every provider record states the
+decision and the release (`collier_cache`).
+
+The reference trees still name files of the root they were built under
+(the MadLoop exports' `LOOP_LIBS` archives, the RUNPATH of `librecola.so`
+and `libmodelfile.so`, OpenLoops' compiled-in installation path). The
+harness never opens those: `providers.relocated` takes each from the same
+place under `ROOT` (MadLoop links the relocated archives; Recola's driver
+links with `-rpath-link` and runs with `LD_LIBRARY_PATH` set to the
+relocated RUNPATH, and a run whose resolved libraries lie outside `ROOT` is
+refused; OpenLoops runs with `OpenLoopsPath`). A provider run under
+`strace -f -e trace=file` accesses nothing outside the current root's trees
+(`workspace/reports/engine-v2/measure-g1-7leg/records/logs-f4/`).
+
+Tracked items (not fixed here):
+
+- g g > g g g g g against NJet: the binary64 accuracy check keeps
+  `passed: false` (3.7e-8 at NJet point 4, 2.2e-8 at point 8, against the
+  fixture's 2e-8; 1.5e-8 and 1.1e-8 on `4e9b5a9e`). Both lie within
+  pyAmpliCol's own binary64 estimate E (1.3e-6, 2.5e-7) and the
+  double-double values equal NJet's double-double values; the points are
+  not timed stream points. The binary64 loss grew with the SymJIT plane
+  applications of `7db32901` (artifact-portability): a slice-level item for
+  that owner; the tolerance is not loosened.
