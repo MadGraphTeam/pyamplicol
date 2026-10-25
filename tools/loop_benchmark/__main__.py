@@ -82,6 +82,24 @@ def main(argv: list[str] | None = None) -> int:
         help="after the timing: one evaluation with every pole at these points "
         "(components, Catani's poles)",
     )
+    v2.add_argument(
+        "--store",
+        type=Path,
+        help="after generation: store the process (the artifact's loop runtime "
+        "member with native point inputs, and generation.json) in this new "
+        "directory",
+    )
+    v2.add_argument(
+        "--generate-only",
+        action="store_true",
+        help="stop after generation and --store (no accuracy check, no timing)",
+    )
+    v2.add_argument(
+        "--load",
+        type=Path,
+        help="time a stored process (--store) instead of generating: loaded "
+        "as the public runtime loads an artifact, nothing regenerated",
+    )
 
     wardp = commands.add_parser(
         "ward", help="the Ward identity at chosen stream points"
@@ -117,6 +135,9 @@ def main(argv: list[str] | None = None) -> int:
     stable.add_argument("--native-build", type=Path)
     stable.add_argument("--scratch", type=Path, help="parent of the model directory")
     stable.add_argument("--json", type=Path)
+    stable.add_argument(
+        "--load", type=Path, help="a stored process (pyamplicol --store)"
+    )
     stable.set_defaults(lanes=16, schedule="B")
 
     providers = commands.add_parser("providers", help="time the providers")

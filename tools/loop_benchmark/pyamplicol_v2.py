@@ -39,6 +39,20 @@ gluon's polarisation replaced by its momentum on the loop side.
 The compiled model lives in a temporary directory under ``--scratch`` (the
 system's temporary directory by default) that the run removes at its end.
 
+Stored processes (``--store``, ``--load``): a generation can be stored as the
+artifact's own loop runtime member (``artifact.write_plan`` with the native
+point inputs, ``point_inputs = "native-v1"``: the plan v4 and the native
+process, ``loop-runtime.pacbin``) beside a ``generation.json`` with the
+run's generation stages; ``--generate-only`` stops there. A later run with
+``--load`` reads it as ``V2VirtualRuntime`` does (``artifact.read_plan``,
+``artifact.read_native_process``, ``NativeProcess.executor``: nothing is
+regenerated) and times that executor, the integrated configuration of a
+loaded artifact, whose values equal the slice's native executor's bitwise
+(``tests/unit/test_loop_v2_native_process.py``). Its record keeps the stored
+generation and states the load (``stored``). This splits a seven-gluon row
+(about an hour of generation, then an hour of timing) into bounded jobs and
+lets its checks reuse one generation.
+
 Stage split of each block (seconds per point; MASTER_PLAN's report rules):
 
 - ``python trees``, ``python counterterm program``, ``python scalars``,
@@ -109,6 +123,10 @@ WORK = "dressing work (modelled complex MAC per lane)"
 # The required fixtures' tolerance (``tools/loop_v2_generate.py validate``),
 # for a reference fixture that states none (NJet's).
 REQUIRED_TOLERANCE = "2e-8"
+# A stored process (``--store``/``--load``): the artifact's loop runtime
+# member and the generation record beside it.
+STORED_RUNTIME = "loop-runtime.pacbin"
+STORED_META = "generation.json"
 
 
 def _status(field: str) -> int:
@@ -468,6 +486,120 @@ class Run:
         }
         self._install_timers()
         print(self.key, "generation", json.dumps(stages), flush=True)
+        if getattr(self.options, "store", None) is not None:
+            self.store(self.options.store)
+
+    # -- stored processes ---------------------------------------------------
+
+    def _configuration(self) -> dict[str, Any]:
+        return {
+            "process": self.key,
+            "accuracy": self.options.accuracy,
+            "inputs": self.options.inputs,
+            "lanes": self.options.lanes,
+            "schedule": self.options.schedule,
+        }
+
+    def store(self, directory: Path) -> None:
+        """Write the generated process as the artifact's loop runtime member
+        with its native point inputs (module docstring) and
+        ``generation.json``; a stored process is never overwritten."""
+
+        from pyamplicol.loops.v2.artifact import plan_digest, write_plan
+        from pyamplicol.loops.v2.native_process import NativeProcess
+
+        if self.options.inputs != "native" or self.options.schedule != "B":
+            raise SystemExit("a stored process has native inputs and schedule B")
+        directory.mkdir(parents=True, exist_ok=False)
+        _reset_peak()
+        start = time.perf_counter()
+        native = NativeProcess.of(self.executor)
+        write_plan(native.plan_json, directory / STORED_RUNTIME, native)
+        written = {
+            "seconds": time.perf_counter() - start,
+            "peak_gib": _gib(_status("VmHWM")),
+            "bytes": (directory / STORED_RUNTIME).stat().st_size,
+        }
+        meta = {
+            "kind": "stored-process",
+            **self._configuration(),
+            "plan_sha256": plan_digest(native.plan_json),
+            "point_inputs": "native-v1",
+            "store": written,
+            **{
+                k: self.record[k]
+                for k in (
+                    "revision",
+                    "branch",
+                    "dirty",
+                    "host_cpus",
+                    "native",
+                    "process_text",
+                    "generation",
+                    "structure",
+                )
+            },
+        }
+        (directory / STORED_META).write_text(json.dumps(meta, indent=1) + "\n")
+        print(self.key, "stored", json.dumps(written), flush=True)
+
+    def load(self, directory: Path) -> None:
+        """Read a stored process (``--load``) as the public runtime does and
+        build its native executor; the record keeps the stored generation."""
+
+        from pyamplicol.loops.native import load_loop_native
+        from pyamplicol.loops.v2.artifact import (
+            plan_digest,
+            read_native_process,
+            read_plan,
+        )
+
+        meta = json.loads((directory / STORED_META).read_text())
+        if meta.get("kind") != "stored-process":
+            raise SystemExit(f"{directory} holds no stored process")
+        wanted = self._configuration()
+        stored = {k: meta.get(k) for k in wanted}
+        if stored != wanted:
+            raise SystemExit(f"stored process {stored} is not this run's {wanted}")
+        build = _native_build(self.options.native_build)
+        if build is None or meta["native"] is None:
+            raise SystemExit("a stored process needs --native-build on both sides")
+        if build["digest"] != meta["native"]["digest"]:
+            raise SystemExit(
+                "the stored process was generated with another native build "
+                f"({meta['native']['digest'][:12]}...)"
+            )
+        native = load_loop_native()
+        self.record["native"] = build
+        _reset_peak()
+        start = time.perf_counter()
+        runtime = directory / STORED_RUNTIME
+        plan_json = read_plan(runtime)
+        if plan_json is None or plan_digest(plan_json) != meta["plan_sha256"]:
+            raise SystemExit("the stored plan does not have its recorded digest")
+        process = read_native_process(runtime, plan_json)
+        self.executor = process.executor(native, lanes=self.options.lanes, threads=1)
+        loaded = {
+            "seconds": time.perf_counter() - start,
+            "peak_gib": _gib(_status("VmHWM")),
+        }
+        self.slice = None
+        self.record["process_text"] = meta["process_text"]
+        self.record["generation"] = meta["generation"]
+        self.record["structure"] = meta["structure"]
+        # No absolute path: the store's directory name and its generation's
+        # provenance (``generation`` is that run's).
+        self.record["stored"] = {
+            "directory": directory.name,
+            "plan_sha256": meta["plan_sha256"],
+            "point_inputs": meta["point_inputs"],
+            "generated_revision": meta["revision"],
+            "generated_dirty": meta["dirty"],
+            "generated_host_cpus": meta["host_cpus"],
+            "load": loaded,
+        }
+        self._install_timers()
+        print(self.key, "loaded", json.dumps(loaded), flush=True)
 
     def _install_timers(self) -> None:
         from pyamplicol.loops.v2 import assemble
@@ -475,17 +607,21 @@ class Run:
 
         wrap = self.timers.wrap
         slice_ = self.slice
-        wrap(type(slice_.tree_rows), "evaluate", "python trees")
-        wrap(assemble.LoopSlice, "scalars", "python scalars")
-        if slice_.counterterm_program is not None:
+        if slice_ is not None:
+            # A loaded process has no slice: its inputs are all native.
+            wrap(type(slice_.tree_rows), "evaluate", "python trees")
+            wrap(assemble.LoopSlice, "scalars", "python scalars")
+            if slice_.counterterm_program is not None:
+                wrap(
+                    type(slice_.counterterm_program),
+                    "point",
+                    "python counterterm program",
+                )
             wrap(
-                type(slice_.counterterm_program), "point", "python counterterm program"
+                assemble._PointEvaluation,
+                "_born_and_counterterms",
+                "python Born and counterterm components",
             )
-        wrap(
-            assemble._PointEvaluation,
-            "_born_and_counterterms",
-            "python Born and counterterm components",
-        )
         wrap(assemble._PointEvaluation, "_assemble", "assembly")
         wrap(NativeExecutor, "_inputs", "input conversion")
         if hasattr(NativeExecutor, "_native_points"):
@@ -765,15 +901,22 @@ class Run:
 
     def run(self) -> dict[str, Any]:
         try:
-            try:
-                self.generate()
-            except Exception as error:
-                # A process this checkout cannot generate is a result: the
-                # record keeps the refusal instead of dropping the row.
-                self.record["generation_error"] = (
-                    f"{type(error).__name__}: {str(error)[:600]}"
-                )
+            if getattr(self.options, "load", None) is not None:
+                self.load(self.options.load)
+            else:
+                try:
+                    self.generate()
+                except Exception as error:
+                    # A process this checkout cannot generate is a result: the
+                    # record keeps the refusal instead of dropping the row.
+                    self.record["generation_error"] = (
+                        f"{type(error).__name__}: {str(error)[:600]}"
+                    )
+                    self.record["batches"] = {}
+                    return self.record
+            if getattr(self.options, "generate_only", False):
                 self.record["batches"] = {}
+                self.record["generate_only"] = True
                 return self.record
             self.accuracy()
             self.timing()
@@ -918,7 +1061,10 @@ def check_points(options: Any) -> int:
 
     run = Run(options)
     try:
-        run.generate()
+        if getattr(options, "load", None) is not None:
+            run.load(options.load)
+        else:
+            run.generate()
         rows = stability_rows(run, options.points, options.arithmetic)
     finally:
         run.close()
@@ -1062,6 +1208,12 @@ def ward(options: Any) -> int:
 def main(options: Any) -> int:
     if options.inputs == "native" and not _native_inputs_supported():
         raise SystemExit("this checkout has no native point inputs (WP3.1)")
+    if getattr(options, "load", None) is not None and (
+        getattr(options, "store", None) is not None or options.generate_only
+    ):
+        raise SystemExit("--load times a stored process: no --store or --generate-only")
+    if getattr(options, "generate_only", False) and options.store is None:
+        raise SystemExit("--generate-only needs --store")
     record = Run(options).run()
     if options.json:
         options.json.parent.mkdir(parents=True, exist_ok=True)
