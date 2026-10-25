@@ -2475,7 +2475,7 @@
        },
        "uncertainty": 0.008289884454098279,
        "gate": {
-        "status": "fail",
+        "status": "below 5 ms: not gated (user 2026-10-24)",
         "central": "fail",
         "statistic": "median per point (pyAmpliCol blocks, provider points)",
         "checks": {
@@ -2531,7 +2531,10 @@
          5.433765781418738,
          5.641478368956365
         ],
-        "ratio_to_binding_limit_of_means": 5.4138042398884405
+        "ratio_to_binding_limit_of_means": 5.4138042398884405,
+        "measured_status": "fail",
+        "floor_seconds": 0.005,
+        "floor_basis_seconds": 0.0026667594920581905
        }
       },
       "128": {
@@ -2641,7 +2644,8 @@
         ],
         "ratio_to_binding_limit_of_means": 1.3234533619270072,
         "measured_status": "fail",
-        "floor_seconds": 0.005
+        "floor_seconds": 0.005,
+        "floor_basis_seconds": 0.0026667594920581905
        }
       }
      },
@@ -2912,7 +2916,8 @@
         ],
         "ratio_to_binding_limit_of_means": 2.080798012166156,
         "measured_status": "fail",
-        "floor_seconds": 0.005
+        "floor_seconds": 0.005,
+        "floor_basis_seconds": 0.0026667594920581905
        }
       }
      },
@@ -4351,7 +4356,7 @@
        },
        "uncertainty": 0.002202743446066605,
        "gate": {
-        "status": "fail",
+        "status": "below 5 ms: not gated (user 2026-10-24)",
         "central": "fail",
         "statistic": "median per point (pyAmpliCol blocks, provider points)",
         "checks": {
@@ -4407,7 +4412,10 @@
          4.88841133187869,
          5.038002279528224
         ],
-        "ratio_to_binding_limit_of_means": 4.7882475988530215
+        "ratio_to_binding_limit_of_means": 4.7882475988530215,
+        "measured_status": "fail",
+        "floor_seconds": 0.005,
+        "floor_basis_seconds": 0.0032950365311990026
        }
       },
       "8": {
@@ -4517,7 +4525,8 @@
         ],
         "ratio_to_binding_limit_of_means": 1.1167062569584418,
         "measured_status": "inconclusive",
-        "floor_seconds": 0.005
+        "floor_seconds": 0.005,
+        "floor_basis_seconds": 0.0032950365311990026
        }
       },
       "32": {
@@ -4627,7 +4636,8 @@
         ],
         "ratio_to_binding_limit_of_means": 0.8389436720191704,
         "measured_status": "pass",
-        "floor_seconds": 0.005
+        "floor_seconds": 0.005,
+        "floor_basis_seconds": 0.0032950365311990026
        }
       },
       "128": {
@@ -4737,7 +4747,8 @@
         ],
         "ratio_to_binding_limit_of_means": 0.8363634276082783,
         "measured_status": "pass",
-        "floor_seconds": 0.005
+        "floor_seconds": 0.005,
+        "floor_basis_seconds": 0.0032950365311990026
        }
       }
      },
@@ -4950,7 +4961,7 @@
        },
        "uncertainty": 0.00977594700894757,
        "gate": {
-        "status": "fail",
+        "status": "below 5 ms: not gated (user 2026-10-24)",
         "central": "fail",
         "statistic": "median per point (pyAmpliCol blocks, provider points)",
         "checks": {
@@ -5006,7 +5017,10 @@
          1.593887348103164,
          1.6677410287294063
         ],
-        "ratio_to_binding_limit_of_means": 1.5733259619337883
+        "ratio_to_binding_limit_of_means": 1.5733259619337883,
+        "measured_status": "fail",
+        "floor_seconds": 0.005,
+        "floor_basis_seconds": 0.0032950365311990026
        }
       }
      },
@@ -5643,7 +5657,8 @@
         ],
         "ratio_to_binding_limit_of_means": 3.839310120176859,
         "measured_status": "fail",
-        "floor_seconds": 0.005
+        "floor_seconds": 0.005,
+        "floor_basis_seconds": 0.0007960739685586304
        }
       },
       "128": {
@@ -5739,7 +5754,8 @@
         ],
         "ratio_to_binding_limit_of_means": 0.8384692812069786,
         "measured_status": "pass",
-        "floor_seconds": 0.005
+        "floor_seconds": 0.005,
+        "floor_basis_seconds": 0.0007960739685586304
        }
       }
      },
@@ -5924,7 +5940,8 @@
         ],
         "ratio_to_binding_limit_of_means": 1.607802953432839,
         "measured_status": "fail",
-        "floor_seconds": 0.005
+        "floor_seconds": 0.005,
+        "floor_basis_seconds": 0.0007960739685586304
        }
       }
      },
@@ -8041,8 +8058,220 @@
      }
     }
    ],
-   "ward": [],
-   "ward_runs": [],
+   "ward": [
+    {
+     "index": 0,
+     "leg": 3,
+     "factor": "1",
+     "born": 0.4699827681523504,
+     "components": {
+      "virtual": [
+       5.455881307832933e-14,
+       5.906823844718088e-14,
+       1.956486215598203e-15
+      ],
+      "bare": [
+       5.445697906606242e-14,
+       5.907581627318804e-14,
+       1.956486215598203e-15
+      ],
+      "uv": [
+       4.6195724349780693e-17,
+       7.577826007164434e-18,
+       0.0
+      ],
+      "r2": [
+       1.4802973661668753e-16,
+       0.0,
+       0.0
+      ],
+      "uv_local": [
+       2.018015712381705e-18,
+       5.012263211575851e-18,
+       0.0
+      ],
+      "uv_external_fields": [
+       4.417770863739899e-17,
+       1.2590089218740285e-17,
+       0.0
+      ]
+     },
+     "lanes": [
+      14.817764853936623,
+      3.637735152240187,
+      0.6452219375048335
+     ],
+     "seconds": 32.57610557007138,
+     "revision": "1570dde50430a005209e5b0590a594360b3eebb7",
+     "scale": [
+      0.6986966365051515,
+      0.4350490386885726,
+      0.13239614287343587
+     ],
+     "bound": [
+      2.1804731218988134e-11,
+      7.988225539125912e-12,
+      1.9691833662391922e-12
+     ],
+     "ratios": {
+      "virtual": [
+       7.808655463296633e-14,
+       1.3577374777160363e-13,
+       1.4777516724701766e-14
+      ],
+      "bare": [
+       7.79408060964108e-14,
+       1.3579116609766176e-13,
+       1.4777516724701766e-14
+      ],
+      "uv": [
+       6.611699833113494e-17,
+       1.7418326058154973e-17,
+       0.0
+      ],
+      "r2": [
+       2.1186553488667911e-16,
+       0.0,
+       0.0
+      ],
+      "uv_local": [
+       2.8882573737233477e-18,
+       1.15211453556707e-17,
+       0.0
+      ],
+      "uv_external_fields": [
+       6.322874095741159e-17,
+       2.893947141382567e-17,
+       0.0
+      ]
+     },
+     "lanes_ratio": [
+      21.207723180197924,
+      8.361666912782766,
+      4.87341944788855
+     ],
+     "passed": true
+    },
+    {
+     "index": 0,
+     "leg": 3,
+     "factor": "i",
+     "born": 0.4699827681523504,
+     "components": {
+      "virtual": [
+       1.203759314449826e-12,
+       1.3802935569161863e-13,
+       7.001041043497299e-15
+      ],
+      "bare": [
+       0.43228856786940756,
+       1.4353235595047635e-13,
+       7.001041043497299e-15
+      ],
+      "uv": [
+       8.0407687830376605e-16,
+       5.503000258857723e-15,
+       0.0
+      ],
+      "r2": [
+       0.4322885678706121,
+       0.0,
+       0.0
+      ],
+      "uv_local": [
+       1.6086547304512747e-15,
+       4.815402211063376e-15,
+       0.0
+      ],
+      "uv_external_fields": [
+       2.4127316087550408e-15,
+       6.875980477943461e-16,
+       0.0
+      ]
+     },
+     "lanes": [
+      14.81776485393658,
+      3.637735152240184,
+      0.6452219375048334
+     ],
+     "seconds": 33.3073596379254,
+     "revision": "1570dde50430a005209e5b0590a594360b3eebb7",
+     "scale": [
+      0.6986966365051515,
+      0.4350490386885726,
+      0.13239614287343587
+     ],
+     "bound": [
+      2.1804731218988095e-11,
+      7.988225539125909e-12,
+      1.9691833662391922e-12
+     ],
+     "ratios": {
+      "virtual": [
+       1.7228640465066138e-12,
+       3.172730966322768e-13,
+       5.287949400602966e-14
+      ],
+      "bare": [
+       0.6187070973057709,
+       3.299222459682831e-13,
+       5.287949400602966e-14
+      ],
+      "uv": [
+       1.1508240290460274e-15,
+       1.2649149336006267e-14,
+       0.0
+      ],
+      "r2": [
+       0.6187070973074948,
+       0.0,
+       0.0
+      ],
+      "uv_local": [
+       2.3023650700505613e-15,
+       1.1068642343353055e-14,
+       0.0
+      ],
+      "uv_external_fields": [
+       3.4531890990965888e-15,
+       1.5805069926532107e-15,
+       0.0
+      ]
+     },
+     "lanes_ratio": [
+      21.207723180197863,
+      8.36166691278276,
+      4.8734194478885495
+     ],
+     "passed": true
+    }
+   ],
+   "ward_runs": [
+    {
+     "revision": "1570dde50430a005209e5b0590a594360b3eebb7",
+     "native": {
+      "directory": "loop-native-v2-slice-4e9b5a9e",
+      "digest": "02e1e95c1ea5a91b97c148954a3d3b3ecd0b97e9ddb41fd8f61811fac7778124",
+      "source_revision": "4e9b5a9eceb74f91b2f31107e18c57795ba08e73",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
+      }
+     },
+     "generation": {
+      "generate": {
+       "seconds": 18.226128936046734,
+       "peak_gib": 0.314
+      },
+      "export": {
+       "seconds": 1.2216635959921405,
+       "peak_gib": 0.261
+      }
+     },
+     "max_rss_gib": 0.643
+    }
+   ],
    "schedules": [
     {
      "configuration": "native/full",
@@ -11133,8 +11362,127 @@
      }
     }
    ],
-   "ward": [],
-   "ward_runs": [],
+   "ward": [
+    {
+     "index": 0,
+     "leg": 3,
+     "factor": "1",
+     "born": 0.0004355415238256235,
+     "components": {
+      "virtual": [
+       2.2367129622975582e-13,
+       2.0279413927809434e-14,
+       1.8374727318088795e-15
+      ],
+      "bare": [
+       2.2367127851271408e-13,
+       2.027939989727698e-14,
+       1.8374727318088795e-15
+      ],
+      "uv": [
+       1.771704173264386e-20,
+       1.4030532455359287e-20,
+       0.0
+      ],
+      "r2": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "uv_local": [
+       1.2018547227103121e-21,
+       1.8737152249198856e-20,
+       0.0
+      ],
+      "uv_external_fields": [
+       1.6515187009933548e-20,
+       4.70661979383957e-21,
+       0.0
+      ]
+     },
+     "lanes": [
+      0.7974002272404113,
+      0.10938564708539014,
+      0.004128691909461166
+     ],
+     "seconds": 2659.1642165360972,
+     "revision": "1570dde50430a005209e5b0590a594360b3eebb7",
+     "scale": [
+      0.0007879827146914501,
+      0.0005278615090857285,
+      0.00014723267759558624
+     ],
+     "bound": [
+      8.052800543873258e-13,
+      1.1466426217624742e-13,
+      5.601018685417029e-15
+     ],
+     "ratios": {
+      "virtual": [
+       2.8385304913362043e-10,
+       3.8418057726796504e-11,
+       1.2480060553242043e-11
+      ],
+      "bare": [
+       2.8385302664957174e-10,
+       3.8418031146846623e-11,
+       1.2480060553242043e-11
+      ],
+      "uv": [
+       2.248404870096841e-17,
+       2.657994988052942e-17,
+       0.0
+      ],
+      "r2": [
+       0.0,
+       0.0,
+       0.0
+      ],
+      "uv_local": [
+       1.5252298055559779e-18,
+       3.5496341230964444e-17,
+       0.0
+      ],
+      "uv_external_fields": [
+       2.095881889541243e-17,
+       8.916391350435028e-18,
+       0.0
+      ]
+     },
+     "lanes_ratio": [
+      1011.9514202194762,
+      207.22413967036405,
+      28.04195357230219
+     ],
+     "passed": true
+    }
+   ],
+   "ward_runs": [
+    {
+     "revision": "1570dde50430a005209e5b0590a594360b3eebb7",
+     "native": {
+      "directory": "loop-native-v2-slice-4e9b5a9e",
+      "digest": "02e1e95c1ea5a91b97c148954a3d3b3ecd0b97e9ddb41fd8f61811fac7778124",
+      "source_revision": "4e9b5a9eceb74f91b2f31107e18c57795ba08e73",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
+      }
+     },
+     "generation": {
+      "generate": {
+       "seconds": 119.41605036903638,
+       "peak_gib": 0.935
+      },
+      "export": {
+       "seconds": 8.712085869978182,
+       "peak_gib": 1.127
+      }
+     },
+     "max_rss_gib": 5.684
+    }
+   ],
    "schedules": [
     {
      "configuration": "native/full",
@@ -19349,6 +19697,414 @@
    "ward_runs": [],
    "schedules": [],
    "pyamplicol": {
+    "native/full": {
+     "revision": "439511db5a411b9046e47d623fdf8aa30aa4b32d",
+     "branch": "work/v2-measure-g1-7leg",
+     "dirty": false,
+     "host_cpus": [
+      170
+     ],
+     "native": {
+      "directory": "loop-native-v2-slice-4e9b5a9e",
+      "digest": "02e1e95c1ea5a91b97c148954a3d3b3ecd0b97e9ddb41fd8f61811fac7778124",
+      "source_revision": "4e9b5a9eceb74f91b2f31107e18c57795ba08e73",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
+      }
+     },
+     "inputs": "native",
+     "accuracy": "full",
+     "schedule": "B",
+     "lanes": 16,
+     "generation": {
+      "model": {
+       "seconds": 3.7483832410071045,
+       "peak_gib": 0.193
+      },
+      "generate": {
+       "seconds": 2615.263128739083,
+       "peak_gib": 14.717
+      },
+      "export": {
+       "seconds": 410.2187942949822,
+       "peak_gib": 27.827,
+       "plan_mb": 159.867
+      }
+     },
+     "structure": {
+      "families": 4707,
+      "b_trie_nodes": 144986
+     },
+     "accuracy_check": {
+      "fixture": "gg_ggggg_njet",
+      "points": 10,
+      "points_are_stream_points": [
+       0,
+       1,
+       2
+      ],
+      "metric": "|a-b|/max(|a|,|b|,|Born| alpha_s/(2pi)) for Laurent coefficients, |a-b|/max(|a|,|b|) for the Born (references.py merge metric); estimated_relative_accuracy = |NJet scaling-test difference| / max(|value|, |Born| alpha_s/(2pi))",
+      "tolerance": 2e-08,
+      "tolerance_source": "required",
+      "max_error": 1.5858874316040314e-08,
+      "passed": true,
+      "rows": [
+       {
+        "index": 0,
+        "mu_r": "1000",
+        "born": 3.623258103789204e-06,
+        "finite": -1.3008954977066943e-05,
+        "errors": {
+         "njet_dd_oneloop_R1": {
+          "born": 7.510073158207184e-13,
+          "finite": 3.764212455416529e-09
+         },
+         "njet_double_R1": {
+          "born": 7.659690179880302e-13,
+          "finite": 3.7248380817641904e-09
+         },
+         "njet_double_R2": {
+          "born": 7.540464115734537e-13,
+          "finite": 3.6048147459444145e-09
+         },
+         "catani": {
+          "born": 8.10854124489963e-13
+         }
+        }
+       },
+       {
+        "index": 1,
+        "mu_r": "1000",
+        "born": 5.81804419996056e-07,
+        "finite": -1.5507512955787696e-06,
+        "errors": {
+         "njet_dd_oneloop_R1": {
+          "born": 7.441327365101301e-13,
+          "finite": 2.8019953479311144e-09
+         },
+         "njet_double_R1": {
+          "born": 7.887188261273916e-13,
+          "finite": 2.7998563969394855e-09
+         },
+         "njet_double_R2": {
+          "born": 7.929044590302365e-13,
+          "finite": 3.1022519589013017e-09
+         },
+         "catani": {
+          "born": 7.697924860449623e-13
+         }
+        }
+       },
+       {
+        "index": 2,
+        "mu_r": "1000",
+        "born": 8.259199320762874e-07,
+        "finite": -2.3302746412373507e-06,
+        "errors": {
+         "njet_dd_oneloop_R1": {
+          "born": 2.7933773002475513e-13,
+          "finite": 1.614879726266303e-11
+         },
+         "njet_double_R1": {
+          "born": 2.7779938548125025e-13,
+          "finite": 4.28593593904434e-11
+         },
+         "njet_double_R2": {
+          "born": 2.94849370838429e-13,
+          "finite": 1.6023393002739587e-11
+         },
+         "catani": {
+          "born": 2.7997870691788215e-13
+         }
+        }
+       },
+       {
+        "index": 3,
+        "mu_r": "1000",
+        "born": 4.6721862989530095e-06,
+        "finite": -1.7448902480057875e-05,
+        "errors": {
+         "njet_dd_oneloop_R1": {
+          "born": 5.319125797276159e-13,
+          "finite": 1.5025028078301997e-11
+         },
+         "njet_double_R1": {
+          "born": 4.4724892099114805e-13,
+          "finite": 7.802319469710017e-12
+         },
+         "njet_double_R2": {
+          "born": 4.613897462190806e-13,
+          "finite": 1.9640361597553292e-11
+         },
+         "catani": {
+          "born": 4.1008393161004334e-13
+         }
+        }
+       },
+       {
+        "index": 4,
+        "mu_r": "1000",
+        "born": 3.960777146117611e-06,
+        "finite": -1.4473345361575393e-05,
+        "errors": {
+         "njet_dd_oneloop_R1": {
+          "born": 9.281317416920617e-13,
+          "finite": 1.4692356765707006e-08
+         },
+         "njet_double_R1": {
+          "born": 8.38954106603291e-13,
+          "finite": 1.5858874316040314e-08
+         },
+         "njet_double_R2": {
+          "born": 9.031106786096025e-13,
+          "finite": 9.008295005956941e-09
+         },
+         "catani": {
+          "born": 8.701769716463635e-13
+         }
+        }
+       },
+       {
+        "index": 5,
+        "mu_r": "1000",
+        "born": 1.8630528418929114e-06,
+        "finite": -5.9720140828559105e-06,
+        "errors": {
+         "njet_dd_oneloop_R1": {
+          "born": 7.533514681061278e-13,
+          "finite": 8.424122696176792e-09
+         },
+         "njet_double_R1": {
+          "born": 7.334606251793813e-13,
+          "finite": 7.253730182410784e-09
+         },
+         "njet_double_R2": {
+          "born": 7.818806199610599e-13,
+          "finite": 8.385144947934496e-09
+         },
+         "catani": {
+          "born": 7.908599147679904e-13
+         }
+        }
+       },
+       {
+        "index": 6,
+        "mu_r": "1000",
+        "born": 6.365472792233739e-07,
+        "finite": -1.7282447831578333e-06,
+        "errors": {
+         "njet_dd_oneloop_R1": {
+          "born": 1.1992643258868662e-13,
+          "finite": 9.063708618946875e-09
+         },
+         "njet_double_R1": {
+          "born": 9.347941070019678e-14,
+          "finite": 6.486384936794604e-09
+         },
+         "njet_double_R2": {
+          "born": 1.0029908301106523e-13,
+          "finite": 9.048984929031582e-09
+         },
+         "catani": {
+          "born": 1.4055178299228876e-13
+         }
+        }
+       },
+       {
+        "index": 7,
+        "mu_r": "1000",
+        "born": 8.075974181049849e-08,
+        "finite": -1.5738934992316165e-07,
+        "errors": {
+         "njet_dd_oneloop_R1": {
+          "born": 2.2009056250133937e-13,
+          "finite": 4.768850104168489e-10
+         },
+         "njet_double_R1": {
+          "born": 2.1796012518747726e-13,
+          "finite": 4.589857550059564e-10
+         },
+         "njet_double_R2": {
+          "born": 2.466390890279277e-13,
+          "finite": 5.048399309215849e-10
+         },
+         "catani": {
+          "born": 2.8203712439671e-13
+         }
+        }
+       },
+       {
+        "index": 8,
+        "mu_r": "1000",
+        "born": 7.001053149966075e-07,
+        "finite": -1.929702200273316e-06,
+        "errors": {
+         "njet_dd_oneloop_R1": {
+          "born": 1.6227314893476434e-13,
+          "finite": 1.1497252049772671e-08
+         },
+         "njet_double_R1": {
+          "born": 1.8631921667066624e-13,
+          "finite": 1.0436556174179612e-08
+         },
+         "njet_double_R2": {
+          "born": 1.7800139449787012e-13,
+          "finite": 4.398712534327639e-09
+         },
+         "catani": {
+          "born": 1.7769892823704117e-13
+         }
+        }
+       },
+       {
+        "index": 9,
+        "mu_r": "1000",
+        "born": 1.5808693167631136e-06,
+        "finite": -4.952371320161086e-06,
+        "errors": {
+         "njet_dd_oneloop_R1": {
+          "born": 1.0608879670062233e-13,
+          "finite": 2.562696568539083e-10
+         },
+         "njet_double_R1": {
+          "born": 1.7453750265265332e-13,
+          "finite": 2.887993037243978e-10
+         },
+         "njet_double_R2": {
+          "born": 1.4908690748458027e-13,
+          "finite": 1.3171708841788946e-10
+         },
+         "catani": {
+          "born": 1.2618137183331342e-13
+         }
+        }
+       }
+      ]
+     },
+     "physical": [],
+     "skipped_batches": {},
+     "max_rss_gib": null,
+     "generation_error": null,
+     "failed_points": 0,
+     "rescue": "off (no stability check, no escalation)",
+     "earlier_runs": [],
+     "partial": true,
+     "batches": {
+      "16": {
+       "blocks": 2,
+       "points_per_block": 16,
+       "median_seconds_per_point": 13.928858545434196,
+       "min_seconds_per_point": 13.709050371311605,
+       "max_seconds_per_point": 14.148666719556786,
+       "samples_seconds_per_point": [
+        14.148666719556786,
+        13.709050371311605
+       ],
+       "stages_per_point": {
+        "assembly": 0.008227605478168698,
+        "dressing": 3.3614928023750004,
+        "factors": 0.12288732509374997,
+        "input conversion": 5.1877093937946483e-05,
+        "other": 9.792588423515227,
+        "python point parameters": 4.4626409362535924e-05,
+        "reduction": 0.47482100171874997,
+        "reduction: masters": 0.041183408406250004,
+        "reduction: masters (oneloopmaster)": 0.0013789050000000001,
+        "scatter": 0.0100907589375,
+        "seeds": 0.1586541248125
+       },
+       "counts_per_block": {
+        "dressing work (modelled complex MAC per lane)": 4063048008,
+        "factors": 25477,
+        "families": 4707,
+        "master evaluations": 22512,
+        "master requests": 2146928,
+        "points": 16,
+        "reduction lanes": 75312,
+        "split steps": 64955,
+        "steps": 163702,
+        "vertex tensors": 11390
+       },
+       "reals_per_lane": {
+        "chunk inputs (factors, vertex tensors, currents)": 22675520,
+        "family numerators (one bucket chunk)": 237600,
+        "open objects (one family walk)": 180480
+       },
+       "throughput": {
+        "work_per_lane_per_chunk": 4063048008.0,
+        "useful_cmac_per_point": 4063048008.0,
+        "kernel_cmac_per_second": 1208703468.0334072,
+        "useful_cmac_per_second": 1208703468.0334072
+       },
+       "uncertainty": 0.015780774383313878,
+       "gate": {
+        "status": "no matched provider timing",
+        "missing": {
+         "madloop": "no export: MadLoop's generation exceeds 17 h (colour factors about 89 days by MG5's estimate); stopped under HANDOFF \u00a70.1",
+         "recola": "no generation: more than 57 h, unfinished at its third attempt; stopped under HANDOFF \u00a70.1"
+        }
+       }
+      },
+      "64": {
+       "blocks": 2,
+       "points_per_block": 64,
+       "median_seconds_per_point": 14.196555633696335,
+       "min_seconds_per_point": 14.0911525775482,
+       "max_seconds_per_point": 14.301958689844469,
+       "samples_seconds_per_point": [
+        14.301958689844469,
+        14.0911525775482
+       ],
+       "stages_per_point": {
+        "assembly": 0.007609678467815684,
+        "dressing": 3.3839910530624997,
+        "factors": 0.08797816035937497,
+        "input conversion": 5.248943671176676e-05,
+        "other": 10.092763810603795,
+        "python point parameters": 4.4663617700280156e-05,
+        "reduction": 0.47556471787500004,
+        "reduction: masters": 0.0404201434453125,
+        "reduction: masters (oneloopmaster)": 0.0013256136953125,
+        "scatter": 0.0111308220234375,
+        "seeds": 0.13742023825
+       },
+       "counts_per_block": {
+        "dressing work (modelled complex MAC per lane)": 16252192032,
+        "factors": 101908,
+        "families": 18828,
+        "master evaluations": 90048,
+        "master requests": 8587712,
+        "points": 64,
+        "reduction lanes": 301248,
+        "split steps": 259820,
+        "steps": 654808,
+        "vertex tensors": 45560
+       },
+       "reals_per_lane": {
+        "chunk inputs (factors, vertex tensors, currents)": 22675520,
+        "family numerators (one bucket chunk)": 237600,
+        "open objects (one family walk)": 180480
+       },
+       "throughput": {
+        "work_per_lane_per_chunk": 4063048008.0,
+        "useful_cmac_per_point": 4063048008.0,
+        "kernel_cmac_per_second": 1200667479.4021564,
+        "useful_cmac_per_second": 1200667479.4021564
+       },
+       "uncertainty": 0.007424551339618879,
+       "gate": {
+        "status": "no matched provider timing",
+        "missing": {
+         "madloop": "no export: MadLoop's generation exceeds 17 h (colour factors about 89 days by MG5's estimate); stopped under HANDOFF \u00a70.1",
+         "recola": "no generation: more than 57 h, unfinished at its third attempt; stopped under HANDOFF \u00a70.1"
+        }
+       }
+      }
+     },
+     "values_vs_providers": {}
+    },
     "native/lc": {
      "revision": "b03cf7892ec32c6b2ea480de8878d24ea796a700",
      "branch": "work/v2-measure-g1-7leg",
@@ -20783,6 +21539,42 @@
   },
   {
    "process": "gg_ggggg",
+   "configuration": "native/full",
+   "batch": 64,
+   "total": 14.196555633696335,
+   "dressing": 3.4719692134218745,
+   "reduction": 0.47556471787500004,
+   "masters": 0.0404201434453125,
+   "native_loop_rest": 0.14855106027343784,
+   "outside_native_loop": 10.100470642126023,
+   "outer_factor": 3.596309969913893,
+   "kernel_cmac_per_second": 1200667479.4021564,
+   "design": {
+    "recipe_finite_only": [
+     2.70677155,
+     7.923898802600001
+    ],
+    "ninjars_model": [
+     0.854041,
+     1.001659
+    ],
+    "dressing_model": [
+     1.7238366666666667,
+     6.201885366
+    ],
+    "g0_dressing": null,
+    "total_over_recipe": [
+     1.791612435665905,
+     5.2448296324439845
+    ],
+    "reduction_over_model": [
+     0.47477706272793435,
+     0.556840617575737
+    ]
+   }
+  },
+  {
+   "process": "gg_ggggg",
    "configuration": "native/lc",
    "batch": 16,
    "total": 15.88555892068689,
@@ -20831,11 +21623,11 @@
    "outer_factor": 2.299309291150254,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    0.0010433184223586365,
+    0.0009324693274087146,
     0.003452142800122572
    ],
    "measured": 0.002212954491369601,
@@ -20854,11 +21646,11 @@
    "outer_factor": 5.040043434271078,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    0.0009182580405932311,
+    0.0007967684577546915,
     0.0027786998057303127
    ],
    "measured": 0.0015636136249668198,
@@ -20877,11 +21669,11 @@
    "outer_factor": 3.5201986038027644,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    0.4401996766215968,
+    0.3866925141517595,
     1.4446579763057479
    ],
    "measured": 0.9132524525630288,
@@ -20900,11 +21692,11 @@
    "outer_factor": 10.6555436540639,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    0.5248242622250917,
+    0.44384191297830106,
     1.6201656869789591
    ],
    "measured": 1.0326115865000247,
@@ -20919,18 +21711,18 @@
     2.70677155,
     7.923898802600001
    ],
-   "outer_class": "gg_gggg",
-   "outer_factor": 3.5201986038027644,
+   "outer_class": "gg_ggggg",
+   "outer_factor": 3.596309969913893,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    8.545885753754003,
-    28.010824825225434
+    7.657679439586684,
+    28.616456036215734
    ],
-   "measured": null,
+   "measured": 14.196555633696335,
    "gate": null,
    "headroom": null
   },
@@ -20946,11 +21738,11 @@
    "outer_factor": 6.0716734155618015,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    5.758947294030516,
+    4.8531869389852735,
     17.894713922959262
    ],
    "measured": 15.88555892068689,
@@ -20969,11 +21761,11 @@
    "outer_factor": 2.6544512942066856,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    1.9904965222971218,
+    1.7901764844043873,
     6.921703372214733
    ],
    "measured": 3.1177243414922486,
@@ -20992,11 +21784,11 @@
    "outer_factor": 10.050988268956797,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    1.8056840885230234,
+    1.4845221105897815,
     5.742435151201037
    ],
    "measured": 3.700961505961459,
@@ -21015,11 +21807,11 @@
    "outer_factor": 1.6818696330723548,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    0.03649766184120629,
+    0.031029294081815463,
     0.1203281396152038
    ],
    "measured": 0.08224925959439133,
@@ -21038,11 +21830,11 @@
    "outer_factor": 7.493991047215449,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    0.02190669026829742,
+    0.018058237369396535,
     0.06835042355816243
    ],
    "measured": 0.05265436016361491,
@@ -21061,11 +21853,11 @@
    "outer_factor": 2.112856411605255,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    0.010059314893423491,
+    0.008715202453965364,
     0.036963956919065656
    ],
    "measured": 0.024724086812057067,
@@ -21084,11 +21876,11 @@
    "outer_factor": 6.06804610197,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    0.006318052787885786,
+    0.005251769683611077,
     0.021452350685571005
    ],
    "measured": 0.020881864273178508,
@@ -21107,11 +21899,11 @@
    "outer_factor": 2.5960999420032107,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    0.1266996913783956,
+    0.10930464138494161,
     0.4213033727064576
    ],
    "measured": 0.1828452865156578,
@@ -21130,11 +21922,11 @@
    "outer_factor": 10.446236920079926,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    0.13560069587497361,
+    0.11656203583465888,
     0.43675143333863803
    ],
    "measured": 0.21653393667929777,
@@ -21153,11 +21945,11 @@
    "outer_factor": 2.814161228332483,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    0.0683966319714595,
+    0.058386547578074766,
     0.22446680540013267
    ],
    "measured": 0.1526493463125007,
@@ -21176,11 +21968,11 @@
    "outer_factor": 25.544574146082695,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.8241229790528676,
+    0.47477706272793435,
     1.752379170098847
    ],
    "estimate": [
-    0.092082726132574,
+    0.07896460391914963,
     0.2949721191833504
    ],
    "measured": 0.18501977082814847,
@@ -21188,7 +21980,7 @@
    "headroom": null
   }
  ],
- "date": "2026-10-24",
+ "date": "2026-10-25",
  "slice_revision": "4e9b5a9e",
  "measured_revision": "4e9b5a9e",
  "slice_lc_revision": "4e9b5a9e",
@@ -21199,8 +21991,9 @@
  "provider_records": "reused from the measure-g1 campaign of 2026-10-23/24 (workspace/reports/engine-v2/measure-g1/records), not re-run",
  "previous_development_side": "native_revision 889af02c, native_commit 39824f9b, native_build loop-native-measure-g1-genscale-39824f9b: its native/full and native/lc runs are earlier_runs of the integrated configuration (bitwise-equal binary64 values at every timed point); its native/full/L1, native/*/M and stability rows stay as development history",
  "repeats": "uux_uuxg B=128 open in the first integrated run (1.00 of the limit, band 0.90-1.09): single repeat with B = 1 8 32 128 decides (MASTER_PLAN 5.8 item 10)",
- "slice_tool_revisions": "b03cf789,29393525,60d3434f,439511db",
- "seven_leg_rows": "package measure-g1-7leg (2026-10-24/25): the 2->5 rows on the integrated configuration of slice_revision (its engine: src and rust equal at every slice_tool_revisions entry; native per-point inputs, slice_build, schedule B, 16 lanes), full and leading colour, binary64 finite part, stability checks off, one thread pinned to one core of 128-175, RAYON_NUM_THREADS=1, paired blocks over 3 rounds after a 16-point warm-up per B; B = 16 and 128, except g g > g g g g g (top-free, particle_veto [t]): B = 128 does not fit 3 rounds in about 1 h (15.5 s/pt x 128 x 3 = 99 min), so B = 16 and 64 (the record states the skipped B); its values are checked against NJet (reference_fixture gg_ggggg_njet), its speed is reported without a gate",
+ "slice_tool_revisions": "b03cf789,29393525,60d3434f,439511db,a03e4062",
+ "seven_leg_rows": "package measure-g1-7leg (2026-10-24/25): the 2->5 rows on the integrated configuration of slice_revision (its engine: src and rust equal at every slice_tool_revisions entry; native per-point inputs, slice_build, schedule B, 16 lanes), full and leading colour, binary64 finite part, stability checks off, one thread pinned to one core of 128-175, RAYON_NUM_THREADS=1, paired blocks over 3 rounds after a 16-point warm-up per B; B = 16 and 128, except g g > g g g g g (top-free, particle_veto [t], N_f = 5): 3 rounds of B = 128 do not fit in about 1 h (15.5 s/pt x 128 x 3 = 99 min), so B = 16 and 64. Its full-colour record is the checkpoint after round 2 (partial): the run was killed with its launcher by the agent tool's 2-h background limit in its physical stage, after its third round (log: B = 16 13.876 s/pt, B = 64 14.091 s/pt over 3 rounds; the record: 13.929 and 14.197 s/pt over 2). Its speed is reported without a gate (no matched provider, ADDENDUM H)",
  "seven_leg_records": "workspace/reports/engine-v2/measure-g1-7leg/records (runs, logs, scripts); provider timings of uux_ggggg imported from the reference campaign (runs/required/uux_ggggg under the reference root), none for gg_ggggg (HANDOFF 0.1)",
- "seven_leg_dirty_records": "m7-uux_emepddxg-lc, m7-uux_emepggg-full, m7-stability-uux_emepggg (revision b03cf789, dirty): the uncommitted edits at their start were gate.py, the gate CLI help text and the report builder (committed as 29393525, 0460220c, 60d3434f); the measurement code is b03cf789"
+ "seven_leg_dirty_records": "m7-uux_emepddxg-lc, m7-uux_emepggg-full, m7-stability-uux_emepggg (revision b03cf789, dirty): the uncommitted edits at their start were gate.py, the gate CLI help text and the report builder (committed as 29393525, 0460220c, 60d3434f); the measurement code is b03cf789",
+ "seven_leg_checks": "values at the timed points: every full-colour row against the providers on the stream (16 points; u u~ > g g g g g: the reference campaign's 3 points, MadLoop and Recola) and its required fixture; g g > g g g g g against NJet double-double at its 10 points (the stream's first 3) at mu_R = 1000 GeV, max 1.59e-8 (tolerance 2e-8). Physical rows: the double pole over the Born against the universal -(alpha_s/2pi) sum C_i at the run's colour accuracy. Rotation: stability rows (rotation-0 and reduction-direction, binary64). Ward (one gluon polarisation replaced by its momentum, the O10 bound): g g > g g g (5 legs, c = 1 and i) and g g > g g g g (6 legs, c = 1) pass; NOT run at 7 legs: the Ward mode forms its per-point inputs in Python with full tree kernels (the native trees take no literal sources), one binary64 evaluation took 1-2 s at 4 legs, 33-43 s at 5 and 2,659-2,860 s at 6 legs (x40-80 per leg), so a seven-gluon Ward evaluation needs native Ward inputs (estimated tens of hours per evaluation in Python; not extrapolated into any result)"
 }

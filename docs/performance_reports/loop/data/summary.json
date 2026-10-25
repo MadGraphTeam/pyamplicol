@@ -1,7 +1,7 @@
 {
  "what": "Table 1 of docs/performance_reports/loop/benchmarks.typ, written by scripts/build_summary.py; do not edit by hand",
  "meta": {
-  "date": "2026-10-24",
+  "date": "2026-10-25",
   "host": "AMD EPYC 9754, shared host, pinned cores without SMT siblings (128-191)",
   "gate_factor": 1.3,
   "engine_on_loop": "b4d76cc3",
@@ -47,7 +47,7 @@
     "revision": "4e9b5a9e",
     "lc_revision": "4e9b5a9e",
     "native_build": "loop-native-v2-slice-4e9b5a9e",
-    "date": "2026-10-24",
+    "date": "2026-10-25",
     "inputs": [
      "native"
     ],
@@ -83,7 +83,8 @@
       "uux_emepddxg",
       "uux_emepggg",
       "gg_ttxemepg_qcd",
-      "uux_ggggg"
+      "uux_ggggg",
+      "gg_ggggg"
      ],
      "validation": [
       "gg_gg",
@@ -99,7 +100,8 @@
       "uux_emepddxg",
       "uux_emepggg",
       "gg_ttxemepg_qcd",
-      "uux_ggggg"
+      "uux_ggggg",
+      "gg_ggggg"
      ],
      "full_colour": [
       "gg_gg",
@@ -115,7 +117,8 @@
       "uux_emepddxg",
       "uux_emepggg",
       "gg_ttxemepg_qcd",
-      "uux_ggggg"
+      "uux_ggggg",
+      "gg_ggggg"
      ],
      "leading_colour": [
       "gg_gg",
@@ -147,36 +150,12 @@
     ],
     "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
     "conditions_short": "shared host under load",
-    "threads": {
-     "6f5a64cc": "8 pinned cores, native stages rayon-parallel",
-     "0ea83af2": "thread count not recorded"
-    },
-    "records": [
-     {
-      "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
-      "revision": "6f5a64cc",
-      "rows": [
-       "g g -> g g g g g"
-      ]
-     },
-     {
-      "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
-      "revision": "0ea83af2",
-      "rows": [
-       "g g -> g g g g g"
-      ]
-     }
-    ],
-    "main_rows": [
-     "gg_ggggg"
-    ],
+    "threads": {},
+    "records": [],
+    "main_rows": [],
     "main_cells": {
-     "generation": [
-      "gg_ggggg"
-     ],
-     "validation": [
-      "gg_ggggg"
-     ],
+     "generation": [],
+     "validation": [],
      "full_colour": [],
      "leading_colour": []
     },
@@ -3175,40 +3154,34 @@
      "corrections": "QCD",
      "kind": "g1",
      "families": {
-      "fc": null,
+      "fc": 4707,
       "lc": 4707,
       "source": "g1.json processes[gg_ggggg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
-      "configuration": "development_records",
+      "configuration": "integrated",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
-      "points": 3,
-      "point_indices": [
-       0,
-       1,
-       2
-      ],
+      "points": 10,
       "references": [
        {
         "key": "njet_dd_oneloop_R1",
         "short": "NJet DD",
-        "points": 3,
-        "max_finite": 3.764212455416529e-09
+        "points": 10,
+        "max_finite": 1.4692356765707006e-08,
+        "median_finite": 3.764212455416529e-09,
+        "worst_point": 4,
+        "fixture": "gg_ggggg_njet"
        }
       ],
-      "max_finite": 3.764212455416529e-09,
-      "tolerance": 2e-08,
-      "passed": true,
-      "source": "measured.json required_native.superseded[gg_ggggg]",
-      "within_estimate": true,
-      "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
-      "revision": "0ea83af2",
+      "max_finite": 1.4692356765707006e-08,
+      "median_finite": 3.764212455416529e-09,
+      "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].accuracy_check",
       "considered": [
        {
         "configuration": "integrated",
         "revision": "4e9b5a9e",
-        "status": "no record"
+        "status": "compared"
        },
        {
         "configuration": "development_records",
@@ -3221,53 +3194,26 @@
         "status": "compared"
        }
       ],
-      "partial_repeats": [
-       {
-        "configuration": "development_records",
-        "revision": "6f5a64cc",
-        "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
-        "points": 1,
-        "point_indices": [
-         0
-        ],
-        "references": [
-         "NJet DD"
-        ],
-        "max_finite": 3.764212455416529e-09,
-        "repeats": "development_records",
-        "repeats_revision": "0ea83af2",
-        "why": "1 of 3 points; largest deviation 3.76e-09 <= 3.76e-09",
-        "source": "measured.json required_native.processes[gg_ggggg]"
-       }
-      ],
-      "rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it",
       "note": "top-free (particle_veto = [t]), Nf = 5"
      },
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 3092.7,
-       "generate_s": 2652.0,
-       "export_s": 440.7,
-       "peak_gib": 28.668,
-       "process_peak_gib": 38.616,
-       "plan_mb": 159.87,
+       "seconds": 3025.4819230340654,
+       "generate_s": 2615.263128739083,
+       "export_s": 410.2187942949822,
+       "model_s": 3.7483832410071045,
+       "peak_gib": 27.827,
+       "plan_mb": 159.867,
        "inputs": "native",
-       "counterterms": "recursion",
-       "branch": "work/v2-generation-scale",
-       "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
-       "revision": "6f5a64cc",
-       "source": "measured.json required_native.processes[gg_ggggg]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
-       "conditions_short": "shared host under load",
-       "threads": "8 pinned cores, native stages rayon-parallel",
-       "conditions_source": "milestone.json development_records",
-       "configuration": "development_records",
+       "revision": "439511db",
+       "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].generation",
+       "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
          "revision": "4e9b5a9e",
-         "status": "no record"
+         "status": "measured"
         },
         {
          "configuration": "development_records",
@@ -3287,13 +3233,28 @@
      "full_colour": {
       "gate_rule": "no gate (no matched provider)",
       "main": {
-       "status": "not measured",
-       "configuration": null,
+       "status": "measured",
+       "batch": 64,
+       "seconds_per_point": 14.196555633696335,
+       "uncertainty": 0.007424551339618879,
+       "stages": {
+        "inputs": 0.0,
+        "numerator": 3.6093894516718747,
+        "scatter": 0.0111308220234375,
+        "ninjars": 0.43514457442968757,
+        "masters": 0.0404201434453125,
+        "glue": 10.100470642126023
+       },
+       "inputs": "native",
+       "revision": "439511db",
+       "g1_configuration": "native/full",
+       "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].batches['64']",
+       "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
          "revision": "4e9b5a9e",
-         "status": "no record"
+         "status": "measured"
         },
         {
          "configuration": "development_records",
@@ -3336,6 +3297,8 @@
        "revision": "b03cf789",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ggggg].pyamplicol['native/lc'].batches['16']",
+       "fc_seconds_per_point": 13.928858545434196,
+       "lc_over_fc": 1.1404781568331808,
        "configuration": "integrated",
        "considered": [
         {
