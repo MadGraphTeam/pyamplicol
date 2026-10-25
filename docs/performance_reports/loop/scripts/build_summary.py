@@ -363,6 +363,15 @@ def _provider_runtime(proc: dict) -> dict:
             out[name] = {"status": "not run"}
         elif "unavailable" in rec:
             out[name] = {"status": "unavailable", "reason": rec["unavailable"]}
+            if "median_seconds_per_point" in rec:
+                # A matched provider's timing outside the protocol (u u~ >
+                # g g g g g: Recola's reference run computes the IR poles):
+                # shown beside the cell, never a gate limit.
+                out[name]["outside_protocol"] = {
+                    "seconds_per_point": rec["median_seconds_per_point"],
+                    "points": rec["points"],
+                    "mode": rec["mode"],
+                }
         else:
             entry = {
                 "status": "measured",
