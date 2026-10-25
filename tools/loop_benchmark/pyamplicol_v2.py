@@ -1214,6 +1214,11 @@ def main(options: Any) -> int:
         raise SystemExit("--load times a stored process: no --store or --generate-only")
     if getattr(options, "generate_only", False) and options.store is None:
         raise SystemExit("--generate-only needs --store")
+    if getattr(options, "store", None) is not None and options.store.exists():
+        # Before an hour of generation, not after it.
+        raise SystemExit(
+            f"{options.store} exists: a stored process is never overwritten"
+        )
     record = Run(options).run()
     if options.json:
         options.json.parent.mkdir(parents=True, exist_ok=True)

@@ -521,6 +521,14 @@ def build(
         key = record["process"]
         if key not in order:
             raise KeyError(f"{key}: a record of a process not in processes.json")
+        if record.get("generate_only"):
+            # A storing run (``pyamplicol --store --generate-only``) times
+            # nothing: its generation is in the records of the runs that
+            # load it (``stored``).
+            raise ValueError(
+                f"{key}: a generate-only record is no gate input; give the runs "
+                "of its stored process"
+            )
         entry = processes.setdefault(
             key,
             {
@@ -711,6 +719,9 @@ def build(
                 "schedule": record.get("schedule", "B"),
                 "lanes": record.get("lanes", 16),
                 "generation": record.get("generation"),
+                # A run of a stored process (``pyamplicol --load``): its
+                # generation is the storing run's, the load is stated.
+                **({"stored": record["stored"]} if "stored" in record else {}),
                 "structure": record.get("structure"),
                 "accuracy_check": accuracy_check,
                 "physical": record.get("physical", []),
