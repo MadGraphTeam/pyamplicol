@@ -17,8 +17,8 @@ and every entry names its source:
                           OpenLoops and Recola production references of the
                           seven-leg rows (DESIGN 1.3 Table 1b, as text: the
                           gate limit is computed here), the branch of the
-                          development revisions, user gate decisions and short
-                          status notes
+                          development revisions, user gate decisions (and
+                          the user's 5 ms gate rule) and short status notes
 - tools/loop_benchmark/processes.json  the G1 process specifications
 
 Main-configuration rule (MAIN_RULE below): every cell of Table 1 and Figure
@@ -100,15 +100,11 @@ INPUTS_PREFERENCE = ("native", "python")
 # so the older, more complete comparison stays in the cell and the repeat is
 # recorded with it (partial_repeats). A check that omits a point cannot
 # improve the cell this way; one that finds a larger deviation replaces it.
-# Today the newer validation records of g g > g g g g (ninth increment,
-# fixture points 0 and 2 against Recola and OpenLoops) and g g > t t~ g g
-# (eighth increment, 3 points) repeat part of G1's comparison (8 and 16
-# points against three providers) and supply only those rows' generation;
-# G1 supplies their validation and batched timings. At the next milestone
-# (G-int integrated and G1 re-measured on loop, whose revision then descends
-# from the records' and has no development side) loop's configuration
-# becomes the main value without code changes (its revision added to
-# milestone.json ancestry).
+# Since the G-int milestone (G1 re-measured on loop at 4e9b5a9e, without a
+# development side) loop's revision descends from every development record,
+# so loop's configuration supplies every cell of the G1 rows, generation
+# included; the 2 -> 5 rows keep the development records (measured on
+# work/v2-generation-scale before its integration) until G1 times them.
 KIND_ORDER = ("development", "integrated", "development_records", "registry")
 MAIN_RULE = (
     "every cell shows the most recent configuration that measured it; A is"
@@ -344,7 +340,15 @@ def _split(stages: dict) -> dict:
     out["ninjars"] = stages.get("reduction", 0.0) - stages.get(
         "reduction: masters", 0.0
     )
-    order = ("inputs", "numerator", "scatter", "ninjars", "masters", "glue")
+    # A record without any per-point input timer (the build on loop: the
+    # native trees timer was a scratch commit of the development campaign)
+    # leaves its native trees, Born and counterterm inputs in "other", the
+    # untimed rest of the call: shown apart, never attributed to a stage.
+    out["untimed"] = 0.0
+    if not any(name in stages for name in STAGE_GROUPS["inputs"]):
+        out["untimed"] = stages.get("other", 0.0)
+        out["glue"] -= out["untimed"]
+    order = ("inputs", "numerator", "scatter", "ninjars", "masters", "glue", "untimed")
     return {k: out[k] for k in order}
 
 
@@ -513,7 +517,12 @@ def _timing_of(
         out["ratio_to_fastest"] = t / fastest["seconds_per_point"]
     gate = rec.get("gate", {})
     if "ratio_to_binding_limit" in gate:
-        measured = {"inconclusive": "open"}.get(gate["status"], gate["status"])
+        # Below the user's 5 ms floor the gate tool's verdict is its floor
+        # status (tools/loop_benchmark/gate.py GATE_FLOOR_STATUS) with the
+        # checks' own verdict as measured_status.
+        floored = "floor_seconds" in gate
+        raw = gate["measured_status"] if floored else gate["status"]
+        measured = {"inconclusive": "open"}.get(raw, raw)
         out["gate"] = {
             "status": measured,
             "ratio_to_limit": gate["ratio_to_binding_limit"],
@@ -521,14 +530,7 @@ def _timing_of(
             "binding": NAMES[gate["binding_provider"]],
             "limit_seconds": gate["binding_limit"],
         }
-        if "floor_seconds" in gate:
-            # Below the user's 5 ms floor (2026-10-24) the gate does not
-            # block: the checks' own verdict stays beside it.
-            out["gate"]["measured_status"] = {"inconclusive": "open"}.get(
-                gate["measured_status"], gate["measured_status"]
-            )
-            out["gate"]["floor_seconds"] = gate["floor_seconds"]
-        d = _decision(decisions, proc["key"], batch, gate["status"])
+        d = _decision(decisions, proc["key"], batch, raw)
         if d is not None:
             out["gate"].update(
                 status=d["verdict"],
@@ -538,13 +540,50 @@ def _timing_of(
                 decision_source="milestone.json gate_decisions"
                 f" ({decisions['source']})",
             )
+        # The user's gate rule (milestone.json gate_decisions.threshold_rule,
+        # 2026-10-24 ~22:35): below 5 ms per point at the largest batch the
+        # process has no blocking gate; the measured ratio, band and status
+        # stay with the cell. It takes precedence over a decision. The gate
+        # tool applies it (floor_seconds); the rule's words label it here,
+        # and both must agree on the cell.
+        rule = decisions.get("threshold_rule")
+        below = rule is not None and t < rule["below_seconds_per_point"]
+        if (
+            rule is not None
+            and floored
+            and (gate["floor_seconds"] != rule["below_seconds_per_point"] or not below)
+        ):
+            raise ValueError(
+                f"{proc['key']} B = {batch}: the gate tool's 5 ms floor"
+                " disagrees with milestone.json gate_decisions.threshold_rule"
+            )
+        if below or floored:
+            if rule is None:
+                raise ValueError(
+                    f"{proc['key']} B = {batch}: a floored gate verdict needs"
+                    " milestone.json gate_decisions.threshold_rule"
+                )
+            out["gate"].setdefault("measured_status", measured)
+            out["gate"].update(
+                status=rule["verdict"],
+                rule=rule["label"],
+                rule_source="milestone.json gate_decisions.threshold_rule"
+                f" ({rule['source']})",
+            )
+            if floored:
+                out["gate"]["floor_seconds"] = gate["floor_seconds"]
     return out
 
 
-def _adopted_schedule(proc: dict, name: str | None, batch: str) -> dict | None:
+def _adopted_schedule(
+    proc: dict, name: str | None, batch: str, revision: str
+) -> dict | None:
     """The schedule G1 adopted for a configuration's class where it is not
     the default protocol's B (g1.json schedules, adopt_m), timed at the same
-    batch: shown next to the schedule-B value, which stays the main one."""
+    batch: shown next to the schedule-B value, which stays the main one.
+    Only a schedule-M run of the main value's own revision (Table 1 shows
+    the most recent measurements only, user 2026-10-24 ~18:35): an earlier
+    campaign's run stays in the schedule table of the gate-G1 details."""
     if name is None:
         return None
     for s in proc.get("schedules", []):
@@ -552,11 +591,14 @@ def _adopted_schedule(proc: dict, name: str | None, batch: str) -> dict | None:
             continue
         alt = proc["pyamplicol"].get(f"{name}/M")
         rec = (alt or {}).get("batches", {}).get(batch)
-        if rec is None:
+        if rec is None or alt["revision"][:8] != revision:
             return None
         return {
             "schedule": "M",
             "seconds_per_point": rec["median_seconds_per_point"],
+            # The schedule-M run's own revision (an earlier campaign's run
+            # where G1 did not repeat it): printed where it differs.
+            "revision": alt["revision"][:8],
             "decision": f"g1.json processes[{proc['key']}].schedules ({name}: adopt_m)",
             "source": f"g1.json processes[{proc['key']}].pyamplicol"
             f"['{name}/M'].batches['{batch}']",
@@ -610,7 +652,7 @@ def _lc_of(
     if f is not None:
         out["fc_seconds_per_point"] = f["median_seconds_per_point"]
         out["lc_over_fc"] = t / f["median_seconds_per_point"]
-    adopted = _adopted_schedule(proc, name, batch)
+    adopted = _adopted_schedule(proc, name, batch, out["revision"])
     if adopted is not None:
         out["adopted_schedule"] = adopted
     return out
@@ -673,6 +715,9 @@ def _validation_g1(
             "dd_closest": None
             if dd is None
             else min(dd["deviation_vs_providers"].values()),
+            # The stability run's revision (printed where it differs from
+            # the validated configuration's).
+            "revision": (b64.get("revision") or "")[:8] or None,
             "source": f"g1.json processes[{proc['key']}].stability ({checked})",
         }
     return out
@@ -1646,6 +1691,10 @@ def _configurations(
         "kind": "records",
         "label": label if in_development else "development records",
         "integration": development.get("integration") if in_development else None,
+        # The revision that integrated the branch into loop (milestone.json
+        # development.integrated_at): its records then measured the
+        # integrated code on the branch, before the integration.
+        "integrated_at": development.get("integrated_at") if in_development else None,
         "branch": branch,
         "inputs": sorted(
             {r["inputs"] for r in meas["required_native"]["processes"].values()}

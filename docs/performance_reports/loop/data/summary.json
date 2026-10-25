@@ -4,8 +4,8 @@
   "date": "2026-10-25",
   "host": "AMD EPYC 9754, shared host, pinned cores without SMT siblings (128-191)",
   "gate_factor": 1.3,
-  "engine_on_loop": "b4d76cc3",
-  "native_build_on_loop": "loop-native-v2-slice-6c44c9f7",
+  "engine_on_loop": "4e9b5a9e",
+  "native_build_on_loop": "loop-native-v2-slice-4e9b5a9e",
   "main_rule": {
    "rule": "every cell shows the most recent configuration that measured it; A is newer than B if B's revision is an ancestor of A's (git merge-base --is-ancestor, recorded in milestone.json ancestry) or if A is the development side and B the integrated side of one G1 campaign, transitively; equal revisions keep the order development, integrated, development_records; the registry (no run) comes last; without a measurement, the status of the newest configuration with a record of the row",
    "validation_rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it",
@@ -142,8 +142,9 @@
    },
    "development_records": {
     "kind": "records",
-    "label": "development, being integrated into loop",
+    "label": "before its integration into loop",
     "integration": "G-int",
+    "integrated_at": "4e9b5a9e",
     "branch": "work/v2-generation-scale",
     "inputs": [
      "native"
@@ -183,8 +184,8 @@
    }
   },
   "gate_decisions": {
-   "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~16:05 UTC (user answers to HANDOFF_24 section 10)",
-   "what": "user verdicts that replace a measured open (inconclusive) gate verdict; the measured ratio and band stay as measured",
+   "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~16:05 UTC (user answers to HANDOFF_24 section 10; decisions) and ~22:35 UTC (user GATE RULE; threshold_rule)",
+   "what": "user verdicts: decisions replace a measured open (inconclusive) gate verdict of their process and batch; threshold_rule removes the blocking gate below 5 ms per point; the measured ratio and band stay as measured",
    "decisions": [
     {
      "process": "uux_uuxg",
@@ -192,9 +193,19 @@
      "measured": "inconclusive",
      "verdict": "pass",
      "label": "user decision 2026-10-24",
-     "reason": "parity within the band (1.00 of the limit, band 0.90-1.10, after the single repeat of plan 5.8) is judged a pass"
+     "reason": "parity within the band (1.00 of the limit, band 0.90-1.10, after the single repeat of plan 5.8) is judged a pass",
+     "revision": "39824f9b",
+     "status": "no longer applies: the G1 re-measure on loop (4e9b5a9e, native inputs) is a measured pass at B = 128 after its single repeat (0.87 of the limit, band 0.78-0.95); a decision applies to a measured open verdict of its process and batch only"
     }
-   ]
+   ],
+   "threshold_rule": {
+    "below_seconds_per_point": 0.005,
+    "verdict": "not gated",
+    "label": "below 5 ms: not gated (user 2026-10-24)",
+    "short": "<5 ms: not gated",
+    "applies": "a process whose pyAmpliCol batched time per point is below 5 ms has no blocking gate: its ratio and band stay as measured and are shown, its verdict is the label, at every batch size of that configuration (B = 1 included); the batched time is the configuration's own at its largest batch above 1, and for a configuration timed at B = 1 only (the one-lane runs) the configuration on loop's; it takes precedence over a decision; the exact-rational vs binary64 input question is therefore moot and the protocol stays",
+    "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts)"
+   }
   }
  },
  "groups": [
@@ -313,7 +324,8 @@
         "scatter": 8.82311171875e-05,
         "ninjars": 0.00011252382812499998,
         "masters": 3.5723015625e-05,
-        "glue": 0.0011551258273071008
+        "glue": 9.939032315742224e-05,
+        "untimed": 0.0010557355041496785
        },
        "inputs": "native",
        "revision": "4e9b5a9e",
@@ -439,6 +451,7 @@
        "estimate": 7.1609463589963336e-12,
        "within_estimate": false,
        "dd_closest": 3.188177722534943e-13,
+       "revision": "39824f9b",
        "source": "g1.json processes[uux_ddxg].stability (native/full)"
       },
       "considered": [
@@ -506,7 +519,8 @@
         "scatter": 0.0004660708906249999,
         "ninjars": 0.00013780310937499998,
         "masters": 0.00011202744531249999,
-        "glue": 0.0012008812498706903
+        "glue": 0.0001375862129862071,
+        "untimed": 0.0010632950368844832
        },
        "inputs": "native",
        "revision": "4e9b5a9e",
@@ -514,7 +528,7 @@
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 1.7598382756504982,
        "gate": {
-        "status": "below 5 ms: not gated (user 2026-10-24)",
+        "status": "not gated",
         "ratio_to_limit": 1.3537217505003833,
         "band": [
          1.2012036861994817,
@@ -523,6 +537,8 @@
         "binding": "OpenLoops",
         "limit_seconds": 0.0019699465499999997,
         "measured_status": "fail",
+        "rule": "below 5 ms: not gated (user 2026-10-24)",
+        "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
         "floor_seconds": 0.005
        },
        "configuration": "integrated",
@@ -639,6 +655,7 @@
        "estimate": 9.16223677316454e-12,
        "within_estimate": false,
        "dd_closest": 2.428328642024099e-13,
+       "revision": "39824f9b",
        "source": "g1.json processes[uux_uuxg].stability (native/full)"
       },
       "considered": [
@@ -706,7 +723,8 @@
         "scatter": 0.00047743297656249994,
         "ninjars": 0.000224063890625,
         "masters": 0.0001639473593750001,
-        "glue": 0.0012103834170237911
+        "glue": 0.00016665702150930883,
+        "untimed": 0.0010437263955144823
        },
        "inputs": "native",
        "revision": "4e9b5a9e",
@@ -714,7 +732,7 @@
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 1.1270006283767753,
        "gate": {
-        "status": "below 5 ms: not gated (user 2026-10-24)",
+        "status": "not gated",
         "ratio_to_limit": 0.8669235602898272,
         "band": [
          0.7819400958399106,
@@ -723,6 +741,8 @@
         "binding": "OpenLoops",
         "limit_seconds": 0.0038008386,
         "measured_status": "pass",
+        "rule": "below 5 ms: not gated (user 2026-10-24)",
+        "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
         "floor_seconds": 0.005
        },
        "configuration": "integrated",
@@ -831,6 +851,7 @@
        "estimate": 1.4042649838622717e-12,
        "within_estimate": true,
        "dd_closest": 7.516482734555493e-15,
+       "revision": "39824f9b",
        "source": "g1.json processes[uux_emepg].stability (native/full)"
       },
       "considered": [
@@ -896,7 +917,8 @@
         "scatter": 0.000152787796875,
         "ninjars": 2.7391124999999998e-05,
         "masters": 1.8139437500000004e-05,
-        "glue": 0.000327534267680341
+        "glue": 9.425333155377302e-05,
+        "untimed": 0.00023328093612656796
        },
        "inputs": "native",
        "revision": "4e9b5a9e",
@@ -904,7 +926,7 @@
        "source": "g1.json processes[uux_emepg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 0.840022252779551,
        "gate": {
-        "status": "below 5 ms: not gated (user 2026-10-24)",
+        "status": "not gated",
         "ratio_to_limit": 0.840022252779551,
         "band": [
          0.835559034865365,
@@ -913,6 +935,8 @@
         "binding": "MadLoop",
         "limit_seconds": 0.000947682,
         "measured_status": "pass",
+        "rule": "below 5 ms: not gated (user 2026-10-24)",
+        "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
         "floor_seconds": 0.005
        },
        "configuration": "integrated",
@@ -1026,6 +1050,7 @@
        "estimate": 1.172467884351517e-12,
        "within_estimate": false,
        "dd_closest": 1.3348289027384224e-14,
+       "revision": "39824f9b",
        "source": "g1.json processes[uux_ggg].stability (native/full)"
       },
       "considered": [
@@ -1093,7 +1118,8 @@
         "scatter": 0.0004697705546875,
         "ninjars": 0.0004490105312500004,
         "masters": 0.0002075495078125,
-        "glue": 0.006214056384599521
+        "glue": 0.00019330655140947783,
+        "untimed": 0.006020749833190044
        },
        "inputs": "native",
        "revision": "4e9b5a9e",
@@ -1224,6 +1250,7 @@
        "estimate": 9.914292767817392e-06,
        "within_estimate": true,
        "dd_closest": 5.96903309784672e-12,
+       "revision": "39824f9b",
        "source": "g1.json processes[gg_ggg].stability (native/full)"
       },
       "considered": [
@@ -1291,7 +1318,8 @@
         "scatter": 0.0005214842890625001,
         "ninjars": 0.0019989841875,
         "masters": 0.0004865315312500001,
-        "glue": 0.030857955602240177
+        "glue": 0.0002809194929795922,
+        "untimed": 0.030577036109260585
        },
        "inputs": "native",
        "revision": "4e9b5a9e",
@@ -1419,6 +1447,7 @@
        "estimate": 2.5206059042728064e-09,
        "within_estimate": true,
        "dd_closest": 4.306016249662366e-13,
+       "revision": "39824f9b",
        "source": "g1.json processes[uux_emepgg].stability (native/full)"
       },
       "considered": [
@@ -1484,7 +1513,8 @@
         "scatter": 0.0006356657421875,
         "ninjars": 0.0004207473828125,
         "masters": 0.0002303070390625,
-        "glue": 0.0022218386322467223
+        "glue": 0.00018489839840185596,
+        "untimed": 0.0020369402338448663
        },
        "inputs": "native",
        "revision": "4e9b5a9e",
@@ -1612,6 +1642,7 @@
        "estimate": 5.624253763935145e-08,
        "within_estimate": true,
        "dd_closest": 5.504855442237677e-15,
+       "revision": "39824f9b",
        "source": "g1.json processes[gg_ttxgg].stability (native/full)"
       },
       "considered": [
@@ -1689,7 +1720,8 @@
         "scatter": 0.0009326325781249999,
         "ninjars": 0.02017280034375001,
         "masters": 0.006346220476562498,
-        "glue": 0.1091152252725229
+        "glue": 0.0014972156304793316,
+        "untimed": 0.10761800964204357
        },
        "inputs": "native",
        "revision": "4e9b5a9e",
@@ -1822,6 +1854,7 @@
        "estimate": 2.6682178956142833e-09,
        "within_estimate": true,
        "dd_closest": 1.897028113555094e-13,
+       "revision": "39824f9b",
        "source": "g1.json processes[uux_gggg].stability (native/full)"
       },
       "considered": [
@@ -1884,7 +1917,8 @@
         "scatter": 0.0018027690937499998,
         "ninjars": 0.009171588351562496,
         "masters": 0.0029118742109374997,
-        "glue": 0.10899918364736405
+        "glue": 0.0009041046441780054,
+        "untimed": 0.10809507900318605
        },
        "inputs": "native",
        "revision": "4e9b5a9e",
@@ -1892,7 +1926,7 @@
        "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 0.4553984146681039,
        "gate": {
-        "status": "partial",
+        "status": "pass",
         "ratio_to_limit": 0.3503064728216184,
         "band": [
          0.336400078998356,
@@ -2013,6 +2047,7 @@
        "estimate": 4.799662575085839e-06,
        "within_estimate": true,
        "dd_closest": 4.35793642888872e-12,
+       "revision": "39824f9b",
        "source": "g1.json processes[gg_gggg].stability (native/full)"
       },
       "considered": [
@@ -2090,7 +2125,8 @@
         "scatter": 0.0024099464296874996,
         "ninjars": 0.044445913390625,
         "masters": 0.005814970453124999,
-        "glue": 0.6539017675705054
+        "glue": 0.0016252355626420467,
+        "untimed": 0.6522765320078634
        },
        "inputs": "native",
        "revision": "4e9b5a9e",
@@ -2162,12 +2198,6 @@
        "source": "g1.json processes[gg_gggg].pyamplicol['native/lc'].batches['128']",
        "fc_seconds_per_point": 0.9132524525630288,
        "lc_over_fc": 1.1306967570708586,
-       "adopted_schedule": {
-        "schedule": "M",
-        "seconds_per_point": 1.0199479628395238,
-        "decision": "g1.json processes[gg_gggg].schedules (native/lc: adopt_m)",
-        "source": "g1.json processes[gg_gggg].pyamplicol['native/lc/M'].batches['128']"
-       },
        "configuration": "integrated",
        "considered": [
         {
@@ -2312,7 +2342,8 @@
         "scatter": 0.0019339075703125,
         "ninjars": 0.0018849306093749998,
         "masters": 0.0013061518593750004,
-        "glue": 0.010789390146634251
+        "glue": 0.00042886146729870234,
+        "untimed": 0.010360528679335549
        },
        "inputs": "native",
        "revision": "b03cf789",
@@ -2523,7 +2554,8 @@
         "scatter": 0.0021323455078125,
         "ninjars": 0.007904382351562498,
         "masters": 0.002656753625000001,
-        "glue": 0.031514714594040746
+        "glue": 0.0007182074177762843,
+        "untimed": 0.030796507176264462
        },
        "inputs": "native",
        "revision": "b03cf789",
@@ -2664,6 +2696,7 @@
        "estimate": 3.37792572192363e-08,
        "within_estimate": true,
        "dd_closest": 5.839256271708991e-13,
+       "revision": "b03cf789",
        "source": "g1.json processes[gg_ttxemepg_qcd].stability (native/full)"
       },
       "considered": [
@@ -2741,7 +2774,8 @@
         "scatter": 0.0008370697734375002,
         "ninjars": 0.011496194632812495,
         "masters": 0.0040790773046875,
-        "glue": 0.09579591030956207
+        "glue": 0.0008900436778276344,
+        "untimed": 0.09490586663173443
        },
        "inputs": "native",
        "revision": "b03cf789",
@@ -2999,6 +3033,7 @@
        "estimate": 1.8177024476374526e-11,
        "within_estimate": false,
        "dd_closest": null,
+       "revision": "b03cf789",
        "source": "g1.json processes[uux_ggggg].stability (native/full)"
       },
       "considered": [
@@ -3061,7 +3096,8 @@
         "scatter": 0.009100805351562498,
         "ninjars": 0.2244573645000001,
         "masters": 0.0435737636796875,
-        "glue": 1.7005087584404013
+        "glue": 0.00794630358905124,
+        "untimed": 1.69256245485135
        },
        "inputs": "native",
        "revision": "b03cf789",
@@ -3069,7 +3105,7 @@
        "source": "g1.json processes[uux_ggggg].pyamplicol['native/full'].batches['128']",
        "ratio_to_fastest": 0.005478541449743822,
        "gate": {
-        "status": "partial",
+        "status": "pass",
         "ratio_to_limit": 0.005478541449743822,
         "band": [
          0.0050498905037508,
@@ -3101,7 +3137,12 @@
        },
        "recola": {
         "status": "unavailable",
-        "reason": "no production-mode timing: the existing run (reference campaign, 2026-10-20) computes the IR poles (compute_ir_poles 1); a production-mode run needs a new generation of 2.8 h, beyond HANDOFF \u00a70.1 (45 minutes, or pyAmpliCol's own generation time)"
+        "reason": "no production-mode timing: the existing run (reference campaign, 2026-10-20) computes the IR poles (compute_ir_poles 1); a production-mode run needs a new generation of 2.8 h, beyond HANDOFF \u00a70.1 (45 minutes, or pyAmpliCol's own generation time)",
+        "outside_protocol": {
+         "seconds_per_point": 182.211351,
+         "points": 3,
+         "mode": "reference campaign: compute_ir_poles 1, Collier cache off"
+        }
        },
        "openloops": {
         "status": "unavailable",
@@ -3243,7 +3284,8 @@
         "scatter": 0.0111308220234375,
         "ninjars": 0.43514457442968757,
         "masters": 0.0404201434453125,
-        "glue": 10.100470642126023
+        "glue": 0.007706831522227731,
+        "untimed": 10.092763810603795
        },
        "inputs": "native",
        "revision": "439511db",

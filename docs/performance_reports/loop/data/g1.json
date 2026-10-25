@@ -15102,7 +15102,7 @@
        },
        "uncertainty": 0.025768030224184692,
        "gate": {
-        "status": "partial",
+        "status": "pass",
         "missing": {
          "madloop": "not exported: the MadLoop export of g g > g g g g took 2.4 h, and HANDOFF \u00a70.1 allows no provider generation beyond about 45 minutes"
         },
@@ -15272,7 +15272,7 @@
        },
        "uncertainty": 0.00415947294252149,
        "gate": {
-        "status": "partial",
+        "status": "pass",
         "missing": {
          "madloop": "not exported: the MadLoop export of g g > g g g g took 2.4 h, and HANDOFF \u00a70.1 allows no provider generation beyond about 45 minutes"
         },
@@ -19229,7 +19229,7 @@
        },
        "uncertainty": 0.008461932307559705,
        "gate": {
-        "status": "partial",
+        "status": "pass",
         "missing": {
          "recola": "no production-mode timing: the existing run (reference campaign, 2026-10-20) computes the IR poles (compute_ir_poles 1); a production-mode run needs a new generation of 2.8 h, beyond HANDOFF \u00a70.1 (45 minutes, or pyAmpliCol's own generation time)"
         },
@@ -19319,7 +19319,7 @@
        },
        "uncertainty": 0.001975415295515944,
        "gate": {
-        "status": "partial",
+        "status": "pass",
         "missing": {
          "recola": "no production-mode timing: the existing run (reference campaign, 2026-10-20) computes the IR poles (compute_ir_poles 1); a production-mode run needs a new generation of 2.8 h, beyond HANDOFF \u00a70.1 (45 minutes, or pyAmpliCol's own generation time)"
         },
@@ -19668,7 +19668,8 @@
    "label": "g g > g g g g g",
    "process_text": "G G > G G G G G",
    "outgoing": 5,
-   "gated": true,
+   "gated": false,
+   "gate_note": "no matched provider timing (HANDOFF 0.1): the speed is reported without a gate, with its rotation and Ward checks (addenda F and H)",
    "providers": {
     "openloops": {
      "provider": "openloops",
