@@ -363,7 +363,8 @@
      6
     ],
     "providers": "stopped 22 Oct; not to be restarted (HANDOFF section 0.1)",
-    "ward": "attempted at seven legs on slice 7db32901 (package measure-g1-7leg, session 6): the Ward-mode generation of g g > g g g g g (Python per-point inputs with full tree kernels; point 0, leg 3, c = 1) had not finished after 55 min when the job stopped; one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs, a growth of x62-87 per added gluon, which puts one seven-gluon Ward evaluation at about 1.6e5-2.5e5 s (46-69 h) with Python per-point inputs (an estimate, not a measurement): seven gluons need native Ward inputs (generation-scale-2); the 5- and 6-gluon Ward rows pass"
+    "ward_status": "pending \u2014 needs native Ward inputs",
+    "ward": "pending (coordinator ruling, slice-status DECISIONS 2026-10-25 ~19:40: a recorded, temporary deviation from ADDENDUM H; the seven-gluon Ward check moves to generation-scale-2's next run with native Ward inputs). Attempted at seven legs on slice 7db32901 (package measure-g1-7leg, session 6): the Ward-mode generation of g g > g g g g g (Python per-point inputs with full tree kernels; point 0, leg 3, c = 1) had not finished after 55 min when the job stopped; one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs, a growth of x62-87 per added gluon, which puts one seven-gluon Ward evaluation at about 1.6e5-2.5e5 s (46-69 h) with Python per-point inputs (an estimate, not a measurement): seven gluons need native Ward inputs (generation-scale-2); the 5- and 6-gluon Ward rows pass"
    }
   }
  },

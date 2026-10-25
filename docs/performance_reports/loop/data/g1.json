@@ -16147,23 +16147,34 @@
       "double alpha_s 0.118",
       "register 11 2 -2 -> 11 -11 1 -1 21"
      ],
+     "install_path": "OpenLoopsPath = the OpenLoops tree",
      "points": 16,
-     "mean_seconds_per_point": 0.0492906085625,
-     "median_seconds_per_point": 0.0490482845,
-     "min_seconds_per_point": 0.048260516,
-     "max_seconds_per_point": 0.052109591,
+     "mean_seconds_per_point": 0.0512318810625,
+     "median_seconds_per_point": 0.0509826425,
+     "min_seconds_per_point": 0.05035069,
+     "max_seconds_per_point": 0.054041905,
      "setup": {
-      "start_seconds": 0.001112644,
-      "initial_call_seconds": 0.12584057
+      "start_seconds": 0.001127354,
+      "initial_call_seconds": 0.106781565
      },
-     "process_wall_seconds": 1.0107862690929323,
-     "harness_wall_seconds": 1.8416469189105555,
-     "cpu": 156
+     "process_wall_seconds": 1.0026581950951368,
+     "harness_wall_seconds": 1.742096076020971,
+     "cpu": 133
     },
     "recola": {
      "provider": "recola",
-     "mode": "production: compute_ir_poles 0, Collier global cache off (seven legs, COLLIER cache defect)",
+     "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
      "version": "Recola2 (tree recola2-2.3.0) / libcollier.so 1.2.8 / libmodelfile.so 2.2.3 / librecola.so 2.2.5",
+     "collier_cache": {
+      "on": true,
+      "collier": "1.2.8",
+      "reason": "COLLIER 1.2.8 has no N = 7 cache defect"
+     },
+     "libraries": {
+      "libcollier.so": "sources/COLLIER-1.2.8/libcollier.so",
+      "libmodelfile.so": "models/SM_2.2.3/libmodelfile.so",
+      "librecola.so": "sources/recola2-2.3.0/librecola.so"
+     },
      "commands": [
       "mass W 80.4190024457561601055171371731 0",
       "mass Z 91.188 0",
@@ -16180,7 +16191,6 @@
       "alpha0 0.00754677111397888413442308708219",
       "onshell",
       "alphas 0.118 1000 5",
-      "cache 0",
       "legs 7",
       "born_gs 3",
       "loop_gs 5",
@@ -16192,23 +16202,28 @@
      ],
      "finite_convention": "Recola (Gamma(1+eps)); MadLoop's adds pi^2/6 D",
      "points": 16,
-     "mean_seconds_per_point": 0.061655337375,
-     "median_seconds_per_point": 0.0609548025,
-     "min_seconds_per_point": 0.06007377,
-     "max_seconds_per_point": 0.064628147,
+     "mean_seconds_per_point": 0.037270664625,
+     "median_seconds_per_point": 0.0353196005,
+     "min_seconds_per_point": 0.034765079,
+     "max_seconds_per_point": 0.066828787,
      "setup": {
-      "generation_seconds": 6.85174653,
-      "initial_call_seconds": 0.067438656
+      "generation_seconds": 6.72977308,
+      "initial_call_seconds": 0.062458131
      },
-     "process_wall_seconds": 7.93025189707987,
-     "harness_wall_seconds": 8.222761916927993,
-     "cpu": 156
+     "process_wall_seconds": 7.407238810905255,
+     "harness_wall_seconds": 7.64223957201466,
+     "cpu": 131
     },
     "madloop": {
      "provider": "madloop",
-     "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags",
+     "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
      "version": "MadLoop/MG5_aMC 3.7.0",
      "export": "runs/required/uux_emepddxg/madloop-export-production-flags",
+     "collier_cache": {
+      "on": false,
+      "collier": "1.2.9",
+      "reason": "COLLIER 1.2.9 global cache defect at N = 7"
+     },
      "madloop_params": {
       "MLReductionLib": "6|7|1",
       "COLLIERGlobalCache": "0",
@@ -16225,10 +16240,10 @@
       "replaced 6 TWOPII pi literals 3.14169258478796109557151794433593750E0_16 by 3.14159265358979323846264338327950288E0_16"
      ],
      "points": 16,
-     "mean_seconds_per_point": 0.1347390004375,
-     "median_seconds_per_point": 0.13472727299999998,
-     "min_seconds_per_point": 0.132890106,
-     "max_seconds_per_point": 0.137312503,
+     "mean_seconds_per_point": 0.1324981835,
+     "median_seconds_per_point": 0.13206965799999998,
+     "min_seconds_per_point": 0.129871134,
+     "max_seconds_per_point": 0.135767327,
      "setup": {
       "split_order_indices": [
        1,
@@ -16236,12 +16251,12 @@
        1,
        1
       ],
-      "initial_call_seconds": 5.73373983,
+      "initial_call_seconds": 5.7456594,
       "initialization_calls": 5
      },
-     "process_wall_seconds": 7.911071756039746,
-     "harness_wall_seconds": 8.953107729088515,
-     "cpu": 156,
+     "process_wall_seconds": 7.8812948890263215,
+     "harness_wall_seconds": 8.952570314984769,
+     "cpu": 133,
      "generation": {
       "graph_generation_s": 24.522084772994276,
       "source_export_s": 26.717296938004438,
@@ -16251,29 +16266,47 @@
      }
     }
    },
-   "provider_cpu": 156,
+   "provider_cpu": 131,
    "provider_repeats": {
     "openloops": [
      {
-      "cpu": 156,
-      "median_seconds_per_point": 0.0490482845,
-      "mean_seconds_per_point": 0.0492906085625,
+      "cpu": 133,
+      "median_seconds_per_point": 0.0509826425,
+      "mean_seconds_per_point": 0.0512318810625,
       "points": 16
      }
     ],
     "recola": [
      {
-      "cpu": 156,
-      "median_seconds_per_point": 0.0609548025,
-      "mean_seconds_per_point": 0.061655337375,
+      "cpu": 133,
+      "median_seconds_per_point": 0.0401380945,
+      "mean_seconds_per_point": 0.0424072576875,
+      "points": 16
+     },
+     {
+      "cpu": 140,
+      "median_seconds_per_point": 0.03509564,
+      "mean_seconds_per_point": 0.0370935406875,
+      "points": 16
+     },
+     {
+      "cpu": 133,
+      "median_seconds_per_point": 0.0352354155,
+      "mean_seconds_per_point": 0.037321347625,
+      "points": 16
+     },
+     {
+      "cpu": 131,
+      "median_seconds_per_point": 0.0353196005,
+      "mean_seconds_per_point": 0.037270664625,
       "points": 16
      }
     ],
     "madloop": [
      {
-      "cpu": 156,
-      "median_seconds_per_point": 0.13472727299999998,
-      "mean_seconds_per_point": 0.1347390004375,
+      "cpu": 133,
+      "median_seconds_per_point": 0.13206965799999998,
+      "mean_seconds_per_point": 0.1324981835,
       "points": 16
      }
     ]
@@ -16284,8 +16317,8 @@
      "assumed": true
     },
     "recola": {
-     "relative": 0.07626638499479058,
-     "assumed": true
+     "relative": 0.07146840559146074,
+     "assumed": false
     },
     "madloop": {
      "relative": 0.07626638499479058,
@@ -16310,7 +16343,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 1.340202955570476e-13,
-      "recola": 3.345764506879176e-13,
+      "recola": 2.306395784005005e-13,
       "madloop": 2.425645389758495e-13
      }
     },
@@ -16352,7 +16385,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 1.227797882431724e-13,
-      "recola": 5.777946387304209e-13,
+      "recola": 5.838329889718884e-13,
       "madloop": 1.5900988969197736e-13
      }
     },
@@ -16373,7 +16406,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 5.73265520581803e-11,
-      "recola": 1.9033385538014625e-09,
+      "recola": 5.746768528374283e-11,
       "madloop": 4.315721725303214e-11
      }
     },
@@ -16394,7 +16427,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 4.837739687954743e-14,
-      "recola": 1.5217875825135683e-13,
+      "recola": 4.824188596392078e-14,
       "madloop": 6.016684653927198e-14
      }
     },
@@ -16436,7 +16469,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 5.409355424648628e-14,
-      "recola": 4.009212962408398e-13,
+      "recola": 4.069596464823084e-13,
       "madloop": 1.7863452797677514e-14
      }
     },
@@ -16457,7 +16490,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 5.535068690347794e-14,
-      "recola": 1.960720456437326e-09,
+      "recola": 8.578253866714785e-14,
       "madloop": 1.4224685492662367e-11
      }
     }
@@ -16829,12 +16862,12 @@
         "statistic": "median per point (pyAmpliCol blocks, provider points)",
         "checks": {
          "openloops": {
-          "reference": 0.0490482845,
-          "limit": 0.06376276985,
-          "ratio_to_limit": 0.24262766845566078,
+          "reference": 0.0509826425,
+          "limit": 0.06627743525,
+          "ratio_to_limit": 0.23342201044178762,
           "band": [
-           0.21947602163783553,
-           0.265779315273486
+           0.21114877186330058,
+           0.25569524902027463
           ],
           "uncertainty": 0.09542047271519707,
           "reference_uncertainty": 0.07626638499479058,
@@ -16843,26 +16876,26 @@
           "status": "pass"
          },
          "recola": {
-          "reference": 0.0609548025,
-          "limit": 0.07924124325000001,
-          "ratio_to_limit": 0.1952343444962343,
+          "reference": 0.0353196005,
+          "limit": 0.04591548065,
+          "ratio_to_limit": 0.33693673601956303,
           "band": [
-           0.176604991054162,
-           0.21386369793830662
+           0.3064026889131078,
+           0.3674707831260182
           ],
-          "uncertainty": 0.09542047271519707,
-          "reference_uncertainty": 0.07626638499479058,
-          "reference_uncertainty_assumed": true,
+          "uncertainty": 0.09062249331186722,
+          "reference_uncertainty": 0.07146840559146074,
+          "reference_uncertainty_assumed": false,
           "passed": true,
           "status": "pass"
          },
          "madloop": {
-          "reference": 0.13472727299999998,
-          "limit": 0.13472727299999998,
-          "ratio_to_limit": 0.1148291050393368,
+          "reference": 0.13206965799999998,
+          "limit": 0.13206965799999998,
+          "ratio_to_limit": 0.11713979135904483,
           "band": [
-           0.10387205755502027,
-           0.12578615252365333
+           0.10596225709380522,
+           0.12831732562428444
           ],
           "uncertainty": 0.09542047271519707,
           "reference_uncertainty": 0.07626638499479058,
@@ -16871,16 +16904,16 @@
           "status": "pass"
          }
         },
-        "fastest_provider": "openloops",
-        "ratio_to_fastest": 0.315415968992359,
-        "binding_provider": "openloops",
-        "binding_limit": 0.06376276985,
-        "ratio_to_binding_limit": 0.24262766845566078,
+        "fastest_provider": "recola",
+        "ratio_to_fastest": 0.4380177568254319,
+        "binding_provider": "recola",
+        "binding_limit": 0.04591548065,
+        "ratio_to_binding_limit": 0.33693673601956303,
         "band_to_binding_limit": [
-         0.21947602163783553,
-         0.265779315273486
+         0.3064026889131078,
+         0.3674707831260182
         ],
-        "ratio_to_binding_limit_of_means": 0.24143485457062772
+        "ratio_to_binding_limit_of_means": 0.3192985966234276
        }
       },
       "128": {
@@ -16938,12 +16971,12 @@
         "statistic": "median per point (pyAmpliCol blocks, provider points)",
         "checks": {
          "openloops": {
-          "reference": 0.0490482845,
-          "limit": 0.06376276985,
-          "ratio_to_limit": 0.25113830834842654,
+          "reference": 0.0509826425,
+          "limit": 0.06627743525,
+          "ratio_to_limit": 0.2416097438794458,
           "band": [
-           0.22802192209073713,
-           0.27425469460611596
+           0.2193704280225041,
+           0.2638490597363875
           ],
           "uncertainty": 0.09204643612402613,
           "reference_uncertainty": 0.07626638499479058,
@@ -16952,26 +16985,26 @@
           "status": "pass"
          },
          "recola": {
-          "reference": 0.0609548025,
-          "limit": 0.07924124325000001,
-          "ratio_to_limit": 0.20208257088065126,
+          "reference": 0.0353196005,
+          "limit": 0.04591548065,
+          "ratio_to_limit": 0.34875545086424037,
           "band": [
-           0.18348159042830642,
-           0.2206835513329961
+           0.31832707600340476,
+           0.379183825725076
           ],
-          "uncertainty": 0.09204643612402613,
-          "reference_uncertainty": 0.07626638499479058,
-          "reference_uncertainty_assumed": true,
+          "uncertainty": 0.0872484567206963,
+          "reference_uncertainty": 0.07146840559146074,
+          "reference_uncertainty_assumed": false,
           "passed": true,
           "status": "pass"
          },
          "madloop": {
-          "reference": 0.13472727299999998,
-          "limit": 0.13472727299999998,
-          "ratio_to_limit": 0.11885696042952681,
+          "reference": 0.13206965799999998,
+          "limit": 0.13206965799999998,
+          "ratio_to_limit": 0.12124869859009597,
           "band": [
-           0.10791660081345449,
-           0.12979732004559916
+           0.11008818800020141,
+           0.13240920917999052
           ],
           "uncertainty": 0.09204643612402613,
           "reference_uncertainty": 0.07626638499479058,
@@ -16980,16 +17013,16 @@
           "status": "pass"
          }
         },
-        "fastest_provider": "openloops",
-        "ratio_to_fastest": 0.3264798008529545,
-        "binding_provider": "openloops",
-        "binding_limit": 0.06376276985,
-        "ratio_to_binding_limit": 0.25113830834842654,
+        "fastest_provider": "recola",
+        "ratio_to_fastest": 0.4533820861235125,
+        "binding_provider": "recola",
+        "binding_limit": 0.04591548065,
+        "ratio_to_binding_limit": 0.34875545086424037,
         "band_to_binding_limit": [
-         0.22802192209073713,
-         0.27425469460611596
+         0.31832707600340476,
+         0.379183825725076
         ],
-        "ratio_to_binding_limit_of_means": 0.24990365418400892
+        "ratio_to_binding_limit_of_means": 0.33049861924007345
        }
       }
      },
@@ -17004,8 +17037,8 @@
       "recola": {
        "points": 16,
        "max_born_deviation": 2.016428974266561e-14,
-       "max_finite_deviation": 1.9033385538014625e-09,
-       "median_finite_deviation": 7.962740243769849e-13,
+       "max_finite_deviation": 5.746768528374283e-11,
+       "median_finite_deviation": 7.961494818636601e-13,
        "worst_point": 15
       },
       "madloop": {
@@ -17438,23 +17471,34 @@
       "double alpha_s 0.118",
       "register 11 2 -2 -> 11 -11 21 21 21"
      ],
+     "install_path": "OpenLoopsPath = the OpenLoops tree",
      "points": 16,
-     "mean_seconds_per_point": 0.334229655375,
-     "median_seconds_per_point": 0.3328312325,
-     "min_seconds_per_point": 0.32800392,
-     "max_seconds_per_point": 0.339879384,
+     "mean_seconds_per_point": 0.345243347375,
+     "median_seconds_per_point": 0.3456512245,
+     "min_seconds_per_point": 0.336380879,
+     "max_seconds_per_point": 0.354088177,
      "setup": {
-      "start_seconds": 0.001126244,
-      "initial_call_seconds": 0.563497552
+      "start_seconds": 0.001119215,
+      "initial_call_seconds": 0.725955759
      },
-     "process_wall_seconds": 6.0044343889458105,
-     "harness_wall_seconds": 6.759684761986136,
-     "cpu": 156
+     "process_wall_seconds": 6.404002187075093,
+     "harness_wall_seconds": 7.3043019260512665,
+     "cpu": 133
     },
     "recola": {
      "provider": "recola",
-     "mode": "production: compute_ir_poles 0, Collier global cache off (seven legs, COLLIER cache defect)",
+     "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
      "version": "Recola2 (tree recola2-2.3.0) / libcollier.so 1.2.8 / libmodelfile.so 2.2.3 / librecola.so 2.2.5",
+     "collier_cache": {
+      "on": true,
+      "collier": "1.2.8",
+      "reason": "COLLIER 1.2.8 has no N = 7 cache defect"
+     },
+     "libraries": {
+      "libcollier.so": "sources/COLLIER-1.2.8/libcollier.so",
+      "libmodelfile.so": "models/SM_2.2.3/libmodelfile.so",
+      "librecola.so": "sources/recola2-2.3.0/librecola.so"
+     },
      "commands": [
       "mass W 80.4190024457561601055171371731 0",
       "mass Z 91.188 0",
@@ -17471,7 +17515,6 @@
       "alpha0 0.00754677111397888413442308708219",
       "onshell",
       "alphas 0.118 1000 5",
-      "cache 0",
       "legs 7",
       "born_gs 3",
       "loop_gs 5",
@@ -17483,23 +17526,28 @@
      ],
      "finite_convention": "Recola (Gamma(1+eps)); MadLoop's adds pi^2/6 D",
      "points": 16,
-     "mean_seconds_per_point": 0.3378246219375,
-     "median_seconds_per_point": 0.3334871935,
-     "min_seconds_per_point": 0.324557494,
-     "max_seconds_per_point": 0.392548803,
+     "mean_seconds_per_point": 0.2582064585,
+     "median_seconds_per_point": 0.2507888745,
+     "min_seconds_per_point": 0.246663888,
+     "max_seconds_per_point": 0.353317548,
      "setup": {
-      "generation_seconds": 13.3668876,
-      "initial_call_seconds": 0.328779383
+      "generation_seconds": 13.3870837,
+      "initial_call_seconds": 0.342714126
      },
-     "process_wall_seconds": 19.120576277957298,
-     "harness_wall_seconds": 19.339777030050755,
-     "cpu": 156
+     "process_wall_seconds": 17.88595775491558,
+     "harness_wall_seconds": 18.180116666015238,
+     "cpu": 133
     },
     "madloop": {
      "provider": "madloop",
-     "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags",
+     "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
      "version": "MadLoop/MG5_aMC 3.7.0",
      "export": "runs/required/uux_emepggg/madloop-export-production-flags",
+     "collier_cache": {
+      "on": false,
+      "collier": "1.2.9",
+      "reason": "COLLIER 1.2.9 global cache defect at N = 7"
+     },
      "madloop_params": {
       "MLReductionLib": "6|7|1",
       "COLLIERGlobalCache": "0",
@@ -17516,10 +17564,10 @@
       "replaced 6 TWOPII pi literals 3.14169258478796109557151794433593750E0_16 by 3.14159265358979323846264338327950288E0_16"
      ],
      "points": 16,
-     "mean_seconds_per_point": 1.45107609625,
-     "median_seconds_per_point": 1.460310365,
-     "min_seconds_per_point": 1.3975159,
-     "max_seconds_per_point": 1.50670251,
+     "mean_seconds_per_point": 1.4189932325,
+     "median_seconds_per_point": 1.417189965,
+     "min_seconds_per_point": 1.39458828,
+     "max_seconds_per_point": 1.49021284,
      "setup": {
       "split_order_indices": [
        1,
@@ -17527,12 +17575,12 @@
        1,
        1
       ],
-      "initial_call_seconds": 30.4313795,
+      "initial_call_seconds": 30.6197909,
       "initialization_calls": 5
      },
-     "process_wall_seconds": 53.67530376499053,
-     "harness_wall_seconds": 54.65410903189331,
-     "cpu": 156,
+     "process_wall_seconds": 53.35621377395,
+     "harness_wall_seconds": 54.54565163003281,
+     "cpu": 133,
      "generation": {
       "graph_generation_s": 76.61233418004122,
       "source_export_s": 58.18535616499139,
@@ -17542,29 +17590,29 @@
      }
     }
    },
-   "provider_cpu": 156,
+   "provider_cpu": 133,
    "provider_repeats": {
     "openloops": [
      {
-      "cpu": 156,
-      "median_seconds_per_point": 0.3328312325,
-      "mean_seconds_per_point": 0.334229655375,
+      "cpu": 133,
+      "median_seconds_per_point": 0.3456512245,
+      "mean_seconds_per_point": 0.345243347375,
       "points": 16
      }
     ],
     "recola": [
      {
-      "cpu": 156,
-      "median_seconds_per_point": 0.3334871935,
-      "mean_seconds_per_point": 0.3378246219375,
+      "cpu": 133,
+      "median_seconds_per_point": 0.2507888745,
+      "mean_seconds_per_point": 0.2582064585,
       "points": 16
      }
     ],
     "madloop": [
      {
-      "cpu": 156,
-      "median_seconds_per_point": 1.460310365,
-      "mean_seconds_per_point": 1.45107609625,
+      "cpu": 133,
+      "median_seconds_per_point": 1.417189965,
+      "mean_seconds_per_point": 1.4189932325,
       "points": 16
      }
     ]
@@ -17601,7 +17649,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 9.887965568139872e-14,
-      "recola": 2.595131483682133e-13,
+      "recola": 2.3525271240178546e-13,
       "madloop": 9.875712822702276e-14
      }
     },
@@ -17643,7 +17691,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 5.21502630531292e-14,
-      "recola": 1.5460350463705384e-13,
+      "recola": 1.5673498677818937e-13,
       "madloop": 5.612902971658298e-14
      }
     },
@@ -17664,7 +17712,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 1.1166644464473589e-10,
-      "recola": 1.1095522252885525e-10,
+      "recola": 1.1095660811645681e-10,
       "madloop": 9.091740886972238e-11
      }
     },
@@ -17685,7 +17733,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 1.0047251258829512e-14,
-      "recola": 3.4834555279076035e-13,
+      "recola": 3.240851168243347e-13,
       "madloop": 9.924723804453541e-15
      }
     },
@@ -17727,7 +17775,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 4.547161901090264e-15,
-      "recola": 9.790607968284016e-14,
+      "recola": 1.000375618239758e-13,
       "madloop": 5.68395237636283e-16
      }
     },
@@ -17748,7 +17796,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 7.676155313492963e-14,
-      "recola": 6.344605628246747e-13,
+      "recola": 6.330749752229611e-13,
       "madloop": 2.0672274223766617e-11
      }
     }
@@ -18148,12 +18196,12 @@
         "statistic": "median per point (pyAmpliCol blocks, provider points)",
         "checks": {
          "openloops": {
-          "reference": 0.3328312325,
-          "limit": 0.43268060225000005,
-          "ratio_to_limit": 0.12670620971743546,
+          "reference": 0.3456512245,
+          "limit": 0.44934659185000003,
+          "ratio_to_limit": 0.12200675408183756,
           "band": [
-           0.11661453673825489,
-           0.13679788269661602
+           0.11228937506631026,
+           0.13172413309736486
           ],
           "uncertainty": 0.07964623834684786,
           "reference_uncertainty": 0.07626638499479058,
@@ -18162,12 +18210,12 @@
           "status": "pass"
          },
          "recola": {
-          "reference": 0.3334871935,
-          "limit": 0.43353335155,
-          "ratio_to_limit": 0.12645698176010325,
+          "reference": 0.2507888745,
+          "limit": 0.32602553684999996,
+          "ratio_to_limit": 0.16815651822568203,
           "band": [
-           0.11638515885021507,
-           0.13652880466999143
+           0.15476348409550328,
+           0.1815495523558608
           ],
           "uncertainty": 0.07964623834684786,
           "reference_uncertainty": 0.07626638499479058,
@@ -18176,12 +18224,12 @@
           "status": "pass"
          },
          "madloop": {
-          "reference": 1.460310365,
-          "limit": 1.460310365,
-          "ratio_to_limit": 0.037542237899102215,
+          "reference": 1.417189965,
+          "limit": 1.417189965,
+          "ratio_to_limit": 0.03868452394055358,
           "band": [
-           0.03455213987131625,
-           0.04053233592688818
+           0.0356034471264499,
+           0.04176560075465725
           ],
           "uncertainty": 0.07964623834684786,
           "reference_uncertainty": 0.07626638499479058,
@@ -18190,16 +18238,16 @@
           "status": "pass"
          }
         },
-        "fastest_provider": "openloops",
-        "ratio_to_fastest": 0.1647180726326661,
-        "binding_provider": "openloops",
-        "binding_limit": 0.43268060225000005,
-        "ratio_to_binding_limit": 0.12670620971743546,
+        "fastest_provider": "recola",
+        "ratio_to_fastest": 0.21860347369338662,
+        "binding_provider": "recola",
+        "binding_limit": 0.32602553684999996,
+        "ratio_to_binding_limit": 0.16815651822568203,
         "band_to_binding_limit": [
-         0.11661453673825489,
-         0.13679788269661602
+         0.15476348409550328,
+         0.1815495523558608
         ],
-        "ratio_to_binding_limit_of_means": 0.12617606866255332
+        "ratio_to_binding_limit_of_means": 0.1633258292245913
        }
       },
       "128": {
@@ -18257,12 +18305,12 @@
         "statistic": "median per point (pyAmpliCol blocks, provider points)",
         "checks": {
          "openloops": {
-          "reference": 0.3328312325,
-          "limit": 0.43268060225000005,
-          "ratio_to_limit": 0.12855409000668755,
+          "reference": 0.3456512245,
+          "limit": 0.44934659185000003,
+          "ratio_to_limit": 0.12378609762408567,
           "band": [
-           0.11789284918147327,
-           0.1392153308319018
+           0.11352027568473541,
+           0.13405191956343593
           ],
           "uncertainty": 0.0829319458031997,
           "reference_uncertainty": 0.07626638499479058,
@@ -18271,12 +18319,12 @@
           "status": "pass"
          },
          "recola": {
-          "reference": 0.3334871935,
-          "limit": 0.43353335155,
-          "ratio_to_limit": 0.12830122731487065,
+          "reference": 0.2507888745,
+          "limit": 0.32602553684999996,
+          "ratio_to_limit": 0.17060890880883858,
           "band": [
-           0.11766095688470979,
-           0.1389414977450315
+           0.15645998002996095,
+           0.18475783758771622
           ],
           "uncertainty": 0.0829319458031997,
           "reference_uncertainty": 0.07626638499479058,
@@ -18285,12 +18333,12 @@
           "status": "pass"
          },
          "madloop": {
-          "reference": 1.460310365,
-          "limit": 1.460310365,
-          "ratio_to_limit": 0.038089752986033405,
+          "reference": 1.417189965,
+          "limit": 1.417189965,
+          "ratio_to_limit": 0.03924869809940708,
           "band": [
-           0.03493089565573842,
-           0.04124861031632839
+           0.0359937271957809,
+           0.04250366900303325
           ],
           "uncertainty": 0.0829319458031997,
           "reference_uncertainty": 0.07626638499479058,
@@ -18299,16 +18347,16 @@
           "status": "pass"
          }
         },
-        "fastest_provider": "openloops",
-        "ratio_to_fastest": 0.16712031700869384,
-        "binding_provider": "openloops",
-        "binding_limit": 0.43268060225000005,
-        "ratio_to_binding_limit": 0.12855409000668755,
+        "fastest_provider": "recola",
+        "ratio_to_fastest": 0.22179158145149014,
+        "binding_provider": "recola",
+        "binding_limit": 0.32602553684999996,
+        "ratio_to_binding_limit": 0.17060890880883858,
         "band_to_binding_limit": [
-         0.11789284918147327,
-         0.1392153308319018
+         0.15645998002996095,
+         0.18475783758771622
         ],
-        "ratio_to_binding_limit_of_means": 0.1280162173875196
+        "ratio_to_binding_limit_of_means": 0.1657077691565246
        }
       }
      },
@@ -18323,8 +18371,8 @@
       "recola": {
        "points": 16,
        "max_born_deviation": 2.0341115881041716e-14,
-       "max_finite_deviation": 1.1095522252885525e-10,
-       "median_finite_deviation": 1.9702791905880756e-12,
+       "max_finite_deviation": 1.1095660811645681e-10,
+       "median_finite_deviation": 1.5454943135514263e-12,
        "worst_point": 8
       },
       "madloop": {
@@ -18729,23 +18777,34 @@
       "double alpha_s 0.118",
       "register 11 21 21 -> 6 -6 11 -11 21"
      ],
+     "install_path": "OpenLoopsPath = the OpenLoops tree",
      "points": 16,
-     "mean_seconds_per_point": 0.4094952126875,
-     "median_seconds_per_point": 0.409208122,
-     "min_seconds_per_point": 0.397715135,
-     "max_seconds_per_point": 0.424919335,
+     "mean_seconds_per_point": 0.404573198,
+     "median_seconds_per_point": 0.40369187250000005,
+     "min_seconds_per_point": 0.391339429,
+     "max_seconds_per_point": 0.419529307,
      "setup": {
-      "start_seconds": 0.001132105,
-      "initial_call_seconds": 0.747359644
+      "start_seconds": 0.001131075,
+      "initial_call_seconds": 1.05727289
      },
-     "process_wall_seconds": 7.404092401033267,
-     "harness_wall_seconds": 8.116408437024802,
-     "cpu": 164
+     "process_wall_seconds": 7.641181354993023,
+     "harness_wall_seconds": 8.533565700985491,
+     "cpu": 133
     },
     "recola": {
      "provider": "recola",
-     "mode": "production: compute_ir_poles 0, Collier global cache off (seven legs, COLLIER cache defect)",
+     "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
      "version": "Recola2 (tree recola2-2.3.0) / libcollier.so 1.2.8 / libmodelfile.so 2.2.3 / librecola.so 2.2.5",
+     "collier_cache": {
+      "on": true,
+      "collier": "1.2.8",
+      "reason": "COLLIER 1.2.8 has no N = 7 cache defect"
+     },
+     "libraries": {
+      "libcollier.so": "sources/COLLIER-1.2.8/libcollier.so",
+      "libmodelfile.so": "models/SM_2.2.3/libmodelfile.so",
+      "librecola.so": "sources/recola2-2.3.0/librecola.so"
+     },
      "commands": [
       "mass W 80.4190024457561601055171371731 0",
       "mass Z 91.188 0",
@@ -18762,7 +18821,6 @@
       "alpha0 0.00754677111397888413442308708219",
       "onshell",
       "alphas 0.118 1000 5",
-      "cache 0",
       "legs 7",
       "born_gs 3",
       "loop_gs 5",
@@ -18774,23 +18832,28 @@
      ],
      "finite_convention": "Recola (Gamma(1+eps)); MadLoop's adds pi^2/6 D",
      "points": 16,
-     "mean_seconds_per_point": 0.7561092049375,
-     "median_seconds_per_point": 0.7519752445,
-     "min_seconds_per_point": 0.723161615,
-     "max_seconds_per_point": 0.831010194,
+     "mean_seconds_per_point": 0.630260146875,
+     "median_seconds_per_point": 0.620191463,
+     "min_seconds_per_point": 0.608986625,
+     "max_seconds_per_point": 0.7450842,
      "setup": {
-      "generation_seconds": 27.611186,
-      "initial_call_seconds": 0.720380273
+      "generation_seconds": 27.6543678,
+      "initial_call_seconds": 0.729906691
      },
-     "process_wall_seconds": 40.456127537065186,
-     "harness_wall_seconds": 40.67363362200558,
-     "cpu": 164
+     "process_wall_seconds": 38.49590455298312,
+     "harness_wall_seconds": 38.74550277600065,
+     "cpu": 133
     },
     "madloop": {
      "provider": "madloop",
-     "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags",
+     "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
      "version": "MadLoop/MG5_aMC 3.7.0",
      "export": "runs/required/gg_ttxemepg_qcd/madloop-export-production-flags",
+     "collier_cache": {
+      "on": false,
+      "collier": "1.2.9",
+      "reason": "COLLIER 1.2.9 global cache defect at N = 7"
+     },
      "madloop_params": {
       "MLReductionLib": "6|7|1",
       "COLLIERGlobalCache": "0",
@@ -18807,10 +18870,10 @@
       "replaced 6 TWOPII pi literals 3.14169258478796109557151794433593750E0_16 by 3.14159265358979323846264338327950288E0_16"
      ],
      "points": 16,
-     "mean_seconds_per_point": 3.022692055625,
-     "median_seconds_per_point": 3.00316277,
-     "min_seconds_per_point": 2.97143517,
-     "max_seconds_per_point": 3.12731838,
+     "mean_seconds_per_point": 3.038358094375,
+     "median_seconds_per_point": 3.03517586,
+     "min_seconds_per_point": 3.00297451,
+     "max_seconds_per_point": 3.08843062,
      "setup": {
       "split_order_indices": [
        1,
@@ -18818,12 +18881,12 @@
        1,
        1
       ],
-      "initial_call_seconds": 37.8994904,
+      "initial_call_seconds": 37.7324433,
       "initialization_calls": 5
      },
-     "process_wall_seconds": 86.29536743101198,
-     "harness_wall_seconds": 87.26361379108857,
-     "cpu": 164,
+     "process_wall_seconds": 86.37733224895783,
+     "harness_wall_seconds": 87.71634145709686,
+     "cpu": 133,
      "generation": {
       "graph_generation_s": 87.49735189595958,
       "source_export_s": 62.39196990203345,
@@ -18833,29 +18896,29 @@
      }
     }
    },
-   "provider_cpu": 164,
+   "provider_cpu": 133,
    "provider_repeats": {
     "openloops": [
      {
-      "cpu": 164,
-      "median_seconds_per_point": 0.409208122,
-      "mean_seconds_per_point": 0.4094952126875,
+      "cpu": 133,
+      "median_seconds_per_point": 0.40369187250000005,
+      "mean_seconds_per_point": 0.404573198,
       "points": 16
      }
     ],
     "recola": [
      {
-      "cpu": 164,
-      "median_seconds_per_point": 0.7519752445,
-      "mean_seconds_per_point": 0.7561092049375,
+      "cpu": 133,
+      "median_seconds_per_point": 0.620191463,
+      "mean_seconds_per_point": 0.630260146875,
       "points": 16
      }
     ],
     "madloop": [
      {
-      "cpu": 164,
-      "median_seconds_per_point": 3.00316277,
-      "mean_seconds_per_point": 3.022692055625,
+      "cpu": 133,
+      "median_seconds_per_point": 3.03517586,
+      "mean_seconds_per_point": 3.038358094375,
       "points": 16
      }
     ]
@@ -18892,7 +18955,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 1.267561841255089e-12,
-      "recola": 3.9705382612936866e-13,
+      "recola": 3.760722339387379e-13,
       "madloop": 2.6302250297184278e-12
      }
     },
@@ -18934,7 +18997,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 5.631513081203468e-09,
-      "recola": 4.377342715003851e-09,
+      "recola": 4.377500593263192e-09,
       "madloop": 8.702696977099847e-09
      }
     },
@@ -18955,7 +19018,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 1.9613227482536463e-14,
-      "recola": 8.508947876435462e-13,
+      "recola": 8.71876379834167e-13,
       "madloop": 1.3822764159475757e-12
      }
     },
@@ -18997,7 +19060,7 @@
      "revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
      "deviation_vs_providers": {
       "openloops": 5.839256271708991e-13,
-      "recola": 1.000827184593493e-08,
+      "recola": 1.0008429724193381e-08,
       "madloop": 1.433362608367516e-08
      }
     }
@@ -19369,12 +19432,12 @@
         "statistic": "median per point (pyAmpliCol blocks, provider points)",
         "checks": {
          "openloops": {
-          "reference": 0.409208122,
-          "limit": 0.5319705586,
-          "ratio_to_limit": 0.11096111955438018,
+          "reference": 0.40369187250000005,
+          "limit": 0.5247994342500001,
+          "ratio_to_limit": 0.11247734829703657,
           "band": [
-           0.09905364053118067,
-           0.12286859857757969
+           0.10040715947043871,
+           0.12454753712363442
           ],
           "uncertainty": 0.10731217448976667,
           "reference_uncertainty": 0.07626638499479058,
@@ -19383,12 +19446,12 @@
           "status": "pass"
          },
          "recola": {
-          "reference": 0.7519752445,
-          "limit": 0.97756781785,
-          "ratio_to_limit": 0.06038256136750442,
+          "reference": 0.620191463,
+          "limit": 0.8062489019000001,
+          "ratio_to_limit": 0.07321318343891067,
           "band": [
-           0.05390277740589574,
-           0.0668623453291131
+           0.06535651752276299,
+           0.08106984935505836
           ],
           "uncertainty": 0.10731217448976667,
           "reference_uncertainty": 0.07626638499479058,
@@ -19397,12 +19460,12 @@
           "status": "pass"
          },
          "madloop": {
-          "reference": 3.00316277,
-          "limit": 3.00316277,
-          "ratio_to_limit": 0.019655294525452914,
+          "reference": 3.03517586,
+          "limit": 3.03517586,
+          "ratio_to_limit": 0.019447983074109255,
           "band": [
-           0.017546042129689753,
-           0.021764546921216075
+           0.017360977720986413,
+           0.0215349884272321
           ],
           "uncertainty": 0.10731217448976667,
           "reference_uncertainty": 0.07626638499479058,
@@ -19412,15 +19475,15 @@
          }
         },
         "fastest_provider": "openloops",
-        "ratio_to_fastest": 0.14424945542069423,
+        "ratio_to_fastest": 0.14622055278614754,
         "binding_provider": "openloops",
-        "binding_limit": 0.5319705586,
-        "ratio_to_binding_limit": 0.11096111955438018,
+        "binding_limit": 0.5247994342500001,
+        "ratio_to_binding_limit": 0.11247734829703657,
         "band_to_binding_limit": [
-         0.09905364053118067,
-         0.12286859857757969
+         0.10040715947043871,
+         0.12454753712363442
         ],
-        "ratio_to_binding_limit_of_means": 0.1108833264493288
+        "ratio_to_binding_limit_of_means": 0.11223232673921564
        }
       },
       "128": {
@@ -19478,12 +19541,12 @@
         "statistic": "median per point (pyAmpliCol blocks, provider points)",
         "checks": {
          "openloops": {
-          "reference": 0.409208122,
-          "limit": 0.5319705586,
-          "ratio_to_limit": 0.11388256162391365,
+          "reference": 0.40369187250000005,
+          "limit": 0.5247994342500001,
+          "ratio_to_limit": 0.11543871042553863,
           "band": [
-           0.10449467019172869,
-           0.1232704530560986
+           0.10592253810650266,
+           0.12495488274457459
           ],
           "uncertainty": 0.08243484602311268,
           "reference_uncertainty": 0.07626638499479058,
@@ -19492,12 +19555,12 @@
           "status": "pass"
          },
          "recola": {
-          "reference": 0.7519752445,
-          "limit": 0.97756781785,
-          "ratio_to_limit": 0.06197234484980572,
+          "reference": 0.620191463,
+          "limit": 0.8062489019000001,
+          "ratio_to_limit": 0.07514077821266457,
           "band": [
-           0.05686366414442074,
-           0.06708102555519069
+           0.06894655973064671,
+           0.08133499669468243
           ],
           "uncertainty": 0.08243484602311268,
           "reference_uncertainty": 0.07626638499479058,
@@ -19506,12 +19569,12 @@
           "status": "pass"
          },
          "madloop": {
-          "reference": 3.00316277,
-          "limit": 3.00316277,
-          "ratio_to_limit": 0.020172789342973996,
+          "reference": 3.03517586,
+          "limit": 3.03517586,
+          "ratio_to_limit": 0.019960019687911022,
           "band": [
-           0.018509848559629248,
-           0.021835730126318745
+           0.01831461853831978,
+           0.021605420837502262
           ],
           "uncertainty": 0.08243484602311268,
           "reference_uncertainty": 0.07626638499479058,
@@ -19521,15 +19584,15 @@
          }
         },
         "fastest_provider": "openloops",
-        "ratio_to_fastest": 0.14804733011108773,
+        "ratio_to_fastest": 0.15007032355320024,
         "binding_provider": "openloops",
-        "binding_limit": 0.5319705586,
-        "ratio_to_binding_limit": 0.11388256162391365,
+        "binding_limit": 0.5247994342500001,
+        "ratio_to_binding_limit": 0.11543871042553863,
         "band_to_binding_limit": [
-         0.10449467019172869,
-         0.1232704530560986
+         0.10592253810650266,
+         0.12495488274457459
         ],
-        "ratio_to_binding_limit_of_means": 0.11380272034153016
+        "ratio_to_binding_limit_of_means": 0.115187237812701
        }
       }
      },
@@ -19544,8 +19607,8 @@
       "recola": {
        "points": 16,
        "max_born_deviation": 1.661120489074993e-14,
-       "max_finite_deviation": 4.377342715003851e-09,
-       "median_finite_deviation": 2.657623699507379e-11,
+       "max_finite_deviation": 4.377500593263192e-09,
+       "median_finite_deviation": 2.6649341888040097e-11,
        "worst_point": 2
       },
       "madloop": {
@@ -19911,12 +19974,12 @@
     "openloops": {
      "provider": "openloops",
      "unavailable": "no public OpenLoops library for 2 -> 5 jets",
-     "harness_wall_seconds": 2.1599698811769485e-06,
-     "cpu": 172
+     "harness_wall_seconds": 2.299901098012924e-06,
+     "cpu": 133
     },
     "recola": {
      "provider": "recola",
-     "mode": "reference campaign: compute_ir_poles 1, Collier cache off",
+     "mode": "reference campaign: compute_ir_poles 1, Collier cache off (the protocol's: on, COLLIER 1.2.8 has no N = 7 cache defect)",
      "protocol_mode": false,
      "version": "Recola2 (supplied 2.3.0 tree, self-reported 2.2.5) / SM model 2.2.3 / Collier 1.2.8",
      "imported_from": "runs/required/uux_ggggg/recola-result.json",
@@ -19933,9 +19996,9 @@
       "generation_seconds": 10220.0391
      },
      "process_wall_seconds": 10950.486181426095,
-     "production_upper_bound": "the run evaluates the IR poles (compute_ir_poles 1: three compute_amplitude calls per point instead of one) with the protocol's Collier cache (off), so the production-mode time is at most this time",
+     "production_upper_bound": "the run evaluates the IR poles (compute_ir_poles 1: three compute_amplitude calls per point instead of one) without the Collier cache, which production keeps on and which only saves repeated tensor-integral work, so the production-mode time is at most this time",
      "unavailable": "no production-mode timing: the existing run (reference campaign, 2026-10-20) computes the IR poles (compute_ir_poles 1); a production-mode run needs a new generation of 2.8 h, beyond HANDOFF \u00a70.1 (45 minutes, or pyAmpliCol's own generation time)",
-     "harness_wall_seconds": 0.004105744999833405
+     "harness_wall_seconds": 0.004918927908875048
     },
     "madloop": {
      "provider": "madloop",
@@ -19955,7 +20018,7 @@
       "initial_call_seconds": 6006.34118
      },
      "process_wall_seconds": 7715.385295354994,
-     "harness_wall_seconds": 0.002139196963980794,
+     "harness_wall_seconds": 0.002019357983954251,
      "generation": {
       "graph_generation_s": 5792.987055428035,
       "source_export_s": 38040.019540841924,
@@ -19966,7 +20029,7 @@
      "export": "runs/required/uux_ggggg/madloop-export"
     }
    },
-   "provider_cpu": 172,
+   "provider_cpu": 133,
    "provider_repeats": {
     "recola": [
      {
@@ -20430,8 +20493,8 @@
         "outside_protocol": {
          "recola": {
           "seconds": 182.211351,
-          "mode": "reference campaign: compute_ir_poles 1, Collier cache off",
-          "production_upper_bound": "the run evaluates the IR poles (compute_ir_poles 1: three compute_amplitude calls per point instead of one) with the protocol's Collier cache (off), so the production-mode time is at most this time",
+          "mode": "reference campaign: compute_ir_poles 1, Collier cache off (the protocol's: on, COLLIER 1.2.8 has no N = 7 cache defect)",
+          "production_upper_bound": "the run evaluates the IR poles (compute_ir_poles 1: three compute_amplitude calls per point instead of one) without the Collier cache, which production keeps on and which only saves repeated tensor-integral work, so the production-mode time is at most this time",
           "ratio": 0.008955027754061073
          }
         },
@@ -20522,8 +20585,8 @@
         "outside_protocol": {
          "recola": {
           "seconds": 182.211351,
-          "mode": "reference campaign: compute_ir_poles 1, Collier cache off",
-          "production_upper_bound": "the run evaluates the IR poles (compute_ir_poles 1: three compute_amplitude calls per point instead of one) with the protocol's Collier cache (off), so the production-mode time is at most this time",
+          "mode": "reference campaign: compute_ir_poles 1, Collier cache off (the protocol's: on, COLLIER 1.2.8 has no N = 7 cache defect)",
+          "production_upper_bound": "the run evaluates the IR poles (compute_ir_poles 1: three compute_amplitude calls per point instead of one) without the Collier cache, which production keeps on and which only saves repeated tensor-integral work, so the production-mode time is at most this time",
           "ratio": 0.009117081196033524
          }
         },
@@ -20925,7 +20988,7 @@
    "process_text": "G G > G G G G G",
    "outgoing": 5,
    "gated": false,
-   "gate_note": "no matched provider timing (HANDOFF 0.1): the speed is reported without a gate, with its rotation and Ward checks (addenda F and H)",
+   "gate_note": "no matched provider timing (HANDOFF 0.1): the speed is reported without a gate (addenda F and H); its rotation and Ward checks, or why one is pending, are summary.json's sanity_checks",
    "providers": {
     "openloops": {
      "provider": "openloops",
@@ -21374,7 +21437,7 @@
      "stored": {
       "directory": "gg_ggggg-full",
       "plan_sha256": "355bcaf3db67b93b7383a3a6d6b4a424831d2e4587da891cc0dcf19959cebb67",
-      "point_inputs": "native-v1",
+      "point_inputs": "native-v2",
       "generated_revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
       "generated_dirty": false,
       "generated_host_cpus": [
@@ -21383,7 +21446,9 @@
       "load": {
        "seconds": 21.732574997935444,
        "peak_gib": 5.085
-      }
+      },
+      "store_label": "native-v1",
+      "label_corrected": "records/scripts/f4-relabel.py: the harness of 2265a9f7 wrote a stale literal"
      },
      "structure": {
       "families": 4707,
@@ -22037,7 +22102,7 @@
      "stored": {
       "directory": "gg_ggggg-lc",
       "plan_sha256": "2853c4d203ec1056a7975c0528cae6cd9a9d01e9f0ba89a3b0ceace340ed8b6c",
-      "point_inputs": "native-v1",
+      "point_inputs": "native-v2",
       "generated_revision": "2265a9f7b7d343a86f208b0678fd432b2899ee1f",
       "generated_dirty": false,
       "generated_host_cpus": [
@@ -22046,7 +22111,9 @@
       "load": {
        "seconds": 15.951732148998417,
        "peak_gib": 4.036
-      }
+      },
+      "store_label": "native-v1",
+      "label_corrected": "records/scripts/f4-relabel.py: the harness of 2265a9f7 wrote a stale literal"
      },
      "structure": {
       "families": 4707,
@@ -23877,8 +23944,8 @@
     0.08110085090178566
    ],
    "measured": 0.055622861085794284,
-   "gate": 0.43268060225000005,
-   "headroom": 5.3350932504269615
+   "gate": 0.32602553684999996,
+   "headroom": 4.020001433090039
   },
   {
    "process": "uu~>e-e+ggg",
@@ -23923,8 +23990,8 @@
     0.023671078465960973
    ],
    "measured": 0.016013274155739055,
-   "gate": 0.06376276985,
-   "headroom": 2.6936993995305665
+   "gate": 0.04591548065,
+   "headroom": 1.9397291389163571
   },
   {
    "process": "uu~>e-e+dd~g",
@@ -24015,8 +24082,8 @@
     0.09132296206906917
    ],
    "measured": 0.060582169921872264,
-   "gate": 0.5319705586,
-   "headroom": 5.825156636921842
+   "gate": 0.5247994342500001,
+   "headroom": 5.7466317600724
   },
   {
    "process": "gg>tt~e-e+g",
@@ -24052,13 +24119,13 @@
  "integrated_configuration": "native per-point inputs: the stored plan v4 with point_inputs native-v2 (binary64 SymJIT plane applications stored as IR and recompiled at load; Runtime.load regenerates nothing), schedule B, 16 lanes; timed through NativeExecutor(slice, inputs=native).evaluate on the exact stream points (the public artifact's plan digest and bitwise the same binary64 values as the loaded artifact's executor at all 128 points of u u~ > d d~ g), on a frozen setup heap (timing_protocol); the 2->5 rows through the same executor, g g > g g g g g from its stored process (pyamplicol --store --generate-only, then --load: the loop runtime member with native point inputs, nothing regenerated)",
  "timing_protocol": "binary64, finite part only (poles none), no stability check, one thread on one pinned core (taskset, RAYON_NUM_THREADS=1, threads=1), warm-up excluded, paired blocks of B = 1 (24 blocks) and B = 128 (3 blocks), leading colour at B = 128; the setup heap is frozen out of Python's cyclic collector before the warm-up (gc.collect + gc.freeze, the protocol of work/v2-measure-g1-7leg de8d3eb8, applied by a scratch launcher on the unmodified checkout 1d27426b; the evaluations' own collections stay inside the timed blocks, 0.2-2.8 % of the timed wall). Reason: a loaded artifact's runtime holds none of the generation's objects; without the freeze a full collection of the generation heap (about 0.09 s at u u~ > d d~ g) fell into 2 of the 3 B = 128 blocks: u u~ > d d~ g B = 128 2.76 ms/pt with the committed protocol, 1.95 ms/pt frozen, 1.96 ms/pt for the public Runtime.load executor in a fresh interpreter (2.08 ms/pt through Runtime.evaluate on 60-digit decimal text); g g > g g g 22.9 vs 20.6 ms/pt. The 2->5 rows (package measure-g1-7leg, revision 2265a9f7 on 1d27426b's engine): full and leading colour at B = 16 and 128, 3 paired rounds after a 16-point warm-up per B, the heap frozen by the harness itself (its commit de8d3eb8)",
  "public_path_check": "u u~ > d d~ g, public Generator artifact: point_inputs native-v2, plan sha256 64c32c44 equal to the harness's (and to G-int's); pyamplicol.Runtime.load in a fresh interpreter with generation forbidden: V2VirtualRuntime, native process loaded, executor inputs native, 16 lanes, nothing regenerated after the load and 128 evaluations; the loaded executor's binary64 values equal the timed run's bitwise at all 128 points",
- "provider_records": "2->2 to 2->4: reused from the measure-g1 campaign of 2026-10-23/24 (workspace/reports/engine-v2/measure-g1/records), not re-run. 2->5: this package's production-mode runs of 2026-10-24 ~22:44 UTC on 16 stream points (MadLoop, Recola, OpenLoops; u u~ > e- e+ d d~ g and u u~ > e- e+ g g g on core 156, g g > t t~ e- e+ g on core 164; workspace/reports/engine-v2/measure-g1-7leg/records/runs/m7-providers-<key>.json), not re-run; u u~ > g g g g g imported from the reference campaign (runs/required/uux_ggggg under the reference root: MadLoop's production build, Recola's run with the IR poles, an upper bound of its production time; re-imported in fix round 2 as records/runs-f2/m7-providers-uux_ggggg-f2.json to record that bound); none for g g > g g g g g (no OpenLoops library, MadLoop and Recola generations stopped under HANDOFF 0.1)",
+ "provider_records": "2->2 to 2->4: reused from the measure-g1 campaign of 2026-10-23/24 (workspace/reports/engine-v2/measure-g1/records), not re-run. 2->5: this package's production-mode runs of fix round 3 (2026-10-25 ~20:00 UTC, harness 1ad2b0a6, 16 stream points, one after the other on core 133): every provider with its production Collier cache (ADDENDUM D; Recola links COLLIER 1.2.8, which has no N = 7 cache defect: cache on; MadLoop's HEPTools COLLIER 1.2.9 has it: COLLIERGlobalCache 0; OpenLoops on) and every provider file taken under the current reference root (a 2-point probe of all three providers under strace -f -e trace=file accessed nothing under /shared/external); records/runs-f4/m7-providers-<key>-f4.json. u u~ > e- e+ d d~ g's Recola ran 40.1 ms/pt in that campaign and 35.1, 35.2, 35.3 ms/pt in three repeats (cores 140, 133, 131; the last decides, all are repeats). The runs of 2026-10-24 (records/runs/m7-providers-<key>.json: Recola uncached at seven legs; provider files of the old root) are superseded and no gate input. u u~ > g g g g g imported from the reference campaign (runs/required/uux_ggggg under the reference root: MadLoop's production build; Recola's run with the IR poles and without the Collier cache, an upper bound of its production time; records/runs-f4/m7-providers-uux_ggggg-f4.json); none for g g > g g g g g (no OpenLoops library, MadLoop and Recola generations stopped under HANDOFF 0.1)",
  "previous_integrated_side": "slice 4e9b5a9e (G-int, the engine on loop 79df367a), native loop-native-v2-slice-4e9b5a9e: its gint-* native/full and native/lc runs are earlier_runs of the configurations re-timed here (history only: DECISIONS 2026-10-25 ~11:40; committed protocol, no heap freeze). The 2->5 rows: the earlier campaigns of package measure-g1-7leg, slice 4e9b5a9e (sessions 2-5, committed protocol) and slice 7db32901 (session 6, revisions c177ea82 and de8d3eb8, frozen heap), are earlier_runs of the configurations this round re-times on 1d27426b",
  "previous_development_side": "native_revision 889af02c, native_commit 39824f9b, native_build loop-native-measure-g1-genscale-39824f9b: its native/full and native/lc runs are earlier_runs of the integrated configuration; its native/full/L1 and native/*/M runs stay as development history. Its stability rows are no longer gate inputs: since 7db32901 the binary64 values differ from 39824f9b's at rounding level (values_note), so every row's worst point is re-evaluated on 1d27426b's engine (revision 2265a9f7: binary64 and double-double with the rotation and reduction-direction checks)",
  "repeats": "none needed: every verdict of the 1d27426b runs is closed (B = 128 pass and B = 1 fail on the whole band), so no single repeat (MASTER_PLAN 5.8 item 10) and no intermediate batches; u u~ > u u~ g at B = 128 is a measured pass (0.70 of the limit, band 0.68-0.72), so the user decision of 2026-10-24 (pass at the limit) does not apply to this campaign. The 2->5 rows: no gated verdict open (every gated B = 128 band passes whole), no repeat",
  "values_note": "binary64 values differ from G-int's at rounding level (median relative change 3e-15 to 3e-11 per process; binary64 SymJIT plane applications since 7db32901); points that are unstable in binary64 move more (g g > g g g point 66 and g g > g g g g point 50 about 1e-3), as before; agreement with the providers on the stream's first points is unchanged in order (g g > g g g g's accuracy check at its known binary64-unstable point 1: 2.4e-7 against the fixture's 2e-8, 4.0e-7 at G-int). The 2->5 rows on 1d27426b: bitwise the binary64 values of session 6 on 7db32901 at all 1760 timed points of the ten configurations (B = 16 and 128), and the same accuracy checks",
  "slice_tool_revisions": "2265a9f7",
  "seven_leg_rows": "package measure-g1-7leg, fix round 2 (2026-10-25): the 2->5 rows timed on the engine of loop (slice 1d27426b, milestone m1025a; run worktree at 2265a9f7, whose src and rust equal 1d27426b's; slice_build, native per-point inputs, schedule B, 16 lanes), binary64 finite part, stability checks off, one thread pinned to one core of 128-175 (no two jobs on one CCX), RAYON_NUM_THREADS=1, setup heap frozen out of the cyclic collector, full and leading colour at B = 16 and 128 after a 16-point warm-up per B, 3 paired rounds. g g > g g g g g (top-free, particle_veto [t], N_f = 5): generated once per colour accuracy (FC 2,274 s generate + 346 s export, LC 2,435 s generate + 436 s export) and stored as the artifact's loop runtime member with native point inputs, then timed from the loaded process (--load: nothing regenerated); its speed is reported without a gate (no matched provider, ADDENDUM H)",
- "seven_leg_records": "workspace/reports/engine-v2/measure-g1-7leg/records: runs-f2 (this round: m7-<key>-{full,lc}-f2 the 2->5 timing runs with their accuracy checks and physical rows, m7-stability-* their stability rows, w-stability-<key> the worst points of every G1 row, m7-fixture-stability-gg_ggggg-*-f2 NJet's points, store-gg_ggggg-* the stores' generate-only records, m7-providers-uux_ggggg-f2), logs-f2; runs-s6 (7db32901) and runs (4e9b5a9e) are history",
- "seven_leg_checks": "values at the timed points: every full-colour row against the providers on the stream (16 points; u u~ > g g g g g: the reference campaign's 3 points, MadLoop and Recola) and its required fixture; u u~ > g g g g g's largest deviation (Recola's, at point 0) is Recola's own: there pyAmpliCol's binary64 estimate is E = 1.9e-11 and its double-double finite part equals the binary64 one to 1.8e-13 (g1.json stability rows: deviations from each provider); g g > g g g g g against NJet double-double at its 10 points (the stream's first 3) at mu_R = 1000 GeV: max 3.73e-08 at point 4 (the fixture tolerance 2e-8 is exceeded in binary64 only; the record keeps passed: false): every point's deviation lies within its binary64 estimate E (yes; stability --fixture), and double-double agrees with NJet's (point 4: binary64 3.73e-08 (E 1.3e-06), double-double 0.0e+00; point 8: binary64 2.20e-08 (E 2.5e-07), double-double 0.0e+00). Physical rows: the double pole over the Born against the universal -(alpha_s/2pi) sum C_i at the run's colour accuracy. Rotation: stability rows (rotation-0 and reduction-direction). Ward (one gluon polarisation replaced by its momentum, the O10 bound): g g > g g g (5 legs) and g g > g g g g (6 legs) pass; not run at 7 legs: a bounded attempt on 7db32901 (point 0, leg 3, c = 1) did not finish the Ward-mode generation (Python per-point inputs with full tree kernels) in 55 min, and one Ward evaluation takes 33-43 s at 5 legs and 2,659-2,860 s at 6 (x62-87 per gluon, so about 1.6e5-2.5e5 s at 7 by that growth, an estimate): seven gluons need native Ward inputs (generation-scale-2)"
+ "seven_leg_records": "workspace/reports/engine-v2/measure-g1-7leg/records: runs-f2 (this round: m7-<key>-{full,lc}-f2 the 2->5 timing runs with their accuracy checks and physical rows, m7-stability-* their stability rows, w-stability-<key> the worst points of every G1 row, m7-fixture-stability-gg_ggggg-*-f2 NJet's points, store-gg_ggggg-* the stores' generate-only records, m7-providers-uux_ggggg-f2), logs-f2; runs-s6 (7db32901) and runs (4e9b5a9e) are history; runs-f4 (fix round 3: the 2->5 provider records, and the g g > g g g g g records of runs-f2 with the stored-process label corrected to native-v2 by scripts/f4-relabel.py: the harness of 2265a9f7 wrote a stale literal), logs-f4",
+ "seven_leg_checks": "values at the timed points: every full-colour row against the providers on the stream (16 points; u u~ > g g g g g: the reference campaign's 3 points, MadLoop and Recola) and its required fixture; u u~ > g g g g g's largest deviation (Recola's, at point 0) is Recola's own: there pyAmpliCol's binary64 estimate is E = 1.9e-11 and its double-double finite part equals the binary64 one to 1.8e-13 (g1.json stability rows: deviations from each provider); g g > g g g g g against NJet double-double at its 10 points (the stream's first 3) at mu_R = 1000 GeV: max 3.73e-08 at point 4 (the fixture tolerance 2e-8 is exceeded in binary64 only; the record keeps passed: false): every point's deviation lies within its binary64 estimate E (yes; stability --fixture), and double-double agrees with NJet's (point 4: binary64 3.73e-08 (E 1.3e-06), double-double 0.0e+00; point 8: binary64 2.20e-08 (E 2.5e-07), double-double 0.0e+00). Physical rows: the double pole over the Born against the universal -(alpha_s/2pi) sum C_i at the run's colour accuracy. Rotation: stability rows (rotation-0 and reduction-direction). Ward (one gluon polarisation replaced by its momentum, the O10 bound): g g > g g g (5 legs) and g g > g g g g (6 legs) pass; at 7 legs pending - needs native Ward inputs (coordinator ruling, DECISIONS 2026-10-25 ~19:40: moved to generation-scale-2's next run): a bounded attempt on 7db32901 (point 0, leg 3, c = 1) did not finish the Ward-mode generation (Python per-point inputs with full tree kernels) in 55 min, and one Ward evaluation takes 33-43 s at 5 legs and 2,659-2,860 s at 6 (x62-87 per gluon, so about 1.6e5-2.5e5 s at 7 by that growth, an estimate)"
 }

@@ -465,7 +465,11 @@
         "key": "recola",
         "short": "Rc",
         "dd_deviation": 3.2750291935874243e-10,
-        "dd_estimate": 9.883824392830725e-28
+        "dd_estimate": 9.883824392830725e-28,
+        "independent": {
+         "key": "madloop",
+         "dd_deviation": 3.188177722534943e-13
+        }
        }
       },
       "considered": [
@@ -675,7 +679,11 @@
         "key": "recola",
         "short": "Rc",
         "dd_deviation": 7.146208078913632e-11,
-        "dd_estimate": 3.5571008779713447e-28
+        "dd_estimate": 3.5571008779713447e-28,
+        "independent": {
+         "key": "madloop",
+         "dd_deviation": 2.428328642024099e-13
+        }
        }
       },
       "considered": [
@@ -1076,7 +1084,11 @@
         "key": "openloops",
         "short": "OL",
         "dd_deviation": 8.383731466508194e-11,
-        "dd_estimate": 9.946465580396263e-29
+        "dd_estimate": 9.946465580396263e-29,
+        "independent": {
+         "key": "madloop",
+         "dd_deviation": 1.3348289027384224e-14
+        }
        }
       },
       "considered": [
@@ -2281,8 +2293,8 @@
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 1.9033385538014625e-09,
-        "median_finite": 7.962740243769849e-13,
+        "max_finite": 5.746768528374283e-11,
+        "median_finite": 7.961494818636601e-13,
         "worst_point": 15
        },
        {
@@ -2294,22 +2306,16 @@
         "worst_point": 15
        }
       ],
-      "max_finite": 1.9033385538014625e-09,
-      "median_finite": 7.962740243769849e-13,
+      "max_finite": 5.746768528374283e-11,
+      "median_finite": 7.961494818636601e-13,
       "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 15,
        "estimate": 1.6486854729410703e-09,
-       "within_estimate": false,
+       "within_estimate": true,
        "dd_closest": 5.535068690347794e-14,
        "revision": "2265a9f7",
-       "source": "g1.json processes[uux_emepddxg].stability (native/full)",
-       "reference_own": {
-        "key": "recola",
-        "short": "Rc",
-        "dd_deviation": 1.960720456437326e-09,
-        "dd_estimate": 1.2582696641548728e-26
-       }
+       "source": "g1.json processes[uux_emepddxg].stability (native/full)"
       },
       "considered": [
        {
@@ -2349,7 +2355,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 2.4935203110847453,
+       "ratio_to_fastest": 2.538714000585503,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2360,7 +2366,7 @@
         "compile_s": 7.405032398062758
        },
        "recola": {
-        "seconds": 6.85174653
+        "seconds": 6.72977308
        },
        "openloops": {
         "prebuilt": "pplljjj"
@@ -2369,7 +2375,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 6.85174653
+       "seconds": 6.72977308
       },
       "source": "g1.json processes[uux_emepddxg].providers (MadLoop generation, Recola setup)"
      },
@@ -2393,16 +2399,16 @@
        "revision": "2265a9f7",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.3264798008529545,
+       "ratio_to_fastest": 0.4533820861235125,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.25113830834842654,
+        "ratio_to_limit": 0.34875545086424037,
         "band": [
-         0.22802192209073713,
-         0.27425469460611596
+         0.31832707600340476,
+         0.379183825725076
         ],
-        "binding": "OpenLoops",
-        "limit_seconds": 0.06376276985
+        "binding": "Recola",
+        "limit_seconds": 0.04591548065
        },
        "configuration": "integrated",
        "considered": [
@@ -2421,28 +2427,28 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 0.13472727299999998,
+        "seconds_per_point": 0.13206965799999998,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.0609548025,
+        "seconds_per_point": 0.0353196005,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache off (seven legs, COLLIER cache defect)"
+        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.0490482845,
+        "seconds_per_point": 0.0509826425,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
         "library": "pplljjj"
        }
       },
       "fastest": {
-       "name": "OpenLoops",
-       "key": "openloops",
-       "seconds_per_point": 0.0490482845
+       "name": "Recola",
+       "key": "recola",
+       "seconds_per_point": 0.0353196005
       },
       "source": "g1.json processes[uux_emepddxg].providers (median s/pt)"
      },
@@ -2507,8 +2513,8 @@
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 1.1095522252885525e-10,
-        "median_finite": 1.9702791905880756e-12,
+        "max_finite": 1.1095660811645681e-10,
+        "median_finite": 1.5454943135514263e-12,
         "worst_point": 8
        },
        {
@@ -2521,7 +2527,7 @@
        }
       ],
       "max_finite": 1.1166644464473589e-10,
-      "median_finite": 1.9702791905880756e-12,
+      "median_finite": 1.5454943135514263e-12,
       "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 8,
@@ -2569,7 +2575,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 1.257332938526942,
+       "ratio_to_fastest": 1.2554360936032203,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2580,7 +2586,7 @@
         "compile_s": 11.008945616078563
        },
        "recola": {
-        "seconds": 13.3668876
+        "seconds": 13.3870837
        },
        "openloops": {
         "prebuilt": "pplljjj"
@@ -2589,7 +2595,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 13.3668876
+       "seconds": 13.3870837
       },
       "source": "g1.json processes[uux_emepggg].providers (MadLoop generation, Recola setup)"
      },
@@ -2613,16 +2619,16 @@
        "revision": "2265a9f7",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.16712031700869384,
+       "ratio_to_fastest": 0.22179158145149014,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.12855409000668755,
+        "ratio_to_limit": 0.17060890880883858,
         "band": [
-         0.11789284918147327,
-         0.1392153308319018
+         0.15645998002996095,
+         0.18475783758771622
         ],
-        "binding": "OpenLoops",
-        "limit_seconds": 0.43268060225000005
+        "binding": "Recola",
+        "limit_seconds": 0.32602553684999996
        },
        "configuration": "integrated",
        "considered": [
@@ -2641,28 +2647,28 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 1.460310365,
+        "seconds_per_point": 1.417189965,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.3334871935,
+        "seconds_per_point": 0.2507888745,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache off (seven legs, COLLIER cache defect)"
+        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.3328312325,
+        "seconds_per_point": 0.3456512245,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
         "library": "pplljjj"
        }
       },
       "fastest": {
-       "name": "OpenLoops",
-       "key": "openloops",
-       "seconds_per_point": 0.3328312325
+       "name": "Recola",
+       "key": "recola",
+       "seconds_per_point": 0.2507888745
       },
       "source": "g1.json processes[uux_emepggg].providers (median s/pt)"
      },
@@ -2727,8 +2733,8 @@
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 4.377342715003851e-09,
-        "median_finite": 2.657623699507379e-11,
+        "max_finite": 4.377500593263192e-09,
+        "median_finite": 2.6649341888040097e-11,
         "worst_point": 2
        },
        {
@@ -2741,7 +2747,7 @@
        }
       ],
       "max_finite": 8.702696977099847e-09,
-      "median_finite": 2.657623699507379e-11,
+      "median_finite": 2.6649341888040097e-11,
       "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 2,
@@ -2789,7 +2795,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.8214407285502469,
+       "ratio_to_fastest": 0.8201580635655095,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2800,7 +2806,7 @@
         "compile_s": 14.854780457098968
        },
        "recola": {
-        "seconds": 27.611186
+        "seconds": 27.6543678
        },
        "openloops": {
         "prebuilt": "ppllttj"
@@ -2809,7 +2815,7 @@
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 27.611186
+       "seconds": 27.6543678
       },
       "source": "g1.json processes[gg_ttxemepg_qcd].providers (MadLoop generation, Recola setup)"
      },
@@ -2833,16 +2839,16 @@
        "revision": "2265a9f7",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.14804733011108773,
+       "ratio_to_fastest": 0.15007032355320024,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.11388256162391365,
+        "ratio_to_limit": 0.11543871042553863,
         "band": [
-         0.10449467019172869,
-         0.1232704530560986
+         0.10592253810650266,
+         0.12495488274457459
         ],
         "binding": "OpenLoops",
-        "limit_seconds": 0.5319705586
+        "limit_seconds": 0.5247994342500001
        },
        "configuration": "integrated",
        "considered": [
@@ -2861,19 +2867,19 @@
       "providers": {
        "madloop": {
         "status": "measured",
-        "seconds_per_point": 3.00316277,
+        "seconds_per_point": 3.03517586,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
        },
        "recola": {
         "status": "measured",
-        "seconds_per_point": 0.7519752445,
+        "seconds_per_point": 0.620191463,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache off (seven legs, COLLIER cache defect)"
+        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
        },
        "openloops": {
         "status": "measured",
-        "seconds_per_point": 0.409208122,
+        "seconds_per_point": 0.40369187250000005,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
         "library": "ppllttj"
@@ -2882,7 +2888,7 @@
       "fastest": {
        "name": "OpenLoops",
        "key": "openloops",
-       "seconds_per_point": 0.409208122
+       "seconds_per_point": 0.40369187250000005
       },
       "source": "g1.json processes[gg_ttxemepg_qcd].providers (median s/pt)"
      },
@@ -3091,7 +3097,11 @@
         "key": "recola",
         "short": "Rc",
         "dd_deviation": 2.8627595034727174e-10,
-        "dd_estimate": 1.243117041833413e-27
+        "dd_estimate": 1.243117041833413e-27,
+        "independent": {
+         "key": "madloop",
+         "dd_deviation": 1.4144241420398502e-12
+        }
        }
       },
       "considered": [
@@ -3213,8 +3223,8 @@
         "outside_protocol": {
          "seconds_per_point": 182.211351,
          "points": 3,
-         "mode": "reference campaign: compute_ir_poles 1, Collier cache off",
-         "production_upper_bound": "the run evaluates the IR poles (compute_ir_poles 1: three compute_amplitude calls per point instead of one) with the protocol's Collier cache (off), so the production-mode time is at most this time"
+         "mode": "reference campaign: compute_ir_poles 1, Collier cache off (the protocol's: on, COLLIER 1.2.8 has no N = 7 cache defect)",
+         "production_upper_bound": "the run evaluates the IR poles (compute_ir_poles 1: three compute_amplitude calls per point instead of one) without the Collier cache, which production keeps on and which only saves repeated tensor-integral work, so the production-mode time is at most this time"
         }
        },
        "openloops": {
@@ -3227,7 +3237,7 @@
        "key": "recola",
        "seconds_per_point": 182.211351,
        "bound": "upper",
-       "basis": "Recola's timing outside the protocol bounds its production time from above (the run evaluates the IR poles (compute_ir_poles 1: three compute_amplitude calls per point instead of one) with the protocol's Collier cache (off), so the production-mode time is at most this time); the fastest provider's production time is at most it",
+       "basis": "Recola's timing outside the protocol bounds its production time from above (the run evaluates the IR poles (compute_ir_poles 1: three compute_amplitude calls per point instead of one) without the Collier cache, which production keeps on and which only saves repeated tensor-integral work, so the production-mode time is at most this time); the fastest provider's production time is at most it",
        "protocol_fastest": {
         "name": "MadLoop",
         "key": "madloop",
@@ -3457,8 +3467,8 @@
         "source": "g1.json processes[gg_ggggg].stability"
        },
        "ward": {
-        "status": "not run",
-        "reason": "attempted at seven legs on slice 7db32901 (package measure-g1-7leg, session 6): the Ward-mode generation of g g > g g g g g (Python per-point inputs with full tree kernels; point 0, leg 3, c = 1) had not finished after 55 min when the job stopped; one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs, a growth of x62-87 per added gluon, which puts one seven-gluon Ward evaluation at about 1.6e5-2.5e5 s (46-69 h) with Python per-point inputs (an estimate, not a measurement): seven gluons need native Ward inputs (generation-scale-2); the 5- and 6-gluon Ward rows pass",
+        "status": "pending \u2014 needs native Ward inputs",
+        "reason": "pending (coordinator ruling, slice-status DECISIONS 2026-10-25 ~19:40: a recorded, temporary deviation from ADDENDUM H; the seven-gluon Ward check moves to generation-scale-2's next run with native Ward inputs). Attempted at seven legs on slice 7db32901 (package measure-g1-7leg, session 6): the Ward-mode generation of g g > g g g g g (Python per-point inputs with full tree kernels; point 0, leg 3, c = 1) had not finished after 55 min when the job stopped; one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs, a growth of x62-87 per added gluon, which puts one seven-gluon Ward evaluation at about 1.6e5-2.5e5 s (46-69 h) with Python per-point inputs (an estimate, not a measurement): seven gluons need native Ward inputs (generation-scale-2); the 5- and 6-gluon Ward rows pass",
         "reason_source": "milestone.json status_notes.notes[gg_ggggg].ward",
         "lower_multiplicity": [
          {
