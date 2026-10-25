@@ -19,14 +19,15 @@
   }
  },
  "ancestry": {
-  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below, in a checkout with work/v2-generation-scale (2026-10-24, package report-dev); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
-  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records): every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions (a clone of loop before the development work is integrated)",
+  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
+  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records): every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. 4e9b5a9e is the G1 campaign of this milestone (slice_revision, the engine on loop); 1c971289 and 889af02c were the sides of the previous campaign (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e and is no candidate)",
   "revisions": [
    "1c971289",
    "889af02c",
    "fef92189",
    "0ea83af2",
-   "6f5a64cc"
+   "6f5a64cc",
+   "4e9b5a9e"
   ],
   "ancestors": [
    [
@@ -56,6 +57,26 @@
    [
     "0ea83af2",
     "6f5a64cc"
+   ],
+   [
+    "1c971289",
+    "4e9b5a9e"
+   ],
+   [
+    "889af02c",
+    "4e9b5a9e"
+   ],
+   [
+    "fef92189",
+    "4e9b5a9e"
+   ],
+   [
+    "0ea83af2",
+    "4e9b5a9e"
+   ],
+   [
+    "6f5a64cc",
+    "4e9b5a9e"
    ]
   ]
  },
