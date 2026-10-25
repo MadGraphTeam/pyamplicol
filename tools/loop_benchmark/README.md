@@ -37,7 +37,9 @@ layout: `sources/MG5_aMC_v3_7_0`, `sources/recola2-2.3.0`,
 `processes.json`). The gate resolves every provider file relative to it:
 a record's `export` (the absolute path of its run, possibly under a root
 that moved) is never opened or stat'ed; its `runs/...` part under `ROOT`,
-else the specification's `madloop.export`, is the export. A new process needs only its specification in
+else the specification's `madloop.export`, is the export (an imported
+campaign timing, `timing` of the specification, names none: its generation
+is that of the specification's export). A new process needs only its specification in
 `processes.json` (PDG codes, orders, provider process strings, `madloop.export`
 or `unavailable` reasons) and its stream: particle names come from the model,
 labels from the specification, and the gate refuses records of unknown
