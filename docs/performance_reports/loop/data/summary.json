@@ -3240,14 +3240,14 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 3025.4819230340654,
-       "generate_s": 2615.263128739083,
-       "export_s": 410.2187942949822,
-       "model_s": 3.7483832410071045,
-       "peak_gib": 27.827,
+       "seconds": 3044.194002132979,
+       "generate_s": 2633.4208681919845,
+       "export_s": 410.77313394099474,
+       "model_s": 3.625220030080527,
+       "peak_gib": 27.815,
        "plan_mb": 159.867,
        "inputs": "native",
-       "revision": "439511db",
+       "revision": "a8615a8c",
        "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
@@ -3276,19 +3276,19 @@
       "main": {
        "status": "measured",
        "batch": 64,
-       "seconds_per_point": 14.196555633696335,
-       "uncertainty": 0.007424551339618879,
+       "seconds_per_point": 15.892131980108388,
+       "uncertainty": 0.10850242426389783,
        "stages": {
         "inputs": 0.0,
-        "numerator": 3.6093894516718747,
-        "scatter": 0.0111308220234375,
-        "ninjars": 0.43514457442968757,
-        "masters": 0.0404201434453125,
-        "glue": 0.007706831522227731,
-        "untimed": 10.092763810603795
+        "numerator": 3.8650737645312505,
+        "scatter": 0.011562593859375003,
+        "ninjars": 0.47130050532812495,
+        "masters": 0.043229957562500004,
+        "glue": 0.004260166557287448,
+        "untimed": 11.381238814104195
        },
        "inputs": "native",
-       "revision": "439511db",
+       "revision": "a8615a8c",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].batches['64']",
        "configuration": "integrated",
@@ -3329,8 +3329,29 @@
       },
       "sanity_checks": {
        "rotation": {
-        "status": "not run",
-        "configurations": {},
+        "status": "measured",
+        "configurations": {
+         "native/full": {
+          "points": [
+           0,
+           1,
+           2
+          ],
+          "max_rotation": 2.1784354738160466e-08,
+          "max_estimate": 6.05681469685206e-08,
+          "revision": "a8615a8c"
+         },
+         "native/lc": {
+          "points": [
+           0,
+           1,
+           2
+          ],
+          "max_rotation": 1.1051096387622281e-08,
+          "max_estimate": 3.701778254830497e-08,
+          "revision": "a8615a8c"
+         }
+        },
         "what": "binary64 finite part: relative deviation under one rotation about z by (3/5, 4/5), and the estimate E (rotation plus reduction direction)",
         "source": "g1.json processes[gg_ggggg].stability"
        },
@@ -3362,16 +3383,16 @@
      "leading_colour": {
       "main": {
        "status": "measured",
-       "batch": 16,
-       "seconds_per_point": 15.88555892068689,
+       "batch": 64,
+       "seconds_per_point": 17.3561039201104,
        "schedule": "B",
        "families": 4707,
        "inputs": "native",
-       "revision": "b03cf789",
+       "revision": "a8615a8c",
        "g1_configuration": "native/lc",
-       "source": "g1.json processes[gg_ggggg].pyamplicol['native/lc'].batches['16']",
-       "fc_seconds_per_point": 13.928858545434196,
-       "lc_over_fc": 1.1404781568331808,
+       "source": "g1.json processes[gg_ggggg].pyamplicol['native/lc'].batches['64']",
+       "fc_seconds_per_point": 15.892131980108388,
+       "lc_over_fc": 1.092119291598787,
        "configuration": "integrated",
        "considered": [
         {
