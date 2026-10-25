@@ -1365,8 +1365,10 @@ def _required_rows(
         corr = req.get("corr")
         text = _text(req["label"])
         key = _key(text, corr)
-        if _key(text) in known and corr is None:
-            continue  # a G1 row (g g > g g g g, g g > t t~ g g)
+        if key in known:
+            # A G1 row (g g > g g g g, g g > t t~ g g, the timed 2 -> 5 rows;
+            # a corrections label is part of the key: gg_ttxemepg_qcd).
+            continue
         note = notes.get(key, {})
         rec = records.get(key)
         dev_gen = None if rec is None else rec["generation"]
