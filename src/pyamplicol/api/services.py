@@ -817,6 +817,18 @@ class Runtime:
             arithmetic=arithmetic,
         )
 
+    def compile_correlated_rescue(
+        self, destination: os.PathLike[str] | str, *, compiler: str = "g++"
+    ) -> Path:
+        """Prepare a native binary128 current kernel for this exact artifact.
+
+        Compilation uses retained Symbolica instructions; numerical execution
+        only needs the generated library and GCC's quadmath runtime.
+        """
+        from pyamplicol.runtime.native_rescue import compile_correlated_rescue
+
+        return compile_correlated_rescue(self, destination, compiler=compiler)
+
     def clear(self) -> None:
         """Drop warmed execution state while keeping this artifact loaded.
 

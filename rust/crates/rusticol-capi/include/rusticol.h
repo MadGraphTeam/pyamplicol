@@ -364,6 +364,20 @@ int rusticol_runtime_evaluate_correlated_many_f64(
     double *output, size_t output_capacity
 );
 
+/* Explicit native higher-precision current/amplitude mode. The companion
+ * is trusted executable input prepared for this exact artifact; no Symbolica
+ * or Python is loaded at numerical runtime. Sources/model inputs and returned
+ * buffers retain binary64 layout. No automatic fallback or component clamping.
+ */
+int rusticol_runtime_load_correlated_rescue(RusticolRuntimeHandle *handle, const char *path);
+int rusticol_runtime_evaluate_correlated_many_rescued_f64(
+    RusticolRuntimeHandle *handle,
+    const double *momenta, size_t momentum_count, size_t point_count,
+    const RusticolCorrelatedRequest *requests, size_t request_count,
+    const char *const *helicity_ids, size_t helicity_count,
+    double *output, size_t output_capacity
+);
+
 /* Ordinary momenta use [point][external particle][E, px, py, pz]. */
 int rusticol_runtime_evaluate_f64(
     RusticolRuntimeHandle *handle,
