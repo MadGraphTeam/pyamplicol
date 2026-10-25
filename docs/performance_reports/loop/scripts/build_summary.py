@@ -869,6 +869,88 @@ def _fixture_refs(check: dict | None) -> list[dict]:
     return out
 
 
+def _accepted(proc: dict, entry: dict) -> dict:
+    """A user acceptance of the points where a validation check exceeds its
+    tolerance (milestone.json validation_decisions): the check keeps its
+    tolerance and its passed: false. The label's claims are checked here:
+    the accepted points must be exactly the check's points above the
+    tolerance (over every reference and quantity), each within pyAmpliCol's
+    binary64 estimate E at that point, with pyAmpliCol's double-double value
+    within the tolerance of every shown reference (``fixture_stability``
+    rows of the configuration); otherwise the build stops."""
+    name = entry["configuration"]
+    check = proc["pyamplicol"][name]["accuracy_check"]
+    where = f"g1.json processes[{proc['key']}].pyamplicol['{name}'].accuracy_check"
+    tolerance = check["tolerance"]
+    if check["fixture"] != entry["fixture"] or tolerance != entry["tolerance"]:
+        raise ValueError(f"{where}: not the check the decision accepts")
+
+    def worst(row: dict) -> float:
+        return max(v for errors in row["errors"].values() for v in errors.values())
+
+    above = {row["index"]: row for row in check["rows"] if worst(row) > tolerance}
+    if sorted(above) != sorted(entry["points"]):
+        raise ValueError(
+            f"{where}: points above the tolerance {sorted(above)}, accepted"
+            f" {entry['points']}"
+        )
+    rows = {
+        (r["index"], r["arithmetic"]): r
+        for r in proc.get("fixture_stability", [])
+        if r["configuration"] == name and r.get("fixture") == check["fixture"]
+    }
+    points = []
+    for index in entry["points"]:
+        b64, dd = rows.get((index, "double")), rows.get((index, "double-double"))
+        if b64 is None or dd is None:
+            raise ValueError(f"{where}: point {index} has no estimate and DD value")
+        shown = {k: v for k, v in dd["deviation_vs_references"].items() if k in SHOWN}
+        if not shown or b64["estimate"] < worst(above[index]):
+            raise ValueError(f"{where}: point {index} lies outside its estimate")
+        if max(shown.values()) > tolerance:
+            raise ValueError(f"{where}: point {index}'s DD value misses the reference")
+        points.append(
+            {
+                "index": index,
+                "finite": {
+                    k: above[index]["errors"][k]["finite"]
+                    for k in sorted(shown)
+                    if "finite" in above[index]["errors"].get(k, {})
+                },
+                "max_error": worst(above[index]),
+                "estimate": b64["estimate"],
+                "dd_deviation": {k: shown[k] for k in sorted(shown)},
+            }
+        )
+    return {
+        "status": entry["label"],
+        "short": entry["short"],
+        "points": points,
+        "tolerance": tolerance,
+        "passed": check["passed"],
+        "max_error": check["max_error"],
+        "check": where,
+        "source": "milestone.json validation_decisions",
+    }
+
+
+def _accept(rows: list[dict], g1: dict, decisions: dict | None) -> None:
+    """Marks the user-accepted points on the row whose validation cell is
+    the accepted check (validation.accepted); a decision on another check
+    than the cell's stops the build (the acceptance would not be shown)."""
+    procs = {p["key"]: p for p in g1["processes"]}
+    cells = {r["key"]: r["validation"] for r in rows}
+    for entry in (decisions or {}).get("accepted", []):
+        accepted = _accepted(procs[entry["process"]], entry)
+        validation = cells[entry["process"]]
+        if validation.get("source") != accepted["check"]:
+            raise ValueError(
+                f"{entry['process']}: the accepted check {accepted['check']} is"
+                f" not the validation cell's ({validation.get('source')})"
+            )
+        validation["accepted"] = accepted
+
+
 def _meta_revisions(g1: dict, *keys: str) -> set[str]:
     """The revisions of meta keys (a key may list several, comma-separated)."""
     return {
@@ -1928,6 +2010,7 @@ def build() -> tuple[dict, Recency]:
         for key in meas["required_native"]["processes"]
     }
     rows = _g1_rows(g1, specs, decisions, records, recency)
+    _accept(rows, g1, ms.get("validation_decisions"))
     _no_matched_provider(rows, ms, meas, g1)
     rows += _required_rows(
         ms, meas, {r["key"] for r in rows}, g1["gate_factor"], records, recency
@@ -1993,6 +2076,7 @@ def build() -> tuple[dict, Recency]:
             },
             "configurations": _configurations(g1, ms, meas, rows, recency),
             "gate_decisions": decisions,
+            "validation_decisions": ms.get("validation_decisions"),
         },
         "groups": groups,
     }
