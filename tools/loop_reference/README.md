@@ -474,6 +474,7 @@ process listed in `required_processes.json`; nothing in it is process-specific.
 | `required_spec.py` | Loader (derives loop orders), external masses, averaging/symmetry metadata, universal double-pole factor. |
 | `exact_points.py` | Deterministic exact on-shell 2->n points with terminating decimals (massive pairs included); see its docstring for the construction and its representability limit. |
 | `madloop_export.py` | MG5_aMC standalone export (optimized output, external Ninja/Collier, split orders `QCD,QED`), built with MG5's production Fortran flags (Source libraries and `make OLP_static`; `--recompile` rebuilds an existing export); writes `<export>.generation.json` with graph counts, observed orders, `fortran_flags` and generation/export/compile times. |
+| `madloop_ct_parameters.py` | MadLoop's own counterterm-parameter values of a loop UFO at one card: MG5_aMC's Fortran model library as a MadLoop standalone output writes it (`UFO_model_to_mg4`, export format `madloop`, quadruple precision), for every coupling, compiled with the production flags and the quadruple-precision repairs of `references.py`; its own `setpara` reads the card, a driver prints every Laurent piece (`_2EPS_`, `_1EPS_`, `_FIN_`) bit-exactly in double and quadruple precision (JSON). Source of `tests/fixtures/loop/madloop-ct-parameters.json` (below). |
 | `madloop_driver.f90`, `recola_driver.f90`, `openloops_driver.cpp` | Generic native drivers (no Python per point): Born and Laurent coefficients selected by squared split order (MadLoop) or coupling power (Recola/OpenLoops). |
 | `references.py` | `run` one provider (builds its driver, sets matched parameters, pins one CPU, records times and the provider versions read from the trees/libraries actually used), `merge` the available providers into one JSON with all-pairs cross-checks, `summary` (Markdown table) and `watch` (periodic re-merge of long runs that exits once every expected run has finished, failed or died). |
 | `run_required.sh` | Convenience wrapper: points (if absent) + `run` + `merge` under `$LOOP_REFERENCE_ROOT/runs/required/<process>/`. |
@@ -691,6 +692,39 @@ the tree path.
   correctly, the UFO EW counterterms agree with Recola/OpenLoops.
   `exclusions.json` remains available for documented exclusions but none is
   in use.
+
+### MadLoop's counterterm-parameter values (`madloop_ct_parameters.py`)
+
+`tests/fixtures/loop/madloop-ct-parameters.json` holds every Laurent piece of
+every CT parameter MadLoop's model library writes for `loop_qcd_qed_sm_Gmu_py3`
+(143) and `loop_qcd_qed_sm` (139) at the oracle card of
+`tests/unit/test_loop_v2_ew.py` (the `gg_ttx_ew` card, the restricted models'
+other values), in double and quadruple precision; the v2 engine's CT values
+must equal them (`test_counterterm_scalars_equal_madloop`). Produced with
+
+```bash
+python tools/loop_reference/madloop_ct_parameters.py --mg5 <MG5_aMC_v3_7_0> \
+    --ufo <reference>/models/loop_qcd_qed_sm_Gmu_py3 --card card.json \
+    --output <new work directory> --json ml_gmu.json
+```
+
+(`card.json`: {UFO external parameter name: decimal string}; about 2 min,
+mostly compiling the couplings). The UFO is copied into the work directory and
+imported from there with MG5's default restriction, real-mass scheme and
+Feynman gauge, as `madloop_export.py` does; MG5's import writes `py.py` and
+`additional_command` into the current directory. Findings:
+
+* MG5's Fortran `REGLOG`, `REGLOGP`, `REGLOGM`, `REGSQRT` and `GRREGLOG` replace
+  a vanishing imaginary part of either sign by +0 before taking a branch: an
+  argument exactly on the negative real axis takes the side of a positive
+  imaginary part. At real masses that side changes HWcft_UV_EW by 80 % and
+  HMass2_UV_EW by 1.7 % against the -0 side.
+* The quadruple-precision lane reads the card through a binary64 buffer
+  (`MP_LHA_GET_REAL` in `lha_read.f`): its inputs are the card's decimals
+  rounded to binary64, so an exact-decimal comparison differs at 1e-15.
+* Cross-check: the 12 CT pieces of the `g g > t t~ [QCD QED]` G_mu standalone
+  export behind `required/gg_ttx_ew.json`, dumped from that export's own
+  `lib/libmodel.a` at its own param_card, are bit-identical in both precisions.
 
 ### Seven-leg QCD references
 
