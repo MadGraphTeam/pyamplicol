@@ -26,7 +26,15 @@ One run measures one process at one colour accuracy on one checkout:
    cost exceeds ``--budget`` seconds is skipped and recorded as such. A
    failed point raises ``plan_export.FailedPoints`` and ends the run, so a
    completed record has no failed point; rescue is off (no stability check,
-   no escalation), so its rescue rate is zero by construction.
+   no escalation), so its rescue rate is zero by construction. Before the
+   warm-up the run collects and then freezes the heap it holds
+   (``gc.freeze``: the model, the generated slice or the loaded process and
+   the executor move to the collector's permanent generation). A runtime that
+   loads an artifact holds none of the generation's objects; without the
+   freeze, a full collection triggered by an evaluation's garbage walks them
+   all inside a timed block (u u~ > e- e+ d d~ g, leading colour: about
+   0.2-0.3 s per collection, 11-20 ms per point at B = 16 on slice
+   ``7db32901``). The evaluations' own garbage is still collected.
 
 After the timing, the same generated process can also be checked
 (``--stability-points``: stability estimates as ``check_points`` makes
@@ -84,6 +92,7 @@ Usage:
 from __future__ import annotations
 
 import contextlib
+import gc
 import inspect
 import json
 import math
@@ -425,7 +434,8 @@ class Run:
             "dirty": bool(_git("status", "--porcelain", "--untracked-files=no")),
             "host_cpus": sorted(_affinity()),
             "protocol": "binary64, finite part only (poles off), no stability check, "
-            "one thread on one pinned core, warm-up excluded, paired blocks",
+            "one thread on one pinned core, warm-up excluded, paired blocks, "
+            "setup heap frozen out of the cyclic collector",
         }
 
     # -- generation ---------------------------------------------------------
@@ -743,6 +753,15 @@ class Run:
         }
         print(self.key, "accuracy vs providers: max", f"{worst:.2e}", flush=True)
 
+    def freeze_heap(self) -> None:
+        """Collect, then move every object alive to the cyclic collector's
+        permanent generation before the timing (module docstring, step 3);
+        the record states the frozen count."""
+
+        gc.collect()
+        gc.freeze()
+        self.record["gc_frozen_objects"] = gc.get_freeze_count()
+
     def timing(self) -> None:
         """Paired blocks of every B (module docstring). The warm-up of a B
         evaluates ``--warm-up`` points of it (default: the whole block; one
@@ -919,6 +938,7 @@ class Run:
                 self.record["generate_only"] = True
                 return self.record
             self.accuracy()
+            self.freeze_heap()
             self.timing()
             if getattr(self.options, "physical_points", None):
                 self.physical(self.options.physical_points)
