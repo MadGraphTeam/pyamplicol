@@ -35,7 +35,8 @@ tools.loop_benchmark``) and writes one JSON document for the live report
   item 10). The ratio with the providers' means is kept beside it;
 - a configuration measured twice (a repeat) keeps the earlier run's batch
   times as ``earlier_runs``; the later run, with its paired provider run,
-  decides;
+  decides; a later run without an accuracy check or physical rows keeps the
+  earlier run's (``checks_from_earlier_run`` names their revision);
 - the value comparison of pyAmpliCol and the providers on the same stream
   points (Born and finite part, metric |a-b| / max(|a|, |b|, |Born|
   alpha_s/(2 pi)) for the finite part; Recola's finite part converted to
@@ -80,6 +81,9 @@ GATE_FACTOR = 1.30
 GATE_FLOOR_SECONDS = 5e-3
 GATE_FLOOR_STATUS = "below 5 ms: not gated (user 2026-10-24)"
 ADOPT_M = 0.85
+# The checks of a configuration's run that a later run of it without them
+# keeps (``build``).
+CARRIED_CHECKS = ("accuracy_check", "physical")
 # The binary64 bound of the Ward test (test_loop_v2_observables, O10).
 WARD_RELATIVE = 1e-11
 WARD_LANES = 1e-12
@@ -587,6 +591,16 @@ def build(
                         },
                     },
                 ]
+                # A repeat that times another batch only (the seven-gluon
+                # row's B = 64 after B = 16) keeps the earlier run's checks
+                # of the same configuration, with the run they come from.
+                for check in CARRIED_CHECKS:
+                    if not record.get(check) and earlier.get(check):
+                        record[check] = earlier[check]
+                        record.setdefault("checks_from_earlier_run", {})[check] = (
+                            earlier.get("checks_from_earlier_run", {}).get(check)
+                            or earlier["revision"]
+                        )
             entry["pyamplicol"][name] = record
     spreads = [
         half_range([r["median_seconds_per_point"] for r in runs])
@@ -669,6 +683,11 @@ def build(
                 "failed_points": 0,
                 "rescue": "off (no stability check, no escalation)",
                 "earlier_runs": record.get("earlier_runs", []),
+                **(
+                    {"checks_from_earlier_run": record["checks_from_earlier_run"]}
+                    if "checks_from_earlier_run" in record
+                    else {}
+                ),
                 "batches": batches,
                 "values_vs_providers": compare_values(key, mine, provider_values)
                 if record["accuracy"] == "full"
