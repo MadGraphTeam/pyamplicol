@@ -122,26 +122,26 @@
   {
    "sha": "201bece5",
    "wp": "WP3.1 ct-perf",
-   "title": "Counterterm-route generation savings",
+   "title": "CT-route generation savings",
    "detail": "output-identical: loop-request DAG-compile memos, the content-addressed lowered-model IR cache (with Weyl support), lean tree rows, native-trees export memos; CT-route parity with the site oracle not yet reached (A4 closes it)"
   },
   {
    "sha": "8b52179b",
    "wp": "WP3.2 ew-poles",
-   "title": "EW guards and the QED Catani operator",
+   "title": "EW guards, QED Catani operator",
    "detail": "typed fail-closed refusals of electroweak requests with a non-zero width or an external photon (until the complex-mass scheme and alpha(0) per photon land); the QED Catani operator summed per correction in the IR poles, equal to MadLoop's poles on the EW controls to 9.1e-13"
   },
   {
    "sha": "88657260",
    "wp": "lc-perf",
-   "title": "Leading colour never slower than full colour",
+   "title": "LC never slower than FC",
    "detail": "LC-aware closure-block pruning in one linear pass, native tree closures with lane-run chunking and runtime AVX-512/AVX2 widths; at B = 128 LC/FC 0.42 (g g > g g g g) and 0.47 (u u~ > g g g g), full colour about 2x faster at six legs; values bitwise equal"
   },
   {
    "sha": "7db32901",
-   "wp": "addendum G",
+   "wp": "artifact-portability",
    "title": "Portable prepared artifacts",
-   "detail": "binary64 SymJIT -O2 plane applications for every native tree kernel and the parameter program, stored as IR and recompiled at load for the loading CPU (point_inputs native-v2); licence-free binary64; DoubleFloat and arbitrary precision under pyAmpliCol's library key; no host strings; bitwise binary64 after relocation"
+   "detail": "addendum G: binary64 SymJIT -O2 plane applications for every native tree kernel and the parameter program, stored as IR and recompiled at load for the loading CPU (point_inputs native-v2); licence-free binary64; DoubleFloat and arbitrary precision under pyAmpliCol's library key; no host strings; bitwise binary64 after relocation"
   },
   {
    "sha": "1d27426b",
@@ -152,7 +152,7 @@
  ],
  "integrated_tip": "1d27426b",
  "after_integration": [],
- "already_on_loop": "v2 waves 0-1, gates S1 and G0, native executor (WP2.1), colour (WP2.4), stability API (WP2.3), schedule M (WP2.8), tree-EW follow-up, NJet reference, observables (WP2.5), public v2 engine with plan v4 artifacts (WP2.6), counterterms in the recursion (WP2.2), runtime pole selection (WP2.10), Rust A0 (contract-class reuse pass), constant counterterm arguments (ct-assume-fix), addendum F-J, Rust A1-A2 (native loop-request DAG builder), the gate G1 harness (WP2.7), counterterms as plain tree insertions (addendum J, b4d76cc3), the summary-first report, Rust A3 (native counterterm-program builder), WP3.1 G-int (native per-point inputs and generation stages), the user's 5 ms gate rule",
+ "already_on_loop": "v2 waves 0-1 (gates S1, G0), native executor, colour, stability API, schedule M, observables, NJet reference, public v2 engine with plan v4 artifacts, counterterms in the recursion and as plain tree insertions (addendum J), runtime pole selection, Rust A0-A3, the G1 harness, WP3.1 G-int (native per-point inputs and generation stages), the summary-first report",
  "addendum_commits": [
   "b91d23a8",
   "2dd36f65",
@@ -351,7 +351,7 @@
   "what": "short attributions of the registry: a refusal attributed to the engine on loop (with its basis where it is inferred), a capability in development that no configuration generates yet, or one nobody has started, printed in Table 1 only where the most recent configuration of the row refuses or no configuration has a record (scripts/build_summary.py, main-configuration rule); short labels of records and the configuration of a development record where the record does not carry it; measured numbers never come from here",
   "notes": {
    "gg_ttxemepg_ew": {
-    "in_development": "EW loops with massive vector bosons and Goldstones, the UFO's EW counterterms and the complex-mass scheme",
+    "in_development": "massive EW loops, EW counterterms, complex-mass scheme",
     "package": "WP3.2"
    },
    "uux_gggg": {

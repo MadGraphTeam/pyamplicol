@@ -2845,14 +2845,14 @@
      },
      "row_status": {
       "status": "in development",
-      "reason": "EW loops with massive vector bosons and Goldstones, the UFO's EW counterterms and the complex-mass scheme",
+      "reason": "massive EW loops, EW counterterms, complex-mass scheme",
       "package": "WP3.2",
       "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]"
      },
      "generation": {
       "main": {
        "status": "in development",
-       "reason": "EW loops with massive vector bosons and Goldstones, the UFO's EW counterterms and the complex-mass scheme",
+       "reason": "massive EW loops, EW counterterms, complex-mass scheme",
        "package": "WP3.2",
        "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]",
        "configuration": "registry",
@@ -2890,7 +2890,7 @@
       "gate_rule": "G1 (seven-leg rows not timed yet)",
       "main": {
        "status": "in development",
-       "reason": "EW loops with massive vector bosons and Goldstones, the UFO's EW counterterms and the complex-mass scheme",
+       "reason": "massive EW loops, EW counterterms, complex-mass scheme",
        "package": "WP3.2",
        "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]",
        "configuration": "registry",
@@ -2937,7 +2937,7 @@
      "leading_colour": {
       "main": {
        "status": "in development",
-       "reason": "EW loops with massive vector bosons and Goldstones, the UFO's EW counterterms and the complex-mass scheme",
+       "reason": "massive EW loops, EW counterterms, complex-mass scheme",
        "package": "WP3.2",
        "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]",
        "configuration": "registry",
