@@ -76,6 +76,15 @@ executor. The record keeps the stored generation and states the load
 never overwritten, a load of another configuration or native build is
 refused, and a `--generate-only` record is no gate input.
 
+`stability KEY --fixture --points I...` evaluates the reference fixture's
+own points (the accuracy check's: e.g. NJet's ten seven-gluon points at
+mu_R = 1000 GeV, of which only the first three are stream points, at other
+scales) with the same checks, each row with its finite part's deviation
+from every reference of the fixture (`deviation_vs_references`). The gate
+keeps these rows apart (`fixture_stability`), and the report builder takes
+the binary64 estimate and the double-double deviation at the fixture's worst
+point from them.
+
 Run the `pyamplicol` jobs under `taskset -c N` with `RAYON_NUM_THREADS=1`.
 Respect HANDOFF §0.1 for provider generations (no generation expected to
 exceed about 45 minutes).
