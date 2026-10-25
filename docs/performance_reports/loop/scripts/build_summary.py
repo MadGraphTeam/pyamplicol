@@ -1073,10 +1073,14 @@ def _ordered(
 def _g1_validation(
     proc: dict, cid: str, name: str | None, cfg: dict | None, base: str
 ) -> dict | None:
-    """A G1 side's comparison with the providers; None without one."""
+    """A G1 side's comparison with the providers (without a provider run on
+    the stream, its check against its reference fixture); None without
+    either."""
     if cfg is None or cfg.get("generation_error"):
         return None
-    if not cfg.get("values_vs_providers"):
+    if not cfg.get("values_vs_providers") and not _fixture_refs(
+        cfg.get("accuracy_check")
+    ):
         return None
     return _validation_g1(proc, cfg, cid, f"{base}['{name}']", name)
 
