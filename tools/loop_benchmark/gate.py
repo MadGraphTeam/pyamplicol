@@ -36,7 +36,8 @@ tools.loop_benchmark``) and writes one JSON document for the live report
 - a configuration measured twice (a repeat) keeps the earlier run's batch
   times as ``earlier_runs``; the later run, with its paired provider run,
   decides; a later run without an accuracy check or physical rows keeps the
-  earlier run's (``checks_from_earlier_run`` names their revision);
+  earlier run's (``checks_from_earlier_run`` names their revision); a run's
+  checkpoint (``partial``: the rounds it completed) is marked as such;
 - the value comparison of pyAmpliCol and the providers on the same stream
   points (Born and finite part, metric |a-b| / max(|a|, |b|, |Born|
   alpha_s/(2 pi)) for the finite part; Recola's finite part converted to
@@ -720,6 +721,10 @@ def build(
                     if "checks_from_earlier_run" in record
                     else {}
                 ),
+                # A run's checkpoint (written after every round but the last)
+                # standing for a run that did not finish: its batches hold the
+                # completed rounds (``blocks``).
+                **({"partial": True} if record.get("partial") else {}),
                 "batches": batches,
                 "values_vs_providers": compare_values(key, mine, provider_values)
                 if record["accuracy"] == "full"

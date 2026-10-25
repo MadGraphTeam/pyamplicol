@@ -613,8 +613,8 @@ class Run:
         chunk of lanes already compiles every kernel, which the heavy rows
         use), and its time per point estimates each B's cost against
         ``--budget``. Every block prints its time (stage-level progress), and
-        the record is written after every round (``partial``) when a JSON
-        target is given."""
+        the record is written after every round, the last included, and after
+        the physical rows (``partial``) when a JSON target is given."""
 
         options = self.options
         batches = sorted(set(options.batches))
@@ -668,8 +668,9 @@ class Run:
             self.record["batches"] = {
                 str(size): _summary(runs[size]) for size, _ in planned
             }
-            if _round + 1 < options.reps:
-                self.checkpoint(partial=True)
+            # Also after the last round: the checks that follow (physical,
+            # stability) may not finish.
+            self.checkpoint(partial=True)
         for size, _ in planned:
             summary = self.record["batches"][str(size)]
             print(
@@ -778,6 +779,7 @@ class Run:
             self.timing()
             if getattr(self.options, "physical_points", None):
                 self.physical(self.options.physical_points)
+                self.checkpoint(partial=True)
             if getattr(self.options, "stability_points", None):
                 self.stability(self.options.stability_points)
         finally:
