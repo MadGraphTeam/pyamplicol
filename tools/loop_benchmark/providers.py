@@ -123,13 +123,13 @@ def collier_cache(legs: int, version: str | None) -> dict[str, Any]:
 
     threshold = _references().UNCACHED_LEG_THRESHOLD
     if legs < threshold:
-        on, reason = True, f"production (below {threshold} legs)"
+        on, reason = True, f"below {threshold} legs"
     elif version is None:
-        on, reason = None, "unknown COLLIER release at seven legs or more"
+        on, reason = None, f"unknown COLLIER release at {threshold} legs or more"
     elif version in COLLIER_CACHE_DEFECT:
-        on, reason = False, f"COLLIER {version}: global cache defect at N = 7"
+        on, reason = False, f"COLLIER {version} global cache defect at N = 7"
     else:
-        on, reason = True, f"production (COLLIER {version}: no N = 7 cache defect)"
+        on, reason = True, f"COLLIER {version} has no N = 7 cache defect"
     return {"on": on, "collier": version, "reason": reason}
 
 
@@ -185,11 +185,13 @@ def _elf_dynamic(library: Path) -> dict[str, list[str]]:
 
 
 def library_path(library: Path, root: Path) -> list[Path]:
-    """The directories a run of ``library`` (a provider's shared library
-    under ``root``) puts first on ``LD_LIBRARY_PATH``: the RUNPATH entries
-    of the library and of every dependency found through them, in order,
-    each ``relocated`` under ``root``. With them the loader resolves every
-    dependency before it would search a RUNPATH entry of the old root."""
+    """The directories a program linking ``library`` (a provider's shared
+    library under ``root``) searches first, at link time (``-rpath-link``)
+    and at run time (``LD_LIBRARY_PATH`` of that program only): the RUNPATH
+    entries of the library and of every dependency found through them, in
+    order, each ``relocated`` under ``root``. With them the linker and the
+    loader resolve every dependency before they would search a RUNPATH entry
+    of the old root."""
 
     dirs: list[Path] = []
     pending, seen = [library], set()
@@ -209,6 +211,33 @@ def library_path(library: Path, root: Path) -> list[Path]:
                     pending.append(directory / name)
                     break
     return dirs
+
+
+def loaded_libraries(binary: Path, pattern: str) -> dict[str, dict[str, Any]]:
+    """The shared libraries the loader resolves for ``binary`` in the
+    current environment (its own loader in trace mode,
+    ``LD_TRACE_LOADED_OBJECTS``: unlike ``ldd`` it shares the program's C
+    library with ``LD_LIBRARY_PATH``), with ``references.library_version``,
+    for the sonames matching ``pattern``."""
+
+    references = _references()
+    text = subprocess.run(
+        [str(binary)],
+        env={**os.environ, "LD_TRACE_LOADED_OBJECTS": "1"},
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    found = {}
+    for line in text.splitlines():
+        match = re.match(r"\s*(\S+) => (\S+)", line)
+        if match and re.search(pattern, match.group(1)):
+            path = Path(match.group(2))
+            found[match.group(1)] = {
+                "path": str(path),
+                "version": references.library_version(path),
+            }
+    return found
 
 
 @contextlib.contextmanager
@@ -381,8 +410,10 @@ def openloops(
     }
 
 
-def _recola_driver(run: Path, recola_tree: Path) -> Path:
-    """The toolkit's Recola driver with an ``irpoles <0|1>`` command."""
+def _recola_driver(run: Path, recola_tree: Path, link: list[Path]) -> Path:
+    """The toolkit's Recola driver with an ``irpoles <0|1>`` command, linked
+    with ``link`` (``library_path``) as the linker's search path for the
+    libraries Recola's own need (before their RUNPATH)."""
 
     source = (streams.REFERENCE / "recola_driver.f90").read_text()
     patches = (
@@ -428,6 +459,7 @@ def _recola_driver(run: Path, recola_tree: Path) -> Path:
             "-L",
             str(recola_tree),
             f"-Wl,-rpath,{recola_tree}",
+            *(f"-Wl,-rpath-link,{directory}" for directory in link),
             "-lrecola",
             "-o",
             str(binary),
@@ -445,14 +477,14 @@ def recola(
     recola_tree = trees.recola
     run = work / "recola-run"
     run.mkdir(parents=True, exist_ok=True)
-    binary = _recola_driver(run, recola_tree)
     root = trees.root
     dirs = library_path(recola_tree / "librecola.so", root)
+    binary = _recola_driver(run, recola_tree, dirs)
     search = os.pathsep.join(
         [*map(str, dirs), *filter(None, [os.environ.get("LD_LIBRARY_PATH")])]
     )
     with _environment(LD_LIBRARY_PATH=search):
-        linked = references.linked_libraries(binary, r"recola|collier|modelfile")
+        linked = loaded_libraries(binary, r"recola|collier|modelfile")
         outside = [v["path"] for v in linked.values() if not _inside(v["path"], root)]
         collier = [v["version"] for k, v in linked.items() if "collier" in k]
         if outside or len(collier) != 1:
