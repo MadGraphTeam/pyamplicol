@@ -3301,16 +3301,16 @@
       "main": {
        "status": "measured",
        "batch": 64,
-       "seconds_per_point": 15.892131980108388,
-       "uncertainty": 0.10850242426389783,
+       "seconds_per_point": 14.064133413718082,
+       "uncertainty": 0.020820175912198924,
        "stages": {
         "inputs": 0.0,
-        "numerator": 3.8650737645312505,
-        "scatter": 0.011562593859375003,
-        "ninjars": 0.47130050532812495,
-        "masters": 0.043229957562500004,
-        "glue": 0.004260166557287448,
-        "untimed": 11.381238814104195
+        "numerator": 3.571717073953124,
+        "scatter": 0.011016168484374995,
+        "ninjars": 0.42947178781249984,
+        "masters": 0.04097296273437502,
+        "glue": 0.004232865563608357,
+        "untimed": 10.006021950100443
        },
        "inputs": "native",
        "revision": "a8615a8c",
@@ -3409,15 +3409,15 @@
       "main": {
        "status": "measured",
        "batch": 64,
-       "seconds_per_point": 17.3561039201104,
+       "seconds_per_point": 16.176537819046644,
        "schedule": "B",
        "families": 4707,
        "inputs": "native",
        "revision": "a8615a8c",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ggggg].pyamplicol['native/lc'].batches['64']",
-       "fc_seconds_per_point": 15.892131980108388,
-       "lc_over_fc": 1.092119291598787,
+       "fc_seconds_per_point": 14.064133413718082,
+       "lc_over_fc": 1.1501979783033154,
        "configuration": "integrated",
        "considered": [
         {

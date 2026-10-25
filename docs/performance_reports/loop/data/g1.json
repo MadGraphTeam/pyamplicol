@@ -19872,7 +19872,7 @@
      "branch": "HEAD",
      "dirty": false,
      "host_cpus": [
-      134
+      170
      ],
      "native": {
       "directory": "loop-native-v2-slice-4e9b5a9e",
@@ -19913,8 +19913,8 @@
        134
       ],
       "load": {
-       "seconds": 27.952025447040796,
-       "peak_gib": 6.969
+       "seconds": 28.05635390500538,
+       "peak_gib": 6.968
       }
      },
      "structure": {
@@ -20296,7 +20296,7 @@
       }
      ],
      "skipped_batches": {},
-     "max_rss_gib": 26.054,
+     "max_rss_gib": 26.036,
      "generation_error": null,
      "failed_points": 0,
      "rescue": "off (no stability check, no escalation)",
@@ -20326,32 +20326,63 @@
          ]
         }
        }
+      },
+      {
+       "revision": "a8615a8c43dc98222dff0cfd5fd0a1bbbcf98d69",
+       "host_cpus": [
+        134
+       ],
+       "batches": {
+        "16": {
+         "median_seconds_per_point": 15.132767231625621,
+         "min_seconds_per_point": 13.911753417502041,
+         "max_seconds_per_point": 15.42055584218906,
+         "samples_seconds_per_point": [
+          13.911753417502041,
+          15.132767231625621,
+          15.42055584218906
+         ]
+        },
+        "64": {
+         "median_seconds_per_point": 15.892131980108388,
+         "min_seconds_per_point": 14.71011115867077,
+         "max_seconds_per_point": 18.15878085179793,
+         "samples_seconds_per_point": [
+          14.71011115867077,
+          18.15878085179793,
+          15.892131980108388
+         ]
+        }
+       }
       }
      ],
+     "checks_from_earlier_run": {
+      "physical": "a8615a8c43dc98222dff0cfd5fd0a1bbbcf98d69"
+     },
      "batches": {
       "16": {
        "blocks": 3,
        "points_per_block": 16,
-       "median_seconds_per_point": 15.132767231625621,
-       "min_seconds_per_point": 13.911753417502041,
-       "max_seconds_per_point": 15.42055584218906,
+       "median_seconds_per_point": 13.624840094751562,
+       "min_seconds_per_point": 13.446206436878128,
+       "max_seconds_per_point": 13.87069154006167,
        "samples_seconds_per_point": [
-        13.911753417502041,
-        15.132767231625621,
-        15.42055584218906
+        13.624840094751562,
+        13.87069154006167,
+        13.446206436878128
        ],
        "stages_per_point": {
-        "assembly": 0.004358901038358454,
-        "dressing": 3.3794843873125,
-        "factors": 0.092876978625,
-        "input conversion": 5.06395663251169e-05,
-        "other": 10.981569051685767,
-        "python point parameters": 3.660893708001822e-05,
-        "reduction": 0.47618181012500005,
-        "reduction: masters": 0.0422696944375,
-        "reduction: masters (oneloopmaster)": 0.0013131389375000003,
-        "scatter": 0.0100848649375,
-        "seeds": 0.139720378875
+        "assembly": 0.004238313893438317,
+        "dressing": 3.2831235324999994,
+        "factors": 0.08850591599999999,
+        "input conversion": 4.901581269223243e-05,
+        "other": 9.619122257040207,
+        "python point parameters": 3.408081101952121e-05,
+        "reduction": 0.46083747500000005,
+        "reduction: masters": 0.040901383625,
+        "reduction: masters (oneloopmaster)": 0.001305785125,
+        "scatter": 0.00972733675,
+        "seeds": 0.1386804603125
        },
        "counts_per_block": {
         "dressing work (modelled complex MAC per lane)": 4063048008,
@@ -20373,10 +20404,10 @@
        "throughput": {
         "work_per_lane_per_chunk": 4063048008.0,
         "useful_cmac_per_point": 4063048008.0,
-        "kernel_cmac_per_second": 1202268613.2990532,
-        "useful_cmac_per_second": 1202268613.2990532
+        "kernel_cmac_per_second": 1237555628.894083,
+        "useful_cmac_per_second": 1237555628.894083
        },
-       "uncertainty": 0.04985216522506894,
+       "uncertainty": 0.015577617800705738,
        "gate": {
         "status": "no matched provider timing",
         "missing": {
@@ -20388,26 +20419,26 @@
       "64": {
        "blocks": 3,
        "points_per_block": 64,
-       "median_seconds_per_point": 15.892131980108388,
-       "min_seconds_per_point": 14.71011115867077,
-       "max_seconds_per_point": 18.15878085179793,
+       "median_seconds_per_point": 14.064133413718082,
+       "min_seconds_per_point": 13.627630715984196,
+       "max_seconds_per_point": 14.213266179436687,
        "samples_seconds_per_point": [
-        14.71011115867077,
-        18.15878085179793,
-        15.892131980108388
+        14.213266179436687,
+        14.064133413718082,
+        13.627630715984196
        ],
        "stages_per_point": {
-        "assembly": 0.004179033698164858,
-        "dressing": 3.6257274840937503,
-        "factors": 0.09318295007812502,
-        "input conversion": 4.8670219257473946e-05,
-        "other": 11.381238814104195,
-        "python point parameters": 3.2462639865116216e-05,
-        "reduction": 0.514530462890625,
-        "reduction: masters": 0.043229957562500004,
-        "reduction: masters (oneloopmaster)": 0.0013656959687500002,
-        "scatter": 0.011562593859375003,
-        "seeds": 0.146163330359375
+        "assembly": 0.004153067937295418,
+        "dressing": 3.343650210921874,
+        "factors": 0.09010860703125002,
+        "input conversion": 4.833298589801416e-05,
+        "other": 10.006021950100443,
+        "python point parameters": 3.146464041492436e-05,
+        "reduction": 0.47044475054687485,
+        "reduction: masters": 0.04097296273437502,
+        "reduction: masters (oneloopmaster)": 0.0013746263281250001,
+        "scatter": 0.011016168484374995,
+        "seeds": 0.137958256
        },
        "counts_per_block": {
         "dressing work (modelled complex MAC per lane)": 16252192032,
@@ -20429,10 +20460,10 @@
        "throughput": {
         "work_per_lane_per_chunk": 4063048008.0,
         "useful_cmac_per_point": 4063048008.0,
-        "kernel_cmac_per_second": 1120615938.6839736,
-        "useful_cmac_per_second": 1120615938.6839736
+        "kernel_cmac_per_second": 1215153425.6568606,
+        "useful_cmac_per_second": 1215153425.6568606
        },
-       "uncertainty": 0.10850242426389783,
+       "uncertainty": 0.020820175912198924,
        "gate": {
         "status": "no matched provider timing",
         "missing": {
@@ -20449,7 +20480,7 @@
      "branch": "HEAD",
      "dirty": false,
      "host_cpus": [
-      142
+      155
      ],
      "native": {
       "directory": "loop-native-v2-slice-4e9b5a9e",
@@ -20490,8 +20521,8 @@
        142
       ],
       "load": {
-       "seconds": 36.00215790607035,
-       "peak_gib": 9.27
+       "seconds": 36.011549946968444,
+       "peak_gib": 9.257
       }
      },
      "structure": {
@@ -20628,7 +20659,7 @@
       }
      ],
      "skipped_batches": {},
-     "max_rss_gib": 32.131,
+     "max_rss_gib": 32.141,
      "generation_error": null,
      "failed_points": 0,
      "rescue": "off (no stability check, no escalation)",
@@ -20650,32 +20681,63 @@
          ]
         }
        }
+      },
+      {
+       "revision": "a8615a8c43dc98222dff0cfd5fd0a1bbbcf98d69",
+       "host_cpus": [
+        142
+       ],
+       "batches": {
+        "16": {
+         "median_seconds_per_point": 16.495980065868935,
+         "min_seconds_per_point": 15.971858131502813,
+         "max_seconds_per_point": 16.563116581062786,
+         "samples_seconds_per_point": [
+          15.971858131502813,
+          16.563116581062786,
+          16.495980065868935
+         ]
+        },
+        "64": {
+         "median_seconds_per_point": 17.3561039201104,
+         "min_seconds_per_point": 16.252207385203292,
+         "max_seconds_per_point": 17.503946337265006,
+         "samples_seconds_per_point": [
+          17.503946337265006,
+          17.3561039201104,
+          16.252207385203292
+         ]
+        }
+       }
       }
      ],
+     "checks_from_earlier_run": {
+      "physical": "a8615a8c43dc98222dff0cfd5fd0a1bbbcf98d69"
+     },
      "batches": {
       "16": {
        "blocks": 3,
        "points_per_block": 16,
-       "median_seconds_per_point": 16.495980065868935,
-       "min_seconds_per_point": 15.971858131502813,
-       "max_seconds_per_point": 16.563116581062786,
+       "median_seconds_per_point": 15.249049684745842,
+       "min_seconds_per_point": 14.98392901574698,
+       "max_seconds_per_point": 15.261248968003201,
        "samples_seconds_per_point": [
-        15.971858131502813,
-        16.563116581062786,
-        16.495980065868935
+        14.98392901574698,
+        15.261248968003201,
+        15.249049684745842
        ],
        "stages_per_point": {
-        "assembly": 0.004226334793202113,
-        "dressing": 2.0940872960625,
-        "factors": 0.0842652796875,
-        "input conversion": 4.9382120778318495e-05,
-        "other": 13.737588967663076,
-        "python point parameters": 3.5071439924649894e-05,
-        "reduction": 0.48053921224999996,
-        "reduction: masters": 0.03986834743750001,
-        "reduction: masters (oneloopmaster)": 0.0013162731250000003,
-        "scatter": 0.010453861375000002,
-        "seeds": 0.0611930160625
+        "assembly": 0.004230023630952928,
+        "dressing": 2.04738910725,
+        "factors": 0.0808327125,
+        "input conversion": 4.991087189409882e-05,
+        "other": 12.54119745255553,
+        "python point parameters": 3.498012665659189e-05,
+        "reduction": 0.4564136968125,
+        "reduction: masters": 0.039629206875,
+        "reduction: masters (oneloopmaster)": 0.0013112776875,
+        "scatter": 0.009676437,
+        "seeds": 0.038946584125
        },
        "counts_per_block": {
         "dressing work (modelled complex MAC per lane)": 2379663816,
@@ -20697,10 +20759,10 @@
        "throughput": {
         "work_per_lane_per_chunk": 2379663816.0,
         "useful_cmac_per_point": 2379663816.0,
-        "kernel_cmac_per_second": 1136372786.595128,
-        "useful_cmac_per_second": 1136372786.595128
+        "kernel_cmac_per_second": 1162291919.778895,
+        "useful_cmac_per_second": 1162291919.778895
        },
-       "uncertainty": 0.01792128892005994,
+       "uncertainty": 0.009093024089679297,
        "gate": {
         "status": "no gate (colour approximation)"
        }
@@ -20708,26 +20770,26 @@
       "64": {
        "blocks": 3,
        "points_per_block": 64,
-       "median_seconds_per_point": 17.3561039201104,
-       "min_seconds_per_point": 16.252207385203292,
-       "max_seconds_per_point": 17.503946337265006,
+       "median_seconds_per_point": 16.176537819046644,
+       "min_seconds_per_point": 15.82409235207706,
+       "max_seconds_per_point": 16.34542716879696,
        "samples_seconds_per_point": [
-        17.503946337265006,
-        17.3561039201104,
-        16.252207385203292
+        15.82409235207706,
+        16.34542716879696,
+        16.176537819046644
        ],
        "stages_per_point": {
-        "assembly": 0.004096314389244071,
-        "dressing": 2.0425846661406246,
-        "factors": 0.08075025837500001,
-        "input conversion": 4.7954421461327e-05,
-        "other": 14.686522257465686,
-        "python point parameters": 3.0151060855132528e-05,
-        "reduction": 0.47590592826562517,
-        "reduction: masters": 0.04044388987499999,
-        "reduction: masters (oneloopmaster)": 0.0013138972812500004,
-        "scatter": 0.010950639546875,
-        "seeds": 0.053004703937499995
+        "assembly": 0.004060311475768685,
+        "dressing": 2.0564968342968752,
+        "factors": 0.07077435645312502,
+        "input conversion": 4.6361876229639165e-05,
+        "other": 13.483208412099303,
+        "python point parameters": 3.0399640309042297e-05,
+        "reduction": 0.475637648171875,
+        "reduction: masters": 0.04032535970312501,
+        "reduction: masters (oneloopmaster)": 0.0013126110312500002,
+        "scatter": 0.010540616546874998,
+        "seeds": 0.046554852609375
        },
        "counts_per_block": {
         "dressing work (modelled complex MAC per lane)": 9518655264,
@@ -20749,10 +20811,10 @@
        "throughput": {
         "work_per_lane_per_chunk": 2379663816.0,
         "useful_cmac_per_point": 2379663816.0,
-        "kernel_cmac_per_second": 1165025790.826224,
-        "useful_cmac_per_second": 1165025790.826224
+        "kernel_cmac_per_second": 1157144410.0051906,
+        "useful_cmac_per_second": 1157144410.0051906
        },
-       "uncertainty": 0.036060482174554535,
+       "uncertainty": 0.016113918273231123,
        "gate": {
         "status": "no gate (colour approximation)"
        }
@@ -21963,14 +22025,14 @@
    "process": "gg_ggggg",
    "configuration": "native/full",
    "batch": 64,
-   "total": 15.892131980108388,
-   "dressing": 3.7189104341718755,
-   "reduction": 0.514530462890625,
-   "masters": 0.043229957562500004,
-   "native_loop_rest": 0.15772592421874976,
-   "outside_native_loop": 11.500965158827139,
-   "outer_factor": 3.753951541200355,
-   "kernel_cmac_per_second": 1120615938.6839736,
+   "total": 14.064133413718082,
+   "dressing": 3.433758817953124,
+   "reduction": 0.47044475054687485,
+   "masters": 0.04097296273437502,
+   "native_loop_rest": 0.1489744244843748,
+   "outside_native_loop": 10.010955420733708,
+   "outer_factor": 3.6023053529254225,
+   "kernel_cmac_per_second": 1215153425.6568606,
    "design": {
     "recipe_finite_only": [
      2.70677155,
@@ -21986,12 +22048,12 @@
     ],
     "g0_dressing": null,
     "total_over_recipe": [
-     2.00559502033189,
-     5.871249821621772
+     1.7749006851404183,
+     5.195907062684356
     ],
     "reduction_over_model": [
-     0.5136782706396338,
-     0.602465763225214
+     0.469665575357357,
+     0.5508456274896344
     ]
    }
   },
@@ -21999,14 +22061,14 @@
    "process": "gg_ggggg",
    "configuration": "native/lc",
    "batch": 64,
-   "total": 17.3561039201104,
-   "dressing": 2.1233349245156248,
-   "reduction": 0.47590592826562517,
-   "masters": 0.04044388987499999,
-   "native_loop_rest": 0.06395534348437482,
-   "outside_native_loop": 14.692907723844774,
-   "outer_factor": 6.677374242382714,
-   "kernel_cmac_per_second": 1165025790.826224,
+   "total": 16.176537819046644,
+   "dressing": 2.12727119075,
+   "reduction": 0.475637648171875,
+   "masters": 0.04032535970312501,
+   "native_loop_rest": 0.057095469156250356,
+   "outside_native_loop": 13.516533510968518,
+   "outer_factor": 6.214792303577933,
+   "kernel_cmac_per_second": 1157144410.0051906,
    "design": {
     "recipe_finite_only": [
      1.074777298,
@@ -22022,12 +22084,12 @@
     ],
     "g0_dressing": null,
     "total_over_recipe": [
-     6.138375936844157,
-     16.14855835939921
+     5.721195894363703,
+     15.051060204889666
     ],
     "reduction_over_model": [
-     0.9502344673155066,
-     1.1144789794076289
+     0.9496987963418225,
+     1.1138507196879661
     ]
    }
   }
@@ -22045,11 +22107,11 @@
    "outer_factor": 2.299309291150254,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    0.0009448128628215053,
+    0.0009308474285331329,
     0.003452142800122572
    ],
    "measured": 0.002212954491369601,
@@ -22068,11 +22130,11 @@
    "outer_factor": 5.040043434271078,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    0.0008102968584036112,
+    0.0007949908715877524,
     0.0027786998057303127
    ],
    "measured": 0.0015636136249668198,
@@ -22091,11 +22153,11 @@
    "outer_factor": 3.5201986038027644,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    0.392650772584837,
+    0.3859096191115735,
     1.4446579763057479
    ],
    "measured": 0.9132524525630288,
@@ -22114,11 +22176,11 @@
    "outer_factor": 10.6555436540639,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    0.45285965458629823,
+    0.4426570121792041,
     1.6201656869789591
    ],
    "measured": 1.0326115865000247,
@@ -22134,17 +22196,17 @@
     7.923898802600001
    ],
    "outer_class": "gg_ggggg",
-   "outer_factor": 3.753951541200355,
+   "outer_factor": 3.6023053529254225,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    8.118066501597244,
-    29.870837091224466
+    7.654719927964107,
+    28.664162328444437
    ],
-   "measured": 15.892131980108388,
+   "measured": 14.064133413718082,
    "gate": null,
    "headroom": null
   },
@@ -22157,17 +22219,17 @@
     2.8274749052000008
    ],
    "outer_class": "gg_ggggg",
-   "outer_factor": 6.677374242382714,
+   "outer_factor": 6.214792303577933,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    5.448255512233655,
-    19.679863135873116
+    4.954019080573282,
+    18.31652046338626
    ],
-   "measured": 17.3561039201104,
+   "measured": 16.176537819046644,
    "gate": null,
    "headroom": null
   },
@@ -22183,11 +22245,11 @@
    "outer_factor": 2.6544512942066856,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    1.8124830037561024,
+    1.7872454830790134,
     6.921703372214733
    ],
    "measured": 3.1177243414922486,
@@ -22206,11 +22268,11 @@
    "outer_factor": 10.050988268956797,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    1.5202849127096527,
+    1.4798229991434968,
     5.742435151201037
    ],
    "measured": 3.700961505961459,
@@ -22229,11 +22291,11 @@
    "outer_factor": 1.6937006957692986,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    0.03186077907869732,
+    0.031166994974981807,
     0.1211745843907085
    ],
    "measured": 0.08305721526539855,
@@ -22252,11 +22314,11 @@
    "outer_factor": 7.493991047215449,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    0.018486779566006264,
+    0.018001928371724735,
     0.06835042355816243
    ],
    "measured": 0.05265436016361491,
@@ -22275,11 +22337,11 @@
    "outer_factor": 2.112856411605255,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    0.008864875299762789,
+    0.008695535947394452,
     0.036963956919065656
    ],
    "measured": 0.024724086812057067,
@@ -22298,11 +22360,11 @@
    "outer_factor": 6.194476724800629,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    0.005482402030906126,
+    0.0053452663157956565,
     0.02189932060188019
    ],
    "measured": 0.02099162727336079,
@@ -22321,11 +22383,11 @@
    "outer_factor": 2.5960999420032107,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    0.11124165688965516,
+    0.10905012408790986,
     0.4213033727064576
    ],
    "measured": 0.1828452865156578,
@@ -22344,11 +22406,11 @@
    "outer_factor": 10.446236920079926,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    0.11868207456412146,
+    0.11628346990386874,
     0.43675143333863803
    ],
    "measured": 0.21653393667929777,
@@ -22367,11 +22429,11 @@
    "outer_factor": 2.814161228332483,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    0.05950121460580817,
+    0.058240084094277784,
     0.22446680540013267
    ],
    "measured": 0.1526493463125007,
@@ -22390,11 +22452,11 @@
    "outer_factor": 25.544574146082695,
    "outer_inferred": false,
    "ninjars_over_model": [
-    0.5136782706396338,
+    0.469665575357357,
     1.752379170098847
    ],
    "estimate": [
-    0.08042536466026233,
+    0.07877266488999195,
     0.2949721191833504
    ],
    "measured": 0.18501977082814847,
@@ -22414,7 +22476,7 @@
  "previous_development_side": "native_revision 889af02c, native_commit 39824f9b, native_build loop-native-measure-g1-genscale-39824f9b: its native/full and native/lc runs are earlier_runs of the integrated configuration (bitwise-equal binary64 values at every timed point); its native/full/L1, native/*/M and stability rows stay as development history",
  "repeats": "uux_uuxg B=128 open in the first integrated run (1.00 of the limit, band 0.90-1.09): single repeat with B = 1 8 32 128 decides (MASTER_PLAN 5.8 item 10)",
  "slice_tool_revisions": "b03cf789,29393525,60d3434f,439511db,a03e4062,a8615a8c",
- "seven_leg_rows": "package measure-g1-7leg (2026-10-24/25): the 2->5 rows on the integrated configuration of slice_revision (its engine: src and rust equal at every slice_tool_revisions entry; native per-point inputs, slice_build, schedule B, 16 lanes), full and leading colour, binary64 finite part, stability checks off, one thread pinned to one core of 128-175, RAYON_NUM_THREADS=1, paired blocks over 3 rounds after a 16-point warm-up per B; B = 16 and 128, except g g > g g g g g (top-free, particle_veto [t], N_f = 5): B = 16 and 64, since 3 rounds of B = 128 do not fit in about 1 h (14-17 s/pt x 128 x 3 = 90-110 min). Its generation (44 min full colour, 50 min leading colour, plus a 7-9 min export) is stored once per colour accuracy as the artifact's loop runtime member with native point inputs (tools.loop_benchmark pyamplicol --store, revision a8615a8c) and timed from the loaded process (--load, as Runtime.load: nothing regenerated; values bitwise equal to the generating harness's earlier runs at every common timed point); its timing is the -r5 repeat on quiet CCXs (cores 170 and 155, session 5; the -r3 runs shared their CCX with another user's jobs and keep their checks, the -r4 repeat was stopped by a session limit). Its speed is reported without a gate (no matched provider, ADDENDUM H). The package branch also merged work/v2-slice 19083c10 and 8b52179b (ct-perf and ew-poles batch 1: generation-only and output-identical for these QCD requests, not on loop): the timed engine stays slice_revision's",
+ "seven_leg_rows": "package measure-g1-7leg (2026-10-24/25): the 2->5 rows on the integrated configuration of slice_revision (its engine: src and rust equal at every slice_tool_revisions entry; native per-point inputs, slice_build, schedule B, 16 lanes), full and leading colour, binary64 finite part, stability checks off, one thread pinned to one core of 128-175, RAYON_NUM_THREADS=1, paired blocks over 3 rounds after a 16-point warm-up per B; B = 16 and 128, except g g > g g g g g (top-free, particle_veto [t], N_f = 5): B = 16 and 64, since 3 rounds of B = 128 do not fit in about 1 h (14-17 s/pt x 128 x 3 = 90-110 min). Its generation (44 min full colour, 50 min leading colour, plus a 7-9 min export) is stored once per colour accuracy as the artifact's loop runtime member with native point inputs (tools.loop_benchmark pyamplicol --store, revision a8615a8c) and timed from the loaded process (--load, as Runtime.load: nothing regenerated; values bitwise equal to the generating harness's earlier runs at every common timed point); its timing is the -r5 repeat on quiet CCXs (cores 170 and 155, session 5; the -r3 runs shared their CCX with another user's jobs and keep their checks, the -r4 repeat was stopped by a session limit). Its speed is reported without a gate (no matched provider, ADDENDUM H). The package branch also merged work/v2-slice 19083c10 and 8b52179b (ct-perf and ew-poles batch 1, not on loop): the timed engine stays slice_revision's; at 25251bf8 (src and rust of the 8b52179b merge) u u~ > e- e+ d d~ g (FC) and g g > t t~ e- e+ g (LC) regenerate with equal structure and bitwise-equal values at the 16 points of their B = 16 block (records/head-check)",
  "seven_leg_records": "workspace/reports/engine-v2/measure-g1-7leg/records (runs, logs, scripts; the stored-process runs of sessions 4-5 with their generate-only records in runs-store/; runs-not-used/: superseded or stopped runs); provider timings of uux_ggggg imported from the reference campaign (runs/required/uux_ggggg under the reference root), none for gg_ggggg (HANDOFF 0.1)",
  "seven_leg_dirty_records": "m7-uux_emepddxg-lc, m7-uux_emepggg-full and m7-stability-uux_emepggg were taken on a dirty tree (revision b03cf789; the uncommitted edits were gate.py, the gate CLI help text and the report builder, committed as 29393525, 0460220c, 60d3434f); session 5 repeated them on the clean a8615a8c (the -r2 records, which decide): bitwise-equal values at every timed point, equal accuracy checks and physical rows; the dirty runs stay as earlier runs",
  "seven_leg_checks": "values at the timed points: every full-colour row against the providers on the stream (16 points; u u~ > g g g g g: the reference campaign's 3 points, MadLoop and Recola) and its required fixture; g g > g g g g g against NJet double-double at its 10 points (the stream's first 3) at mu_R = 1000 GeV, max 1.59e-8 (tolerance 2e-8). Physical rows: the double pole over the Born against the universal -(alpha_s/2pi) sum C_i at the run's colour accuracy. Rotation: stability rows (rotation-0 and reduction-direction, binary64). Ward (one gluon polarisation replaced by its momentum, the O10 bound): g g > g g g (5 legs, c = 1 and i) and g g > g g g g (6 legs, c = 1) pass; NOT run at 7 legs: the Ward mode forms its per-point inputs in Python with full tree kernels (the native trees take no literal sources), one binary64 evaluation took 1-2 s at 4 legs, 33-43 s at 5 and 2,659-2,860 s at 6 legs (x40-80 per leg), so a seven-gluon Ward evaluation needs native Ward inputs (estimated tens of hours per evaluation in Python; not extrapolated into any result)"
