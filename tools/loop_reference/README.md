@@ -511,7 +511,8 @@ HEPTools archives in a MadLoop export's `MadLoop_makefile_definitions`
 (`LOOP_LIBS`), OpenLoops' compiled-in `install_path` (where it loads
 `proclib/` from), NJet's `pkg-config` files and RUNPATHs. After the working
 root moved on 2026-10-24 every run read the old tree until the trees were
-relocated (`workspace/reports/engine-v2/reference-relocate/REPORT.md`).
+relocated (package reference-relocate,
+`workspace/reports/engine-v2/reference-relocate/`: inventory, scripts, evidence).
 `references.py run` therefore refuses, before linking or loading anything, a
 MadLoop export, `LOOP_LIBS` archive, provider tree or (recursive) library
 RUNPATH entry outside `--reference-root` (default `$LOOP_REFERENCE_ROOT`;
