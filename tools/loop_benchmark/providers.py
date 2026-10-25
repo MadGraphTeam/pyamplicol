@@ -540,7 +540,12 @@ def imported(spec: dict, provider: str, trees: Trees) -> dict[str, Any]:
     ``protocol_mode`` says whether its settings are the gate protocol's
     (MadLoop: the production stability setting on a production build, poles
     included as always; Recola: no IR-pole evaluation); a run outside the
-    protocol is reported beside the gate, never in it (``gate.py``)."""
+    protocol is reported beside the gate, never in it (``gate.py``). A Recola
+    run with the protocol's Collier cache setting that also evaluates the IR
+    poles does the production work and more (three ``compute_amplitude``
+    calls per point instead of one): its time bounds the production time
+    from above (``production_upper_bound``, the reason), which the report
+    uses as a bound only, never as a limit or an extrapolated time."""
 
     relative = spec[provider]["timing"]
     path = trees.root / relative
@@ -556,6 +561,7 @@ def imported(spec: dict, provider: str, trees: Trees) -> dict[str, Any]:
     ):
         raise RuntimeError(f"{relative}: its points are not the stream's first points")
     settings = data.get("settings", {})
+    bound = None
     if provider == "madloop":
         flags = settings.get("fortran_flags", {})
         protocol = bool(flags.get("production_build")) and "production" in str(
@@ -568,11 +574,17 @@ def imported(spec: dict, provider: str, trees: Trees) -> dict[str, Any]:
         )
     elif provider == "recola":
         poles = settings.get("compute_ir_poles")
+        cache = settings.get("collier_cache")
         protocol = poles == 0
-        mode = (
-            f"reference campaign: compute_ir_poles {poles}, Collier cache "
-            f"{settings.get('collier_cache')}"
-        )
+        mode = f"reference campaign: compute_ir_poles {poles}, Collier cache {cache}"
+        uncached = len(spec["pdgs"]) >= _references().UNCACHED_LEG_THRESHOLD
+        if poles == 1 and cache == ("off" if uncached else "on"):
+            bound = (
+                "the run evaluates the IR poles (compute_ir_poles 1: three"
+                " compute_amplitude calls per point instead of one) with the"
+                f" protocol's Collier cache ({cache}), so the production-mode"
+                " time is at most this time"
+            )
     else:
         raise RuntimeError(f"no import of {provider} timings")
     rows = [
@@ -595,6 +607,8 @@ def imported(spec: dict, provider: str, trees: Trees) -> dict[str, Any]:
         for key in ("initial_call_seconds", "generation_seconds")
         if key in data
     }
+    if bound is not None and not protocol:
+        out["production_upper_bound"] = bound
     return out
 
 

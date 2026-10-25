@@ -392,12 +392,22 @@ def missing_providers(key: str, record: dict[str, Any] | None) -> dict[str, str]
 
 
 def outside_protocol(record: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
-    """Imported timings outside the protocol: median seconds and mode."""
+    """Imported timings outside the protocol: median seconds and mode, and
+    the reason where the time bounds the provider's production time from
+    above (``providers.imported``: never a limit)."""
 
     if record is None:
         return {}
     return {
-        name: {"seconds": result["median_seconds_per_point"], "mode": result["mode"]}
+        name: {
+            "seconds": result["median_seconds_per_point"],
+            "mode": result["mode"],
+            **(
+                {"production_upper_bound": result["production_upper_bound"]}
+                if "production_upper_bound" in result
+                else {}
+            ),
+        }
         for name, result in record["providers"].items()
         if result.get("protocol_mode") is False and "median_seconds_per_point" in result
     }

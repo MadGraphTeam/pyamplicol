@@ -362,7 +362,19 @@ def _largest_batch(cfg: dict | None) -> str | None:
 
 
 def _provider_runtime(proc: dict) -> dict:
+    """The providers' production-mode times of a G1 row and the fastest.
+
+    A matched provider's timing outside the protocol is shown beside the
+    cell, never a gate limit. Where it does the production work and more
+    (``production_upper_bound``, set by the gate tool's import: u u~ >
+    g g g g g, Recola's reference run also evaluates the IR poles) it bounds
+    that provider's production time from above, so the fastest provider's
+    production time is at most it: below the fastest protocol-mode time it
+    becomes the fastest as a bound (``fastest.bound`` "upper"), and the
+    ratio to it is a lower bound of the ratio to the fastest provider
+    (``_timing_of``). Never extrapolated, never a limit."""
     out = {}
+    bounds = []
     for name in PROVIDERS:
         rec = (proc.get("providers") or {}).get(name)
         if rec is None:
@@ -370,14 +382,16 @@ def _provider_runtime(proc: dict) -> dict:
         elif "unavailable" in rec:
             out[name] = {"status": "unavailable", "reason": rec["unavailable"]}
             if "median_seconds_per_point" in rec:
-                # A matched provider's timing outside the protocol (u u~ >
-                # g g g g g: Recola's reference run computes the IR poles):
-                # shown beside the cell, never a gate limit.
                 out[name]["outside_protocol"] = {
                     "seconds_per_point": rec["median_seconds_per_point"],
                     "points": rec["points"],
                     "mode": rec["mode"],
                 }
+                if "production_upper_bound" in rec:
+                    out[name]["outside_protocol"]["production_upper_bound"] = rec[
+                        "production_upper_bound"
+                    ]
+                    bounds.append((name, rec["median_seconds_per_point"]))
         else:
             entry = {
                 "status": "measured",
@@ -392,16 +406,29 @@ def _provider_runtime(proc: dict) -> dict:
         (n, v["seconds_per_point"]) for n, v in out.items() if "seconds_per_point" in v
     ]
     fastest = min(timed, key=lambda x: x[1]) if timed else None
-    return {
-        "providers": out,
-        "fastest": None
+    best = (
+        None
         if fastest is None
         else {
             "name": NAMES[fastest[0]],
             "key": fastest[0],
             "seconds_per_point": fastest[1],
-        },
-    }
+        }
+    )
+    bound = min(bounds, key=lambda x: x[1]) if bounds else None
+    if bound is not None and (fastest is None or bound[1] < fastest[1]):
+        best = {
+            "name": NAMES[bound[0]],
+            "key": bound[0],
+            "seconds_per_point": bound[1],
+            "bound": "upper",
+            "basis": f"{NAMES[bound[0]]}'s timing outside the protocol bounds its"
+            " production time from above ("
+            + out[bound[0]]["outside_protocol"]["production_upper_bound"]
+            + "); the fastest provider's production time is at most it",
+            "protocol_fastest": best,
+        }
+    return {"providers": out, "fastest": best}
 
 
 def _provider_generation_g1(proc: dict) -> dict:
@@ -550,6 +577,10 @@ def _timing_of(
     }
     if fastest is not None:
         out["ratio_to_fastest"] = t / fastest["seconds_per_point"]
+        if fastest.get("bound") == "upper":
+            # The fastest provider's production time is at most the bound,
+            # so the ratio to it is at least this (_provider_runtime).
+            out["ratio_to_fastest_bound"] = "lower"
     gate = rec.get("gate", {})
     if "ratio_to_binding_limit" in gate:
         # Below the user's 5 ms floor the gate tool's verdict is its floor
