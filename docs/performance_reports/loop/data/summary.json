@@ -206,6 +206,25 @@
     "applies": "a process whose pyAmpliCol batched time per point is below 5 ms has no blocking gate: its ratio and band stay as measured and are shown, its verdict is the label, at every batch size of that configuration (B = 1 included); the batched time is the configuration's own at its largest batch above 1, and for a configuration timed at B = 1 only (the one-lane runs) the configuration on loop's; it takes precedence over a decision; the exact-rational vs binary64 input question is therefore moot and the protocol stays",
     "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts)"
    }
+  },
+  "validation_decisions": {
+   "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-25 ~20:05 UTC (USER decision, binding: the O(1e-8) relative binary64 discrepancy of g g > g g g g g against NJet is acceptable; mark the accepted points explicitly, keep the 2e-8 fixture tolerance, not a defect to route)",
+   "what": "user acceptances of the points where a validation check exceeds its tolerance: the check, its tolerance and its passed: false stay as measured (never widened); the accepted points are marked and shown with the label instead of a failure. scripts/build_summary.py (_accepted) requires the accepted points to be exactly the check's points above the tolerance, each within pyAmpliCol's binary64 estimate E there and with pyAmpliCol's double-double value on the shown reference within the tolerance, and stops otherwise",
+   "accepted": [
+    {
+     "process": "gg_ggggg",
+     "configuration": "native/full",
+     "fixture": "gg_ggggg_njet",
+     "points": [
+      4,
+      8
+     ],
+     "tolerance": 2e-08,
+     "label": "accepted (user 2026-10-25): O(1e-8) binary64, within the estimate, DD = NJet",
+     "short": "accepted (user 2026-10-25)",
+     "reason": "binary64 deviations from NJet's double-double values 3.73e-8 (fixture point 4) and 2.2e-8 (point 8) at the fixture's mu_R = 1000 GeV, each within pyAmpliCol's binary64 estimate E (rotation and reduction direction); pyAmpliCol's double-double values equal NJet's double-double values at both points"
+    }
+   ]
   }
  },
  "groups": [
@@ -3334,6 +3353,39 @@
         "status": "compared"
        }
       ],
+      "accepted": {
+       "status": "accepted (user 2026-10-25): O(1e-8) binary64, within the estimate, DD = NJet",
+       "short": "accepted (user 2026-10-25)",
+       "points": [
+        {
+         "index": 4,
+         "finite": {
+          "njet_dd_oneloop_R1": 3.732137568931227e-08
+         },
+         "max_error": 4.300543728812903e-08,
+         "estimate": 1.2697658781127443e-06,
+         "dd_deviation": {
+          "njet_dd_oneloop_R1": 0.0
+         }
+        },
+        {
+         "index": 8,
+         "finite": {
+          "njet_dd_oneloop_R1": 2.2015293065975614e-08
+         },
+         "max_error": 2.2015293065975614e-08,
+         "estimate": 2.544824847633316e-07,
+         "dd_deviation": {
+          "njet_dd_oneloop_R1": 0.0
+         }
+        }
+       ],
+       "tolerance": 2e-08,
+       "passed": false,
+       "max_error": 4.300543728812903e-08,
+       "check": "g1.json processes[gg_ggggg].pyamplicol['native/full'].accuracy_check",
+       "source": "milestone.json validation_decisions"
+      },
       "note": "top-free (particle_veto = [t]), Nf = 5"
      },
      "generation": {
