@@ -403,10 +403,15 @@ def _provider_runtime(proc: dict) -> dict:
 
 
 def _provider_generation_g1(proc: dict) -> dict:
+    """The providers' generation of a G1 row (g1.json): MadLoop's export
+    stages, Recola's setup, OpenLoops's prebuilt library. A provider without a
+    production-mode timing (``unavailable``) has one where its record still
+    holds a run (an imported campaign timing, ``imported_from``: the process
+    was generated; only its timing is outside the protocol)."""
     out = {}
     for name in PROVIDERS:
         rec = (proc.get("providers") or {}).get(name)
-        if rec is None or "unavailable" in rec:
+        if rec is None or ("unavailable" in rec and "imported_from" not in rec):
             out[name] = None
         elif name == "madloop":
             gen = rec.get("generation")
@@ -417,6 +422,34 @@ def _provider_generation_g1(proc: dict) -> dict:
         else:
             out[name] = {"prebuilt": rec["library"]["name"]}
     return out
+
+
+def _reference_generation(pg: dict | None) -> tuple[dict, dict]:
+    """The providers' generation in their reference runs (measured.json
+    provider_generation.processes[key]) and the runs that did not finish
+    (MadLoop's graph generation time and stage, Recola's status)."""
+    gens: dict = {n: None for n in PROVIDERS}
+    unfinished: dict = {}
+    if pg is None:
+        return gens, unfinished
+    ml, rc = pg["madloop"], pg["recola"]
+    if "total_s" in ml:
+        gens["madloop"] = _madloop_generation(ml)
+    else:
+        unfinished["madloop"] = {
+            "status": ml["status"],
+            "graph_generation_s": ml.get("graph_generation_s"),
+        }
+    if "generation_s" in rc:
+        gens["recola"] = {"seconds": rc["generation_s"]}
+    else:
+        unfinished["recola"] = {
+            "status": rc["status"],
+            "since": rc.get("updated"),
+        }
+    if pg["openloops"] is not None:
+        gens["openloops"] = {"prebuilt": pg["openloops"]["library"]}
+    return gens, unfinished
 
 
 def _madloop_generation(gen: dict) -> dict:
@@ -1307,6 +1340,18 @@ def _no_matched_provider(rows: list[dict], ms: dict, meas: dict, g1: dict) -> No
             continue
         fc["alternative"] = _alternative(njet, meas, r["math"])
         note = notes.get(r["key"], {})
+        # Its providers' generations that did not finish (stopped under
+        # HANDOFF 0.1), from their reference runs, as in its required row.
+        _, unfinished = _reference_generation(
+            meas["provider_generation"]["processes"].get(r["key"])
+        )
+        if unfinished:
+            if "providers" in note:
+                unfinished["note"] = note["providers"]
+            r["generation"]["unfinished"] = unfinished
+            r["generation"]["unfinished_source"] = (
+                f"measured.json provider_generation.processes[{r['key']}]"
+            )
         if "validation" in note and r["validation"].get("status") == "compared":
             r["validation"]["note"] = note["validation"]
         fc["sanity_checks"] = _sanity_checks(g1, r["key"], note)
@@ -1549,26 +1594,7 @@ def _required_rows(
             )
         )
         pg = prov_gen.get(key)
-        gens: dict = {n: None for n in PROVIDERS}
-        unfinished = {}
-        if pg is not None:
-            ml, rc = pg["madloop"], pg["recola"]
-            if "total_s" in ml:
-                gens["madloop"] = _madloop_generation(ml)
-            else:
-                unfinished["madloop"] = {
-                    "status": ml["status"],
-                    "graph_generation_s": ml.get("graph_generation_s"),
-                }
-            if "generation_s" in rc:
-                gens["recola"] = {"seconds": rc["generation_s"]}
-            else:
-                unfinished["recola"] = {
-                    "status": rc["status"],
-                    "since": rc.get("updated"),
-                }
-            if pg["openloops"] is not None:
-                gens["openloops"] = {"prebuilt": pg["openloops"]["library"]}
+        gens, unfinished = _reference_generation(pg)
         if unfinished and "providers" in note:
             unfinished["note"] = note["providers"]
         gen_fastest = _fastest_generation(gens)

@@ -767,8 +767,15 @@ def build(
                 for name, result in entry["providers"]["providers"].items()
             }
             madloop = provider_summary.get("madloop")
-            if madloop and "export" in madloop:
-                export, name = _export_of(key, madloop["export"], reference_root)
+            if madloop and (
+                "export" in madloop
+                # An imported campaign timing (``providers.imported``) names
+                # no export: its generation is the specification's export's.
+                or ("imported_from" in madloop and _specified_export(key))
+            ):
+                export, name = _export_of(
+                    key, madloop.get("export", ""), reference_root
+                )
                 madloop["generation"] = _madloop_generation(export)
                 madloop["export"] = name
         values_document["processes"][key] = {
@@ -859,18 +866,20 @@ def _export_of(key: str, recorded: str, root: Path | None) -> tuple[Path | None,
     only the name is kept (no generation times)."""
 
     names = [
-        name
-        for name in (
-            _relative_export(recorded),
-            streams.spec(key).get("madloop", {}).get("export"),
-        )
-        if name
+        name for name in (_relative_export(recorded), _specified_export(key)) if name
     ]
     if root is not None:
         for name in names:
             if (root / name).exists():
                 return root / name, name
     return None, names[0] if names else Path(recorded).name
+
+
+def _specified_export(key: str) -> str | None:
+    """The MadLoop export of ``processes.json`` (relative to the reference
+    root), or None."""
+
+    return streams.spec(key).get("madloop", {}).get("export")
 
 
 def _relative_export(path: str) -> str | None:
