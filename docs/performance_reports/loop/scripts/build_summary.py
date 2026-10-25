@@ -1616,7 +1616,7 @@ def _required_rows(
         if not matched:
             gate_rule = "no gate (no matched provider)"
         elif reference is not None and reference["limit_seconds"] is not None:
-            gate_rule = "G1 (seven-leg rows not timed yet)"
+            gate_rule = "G1 (not timed by G1)"
         else:
             gate_rule = "G1 (no complete gate limit yet)"
         alternative = None if matched else _alternative(njet, meas, req["label"])
