@@ -39,7 +39,13 @@ a record's `export` (the absolute path of its run, possibly under a root
 that moved) is never opened or stat'ed; its `runs/...` part under `ROOT`,
 else the specification's `madloop.export`, is the export (an imported
 campaign timing, `timing` of the specification, names none: its generation
-is that of the specification's export). A new process needs only its specification in
+is that of the specification's export). An imported timing outside the
+protocol (`protocol_mode` false) is never a gate limit; where it does the
+production work and more (a Recola run that also evaluates the IR poles,
+with the protocol's Collier cache) the import records
+`production_upper_bound`, and the report takes it as an upper bound of that
+provider's production time (u u~ > g g g g g: the ratio to the fastest
+provider is then a lower bound). A new process needs only its specification in
 `processes.json` (PDG codes, orders, provider process strings, `madloop.export`
 or `unavailable` reasons) and its stream: particle names come from the model,
 labels from the specification, and the gate refuses records of unknown
