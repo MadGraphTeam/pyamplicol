@@ -834,7 +834,7 @@ fn evaluate_many(
         // Memo lifetime is exactly one point tile: momenta and parameters cannot change.
         let mut memo = compiled_direct_prototype::CorrelatedStageMemo::default();
         for (assignment, vectors) in assignments.iter().enumerate() {
-            let mut rescued = None;
+            let rescued: Option<Vec<[Twofold; 2]>>;
             if rescue {
                 #[cfg(feature = "f64-compiled")]
                 {
@@ -909,6 +909,7 @@ fn evaluate_many(
                 } else {
                     direct.evaluate_all(count)?;
                 }
+                rescued = None;
             }
             let mut amplitudes = vec![[Twofold::default(); 2]; selected[assignment].len() * count];
             let mut by_helicity: BTreeMap<&str, BTreeMap<i64, usize>> = BTreeMap::new();
