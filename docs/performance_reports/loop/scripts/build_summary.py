@@ -1204,7 +1204,11 @@ def _g1_rows(
                     " (MadLoop generation, Recola setup)",
                 },
                 "full_colour": {
-                    "gate_rule": "G1" if proc["gated"] else "no gate (2->2)",
+                    "gate_rule": "G1"
+                    if proc["gated"]
+                    else "no gate (2->2)"
+                    if proc["outgoing"] < 3
+                    else "no gate (no matched provider)",
                     "main": fc_main,
                     "providers": runtime["providers"],
                     "fastest": fastest,
@@ -1233,17 +1237,16 @@ def _alternative(njet: dict, meas: dict, label: str) -> dict | None:
 
 
 def _no_matched_provider(rows: list[dict], ms: dict, meas: dict) -> None:
-    """A gated G1 row without any provider timing (g g > g g g g g: every
-    provider unavailable, HANDOFF 0.1) is reported without a gate (ADDENDUM
-    H), as its required row was: the gate rule says so and the registry's
-    alternative and validation note stay with it."""
+    """A G1 row without any provider timing (g g > g g g g g: every provider
+    beyond HANDOFF 0.1; g1.json gated false) is reported without a gate
+    (ADDENDUM H), as its required row was: the registry's alternative and
+    validation note stay with it."""
     njet = {r["label"]: r for r in ms["njet"]["rows"]}
     notes = ms.get("status_notes", {}).get("notes", {})
     for r in rows:
         fc = r["full_colour"]
-        if r["kind"] != "g1" or fc["gate_rule"] != "G1" or fc["fastest"] is not None:
+        if r["kind"] != "g1" or fc["gate_rule"] != "no gate (no matched provider)":
             continue
-        fc["gate_rule"] = "no gate (no matched provider)"
         fc["alternative"] = _alternative(njet, meas, r["math"])
         note = notes.get(r["key"], {})
         if "validation" in note and r["validation"].get("status") == "compared":

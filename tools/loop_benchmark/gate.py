@@ -85,6 +85,10 @@ GATE_FACTOR = 1.30
 GATE_FLOOR_SECONDS = 5e-3
 GATE_FLOOR_STATUS = "below 5 ms: not gated (user 2026-10-24)"
 ADOPT_M = 0.85
+NO_PROVIDER_NOTE = (
+    "no matched provider timing (HANDOFF 0.1): the speed is reported without"
+    " a gate, with its rotation and Ward checks (addenda F and H)"
+)
 # The checks of a configuration's run that a later run of it without them
 # keeps (``build``).
 CARRIED_CHECKS = ("accuracy_check", "physical")
@@ -788,7 +792,11 @@ def build(
                 "label": label(key),
                 "process_text": entry["text"],
                 "outgoing": legs,
-                "gated": legs >= 3,
+                # From 2 -> 3 upward, wherever a provider timing exists: with
+                # none (g g > g g g g g, every provider beyond HANDOFF 0.1)
+                # the speed is reported without a gate (addenda F and H).
+                "gated": legs >= 3 and bool(times),
+                **({"gate_note": NO_PROVIDER_NOTE} if legs >= 3 and not times else {}),
                 "providers": provider_summary,
                 "provider_cpu": entry["providers"]["cpu"]
                 if entry["providers"]
