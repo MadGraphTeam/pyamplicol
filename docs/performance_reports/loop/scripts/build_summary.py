@@ -17,8 +17,8 @@ and every entry names its source:
                           OpenLoops and Recola production references of the
                           seven-leg rows (DESIGN 1.3 Table 1b, as text: the
                           gate limit is computed here), the branch of the
-                          development revisions, user gate decisions and short
-                          status notes
+                          development revisions, user gate decisions (and
+                          the user's 5 ms gate rule) and short status notes
 - tools/loop_benchmark/processes.json  the G1 process specifications
 
 Main-configuration rule (MAIN_RULE below): every cell of Table 1 and Figure
@@ -526,13 +526,31 @@ def _timing_of(
                 decision_source="milestone.json gate_decisions"
                 f" ({decisions['source']})",
             )
+        # The user's gate rule (milestone.json gate_decisions.threshold_rule,
+        # 2026-10-24 ~22:35): below 5 ms per point at the largest batch the
+        # process has no blocking gate; the measured ratio, band and status
+        # stay with the cell. It takes precedence over a decision.
+        rule = decisions.get("threshold_rule")
+        if rule is not None and t < rule["below_seconds_per_point"]:
+            out["gate"].setdefault("measured_status", measured)
+            out["gate"].update(
+                status=rule["verdict"],
+                rule=rule["label"],
+                rule_source="milestone.json gate_decisions.threshold_rule"
+                f" ({rule['source']})",
+            )
     return out
 
 
-def _adopted_schedule(proc: dict, name: str | None, batch: str) -> dict | None:
+def _adopted_schedule(
+    proc: dict, name: str | None, batch: str, revision: str
+) -> dict | None:
     """The schedule G1 adopted for a configuration's class where it is not
     the default protocol's B (g1.json schedules, adopt_m), timed at the same
-    batch: shown next to the schedule-B value, which stays the main one."""
+    batch: shown next to the schedule-B value, which stays the main one.
+    Only a schedule-M run of the main value's own revision (Table 1 shows
+    the most recent measurements only, user 2026-10-24 ~18:35): an earlier
+    campaign's run stays in the schedule table of the gate-G1 details."""
     if name is None:
         return None
     for s in proc.get("schedules", []):
@@ -540,7 +558,7 @@ def _adopted_schedule(proc: dict, name: str | None, batch: str) -> dict | None:
             continue
         alt = proc["pyamplicol"].get(f"{name}/M")
         rec = (alt or {}).get("batches", {}).get(batch)
-        if rec is None:
+        if rec is None or alt["revision"][:8] != revision:
             return None
         return {
             "schedule": "M",
@@ -601,7 +619,7 @@ def _lc_of(
     if f is not None:
         out["fc_seconds_per_point"] = f["median_seconds_per_point"]
         out["lc_over_fc"] = t / f["median_seconds_per_point"]
-    adopted = _adopted_schedule(proc, name, batch)
+    adopted = _adopted_schedule(proc, name, batch, out["revision"])
     if adopted is not None:
         out["adopted_schedule"] = adopted
     return out

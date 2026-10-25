@@ -91,8 +91,13 @@
 #let minutes(s) = [#fixed(s / 60, 1) min]
 
 // --------------------------------------------------------- colour scales --
-// Diverging ColorBrewer RdBu (colour-blind safe): blue faster, red slower.
-#let palette = gradient.linear(rgb("#4393c3"), rgb("#d1e5f0"), white, rgb("#fddbc7"), rgb("#d6604d"))
+// Run times (user rule (b) of 2026-10-24 ~22:35): diverging green (faster)
+// -> white (×1) -> red (slower). Poles #1a9e77 / #d73027: ΔE 9.8 under
+// deuteranopia (dataviz validator, light surface); every coloured cell also
+// prints its multiplier, so colour never carries the value alone.
+#let fast-green = rgb("#1a9e77")
+#let slow-red = rgb("#d73027")
+#let palette = gradient.linear(fast-green, rgb("#c4e6d9"), white, rgb("#fbd0c3"), slow-red)
 #let ratio-fill(r) = if r == none { none } else { palette.sample(calc.clamp(0.5 + calc.log(r, base: 2) / 8, 0, 1) * 100%) }
 
 // Stage colours of the per-point split (Table 1 bars, the stage-split table):
@@ -162,17 +167,9 @@
 #let decision(p, b, gt) = if gt == none or gt.status != "inconclusive" { none } else {
   ms.gate_decisions.decisions.find(d => d.process == p.key and d.batch == b and d.measured == gt.status)
 }
-#let eff-status(p, b, gt) = { let d = decision(p, b, gt); if d != none { d.verdict } else if gt == none { none } else { gt.status } }
 #let amber = rgb("#8a4b08")
-#let gate-word(p, b, gt) = if gt == none [—] else if decision(p, b, gt) != none {
-  text(fill: rgb("#2166ac"), weight: "bold")[#decision(p, b, gt).verdict‡] + [ #fixed(gt.ratio_to_binding_limit, 2)]
-} else if gt.status == "pass" {
-  text(fill: rgb("#2166ac"), weight: "bold")[pass] + [ #fixed(gt.ratio_to_binding_limit, 2)]
-} else if gt.status == "fail" {
-  text(fill: rgb("#b2182b"), weight: "bold")[fail] + [ #mult2(gt.ratio_to_binding_limit)]
-} else if gt.status == "inconclusive" {
-  text(fill: amber, weight: "bold")[open] + [ #fixed(gt.ratio_to_binding_limit, 2)]
-} else { text(fill: ink2, gt.status) }
+#let pass-ink = rgb("#0f7356")
+#let fail-ink = rgb("#b2182b")
 #let rev(c) = if c == none { none } else { c.revision.slice(0, 8) }
 // The configurations of the G1 details: native/full is the engine on `loop`
 // (integrated, native per-point inputs: g.slice_revision); python/full the
@@ -184,6 +181,32 @@
 #let l1-c(p) = cfg(p, "native/full/L1")
 #let gated = g.processes.filter(p => p.gated)
 #let big = "128"
+// The user's gate rule (milestone.json gate_decisions.threshold_rule,
+// 2026-10-24 ~22:35; Table 1 reads it through summary.json): a process whose
+// batched time per point is below 5 ms has no blocking gate; its ratio and
+// band stay as measured, at every batch size of the configuration. The
+// batched time is the configuration's own at its largest batch above 1; a
+// configuration timed at B = 1 only (the one-lane runs) takes the
+// configuration on loop's. The rule takes precedence over a decision.
+#let thr-rule = ms.gate_decisions.threshold_rule
+#let batched-of(c) = if c == none or refused(c) { none } else {
+  let s = sizes(c).filter(n => n > 1)
+  if s.len() == 0 { none } else { bat(c, str(s.last())).median_seconds_per_point }
+}
+#let batched-time(p, c) = { let t = batched-of(c); if t != none { t } else { batched-of(nat-c(p)) } }
+#let ungated(p, c) = p.gated and { let t = batched-time(p, c); t != none and t < thr-rule.below_seconds_per_point }
+#let eff-status(p, c, b, gt) = if gt == none { none } else if "ratio_to_binding_limit" in gt and ungated(p, c) { "not gated" } else { let d = decision(p, b, gt); if d != none { d.verdict } else { gt.status } }
+#let gate-word(p, c, b, gt) = if gt == none [—] else if eff-status(p, c, b, gt) == "not gated" {
+  text(fill: ink2, weight: "bold")[not gated] + [ #fixed(gt.ratio_to_binding_limit, 2)]
+} else if decision(p, b, gt) != none {
+  text(fill: pass-ink, weight: "bold")[#decision(p, b, gt).verdict‡] + [ #fixed(gt.ratio_to_binding_limit, 2)]
+} else if gt.status == "pass" {
+  text(fill: pass-ink, weight: "bold")[pass] + [ #fixed(gt.ratio_to_binding_limit, 2)]
+} else if gt.status == "fail" {
+  text(fill: fail-ink, weight: "bold")[fail] + [ #mult2(gt.ratio_to_binding_limit)]
+} else if gt.status == "inconclusive" {
+  text(fill: amber, weight: "bold")[open] + [ #fixed(gt.ratio_to_binding_limit, 2)]
+} else { text(fill: ink2, gt.status) }
 // Revisions of the history configurations, from their own records.
 // (Timed configurations only: a refusal recorded at another revision is not one.)
 #let revs-of(f) = g.processes.map(f).filter(c => c != none and not refused(c)).map(rev).dedup()
@@ -208,7 +231,7 @@
 
 #let ratio-range(xs) = if xs.len() == 0 [—] else { let s = xs.sorted(); if s.len() == 1 [#mult2(s.first())] else [#mult2(s.first())–#fixed(s.last(), if s.last() >= 10 { 0 } else { 1 })] }
 #let lim(p, c, b) = { let x = bat(c, b); if x == none or "ratio_to_binding_limit" not in x.gate { none } else { x.gate.ratio_to_binding_limit } }
-#let status(p, c, b) = { let x = bat(c, b); if x == none { none } else { eff-status(p, b, x.gate) } }
+#let status(p, c, b) = { let x = bat(c, b); if x == none { none } else { eff-status(p, c, b, x.gate) } }
 #let py-timed = gated.filter(p => py-c(p) != none and not refused(py-c(p)))
 #let py-refused = gated.filter(p => refused(py-c(p)))
 // The Python-input rows timed in batches (B = 128) and those timed at B = 1 only.
@@ -221,7 +244,11 @@
 #let nat-pass = nat-at(nat-c, big, "pass")
 #let nat-fail = nat-at(nat-c, big, "fail")
 #let nat-open = nat-at(nat-c, big, "inconclusive")
-#let nat-decided = gated.filter(p => { let x = bat(nat-c(p), big); x != none and decision(p, big, x.gate) != none })
+#let nat-decided = gated.filter(p => { let x = bat(nat-c(p), big); x != none and not ungated(p, nat-c(p)) and decision(p, big, x.gate) != none })
+// Below 5 ms per point on loop: no blocking gate (user rule); the gated rest.
+#let nat-ungated = gated.filter(p => ungated(p, nat-c(p)))
+#let nat-gated = gated.filter(p => not ungated(p, nat-c(p)))
+#let ungated-text(ps) = ps.map(p => [#gname(p.key) #msec(bat(nat-c(p), big).median_seconds_per_point) ms (#fixed(lim(p, nat-c(p), big), 2) of its limit)]).join([, ], last: [ and ])
 #let decided-text(ps) = ps.map(p => { let x = bat(nat-c(p), big).gate; let (lo, hi) = x.band_to_binding_limit; [#gname(p.key) by #decision(p, big, x).label (#fixed(x.ratio_to_binding_limit, 2) of its limit, band #fixed(lo, 2)–#fixed(hi, 2))] }).join([, ])
 #let l1-pass = nat-at(l1-c, "1", "pass")
 #let one-pass = nat-at(nat-c, "1", "pass")
@@ -272,13 +299,15 @@
   [#fixed(m, 1)e#str(e).replace("-", "−")]
 }
 #let dev-tag = box(fill: warm, stroke: 0.3pt + rgb("#d9a066"), inset: (x: 1.6pt, y: 0.7pt), radius: 1.5pt, baseline: 0.6pt, text(5.2pt, weight: "bold", stretch: 100%, fill: amber)[DEV])
-#let chip-style = (pass: (rgb("#e1edf7"), rgb("#2166ac")), fail: (rgb("#f9e0da"), rgb("#b2182b")), open: (rgb("#fdf0dc"), amber))
+#let chip-style = (pass: (rgb("#e1f2ea"), pass-ink), fail: (rgb("#f9e0da"), fail-ink), open: (rgb("#fdf0dc"), amber), (thr-rule.verdict): (luma(240), luma(90)))
 // ‡: a verdict set by a user decision (data/milestone.json gate_decisions);
-// the ratio is the measured one.
+// "<5 ms: not gated": the user's gate rule (gate_decisions.threshold_rule).
+// The ratio is always the measured one.
 #let gate-chip(g) = {
   let (f, c) = chip-style.at(g.status)
+  let word = if g.status == thr-rule.verdict { thr-rule.short } else { g.status }
   box(fill: f, stroke: 0.4pt + c, inset: (x: 2pt, y: 0.8pt), radius: 1.5pt, baseline: 0.8pt,
-    text(5.9pt, fill: c, weight: "bold")[#g.status#if "decision" in g [‡] #mult2(g.ratio_to_limit)])
+    text(5.9pt, fill: c, weight: "bold")[#word#if "decision" in g [‡] #mult2(g.ratio_to_limit)])
 }
 #let plain-chip(body) = box(fill: white, stroke: 0.4pt + luma(150), inset: (x: 2pt, y: 0.8pt), radius: 1.5pt, baseline: 0.8pt, text(5.9pt, fill: luma(80), weight: "bold", body))
 #let stage-keys = ("inputs", "numerator", "scatter", "ninjars", "masters", "glue", "untimed")
@@ -324,8 +353,8 @@
 // the configurations' revisions, and a G1 campaign's own roles);
 // summary.json names it per cell, and meta.configurations lists the
 // candidates with the rows (main_rows) and cells (main_cells) where each
-// supplies a main value. Stated once (title line, reading guide, column
-// header); within a row, a cell from another configuration than the row's
+// supplies a main value. Stated once in Table 1 (column header; explained
+// in "Reading the summary"); within a row, a cell from another configuration than the row's
 // timing is marked: quietly with its revision (and its run conditions) if it
 // is a newer record of the same branch, in amber with its origin otherwise.
 #let C = sm.configurations
@@ -356,12 +385,6 @@
     if rs.len() == 1 [validation record #raw(rs.first())] else [validation records up to #raw(rs.first())]
   } else [G1 at #raw(x.revision)]
 }
-#let branch-text(b) = {
-  let ids = measured-ids.filter(i => branch-of(i) == b)
-  let x = C.at(ids.first())
-  if b == "loop" [`loop`, #ids.map(rev-text).join(", ")] else [#raw(b) (#lab(x)#if x.at("integration", default: none) != none [ as #x.integration]#if x.at("integrated_at", default: none) != none [ at #raw(x.integrated_at)]): #ids.map(rev-text).join(", ")]
-}
-#let prov-title = measured-ids.map(branch-of).dedup().map(branch-text).join([ and ])
 // The cells where the records supply values (main_cells): G1 rows by name
 // and by cell (generation, validation or both), the other rows by
 // multiplicity (generation and validation). Compact: the multiplicity alone.
@@ -486,7 +509,9 @@
     // conditions differ from the providers' G1 runs, listed beside it).
     let o = origin(r, m)
     let unmatched = "no_ratio" in m
-    valued(fill: ratio-fill(ratio-of(m)), dur(m.seconds), mult: if ratio-of(m) != none { mult2(ratio-of(m)) },
+    // Uncoloured (user rule (a) of 2026-10-24 ~22:35): generation time is
+    // not the main metric; the multiplier stays as text.
+    valued(fill: none, dur(m.seconds), mult: if ratio-of(m) != none { mult2(ratio-of(m)) },
       [#gib(m.peak_gib) peak · plan #box[#sig(m.plan_mb)~MB]], prov-line,
       if unmatched [#if o != none [#o: ]#dim[no multiplier]] else { o })
   } else {
@@ -528,7 +553,12 @@
   if m.status == "measured" {
     valued(fill: ratio-fill(ratio-of(m)), dur(m.seconds_per_point), mult: mult2(ratio-of(m)),
       [#prov-line #h(1fr) $B = #m.batch$],
-      [#if "gate" in m { gate-chip(m.gate) } else { plain-chip[#c.gate_rule.replace("->", "→")] } #h(4pt) #stage-bar(m.stages)],
+      ..if "gate" in m and m.gate.status == thr-rule.verdict {
+        // The longer not-gated chip on its own line, the bar below it.
+        ([#gate-chip(m.gate)], [#stage-bar(m.stages)])
+      } else {
+        ([#if "gate" in m { gate-chip(m.gate) } else { plain-chip[#c.gate_rule.replace("->", "→")] } #h(4pt) #stage-bar(m.stages)],)
+      },
       origin(r, m))
   } else if m.status == "not batched" {
     absent(status-title(m), [G1 timed $B = #m.timed_batches.map(str).join(", ")$ only · #prov-line])
@@ -540,9 +570,10 @@
 // Leading-colour column (neutral: no provider ratio).
 #let t1-lc(r) = {
   let m = r.leading_colour.main
-  // The schedule G1 adopted for the class, where it is not the protocol's B.
-  // Its revision where G1 did not repeat the schedule-M run.
-  let alt(x) = if "adopted_schedule" not in x { none } else { let a = x.adopted_schedule; let r = a.at("revision", default: none); [ · #box[#a.schedule#if r != none and r != x.at("revision", default: none) [ (#raw(r))]: #dur(a.seconds_per_point)]] }
+  // The schedule G1 adopted for the class, where it is not the protocol's B
+  // (summary.json carries it only when run at the main value's revision:
+  // Table 1 shows the most recent measurements only).
+  let alt(x) = if "adopted_schedule" not in x { none } else { let a = x.adopted_schedule; [ · #box[#a.schedule: #dur(a.seconds_per_point)]] }
   if m.status == "measured" {
     valued(fill: none, dur(m.seconds_per_point), mult: if "lc_over_fc" in m [#text(6.8pt)[LC/FC] #fixed(m.lc_over_fc, 2)],
       [$B = #m.batch$#if "fc_seconds_per_point" in m [ · FC #dur(m.fc_seconds_per_point)]#alt(m)], origin(r, m))
@@ -567,12 +598,11 @@
 // Rows whose gate verdict is a user decision (legend of Table 1).
 #let decided-gate(r) = r.full_colour.main.at("gate", default: none)
 #let decided-rows = all-rows.filter(r => { let x = decided-gate(r); x != none and "decision" in x })
-// G1 rows whose generation is a newer record without a multiplier, LC cells
-// whose adopted schedule-M value is an earlier run, and validations whose
-// worst point was re-evaluated by an earlier run (legend of Table 1).
+// G1 rows whose generation is a newer record without a multiplier, and
+// validations whose worst point was re-evaluated by an earlier run (reading
+// notes of Table 1).
 #let s-g1-count = all-rows.filter(r => r.kind == "g1" and r.validation.at("worst_point", default: none) != none).len()
 #let no-ratio-rows = all-rows.filter(r => r.kind == "g1" and "no_ratio" in r.generation.main)
-#let m-other = all-rows.filter(r => { let m = r.leading_colour.main; "adopted_schedule" in m and m.adopted_schedule.at("revision", default: none) != m.at("revision", default: none) })
 #let stab-other = all-rows.filter(r => {
   let v = r.validation
   let wp = v.at("worst_point", default: none)
@@ -583,26 +613,48 @@
 #let seven-untimed = all-rows.filter(r => r.full_colour.gate_rule.starts-with("G1 (seven-leg") or r.full_colour.gate_rule.starts-with("G1 (no complete"))
 
 // ================================================================ PAGE 1 ==
+// Pages 1-2 hold only the title line, Table 1, Figure 1 and compact visual
+// legends (user rule (e) of 2026-10-24 ~22:35); every explanation is in
+// "Reading the summary" after Figure 1.
 #align(center)[
   #v(-0.3em)
   #text(23pt, weight: "bold", fill: navy)[pyAmpliCol at one loop]
   #v(-0.6em)
   #text(11.5pt, fill: luma(80))[The recursive one-loop engine against MadLoop, Recola, OpenLoops and NJet]
   #v(-0.4em)
-  #text(8.6pt, fill: luma(105))[#sm.date · values from #prov-title · engine #raw(sm.engine_on_loop) on `loop` · #sm.host.split(",").first(), shared host · binary64 · one pinned thread · batches of $B = 128$]
+  #text(8.6pt, fill: luma(105))[#sm.date · engine #raw(sm.engine_on_loop) on `loop` · #sm.host.split(",").first(), shared host · finite part · binary64 · one pinned thread · batches of $B = 128$]
 ]
 
-#block(fill: pale, inset: (x: 9pt, y: 7pt), radius: 3pt, width: 100%, {
-  set text(8.4pt)
-  set par(justify: true, leading: 0.5em)
-  [*Reading guide.* One row per test process, by multiplicity. A cell gives pyAmpliCol's value in bold and, at its right, the
-  multiplier _pyAmpliCol ÷ the fastest provider_ on this host (in bold among the provider values); the colour encodes it (blue
-  faster, red slower). Every value is the *most recent measured configuration* of its cell (by git ancestry of the revisions; a newer check that only repeats part of an older comparison does not replace it): #measured-ids.map(cfg-clause).join([\; ])#if dev-used [. #if cfg-used("integrated") [The values of #row-span(dev-rows) are] else [These are] #if rec-integrated != none and not cfg-used("development") [*development measurements*, not yet repeated on `loop`] else [*development measurements* of a branch being integrated into `loop`#if C.development_records.at("integration", default: none) != none [ (#C.development_records.integration)], not yet on `loop`]]. #if not cfg-used("integrated") [The engine on `loop` (#inputs-text(C.integrated) per-point inputs, G1 at #raw(C.integrated.revision)) is not shown here: @g1 (gate-G1 details) keeps its timings for history. ] else if py-revs.len() > 0 [The engine before #C.development_records.at("integration", default: "this milestone") (Python per-point inputs, G1 at #rev-list(py-revs)) is history in @g1. ]Grey cells say why a value is missing. Run times:
-  per phase-space point in batches, finite part, stability checks off; providers in production mode (@status).]
+
+// Compact visual legend of Table 1 (its text: "Reading the summary").
+#let thr-rows = all-rows.filter(r => { let x = decided-gate(r); x != none and x.status == thr-rule.verdict })
+#let m-rows = all-rows.filter(r => "adopted_schedule" in r.leading_colour.main)
+#let key-swatch(fill) = box(baseline: 0.5pt, rect(width: 5pt, height: 5pt, fill: fill, stroke: 0.3pt + luma(200)))
+#block(breakable: false, width: 100%, above: 1.0em, below: 0.9em, {
+  set text(6.9pt, font: sans, stretch: 87.5%)
+  set par(justify: false, leading: 0.5em)
+  grid(columns: (5.4cm, 1fr), column-gutter: 14pt,
+    {
+      box(width: 5.4cm, height: 0.26cm, fill: palette, radius: 2pt)
+      v(-0.5em)
+      [×1/16 #h(1fr) ×1/4 #h(1fr) ×1 #h(1fr) ×4 #h(1fr) ×16]
+      v(-0.6em)
+      text(fill: ink2)[faster #h(1fr) run time ÷ fastest provider #h(1fr) slower]
+    },
+    {
+      [*Gate* #h(2pt) #gate-chip((status: "pass", ratio_to_limit: 0.25)) #gate-chip((status: "fail", ratio_to_limit: 1.4)) #gate-chip((status: "open", ratio_to_limit: 1.0)) #gate-chip((status: thr-rule.verdict, ratio_to_limit: 1.4)) #h(2pt) #text(fill: ink2)[time ÷ limit]]
+      linebreak()
+      [*Stages* #h(2pt) ]
+      for (k, n) in stage-keys.enumerate() { box[#key-swatch(seg-colours.at(k))#h(1.5pt)#stage-label.at(n)]; h(4pt) }
+      linebreak()
+      [#key-swatch(neutral) missing (why) #h(4pt) #key-swatch(white) no colour: generation, LC #h(4pt) † within estimate#if decided-rows.len() > 0 [ #h(4pt) ‡ user decision] #h(4pt) ML MadLoop · Rc Recola · OL OpenLoops]
+    },
+  )
 })
 
+
 #figure(kind: table,
-  caption: [*State of the one-loop engine.* Every value from `data/summary.json` (`scripts/build_summary.py`).],
+  caption: [*State of the one-loop engine.* How to read it: #link(<reading>)[after Figure 1].],
   {
     set text(7pt, font: sans, stretch: 87.5%)
     set par(justify: false)
@@ -635,36 +687,102 @@
   },
 ) <tab:summary>
 
-#block(breakable: false, width: 100%, {
-  set text(6.9pt, font: sans, stretch: 87.5%)
-  set par(justify: false, leading: 0.42em)
-  grid(columns: (5.4cm, 1fr), column-gutter: 14pt,
-    {
-      box(width: 5.4cm, height: 0.26cm, fill: palette, radius: 2pt)
-      v(-0.5em)
-      [×1/16 #h(1fr) ×1/4 #h(1fr) ×1 #h(1fr) ×4 #h(1fr) ×16]
-      v(-0.6em)
-      text(fill: ink2)[faster #h(1fr) pyAmpliCol ÷ fastest provider #h(1fr) slower]
-      v(0.1em)
-      text(fill: ink2)[RdBu, log₂ scale, clamped. Grey: missing (reason given). White without a multiplier: no provider ratio (leading colour#if no-ratio-rows.len() > 0 [\; a newer record's generation in a G1 row, whose provider generation is G1's]).]
-    },
-    {
-      [*Stage shares* (bar; the largest is named): ]
-      for (k, n) in stage-keys.enumerate() { box[#box(baseline: 0.5pt, rect(width: 5pt, height: 5pt, fill: seg-colours.at(k), stroke: none))#h(1.5pt)#stage-label.at(n)]; h(5pt) }
-      [(@tab:g1split): inputs = trees, Born and counterterm inputs; glue = point parameters, input conversion, assembly;
-      untimed = rest of the call (on `loop`: native inputs, Python rest). Times
-      use the protocol's schedule B; "M:" gives the schedule G1 adopted for the class (@tab:g1bm#if m-other.len() > 0 [; its run's revision where not repeated]).]
-      linebreak()
-      [*References:* ML MadLoop 3.7.0, Rc Recola 2.2.5 (COLLIER), OL OpenLoops 2.1.5 (prebuilt libraries: no generation
-      time), NJet DD NJet 3.1.2 in double-double. Deviation $|a - b| slash max(|a|, |b|, |B| alpha_s slash 2 pi)$ of the
-      binary64 finite part at the timed points (median: over the points, the largest over the references); † the largest lies within
-      the binary64 stability estimate of the same configuration at that point#if stab-other.len() > 0 [ (#if stab-other.len() == s-g1-count [G1 rows] else [#row-names(stab-other.map(r => r.key))]: stability runs of #rev-list(stab-other.map(r => r.validation.worst_point.revision).dedup()), bitwise the same binary64 values)]. *Gate chip:* time ÷ binding limit (MadLoop, or 1.30 × the faster of Recola and OpenLoops); pass or fail when the
-      whole uncertainty band is below or above 1, else open#for r in decided-rows { let x = decided-gate(r); [; ‡ #math-label(r.math): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }.]
-    },
-  )
-})
-#v(0.1em)
-#[#show raw: set text(6.8pt)
+// Figure 1: the batched full-colour time of each G1 row against its gate
+// limit and the providers, on a log scale (data/summary.json).
+#let fig-lo = calc.log(0.0005, base: 10)
+#let fig-hi = calc.log(50.0, base: 10)
+#let fig-w = 11.2cm
+#let fig-h = 11pt
+#let xpos(t) = fig-w * (calc.log(t, base: 10) - fig-lo) / (fig-hi - fig-lo)
+#let fig-ticks = ((0.001, [1 ms]), (0.01, [10 ms]), (0.1, [100 ms]), (1.0, [1 s]), (10.0, [10 s]))
+#let fig-rows = all-rows.filter(r => r.full_colour.at("fastest", default: none) != none)
+#let fig-dot(fill: none, stroke: none) = circle(radius: 2.9pt, fill: fill, stroke: stroke)
+// One value per row: Table 1's main value (the most recent configuration).
+#let fig-row(r) = {
+  let c = r.full_colour
+  let m = c.main
+  let g = m.at("gate", default: none)
+  box(width: fig-w, height: fig-h, {
+    for (t, _) in fig-ticks { place(dx: xpos(t), line(start: (0pt, 0pt), end: (0pt, fig-h), stroke: 0.4pt + luma(222))) }
+    place(dy: fig-h / 2, line(start: (0pt, 0pt), end: (fig-w, 0pt), stroke: 0.4pt + luma(205)))
+    if g != none and g.status == thr-rule.verdict {
+      // Below 5 ms per point: no blocking gate (user rule), the limit grey.
+      place(dx: xpos(g.limit_seconds) - 0.6pt, rect(width: 1.2pt, height: fig-h, fill: luma(150), stroke: none))
+    } else if g != none {
+      let xl = xpos(g.limit_seconds)
+      place(dx: xl, rect(width: fig-w - xl, height: fig-h, fill: slow-red.transparentize(86%), stroke: none))
+      place(dx: xl - 0.7pt, rect(width: 1.4pt, height: fig-h, fill: fail-ink, stroke: none))
+    }
+    place(dx: xpos(thr-rule.below_seconds_per_point), line(start: (0pt, 0pt), end: (0pt, fig-h), stroke: (paint: luma(110), thickness: 0.6pt, dash: "dotted")))
+    for (k, x) in c.providers.pairs() {
+      if "seconds_per_point" in x {
+        let fast = k == c.fastest.key
+        place(dx: xpos(x.seconds_per_point) - 2.4pt, dy: fig-h / 2 - 2.4pt,
+          rotate(45deg, square(size: 3.4pt, fill: if fast { luma(40) } else { luma(165) }, stroke: 0.4pt + white)))
+      }
+    }
+    if m.status == "measured" { place(dx: xpos(m.seconds_per_point) - 2.9pt, dy: fig-h / 2 - 2.9pt, fig-dot(fill: navy, stroke: 0.6pt + white)) }
+  })
+}
+#figure(
+  caption: [*Batched full colour against the gate* (finite part, $B = 128$; the rows of @tab:summary with a matched provider).],
+  {
+    set text(7pt, font: sans, stretch: 87.5%)
+    grid(columns: (3.2cm, fig-w, 1fr), column-gutter: 6pt, row-gutter: 3pt, align: (right + horizon, left + horizon, left + horizon),
+      ..fig-rows.map(r => {
+        let m = r.full_colour.main
+        let chip = if m.status != "measured" { plain-chip[#status-title(m)] } else if "gate" in m { gate-chip(m.gate) } else { plain-chip[no gate] }
+        (text(8.6pt, font: "Libertinus Serif", math-label(r.math)), fig-row(r), chip)
+      }).flatten(),
+      [], box(width: fig-w, height: 9pt, for (t, l) in fig-ticks { place(dx: xpos(t) - 1cm, box(width: 2cm, align(center, text(fill: ink2, l)))) }), [],
+    )
+    // Compact visual key (its text: "Reading the summary").
+    let key-mark(body) = box(width: 8pt, height: 7pt, baseline: 1pt, body)
+    v(2pt)
+    text(fill: ink2, {
+      key-mark(place(dx: 1.1pt, dy: 0.6pt, fig-dot(fill: navy, stroke: 0.6pt + white))); [pyAmpliCol (@tab:summary)]; h(9pt)
+      key-mark(place(dx: 1.6pt, dy: 1.2pt, rotate(45deg, square(size: 3.4pt, fill: luma(40), stroke: 0.4pt + white)))); [fastest provider]; h(9pt)
+      key-mark(place(dx: 1.6pt, dy: 1.2pt, rotate(45deg, square(size: 3.4pt, fill: luma(165), stroke: 0.4pt + white)))); [other providers]; h(9pt)
+      key-mark({ place(dx: 1pt, rect(width: 1.4pt, height: 7pt, fill: fail-ink, stroke: none)); place(dx: 2.4pt, rect(width: 5.6pt, height: 7pt, fill: slow-red.transparentize(86%), stroke: none)) }); [gate limit, shaded side fails]; h(9pt)
+      key-mark(place(dx: 3pt, rect(width: 1.2pt, height: 7pt, fill: luma(150), stroke: none))); [limit, not gated]; h(9pt)
+      key-mark(place(dx: 3.5pt, line(start: (0pt, 0pt), end: (0pt, 7pt), stroke: (paint: luma(110), thickness: 0.6pt, dash: "dotted")))); [5 ms]
+    })
+  },
+) <fig:gate>
+
+#pagebreak(weak: true)
+
+// ============================================================== READING ==
+// Everything that explains Table 1 and Figure 1 (user rule (e)).
+#heading(numbering: none)[Reading the summary] <reading>
+#[
+#set text(9.4pt)
+#set par(justify: true)
+*Table 1* has one row per test process, by multiplicity. A cell gives pyAmpliCol's value in bold and, at its right, the
+multiplier _pyAmpliCol ÷ the fastest provider_ on this host (in bold among the provider values). Only run times are
+coloured: green faster, white at parity, red slower (log₂ scale, clamped at ×1/16 and ×16). Generation cells carry their
+multiplier uncoloured (generation time is not the main metric, user 2026-10-24); leading colour has no provider ratio.
+Grey cells say why a value is missing. Run times are per phase-space point in batches, finite part, stability checks off;
+providers in production mode (@status). Every value is the *most recent measured configuration* of its cell (by git
+ancestry of the revisions; a newer check that only repeats part of an older comparison does not replace it):
+#measured-ids.map(cfg-clause).join([\; ])#if dev-used [. #if cfg-used("integrated") [The values of #row-span(dev-rows) are] else [These are] #if rec-integrated != none and not cfg-used("development") [*development measurements*, not yet repeated on `loop`] else [*development measurements* of a branch being integrated into `loop`#if C.development_records.at("integration", default: none) != none [ (#C.development_records.integration)], not yet on `loop`]]. #if not cfg-used("integrated") [The engine on `loop` (#inputs-text(C.integrated) per-point inputs, G1 at #raw(C.integrated.revision)) is not shown there: @g1 (gate-G1 details) keeps its timings for history.] else if py-revs.len() > 0 [The engine before #C.development_records.at("integration", default: "this milestone") (Python per-point inputs, G1 at #rev-list(py-revs)) is history in @g1.] The column header of Table 1 names these configurations once.
+
+*Gate chips* (Table 1 and Figure 1): the time over the binding limit (MadLoop's time, or 1.30 × the faster of Recola and
+OpenLoops), *pass* or *fail* when the whole uncertainty band is below or above 1, else *open*. The user's gate rule of 2026-10-24:
+a process whose batched time per point is below 5 ms has no blocking gate, its verdict is "#thr-rule.label" and its chip
+("#thr-rule.short") keeps the measured ratio#if thr-rows.len() > 0 [ (#thr-rows.map(r => { let x = decided-gate(r); [#box(math-label(r.math)) #dur(r.full_colour.main.seconds_per_point), #fixed(x.ratio_to_limit, 2) of its limit] }).join([, ], last: [ and ]))]. #box(math-label("g g -> g g")) ($2 -> 2$) has no gate#for r in decided-rows.filter(r => decided-gate(r).status != thr-rule.verdict) { let x = decided-gate(r); [; ‡ #math-label(r.math): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }.
+
+*Stage shares* (the bar of the full-colour cell; the largest is named; @tab:g1split): inputs = trees, Born and
+counterterm inputs; glue = point parameters, input conversion, assembly; untimed = the rest of the call (on `loop`:
+native inputs, Python rest). Times use the protocol's schedule B#if m-rows.len() > 0 [; "M:" gives the schedule G1 adopted for the class (@tab:g1bm)].
+
+*References and deviations.* ML MadLoop 3.7.0, Rc Recola 2.2.5 (COLLIER), OL OpenLoops 2.1.5 (prebuilt libraries: no
+generation time), NJet DD NJet 3.1.2 in double-double. Deviation $|a - b| slash max(|a|, |b|, |B| alpha_s slash 2 pi)$ of the
+binary64 finite part at the timed points (median: over the points, the largest over the references); † the largest lies
+within the binary64 stability estimate of the same configuration at that point#if stab-other.len() > 0 [ (#if stab-other.len() == s-g1-count [G1 rows] else [#row-names(stab-other.map(r => r.key))]: stability runs of #rev-list(stab-other.map(r => r.validation.worst_point.revision).dedup()), bitwise the same binary64 values)].
+#if no-ratio-rows.len() > 0 [A newer development record's generation in a G1 row has no multiplier (its provider generation is G1's).]
+
+
 // G1 rows whose newer validation record only repeats part of G1's
 // comparison (summary.json validation.partial_repeats).
 #let repeat-rows = all-rows.filter(r => r.validation.at("partial_repeats", default: ()).len() > 0)
@@ -691,61 +809,17 @@
   }
   else if id == "integrated" [#row-span(x.main_rows): the engine on `loop`, gate G1 at #raw(x.revision)#if x.lc_revision != none and x.lc_revision != x.revision [ (LC: #raw(x.lc_revision))], build #raw(x.native_build), #inputs-text(x) per-point inputs (@g1)]
 }
-#text(7.4pt, fill: ink2)[*Configurations* (main-configuration rule of `scripts/build_summary.py`; `data/summary.json` names the
+*Configurations* (main-configuration rule of `scripts/build_summary.py`; `data/summary.json` names the
 configuration and source of every value). #measured-ids.map(cfg-detail).join([. ]). Generation excludes model loading;
-unbatched development timings (e.g. a seven-gluon point with its rotation check) are not in this table (@sevenglue).]]
+unbatched development timings (e.g. a seven-gluon point with its rotation check) are not in this table (@sevenglue).
 
-// Figure 1: the batched full-colour time of each G1 row against its gate
-// limit and the providers, on a log scale (data/summary.json).
-#let fig-lo = calc.log(0.0005, base: 10)
-#let fig-hi = calc.log(50.0, base: 10)
-#let fig-w = 11.2cm
-#let fig-h = 11pt
-#let xpos(t) = fig-w * (calc.log(t, base: 10) - fig-lo) / (fig-hi - fig-lo)
-#let fig-ticks = ((0.001, [1 ms]), (0.01, [10 ms]), (0.1, [100 ms]), (1.0, [1 s]), (10.0, [10 s]))
-#let fig-rows = all-rows.filter(r => r.full_colour.at("fastest", default: none) != none)
-#let fig-dot(fill: none, stroke: none) = circle(radius: 2.9pt, fill: fill, stroke: stroke)
-// One value per row: Table 1's main value (the most recent configuration).
-#let fig-row(r) = {
-  let c = r.full_colour
-  let m = c.main
-  let g = m.at("gate", default: none)
-  box(width: fig-w, height: fig-h, {
-    for (t, _) in fig-ticks { place(dx: xpos(t), line(start: (0pt, 0pt), end: (0pt, fig-h), stroke: 0.4pt + luma(222))) }
-    place(dy: fig-h / 2, line(start: (0pt, 0pt), end: (fig-w, 0pt), stroke: 0.4pt + luma(205)))
-    if g != none {
-      let xl = xpos(g.limit_seconds)
-      place(dx: xl, rect(width: fig-w - xl, height: fig-h, fill: rgb("#d6604d").transparentize(84%), stroke: none))
-      place(dx: xl - 0.7pt, rect(width: 1.4pt, height: fig-h, fill: rgb("#b2182b"), stroke: none))
-    }
-    for (k, x) in c.providers.pairs() {
-      if "seconds_per_point" in x {
-        let fast = k == c.fastest.key
-        place(dx: xpos(x.seconds_per_point) - 2.4pt, dy: fig-h / 2 - 2.4pt,
-          rotate(45deg, square(size: 3.4pt, fill: if fast { luma(40) } else { luma(165) }, stroke: 0.4pt + white)))
-      }
-    }
-    if m.status == "measured" { place(dx: xpos(m.seconds_per_point) - 2.9pt, dy: fig-h / 2 - 2.9pt, fig-dot(fill: navy, stroke: 0.6pt + white)) }
-  })
-}
-#figure(
-  caption: [*Batched full colour against the gate* ($B = 128$ or the largest batch, finite part; the rows of @tab:summary with a
-    matched provider). Dots: pyAmpliCol's values of @tab:summary, the most recent measured configuration (#measured-ids.filter(id => C.at(id).main_cells.full_colour.len() > 0 and C.at(id).kind == "g1").map(cfg-short).join([\; ])#if C.at("development", default: none) != none and C.development.main_cells.full_colour.len() > 0 [\; development, not yet on `loop`]); diamonds: the providers, the darkest the fastest; red line: the gate limit, the shaded side
-    fails. The ratios and bands at every batch size: @tab:g1batch.],
-  {
-    set text(7pt, font: sans, stretch: 87.5%)
-    grid(columns: (3.2cm, fig-w, 1fr), column-gutter: 6pt, row-gutter: 3pt, align: (right + horizon, left + horizon, left + horizon),
-      ..fig-rows.map(r => {
-        let m = r.full_colour.main
-        let chip = if m.status != "measured" { plain-chip[#status-title(m)] } else if "gate" in m { gate-chip(m.gate) } else { plain-chip[no gate] }
-        (text(8.6pt, font: "Libertinus Serif", math-label(r.math)), fig-row(r), chip)
-      }).flatten(),
-      [], box(width: fig-w, height: 9pt, for (t, l) in fig-ticks { place(dx: xpos(t) - 1cm, box(width: 2cm, align(center, text(fill: ink2, l)))) }), [],
-    )
-  },
-) <fig:gate>
 
-#pagebreak(weak: true)
+*Figure 1* places each row's batched full-colour value of Table 1 (dots; the most recent measured configuration:
+#measured-ids.filter(id => C.at(id).main_cells.full_colour.len() > 0 and C.at(id).kind == "g1").map(cfg-short).join([\; ])#if C.at("development", default: none) != none and C.development.main_cells.full_colour.len() > 0 [\; development, not yet on `loop`]) against the providers (diamonds, the darkest
+the fastest) and the gate limit (red bar, the shaded side fails; grey bar: the limit of a process below 5 ms, not gated;
+dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The ratios and bands at every batch size: @tab:g1batch.
+]
+
 
 // =============================================================== STATUS ==
 = Status at this milestone <status>
@@ -762,7 +836,10 @@ unbatched development timings (e.g. a seven-gluon point with its rotation check)
 #let s-gate(r) = { let m = s-main(r); if m.status == "measured" { m.at("gate", default: none) } else { none } }
 #let s-ids = s-gated.filter(r => s-main(r).status == "measured").map(r => s-main(r).configuration).dedup()
 #let s-with(st) = s-gated.filter(r => s-gate(r) != none and s-gate(r).status == st)
-#let s-decided = s-gated.filter(r => s-gate(r) != none and "decision" in s-gate(r))
+#let s-decided = s-gated.filter(r => s-gate(r) != none and "decision" in s-gate(r) and s-gate(r).status != thr-rule.verdict)
+// Below 5 ms per point: no blocking gate (user rule; summary.json gate.rule).
+#let s-thr = s-with(thr-rule.verdict)
+#let s-blocking = s-gated.filter(r => r not in s-thr)
 #let s-at-one(suffix, st) = s-gated.filter(r => {
   let m = s-main(r)
   let name = m.at("g1_configuration", default: none)
@@ -792,9 +869,9 @@ unbatched development timings (e.g. a seven-gluon point with its rotation check)
     [*Gate G1* (@g1; finite part, $2 -> 3$ and beyond)]
     [
       - *Most recent configuration* (Table 1 and Figure 1): #s-ids.map(s-config).join([; ]) at $B = 128$:
-        #s-with("pass").len() of #s-gated.len() pass#if s-decided.len() > 0 [ (#s-decided.map(r => { let x = s-gate(r); [#math-label(r.math) by #x.decision (#fixed(x.ratio_to_limit, 2) of its limit, band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2))] }).join([, ]))]#if s-with("open").len() > 0 [, #row-names(s-with("open").map(r => r.key)) open]#if s-with("fail").len() > 0 [, #row-names(s-with("fail").map(r => r.key)) #if s-with("fail").len() == 1 [fails] else [fail]
-        (#s-with("fail").map(r => [×#fixed(s-gate(r).ratio_to_limit, 2)]).join([, ]) of the limit)].
-        At $B = 1$ #if s-at-one("", "pass").len() == 0 [no process passes] else [#s-at-one("", "pass").len() pass] with 16 lanes#if s-lanes [ (#s-at-one("/L1", "pass").len() with one lane: the development runs of #rev-list(l1-revs), history; the public path runs 16 lanes)].
+        #s-with("pass").len() of #s-blocking.len() gated #if s-blocking.len() == 1 [process passes] else [processes pass]#if s-decided.len() > 0 [ (#s-decided.map(r => { let x = s-gate(r); [#math-label(r.math) by #x.decision (#fixed(x.ratio_to_limit, 2) of its limit, band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2))] }).join([, ]))]#if s-with("open").len() > 0 [, #row-names(s-with("open").map(r => r.key)) open]#if s-with("fail").len() > 0 [, #row-names(s-with("fail").map(r => r.key)) #if s-with("fail").len() == 1 [fails] else [fail]
+        (#s-with("fail").map(r => [×#fixed(s-gate(r).ratio_to_limit, 2)]).join([, ]) of the limit)]#if s-thr.len() > 0 [; #row-names(s-thr.map(r => r.key)) #if s-thr.len() == 1 [runs] else [run] below 5 ms per point: *not gated* (user 2026-10-24\; #s-thr.map(r => fixed(s-gate(r).ratio_to_limit, 2)).join([, ]) of the limit)].
+        At $B = 1$ #if s-at-one("", "pass").len() == 0 [no gated process passes] else [#s-at-one("", "pass").len() pass] with 16 lanes#if s-lanes [ (#s-at-one("/L1", "pass").len() with one lane: the development runs of #rev-list(l1-revs), history; the public path runs 16 lanes)].
 #if not cfg-used("integrated") [
       - *On `loop` (integrated, #inputs-text(C.integrated) per-point inputs): not met* (history, @g1). It fails every gated process it
         generates, at #ratio-range(py-big) of the binding limit at $B = 128$ (the Python inputs take
@@ -835,7 +912,7 @@ unbatched development timings (e.g. a seven-gluon point with its rotation check)
     #set text(8.3pt)
     - Electroweak loops, Goldstones and the complex-mass scheme (WP3.2): $g g -> t overline(t) e^- e^+ g$ (EW) not started.
       ($Z$ couplings on loop quark lines in QCD loops generate on `loop` since G-int; the Python-input engine refused them.)
-    - Gate G1 at $B = 1$ (16 lanes for one point) and for #names(nat-fail) at $B = 128$; batched timings of the $2 -> 5$ set;
+    - Gate G1 at $B = 1$ (16 lanes for one point)#if nat-fail.len() > 0 [ and for #names(nat-fail) at $B = 128$]; batched timings of the $2 -> 5$ set;
       provider protocol-mode columns.
     - Seven-gluon generation cost (WP3.1 branch, before G-int): #let g7r = meas.required_native.processes.gg_ggggg
       #minutes(g7r.generate_s + g7r.export_s) with the plan export (generation #minutes(g7r.generate_s), mostly the
@@ -853,7 +930,10 @@ unbatched development timings (e.g. a seven-gluon point with its rotation check)
   [*Performance gates and timing protocol: definitions*]
   [
     - *Gate.* Faster than MadLoop and at most 1.30× each matched Recola and OpenLoops time, on the *finite part*, from
-      $2 -> 3$ upward; $2 -> 2$ is reported without a gate. Aspiration: fastest of all tools from $2 -> 3$.
+      $2 -> 3$ upward; $2 -> 2$ is reported without a gate. A process whose batched time per point is below 5 ms has no
+      blocking gate: its ratio is shown, its verdict is "#thr-rule.label" (user decision; `data/milestone.json`
+      `gate_decisions.threshold_rule`); optimisation effort goes to higher multiplicities. Aspiration: fastest of all tools
+      from $2 -> 3$.
     - *Protocol.* Providers in production mode with poles off where they allow it (OpenLoops `truepoles 0`, Recola without IR
       poles, MadLoop production build); pyAmpliCol finite-only (`poles = "none"`) with stability checks off, one pinned
       thread, binary64, 16 lanes, the same frozen points (pyAmpliCol receives their exact rationals, the providers their
@@ -868,8 +948,8 @@ unbatched development timings (e.g. a seven-gluon point with its rotation check)
       generation; OpenLoops libraries are prebuilt (no generation time).
     - *Labels.* @tab:summary and @fig:gate show the most recent measured configuration of each cell
       (main-configuration rule of `scripts/build_summary.py`; `data/summary.json` names the configuration and source of every
-      value); their title line, reading guide and column header state it once, with branch and commit, and say when it is a
-      development measurement not yet on `loop`. The detailed G1 tables (@g1) show the configuration on `loop` and, labelled,
+      value); the column header of @tab:summary states it once, with branch and commit, and "Reading the summary" says
+      when it is a development measurement not yet on `loop`. The detailed G1 tables (@g1) show the configuration on `loop` and, labelled,
       its history: the Python per-point inputs before G-int and the development runs of #rev-list(l1-revs).
       Missing values are marked, never estimated or extrapolated; test durations are never used as event timings. The legacy per-diagram engine's timings of 18 October are history (data kept in
       `data/measurements.json`, not shown).
@@ -962,7 +1042,7 @@ The configurations:
   if not p.gated { return table.cell(tiny[no gate]) }
   let a = if refused(py-c(p)) { none } else { verdict(bat(py-c(p), b)) }
   let d = verdict(bat(nat-c(p), b))
-  table.cell(text(6.8pt)[#if refused(py-c(p)) { text(fill: ink2)[—] } else { gate-word(p, b, a) } #linebreak() #gate-word(p, b, d)])
+  table.cell(text(6.8pt)[#if refused(py-c(p)) { text(fill: ink2)[—] } else { gate-word(p, py-c(p), b, a) } #linebreak() #gate-word(p, nat-c(p), b, d)])
 }
 #figure(kind: table,
   caption: [*Gate G1, full colour*, ms per point (gate statistic: median),
@@ -978,10 +1058,11 @@ The configurations:
     the gate. Gate: upper line Python inputs (history), lower line native
     inputs (`loop`); the number is the time over the binding limit (MadLoop's
     time or 1.30× the faster of Recola and OpenLoops); *open*: the band
-    contains the limit#if nat-decided.len() > 0 [; ‡ pass by user decision although it does] (bands:
-    @tab:g1batch).],
+    contains the limit#if nat-decided.len() > 0 [; ‡ pass by user decision although it does]; *not gated*: the
+    configuration runs below 5 ms per point at its largest batch (user rule of 2026-10-24, at every $B$; ratio as
+    measured) (bands: @tab:g1batch).],
   tstyle(table(
-    columns: (2.75cm, 0.75cm, 1fr, 1fr, 1fr, 1fr, 1fr, 1.7cm),
+    columns: (2.55cm, 0.75cm, 1fr, 1fr, 1fr, 1fr, 1fr, 2.3cm),
     align: left + horizon, inset: (x: 4pt, y: 2.6pt),
     stroke: (x, y) => (top: if y <= 1 { none } else if calc.rem(y - 1, 3) == 0 { 0.6pt + luma(190) } else { hair }, left: if x >= 2 and y > 0 { hair } else { none }),
     fill: thead-fill,
@@ -1015,8 +1096,14 @@ timed blocks of one $B$, and over the provider's timed points (the stream's
 first 16; 8 for #pairs-text(short-points)). The provider times are the
 records of the measure-g1 campaign (23–24 October, on cores
 #core-span(prov-cores)), not re-run for this milestone; pyAmpliCol ran on
-cores #core-span(nat-cores), one job per idle eight-core group sharing an L3
-cache.
+cores #core-span(nat-cores), inside the cores 128–191 reserved for this
+campaign (no SMT siblings), one job at a time per eight-core group sharing
+an L3 cache (the idleness check's output was not archived). Run-to-run
+spread on this shared host is visible: #gname("uux_uuxg") took 3.78 then
+3.30 ms per point at $B = 128$ (the first run, open at the limit, and the
+single repeat that decides), and the three blocks of #gname("uux_ddxg")
+spread over 2.22–2.77 ms, a range containing the 2.29 ms of a ten-round
+paired run of the same plan (below).
 Its uncertainty is pyAmpliCol's block spread (half the range of three blocks,
 the median's standard error from five) plus the provider's half-range over its
 repeated runs (#pct(host-spread), the campaign's largest, for the single runs
@@ -1042,9 +1129,9 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
   let gt = x.gate
   if "band_to_binding_limit" not in gt { return table.cell(tiny[#gt.status]) }
   let (lo, hi) = gt.band_to_binding_limit
-  let st = eff-status(p, b, gt)
-  table.cell(fill: if st == "pass" { rgb("#e8f1f8") } else if st == "fail" { rgb("#fbe3dd") } else { warm }, {
-    text(7.6pt, weight: "bold")[#fixed(gt.ratio_to_binding_limit, 2)#if decision(p, b, gt) != none [‡]]
+  let st = eff-status(p, c, b, gt)
+  table.cell(fill: if st == "pass" { rgb("#e1f2ea") } else if st == "fail" { rgb("#fbe3dd") } else if st == "not gated" { neutral } else { warm }, {
+    text(7.6pt, weight: "bold")[#fixed(gt.ratio_to_binding_limit, 2)#if st != "not gated" and decision(p, b, gt) != none [‡]]
     h(1fr)
     tiny[#fixed(lo, 2)–#fixed(hi, 2)]
   })
@@ -1054,7 +1141,8 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
 #figure(kind: table,
   caption: [*The gate at every batch size* (native inputs on `loop`, full
     colour): time over the binding limit and its uncertainty band (cell
-    colour: blue pass, red fail, amber open#if nat-decided.len() > 0 [; ‡ pass by user decision, the
+    colour: green pass, red fail, amber open, grey not gated: below 5 ms per point at $B = 128$, user rule of
+    2026-10-24, at every $B$ of the process#if nat-decided.len() > 0 [; ‡ pass by user decision, the
     band containing the limit: #decided-text(nat-decided)]). $B = 1$ is timed with the
     default 16 lanes (a one-point call pays a 16-lane chunk); the one-lane
     column is the development campaign's (#rev-list(l1-revs), history: the
@@ -1150,14 +1238,14 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
   #set par(justify: true)
   *Verdict of gate G1* (processes from $2 -> 3$; $2 -> 2$ without a gate).
   - *Native inputs on `loop`* (G1 at #raw(g.slice_revision)) at $B = 128$: *pass* for
-    #names(nat-pass)#if nat-decided.len() > 0 [ (#decided-text(nat-decided))]\; *fail* for #names(nat-fail)
-    (#nat-fail.map(p => [#mult2(lim(p, nat-c(p), big)), #pshort(bat(nat-c(p), big).gate.binding_provider) binding]).join([; ]))#if nat-open.len() > 0 [; *open* for #names(nat-open)
+    #if nat-pass.len() == nat-gated.len() [all #nat-gated.len() gated processes, ] #names(nat-pass)#if nat-decided.len() > 0 [ (#decided-text(nat-decided))]#if nat-fail.len() > 0 [\; *fail* for #names(nat-fail)
+    (#nat-fail.map(p => [#mult2(lim(p, nat-c(p), big)), #pshort(bat(nat-c(p), big).gate.binding_provider) binding]).join([; ]))]#if nat-open.len() > 0 [; *open* for #names(nat-open)
     (#nat-open.map(p => fixed(lim(p, nat-c(p), big), 2)).join([, ]) of its limit
-    after the single repeat)]. At $B = 1$ with 16 lanes
-    #if one-pass.len() == 0 [none passes] else [#names(one-pass) pass] (a
+    after the single repeat)]#if nat-ungated.len() > 0 [. *Not gated* (below 5 ms per point, user decision of 2026-10-24; ratios as measured): #ungated-text(nat-ungated)]. At $B = 1$ with 16 lanes
+    #if one-pass.len() == 0 [no gated process passes] else [#names(one-pass) pass] (a
     one-point call pays a 16-lane chunk, @tab:g1batch); with one lane per
     call, in the development runs of #rev-list(l1-revs) (history),
-    #names(l1-pass) passed.
+    #if l1-pass.len() == nat-gated.len() [all #nat-gated.len() gated processes passed.] else [#names(l1-pass) passed.]
   - *Python inputs* #flag[history] (the engine before G-int, G1 at
     #rev-list(py-revs)): failed every process it generated, at $B = 128$ at
     #ratio-range(py-big) of the binding limit, the per-point Python inputs
@@ -1197,8 +1285,8 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
     [done: G-int, on `loop` at #raw(g.slice_revision)],
     [*Binary64 point inputs* (the providers' input; the protocol passes the stream's exact rationals)],
     [paired run on the loaded artifact, $B = 128$: #gname("uux_ddxg") 1.68 against 2.29 ms, #gname("uux_uuxg") 2.94 against 3.39 ms],
-    [measured: ×1.37 and ×1.15 (not a G1 configuration)],
-    [protocol: the user's decision; executor input conversion],
+    [measured: ×1.37 and ×1.15 (information; not a G1 configuration)],
+    [none: moot under the 5 ms gate rule (user, 2026-10-24); the protocol keeps exact inputs],
     [*Compiled native trees* (kernels as the tree engine's SymJIT planes, lanes batched)],
     [untimed rest (the native trees, Born and counterterm inputs and the rest of the call; no trees timer on `loop`) #pct-range(trees-share.map(t => t.s)) of the time at $B = 128$; #gname(trees-share.sorted(key: t => t.s).last().p.key) #pct(trees-share.sorted(key: t => t.s).last().s)],
     [up to the share; ×#fixed(1 / (1 - calc.max(..trees-share.map(t => t.s))), 1) for the largest],
@@ -1229,20 +1317,23 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
 
 #let ud = gproc("uux_ddxg")
 #let udx = bat(nat-c(ud), big)
-#let ud-after = udx.median_seconds_per_point - glue(udx) - stage(udx, "scatter")
-The failing row, #gname("uux_ddxg"), takes #msec(udx.median_seconds_per_point) ms
-at $B = 128$ against a limit of #msec(udx.gate.binding_limit) ms (OpenLoops
-#msec(ptime(ud, "openloops")) ms × 1.30). Its glue and scatter are
-#msec(glue(udx) + stage(udx, "scatter")) ms; without them it would take
-#msec(ud-after) ms, #fixed(ud-after / udx.gate.binding_limit, 2) of the limit.
-Its points enter as exact rationals. In a paired run on the loaded artifact
-(one core, ten alternating rounds, $B = 128$; not a G1 configuration, and its
-exact-input time, 2.29 ms, is not G1's) the same executor takes 1.68 ms on the
-binary64 text the providers read (×0.73; #gname("uux_uuxg"): 2.94 against
-3.39 ms, ×0.87), and the public `Runtime.evaluate` adds 10 % (2 %) to the
-executor call on the same decimal text. Whether G1 passes binary64 inputs is
-the user's decision; this campaign keeps the exact inputs of the measure-g1
-protocol, and no verdict is formed from the paired run.
+*Below 5 ms per point.* #names(nat-ungated) take
+#nat-ungated.map(p => [#msec(bat(nat-c(p), big).median_seconds_per_point)]).join([, ], last: [ and ]) ms per point at
+$B = 128$; by the user's decision of 2026-10-24 a process below 5 ms has no
+blocking gate and its slowdown against the providers need not be pursued:
+optimisation effort goes to higher multiplicities. Their ratios stay in the
+tables (#gname("uux_ddxg"): #msec(udx.median_seconds_per_point) ms against a
+limit of #msec(udx.gate.binding_limit) ms, OpenLoops
+#msec(ptime(ud, "openloops")) ms × 1.30, #fixed(lim(ud, nat-c(ud), big), 2) of
+it). The question whether G1 should pass the points as exact rationals (the
+protocol) or as the binary64 text the providers read is moot under this
+rule, and the protocol stays. For information only (not a G1
+configuration, no verdict formed from it): in a paired run on the loaded
+artifact (one core, ten alternating rounds, $B = 128$) the same executor takes
+1.68 ms on the binary64 text against 2.29 ms on the exact points for
+#gname("uux_ddxg") (×0.73; #gname("uux_uuxg"): 2.94 against 3.39 ms, ×0.87),
+and the public `Runtime.evaluate` adds 10 % (2 %) to the executor call on the
+same decimal text.
 
 == Leading colour
 
@@ -1750,7 +1841,7 @@ not a batched one-thread time and not comparable with NJet's
   ([Direct $R_2$], "deferred", [A bonus by the user's rule; bounded controls only.]),
   ([Electroweak, complex mass], "open", [Tree EW lanes fixed, the Dirac–Weyl class refused; loop EW, Goldstones and CMS are WP3.2.]),
   ([Required set], "progress", [Seven of eight generate and agree with their references in all coefficients with native inputs (@tab:validation, validated on the WP3.1 branch before its integration), $g g -> g g g g g$ against NJet's double-double values; the generator is on `loop` since G-int. The EW target is not started; no batched $2 -> 5$ timing.]),
-  ([Performance gates], "progress", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #gated.len() pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open], #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]\; $B = 1$ needs lane adaptation (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history). Missing: provider protocol-mode columns, seven legs (`measure-g1-7leg`).]),
+  ([Performance gates], "progress", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]\; $B = 1$ needs lane adaptation (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history). Missing: provider protocol-mode columns, seven legs (`measure-g1-7leg`).]),
   ([$g g -> 6g$], "deferred", [No $2 -> 6$ work until the $2 -> 5$ plan is complete (user, 23 October).]),
 )
 #figure(kind: table,
@@ -1965,12 +2056,15 @@ evaluators), so a plain evaluation loads without regenerating the process.
   - *Build:* `typst compile benchmarks.typ benchmarks.pdf` in
     `docs/performance_reports/loop/` (Typst 0.15).
   - *Status, in-flight work, decisions:* `data/milestone.json`, from the
-    `Integrate …` merges of #ms.engine_revision since #ms.previous_loop (A3
-    `c29d5899`, G-int `4e9b5a9e`)\;
+    integration merges of #ms.engine_revision since #ms.previous_loop (A3
+    `c29d5899`, G-int `4e9b5a9e`; commit subjects "Integrate work/v2-…")\;
     `workspace/reports/engine-v2/slice-status.md` (integration blocks,
     DECISIONS 2026-10-23/24; the user's gate decision of 2026-10-24, 16:05 UTC, is
     recorded in `data/milestone.json` `gate_decisions` and no longer applies after the
-    re-measure); `HANDOFF_24_10_2026.md` §6; MASTER_PLAN
+    re-measure; the user's rules of 2026-10-24, 22:35 UTC — uncoloured generation,
+    green-to-red run times, summary pages with only Table 1, Figure 1 and legends,
+    and the gate rule "#thr-rule.label", recorded as `gate_decisions.threshold_rule`
+    and applied by `scripts/build_summary.py` and this report); `HANDOFF_24_10_2026.md` §6; MASTER_PLAN
     2026-10-23/24 entries; REQUIREMENTS_ADDENDUM A, D, F, G, H, I, J; DESIGN §5.5,
     §5.7 (G1), §6.1, §6.2, §12.4, WP3.1; the 24 October pushes (59badc7a and b4d76cc3,
     gates in slice-status.md).

@@ -329,8 +329,8 @@
   "batched": "measure-g1-7leg"
  },
  "gate_decisions": {
-  "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~16:05 UTC (user answers to HANDOFF_24 section 10)",
-  "what": "user verdicts that replace a measured open (inconclusive) gate verdict; the measured ratio and band stay as measured",
+  "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~16:05 UTC (user answers to HANDOFF_24 section 10; decisions) and ~22:35 UTC (user GATE RULE; threshold_rule)",
+  "what": "user verdicts: decisions replace a measured open (inconclusive) gate verdict of their process and batch; threshold_rule removes the blocking gate below 5 ms per point; the measured ratio and band stay as measured",
   "decisions": [
    {
     "process": "uux_uuxg",
@@ -342,6 +342,14 @@
     "revision": "39824f9b",
     "status": "no longer applies: the G1 re-measure on loop (4e9b5a9e, native inputs) is a measured pass at B = 128 after its single repeat (0.87 of the limit, band 0.78-0.95); a decision applies to a measured open verdict of its process and batch only"
    }
-  ]
+  ],
+  "threshold_rule": {
+   "below_seconds_per_point": 0.005,
+   "verdict": "not gated",
+   "label": "below 5 ms: not gated (user 2026-10-24)",
+   "short": "<5 ms: not gated",
+   "applies": "a process whose pyAmpliCol batched time per point is below 5 ms has no blocking gate: its ratio and band stay as measured and are shown, its verdict is the label, at every batch size of that configuration (B = 1 included); the batched time is the configuration's own at its largest batch above 1, and for a configuration timed at B = 1 only (the one-lane runs) the configuration on loop's; it takes precedence over a decision; the exact-rational vs binary64 input question is therefore moot and the protocol stays",
+   "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts)"
+  }
  }
 }
