@@ -22,9 +22,11 @@ tools.loop_benchmark``) and writes one JSON document for the live report
   that could compute the process but whose production-mode timing is not
   obtainable under HANDOFF §0.1 (``matched`` in its specification, or an
   imported campaign timing outside the protocol, ``protocol_mode`` false) is
-  *missing*: a verdict that passes every obtainable check is then "partial"
-  (the user judges it, addendum F), and the timing outside the protocol is
-  kept beside the verdict as ``outside_protocol``, never in it;
+  *missing*: the gate is taken on the available providers (addendum D,
+  "each available Recola / OpenLoops"; the verdicts published on loop, e.g.
+  u u~ > g g g g without MadLoop), the missing ones are listed beside the
+  verdict with their reasons (``missing``), and the timing outside the
+  protocol is kept beside it as ``outside_protocol``, never in it;
 - its **uncertainty** (MASTER_PLAN §5.8 item 9): the relative standard error
   of pyAmpliCol's median over its blocks (1.2533 x 1.4826 MAD / sqrt(n);
   half the range for fewer than five blocks) plus each provider's relative
@@ -251,8 +253,6 @@ def _verdict(
         status = "fail"
     elif "inconclusive" in states:
         status = "inconclusive"
-    elif missing:
-        status = "partial"
     else:
         status = "pass"
     fastest = min(times, key=times.get)
