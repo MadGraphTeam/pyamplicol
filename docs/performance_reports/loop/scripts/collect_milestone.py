@@ -4,8 +4,11 @@
 Usage: python scripts/collect_milestone.py <workspace> [output]
 
 <workspace> is the development workspace that holds the run records
-(tmp/generation-scale/runs, tmp/ct-recursion/s4). Every value is read from
-those records (JSON and /usr/bin/time -v logs); nothing is copied from text.
+(tmp/generation-scale/runs, tmp/ct-recursion/s4, the WP3.1 native validations
+in tmp/generation-scale/gint2/after, gint and i7, the provider reference runs in
+reference/runs/required, NJet's timing records in reference/runs/njet/timing).
+Every value is read from those records (JSON and /usr/bin/time -v logs);
+nothing is copied from text.
 Each block carries its source, relative to the workspace. The hand-maintained
 registry data/milestone.json is not written here.
 """
@@ -18,7 +21,74 @@ import sys
 from pathlib import Path
 
 RUNS = "tmp/generation-scale/runs"
+# The branch whose development runs RUNS and GENSCALE hold.
+GENSCALE_BRANCH = "work/v2-generation-scale"
 CT = "tmp/ct-recursion/s4"
+# Native validations of the WP3.1 branch (work/v2-generation-scale):
+# tools/loop_v2_generate.py validate --inputs native, production counterterm
+# route, binary64, one record per process. Each process takes the newest
+# record, with the DESIGN WP3.1 increment that reports it and that
+# increment's commit (`revision`: a docs-only commit on the measured tree,
+# which scripts/build_summary.py orders by git ancestry against the G1
+# campaign's revisions). The ninth increment (6f5a64cc) re-ran three
+# processes on the head after the ct-simplify merge; the eighth (0ea83af2)
+# re-ran the set on its merged head ("the results equal the seventh
+# increment's") except u u~ > g g g g g, whose newest record is the seventh
+# increment's (fef92189).
+GENSCALE = "tmp/generation-scale"
+NINTH = (
+    "DESIGN.md WP3.1 ninth increment (6f5a64cc),"
+    " 'Native validations on the merged head'",
+    "6f5a64cc",
+)
+EIGHTH = (
+    "DESIGN.md WP3.1 eighth increment (0ea83af2),"
+    " 'Native validations on the merged head'",
+    "0ea83af2",
+)
+SEVENTH = (
+    "DESIGN.md WP3.1 seventh increment (fef92189),"
+    " 'I5 proper, the interim production route'",
+    "fef92189",
+)
+GINT_RECORDS = {
+    "uux_emepddxg": ("gint2/after/uux_emepddxg.json", NINTH),
+    "uux_emepggg": ("gint/val1/uux_emepggg.json", EIGHTH),
+    "gg_ttxemepg_qcd": ("gint/val1/gg_ttxemepg_qcd.json", EIGHTH),
+    "gg_ttxgg": ("gint/val1/gg_ttxgg.json", EIGHTH),
+    "gg_gggg": ("gint2/after/gg_gggg.json", NINTH),
+    "uux_ggggg": ("i7/val/uux_ggggg.json", SEVENTH),
+    "gg_ggggg": ("gint2/after/gg_ggggg_njet.json", NINTH),
+}
+# Earlier records of a process whose newest record re-ran fewer points: the
+# ninth increment re-ran g g > g g g g g at point 0 only (bitwise the eighth
+# increment's values there); the eighth increment's record keeps points 1
+# and 2. They are older candidates of Table 1's validation cell only: the
+# newest record replaces them unless it only repeats part of them
+# (VALIDATION_RULE of scripts/build_summary.py), never in the generation cell.
+SUPERSEDED = {
+    "gg_ggggg": ("gint/val1/gg_ggggg_njet.json", EIGHTH),
+}
+# Provider reference runs of the required set (HANDOFF section 0.1): MadLoop
+# export records (graph generation, source export, compilation), MadLoop's
+# production-build timing records and the Recola/OpenLoops result records of
+# the reference campaign.
+REFS = "reference/runs/required"
+REF_PROCESSES = (
+    "uux_emepddxg",
+    "uux_emepggg",
+    "gg_ttxemepg_qcd",
+    "gg_ttxemepg_ew",
+    "uux_ggggg",
+    "gg_ggggg",
+)
+# NJet 3.1.2's seven-gluon single evaluations (no scaling test): double
+# precision, one pinned core, the 10 frozen points of the timing campaign.
+NJET = "reference/runs/njet/timing"
+NJET_SINGLE = {
+    "standard": "njet312-double-standard-single-gg_5g",
+    "desymmetrised": "njet312-double-ds-single-gg_5g",
+}
 
 
 def _load(root: Path, rel: str) -> dict:
@@ -47,6 +117,32 @@ def _time_v(root: Path, rel: str) -> dict:
     }
 
 
+def _command_veto(root: Path, rel: str) -> list[int]:
+    """The vetoed particles (|PDG|) of a timed tools/loop_v2_generate.py run:
+    the --veto argument of the command line in its /usr/bin/time -v log;
+    none (top loops included) when the argument is absent."""
+    text = (root / rel).read_text()
+    command = re.search(r'Command being timed: "(.*)"', text).group(1)
+    veto = re.search(r"--veto[ =](\S+)", command)
+    return [] if veto is None else [int(x) for x in veto.group(1).split(",") if x]
+
+
+def _njet_single(root: Path, name: str) -> dict:
+    """Mean time of one NJet evaluation over the points of a timing record."""
+    rel = f"{NJET}/{name}.json"
+    rec = _load(root, rel)
+    seconds = [row["seconds"] for row in rec["rows"]]
+    return {
+        "source": f"workspace/{rel}",
+        "tool": rec["tool"],
+        "amplitude": rec["options"]["amp"],
+        "precision": rec["options"]["prec"],
+        "scaling_test": rec["options"]["scaling"] != "0",
+        "points": len(seconds),
+        "mean_s": round(sum(seconds) / len(seconds), 4),
+    }
+
+
 def _events(record: dict) -> dict:
     return {e["stage"]: e for e in record.get("events", [])}
 
@@ -64,8 +160,118 @@ def _generation(root: Path, name: str) -> dict:
         "plan_json_s": ev["plan_json"]["wall_s"],
         "plan_json_mb": rec["plan_json_mb"],
         "counts": rec["counts"],
+        "particle_veto": _command_veto(root, f"{RUNS}/{name}.log"),
     }
     out.update(_time_v(root, f"{RUNS}/{name}.log"))
+    return out
+
+
+def _native_validation(root: Path, rel: str, record: tuple[str, str]) -> dict:
+    """One WP3.1 native validation record: generation and export cost, and
+    per reference the largest deviation of every coefficient over the points
+    (the record's own metric, |a-b|/max(|a|,|b|,|Born| coupling/2pi))."""
+    path = f"{GENSCALE}/{rel}"
+    rec = _load(root, path)
+    label, revision = record
+    worst: dict[str, dict[str, float]] = {}
+    for point in rec["points"]:
+        for ref, errors in point["errors"].items():
+            for coefficient, value in errors.items():
+                slot = worst.setdefault(ref, {})
+                slot[coefficient] = max(slot.get(coefficient, 0.0), value)
+    return {
+        "source": f"workspace/{path}",
+        "record": label,
+        "revision": revision,
+        "process": rec["process"],
+        "counterterms": rec["counterterms"],
+        "inputs": rec["inputs"],
+        "generate_s": rec["generate_s"],
+        "generate_peak_gib": rec["generate_peak_gb"],
+        "export_s": rec["export_s"],
+        "export_peak_gib": rec["export_peak_gb"],
+        "plan_json_mb": rec["plan_json_mb"],
+        "max_rss_gib": rec["max_rss_gb"],
+        "tolerance": rec["tolerance"],
+        "passed": rec["passed"],
+        "points": [p["index"] for p in rec["points"]],
+        "max_deviation": worst,
+        "max_error_per_point": [p["max_error"] for p in rec["points"]],
+        "stability_estimate_per_point": [
+            p.get("stability_relative") for p in rec["points"]
+        ],
+        # Single-point development evaluations (one point per call, with the
+        # rotation check where a stability estimate is recorded); not batched
+        # timings.
+        "seconds_per_point_unbatched": [p["seconds"] for p in rec["points"]],
+    }
+
+
+def _provider_generation(root: Path, key: str) -> dict:
+    """MadLoop export and Recola generation records of one required process,
+    and the OpenLoops library its reference run used."""
+    base = root / REFS / key
+    out: dict = {"source": f"workspace/{REFS}/{key}/"}
+    ml = json.loads((base / "madloop-export.generation.json").read_text())
+    stages = ("graph_generation_s", "source_export_s", "compile_s")
+    madloop = {"status": ml["status"], "loops": ml.get("loops")}
+    madloop.update({s: ml[s] for s in stages if s in ml})
+    if ml["status"] == "compiled":
+        madloop["total_s"] = sum(ml[s] for s in stages)
+    out["madloop"] = madloop
+    production = base / "madloop-production-result.json"
+    if production.exists():
+        rec = json.loads(production.read_text())
+        flags = rec["settings"].get("fortran_flags", {})
+        madloop["production"] = {
+            # MadLoop at its production stability setting, built with MG5's
+            # production Fortran flags; one pinned thread, each point timed
+            # once after an untimed initialisation call.
+            "source": f"workspace/{REFS}/{key}/madloop-production-result.json",
+            "seconds_per_point": [r["seconds"] for r in rec["rows"]],
+            "stability_check": rec["settings"]["stability_check"],
+            "production_build": flags.get("production_build", False),
+            "timing_scope": rec["timing_scope"],
+        }
+    else:
+        state = json.loads((base / "status-madloop-production.json").read_text())
+        madloop["production"] = {
+            "status": state["state"].split(" (")[0],
+            "updated": state["updated"],
+        }
+    recola = base / "recola-result.json"
+    if recola.exists():
+        rec = json.loads(recola.read_text())
+        out["recola"] = {
+            "status": "done",
+            "generation_s": rec["generation_seconds"],
+            # The reference campaign's protocol run (all actual poles; its
+            # settings name the Collier cache), not production mode.
+            "protocol": {
+                "seconds_per_point": [r["seconds"] for r in rec["rows"]],
+                "compute_ir_poles": rec["settings"]["compute_ir_poles"],
+                "collier_cache": rec["settings"]["collier_cache"],
+            },
+        }
+    else:
+        state = json.loads((base / "status-recola.json").read_text())
+        out["recola"] = {"status": state["state"], "updated": state["updated"]}
+    merged = base / "reference.json"
+    if merged.exists():
+        rec = json.loads(merged.read_text())
+        # The reference merge: the providers' largest distance from each
+        # other (its own metric) and the validation status.
+        out["reference"] = {
+            "validation_status": rec["validation_status"],
+            "validated_providers": rec["validated_providers"],
+            "maximum_provider_relative_error": rec["maximum_provider_relative_error"],
+        }
+    openloops = base / "openloops-result.json"
+    out["openloops"] = (
+        {"library": json.loads(openloops.read_text())["library"]["name"]}
+        if openloops.exists()
+        else None
+    )
     return out
 
 
@@ -74,7 +280,6 @@ def collect(root: Path) -> dict:
     ev0 = _load(root, f"{RUNS}/eval2_gg_ggggg.json")
     ev1 = _load(root, f"{RUNS}/eval2_gg_ggggg_rot.json")
     ct = _load(root, f"{CT}/gg_ggggg.json")
-    uux = _load(root, f"{RUNS}/cmp_uux_ggggg.json")
 
     p0, p1 = ev0["points"][0], ev1["points"][0]
     rotation = {
@@ -86,12 +291,6 @@ def collect(root: Path) -> dict:
             strict=True,
         )
     }
-    worst = {}
-    for provider in ("madloop", "recola"):
-        for key in ("born", "finite", "single_pole", "double_pole"):
-            worst.setdefault(provider, {})[key] = max(
-                p["errors"][provider][key] for p in uux["points"]
-            )
 
     return {
         "date": "2026-10-23",
@@ -154,10 +353,46 @@ def collect(root: Path) -> dict:
                 "double_pole_over_born": p0["double_pole_over_born"],
                 "evaluate_s": [p0["evaluate_s"], p1["evaluate_s"]],
             },
-            "uux_ggggg_vs_providers": {
-                "source": f"workspace/{RUNS}/cmp_uux_ggggg.json",
-                "points": len(uux["points"]),
-                "max_relative_deviation": worst,
+        },
+        "required_native": {
+            "branch": GENSCALE_BRANCH,
+            "what": (
+                "generation (LoopSlice.generate; threads as each DESIGN increment"
+                " states them, milestone.json development_records.threads) and"
+                " plan export,"
+                " then binary64 virtuals with native per-point inputs and the"
+                " production counterterm route at the fixture points, against"
+                " the committed references (tests/fixtures/loop/required)"
+            ),
+            "processes": {
+                key: _native_validation(root, rel, record)
+                for key, (rel, record) in GINT_RECORDS.items()
+            },
+            "superseded": {
+                key: _native_validation(root, rel, record)
+                for key, (rel, record) in SUPERSEDED.items()
+            },
+        },
+        "njet_single_evaluation": {
+            "what": (
+                "one NJet evaluation at seven gluons without the scaling test,"
+                " double precision, one pinned core: mean over the record's"
+                " points"
+            ),
+            **{key: _njet_single(root, name) for key, name in NJET_SINGLE.items()},
+        },
+        "provider_generation": {
+            "what": (
+                "MadLoop: graph generation, source export and compilation"
+                " (madloop-export.generation.json) and the production-build"
+                " timing (madloop-production-result.json, or its run status);"
+                " Recola: process generation and the protocol run's times"
+                " per point (recola-result.json, or the run status if"
+                " unfinished); OpenLoops: the prebuilt library of the"
+                " reference run"
+            ),
+            "processes": {
+                key: _provider_generation(root, key) for key in REF_PROCESSES
             },
         },
     }
