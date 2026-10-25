@@ -104,24 +104,35 @@ cache defect (`COLLIER_CACHE_DEFECT`: 1.2.9, 1.2.10). Recola links COLLIER
 (`COLLIERGlobalCache 0` at seven legs); every provider record states the
 decision and the release (`collier_cache`).
 
-The reference trees still name files of the root they were built under
-(the MadLoop exports' `LOOP_LIBS` archives, the RUNPATH of `librecola.so`
-and `libmodelfile.so`, OpenLoops' compiled-in installation path). The
-harness never opens those: `providers.relocated` takes each from the same
-place under `ROOT` (MadLoop links the relocated archives; Recola's driver
-links with `-rpath-link` and runs with `LD_LIBRARY_PATH` set to the
-relocated RUNPATH, and a run whose resolved libraries lie outside `ROOT` is
-refused; OpenLoops runs with `OpenLoopsPath`). A provider run under
-`strace -f -e trace=file` accesses nothing outside the current root's trees
-(`workspace/reports/engine-v2/measure-g1-7leg/records/logs-f4/`).
+TRANSITIONAL (until package reference-relocate fixes the reference trees,
+slice-status DECISIONS 2026-10-25 ~20:45 item 2): the reference trees still
+name files of the root they were built under (the MadLoop exports'
+`LOOP_LIBS` archives, the RUNPATH of `librecola.so` and `libmodelfile.so`,
+OpenLoops' compiled-in installation path), so every `tools/loop_reference`
+run of the toolkit itself still reads the old root. The harness never opens
+those: `providers.relocated` takes each from the same place under `ROOT`
+(MadLoop links the relocated archives; Recola's driver links with
+`-rpath-link` and runs with `LD_LIBRARY_PATH` set to the relocated RUNPATH,
+and a run whose resolved libraries lie outside `ROOT` is refused; OpenLoops
+runs with `OpenLoopsPath`). A provider run under `strace -f -e trace=file`
+accesses nothing outside the current root's trees
+(`workspace/reports/engine-v2/measure-g1-7leg/records/logs-f4/`). Once the
+trees name the current root (patched RUNPATHs and makefile definitions,
+OpenLoops' path, with a strace proof for all three providers), this
+workaround is retired: `relocated`, `library_path`, `loaded_libraries`,
+`_elf_dynamic`, `_environment` and `_relocated_madloop_build` go with
+`test_files_of_a_moved_root_are_taken_under_the_current_root`; the
+reference-root resolution of the records' export paths and the strace check
+stay.
 
-Tracked items (not fixed here):
-
-- g g > g g g g g against NJet: the binary64 accuracy check keeps
-  `passed: false` (3.7e-8 at NJet point 4, 2.2e-8 at point 8, against the
-  fixture's 2e-8; 1.5e-8 and 1.1e-8 on `4e9b5a9e`). Both lie within
-  pyAmpliCol's own binary64 estimate E (1.3e-6, 2.5e-7) and the
-  double-double values equal NJet's double-double values; the points are
-  not timed stream points. The binary64 loss grew with the SymJIT plane
-  applications of `7db32901` (artifact-portability): a slice-level item for
-  that owner; the tolerance is not loosened.
+Accepted deviation (user decision of 2026-10-25, slice-status DECISIONS
+~20:05; not a defect): g g > g g g g g against NJet, binary64, points 4
+(3.7e-8 from NJet's double-double value) and 8 (2.2e-8) of the fixture's
+ten, above its 2e-8 tolerance, are "accepted (user 2026-10-25): O(1e-8)
+binary64, within the estimate, DD = NJet": both lie within pyAmpliCol's own
+binary64 estimate E (1.3e-6, 2.5e-7) and the double-double values equal
+NJet's double-double values; the points are not timed stream points. The
+run's accuracy check keeps the 2e-8 tolerance and `passed: false`; the
+acceptance lives in `docs/performance_reports/loop/data/milestone.json`
+(`validation_decisions`), and the report builder checks its claims against
+`g1.json` and marks the points (`summary.json` `validation.accepted`).

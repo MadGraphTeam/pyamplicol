@@ -38,7 +38,8 @@ shared libraries, OpenLoops' compiled-in installation path). Such files are
 never opened: each is taken from the same place under the current root
 (``relocated``; Recola through ``LD_LIBRARY_PATH``, OpenLoops through
 ``OpenLoopsPath``, MadLoop by linking the relocated archives), and a Recola
-run whose resolved libraries lie outside the root is refused.
+run whose resolved libraries lie outside the root is refused. TRANSITIONAL:
+retired once the reference trees name the current root (README).
 
 Every driver evaluates point 1 once untimed (initialisation), then times
 points 2..n and 1 one by one. Per point the driver's own timer is recorded;
