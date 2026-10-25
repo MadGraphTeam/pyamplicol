@@ -460,7 +460,13 @@
        "within_estimate": false,
        "dd_closest": 3.188177722534943e-13,
        "revision": "2265a9f7",
-       "source": "g1.json processes[uux_ddxg].stability (native/full)"
+       "source": "g1.json processes[uux_ddxg].stability (native/full)",
+       "reference_own": {
+        "key": "recola",
+        "short": "Rc",
+        "dd_deviation": 3.2750291935874243e-10,
+        "dd_estimate": 9.883824392830725e-28
+       }
       },
       "considered": [
        {
@@ -664,7 +670,13 @@
        "within_estimate": false,
        "dd_closest": 2.428328642024099e-13,
        "revision": "2265a9f7",
-       "source": "g1.json processes[uux_uuxg].stability (native/full)"
+       "source": "g1.json processes[uux_uuxg].stability (native/full)",
+       "reference_own": {
+        "key": "recola",
+        "short": "Rc",
+        "dd_deviation": 7.146208078913632e-11,
+        "dd_estimate": 3.5571008779713447e-28
+       }
       },
       "considered": [
        {
@@ -1059,7 +1071,13 @@
        "within_estimate": false,
        "dd_closest": 1.3348289027384224e-14,
        "revision": "2265a9f7",
-       "source": "g1.json processes[uux_ggg].stability (native/full)"
+       "source": "g1.json processes[uux_ggg].stability (native/full)",
+       "reference_own": {
+        "key": "openloops",
+        "short": "OL",
+        "dd_deviation": 8.383731466508194e-11,
+        "dd_estimate": 9.946465580396263e-29
+       }
       },
       "considered": [
        {
@@ -2285,7 +2303,13 @@
        "within_estimate": false,
        "dd_closest": 5.535068690347794e-14,
        "revision": "2265a9f7",
-       "source": "g1.json processes[uux_emepddxg].stability (native/full)"
+       "source": "g1.json processes[uux_emepddxg].stability (native/full)",
+       "reference_own": {
+        "key": "recola",
+        "short": "Rc",
+        "dd_deviation": 1.960720456437326e-09,
+        "dd_estimate": 1.2582696641548728e-26
+       }
       },
       "considered": [
        {
@@ -3062,7 +3086,13 @@
        "within_estimate": false,
        "dd_closest": 1.4144241420398502e-12,
        "revision": "2265a9f7",
-       "source": "g1.json processes[uux_ggggg].stability (native/full)"
+       "source": "g1.json processes[uux_ggggg].stability (native/full)",
+       "reference_own": {
+        "key": "recola",
+        "short": "Rc",
+        "dd_deviation": 2.8627595034727174e-10,
+        "dd_estimate": 1.243117041833413e-27
+       }
       },
       "considered": [
        {

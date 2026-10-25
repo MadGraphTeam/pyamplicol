@@ -797,17 +797,32 @@ def _validation_g1(
                 k: v for k, v in dd[deviations].items() if not fixture or k in SHOWN
             }
             closest = min(shown.values()) if shown else None
+        within = b64["estimate"] >= worst["max_finite"]
         out["worst_point"] = {
             "index": worst["worst_point"],
             **({"fixture": name} if fixture else {}),
             "estimate": b64["estimate"],
-            "within_estimate": b64["estimate"] >= worst["max_finite"],
+            "within_estimate": within,
             "dd_closest": closest,
             # The stability run's revision (printed where it differs from
             # the validated configuration's).
             "revision": (b64.get("revision") or "")[:8] or None,
             "source": f"g1.json processes[{proc['key']}].{table} ({checked})",
         }
+        # A deviation beyond pyAmpliCol's binary64 estimate that its
+        # double-double value repeats is the reference's own (u u~ >
+        # g g g g g at point 0: Recola 2.9e-10 in binary64 and in DD, E =
+        # 1.9e-11, MadLoop 1.4e-12 in DD): the DD value is exact to its own
+        # estimate, so the reference lies that far from it, and the binary64
+        # value lies within E of it. Stated, never used to hide a deviation.
+        own = None if dd is None or within else dd[deviations].get(worst["key"])
+        if own is not None and own > b64["estimate"] and dd["estimate"] < own:
+            out["worst_point"]["reference_own"] = {
+                "key": worst["key"],
+                "short": worst["short"],
+                "dd_deviation": own,
+                "dd_estimate": dd["estimate"],
+            }
     return out
 
 
