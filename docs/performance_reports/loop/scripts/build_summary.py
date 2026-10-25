@@ -81,8 +81,9 @@ INPUTS_PREFERENCE = ("native", "python")
 #                        it): generation and validation, no batched timing
 #                        (a row G1 has not timed waits for it, "pending");
 #   registry             milestone.json status_notes: a refusal attributed
-#                        to loop, or a capability nobody has started (no run,
-#                        so always the last candidate).
+#                        to loop, a capability in development that no
+#                        configuration generates yet, or one nobody has
+#                        started (no run, so always the last candidate).
 # Recency (class Recency): A is newer than B if B's revision is an ancestor
 # of A's (git merge-base --is-ancestor, recorded in milestone.json ancestry
 # and checked against git where the revisions are present), or if A and B
@@ -92,7 +93,7 @@ INPUTS_PREFERENCE = ("native", "python")
 # basis orders, or that the bases order both ways, stop the build: the order
 # is never guessed. A cell takes the newest candidate that measured it; if
 # none did, the status of the newest candidate with a record of the row
-# (refused, not timed, not batched, pending, not started), so "refused"
+# (refused, not timed, not batched, pending, in development, not started), so "refused"
 # appears only where the most recent configuration refuses.
 # The validation cell has one more condition (VALIDATION_RULE): a newer
 # comparison that is less complete than an older one (fewer points, or
@@ -340,8 +341,9 @@ def _split(stages: dict) -> dict:
     out["ninjars"] = stages.get("reduction", 0.0) - stages.get(
         "reduction: masters", 0.0
     )
-    # A record without any per-point input timer (the build on loop: the
-    # native trees timer was a scratch commit of the development campaign)
+    # A record without any per-point input timer (the build on loop before
+    # lc-perf, 88657260: the native trees timer was a scratch commit of the
+    # development campaign; since lc-perf the executor reports "trees")
     # leaves its native trees, Born and counterterm inputs in "other", the
     # untimed rest of the call: shown apart, never attributed to a stage.
     out["untimed"] = 0.0
@@ -1275,14 +1277,22 @@ def _reference(ref: dict, prov: dict | None, matched: list[str], factor: float) 
 
 def _registry_status(note: dict, key: str) -> dict | None:
     """The registry's status of a process without a G1 record: refused on
-    loop (inferred, the basis says why) or not started anywhere, by its short
-    attribution (no record of a run)."""
+    loop (inferred, the basis says why), in development (its work package
+    has started but no configuration generates the process yet) or not
+    started anywhere, by its short attribution (no record of a run)."""
     src = f"milestone.json status_notes.notes[{key}]"
     if "refused" in note:
         return {
             "status": "refused",
             "reason": note["refused"],
             "basis": note.get("refused_basis"),
+            "source": src,
+        }
+    if "in_development" in note:
+        return {
+            "status": "in development",
+            "reason": note["in_development"],
+            "package": note.get("package"),
             "source": src,
         }
     if "not_started" in note:

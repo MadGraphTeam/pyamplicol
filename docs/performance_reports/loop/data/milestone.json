@@ -1,13 +1,13 @@
 {
- "date": "2026-10-24",
- "engine_revision": "4e9b5a9e",
- "previous_loop": "c3a7be09",
- "previous_engine": "b4d76cc3",
+ "date": "2026-10-25",
+ "engine_revision": "1d27426b",
+ "previous_loop": "79df367a",
+ "previous_engine": "4e9b5a9e",
  "native_build": {
-  "name": "loop-native-v2-slice-4e9b5a9e",
-  "digest": "02e1e95c",
+  "name": "loop-native-v2-slice-7db32901",
+  "digest": "be32a169",
   "profile": "release, codegen-units 1, thin LTO, rustc 1.97.1",
-  "source": "workspace/reports/engine-v2/slice-status.md, G-int integration (4e9b5a9e): integrator release build of the merge commit (stage --source accepted it); the G1 campaign of this milestone ran on it (data/g1.json slice_build, slice_native_digest)"
+  "source": "workspace/reports/engine-v2/slice-status.md, artifact-portability integration (7db32901): integrator release build of the merge commit; ew-lines (1d27426b) changed no native input and its integrator's stage --source accepted the build; the G1 campaign of this milestone ran on it (data/g1.json slice_build, slice_native_digest)"
  },
  "development": {
   "source": "git: 889af02c and the G1 scratch commit 39824f9b (tag g1-native-inputs-39824f9b) are on work/v2-generation-scale; work/v2-generation-scale d7e40cfb was integrated into work/v2-slice at 4e9b5a9e (G-int; 889af02c, fef92189, 0ea83af2 and 6f5a64cc are ancestors of 4e9b5a9e, the scratch commit 39824f9b is not); workspace/reports/engine-v2/slice-status.md, G-int integration block and DECISIONS 2026-10-24 ~21:50 UTC; label and integration: HANDOFF_24_10_2026.md section 6.2 (WP3.1 generation-scale, integration package G-int)",
@@ -21,15 +21,16 @@
   "integrated_at": "4e9b5a9e"
  },
  "ancestry": {
-  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
-  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records): every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. 4e9b5a9e is the G1 campaign of this milestone (slice_revision, the engine on loop); 1c971289 and 889af02c were the sides of the previous campaign (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e and is no candidate)",
+  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout; 2026-10-25: milestone m1025a for 1d27426b, in the main checkout); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
+  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records): every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. 1d27426b is the G1 campaign of this milestone (slice_revision, the engine on loop); 4e9b5a9e was the previous milestone's (G-int; its runs are earlier_runs in data/g1.json); 1c971289 and 889af02c were the sides of the campaign before (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e or 1d27426b and is no candidate)",
   "revisions": [
    "1c971289",
    "889af02c",
    "fef92189",
    "0ea83af2",
    "6f5a64cc",
-   "4e9b5a9e"
+   "4e9b5a9e",
+   "1d27426b"
   ],
   "ancestors": [
    [
@@ -79,6 +80,30 @@
    [
     "6f5a64cc",
     "4e9b5a9e"
+   ],
+   [
+    "1c971289",
+    "1d27426b"
+   ],
+   [
+    "889af02c",
+    "1d27426b"
+   ],
+   [
+    "fef92189",
+    "1d27426b"
+   ],
+   [
+    "0ea83af2",
+    "1d27426b"
+   ],
+   [
+    "6f5a64cc",
+    "1d27426b"
+   ],
+   [
+    "4e9b5a9e",
+    "1d27426b"
    ]
   ]
  },
@@ -95,21 +120,39 @@
  },
  "integrated": [
   {
-   "sha": "c29d5899",
-   "wp": "Rust A3",
-   "title": "Native counterterm-program builder",
-   "detail": "V2Dag.build for the counterterm-lowered model and the value-equivalence derivation in Rust, equal to the Python builder (program, DAG and block digests at seven legs); no production call site switched (NATIVE_DAG = False)"
+   "sha": "201bece5",
+   "wp": "WP3.1 ct-perf",
+   "title": "CT-route generation savings",
+   "detail": "output-identical: loop-request DAG-compile memos, the content-addressed lowered-model IR cache (with Weyl support), lean tree rows, native-trees export memos; CT-route parity with the site oracle not yet reached (A4 closes it)"
   },
   {
-   "sha": "4e9b5a9e",
-   "wp": "WP3.1 G-int",
-   "title": "Native per-point inputs and generation stages",
-   "detail": "trees, Born, counterterm and field inputs formed in the executor; native families, schedules, cycles and order filters; the stored native process (point_inputs native-v1: a plain evaluation loads without generation); the poles companion on native schedules; particle_veto on the native generator"
+   "sha": "8b52179b",
+   "wp": "WP3.2 ew-poles",
+   "title": "EW guards, QED Catani operator",
+   "detail": "typed fail-closed refusals of electroweak requests with a non-zero width or an external photon (until the complex-mass scheme and alpha(0) per photon land); the QED Catani operator summed per correction in the IR poles, equal to MadLoop's poles on the EW controls to 9.1e-13"
+  },
+  {
+   "sha": "88657260",
+   "wp": "lc-perf",
+   "title": "LC never slower than FC",
+   "detail": "LC-aware closure-block pruning in one linear pass, native tree closures with lane-run chunking and runtime AVX-512/AVX2 widths; at B = 128 LC/FC 0.42 (g g > g g g g) and 0.47 (u u~ > g g g g), full colour about 2x faster at six legs; values bitwise equal"
+  },
+  {
+   "sha": "7db32901",
+   "wp": "artifact-portability",
+   "title": "Portable prepared artifacts",
+   "detail": "addendum G: binary64 SymJIT -O2 plane applications for every native tree kernel and the parameter program, stored as IR and recompiled at load for the loading CPU (point_inputs native-v2); licence-free binary64; DoubleFloat and arbitrary precision under pyAmpliCol's library key; no host strings; bitwise binary64 after relocation"
+  },
+  {
+   "sha": "1d27426b",
+   "wp": "WP3.2 ew-lines",
+   "title": "EW fermion lines",
+   "detail": "W vertices along fermion flow, vertices read through their conjugate rule, lepton- and colour-singlet-rooted processes, Born closure beyond the loop orders' cap with order bounds from the model, mixed-order Born with W exchange; more than one colour-singlet fermion line refused until EWI-5"
   }
  ],
- "integrated_tip": "4e9b5a9e",
+ "integrated_tip": "1d27426b",
  "after_integration": [],
- "already_on_loop": "v2 waves 0-1, gates S1 and G0, native executor (WP2.1), colour (WP2.4), stability API (WP2.3), schedule M (WP2.8), tree-EW follow-up, NJet reference, observables (WP2.5), public v2 engine with plan v4 artifacts (WP2.6), counterterms in the recursion (WP2.2), runtime pole selection (WP2.10), Rust A0 (contract-class reuse pass), constant counterterm arguments (ct-assume-fix), addendum F-J, Rust A1-A2 (native loop-request DAG builder), the gate G1 harness (WP2.7), counterterms as plain tree insertions (addendum J, b4d76cc3), the summary-first report",
+ "already_on_loop": "v2 waves 0-1 (gates S1, G0), native executor, colour, stability API, schedule M, observables, NJet reference, public v2 engine with plan v4 artifacts, counterterms in the recursion and as plain tree insertions (addendum J), runtime pole selection, Rust A0-A3, the G1 harness, WP3.1 G-int (native per-point inputs and generation stages), the summary-first report",
  "addendum_commits": [
   "b91d23a8",
   "2dd36f65",
@@ -154,7 +197,7 @@
   ]
  },
  "required": {
-  "source_validation": "DESIGN.md WP3.1 status, first to fourth increment (branch work/v2-generation-scale); workspace/reports/engine-v2/njet-benchmark.md \u00a75.3",
+  "source_validation": "DESIGN.md WP3.1 status, first to fourth increment (branch work/v2-generation-scale); workspace/reports/engine-v2/njet-benchmark.md \u00a75.3; WP3.2 status: workspace/reports/engine-v2/slice-status.md (ew-poles 8b52179b, ew-lines 1d27426b; DECISIONS 2026-10-25 ~13:50 UTC)",
   "rows": [
    {
     "label": "g g -> g g g g",
@@ -186,7 +229,7 @@
    {
     "label": "g g -> t overline(t) e^- e^+ g",
     "corr": "EW",
-    "validation": "not started: Feynman-gauge massive vectors, Goldstones, complex-mass scheme, generic EW counterterms (WP3.2)",
+    "validation": "in development (WP3.2): EW guards, the QED Catani operator and EW fermion lines on loop; massive vector bosons and Goldstones in Feynman gauge (ew-gauge), the UFO's EW counterterms (ew-ct) and the complex-mass scheme open",
     "refs": "ML, Recola, OL"
    },
    {
@@ -304,11 +347,11 @@
   "catani_native_vs_njet": 2.3e-14
  },
  "status_notes": {
-  "source": "HANDOFF_24_10_2026.md sections 0.1 and 9 items 2 and 4; HANDOFF_22_10_2026.md section 0.1 (provider jobs stopped); DESIGN.md WP3.2; workspace/reports/engine-v2/slice-status.md, G-int integration (4e9b5a9e: the V+jets rows that the engine with Python per-point inputs refused generate on loop with the native generator, data/g1.json; the 2->5 V+jets and g g > t t~ e- e+ g (QCD) records of the branch are ancestors of 4e9b5a9e); the configuration of the gg_ggggg validation: tests/fixtures/loop/required/gg_ggggg_njet.json names the scheme massless-qcd-nf5, for which tools/loop_v2_generate.py validate (work/v2-generation-scale, 0ea83af2) vetoes the top",
-  "what": "short attributions of the registry: a refusal attributed to the engine on loop (with its basis where it is inferred) or a capability nobody has started, printed in Table 1 only where the most recent configuration of the row refuses or no configuration has a record (scripts/build_summary.py, main-configuration rule); short labels of records and the configuration of a development record where the record does not carry it; measured numbers never come from here",
+  "source": "HANDOFF_24_10_2026.md sections 0.1 and 9 items 2 and 4; HANDOFF_22_10_2026.md section 0.1 (provider jobs stopped); DESIGN.md WP3.2; workspace/reports/engine-v2/slice-status.md, ew-poles (8b52179b) and ew-lines (1d27426b) integrations and DECISIONS 2026-10-25 ~13:50 UTC (ew-ct and ew-gauge in development; WP3.2 in progress, the EW row not generated by any configuration); workspace/reports/engine-v2/slice-status.md, G-int integration (4e9b5a9e: the V+jets rows that the engine with Python per-point inputs refused generate on loop with the native generator, data/g1.json; the 2->5 V+jets and g g > t t~ e- e+ g (QCD) records of the branch are ancestors of 4e9b5a9e); the configuration of the gg_ggggg validation: tests/fixtures/loop/required/gg_ggggg_njet.json names the scheme massless-qcd-nf5, for which tools/loop_v2_generate.py validate (work/v2-generation-scale, 0ea83af2) vetoes the top",
+  "what": "short attributions of the registry: a refusal attributed to the engine on loop (with its basis where it is inferred), a capability in development that no configuration generates yet, or one nobody has started, printed in Table 1 only where the most recent configuration of the row refuses or no configuration has a record (scripts/build_summary.py, main-configuration rule); short labels of records and the configuration of a development record where the record does not carry it; measured numbers never come from here",
   "notes": {
    "gg_ttxemepg_ew": {
-    "not_started": "EW loops",
+    "in_development": "massive EW loops, EW counterterms, complex-mass scheme",
     "package": "WP3.2"
    },
    "uux_gggg": {
