@@ -325,7 +325,7 @@
   }
  },
  "pending": {
-  "source": "HANDOFF_24_10_2026.md section 6.5 (measure-g1-7leg: seven-leg G1 specifications and frozen streams, no measurement yet); workspace/reports/engine-v2/slice-status.md, measure-g1 integration block (open: seven-leg rows)",
+  "source": "HANDOFF_24_10_2026.md section 6.5 (measure-g1-7leg); its 2->5 rows are timed in g1.json (batched, full and leading colour, on the integrated configuration of slice_revision), so no row waits for it today; a row with development records and no batched timing would",
   "what": "the package that will time, in batches, a row whose most recent configuration has no batched timing (the development validation records time single points only)",
   "batched": "measure-g1-7leg"
  },

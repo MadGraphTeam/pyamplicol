@@ -2406,15 +2406,15 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.020881864273178508,
+       "seconds_per_point": 0.02099162727336079,
        "schedule": "B",
        "families": 114,
        "inputs": "native",
-       "revision": "b03cf789",
+       "revision": "a8615a8c",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepddxg].pyamplicol['native/lc'].batches['128']",
        "fc_seconds_per_point": 0.024724086812057067,
-       "lc_over_fc": 0.8445959776761162,
+       "lc_over_fc": 0.8490354945333679,
        "configuration": "integrated",
        "considered": [
         {
@@ -2495,14 +2495,14 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 35.45361836196389,
-       "generate_s": 28.460386029910296,
-       "export_s": 6.993232332053594,
-       "model_s": 3.716144055943005,
-       "peak_gib": 0.456,
+       "seconds": 35.03583324793726,
+       "generate_s": 28.427126968977973,
+       "export_s": 6.608706278959289,
+       "model_s": 3.6858805150259286,
+       "peak_gib": 0.45,
        "plan_mb": 2.447,
        "inputs": "native",
-       "revision": "b03cf789",
+       "revision": "a8615a8c",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
@@ -2517,7 +2517,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 2.6523465613613664,
+       "ratio_to_fastest": 2.6210913337774504,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2546,28 +2546,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.08224925959439133,
-       "uncertainty": 0.03762440171393337,
+       "seconds_per_point": 0.08305721526539855,
+       "uncertainty": 0.03448386497871567,
        "stages": {
         "inputs": 0.0,
-        "numerator": 0.038544371273437496,
-        "scatter": 0.0021323455078125,
-        "ninjars": 0.007904382351562498,
-        "masters": 0.002656753625000001,
-        "glue": 0.0007182074177762843,
-        "untimed": 0.030796507176264462
+        "numerator": 0.038592936929687495,
+        "scatter": 0.0021300683749999995,
+        "ninjars": 0.007979962203125,
+        "masters": 0.0026748383749999995,
+        "glue": 0.0007109889211278642,
+        "untimed": 0.031212940024473765
        },
        "inputs": "native",
-       "revision": "b03cf789",
+       "revision": "a8615a8c",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.24712001628149885,
+       "ratio_to_fastest": 0.24954753987938483,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.19009232021653757,
+        "ratio_to_limit": 0.19195964606106522,
         "band": [
-         0.16844255631978944,
-         0.2117420841132857
+         0.17070006727497647,
+         0.21321922484715397
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.43268060225000005
@@ -2625,8 +2625,8 @@
        "revision": "29393525",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.08224925959439133,
-       "lc_over_fc": 0.6401803544892393,
+       "fc_seconds_per_point": 0.08305721526539855,
+       "lc_over_fc": 0.6339528720697502,
        "configuration": "integrated",
        "considered": [
         {
@@ -3073,14 +3073,27 @@
          "revision": "fef92189",
          "status": "measured"
         }
-       ]
+       ],
+       "ratio_to_fastest": 0.04645171671808208,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
-       "madloop": null,
-       "recola": null,
+       "madloop": {
+        "seconds": 43954.58921789803,
+        "graph_s": 5792.987055428035,
+        "export_s": 38040.019540841924,
+        "compile_s": 121.58262162806932
+       },
+       "recola": {
+        "seconds": 10220.0391
+       },
        "openloops": null
       },
-      "fastest": null,
+      "fastest": {
+       "name": "Recola",
+       "key": "recola",
+       "seconds": 10220.0391
+      },
       "source": "g1.json processes[uux_ggggg].providers (MadLoop generation, Recola setup)"
      },
      "full_colour": {
@@ -3269,7 +3282,19 @@
        "openloops": null
       },
       "fastest": null,
-      "source": "g1.json processes[gg_ggggg].providers (MadLoop generation, Recola setup)"
+      "source": "g1.json processes[gg_ggggg].providers (MadLoop generation, Recola setup)",
+      "unfinished": {
+       "madloop": {
+        "status": "exporting",
+        "graph_generation_s": 62538.53792525001
+       },
+       "recola": {
+        "status": "running",
+        "since": "2026-10-20T09:10:49Z"
+       },
+       "note": "stopped 22 Oct; not to be restarted (HANDOFF section 0.1)"
+      },
+      "unfinished_source": "measured.json provider_generation.processes[gg_ggggg]"
      },
      "full_colour": {
       "gate_rule": "no gate (no matched provider)",

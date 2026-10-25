@@ -16304,11 +16304,11 @@
      }
     },
     "native/lc": {
-     "revision": "b03cf7892ec32c6b2ea480de8878d24ea796a700",
-     "branch": "work/v2-measure-g1-7leg",
-     "dirty": true,
+     "revision": "a8615a8c43dc98222dff0cfd5fd0a1bbbcf98d69",
+     "branch": "HEAD",
+     "dirty": false,
      "host_cpus": [
-      156
+      162
      ],
      "native": {
       "directory": "loop-native-v2-slice-4e9b5a9e",
@@ -16326,16 +16326,16 @@
      "lanes": 16,
      "generation": {
       "model": {
-       "seconds": 3.6665480779483914,
-       "peak_gib": 0.196
+       "seconds": 3.7098389819730073,
+       "peak_gib": 0.19
       },
       "generate": {
-       "seconds": 41.470192879089154,
-       "peak_gib": 0.374
+       "seconds": 42.20787202601787,
+       "peak_gib": 0.367
       },
       "export": {
-       "seconds": 11.2214157799026,
-       "peak_gib": 0.484,
+       "seconds": 11.545409661019221,
+       "peak_gib": 0.478,
        "plan_mb": 0.356
       }
      },
@@ -16385,7 +16385,7 @@
        "double_pole_over_born": -0.16902254956359544,
        "universal_double_pole": -0.16902254956359286,
        "double_pole_deviation": 1.5271740598625366e-14,
-       "seconds": 0.027595624327659607
+       "seconds": 0.03497807666038474
       },
       {
        "index": 1,
@@ -16427,7 +16427,7 @@
        "double_pole_over_born": -0.16902254956359425,
        "universal_double_pole": -0.16902254956359286,
        "double_pole_deviation": 8.2106132250674e-15,
-       "seconds": 0.027595624327659607
+       "seconds": 0.03497807666038474
       },
       {
        "index": 2,
@@ -16469,39 +16469,68 @@
        "double_pole_over_born": -0.16902254956359336,
        "universal_double_pole": -0.16902254956359286,
        "double_pole_deviation": 2.955820761024264e-15,
-       "seconds": 0.027595624327659607
+       "seconds": 0.03497807666038474
       }
      ],
      "skipped_batches": {},
-     "max_rss_gib": 4.234,
+     "max_rss_gib": 4.193,
      "generation_error": null,
      "failed_points": 0,
      "rescue": "off (no stability check, no escalation)",
-     "earlier_runs": [],
+     "earlier_runs": [
+      {
+       "revision": "b03cf7892ec32c6b2ea480de8878d24ea796a700",
+       "host_cpus": [
+        156
+       ],
+       "batches": {
+        "16": {
+         "median_seconds_per_point": 0.01672955750109395,
+         "min_seconds_per_point": 0.01470074818644207,
+         "max_seconds_per_point": 0.01719637544010766,
+         "samples_seconds_per_point": [
+          0.01470074818644207,
+          0.01719637544010766,
+          0.01672955750109395
+         ]
+        },
+        "128": {
+         "median_seconds_per_point": 0.020881864273178508,
+         "min_seconds_per_point": 0.02078272265589476,
+         "max_seconds_per_point": 0.031048288765305188,
+         "samples_seconds_per_point": [
+          0.031048288765305188,
+          0.020881864273178508,
+          0.02078272265589476
+         ]
+        }
+       }
+      }
+     ],
      "batches": {
       "16": {
        "blocks": 3,
        "points_per_block": 16,
-       "median_seconds_per_point": 0.01672955750109395,
-       "min_seconds_per_point": 0.01470074818644207,
-       "max_seconds_per_point": 0.01719637544010766,
+       "median_seconds_per_point": 0.016561463628022466,
+       "min_seconds_per_point": 0.01485038499959046,
+       "max_seconds_per_point": 0.01702710537938401,
        "samples_seconds_per_point": [
-        0.01470074818644207,
-        0.01719637544010766,
-        0.01672955750109395
+        0.01485038499959046,
+        0.01702710537938401,
+        0.016561463628022466
        ],
        "stages_per_point": {
-        "assembly": 0.00017523924907436594,
-        "dressing": 0.00160607275,
-        "factors": 0.0008814824999999999,
-        "input conversion": 4.735450056614354e-05,
-        "other": 0.011588976943193559,
-        "python point parameters": 3.799200203502551e-05,
-        "reduction": 0.0009493491250000001,
-        "reduction: masters": 0.0004152138750000001,
-        "reduction: masters (oneloopmaster)": 8.40515625e-05,
-        "scatter": 0.0014202388749999999,
-        "seeds": 1.92363125e-05
+        "assembly": 0.00017060458048945293,
+        "dressing": 0.0015845625625,
+        "factors": 0.0008643674375000001,
+        "input conversion": 4.7598310629837215e-05,
+        "other": 0.011495617055426139,
+        "python point parameters": 3.737200313480571e-05,
+        "reduction": 0.0009242701874999999,
+        "reduction: masters": 0.000397298375,
+        "reduction: masters (oneloopmaster)": 8.246918750000001e-05,
+        "scatter": 0.001412412125,
+        "seeds": 2.00325625e-05
        },
        "counts_per_block": {
         "dressing work (modelled complex MAC per lane)": 1978708,
@@ -16523,10 +16552,10 @@
        "throughput": {
         "work_per_lane_per_chunk": 1978708.0,
         "useful_cmac_per_point": 1978708.0,
-        "kernel_cmac_per_second": 1232016420.1777284,
-        "useful_cmac_per_second": 1232016420.1777284
+        "kernel_cmac_per_second": 1248740849.2588313,
+        "useful_cmac_per_second": 1248740849.2588313
        },
-       "uncertainty": 0.07458736590918197,
+       "uncertainty": 0.0657164254525934,
        "gate": {
         "status": "no gate (colour approximation)"
        }
@@ -16534,26 +16563,26 @@
       "128": {
        "blocks": 3,
        "points_per_block": 128,
-       "median_seconds_per_point": 0.020881864273178508,
-       "min_seconds_per_point": 0.02078272265589476,
-       "max_seconds_per_point": 0.031048288765305188,
+       "median_seconds_per_point": 0.02099162727336079,
+       "min_seconds_per_point": 0.020482489968344453,
+       "max_seconds_per_point": 0.03150097865545831,
        "samples_seconds_per_point": [
-        0.031048288765305188,
-        0.020881864273178508,
-        0.02078272265589476
+        0.03150097865545831,
+        0.020482489968344453,
+        0.02099162727336079
        ],
        "stages_per_point": {
-        "assembly": 0.00017872301941679325,
-        "dressing": 0.0016072024374999996,
-        "factors": 0.0008738706875000001,
-        "input conversion": 4.7559702579746954e-05,
-        "other": 0.015762076550850098,
-        "python point parameters": 3.547482083376963e-05,
-        "reduction": 0.0009602099374999999,
-        "reduction: masters": 0.00041689960156249993,
-        "reduction: masters (oneloopmaster)": 8.48132890625e-05,
-        "scatter": 0.001409116734375,
-        "seeds": 2.0650468749999998e-05
+        "assembly": 0.00017402684898115695,
+        "dressing": 0.0015955072421875002,
+        "factors": 0.0008627072499999999,
+        "input conversion": 4.723993788502412e-05,
+        "other": 0.01586522602587283,
+        "python point parameters": 3.55323127223528e-05,
+        "reduction": 0.0009305507265625002,
+        "reduction: masters": 0.0004028981640625001,
+        "reduction: masters (oneloopmaster)": 8.336739843750001e-05,
+        "scatter": 0.0014024264531249996,
+        "seeds": 1.9844359375e-05
        },
        "counts_per_block": {
         "dressing work (modelled complex MAC per lane)": 15829664,
@@ -16575,10 +16604,10 @@
        "throughput": {
         "work_per_lane_per_chunk": 1978708.0,
         "useful_cmac_per_point": 1978708.0,
-        "kernel_cmac_per_second": 1231150447.405914,
-        "useful_cmac_per_second": 1231150447.405914
+        "kernel_cmac_per_second": 1240174878.358507,
+        "useful_cmac_per_second": 1240174878.358507
        },
-       "uncertainty": 0.24580099686300347,
+       "uncertainty": 0.2624496077323352,
        "gate": {
         "status": "no gate (colour approximation)"
        }
@@ -16794,10 +16823,10 @@
       "rotation-0": 1.110908470236605e-12,
       "reduction-direction": 4.876831191769938e-13
      },
-     "seconds_with_checks": 0.47325305233243853,
+     "seconds_with_checks": 0.4790028629746909,
      "batch": 3,
      "configuration": "native/full",
-     "revision": "b03cf7892ec32c6b2ea480de8878d24ea796a700",
+     "revision": "a8615a8c43dc98222dff0cfd5fd0a1bbbcf98d69",
      "deviation_vs_providers": {
       "openloops": 8.846482205944315e-14,
       "recola": 2.699279819901671e-13,
@@ -16815,10 +16844,10 @@
       "rotation-0": 3.0351803225343476e-12,
       "reduction-direction": 1.2219965320296085e-12
      },
-     "seconds_with_checks": 0.47325305233243853,
+     "seconds_with_checks": 0.4790028629746909,
      "batch": 3,
      "configuration": "native/full",
-     "revision": "b03cf7892ec32c6b2ea480de8878d24ea796a700",
+     "revision": "a8615a8c43dc98222dff0cfd5fd0a1bbbcf98d69",
      "deviation_vs_providers": {
       "openloops": 4.585783464407682e-13,
       "recola": 8.629580002425501e-13,
@@ -16836,10 +16865,10 @@
       "rotation-0": 7.449608419481012e-13,
       "reduction-direction": 4.1204514381715256e-13
      },
-     "seconds_with_checks": 0.47325305233243853,
+     "seconds_with_checks": 0.4790028629746909,
      "batch": 3,
      "configuration": "native/full",
-     "revision": "b03cf7892ec32c6b2ea480de8878d24ea796a700",
+     "revision": "a8615a8c43dc98222dff0cfd5fd0a1bbbcf98d69",
      "deviation_vs_providers": {
       "openloops": 6.550755113758192e-14,
       "recola": 1.679607927215052e-13,
@@ -16857,10 +16886,10 @@
       "rotation-0": 6.481600120835217e-29,
       "reduction-direction": 3.9847694060169513e-29
      },
-     "seconds_with_checks": 17.6103493530148,
+     "seconds_with_checks": 17.58882470165069,
      "batch": 3,
      "configuration": "native/full",
-     "revision": "b03cf7892ec32c6b2ea480de8878d24ea796a700",
+     "revision": "a8615a8c43dc98222dff0cfd5fd0a1bbbcf98d69",
      "deviation_vs_providers": {
       "openloops": 1.0047251258829512e-14,
       "recola": 3.4834555279076035e-13,
@@ -16878,10 +16907,10 @@
       "rotation-0": 6.12574152598034e-29,
       "reduction-direction": 4.50892558866708e-29
      },
-     "seconds_with_checks": 17.6103493530148,
+     "seconds_with_checks": 17.58882470165069,
      "batch": 3,
      "configuration": "native/full",
-     "revision": "b03cf7892ec32c6b2ea480de8878d24ea796a700",
+     "revision": "a8615a8c43dc98222dff0cfd5fd0a1bbbcf98d69",
      "deviation_vs_providers": {
       "openloops": 3.106716338186208e-14,
       "recola": 4.3544681718381687e-13,
@@ -16899,10 +16928,10 @@
       "rotation-0": 2.609025503145341e-29,
       "reduction-direction": 1.5477087582396425e-29
      },
-     "seconds_with_checks": 17.6103493530148,
+     "seconds_with_checks": 17.58882470165069,
      "batch": 3,
      "configuration": "native/full",
-     "revision": "b03cf7892ec32c6b2ea480de8878d24ea796a700",
+     "revision": "a8615a8c43dc98222dff0cfd5fd0a1bbbcf98d69",
      "deviation_vs_providers": {
       "openloops": 4.547161901090264e-15,
       "recola": 9.790607968284016e-14,
@@ -16915,11 +16944,11 @@
    "schedules": [],
    "pyamplicol": {
     "native/full": {
-     "revision": "b03cf7892ec32c6b2ea480de8878d24ea796a700",
-     "branch": "work/v2-measure-g1-7leg",
-     "dirty": true,
+     "revision": "a8615a8c43dc98222dff0cfd5fd0a1bbbcf98d69",
+     "branch": "HEAD",
+     "dirty": false,
      "host_cpus": [
-      156
+      146
      ],
      "native": {
       "directory": "loop-native-v2-slice-4e9b5a9e",
@@ -16937,16 +16966,16 @@
      "lanes": 16,
      "generation": {
       "model": {
-       "seconds": 3.716144055943005,
-       "peak_gib": 0.195
+       "seconds": 3.6858805150259286,
+       "peak_gib": 0.189
       },
       "generate": {
-       "seconds": 28.460386029910296,
-       "peak_gib": 0.349
+       "seconds": 28.427126968977973,
+       "peak_gib": 0.343
       },
       "export": {
-       "seconds": 6.993232332053594,
-       "peak_gib": 0.456,
+       "seconds": 6.608706278959289,
+       "peak_gib": 0.45,
        "plan_mb": 2.447
       }
      },
@@ -17071,7 +17100,7 @@
        "double_pole_over_born": -0.21910330498984304,
        "universal_double_pole": -0.2191033049898426,
        "double_pole_deviation": 2.0268485218452096e-15,
-       "seconds": 0.23357671169408908
+       "seconds": 0.24042659668096653
       },
       {
        "index": 1,
@@ -17113,7 +17142,7 @@
        "double_pole_over_born": -0.21910330498984243,
        "universal_double_pole": -0.2191033049898426,
        "double_pole_deviation": 7.600681956919537e-16,
-       "seconds": 0.23357671169408908
+       "seconds": 0.24042659668096653
       },
       {
        "index": 2,
@@ -17155,39 +17184,68 @@
        "double_pole_over_born": -0.2191033049898419,
        "universal_double_pole": -0.2191033049898426,
        "double_pole_deviation": 3.16695081538314e-15,
-       "seconds": 0.23357671169408908
+       "seconds": 0.24042659668096653
       }
      ],
      "skipped_batches": {},
-     "max_rss_gib": 3.396,
+     "max_rss_gib": 3.389,
      "generation_error": null,
      "failed_points": 0,
      "rescue": "off (no stability check, no escalation)",
-     "earlier_runs": [],
+     "earlier_runs": [
+      {
+       "revision": "b03cf7892ec32c6b2ea480de8878d24ea796a700",
+       "host_cpus": [
+        156
+       ],
+       "batches": {
+        "16": {
+         "median_seconds_per_point": 0.07840365512674907,
+         "min_seconds_per_point": 0.07513262568681967,
+         "max_seconds_per_point": 0.08924139543523779,
+         "samples_seconds_per_point": [
+          0.07513262568681967,
+          0.08924139543523779,
+          0.07840365512674907
+         ]
+        },
+        "128": {
+         "median_seconds_per_point": 0.08224925959439133,
+         "min_seconds_per_point": 0.08187028837528487,
+         "max_seconds_per_point": 0.08805944674259081,
+         "samples_seconds_per_point": [
+          0.08805944674259081,
+          0.08187028837528487,
+          0.08224925959439133
+         ]
+        }
+       }
+      }
+     ],
      "batches": {
       "16": {
        "blocks": 3,
        "points_per_block": 16,
-       "median_seconds_per_point": 0.07840365512674907,
-       "min_seconds_per_point": 0.07513262568681967,
-       "max_seconds_per_point": 0.08924139543523779,
+       "median_seconds_per_point": 0.07734061418886995,
+       "min_seconds_per_point": 0.07501119575317716,
+       "max_seconds_per_point": 0.09236108980985591,
        "samples_seconds_per_point": [
-        0.07513262568681967,
-        0.08924139543523779,
-        0.07840365512674907
+        0.07501119575317716,
+        0.09236108980985591,
+        0.07734061418886995
        ],
        "stages_per_point": {
-        "assembly": 0.0006409472916857339,
-        "dressing": 0.036713832625,
-        "factors": 0.0017953608124999998,
-        "input conversion": 4.896456084679812e-05,
-        "other": 0.026766305081858954,
-        "python point parameters": 3.926143835997209e-05,
-        "reduction": 0.010483887625,
-        "reduction: masters": 0.0026476783125000004,
-        "reduction: masters (oneloopmaster)": 0.000544697625,
-        "scatter": 0.0021086476875000005,
-        "seeds": 0.000203640125
+        "assembly": 0.0006374904987751506,
+        "dressing": 0.036416446875,
+        "factors": 0.0018189109374999997,
+        "input conversion": 4.870637349085882e-05,
+        "other": 0.02540399418748391,
+        "python point parameters": 3.911893145414069e-05,
+        "reduction": 0.010636278499999999,
+        "reduction: masters": 0.002662647,
+        "reduction: masters (oneloopmaster)": 0.0005445281875,
+        "scatter": 0.002125719,
+        "seeds": 0.00020558075
        },
        "counts_per_block": {
         "dressing work (modelled complex MAC per lane)": 47789352,
@@ -17209,10 +17267,10 @@
        "throughput": {
         "work_per_lane_per_chunk": 47789352.0,
         "useful_cmac_per_point": 47789352.0,
-        "kernel_cmac_per_second": 1301671565.8135407,
-        "useful_cmac_per_second": 1301671565.8135407
+        "kernel_cmac_per_second": 1312301339.118494,
+        "useful_cmac_per_second": 1312301339.118494
        },
-       "uncertainty": 0.08997520412542999,
+       "uncertainty": 0.11216547889256072,
        "gate": {
         "status": "pass",
         "central": "pass",
@@ -17221,12 +17279,12 @@
          "openloops": {
           "reference": 0.3328312325,
           "limit": 0.43268060225000005,
-          "ratio_to_limit": 0.18120446056291645,
+          "ratio_to_limit": 0.17874758837509208,
           "band": [
-           0.15108074308326488,
-           0.211328178042568
+           0.14506584713220444,
+           0.21242932961797972
           ],
-          "uncertainty": 0.16624158912022058,
+          "uncertainty": 0.18843186388735128,
           "reference_uncertainty": 0.07626638499479058,
           "reference_uncertainty_assumed": true,
           "passed": true,
@@ -17235,12 +17293,12 @@
          "recola": {
           "reference": 0.3334871935,
           "limit": 0.43353335155,
-          "ratio_to_limit": 0.18084803590412277,
+          "ratio_to_limit": 0.1783959963226731,
           "band": [
-           0.1507835710261507,
-           0.21091250078209484
+           0.14478050622555078,
+           0.21201148641979545
           ],
-          "uncertainty": 0.16624158912022058,
+          "uncertainty": 0.18843186388735128,
           "reference_uncertainty": 0.07626638499479058,
           "reference_uncertainty_assumed": true,
           "passed": true,
@@ -17249,12 +17307,12 @@
          "madloop": {
           "reference": 1.460310365,
           "limit": 1.460310365,
-          "ratio_to_limit": 0.05368972035389824,
+          "ratio_to_limit": 0.0529617648703534,
           "band": [
-           0.04476425592284595,
-           0.06261518478495053
+           0.04298208080106907,
+           0.06294144893963774
           ],
-          "uncertainty": 0.16624158912022058,
+          "uncertainty": 0.18843186388735128,
           "reference_uncertainty": 0.07626638499479058,
           "reference_uncertainty_assumed": true,
           "passed": true,
@@ -17262,40 +17320,40 @@
          }
         },
         "fastest_provider": "openloops",
-        "ratio_to_fastest": 0.2355657987317914,
+        "ratio_to_fastest": 0.2323718648876197,
         "binding_provider": "openloops",
         "binding_limit": 0.43268060225000005,
-        "ratio_to_binding_limit": 0.18120446056291645,
+        "ratio_to_binding_limit": 0.17874758837509208,
         "band_to_binding_limit": [
-         0.15108074308326488,
-         0.211328178042568
+         0.14506584713220444,
+         0.21242932961797972
         ],
-        "ratio_to_binding_limit_of_means": 0.1804462978486627
+        "ratio_to_binding_limit_of_means": 0.17799970525815456
        }
       },
       "128": {
        "blocks": 3,
        "points_per_block": 128,
-       "median_seconds_per_point": 0.08224925959439133,
-       "min_seconds_per_point": 0.08187028837528487,
-       "max_seconds_per_point": 0.08805944674259081,
+       "median_seconds_per_point": 0.08305721526539855,
+       "min_seconds_per_point": 0.08302749117228814,
+       "max_seconds_per_point": 0.08875575876572839,
        "samples_seconds_per_point": [
-        0.08805944674259081,
-        0.08187028837528487,
-        0.08224925959439133
+        0.08875575876572839,
+        0.08305721526539855,
+        0.08302749117228814
        ],
        "stages_per_point": {
-        "assembly": 0.0006336278938761097,
-        "dressing": 0.036517318937499994,
-        "factors": 0.0018250141640625006,
-        "input conversion": 4.741868815472117e-05,
-        "other": 0.030796507176264462,
-        "python point parameters": 3.716083574545337e-05,
-        "reduction": 0.010561135976562499,
-        "reduction: masters": 0.002656753625000001,
-        "reduction: masters (oneloopmaster)": 0.0005487952968750002,
-        "scatter": 0.0021323455078125,
-        "seeds": 0.00020203817187499997
+        "assembly": 0.0006275986243053921,
+        "dressing": 0.036533133585937495,
+        "factors": 0.0018509636015624999,
+        "input conversion": 4.7201343477354385e-05,
+        "other": 0.031212940024473765,
+        "python point parameters": 3.6188953345117625e-05,
+        "reduction": 0.010654800578124998,
+        "reduction: masters": 0.0026748383749999995,
+        "reduction: masters (oneloopmaster)": 0.0005529656015625001,
+        "scatter": 0.0021300683749999995,
+        "seeds": 0.0002088397421875
        },
        "counts_per_block": {
         "dressing work (modelled complex MAC per lane)": 382314816,
@@ -17317,10 +17375,10 @@
        "throughput": {
         "work_per_lane_per_chunk": 47789352.0,
         "useful_cmac_per_point": 47789352.0,
-        "kernel_cmac_per_second": 1308676359.3404071,
-        "useful_cmac_per_second": 1308676359.3404071
+        "kernel_cmac_per_second": 1308109852.8705268,
+        "useful_cmac_per_second": 1308109852.8705268
        },
-       "uncertainty": 0.03762440171393337,
+       "uncertainty": 0.03448386497871567,
        "gate": {
         "status": "pass",
         "central": "pass",
@@ -17329,12 +17387,12 @@
          "openloops": {
           "reference": 0.3328312325,
           "limit": 0.43268060225000005,
-          "ratio_to_limit": 0.19009232021653757,
+          "ratio_to_limit": 0.19195964606106522,
           "band": [
-           0.16844255631978944,
-           0.2117420841132857
+           0.17070006727497647,
+           0.21321922484715397
           ],
-          "uncertainty": 0.11389078670872395,
+          "uncertainty": 0.11075024997350624,
           "reference_uncertainty": 0.07626638499479058,
           "reference_uncertainty_assumed": true,
           "passed": true,
@@ -17343,12 +17401,12 @@
          "recola": {
           "reference": 0.3334871935,
           "limit": 0.43353335155,
-          "ratio_to_limit": 0.18971841335926704,
+          "ratio_to_limit": 0.19158206622038731,
           "band": [
-           0.16811123400864922,
-           0.21132559270988485
+           0.1703643044960386,
+           0.21279982794473604
           ],
-          "uncertainty": 0.11389078670872395,
+          "uncertainty": 0.11075024997350624,
           "reference_uncertainty": 0.07626638499479058,
           "reference_uncertainty_assumed": true,
           "passed": true,
@@ -17357,12 +17415,12 @@
          "madloop": {
           "reference": 1.460310365,
           "limit": 1.460310365,
-          "ratio_to_limit": 0.05632313620837125,
+          "ratio_to_limit": 0.05687641288870709,
           "band": [
-           0.04990844991569723,
-           0.06273782250104526
+           0.05057733594368643,
+           0.06317548983372775
           ],
-          "uncertainty": 0.11389078670872395,
+          "uncertainty": 0.11075024997350624,
           "reference_uncertainty": 0.07626638499479058,
           "reference_uncertainty_assumed": true,
           "passed": true,
@@ -17370,15 +17428,15 @@
          }
         },
         "fastest_provider": "openloops",
-        "ratio_to_fastest": 0.24712001628149885,
+        "ratio_to_fastest": 0.24954753987938483,
         "binding_provider": "openloops",
         "binding_limit": 0.43268060225000005,
-        "ratio_to_binding_limit": 0.19009232021653757,
+        "ratio_to_binding_limit": 0.19195964606106522,
         "band_to_binding_limit": [
-         0.16844255631978944,
-         0.2117420841132857
+         0.17070006727497647,
+         0.21321922484715397
         ],
-        "ratio_to_binding_limit_of_means": 0.18929697053802275
+        "ratio_to_binding_limit_of_means": 0.19115648345771244
        }
       }
      },
@@ -18847,7 +18905,15 @@
       "initial_call_seconds": 6006.34118
      },
      "process_wall_seconds": 7715.385295354994,
-     "harness_wall_seconds": 0.0017234779661521316
+     "harness_wall_seconds": 0.0017234779661521316,
+     "generation": {
+      "graph_generation_s": 5792.987055428035,
+      "source_export_s": 38040.019540841924,
+      "compile_s": 121.58262162806932,
+      "total_s": 43954.58921789803,
+      "loops": 110475
+     },
+     "export": "runs/required/uux_ggggg/madloop-export"
     }
    },
    "provider_cpu": 172,
@@ -21645,14 +21711,14 @@
    "process": "uux_emepddxg",
    "configuration": "native/lc",
    "batch": 128,
-   "total": 0.020881864273178508,
-   "dressing": 0.002481073125,
-   "reduction": 0.0009602099374999999,
-   "masters": 0.00041689960156249993,
-   "native_loop_rest": 0.0014297672031249996,
-   "outside_native_loop": 0.016010814007553508,
-   "outer_factor": 6.06804610197,
-   "kernel_cmac_per_second": 1231150447.405914,
+   "total": 0.02099162727336079,
+   "dressing": 0.0024582144921875,
+   "reduction": 0.0009305507265625002,
+   "masters": 0.0004028981640625001,
+   "native_loop_rest": 0.001422270812499999,
+   "outside_native_loop": 0.01618059124211079,
+   "outer_factor": 6.194476724800629,
+   "kernel_cmac_per_second": 1240174878.358507,
    "design": {
     "recipe_finite_only": [
      0.00118615,
@@ -21668,12 +21734,12 @@
     ],
     "g0_dressing": null,
     "total_over_recipe": [
-     6.654134220252734,
-     17.60474162051891
+     6.689110873968881,
+     17.697278820858063
     ],
     "reduction_over_model": [
-     1.0586658627342886,
-     1.908966078528827
+     1.0259655199145536,
+     1.8500014444582509
     ]
    }
   },
@@ -21681,14 +21747,14 @@
    "process": "uux_emepggg",
    "configuration": "native/full",
    "batch": 128,
-   "total": 0.08224925959439133,
-   "dressing": 0.038342333101562494,
-   "reduction": 0.010561135976562499,
-   "masters": 0.002656753625000001,
-   "native_loop_rest": 0.0023343836796875014,
-   "outside_native_loop": 0.03101140683657884,
-   "outer_factor": 1.6818696330723548,
-   "kernel_cmac_per_second": 1308676359.3404071,
+   "total": 0.08305721526539855,
+   "dressing": 0.038384097187499994,
+   "reduction": 0.010654800578124998,
+   "masters": 0.0026748383749999995,
+   "native_loop_rest": 0.0023389081171875034,
+   "outside_native_loop": 0.03167940938258606,
+   "outer_factor": 1.6937006957692986,
+   "kernel_cmac_per_second": 1308109852.8705268,
    "design": {
     "recipe_finite_only": [
      0.0245044128,
@@ -21704,12 +21770,12 @@
     ],
     "g0_dressing": null,
     "total_over_recipe": [
-     1.207899738965117,
-     3.356508081450184
+     1.2197652493529036,
+     3.389479925240182
     ],
     "reduction_over_model": [
-     0.8241229790528676,
-     1.1347519046483827
+     0.8314319608369097,
+     1.1448157922128501
     ]
    }
   },
@@ -22160,19 +22226,19 @@
     0.06809278696000001
    ],
    "outer_class": "uux_emepggg",
-   "outer_factor": 1.6818696330723548,
+   "outer_factor": 1.6937006957692986,
    "outer_inferred": false,
    "ninjars_over_model": [
     0.5136782706396338,
     1.752379170098847
    ],
    "estimate": [
-    0.031638220939709055,
-    0.1203281396152038
+    0.03186077907869732,
+    0.1211745843907085
    ],
-   "measured": 0.08224925959439133,
+   "measured": 0.08305721526539855,
    "gate": 0.43268060225000005,
-   "headroom": 3.59583887554204
+   "headroom": 3.5707207449945866
   },
   {
    "process": "uu~>e-e+ggg",
@@ -22229,17 +22295,17 @@
     0.0031381790000000005
    ],
    "outer_class": "uux_emepddxg",
-   "outer_factor": 6.06804610197,
+   "outer_factor": 6.194476724800629,
    "outer_inferred": false,
    "ninjars_over_model": [
     0.5136782706396338,
     1.752379170098847
    ],
    "estimate": [
-    0.005370505008095426,
-    0.021452350685571005
+    0.005482402030906126,
+    0.02189932060188019
    ],
-   "measured": 0.020881864273178508,
+   "measured": 0.02099162727336079,
    "gate": null,
    "headroom": null
   },
@@ -22348,8 +22414,8 @@
  "previous_development_side": "native_revision 889af02c, native_commit 39824f9b, native_build loop-native-measure-g1-genscale-39824f9b: its native/full and native/lc runs are earlier_runs of the integrated configuration (bitwise-equal binary64 values at every timed point); its native/full/L1, native/*/M and stability rows stay as development history",
  "repeats": "uux_uuxg B=128 open in the first integrated run (1.00 of the limit, band 0.90-1.09): single repeat with B = 1 8 32 128 decides (MASTER_PLAN 5.8 item 10)",
  "slice_tool_revisions": "b03cf789,29393525,60d3434f,439511db,a03e4062,a8615a8c",
- "seven_leg_rows": "package measure-g1-7leg (2026-10-24/25): the 2->5 rows on the integrated configuration of slice_revision (its engine: src and rust equal at every slice_tool_revisions entry; native per-point inputs, slice_build, schedule B, 16 lanes), full and leading colour, binary64 finite part, stability checks off, one thread pinned to one core of 128-175, RAYON_NUM_THREADS=1, paired blocks over 3 rounds after a 16-point warm-up per B; B = 16 and 128, except g g > g g g g g (top-free, particle_veto [t], N_f = 5): B = 16 and 64, since 3 rounds of B = 128 do not fit in about 1 h (14-16 s/pt x 128 x 3 = 90-100 min). Its generation (44 min full colour, 50 min leading colour, plus a 7-9 min export) is stored once per colour accuracy as the artifact's loop runtime member with native point inputs (tools.loop_benchmark pyamplicol --store, revision a8615a8c) and timed from the loaded process (--load, as Runtime.load: nothing regenerated; values bitwise equal to the generating harness's earlier runs at every common timed point). Its speed is reported without a gate (no matched provider, ADDENDUM H). The package branch also merged work/v2-slice 19083c10 (ct-perf, generation-only and output-identical, not on loop): the timed engine stays slice_revision's",
- "seven_leg_records": "workspace/reports/engine-v2/measure-g1-7leg/records (runs, logs, scripts; the stored-process runs of session 4 with their generate-only records in runs-store/); provider timings of uux_ggggg imported from the reference campaign (runs/required/uux_ggggg under the reference root), none for gg_ggggg (HANDOFF 0.1)",
- "seven_leg_dirty_records": "m7-uux_emepddxg-lc, m7-uux_emepggg-full, m7-stability-uux_emepggg (revision b03cf789, dirty): the uncommitted edits at their start were gate.py, the gate CLI help text and the report builder (committed as 29393525, 0460220c, 60d3434f); the measurement code is b03cf789",
+ "seven_leg_rows": "package measure-g1-7leg (2026-10-24/25): the 2->5 rows on the integrated configuration of slice_revision (its engine: src and rust equal at every slice_tool_revisions entry; native per-point inputs, slice_build, schedule B, 16 lanes), full and leading colour, binary64 finite part, stability checks off, one thread pinned to one core of 128-175, RAYON_NUM_THREADS=1, paired blocks over 3 rounds after a 16-point warm-up per B; B = 16 and 128, except g g > g g g g g (top-free, particle_veto [t], N_f = 5): B = 16 and 64, since 3 rounds of B = 128 do not fit in about 1 h (14-17 s/pt x 128 x 3 = 90-110 min). Its generation (44 min full colour, 50 min leading colour, plus a 7-9 min export) is stored once per colour accuracy as the artifact's loop runtime member with native point inputs (tools.loop_benchmark pyamplicol --store, revision a8615a8c) and timed from the loaded process (--load, as Runtime.load: nothing regenerated; values bitwise equal to the generating harness's earlier runs at every common timed point); its timing is the -r5 repeat on quiet CCXs (cores 170 and 155, session 5; the -r3 runs shared their CCX with another user's jobs and keep their checks, the -r4 repeat was stopped by a session limit). Its speed is reported without a gate (no matched provider, ADDENDUM H). The package branch also merged work/v2-slice 19083c10 and 8b52179b (ct-perf and ew-poles batch 1: generation-only and output-identical for these QCD requests, not on loop): the timed engine stays slice_revision's",
+ "seven_leg_records": "workspace/reports/engine-v2/measure-g1-7leg/records (runs, logs, scripts; the stored-process runs of sessions 4-5 with their generate-only records in runs-store/; runs-not-used/: superseded or stopped runs); provider timings of uux_ggggg imported from the reference campaign (runs/required/uux_ggggg under the reference root), none for gg_ggggg (HANDOFF 0.1)",
+ "seven_leg_dirty_records": "m7-uux_emepddxg-lc, m7-uux_emepggg-full and m7-stability-uux_emepggg were taken on a dirty tree (revision b03cf789; the uncommitted edits were gate.py, the gate CLI help text and the report builder, committed as 29393525, 0460220c, 60d3434f); session 5 repeated them on the clean a8615a8c (the -r2 records, which decide): bitwise-equal values at every timed point, equal accuracy checks and physical rows; the dirty runs stay as earlier runs",
  "seven_leg_checks": "values at the timed points: every full-colour row against the providers on the stream (16 points; u u~ > g g g g g: the reference campaign's 3 points, MadLoop and Recola) and its required fixture; g g > g g g g g against NJet double-double at its 10 points (the stream's first 3) at mu_R = 1000 GeV, max 1.59e-8 (tolerance 2e-8). Physical rows: the double pole over the Born against the universal -(alpha_s/2pi) sum C_i at the run's colour accuracy. Rotation: stability rows (rotation-0 and reduction-direction, binary64). Ward (one gluon polarisation replaced by its momentum, the O10 bound): g g > g g g (5 legs, c = 1 and i) and g g > g g g g (6 legs, c = 1) pass; NOT run at 7 legs: the Ward mode forms its per-point inputs in Python with full tree kernels (the native trees take no literal sources), one binary64 evaluation took 1-2 s at 4 legs, 33-43 s at 5 and 2,659-2,860 s at 6 legs (x40-80 per leg), so a seven-gluon Ward evaluation needs native Ward inputs (estimated tens of hours per evaluation in Python; not extrapolated into any result)"
 }
