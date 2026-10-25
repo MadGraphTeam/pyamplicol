@@ -973,14 +973,19 @@ def main(options: Any) -> int:
     return 0
 
 
+def alpha_s(spec: dict) -> float:
+    """The specification's alpha_s as the providers receive it (the
+    toolkit's ``references.value``: a fixed parameter overrides)."""
+
+    return float(_references().value(spec["scheme_data"], "aS"))
+
+
 def universal_double_pole(spec: dict) -> float:
     """D / Born of the declared correction: -(alpha_s/2pi) sum_i C_i over the
     massless coloured legs for QCD (the toolkit's ``double_pole_factor``,
     from its particle metadata)."""
 
-    references = _references()
     _, required_spec = streams._toolkit()
     if spec["correction"] != "QCD":
         raise ValueError("the G1 value comparison converts QCD corrections only")
-    alpha_s = float(references.value(spec["scheme_data"], "aS"))
-    return required_spec.double_pole_factor(spec, alpha_s)
+    return required_spec.double_pole_factor(spec, alpha_s(spec))

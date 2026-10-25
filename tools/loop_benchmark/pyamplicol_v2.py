@@ -106,7 +106,9 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
-from . import streams
+from tools.loop_v2_generate import _LEADING_CASIMIRS
+
+from . import providers, streams
 
 ROOT = streams.ROOT
 STAGES = (
@@ -341,16 +343,6 @@ def _relative(a: float, b: float, floor: float = 0.0) -> float:
     return 0.0 if scale == 0 else abs(a - b) / scale
 
 
-# Quadratic Casimirs of the massless coloured legs by SU(3) representation
-# and their leading-colour parts (C_F = N_c/2 - 1/(2 N_c) -> 3/2, C_A = N_c):
-# the universal double pole of the virtual over the Born at full and at
-# leading colour (``tools/loop_v2_generate.py poles``).
-CASIMIRS = {
-    "full": {1: Fraction(0), 3: Fraction(4, 3), 8: Fraction(3)},
-    "lc": {1: Fraction(0), 3: Fraction(3, 2), 8: Fraction(3)},
-}
-
-
 def reference_errors(
     born: float, finite: float, providers: dict[str, Any], alpha: float
 ) -> dict[str, dict[str, float]]:
@@ -398,20 +390,31 @@ def fixture_batch(fixture: dict[str, Any], indices: list[int]) -> tuple[list, li
 
 def universal_double_pole(key: str, accuracy: str) -> float | None:
     """D / Born = -(alpha_s/2pi) sum_i C_i over the massless coloured legs of
-    ``key`` at colour ``accuracy`` (None at NLC, where it holds only with
-    adjoint legs)."""
+    ``key`` at colour ``accuracy``. Full colour: the providers' conversion
+    (``providers.universal_double_pole``, the toolkit's
+    ``required_spec.double_pole_factor``); leading colour: the leading parts
+    of the Casimirs (C_F -> N_c/2) of ``tools/loop_v2_generate.py``'s table,
+    the one the generator's ``poles`` check uses; None at NLC, where it holds
+    only with adjoint legs."""
 
-    table = CASIMIRS.get(accuracy)
-    if table is None:
+    process = streams.spec(key)
+    if accuracy == "full":
+        return providers.universal_double_pole(process)
+    if accuracy != "lc":
         return None
     _, required_spec = streams._toolkit()
-    process = streams.spec(key)
-    total = Fraction(0)
-    for pdg, mass in zip(process["pdgs"], required_spec.masses(process), strict=True):
-        if not mass:
-            total += table[abs(required_spec.particle(pdg)["colour"])]
-    alpha = Fraction(process["scheme_data"]["parameters"]["aS"])
-    return -float(alpha * total) / (2 * math.pi)
+    total = sum(
+        (
+            _LEADING_CASIMIRS[abs(required_spec.particle(pdg)["colour"])]
+            for pdg, mass in zip(
+                process["pdgs"], required_spec.masses(process), strict=True
+            )
+            if not mass
+        ),
+        Fraction(0),
+    )
+    # double_pole_factor's arithmetic: equal at both accuracies without quarks.
+    return -float(total) * providers.alpha_s(process) / (2 * math.pi)
 
 
 def _git(*args: str) -> str:
