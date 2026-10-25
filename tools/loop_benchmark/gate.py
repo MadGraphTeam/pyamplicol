@@ -75,8 +75,9 @@ from . import providers as provider_module
 from . import streams
 
 GATE_FACTOR = 1.30
-# The user's rule of 2026-10-24 (slice-status DECISIONS ~22:35): a
-# pyAmpliCol time per point below 5 ms has no blocking gate; its ratio is
+# The user's rule of 2026-10-24 (slice-status DECISIONS ~22:35): a process
+# whose pyAmpliCol batched time per point is below 5 ms has no blocking gate
+# (at every batch of that configuration, ``floor_bases``); its ratio is
 # still shown.
 GATE_FLOOR_SECONDS = 5e-3
 GATE_FLOOR_STATUS = "below 5 ms: not gated (user 2026-10-24)"
@@ -133,6 +134,7 @@ def gate_verdict(
     means: dict[str, float] | None = None,
     missing: dict[str, str] | None = None,
     outside: dict[str, dict[str, Any]] | None = None,
+    floor_basis: float | None = None,
 ) -> dict[str, Any]:
     """The speed gate of one pyAmpliCol time against the matched providers.
 
@@ -141,9 +143,11 @@ def gate_verdict(
     taken on the band ratio x (1 -+ u), u the sum of both. ``missing``: the
     matched providers without a protocol-mode timing (reason); ``outside``:
     their timings outside the protocol (seconds, mode), reported as ratios
-    beside the verdict. A time below ``GATE_FLOOR_SECONDS`` is not gated (the
-    user's rule of 2026-10-24): its verdict is ``GATE_FLOOR_STATUS`` with every
-    check and ratio kept and the checks' own verdict as ``measured_status``."""
+    beside the verdict. A batched time below ``GATE_FLOOR_SECONDS`` is not
+    gated (the user's rule of 2026-10-24): its verdict is ``GATE_FLOOR_STATUS``
+    with every check and ratio kept and the checks' own verdict as
+    ``measured_status``. ``floor_basis`` is that batched time (``floor_bases``:
+    the configuration's at its largest batch above 1), ``seconds`` by default."""
 
     verdict = _verdict(
         seconds,
@@ -154,7 +158,8 @@ def gate_verdict(
         missing=missing,
         outside=outside,
     )
-    if seconds < GATE_FLOOR_SECONDS:
+    basis = seconds if floor_basis is None else floor_basis
+    if basis < GATE_FLOOR_SECONDS:
         # Below the floor the checks and ratios stay, the verdict does not
         # block; ``measured_status`` keeps what the checks alone say.
         return {
@@ -162,8 +167,33 @@ def gate_verdict(
             "status": GATE_FLOOR_STATUS,
             "measured_status": verdict["status"],
             "floor_seconds": GATE_FLOOR_SECONDS,
+            "floor_basis_seconds": basis,
         }
     return verdict
+
+
+def floor_bases(configurations: dict[str, dict[str, Any]]) -> dict[str, float | None]:
+    """The batched time per point that decides the 5 ms floor of each
+    configuration of a process (the user's rule concerns the batched time):
+    its median at its largest batch above 1, so every batch of it (B = 1
+    included) has the same verdict; for a configuration timed at B = 1 only
+    (the one-lane runs) that of the process's default configuration of the
+    same inputs and colour accuracy (schedule B, 16 lanes); None without
+    either."""
+
+    own: dict[str, float | None] = {}
+    for name, record in configurations.items():
+        sizes = [int(size) for size in record.get("batches", {}) if int(size) > 1]
+        own[name] = (
+            record["batches"][str(max(sizes))]["median_seconds_per_point"]
+            if sizes
+            else None
+        )
+    bases = {}
+    for name, record in configurations.items():
+        default = f"{record['inputs']}/{record['accuracy']}"
+        bases[name] = own[name] if own[name] is not None else own.get(default)
+    return bases
 
 
 def _verdict(
@@ -632,6 +662,7 @@ def build(
         )
         configurations = {}
         point_values: dict[str, Any] = {}
+        bases = floor_bases(entry["pyamplicol"])
         for name, record in entry["pyamplicol"].items():
             batches = {}
             mine: dict[int, tuple] = {}
@@ -652,6 +683,7 @@ def build(
                         means=means,
                         missing=missing,
                         outside=outside,
+                        floor_basis=bases[name],
                     )
                 for index, value in _values_of(summary).items():
                     mine.setdefault(index, value)
