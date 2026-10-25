@@ -106,7 +106,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
-from tools.loop_v2_generate import _LEADING_CASIMIRS
+from tools.loop_v2_generate import LEADING_CASIMIRS
 
 from . import providers, streams
 
@@ -395,9 +395,12 @@ def universal_double_pole(key: str, accuracy: str) -> float | None:
     ``required_spec.double_pole_factor``); leading colour: the leading parts
     of the Casimirs (C_F -> N_c/2) of ``tools/loop_v2_generate.py``'s table,
     the one the generator's ``poles`` check uses; None at NLC, where it holds
-    only with adjoint legs."""
+    only with adjoint legs. A non-QCD correction raises at every accuracy,
+    like the providers' conversion."""
 
     process = streams.spec(key)
+    if process["correction"] != "QCD":
+        raise ValueError("the G1 value comparison converts QCD corrections only")
     if accuracy == "full":
         return providers.universal_double_pole(process)
     if accuracy != "lc":
@@ -405,7 +408,7 @@ def universal_double_pole(key: str, accuracy: str) -> float | None:
     _, required_spec = streams._toolkit()
     total = sum(
         (
-            _LEADING_CASIMIRS[abs(required_spec.particle(pdg)["colour"])]
+            LEADING_CASIMIRS[abs(required_spec.particle(pdg)["colour"])]
             for pdg, mass in zip(
                 process["pdgs"], required_spec.masses(process), strict=True
             )

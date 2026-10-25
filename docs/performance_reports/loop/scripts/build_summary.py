@@ -869,6 +869,11 @@ def _fixture_refs(check: dict | None) -> list[dict]:
     return out
 
 
+# An accepted point's double-double value equals the shown reference when they
+# differ by at most binary64 rounding (the references are stored in binary64).
+DD_EQUAL = 2.0**-52
+
+
 def _accepted(proc: dict, entry: dict) -> dict:
     """A user acceptance of the points where a validation check exceeds its
     tolerance (milestone.json validation_decisions): the check keeps its
@@ -876,8 +881,9 @@ def _accepted(proc: dict, entry: dict) -> dict:
     the accepted points must be exactly the check's points above the
     tolerance (over every reference and quantity), each within pyAmpliCol's
     binary64 estimate E at that point, with pyAmpliCol's double-double value
-    within the tolerance of every shown reference (``fixture_stability``
-    rows of the configuration); otherwise the build stops."""
+    equal to every shown reference to binary64 rounding (DD_EQUAL; the label
+    states 'DD = NJet', ``fixture_stability`` rows of the configuration);
+    otherwise the build stops."""
     name = entry["configuration"]
     check = proc["pyamplicol"][name]["accuracy_check"]
     where = f"g1.json processes[{proc['key']}].pyamplicol['{name}'].accuracy_check"
@@ -907,7 +913,7 @@ def _accepted(proc: dict, entry: dict) -> dict:
         shown = {k: v for k, v in dd["deviation_vs_references"].items() if k in SHOWN}
         if not shown or b64["estimate"] < worst(above[index]):
             raise ValueError(f"{where}: point {index} lies outside its estimate")
-        if max(shown.values()) > tolerance:
+        if max(shown.values()) > DD_EQUAL:
             raise ValueError(f"{where}: point {index}'s DD value misses the reference")
         points.append(
             {
