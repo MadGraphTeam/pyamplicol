@@ -73,7 +73,8 @@ gives a Ward run its own physical scale.
 A generation that takes about an hour (g g > g g g g g) is stored once and
 timed in bounded jobs: `pyamplicol KEY --store DIR --generate-only` writes
 the process as the artifact's loop runtime member with its native point
-inputs (`artifact.write_plan`, `point_inputs = "native-v1"`) beside
+inputs (`artifact.write_plan`, `point_inputs` = `LOOP_V2_NATIVE_POINT_INPUTS`,
+"native-v2" since `7db32901`) beside
 `generation.json`, and `pyamplicol KEY --load DIR ...` (or `stability KEY
 --load DIR ...`) reads it as `V2VirtualRuntime` loads an artifact (nothing
 regenerated; the values equal the generating run's bitwise) and times that

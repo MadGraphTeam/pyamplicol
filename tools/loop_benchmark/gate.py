@@ -88,7 +88,8 @@ GATE_FLOOR_STATUS = "below 5 ms: not gated (user 2026-10-24)"
 ADOPT_M = 0.85
 NO_PROVIDER_NOTE = (
     "no matched provider timing (HANDOFF 0.1): the speed is reported without"
-    " a gate, with its rotation and Ward checks (addenda F and H)"
+    " a gate (addenda F and H); its rotation and Ward checks, or why one is"
+    " pending, are summary.json's sanity_checks"
 )
 # The checks of a configuration's run that a later run of it without them
 # keeps (``build``).
@@ -941,9 +942,9 @@ def main(options: Any) -> int:
                     f"{name} B={size} {batch['median_seconds_per_point'] * 1e3:.2f} ms "
                     f"{gate['status']}"
                     + (
-                        f" ({gate['ratio_to_binding_limit']:.2f} x limit, band "
-                        f"{gate['band_to_binding_limit'][0]:.2f}-"
-                        f"{gate['band_to_binding_limit'][1]:.2f})"
+                        f" ({gate['ratio_to_binding_limit']:.3g} x limit, band "
+                        f"{gate['band_to_binding_limit'][0]:.3g}-"
+                        f"{gate['band_to_binding_limit'][1]:.3g})"
                         if "ratio_to_binding_limit" in gate
                         else ""
                     )

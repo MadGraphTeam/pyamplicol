@@ -49,13 +49,13 @@ system's temporary directory by default) that the run removes at its end.
 
 Stored processes (``--store``, ``--load``): a generation can be stored as the
 artifact's own loop runtime member (``artifact.write_plan`` with the native
-point inputs, ``point_inputs = "native-v1"``: the plan v4 and the native
-process, ``loop-runtime.pacbin``) beside a ``generation.json`` with the
-run's generation stages; ``--generate-only`` stops there. A later run with
-``--load`` reads it as ``V2VirtualRuntime`` does (``artifact.read_plan``,
+point inputs, ``point_inputs`` = ``LOOP_V2_NATIVE_POINT_INPUTS``: the plan v4
+and the native process, ``loop-runtime.pacbin``) beside a ``generation.json``
+with the run's generation stages; ``--generate-only`` stops there. A later run
+with ``--load`` reads it as ``V2VirtualRuntime`` does (``artifact.read_plan``,
 ``artifact.read_native_process``, ``NativeProcess.executor``: nothing is
-regenerated) and times that executor, the integrated configuration of a
-loaded artifact, whose values equal the slice's native executor's bitwise
+regenerated) and times that executor, the integrated configuration of a loaded
+artifact, whose values equal the slice's native executor's bitwise
 (``tests/unit/test_loop_v2_native_process.py``). Its record keeps the stored
 generation and states the load (``stored``). This splits a seven-gluon row
 (about an hour of generation, then an hour of timing) into bounded jobs and
@@ -538,6 +538,7 @@ class Run:
         with its native point inputs (module docstring) and
         ``generation.json``; a stored process is never overwritten."""
 
+        from pyamplicol.generation.loop_artifact import LOOP_V2_NATIVE_POINT_INPUTS
         from pyamplicol.loops.v2.artifact import plan_digest, write_plan
         from pyamplicol.loops.v2.native_process import NativeProcess
 
@@ -557,7 +558,7 @@ class Run:
             "kind": "stored-process",
             **self._configuration(),
             "plan_sha256": plan_digest(native.plan_json),
-            "point_inputs": "native-v1",
+            "point_inputs": LOOP_V2_NATIVE_POINT_INPUTS,
             "store": written,
             **{
                 k: self.record[k]
@@ -580,6 +581,7 @@ class Run:
         """Read a stored process (``--load``) as the public runtime does and
         build its native executor; the record keeps the stored generation."""
 
+        from pyamplicol.generation.loop_artifact import LOOP_V2_NATIVE_POINT_INPUTS
         from pyamplicol.loops.native import load_loop_native
         from pyamplicol.loops.v2.artifact import (
             plan_digest,
@@ -622,10 +624,18 @@ class Run:
         self.record["structure"] = meta["structure"]
         # No absolute path: the store's directory name and its generation's
         # provenance (``generation`` is that run's).
+        # The native point inputs this build reads (read_native_process reads
+        # no other format); a store's label written by a harness before
+        # 2026-10-25 fix round 3 (the literal "native-v1") is kept beside it.
         self.record["stored"] = {
             "directory": directory.name,
             "plan_sha256": meta["plan_sha256"],
-            "point_inputs": meta["point_inputs"],
+            "point_inputs": LOOP_V2_NATIVE_POINT_INPUTS,
+            **(
+                {"store_label": meta["point_inputs"]}
+                if meta["point_inputs"] != LOOP_V2_NATIVE_POINT_INPUTS
+                else {}
+            ),
             "generated_revision": meta["revision"],
             "generated_dirty": meta["dirty"],
             "generated_host_cpus": meta["host_cpus"],

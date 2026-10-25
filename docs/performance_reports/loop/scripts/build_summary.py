@@ -58,6 +58,10 @@ SHORT = {
 # References shown in Table 1 (NJet: its double-double values; the record's
 # binary64 NJet runs are cross-checks and stay in measured.json).
 SHOWN = set(SHORT)
+# A worst deviation that pyAmpliCol's double-double value repeats is the
+# reference's own only if another reference agrees with that double-double
+# value at least this many times better (_validation_g1).
+REFERENCE_OWN_MARGIN = 100
 # When several configurations of one side qualify, the engine's production
 # per-point inputs come first.
 INPUTS_PREFERENCE = ("native", "python")
@@ -791,12 +795,15 @@ def _validation_g1(
     b64 = rows.get((worst["worst_point"], "double"))
     dd = rows.get((worst["worst_point"], "double-double"))
     if b64 is not None:
-        closest = None
+        closest = independent = None
         if dd is not None:
             shown = {
                 k: v for k, v in dd[deviations].items() if not fixture or k in SHOWN
             }
             closest = min(shown.values()) if shown else None
+            others = {k: v for k, v in shown.items() if k != worst["key"]}
+            if others:
+                independent = min(others.items(), key=lambda kv: kv[1])
         within = b64["estimate"] >= worst["max_finite"]
         out["worst_point"] = {
             "index": worst["worst_point"],
@@ -812,16 +819,26 @@ def _validation_g1(
         # A deviation beyond pyAmpliCol's binary64 estimate that its
         # double-double value repeats is the reference's own (u u~ >
         # g g g g g at point 0: Recola 2.9e-10 in binary64 and in DD, E =
-        # 1.9e-11, MadLoop 1.4e-12 in DD): the DD value is exact to its own
-        # estimate, so the reference lies that far from it, and the binary64
-        # value lies within E of it. Stated, never used to hide a deviation.
+        # 1.9e-11, MadLoop 1.4e-12 in DD) only if another, independent
+        # reference agrees with the DD value at least a hundred times better
+        # (REFERENCE_OWN_MARGIN): the stability estimate measures numerical
+        # conditioning only, and a systematic error of ours (a wrong
+        # counterterm constant) would repeat in DD too. Stated, never used to
+        # hide a deviation.
         own = None if dd is None or within else dd[deviations].get(worst["key"])
-        if own is not None and own > b64["estimate"] and dd["estimate"] < own:
+        if (
+            own is not None
+            and own > b64["estimate"]
+            and dd["estimate"] < own
+            and independent is not None
+            and independent[1] <= own / REFERENCE_OWN_MARGIN
+        ):
             out["worst_point"]["reference_own"] = {
                 "key": worst["key"],
                 "short": worst["short"],
                 "dd_deviation": own,
                 "dd_estimate": dd["estimate"],
+                "independent": {"key": independent[0], "dd_deviation": independent[1]},
             }
     return out
 
@@ -1478,7 +1495,9 @@ def _sanity_checks(g1: dict, key: str, note: dict) -> dict:
         out["ward"] = {"status": "measured", **ward_of(proc)}
     else:
         out["ward"] = {
-            "status": "not run",
+            # A check the coordinator ruled pending (milestone.json
+            # status_notes.notes[key].ward_status) says so.
+            "status": note.get("ward_status", "not run"),
             "reason": note.get("ward"),
             "reason_source": f"milestone.json status_notes.notes[{key}].ward",
             "lower_multiplicity": [
