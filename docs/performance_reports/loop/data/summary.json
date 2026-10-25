@@ -3240,7 +3240,8 @@
         "source": "measured.json required_native.processes[gg_ggggg]"
        }
       ],
-      "rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it"
+      "rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it",
+      "note": "top-free (particle_veto = [t]), Nf = 5"
      },
      "generation": {
       "main": {
@@ -3284,7 +3285,7 @@
       "source": "g1.json processes[gg_ggggg].providers (MadLoop generation, Recola setup)"
      },
      "full_colour": {
-      "gate_rule": "G1",
+      "gate_rule": "no gate (no matched provider)",
       "main": {
        "status": "not measured",
        "configuration": null,
@@ -3316,7 +3317,13 @@
        }
       },
       "fastest": null,
-      "source": "g1.json processes[gg_ggggg].providers (median s/pt)"
+      "source": "g1.json processes[gg_ggggg].providers (median s/pt)",
+      "alternative": {
+       "name": "NJet 3.1.2",
+       "seconds_per_evaluation": 71.2039,
+       "what": "standard full-colour sum, one evaluation, double precision, one pinned core; not a matched provider",
+       "source": "measured.json njet_single_evaluation.standard"
+      }
      },
      "leading_colour": {
       "main": {

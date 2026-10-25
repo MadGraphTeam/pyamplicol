@@ -1212,6 +1212,40 @@ def _g1_rows(
     return rows
 
 
+def _alternative(njet: dict, meas: dict, label: str) -> dict | None:
+    """An existing alternative that is not a matched provider (NJet: massless
+    five-flavour QCD) of a row without one, shown for orientation only: no
+    ratio, no gate."""
+    if label not in njet:
+        return None
+    one = meas["njet_single_evaluation"]["standard"]
+    return {
+        "name": one["tool"],
+        "seconds_per_evaluation": one["mean_s"],
+        "what": "standard full-colour sum, one evaluation, double precision,"
+        " one pinned core; not a matched provider",
+        "source": "measured.json njet_single_evaluation.standard",
+    }
+
+
+def _no_matched_provider(rows: list[dict], ms: dict, meas: dict) -> None:
+    """A gated G1 row without any provider timing (g g > g g g g g: every
+    provider unavailable, HANDOFF 0.1) is reported without a gate (ADDENDUM
+    H), as its required row was: the gate rule says so and the registry's
+    alternative and validation note stay with it."""
+    njet = {r["label"]: r for r in ms["njet"]["rows"]}
+    notes = ms.get("status_notes", {}).get("notes", {})
+    for r in rows:
+        fc = r["full_colour"]
+        if r["kind"] != "g1" or fc["gate_rule"] != "G1" or fc["fastest"] is not None:
+            continue
+        fc["gate_rule"] = "no gate (no matched provider)"
+        fc["alternative"] = _alternative(njet, meas, r["math"])
+        note = notes.get(r["key"], {})
+        if "validation" in note and r["validation"].get("status") == "compared":
+            r["validation"]["note"] = note["validation"]
+
+
 def _validation_native(rec: dict, source: str) -> dict:
     refs = []
     for ref, dev in rec["max_deviation"].items():
@@ -1430,20 +1464,7 @@ def _required_rows(
             gate_rule = "G1 (seven-leg rows not timed yet)"
         else:
             gate_rule = "G1 (no complete gate limit yet)"
-        # An existing alternative that is not a matched provider (NJet:
-        # massless five-flavour QCD), shown for orientation only: no ratio,
-        # no gate.
-        alternative = None
-        nj = njet.get(req["label"])
-        if nj is not None and not matched:
-            one = meas["njet_single_evaluation"]["standard"]
-            alternative = {
-                "name": one["tool"],
-                "seconds_per_evaluation": one["mean_s"],
-                "what": "standard full-colour sum, one evaluation, double precision,"
-                " one pinned core; not a matched provider",
-                "source": "measured.json njet_single_evaluation.standard",
-            }
+        alternative = None if matched else _alternative(njet, meas, req["label"])
         # The only family count of a seven-leg generation is the seven-gluon
         # run of measured.json; it describes the row only with the row's
         # particle veto (the validation's, by the registry). Otherwise it is
@@ -1651,6 +1672,7 @@ def build() -> tuple[dict, Recency]:
         for key in meas["required_native"]["processes"]
     }
     rows = _g1_rows(g1, specs, decisions, records, recency)
+    _no_matched_provider(rows, ms, meas)
     rows += _required_rows(
         ms, meas, {r["key"] for r in rows}, g1["gate_factor"], records, recency
     )
