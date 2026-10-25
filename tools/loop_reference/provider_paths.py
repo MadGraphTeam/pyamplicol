@@ -67,11 +67,11 @@ def foreign(path, roots):
             current = os.path.join(current, part)
             if not _allowed(current, roots):
                 if _ancestor(current, roots):
-                    continue  # above a root: the configured root's own spelling is trusted
+                    continue  # above a root: the root's own spelling is trusted
                 return current
             if os.path.islink(current):
                 target = os.path.join(os.path.dirname(current), os.readlink(current))
-                path = os.path.normpath(os.path.join(target, *parts[index + 1:]))
+                path = os.path.normpath(os.path.join(target, *parts[index + 1 :]))
                 break
         else:
             return None
@@ -80,11 +80,17 @@ def foreign(path, roots):
 
 def elf_search_path(library):
     """The RUNPATH/RPATH entries of an ELF object, ``$ORIGIN`` expanded."""
-    text = subprocess.run(["readelf", "-d", "-W", str(library)], capture_output=True,
-                          text=True, check=True).stdout
+    text = subprocess.run(
+        ["readelf", "-d", "-W", str(library)],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
     origin = os.path.dirname(os.path.abspath(str(library)))
     entries = []
-    for value in re.findall(r"\((?:RUNPATH|RPATH)\)\s+Library r(?:un)?path: \[([^\]]*)\]", text):
+    for value in re.findall(
+        r"\((?:RUNPATH|RPATH)\)\s+Library r(?:un)?path: \[([^\]]*)\]", text
+    ):
         for entry in value.split(":"):
             if entry:
                 entries.append(re.sub(r"\$(ORIGIN|\{ORIGIN\})", origin, entry))
@@ -92,8 +98,12 @@ def elf_search_path(library):
 
 
 def elf_needed(library):
-    text = subprocess.run(["readelf", "-d", "-W", str(library)], capture_output=True,
-                          text=True, check=True).stdout
+    text = subprocess.run(
+        ["readelf", "-d", "-W", str(library)],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
     return re.findall(r"\(NEEDED\)\s+Shared library: \[([^\]]+)\]", text)
 
 
@@ -114,8 +124,11 @@ def library_violations(library, roots):
         for name in elf_needed(current):
             for entry in entries:
                 candidate = Path(entry) / name
-                if foreign(entry, roots) is None and not any(
-                        _inside(entry, p) for p in SYSTEM_PREFIXES) and candidate.is_file():
+                if (
+                    foreign(entry, roots) is None
+                    and not any(_inside(entry, p) for p in SYSTEM_PREFIXES)
+                    and candidate.is_file()
+                ):
                     pending.append(candidate)
                     break
     return violations
@@ -132,7 +145,10 @@ def check(paths, roots, libraries=(), what="provider", strict=None):
     for path in paths:
         bad = foreign(path, roots)
         if bad is not None:
-            violations.append(f"{path}" + (f" (resolves to {bad})" if bad != os.path.abspath(str(path)) else ""))
+            violations.append(
+                f"{path}"
+                + (f" (resolves to {bad})" if bad != os.path.abspath(str(path)) else "")
+            )
     for library in libraries:
         bad = foreign(library, roots)
         if bad is not None:
@@ -141,8 +157,11 @@ def check(paths, roots, libraries=(), what="provider", strict=None):
         violations += library_violations(library, roots)
     if not violations:
         return
-    message = (f"{what} files outside the reference roots {', '.join(map(str, roots)) or '(none)'} "
-               f"(a tree built under another root; relocate it): " + "; ".join(violations))
+    allowed = ", ".join(map(str, roots)) or "(none)"
+    message = (
+        f"{what} files outside the reference roots {allowed} (a tree built under "
+        "another root; relocate it): " + "; ".join(violations)
+    )
     if strict:
         raise ForeignProviderPath(message)
     print(f"warning: {message}", file=sys.stderr)
