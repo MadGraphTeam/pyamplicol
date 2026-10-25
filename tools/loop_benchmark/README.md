@@ -62,6 +62,18 @@ checks the virtual's double pole over the Born against the universal
 -(alpha_s/2pi) sum C_i at the run's colour accuracy, and `ward --physical`
 gives a Ward run its own physical scale.
 
+A generation that takes about an hour (g g > g g g g g) is stored once and
+timed in bounded jobs: `pyamplicol KEY --store DIR --generate-only` writes
+the process as the artifact's loop runtime member with its native point
+inputs (`artifact.write_plan`, `point_inputs = "native-v1"`) beside
+`generation.json`, and `pyamplicol KEY --load DIR ...` (or `stability KEY
+--load DIR ...`) reads it as `V2VirtualRuntime` loads an artifact (nothing
+regenerated; the values equal the generating run's bitwise) and times that
+executor. The record keeps the stored generation and states the load
+(`stored`: directory name, plan digest, the generating revision); a store is
+never overwritten, a load of another configuration or native build is
+refused, and a `--generate-only` record is no gate input.
+
 Run the `pyamplicol` jobs under `taskset -c N` with `RAYON_NUM_THREADS=1`.
 Respect HANDOFF §0.1 for provider generations (no generation expected to
 exceed about 45 minutes).
