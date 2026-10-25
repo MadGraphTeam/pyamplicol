@@ -1037,18 +1037,22 @@ def _sides(g1: dict) -> dict:
     def is_dev(cfg: dict) -> bool:
         return cfg["revision"][:8] in dev_revs
 
-    # A campaign without a configuration at its own slice_revision (e.g. a
-    # new slice_revision over the configurations of an older campaign) is
-    # inconsistent: stop instead of printing its cells as missing.
+    # A campaign without a configuration at its own slice_revision or at one
+    # of its tool revisions (slice_tool_revisions: slice_revision's engine,
+    # _check_tool_revisions) -- e.g. a new slice_revision over the
+    # configurations of an older campaign -- is inconsistent: stop instead of
+    # printing its cells as missing.
     slice_rev = g1["slice_revision"][:8]
+    own = {slice_rev} | _meta_revisions(g1, "slice_tool_revisions")
     if not any(
-        cfg["revision"][:8] == slice_rev
+        cfg["revision"][:8] in own
         for proc in g1["processes"]
         for cfg in proc["pyamplicol"].values()
     ):
         raise ValueError(
             f"g1.json slice_revision {slice_rev}: no configuration is"
-            " recorded at it; re-record the configurations with the campaign"
+            " recorded at it or at its tool revisions; re-record the"
+            " configurations with the campaign"
         )
     side = {"integrated": is_integrated}
     revisions = {"integrated": g1["slice_revision"][:8]}
