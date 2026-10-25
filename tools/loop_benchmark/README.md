@@ -52,7 +52,9 @@ are kept.
 A specification may carry `particle_veto` (the request's public veto:
 g g > g g g g g without the top is NJet's massless five-flavour QCD) and
 `reference_fixture` (the fixture the run's accuracy check uses, at its own
-points and scales, e.g. `gg_ggggg_njet`). For the seven-leg rows,
+points and scales, e.g. `gg_ggggg_njet`; only the quantities a fixture
+entry states are compared: NJet's `catani` entry has a Born and the poles,
+no finite part). For the seven-leg rows,
 `--warm-up 16` limits each B's untimed warm-up to one chunk of lanes (it
 compiles every kernel), every block prints its time and the record is
 written after every round; `--physical-points` (every pole, one batch)
