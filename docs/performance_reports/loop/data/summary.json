@@ -4,8 +4,8 @@
   "date": "2026-10-25",
   "host": "AMD EPYC 9754, shared host, pinned cores without SMT siblings (128-191)",
   "gate_factor": 1.3,
-  "engine_on_loop": "4e9b5a9e",
-  "native_build_on_loop": "loop-native-v2-slice-4e9b5a9e",
+  "engine_on_loop": "7db32901",
+  "native_build_on_loop": "loop-native-v2-slice-7db32901",
   "main_rule": {
    "rule": "every cell shows the most recent configuration that measured it; A is newer than B if B's revision is an ancestor of A's (git merge-base --is-ancestor, recorded in milestone.json ancestry) or if A is the development side and B the integrated side of one G1 campaign, transitively; equal revisions keep the order development, integrated, development_records; the registry (no run) comes last; without a measurement, the status of the newest configuration with a record of the row",
    "validation_rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it",
@@ -23,19 +23,19 @@
      "basis": "git merge-base --is-ancestor 0ea83af2 6f5a64cc (milestone.json ancestry)"
     },
     {
-     "newer": "integrated 4e9b5a9e",
+     "newer": "integrated 7db32901",
      "older": "development_records 0ea83af2",
-     "basis": "git merge-base --is-ancestor 0ea83af2 4e9b5a9e (milestone.json ancestry)"
+     "basis": "git merge-base --is-ancestor 0ea83af2 7db32901 (milestone.json ancestry)"
     },
     {
-     "newer": "integrated 4e9b5a9e",
+     "newer": "integrated 7db32901",
      "older": "development_records 6f5a64cc",
-     "basis": "git merge-base --is-ancestor 6f5a64cc 4e9b5a9e (milestone.json ancestry)"
+     "basis": "git merge-base --is-ancestor 6f5a64cc 7db32901 (milestone.json ancestry)"
     },
     {
-     "newer": "integrated 4e9b5a9e",
+     "newer": "integrated 7db32901",
      "older": "development_records fef92189",
-     "basis": "git merge-base --is-ancestor fef92189 4e9b5a9e (milestone.json ancestry)"
+     "basis": "git merge-base --is-ancestor fef92189 7db32901 (milestone.json ancestry)"
     }
    ],
    "source": "scripts/build_summary.py MAIN_RULE, VALIDATION_RULE, GENERATION_RULE, Recency; ancestry: milestone.json ancestry"
@@ -44,9 +44,9 @@
    "integrated": {
     "kind": "g1",
     "label": "on loop",
-    "revision": "4e9b5a9e",
-    "lc_revision": "4e9b5a9e",
-    "native_build": "loop-native-v2-slice-4e9b5a9e",
+    "revision": "7db32901",
+    "lc_revision": "7db32901",
+    "native_build": "loop-native-v2-slice-7db32901",
     "date": "2026-10-25",
     "inputs": [
      "native"
@@ -235,34 +235,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 1.7209852584247418e-12,
-        "median_finite": 9.177872546621443e-15,
+        "max_finite": 1.7715394119736425e-12,
+        "median_finite": 6.702933373401956e-15,
         "worst_point": 4
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 7.416113775082604e-13,
-        "median_finite": 1.5221279618792333e-14,
+        "max_finite": 7.921655310572107e-13,
+        "median_finite": 1.3344272543961439e-14,
         "worst_point": 4
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 7.519930340406263e-13,
-        "median_finite": 1.1260298621126139e-14,
+        "max_finite": 8.025471875895761e-13,
+        "median_finite": 1.6719840318942113e-14,
         "worst_point": 4
        }
       ],
-      "max_finite": 1.7209852584247418e-12,
-      "median_finite": 1.5221279618792333e-14,
+      "max_finite": 1.7715394119736425e-12,
+      "median_finite": 1.6719840318942113e-14,
       "source": "g1.json processes[gg_gg].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 4,
+       "estimate": 2.9837238839032454e-12,
+       "within_estimate": true,
+       "dd_closest": 9.399912925506945e-14,
+       "revision": "de8d3eb8",
+       "source": "g1.json processes[gg_gg].stability (native/full)"
+      },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        }
       ]
@@ -270,24 +278,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 10.050284900935367,
-       "generate_s": 8.69453621597495,
-       "export_s": 1.3557486849604174,
-       "model_s": 3.611159974941984,
-       "peak_gib": 0.296,
+       "seconds": 8.912569202948362,
+       "generate_s": 7.024487355956808,
+       "export_s": 1.888081846991554,
+       "model_s": 4.163774752989411,
+       "peak_gib": 0.384,
        "plan_mb": 0.305,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[gg_gg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 70.64220122882854,
+       "ratio_to_fastest": 62.64533924226783,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -316,27 +324,27 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.002212954491369601,
-       "uncertainty": 0.11879410547937666,
+       "seconds_per_point": 0.0014871404300720314,
+       "uncertainty": 0.009768892157106985,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.0008184713984375001,
-        "scatter": 8.82311171875e-05,
-        "ninjars": 0.00011252382812499998,
-        "masters": 3.5723015625e-05,
-        "glue": 9.939032315742224e-05,
-        "untimed": 0.0010557355041496785
+        "inputs": 0.00019234678125,
+        "numerator": 0.00083747671875,
+        "scatter": 8.912849218750002e-05,
+        "ninjars": 0.00011405717187499997,
+        "masters": 3.590644531250001e-05,
+        "glue": 0.00022183001242536793,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_gg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 1.0946241085256305,
+       "ratio_to_fastest": 0.7356047193327213,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -373,20 +381,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0015636136249668198,
+       "seconds_per_point": 0.0007186105858636438,
        "schedule": "B",
        "families": 12,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_gg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.002212954491369601,
-       "lc_over_fc": 0.7065728785046532,
+       "fc_seconds_per_point": 0.0014871404300720314,
+       "lc_over_fc": 0.48321636029277815,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -422,42 +430,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 6.845888769252629e-13,
-        "median_finite": 5.2352435206543294e-14,
+        "max_finite": 6.675644361275736e-13,
+        "median_finite": 5.5685773736309785e-14,
         "worst_point": 9
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 3.2746890638912756e-10,
-        "median_finite": 8.077147456133812e-14,
+        "max_finite": 3.2770312228115884e-10,
+        "median_finite": 8.707642041040554e-14,
         "worst_point": 1
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 6.162331676618135e-13,
-        "median_finite": 4.154118846780919e-14,
-        "worst_point": 9
+        "max_finite": 6.684194347379823e-13,
+        "median_finite": 3.05212421165652e-14,
+        "worst_point": 1
        }
       ],
-      "max_finite": 3.2746890638912756e-10,
-      "median_finite": 8.077147456133812e-14,
+      "max_finite": 3.2770312228115884e-10,
+      "median_finite": 8.707642041040554e-14,
       "source": "g1.json processes[uux_ddxg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 1,
-       "estimate": 7.1609463589963336e-12,
+       "estimate": 7.42363579719006e-12,
        "within_estimate": false,
        "dd_closest": 3.188177722534943e-13,
-       "revision": "39824f9b",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_ddxg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        }
       ]
@@ -465,24 +473,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 10.53408719995059,
-       "generate_s": 8.411407690960914,
-       "export_s": 2.122679508989677,
-       "model_s": 3.6363671359140426,
-       "peak_gib": 0.301,
+       "seconds": 8.508453198941424,
+       "generate_s": 5.914385717944242,
+       "export_s": 2.5940674809971824,
+       "model_s": 3.8368760080775246,
+       "peak_gib": 0.388,
        "plan_mb": 0.282,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 25.93336846138441,
+       "ratio_to_fastest": 20.946556417876227,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -511,32 +519,32 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0026667594920581905,
-       "uncertainty": 0.10220095212118051,
+       "seconds_per_point": 0.0018893809447035892,
+       "uncertainty": 0.011680355495845257,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.0007526232187500001,
-        "scatter": 0.0004660708906249999,
-        "ninjars": 0.00013780310937499998,
-        "masters": 0.00011202744531249999,
-        "glue": 0.0001375862129862071,
-        "untimed": 0.0010632950368844832
+        "inputs": 8.77064453125e-05,
+        "numerator": 0.0007513353281250003,
+        "scatter": 0.00046415085156250013,
+        "ninjars": 0.00013724761718750004,
+        "masters": 0.00011054405468750002,
+        "glue": 0.0003354820001905518,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 1.7598382756504982,
+       "ratio_to_fastest": 1.2468334372395364,
        "gate": {
         "status": "not gated",
-        "ratio_to_limit": 1.3537217505003833,
+        "ratio_to_limit": 0.9591026440304127,
         "band": [
-         1.2012036861994817,
-         1.506239814801285
+         0.9378631773856964,
+         0.9803421106751291
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.0019699465499999997,
-        "measured_status": "fail",
+        "measured_status": "pass",
         "rule": "below 5 ms: not gated (user 2026-10-24)",
         "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
         "floor_seconds": 0.005
@@ -545,7 +553,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -582,20 +590,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0018937981012641103,
+       "seconds_per_point": 0.0012594602349054185,
        "schedule": "B",
        "families": 27,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0026667594920581905,
-       "lc_over_fc": 0.7101495680071573,
+       "fc_seconds_per_point": 0.0018893809447035892,
+       "lc_over_fc": 0.6665994162987633,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -626,42 +634,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 3.4135342718682905e-12,
-        "median_finite": 5.366884307932818e-14,
-        "worst_point": 6
+        "max_finite": 8.443747572472725e-12,
+        "median_finite": 3.688641071201554e-14,
+        "worst_point": 13
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 7.206666653697612e-11,
-        "median_finite": 1.3192618763197713e-13,
+        "max_finite": 7.183915256842913e-11,
+        "median_finite": 1.6697387046793994e-13,
         "worst_point": 1
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 6.8356276176645796e-12,
-        "median_finite": 4.543493292472212e-14,
-        "worst_point": 6
+        "max_finite": 6.149326984134708e-12,
+        "median_finite": 2.514904050167193e-14,
+        "worst_point": 13
        }
       ],
-      "max_finite": 7.206666653697612e-11,
-      "median_finite": 1.3192618763197713e-13,
+      "max_finite": 7.183915256842913e-11,
+      "median_finite": 1.6697387046793994e-13,
       "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 1,
-       "estimate": 9.16223677316454e-12,
+       "estimate": 1.0244693923956225e-11,
        "within_estimate": false,
        "dd_closest": 2.428328642024099e-13,
-       "revision": "39824f9b",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_uuxg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        }
       ]
@@ -669,24 +677,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 10.68343812203966,
-       "generate_s": 8.59451490396168,
-       "export_s": 2.08892321807798,
-       "model_s": 3.6171268459875137,
-       "peak_gib": 0.307,
+       "seconds": 9.186309383017942,
+       "generate_s": 6.586784804938361,
+       "export_s": 2.5995245780795813,
+       "model_s": 3.9584252540953457,
+       "peak_gib": 0.395,
        "plan_mb": 0.388,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 23.137257715010232,
+       "ratio_to_fastest": 19.894906978140845,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -715,28 +723,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0032950365311990026,
-       "uncertainty": 0.0851615403945675,
+       "seconds_per_point": 0.0026982039144058945,
+       "uncertainty": 0.007767610781223676,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.001215731671875,
-        "scatter": 0.00047743297656249994,
-        "ninjars": 0.000224063890625,
-        "masters": 0.0001639473593750001,
-        "glue": 0.00016665702150930883,
-        "untimed": 0.0010437263955144823
+        "inputs": 0.00013147278125,
+        "numerator": 0.0012265453515625,
+        "scatter": 0.00047388482031250016,
+        "ninjars": 0.00022503609374999992,
+        "masters": 0.00016377772656249998,
+        "glue": 0.00045303766104611313,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 1.1270006283767753,
+       "ratio_to_fastest": 0.9228660982151841,
        "gate": {
         "status": "not gated",
-        "ratio_to_limit": 0.8669235602898272,
+        "ratio_to_limit": 0.7098969986270647,
         "band": [
-         0.7819400958399106,
-         0.9519070247397438
+         0.6952483757818697,
+         0.7245456214722595
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.0038008386,
@@ -749,7 +757,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -786,20 +794,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0027168815468030516,
+       "seconds_per_point": 0.0016640162029943895,
        "schedule": "B",
        "families": 42,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0032950365311990026,
-       "lc_over_fc": 0.8245376101534233,
+       "fc_seconds_per_point": 0.0026982039144058945,
+       "lc_over_fc": 0.6167125450045097,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -830,34 +838,34 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 8.76546219646284e-14,
-        "median_finite": 8.338717529686967e-15,
+        "max_finite": 1.2518052072962733e-13,
+        "median_finite": 9.562124921618282e-15,
         "worst_point": 0
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 4.882888032072143e-14,
-        "median_finite": 4.619464263901381e-15,
+        "max_finite": 8.635477908572035e-14,
+        "median_finite": 5.5210889623340826e-15,
         "worst_point": 0
        }
       ],
-      "max_finite": 8.76546219646284e-14,
-      "median_finite": 8.338717529686967e-15,
+      "max_finite": 1.2518052072962733e-13,
+      "median_finite": 9.562124921618282e-15,
       "source": "g1.json processes[uux_emepg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 0,
-       "estimate": 1.4042649838622717e-12,
+       "estimate": 1.1542025128657807e-12,
        "within_estimate": true,
        "dd_closest": 7.516482734555493e-15,
-       "revision": "39824f9b",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_emepg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        }
       ]
@@ -865,24 +873,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 26.24484739510808,
-       "generate_s": 22.915560940047726,
-       "export_s": 3.3292864550603554,
-       "model_s": 3.631012037047185,
-       "peak_gib": 0.33,
+       "seconds": 11.372570477891713,
+       "generate_s": 6.963315485976636,
+       "export_s": 4.409254991915077,
+       "model_s": 3.9024201129795983,
+       "peak_gib": 0.427,
        "plan_mb": 0.31,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_emepg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 37.42225023543157,
+       "ratio_to_fastest": 16.21602792489747,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -909,28 +917,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0007960739685586304,
-       "uncertainty": 0.005025851441435437,
+       "seconds_per_point": 0.0007327800940402085,
+       "uncertainty": 0.011521021228845765,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.00026796220312499995,
-        "scatter": 0.000152787796875,
-        "ninjars": 2.7391124999999998e-05,
-        "masters": 1.8139437500000004e-05,
-        "glue": 9.425333155377302e-05,
-        "untimed": 0.00023328093612656796
+        "inputs": 5.923015625e-05,
+        "numerator": 0.0002714788359375,
+        "scatter": 0.00015638374218749994,
+        "ninjars": 2.8043992187500002e-05,
+        "masters": 1.8352335937500003e-05,
+        "glue": 0.00020133770333065609,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.840022252779551,
+       "ratio_to_fastest": 0.7732341587581155,
        "gate": {
         "status": "not gated",
-        "ratio_to_limit": 0.840022252779551,
+        "ratio_to_limit": 0.7732341587581155,
         "band": [
-         0.835559034865365,
-         0.8444854706937371
+         0.7641035131272298,
+         0.7823648043890012
         ],
         "binding": "MadLoop",
         "limit_seconds": 0.000947682,
@@ -943,7 +951,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -977,20 +985,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.000622249750449555,
+       "seconds_per_point": 0.0005242437191554927,
        "schedule": "B",
        "families": 7,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0007960739685586304,
-       "lc_over_fc": 0.7816481571130869,
+       "fc_seconds_per_point": 0.0007327800940402085,
+       "lc_over_fc": 0.715417522145091,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -1021,42 +1029,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 1.3755505581547468e-12,
-        "median_finite": 4.241472272895433e-14,
+        "max_finite": 1.354820559790085e-12,
+        "median_finite": 4.0708974142328303e-14,
         "worst_point": 15
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 1.4879582170251845e-12,
-        "median_finite": 4.350242497327911e-14,
+        "max_finite": 1.4885459246707422e-12,
+        "median_finite": 7.22139631886788e-14,
         "worst_point": 1
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 8.384505280364788e-11,
-        "median_finite": 2.8829051078787693e-14,
+        "max_finite": 8.39121811557075e-11,
+        "median_finite": 4.022030629640151e-14,
         "worst_point": 2
        }
       ],
-      "max_finite": 8.384505280364788e-11,
-      "median_finite": 4.350242497327911e-14,
+      "max_finite": 8.39121811557075e-11,
+      "median_finite": 7.22139631886788e-14,
       "source": "g1.json processes[uux_ggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 2,
-       "estimate": 1.172467884351517e-12,
+       "estimate": 7.980214771773228e-13,
        "within_estimate": false,
        "dd_closest": 1.3348289027384224e-14,
-       "revision": "39824f9b",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_ggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        }
       ]
@@ -1064,24 +1072,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 11.814367553917691,
-       "generate_s": 9.341751217958517,
-       "export_s": 2.4726163359591737,
-       "model_s": 3.6308248760178685,
-       "peak_gib": 0.331,
+       "seconds": 10.496204260969535,
+       "generate_s": 7.307131267967634,
+       "export_s": 3.1890729930019006,
+       "model_s": 4.210223724949174,
+       "peak_gib": 0.413,
        "plan_mb": 0.656,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_ggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 18.624365903607156,
+       "ratio_to_fastest": 16.5463913208349,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1110,28 +1118,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.01018212316375866,
-       "uncertainty": 0.0388935321466751,
+       "seconds_per_point": 0.005044794898822147,
+       "uncertainty": 0.012660632193626327,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.0028412944062499996,
-        "scatter": 0.0004697705546875,
-        "ninjars": 0.0004490105312500004,
-        "masters": 0.0002075495078125,
-        "glue": 0.00019330655140947783,
-        "untimed": 0.006020749833190044
+        "inputs": 0.00037620478125,
+        "numerator": 0.0029364944453125004,
+        "scatter": 0.00047854348437499986,
+        "ninjars": 0.00046486334374999975,
+        "masters": 0.00021984382812500003,
+        "glue": 0.0005695482530945232,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_ggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.8220301051166687,
+       "ratio_to_fastest": 0.4072798191767283,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.6323308500897451,
+        "ratio_to_limit": 0.31329216859748327,
         "band": [
-         0.5937669850593645,
-         0.6708947151201257
+         0.30240402904954455,
+         0.324180308145422
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.01610252475
@@ -1140,7 +1148,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -1177,20 +1185,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.011997988726761832,
+       "seconds_per_point": 0.002752780827904644,
        "schedule": "B",
        "families": 62,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_ggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.01018212316375866,
-       "lc_over_fc": 1.1783385973434697,
+       "fc_seconds_per_point": 0.005044794898822147,
+       "lc_over_fc": 0.5456675411219116,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -1221,42 +1229,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 1.6750600593883971e-06,
-        "median_finite": 2.780801177008846e-13,
+        "max_finite": 7.128123550991327e-07,
+        "median_finite": 2.351387317088752e-13,
         "worst_point": 10
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 1.7173182195691923e-06,
-        "median_finite": 2.8134471614043413e-13,
+        "max_finite": 7.550705559428138e-07,
+        "median_finite": 3.3081738462267597e-13,
         "worst_point": 10
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 1.7173356824130617e-06,
-        "median_finite": 3.1839356841279784e-13,
+        "max_finite": 7.550880188034867e-07,
+        "median_finite": 6.082760531609598e-13,
         "worst_point": 10
        }
       ],
-      "max_finite": 1.7173356824130617e-06,
-      "median_finite": 3.1839356841279784e-13,
+      "max_finite": 7.550880188034867e-07,
+      "median_finite": 6.082760531609598e-13,
       "source": "g1.json processes[gg_ggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 10,
-       "estimate": 9.914292767817392e-06,
+       "estimate": 8.899672663324205e-06,
        "within_estimate": true,
        "dd_closest": 5.96903309784672e-12,
-       "revision": "39824f9b",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[gg_ggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        }
       ]
@@ -1264,24 +1272,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 19.962159010930918,
-       "generate_s": 16.06618909596,
-       "export_s": 3.8959699149709195,
-       "model_s": 3.66157313704025,
-       "peak_gib": 0.436,
+       "seconds": 17.502844781964086,
+       "generate_s": 13.593267070944421,
+       "export_s": 3.909577711019665,
+       "model_s": 3.924518557963893,
+       "peak_gib": 0.501,
        "plan_mb": 1.852,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[gg_ggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 3.0112997301536577,
+       "ratio_to_fastest": 2.6403111877822827,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1310,28 +1318,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.04536663985982159,
-       "uncertainty": 0.022793039729379756,
+       "seconds_per_point": 0.020128210406255675,
+       "uncertainty": 0.008207504184498997,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.01149672678125,
-        "scatter": 0.0005214842890625001,
-        "ninjars": 0.0019989841875,
-        "masters": 0.0004865315312500001,
-        "glue": 0.0002809194929795922,
-        "untimed": 0.030577036109260585
+        "inputs": 0.00406973746875,
+        "numerator": 0.011976242296875002,
+        "scatter": 0.0005459207031249999,
+        "ninjars": 0.00210107015625,
+        "masters": 0.0004989728359375001,
+        "glue": 0.0009343975796465669,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.46784693993472964,
+       "ratio_to_fastest": 0.2075737077735193,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.3598822614882536,
+        "ratio_to_limit": 0.15967208290270718,
         "band": [
-         0.3515715294233809,
-         0.36819299355312635
+         0.158313691199475,
+         0.1610304746059394
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.12605967205
@@ -1340,7 +1348,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -1377,20 +1385,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.04465905047618435,
+       "seconds_per_point": 0.007990928555045684,
        "schedule": "B",
        "families": 77,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.04536663985982159,
-       "lc_over_fc": 0.9844028699100568,
+       "fc_seconds_per_point": 0.020128210406255675,
+       "lc_over_fc": 0.3970014419444946,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -1426,34 +1434,34 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 1.1061947636599293e-10,
-        "median_finite": 6.355143497163753e-14,
+        "max_finite": 1.2254548874729426e-10,
+        "median_finite": 5.492848930724153e-14,
         "worst_point": 8
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 4.953930382165145e-11,
-        "median_finite": 5.536436490541229e-14,
+        "max_finite": 5.274394668303551e-11,
+        "median_finite": 5.871229013098823e-14,
         "worst_point": 10
        }
       ],
-      "max_finite": 1.1061947636599293e-10,
-      "median_finite": 6.355143497163753e-14,
+      "max_finite": 1.2254548874729426e-10,
+      "median_finite": 5.871229013098823e-14,
       "source": "g1.json processes[uux_emepgg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 8,
-       "estimate": 2.5206059042728064e-09,
+       "estimate": 2.5408281824584713e-09,
        "within_estimate": true,
        "dd_closest": 4.306016249662366e-13,
-       "revision": "39824f9b",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_emepgg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        }
       ]
@@ -1461,24 +1469,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 27.88829160714522,
-       "generate_s": 24.091567021096125,
-       "export_s": 3.796724586049095,
-       "model_s": 3.5934814509237185,
-       "peak_gib": 0.344,
+       "seconds": 11.953740266035311,
+       "generate_s": 7.269933823961765,
+       "export_s": 4.683806442073546,
+       "model_s": 3.993983988999389,
+       "peak_gib": 0.442,
        "plan_mb": 0.624,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_emepgg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 33.495960004215995,
+       "ratio_to_fastest": 14.35735151841709,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1505,37 +1513,41 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.006231309180293465,
-       "uncertainty": 0.05014411936929242,
+       "seconds_per_point": 0.004813862289665849,
+       "uncertainty": 0.014974959853568389,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.0027210846093749996,
-        "scatter": 0.0006356657421875,
-        "ninjars": 0.0004207473828125,
-        "masters": 0.0002303070390625,
-        "glue": 0.00018489839840185596,
-        "untimed": 0.0020369402338448663
+        "inputs": 0.000177646484375,
+        "numerator": 0.0028112645703124994,
+        "scatter": 0.0006517975937500001,
+        "ninjars": 0.0004328780546874998,
+        "masters": 0.00023872770312500003,
+        "glue": 0.0005161634761313982,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepgg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.6091485823841588,
+       "ratio_to_fastest": 0.470584479874005,
        "gate": {
-        "status": "pass",
-        "ratio_to_limit": 0.46857583260319907,
+        "status": "not gated",
+        "ratio_to_limit": 0.36198806144154233,
         "band": [
-         0.44347703003062644,
-         0.4936746351757717
+         0.35532934363747537,
+         0.3686467792456093
         ],
         "binding": "Recola",
-        "limit_seconds": 0.013298400699999999
+        "limit_seconds": 0.013298400699999999,
+        "measured_status": "pass",
+        "rule": "below 5 ms: not gated (user 2026-10-24)",
+        "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
+        "floor_seconds": 0.005
        },
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -1569,20 +1581,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0034212470627608127,
+       "seconds_per_point": 0.0017526082265248988,
        "schedule": "B",
        "families": 33,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepgg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.006231309180293465,
-       "lc_over_fc": 0.5490414556190724,
+       "fc_seconds_per_point": 0.004813862289665849,
+       "lc_over_fc": 0.3640752728401283,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -1613,42 +1625,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 7.630497165589562e-09,
-        "median_finite": 1.9892323057708503e-11,
+        "max_finite": 1.28198142195434e-08,
+        "median_finite": 1.5804192734445032e-11,
         "worst_point": 13
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 1.5108105621988155e-09,
-        "median_finite": 1.4679409478528918e-11,
+        "max_finite": 6.700127647909649e-09,
+        "median_finite": 1.3180615819086168e-11,
         "worst_point": 13
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 1.5047685901560914e-09,
-        "median_finite": 8.219428169712063e-12,
+        "max_finite": 6.694085675898278e-09,
+        "median_finite": 6.940145353800222e-12,
         "worst_point": 13
        }
       ],
-      "max_finite": 7.630497165589562e-09,
-      "median_finite": 1.9892323057708503e-11,
+      "max_finite": 1.28198142195434e-08,
+      "median_finite": 1.5804192734445032e-11,
       "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 13,
-       "estimate": 5.624253763935145e-08,
+       "estimate": 6.031752733158611e-08,
        "within_estimate": true,
        "dd_closest": 5.504855442237677e-15,
-       "revision": "39824f9b",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[gg_ttxgg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        },
        {
@@ -1661,20 +1673,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 35.7164425291121,
-       "generate_s": 26.589336418081075,
-       "export_s": 9.127106111031026,
-       "model_s": 3.657897933968343,
-       "peak_gib": 0.657,
+       "seconds": 31.789467474911362,
+       "generate_s": 23.100159628898837,
+       "export_s": 8.689307846012525,
+       "model_s": 4.146632532007061,
+       "peak_gib": 0.663,
        "plan_mb": 3.712,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -1683,7 +1695,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.581829446342271,
+       "ratio_to_fastest": 0.5178580774209909,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1712,28 +1724,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.1828452865156578,
-       "uncertainty": 0.027738204522708063,
+       "seconds_per_point": 0.09656357155472506,
+       "uncertainty": 0.021476298371964228,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.045408873664062495,
-        "scatter": 0.0009326325781249999,
-        "ninjars": 0.02017280034375001,
-        "masters": 0.006346220476562498,
-        "glue": 0.0014972156304793316,
-        "untimed": 0.10761800964204357
+        "inputs": 0.0114335232734375,
+        "numerator": 0.04625665297656249,
+        "scatter": 0.0009755875468750001,
+        "ninjars": 0.021599845781249998,
+        "masters": 0.006460923742187502,
+        "glue": 0.00888668866394629,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.38755447008796207,
+       "ratio_to_fastest": 0.20467382297266787,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.2981188231445862,
+        "ratio_to_limit": 0.1574414022866676,
         "band": [
-         0.28729816456394286,
-         0.30893948172522956
+         0.1527127196729957,
+         0.16217008490033946
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.6133302305
@@ -1742,7 +1754,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -1784,20 +1796,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.21653393667929777,
+       "seconds_per_point": 0.03295617981984833,
        "schedule": "B",
        "families": 375,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.1828452865156578,
-       "lc_over_fc": 1.1842467520252706,
+       "fc_seconds_per_point": 0.09656357155472506,
+       "lc_over_fc": 0.3412899842998373,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -1833,34 +1845,34 @@
         "key": "recola",
         "short": "Rc",
         "points": 8,
-        "max_finite": 9.353874152881173e-12,
-        "median_finite": 1.516381452356598e-12,
+        "max_finite": 9.7399834333521e-12,
+        "median_finite": 1.4978600992094438e-12,
         "worst_point": 7
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 1.9263696467035303e-10,
-        "median_finite": 1.4384834032432862e-12,
+        "max_finite": 1.9668645406731712e-10,
+        "median_finite": 1.3207492668451454e-12,
         "worst_point": 9
        }
       ],
-      "max_finite": 1.9263696467035303e-10,
-      "median_finite": 1.516381452356598e-12,
+      "max_finite": 1.9668645406731712e-10,
+      "median_finite": 1.4978600992094438e-12,
       "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 9,
-       "estimate": 2.6682178956142833e-09,
+       "estimate": 2.569925103011449e-09,
        "within_estimate": true,
        "dd_closest": 1.897028113555094e-13,
-       "revision": "39824f9b",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_gggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        }
       ]
@@ -1868,24 +1880,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 37.33755611395463,
-       "generate_s": 27.60903503699228,
-       "export_s": 9.728521076962352,
-       "model_s": 3.6362427559215575,
-       "peak_gib": 0.723,
+       "seconds": 31.847651734016836,
+       "generate_s": 22.80410066701006,
+       "export_s": 9.043551067006774,
+       "model_s": 4.078063657041639,
+       "peak_gib": 0.71,
        "plan_mb": 4.537,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 1.1380351285413777,
+       "ratio_to_fastest": 0.970704840034162,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1909,28 +1921,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.170236247304274,
-       "uncertainty": 0.025768030224184692,
+       "seconds_per_point": 0.07708036577423627,
+       "uncertainty": 0.008589069630546918,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.04735279925781247,
-        "scatter": 0.0018027690937499998,
-        "ninjars": 0.009171588351562496,
-        "masters": 0.0029118742109374997,
-        "glue": 0.0009041046441780054,
-        "untimed": 0.10809507900318605
+        "inputs": 0.0086641365625,
+        "numerator": 0.04901144115625,
+        "scatter": 0.0018813452890624998,
+        "ninjars": 0.009378104468750002,
+        "masters": 0.0029708889765625002,
+        "glue": 0.005400778354237801,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.4553984146681039,
+       "ratio_to_fastest": 0.2061974281710067,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.3503064728216184,
+        "ratio_to_limit": 0.15861340628538978,
         "band": [
-         0.336400078998356,
-         0.3642128666448808
+         0.15504161758152302,
+         0.16218519498925654
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.48596375034999995
@@ -1939,7 +1951,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -1974,20 +1986,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.21834464119547192,
+       "seconds_per_point": 0.030484976953630394,
        "schedule": "B",
        "families": 375,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_gggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.170236247304274,
-       "lc_over_fc": 1.2825978289171915,
+       "fc_seconds_per_point": 0.07708036577423627,
+       "lc_over_fc": 0.3954960079317611,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         }
        ]
@@ -2018,42 +2030,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 8,
-        "max_finite": 1.6860783211395883e-07,
-        "median_finite": 3.149660973653249e-11,
-        "worst_point": 1
+        "max_finite": 3.203695012143254e-08,
+        "median_finite": 2.7426402136696236e-11,
+        "worst_point": 5
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 8,
-        "max_finite": 4.0437030819143746e-07,
-        "median_finite": 2.311799188316325e-11,
+        "max_finite": 2.417105036018344e-07,
+        "median_finite": 2.427095878923705e-11,
         "worst_point": 1
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 8,
-        "max_finite": 4.04445833917819e-07,
-        "median_finite": 9.921880065949504e-12,
+        "max_finite": 2.4178602934050094e-07,
+        "median_finite": 9.59046614781557e-12,
         "worst_point": 1
        }
       ],
-      "max_finite": 4.04445833917819e-07,
-      "median_finite": 3.149660973653249e-11,
+      "max_finite": 2.4178602934050094e-07,
+      "median_finite": 2.7426402136696236e-11,
       "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 1,
-       "estimate": 4.799662575085839e-06,
+       "estimate": 4.715305570211097e-06,
        "within_estimate": true,
        "dd_closest": 4.35793642888872e-12,
-       "revision": "39824f9b",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[gg_gggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        },
        {
@@ -2066,20 +2078,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 148.3377647260204,
-       "generate_s": 115.98030038992874,
-       "export_s": 32.35746433609165,
-       "model_s": 3.6671581480186433,
-       "peak_gib": 2.146,
+       "seconds": 124.84527536993846,
+       "generate_s": 100.87628633901477,
+       "export_s": 23.968989030923694,
+       "model_s": 4.0763421199517325,
+       "peak_gib": 1.844,
        "plan_mb": 16.103,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -2088,7 +2100,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.06980434049497745,
+       "ratio_to_fastest": 0.058749315302199144,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2117,28 +2129,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.9132524525630288,
-       "uncertainty": 0.03152131505859887,
+       "seconds_per_point": 0.38763225274215074,
+       "uncertainty": 0.009368318262682517,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.21122840565625,
-        "scatter": 0.0024099464296874996,
-        "ninjars": 0.044445913390625,
-        "masters": 0.005814970453124999,
-        "glue": 0.0016252355626420467,
-        "untimed": 0.6522765320078634
+        "inputs": 0.10064092366406249,
+        "numerator": 0.21857732864843749,
+        "scatter": 0.0025205922656250006,
+        "ninjars": 0.04808729094531248,
+        "masters": 0.005942311320312502,
+        "glue": 0.011803468421618946,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.32147797075631923,
+       "ratio_to_fastest": 0.13645211645642624,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.24729074673563017,
+        "ratio_to_limit": 0.10496316650494325,
         "band": [
-         0.23901914552306294,
-         0.25556234794819743
+         0.1037775136893948,
+         0.1061488193204917
         ],
         "binding": "OpenLoops",
         "limit_seconds": 3.693031238
@@ -2147,7 +2159,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -2189,20 +2201,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 1.0326115865000247,
+       "seconds_per_point": 0.1558063687189133,
        "schedule": "B",
        "families": 550,
        "inputs": "native",
-       "revision": "4e9b5a9e",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.9132524525630288,
-       "lc_over_fc": 1.1306967570708586,
+       "fc_seconds_per_point": 0.38763225274215074,
+       "lc_over_fc": 0.40194376916967794,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -2243,34 +2255,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 3.929413624473955e-11,
-        "median_finite": 2.193685883815354e-13,
+        "max_finite": 4.315721725303214e-11,
+        "median_finite": 1.8193900309722166e-13,
         "worst_point": 15
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 1.907201634802554e-09,
-        "median_finite": 7.857385687021471e-13,
+        "max_finite": 1.9033385538014625e-09,
+        "median_finite": 7.962740243769849e-13,
         "worst_point": 15
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 5.346347104994245e-11,
-        "median_finite": 7.294108260011462e-14,
+        "max_finite": 5.73265520581803e-11,
+        "median_finite": 1.0626676138339913e-13,
         "worst_point": 15
        }
       ],
-      "max_finite": 1.907201634802554e-09,
-      "median_finite": 7.857385687021471e-13,
+      "max_finite": 1.9033385538014625e-09,
+      "median_finite": 7.962740243769849e-13,
       "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 15,
+       "estimate": 1.6486854729410703e-09,
+       "within_estimate": false,
+       "dd_closest": 5.535068690347794e-14,
+       "revision": "de8d3eb8",
+       "source": "g1.json processes[uux_emepddxg].stability (native/full)"
+      },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        },
        {
@@ -2283,20 +2303,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 38.20085273485165,
-       "generate_s": 29.198532737907954,
-       "export_s": 9.002319996943697,
-       "model_s": 3.7428675529081374,
-       "peak_gib": 0.412,
+       "seconds": 18.252679346012883,
+       "generate_s": 9.734364068019204,
+       "export_s": 8.518315277993679,
+       "model_s": 4.07215368305333,
+       "peak_gib": 0.493,
        "plan_mb": 1.129,
        "inputs": "native",
-       "revision": "b03cf789",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -2305,7 +2325,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 5.575345288619667,
+       "ratio_to_fastest": 2.6639455015001676,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2334,28 +2354,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.024724086812057067,
-       "uncertainty": 0.17368017084548282,
+       "seconds_per_point": 0.016245002249888785,
+       "uncertainty": 0.0057235264304736615,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.008566311335937502,
-        "scatter": 0.0019339075703125,
-        "ninjars": 0.0018849306093749998,
-        "masters": 0.0013061518593750004,
-        "glue": 0.00042886146729870234,
-        "untimed": 0.010360528679335549
+        "inputs": 0.00054639421875,
+        "numerator": 0.008806795828125,
+        "scatter": 0.00196846490625,
+        "ninjars": 0.0019441298906250019,
+        "masters": 0.0013055297499999998,
+        "glue": 0.0016440944863320324,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "b03cf789",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.5040764843071539,
+       "ratio_to_fastest": 0.3312042901294292,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.38775114177473374,
+        "ratio_to_limit": 0.2547725308687917,
         "band": [
-         0.2908340793650055,
-         0.484668204184462
+         0.23388375362926908,
+         0.27566130810831435
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.06376276985
@@ -2364,7 +2384,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -2406,20 +2426,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.02099162727336079,
+       "seconds_per_point": 0.006250352750612365,
        "schedule": "B",
        "families": 114,
        "inputs": "native",
-       "revision": "a8615a8c",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepddxg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.024724086812057067,
-       "lc_over_fc": 0.8490354945333679,
+       "fc_seconds_per_point": 0.016245002249888785,
+       "lc_over_fc": 0.3847554253589072,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -2455,34 +2475,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 8.993003914472083e-11,
-        "median_finite": 1.4823623253019519e-13,
+        "max_finite": 9.091740886972238e-11,
+        "median_finite": 2.2158856847992725e-13,
         "worst_point": 8
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 1.0996785280387349e-10,
-        "median_finite": 1.8182719732561999e-12,
+        "max_finite": 1.1095522252885525e-10,
+        "median_finite": 1.9702791905880756e-12,
         "worst_point": 8
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 1.1067907491975484e-10,
-        "median_finite": 1.1758454820582262e-13,
+        "max_finite": 1.1166644464473589e-10,
+        "median_finite": 1.6547723164046329e-13,
         "worst_point": 8
        }
       ],
-      "max_finite": 1.1067907491975484e-10,
-      "median_finite": 1.8182719732561999e-12,
+      "max_finite": 1.1166644464473589e-10,
+      "median_finite": 1.9702791905880756e-12,
       "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 8,
+       "estimate": 1.0988243713152604e-09,
+       "within_estimate": true,
+       "dd_closest": 7.676155313492963e-14,
+       "revision": "de8d3eb8",
+       "source": "g1.json processes[uux_emepggg].stability (native/full)"
+      },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        },
        {
@@ -2495,20 +2523,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 35.03583324793726,
-       "generate_s": 28.427126968977973,
-       "export_s": 6.608706278959289,
-       "model_s": 3.6858805150259286,
-       "peak_gib": 0.45,
+       "seconds": 17.628158709034324,
+       "generate_s": 10.515545091009699,
+       "export_s": 7.112613618024625,
+       "model_s": 4.193374280934222,
+       "peak_gib": 0.526,
        "plan_mb": 2.447,
        "inputs": "native",
-       "revision": "a8615a8c",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -2517,7 +2545,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 2.6210913337774504,
+       "ratio_to_fastest": 1.3187930681061704,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2546,28 +2574,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.08305721526539855,
-       "uncertainty": 0.03448386497871567,
+       "seconds_per_point": 0.06073965001542092,
+       "uncertainty": 0.02054483349704664,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.038592936929687495,
-        "scatter": 0.0021300683749999995,
-        "ninjars": 0.007979962203125,
-        "masters": 0.0026748383749999995,
-        "glue": 0.0007109889211278642,
-        "untimed": 0.031212940024473765
+        "inputs": 0.0015854569609375,
+        "numerator": 0.041921673773437494,
+        "scatter": 0.002180892078125001,
+        "ninjars": 0.008399569874999999,
+        "masters": 0.0027371335,
+        "glue": 0.003614397345705761,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "a8615a8c",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.24954753987938483,
+       "ratio_to_fastest": 0.18249384097515822,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.19195964606106522,
+        "ratio_to_limit": 0.14037987767319862,
         "band": [
-         0.17070006727497647,
-         0.21321922484715397
+         0.1267895306639212,
+         0.15397022468247604
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.43268060225000005
@@ -2576,7 +2604,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -2618,20 +2646,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.05265436016361491,
+       "seconds_per_point": 0.010993824461365875,
        "schedule": "B",
        "families": 164,
        "inputs": "native",
-       "revision": "29393525",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.08305721526539855,
-       "lc_over_fc": 0.6339528720697502,
+       "fc_seconds_per_point": 0.06073965001542092,
+       "lc_over_fc": 0.1809991407354949,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -2667,42 +2695,42 @@
         "key": "madloop",
         "short": "ML",
         "points": 16,
-        "max_finite": 8.662912775447645e-09,
-        "median_finite": 9.725071815818482e-12,
+        "max_finite": 8.702696977099847e-09,
+        "median_finite": 9.681635217143489e-12,
         "worst_point": 2
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 16,
-        "max_finite": 4.337558513179569e-09,
-        "median_finite": 2.654957035696833e-11,
+        "max_finite": 4.377342715003851e-09,
+        "median_finite": 2.657623699507379e-11,
         "worst_point": 2
        },
        {
         "key": "openloops",
         "short": "OL",
         "points": 16,
-        "max_finite": 5.67129728297627e-09,
-        "median_finite": 1.0631586568375846e-11,
+        "max_finite": 5.631513081203468e-09,
+        "median_finite": 1.0663593457114594e-11,
         "worst_point": 2
        }
       ],
-      "max_finite": 8.662912775447645e-09,
-      "median_finite": 2.654957035696833e-11,
+      "max_finite": 8.702696977099847e-09,
+      "median_finite": 2.657623699507379e-11,
       "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 2,
-       "estimate": 3.37792572192363e-08,
+       "estimate": 3.362864974926758e-08,
        "within_estimate": true,
        "dd_closest": 5.839256271708991e-13,
-       "revision": "b03cf789",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[gg_ttxemepg_qcd].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        },
        {
@@ -2715,20 +2743,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 43.23978214303497,
-       "generate_s": 30.893761427956633,
-       "export_s": 12.346020715078339,
-       "model_s": 3.6818425100063905,
-       "peak_gib": 0.566,
+       "seconds": 24.447735768044367,
+       "generate_s": 12.210824194015004,
+       "export_s": 12.236911574029364,
+       "model_s": 3.952013325993903,
+       "peak_gib": 0.606,
        "plan_mb": 2.13,
        "inputs": "native",
-       "revision": "b03cf789",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -2737,7 +2765,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 1.566024079626097,
+       "ratio_to_fastest": 0.8854286725693119,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2766,28 +2794,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.1526493463125007,
-       "uncertainty": 0.03396589315164172,
+       "seconds_per_point": 0.06293723771068471,
+       "uncertainty": 0.008734146872625408,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 0.038850909148437515,
-        "scatter": 0.0008370697734375002,
-        "ninjars": 0.011496194632812495,
-        "masters": 0.0040790773046875,
-        "glue": 0.0008900436778276344,
-        "untimed": 0.09490586663173443
+        "inputs": 0.002680985203125,
+        "numerator": 0.03925462025,
+        "scatter": 0.0008570153749999999,
+        "ninjars": 0.0109982642421875,
+        "masters": 0.004105246531250001,
+        "glue": 0.004790189035812464,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "b03cf789",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.3730359641114374,
+       "ratio_to_fastest": 0.15380251350603621,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.28695074162418266,
+        "ratio_to_limit": 0.11830962577387401,
         "band": [
-         0.25531950765914074,
-         0.3185819755892246
+         0.10825324465805977,
+         0.12836600688968824
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.5319705586
@@ -2796,7 +2824,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -2838,20 +2866,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.18501977082814847,
+       "seconds_per_point": 0.01163790716418589,
        "schedule": "B",
        "families": 164,
        "inputs": "native",
-       "revision": "29393525",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.1526493463125007,
-       "lc_over_fc": 1.2120574067142067,
+       "fc_seconds_per_point": 0.06293723771068471,
+       "lc_over_fc": 0.1849129003354742,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -2925,7 +2953,7 @@
       "source": "measured.json provider_generation.processes[gg_ttxemepg_ew]"
      },
      "full_colour": {
-      "gate_rule": "G1 (seven-leg rows not timed yet)",
+      "gate_rule": "G1 (not timed by G1)",
       "main": {
        "status": "not started",
        "reason": "EW loops",
@@ -3012,34 +3040,34 @@
         "key": "madloop",
         "short": "ML",
         "points": 3,
-        "max_finite": 2.2439613080282422e-12,
-        "median_finite": 1.2560115514663862e-12,
+        "max_finite": 2.0570214394729373e-12,
+        "median_finite": 1.2303984812663853e-12,
         "worst_point": 1
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 3,
-        "max_finite": 2.864343629378001e-10,
-        "median_finite": 7.076553611190645e-11,
+        "max_finite": 2.8645997600799273e-10,
+        "median_finite": 7.08844293990047e-11,
         "worst_point": 0
        }
       ],
-      "max_finite": 2.864343629378001e-10,
-      "median_finite": 7.076553611190645e-11,
+      "max_finite": 2.8645997600799273e-10,
+      "median_finite": 7.08844293990047e-11,
       "source": "g1.json processes[uux_ggggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 0,
-       "estimate": 1.8177024476374526e-11,
+       "estimate": 1.8549019155855338e-11,
        "within_estimate": false,
        "dd_closest": null,
-       "revision": "b03cf789",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_ggggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        },
        {
@@ -3052,20 +3080,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 474.7383611209225,
-       "generate_s": 329.51189920690376,
-       "export_s": 145.22646191401873,
-       "model_s": 3.7670171610079706,
-       "peak_gib": 6.006,
+       "seconds": 390.06969935202505,
+       "generate_s": 262.5715138700325,
+       "export_s": 127.49818548199255,
+       "model_s": 4.072840185952373,
+       "peak_gib": 4.809,
        "plan_mb": 69.176,
        "inputs": "native",
-       "revision": "b03cf789",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[uux_ggggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -3074,7 +3102,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.04645171671808208,
+       "ratio_to_fastest": 0.03816714354370964,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -3101,28 +3129,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 3.1177243414922486,
-       "uncertainty": 0.001975415295515944,
+       "seconds_per_point": 1.7950395024299723,
+       "uncertainty": 0.0015558039991092432,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 1.1319598306406249,
-        "scatter": 0.009100805351562498,
-        "ninjars": 0.2244573645000001,
-        "masters": 0.0435737636796875,
-        "glue": 0.00794630358905124,
-        "untimed": 1.69256245485135
+        "inputs": 0.2233160734765625,
+        "numerator": 1.1924476767109378,
+        "scatter": 0.0099106357109375,
+        "ninjars": 0.25640503354687494,
+        "masters": 0.0454265999765625,
+        "glue": 0.07325329516366574,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "b03cf789",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_ggggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.005478541449743822,
+       "ratio_to_fastest": 0.0031542873072874524,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.005478541449743822,
+        "ratio_to_limit": 0.0031542873072874524,
         "band": [
-         0.0050498905037508,
-         0.005907192395736844
+         0.002908813764318669,
+         0.003399760850256236
         ],
         "binding": "MadLoop",
         "limit_seconds": 569.079265
@@ -3131,7 +3159,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -3173,20 +3201,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 3.700961505961459,
+       "seconds_per_point": 0.5223757485782698,
        "schedule": "B",
        "families": 2712,
        "inputs": "native",
-       "revision": "60d3434f",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_ggggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 3.1177243414922486,
-       "lc_over_fc": 1.1870714343494695,
+       "fc_seconds_per_point": 1.7950395024299723,
+       "lc_over_fc": 0.29101072587601656,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -3222,19 +3250,28 @@
         "key": "njet_dd_oneloop_R1",
         "short": "NJet DD",
         "points": 10,
-        "max_finite": 1.4692356765707006e-08,
-        "median_finite": 3.764212455416529e-09,
+        "max_finite": 3.732137568931227e-08,
+        "median_finite": 2.0453792777268e-09,
         "worst_point": 4,
         "fixture": "gg_ggggg_njet"
        }
       ],
-      "max_finite": 1.4692356765707006e-08,
-      "median_finite": 3.764212455416529e-09,
+      "max_finite": 3.732137568931227e-08,
+      "median_finite": 2.0453792777268e-09,
       "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].accuracy_check",
+      "worst_point": {
+       "index": 4,
+       "fixture": "gg_ggggg_njet",
+       "estimate": 1.2697658781127443e-06,
+       "within_estimate": true,
+       "dd_closest": 0.0,
+       "revision": "b95ccf43",
+       "source": "g1.json processes[gg_ggggg].fixture_stability (native/full)"
+      },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "4e9b5a9e",
+        "revision": "7db32901",
         "status": "compared"
        },
        {
@@ -3253,20 +3290,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 3044.194002132979,
-       "generate_s": 2633.4208681919845,
-       "export_s": 410.77313394099474,
-       "model_s": 3.625220030080527,
-       "peak_gib": 27.815,
+       "seconds": 2863.953017382999,
+       "generate_s": 2516.296381701017,
+       "export_s": 347.65663568198215,
+       "model_s": 3.7235334690194577,
+       "peak_gib": 22.969,
        "plan_mb": 159.867,
        "inputs": "native",
-       "revision": "a8615a8c",
+       "revision": "de8d3eb8",
        "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -3300,27 +3337,27 @@
       "gate_rule": "no gate (no matched provider)",
       "main": {
        "status": "measured",
-       "batch": 64,
-       "seconds_per_point": 14.064133413718082,
-       "uncertainty": 0.020820175912198924,
+       "batch": 128,
+       "seconds_per_point": 7.410042469625296,
+       "uncertainty": 0.05544119219164762,
        "stages": {
-        "inputs": 0.0,
-        "numerator": 3.571717073953124,
-        "scatter": 0.011016168484374995,
-        "ninjars": 0.42947178781249984,
-        "masters": 0.04097296273437502,
-        "glue": 0.004232865563608357,
-        "untimed": 10.006021950100443
+        "inputs": 3.10095040653125,
+        "numerator": 3.6210786562265613,
+        "scatter": 0.011052665554687502,
+        "ninjars": 0.43732939125781256,
+        "masters": 0.0407554279921875,
+        "glue": 0.032114459569158704,
+        "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "a8615a8c",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/full",
-       "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].batches['64']",
+       "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].batches['128']",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {
@@ -3362,9 +3399,9 @@
            1,
            2
           ],
-          "max_rotation": 2.1784354738160466e-08,
-          "max_estimate": 6.05681469685206e-08,
-          "revision": "a8615a8c"
+          "max_rotation": 3.0248729042373344e-08,
+          "max_estimate": 7.694100422732902e-08,
+          "revision": "de8d3eb8"
          },
          "native/lc": {
           "points": [
@@ -3372,9 +3409,9 @@
            1,
            2
           ],
-          "max_rotation": 1.1051096387622281e-08,
-          "max_estimate": 3.701778254830497e-08,
-          "revision": "a8615a8c"
+          "max_rotation": 1.1884253316246013e-08,
+          "max_estimate": 3.1764945629520285e-08,
+          "revision": "de8d3eb8"
          }
         },
         "what": "binary64 finite part: relative deviation under one rotation about z by (3/5, 4/5), and the estimate E (rotation plus reduction direction)",
@@ -3382,7 +3419,7 @@
        },
        "ward": {
         "status": "not run",
-        "reason": "not run at seven legs: the Ward mode (WP2.5) forms its per-point inputs in Python with full tree kernels (the native trees take no literal sources); one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs (package measure-g1-7leg), so seven gluons need native Ward inputs (generation-scale-2); the 5- and 6-gluon Ward rows pass",
+        "reason": "attempted at seven legs on slice 7db32901 (package measure-g1-7leg, session 6): the Ward-mode generation of g g > g g g g g (Python per-point inputs with full tree kernels; point 0, leg 3, c = 1) had not finished after 55 min when the job stopped; one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs, so seven gluons need native Ward inputs (generation-scale-2); the 5- and 6-gluon Ward rows pass",
         "reason_source": "milestone.json status_notes.notes[gg_ggggg].ward",
         "lower_multiplicity": [
          {
@@ -3408,21 +3445,21 @@
      "leading_colour": {
       "main": {
        "status": "measured",
-       "batch": 64,
-       "seconds_per_point": 16.176537819046644,
+       "batch": 128,
+       "seconds_per_point": 3.739958393546658,
        "schedule": "B",
        "families": 4707,
        "inputs": "native",
-       "revision": "a8615a8c",
+       "revision": "de8d3eb8",
        "g1_configuration": "native/lc",
-       "source": "g1.json processes[gg_ggggg].pyamplicol['native/lc'].batches['64']",
-       "fc_seconds_per_point": 14.064133413718082,
-       "lc_over_fc": 1.1501979783033154,
+       "source": "g1.json processes[gg_ggggg].pyamplicol['native/lc'].batches['128']",
+       "fc_seconds_per_point": 7.410042469625296,
+       "lc_over_fc": 0.5047148392033138,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "4e9b5a9e",
+         "revision": "7db32901",
          "status": "measured"
         },
         {

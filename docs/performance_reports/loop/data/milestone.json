@@ -1,13 +1,13 @@
 {
- "date": "2026-10-24",
- "engine_revision": "4e9b5a9e",
- "previous_loop": "c3a7be09",
- "previous_engine": "b4d76cc3",
+ "date": "2026-10-25",
+ "engine_revision": "7db32901",
+ "previous_loop": "79df367a",
+ "previous_engine": "4e9b5a9e",
  "native_build": {
-  "name": "loop-native-v2-slice-4e9b5a9e",
-  "digest": "02e1e95c",
+  "name": "loop-native-v2-slice-7db32901",
+  "digest": "be32a169",
   "profile": "release, codegen-units 1, thin LTO, rustc 1.97.1",
-  "source": "workspace/reports/engine-v2/slice-status.md, G-int integration (4e9b5a9e): integrator release build of the merge commit (stage --source accepted it); the G1 campaign of this milestone ran on it (data/g1.json slice_build, slice_native_digest)"
+  "source": "workspace/reports/engine-v2/slice-status.md and HANDOFF_24_10_2026.md section 6.4, artifact-portability integration (7db32901): integrator release build of the merge commit (build-info.json source_revision 7db32901, clean tree; stage --source accepted it); the G1 campaign of this milestone ran on it (data/g1.json slice_build, slice_native_digest)"
  },
  "development": {
   "source": "git: 889af02c and the G1 scratch commit 39824f9b (tag g1-native-inputs-39824f9b) are on work/v2-generation-scale; work/v2-generation-scale d7e40cfb was integrated into work/v2-slice at 4e9b5a9e (G-int; 889af02c, fef92189, 0ea83af2 and 6f5a64cc are ancestors of 4e9b5a9e, the scratch commit 39824f9b is not); workspace/reports/engine-v2/slice-status.md, G-int integration block and DECISIONS 2026-10-24 ~21:50 UTC; label and integration: HANDOFF_24_10_2026.md section 6.2 (WP3.1 generation-scale, integration package G-int)",
@@ -21,15 +21,16 @@
   "integrated_at": "4e9b5a9e"
  },
  "ancestry": {
-  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
-  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records): every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. 4e9b5a9e is the G1 campaign of this milestone (slice_revision, the engine on loop); 1c971289 and 889af02c were the sides of the previous campaign (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e and is no candidate)",
+  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout; 2026-10-25: package measure-g1-7leg for 7db32901, in its worktree with work/v2-slice merged); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
+  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records): every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. 7db32901 is the G1 campaign of this milestone (slice_revision; DECISIONS 2026-10-25 ~11:40: timings on 88657260 or later); 4e9b5a9e was the previous campaign (the engine on loop 79df367a, now earlier runs in data/g1.json); 1c971289 and 889af02c the sides of the campaign before (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e or 7db32901 and is no candidate)",
   "revisions": [
    "1c971289",
    "889af02c",
    "fef92189",
    "0ea83af2",
    "6f5a64cc",
-   "4e9b5a9e"
+   "4e9b5a9e",
+   "7db32901"
   ],
   "ancestors": [
    [
@@ -79,6 +80,30 @@
    [
     "6f5a64cc",
     "4e9b5a9e"
+   ],
+   [
+    "1c971289",
+    "7db32901"
+   ],
+   [
+    "889af02c",
+    "7db32901"
+   ],
+   [
+    "fef92189",
+    "7db32901"
+   ],
+   [
+    "0ea83af2",
+    "7db32901"
+   ],
+   [
+    "6f5a64cc",
+    "7db32901"
+   ],
+   [
+    "4e9b5a9e",
+    "7db32901"
    ]
   ]
  },
@@ -95,21 +120,33 @@
  },
  "integrated": [
   {
-   "sha": "c29d5899",
-   "wp": "Rust A3",
-   "title": "Native counterterm-program builder",
-   "detail": "V2Dag.build for the counterterm-lowered model and the value-equivalence derivation in Rust, equal to the Python builder (program, DAG and block digests at seven legs); no production call site switched (NATIVE_DAG = False)"
+   "sha": "201bece5",
+   "wp": "ct-perf",
+   "title": "Counterterm-route generation memos",
+   "detail": "loop-request DAG-compile memos, the counterterm bind sharing the Born closure's colour cache, the content-addressed lowered-model IR cache, memoized derived runtime parameters; output-identical (plans and native trees bit-equal at the six-leg controls)"
   },
   {
-   "sha": "4e9b5a9e",
-   "wp": "WP3.1 G-int",
-   "title": "Native per-point inputs and generation stages",
-   "detail": "trees, Born, counterterm and field inputs formed in the executor; native families, schedules, cycles and order filters; the stored native process (point_inputs native-v1: a plain evaluation loads without generation); the poles companion on native schedules; particle_veto on the native generator"
+   "sha": "8b52179b",
+   "wp": "WP3.2 ew-poles batch 1",
+   "title": "Electroweak request guards and the QED Catani operator",
+   "detail": "typed refusals for EW requests with non-zero widths outside CMS and for external photons until alpha(0); the QED Catani operator (equal to MadLoop's poles on the four EW rungs); QCD-only requests byte-identical"
+  },
+  {
+   "sha": "88657260",
+   "wp": "lc-perf",
+   "title": "Leading colour never slower than full colour",
+   "detail": "LC-aware closure-block pruning in one linear pass, native tree closures with lane-run chunking and narrowed SIMD widths"
+  },
+  {
+   "sha": "7db32901",
+   "wp": "artifact-portability",
+   "title": "Portable prepared artifacts",
+   "detail": "binary64 SymJIT plane applications for every loop kernel and the parameter program, stored as IR and recompiled at load; licence-free binary64; relocatable, cache-independent members"
   }
  ],
- "integrated_tip": "4e9b5a9e",
+ "integrated_tip": "7db32901",
  "after_integration": [],
- "already_on_loop": "v2 waves 0-1, gates S1 and G0, native executor (WP2.1), colour (WP2.4), stability API (WP2.3), schedule M (WP2.8), tree-EW follow-up, NJet reference, observables (WP2.5), public v2 engine with plan v4 artifacts (WP2.6), counterterms in the recursion (WP2.2), runtime pole selection (WP2.10), Rust A0 (contract-class reuse pass), constant counterterm arguments (ct-assume-fix), addendum F-J, Rust A1-A2 (native loop-request DAG builder), the gate G1 harness (WP2.7), counterterms as plain tree insertions (addendum J, b4d76cc3), the summary-first report",
+ "already_on_loop": "v2 waves 0-1, gates S1 and G0, native executor (WP2.1), colour (WP2.4), stability API (WP2.3), schedule M (WP2.8), tree-EW follow-up, NJet reference, observables (WP2.5), public v2 engine with plan v4 artifacts (WP2.6), counterterms in the recursion (WP2.2), runtime pole selection (WP2.10), Rust A0 (contract-class reuse pass), constant counterterm arguments (ct-assume-fix), addendum F-J, Rust A1-A2 (native loop-request DAG builder), the gate G1 harness (WP2.7), counterterms as plain tree insertions (addendum J, b4d76cc3), the summary-first report, Rust A3 (native counterterm-program builder), WP3.1 G-int (native per-point inputs and generation stages)",
  "addendum_commits": [
   "b91d23a8",
   "2dd36f65",
@@ -304,7 +341,7 @@
   "catani_native_vs_njet": 2.3e-14
  },
  "status_notes": {
-  "source": "HANDOFF_24_10_2026.md sections 0.1 and 9 items 2 and 4; HANDOFF_22_10_2026.md section 0.1 (provider jobs stopped); DESIGN.md WP3.2; workspace/reports/engine-v2/slice-status.md, G-int integration (4e9b5a9e: the V+jets rows that the engine with Python per-point inputs refused generate on loop with the native generator, data/g1.json; the 2->5 V+jets and g g > t t~ e- e+ g (QCD) records of the branch are ancestors of 4e9b5a9e); the configuration of the gg_ggggg validation: tests/fixtures/loop/required/gg_ggggg_njet.json names the scheme massless-qcd-nf5, for which tools/loop_v2_generate.py validate (work/v2-generation-scale, 0ea83af2) vetoes the top",
+  "source": "HANDOFF_24_10_2026.md sections 0.1 and 9 items 2 and 4; HANDOFF_22_10_2026.md section 0.1 (provider jobs stopped); DESIGN.md WP3.2; workspace/reports/engine-v2/slice-status.md, G-int integration (4e9b5a9e: the V+jets rows that the engine with Python per-point inputs refused generate on loop with the native generator, data/g1.json; the 2->5 V+jets and g g > t t~ e- e+ g (QCD) records of the branch are ancestors of 4e9b5a9e); the configuration of the gg_ggggg validation: tests/fixtures/loop/required/gg_ggggg_njet.json names the scheme massless-qcd-nf5, for which tools/loop_v2_generate.py validate (work/v2-generation-scale, 0ea83af2) vetoes the top; the seven-gluon Ward attempt: workspace/reports/engine-v2/measure-g1-7leg/records (measure-g1-7leg session 6)",
   "what": "short attributions of the registry: a refusal attributed to the engine on loop (with its basis where it is inferred) or a capability nobody has started, printed in Table 1 only where the most recent configuration of the row refuses or no configuration has a record (scripts/build_summary.py, main-configuration rule); short labels of records and the configuration of a development record where the record does not carry it; measured numbers never come from here",
   "notes": {
    "gg_ttxemepg_ew": {
@@ -320,12 +357,12 @@
      6
     ],
     "providers": "stopped 22 Oct; not to be restarted (HANDOFF section 0.1)",
-    "ward": "not run at seven legs: the Ward mode (WP2.5) forms its per-point inputs in Python with full tree kernels (the native trees take no literal sources); one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs (package measure-g1-7leg), so seven gluons need native Ward inputs (generation-scale-2); the 5- and 6-gluon Ward rows pass"
+    "ward": "attempted at seven legs on slice 7db32901 (package measure-g1-7leg, session 6): the Ward-mode generation of g g > g g g g g (Python per-point inputs with full tree kernels; point 0, leg 3, c = 1) had not finished after 55 min when the job stopped; one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs, so seven gluons need native Ward inputs (generation-scale-2); the 5- and 6-gluon Ward rows pass"
    }
   }
  },
  "pending": {
-  "source": "HANDOFF_24_10_2026.md section 6.5 (measure-g1-7leg); its 2->5 rows are timed in g1.json (batched, full and leading colour, on the integrated configuration of slice_revision), so no row waits for it today; a row with development records and no batched timing would",
+  "source": "HANDOFF_24_10_2026.md section 6.5 (measure-g1-7leg); its 2->5 rows are timed in g1.json (batched, full and leading colour, on the integrated configuration of slice_revision 7db32901), so no row waits for it today; a row with development records and no batched timing would",
   "what": "the package that will time, in batches, a row whose most recent configuration has no batched timing (the development validation records time single points only)",
   "batched": "measure-g1-7leg"
  },
