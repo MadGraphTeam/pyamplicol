@@ -373,6 +373,29 @@ def reference_errors(
     return errors
 
 
+def reference_fixture(key: str) -> tuple[str, dict[str, Any]] | None:
+    """The reference fixture of ``key`` (``streams.fixture_name``: its
+    required fixture, or the specification's ``reference_fixture``, e.g.
+    NJet's) with its content, or None if it has none."""
+
+    name = streams.fixture_name(key)
+    path = streams.FIXTURES / f"{name}.json"
+    if not path.exists():
+        return None
+    return name, json.loads(path.read_text())
+
+
+def fixture_batch(fixture: dict[str, Any], indices: list[int]) -> tuple[list, list]:
+    """The exact points and squared scales of a fixture's points ``indices``
+    (each at the fixture's own scale)."""
+
+    points = [
+        [[Fraction(x) for x in leg] for leg in fixture["points"][i]] for i in indices
+    ]
+    scales = [str(Fraction(fixture["mu_r"][i]) ** 2) for i in indices]
+    return points, scales
+
+
 def universal_double_pole(key: str, accuracy: str) -> float | None:
     """D / Born = -(alpha_s/2pi) sum_i C_i over the massless coloured legs of
     ``key`` at colour ``accuracy`` (None at NLC, where it holds only with
@@ -694,18 +717,13 @@ class Run:
         NJet fixture's points are the stream's first points at its own
         scale (``points_are_stream_points``)."""
 
-        name = streams.fixture_name(self.key)
-        fixture_path = streams.FIXTURES / f"{name}.json"
-        if not fixture_path.exists() or self.options.accuracy != "full":
+        found = reference_fixture(self.key)
+        if found is None or self.options.accuracy != "full":
             self.record["accuracy_check"] = None
             return
-        fixture = json.loads(fixture_path.read_text())
+        name, fixture = found
         count = min(len(fixture["points"]), self.options.lanes)
-        points = [
-            [[Fraction(x) for x in leg] for leg in point]
-            for point in fixture["points"][:count]
-        ]
-        scales = [str(Fraction(mu) ** 2) for mu in fixture["mu_r"][:count]]
+        points, scales = fixture_batch(fixture, list(range(count)))
         options: dict[str, Any] = {
             "parameters": self.parameters,
             "poles": _finite_only(),
@@ -1008,11 +1026,20 @@ def _summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
 CHECKS = "rotation about z by (3/5, 4/5) and the reduction direction"
 
 
-def stability_rows(run: Run, indices: list[int], arithmetics: list[str]) -> list:
+def stability_rows(
+    run: Run,
+    indices: list[int],
+    arithmetics: list[str],
+    fixture: tuple[str, dict[str, Any]] | None = None,
+) -> list:
     """Stream points of a generated run evaluated with one rotation about z
     by (3/5, 4/5) and the reduction-direction check, finite part only: the
     estimate E and each check's relative deviation (``checks``: the rotated
-    evaluation's is the rotational-invariance test)."""
+    evaluation's is the rotational-invariance test). With ``fixture`` (name,
+    content: ``reference_fixture``) the indices are the fixture's points at
+    its own scales, and each row also has the finite part's deviation from
+    every reference of the fixture that states one
+    (``deviation_vs_references``, the fixture metric of ``reference_errors``)."""
 
     from pyamplicol.loops.v2.assemble import Precision
     from pyamplicol.loops.v2.stability import Rotation, StabilityChecks
@@ -1030,9 +1057,12 @@ def stability_rows(run: Run, indices: list[int], arithmetics: list[str]) -> list
     lanes = run.options.lanes
     for start in range(0, len(indices), lanes):
         chunk = indices[start : start + lanes]
-        batches = [run._batch(index, 1) for index in chunk]
-        points = [p for batch in batches for p in batch[0]]
-        scales = [mu for batch in batches for mu in batch[1]]
+        if fixture is None:
+            batches = [run._batch(index, 1) for index in chunk]
+            points = [p for batch in batches for p in batch[0]]
+            scales = [mu for batch in batches for mu in batch[1]]
+        else:
+            points, scales = fixture_batch(fixture[1], chunk)
         for arithmetic in arithmetics:
             begin = time.perf_counter()
             results = run.executor.evaluate(
@@ -1066,6 +1096,21 @@ def stability_rows(run: Run, indices: list[int], arithmetics: list[str]) -> list
                         "batch": len(chunk),
                     }
                 )
+                if fixture is not None:
+                    name, content = fixture
+                    errors = reference_errors(
+                        born,
+                        finite,
+                        content["rows"][index]["providers"],
+                        float(run.parameters["aS"]),
+                    )
+                    rows[-1]["fixture"] = name
+                    rows[-1]["mu_r"] = content["mu_r"][index]
+                    rows[-1]["deviation_vs_references"] = {
+                        reference: row["finite"]
+                        for reference, row in errors.items()
+                        if "finite" in row
+                    }
                 print(run.key, json.dumps(rows[-1]), flush=True)
     return rows
 
@@ -1077,19 +1122,36 @@ def check_points(options: Any) -> int:
     double-double): the estimate E beside the value, for the points where the
     timed binary64 values deviate most from the providers (``gate.py``). The
     double-double values separate pyAmpliCol's binary64 loss from the
-    providers' own (they read the points rounded to binary64)."""
+    providers' own (they read the points rounded to binary64). With
+    ``--fixture`` the points are the reference fixture's (e.g. NJet's ten
+    seven-gluon points at mu_R = 1000 GeV), where the timing run's accuracy
+    check compares (``Run.accuracy``)."""
 
+    fixture = None
+    if getattr(options, "fixture", False):
+        fixture = reference_fixture(options.process)
+        if fixture is None:
+            raise SystemExit(f"{options.process} has no reference fixture")
+        count = len(fixture[1]["points"])
+        outside = [i for i in options.points if not 0 <= i < count]
+        if outside:
+            raise SystemExit(f"{fixture[0]} has {count} points, not {outside}")
     run = Run(options)
     try:
         if getattr(options, "load", None) is not None:
             run.load(options.load)
         else:
             run.generate()
-        rows = stability_rows(run, options.points, options.arithmetic)
+        rows = stability_rows(run, options.points, options.arithmetic, fixture)
     finally:
         run.close()
     run.record["kind"] = "stability"
     run.record["checks"] = CHECKS
+    if fixture is not None:
+        # The rows are the fixture's points (``index``: the fixture's), at
+        # its own scales: no stream point.
+        run.record["fixture"] = fixture[0]
+        run.record["fixture_metric"] = fixture[1]["error_metric"]
     run.record["rows"] = rows
     if options.json:
         options.json.write_text(json.dumps(run.record, indent=1) + "\n")

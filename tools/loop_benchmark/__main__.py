@@ -7,7 +7,8 @@ Subcommands:
 - ``pyamplicol``: time pyAmpliCol v2 on one process (``pyamplicol_v2.py``),
   optionally followed by stability and every-pole checks of the same
   generation;
-- ``stability``: stability estimates at chosen stream points;
+- ``stability``: stability estimates at chosen stream points (or at the
+  reference fixture's points, ``--fixture``);
 - ``ward``: the Ward identity at chosen stream points (``pyamplicol_v2.ward``);
 - ``providers``: time MadLoop, Recola and OpenLoops in production mode on the
   same stream (``providers.py``);
@@ -137,6 +138,12 @@ def main(argv: list[str] | None = None) -> int:
     stable.add_argument("--json", type=Path)
     stable.add_argument(
         "--load", type=Path, help="a stored process (pyamplicol --store)"
+    )
+    stable.add_argument(
+        "--fixture",
+        action="store_true",
+        help="the points are the reference fixture's (the accuracy check's, at "
+        "its own scales), each row with its deviation from every reference",
     )
     stable.set_defaults(lanes=16, schedule="B")
 

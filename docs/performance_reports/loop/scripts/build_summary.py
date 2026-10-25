@@ -736,26 +736,44 @@ def _validation_g1(
     # configuration itself (another configuration's estimate is not its own).
     # A fixture's worst point is indexed by the fixture, at its own scale
     # (NJet's mu_R = 1000 GeV, not the stream's): the stability rows of the
-    # stream points are not its estimate.
+    # stream points are not its estimate; the rows at the fixture's own
+    # points are (``stability --fixture``: fixture_stability, with their
+    # deviations from the fixture's references).
+    if fixture:
+        name = worst.get("fixture")
+        table, deviations = "fixture_stability", "deviation_vs_references"
+        candidates = [
+            r
+            for r in proc.get(table, [])
+            if name is not None and r.get("fixture") == name
+        ]
+    else:
+        table, deviations = "stability", "deviation_vs_providers"
+        candidates = proc.get(table, [])
     rows = {
         (r["index"], r["arithmetic"]): r
-        for r in proc.get("stability", [])
-        if r["configuration"] == checked and not fixture
+        for r in candidates
+        if r["configuration"] == checked
     }
     b64 = rows.get((worst["worst_point"], "double"))
     dd = rows.get((worst["worst_point"], "double-double"))
     if b64 is not None:
+        closest = None
+        if dd is not None:
+            shown = {
+                k: v for k, v in dd[deviations].items() if not fixture or k in SHOWN
+            }
+            closest = min(shown.values()) if shown else None
         out["worst_point"] = {
             "index": worst["worst_point"],
+            **({"fixture": name} if fixture else {}),
             "estimate": b64["estimate"],
             "within_estimate": b64["estimate"] >= worst["max_finite"],
-            "dd_closest": None
-            if dd is None
-            else min(dd["deviation_vs_providers"].values()),
+            "dd_closest": closest,
             # The stability run's revision (printed where it differs from
             # the validated configuration's).
             "revision": (b64.get("revision") or "")[:8] or None,
-            "source": f"g1.json processes[{proc['key']}].stability ({checked})",
+            "source": f"g1.json processes[{proc['key']}].{table} ({checked})",
         }
     return out
 

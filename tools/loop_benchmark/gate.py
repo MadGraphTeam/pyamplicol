@@ -45,7 +45,8 @@ tools.loop_benchmark``) and writes one JSON document for the live report
   alpha_s/(2 pi)) for the finite part; Recola's finite part converted to
   MadLoop's convention with the universal double pole, since Recola returns
   no poles in production mode) and the stability rows (binary64 and
-  double-double at the worst points);
+  double-double at the worst points; the rows at a reference fixture's own
+  points, e.g. NJet's for g g > g g g g g, apart as ``fixture_stability``);
 - the schedule B/M comparison on the schedule-dependent stages (seeds,
   factors, dressing, scatter, reduction) and end to end, with the design's
   adoption rule (M where at least 15 % faster, the reduction included);
@@ -558,21 +559,33 @@ def build(
             continue
         if record["kind"] == "stability":
             # A later record's row of the same point, arithmetic and
-            # configuration replaces an earlier one.
-            rows = entry.setdefault("stability", [])
+            # configuration replaces an earlier one. The rows of a record at
+            # the reference fixture's points (``stability --fixture``) are
+            # indexed by the fixture, not the stream: they stay apart
+            # (``fixture_stability``), with their deviations from the
+            # fixture's references.
+            fixture = record.get("fixture")
+            rows = entry.setdefault(
+                "stability" if fixture is None else "fixture_stability", []
+            )
+
+            def identity(r: dict[str, Any]) -> tuple:
+                return (
+                    r.get("fixture"),
+                    r["index"],
+                    r["arithmetic"],
+                    r["configuration"],
+                )
+
             for row in record["rows"]:
                 new = {
                     "arithmetic": "double",
                     **row,
+                    **({"fixture": fixture} if fixture is not None else {}),
                     "configuration": _configuration(record),
                     "revision": record["revision"],
                 }
-                same = (new["index"], new["arithmetic"], new["configuration"])
-                rows[:] = [
-                    r
-                    for r in rows
-                    if (r["index"], r["arithmetic"], r["configuration"]) != same
-                ]
+                rows[:] = [r for r in rows if identity(r) != identity(new)]
                 rows.append(new)
             continue
         if record["kind"] == "providers":
@@ -825,6 +838,11 @@ def build(
                     for name, (u, assumed) in reference_uncertainty.items()
                 },
                 "stability": entry.get("stability", []),
+                **(
+                    {"fixture_stability": entry["fixture_stability"]}
+                    if entry.get("fixture_stability")
+                    else {}
+                ),
                 "ward": ward_rows(
                     entry.get("ward", []),
                     [
