@@ -148,10 +148,11 @@
 #let stage(x, name) = x.stages_per_point.at(name, default: 0.0)
 #let python-inputs(x) = ("python trees", "python counterterm program", "python scalars",
   "python Born and counterterm components").map(n => stage(x, n)).sum()
-// A record without any per-point input timer (the build on `loop`: the native
-// trees timer was a scratch commit of the development campaign) leaves its
-// native trees, Born and counterterm inputs in "other": the untimed rest of
-// the call, kept out of the glue and never attributed to a stage (as
+// A record without any per-point input timer (the build on `loop` before
+// lc-perf, 88657260: the native trees timer was a scratch commit of the
+// development campaign; since lc-perf the executor reports "trees") leaves
+// its native trees, Born and counterterm inputs in "other": the untimed rest
+// of the call, kept out of the glue and never attributed to a stage (as
 // scripts/build_summary.py does for Table 1).
 #let input-timers = ("python trees", "python counterterm program", "python scalars",
   "python Born and counterterm components", "native trees")
@@ -172,10 +173,11 @@
 #let fail-ink = rgb("#b2182b")
 #let rev(c) = if c == none { none } else { c.revision.slice(0, 8) }
 // The configurations of the G1 details: native/full is the engine on `loop`
-// (integrated, native per-point inputs: g.slice_revision); python/full the
-// engine before G-int with Python per-point inputs (history, its own
-// revision); native/full/L1 and the schedule-M runs the development
-// campaign of 39824f9b (history, not repeated).
+// (integrated, native per-point inputs: g.slice_revision; its earlier runs
+// are G-int's at 4e9b5a9e and the development campaign's of 39824f9b);
+// python/full the engine before G-int with Python per-point inputs
+// (history, its own revision); native/full/L1 and the schedule-M runs the
+// development campaign of 39824f9b (history, not repeated).
 #let py-c(p) = cfg(p, "python/full")
 #let nat-c(p) = cfg(p, "native/full")
 #let l1-c(p) = cfg(p, "native/full/L1")
@@ -196,12 +198,13 @@
 #let batched-time(p, c) = { let t = batched-of(c); if t != none { t } else { batched-of(nat-c(p)) } }
 #let ungated(p, c) = p.gated and { let t = batched-time(p, c); t != none and t < thr-rule.below_seconds_per_point }
 #let eff-status(p, c, b, gt) = if gt == none { none } else if "ratio_to_binding_limit" in gt and ungated(p, c) { "not gated" } else { let d = decision(p, b, gt); if d != none { d.verdict } else { gt.status } }
+#let gratio(r) = if r < 0.01 { fixed(r, 1 - calc.floor(calc.log(r, base: 10))) } else { fixed(r, 2) }
 #let gate-word(p, c, b, gt) = if gt == none [—] else if eff-status(p, c, b, gt) == "not gated" {
   text(fill: ink2, weight: "bold")[not gated] + [ #fixed(gt.ratio_to_binding_limit, 2)]
 } else if decision(p, b, gt) != none {
   text(fill: pass-ink, weight: "bold")[#decision(p, b, gt).verdict‡] + [ #fixed(gt.ratio_to_binding_limit, 2)]
 } else if gt.status == "pass" {
-  text(fill: pass-ink, weight: "bold")[pass] + [ #fixed(gt.ratio_to_binding_limit, 2)]
+  text(fill: pass-ink, weight: "bold")[pass] + [ #gratio(gt.ratio_to_binding_limit)]
 } else if gt.status == "fail" {
   text(fill: fail-ink, weight: "bold")[fail] + [ #mult2(gt.ratio_to_binding_limit)]
 } else if gt.status == "inconclusive" {
@@ -217,8 +220,9 @@
 // An earlier run of a configuration (g1.json earlier_runs, oldest first):
 // the newest that timed batch b, with its revision; none if no earlier run
 // did. The integrated configuration's earlier runs are the development
-// campaign's (39824f9b, bitwise the same binary64 values) and, for the
-// single repeat, its own first run.
+// campaign's (39824f9b) and G-int's (4e9b5a9e), whose binary64 values equal
+// this campaign's to rounding level (g1.json values_note), and, for a single
+// repeat, its own first run.
 #let earlier-bat(c, b) = if c == none { none } else {
   let e = c.at("earlier_runs", default: ()).filter(r => b in r.batches)
   if e.len() == 0 { none } else { (rev: e.last().revision.slice(0, 8), x: e.last().batches.at(b)) }
@@ -260,9 +264,11 @@
 // "inputs" stage group of Table 1's bars and of the stage-split table's
 // "Trees, Born, CT" column (input conversion is glue there and here).
 #let inputs-share = py-batched.map(p => { let x = bat(py-c(p), big); share(x, python-inputs(x)) })
-// The untimed rest's share (native trees, Born and counterterm inputs and
-// the rest of the call; the build on loop has no trees timer).
-#let trees-share = gated.map(p => { let x = bat(nat-c(p), top(nat-c(p))); if x == none { none } else { (p: p, s: share(x, untimed(x))) } }).filter(v => v != none)
+// The native trees' share (Born and counterterm inputs included): the
+// executor's trees timer (since lc-perf, 88657260), or the untimed rest of a
+// build without it (an upper bound: the rest of the call is in it too).
+#let trees-share = gated.map(p => { let x = bat(nat-c(p), top(nat-c(p))); if x == none { none } else { (p: p, s: share(x, if inputs-timed(x) { stage(x, "native trees") } else { untimed(x) })) } }).filter(v => v != none)
+#let trees-timed = gated.all(p => { let x = bat(nat-c(p), top(nat-c(p))); x == none or inputs-timed(x) })
 // Python over native inputs at equal batch size.
 #let speedup-at(b) = py-timed.map(p => { let (a, d) = (bat(py-c(p), b), bat(nat-c(p), b)); if a == none or d == none { none } else { a.median_seconds_per_point / d.median_seconds_per_point } }).filter(v => v != none)
 // 16 lanes (integrated) over one lane (39824f9b's runs) at B = 1.
@@ -274,7 +280,7 @@
 #let single-runs = g.processes.map(p => p.provider_uncertainty.pairs().filter(((n, u)) => u.assumed).map(((n, u)) => (p: p, n: n))).flatten()
 #let pshort(n) = (madloop: "MadLoop", recola: "Recola", openloops: "OpenLoops").at(n)
 // The cores of the integrated configuration's runs and of the provider records.
-#let nat-cores = g.processes.map(p => nat-c(p)).filter(c => c != none and c.host_cpus != none).map(c => c.host_cpus).flatten().dedup().sorted()
+#let nat-cores = g.processes.map(p => (nat-c(p), cfg(p, "native/lc"))).flatten().filter(c => c != none and c.host_cpus != none).map(c => c.host_cpus).flatten().dedup().sorted()
 #let prov-cores = g.processes.map(p => pnames.map(n => prov(p, n)).filter(r => r != none and r.at("cpu", default: none) != none and "median_seconds_per_point" in r).map(r => r.cpu)).flatten().dedup().sorted()
 #let core-span(cs) = if cs.len() == 0 [—] else [#cs.first()–#cs.last()]
 #let short-points = g.processes.map(p => pnames.filter(n => { let r = prov(p, n); r != none and r.at("points", default: 16) < 16 }).map(n => (p: p, n: n, k: prov(p, n).points))).flatten()
@@ -325,7 +331,7 @@
     }
   })
   h(4pt)
-  [#stage-label.at(top.at(0)) #fixed(100 * top.at(1) / tot, 0) %]
+  box[#stage-label.at(top.at(0)) #fixed(100 * top.at(1) / tot, 0)~%]
 }
 #let cell-lines(lines) = for l in lines.filter(l => l != none) { v(2.7pt); block(spacing: 0pt, text(6.4pt, l)) }
 #let valued(fill: none, value, mult: none, ..lines) = table.cell(fill: fill, breakable: false, {
@@ -345,6 +351,11 @@
 })
 #let pkey(k) = (madloop: "ML", recola: "Rc", openloops: "OL").at(k)
 #let ratio-of(c) = c.at("ratio_to_fastest", default: none)
+// The multiplier text: none without a provider ratio (g g > g g g g g: no
+// matched provider); "≥" where the fastest provider's time is an upper bound
+// (summary.json ratio_to_fastest_bound "lower": a provider's run outside the
+// protocol that does the production work and more, u u~ > g g g g g's Recola).
+#let ratio-mult(m) = { let r = ratio-of(m); if r == none { none } else if m.at("ratio_to_fastest_bound", default: none) == "lower" [≥#mult2(r)] else { mult2(r) } }
 // "native" / "Python": the per-point inputs of a configuration.
 #let inputs-word(c) = { let i = c.at("inputs", default: none); if i == none { "inputs not recorded" } else { (native: "native", python: "Python").at(i, default: i) } }
 
@@ -362,6 +373,9 @@
 #let lab(x) = { let t = x.label; if t.ends-with(" loop") [#t.slice(0, t.len() - 4)`loop`] else [#t] }
 #let cfg-used(id) = id in C and C.at(id).main_rows.len() > 0
 #let all-rows = S.groups.map(g => g.rows).flatten()
+// Whether a Table 1 bar has an untimed rest (a build without per-point input
+// timers; since lc-perf, 88657260, the executor times its native trees).
+#let t1-untimed = all-rows.any(r => { let m = r.full_colour.main; m.status == "measured" and m.at("stages", default: none) != none and m.stages.untimed > 0 })
 #let row-span(keys) = {
   let n = all-rows.filter(r => r.key in keys).map(r => r.outgoing)
   if n.len() == 0 { none } else if calc.min(..n) == calc.max(..n) [#box[$2 -> #calc.min(..n)$]] else [#box[$2 -> #calc.min(..n)$] to #box[$2 -> #calc.max(..n)$]]
@@ -453,13 +467,14 @@
 #let status-title(c) = {
   let s = c.status
   if s == "refused" [refused #where(c)]
+  else if s == "in development" [in development#if c.at("package", default: none) != none [ (#c.package)]]
   else if s == "not started" [not started#if c.at("package", default: none) != none [ (#c.package)]]
   else if s == "pending" [batched timing pending #box[(#c.package)]]
   else if s == "not timed" [not timed]
   else if s == "not batched" [no batched run]
   else [not measured]
 }
-#let status-reason(c) = if c.status == "refused" { c.at("reason", default: c.at("error", default: none)) } else if c.status == "not started" [#c.reason: no configuration generates it yet] else { none }
+#let status-reason(c) = if c.status == "refused" { c.at("reason", default: c.at("error", default: none)) } else if c.status in ("not started", "in development") [#c.reason: no configuration generates it yet] else { none }
 
 // Process column: label, legs, corrections, families, validation.
 #let t1-process(r) = table.cell(breakable: false, {
@@ -489,7 +504,14 @@
     let wp = val.at("worst_point", default: none)
     let within = if wp != none { wp.within_estimate } else { val.at("within_estimate", default: false) }
     let o = origin(r, val)
-    block(spacing: 0pt, text(6.2pt, fill: ink2)[#if o != none [#o · ]#val.points #if val.points == 1 [pt] else [pts]#if "median_finite" in val [ · median #esci(val.median_finite)]#if within [ · †]#if val.at("note", default: none) != none [ · #val.note]])
+    block(spacing: 0pt, text(6.2pt, fill: ink2)[#if o != none [#o · ]#val.points #if val.points == 1 [pt] else [pts]#if "median_finite" in val [ · median #esci(val.median_finite)]#if within [ · †] else if wp != none and "reference_own" in wp [ · ¶]#if val.at("note", default: none) != none [ · #val.note]])
+    // Points above the check's tolerance that the user accepted
+    // (summary.json validation.accepted; the check keeps its tolerance).
+    let acc = val.at("accepted", default: none)
+    if acc != none {
+      v(2.2pt)
+      block(spacing: 0pt, text(6.2pt, fill: pass-ink)[‡ pts #acc.points.map(x => str(x.index)).join(", ") above #esci(acc.tolerance): #acc.short])
+    }
   }
 })
 
@@ -525,9 +547,10 @@
   let (m, f) = (c.main, c.at("fastest", default: none))
   let prov-line = if f == none { none } else {
     let rest = c.providers.pairs().filter(((k, x)) => k != f.key and "seconds_per_point" in x).sorted(key: ((k, x)) => x.seconds_per_point).map(((k, x)) => [#pkey(k) #dur(x.seconds_per_point)])
-    let gone = c.providers.pairs().filter(((k, x)) => x.status == "unavailable").map(((k, x)) => [#pkey(k) no library])
+    let gone = c.providers.pairs().filter(((k, x)) => x.status == "unavailable" and k != f.key).map(((k, x)) => if "outside_protocol" in x [#pkey(k) #dur(x.outside_protocol.seconds_per_point) outside protocol] else if k == "openloops" [#pkey(k) no library] else [#pkey(k) no production timing])
     let nr = c.providers.pairs().filter(((k, x)) => x.status == "not run").map(((k, x)) => [#pkey(k) not exported])
-    ((text(weight: "bold")[#pkey(f.key) #dur(f.seconds_per_point)],) + rest + gone + nr).join([~· ])
+    let best = if f.at("bound", default: none) == "upper" [#pkey(f.key) ≤#dur(f.seconds_per_point)] else [#pkey(f.key) #dur(f.seconds_per_point)]
+    ((text(weight: "bold", best),) + rest + gone + nr).join([~· ])
   }
   // Rows without a G1 record: the providers' production references (text
   // of DESIGN Table 1b), the computed gate limit, or the unmatched
@@ -551,7 +574,7 @@
     if rt == none or no-gate { none } else if rt.limit_seconds == none [no complete gate limit (#rt.missing_production.join(", ") production not measured)] else [gate limit #str(rt.limit_seconds) s/pt (#rt.binding)],
   )
   if m.status == "measured" {
-    valued(fill: ratio-fill(ratio-of(m)), dur(m.seconds_per_point), mult: mult2(ratio-of(m)),
+    valued(fill: if ratio-of(m) == none { none } else { ratio-fill(ratio-of(m)) }, dur(m.seconds_per_point), mult: ratio-mult(m),
       [#prov-line #h(1fr) $B = #m.batch$],
       ..if "gate" in m and m.gate.status == thr-rule.verdict {
         // The longer not-gated chip on its own line, the bar below it.
@@ -598,16 +621,21 @@
 // Rows whose gate verdict is a user decision (legend of Table 1).
 #let decided-gate(r) = r.full_colour.main.at("gate", default: none)
 #let decided-rows = all-rows.filter(r => { let x = decided-gate(r); x != none and "decision" in x })
+// Validation cells with points the user accepted above the check's tolerance.
+#let accepted-rows = all-rows.filter(r => "accepted" in r.validation)
 // G1 rows whose generation is a newer record without a multiplier, and
 // validations whose worst point was re-evaluated by an earlier run (reading
 // notes of Table 1).
 #let s-g1-count = all-rows.filter(r => r.kind == "g1" and r.validation.at("worst_point", default: none) != none).len()
 #let no-ratio-rows = all-rows.filter(r => r.kind == "g1" and "no_ratio" in r.generation.main)
+// slice_tool_revisions: benchmark-tool commits on slice_revision's engine
+// (build_summary.py _check_tool_revisions): not another engine.
+#let same-engine(r) = r == g.slice_revision.slice(0, 8) or g.at("slice_tool_revisions", default: "").split(",").map(x => x.trim().slice(0, 8)).contains(r)
 #let stab-other = all-rows.filter(r => {
   let v = r.validation
   let wp = v.at("worst_point", default: none)
   let id = v.at("configuration", default: none)
-  wp != none and wp.at("revision", default: none) != none and id in C and C.at(id).at("revision", default: none) != wp.revision
+  wp != none and wp.at("revision", default: none) != none and id in C and C.at(id).at("revision", default: none) != wp.revision and not (C.at(id).kind == "g1" and same-engine(wp.revision))
 })
 // Rows with a gate limit but no G1 timing yet (the seven-leg rows).
 #let seven-untimed = all-rows.filter(r => r.full_colour.gate_rule.starts-with("G1 (seven-leg") or r.full_colour.gate_rule.starts-with("G1 (no complete"))
@@ -645,9 +673,9 @@
       [*Gate* #h(2pt) #gate-chip((status: "pass", ratio_to_limit: 0.25)) #gate-chip((status: "fail", ratio_to_limit: 1.4)) #gate-chip((status: "open", ratio_to_limit: 1.0)) #gate-chip((status: thr-rule.verdict, ratio_to_limit: 1.4)) #h(2pt) #text(fill: ink2)[time ÷ limit]]
       linebreak()
       [*Stages* #h(2pt) ]
-      for (k, n) in stage-keys.enumerate() { box[#key-swatch(seg-colours.at(k))#h(1.5pt)#stage-label.at(n)]; h(4pt) }
+      for (k, n) in stage-keys.enumerate() { if n != "untimed" or t1-untimed { box[#key-swatch(seg-colours.at(k))#h(1.5pt)#stage-label.at(n)]; h(4pt) } }
       linebreak()
-      [#key-swatch(neutral) missing (why) #h(4pt) #key-swatch(white) no colour: generation, LC #h(4pt) † within estimate#if decided-rows.len() > 0 [ #h(4pt) ‡ user decision] #h(4pt) ML MadLoop · Rc Recola · OL OpenLoops]
+      [#key-swatch(neutral) missing (why) #h(4pt) #key-swatch(white) no colour: generation, LC #h(4pt) † within estimate #h(4pt) ¶ reference's own (DD)#if decided-rows.len() > 0 or accepted-rows.len() > 0 [ #h(4pt) ‡ user decision] #h(4pt) ML MadLoop · Rc Recola · OL OpenLoops]
     },
   )
 })
@@ -690,11 +718,11 @@
 // Figure 1: the batched full-colour time of each G1 row against its gate
 // limit and the providers, on a log scale (data/summary.json).
 #let fig-lo = calc.log(0.0005, base: 10)
-#let fig-hi = calc.log(50.0, base: 10)
+#let fig-hi = calc.log(1000.0, base: 10)
 #let fig-w = 11.2cm
 #let fig-h = 11pt
 #let xpos(t) = fig-w * (calc.log(t, base: 10) - fig-lo) / (fig-hi - fig-lo)
-#let fig-ticks = ((0.001, [1 ms]), (0.01, [10 ms]), (0.1, [100 ms]), (1.0, [1 s]), (10.0, [10 s]))
+#let fig-ticks = ((0.001, [1 ms]), (0.01, [10 ms]), (0.1, [100 ms]), (1.0, [1 s]), (10.0, [10 s]), (100.0, [100 s]))
 #let fig-rows = all-rows.filter(r => r.full_colour.at("fastest", default: none) != none)
 #let fig-dot(fill: none, stroke: none) = circle(radius: 2.9pt, fill: fill, stroke: stroke)
 // One value per row: Table 1's main value (the most recent configuration).
@@ -715,10 +743,13 @@
     }
     place(dx: xpos(thr-rule.below_seconds_per_point), line(start: (0pt, 0pt), end: (0pt, fig-h), stroke: (paint: luma(110), thickness: 0.6pt, dash: "dotted")))
     for (k, x) in c.providers.pairs() {
+      let fast = k == c.fastest.key
       if "seconds_per_point" in x {
-        let fast = k == c.fastest.key
         place(dx: xpos(x.seconds_per_point) - 2.4pt, dy: fig-h / 2 - 2.4pt,
           rotate(45deg, square(size: 3.4pt, fill: if fast { luma(40) } else { luma(165) }, stroke: 0.4pt + white)))
+      } else if "outside_protocol" in x and "production_upper_bound" in x.outside_protocol {
+        place(dx: xpos(x.outside_protocol.seconds_per_point) - 2.4pt, dy: fig-h / 2 - 2.4pt,
+          rotate(45deg, square(size: 3.4pt, fill: white, stroke: 0.9pt + if fast { luma(40) } else { luma(165) })))
       }
     }
     if m.status == "measured" { place(dx: xpos(m.seconds_per_point) - 2.9pt, dy: fig-h / 2 - 2.9pt, fig-dot(fill: navy, stroke: 0.6pt + white)) }
@@ -740,12 +771,13 @@
     let key-mark(body) = box(width: 8pt, height: 7pt, baseline: 1pt, body)
     v(2pt)
     text(fill: ink2, {
-      key-mark(place(dx: 1.1pt, dy: 0.6pt, fig-dot(fill: navy, stroke: 0.6pt + white))); [pyAmpliCol (@tab:summary)]; h(9pt)
-      key-mark(place(dx: 1.6pt, dy: 1.2pt, rotate(45deg, square(size: 3.4pt, fill: luma(40), stroke: 0.4pt + white)))); [fastest provider]; h(9pt)
-      key-mark(place(dx: 1.6pt, dy: 1.2pt, rotate(45deg, square(size: 3.4pt, fill: luma(165), stroke: 0.4pt + white)))); [other providers]; h(9pt)
-      key-mark({ place(dx: 1pt, rect(width: 1.4pt, height: 7pt, fill: fail-ink, stroke: none)); place(dx: 2.4pt, rect(width: 5.6pt, height: 7pt, fill: slow-red.transparentize(86%), stroke: none)) }); [gate limit, shaded side fails]; h(9pt)
-      key-mark(place(dx: 3pt, rect(width: 1.2pt, height: 7pt, fill: luma(150), stroke: none))); [limit, not gated]; h(9pt)
-      key-mark(place(dx: 3.5pt, line(start: (0pt, 0pt), end: (0pt, 7pt), stroke: (paint: luma(110), thickness: 0.6pt, dash: "dotted")))); [5 ms]
+      box[#key-mark(place(dx: 1.1pt, dy: 0.6pt, fig-dot(fill: navy, stroke: 0.6pt + white)))#[pyAmpliCol (@tab:summary)]]; h(5pt)
+      box[#key-mark(place(dx: 1.6pt, dy: 1.2pt, rotate(45deg, square(size: 3.4pt, fill: luma(40), stroke: 0.4pt + white))))#[fastest provider]]; h(5pt)
+      box[#key-mark(place(dx: 1.6pt, dy: 1.2pt, rotate(45deg, square(size: 3.4pt, fill: luma(165), stroke: 0.4pt + white))))#[other providers]]; h(5pt)
+      box[#key-mark(place(dx: 1.6pt, dy: 1.2pt, rotate(45deg, square(size: 3.4pt, fill: white, stroke: 0.9pt + luma(40)))))#[upper bound (outside protocol)]]; h(5pt)
+      box[#key-mark({ place(dx: 1pt, rect(width: 1.4pt, height: 7pt, fill: fail-ink, stroke: none)); place(dx: 2.4pt, rect(width: 5.6pt, height: 7pt, fill: slow-red.transparentize(86%), stroke: none)) })#[gate limit, shaded side fails]]; h(5pt)
+      box[#key-mark(place(dx: 3pt, rect(width: 1.2pt, height: 7pt, fill: luma(150), stroke: none)))#[limit, not gated]]; h(5pt)
+      box[#key-mark(place(dx: 3.5pt, line(start: (0pt, 0pt), end: (0pt, 7pt), stroke: (paint: luma(110), thickness: 0.6pt, dash: "dotted"))))#[5 ms]]
     })
   },
 ) <fig:gate>
@@ -758,8 +790,10 @@
 #[
 #set text(9.4pt)
 #set par(justify: true)
+// Rows whose fastest provider time is an upper bound (summary.json fastest.bound).
+#let bound-rows = all-rows.filter(r => { let f = r.full_colour.at("fastest", default: none); f != none and f.at("bound", default: none) == "upper" })
 *Table 1* has one row per test process, by multiplicity. A cell gives pyAmpliCol's value in bold and, at its right, the
-multiplier _pyAmpliCol ÷ the fastest provider_ on this host (in bold among the provider values). Only run times are
+multiplier _pyAmpliCol ÷ the fastest provider_ on this host (in bold among the provider values).#if bound-rows.len() > 0 [ A provider time marked ≤ (#row-names(bound-rows.map(r => r.key))) comes from a run outside the protocol that does the production work and more (Recola's reference run evaluates the IR poles too), so it bounds that provider's production time from above, and the multiplier against it is a lower bound (≥); it is never a gate limit.] Only run times are
 coloured: green faster, white at parity, red slower (log₂ scale, clamped at ×1/16 and ×16). Generation cells carry their
 multiplier uncoloured (generation time is not the main metric, user 2026-10-24); leading colour has no provider ratio.
 Grey cells say why a value is missing. Run times are per phase-space point in batches, finite part, stability checks off;
@@ -773,13 +807,14 @@ a process whose batched time per point is below 5 ms has no blocking gate, its v
 ("#thr-rule.short") keeps the measured ratio#if thr-rows.len() > 0 [ (#thr-rows.map(r => { let x = decided-gate(r); [#box(math-label(r.math)) #dur(r.full_colour.main.seconds_per_point), #fixed(x.ratio_to_limit, 2) of its limit] }).join([, ], last: [ and ]))]. #box(math-label("g g -> g g")) ($2 -> 2$) has no gate#for r in decided-rows.filter(r => decided-gate(r).status != thr-rule.verdict) { let x = decided-gate(r); [; ‡ #math-label(r.math): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }.
 
 *Stage shares* (the bar of the full-colour cell; the largest is named; @tab:g1split): inputs = trees, Born and
-counterterm inputs; glue = point parameters, input conversion, assembly; untimed = the rest of the call (on `loop`:
-native inputs, Python rest). Times use the protocol's schedule B#if m-rows.len() > 0 [; "M:" gives the schedule G1 adopted for the class (@tab:g1bm)].
+counterterm inputs (on `loop` the executor's own timer of its native trees, since lc-perf); glue = point parameters, input
+conversion, assembly and the rest of the call#if t1-untimed [; untimed = the rest of the call of a build without input
+timers]. Times use the protocol's schedule B#if m-rows.len() > 0 [; "M:" gives the schedule G1 adopted for the class (@tab:g1bm)].
 
 *References and deviations.* ML MadLoop 3.7.0, Rc Recola 2.2.5 (COLLIER), OL OpenLoops 2.1.5 (prebuilt libraries: no
 generation time), NJet DD NJet 3.1.2 in double-double. Deviation $|a - b| slash max(|a|, |b|, |B| alpha_s slash 2 pi)$ of the
 binary64 finite part at the timed points (median: over the points, the largest over the references); † the largest lies
-within the binary64 stability estimate of the same configuration at that point#if stab-other.len() > 0 [ (#if stab-other.len() == s-g1-count [G1 rows] else [#row-names(stab-other.map(r => r.key))]: stability runs of #rev-list(stab-other.map(r => r.validation.worst_point.revision).dedup()), bitwise the same binary64 values)].
+within the binary64 stability estimate of the same configuration at that point#if stab-other.len() > 0 [ (#if stab-other.len() == s-g1-count [G1 rows] else [#row-names(stab-other.map(r => r.key))]: stability runs of #rev-list(stab-other.map(r => r.validation.worst_point.revision).dedup()) on the same process, whose binary64 values equal the timed ones to rounding level, more at binary64-unstable points: `values_note` of `data/g1.json`)]\; ¶ the largest is the reference's own: pyAmpliCol's double-double value at that point lies as far from it, and its binary64 value lies within $E$ of the double-double one.#for r in accepted-rows { let a = r.validation.accepted; [ ‡ #box(math-label(r.math)): the reference check's points #a.points.map(x => str(x.index)).join(" and ") (#a.points.map(x => sci(x.finite.values().first())).join(" and ") from #r.validation.references.first().short) exceed its tolerance #sci(a.tolerance, d: 0) in binary64: *#a.status* (estimates $E$ #a.points.map(x => sci(x.estimate)).join(" and ")\; pyAmpliCol's double-double values equal the reference's); the check keeps its tolerance and records `passed: false` (`data/milestone.json` `validation_decisions`).] }
 #if no-ratio-rows.len() > 0 [A newer development record's generation in a G1 row has no multiplier (its provider generation is G1's).]
 
 
@@ -891,36 +926,43 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
 )
 
 #grid(columns: (1fr, 1fr), gutter: 8pt,
-  box-note(fill: white, stroke: 0.6pt + luma(205))[
+  box-note(fill: white, stroke: 0.6pt + luma(205), breakable: false)[
     #set par(justify: false)
     *In development* (branches, not on `loop`; HANDOFF §6)
     #set text(8.3pt)
     #let gg4-gen = cfg(gproc("gg_gggg"), "native/full").generation.generate.seconds
-    - *Counterterm-route parity* (`ct-perf`, with Rust A4): output-identical Python gains, then A4 switches the counterterm
-      program and the loop-block DAG to the native builder of A3. The pure-gluon generation on `loop` is slower than on the
-      development branch before the merge (#gname("gg_gggg"): generate #sig(gg4-gen) s, 64.5 s at `39824f9b` in the previous campaign), consistent with the
-      counterterm-route excess ct-perf addresses (not attributed stage by stage).
-    - *Rust ports* (HANDOFF §0.4): A0, A1–A2 and A3 are on `loop`, not switched on; seeds (B) and cells (C) passed phase 0,
-      lowering (D) is in a fix round; their switches, A5 and A6 wait for counterterm-route parity.
-    - *Next, after parity:* generation-scale-2 (every stored-process call without regeneration, SDK v4 runtime, native
-      Catani operator, lean poles companion); artifact portability (branch); the seven-leg G1 rows (`measure-g1-7leg`,
-      specifications and streams).
+    - *Counterterm-route parity* (Rust A4, `native-dag`, with A5's counterterm emission brought forward; last fix round):
+      A4 switches the counterterm program to the native builder of A3. ct-perf's output-identical Python savings are on
+      `loop`; parity with the site oracle needs A4 (DECISIONS 2026-10-25 \~12:50). #gname("gg_gggg") generates in
+      #sig(gg4-gen) s on `loop` (116 s at G-int, 64.5 s at `39824f9b` on the development branch; G1 records).
+    - *Rust ports* (HANDOFF §0.4): A0–A3 are on `loop` (A3 not switched on); the switches of seeds (B), cells (C) and
+      lowering (D), and generation-scale-2, follow A4.
+    - *Electroweak* (WP3.2): the UFO's EW counterterms (`ew-ct`), massive vector bosons and Goldstones in Feynman gauge
+      (`ew-gauge`); then $alpha(0)$ per external photon and several colour-singlet fermion lines.
+    - *generation-scale-2:* every stored-process call without regeneration (`"uv"`/`"ir"`, correlated, resolved), SDK v4
+      runtime, native Catani operator, lean poles companion.
   ],
-  box-note(fill: white, stroke: 0.6pt + luma(205))[
+  box-note(fill: white, stroke: 0.6pt + luma(205), breakable: false)[
     #set par(justify: false)
     *Missing or incomplete*
     #set text(8.3pt)
-    - Electroweak loops, Goldstones and the complex-mass scheme (WP3.2): $g g -> t overline(t) e^- e^+ g$ (EW) not started.
-      ($Z$ couplings on loop quark lines in QCD loops generate on `loop` since G-int; the Python-input engine refused them.)
-    - Gate G1 at $B = 1$ (16 lanes for one point)#if nat-fail.len() > 0 [ and for #names(nat-fail) at $B = 128$]; batched timings of the $2 -> 5$ set;
-      provider protocol-mode columns.
-    - Seven-gluon generation cost (WP3.1 branch, before G-int): #let g7r = meas.required_native.processes.gg_ggggg
-      #minutes(g7r.generate_s + g7r.export_s) with the plan export (generation #minutes(g7r.generate_s), mostly the
-      always-generated poles companion), peak #fixed(calc.max(g7r.generate_peak_gib, g7r.export_peak_gib), 1) GiB
+    - Electroweak loops with massive vector bosons, Goldstones, the UFO's EW counterterms and the complex-mass scheme
+      (WP3.2, in development): $g g -> t overline(t) e^- e^+ g$ (EW) is not generated. On `loop`: typed refusals of EW
+      requests with a non-zero width or an external photon, the QED Catani operator, and EW fermion lines ($W$ at the root
+      and on loop quark lines, lepton-rooted processes); more than one colour-singlet fermion line is refused (EWI-5).
+    - Gate G1 at $B = 1$ (16 lanes for one point)#if nat-fail.len() > 0 [ and for #names(nat-fail) at $B = 128$]\; provider protocol-mode
+      columns.
+    - Seven-gluon generation cost (G1's stored generation of $g g -> g g g g g$, full colour, on the engine of `loop`):
+      #let g7s = nat-c(gproc("gg_ggggg")).generation
+      #minutes(g7s.generate.seconds + g7s.export.seconds) with the plan export (generation
+      #minutes(g7s.generate.seconds)), peak #fixed(calc.max(g7s.generate.peak_gib, g7s.export.peak_gib), 1) GiB
       (@sevenglue); inside addendum H, to be made lean.
-    - Ward check at seven gluons. Prepared artifacts (addendum G): a plain evaluation of a stored process loads without
-      regeneration since G-int, but correlated, resolved and flavour calls, the `"uv"`/`"ir"` selections and the writer's
-      `regenerated-at-load` fallback still regenerate; the native build embeds host paths of its build.
+    - Ward check at seven gluons: pending — needs native Ward inputs (coordinator ruling of 25 October: generation-scale-2's
+      next run; with Python per-point Ward inputs one evaluation is estimated at 46–69 h). Prepared artifacts (addendum G): relocatable since `7db32901` (no host strings, SymJIT
+      applications recompiled at load, bitwise binary64 after relocation), but correlated, resolved and flavour calls, the
+      `"uv"`/`"ir"` selections and the writer's `regenerated-at-load` fallback still regenerate on first use
+      (generation-scale-2), and the parameter program's SymJIT bytes differ per compilation (values unaffected; upstream
+      fix filed).
   ],
 )
 
@@ -937,7 +979,8 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
     - *Protocol.* Providers in production mode with poles off where they allow it (OpenLoops `truepoles 0`, Recola without IR
       poles, MadLoop production build); pyAmpliCol finite-only (`poles = "none"`) with stability checks off, one pinned
       thread, binary64, 16 lanes, the same frozen points (pyAmpliCol receives their exact rationals, the providers their
-      binary64 decimal text). Statistic: median per point; the uncertainty band combines
+      binary64 decimal text); since this milestone pyAmpliCol's setup heap is frozen out of Python's cyclic collector before
+      the warm-up (a loaded runtime holds no generation objects; @g1). Statistic: median per point; the uncertainty band combines
       pyAmpliCol's block spread and the provider's repeat spread; a gate whose band contains the limit is *open*.
     - *Timing boundary.* pyAmpliCol: the public v2 runtime call (`NativeExecutor.evaluate`) for a batch of $B$ distinct
       points, everything included (per-point inputs, loop stage, assembly); the public `Runtime.evaluate` of a loaded artifact
@@ -950,7 +993,8 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
       (main-configuration rule of `scripts/build_summary.py`; `data/summary.json` names the configuration and source of every
       value); the column header of @tab:summary states it once, with branch and commit, and "Reading the summary" says
       when it is a development measurement not yet on `loop`. The detailed G1 tables (@g1) show the configuration on `loop` and, labelled,
-      its history: the Python per-point inputs before G-int and the development runs of #rev-list(l1-revs).
+      its history: the G-int runs (`4e9b5a9e`), the Python per-point inputs before G-int and the development runs of
+      #rev-list(l1-revs).
       Missing values are marked, never estimated or extrapolated; test durations are never used as event timings. The legacy per-diagram engine's timings of 18 October are history (data kept in
       `data/measurements.json`, not shown).
   ]
@@ -967,20 +1011,28 @@ stream's exact rational points, the providers their binary64 decimal text.
 #let py-lc-revs = revs-of(p => cfg(p, "python/lc"))
 The configurations:
 
-- *native inputs, on `loop`* — the engine at #raw(g.slice_revision) (G-int;
-  build #raw(g.slice_build)): the executor forms the trees, the Born and the
-  counterterm inputs per point, then runs the loop stage. A stored artifact
-  written by the public generator holds the plan v4 with
-  `point_inputs = "native-v1"` and loads without any generation call; for
-  #gname("uux_ddxg") it has the harness's plan and, on the exact points,
-  bitwise its values at all 128 stream points (the plan also checked for
-  #gname("uux_uuxg")). It generates the $V$+jets rows with $gamma$ and $Z$
-  exchange. Its binary64 values equal, bitwise at every timed point in full
-  and leading colour, those of the development campaign of #rev-list(l1-revs)
-  (`work/v2-generation-scale` #rev-list(ms.development.revisions.keys().filter(r => r not in l1-revs)) plus
-  timers), whose runs are its earlier runs; that campaign's one-lane,
-  schedule-M and stability runs were not repeated and appear below as
-  history, labelled #rev-list(l1-revs)\;
+- *native inputs, on `loop`* — the engine at #raw(g.slice_revision) (G-int
+  with ct-perf, ew-poles, lc-perf, artifact-portability and ew-lines; build
+  #raw(g.slice_build), unchanged by ew-lines): the executor forms the trees,
+  the Born and the counterterm inputs per point, with binary64 SymJIT plane
+  applications for every native tree kernel and the parameter program
+  (`7db32901`) and tree closures in lanes of points (`88657260`; its report
+  times them), then runs the loop stage. A stored artifact written by the
+  public generator holds the plan v4 with `point_inputs = "native-v2"` (the
+  SymJIT applications stored as IR, recompiled at load); for
+  #gname("uux_ddxg") its plan digest equals the harness's (and G-int's), and
+  `Runtime.load` in a fresh interpreter with generation forbidden gives the
+  native executor (16 lanes), regenerates nothing over 128 evaluations, and
+  returns bitwise the timed run's binary64 values at all 128 stream points.
+  Its binary64 values equal those of G-int (`4e9b5a9e`) and of the
+  development campaign of #rev-list(l1-revs) (`work/v2-generation-scale`
+  #rev-list(ms.development.revisions.keys().filter(r => r not in l1-revs)) plus
+  timers), whose runs are its earlier runs, to rounding level (median
+  relative change 3×10⁻¹⁵ to 3×10⁻¹¹ per process; binary64-unstable points
+  move more, about 10⁻³ at #gname("gg_ggg") point 66 and #gname("gg_gggg")
+  point 50, outside the provider comparison); the development campaign's
+  one-lane, schedule-M and stability runs were not repeated and appear below
+  as history, labelled #rev-list(l1-revs)\;
 - *Python inputs* #flag[history] — the engine on `loop` before G-int, G1 at
   #rev-list(py-revs)#if py-lc-revs.len() > 0 [ (LC at #rev-list(py-lc-revs))]: trees, Born amplitudes and
   counterterm scalars formed per point in Python, then the loop stage
@@ -988,6 +1040,25 @@ The configurations:
   triangles needed Furry's certified zeros (WP3.5), and their $Z$ couplings on
   loop quark lines the electroweak fermion signs (WP3.2).
 
+*Timing protocol of this milestone* #flag[deviation]: the setup heap is frozen
+out of Python's cyclic collector (`gc.collect()`, `gc.freeze()`) before the
+warm-up. A scratch launcher applied it to the unmodified harness of
+#raw(g.slice_revision) (clean checkout; the protocol of `work/v2-measure-g1-7leg`
+`de8d3eb8`, not yet on `loop`); `timing_protocol` in `data/g1.json` records
+it. The committed harness times with the whole generation heap in memory,
+which a runtime loaded from an artifact never holds, and full collections of
+that heap fell into the timed blocks: #gname("uux_ddxg") at $B = 128$ took
+2.76 ms per point with the committed protocol (a collection of about 0.09 s in
+2 of the 3 blocks), 1.95 ms with the frozen heap, 1.96 ms through the public
+`Runtime.load` executor in a fresh interpreter and 2.08 ms through
+`Runtime.evaluate` on decimal text; #gname("gg_ggg") 22.9 against 20.6 ms. The
+evaluations' own collections stay in the timed blocks (0.2–2.8 % of the
+timed wall). Earlier campaigns (G-int and before) used the committed
+protocol.
+
+// A provider time outside the protocol (poles on) bounds its production time
+// from above: a ratio taken against it is a lower bound (≥).
+#let outside-p(p, n) = { let r = prov(p, n); r != none and r.at("protocol_mode", default: true) == false }
 #let g1-cell(p, c, b) = {
   if refused(c) { return table.cell(text(6.4pt, fill: amber, style: "italic")[not generable]) }
   let x = bat(c, b)
@@ -998,22 +1069,26 @@ The configurations:
   table.cell(fill: ratio-fill(r), {
     text(8pt, weight: "bold", msec(t))
     h(1fr)
-    if r != none { text(7.2pt, weight: "semibold", mult2(r)) }
+    if r != none { text(7.2pt, weight: "semibold")[#if outside-p(p, best.n) [≥]#mult2(r)] }
   })
 }
 #let p-cell(p, n) = {
   let t = ptime(p, n)
   let r0 = prov(p, n)
   if t == none {
-    let why = if r0 == none [not timed] else if "unavailable" in r0 { if n == "openloops" [no library] else [not exported] } else [not timed]
+    let why = if r0 == none [not timed] else if "unavailable" in r0 { if r0.unavailable.starts-with("no generation") [not generated] else if n == "openloops" [no library] else [not exported] } else [not timed]
     return table.cell(text(6.6pt, fill: ink2, style: "italic", why))
   }
   let best = fastest-p(p)
   let r = t / best.t
+  let outside = r0.at("protocol_mode", default: true) == false
+  // A time outside the protocol bounds the provider's production time from
+  // above (≤); a ratio taken against such a time is a lower bound (≥).
   table.cell(fill: ratio-fill(r), {
-    text(8pt, weight: "bold", msec(t))
+    text(8pt, weight: "bold")[#if outside [≤ ]#msec(t)]
     h(1fr)
-    if best.n == n { text(6.6pt, fill: ink2)[fastest] } else { text(7.2pt, weight: "semibold", mult2(r)) }
+    if best.n == n { if not outside { text(6.6pt, fill: ink2)[fastest] } } else { text(7.2pt, weight: "semibold")[#if outside-p(p, best.n) [≥]#mult2(r)] }
+    if outside { linebreak(); text(6.2pt, fill: ink2)[(outside protocol, poles on: upper bound)] }
   })
 }
 #let gen-v2(c) = if c == none { table.cell(tiny[—]) } else if refused(c) {
@@ -1058,7 +1133,7 @@ The configurations:
     the gate. Gate: upper line Python inputs (history), lower line native
     inputs (`loop`); the number is the time over the binding limit (MadLoop's
     time or 1.30× the faster of Recola and OpenLoops); *open*: the band
-    contains the limit#if nat-decided.len() > 0 [; ‡ pass by user decision although it does]; *not gated*: the
+    contains the limit#if nat-decided.len() > 0 [; ‡ pass by user decision although it does]\; *not gated*: the
     configuration runs below 5 ms per point at its largest batch (user rule of 2026-10-24, at every $B$; ratio as
     measured) (bands: @tab:g1batch).],
   tstyle(table(
@@ -1074,7 +1149,7 @@ The configurations:
         table.cell(rowspan: 3, align: left + horizon, breakable: false, {
           gname(p.key)
           linebreak()
-          tiny[#if p.gated [$2 -> #p.outgoing$] else [$2 -> 2$, no gate]]
+          tiny[$2 -> #p.outgoing$#if not p.gated [, no gate#if p.outgoing > 2 [ (no matched provider)]]]
         }),
         [1], g1-cell(p, a, "1"), g1-cell(p, d, "1"), ..pnames.map(n => p-cell(p, n)), gate-cell(p, "1"),
         [#bb], g1-cell(p, a, bb), g1-cell(p, d, bb), ..pnames.map(n => p-cell(p, n)), gate-cell(p, bb),
@@ -1095,16 +1170,17 @@ Recola. Providers have no batch API: one time per point serves every $B$.
 timed blocks of one $B$, and over the provider's timed points (the stream's
 first 16; 8 for #pairs-text(short-points)). The provider times are the
 records of the measure-g1 campaign (23–24 October, on cores
-#core-span(prov-cores)), not re-run for this milestone; pyAmpliCol ran on
-cores #core-span(nat-cores), inside the cores 128–191 reserved for this
-campaign (no SMT siblings), one job at a time per eight-core group sharing
-an L3 cache (the idleness check's output was not archived). Run-to-run
-spread on this shared host is visible: #gname("uux_uuxg") took 3.78 then
-3.30 ms per point at $B = 128$ (the first run, open at the limit, and the
-single repeat that decides), and the three blocks of #gname("uux_ddxg")
-spread over 2.22–2.77 ms, a range containing the 2.29 ms of a ten-round
-paired run of the same plan (below).
-Its uncertainty is pyAmpliCol's block spread (half the range of three blocks,
+#core-span(prov-cores)), not re-run for this milestone, and for the $2 -> 5$ rows
+the production-mode runs of package `measure-g1-7leg` (25 October, each provider with its production Collier cache:
+on for Recola's COLLIER 1.2.8 and OpenLoops, off for MadLoop's COLLIER 1.2.9 with its seven-leg cache defect;
+$u overline(u) -> g g g g g$ imported from the reference campaign's three points); pyAmpliCol ran on
+cores #nat-cores.map(str).join([, ], last: [ and ]), one job per eight-core group sharing an L3 cache, inside the
+cores 176–191 reserved for this campaign (no SMT siblings; DECISIONS
+2026-10-25 \~13:45; the $2 -> 5$ rows inside the cores 128–175 of package `measure-g1-7leg`), while other users' jobs loaded those cores at 10–60 %.
+The three $B = 128$ blocks of a process spread by at most
+#fixed(100 * calc.max(..gated.map(p => bat(nat-c(p), big)).filter(x => x != none).map(x => x.uncertainty)), 1)~% (half the range over the median; #gname("uux_ddxg")
+#bat(nat-c(gproc("uux_ddxg")), big).samples_seconds_per_point.map(v => fixed(1000 * v, 3)).join([, ]) ms).
+The gate's uncertainty is pyAmpliCol's block spread (half the range of three blocks,
 the median's standard error from five) plus the provider's half-range over its
 repeated runs (#pct(host-spread), the campaign's largest, for the single runs
 of #pairs-text(single-runs)). A gate passes or fails only if the whole band
@@ -1131,9 +1207,9 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
   let (lo, hi) = gt.band_to_binding_limit
   let st = eff-status(p, c, b, gt)
   table.cell(fill: if st == "pass" { rgb("#e1f2ea") } else if st == "fail" { rgb("#fbe3dd") } else if st == "not gated" { neutral } else { warm }, {
-    text(7.6pt, weight: "bold")[#fixed(gt.ratio_to_binding_limit, 2)#if st != "not gated" and decision(p, b, gt) != none [‡]]
+    text(7.6pt, weight: "bold")[#gratio(gt.ratio_to_binding_limit)#if st != "not gated" and decision(p, b, gt) != none [‡]]
     h(1fr)
-    tiny[#fixed(lo, 2)–#fixed(hi, 2)]
+    tiny[#gratio(lo)–#gratio(hi)]
   })
 }
 #let repeated = gated.filter(p => first-run(nat-c(p)) != none)
@@ -1147,10 +1223,10 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
     default 16 lanes (a one-point call pays a 16-lane chunk); the one-lane
     column is the development campaign's (#rev-list(l1-revs), history: the
     public path always runs 16 lanes in binary64). This campaign timed
-    $B = 1$ and $B = 128$, and every batch size only for the single repeat#if repeated.len() > 0 [ of
-    #names(repeated) (its first run, #repeated.map(p => { let x = first-run(nat-c(p)).batches.at(big); [#msec(x.median_seconds_per_point) ms at $B = 128$] }).join([; ]), was open at the limit: `repeats` in `data/g1.json`)]#if earlier-revs.len() > 0 [; ° grey: the earlier
+    $B = 1$ and $B = 128$#if repeated.len() > 0 [, and every batch size only for the single repeat of
+    #names(repeated) (its first run, #repeated.map(p => { let x = first-run(nat-c(p)).batches.at(big); [#msec(x.median_seconds_per_point) ms at $B = 128$] }).join([; ]), was open at the limit: `repeats` in `data/g1.json`)] else [ (no verdict was open, so no repeat: `repeats` in `data/g1.json`)]#if earlier-revs.len() > 0 [; ° grey: the earlier
     run of #rev-list(earlier-revs) at that batch size, its median over the same binding limit with its time (no band;
-    bitwise the same values; not a verdict of this campaign)].],
+    an earlier engine under the committed protocol; not a verdict of this campaign)].],
   tstyle(table(
     columns: (2.9cm, 1fr, 1fr, 1fr, 1fr, 1fr),
     align: left + horizon, inset: (x: 4pt, y: 2.6pt), stroke: tstroke, fill: thead-fill,
@@ -1171,11 +1247,15 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
   }
 })
 #let swatch(k) = box(fill: seg-colours.at(k), width: 5pt, height: 5pt, stroke: 0.3pt + white)
+// The untimed-rest column only where a shown row has one (a build without
+// per-point input timers; on loop the executor times its trees since lc-perf).
+#let split-untimed = g.processes.any(p => (py-c(p), nat-c(p)).any(c => c != none and not refused(c) and { let x = bat(c, top(c)); x != none and untimed(x) > 0 }))
 #let split-row(label, x) = {
   let parts = (python-inputs(x) + stage(x, "native trees"), numerator(x), stage(x, "scatter"), ninjars(x), masters(x), glue(x), untimed(x))
   let total = x.median_seconds_per_point
   // "—": the inputs where the build has no timer for them; the untimed rest where it has.
   let cells = parts.enumerate().map(((i, v)) => if (i == 0 and not inputs-timed(x)) or (i == 6 and inputs-timed(x)) { align(right, dim[—]) } else { align(right, msec(v)) })
+  if not split-untimed { cells = cells.slice(0, 6) }
   (label, ..cells, align(right, text(weight: "bold", msec(total))), bar(parts, parts.sum()))
 }
 #let ml-row(p) = {
@@ -1185,7 +1265,7 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
   let parts = (s.at("Born and counterterm HELAS"), s.at("loop numerator coefficients"), 0.0, s.at("reduction and masters"), 0.0, r.stages.residual_seconds_per_point, 0.0)
   (tiny[MadLoop],
     align(right, msec(parts.at(0))), align(right, msec(parts.at(1))), align(right, dim[—]),
-    table.cell(colspan: 2, align(center, msec(parts.at(3)))), align(right, msec(parts.at(5))), align(right, dim[—]),
+    table.cell(colspan: 2, align(center, msec(parts.at(3)))), align(right, msec(parts.at(5))), ..if split-untimed { (align(right, dim[—]),) } else { () },
     align(right, text(weight: "bold", msec(r.stages.instrumented_seconds_per_point))),
     bar(parts, parts.map(v => calc.max(v, 0)).sum()))
 }
@@ -1193,26 +1273,26 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
   caption: [*Stage split*, ms per point, full colour, at the largest batch timed
     (Python-input $2 -> 4$: $B = 1$). Trees/Born/CT: the per-point inputs,
     timed in Python before G-int (history: trees, counterterm program, Born
-    and counterterm colour projections, scalars); the build on `loop` forms
-    them in the executor without a timer (—: the development campaign's
-    scratch timers of #rev-list(l1-revs) timed them). Untimed rest: the part
-    of the call such a build does not time, its native trees, Born and
-    counterterm inputs and the rest of the Python call. Numerator: seeds, fused factors and the dressing of the open-loop
+    and counterterm colour projections, scalars); on `loop` the executor forms
+    them and, since lc-perf (`88657260`), times them itself (its `trees`
+    stage: programs, closures, interferences)#if split-untimed [. Untimed rest: the part
+    of the call a build without input timers does not time, its native trees, Born and
+    counterterm inputs and the rest of the Python call]. Numerator: seeds, fused factors and the dressing of the open-loop
     objects (the pure numerator evaluation). Scatter: closures into NinjaRS
     lanes. NinjaRS: the reduction without the masters; masters: the master
     integrals (canonical arguments, cache, oneloopmaster). Glue: point
     parameters, carrier conversion, assembly and, where the inputs are timed,
-    the rest of the Python call.
+    the rest of the Python call (all rows of this table).
     MadLoop (instrumented copy; its points less one, 3 for $g g -> g g g g$):
     Born/counterterm HELAS calls, loop-numerator coefficients, reduction plus
     masters, residual (stability test, colour sums). Bar: shares, colours as the
     column heads.],
   tstyle(table(
-    columns: (1.8cm, 1.0cm, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1fr, 1.45cm, 2.55cm),
+    columns: (1.8cm, 1.0cm, ..range(if split-untimed { 7 } else { 6 }).map(_ => 1fr), 1.45cm, 2.55cm),
     align: left + horizon, inset: (x: 3.5pt, y: 2.4pt),
     stroke: (x, y) => (top: if y <= 1 { none } else { hair }),
     fill: thead-fill,
-    table.header(..([Process], [], [#swatch(0) Trees, Born, CT], [#swatch(1) Numerator], [#swatch(2) Scatter], [#swatch(3) NinjaRS], [#swatch(4) Masters], [#swatch(5) Glue], [#swatch(6) Untimed rest], [Total], [Shares]).map(c => text(6.9pt, c))),
+    table.header(..([Process], [], [#swatch(0) Trees, Born, CT], [#swatch(1) Numerator], [#swatch(2) Scatter], [#swatch(3) NinjaRS], [#swatch(4) Masters], [#swatch(5) Glue], ..if split-untimed { ([#swatch(6) Untimed rest],) } else { () }, [Total], [Shares]).map(c => text(6.9pt, c))),
     ..g.processes.map(p => {
       let rows = ()
       let (a, d) = (py-c(p), nat-c(p))
@@ -1226,6 +1306,8 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
   )),
 ) <tab:g1split>
 
+// Providers whose time is only an upper bound of their production time.
+#let bounded-n(p) = pnames.filter(n => { let r = prov(p, n); r != none and "production_upper_bound" in r })
 #let fast-word(p) = {
   let x = bat(nat-c(p), big)
   if x == none or "ratio_to_fastest" not in x.gate { return none }
@@ -1255,15 +1337,21 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
     WP3.2).
   - *Fastest of all tools* (aspiration), native inputs at $B = 128$, within
     the uncertainty band: faster than every provider for
-    #names(gated.filter(p => fast-word(p) == "faster"))\; at parity with the
+    #names(gated.filter(p => fast-word(p) == "faster" and bounded-n(p).len() == 0))#{
+      let fb = gated.filter(p => fast-word(p) == "faster" and bounded-n(p).len() > 0)
+      if fb.len() > 0 [\; faster than every provider with a production-mode time for #fb.map(p => [#gname(p.key) (#pshort(bat(nat-c(p), big).gate.fastest_provider)#for n in bounded-n(p) [; #pshort(n) has only an upper bound of its production time, ≤ #sig(ptime(p, n)) s])]).join([, ], last: [ and ])]
+    }\; at parity with the
     fastest for #names(gated.filter(p => fast-word(p) == "parity"))\; slower
-    than the fastest (OpenLoops) for #names(gated.filter(p => fast-word(p) == "slower")).
+    than the fastest for #{
+      let sl = gated.filter(p => fast-word(p) == "slower")
+      if sl.len() == 0 [none] else { sl.map(p => [#gname(p.key) (#pshort(bat(nat-c(p), big).gate.fastest_provider))]).join([, ], last: [ and ]) }
+    }.
     NJet, not a matched provider, takes 4.58 s for its two-evaluation
     full-colour $g g -> g g g g$ test (@tab:njet).
   - Seven-leg rows ($u overline(u) -> e^- e^+ d overline(d) g$, $u overline(u) -> e^- e^+ g g g$,
     $g g -> t overline(t) e^- e^+ g$, $u overline(u) -> g g g g g$, $g g -> g g g g g$)
-    are generated by the WP3.1 generator, on `loop` since G-int, and are
-    added to G1 by the follow-on package `measure-g1-7leg`#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) #if s-no-gate.len() == 1 [has] else [have] no matched provider timing
+    are generated by the WP3.1 generator, on `loop` since G-int, and timed by
+    G1 (package `measure-g1-7leg`: full and leading colour at $B = 16$ and 128)#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) #if s-no-gate.len() == 1 [has] else [have] no matched provider timing
     (addendum F, H): reported without a gate].
 ]
 
@@ -1282,18 +1370,18 @@ is off by protocol (no checks, no escalation), so the rescue rate is 0.
     [*Native per-point inputs* (WP3.1 I3–I6: trees, Born, counterterm scalars in the executor)],
     [Python inputs #pct-range(inputs-share) of the Python-input time at $B = 128$ (history)],
     [measured, Python ÷ native inputs at equal $B$: #ratio-range(sp-int) at $B = 1$, #ratio-range(sp-big) at $B = 128$ ($2 -> 3$)],
-    [done: G-int, on `loop` at #raw(g.slice_revision)],
+    [done: G-int, on `loop` since `4e9b5a9e`],
     [*Binary64 point inputs* (the providers' input; the protocol passes the stream's exact rationals)],
-    [paired run on the loaded artifact, $B = 128$: #gname("uux_ddxg") 1.68 against 2.29 ms, #gname("uux_uuxg") 2.94 against 3.39 ms],
+    [paired run on the loaded artifact of G-int (`4e9b5a9e`, history), $B = 128$: #gname("uux_ddxg") 1.68 against 2.29 ms, #gname("uux_uuxg") 2.94 against 3.39 ms],
     [measured: ×1.37 and ×1.15 (information; not a G1 configuration)],
     [none: moot under the 5 ms gate rule (user, 2026-10-24); the protocol keeps exact inputs],
     [*Compiled native trees* (kernels as the tree engine's SymJIT planes, lanes batched)],
-    [untimed rest (the native trees, Born and counterterm inputs and the rest of the call; no trees timer on `loop`) #pct-range(trees-share.map(t => t.s)) of the time at $B = 128$; #gname(trees-share.sorted(key: t => t.s).last().p.key) #pct(trees-share.sorted(key: t => t.s).last().s)],
+    [#if trees-timed [native trees (with the Born and counterterm inputs; the executor's timer)] else [untimed rest (the native trees, Born and counterterm inputs and the rest of the call)] #pct-range(trees-share.map(t => t.s)) of the time at $B = 128$; #gname(trees-share.sorted(key: t => t.s).last().p.key) #pct(trees-share.sorted(key: t => t.s).last().s)],
     [up to the share; ×#fixed(1 / (1 - calc.max(..trees-share.map(t => t.s))), 1) for the largest],
-    [Rust ports A/B (`native-dag`, HANDOFF §0.4)],
+    [in part on `loop`: SymJIT plane applications (`7db32901`), lane-chunked tree closures (`88657260`); next: the native tree program (A5, `native-dag`)],
     [*Lanes by batch* in binary64 (`plan_export.lanes_for`: 16 lanes also for one point)],
     [$B = 1$: one 16-lane chunk per call],
-    [measured: #ratio-range(lanes-gain) at $B = 1$ (16 lanes ÷ 1 lane of #rev-list(l1-revs))],
+    [measured: #ratio-range(lanes-gain) at $B = 1$ (16 lanes on `loop` ÷ 1 lane of #rev-list(l1-revs), different builds)],
     [executor policy (WP3.1 or wave 4)],
     [*Finite-only result path* (sum the virtual natively, no per-family lane export, Python assembly only for checks and observables)],
     [glue #pct-range(nat-shares(x => share(x, glue(x)))) of the native-input time],
@@ -1325,15 +1413,14 @@ optimisation effort goes to higher multiplicities. Their ratios stay in the
 tables (#gname("uux_ddxg"): #msec(udx.median_seconds_per_point) ms against a
 limit of #msec(udx.gate.binding_limit) ms, OpenLoops
 #msec(ptime(ud, "openloops")) ms × 1.30, #fixed(lim(ud, nat-c(ud), big), 2) of
-it). The question whether G1 should pass the points as exact rationals (the
+it; measured #udx.gate.status, band #fixed(udx.gate.band_to_binding_limit.at(0), 2)–#fixed(udx.gate.band_to_binding_limit.at(1), 2)). The question whether G1 should pass the points as exact rationals (the
 protocol) or as the binary64 text the providers read is moot under this
-rule, and the protocol stays. For information only (not a G1
-configuration, no verdict formed from it): in a paired run on the loaded
-artifact (one core, ten alternating rounds, $B = 128$) the same executor takes
-1.68 ms on the binary64 text against 2.29 ms on the exact points for
-#gname("uux_ddxg") (×0.73; #gname("uux_uuxg"): 2.94 against 3.39 ms, ×0.87),
-and the public `Runtime.evaluate` adds 10 % (2 %) to the executor call on the
-same decimal text.
+rule, and the protocol stays. For information only (not G1
+configurations, no verdict formed from them): on #raw(g.slice_revision) the public
+`Runtime.evaluate` of the loaded artifact takes 2.08 ms per point on 60-digit decimal text for #gname("uux_ddxg")
+at $B = 128$, against 1.96 ms for its executor on the exact points (@g1, timing protocol); at G-int
+(`4e9b5a9e`, committed protocol) a paired run (one core, ten alternating rounds) gave 1.68 ms on the binary64 text
+against 2.29 ms on the exact points (×0.73; #gname("uux_uuxg"): 2.94 against 3.39 ms, ×0.87).
 
 == Leading colour
 
@@ -1369,7 +1456,8 @@ same decimal text.
     No provider ratio: the providers time full colour. LC uses the committed
     QCD colour continuation (`examples/loop/source_colour`)#if lc-vjets.len() > 0 [; the $V$+jets rows are
     timed at LC with native inputs only]. This campaign timed LC at $B = 128$#if lc-earlier-revs.len() > 0 [; ° grey: the
-    earlier run of #rev-list(lc-earlier-revs) at $B = 1$ with its FC time (bitwise the same values)].],
+    earlier run of #rev-list(lc-earlier-revs) at $B = 1$ with its FC time (an earlier engine under the committed
+    protocol; history)].],
   tstyle(table(
     columns: (2.9cm, 1fr, 1fr, 1fr, 1fr),
     align: left + horizon, inset: (x: 4pt, y: 2.6pt),
@@ -1391,14 +1479,27 @@ same decimal text.
 #let lc-slower = g.processes.filter(p => { let (l, f) = (bat(cfg(p, "native/lc"), big), bat(nat-c(p), big)); l != none and f != none and l.median_seconds_per_point > f.median_seconds_per_point })
 #let lc-big(key) = bat(cfg(gproc(key), "native/lc"), big)
 #let fc-big(key) = bat(nat-c(gproc(key)), big)
+// LC/FC at B = 128 on loop, and in the G-int campaign (earlier runs at 4e9b5a9e).
+#let lc-ratio(p) = { let (l, f) = (bat(cfg(p, "native/lc"), big), bat(nat-c(p), big)); if l == none or f == none { none } else { l.median_seconds_per_point / f.median_seconds_per_point } }
+#let lc-ratio-at(p, r) = { let (l, f) = (earlier-at(cfg(p, "native/lc"), big, r), earlier-at(nat-c(p), big, r)); if l == none or f == none { none } else { l.median_seconds_per_point / f.median_seconds_per_point } }
+#let lc-now = g.processes.map(p => (p: p, r: lc-ratio(p))).filter(x => x.r != none).sorted(key: x => x.r)
+#let lc-gint = g.processes.map(p => (p: p, r: lc-ratio-at(p, "4e9b5a9e"))).filter(x => x.r != none)
+#let lc-trees(p) = { let x = bat(cfg(p, "native/lc"), big); if x == none or not inputs-timed(x) { none } else { share(x, stage(x, "native trees")) } }
+#let fc-trees(p) = { let x = bat(nat-c(p), big); if x == none or not inputs-timed(x) { none } else { share(x, stage(x, "native trees")) } }
+#if lc-slower.len() == 0 [
+LC is cheaper in the loop stage (fewer families and skeletons) and, since lc-perf (`88657260`: LC-aware pruning of the
+closure blocks, native tree closures in lanes of points), also end to end: with native inputs at $B = 128$ LC/FC is
+#fixed(lc-now.first().r, 2)–#fixed(lc-now.last().r, 2) (#gname(lc-now.first().p.key) gains most,
+#gname(lc-now.last().p.key) least), so LC is faster than full colour on every row#if lc-gint.len() > 0 [; at G-int it
+was #fixed(calc.min(..lc-gint.map(x => x.r)), 2)–#fixed(calc.max(..lc-gint.map(x => x.r)), 2), slower than full colour for
+#names(lc-gint.filter(x => x.r > 1).map(x => x.p)) (committed protocol; @g1)]. The native trees, with the Born and
+counterterm inputs, take a larger share at LC (#("uux_ggg", "gg_gggg").map(k => [#gname(k): #pct(lc-trees(gproc(k))) at LC,
+#pct(fc-trees(gproc(k))) at full colour]).join([; ])), the lever of compiled trees (@tab:levers).
+] else [
 LC is cheaper in the loop stage (fewer families and skeletons), but not yet
 end to end: with native inputs at $B = 128$ it is slower than full colour for
-#names(lc-slower). There the untimed rest of the call, which holds the native
-trees, Born and counterterm inputs, is larger at LC
-(#("uux_ggg", "gg_gggg").map(k => [#gname(k): #msec(untimed(lc-big(k))) of #msec(lc-big(k).median_seconds_per_point) ms at LC, #msec(untimed(fc-big(k))) of #msec(fc-big(k).median_seconds_per_point) ms at full colour]).join([; ])),
-as the development campaign's timers showed for the trees of the processes
-with many colour orderings; with Python inputs (history) the inputs dominated
-either way.
+#names(lc-slower) (@tab:g1lc).
+]
 
 == Throughput, model recalibration and schedule M
 
@@ -1456,13 +1557,15 @@ at LC). @tab:g1est re-estimates every design row with these measured terms.
   caption: [*Design estimates recalibrated by G1*
     (#raw("tools/loop_v2_costmodel.py --g1")), ms per point, finite only, one thread. Recipe: DESIGN Table 1a's
     finite-only band (outer factor 1.05–1.10). G1: the recipe's dressing term,
-    the NinjaRS model R × #fixed(0.97, 2)–#fixed(1.39, 2) (the band of the first G1 campaign, a constant of
-    the tool; this campaign measures #fixed(calc.min(..rc.filter(r => r.at("design", default: none) != none).map(r => r.design.reduction_over_model.at(0))), 2)–#fixed(calc.max(..rc.filter(r => r.at("design", default: none) != none).map(r => r.design.reduction_over_model.at(1))), 2), @tab:g1rate) and
+    the NinjaRS model R × #fixed(calc.min(..g.estimates.map(e => e.ninjars_over_model.at(0))), 3)–#fixed(calc.max(..g.estimates.map(e => e.ninjars_over_model.at(1))), 3) (the band
+    this campaign measures, @tab:g1rate) and
     the measured outer factor of the row's class representative at $B = 128$
     with native inputs (same colour where measured#if g.estimates.any(e => e.outer_inferred) [; rows whose class
     was not measured at their colour take the FC factor, marked †]). Measured: G1's own time where the row
-    was timed. Gate: 1.3× the best production provider of DESIGN Table 1b
-    (seven-leg rows, protocol of 20 October), with the headroom gate ÷ upper
+    was timed. Gate: G1's binding limit at the row's largest batch where G1
+    timed the providers (1.3× the fastest production provider, or MadLoop's
+    time where it binds), else 1.3× the best production provider of DESIGN
+    Table 1b (protocol of 20 October), with the headroom gate ÷ upper
     estimate. The outer factor shrinks with compiled trees (@tab:levers);
     until then these replace the Table 1a targets.],
   tstyle(table(
@@ -1493,9 +1596,12 @@ at LC). @tab:g1est re-estimates every design row with these measured terms.
     NinjaRS reduction ("the reduction included", §1.6 item 5); the trees,
     Born and counterterm inputs and the glue are the same work in both
     schedules. M: the development campaign's runs (#rev-list(m-revs), not
-    repeated); B: the configuration on `loop` (#raw(g.slice_revision)), on the
-    same plans (bitwise the same binary64 values); LC was re-timed at
-    $B = 128$ only. M is adopted where M/B ≤ 0.85 on the schedule-dependent
+    repeated); B: the configuration on `loop` (#raw(g.slice_revision)), a later
+    engine (native tree closures and plane applications, frozen setup heap) on
+    the same processes, so the ratios pair runs of different builds and
+    campaigns (the gate tool pairs them; history for M): end to end at
+    $B = 128$ they set the M time with the older, slower trees against this
+    engine's B time and do not measure M; LC was re-timed at $B = 128$ only. M is adopted where M/B ≤ 0.85 on the schedule-dependent
     stages at every common batch size; ± is the timing uncertainty of the
     ratio.],
   tstyle(table(
@@ -1530,14 +1636,17 @@ shrink (@tab:levers). With a quark line M's entries do not merge at all (M/B
 work 1.00, DESIGN §5.6; equal by test). *Decision (G1):* schedule M for
 pure-gluon classes at leading colour from $n = 6$; schedule B for every other
 class at $n <= 6$, including pure-gluon full colour; M stays the planned
-default from $n >= 8$, and both are re-measured at seven legs with the WP3.1
-plans (`measure-g1-7leg`).
+default from $n >= 8$. The seven-leg comparison of M with B is open (the
+schedule-M run of `measure-g1-7leg` stopped; G1 and Table 1 time schedule B).
 
 #let stab-revs = g.processes.map(p => p.stability.map(r => r.at("revision", default: none))).flatten().filter(r => r != none).map(r => r.slice(0, 8)).dedup()
 #let dd-row(p, i) = p.stability.find(r => r.index == i and r.arithmetic == "double-double" and r.configuration == "native/full")
 #let b64-row(p, i) = p.stability.find(r => r.index == i and r.arithmetic == "double" and r.configuration == "native/full")
 #let best-dev(r) = if r == none or r.deviation_vs_providers.len() == 0 { none } else { r.deviation_vs_providers.pairs().sorted(key: ((n, v)) => v).first() }
-#let camp-cell(c) = { let acc = if c == none { none } else { c.at("accuracy_check", default: none) }; if acc == none { dim[—] } else [#sci(acc.max_error) #if not acc.passed [#linebreak() #text(fill: amber, weight: "bold", tiny[above #sci(acc.tolerance)])]] }
+// The user's acceptance of a native check's points above its tolerance
+// (summary.json validation.accepted): shown instead of the failure.
+#let accepted-of(p) = { let r = all-rows.find(r => r.key == p.key); let a = if r == none { none } else { r.validation.at("accepted", default: none) }; if a != none and a.check.ends-with("['native/full'].accuracy_check") { a } else { none } }
+#let camp-cell(c, accepted: none) = { let acc = if c == none { none } else { c.at("accuracy_check", default: none) }; if acc == none { dim[—] } else [#sci(acc.max_error) #if not acc.passed { if accepted != none [#linebreak() #text(fill: pass-ink, weight: "bold", tiny[‡ pts #accepted.points.map(x => str(x.index)).join(", ") accepted])] else [#linebreak() #text(fill: amber, weight: "bold", tiny[above #sci(acc.tolerance)])] }] }
 #figure(kind: table,
   caption: [*Values at the timed points*: pyAmpliCol's binary64 finite part
     (native inputs on `loop`) against each provider's production-mode value on the
@@ -1547,12 +1656,13 @@ plans (`measure-g1-7leg`).
     converted with the universal double pole (it returns no poles in
     production). Worst point: the point of the row's largest deviation,
     evaluated again with one rotation and the reduction-direction check in
-    binary64 and in double-double (DD)#if stab-revs.any(r => r != g.slice_revision.slice(0, 8)) [ by the stability runs of
-    #rev-list(stab-revs), not repeated (the timed binary64 values are bitwise theirs)]: $E$ is the binary64 estimate, DD
+    binary64 and in double-double (DD)#if stab-revs.any(r => not same-engine(r)) [ by the stability runs of
+    #rev-list(stab-revs.filter(r => not same-engine(r))), not repeated (their binary64 values equal the timed ones to rounding level, more at
+    binary64-unstable points)]: $E$ is the binary64 estimate, DD
     the DD value's deviation from the closest provider (named). Campaign: the
     first three points against the committed references
-    (`tests/fixtures/loop/required`), fixture metric and tolerance, native
-    inputs (`loop`) and Python inputs (history).],
+    (`tests/fixtures/loop/required`; $g g -> g g g g g$: NJet's ten points), fixture metric and tolerance, native
+    inputs (`loop`) and Python inputs (history); ‡ points above the tolerance that the user accepted (below the table).],
   tstyle(table(
     columns: (2.7cm, 0.65cm, 1fr, 1fr, 1fr, 1.25fr, 1.45fr, 1fr, 1fr),
     align: (x, y) => if x == 0 { left + horizon } else { right + horizon },
@@ -1561,7 +1671,7 @@ plans (`measure-g1-7leg`).
     ..g.processes.map(p => {
       let c = nat-c(p)
       let v = if c == none { none } else { c.values_vs_providers }
-      let cell(n) = if v == none or v.at(n, default: none) == none { if prov(p, n) != none and "unavailable" in prov(p, n) { dim[no library] } else [—] } else { sci(v.at(n).max_finite_deviation) }
+      let cell(n) = if v == none or v.at(n, default: none) == none { if prov(p, n) != none and "unavailable" in prov(p, n) { if n == "openloops" { dim[no library] } else { dim[not generated] } } else [—] } else { sci(v.at(n).max_finite_deviation) }
       let pts = if v == none or v.len() == 0 { 0 } else { calc.max(..v.values().map(x => x.points)) }
       let worst = if v == none or v.len() == 0 { none } else { v.values().sorted(key: x => x.max_finite_deviation).last() }
       let wi = if worst == none { none } else { worst.worst_point }
@@ -1570,7 +1680,7 @@ plans (`measure-g1-7leg`).
       (gname(p.key), str(pts), cell("madloop"), cell("recola"), cell("openloops"),
         if st == none { dim[—] } else [#tiny[pt #st.index:] #sci(st.estimate)],
         if dd == none { dim[—] } else [#sci(dd.at(1)) #tiny[#pshort(dd.at(0))]],
-        camp-cell(c), camp-cell(py-c(p)))
+        camp-cell(c, accepted: accepted-of(p)), camp-cell(py-c(p)))
     }).flatten(),
   )),
 ) <tab:g1values>
@@ -1588,7 +1698,7 @@ agrees with the closest provider to #sci(calc.max(..dd-best)) or better
 everywhere. Where pyAmpliCol's binary64 estimate $E$ exceeds the deviation —
 $g g -> g g g$, $g g -> g g g g$ and $g g -> t overline(t) g g$ (above
 10⁻⁹) and $u overline(u) -> g g g g$ (#sci(dd-row(gproc("uux_gggg"), 9).deviation_vs_providers.openloops) in DD
-against #sci(b64-row(gproc("uux_gggg"), 9).deviation_vs_providers.openloops) in binary64) — the deviation is pyAmpliCol's own binary64
+against #sci(nat-c(gproc("uux_gggg")).values_vs_providers.openloops.max_finite_deviation) in binary64 at point #nat-c(gproc("uux_gggg")).values_vs_providers.openloops.worst_point) — the deviation is pyAmpliCol's own binary64
 loss, which $E$ flags. The other deviations above 10⁻¹¹ stay in DD and are
 the providers' own accuracy: Recola's at $u overline(u) -> d overline(d) g$
 (#sci(dd-of("uux_ddxg", 1, "recola"))), $u overline(u) -> u overline(u) g$ and
@@ -1599,7 +1709,7 @@ off the DD values at the ill-conditioned gluon and top points (up to
 #sci(calc.max(..ml-dd))). At the campaign points $g g -> g g g g$ point 1
 misses the fixture tolerance (#sci(nat-c(gg4).accuracy_check.tolerance, d: 0)) in binary64 on both paths, within
 its estimate $E$ = #sci(b64-row(gg4, 1).estimate)\; its DD value agrees with
-Recola to #sci(dd-of("gg_gggg", 1, "recola")).
+Recola to #sci(dd-of("gg_gggg", 1, "recola")).#for r in accepted-rows { let a = r.validation.accepted; [ ‡ #box(math-label(r.math)) against NJet: points #a.points.map(x => str(x.index)).join(" and ") exceed the tolerance #sci(a.tolerance, d: 0) in binary64 (#a.points.map(x => sci(x.finite.values().first())).join(" and ") from NJet's double-double values, at most #sci(a.max_error) over all its references), *#a.status*: estimates $E$ #a.points.map(x => sci(x.estimate)).join(" and "), and pyAmpliCol's double-double values equal NJet's; the check keeps its tolerance (`passed: false`).] }
 
 // ============================================================= REQUIRED ==
 = Required processes: references and development validation <required>
@@ -1695,7 +1805,8 @@ lower multiplicities and existing references.
 #let ttq-errs = ttq.max_error_per_point.sorted()
 The $g g -> t overline(t) e^- e^+ g$ (QCD) finite part deviates by #sci(ttq-errs.last()) at one of its three points and by at
 most #sci(ttq-errs.at(-2)) at the others: the point's known binary64 conditioning (earlier record, DESIGN WP3.1 fourth
-increment: #ttq-old.validation). The electroweak target is not started (WP3.2). The $u overline(u) -> g g g g g$ row comes
+increment: #ttq-old.validation). The electroweak target is in development (WP3.2: EW guards, the QED Catani operator
+and EW fermion lines are on `loop`; the UFO's EW counterterms and massive vector bosons in Feynman gauge are not). The $u overline(u) -> g g g g g$ row comes
 from #rn.processes.uux_ggggg.record.split(",").first(), the newest record of that process: the later re-runs on the merged
 heads (eighth and ninth increments) do not include it. It uses the same production counterterm route; its check is in @tab:sevencheck.
 
@@ -1764,7 +1875,10 @@ the unrotated seven-gluon points NJet keeps only 4–6 digits in double precisio
 // The comparison Table 1 keeps (VALIDATION_RULE of scripts/build_summary.py):
 // the newest record, or the older, more complete one it only repeats part of.
 #let g7-row = all-rows.find(r => r.key == "gg_ggggg")
-#let g7v = (g7, ..if g7-old != none { (g7-old,) } else { () }).find(x => x.revision == g7-row.validation.revision)
+// Since the seven-leg G1 rows (measure-g1-7leg) Table 1 validates g g > g g g g g with G1's own accuracy
+// check (no record revision): this section then cites the newest development record.
+#let g7v = (g7, ..if g7-old != none { (g7-old,) } else { () }).find(x => x.revision == g7-row.validation.at("revision", default: none))
+#let g7v = if g7v == none { g7 } else { g7v }
 #let g7v-dd = g7v.max_deviation.njet_dd_oneloop_R1
 #let g7v-within = g7v.stability_estimate_per_point.zip(g7v.max_error_per_point).all(((e, d)) => e != none and e >= d)
 // The newest record's deviations at the points it re-ran, against the kept ones.
@@ -1783,36 +1897,61 @@ addendum H's budget (hours, below 150 GB). DESIGN WP3.1 attributes the cost: 325
 generic seeds (making it lean is open). A point with its rotation and reduction-direction checks took
 #g7.seconds_per_point_unbatched.map(t => sig(t)).join(", ") s, a single-point development evaluation (#C.development_records.threads.at(g7.revision, default: "threads not recorded")):
 not a batched one-thread time and not comparable with NJet's
-#sig(meas.njet_single_evaluation.standard.mean_s) s per evaluation on one pinned core. No batched seven-gluon timing exists yet.
+#sig(meas.njet_single_evaluation.standard.mean_s) s per evaluation on one pinned core. The batched one-thread timing is G1's (@tab:summary, @g1),
+and so is the check of the timed configuration against NJet's ten points (@tab:sevencheck).
 
 == Validation without a matched provider
 
 #let nv = ms.njet_validation
-#let uxr = rn.processes.uux_ggggg
-#let ux = uxr.max_deviation
 #let ux-agree = meas.provider_generation.processes.uux_ggggg.reference.maximum_provider_relative_error
-#let g7-cat = g7v.max_deviation.catani
+// G1's own checks of the timed configurations (native/full, engine
+// slice_revision): g g > g g g g g against NJet's ten points (with the
+// user's acceptance of the points above the tolerance, summary.json
+// validation.accepted) and u u~ > g g g g g against MadLoop and Recola at
+// the timed stream points.
+#let g7p = gproc("gg_ggggg")
+#let g7c = nat-c(g7p)
+#let g7a = g7c.accuracy_check
+#let g7val = all-rows.find(r => r.key == "gg_ggggg").validation
+#let g7acc = g7val.at("accepted", default: none)
+#let g7-born = calc.max(..g7a.rows.map(r => r.errors.values().map(e => e.at("born", default: 0))).flatten())
+#let g7-row-max(r) = calc.max(..r.errors.values().map(e => e.values()).flatten())
+#let g7-est = g7p.fixture_stability.filter(r => r.arithmetic == "double" and r.configuration == "native/full" and r.fixture == g7a.fixture)
+#let g7-within-all = g7a.rows.all(r => { let e = g7-est.find(x => x.index == r.index); e != none and e.estimate >= g7-row-max(r) })
+#let g7-dp = calc.max(..g7c.physical.map(x => x.double_pole_deviation))
+#let uxp = gproc("uux_ggggg")
+#let uxc = nat-c(uxp)
+#let uxv = uxc.values_vs_providers
+#let uxval = all-rows.find(r => r.key == "uux_ggggg").validation
+#let ux-own = uxval.at("worst_point", default: (:)).at("reference_own", default: none)
+#let ux-dp = calc.max(..uxc.physical.map(x => x.double_pole_deviation))
 #block(breakable: false)[#figure(kind: table,
-  caption: [*Checks of the seven-leg QCD results*, #dev-tag on `work/v2-generation-scale`, except the Ward row (WP2.5 on
-    `loop`); binary64, all three Laurent coefficients, deviation metric of @tab:summary. NJet values: fixture
-    `gg_ggggg_njet.json` (NJet 3.1.2 double-double at exactly rotated points, scaling-test estimates ≤ #sci(1.3e-24)).],
+  caption: [*Checks of the seven-leg QCD results.* First and third rows: G1's checks of the timed configurations (engine
+    #raw(g.slice_revision) on `loop`, native per-point inputs, full colour; binary64 finite part and Born, and the double pole
+    of G1's physical rows against the universal one); second row #dev-tag on `work/v2-generation-scale`; Ward row WP2.5 on
+    `loop`; deviation metric of @tab:summary. NJet values: fixture `gg_ggggg_njet.json` (NJet 3.1.2 double-double at
+    exactly rotated points, scaling-test estimates ≤ #sci(1.3e-24)\; points 0–2 are G1's stream points 0–2 at NJet's scale).],
   tstyle(table(
     columns: (4.4cm, 1fr, 2.9cm),
     align: left + horizon, inset: (x: 4pt, y: 2.8pt), stroke: tstroke, fill: thead-fill,
     table.header[Check][Result][Status],
-    [$g g -> g g g g g$ full virtual against NJet (top-free, $N_f = 5$), #g7v.points.len() #pts-word(g7v.points.len()) (#inc-name(g7v.record) increment#if g7v != g7 [\; #inc-name(g7.record): #pts-word(g7.points.len()) #g7.points.map(str).join(", ")])],
-    [Born ≤ #sci(g7v-dd.born), finite ≤ #sci(g7v-dd.finite), single pole ≤ #sci(g7v-dd.single_pole), double pole ≤ #sci(g7v-dd.double_pole)\;
-      Catani poles: single ≤ #sci(g7-cat.single_pole), double ≤ #sci(g7-cat.double_pole)\; estimates #g7v.stability_estimate_per_point.map(e => sci(e)).join(", ")],
-    [#if g7v.passed [passed] else [failed] (tolerance #sci(g7v.tolerance, d: 0))],
+    [$g g -> g g g g g$ full virtual against NJet (top-free, $N_f = 5$), #g7a.points points (G1)],
+    [finite ≤ #sci(g7val.max_finite) against NJet's double-double values (median #sci(g7val.median_finite)\; NJet's binary64
+      values ≤ #sci(g7a.max_error)), Born ≤ #sci(g7-born)#if g7-within-all [\; every point within its estimate $E$]#if g7acc != none [\;
+      above the tolerance: #g7acc.points.map(x => [point #x.index #sci(x.finite.values().first()) ($E$ = #sci(x.estimate))]).join(" and "),
+      where the double-double values equal NJet's]\; double pole against the universal one ≤ #sci(g7-dp) (points
+      #g7c.physical.map(x => str(x.index)).join(", "))],
+    [#if g7a.passed [passed (tolerance #sci(g7a.tolerance, d: 0))] else if g7acc != none { text(fill: pass-ink, weight: "semibold", g7acc.status); linebreak(); text(6.6pt, fill: ink2)[points #g7acc.points.map(x => str(x.index)).join(" and ")\; tolerance #sci(g7acc.tolerance, d: 0) unchanged, `passed: false`] } else [failed (tolerance #sci(g7a.tolerance, d: 0))]],
     [Top-free full virtual against NJet at lower multiplicity],
     [#nv.topfree.lower.map(l => [#math-label(l.label): #l.value]).join([; ]) (`test_loop_v2_topfree.py`)],
     [passed],
-    [$u overline(u) -> g g g g g$ full virtual against MadLoop and Recola, #uxr.points.len() points (#uxr.record.split(",").first())],
-    [MadLoop ≤ #sci(calc.max(..ux.madloop.values())), Recola ≤ #sci(calc.max(..ux.recola.values())) (finite ≤ #sci(ux.recola.finite)); the providers agree to #sci(ux-agree) (reference merge)],
-    [#if uxr.passed [passed] else [failed] (tolerance #sci(uxr.tolerance, d: 0))],
+    [$u overline(u) -> g g g g g$ full virtual against MadLoop and Recola, #calc.max(..uxv.values().map(x => x.points)) points (G1, the timed stream points)],
+    [finite: MadLoop ≤ #sci(uxv.madloop.max_finite_deviation), Recola ≤ #sci(uxv.recola.max_finite_deviation)#if ux-own != none [ (Recola's own: pyAmpliCol's double-double value lies #sci(ux-own.dd_deviation) from it and #sci(ux-own.independent.dd_deviation) from #pshort(ux-own.independent.key))]\;
+      Born ≤ #sci(calc.max(..uxv.values().map(x => x.max_born_deviation)))\; double pole against the universal one ≤ #sci(ux-dp)\; the providers agree to #sci(ux-agree) (reference merge)],
+    [#if uxc.accuracy_check.passed [passed] else [failed] (tolerance #sci(uxc.accuracy_check.tolerance, d: 0))],
     [Ward identity, one gluon's $epsilon -> p$, at seven gluons],
     [asymmetric Ward mode of WP2.5 (loop side only, bare + UV + $R_2$); passes on $g g -> g g$ and $u overline(u) -> g g g$ (`test_loop_v2_observables.py`)],
-    text(fill: rgb("#8a4b08"), weight: "semibold")[not yet run at seven gluons (addendum H)],
+    text(fill: rgb("#8a4b08"), weight: "semibold")[#s-rows.find(r => r.key == "gg_ggggg").full_colour.sanity_checks.ward.status at seven gluons (addendum H)],
   )),
 ) <tab:sevencheck>]
 
@@ -1829,19 +1968,19 @@ not a batched one-thread time and not comparable with NJet's
 #let badge(s) = { let (f, t, name) = st-style.at(s); box(fill: f, inset: (x: 4pt, y: 2pt), radius: 2pt, text(6.8pt, fill: t, weight: "bold", name)) }
 #let caps = (
   ([Recursive engine], "supported", [Trees, families and loop numerators from recursions; no loop diagram is enumerated (FeynKit graphs are test oracles only). Counterterms: see below.]),
-  ([Full, NLC and LC colour], "supported", [Exact seed tables in $N_c$; LC/NLC by generated classes and truncated cells. LC is cheaper in the loop stage but not yet end to end at large batches (its native per-point inputs cost more, @tab:g1lc), nor to generate at seven legs.]),
+  ([Full, NLC and LC colour], "supported", [Exact seed tables in $N_c$; LC/NLC by generated classes and truncated cells. #if lc-slower.len() == 0 [Since lc-perf LC is faster than full colour end to end on every G1 row at $B = 128$ (LC/FC #fixed(lc-now.first().r, 2)–#fixed(lc-now.last().r, 2), @tab:g1lc); not cheaper to generate at seven legs (not re-measured since).] else [LC is cheaper in the loop stage but not yet end to end at large batches (@tab:g1lc), nor to generate at seven legs.]]),
   ([Colour and spin correlations], "supported", [Directed colour histories at LC/NLC/FC, spin sources, resolved helicities, flavour aliases, Ward sources (WP2.5). Seven-leg directed LC/NLC tables need the Rust seed tables (WP3.1).]),
   ([Per-order partials], "supported", [Every squared coupling order at tree level and at one loop, mixed Born orders, per-correction loop orders.]),
-  ([Poles at runtime], "supported", [`poles = "all" | "none" | "uv" | "ir" | "split"` (WP2.10, on `loop` since 24 October): finite-only mode with the finite part bitwise unchanged and the pole work skipped; `"uv"` and `"ir"` with the user's semantics of 23 October. The UV residue comes from an interim local module until the NinjaRS re-pin; a `"uv"` estimate needs a rotation check.]),
+  ([Poles at runtime], "supported", [`poles = "all" | "none" | "uv" | "ir" | "split"` (WP2.10, on `loop` since 24 October): finite-only mode with the finite part bitwise unchanged and the pole work skipped; `"uv"` and `"ir"` with the user's semantics of 23 October; the IR poles sum one Catani operator per correction, QED included (ew-poles, `8b52179b`; a correction without a prediction gives none; the prediction for mixed QCD×EW sectors is still misleading, about 2 % in the single pole, open in WP3.2). The UV residue comes from an interim local module until the NinjaRS re-pin; a `"uv"` estimate needs a rotation check.]),
   ([Stability estimates], "supported", [Rotation checks (any number, 0 = estimate absent), reduction direction, exact rescaling, in any combination; no automatic escalation (WP2.3).]),
-  ([Precision carriers], "supported", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; since G-int the native per-point inputs run in binary64, DoubleFloat and arbitrary precision (DESIGN §5.5).]),
-  ([Native executor, schedules], "supported", [Rust, 16 lanes (also for a one-point call, a G1 lever), threads; G1 decision on the schedule-dependent stages (@tab:g1bm, provisional until compiled trees): M for pure-gluon LC from $n = 6$, B for every other class at $n <= 6$; F as oracle. The NinjaRS reduction runs serially. Development report: stage times, modelled kernel work, master-integral time.]),
-  ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; relocation to another path tested on the same host and CPU. Since G-int the artifact stores the native process (`point_inputs = "native-v1"`): a plain evaluation loads without any generation call. Correlated, resolved and flavour calls and the `"uv"`/`"ir"` selections still regenerate the slice on first use, and processes the native export refuses keep `regenerated-at-load` (addendum G; generation-scale-2). The Rust/C/C++/Fortran SDK refuses v4 until then.]),
-  ([Counterterms (model UV, $R_2$)], "supported", [Plain tree vertices of the recursion inserted exactly once (WP2.2, a18b7599; addendum J, b4d76cc3), admitted by coupling orders and the public `particle_veto`; no witness table or loop matching in production. An unlowerable counterterm vertex that no tree of the request reaches is inert and recorded in the artifact; a reachable one is refused. Site closure is the test oracle. Per point they are formed natively (G-int), the Python stages kept as oracle; the native counterterm-program builder (A3) is on `loop`, not switched on.]),
+  ([Precision carriers], "supported", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; since G-int the native per-point inputs run in binary64, DoubleFloat and arbitrary precision (DESIGN §5.5). Since `7db32901` binary64 runs SymJIT plane applications and needs no Symbolica licence; DoubleFloat and arbitrary precision run under pyAmpliCol's library key.]),
+  ([Native executor, schedules], "supported", [Rust, 16 lanes (also for a one-point call, a G1 lever), threads; native tree closures in lanes of points with runtime AVX-512/AVX2 widths (lc-perf); G1 decision on the schedule-dependent stages (@tab:g1bm, provisional until compiled trees): M for pure-gluon LC from $n = 6$, B for every other class at $n <= 6$; F as oracle. The NinjaRS reduction runs serially. Development report: stage times, modelled kernel work, master-integral time.]),
+  ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; the artifact stores the native process (`point_inputs = "native-v2"`): a plain evaluation loads without any generation call. Since `7db32901` (addendum G) its SymJIT -O2 applications are stored as IR and recompiled at load for the loading CPU (AVX and FMA3 required), no host string is embedded, and binary64 values are bitwise equal after relocation to another machine, user and path; the parameter program's SymJIT bytes differ per compilation (a random external-call tag, values unaffected; upstream fix filed). Correlated, resolved and flavour calls and the `"uv"`/`"ir"` selections still regenerate the slice on first use, and processes the native export refuses keep `regenerated-at-load` (generation-scale-2). The Rust/C/C++/Fortran SDK refuses v4 until then.]),
+  ([Counterterms (model UV, $R_2$)], "supported", [Plain tree vertices of the recursion inserted exactly once (WP2.2, a18b7599; addendum J, b4d76cc3), admitted by coupling orders and the public `particle_veto`; no witness table or loop matching in production. An unlowerable counterterm vertex that no tree of the request reaches is inert and recorded in the artifact; a reachable one is refused. Site closure is the test oracle. Per point they are formed natively (G-int), the Python stages kept as oracle; generation of the counterterm route has output-identical savings (ct-perf, `201bece5`: compile memos, a content-addressed lowered-model cache); the native counterterm-program builder (A3) is on `loop`, not switched on (A4 in development). EW counterterms of the UFO: `ew-ct`, in development.]),
   ([Direct $R_2$], "deferred", [A bonus by the user's rule; bounded controls only.]),
-  ([Electroweak, complex mass], "open", [Tree EW lanes fixed, the Dirac–Weyl class refused; loop EW, Goldstones and CMS are WP3.2.]),
-  ([Required set], "progress", [Seven of eight generate and agree with their references in all coefficients with native inputs (@tab:validation, validated on the WP3.1 branch before its integration), $g g -> g g g g g$ against NJet's double-double values; the generator is on `loop` since G-int. The EW target is not started; no batched $2 -> 5$ timing.]),
-  ([Performance gates], "progress", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]\; $B = 1$ needs lane adaptation (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history). Missing: provider protocol-mode columns, seven legs (`measure-g1-7leg`).]),
+  ([Electroweak, complex mass], "progress", [WP3.2. On `loop`: typed refusals of EW requests with a non-zero width or an external photon (until the complex-mass scheme and $alpha(0)$ per photon); the QED Catani operator (`8b52179b`); EW fermion lines (`1d27426b`): Dirac–Weyl EW vertices, $W$ vertices along the fermion flow, conjugate readings, lepton- and colour-singlet-rooted processes, mixed-order Born with $W$ exchange, the sites oracle equal to the recursion at $W$ vertices; more than one colour-singlet fermion line refused until EWI-5. In development: the UFO's EW counterterms (`ew-ct`), massive vector bosons and Goldstones in Feynman gauge (`ew-gauge`); CMS later.]),
+  ([Required set], "progress", [Seven of eight generate and agree with their references in all coefficients with native inputs (@tab:validation, validated on the WP3.1 branch before its integration), $g g -> g g g g g$ against NJet's double-double values; the generator is on `loop` since G-int. The EW target is in development (WP3.2); the other $2 -> 5$ rows are timed in batches by G1 (@g1).]),
+  ([Performance gates], "progress", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]\; $B = 1$ needs lane adaptation (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history). Missing: provider protocol-mode columns.]),
   ([$g g -> 6g$], "deferred", [No $2 -> 6$ work until the $2 -> 5$ plan is complete (user, 23 October).]),
 )
 #figure(kind: table,
@@ -1907,7 +2046,7 @@ recursions that share all work (@fig:pipeline).
     stage-box([Counterterm program; plan v4], [CT recursion; native builder A3 (off)], "plain"),
     lane[evaluation],
     stage-box([Exact inputs, invariant table], [Rust executor], "nat"), arr,
-    stage-box([Blocks, Born, CT scalars], [Rust executor (G-int); Python as oracle], "nat"), arr,
+    stage-box([Blocks, Born, CT scalars], [Rust executor, SymJIT planes; Python as oracle], "nat"), arr,
     stage-box([Seeds $U_0 = K overline(A_0)$], [Rust executor], "nat"), arr,
     stage-box([Dressing, B or M], [threads × 16 lanes], "nat"), arr,
     stage-box([Reduction, master cache], [NinjaRS, oneloopmaster], "nat"), arr,
@@ -2006,10 +2145,12 @@ $2 op("Re")$ of $i slash (16 pi^2)$ times the reduced family sum, plus local UV,
 field terms, per sector and column, with optional rotation, reduction-direction and rescaling estimates
 and the finite-only mode. The public API selects `loop_engine = "v2"` from
 TOML, CLI or Python and stores plan v4 as a relocatable PACBIN member (zlib
-JSON of exact kernel term lists, no compiled code, digest checked at load) and,
-since G-int, the native process (`point_inputs = "native-v1"`: the tree program
-with the Born, counterterm and field components and their saved exact
-evaluators), so a plain evaluation loads without regenerating the process.
+JSON of exact kernel term lists, no compiled code, digest checked at load) and
+the native process (`point_inputs = "native-v2"`: the tree program with the
+Born, counterterm and field components, their saved exact evaluators and the
+binary64 SymJIT applications of every tree kernel and of the parameter
+program, stored as IR and recompiled at load), so a plain evaluation loads
+without regenerating the process, on another machine, user and path too.
 
 #block(breakable: false)[#figure(kind: table,
   caption: [*Asymptotic classes per event* for $n$ gluons, full colour (DESIGN
@@ -2056,18 +2197,18 @@ evaluators), so a plain evaluation loads without regenerating the process.
   - *Build:* `typst compile benchmarks.typ benchmarks.pdf` in
     `docs/performance_reports/loop/` (Typst 0.15).
   - *Status, in-flight work, decisions:* `data/milestone.json`, from the
-    integration merges of #ms.engine_revision since #ms.previous_loop (A3
-    `c29d5899`, G-int `4e9b5a9e`; commit subjects "Integrate work/v2-…")\;
+    integration merges of #ms.engine_revision since #ms.previous_loop
+    (#ms.integrated.map(r => [#r.wp.split(" ").last() #raw(r.sha)]).join([, ])\; commit subjects "Integrate work/v2-…")\;
     `workspace/reports/engine-v2/slice-status.md` (integration blocks,
-    DECISIONS 2026-10-23/24; the user's gate decision of 2026-10-24, 16:05 UTC, is
+    DECISIONS 2026-10-23/24/25, the milestone push m1025a of 2026-10-25 \~13:45 UTC; the user's gate decision of 2026-10-24, 16:05 UTC, is
     recorded in `data/milestone.json` `gate_decisions` and no longer applies after the
     re-measure; the user's rules of 2026-10-24, 22:35 UTC — uncoloured generation,
     green-to-red run times, summary pages with only Table 1, Figure 1 and legends,
     and the gate rule "#thr-rule.label", recorded as `gate_decisions.threshold_rule`
     and applied by `scripts/build_summary.py` and this report); `HANDOFF_24_10_2026.md` §6; MASTER_PLAN
     2026-10-23/24 entries; REQUIREMENTS_ADDENDUM A, D, F, G, H, I, J; DESIGN §5.5,
-    §5.7 (G1), §6.1, §6.2, §12.4, WP3.1; the 24 October pushes (59badc7a and b4d76cc3,
-    gates in slice-status.md).
+    §5.7 (G1), §6.1, §6.2, §7.5, §12.1, §12.4, WP3.1, WP3.2; the 24 October pushes (59badc7a and b4d76cc3,
+    gates in slice-status.md) and the G-int push (79df367a, 25 October).
   - *@tab:summary, @fig:gate:* `data/summary.json`, written by
     `scripts/build_summary.py` from `data/g1.json`, `data/measured.json`,
     `data/milestone.json` and `tools/loop_benchmark/processes.json` by its
@@ -2080,7 +2221,7 @@ evaluators), so a plain evaluation loads without regenerating the process.
     reference runs' records (`workspace/reference/runs/required/<process>/`,
     collected into `data/measured.json`) for the $2 -> 5$ rows; MadLoop's production-build times of the $2 -> 5$ rows: the
     same runs' `madloop-production-result.json`. *@tab:validation, @required, @sevenglue:* the native
-    validations on `work/v2-generation-scale` (#records-text), records
+    validations on `work/v2-generation-scale`#if C.development_records.records.len() > 0 [ (#records-text)], records
     `workspace/tmp/generation-scale/gint2/after/`, `gint/val1/` and `i7/val/` (the earlier seven-gluon
     points: `gint/val1/`), collected into `data/measured.json`; the earlier $g g -> t overline(t) e^- e^+ g$ record:
     DESIGN WP3.1 fourth increment. *Conventions:*
@@ -2092,9 +2233,12 @@ evaluators), so a plain evaluation loads without regenerating the process.
     (README and docstrings of `tools/loop_benchmark`); streams
     `tools/loop_benchmark/streams/`; run records archived in
     `workspace/reports/engine-v2/measure-g1/records/` (first campaign `runs/`,
-    fix round `runs2/`, the re-measure on `loop` at #raw(g.slice_revision) `gint/`: its runs, logs, the
-    stored-artifact confirmation and the paired binary64-input runs `confirm/<process>/ab.json`;
-    provider records reused from the first campaign and the fix round, not re-run), MadLoop exports of the G1-only processes in
+    fix round `runs2/`, the re-measure at G-int (`4e9b5a9e`) `gint/` with its paired binary64-input runs
+    `confirm/<process>/ab.json`, and this milestone's at #raw(g.slice_revision) `m1025a/`: its runs, logs, the
+    frozen-heap launcher `gc_launcher.py` and its protocol experiment `gc/`, and the public-path confirmation
+    `confirm/uux_ddxg/` (write, load and evaluate records); provider records reused from the first campaign and the
+    fix round, not re-run); the $2 -> 5$ rows' records (timings, stability, provider runs) in
+    `workspace/reports/engine-v2/measure-g1-7leg/records/` (`runs-f2/`, `runs/m7-providers-*.json`), MadLoop exports of the G1-only processes in
     `workspace/reference/runs/g1/`; recalibration
     `tools/loop_v2_costmodel.py --g1 data/g1.json`. Builds:
     #raw(g.slice_build) (`loop`, #raw(g.slice_revision))#if g.at("native_build", default: none) != none [ and
@@ -2102,10 +2246,10 @@ evaluators), so a plain evaluation loads without regenerating the process.
     scratch commit #raw(g.native_commit), kept as tag #raw("g1-native-inputs-" + g.native_commit))] else [; history:
     #builds-of(l1-c).map(raw).join([, ]) (`work/v2-generation-scale` #rev-list(ms.development.revisions.keys().filter(r => r not in l1-revs)) plus the timers of
     scratch commit #rev-list(l1-revs), tag #l1-revs.map(r => raw("g1-native-inputs-" + r)).join([, ]): earlier runs, one lane, schedule M, stability) and
-    #builds-of(py-c).map(raw).join([, ]) (Python inputs)],
+    #builds-of(py-c).map(raw).join([, ]) (Python inputs); G-int's earlier runs: `loop-native-v2-slice-4e9b5a9e`],
     release with one codegen unit and thin LTO; the harness is this
-    branch's `tools/loop_benchmark`; the generation of 39824f9b quoted in @status: `data/g1.json` of
-    `c3a7be09`. Schedule M at seven legs: DESIGN §5.6.
+    branch's `tools/loop_benchmark`; the generations of 39824f9b and of G-int quoted in @status: `data/g1.json` of
+    `c3a7be09` and of `79df367a`. Schedule M at seven legs: DESIGN §5.6.
   - *@tab:njet* and NJet prose: `workspace/reports/engine-v2/njet-benchmark.md`
     §2, §5, §6 (raw `workspace/reference/runs/njet/timing/`; the seven-gluon single evaluations are read from
     those records into `data/measured.json`);
