@@ -150,14 +150,14 @@
  "integrated": [
   {
    "sha": "1b13005a",
-   "wp": "WP3.1 native-dag A4",
-   "title": "Native DAG production route",
+   "wp": "WP3.1 native-dag",
+   "title": "A4: native DAG production route",
    "detail": "the native DAG builder is the production route for the loop blocks and the counterterm program (A5's counterterm emission brought forward, byte-identical to the Python oracle; 11 listed features keep a recorded per-request Python fallback, any other native failure fails closed); counterterm-route parity with the site oracle met (generation + export, sites / recursion 0.82-0.98 at six legs)"
   },
   {
    "sha": "6c87e276",
-   "wp": "WP3.2 ew-gauge EWI-4a",
-   "title": "'t Hooft-Feynman-gauge trees",
+   "wp": "WP3.2 ew-gauge",
+   "title": "EWI-4a: Feynman-gauge trees",
    "detail": "massive vector bosons and explicit Goldstones in Feynman gauge for trees (Feynman = unitary and Slavnov-Taylor identities to 1e-13); two model-compiler defects fixed: lone chiral projectors had the opposite chirality (spinor-chain order in models/tensors.py, fix 3ae34543) and loop_qcd_qed_sm dropped the Goldstone flag of G-"
   },
   {
@@ -168,20 +168,20 @@
   },
   {
    "sha": "392d3f4a",
-   "wp": "WP3.2 ew-ct EWI-0/EWI-3",
-   "title": "EW counterterms",
+   "wp": "WP3.2 ew-ct",
+   "title": "EWI-0, EWI-3: EW counterterms",
    "detail": "the UFO's EW counterterms lowered through the model's own helper bodies, with MadLoop's branch side for exactly real arguments; every Laurent piece equals MadLoop's to 3.7e-15 (binary64) and 6.0e-31 (double-double against MadLoop's quadruple precision); lowering 259 s cold (PLAN 30 s: EWI-3R)"
   },
   {
    "sha": "46f72f20",
    "wp": "measure-g1-7leg",
-   "title": "G1 at 2 -> 5",
+   "title": "G1 at 2\u21925",
    "detail": "G1 for every 2->5 row (with db13c260): full and leading colour at B = 16 and 128 on engine 1d27426b; the four gated rows pass, g g > g g g g g without a matched provider; the user's acceptance of its NJet points 4 and 8"
   }
  ],
  "integrated_tip": "db13c260",
  "after_integration": [],
- "already_on_loop": "v2 waves 0-1 (gates S1, G0), native executor, colour, stability API, schedule M, observables, NJet reference, public v2 engine with plan v4 artifacts, counterterms in the recursion and as plain tree insertions (addendum J), runtime pole selection, Rust A0-A3, the G1 harness, WP3.1 G-int (native per-point inputs and generation stages), the summary-first report, ct-perf (counterterm-route generation savings), ew-poles (EW guards, QED Catani operator), lc-perf (LC never slower than FC), artifact-portability (portable prepared artifacts) and ew-lines (EW fermion lines)",
+ "already_on_loop": "v2 waves 0-1 (gates S1, G0), native executor, colour, stability API, schedule M, observables, NJet reference, public v2 engine with plan v4 artifacts, counterterms as plain tree insertions (addendum J), runtime pole selection, Rust A0-A3, the G1 harness, G-int (native per-point inputs and generation stages), the summary-first report; at milestone m1025a ct-perf, ew-poles (EW guards, QED Catani operator), lc-perf, artifact-portability and ew-lines",
  "addendum_commits": [
   "b91d23a8",
   "2dd36f65",
