@@ -554,7 +554,15 @@ class Run:
         _reset_peak()
         start = time.perf_counter()
         native = NativeProcess.of(self.executor)
-        write_plan(native.plan_json, directory / STORED_RUNTIME, native)
+        # With the companion of the certified-scaleless families (its plan
+        # and tree program), as the artifact writer stores it.
+        companion = native.scaleless
+        write_plan(
+            native.plan_json,
+            directory / STORED_RUNTIME,
+            native,
+            None if companion is None else companion.plan_json,
+        )
         written = {
             "seconds": time.perf_counter() - start,
             "peak_gib": _gib(_status("VmHWM")),
