@@ -105,12 +105,16 @@ def prepare_loop_sm_scalar_declarations(raw: RawLoopModel):
             f"(found {len(repairs)})"
         )
     ((vertex, old, new),) = repairs
+    arity = len(new["fields"]["spins"])
     diagnostic = {
         "profile": PROFILE,
         "vertex": [vertex["id"], vertex["name"]],
         "original_lorentz": [old["id"], old["name"]],
         "derived_lorentz": [new["id"], new["name"]],
-        "reason": "four scalar species require the existing four-slot constant tensor",
+        "reason": (
+            f"{arity} scalar species require the existing {arity}-slot "
+            "constant tensor"
+        ),
     }
     payload["metadata"][PROFILE] = diagnostic
     return CompatibleLoopDeclarations(
