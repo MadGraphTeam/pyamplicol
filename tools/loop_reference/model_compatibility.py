@@ -112,8 +112,7 @@ def prepare_loop_sm_scalar_declarations(raw: RawLoopModel):
         "original_lorentz": [old["id"], old["name"]],
         "derived_lorentz": [new["id"], new["name"]],
         "reason": (
-            f"{arity} scalar species require the existing {arity}-slot "
-            "constant tensor"
+            f"{arity} scalar species require the existing {arity}-slot constant tensor"
         ),
     }
     payload["metadata"][PROFILE] = diagnostic
