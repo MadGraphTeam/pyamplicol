@@ -38,6 +38,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 from exact_points import _matmul, _rotate, _rotation, check, decimal_string, generate  # noqa: E402
+import provider_paths  # noqa: E402
 
 COEFFICIENTS = ("born", "finite", "single_pole", "double_pole")
 PKG_CONFIG = "/nix/store/1c6lyixjky1pfr9ia3mvpy01sxxh307a-pkg-config-0.29.2/bin"
@@ -150,12 +151,21 @@ def njet_source(build):
     return Path(re.search(r"^njet_source: (.+)$", info, re.M).group(1))
 
 
+def check_build_paths(build, paths=(), libraries=(), driver_dir=None):
+    """Refuse (with a configured reference root; warn without one) NJet files
+    outside the build directory and the reference root (provider_paths)."""
+    root = provider_paths.reference_root()
+    provider_paths.check(paths, [Path(build).resolve(), root, driver_dir], libraries=libraries,
+                         what="NJet build", strict=root is not None)
+
+
 def build_driver(build, out_dir):
     """Compile njet_driver.cpp against an NJet build (cached by source digest)."""
     prefix, pc, version = njet_install(build)
     digest = sha256(HERE / "njet_driver.cpp")[:12]
     binary = Path(out_dir) / f"njet_driver-{Path(build).resolve().name}-{digest}"
     if binary.exists():
+        check_build_paths(build, libraries=[binary], driver_dir=binary.parent.resolve())
         return binary, version
     qd = Path(build) / "qd" / "prefix" / "lib"
     if pc is not None:
@@ -209,6 +219,8 @@ def build_driver(build, out_dir):
     rpaths = [f"-Wl,-rpath,{prefix / 'lib'}"] + (
         [f"-Wl,-rpath,{qd}"] if qd.is_dir() else []
     )
+    check_build_paths(build, paths=[f[2:] for f in flags if f[:2] in ("-I", "-L")],
+                      libraries=sorted((prefix / "lib").glob("lib*.so")))
     Path(out_dir).mkdir(parents=True, exist_ok=True)
     command = [
         "g++",
@@ -222,6 +234,7 @@ def build_driver(build, out_dir):
     ]
     subprocess.run(command, check=True)
     (binary.parent / (binary.name + ".command")).write_text(" ".join(command) + "\n")
+    check_build_paths(build, libraries=[binary], driver_dir=binary.parent.resolve())
     return binary, version
 
 
@@ -467,6 +480,10 @@ def command_openloops(args):
     pts = json.loads(Path(args.points).read_text())
     legs = pts["legs"]
     root = Path(args.openloops).resolve()
+    reference = provider_paths.reference_root()
+    provider_paths.check([root], [reference] if reference else [root],
+                         libraries=[root / "lib/libopenloops.so"], what="OpenLoops",
+                         strict=reference is not None)
     work = Path(args.output).with_suffix("")
     work.mkdir(parents=True, exist_ok=True)
     binary = work / "openloops-driver"
@@ -519,6 +536,8 @@ def command_openloops(args):
         capture_output=True,
         text=True,
         cwd=work,
+        # process libraries from this tree, not from the compiled-in install path
+        env={**os.environ, "OpenLoopsPath": str(root)},
     )
     (work / "output.log").write_text(proc.stdout + proc.stderr)
     rows = {}
