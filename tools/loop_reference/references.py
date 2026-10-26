@@ -53,6 +53,9 @@ def derived_parameters(scheme):
         alpha = 1 / p["aEWM1"]
         mz2 = p["MZ"] ** 2
         mw = (mz2 / 2 + (mz2 ** 2 / 4 - alpha * PI * mz2 / (p["Gf"] * two.sqrt())).sqrt()).sqrt()
+    elif scheme["electroweak_inputs"] == "alpha_mw":
+        # alpha, MZ and MW all inputs (MG5_aMC's loop_qcd_qed_sm).
+        alpha, mw = 1 / p["aEWM1"], p["MW"]
     else:
         mw = p["MW"]
         alpha = two.sqrt() * p["Gf"] * mw ** 2 * (1 - mw ** 2 / p["MZ"] ** 2) / PI
@@ -71,8 +74,17 @@ def width(scheme, name):
 
 # ---------------------------------------------------------------- Recola
 
+def _gmu_or_alpha_fixed(scheme, provider):
+    """Recola and OpenLoops are driven in the G_mu or fixed-alpha schemes only."""
+    if scheme["electroweak_inputs"] not in ("alpha_fixed", "gmu"):
+        raise NotImplementedError(
+            f"{provider}: electroweak inputs {scheme['electroweak_inputs']!r} have no "
+            "translation in this driver (MadLoop only)")
+
+
 def recola_commands(spec, points, uncached):
     scheme = spec["scheme_data"]
+    _gmu_or_alpha_fixed(scheme, "Recola")
     derived = derived_parameters(scheme)
     zero = "0"
     masses = [
@@ -104,6 +116,7 @@ def recola_commands(spec, points, uncached):
 
 def openloops_commands(spec):
     scheme = spec["scheme_data"]
+    _gmu_or_alpha_fixed(scheme, "OpenLoops")
     derived = derived_parameters(scheme)
     born, loop = spec["born_orders"], spec["loop_orders"]
     lines = [
