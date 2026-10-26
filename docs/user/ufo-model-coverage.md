@@ -143,7 +143,7 @@ carry a `ValueError` message instead of a code; they are marked below.
 | Other tensor heads | rejected | `Epsilon`, `EpsilonBar`, `C`, `IdentityL`, three-argument `PSlash` and any accepted head with a wrong arity fail model compilation with `ValueError: ... contains unsupported UFO tensors`. |
 | Form factors | rejected | `form-factors`. |
 | Sigma normalisation | experimental | expanded as (i/2)(gamma^mu gamma^nu - gamma^nu gamma^mu); vertices using `Sigma` have not been validated against a reference implementation. |
-| Chiral structures | supported | `ProjM`, `ProjP` and `Gamma5` are validated through the packaged Standard Model. |
+| Chiral structures | supported | `ProjM`, `ProjP`, `Gamma5` and their products with `Gamma` and `Sigma` are checked against their UFO definitions (`tests/unit/test_model_tensors.py`); lone-projector scalar–fermion couplings are validated against MadGraph5_aMC@NLO (`tests/integration/test_ufo_chiral_scalar_coupling.py`). |
 | Index conventions | conditional | 1-based leg indices, the `1000*component + leg` notation for spin-2 fields and negative dummy indices are supported; inconsistent indices are a `ValueError`. |
 | Several structures per vertex | supported | any number of colour and Lorentz structures through the coupling matrix. |
 | Three-point vertices | supported | any combination of scalars, Dirac fermions, vectors and spin-2 fields, momentum-dependent or not, with colour 1, delta, T^a or f^abc. |
