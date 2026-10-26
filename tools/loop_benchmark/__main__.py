@@ -4,7 +4,12 @@
 Subcommands:
 
 - ``streams``: freeze the phase-space streams (``streams.py``);
-- ``pyamplicol``: time pyAmpliCol v2 on one process (``pyamplicol_v2.py``);
+- ``pyamplicol``: time pyAmpliCol v2 on one process (``pyamplicol_v2.py``),
+  optionally followed by stability and every-pole checks of the same
+  generation;
+- ``stability``: stability estimates at chosen stream points (or at the
+  reference fixture's points, ``--fixture``);
+- ``ward``: the Ward identity at chosen stream points (``pyamplicol_v2.ward``);
 - ``providers``: time MadLoop, Recola and OpenLoops in production mode on the
   same stream (``providers.py``);
 - ``gate``: combine the records into the gate table (``gate.py``).
@@ -44,6 +49,12 @@ def main(argv: list[str] | None = None) -> int:
         default=900.0,
         help="seconds a B may take over all rounds; larger B are skipped",
     )
+    v2.add_argument(
+        "--warm-up",
+        type=int,
+        help="points of each B's untimed warm-up (default: the whole block; "
+        "one chunk of lanes compiles every kernel)",
+    )
     v2.add_argument("--native-build", type=Path, help="staged native build directory")
     v2.add_argument(
         "--scratch",
@@ -52,6 +63,62 @@ def main(argv: list[str] | None = None) -> int:
         "system's temporary directory)",
     )
     v2.add_argument("--json", type=Path)
+    v2.add_argument(
+        "--stability-points",
+        type=int,
+        nargs="+",
+        help="after the timing: stability estimates at these stream points",
+    )
+    v2.add_argument(
+        "--stability-arithmetic",
+        nargs="+",
+        choices=("double", "double-double"),
+        default=["double"],
+    )
+    v2.add_argument("--stability-json", type=Path, help="the stability record")
+    v2.add_argument(
+        "--physical-points",
+        type=int,
+        nargs="+",
+        help="after the timing: one evaluation with every pole at these points "
+        "(components, Catani's poles)",
+    )
+    v2.add_argument(
+        "--store",
+        type=Path,
+        help="after generation: store the process (the artifact's loop runtime "
+        "member with native point inputs, and generation.json) in this new "
+        "directory",
+    )
+    v2.add_argument(
+        "--generate-only",
+        action="store_true",
+        help="stop after generation and --store (no accuracy check, no timing)",
+    )
+    v2.add_argument(
+        "--load",
+        type=Path,
+        help="time a stored process (--store) instead of generating: loaded "
+        "as the public runtime loads an artifact, nothing regenerated",
+    )
+
+    wardp = commands.add_parser(
+        "ward", help="the Ward identity at chosen stream points"
+    )
+    wardp.add_argument("process")
+    wardp.add_argument("--points", type=int, nargs="+", required=True)
+    wardp.add_argument("--legs", type=int, nargs="+", required=True)
+    wardp.add_argument("--factors", nargs="+", choices=("1", "i"), default=["1", "i"])
+    wardp.add_argument("--lanes", type=int, default=16)
+    wardp.add_argument(
+        "--physical",
+        action="store_true",
+        help="also evaluate each point without the substitution (its physical "
+        "scale for the gate's Ward bound)",
+    )
+    wardp.add_argument("--native-build", type=Path)
+    wardp.add_argument("--scratch", type=Path, help="parent of the model directory")
+    wardp.add_argument("--json", type=Path)
 
     stable = commands.add_parser(
         "stability", help="stability estimates at chosen stream points"
@@ -69,6 +136,15 @@ def main(argv: list[str] | None = None) -> int:
     stable.add_argument("--native-build", type=Path)
     stable.add_argument("--scratch", type=Path, help="parent of the model directory")
     stable.add_argument("--json", type=Path)
+    stable.add_argument(
+        "--load", type=Path, help="a stored process (pyamplicol --store)"
+    )
+    stable.add_argument(
+        "--fixture",
+        action="store_true",
+        help="the points are the reference fixture's (the accuracy check's, at "
+        "its own scales), each row with its deviation from every reference",
+    )
     stable.set_defaults(lanes=16, schedule="B")
 
     providers = commands.add_parser("providers", help="time the providers")
@@ -108,8 +184,9 @@ def main(argv: list[str] | None = None) -> int:
     gate.add_argument(
         "--reference-root",
         type=Path,
-        help="provider reference root for MadLoop exports that moved "
-        "(default: $LOOP_REFERENCE_ROOT)",
+        help="provider reference root: every provider file (MadLoop exports "
+        "and their generation times) is resolved relative to it, never through "
+        "the absolute paths of the records (default: $LOOP_REFERENCE_ROOT)",
     )
     gate.add_argument(
         "--meta",
@@ -132,6 +209,10 @@ def main(argv: list[str] | None = None) -> int:
         from . import pyamplicol_v2
 
         return pyamplicol_v2.check_points(options)
+    if options.command == "ward":
+        from . import pyamplicol_v2
+
+        return pyamplicol_v2.ward(options)
     if options.command == "providers":
         from . import providers as module
 

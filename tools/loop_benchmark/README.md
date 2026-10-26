@@ -34,15 +34,105 @@ python tools/loop_v2_costmodel.py --g1 docs/performance_reports/loop/data/g1.jso
 `ROOT` is the provider reference root (`$LOOP_REFERENCE_ROOT`, toolkit
 layout: `sources/MG5_aMC_v3_7_0`, `sources/recola2-2.3.0`,
 `sources/OpenLoops-2.1.5`, MadLoop exports at `madloop.export` of
-`processes.json`). A new process needs only its specification in
+`processes.json`). The gate resolves every provider file relative to it:
+a record's `export` (the absolute path of its run, possibly under a root
+that moved) is never opened or stat'ed; its `runs/...` part under `ROOT`,
+else the specification's `madloop.export`, is the export (an imported
+campaign timing, `timing` of the specification, names none: its generation
+is that of the specification's export). An imported timing outside the
+protocol (`protocol_mode` false) is never a gate limit; where it does the
+production work and more (a Recola run that also evaluates the IR poles,
+with the protocol's Collier cache or without one) the import records
+`production_upper_bound`, and the report takes it as an upper bound of that
+provider's production time (u u~ > g g g g g: the ratio to the fastest
+provider is then a lower bound). A new process needs only its specification in
 `processes.json` (PDG codes, orders, provider process strings, `madloop.export`
 or `unavailable` reasons) and its stream: particle names come from the model,
 labels from the specification, and the gate refuses records of unknown
 processes. The gate statistic is the median per point on both sides with an
-uncertainty band; `open` verdicts are repeated once (MASTER_PLAN §5.8 item 10);
+uncertainty band; a pyAmpliCol time below 5 ms per point is not gated (the
+user's rule of 2026-10-24: verdict `below 5 ms: not gated (user
+2026-10-24)`, the checks and ratios kept, their own verdict as
+`measured_status`); `open` verdicts are repeated once (MASTER_PLAN §5.8 item 10);
 the record given last for a configuration or provider decides, earlier runs
 are kept.
+
+A specification may carry `particle_veto` (the request's public veto:
+g g > g g g g g without the top is NJet's massless five-flavour QCD) and
+`reference_fixture` (the fixture the run's accuracy check uses, at its own
+points and scales, e.g. `gg_ggggg_njet`; only the quantities a fixture
+entry states are compared: NJet's `catani` entry has a Born and the poles,
+no finite part). For the seven-leg rows,
+`--warm-up 16` limits each B's untimed warm-up to one chunk of lanes (it
+compiles every kernel), every block prints its time and the record is
+written after every round; `--physical-points` (every pole, one batch)
+checks the virtual's double pole over the Born against the universal
+-(alpha_s/2pi) sum C_i at the run's colour accuracy, and `ward --physical`
+gives a Ward run its own physical scale.
+
+A generation that takes about an hour (g g > g g g g g) is stored once and
+timed in bounded jobs: `pyamplicol KEY --store DIR --generate-only` writes
+the process as the artifact's loop runtime member with its native point
+inputs (`artifact.write_plan`, `point_inputs` = `LOOP_V2_NATIVE_POINT_INPUTS`,
+"native-v2" since `7db32901`) beside
+`generation.json`, and `pyamplicol KEY --load DIR ...` (or `stability KEY
+--load DIR ...`) reads it as `V2VirtualRuntime` loads an artifact (nothing
+regenerated; the values equal the generating run's bitwise) and times that
+executor. The record keeps the stored generation and states the load
+(`stored`: directory name, plan digest, the generating revision); a store is
+never overwritten, a load of another configuration or native build is
+refused, and a `--generate-only` record is no gate input.
+
+`stability KEY --fixture --points I...` evaluates the reference fixture's
+own points (the accuracy check's: e.g. NJet's ten seven-gluon points at
+mu_R = 1000 GeV, of which only the first three are stream points, at other
+scales) with the same checks, each row with its finite part's deviation
+from every reference of the fixture (`deviation_vs_references`). The gate
+keeps these rows apart (`fixture_stability`), and the report builder takes
+the binary64 estimate and the double-double deviation at the fixture's worst
+point from them.
 
 Run the `pyamplicol` jobs under `taskset -c N` with `RAYON_NUM_THREADS=1`.
 Respect HANDOFF §0.1 for provider generations (no generation expected to
 exceed about 45 minutes).
+
+Provider caches are those of production (REQUIREMENTS_ADDENDUM D):
+`providers.collier_cache` switches the COLLIER global cache off only at
+seven legs or more and only for a linked release with the documented N = 7
+cache defect (`COLLIER_CACHE_DEFECT`: 1.2.9, 1.2.10). Recola links COLLIER
+1.2.8 (cache on at every multiplicity); MadLoop's HEPTools COLLIER is 1.2.9
+(`COLLIERGlobalCache 0` at seven legs); every provider record states the
+decision and the release (`collier_cache`).
+
+TRANSITIONAL (until package reference-relocate fixes the reference trees,
+slice-status DECISIONS 2026-10-25 ~20:45 item 2): the reference trees still
+name files of the root they were built under (the MadLoop exports'
+`LOOP_LIBS` archives, the RUNPATH of `librecola.so` and `libmodelfile.so`,
+OpenLoops' compiled-in installation path), so every `tools/loop_reference`
+run of the toolkit itself still reads the old root. The harness never opens
+those: `providers.relocated` takes each from the same place under `ROOT`
+(MadLoop links the relocated archives; Recola's driver links with
+`-rpath-link` and runs with `LD_LIBRARY_PATH` set to the relocated RUNPATH,
+and a run whose resolved libraries lie outside `ROOT` is refused; OpenLoops
+runs with `OpenLoopsPath`). A provider run under `strace -f -e trace=file`
+accesses nothing outside the current root's trees
+(`workspace/reports/engine-v2/measure-g1-7leg/records/logs-f4/`). Once the
+trees name the current root (patched RUNPATHs and makefile definitions,
+OpenLoops' path, with a strace proof for all three providers), this
+workaround is retired: `relocated`, `library_path`, `loaded_libraries`,
+`_elf_dynamic`, `_environment` and `_relocated_madloop_build` go with
+`test_files_of_a_moved_root_are_taken_under_the_current_root`; the
+reference-root resolution of the records' export paths and the strace check
+stay.
+
+Accepted deviation (user decision of 2026-10-25, slice-status DECISIONS
+~20:05; not a defect): g g > g g g g g against NJet, binary64, points 4
+(3.7e-8 from NJet's double-double value) and 8 (2.2e-8) of the fixture's
+ten, above its 2e-8 tolerance, are "accepted (user 2026-10-25): O(1e-8)
+binary64, within the estimate, DD = NJet": both lie within pyAmpliCol's own
+binary64 estimate E (1.3e-6, 2.5e-7) and the double-double values equal
+NJet's double-double values; the points are not timed stream points. The
+run's accuracy check keeps the 2e-8 tolerance and `passed: false`; the
+acceptance lives in `docs/performance_reports/loop/data/milestone.json`
+(`validation_decisions`), and the report builder checks its claims against
+`g1.json` and marks the points (`summary.json` `validation.accepted`).
