@@ -28,11 +28,21 @@ configurations (today the G-int campaign at `4e9b5a9e` as earlier runs, the
 engine before G-int with Python per-point inputs, and the development campaign
 of `39824f9b`: one lane, schedule M, stability runs and the batches this
 milestone did not repeat) stay in the gate-G1 details for history, labelled
-with their revisions. G1 at this milestone (`1d27426b`) timed with the setup
+with their revisions. G1 at milestone m1025a (`1d27426b`) timed with the setup
 heap frozen out of Python's cyclic collector (a scratch launcher around the
-unmodified harness; the protocol of `work/v2-measure-g1-7leg` `de8d3eb8`):
-the report states this deviation from the committed harness in the gate-G1
-section and the status page, and `g1.json` in `timing_protocol`. Then a status page (what is on `loop`, the
+unmodified harness; the protocol of `work/v2-measure-g1-7leg` `de8d3eb8`, in
+the committed harness since that package's integration): the report states
+this deviation from that revision's harness in the gate-G1 section and the
+status page, and `g1.json` in `timing_protocol`; the 2 → 5 rows
+(`measure-g1-7leg`) were timed on the same engine and build with the freeze
+in the harness itself. Milestone m1025c (2026-10-26, engine `4fc72e39` on
+`loop`, build `loop-native-v2-slice-79f2a5bd`; it replaces the m1025b
+attempt at `db13c260`, which was not pushed) did not re-measure G1: when
+`milestone.json` `engine_revision` differs from `g1.json` `slice_revision`,
+the title line states once that every pyAmpliCol timing is G1's on that
+revision and build (`slice_build`), and the gate-G1 section names the head
+check of the 2 → 5 rows by `measure-g1-7leg`'s integration (on `db13c260`)
+and the merges after it that no G1 row check covers. Then a status page (what is on `loop`, the
 gate, what is in development or missing, the timing protocol), the gate-G1
 details (provider grid with B = 1 and the largest batch, gate bands, stage
 split, levers, leading colour, throughput and recalibration, schedule B
@@ -193,10 +203,12 @@ Table 1 once, in its column header).
   re-measured on `loop` at `4e9b5a9e` without a development side and
   `4e9b5a9e` added to `milestone.json` `ancestry` with its five ancestors,
   `loop`'s configuration supplies every cell of the G1 rows (likewise at
-  milestone m1025a: `1d27426b` added with its six ancestors); the 2 → 5 rows
-  keep the development validation records (made on the branch before its
-  integration, `development.integrated_at`) until the seven-leg G1 rows
-  (`measure-g1-7leg`) are added to `g1.json`, which then supplies their
+  milestone m1025a: `1d27426b` added with its six ancestors; at milestone
+  m1025c `4fc72e39`, the engine on `loop`, with its seven, although no G1
+  campaign ran there); the 2 → 5 rows kept the development validation
+  records (made on the branch before its integration,
+  `development.integrated_at`) until the seven-leg G1 rows
+  (`measure-g1-7leg`) were added to `g1.json`, which now supplies their
   cells. Checked before, on a scratch clone of this branch (2026-10-24, package
   report-dev, `git clone --single-branch`, so without the development
   revisions): `summary.json` and the PDF rebuild byte-identical; then, with
