@@ -1,13 +1,13 @@
 {
  "date": "2026-10-26",
- "engine_revision": "db13c260",
+ "engine_revision": "4fc72e39",
  "previous_loop": "bae3b9ea",
  "previous_engine": "1d27426b",
  "native_build": {
-  "name": "loop-native-v2-slice-a8409830",
-  "digest": "0d601bed",
+  "name": "loop-native-v2-slice-79f2a5bd",
+  "digest": "2ba11490",
   "profile": "release, codegen-units 1, thin LTO, rustc 1.97.1",
-  "source": "workspace/reports/engine-v2/slice-status.md, precision-ap integration (a8409830): integrator release build of the merge commit (digest 0d601bed236c9de8...); ew-ct (392d3f4a) and measure-g1-7leg (46f72f20, db13c260) changed no native input and their integrators' stage --source accepted the build on db13c260. G1 was not re-measured at this milestone: its timings are of engine 1d27426b on loop-native-v2-slice-7db32901 (data/g1.json slice_revision, slice_build, slice_native_digest); the measure-g1-7leg integrator's head check on db13c260 with this build (B = 16, five 2->5 jobs) returned bitwise the timed binary64 values at 16/16 points (slice-status UPDATE 2026-10-26 ~00:35)"
+  "source": "workspace/reports/engine-v2/slice-status.md, native-lowering integration (79f2a5bd, UPDATE 2026-10-26 ~06:15 UTC): integrator release build of the merge commit (digest 2ba11490cf105199...), the third native change since bae3b9ea (after A4's at 1b13005a and precision-ap's loop-native-v2-slice-a8409830); onshell-consistency (4fc72e39) changed no native input and its integrator's stage --source accepted the build on 4fc72e39 (UPDATE ~06:35). G1 was not re-measured at this milestone: its timings are of engine 1d27426b on loop-native-v2-slice-7db32901 (data/g1.json slice_revision, slice_build, slice_native_digest); the measure-g1-7leg integrator's head check of the 2->5 rows on db13c260 with loop-native-v2-slice-a8409830 (B = 16, five jobs) returned bitwise the timed binary64 values at 16/16 points (UPDATE 2026-10-26 ~00:35); it was not repeated on 4fc72e39"
  },
  "development": {
   "source": "git: 889af02c and the G1 scratch commit 39824f9b (tag g1-native-inputs-39824f9b) are on work/v2-generation-scale; work/v2-generation-scale d7e40cfb was integrated into work/v2-slice at 4e9b5a9e (G-int; 889af02c, fef92189, 0ea83af2 and 6f5a64cc are ancestors of 4e9b5a9e, the scratch commit 39824f9b is not); workspace/reports/engine-v2/slice-status.md, G-int integration block and DECISIONS 2026-10-24 ~21:50 UTC; label and integration: HANDOFF_24_10_2026.md section 6.2 (WP3.1 generation-scale, integration package G-int)",
@@ -21,8 +21,8 @@
   "integrated_at": "4e9b5a9e"
  },
  "ancestry": {
-  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout; 2026-10-25: milestone m1025a for 1d27426b, in the main checkout; 2026-10-26: milestone m1025b for db13c260, in the report worktree at db13c260); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
-  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records) and of the engine on loop: every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. db13c260 is the engine on loop at this milestone (m1025b; not a G1 campaign: G1 was not re-measured, every revision of the data is its ancestor); 1d27426b is the G1 campaign of milestone m1025a and of the 2->5 rows (slice_revision); 4e9b5a9e was G-int's (its runs are earlier_runs in data/g1.json); 1c971289 and 889af02c were the sides of the campaign before (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e, 1d27426b or db13c260 and is no candidate)",
+  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout; 2026-10-25: milestone m1025a for 1d27426b, in the main checkout; 2026-10-26: milestone m1025c for 4fc72e39, in the report worktree at 4fc72e39 (it replaces db13c260, the pin of the m1025b attempt, which was not pushed)); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
+  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records) and of the engine on loop: every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. 4fc72e39 is the engine on loop at this milestone (m1025c; not a G1 campaign: G1 was not re-measured, every revision of the data is its ancestor); 1d27426b is the G1 campaign of milestone m1025a and of the 2->5 rows (slice_revision); 4e9b5a9e was G-int's (its runs are earlier_runs in data/g1.json); 1c971289 and 889af02c were the sides of the campaign before (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e, 1d27426b or 4fc72e39 and is no candidate)",
   "revisions": [
    "1c971289",
    "889af02c",
@@ -31,7 +31,7 @@
    "6f5a64cc",
    "4e9b5a9e",
    "1d27426b",
-   "db13c260"
+   "4fc72e39"
   ],
   "ancestors": [
    [
@@ -108,31 +108,31 @@
    ],
    [
     "1c971289",
-    "db13c260"
+    "4fc72e39"
    ],
    [
     "889af02c",
-    "db13c260"
+    "4fc72e39"
    ],
    [
     "fef92189",
-    "db13c260"
+    "4fc72e39"
    ],
    [
     "0ea83af2",
-    "db13c260"
+    "4fc72e39"
    ],
    [
     "6f5a64cc",
-    "db13c260"
+    "4fc72e39"
    ],
    [
     "4e9b5a9e",
-    "db13c260"
+    "4fc72e39"
    ],
    [
     "1d27426b",
-    "db13c260"
+    "4fc72e39"
    ]
   ]
  },
@@ -151,7 +151,7 @@
   {
    "sha": "1b13005a",
    "wp": "WP3.1 native-dag",
-   "title": "A4: native DAG production route",
+   "title": "A4: native DAG route",
    "detail": "the native DAG builder is the production route for the loop blocks and the counterterm program (A5's counterterm emission brought forward, byte-identical to the Python oracle; 11 listed features keep a recorded per-request Python fallback, any other native failure fails closed); counterterm-route parity with the site oracle met (generation + export, sites / recursion 0.82-0.98 at six legs)"
   },
   {
@@ -163,7 +163,7 @@
   {
    "sha": "a8409830",
    "wp": "precision-ap",
-   "title": "On-shell invariants in the masters",
+   "title": "On-shell master invariants",
    "detail": "a one-leg entry of the master integrals' S matrix is the leg's squared mass: DoubleFloat and arbitrary-precision virtuals were O(1) wrong at binary64-rounded massive momenta and now agree with a MadLoop quadruple-precision run within 1e-15; DoubleFloat massive spinors along -z fixed; new native build"
   },
   {
@@ -177,9 +177,33 @@
    "wp": "measure-g1-7leg",
    "title": "G1 at 2\u21925",
    "detail": "G1 for every 2->5 row (with db13c260): full and leading colour at B = 16 and 128 on engine 1d27426b; the four gated rows pass, g g > g g g g g without a matched provider; the user's acceptance of its NJet points 4 and 8"
+  },
+  {
+   "sha": "48aeb123",
+   "wp": "reference-relocate",
+   "title": "Relocated provider trees",
+   "detail": "the provider reference trees (MadLoop exports, Recola, OpenLoops, NJet builds) no longer reference the old working root (RUNPATHs, install paths, build configurations and scripts relocated; provider values bitwise, zero old-root accesses); tools/loop_reference refuses provider files outside the configured reference root; tools only"
+  },
+  {
+   "sha": "4e9262b5",
+   "wp": "model-determinism",
+   "title": "Deterministic models",
+   "detail": "compiled models and the cache files derived from them no longer depend on the process history (canonical Symbolica order through the central symbol registry, no wall-clock fields in the compiled-model payload; 90 of 90 history comparisons byte-identical over 9 models); the joint QCD+QED artifact test passes from an empty cache"
+  },
+  {
+   "sha": "79f2a5bd",
+   "wp": "WP3.1 native-lowering",
+   "title": "D phase 1 part 1: Rust plan writer",
+   "detail": "the Rust plan v4 model writes the plan JSON byte-identical to the Python writer (kept as oracle) and a bounded binary columnar plan member (23.0 MB for 193.6 MB of JSON at g g > g g g g g, full colour); a strict records reader; the D1 leaf-weight fast path (output-identical, 36.5 s saved at seven gluons); new native build"
+  },
+  {
+   "sha": "4fc72e39",
+   "wp": "onshell-consistency",
+   "title": "Binary64-miss re-check",
+   "detail": "at a binary64 miss, generation's staged validation re-checks the point against the 32-digit reference: double-double at the same 1e-12 tolerance, binary64 Borns at the tolerance and virtuals within max(tolerance, the point's own binary64 estimate), refused when that estimate is missing or above max(tolerance, 1e-9); accepted misses are logged; one on-shell rule for the structural bindings (the precision-ap staged-validation regression of d d~ > g g NLC passes again)"
   }
  ],
- "integrated_tip": "db13c260",
+ "integrated_tip": "4fc72e39",
  "after_integration": [],
  "already_on_loop": "v2 waves 0-1 (gates S1, G0), native executor, colour, stability API, schedule M, observables, NJet reference, public v2 engine with plan v4 artifacts, counterterms as plain tree insertions (addendum J), runtime pole selection, Rust A0-A3, the G1 harness, G-int (native per-point inputs and generation stages), the summary-first report; at milestone m1025a ct-perf, ew-poles (EW guards, QED Catani operator), lc-perf, artifact-portability and ew-lines",
  "addendum_commits": [

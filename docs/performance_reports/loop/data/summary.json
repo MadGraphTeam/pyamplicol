@@ -4,8 +4,8 @@
   "date": "2026-10-25",
   "host": "AMD EPYC 9754, shared host, pinned cores without SMT siblings: the 2->2 to 2->4 rows on 178 and 189 (one job per CCX of the cores 176-191 reserved for G1, DECISIONS 2026-10-25 ~13:45); the 2->5 rows on 130, 138, 156 and 174 (one job per CCX of the cores 128-175 of measure-g1-7leg; unpinned processes of other jobs also ran on some of these CCXs, sampled every 5 min in the package's records/logs-f2/hostload-f2.txt)",
   "gate_factor": 1.3,
-  "engine_on_loop": "db13c260",
-  "native_build_on_loop": "loop-native-v2-slice-a8409830",
+  "engine_on_loop": "4fc72e39",
+  "native_build_on_loop": "loop-native-v2-slice-79f2a5bd",
   "main_rule": {
    "rule": "every cell shows the most recent configuration that measured it; A is newer than B if B's revision is an ancestor of A's (git merge-base --is-ancestor, recorded in milestone.json ancestry) or if A is the development side and B the integrated side of one G1 campaign, transitively; equal revisions keep the order development, integrated, development_records; the registry (no run) comes last; without a measurement, the status of the newest configuration with a record of the row",
    "validation_rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it",
