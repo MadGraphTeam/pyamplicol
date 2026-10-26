@@ -504,6 +504,26 @@ for a long export with `--wait-for-export`; they fail as soon as no live
 `run_required.sh` line; a MadLoop export is resumed by deleting the incomplete
 export directory and rerunning `madloop_export.py` (it refuses to overwrite).
 
+### Provider files come from the reference root
+
+Provider trees name absolute paths of the place they were built in: the
+RUNPATH of Recola's, COLLIER's and the Recola model's shared libraries, the
+HEPTools archives in a MadLoop export's `MadLoop_makefile_definitions`
+(`LOOP_LIBS`), OpenLoops' compiled-in `install_path` (where it loads
+`proclib/` from), NJet's `pkg-config` files and RUNPATHs. After the working
+root moved on 2026-10-24 every run read the old tree until the trees were
+relocated (package reference-relocate,
+`workspace/reports/engine-v2/reference-relocate/`: inventory, scripts, evidence).
+`references.py run` therefore refuses, before linking or loading anything, a
+MadLoop export, `LOOP_LIBS` archive, provider tree or (recursive) library
+RUNPATH entry outside `--reference-root` (default `$LOOP_REFERENCE_ROOT`;
+`run_required.sh` passes it) or the system prefixes (`provider_paths.py`; a
+path outside is judged by its text and never opened, symbolic links are
+followed one component at a time). Without a configured root it warns and
+does not check. OpenLoops runs with `OpenLoopsPath` set to the given tree, so
+its process libraries never come from a compiled-in path. The NJet runner
+checks its build the same way (the build directory and the reference root).
+
 ### Matched settings
 
 Both schemes: Feynman gauge, all widths zero (stable top; the complex-mass
