@@ -1,15 +1,18 @@
 # SPDX-License-Identifier: 0BSD
-"""Explicit prepared loop_sm four-gluon continuation, without a model certificate."""
+"""Explicit prepared loop_sm four-gluon continuation, without a model certificate.
+
+Test support (moved out of ``src/pyamplicol/loops``, genericity audit m10):
+no production route imports it."""
 
 from __future__ import annotations
 
 from dataclasses import replace
 
-from .._internal.physics.symbols import symbols
-from .counterterms import prepare_counterterm_model
-from .model import CovariantKernelCatalogue
-from .qcd_r2_color import prepare_qcd_four_gluon_r2
-from .source_color import SourceColorContinuation
+from pyamplicol._internal.physics.symbols import symbols
+from pyamplicol.loops.counterterms import prepare_counterterm_model
+from pyamplicol.loops.model import CovariantKernelCatalogue
+from pyamplicol.loops.qcd_r2_color import prepare_qcd_four_gluon_r2
+from pyamplicol.loops.source_color import SourceColorContinuation
 
 
 def prepare_loop_sm_four_gluon_color(prepared, continuation):

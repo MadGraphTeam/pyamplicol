@@ -59,6 +59,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:  # the ``tools`` package, run as a script
+    sys.path.insert(0, str(ROOT))
 OUTPUT = ROOT / "tests/fixtures/loop/legacy/observables"
 # carrier label -> (arithmetic, decimal digits)
 CARRIERS = {"double": ("double", 16), "arbitrary-200": ("arbitrary", 60)}
@@ -259,8 +261,10 @@ def _model(ufo: Path, root: Path, control: Control) -> Path:
     also the committed QCD colour continuation (as
     ``examples/loop/source_colour/prepare_model.py`` declares it)."""
 
-    from pyamplicol.loops.model_compatibility import prepare_loop_sm_scalar_declarations
     from pyamplicol.models.loading import compile_model_source
+    from tools.loop_reference.model_compatibility import (
+        prepare_loop_sm_scalar_declarations,
+    )
 
     model = compile_model_source(
         str(ufo), restriction="no_b_mass", cache_dir=root / "model-cache"
