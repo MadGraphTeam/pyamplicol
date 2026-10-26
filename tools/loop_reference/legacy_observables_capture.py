@@ -259,8 +259,10 @@ def _model(ufo: Path, root: Path, control: Control) -> Path:
     also the committed QCD colour continuation (as
     ``examples/loop/source_colour/prepare_model.py`` declares it)."""
 
-    from pyamplicol.loops.model_compatibility import prepare_loop_sm_scalar_declarations
     from pyamplicol.models.loading import compile_model_source
+    from tools.loop_reference.model_compatibility import (
+        prepare_loop_sm_scalar_declarations,
+    )
 
     model = compile_model_source(
         str(ufo), restriction="no_b_mass", cache_dir=root / "model-cache"
