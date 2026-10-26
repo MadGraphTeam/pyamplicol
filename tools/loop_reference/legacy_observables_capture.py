@@ -59,6 +59,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:  # the ``tools`` package, run as a script
+    sys.path.insert(0, str(ROOT))
 OUTPUT = ROOT / "tests/fixtures/loop/legacy/observables"
 # carrier label -> (arithmetic, decimal digits)
 CARRIERS = {"double": ("double", 16), "arbitrary-200": ("arbitrary", 60)}
