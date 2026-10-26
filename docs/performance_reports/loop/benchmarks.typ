@@ -901,14 +901,14 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
   if id == "integrated" [#inputs-text(x) per-point inputs on `loop` (G1 at #raw(x.revision))]
   else [#inputs-text(x) per-point inputs on #raw(x.branch) #raw(x.revision) (#lab(x)#if x.at("integration", default: none) != none [ as #x.integration])]
 }
-#grid(columns: (1fr, 1fr), gutter: 8pt,
+#grid(columns: (1.1fr, 1fr), gutter: 8pt,
   box-note[
     #set par(justify: false)
     *On `loop`* (engine #ms.engine_revision\; merges since #ms.previous_loop#if ms.at("previous_engine", default: none) != none [, engine #ms.previous_engine])
     #v(-0.2em)
     #set text(8.2pt)
-    #table(columns: (auto, auto, 1fr), stroke: none, inset: (x: 2pt, y: 2.2pt),
-      ..ms.integrated.map(r => (raw(r.sha), text(weight: "semibold", r.wp), [*#r.title.*])).flatten())
+    #table(columns: (auto, auto, 1fr), stroke: none, inset: (x: 2pt, y: 1.9pt),
+      ..ms.integrated.map(r => (raw(r.sha), text(weight: "semibold", r.wp.split(" ").last()), [*#r.title.*])).flatten())
     #v(-0.3em)
     #text(8.2pt)[*Before (#if ms.at("previous_engine", default: none) != none [engine #ms.previous_engine] else [#ms.previous_loop]):* #ms.already_on_loop.
       *Native build* #raw(ms.native_build.name) (digest #raw(ms.native_build.digest)…)#if g.slice_revision.slice(0, 8) != ms.engine_revision.slice(0, 8) [; G1 ran on #raw(g.slice_build) (engine #raw(g.slice_revision))].]
@@ -945,37 +945,39 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
   }),
 )
 
-#grid(columns: (1fr, 1fr), gutter: 8pt,
+#grid(columns: (1.1fr, 1fr), gutter: 8pt,
   box-note(fill: white, stroke: 0.6pt + luma(205), breakable: false)[
     #set par(justify: false)
     *In development* (branches, not on `loop`; HANDOFF §6)
     #set text(8.3pt)
     - *Rust phase 1* (HANDOFF §0.4): A0–A4 are on `loop`, A4 switched on (the native DAG builder is the production
-      route for the loop blocks and the counterterm program; counterterm-route parity with the site oracle met). Next
-      the switches of seeds (B, `native-seeds`), cells (C, `native-cells`) and lowering (D, `native-lowering`).
-    - *generation-scale-2:* every stored-process call without regeneration (`"uv"`/`"ir"`, correlated, resolved), SDK v4
-      runtime, native Catani operator, native Ward inputs (the seven-gluon Ward check), and the genericity audit's M1
-      and M2 (right).
+      route for the loop blocks and the counterterm program; counterterm-route parity with the site oracle met), and
+      D's phase 1 part 1 (`native-lowering`: the Rust plan writer, the bounded binary plan encoding, D1 leaf weights).
+      Next the switches of seeds (B, `native-seeds`) and cells (C, `native-cells`), both under audit, and D3, the
+      plan lowering in Rust (about 55 s at seven gluons, target under 15 s).
+    - *generation-scale-2* (under audit): every stored-process call without regeneration (`"uv"`/`"ir"`, correlated,
+      resolved), SDK v4 runtime, native Catani operator, native Ward inputs (the seven-gluon Ward check), the binary
+      plan member in artifacts, and the genericity audit's M1 and M2 (right).
     - *Electroweak* (WP3.2): $W$, $Z$, Goldstone and ghost loop lines in Feynman gauge with the Goldstone–vector
       mixing counterterms (EWI-4b, `ew-gauge`, in progress); the counterterm lowering within the plan's 30 s
-      (EWI-3R; 259 s cold in measurement M1); then lepton-line signs (EWI-5), EW native inputs (EWI-N), the EW
-      ladder and the target (EWI-7, EWI-9), the complex-mass scheme (EWI-10).
-    - *Genericity and determinism:* `genericity-fixes` (M3, and the audit's renamed-model harness: renamed orders,
-      particles, PDG codes and parameters as a durable test); `model-determinism` (compiled-model bytes independent
-      of the process history).
+      (EWI-3R; 259 s cold in measurement M1); then lepton-line signs (EWI-5, `ew-leptons`, free to start since
+      `native-lowering`), EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9), the complex-mass
+      scheme (EWI-10).
+    - *Genericity:* `genericity-fixes` (in a fix round): M3, and the audit's renamed-model harness (renamed orders,
+      particles, PDG codes and parameters as a durable test).
   ],
   box-note(fill: white, stroke: 0.6pt + luma(205), breakable: false)[
     #set par(justify: false)
     *Missing or incomplete*
     #set text(8.3pt)
     - Electroweak loops (WP3.2, in development): $g g -> t overline(t) e^- e^+ g$ (EW) is not generated; it needs the
-      massive EW loop lines (EWI-4b), lepton-line signs (EWI-5) and EW native inputs. On `loop`: typed refusals of EW
+      massive EW loop lines (EWI-4b, in progress), lepton-line signs (EWI-5) and EW native inputs. On `loop`: typed refusals of EW
       requests with a non-zero width or an external photon, the QED Catani operator, EW fermion lines (more than one
       colour-singlet fermion line refused until EWI-5), Feynman-gauge trees (EWI-4a) and the UFO's EW counterterms
       with MadLoop's branch-side convention (EWI-0, EWI-3).
-    - *Genericity audit* (DECISIONS 2026-10-26 \~00:20; no process-keyed branch found), three majors being fixed:
-      *M1* any `NotImplementedError` of the native tree export silently turns an artifact into a plan-only one
-      (`regenerated-at-load`, Python per-point inputs), to become a typed, recorded refusal (generation-scale-2);
+    - *Genericity audit* (DECISIONS 2026-10-26 \~00:20; no process-keyed branch found), three majors, their fixes not
+      yet on `loop`: *M1* any `NotImplementedError` of the native tree export silently makes an artifact plan-only
+      (`regenerated-at-load`), to become a typed, recorded refusal (generation-scale-2);
       *M2* derived (internal) masses are not inputs of the native parameter program (e.g. $M_W$ of `loop_sm`), so
       such processes take M1's route with $p^2$ invariants (generation-scale-2); *M3* generation upper-cases
       coupling-order names while the loop request scope matches the model's spelling, so a model with lower-case
@@ -986,12 +988,10 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
       generation-scale-2's next run; with Python per-point Ward inputs one evaluation is estimated at 46–69 h).
       #let g7s = nat-c(gproc("gg_ggggg")).generation
       #let g7l = cfg(gproc("gg_ggggg"), "native/lc")
-      Generation of $g g -> g g g g g$ (G1's stored process, full colour):
-      #minutes(g7s.generate.seconds + g7s.export.seconds) with the plan export, peak
-      #fixed(calc.max(g7s.generate.peak_gib, g7s.export.peak_gib), 1) GiB (@sevenglue), inside addendum H, to be made
-      lean; its LC plan keeps all #group(g7l.structure.families) families (#group(nat-c(gproc("gg_gggg")).structure.families) → #group(cfg(gproc("gg_gggg"), "native/lc").structure.families) at six gluons)
-      and generates in #minutes(g7l.generation.generate.seconds) against #minutes(g7s.generate.seconds) at full colour
-      (investigation routed to `native-cells`).
+      Generation of $g g -> g g g g g$ at full colour: #minutes(g7s.generate.seconds + g7s.export.seconds) with the
+      plan export, peak #fixed(calc.max(g7s.generate.peak_gib, g7s.export.peak_gib), 1) GiB (@sevenglue), inside
+      addendum H, to be made lean; its LC plan keeps all #group(g7l.structure.families) families and generates more
+      slowly (@lc; investigation: `native-cells`).
     - Prepared artifacts (addendum G): relocatable since `7db32901` (no host strings, SymJIT applications recompiled at
       load, bitwise binary64 after relocation), but correlated, resolved and flavour calls, the `"uv"`/`"ir"` selections
       and the plan-only artifacts of M1 still regenerate on first use (generation-scale-2), and the parameter program's
@@ -1059,11 +1059,15 @@ The configurations:
   native executor (16 lanes), regenerates nothing over 128 evaluations, and
   returns bitwise the timed run's binary64 values at all 128 stream points.
   #if g.slice_revision.slice(0, 8) != ms.engine_revision.slice(0, 8) [This milestone did not re-time it on the
-  engine now on `loop`, #raw(ms.engine_revision) (#ms.integrated.filter(r => r.sha != "46f72f20").map(r => [#r.wp.replace("WP3.1 ", "").replace("WP3.2 ", "")#if r.title.contains(":") [ #r.title.split(":").first()]]).join([, ], last: [ and ])\; build
-  #raw(ms.native_build.name)); the integration's head check of the $2 -> 5$ rows on it ($B = 16$, one pinned
-  core; #gname("uux_emepddxg") at full and leading colour, #gname("gg_ttxemepg_qcd") and #gname("uux_ggggg") at
-  full colour, #gname("uux_emepggg") at leading colour; not timing runs) returned bitwise the timed binary64
-  values at 16 of 16 points in every job.]
+  engine now on `loop`, #raw(ms.engine_revision) (#ms.integrated.filter(r => r.sha != "46f72f20").map(r => [#r.wp.replace("WP3.1 ", "").replace("WP3.2 ", "")#if r.title.contains(":") [ #r.title.split(":").first().replace(", ", "/")]]).join([, ], last: [ and ])\; build
+  #raw(ms.native_build.name)). `measure-g1-7leg`'s integration checked the $2 -> 5$ rows on its head `db13c260`
+  (build `loop-native-v2-slice-a8409830`; $B = 16$, one pinned core; #gname("uux_emepddxg") at full and leading
+  colour, #gname("gg_ttxemepg_qcd") and #gname("uux_ggggg") at full colour, #gname("uux_emepggg") at leading
+  colour; not timing runs): bitwise the timed binary64 values at 16 of 16 points in every job. The four merges
+  after it (reference-relocate, model-determinism, native-lowering, onshell-consistency) were not checked on the
+  G1 rows; their records report the plan JSON byte-identical and the numerators bitwise equal
+  (native-lowering), and plans and full-colour values of #gname("gg_gg") and #gname("uux_ddxg") bitwise equal
+  while binary64 model parameters moved by at most 8 ulp, EW values in their last bits (model-determinism).]
   Its binary64 values equal those of G-int (`4e9b5a9e`) and of the
   development campaign of #rev-list(l1-revs) (`work/v2-generation-scale`
   #rev-list(ms.development.revisions.keys().filter(r => r not in l1-revs)) plus
@@ -2029,14 +2033,14 @@ and so is the check of the timed configuration against NJet's ten points (@tab:s
   ([Colour and spin correlations], "supported", [Directed colour histories at LC/NLC/FC, spin sources, resolved helicities, flavour aliases, Ward sources (WP2.5). Seven-leg directed LC/NLC tables need the Rust seed tables (WP3.1).]),
   ([Per-order partials], "supported", [Every squared coupling order at tree level and at one loop, mixed Born orders, per-correction loop orders.]),
   ([Poles at runtime], "supported", [`poles = "all" | "none" | "uv" | "ir" | "split"` (WP2.10, on `loop` since 24 October): finite-only mode with the finite part bitwise unchanged and the pole work skipped; `"uv"` and `"ir"` with the user's semantics of 23 October; the IR poles sum one Catani operator per correction, QED included (ew-poles, `8b52179b`; a correction without a prediction gives none; the prediction for mixed QCD×EW sectors is still misleading, about 2 % in the single pole, open in WP3.2). The UV residue comes from an interim local module until the NinjaRS re-pin; a `"uv"` estimate needs a rotation check.]),
-  ([Stability estimates], "supported", [Rotation checks (any number, 0 = estimate absent), reduction direction, exact rescaling, in any combination; no automatic escalation (WP2.3).]),
+  ([Stability estimates], "supported", [Rotation checks (any number, 0 = estimate absent), reduction direction, exact rescaling, in any combination; no automatic escalation (WP2.3). Generation's post-build validation re-checks a binary64 miss alone against a 32-digit reference: double-double must agree at the same tolerance, binary64 Borns at the tolerance and binary64 virtuals within the larger of the tolerance and their own estimate (one exact rotation and the reduction direction; an estimate above $10^(-9)$ or absent refuses), else generation refuses; an accepted point is logged (onshell-consistency, `4fc72e39`).]),
   ([Precision carriers], "supported", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; since G-int the native per-point inputs run in binary64, DoubleFloat and arbitrary precision (DESIGN §5.5). Since `7db32901` binary64 runs SymJIT plane applications and needs no Symbolica licence; DoubleFloat and arbitrary precision run under pyAmpliCol's library key. Since precision-ap (`a8409830`) a master-integral invariant of one external leg is that leg's squared mass at the point's parameters: DoubleFloat and arbitrary-precision virtuals were O(1) wrong at binary64-rounded massive momenta and now agree with a MadLoop quadruple-precision run within $10^(-15)$ (and DoubleFloat massive spinors along $-z$ are fixed); a derived leg mass (e.g. $M_W$ of `loop_sm`) is not bound yet (genericity M2, generation-scale-2).]),
   ([Native executor, schedules], "supported", [Rust, 16 lanes (also for a one-point call, a G1 lever), threads; native tree closures in lanes of points with runtime AVX-512/AVX2 widths (lc-perf); G1 decision on the schedule-dependent stages (@tab:g1bm, provisional until compiled trees): M for pure-gluon LC from $n = 6$, B for every other class at $n <= 6$; F as oracle. The NinjaRS reduction runs serially. Development report: stage times, modelled kernel work, master-integral time.]),
-  ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; the artifact stores the native process (`point_inputs = "native-v2"`): a plain evaluation loads without any generation call. Since `7db32901` (addendum G) its SymJIT -O2 applications are stored as IR and recompiled at load for the loading CPU (AVX and FMA3 required), no host string is embedded, and binary64 values are bitwise equal after relocation to another machine, user and path; the parameter program's SymJIT bytes differ per compilation (a random external-call tag, values unaffected; upstream fix filed). Correlated, resolved and flavour calls and the `"uv"`/`"ir"` selections still regenerate the slice on first use, and processes the native export refuses keep `regenerated-at-load`, silently (genericity M1: to become a typed, recorded refusal; generation-scale-2). The Rust/C/C++/Fortran SDK refuses v4 until then.]),
+  ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; the artifact stores the native process (`point_inputs = "native-v2"`): a plain evaluation loads without any generation call. Since `7db32901` (addendum G) its SymJIT -O2 applications are stored as IR and recompiled at load for the loading CPU (AVX and FMA3 required), no host string is embedded, and binary64 values are bitwise equal after relocation to another machine, user and path; the parameter program's SymJIT bytes differ per compilation (a random external-call tag, values unaffected; upstream fix filed). Since model-determinism (`4e9262b5`) the compiled model, and with it the artifact's model member and digest, no longer depends on the process history. Since native-lowering (`79f2a5bd`, D phase 1 part 1) the plan JSON is written by the Rust plan model, byte-identical to the Python writer (kept as oracle); its bounded binary columnar encoding (23.0 MB against 193.6 MB of JSON at $g g -> g g g g g$, full colour) becomes the artifact's plan member with generation-scale-2's writer. Correlated, resolved and flavour calls and the `"uv"`/`"ir"` selections still regenerate the slice on first use, and processes the native export refuses keep `regenerated-at-load`, silently (genericity M1: to become a typed, recorded refusal; generation-scale-2). The Rust/C/C++/Fortran SDK refuses v4 until then.]),
   ([Counterterms (model UV, $R_2$)], "supported", [Plain tree vertices of the recursion inserted exactly once (WP2.2, a18b7599; addendum J, b4d76cc3), admitted by coupling orders and the public `particle_veto`; no witness table or loop matching in production. An unlowerable counterterm vertex that no tree of the request reaches is inert and recorded in the artifact; a reachable one is refused. Site closure is the test oracle. Per point they are formed natively (G-int), the Python stages kept as oracle; generation of the counterterm route has output-identical savings (ct-perf, `201bece5`: compile memos, a content-addressed lowered-model cache), and since A4 (`1b13005a`) the native DAG builder is the production route for the loop blocks and the counterterm program (its counterterm emission byte-identical to the Python oracle; 11 listed features keep a recorded per-request Python fallback, any other native failure fails closed), at parity with the site oracle. The UFO's EW counterterms (ew-ct, `392d3f4a`) are lowered through the model's own helper bodies with MadLoop's branch side for exactly real arguments: every Laurent piece of MadLoop's model library equals pyAmpliCol's to $3.7 times 10^(-15)$ in binary64 and $6.0 times 10^(-31)$ in double-double (against MadLoop's quadruple precision); the lowering takes 259 s cold (plan: 30 s, EWI-3R).]),
   ([Direct $R_2$], "deferred", [A bonus by the user's rule; bounded controls only.]),
-  ([Electroweak, complex mass], "progress", [WP3.2. On `loop`: typed refusals of EW requests with a non-zero width or an external photon (until the complex-mass scheme and $alpha(0)$ per photon); the QED Catani operator (`8b52179b`); EW fermion lines (`1d27426b`): Dirac–Weyl EW vertices, $W$ vertices along the fermion flow, conjugate readings, lepton- and colour-singlet-rooted processes, mixed-order Born with $W$ exchange, the sites oracle equal to the recursion at $W$ vertices; more than one colour-singlet fermion line refused until EWI-5; 't Hooft–Feynman-gauge trees with massive vector bosons and explicit Goldstones (EWI-4a, `6c87e276`; Feynman = unitary and Slavnov–Taylor identities to $10^(-13)$), which fixed two model-compiler defects that are also on `main`: a lone chiral projector had the opposite chirality (spinor-chain order in `models/tensors.py`, `3ae34543`) and `loop_qcd_qed_sm` dropped the Goldstone flag of $G^-$; the UFO's EW counterterms (EWI-0, EWI-3, above). In development: Feynman-gauge loop lines (EWI-4b), lepton-line signs (EWI-5), EW native inputs (EWI-N), the EW ladder and the target; CMS later.]),
-  ([Required set], "progress", [Seven of eight generate and agree with their references in all coefficients with native inputs (@tab:validation, validated on the WP3.1 branch before its integration), $g g -> g g g g g$ against NJet's double-double values (its binary64 points 4 and 8 at $O(10^(-8))$ accepted by the user, within the estimate); the generator is on `loop` since G-int, and G1 times all seven in batches at full and leading colour (@g1; the $2 -> 5$ rows since this milestone, `measure-g1-7leg`). The seven-gluon Ward check is #ms.status_notes.notes.gg_ggggg.ward_status. The EW target is in development (WP3.2).]),
+  ([Electroweak, complex mass], "progress", [WP3.2. On `loop`: typed refusals of EW requests with a non-zero width or an external photon (until the complex-mass scheme and $alpha(0)$ per photon); the QED Catani operator (`8b52179b`); EW fermion lines (`1d27426b`): Dirac–Weyl EW vertices, $W$ vertices along the fermion flow, conjugate readings, lepton- and colour-singlet-rooted processes, mixed-order Born with $W$ exchange, the sites oracle equal to the recursion at $W$ vertices; more than one colour-singlet fermion line refused until EWI-5; 't Hooft–Feynman-gauge trees with massive vector bosons and explicit Goldstones (EWI-4a, `6c87e276`; Feynman = unitary and Slavnov–Taylor identities to $10^(-13)$), which fixed two model-compiler defects that are also on `main`: a lone chiral projector had the opposite chirality (spinor-chain order in `models/tensors.py`, `3ae34543`) and `loop_qcd_qed_sm` dropped the Goldstone flag of $G^-$; the UFO's EW counterterms (EWI-0, EWI-3, above). In development: Feynman-gauge loop lines (EWI-4b, in progress), lepton-line signs (EWI-5), EW native inputs (EWI-N), the EW ladder and the target; CMS later.]),
+  ([Required set], "progress", [Seven of eight generate and agree with their references in all coefficients with native inputs (@tab:validation, validated on the WP3.1 branch before its integration), $g g -> g g g g g$ against NJet's double-double values (its binary64 points 4 and 8 at $O(10^(-8))$ accepted by the user, within the estimate); the generator is on `loop` since G-int, and G1 times all seven in batches at full and leading colour (@g1; the $2 -> 5$ rows since this milestone, `measure-g1-7leg`). The seven-gluon Ward check is #ms.status_notes.notes.gg_ggggg.ward_status. The EW target is in development (WP3.2). The provider reference trees no longer read the old working root (reference-relocate, `48aeb123`; provider values bitwise, and the toolkit refuses provider files outside the configured reference root).]),
   ([Performance gates], "progress", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) without a matched provider: no gate]\; $B = 1$ needs lane adaptation (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history). Missing: provider protocol-mode columns.]),
   ([$g g -> 6g$], "deferred", [No $2 -> 6$ work until the $2 -> 5$ plan is complete (user, 23 October).]),
 )
@@ -2100,7 +2104,7 @@ recursions that share all work (@fig:pipeline).
     stage-box([Families by loop-prefix recursion], [pyAmpliCol; native in Rust], "plain"), arr,
     stage-box([Skeleton tries B, merged graph M], [pyAmpliCol, rusticol-core], "plain"), arr,
     stage-box([Exact seed tables $K[c,b]$], [colour flow, Laurent in $N_c$], "plain"), arr,
-    stage-box([Counterterm program; plan v4], [CT recursion; native DAG builder (A4)], "plain"),
+    stage-box([Counterterm program; plan v4], [CT recursion, native DAG (A4); Rust plan writer (D)], "plain"),
     lane[evaluation],
     stage-box([Exact inputs, invariant table], [Rust executor], "nat"), arr,
     stage-box([Blocks, Born, CT scalars], [Rust executor, SymJIT planes; Python as oracle], "nat"), arr,
@@ -2206,7 +2210,8 @@ $2 op("Re")$ of $i slash (16 pi^2)$ times the reduced family sum, plus local UV,
 field terms, per sector and column, with optional rotation, reduction-direction and rescaling estimates
 and the finite-only mode. The public API selects `loop_engine = "v2"` from
 TOML, CLI or Python and stores plan v4 as a relocatable PACBIN member (zlib
-JSON of exact kernel term lists, no compiled code, digest checked at load) and
+JSON of exact kernel term lists, written by the Rust plan model since
+`79f2a5bd`, no compiled code, digest checked at load) and
 the native process (`point_inputs = "native-v2"`: the tree program with the
 Born, counterterm and field components, their saved exact evaluators and the
 binary64 SymJIT applications of every tree kernel and of the parameter
@@ -2261,8 +2266,9 @@ without regenerating the process, on another machine, user and path too.
     integration merges of #ms.engine_revision since #ms.previous_loop
     (#ms.integrated.map(r => [#r.wp.split(" ").last() #raw(r.sha)]).join([, ])\; commit subjects "Integrate work/v2-…")\;
     `workspace/reports/engine-v2/slice-status.md` (integration blocks,
-    DECISIONS 2026-10-23/24/25/26, the milestone pushes m1025a of 2026-10-25 \~13:45 UTC and m1025b of 2026-10-26 \~00:50 UTC
-    (pin #raw(ms.engine_revision), no G1 re-measure; the head check of the $2 -> 5$ rows on it: slice-status UPDATE
+    DECISIONS 2026-10-23/24/25/26, the milestone push m1025a of 2026-10-25 \~13:45 UTC, the m1025b attempt of 2026-10-26
+    \~00:50 UTC (pin `db13c260`, not pushed: its gate failed, DECISIONS \~01:35) and its replacement m1025c of \~06:35 UTC
+    (pin #raw(ms.engine_revision), no G1 re-measure; the head check of the $2 -> 5$ rows on `db13c260`: slice-status UPDATE
     2026-10-26 \~00:35, logs `workspace/tmp/integrate-measure-g1-7leg/hc/`); the user's gate decision of 2026-10-24, 16:05 UTC, is
     recorded in `data/milestone.json` `gate_decisions` and no longer applies after the
     re-measure; the user's rules of 2026-10-24, 22:35 UTC — uncoloured generation,
@@ -2275,7 +2281,9 @@ without regenerating the process, on another machine, user and path too.
     WP3.2 increments and dependencies: `workspace/reports/engine-v2/wp32/PLAN.md`; the EW counterterm comparison with
     MadLoop and measurement M1: `wp32/M1-ew-ct.md` and DESIGN §6.1; the genericity audit:
     `workspace/reports/engine-v2/genericity-audit/REPORT.md`; precision-ap's MadLoop comparison:
-    `workspace/reports/engine-v2/precision-ap/`.
+    `workspace/reports/engine-v2/precision-ap/`; reference-relocate's inventory and evidence:
+    `workspace/reports/engine-v2/reference-relocate/`; model-determinism: DESIGN WP2.5; native-lowering: DESIGN §12.1
+    and WP3.1 (Rust migration D); onshell-consistency: DESIGN §11.1 and `docs/user/configuration.md`.
   - *@tab:summary, @fig:gate:* `data/summary.json`, written by
     `scripts/build_summary.py` from `data/g1.json`, `data/measured.json`,
     `data/milestone.json` and `tools/loop_benchmark/processes.json` by its

@@ -35,12 +35,14 @@ the committed harness since that package's integration): the report states
 this deviation from that revision's harness in the gate-G1 section and the
 status page, and `g1.json` in `timing_protocol`; the 2 → 5 rows
 (`measure-g1-7leg`) were timed on the same engine and build with the freeze
-in the harness itself. Milestone m1025b (2026-10-26, engine `db13c260` on
-`loop`, build `loop-native-v2-slice-a8409830`) did not re-measure G1: when
+in the harness itself. Milestone m1025c (2026-10-26, engine `4fc72e39` on
+`loop`, build `loop-native-v2-slice-79f2a5bd`; it replaces the m1025b
+attempt at `db13c260`, which was not pushed) did not re-measure G1: when
 `milestone.json` `engine_revision` differs from `g1.json` `slice_revision`,
 the title line states once that every pyAmpliCol timing is G1's on that
-revision and build (`slice_build`), and the gate-G1 section names the
-integration's head check on the new engine. Then a status page (what is on `loop`, the
+revision and build (`slice_build`), and the gate-G1 section names the head
+check of the 2 → 5 rows by `measure-g1-7leg`'s integration (on `db13c260`)
+and the merges after it that no G1 row check covers. Then a status page (what is on `loop`, the
 gate, what is in development or missing, the timing protocol), the gate-G1
 details (provider grid with B = 1 and the largest batch, gate bands, stage
 split, levers, leading colour, throughput and recalibration, schedule B
@@ -202,7 +204,7 @@ Table 1 once, in its column header).
   `4e9b5a9e` added to `milestone.json` `ancestry` with its five ancestors,
   `loop`'s configuration supplies every cell of the G1 rows (likewise at
   milestone m1025a: `1d27426b` added with its six ancestors; at milestone
-  m1025b `db13c260`, the engine on `loop`, with its seven, although no G1
+  m1025c `4fc72e39`, the engine on `loop`, with its seven, although no G1
   campaign ran there); the 2 → 5 rows kept the development validation
   records (made on the branch before its integration,
   `development.integrated_at`) until the seven-leg G1 rows
