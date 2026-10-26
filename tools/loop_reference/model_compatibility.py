@@ -35,6 +35,13 @@ def _constant(record: dict) -> Any:
     return value if value.get_type() == AtomType.Num else None
 
 
+_COUNTS = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight")
+
+
+def _count(number: int) -> str:
+    return _COUNTS[number] if number < len(_COUNTS) else str(number)
+
+
 def prepare_loop_sm_scalar_declarations(raw: RawLoopModel):
     """Repair scalar vertices that reference a constant tensor of too few slots.
 
@@ -105,7 +112,9 @@ def prepare_loop_sm_scalar_declarations(raw: RawLoopModel):
             f"(found {len(repairs)})"
         )
     ((vertex, old, new),) = repairs
-    arity = len(new["fields"]["spins"])
+    # The arity in words: the four-scalar diagnostic stays byte-identical to
+    # the one recorded in saved artifacts (their raw loop model).
+    arity = _count(len(new["fields"]["spins"]))
     diagnostic = {
         "profile": PROFILE,
         "vertex": [vertex["id"], vertex["name"]],
