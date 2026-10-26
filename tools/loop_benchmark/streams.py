@@ -233,6 +233,14 @@ def binary64(stream: dict[str, Any], count: int) -> list[list[list[str]]]:
     ]
 
 
+def fixture_name(key: str) -> str:
+    """The reference fixture of ``key`` (``tests/fixtures/loop/required``):
+    the specification's ``reference_fixture`` (e.g. NJet's
+    ``gg_ggggg_njet``), else the required fixture of the same name."""
+
+    return spec(key).get("reference_fixture", key)
+
+
 def campaign_agreement(key: str, stream: dict[str, Any]) -> bool | None:
     """Whether the stream starts with the committed fixture's points (None
     without a fixture)."""

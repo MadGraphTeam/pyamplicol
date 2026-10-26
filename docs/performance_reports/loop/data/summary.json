@@ -2,7 +2,7 @@
  "what": "Table 1 of docs/performance_reports/loop/benchmarks.typ, written by scripts/build_summary.py; do not edit by hand",
  "meta": {
   "date": "2026-10-25",
-  "host": "AMD EPYC 9754, shared host, pinned cores without SMT siblings (178 and 189: one job per CCX of the cores 176-191 reserved for G1, DECISIONS 2026-10-25 ~13:45)",
+  "host": "AMD EPYC 9754, shared host, pinned cores without SMT siblings: the 2->2 to 2->4 rows on 178 and 189 (one job per CCX of the cores 176-191 reserved for G1, DECISIONS 2026-10-25 ~13:45); the 2->5 rows on 130, 138, 156 and 174 (one job per CCX of the cores 128-175 of measure-g1-7leg; unpinned processes of other jobs also ran on some of these CCXs, sampled every 5 min in the package's records/logs-f2/hostload-f2.txt)",
   "gate_factor": 1.3,
   "engine_on_loop": "1d27426b",
   "native_build_on_loop": "loop-native-v2-slice-7db32901",
@@ -31,6 +31,11 @@
      "newer": "integrated 1d27426b",
      "older": "development_records 6f5a64cc",
      "basis": "git merge-base --is-ancestor 6f5a64cc 1d27426b (milestone.json ancestry)"
+    },
+    {
+     "newer": "integrated 1d27426b",
+     "older": "development_records fef92189",
+     "basis": "git merge-base --is-ancestor fef92189 1d27426b (milestone.json ancestry)"
     }
    ],
    "source": "scripts/build_summary.py MAIN_RULE, VALIDATION_RULE, GENERATION_RULE, Recency; ancestry: milestone.json ancestry"
@@ -56,7 +61,12 @@
      "uux_emepgg",
      "gg_ttxgg",
      "uux_gggg",
-     "gg_gggg"
+     "gg_gggg",
+     "uux_emepddxg",
+     "uux_emepggg",
+     "gg_ttxemepg_qcd",
+     "uux_ggggg",
+     "gg_ggggg"
     ],
     "main_cells": {
      "generation": [
@@ -69,7 +79,12 @@
       "uux_emepgg",
       "gg_ttxgg",
       "uux_gggg",
-      "gg_gggg"
+      "gg_gggg",
+      "uux_emepddxg",
+      "uux_emepggg",
+      "gg_ttxemepg_qcd",
+      "uux_ggggg",
+      "gg_ggggg"
      ],
      "validation": [
       "gg_gg",
@@ -81,7 +96,12 @@
       "uux_emepgg",
       "gg_ttxgg",
       "uux_gggg",
-      "gg_gggg"
+      "gg_gggg",
+      "uux_emepddxg",
+      "uux_emepggg",
+      "gg_ttxemepg_qcd",
+      "uux_ggggg",
+      "gg_ggggg"
      ],
      "full_colour": [
       "gg_gg",
@@ -93,7 +113,12 @@
       "uux_emepgg",
       "gg_ttxgg",
       "uux_gggg",
-      "gg_gggg"
+      "gg_gggg",
+      "uux_emepddxg",
+      "uux_emepggg",
+      "gg_ttxemepg_qcd",
+      "uux_ggggg",
+      "gg_ggggg"
      ],
      "leading_colour": [
       "gg_gg",
@@ -105,7 +130,12 @@
       "uux_emepgg",
       "gg_ttxgg",
       "uux_gggg",
-      "gg_gggg"
+      "gg_gggg",
+      "uux_emepddxg",
+      "uux_emepggg",
+      "gg_ttxemepg_qcd",
+      "uux_ggggg",
+      "gg_ggggg"
      ]
     },
     "source": "g1.json slice_revision, slice_lc_revision, slice_build, date"
@@ -121,73 +151,14 @@
     ],
     "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
     "conditions_short": "shared host under load",
-    "threads": {
-     "6f5a64cc": "8 pinned cores, native stages rayon-parallel",
-     "0ea83af2": "thread count not recorded",
-     "fef92189": "one generation thread"
-    },
-    "records": [
-     {
-      "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
-      "revision": "6f5a64cc",
-      "rows": [
-       "u overline(u) -> e^- e^+ d overline(d) g",
-       "g g -> g g g g g"
-      ]
-     },
-     {
-      "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
-      "revision": "0ea83af2",
-      "rows": [
-       "u overline(u) -> e^- e^+ g g g",
-       "g g -> t overline(t) e^- e^+ g",
-       "g g -> g g g g g"
-      ]
-     },
-     {
-      "record": "DESIGN.md WP3.1 seventh increment (fef92189), 'I5 proper, the interim production route'",
-      "revision": "fef92189",
-      "rows": [
-       "u overline(u) -> g g g g g"
-      ]
-     }
-    ],
-    "main_rows": [
-     "uux_emepddxg",
-     "uux_emepggg",
-     "gg_ttxemepg_qcd",
-     "uux_ggggg",
-     "gg_ggggg"
-    ],
+    "threads": {},
+    "records": [],
+    "main_rows": [],
     "main_cells": {
-     "generation": [
-      "uux_emepddxg",
-      "uux_emepggg",
-      "gg_ttxemepg_qcd",
-      "uux_ggggg",
-      "gg_ggggg"
-     ],
-     "validation": [
-      "uux_emepddxg",
-      "uux_emepggg",
-      "gg_ttxemepg_qcd",
-      "uux_ggggg",
-      "gg_ggggg"
-     ],
-     "full_colour": [
-      "uux_emepddxg",
-      "uux_emepggg",
-      "gg_ttxemepg_qcd",
-      "uux_ggggg",
-      "gg_ggggg"
-     ],
-     "leading_colour": [
-      "uux_emepddxg",
-      "uux_emepggg",
-      "gg_ttxemepg_qcd",
-      "uux_ggggg",
-      "gg_ggggg"
-     ]
+     "generation": [],
+     "validation": [],
+     "full_colour": [],
+     "leading_colour": []
     },
     "source": "measured.json required_native; label: milestone.json development; conditions: milestone.json development_records"
    },
@@ -235,6 +206,25 @@
     "applies": "a process whose pyAmpliCol batched time per point is below 5 ms has no blocking gate: its ratio and band stay as measured and are shown, its verdict is the label, at every batch size of that configuration (B = 1 included); the batched time is the configuration's own at its largest batch above 1, and for a configuration timed at B = 1 only (the one-lane runs) the configuration on loop's; it takes precedence over a decision; the exact-rational vs binary64 input question is therefore moot and the protocol stays",
     "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts)"
    }
+  },
+  "validation_decisions": {
+   "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-25 ~20:05 UTC (USER decision, binding: the O(1e-8) relative binary64 discrepancy of g g > g g g g g against NJet is acceptable; mark the accepted points explicitly, keep the 2e-8 fixture tolerance, not a defect to route)",
+   "what": "user acceptances of the points where a validation check exceeds its tolerance: the check, its tolerance and its passed: false stay as measured (never widened); the accepted points are marked and shown with the label instead of a failure. scripts/build_summary.py (_accepted) requires the accepted points to be exactly the check's points above the tolerance, each within pyAmpliCol's binary64 estimate E there and with pyAmpliCol's double-double value on the shown reference within the tolerance, and stops otherwise",
+   "accepted": [
+    {
+     "process": "gg_ggggg",
+     "configuration": "native/full",
+     "fixture": "gg_ggggg_njet",
+     "points": [
+      4,
+      8
+     ],
+     "tolerance": 2e-08,
+     "label": "accepted (user 2026-10-25): O(1e-8) binary64, within the estimate, DD = NJet",
+     "short": "accepted (user 2026-10-25)",
+     "reason": "binary64 deviations from NJet's double-double values 3.73e-8 (fixture point 4) and 2.2e-8 (point 8) at the fixture's mu_R = 1000 GeV, each within pyAmpliCol's binary64 estimate E (rotation and reduction direction); pyAmpliCol's double-double values equal NJet's double-double values at both points"
+    }
+   ]
   }
  },
  "groups": [
@@ -288,6 +278,14 @@
       "max_finite": 1.7715394119736425e-12,
       "median_finite": 1.6719840318942113e-14,
       "source": "g1.json processes[gg_gg].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 4,
+       "estimate": 2.9837238839032454e-12,
+       "within_estimate": true,
+       "dd_closest": 9.399912925506945e-14,
+       "revision": "2265a9f7",
+       "source": "g1.json processes[gg_gg].stability (native/full)"
+      },
       "considered": [
        {
         "configuration": "integrated",
@@ -477,11 +475,21 @@
       "source": "g1.json processes[uux_ddxg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 1,
-       "estimate": 7.1609463589963336e-12,
+       "estimate": 7.42363579719006e-12,
        "within_estimate": false,
        "dd_closest": 3.188177722534943e-13,
-       "revision": "39824f9b",
-       "source": "g1.json processes[uux_ddxg].stability (native/full)"
+       "revision": "2265a9f7",
+       "source": "g1.json processes[uux_ddxg].stability (native/full)",
+       "reference_own": {
+        "key": "recola",
+        "short": "Rc",
+        "dd_deviation": 3.2750291935874243e-10,
+        "dd_estimate": 9.883824392830725e-28,
+        "independent": {
+         "key": "madloop",
+         "dd_deviation": 3.188177722534943e-13
+        }
+       }
       },
       "considered": [
        {
@@ -567,7 +575,8 @@
         "limit_seconds": 0.0019699465499999997,
         "measured_status": "pass",
         "rule": "below 5 ms: not gated (user 2026-10-24)",
-        "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+        "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
+        "floor_seconds": 0.005
        },
        "configuration": "integrated",
        "considered": [
@@ -680,11 +689,21 @@
       "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 1,
-       "estimate": 9.16223677316454e-12,
+       "estimate": 1.0244693923956225e-11,
        "within_estimate": false,
        "dd_closest": 2.428328642024099e-13,
-       "revision": "39824f9b",
-       "source": "g1.json processes[uux_uuxg].stability (native/full)"
+       "revision": "2265a9f7",
+       "source": "g1.json processes[uux_uuxg].stability (native/full)",
+       "reference_own": {
+        "key": "recola",
+        "short": "Rc",
+        "dd_deviation": 7.146208078913632e-11,
+        "dd_estimate": 3.5571008779713447e-28,
+        "independent": {
+         "key": "madloop",
+         "dd_deviation": 2.428328642024099e-13
+        }
+       }
       },
       "considered": [
        {
@@ -770,7 +789,8 @@
         "limit_seconds": 0.0038008386,
         "measured_status": "pass",
         "rule": "below 5 ms: not gated (user 2026-10-24)",
-        "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+        "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
+        "floor_seconds": 0.005
        },
        "configuration": "integrated",
        "considered": [
@@ -875,10 +895,10 @@
       "source": "g1.json processes[uux_emepg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 0,
-       "estimate": 1.4042649838622717e-12,
+       "estimate": 1.1542025128657807e-12,
        "within_estimate": true,
        "dd_closest": 7.516482734555493e-15,
-       "revision": "39824f9b",
+       "revision": "2265a9f7",
        "source": "g1.json processes[uux_emepg].stability (native/full)"
       },
       "considered": [
@@ -963,7 +983,8 @@
         "limit_seconds": 0.000947682,
         "measured_status": "pass",
         "rule": "below 5 ms: not gated (user 2026-10-24)",
-        "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+        "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
+        "floor_seconds": 0.005
        },
        "configuration": "integrated",
        "considered": [
@@ -1073,11 +1094,21 @@
       "source": "g1.json processes[uux_ggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 2,
-       "estimate": 1.172467884351517e-12,
+       "estimate": 7.980214771773228e-13,
        "within_estimate": false,
        "dd_closest": 1.3348289027384224e-14,
-       "revision": "39824f9b",
-       "source": "g1.json processes[uux_ggg].stability (native/full)"
+       "revision": "2265a9f7",
+       "source": "g1.json processes[uux_ggg].stability (native/full)",
+       "reference_own": {
+        "key": "openloops",
+        "short": "OL",
+        "dd_deviation": 8.383731466508194e-11,
+        "dd_estimate": 9.946465580396263e-29,
+        "independent": {
+         "key": "madloop",
+         "dd_deviation": 1.3348289027384224e-14
+        }
+       }
       },
       "considered": [
        {
@@ -1273,10 +1304,10 @@
       "source": "g1.json processes[gg_ggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 10,
-       "estimate": 9.914292767817392e-06,
+       "estimate": 8.899672663324205e-06,
        "within_estimate": true,
        "dd_closest": 5.96903309784672e-12,
-       "revision": "39824f9b",
+       "revision": "2265a9f7",
        "source": "g1.json processes[gg_ggg].stability (native/full)"
       },
       "considered": [
@@ -1470,10 +1501,10 @@
       "source": "g1.json processes[uux_emepgg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 8,
-       "estimate": 2.5206059042728064e-09,
+       "estimate": 2.5408281824584713e-09,
        "within_estimate": true,
        "dd_closest": 4.306016249662366e-13,
-       "revision": "39824f9b",
+       "revision": "2265a9f7",
        "source": "g1.json processes[uux_emepgg].stability (native/full)"
       },
       "considered": [
@@ -1558,7 +1589,8 @@
         "limit_seconds": 0.013298400699999999,
         "measured_status": "pass",
         "rule": "below 5 ms: not gated (user 2026-10-24)",
-        "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+        "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
+        "floor_seconds": 0.005
        },
        "configuration": "integrated",
        "considered": [
@@ -1668,10 +1700,10 @@
       "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 13,
-       "estimate": 5.624253763935145e-08,
+       "estimate": 6.031752733158611e-08,
        "within_estimate": true,
        "dd_closest": 5.504855442237677e-15,
-       "revision": "39824f9b",
+       "revision": "2265a9f7",
        "source": "g1.json processes[gg_ttxgg].stability (native/full)"
       },
       "considered": [
@@ -1880,10 +1912,10 @@
       "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 9,
-       "estimate": 2.6682178956142833e-09,
+       "estimate": 2.569925103011449e-09,
        "within_estimate": true,
        "dd_closest": 1.897028113555094e-13,
-       "revision": "39824f9b",
+       "revision": "2265a9f7",
        "source": "g1.json processes[uux_gggg].stability (native/full)"
       },
       "considered": [
@@ -2073,10 +2105,10 @@
       "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].values_vs_providers",
       "worst_point": {
        "index": 1,
-       "estimate": 4.799662575085839e-06,
+       "estimate": 4.715305570211097e-06,
        "within_estimate": true,
        "dd_closest": 4.35793642888872e-12,
-       "revision": "39824f9b",
+       "revision": "2265a9f7",
        "source": "g1.json processes[gg_gggg].stability (native/full)"
       },
       "considered": [
@@ -2256,50 +2288,60 @@
      "outgoing": 5,
      "legs": 7,
      "corrections": "QCD",
-     "kind": "records",
+     "kind": "g1",
      "families": {
-      "fc": null,
-      "lc": null,
-      "source": null
+      "fc": 242,
+      "lc": 114,
+      "source": "g1.json processes[uux_emepddxg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
-      "configuration": "development_records",
+      "configuration": "integrated",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
-      "points": 3,
-      "point_indices": [
-       0,
-       1,
-       2
-      ],
+      "points": 16,
       "references": [
        {
         "key": "madloop",
         "short": "ML",
-        "points": 3,
-        "max_finite": 8.24556399977019e-13
+        "points": 16,
+        "max_finite": 4.315721725303214e-11,
+        "median_finite": 1.8193900309722166e-13,
+        "worst_point": 15
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 3,
-        "max_finite": 8.480896209301004e-13
+        "points": 16,
+        "max_finite": 5.746768528374283e-11,
+        "median_finite": 7.961494818636601e-13,
+        "worst_point": 15
        },
        {
         "key": "openloops",
         "short": "OL",
-        "points": 3,
-        "max_finite": 8.652182311174691e-13
+        "points": 16,
+        "max_finite": 5.73265520581803e-11,
+        "median_finite": 1.0626676138339913e-13,
+        "worst_point": 15
        }
       ],
-      "max_finite": 8.652182311174691e-13,
-      "tolerance": 2e-08,
-      "passed": true,
-      "source": "measured.json required_native.processes[uux_emepddxg]",
-      "within_estimate": true,
-      "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
-      "revision": "6f5a64cc",
+      "max_finite": 5.746768528374283e-11,
+      "median_finite": 7.961494818636601e-13,
+      "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 15,
+       "estimate": 1.6486854729410703e-09,
+       "within_estimate": true,
+       "dd_closest": 5.535068690347794e-14,
+       "revision": "2265a9f7",
+       "source": "g1.json processes[uux_emepddxg].stability (native/full)"
+      },
       "considered": [
+       {
+        "configuration": "integrated",
+        "revision": "1d27426b",
+        "status": "compared"
+       },
        {
         "configuration": "development_records",
         "revision": "6f5a64cc",
@@ -2307,140 +2349,157 @@
        }
       ]
      },
-     "row_status": null,
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 37.7,
-       "generate_s": 28.9,
-       "export_s": 8.8,
-       "peak_gib": 0.409,
-       "process_peak_gib": 0.489,
-       "plan_mb": 1.13,
+       "seconds": 17.084969138959423,
+       "generate_s": 9.076450512045994,
+       "export_s": 8.008518626913428,
+       "model_s": 3.458139010006562,
+       "peak_gib": 0.489,
+       "plan_mb": 1.129,
        "inputs": "native",
-       "counterterms": "recursion",
-       "branch": "work/v2-generation-scale",
-       "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
-       "revision": "6f5a64cc",
-       "source": "measured.json required_native.processes[uux_emepddxg]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
-       "conditions_short": "shared host under load",
-       "threads": "8 pinned cores, native stages rayon-parallel",
-       "conditions_source": "milestone.json development_records",
-       "ratio_to_fastest": 4.489228950112028,
-       "ratio_basis": "the development record and the providers' reference runs, both run records on this shared host outside the G1 protocol",
-       "configuration": "development_records",
+       "revision": "2265a9f7",
+       "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].generation",
+       "configuration": "integrated",
        "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
+        },
         {
          "configuration": "development_records",
          "revision": "6f5a64cc",
          "status": "measured"
+        }
+       ],
+       "ratio_to_fastest": 2.538714000585503,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
+      },
+      "providers": {
+       "madloop": {
+        "seconds": 58.64441410906147,
+        "graph_s": 24.522084772994276,
+        "export_s": 26.717296938004438,
+        "compile_s": 7.405032398062758
+       },
+       "recola": {
+        "seconds": 6.72977308
+       },
+       "openloops": {
+        "prebuilt": "pplljjj"
+       }
+      },
+      "fastest": {
+       "name": "Recola",
+       "key": "recola",
+       "seconds": 6.72977308
+      },
+      "source": "g1.json processes[uux_emepddxg].providers (MadLoop generation, Recola setup)"
+     },
+     "full_colour": {
+      "gate_rule": "G1",
+      "main": {
+       "status": "measured",
+       "batch": 128,
+       "seconds_per_point": 0.016013274155739055,
+       "uncertainty": 0.01578005112923556,
+       "stages": {
+        "inputs": 0.00053967421875,
+        "numerator": 0.0086839896015625,
+        "scatter": 0.0019146415078124992,
+        "ninjars": 0.0018594042109375002,
+        "masters": 0.0012698090000000004,
+        "glue": 0.001571918464593515,
+        "untimed": 0.0
+       },
+       "inputs": "native",
+       "revision": "2265a9f7",
+       "g1_configuration": "native/full",
+       "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].batches['128']",
+       "ratio_to_fastest": 0.4533820861235125,
+       "gate": {
+        "status": "pass",
+        "ratio_to_limit": 0.34875545086424037,
+        "band": [
+         0.31832707600340476,
+         0.379183825725076
+        ],
+        "binding": "Recola",
+        "limit_seconds": 0.04591548065
+       },
+       "configuration": "integrated",
+       "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
         },
         {
-         "configuration": "registry",
-         "revision": null,
+         "configuration": "development_records",
+         "revision": "6f5a64cc",
          "status": "no record"
         }
        ]
       },
       "providers": {
        "madloop": {
-        "seconds": 55.748498094966635,
-        "graph_s": 24.522084772994276,
-        "export_s": 26.717296938004438,
-        "compile_s": 4.509116383967921
+        "status": "measured",
+        "seconds_per_point": 0.13206965799999998,
+        "points": 16,
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
        },
        "recola": {
-        "seconds": 8.39787866
+        "status": "measured",
+        "seconds_per_point": 0.0353196005,
+        "points": 16,
+        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
        },
        "openloops": {
-        "prebuilt": "pplljjj"
+        "status": "measured",
+        "seconds_per_point": 0.0509826425,
+        "points": 16,
+        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "library": "pplljjj"
        }
       },
-      "unfinished": {},
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 8.39787866
+       "seconds_per_point": 0.0353196005
       },
-      "source": "measured.json provider_generation.processes[uux_emepddxg]"
-     },
-     "full_colour": {
-      "gate_rule": "G1 (seven-leg rows not timed yet)",
-      "main": {
-       "status": "pending",
-       "package": "measure-g1-7leg",
-       "what": "the development validation records time single points only; batched timings come from G1",
-       "revision": "6f5a64cc",
-       "source": "measured.json required_native.processes[uux_emepddxg] (no batched timing); milestone.json pending",
-       "configuration": "development_records",
-       "considered": [
-        {
-         "configuration": "development_records",
-         "revision": "6f5a64cc",
-         "status": "pending"
-        },
-        {
-         "configuration": "registry",
-         "revision": null,
-         "status": "no record"
-        }
-       ]
-      },
-      "alternative": null,
-      "reference": {
-       "providers": {
-        "openloops": {
-         "text": "0.053\u20130.055",
-         "low": 0.053,
-         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
-        },
-        "recola": {
-         "text": "0.035",
-         "low": 0.035,
-         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
-        },
-        "madloop": {
-         "text": null,
-         "low": 0.142539069,
-         "high": 0.143045331,
-         "production_build": true,
-         "source": "workspace/reference/runs/required/uux_emepddxg/madloop-production-result.json"
-        }
-       },
-       "matched": [
-        "MadLoop",
-        "Recola",
-        "OpenLoops"
-       ],
-       "missing_production": [],
-       "limit_seconds": 0.0455,
-       "binding": "Recola",
-       "source": "milestone.json gate_references (OpenLoops, Recola); measured.json provider_generation (MadLoop production build); limit computed by scripts/build_summary.py"
-      }
+      "source": "g1.json processes[uux_emepddxg].providers (median s/pt)"
      },
      "leading_colour": {
       "main": {
-       "status": "pending",
-       "package": "measure-g1-7leg",
-       "what": "the development validation records time single points only; batched timings come from G1",
-       "revision": "6f5a64cc",
-       "source": "measured.json required_native.processes[uux_emepddxg] (no batched timing); milestone.json pending",
-       "configuration": "development_records",
+       "status": "measured",
+       "batch": 128,
+       "seconds_per_point": 0.006125212914412259,
+       "schedule": "B",
+       "families": 114,
+       "inputs": "native",
+       "revision": "2265a9f7",
+       "g1_configuration": "native/lc",
+       "source": "g1.json processes[uux_emepddxg].pyamplicol['native/lc'].batches['128']",
+       "fc_seconds_per_point": 0.016013274155739055,
+       "lc_over_fc": 0.38250846484240214,
+       "configuration": "integrated",
        "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
+        },
         {
          "configuration": "development_records",
          "revision": "6f5a64cc",
-         "status": "pending"
-        },
-        {
-         "configuration": "registry",
-         "revision": null,
          "status": "no record"
         }
        ]
       }
-     }
+     },
+     "row_status": null
     },
     {
      "key": "uux_emepggg",
@@ -2449,49 +2508,60 @@
      "outgoing": 5,
      "legs": 7,
      "corrections": "QCD",
-     "kind": "records",
+     "kind": "g1",
      "families": {
-      "fc": null,
-      "lc": null,
-      "source": null
+      "fc": 463,
+      "lc": 164,
+      "source": "g1.json processes[uux_emepggg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
-      "configuration": "development_records",
+      "configuration": "integrated",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
-      "points": 3,
-      "point_indices": [
-       0,
-       1,
-       2
-      ],
+      "points": 16,
       "references": [
        {
         "key": "madloop",
         "short": "ML",
-        "points": 3,
-        "max_finite": 5.992247980553336e-13
+        "points": 16,
+        "max_finite": 9.091740886972238e-11,
+        "median_finite": 2.2158856847992725e-13,
+        "worst_point": 8
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 3,
-        "max_finite": 8.531650900460978e-13
+        "points": 16,
+        "max_finite": 1.1095660811645681e-10,
+        "median_finite": 1.5454943135514263e-12,
+        "worst_point": 8
        },
        {
         "key": "openloops",
         "short": "OL",
-        "points": 3,
-        "max_finite": 4.585783464407682e-13
+        "points": 16,
+        "max_finite": 1.1166644464473589e-10,
+        "median_finite": 1.6547723164046329e-13,
+        "worst_point": 8
        }
       ],
-      "max_finite": 8.531650900460978e-13,
-      "tolerance": 2e-08,
-      "passed": true,
-      "source": "measured.json required_native.processes[uux_emepggg]",
-      "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
-      "revision": "0ea83af2",
+      "max_finite": 1.1166644464473589e-10,
+      "median_finite": 1.5454943135514263e-12,
+      "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 8,
+       "estimate": 1.0988243713152604e-09,
+       "within_estimate": true,
+       "dd_closest": 7.676155313492963e-14,
+       "revision": "2265a9f7",
+       "source": "g1.json processes[uux_emepggg].stability (native/full)"
+      },
       "considered": [
+       {
+        "configuration": "integrated",
+        "revision": "1d27426b",
+        "status": "compared"
+       },
        {
         "configuration": "development_records",
         "revision": "0ea83af2",
@@ -2499,140 +2569,157 @@
        }
       ]
      },
-     "row_status": null,
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 36.7,
-       "generate_s": 29.6,
-       "export_s": 7.1,
-       "peak_gib": 0.48,
-       "process_peak_gib": 0.627,
-       "plan_mb": 2.45,
+       "seconds": 16.806628065067343,
+       "generate_s": 10.095111827016808,
+       "export_s": 6.711516238050535,
+       "model_s": 3.5543650509789586,
+       "peak_gib": 0.523,
+       "plan_mb": 2.447,
        "inputs": "native",
-       "counterterms": "recursion",
-       "branch": "work/v2-generation-scale",
-       "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
-       "revision": "0ea83af2",
-       "source": "measured.json required_native.processes[uux_emepggg]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
-       "conditions_short": "shared host under load",
-       "threads": "thread count not recorded",
-       "conditions_source": "milestone.json development_records",
-       "ratio_to_fastest": 2.309976560283896,
-       "ratio_basis": "the development record and the providers' reference runs, both run records on this shared host outside the G1 protocol",
-       "configuration": "development_records",
+       "revision": "2265a9f7",
+       "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].generation",
+       "configuration": "integrated",
        "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
+        },
         {
          "configuration": "development_records",
          "revision": "0ea83af2",
          "status": "measured"
+        }
+       ],
+       "ratio_to_fastest": 1.2554360936032203,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
+      },
+      "providers": {
+       "madloop": {
+        "seconds": 145.80663596111117,
+        "graph_s": 76.61233418004122,
+        "export_s": 58.18535616499139,
+        "compile_s": 11.008945616078563
+       },
+       "recola": {
+        "seconds": 13.3870837
+       },
+       "openloops": {
+        "prebuilt": "pplljjj"
+       }
+      },
+      "fastest": {
+       "name": "Recola",
+       "key": "recola",
+       "seconds": 13.3870837
+      },
+      "source": "g1.json processes[uux_emepggg].providers (MadLoop generation, Recola setup)"
+     },
+     "full_colour": {
+      "gate_rule": "G1",
+      "main": {
+       "status": "measured",
+       "batch": 128,
+       "seconds_per_point": 0.055622861085794284,
+       "uncertainty": 0.006665560808409122,
+       "stages": {
+        "inputs": 0.001492330734375,
+        "numerator": 0.03853486519531251,
+        "scatter": 0.0021063524140625006,
+        "ninjars": 0.007800972976562495,
+        "masters": 0.0026369128750000003,
+        "glue": 0.003095015736473132,
+        "untimed": 0.0
+       },
+       "inputs": "native",
+       "revision": "2265a9f7",
+       "g1_configuration": "native/full",
+       "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].batches['128']",
+       "ratio_to_fastest": 0.22179158145149014,
+       "gate": {
+        "status": "pass",
+        "ratio_to_limit": 0.17060890880883858,
+        "band": [
+         0.15645998002996095,
+         0.18475783758771622
+        ],
+        "binding": "Recola",
+        "limit_seconds": 0.32602553684999996
+       },
+       "configuration": "integrated",
+       "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
         },
         {
-         "configuration": "registry",
-         "revision": null,
+         "configuration": "development_records",
+         "revision": "0ea83af2",
          "status": "no record"
         }
        ]
       },
       "providers": {
        "madloop": {
-        "seconds": 141.5220654970617,
-        "graph_s": 76.61233418004122,
-        "export_s": 58.18535616499139,
-        "compile_s": 6.724375152029097
+        "status": "measured",
+        "seconds_per_point": 1.417189965,
+        "points": 16,
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
        },
        "recola": {
-        "seconds": 15.8876071
+        "status": "measured",
+        "seconds_per_point": 0.2507888745,
+        "points": 16,
+        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
        },
        "openloops": {
-        "prebuilt": "pplljjj"
+        "status": "measured",
+        "seconds_per_point": 0.3456512245,
+        "points": 16,
+        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "library": "pplljjj"
        }
       },
-      "unfinished": {},
       "fastest": {
        "name": "Recola",
        "key": "recola",
-       "seconds": 15.8876071
+       "seconds_per_point": 0.2507888745
       },
-      "source": "measured.json provider_generation.processes[uux_emepggg]"
-     },
-     "full_colour": {
-      "gate_rule": "G1 (seven-leg rows not timed yet)",
-      "main": {
-       "status": "pending",
-       "package": "measure-g1-7leg",
-       "what": "the development validation records time single points only; batched timings come from G1",
-       "revision": "0ea83af2",
-       "source": "measured.json required_native.processes[uux_emepggg] (no batched timing); milestone.json pending",
-       "configuration": "development_records",
-       "considered": [
-        {
-         "configuration": "development_records",
-         "revision": "0ea83af2",
-         "status": "pending"
-        },
-        {
-         "configuration": "registry",
-         "revision": null,
-         "status": "no record"
-        }
-       ]
-      },
-      "alternative": null,
-      "reference": {
-       "providers": {
-        "openloops": {
-         "text": "0.348\u20130.353",
-         "low": 0.348,
-         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
-        },
-        "recola": {
-         "text": "0.246\u20130.259",
-         "low": 0.246,
-         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
-        },
-        "madloop": {
-         "text": null,
-         "low": 1.40528964,
-         "high": 1.41250834,
-         "production_build": true,
-         "source": "workspace/reference/runs/required/uux_emepggg/madloop-production-result.json"
-        }
-       },
-       "matched": [
-        "MadLoop",
-        "Recola",
-        "OpenLoops"
-       ],
-       "missing_production": [],
-       "limit_seconds": 0.3198,
-       "binding": "Recola",
-       "source": "milestone.json gate_references (OpenLoops, Recola); measured.json provider_generation (MadLoop production build); limit computed by scripts/build_summary.py"
-      }
+      "source": "g1.json processes[uux_emepggg].providers (median s/pt)"
      },
      "leading_colour": {
       "main": {
-       "status": "pending",
-       "package": "measure-g1-7leg",
-       "what": "the development validation records time single points only; batched timings come from G1",
-       "revision": "0ea83af2",
-       "source": "measured.json required_native.processes[uux_emepggg] (no batched timing); milestone.json pending",
-       "configuration": "development_records",
+       "status": "measured",
+       "batch": 128,
+       "seconds_per_point": 0.0104229307416972,
+       "schedule": "B",
+       "families": 164,
+       "inputs": "native",
+       "revision": "2265a9f7",
+       "g1_configuration": "native/lc",
+       "source": "g1.json processes[uux_emepggg].pyamplicol['native/lc'].batches['128']",
+       "fc_seconds_per_point": 0.055622861085794284,
+       "lc_over_fc": 0.18738573561724153,
+       "configuration": "integrated",
        "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
+        },
         {
          "configuration": "development_records",
          "revision": "0ea83af2",
-         "status": "pending"
-        },
-        {
-         "configuration": "registry",
-         "revision": null,
          "status": "no record"
         }
        ]
       }
-     }
+     },
+     "row_status": null
     },
     {
      "key": "gg_ttxemepg_qcd",
@@ -2641,49 +2728,60 @@
      "outgoing": 5,
      "legs": 7,
      "corrections": "QCD",
-     "kind": "records",
+     "kind": "g1",
      "families": {
-      "fc": null,
-      "lc": null,
-      "source": null
+      "fc": 579,
+      "lc": 164,
+      "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
-      "configuration": "development_records",
+      "configuration": "integrated",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
-      "points": 3,
-      "point_indices": [
-       0,
-       1,
-       2
-      ],
+      "points": 16,
       "references": [
        {
         "key": "madloop",
         "short": "ML",
-        "points": 3,
-        "max_finite": 5.670694602310801e-09
+        "points": 16,
+        "max_finite": 8.702696977099847e-09,
+        "median_finite": 9.681635217143489e-12,
+        "worst_point": 2
        },
        {
         "key": "recola",
         "short": "Rc",
-        "points": 3,
-        "max_finite": 4.377966389939275e-09
+        "points": 16,
+        "max_finite": 4.377500593263192e-09,
+        "median_finite": 2.6649341888040097e-11,
+        "worst_point": 2
        },
        {
         "key": "openloops",
         "short": "OL",
-        "points": 3,
-        "max_finite": 5.67129728297627e-09
+        "points": 16,
+        "max_finite": 5.631513081203468e-09,
+        "median_finite": 1.0663593457114594e-11,
+        "worst_point": 2
        }
       ],
-      "max_finite": 5.67129728297627e-09,
-      "tolerance": 2e-08,
-      "passed": true,
-      "source": "measured.json required_native.processes[gg_ttxemepg_qcd]",
-      "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
-      "revision": "0ea83af2",
+      "max_finite": 8.702696977099847e-09,
+      "median_finite": 2.6649341888040097e-11,
+      "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 2,
+       "estimate": 3.362864974926758e-08,
+       "within_estimate": true,
+       "dd_closest": 5.839256271708991e-13,
+       "revision": "2265a9f7",
+       "source": "g1.json processes[gg_ttxemepg_qcd].stability (native/full)"
+      },
       "considered": [
+       {
+        "configuration": "integrated",
+        "revision": "1d27426b",
+        "status": "compared"
+       },
        {
         "configuration": "development_records",
         "revision": "0ea83af2",
@@ -2691,140 +2789,157 @@
        }
       ]
      },
-     "row_status": null,
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 43.7,
-       "generate_s": 31.7,
-       "export_s": 12.0,
-       "peak_gib": 0.587,
-       "process_peak_gib": 0.886,
+       "seconds": 22.680952743976377,
+       "generate_s": 11.656193880946375,
+       "export_s": 11.024758863030002,
+       "model_s": 3.7132365229772404,
+       "peak_gib": 0.604,
        "plan_mb": 2.13,
        "inputs": "native",
-       "counterterms": "recursion",
-       "branch": "work/v2-generation-scale",
-       "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
-       "revision": "0ea83af2",
-       "source": "measured.json required_native.processes[gg_ttxemepg_qcd]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
-       "conditions_short": "shared host under load",
-       "threads": "thread count not recorded",
-       "conditions_source": "milestone.json development_records",
-       "ratio_to_fastest": 1.5238129244512035,
-       "ratio_basis": "the development record and the providers' reference runs, both run records on this shared host outside the G1 protocol",
-       "configuration": "development_records",
+       "revision": "2265a9f7",
+       "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].generation",
+       "configuration": "integrated",
        "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
+        },
         {
          "configuration": "development_records",
          "revision": "0ea83af2",
          "status": "measured"
+        }
+       ],
+       "ratio_to_fastest": 0.8201580635655095,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
+      },
+      "providers": {
+       "madloop": {
+        "seconds": 164.744102255092,
+        "graph_s": 87.49735189595958,
+        "export_s": 62.39196990203345,
+        "compile_s": 14.854780457098968
+       },
+       "recola": {
+        "seconds": 27.6543678
+       },
+       "openloops": {
+        "prebuilt": "ppllttj"
+       }
+      },
+      "fastest": {
+       "name": "Recola",
+       "key": "recola",
+       "seconds": 27.6543678
+      },
+      "source": "g1.json processes[gg_ttxemepg_qcd].providers (MadLoop generation, Recola setup)"
+     },
+     "full_colour": {
+      "gate_rule": "G1",
+      "main": {
+       "status": "measured",
+       "batch": 128,
+       "seconds_per_point": 0.060582169921872264,
+       "uncertainty": 0.006168461028322102,
+       "stages": {
+        "inputs": 0.0027026117421875,
+        "numerator": 0.03831271678125,
+        "scatter": 0.0007922478906250002,
+        "ninjars": 0.010454098937500003,
+        "masters": 0.003995919109375001,
+        "glue": 0.004242179763034731,
+        "untimed": 0.0
+       },
+       "inputs": "native",
+       "revision": "2265a9f7",
+       "g1_configuration": "native/full",
+       "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].batches['128']",
+       "ratio_to_fastest": 0.15007032355320024,
+       "gate": {
+        "status": "pass",
+        "ratio_to_limit": 0.11543871042553863,
+        "band": [
+         0.10592253810650266,
+         0.12495488274457459
+        ],
+        "binding": "OpenLoops",
+        "limit_seconds": 0.5247994342500001
+       },
+       "configuration": "integrated",
+       "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
         },
         {
-         "configuration": "registry",
-         "revision": null,
+         "configuration": "development_records",
+         "revision": "0ea83af2",
          "status": "no record"
         }
        ]
       },
       "providers": {
        "madloop": {
-        "seconds": 161.09624127595453,
-        "graph_s": 87.49735189595958,
-        "export_s": 62.39196990203345,
-        "compile_s": 11.206919477961492
+        "status": "measured",
+        "seconds_per_point": 3.03517586,
+        "points": 16,
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
        },
        "recola": {
-        "seconds": 28.678061
+        "status": "measured",
+        "seconds_per_point": 0.620191463,
+        "points": 16,
+        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
        },
        "openloops": {
-        "prebuilt": "ppllttj"
+        "status": "measured",
+        "seconds_per_point": 0.40369187250000005,
+        "points": 16,
+        "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "library": "ppllttj"
        }
       },
-      "unfinished": {},
       "fastest": {
-       "name": "Recola",
-       "key": "recola",
-       "seconds": 28.678061
+       "name": "OpenLoops",
+       "key": "openloops",
+       "seconds_per_point": 0.40369187250000005
       },
-      "source": "measured.json provider_generation.processes[gg_ttxemepg_qcd]"
-     },
-     "full_colour": {
-      "gate_rule": "G1 (seven-leg rows not timed yet)",
-      "main": {
-       "status": "pending",
-       "package": "measure-g1-7leg",
-       "what": "the development validation records time single points only; batched timings come from G1",
-       "revision": "0ea83af2",
-       "source": "measured.json required_native.processes[gg_ttxemepg_qcd] (no batched timing); milestone.json pending",
-       "configuration": "development_records",
-       "considered": [
-        {
-         "configuration": "development_records",
-         "revision": "0ea83af2",
-         "status": "pending"
-        },
-        {
-         "configuration": "registry",
-         "revision": null,
-         "status": "no record"
-        }
-       ]
-      },
-      "alternative": null,
-      "reference": {
-       "providers": {
-        "openloops": {
-         "text": "0.425\u20130.433",
-         "low": 0.425,
-         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
-        },
-        "recola": {
-         "text": "0.59\u20130.67",
-         "low": 0.59,
-         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
-        },
-        "madloop": {
-         "text": null,
-         "low": 3.02587716,
-         "high": 3.03565302,
-         "production_build": true,
-         "source": "workspace/reference/runs/required/gg_ttxemepg_qcd/madloop-production-result.json"
-        }
-       },
-       "matched": [
-        "MadLoop",
-        "Recola",
-        "OpenLoops"
-       ],
-       "missing_production": [],
-       "limit_seconds": 0.5525,
-       "binding": "OpenLoops",
-       "source": "milestone.json gate_references (OpenLoops, Recola); measured.json provider_generation (MadLoop production build); limit computed by scripts/build_summary.py"
-      }
+      "source": "g1.json processes[gg_ttxemepg_qcd].providers (median s/pt)"
      },
      "leading_colour": {
       "main": {
-       "status": "pending",
-       "package": "measure-g1-7leg",
-       "what": "the development validation records time single points only; batched timings come from G1",
-       "revision": "0ea83af2",
-       "source": "measured.json required_native.processes[gg_ttxemepg_qcd] (no batched timing); milestone.json pending",
-       "configuration": "development_records",
+       "status": "measured",
+       "batch": 128,
+       "seconds_per_point": 0.011054941468501056,
+       "schedule": "B",
+       "families": 164,
+       "inputs": "native",
+       "revision": "2265a9f7",
+       "g1_configuration": "native/lc",
+       "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/lc'].batches['128']",
+       "fc_seconds_per_point": 0.060582169921872264,
+       "lc_over_fc": 0.18247846656462927,
+       "configuration": "integrated",
        "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
+        },
         {
          "configuration": "development_records",
          "revision": "0ea83af2",
-         "status": "pending"
-        },
-        {
-         "configuration": "registry",
-         "revision": null,
          "status": "no record"
         }
        ]
       }
-     }
+     },
+     "row_status": null
     },
     {
      "key": "gg_ttxemepg_ew",
@@ -2887,7 +3002,7 @@
       "source": "measured.json provider_generation.processes[gg_ttxemepg_ew]"
      },
      "full_colour": {
-      "gate_rule": "G1 (seven-leg rows not timed yet)",
+      "gate_rule": "G1 (not timed by G1)",
       "main": {
        "status": "in development",
        "reason": "massive EW loops, EW counterterms, complex-mass scheme",
@@ -2958,43 +3073,62 @@
      "outgoing": 5,
      "legs": 7,
      "corrections": "QCD",
-     "kind": "records",
+     "kind": "g1",
      "families": {
-      "fc": null,
-      "lc": null,
-      "source": null
+      "fc": 5258,
+      "lc": 2712,
+      "source": "g1.json processes[uux_ggggg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
-      "configuration": "development_records",
+      "configuration": "integrated",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
       "points": 3,
-      "point_indices": [
-       0,
-       1,
-       2
-      ],
       "references": [
        {
         "key": "madloop",
         "short": "ML",
         "points": 3,
-        "max_finite": 2.2439613080282422e-12
+        "max_finite": 2.0570214394729373e-12,
+        "median_finite": 1.2303984812663853e-12,
+        "worst_point": 1
        },
        {
         "key": "recola",
         "short": "Rc",
         "points": 3,
-        "max_finite": 2.872587153535746e-10
+        "max_finite": 2.8645997600799273e-10,
+        "median_finite": 7.08844293990047e-11,
+        "worst_point": 0
        }
       ],
-      "max_finite": 2.872587153535746e-10,
-      "tolerance": 2e-08,
-      "passed": true,
-      "source": "measured.json required_native.processes[uux_ggggg]",
-      "record": "DESIGN.md WP3.1 seventh increment (fef92189), 'I5 proper, the interim production route'",
-      "revision": "fef92189",
+      "max_finite": 2.8645997600799273e-10,
+      "median_finite": 7.08844293990047e-11,
+      "source": "g1.json processes[uux_ggggg].pyamplicol['native/full'].values_vs_providers",
+      "worst_point": {
+       "index": 0,
+       "estimate": 1.8549019155855338e-11,
+       "within_estimate": false,
+       "dd_closest": 1.4144241420398502e-12,
+       "revision": "2265a9f7",
+       "source": "g1.json processes[uux_ggggg].stability (native/full)",
+       "reference_own": {
+        "key": "recola",
+        "short": "Rc",
+        "dd_deviation": 2.8627595034727174e-10,
+        "dd_estimate": 1.243117041833413e-27,
+        "independent": {
+         "key": "madloop",
+         "dd_deviation": 1.4144241420398502e-12
+        }
+       }
+      },
       "considered": [
+       {
+        "configuration": "integrated",
+        "revision": "1d27426b",
+        "status": "compared"
+       },
        {
         "configuration": "development_records",
         "revision": "fef92189",
@@ -3002,41 +3136,33 @@
        }
       ]
      },
-     "row_status": null,
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 517.4,
-       "generate_s": 365.3,
-       "export_s": 152.1,
-       "peak_gib": 6.098,
-       "process_peak_gib": 9.606,
-       "plan_mb": 69.18,
+       "seconds": 367.7176093660528,
+       "generate_s": 247.53517676796764,
+       "export_s": 120.18243259808514,
+       "model_s": 3.450412111938931,
+       "peak_gib": 4.803,
+       "plan_mb": 69.176,
        "inputs": "native",
-       "counterterms": "recursion",
-       "branch": "work/v2-generation-scale",
-       "record": "DESIGN.md WP3.1 seventh increment (fef92189), 'I5 proper, the interim production route'",
-       "revision": "fef92189",
-       "source": "measured.json required_native.processes[uux_ggggg]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
-       "conditions_short": "shared host under load",
-       "threads": "one generation thread",
-       "conditions_source": "milestone.json development_records",
-       "ratio_to_fastest": 0.05062602940530824,
-       "ratio_basis": "the development record and the providers' reference runs, both run records on this shared host outside the G1 protocol",
-       "configuration": "development_records",
+       "revision": "2265a9f7",
+       "source": "g1.json processes[uux_ggggg].pyamplicol['native/full'].generation",
+       "configuration": "integrated",
        "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
+        },
         {
          "configuration": "development_records",
          "revision": "fef92189",
          "status": "measured"
-        },
-        {
-         "configuration": "registry",
-         "revision": null,
-         "status": "no record"
         }
-       ]
+       ],
+       "ratio_to_fastest": 0.035980058957509546,
+       "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
        "madloop": {
@@ -3050,98 +3176,124 @@
        },
        "openloops": null
       },
-      "unfinished": {},
       "fastest": {
        "name": "Recola",
        "key": "recola",
        "seconds": 10220.0391
       },
-      "source": "measured.json provider_generation.processes[uux_ggggg]"
+      "source": "g1.json processes[uux_ggggg].providers (MadLoop generation, Recola setup)"
      },
      "full_colour": {
-      "gate_rule": "G1 (no complete gate limit yet)",
+      "gate_rule": "G1",
       "main": {
-       "status": "pending",
-       "package": "measure-g1-7leg",
-       "what": "the development validation records time single points only; batched timings come from G1",
-       "revision": "fef92189",
-       "source": "measured.json required_native.processes[uux_ggggg] (no batched timing); milestone.json pending",
-       "configuration": "development_records",
+       "status": "measured",
+       "batch": 128,
+       "seconds_per_point": 1.6612356819059642,
+       "uncertainty": 0.015421769602081787,
+       "stages": {
+        "inputs": 0.200862241859375,
+        "numerator": 1.1304040383593754,
+        "scatter": 0.009123594664062496,
+        "ninjars": 0.22409381910156254,
+        "masters": 0.043022783890625,
+        "glue": 0.06515983316388763,
+        "untimed": 0.0
+       },
+       "inputs": "native",
+       "revision": "2265a9f7",
+       "g1_configuration": "native/full",
+       "source": "g1.json processes[uux_ggggg].pyamplicol['native/full'].batches['128']",
+       "ratio_to_fastest": 0.009117081196033524,
+       "ratio_to_fastest_bound": "lower",
+       "gate": {
+        "status": "pass",
+        "ratio_to_limit": 0.0029191639619938784,
+        "band": [
+         0.002651511205352965,
+         0.0031868167186347917
+        ],
+        "binding": "MadLoop",
+        "limit_seconds": 569.079265
+       },
+       "configuration": "integrated",
        "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
+        },
         {
          "configuration": "development_records",
          "revision": "fef92189",
-         "status": "pending"
-        },
-        {
-         "configuration": "registry",
-         "revision": null,
          "status": "no record"
         }
        ]
       },
-      "alternative": null,
-      "reference": {
-       "providers": {
-        "openloops": {
-         "text": "no library",
-         "low": null,
-         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
-        },
-        "recola": {
-         "text": "not measured",
-         "low": null,
-         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)",
-         "protocol": {
-          "low": 180.106525,
-          "high": 184.204914,
-          "compute_ir_poles": 1,
-          "collier_cache": "off",
-          "source": "measured.json provider_generation.processes[uux_ggggg].recola.protocol"
-         }
-        },
-        "madloop": {
-         "text": null,
-         "low": 568.668892,
-         "high": 570.108667,
-         "production_build": true,
-         "source": "workspace/reference/runs/required/uux_ggggg/madloop-production-result.json"
+      "providers": {
+       "madloop": {
+        "status": "measured",
+        "seconds_per_point": 569.079265,
+        "points": 3,
+        "mode": "reference campaign: MadLoop MLStabThres (production setting), MadLoop default (CTModeRun=-1 after initialization), production build True"
+       },
+       "recola": {
+        "status": "unavailable",
+        "reason": "no production-mode timing: the existing run (reference campaign, 2026-10-20) computes the IR poles (compute_ir_poles 1); a production-mode run needs a new generation of 2.8 h, beyond HANDOFF \u00a70.1 (45 minutes, or pyAmpliCol's own generation time)",
+        "outside_protocol": {
+         "seconds_per_point": 182.211351,
+         "points": 3,
+         "mode": "reference campaign: compute_ir_poles 1, Collier cache off (the protocol's: on, COLLIER 1.2.8 has no N = 7 cache defect)",
+         "production_upper_bound": "the run evaluates the IR poles (compute_ir_poles 1: three compute_amplitude calls per point instead of one) without the Collier cache, which production keeps on and which only saves repeated tensor-integral work, so the production-mode time is at most this time"
         }
        },
-       "matched": [
-        "MadLoop",
-        "Recola"
-       ],
-       "missing_production": [
-        "Recola"
-       ],
-       "limit_seconds": null,
-       "binding": null,
-       "source": "milestone.json gate_references (OpenLoops, Recola); measured.json provider_generation (MadLoop production build); limit computed by scripts/build_summary.py"
-      }
+       "openloops": {
+        "status": "unavailable",
+        "reason": "no public OpenLoops library for 2 -> 5 jets"
+       }
+      },
+      "fastest": {
+       "name": "Recola",
+       "key": "recola",
+       "seconds_per_point": 182.211351,
+       "bound": "upper",
+       "basis": "Recola's timing outside the protocol bounds its production time from above (the run evaluates the IR poles (compute_ir_poles 1: three compute_amplitude calls per point instead of one) without the Collier cache, which production keeps on and which only saves repeated tensor-integral work, so the production-mode time is at most this time); the fastest provider's production time is at most it",
+       "protocol_fastest": {
+        "name": "MadLoop",
+        "key": "madloop",
+        "seconds_per_point": 569.079265
+       }
+      },
+      "source": "g1.json processes[uux_ggggg].providers (median s/pt)"
      },
      "leading_colour": {
       "main": {
-       "status": "pending",
-       "package": "measure-g1-7leg",
-       "what": "the development validation records time single points only; batched timings come from G1",
-       "revision": "fef92189",
-       "source": "measured.json required_native.processes[uux_ggggg] (no batched timing); milestone.json pending",
-       "configuration": "development_records",
+       "status": "measured",
+       "batch": 128,
+       "seconds_per_point": 0.5215582175469535,
+       "schedule": "B",
+       "families": 2712,
+       "inputs": "native",
+       "revision": "2265a9f7",
+       "g1_configuration": "native/lc",
+       "source": "g1.json processes[uux_ggggg].pyamplicol['native/lc'].batches['128']",
+       "fc_seconds_per_point": 1.6612356819059642,
+       "lc_over_fc": 0.31395799116749096,
+       "configuration": "integrated",
        "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
+        },
         {
          "configuration": "development_records",
          "revision": "fef92189",
-         "status": "pending"
-        },
-        {
-         "configuration": "registry",
-         "revision": null,
          "status": "no record"
         }
        ]
       }
-     }
+     },
+     "row_status": null
     },
     {
      "key": "gg_ggggg",
@@ -3150,46 +3302,46 @@
      "outgoing": 5,
      "legs": 7,
      "corrections": "QCD",
-     "kind": "records",
+     "kind": "g1",
      "families": {
-      "fc": null,
-      "lc": null,
-      "source": null,
-      "other_configuration": {
-       "fc": 9414,
-       "particle_veto": [],
-       "row_particle_veto": [
-        6
-       ],
-       "source": "measured.json seven_gluon.generation_latest (counts, particle_veto); milestone.json status_notes.notes[gg_ggggg].particle_veto"
-      }
+      "fc": 4707,
+      "lc": 4707,
+      "source": "g1.json processes[gg_ggggg].pyamplicol[...].structure (main value's configuration)"
      },
      "validation": {
       "status": "compared",
-      "configuration": "development_records",
+      "configuration": "integrated",
       "metric": "|a-b|/max(|a|,|b|,|Born| alpha/2pi), finite part, binary64",
-      "points": 3,
-      "point_indices": [
-       0,
-       1,
-       2
-      ],
+      "points": 10,
       "references": [
        {
         "key": "njet_dd_oneloop_R1",
         "short": "NJet DD",
-        "points": 3,
-        "max_finite": 3.764212455416529e-09
+        "points": 10,
+        "max_finite": 3.732137568931227e-08,
+        "median_finite": 2.0453792777268e-09,
+        "worst_point": 4,
+        "fixture": "gg_ggggg_njet"
        }
       ],
-      "max_finite": 3.764212455416529e-09,
-      "tolerance": 2e-08,
-      "passed": true,
-      "source": "measured.json required_native.superseded[gg_ggggg]",
-      "within_estimate": true,
-      "record": "DESIGN.md WP3.1 eighth increment (0ea83af2), 'Native validations on the merged head'",
-      "revision": "0ea83af2",
+      "max_finite": 3.732137568931227e-08,
+      "median_finite": 2.0453792777268e-09,
+      "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].accuracy_check",
+      "worst_point": {
+       "index": 4,
+       "fixture": "gg_ggggg_njet",
+       "estimate": 1.2697658781127443e-06,
+       "within_estimate": true,
+       "dd_closest": 0.0,
+       "revision": "2265a9f7",
+       "source": "g1.json processes[gg_ggggg].fixture_stability (native/full)"
+      },
       "considered": [
+       {
+        "configuration": "integrated",
+        "revision": "1d27426b",
+        "status": "compared"
+       },
        {
         "configuration": "development_records",
         "revision": "6f5a64cc",
@@ -3201,59 +3353,64 @@
         "status": "compared"
        }
       ],
-      "partial_repeats": [
-       {
-        "configuration": "development_records",
-        "revision": "6f5a64cc",
-        "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
-        "points": 1,
-        "point_indices": [
-         0
-        ],
-        "references": [
-         "NJet DD"
-        ],
-        "max_finite": 3.764212455416529e-09,
-        "repeats": "development_records",
-        "repeats_revision": "0ea83af2",
-        "why": "1 of 3 points; largest deviation 3.76e-09 <= 3.76e-09",
-        "source": "measured.json required_native.processes[gg_ggggg]"
-       }
-      ],
-      "rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it",
+      "accepted": {
+       "status": "accepted (user 2026-10-25): O(1e-8) binary64, within the estimate, DD = NJet",
+       "short": "accepted (user 2026-10-25)",
+       "points": [
+        {
+         "index": 4,
+         "finite": {
+          "njet_dd_oneloop_R1": 3.732137568931227e-08
+         },
+         "max_error": 4.300543728812903e-08,
+         "estimate": 1.2697658781127443e-06,
+         "dd_deviation": {
+          "njet_dd_oneloop_R1": 0.0
+         }
+        },
+        {
+         "index": 8,
+         "finite": {
+          "njet_dd_oneloop_R1": 2.2015293065975614e-08
+         },
+         "max_error": 2.2015293065975614e-08,
+         "estimate": 2.544824847633316e-07,
+         "dd_deviation": {
+          "njet_dd_oneloop_R1": 0.0
+         }
+        }
+       ],
+       "tolerance": 2e-08,
+       "passed": false,
+       "max_error": 4.300543728812903e-08,
+       "check": "g1.json processes[gg_ggggg].pyamplicol['native/full'].accuracy_check",
+       "source": "milestone.json validation_decisions"
+      },
       "note": "top-free (particle_veto = [t]), Nf = 5"
      },
-     "row_status": null,
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 3092.7,
-       "generate_s": 2652.0,
-       "export_s": 440.7,
-       "peak_gib": 28.668,
-       "process_peak_gib": 38.616,
-       "plan_mb": 159.87,
+       "seconds": 2620.180124287028,
+       "generate_s": 2274.0794347689953,
+       "export_s": 346.1006895180326,
+       "model_s": 3.6219977219589055,
+       "peak_gib": 22.954,
+       "plan_mb": 159.867,
        "inputs": "native",
-       "counterterms": "recursion",
-       "branch": "work/v2-generation-scale",
-       "record": "DESIGN.md WP3.1 ninth increment (6f5a64cc), 'Native validations on the merged head'",
-       "revision": "6f5a64cc",
-       "source": "measured.json required_native.processes[gg_ggggg]",
-       "conditions": "run on the shared host under its load, not on the idle pinned cores of the G1 protocol",
-       "conditions_short": "shared host under load",
-       "threads": "8 pinned cores, native stages rayon-parallel",
-       "conditions_source": "milestone.json development_records",
-       "configuration": "development_records",
+       "revision": "2265a9f7",
+       "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].generation",
+       "configuration": "integrated",
        "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
+        },
         {
          "configuration": "development_records",
          "revision": "6f5a64cc",
          "status": "measured"
-        },
-        {
-         "configuration": "registry",
-         "revision": null,
-         "status": "no record"
         }
        ]
       },
@@ -3262,6 +3419,8 @@
        "recola": null,
        "openloops": null
       },
+      "fastest": null,
+      "source": "g1.json processes[gg_ggggg].providers (MadLoop generation, Recola setup)",
       "unfinished": {
        "madloop": {
         "status": "exporting",
@@ -3273,85 +3432,146 @@
        },
        "note": "stopped 22 Oct; not to be restarted (HANDOFF section 0.1)"
       },
-      "fastest": null,
-      "source": "measured.json provider_generation.processes[gg_ggggg]"
+      "unfinished_source": "measured.json provider_generation.processes[gg_ggggg]"
      },
      "full_colour": {
       "gate_rule": "no gate (no matched provider)",
       "main": {
-       "status": "pending",
-       "package": "measure-g1-7leg",
-       "what": "the development validation records time single points only; batched timings come from G1",
-       "revision": "6f5a64cc",
-       "source": "measured.json required_native.processes[gg_ggggg] (no batched timing); milestone.json pending",
-       "configuration": "development_records",
+       "status": "measured",
+       "batch": 128,
+       "seconds_per_point": 6.965318084351566,
+       "uncertainty": 0.006033773868345931,
+       "stages": {
+        "inputs": 2.8924180583046875,
+        "numerator": 3.5668213123437496,
+        "scatter": 0.010932407859374993,
+        "ninjars": 0.4338162371171874,
+        "masters": 0.0403822262109375,
+        "glue": 0.03260906318847567,
+        "untimed": 0.0
+       },
+       "inputs": "native",
+       "revision": "2265a9f7",
+       "g1_configuration": "native/full",
+       "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].batches['128']",
+       "configuration": "integrated",
        "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
+        },
         {
          "configuration": "development_records",
          "revision": "6f5a64cc",
-         "status": "pending"
-        },
-        {
-         "configuration": "registry",
-         "revision": null,
          "status": "no record"
         }
        ]
       },
+      "providers": {
+       "madloop": {
+        "status": "unavailable",
+        "reason": "no export: MadLoop's generation exceeds 17 h (colour factors about 89 days by MG5's estimate); stopped under HANDOFF \u00a70.1"
+       },
+       "recola": {
+        "status": "unavailable",
+        "reason": "no generation: more than 57 h, unfinished at its third attempt; stopped under HANDOFF \u00a70.1"
+       },
+       "openloops": {
+        "status": "unavailable",
+        "reason": "no public OpenLoops library for 2 -> 5 jets"
+       }
+      },
+      "fastest": null,
+      "source": "g1.json processes[gg_ggggg].providers (median s/pt)",
       "alternative": {
        "name": "NJet 3.1.2",
        "seconds_per_evaluation": 71.2039,
        "what": "standard full-colour sum, one evaluation, double precision, one pinned core; not a matched provider",
        "source": "measured.json njet_single_evaluation.standard"
       },
-      "reference": {
-       "providers": {
-        "openloops": {
-         "text": "no library",
-         "low": null,
-         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
+      "sanity_checks": {
+       "rotation": {
+        "status": "measured",
+        "configurations": {
+         "native/full": {
+          "points": [
+           0,
+           1,
+           2
+          ],
+          "max_rotation": 3.0248729042373344e-08,
+          "max_estimate": 7.694100422732902e-08,
+          "revision": "2265a9f7"
+         },
+         "native/lc": {
+          "points": [
+           0,
+           1,
+           2
+          ],
+          "max_rotation": 1.1884253316246013e-08,
+          "max_estimate": 3.1764945629520285e-08,
+          "revision": "2265a9f7"
+         }
         },
-        "recola": {
-         "text": "none (\u00a70.1)",
-         "low": null,
-         "source": "milestone.json gate_references (DESIGN 1.3 Table 1b, 2026-10-20)"
-        },
-        "madloop": {
-         "text": null,
-         "low": null,
-         "status": "not measured (last run state: waiting for MadLoop export, 2026-10-22)",
-         "source": "measured.json provider_generation.processes[gg_ggggg].madloop.production"
-        }
+        "what": "binary64 finite part: relative deviation under one rotation about z by (3/5, 4/5), and the estimate E (rotation plus reduction direction)",
+        "source": "g1.json processes[gg_ggggg].stability"
        },
-       "matched": [],
-       "missing_production": [],
-       "limit_seconds": null,
-       "binding": null,
-       "source": "milestone.json gate_references (OpenLoops, Recola); measured.json provider_generation (MadLoop production build); limit computed by scripts/build_summary.py"
+       "ward": {
+        "status": "pending \u2014 needs native Ward inputs",
+        "reason": "pending (coordinator ruling, slice-status DECISIONS 2026-10-25 ~19:40: a recorded, temporary deviation from ADDENDUM H; the seven-gluon Ward check moves to generation-scale-2's next run with native Ward inputs). Attempted at seven legs on slice 7db32901 (package measure-g1-7leg, session 6): the Ward-mode generation of g g > g g g g g (Python per-point inputs with full tree kernels; point 0, leg 3, c = 1) had not finished after 55 min when the job stopped; one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs, a growth of x62-87 per added gluon, which puts one seven-gluon Ward evaluation at about 1.6e5-2.5e5 s (46-69 h) with Python per-point inputs (an estimate, not a measurement): seven gluons need native Ward inputs (generation-scale-2); the 5- and 6-gluon Ward rows pass",
+        "reason_source": "milestone.json status_notes.notes[gg_ggggg].ward",
+        "lower_multiplicity": [
+         {
+          "key": "gg_ggg",
+          "legs": 5,
+          "rows": 2,
+          "passed": true,
+          "max_virtual_ratio": 1.7228640465066138e-12,
+          "source": "g1.json processes[gg_ggg].ward"
+         },
+         {
+          "key": "gg_gggg",
+          "legs": 6,
+          "rows": 1,
+          "passed": true,
+          "max_virtual_ratio": 2.8385304913362043e-10,
+          "source": "g1.json processes[gg_gggg].ward"
+         }
+        ]
+       }
       }
      },
      "leading_colour": {
       "main": {
-       "status": "pending",
-       "package": "measure-g1-7leg",
-       "what": "the development validation records time single points only; batched timings come from G1",
-       "revision": "6f5a64cc",
-       "source": "measured.json required_native.processes[gg_ggggg] (no batched timing); milestone.json pending",
-       "configuration": "development_records",
+       "status": "measured",
+       "batch": 128,
+       "seconds_per_point": 3.4654240582112834,
+       "schedule": "B",
+       "families": 4707,
+       "inputs": "native",
+       "revision": "2265a9f7",
+       "g1_configuration": "native/lc",
+       "source": "g1.json processes[gg_ggggg].pyamplicol['native/lc'].batches['128']",
+       "fc_seconds_per_point": 6.965318084351566,
+       "lc_over_fc": 0.4975255998712794,
+       "configuration": "integrated",
        "considered": [
+        {
+         "configuration": "integrated",
+         "revision": "1d27426b",
+         "status": "measured"
+        },
         {
          "configuration": "development_records",
          "revision": "6f5a64cc",
-         "status": "pending"
-        },
-        {
-         "configuration": "registry",
-         "revision": null,
          "status": "no record"
         }
        ]
       }
-     }
+     },
+     "row_status": null
     }
    ]
   }
