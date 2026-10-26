@@ -156,7 +156,12 @@ CONTROLS = {
     ),
     "uux_uux": Control("u u~ > u u~", (2, -2), (2, -2), (2, 0), "required:uux_uux"),
     "uux_uuxg": Control(
-        "u u~ > u u~ g", (2, -2), (2, -2, 21), (3, 0), "required:uux_uuxg"
+        "u u~ > u u~ g",
+        (2, -2),
+        (2, -2, 21),
+        (3, 0),
+        "required:uux_uuxg",
+        colour_projections=("lc", "nlc"),
     ),
 }
 
