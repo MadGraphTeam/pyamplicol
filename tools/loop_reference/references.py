@@ -739,8 +739,9 @@ def command_merge(args):
         "scheme_description": scheme["description"],
         "source": "independent references: " + "; ".join(
             results[p].get("version", p) for p in results),
-        "scope": "Independent provider references at exact on-shell decimal points; binary64 "
-                 "provider arithmetic; timings are single-run by-products, not benchmarks.",
+        "scope": "Independent provider references at exact on-shell decimal points; "
+                 + provider_arithmetic(results)
+                 + "; timings are single-run by-products, not benchmarks.",
         "convention": "MadLoop/BLHA C_eps=(4pi)^eps/Gamma(1-eps); F_MadLoop=F_Recola+pi^2/6*D; "
                       "OpenLoops truepoles=1, polenorm=0; physical couplings, no alpha extraction; "
                       "initial spin/colour average and final identical-particle factor included",
@@ -775,6 +776,29 @@ def command_merge(args):
           f"max_pole_identity={max(pole_errors):.3g} status={report['validation_status']}")
     if not passed:
         sys.exit(2)
+
+
+def provider_arithmetic(results):
+    """The arithmetic of each provider's values as its run records it. MadLoop
+    reports a return code 100*H + 10*T + U per point, H = 1, 2 for double and
+    3, 4 for quadruple precision; the other providers keep no per-point record,
+    so their recorded settings describe them."""
+    parts = []
+    for provider, result in results.items():
+        statuses = [row.get("status") for row in result["rows"]]
+        quadruple = [isinstance(s, int) and s // 100 in (3, 4) for s in statuses]
+        if provider == "madloop" and statuses and all(isinstance(s, int) for s in statuses):
+            codes = ", ".join(str(s) for s in sorted(set(statuses)))
+            if all(quadruple):
+                parts.append(f"MadLoop in quadruple precision at every point (return codes {codes})")
+            elif any(quadruple):
+                parts.append("MadLoop in quadruple precision where its return code is 3xx or 4xx, "
+                             f"double precision elsewhere (return codes {codes})")
+            else:
+                parts.append(f"MadLoop in double precision (return codes {codes})")
+        else:
+            parts.append(f"{provider} as configured in its recorded settings")
+    return "; ".join(parts)
 
 
 def generation_seconds(provider, result):
