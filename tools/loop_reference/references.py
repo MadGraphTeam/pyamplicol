@@ -35,6 +35,7 @@ import time
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import provider_paths  # noqa: E402
 import required_spec  # noqa: E402
 
 COEFFICIENTS = ("born", "finite", "single_pole", "double_pole")
@@ -370,8 +371,8 @@ def point_lines(points):
             for mu, point in zip(points["mu_r"], points["points"], strict=True)]
 
 
-def run_native(command, stdin_text, cwd, log, cpu):
-    env = os.environ.copy()
+def run_native(command, stdin_text, cwd, log, cpu, env=None):
+    env = {**os.environ, **(env or {})}
     env.update({"OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"})
 
     def pin():
@@ -466,8 +467,33 @@ def status_update(work, label, state):
                                 "updated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}) + "\n")
 
 
+def check_provider_paths(args, root):
+    """Refuse provider files outside the reference root ``root`` before any of
+    them is linked, loaded or run (provider_paths); no check without a root."""
+    if root is None:
+        print("warning: no reference root configured (--reference-root or "
+              f"{provider_paths.ENVIRONMENT}); provider paths are not checked", file=sys.stderr)
+        return
+    from build import madloop_library_paths
+
+    roots, what = [root], f"{args.provider} reference"
+    absolute = lambda path: Path(os.path.abspath(path))  # noqa: E731 (resolve() would stat it)
+    if args.provider == "madloop":
+        export = absolute(args.madloop_export)
+        provider_paths.check([export, *([args.mg5] if args.mg5 else [])], roots, what=what, strict=True)
+        provider_paths.check(madloop_library_paths(export), roots, what=what, strict=True)
+    elif args.provider == "recola":
+        tree = absolute(args.recola)
+        provider_paths.check([tree], roots, libraries=[tree / "librecola.so"], what=what, strict=True)
+    else:
+        tree = absolute(args.openloops)
+        provider_paths.check([tree], roots, libraries=[tree / "lib/libopenloops.so"], what=what, strict=True)
+
+
 def command_run(args):
     roots = {"mg5": args.mg5, "reference": args.reference_root}
+    reference_root = provider_paths.reference_root(args.reference_root)
+    check_provider_paths(args, reference_root)
     spec = required_spec.load_process(args.spec, args.process, roots)
     points = json.loads(args.points.read_text())
     if points["pdgs"] != spec["pdgs"]:
@@ -542,6 +568,9 @@ def command_run(args):
             subprocess.run(["gfortran", "-O2", "-ffree-line-length-none", str(HERE / "recola_driver.f90"),
                             "-I", str(root / "include"), "-L", str(root), f"-Wl,-rpath,{root}",
                             "-lrecola", "-o", str(binary)], check=True, cwd=run_dir)
+            if reference_root is not None:
+                provider_paths.check([], [reference_root, run_dir], libraries=[binary],
+                                     what="Recola driver", strict=True)
             uncached = legs >= UNCACHED_LEG_THRESHOLD or args.recola_uncached
             commands = recola_commands(spec, points, uncached)
             result["settings"] = {"recola_tree": str(root), "commands": commands,
@@ -564,8 +593,12 @@ def command_run(args):
             result["provenance"] = {"openloops": {"path": str(root), "release": openloops_release(root)},
                                     "linked": linked_libraries(binary, r"openloops")}
             result["library"] = {"name": library, **openloops_library_version(root, library)}
+            # OpenLoops loads its process libraries from <install_path>/proclib; the
+            # compiled-in default is the tree it was built in, OpenLoopsPath this one.
+            result["settings"]["OpenLoopsPath"] = str(root)
             stdin = "\n".join(commands + [f"points {count}", *point_lines(points)]) + "\n"
-            stdout, wall = run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu)
+            stdout, wall = run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu,
+                                      env={"OpenLoopsPath": str(root)})
         rows, extra = parse_rows(stdout, provider, count)
         if provider == "recola":
             banner = re.search(r"Version (\S+)", stdout)
@@ -844,7 +877,9 @@ def main():
     run = sub.choices["run"]
     run.add_argument("--provider", choices=("madloop", "recola", "openloops"), required=True)
     run.add_argument("--mg5", type=Path, help="MG5_aMC tree (MadLoop card handling, version)")
-    run.add_argument("--reference-root", type=Path)
+    run.add_argument("--reference-root", type=Path,
+                     help=f"reference root (default ${provider_paths.ENVIRONMENT}); provider files "
+                     "outside it are refused")
     run.add_argument("--madloop-export", type=Path)
     run.add_argument("--madloop-accuracy", type=float, default=1e-11,
                      help="relative accuracy target forcing quadruple-precision rescue; <= 0 keeps "
@@ -881,7 +916,7 @@ def main():
         return
     if args.command == "run":
         if args.mg5:
-            args.mg5 = args.mg5.resolve()
+            args.mg5 = Path(os.path.abspath(args.mg5))  # checked before it is resolved
         command_run(args)
     else:
         command_merge(args)
