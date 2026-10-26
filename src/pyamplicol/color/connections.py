@@ -24,7 +24,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from fractions import Fraction
-from functools import cached_property
+from functools import cached_property, lru_cache
 from typing import TypeAlias
 
 from .contraction_trace import _simplify_trace_terms_nc_power
@@ -489,6 +489,15 @@ def apply_color_connection(
     return ConnectedColorTensor(connection.output_legs, terms, connection.order)
 
 
+@lru_cache(maxsize=65536)
+def _closed_trace_overlap_nc_terms(
+    traces: tuple[tuple[int, ...], ...],
+) -> tuple[tuple[int, Fraction], ...]:
+    return tuple(
+        sorted(_simplify_trace_terms_nc_power(((Fraction(1), 0, traces),)).items())
+    )
+
+
 def _literal_tensor_overlap_nc_terms(
     left: ColorTensor, right: ColorTensor
 ) -> Mapping[int, Fraction]:
@@ -511,7 +520,18 @@ def _literal_tensor_overlap_nc_terms(
             trace.extend(reversed(left_string.adjoint_labels))
             current = left_string.fundamental_label
         traces.append(tuple(trace))
-    return _simplify_trace_terms_nc_power(((Fraction(1), 0, tuple(traces)),))
+    # Closed overlaps are invariant under cyclic rotations, trace ordering and
+    # bijective dummy-index relabelling. Keep reflections and the full Nc series.
+    words = sorted(
+        (_canonical_trace(trace) for trace in traces),
+        key=lambda word: (len(word), word),
+    )
+    labels: dict[int, int] = {}
+    key = tuple(
+        tuple(labels.setdefault(label, len(labels)) for label in word) for word in words
+    )
+    # Return a fresh mapping so callers cannot mutate cached coefficients.
+    return dict(_closed_trace_overlap_nc_terms(key))
 
 
 def contract_connected_tensor_nc_terms(

@@ -51,10 +51,34 @@ SDK and library, not an older installed release. Declare the operators with
 `Generator.generate(..., correlators=CorrelatorConfig(...))` or
 `generate ... --correlators FILE.json` as in [Born Correlations](../correlators.md).
 
-Native correlated evaluation is **binary64 only**, like the ordinary native
+Native correlated evaluation uses **binary64 buffers by default**, like the ordinary native
 SDK. It runs in RustiCol without Python or Symbolica. The separate Python
 correlated executor retains Symbolica-backed double-double and arbitrary
 precision; its `precision=16` path also uses that executor.
+
+For cancellation-prone correlated requests, the development SDK can load an
+explicit native binary128 companion. Preparation requires retained evaluators,
+Symbolica and Linux GCC with quadmath:
+
+```python
+runtime = Runtime.load("PROCESS_ARTIFACT")
+runtime.compile_correlated_rescue("PROCESS.rescue.so")
+```
+
+Attach that trusted executable library with
+`rusticol_runtime_load_correlated_rescue(handle, path)`, then use
+`rusticol_runtime_evaluate_correlated_many_rescued_f64` with the same request
+and binary64 buffer layout as `_many_f64`. The loader checks the artifact ID
+and dimensions. Ordinary calls remain unchanged; no automatic rescue or
+precision switching is implied. Convenience-language wrappers do not yet
+expose these two C functions.
+
+The companion recomputes internal momenta, currents and amplitudes in binary128,
+returns high/low binary64 amplitude components, and reuses the SDK's twofold
+full-colour contraction. External sources and mutable model inputs remain
+binary64. Numerical execution needs quadmath, not Python or Symbolica. Missing
+kernels, incompatible artifacts and unsupported instruction programs fail
+explicitly; small imaginary parts are not clamped.
 
 LC, NLC and full colour are selected at generation for each inserted colour
 matrix, independently of connection order. The underlying amplitudes remain

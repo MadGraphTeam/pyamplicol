@@ -98,7 +98,39 @@ struct WeightRecord {
 struct Matrix {
     id: String,
     sectors: BTreeSet<i64>,
-    entries: Vec<(i64, i64, [f64; 2])>,
+    entries: Vec<(i64, i64, [Twofold; 2])>,
+}
+
+// Keep rounding residuals through coherent sums and cancellation-prone colour
+// bilinears. The compiled amplitude stages themselves still execute in f64.
+#[derive(Clone, Copy, Default, Debug)]
+struct Twofold(f64, f64);
+
+impl Twofold {
+    fn add(self, rhs: Self) -> Self {
+        let sum = self.0 + rhs.0;
+        let virtual_rhs = sum - self.0;
+        let error = (self.0 - (sum - virtual_rhs)) + (rhs.0 - virtual_rhs);
+        let tail = error + self.1 + rhs.1;
+        let high = sum + tail;
+        Self(high, tail - (high - sum))
+    }
+
+    fn sub(self, rhs: Self) -> Self {
+        self.add(Self(-rhs.0, -rhs.1))
+    }
+
+    fn mul(self, rhs: Self) -> Self {
+        let product = self.0 * rhs.0;
+        let error =
+            self.0.mul_add(rhs.0, -product) + self.0 * rhs.1 + self.1 * rhs.0 + self.1 * rhs.1;
+        let high = product + error;
+        Self(high, error - (high - product))
+    }
+
+    fn value(self) -> f64 {
+        self.0 + self.1
+    }
 }
 
 struct Group {
@@ -115,6 +147,63 @@ pub(super) struct CorrelatedRuntime {
     known_helicities: BTreeSet<String>,
     groups: Vec<Group>,
     vectors: NativeSpinCorrelationVectors,
+    #[cfg(feature = "f64-compiled")]
+    rescue: Option<RescueKernel>,
+}
+
+#[cfg(feature = "f64-compiled")]
+struct RescueKernel {
+    _library: libloading::Library,
+    evaluate: unsafe extern "C" fn(*const f64, *const f64, *mut f64) -> i32,
+}
+
+#[cfg(feature = "f64-compiled")]
+impl RescueKernel {
+    unsafe fn load(
+        path: &Path,
+        artifact_id: &str,
+        state: usize,
+        outputs: usize,
+    ) -> RusticolResult<Self> {
+        // Like a process artifact, the caller-supplied kernel is trusted executable input.
+        let library = unsafe { libloading::Library::new(path) }
+            .map_err(|error| invalid(format!("cannot load rescue kernel: {error}")))?;
+        unsafe {
+            let identity = library
+                .get::<unsafe extern "C" fn() -> *const std::ffi::c_char>(
+                    b"rusticol_rescue_artifact_id",
+                )
+                .map_err(|error| invalid(error.to_string()))?;
+            let pointer = identity();
+            if pointer.is_null()
+                || std::ffi::CStr::from_ptr(pointer).to_bytes() != artifact_id.as_bytes()
+            {
+                return Err(invalid(
+                    "rescue kernel belongs to a different process artifact",
+                ));
+            }
+            for (name, expected) in [
+                (b"rusticol_rescue_state_size".as_slice(), state),
+                (b"rusticol_rescue_output_size".as_slice(), outputs),
+            ] {
+                let size = library
+                    .get::<unsafe extern "C" fn() -> u64>(name)
+                    .map_err(|error| invalid(error.to_string()))?;
+                if size() != expected as u64 {
+                    return Err(invalid("rescue kernel dimensions differ from the artifact"));
+                }
+            }
+            let evaluate = *library
+                .get::<unsafe extern "C" fn(*const f64, *const f64, *mut f64) -> i32>(
+                    b"rusticol_rescue_evaluate",
+                )
+                .map_err(|error| invalid(error.to_string()))?;
+            Ok(Self {
+                _library: library,
+                evaluate,
+            })
+        }
+    }
 }
 
 fn invalid(message: impl Into<String>) -> RusticolError {
@@ -137,7 +226,7 @@ fn validate_catalogue_artifact_id(loaded: &str, reopened: &str) -> RusticolResul
     Ok(())
 }
 
-fn rational_f64(parts: &[Value; 2]) -> RusticolResult<f64> {
+fn rational_twofold(parts: &[Value; 2]) -> RusticolResult<Twofold> {
     let integer = |value: &Value| -> RusticolResult<f64> {
         let text = match value {
             Value::String(text) => text.clone(),
@@ -157,11 +246,15 @@ fn rational_f64(parts: &[Value; 2]) -> RusticolResult<f64> {
     if denominator == 0.0 {
         return Err(malformed("zero matrix denominator"));
     }
-    let value = integer(&parts[0])? / denominator;
+    let numerator = integer(&parts[0])?;
+    let value = numerator / denominator;
     if !value.is_finite() {
         return Err(malformed("matrix coefficient exceeds binary64 range"));
     }
-    Ok(value)
+    Ok(Twofold(
+        value,
+        (-value).mul_add(denominator, numerator) / denominator,
+    ))
 }
 
 impl CorrelatedRuntime {
@@ -310,8 +403,8 @@ impl CorrelatedRuntime {
                     entry.left_sector_id,
                     entry.right_sector_id,
                     [
-                        rational_f64(&entry.weight.real)?,
-                        rational_f64(&entry.weight.imag)?,
+                        rational_twofold(&entry.weight.real)?,
+                        rational_twofold(&entry.weight.imag)?,
                     ],
                 ));
             }
@@ -447,6 +540,8 @@ impl CorrelatedRuntime {
             known_helicities,
             groups,
             vectors: BTreeMap::new(),
+            #[cfg(feature = "f64-compiled")]
+            rescue: None,
         })
     }
 
@@ -517,6 +612,62 @@ impl CorrelatedRuntime {
 }
 
 impl NativeRuntime {
+    /// Attach a trusted, preparation-compiled binary128 current/amplitude kernel.
+    ///
+    /// # Safety
+    /// The library must implement the documented rescue ABI and be trusted code.
+    pub unsafe fn load_correlated_rescue(&mut self, path: &Path) -> RusticolResult<()> {
+        self.ensure_correlated()?;
+        #[cfg(feature = "f64-compiled")]
+        {
+            let kernel = unsafe {
+                RescueKernel::load(
+                    path,
+                    &self.artifact_id,
+                    self.runtime.parameter_count,
+                    self.runtime.amplitude_output_count,
+                )?
+            };
+            self.correlated.as_mut().expect("initialized").rescue = Some(kernel);
+            Ok(())
+        }
+        #[cfg(not(feature = "f64-compiled"))]
+        {
+            let _ = path;
+            Err(invalid("rescue requires native compiled-stage support"))
+        }
+    }
+
+    pub fn evaluate_correlated_many_rescued_f64(
+        &mut self,
+        momenta: &[f64],
+        point_count: usize,
+        requests: &[NativeCorrelatedRequest],
+        helicity_ids: Option<&[String]>,
+    ) -> RusticolResult<NativeCorrelatedEvaluation> {
+        self.ensure_correlated()?;
+        #[cfg(feature = "f64-compiled")]
+        {
+            if self
+                .correlated
+                .as_ref()
+                .expect("initialized")
+                .rescue
+                .is_none()
+            {
+                return Err(invalid("no native rescue kernel loaded"));
+            }
+            let mut evaluation =
+                evaluate_many(self, momenta, point_count, requests, helicity_ids, true)?;
+            self.apply_process_group_factor(evaluation.values.as_flattened_mut());
+            Ok(evaluation)
+        }
+        #[cfg(not(feature = "f64-compiled"))]
+        {
+            let _ = (momenta, point_count, requests, helicity_ids);
+            Err(invalid("rescue requires native compiled-stage support"))
+        }
+    }
     fn ensure_correlated(&mut self) -> RusticolResult<()> {
         if self.correlated.is_none() {
             self.correlated = Some(CorrelatedRuntime::load(self)?);
@@ -568,7 +719,8 @@ impl NativeRuntime {
         self.ensure_correlated()?;
         #[cfg(any(feature = "f64-compiled", feature = "f64-symjit"))]
         {
-            let mut evaluation = evaluate_many(self, momenta, point_count, requests, helicity_ids)?;
+            let mut evaluation =
+                evaluate_many(self, momenta, point_count, requests, helicity_ids, false)?;
             self.apply_process_group_factor(evaluation.values.as_flattened_mut());
             Ok(evaluation)
         }
@@ -589,6 +741,7 @@ fn evaluate_many(
     point_count: usize,
     requests: &[NativeCorrelatedRequest],
     helicity_ids: Option<&[String]>,
+    rescue: bool,
 ) -> RusticolResult<NativeCorrelatedEvaluation> {
     let expected = point_count
         .checked_mul(native.runtime.external_count)
@@ -681,24 +834,84 @@ fn evaluate_many(
         // Memo lifetime is exactly one point tile: momenta and parameters cannot change.
         let mut memo = compiled_direct_prototype::CorrelatedStageMemo::default();
         for (assignment, vectors) in assignments.iter().enumerate() {
-            direct.begin_tile_from_inputs(
-                batch.subview(point_start, point_stop)?,
-                &runtime.sources,
-                None,
-                runtime.external_count,
-                &runtime.particle_masses,
-                &runtime.momentum_slots,
-                &runtime.external_is_initial,
-                &runtime.model_parameter_values_f64,
-            )?;
-            direct.replace_correlated_sources(&runtime.sources, vectors, point_start, count)?;
-            if assignments.len() > 1 {
-                direct.evaluate_correlated_reusing(count, &mut memo)?;
+            let rescued: Option<Vec<[Twofold; 2]>>;
+            if rescue {
+                #[cfg(feature = "f64-compiled")]
+                {
+                    let kernel = correlated
+                        .rescue
+                        .as_ref()
+                        .expect("checked before evaluation");
+                    let mut raw =
+                        vec![[Twofold::default(); 2]; runtime.amplitude_output_count * count];
+                    for offset in 0..count {
+                        let point_index = point_start + offset;
+                        let mut state = vec![c64(0., 0.); runtime.parameter_count];
+                        ExecutionRuntime::fill_sources_row(
+                            &runtime.sources,
+                            runtime.external_count,
+                            &runtime.particle_masses,
+                            &mut state,
+                            &batch.point(point_index),
+                        )?;
+                        ExecutionRuntime::fill_model_parameters_row(
+                            runtime.value_parameter_count + runtime.momentum_parameter_count,
+                            &runtime.model_parameter_values_f64,
+                            &mut state,
+                        )?;
+                        for source in &runtime.sources {
+                            if let Some(vectors) = vectors.get(&source.leg_label) {
+                                let wave =
+                                    &vectors[if vectors.len() == 1 { 0 } else { point_index }];
+                                let [pr, pi] = source.applied_crossing.phase;
+                                for (mu, &[vr, vi]) in wave.iter().enumerate() {
+                                    state[source.value_slot.component_start + mu] =
+                                        c64(vr * pr - vi * pi, vr * pi + vi * pr);
+                                }
+                            }
+                        }
+                        let mut output = vec![0.; 4 * runtime.amplitude_output_count];
+                        let status = unsafe {
+                            (kernel.evaluate)(
+                                state.as_ptr().cast::<f64>(),
+                                momenta[4 * runtime.external_count * point_index..].as_ptr(),
+                                output.as_mut_ptr(),
+                            )
+                        };
+                        if status != 0 || output.iter().any(|value| !value.is_finite()) {
+                            return Err(invalid(
+                                "native rescue kernel failed or returned nonfinite amplitudes",
+                            ));
+                        }
+                        for (root, value) in output.chunks_exact(4).enumerate() {
+                            raw[root * count + offset] =
+                                [Twofold(value[0], value[1]), Twofold(value[2], value[3])];
+                        }
+                    }
+                    rescued = Some(raw);
+                }
+                #[cfg(not(feature = "f64-compiled"))]
+                return Err(invalid("rescue requires compiled-stage support"));
             } else {
-                direct.evaluate_all(count)?;
+                direct.begin_tile_from_inputs(
+                    batch.subview(point_start, point_stop)?,
+                    &runtime.sources,
+                    None,
+                    runtime.external_count,
+                    &runtime.particle_masses,
+                    &runtime.momentum_slots,
+                    &runtime.external_is_initial,
+                    &runtime.model_parameter_values_f64,
+                )?;
+                direct.replace_correlated_sources(&runtime.sources, vectors, point_start, count)?;
+                if assignments.len() > 1 {
+                    direct.evaluate_correlated_reusing(count, &mut memo)?;
+                } else {
+                    direct.evaluate_all(count)?;
+                }
+                rescued = None;
             }
-            let planes = direct.amplitude_planes()?;
-            let mut amplitudes = vec![[0.0; 2]; selected[assignment].len() * count];
+            let mut amplitudes = vec![[Twofold::default(); 2]; selected[assignment].len() * count];
             let mut by_helicity: BTreeMap<&str, BTreeMap<i64, usize>> = BTreeMap::new();
             for (position, &index) in selected[assignment].iter().enumerate() {
                 let group = &correlated.groups[index];
@@ -707,10 +920,22 @@ fn evaluate_many(
                     .or_default()
                     .insert(group.sector, position);
                 for &root in &group.roots {
-                    let (re, im) = planes.plane_unchecked(root);
+                    let planes = if rescued.is_none() {
+                        Some(direct.amplitude_planes()?.plane_unchecked(root))
+                    } else {
+                        None
+                    };
                     for point in 0..count {
-                        amplitudes[position * count + point][0] += re[point];
-                        amplitudes[position * count + point][1] += im[point];
+                        let value = if let Some(raw) = rescued.as_ref() {
+                            raw[root * count + point]
+                        } else {
+                            let (re, im) = planes.expect("binary64 planes");
+                            [Twofold(re[point], 0.), Twofold(im[point], 0.)]
+                        };
+                        amplitudes[position * count + point][0] =
+                            amplitudes[position * count + point][0].add(value[0]);
+                        amplitudes[position * count + point][1] =
+                            amplitudes[position * count + point][1].add(value[1]);
                     }
                 }
             }
@@ -719,6 +944,7 @@ fn evaluate_many(
                 .enumerate()
                 .filter(|(_, (id, _))| *id == assignment)
             {
+                let mut sums = vec![[Twofold::default(); 2]; count];
                 for sectors in by_helicity.values() {
                     for &(left, right, weight) in &correlated.matrices[matrix].entries {
                         let a = sectors[&left] * count;
@@ -726,19 +952,20 @@ fn evaluate_many(
                         for point in 0..count {
                             let [ar, ai] = amplitudes[a + point];
                             let [br, bi] = amplitudes[b + point];
-                            let wr = ar * weight[0] + ai * weight[1];
-                            let wi = ar * weight[1] - ai * weight[0];
-                            let value = &mut values[request * point_count + point_start + point];
-                            value[0] += wr * br - wi * bi;
-                            value[1] += wr * bi + wi * br;
+                            let wr = ar.mul(weight[0]).add(ai.mul(weight[1]));
+                            let wi = ar.mul(weight[1]).sub(ai.mul(weight[0]));
+                            let value = &mut sums[point];
+                            value[0] = value[0].add(wr.mul(br).sub(wi.mul(bi)));
+                            value[1] = value[1].add(wr.mul(bi).add(wi.mul(br)));
                         }
                     }
                 }
-                for value in &mut values
-                    [request * point_count + point_start..request * point_count + point_stop]
-                {
-                    value[0] *= runtime.normalization_factor;
-                    value[1] *= runtime.normalization_factor;
+                for (point, sum) in sums.into_iter().enumerate() {
+                    values[request * point_count + point_start + point] = sum.map(|value| {
+                        value
+                            .mul(Twofold(runtime.normalization_factor, 0.0))
+                            .value()
+                    });
                 }
             }
         }
@@ -764,7 +991,9 @@ mod tests {
     #[test]
     fn exact_weights_reject_lossy_or_nonfinite_encodings() {
         assert_eq!(
-            rational_f64(&[Value::from("-3"), Value::from("2")]).unwrap(),
+            rational_twofold(&[Value::from("-3"), Value::from("2")])
+                .unwrap()
+                .value(),
             -1.5
         );
         for parts in [
@@ -772,8 +1001,29 @@ mod tests {
             [Value::from(1.2), Value::from(1)],
             [Value::from(1), Value::from(0)],
         ] {
-            assert!(rational_f64(&parts).is_err());
+            assert!(rational_twofold(&parts).is_err());
         }
+    }
+
+    #[test]
+    fn correlated_contraction_keeps_rounding_residuals() {
+        let large = Twofold(1e16, 0.0);
+        assert_eq!(large.add(Twofold(1.0, 0.0)).sub(large).value(), 1.0);
+        let third = rational_twofold(&[Value::from(1), Value::from(3)]).unwrap();
+        assert!(
+            third
+                .mul(Twofold(3.0, 0.0))
+                .sub(Twofold(1.0, 0.0))
+                .value()
+                .abs()
+                < 1e-30
+        );
+        let a = Twofold(1.0 + f64::EPSILON, 0.0);
+        let b = Twofold(1.0 - f64::EPSILON, 0.0);
+        assert_eq!(
+            a.mul(b).sub(Twofold(1.0, 0.0)).value(),
+            -f64::EPSILON.powi(2)
+        );
     }
 
     #[test]
@@ -785,6 +1035,8 @@ mod tests {
             known_helicities: BTreeSet::new(),
             groups: vec![],
             vectors: BTreeMap::new(),
+            #[cfg(feature = "f64-compiled")]
+            rescue: None,
         };
         let vector = [[1.0, 0.0]; 4];
         assert!(
@@ -818,6 +1070,8 @@ mod tests {
             known_helicities: BTreeSet::new(),
             groups: vec![],
             vectors: BTreeMap::new(),
+            #[cfg(feature = "f64-compiled")]
+            rescue: None,
         };
         for h1 in [-1, 1] {
             for h2 in [-1, 1] {

@@ -177,6 +177,88 @@ pub unsafe extern "C" fn rusticol_runtime_evaluate_correlated_many_f64(
     output: *mut c_double,
     output_capacity: size_t,
 ) -> c_int {
+    unsafe {
+        evaluate(
+            handle,
+            momenta,
+            momentum_count,
+            point_count,
+            requests,
+            request_count,
+            helicity_ids,
+            helicity_count,
+            output,
+            output_capacity,
+            false,
+        )
+    }
+}
+
+/// Attach a trusted native companion library to this exact process artifact.
+///
+/// # Safety
+/// handle must be live/exclusive; path must name trusted executable code implementing the rescue ABI.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rusticol_runtime_load_correlated_rescue(
+    handle: *mut RusticolRuntimeHandle,
+    path: *const c_char,
+) -> c_int {
+    guard(|| {
+        let handle = unsafe { required_handle_mut(handle) }?;
+        let path = unsafe { required_c_string(path, "rescue library path") }?;
+        unsafe { handle.runtime.load_correlated_rescue(Path::new(path)) }?;
+        Ok(())
+    })
+}
+
+/// Evaluate using a previously attached binary128 current/amplitude kernel.
+///
+/// # Safety
+/// Pointer/storage requirements are identical to the binary64 correlated entry point.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rusticol_runtime_evaluate_correlated_many_rescued_f64(
+    handle: *mut RusticolRuntimeHandle,
+    momenta: *const c_double,
+    momentum_count: size_t,
+    point_count: size_t,
+    requests: *const RusticolCorrelatedRequest,
+    request_count: size_t,
+    helicity_ids: *const *const c_char,
+    helicity_count: size_t,
+    output: *mut c_double,
+    output_capacity: size_t,
+) -> c_int {
+    unsafe {
+        evaluate(
+            handle,
+            momenta,
+            momentum_count,
+            point_count,
+            requests,
+            request_count,
+            helicity_ids,
+            helicity_count,
+            output,
+            output_capacity,
+            true,
+        )
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+unsafe fn evaluate(
+    handle: *mut RusticolRuntimeHandle,
+    momenta: *const c_double,
+    momentum_count: size_t,
+    point_count: size_t,
+    requests: *const RusticolCorrelatedRequest,
+    request_count: size_t,
+    helicity_ids: *const *const c_char,
+    helicity_count: size_t,
+    output: *mut c_double,
+    output_capacity: size_t,
+    rescue: bool,
+) -> c_int {
     guard(|| {
         let required = request_count
             .checked_mul(point_count)
@@ -193,12 +275,21 @@ pub unsafe extern "C" fn rusticol_runtime_evaluate_correlated_many_f64(
         let requests = unsafe { read_requests(requests, request_count) }?;
         let helicities =
             unsafe { read_selector_ids(helicity_ids, helicity_count, "helicity IDs") }?;
-        let values = handle.runtime.evaluate_correlated_many_f64(
-            momenta,
-            point_count,
-            &requests,
-            helicities.as_deref(),
-        )?;
+        let values = if rescue {
+            handle.runtime.evaluate_correlated_many_rescued_f64(
+                momenta,
+                point_count,
+                &requests,
+                helicities.as_deref(),
+            )?
+        } else {
+            handle.runtime.evaluate_correlated_many_f64(
+                momenta,
+                point_count,
+                &requests,
+                helicities.as_deref(),
+            )?
+        };
         if values.point_count != point_count
             || values.request_count != request_count
             || values.values.len().checked_mul(2) != Some(required)
