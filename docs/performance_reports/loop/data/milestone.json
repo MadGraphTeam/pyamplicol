@@ -501,7 +501,7 @@
     "revision": "11542fd5",
     "kind": "not validated",
     "label": "cost only: value not validated (identical-flavour LC pending)",
-    "reason": "LC/NLC of processes with identical-flavour quark lines (from u u~ > u u~ g up) are refused by the Python per-point path but not yet by generation, export, the native runtime or the SDK, which serve grade-0 projections that are not correct LC/NLC values; full colour is exact; pre-existing on loop 36f43250; fixes in flight (packages fail-closed and identical-flavour-lc)",
+    "reason": "LC/NLC of identical-flavour quark lines are refused by the Python per-point path but not yet by generation, export, the native runtime or the SDK, which serve grade-0 projections that are not correct LC/NLC values (full colour is exact; pre-existing on loop 36f43250; fixes in flight in packages fail-closed and identical-flavour-lc)",
     "source": "slice-status DECISIONS 2026-10-26 ~21:10 item 1; data/g1.json known_limitations"
    },
    {
@@ -511,7 +511,7 @@
     "revision": "11542fd5",
     "kind": "run conditions",
     "label": "busier host: about +15 % contention",
-    "reason": "the full-colour runtime was re-run alone on 2026-10-27 (core 163, host load average 158-287, other users' unpinned processes on the same CCX) after its first run of 2026-10-26 (the same engine, stored process and core) was killed by a session stop in its third round: this run's times per point lie about 15 % (B = 128) and 17 % (B = 16) above that run's blocks, its warm-ups (132 and 129 s against 112 and 113 s) and the stored process's load (29 against 23 s) were longer too, and the values are bitwise the same; the killed run is no input; no gate (no matched provider)",
+    "reason": "re-run alone on 2026-10-27 (core 163, host load average 158-287, other users' unpinned processes on the same CCX) after a session stop killed its first run of 2026-10-26 (same engine, stored process and core) in round 3: this run's times per point lie about 15 % (B = 128) and 17 % (B = 16) above that run's blocks, its warm-ups and load took longer, the values are bitwise the same; the killed run is no input",
     "source": "data/g1.json seven_leg_rows and host"
    }
   ]
