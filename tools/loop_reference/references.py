@@ -406,8 +406,9 @@ def check_point_masses(spec, points):
             shell = energy * energy - sum(x * x for x in space)
             if abs(shell - mass * mass) > energy * energy / 10**20:
                 raise SystemExit(
-                    f"point {index + 1}, leg {leg + 1}: p^2 = {float(shell)!r} is off "
-                    f"the mass shell {float(mass * mass)!r} of the scheme {spec['scheme']!r}")
+                    f"point {index + 1}, leg {leg + 1}: p^2 = {float(shell)!r} is "
+                    f"off the mass shell {float(mass * mass)!r} of the scheme "
+                    f"{spec['scheme']!r}")
 
 
 def run_native(command, stdin_text, cwd, log, cpu, env=None):
