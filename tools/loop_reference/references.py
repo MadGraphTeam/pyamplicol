@@ -21,6 +21,7 @@ nothing here is process-specific.
 
 import argparse
 from decimal import Decimal, getcontext
+from fractions import Fraction
 import json
 import math
 import os
@@ -384,6 +385,31 @@ def point_lines(points):
             for mu, point in zip(points["mu_r"], points["points"], strict=True)]
 
 
+def check_point_masses(spec, points):
+    """Refuse points off the scheme's mass shells (``required_spec.masses``).
+
+    A points JSON built for other masses (for example before the process moved
+    to another scheme) is evaluated off shell by the providers, while a client
+    takes each leg's invariant on its model mass shell: their comparison then
+    measures the inconsistency, not the virtual. Printed points are on shell
+    to about 1e-27 (``exact_points.py``)."""
+
+    expected = required_spec.masses(spec)
+    recorded = points.get("masses")
+    if recorded is not None and [Fraction(m) for m in recorded] != expected:
+        raise SystemExit(
+            f"points JSON was built for the leg masses {recorded}; the scheme "
+            f"{spec['scheme']!r} gives {[str(m) for m in expected]}")
+    for index, point in enumerate(points["points"]):
+        for leg, (momentum, mass) in enumerate(zip(point, expected, strict=True)):
+            energy, *space = (Fraction(x) for x in momentum)
+            shell = energy * energy - sum(x * x for x in space)
+            if abs(shell - mass * mass) > energy * energy / 10**20:
+                raise SystemExit(
+                    f"point {index + 1}, leg {leg + 1}: p^2 = {float(shell)!r} is off "
+                    f"the mass shell {float(mass * mass)!r} of the scheme {spec['scheme']!r}")
+
+
 def run_native(command, stdin_text, cwd, log, cpu, env=None):
     env = {**os.environ, **(env or {})}
     env.update({"OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1"})
@@ -511,6 +537,7 @@ def command_run(args):
     points = json.loads(args.points.read_text())
     if points["pdgs"] != spec["pdgs"]:
         raise SystemExit("points JSON belongs to another process")
+    check_point_masses(spec, points)
     work = args.work_dir.resolve()
     work.mkdir(parents=True, exist_ok=True)
     provider = args.provider
@@ -647,6 +674,7 @@ def relative(a, b, floor=0.0):
 def command_merge(args):
     spec = required_spec.load_process(args.spec, args.process)
     points = json.loads(args.points.read_text())
+    check_point_masses(spec, points)
     work = args.work_dir.resolve()
     results = {}
     for provider in ("madloop", "recola", "openloops"):
