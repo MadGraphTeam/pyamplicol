@@ -18,7 +18,10 @@ and every entry names its source:
                           seven-leg rows (DESIGN 1.3 Table 1b, as text: the
                           gate limit is computed here), the branch of the
                           development revisions, user gate decisions (and
-                          the user's 5 ms gate rule) and short status notes
+                          the user's 5 ms gate rule), short status notes and
+                          notes on single measured cells (cell_notes: a
+                          known limitation of a value, or its run
+                          conditions)
 - tools/loop_benchmark/processes.json  the G1 process specifications
 
 Main-configuration rule (MAIN_RULE below): every cell of Table 1 and Figure
@@ -955,6 +958,44 @@ def _accept(rows: list[dict], g1: dict, decisions: dict | None) -> None:
                 f" not the validation cell's ({validation.get('source')})"
             )
         validation["accepted"] = accepted
+
+
+NOTE_CELLS = ("generation", "full_colour", "leading_colour")
+
+
+def _cell_notes(rows: list[dict], notes: dict | None) -> None:
+    """Attaches the registry's notes on single measured cells (milestone.json
+    cell_notes: a known limitation of a measured value, or its run
+    conditions) to their main cells (<cell>.main.note). A note applies to one
+    G1 configuration at one revision; when the cell's main value is not that
+    measurement (a newer campaign, another configuration, no measurement) the
+    build stops: the note is decided again, never carried over silently."""
+    by_key = {r["key"]: r for r in rows}
+    for entry in (notes or {}).get("notes", []):
+        key, cell, name = entry["process"], entry["cell"], entry["configuration"]
+        where = f"milestone.json cell_notes ({key}, {cell}, {name}@{entry['revision']})"
+        if key not in by_key or cell not in NOTE_CELLS:
+            raise ValueError(f"{where}: no such row or cell")
+        main = by_key[key][cell]["main"]
+        of_name = main.get("g1_configuration") == name or (
+            f"pyamplicol['{name}']" in str(main.get("source", ""))
+        )
+        if (
+            main.get("status") != "measured"
+            or not of_name
+            or main.get("revision") != entry["revision"][:8]
+        ):
+            raise ValueError(
+                f"{where}: the cell's main value is {main.get('status')}"
+                f" {main.get('g1_configuration')}@{main.get('revision')}"
+                f" ({main.get('source')}), not the noted measurement"
+            )
+        main["note"] = {
+            "kind": entry["kind"],
+            "label": entry["label"],
+            "reason": entry["reason"],
+            "source": f"milestone.json cell_notes ({entry['source']})",
+        }
 
 
 def _meta_revisions(g1: dict, *keys: str) -> set[str]:
@@ -2047,6 +2088,7 @@ def build() -> tuple[dict, Recency]:
             }
         if "madloop" in note:
             r["full_colour"]["madloop_note"] = note["madloop"]
+    _cell_notes(rows, ms.get("cell_notes"))
     # Increasing multiplicity, then increasing colour complexity (number of
     # gluons) within a multiplicity; stable otherwise.
     rows.sort(key=lambda r: (r["outgoing"], r["label"].split().count("g")))
