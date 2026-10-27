@@ -1,13 +1,13 @@
 {
- "date": "2026-10-26",
- "engine_revision": "4fc72e39",
- "previous_loop": "bae3b9ea",
- "previous_engine": "1d27426b",
+ "date": "2026-10-27",
+ "engine_revision": "11542fd5",
+ "previous_loop": "36f43250",
+ "previous_engine": "4fc72e39",
  "native_build": {
-  "name": "loop-native-v2-slice-79f2a5bd",
-  "digest": "2ba11490",
+  "name": "loop-native-v2-slice-11542fd5",
+  "digest": "f68a5255",
   "profile": "release, codegen-units 1, thin LTO, rustc 1.97.1",
-  "source": "workspace/reports/engine-v2/slice-status.md, native-lowering integration (79f2a5bd, UPDATE 2026-10-26 ~06:15 UTC): integrator release build of the merge commit (digest 2ba11490cf105199...), the third native change since bae3b9ea (after A4's at 1b13005a and precision-ap's loop-native-v2-slice-a8409830); onshell-consistency (4fc72e39) changed no native input and its integrator's stage --source accepted the build on 4fc72e39 (UPDATE ~06:35). G1 was not re-measured at this milestone: its timings are of engine 1d27426b on loop-native-v2-slice-7db32901 (data/g1.json slice_revision, slice_build, slice_native_digest); the measure-g1-7leg integrator's head check of the 2->5 rows on db13c260 with loop-native-v2-slice-a8409830 (B = 16, five jobs) returned bitwise the timed binary64 values at 16/16 points (UPDATE 2026-10-26 ~00:35); it was not repeated on 4fc72e39"
+  "source": "workspace/reports/engine-v2/slice-status.md, generation-scale-2 integration (11542fd5, UPDATE 2026-10-26 ~20:40 UTC): integrator release build of the merge commit (digest f68a52553506aef2..., equal to the package's own loop-native-generation-scale-2-3f4605dd), the fourth native change since 36f43250 (after native-seeds' loop-native-v2-slice-7e3841f3, native-cells' loop-native-v2-slice-5ebcebea and fermion-lines' loop-native-v2-slice-db1ed5cb; EWI-4b, genericity-fixes and ew-poles batch 2 changed no native input). G1 was re-measured on this build at this milestone (data/g1.json slice_revision 11542fd5, slice_build, slice_native_digest; the campaign restaged it with build_loop_native.py stage --source, which accepted the digest)"
  },
  "development": {
   "source": "git: 889af02c and the G1 scratch commit 39824f9b (tag g1-native-inputs-39824f9b) are on work/v2-generation-scale; work/v2-generation-scale d7e40cfb was integrated into work/v2-slice at 4e9b5a9e (G-int; 889af02c, fef92189, 0ea83af2 and 6f5a64cc are ancestors of 4e9b5a9e, the scratch commit 39824f9b is not); workspace/reports/engine-v2/slice-status.md, G-int integration block and DECISIONS 2026-10-24 ~21:50 UTC; label and integration: HANDOFF_24_10_2026.md section 6.2 (WP3.1 generation-scale, integration package G-int)",
@@ -21,8 +21,8 @@
   "integrated_at": "4e9b5a9e"
  },
  "ancestry": {
-  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout; 2026-10-25: milestone m1025a for 1d27426b, in the main checkout; 2026-10-26: milestone m1025c for 4fc72e39, in the report worktree at 4fc72e39 (it replaces db13c260, the pin of the m1025b attempt, which was not pushed)); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
-  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records) and of the engine on loop: every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. 4fc72e39 is the engine on loop at this milestone (m1025c; not a G1 campaign: G1 was not re-measured, every revision of the data is its ancestor); 1d27426b is the G1 campaign of milestone m1025a and of the 2->5 rows (slice_revision); 4e9b5a9e was G-int's (its runs are earlier_runs in data/g1.json); 1c971289 and 889af02c were the sides of the campaign before (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e, 1d27426b or 4fc72e39 and is no candidate)",
+  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout; 2026-10-25: milestone m1025a for 1d27426b, in the main checkout; 2026-10-26: milestone m1025c for 4fc72e39, in the report worktree at 4fc72e39 (it replaces db13c260, the pin of the m1025b attempt, which was not pushed); 2026-10-27: milestone m1026a for 11542fd5, in the report worktree at 11542fd5); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
+  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records) and of the engine on loop: every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. 11542fd5 is the engine on loop at this milestone (m1026a) and its G1 campaign (slice_revision; every other revision of the data is its ancestor); 4fc72e39 was the engine on loop at m1025c (not a G1 campaign); 1d27426b was the G1 campaign of milestone m1025a and of the 2->5 rows (its runs are earlier_runs in data/g1.json now), 4e9b5a9e G-int's (earlier_runs too); 1c971289 and 889af02c were the sides of the campaign before (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e, 1d27426b, 4fc72e39 or 11542fd5 and is no candidate)",
   "revisions": [
    "1c971289",
    "889af02c",
@@ -31,7 +31,8 @@
    "6f5a64cc",
    "4e9b5a9e",
    "1d27426b",
-   "4fc72e39"
+   "4fc72e39",
+   "11542fd5"
   ],
   "ancestors": [
    [
@@ -133,6 +134,38 @@
    [
     "1d27426b",
     "4fc72e39"
+   ],
+   [
+    "1c971289",
+    "11542fd5"
+   ],
+   [
+    "889af02c",
+    "11542fd5"
+   ],
+   [
+    "fef92189",
+    "11542fd5"
+   ],
+   [
+    "0ea83af2",
+    "11542fd5"
+   ],
+   [
+    "6f5a64cc",
+    "11542fd5"
+   ],
+   [
+    "4e9b5a9e",
+    "11542fd5"
+   ],
+   [
+    "1d27426b",
+    "11542fd5"
+   ],
+   [
+    "4fc72e39",
+    "11542fd5"
    ]
   ]
  },
@@ -149,63 +182,51 @@
  },
  "integrated": [
   {
-   "sha": "1b13005a",
-   "wp": "WP3.1 native-dag",
-   "title": "A4: native DAG route",
-   "detail": "the native DAG builder is the production route for the loop blocks and the counterterm program (A5's counterterm emission brought forward, byte-identical to the Python oracle; 11 listed features keep a recorded per-request Python fallback, any other native failure fails closed); counterterm-route parity with the site oracle met (generation + export, sites / recursion 0.82-0.98 at six legs)"
-  },
-  {
-   "sha": "6c87e276",
+   "sha": "8b19dae8",
    "wp": "WP3.2 ew-gauge",
-   "title": "EWI-4a: Feynman-gauge trees",
-   "detail": "massive vector bosons and explicit Goldstones in Feynman gauge for trees (Feynman = unitary and Slavnov-Taylor identities to 1e-13); two model-compiler defects fixed: lone chiral projectors had the opposite chirality (spinor-chain order in models/tensors.py, fix 3ae34543) and loop_qcd_qed_sm dropped the Goldstone flag of G-"
+   "title": "EWI-4b: Feynman-gauge loops",
+   "detail": "electroweak requests take the model in 't Hooft-Feynman gauge throughout (loops, counterterms, trees; a model that cannot take gauge 1 is refused when the request is prepared, visible in the dry run); Goldstone-vector mixing counterterms lowered as vertex insertions; QCD-only requests keep the compiled gauge (plans byte-identical); g g > t t~ (EW) equals MadLoop at point 0 within 1e-12 per coefficient"
   },
   {
-   "sha": "a8409830",
-   "wp": "precision-ap",
-   "title": "On-shell master invariants",
-   "detail": "a one-leg entry of the master integrals' S matrix is the leg's squared mass: DoubleFloat and arbitrary-precision virtuals were O(1) wrong at binary64-rounded massive momenta and now agree with a MadLoop quadruple-precision run within 1e-15; DoubleFloat massive spinors along -z fixed; new native build"
+   "sha": "7e3841f3",
+   "wp": "WP3.1 native-seeds",
+   "title": "B phase 1: native seed tables",
+   "detail": "the seed tables are built in Rust on the production route (main slice, poles companion, LC/NLC and observable prunes; any native failure fails closed, the Python stage kept as oracle), with a retained arena and the exact colour-network reductions in-crate; seven-leg plan digests unchanged; the 43,200 generic companion seeds of g g > g g g g g equal the Python ones (2.69 s against 260.9 s); new native build"
   },
   {
-   "sha": "392d3f4a",
-   "wp": "WP3.2 ew-ct",
-   "title": "EWI-0, EWI-3: EW counterterms",
-   "detail": "the UFO's EW counterterms lowered through the model's own helper bodies, with MadLoop's branch side for exactly real arguments; every Laurent piece equals MadLoop's to 3.7e-15 (binary64) and 6.0e-31 (double-double against MadLoop's quadruple precision); lowering 259 s cold (PLAN 30 s: EWI-3R)"
+   "sha": "5ebcebea",
+   "wp": "WP3.1 native-cells",
+   "title": "C phase 1: native colour cells",
+   "detail": "colour cells, seed records, overlap degrees and dipole orbits in Rust on the production route (the Python stages as oracles, no per-request fallback); the stored dipole orbits are validated before allocation (typed refusals); seven-leg stored forms keep their digests; new native build"
   },
   {
-   "sha": "46f72f20",
-   "wp": "measure-g1-7leg",
-   "title": "G1 at 2\u21925",
-   "detail": "G1 for every 2->5 row (with db13c260): full and leading colour at B = 16 and 128 on engine 1d27426b; the four gated rows pass, g g > g g g g g without a matched provider; the user's acceptance of its NJet points 4 and 8"
+   "sha": "005ab8f8",
+   "wp": "genericity-fixes",
+   "title": "Genericity audit M3 and minors",
+   "detail": "coupling-order names resolve once, case-insensitively, against the model's declared names (M3); structural colour-singlet and neutral-QCD counterterm certificates (no PDG allowlist); validation momenta from the model's masses; a renamed-model harness (orders, particles, PDG codes, parameters) as a durable test"
   },
   {
-   "sha": "48aeb123",
-   "wp": "reference-relocate",
-   "title": "Relocated provider trees",
-   "detail": "the provider reference trees (MadLoop exports, Recola, OpenLoops, NJet builds) no longer reference the old working root (RUNPATHs, install paths, build configurations and scripts relocated; provider values bitwise, zero old-root accesses); tools/loop_reference refuses provider files outside the configured reference root; tools only"
+   "sha": "e6e7543a",
+   "wp": "WP3.2 ew-poles",
+   "title": "EWI-6b: external photons at \u03b1(0)",
+   "detail": "on-shell external photons of EW requests take alpha(0) (every output scaled by (alpha(0)/alpha_Gmu)^n with MG5_aMC's per-photon DGmua0 field term; typed refusals otherwise); mixed QCD x EW sectors predicted only where the requested corrections complete their loops; Catani beta_0 and gamma_j from the request's species (genericity m1, m3); stored artifacts of external-photon requests wait for EW native inputs (EWI-N)"
   },
   {
-   "sha": "4e9262b5",
-   "wp": "model-determinism",
-   "title": "Deterministic models",
-   "detail": "compiled models and the cache files derived from them no longer depend on the process history (canonical Symbolica order through the central symbol registry, no wall-clock fields in the compiled-model payload; 90 of 90 history comparisons byte-identical over 9 models); the joint QCD+QED artifact test passes from an empty cache"
+   "sha": "db1ed5cb",
+   "wp": "fermion-lines",
+   "title": "Arbitrary fermion lines",
+   "detail": "any number of coloured fermion lines, identical or distinct flavours, QCD and EW, in the loop recursion (the fold of mixed colour-connection parities runs before the evaluation reuse in the Python and Rust lanes; native fast paths output-identical); u u~ > d d~ s s~, u u~ > u u~ d d~, u u~ > u u~ u u~ and u u~ > u u~ e+ e- equal MadLoop in quadruple precision and Recola; new native build"
   },
   {
-   "sha": "79f2a5bd",
-   "wp": "WP3.1 native-lowering",
-   "title": "D phase 1 part 1: Rust plan writer",
-   "detail": "the Rust plan v4 model writes the plan JSON byte-identical to the Python writer (kept as oracle) and a bounded binary columnar plan member (23.0 MB for 193.6 MB of JSON at g g > g g g g g, full colour); a strict records reader; the D1 leaf-weight fast path (output-identical, 36.5 s saved at seven gluons); new native build"
-  },
-  {
-   "sha": "4fc72e39",
-   "wp": "onshell-consistency",
-   "title": "Binary64-miss re-check",
-   "detail": "at a binary64 miss, generation's staged validation re-checks the point against the 32-digit reference: double-double at the same 1e-12 tolerance, binary64 Borns at the tolerance and virtuals within max(tolerance, the point's own binary64 estimate), refused when that estimate is missing or above max(tolerance, 1e-9); accepted misses are logged; one on-shell rule for the structural bindings (the precision-ap staged-validation regression of d d~ > g g NLC passes again)"
+   "sha": "11542fd5",
+   "wp": "WP3.1 generation-scale-2",
+   "title": "Generation at scale",
+   "detail": "no call of a stored process regenerates (every pole selection, correlated, resolved, flavour and catalogue calls; a process the native export cannot store fails its generation with a typed refusal, genericity M1); a lean poles companion; the native finite-only skip from the I5 interaction record; derived masses bound by the parameter program (M2); the SDK v4 runtime with the \"uv\"/\"ir\" pole selections, bitwise the Python API; declared NLO dipoles at +10 % of the six-gluon generation; new native build"
   }
  ],
- "integrated_tip": "4fc72e39",
+ "integrated_tip": "11542fd5",
  "after_integration": [],
- "already_on_loop": "v2 waves 0-1 (gates S1, G0), native executor, colour, stability API, schedule M, observables, NJet reference, public v2 engine with plan v4 artifacts, counterterms as plain tree insertions (addendum J), runtime pole selection, Rust A0-A3, the G1 harness, G-int (native per-point inputs and generation stages), the summary-first report; at milestone m1025a ct-perf, ew-poles (EW guards, QED Catani operator), lc-perf, artifact-portability and ew-lines",
+ "already_on_loop": "v2 waves 0-1 (gates S1, G0), native executor, colour, stability API, schedule M, observables, NJet reference, public v2 engine with plan v4 artifacts, counterterms as plain tree insertions (addendum J), runtime pole selection, Rust A0-A3, the G1 harness, G-int (native per-point inputs and generation stages), the summary-first report; at milestone m1025a ct-perf, ew-poles (EW guards, QED Catani operator), lc-perf, artifact-portability and ew-lines; at m1025c native-dag A4, ew-gauge EWI-4a, precision-ap, ew-ct EWI-0/EWI-3, measure-g1-7leg (G1 at 2->5), reference-relocate, model-determinism, native-lowering D phase 1 part 1 and onshell-consistency",
  "addendum_commits": [
   "b91d23a8",
   "2dd36f65",
@@ -213,7 +234,7 @@
   "f21495ed"
  ],
  "gate_references": {
-  "source": "docs/development/loop_v2/DESIGN.md \u00a71.3 Table 1b (production mode, one pinned core, this host, measured 2026-10-20 for the design), OpenLoops and Recola transcribed as text; MadLoop's production-build times are read from the reference runs' records (data/measured.json provider_generation, madloop-production-result.json); scripts/build_summary.py computes the gate limit from the lower ends (MadLoop, 1.30 \u00d7 Recola, 1.30 \u00d7 OpenLoops) when every matched provider has a production time; the 2->4 rows and the seven-leg QCD rows are measured by G1 (data/g1.json; the seven-leg rows by package measure-g1-7leg), so these references serve the rows G1 does not time (the EW row)",
+  "source": "docs/development/loop_v2/DESIGN.md \u00a71.3 Table 1b (production mode, one pinned core, this host, measured 2026-10-20 for the design), OpenLoops and Recola transcribed as text; MadLoop's production-build times are read from the reference runs' records (data/measured.json provider_generation, madloop-production-result.json); scripts/build_summary.py computes the gate limit from the lower ends (MadLoop, 1.30 \u00d7 Recola, 1.30 \u00d7 OpenLoops) when every matched provider has a production time; the 2->4 rows and the seven-leg QCD rows are measured by G1 (data/g1.json; the seven-leg rows since package measure-g1-7leg, all rows re-measured at milestone m1026a), so these references serve the rows G1 does not time (the EW row)",
   "rows": [
    {
     "label": "u overline(u) -> e^- e^+ g g g",
@@ -250,7 +271,7 @@
   ]
  },
  "required": {
-  "source_validation": "DESIGN.md WP3.1 status, first to fourth increment (branch work/v2-generation-scale); workspace/reports/engine-v2/njet-benchmark.md \u00a75.3; WP3.2 status: workspace/reports/engine-v2/slice-status.md (ew-poles 8b52179b, ew-lines 1d27426b, ew-gauge EWI-4a 6c87e276, ew-ct EWI-0/EWI-3 392d3f4a; DECISIONS 2026-10-26 ~00:35 UTC: EWI-4b launched) and workspace/reports/engine-v2/wp32/PLAN.md (increments and dependencies)",
+  "source_validation": "DESIGN.md WP3.1 status, first to fourth increment (branch work/v2-generation-scale); workspace/reports/engine-v2/njet-benchmark.md \u00a75.3; WP3.2 status: workspace/reports/engine-v2/slice-status.md (ew-poles 8b52179b, ew-lines 1d27426b, ew-gauge EWI-4a 6c87e276, ew-ct EWI-0/EWI-3 392d3f4a, ew-gauge EWI-4b 8b19dae8, ew-poles batch 2 EWI-6b e6e7543a; DECISIONS 2026-10-27 ~19:20 UTC: ew-ct EWI-3R, ew-epsilon EWI-7b and ew-leptons EWI-5 in flight) and workspace/reports/engine-v2/wp32/PLAN.md (increments and dependencies)",
   "rows": [
    {
     "label": "g g -> g g g g",
@@ -282,7 +303,7 @@
    {
     "label": "g g -> t overline(t) e^- e^+ g",
     "corr": "EW",
-    "validation": "in development (WP3.2): on loop the EW guards, the QED Catani operator, EW fermion lines, Feynman-gauge trees (EWI-4a) and the UFO's EW counterterms with MadLoop's convention (EWI-0, EWI-3); open: massive EW loop lines in Feynman gauge (EWI-4b, in progress), lepton-line signs (EWI-5), EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)",
+    "validation": "in development (WP3.2): on loop the EW guards, the QED Catani operator, EW fermion lines, Feynman-gauge trees (EWI-4a), loops and counterterms (EWI-4b), on-shell external photons at alpha(0) (EWI-6b) and the UFO's EW counterterms with MadLoop's convention (EWI-0, EWI-3); open: colour-singlet fermion lines through the loop and lepton-line signs (EWI-5), Levi-Civita cells (EWI-7b), EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)",
     "refs": "ML, Recola, OL"
    },
    {
@@ -400,11 +421,11 @@
   "catani_native_vs_njet": 2.3e-14
  },
  "status_notes": {
-  "source": "HANDOFF_24_10_2026.md sections 0.1 and 9 items 2 and 4; HANDOFF_22_10_2026.md section 0.1 (provider jobs stopped); DESIGN.md WP3.2; workspace/reports/engine-v2/slice-status.md, ew-poles (8b52179b), ew-lines (1d27426b), ew-gauge EWI-4a (6c87e276) and ew-ct EWI-0/EWI-3 (392d3f4a) integrations and DECISIONS 2026-10-26 ~00:35 UTC (EWI-4b launched; WP3.2 in progress, the EW row not generated by any configuration; its open increments: workspace/reports/engine-v2/wp32/PLAN.md); workspace/reports/engine-v2/slice-status.md, G-int integration (4e9b5a9e: the V+jets rows that the engine with Python per-point inputs refused generate on loop with the native generator, data/g1.json; the 2->5 V+jets and g g > t t~ e- e+ g (QCD) records of the branch are ancestors of 4e9b5a9e); the configuration of the gg_ggggg validation: tests/fixtures/loop/required/gg_ggggg_njet.json names the scheme massless-qcd-nf5, for which tools/loop_v2_generate.py validate (work/v2-generation-scale, 0ea83af2) vetoes the top; the seven-gluon Ward attempt: workspace/reports/engine-v2/measure-g1-7leg/records (measure-g1-7leg session 6) and README.md there",
+  "source": "HANDOFF_24_10_2026.md sections 0.1 and 9 items 2 and 4; HANDOFF_22_10_2026.md section 0.1 (provider jobs stopped); DESIGN.md WP3.2; workspace/reports/engine-v2/slice-status.md, ew-poles (8b52179b), ew-lines (1d27426b), ew-gauge EWI-4a (6c87e276) and ew-ct EWI-0/EWI-3 (392d3f4a), ew-gauge EWI-4b (8b19dae8) and ew-poles batch 2 (e6e7543a) integrations and DECISIONS 2026-10-27 ~19:20 UTC (EWI-5, EWI-7b and EWI-3R in flight; WP3.2 in progress, the EW row not generated by any configuration; its open increments: workspace/reports/engine-v2/wp32/PLAN.md); the seven-gluon Ward check: DESIGN.md WP3.1 generation-scale-2 status (native Ward inputs: its next run); workspace/reports/engine-v2/slice-status.md, G-int integration (4e9b5a9e: the V+jets rows that the engine with Python per-point inputs refused generate on loop with the native generator, data/g1.json; the 2->5 V+jets and g g > t t~ e- e+ g (QCD) records of the branch are ancestors of 4e9b5a9e); the configuration of the gg_ggggg validation: tests/fixtures/loop/required/gg_ggggg_njet.json names the scheme massless-qcd-nf5, for which tools/loop_v2_generate.py validate (work/v2-generation-scale, 0ea83af2) vetoes the top; the seven-gluon Ward attempt: workspace/reports/engine-v2/measure-g1-7leg/records (measure-g1-7leg session 6) and README.md there",
   "what": "short attributions of the registry: a refusal attributed to the engine on loop (with its basis where it is inferred), a capability in development that no configuration generates yet, or one nobody has started, printed in Table 1 only where the most recent configuration of the row refuses or no configuration has a record (scripts/build_summary.py, main-configuration rule); short labels of records and the configuration of a development record where the record does not carry it; measured numbers never come from here",
   "notes": {
    "gg_ttxemepg_ew": {
-    "in_development": "massive EW loops (EWI-4b), lepton lines (EWI-5), EW native inputs",
+    "in_development": "lepton lines through the loop (EWI-5), EW native inputs (EWI-N)",
     "package": "WP3.2"
    },
    "uux_gggg": {
@@ -417,12 +438,12 @@
     ],
     "providers": "stopped 22 Oct; not to be restarted (HANDOFF section 0.1)",
     "ward_status": "pending \u2014 needs native Ward inputs",
-    "ward": "pending (coordinator ruling, slice-status DECISIONS 2026-10-25 ~19:40: a recorded, temporary deviation from ADDENDUM H; the seven-gluon Ward check moves to generation-scale-2's next run with native Ward inputs). Attempted at seven legs on slice 7db32901 (package measure-g1-7leg, session 6): the Ward-mode generation of g g > g g g g g (Python per-point inputs with full tree kernels; point 0, leg 3, c = 1) had not finished after 55 min when the job stopped; one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs, a growth of x62-87 per added gluon, which puts one seven-gluon Ward evaluation at about 1.6e5-2.5e5 s (46-69 h) with Python per-point inputs (an estimate, not a measurement): seven gluons need native Ward inputs (generation-scale-2); the 5- and 6-gluon Ward rows pass"
+    "ward": "pending (coordinator ruling, slice-status DECISIONS 2026-10-25 ~19:40: a recorded, temporary deviation from ADDENDUM H; the seven-gluon Ward check moves to a generation-scale run with native Ward inputs, which generation-scale-2's first run, integrated at 11542fd5, did not include; milestone m1026a's G1 campaign did not attempt it). Attempted at seven legs on slice 7db32901 (package measure-g1-7leg, session 6): the Ward-mode generation of g g > g g g g g (Python per-point inputs with full tree kernels; point 0, leg 3, c = 1) had not finished after 55 min when the job stopped; one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs, a growth of x62-87 per added gluon, which puts one seven-gluon Ward evaluation at about 1.6e5-2.5e5 s (46-69 h) with Python per-point inputs (an estimate, not a measurement): seven gluons need native Ward inputs; the 5- and 6-gluon Ward rows pass"
    }
   }
  },
  "pending": {
-  "source": "HANDOFF_24_10_2026.md section 6.5 (measure-g1-7leg); its 2->5 rows are timed in g1.json (batched, full and leading colour, on the integrated configuration of slice_revision 1d27426b), so no row waits for it today; a row with development records and no batched timing would",
+  "source": "HANDOFF_24_10_2026.md section 6.5 (measure-g1-7leg); its 2->5 rows are timed in g1.json (batched, full and leading colour, on the integrated configuration of slice_revision 11542fd5), so no row waits for it today; a row with development records and no batched timing would",
   "what": "the package that will time, in batches, a row whose most recent configuration has no batched timing (the development validation records time single points only)",
   "batched": "measure-g1-7leg"
  },
@@ -466,6 +487,32 @@
     "label": "accepted (user 2026-10-25): O(1e-8) binary64, within the estimate, DD = NJet",
     "short": "accepted (user 2026-10-25)",
     "reason": "binary64 deviations from NJet's double-double values 3.73e-8 (fixture point 4) and 2.2e-8 (point 8) at the fixture's mu_R = 1000 GeV, each within pyAmpliCol's binary64 estimate E (rotation and reduction direction); pyAmpliCol's double-double values equal NJet's double-double values at both points"
+   }
+  ]
+ },
+ "cell_notes": {
+  "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS 2026-10-26 ~21:10 UTC item 1 (binding for the report: the identical-flavour LC/NLC limitation, G2-M1 of workspace/reports/engine-v2/genericity-audit-2/REPORT.md); data/g1.json known_limitations and seven_leg_rows (milestone m1026a's G1 campaign)",
+  "what": "notes on single measured cells of Table 1: each names its process, cell (generation, full_colour, leading_colour), G1 configuration and revision; scripts/build_summary.py attaches it to that main cell (summary.json <cell>.main.note) and stops the build when the cell's main value is not that configuration at that revision (a newer measurement needs a new decision); the value stays as measured",
+  "notes": [
+   {
+    "process": "uux_uuxg",
+    "cell": "leading_colour",
+    "configuration": "native/lc",
+    "revision": "11542fd5",
+    "kind": "not validated",
+    "label": "cost only: value not validated (identical-flavour LC pending)",
+    "reason": "LC/NLC of processes with identical-flavour quark lines (from u u~ > u u~ g up) are refused by the Python per-point path but not yet by generation, export, the native runtime or the SDK, which serve grade-0 projections that are not correct LC/NLC values; full colour is exact; pre-existing on loop 36f43250; fixes in flight (packages fail-closed and identical-flavour-lc)",
+    "source": "slice-status DECISIONS 2026-10-26 ~21:10 item 1; data/g1.json known_limitations"
+   },
+   {
+    "process": "gg_ggggg",
+    "cell": "full_colour",
+    "configuration": "native/full",
+    "revision": "11542fd5",
+    "kind": "run conditions",
+    "label": "busier host: about +15 % contention",
+    "reason": "the full-colour runtime was re-run alone on 2026-10-27 (core 163, host load average 158-287, other users' unpinned processes on the same CCX) after its first run of 2026-10-26 (the same engine, stored process and core) was killed by a session stop in its third round: this run's times per point lie about 15 % (B = 128) and 17 % (B = 16) above that run's blocks, its warm-ups (132 and 129 s against 112 and 113 s) and the stored process's load (29 against 23 s) were longer too, and the values are bitwise the same; the killed run is no input; no gate (no matched provider)",
+    "source": "data/g1.json seven_leg_rows and host"
    }
   ]
  }
