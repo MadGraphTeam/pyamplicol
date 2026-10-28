@@ -189,13 +189,40 @@ def command_points(args, data, runs):
         print(target)
 
 
+def evaluation(data, run):
+    """The run's MadLoop evaluation: the campaign's quadruple-precision
+    evaluation (madloop_settings.evaluation) unless the run keeps the
+    evaluation of an earlier batch (``madloop_evaluation``)."""
+    if run.get("madloop_evaluation", {}).get("mode") == "mlstabthres":
+        return None
+    return data["madloop_settings"]["evaluation"]
+
+
+def madloop_jobs(data, run, skip_helicities=False):
+    """(label, references.py run options) of every MadLoop job of a run."""
+    setting = evaluation(data, run)
+    options = []
+    if setting is not None:
+        options = ["--madloop-accuracy", str(setting["requested_relative_accuracy"]),
+                   *(x for key, value in setting["madloop_params"].items()
+                     for x in ("--madloop-param", f"{key}={value}"))]
+    if setting is not None and setting.get("quadruple_precision_stage"):
+        options.append("--madloop-quadruple")
+    jobs = [("madloop", options)]
+    if run.get("helicities") and not skip_helicities:
+        jobs.append(("madloop-hel", ["--tag", "hel", "--helicities", run["helicities"], *options]))
+    return jobs
+
+
 def provider_run(args, data, root, run, work, points, extra, log, cpu):
     export = check_export(root, run)
     command = [*timeout(data), python(), str(HERE / "references.py"), "run", "--process", run["process"],
                "--points", str(points), "--work-dir", str(work), "--reference-root", str(root),
-               "--provider", "madloop", "--mg5", str(root / "sources/MG5_aMC_v3_7_0"), "--madloop-export", str(export),
-               "--madloop-accuracy", str(run.get("madloop_accuracy",
-                                                 data["madloop_settings"]["requested_relative_accuracy"])), *extra]
+               "--provider", "madloop", "--mg5", str(root / "sources/MG5_aMC_v3_7_0"), "--madloop-export", str(export)]
+    if "--madloop-accuracy" not in extra:
+        command += ["--madloop-accuracy", str(run.get("madloop_accuracy",
+                                                      data["madloop_settings"]["requested_relative_accuracy"]))]
+    command += extra
     if run.get("subprocess"):
         command += ["--subprocess", run["subprocess"]]
     if run.get("pdgs"):
@@ -206,6 +233,9 @@ def provider_run(args, data, root, run, work, points, extra, log, cpu):
         completed = subprocess.run(command, stdout=handle, stderr=subprocess.STDOUT)
     if completed.returncode:
         raise SystemExit(f"{run['id']}: provider run failed ({completed.returncode}); see {log}")
+
+
+SPLIT_LABELS = ("madloop",)
 
 
 def combine_split(work, label, count):
@@ -234,16 +264,14 @@ def command_run(args, data, runs):
         points = work / "points.json"
         if not points.exists():
             raise SystemExit(f"{run['id']}: no points.json")
-        jobs = [("madloop", [])]
-        if run.get("helicities") and not args.skip_helicities:
-            jobs.append(("madloop-hel", ["--tag", "hel", "--helicities", run["helicities"]]))
+        jobs = madloop_jobs(data, run, args.skip_helicities)
         if args.only:
             jobs = [job for job in jobs if job[0] in args.only]
         for label, extra in jobs:
             if (work / f"{label}-result.json").exists() and not args.force:
                 print(f"{run['id']}: {label} done")
                 continue
-            if run.get("split_points") and label == "madloop":
+            if run.get("split_points") and label in SPLIT_LABELS:
                 content = json.loads(points.read_text())
                 count = len(content["points"])
                 if args.point is None:
@@ -284,8 +312,9 @@ def command_combine(args, data, runs):
             continue
         work = work_dir(root, run)
         count = len(json.loads((work / "points.json").read_text())["points"])
-        combine_split(work, "madloop", count)
-        print(work / "madloop-result.json")
+        for label in SPLIT_LABELS:
+            combine_split(work, label, count)
+            print(work / f"{label}-result.json")
 
 
 def command_merge(args, data, runs):
@@ -369,6 +398,24 @@ def sector_accuracy(fixture):
     return out
 
 
+def second_provider_outcome(fixture, providers):
+    """Per second provider and point: the strict relative difference of each
+    coefficient from MadLoop's (the fixture's provider pair record)."""
+    out = {}
+    for provider in providers:
+        pair = f"madloop-{provider}"
+        out[provider] = [row["provider_pair_strict_relative_errors"].get(pair) for row in fixture["rows"]]
+    return out
+
+
+def superseded_deviation(fixture):
+    """Per point: the largest deviation of the batch-2 MadLoop values (secondary
+    run 'mlstabthres') from the reference, per coefficient (references.py merge's
+    relative_deviation_from_reference_run: Laurent coefficients with the loop-unit floor)."""
+    run = fixture["providers"]["madloop"].get("secondary_runs", {}).get("mlstabthres")
+    return None if run is None else run["relative_deviation_from_reference_run"]
+
+
 def run_entry(root, run, fixture_path):
     entry = {"run": run["id"], "fixture": str(fixture_path.relative_to(FIXTURES)) if fixture_path.exists() else None,
              "process_key": run["process"], "note": run.get("note"),
@@ -404,11 +451,17 @@ def run_entry(root, run, fixture_path):
         "validated_providers": fixture["validated_providers"],
         "validation_status": fixture["validation_status"],
         "madloop_return_codes": [row.get("madloop_status") for row in fixture["rows"]],
+        "madloop_evaluation": run.get("madloop_evaluation", {}).get("mode", "quadruple"),
         "provider_accuracy_per_sector": sector_accuracy(fixture),
+        "second_provider_outcome": second_provider_outcome(fixture, run.get("second_providers", [])),
+        "batch2_relative_deviation": superseded_deviation(fixture),
         "squared_split_orders": fixture.get("squared_split_orders"),
         "per_helicity": bool(fixture.get("per_helicity")),
         "subprocess": run.get("subprocess"),
         "point_reference": [row["reference"] for row in fixture["rows"]],
+        "per_helicity_reference": ([[{"helicity": e["helicity"], **e["reference"]} for e in entries]
+                                    for entries in fixture["per_helicity"]["rows"]]
+                                   if fixture.get("per_helicity") else None),
     })
     return entry
 
@@ -451,8 +504,27 @@ def command_manifest(args, data, runs):
                        "average and final identical-particle factor included",
             "squared_split_orders": "QCD^2, QED^2 = summed g_s and e powers of the interfering amplitudes; a loop "
                                     "sector's born_sector is its orders minus the correction step",
-            "madloop_accuracy": "MadLoop's own estimate of the relative accuracy of a loop squared split order "
-                                "(ACC(i) of SLOOPMATRIX_THRES); 0.0 when its stability test found no difference",
+            "madloop_accuracy": "MadLoop's own ACC(i) of SLOOPMATRIX_THRES per point and loop squared split "
+                                "order: ONE number over the three Laurent coefficients (madloop_settings."
+                                "madloop_accuracy_definition), not a per-coefficient relative accuracy. In the "
+                                "quadruple-precision evaluation (madloop_evaluation 'quadruple') 0.0 means its two "
+                                "quadruple-precision evaluations (propagators in original and reversed order) "
+                                "printed identical binary64 values for all three coefficients; that test does not "
+                                "see a systematic error both share (g g > u u~ u u~ points 0, 2, 3: accuracy 0.0, "
+                                "reference outliers named in reference_notes)",
+            "second_provider_outcome": "per triggered second provider and point: the strict relative difference "
+                                       "|a - b| / max(|a|, |b|) of each coefficient from MadLoop's (the outcome of the "
+                                       "§4.1 trigger named in second_provider_trigger)",
+            "batch2_relative_deviation": "per point and coefficient: how far the batch-2 MadLoop values (MLStabThres "
+                                         "1e-13, HelicityFilterLevel 2), which this evaluation supersedes, are from "
+                                         "the reference (Laurent coefficients relative to max(|a|, |b|, "
+                                         "|Born| alpha/(2 pi)))",
+            "per_helicity_reference": "per point and helicity configuration (the fixture's per_helicity rows): "
+                                      "status, comparison, absolute_scale, born_source and "
+                                      "born_double_pole_relative_mismatch as for point_reference; 'absolute' entries "
+                                      "(a vanishing helicity, or one suppressed below the point's binary64 condition: "
+                                      "printed Born mismatch above 1e-13) compare against absolute_scale = the "
+                                      "point's summed |Born| over the configurations",
             "per_helicity": "MadLoop SLOOPMATRIXHEL_THRES: colour average and identical-particle factor, no "
                             "helicity average; HelConfigs.dat helicity labels",
             "indexing": "rows, points, mu_r, point_labels, point_reference, provider_accuracy_per_sector and "
@@ -465,8 +537,9 @@ def command_manifest(args, data, runs):
                           "(reason given), validate it by internal oracles only",
                 "comparison": "'relative': compare per coefficient relative to the reference value; 'absolute': "
                               "a Born-zero point (§4.1 S3), compare |value - reference| against the tolerance times "
-                              "absolute_scale = |Born| at row absolute_scale_row (the nearest regular point), never "
-                              "dividing by the vanishing Born",
+                              "absolute_scale = |Born| at row absolute_scale_row (the nearest regular point) for the "
+                              "Born, and times absolute_scale alpha/(2 pi) (F_s of §1.4) for the Laurent "
+                              "coefficients, never dividing by the vanishing Born",
                 "born_source": "which value the row's (and its sectors') 'born' is: 'madloop' = MadLoop's printed "
                                "Born; 'madloop_double_pole_over_universal_factor' = at madloop_qp_point points, "
                                "MadLoop's printed Born is its double-precision Born at the binary64 rounding of the "
@@ -477,17 +550,26 @@ def command_manifest(args, data, runs):
                                  "precision at a madloop_qp_point point), the binary64 rounding of the published "
                                  "point (double precision), or MadLoop's quadruple-precision repair of that rounding "
                                  "(~1e-16 from an exact published point)",
-                "born_double_pole_relative_mismatch": "MadLoop's printed (binary64-input) Born against the Born its "
-                                                      "double pole implies: for points rescued in quadruple "
-                                                      "precision at MadLoop's own repaired point, the sensitivity "
-                                                      "of the reference to the ~1e-16 displacement from the "
-                                                      "published point (the published point limits the reference "
-                                                      "at about this level, which MadLoop's accuracy does not "
-                                                      "show); at madloop_qp_point points, the binary64 condition "
-                                                      "of the point",
+                "born_double_pole_relative_mismatch": "MadLoop's printed Born (double precision at the binary64 "
+                                                      "input) against the Born its quadruple-precision double pole "
+                                                      "implies. At a regular point both are the same Born to its "
+                                                      "binary64 rounding (~1e-16 .. 1e-15): a mismatch above that "
+                                                      "scale is a loop defect of the reference, not point "
+                                                      "sensitivity (C01 point 1 of batch 2: 4.8e-13 from MadLoop's "
+                                                      "helicity filter, Recola's own relation holding to 1e-15), "
+                                                      "and the integrity tests refuse it at ok points; at "
+                                                      "madloop_qp_point points (S1-S3) it is the binary64 condition "
+                                                      "of the limit point, bounded by the family's stated bound",
                 "max_sector_double_pole_relative_error": "largest violation of the universal double pole over the "
-                                                         "loop squared split orders (MadLoop's printed values); the "
-                                                         "merge refuses ok points above its tolerance",
+                                                         "loop squared split orders (MadLoop's printed values, "
+                                                         "relative to the point's largest double pole); the merge "
+                                                         "refuses ok points above its tolerance, the integrity "
+                                                         "tests ok regular points above max(10 x the sector "
+                                                         "accuracy, 1e-14). At madloop_qp_point points the "
+                                                         "reference Born is the double pole over the factor, so the "
+                                                         "relation holds there by construction for every sector "
+                                                         "with a Born partner; born_double_pole_relative_mismatch "
+                                                         "is the falsifiable quantity",
             },
             "fixture_tolerance": TOLERANCE_SCOPE,
             "madloop_settings": data["madloop_settings"],

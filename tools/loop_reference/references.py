@@ -386,6 +386,42 @@ def madloop_born_fix(process_dir, work, global_flag):
     return [obj], repairs
 
 
+DOUBLE_PRECISION_ACCEPTANCE = ("        ELSEIF(.NOT.DOING_QP_EVALS)THEN\n"
+                               "          CALL {prefix}COMPUTE_ACCURACY(DP_RES,N_DP_EVAL,ACC,ANS)\n")
+DOUBLE_PRECISION_TEST = "          IF(MAXVAL(ACC).GE.MLSTABTHRES) THEN\n            I_LIB=I_LIB+1\n"
+QUADRUPLE_STAGE = "          IF(.TRUE.) THEN\n            I_LIB=NLOOPLIB+1\n"
+
+
+def force_quadruple_stage(text, prefix):
+    """loop_matrix.f with MadLoop's double-precision acceptance bypassed: after
+    its double-precision evaluations every point goes on to the
+    quadruple-precision stage, where MadLoop's own test (MLStabThres, two
+    propagator directions) picks Ninja or else CutTools, exactly as for a point
+    whose double-precision estimate failed. Refuses an unknown source layout."""
+    head = DOUBLE_PRECISION_ACCEPTANCE.format(prefix=prefix)
+    if text.count(head) != 1:
+        raise RuntimeError("loop_matrix.f: MadLoop's double-precision stability branch not found")
+    start = text.index(head)
+    test = text.find(DOUBLE_PRECISION_TEST, start)
+    if test < 0 or test - start > 800:
+        raise RuntimeError("loop_matrix.f: MadLoop's double-precision acceptance test not found")
+    return text[:test] + QUADRUPLE_STAGE + text[test + len(DOUBLE_PRECISION_TEST):]
+
+
+def madloop_quadruple_stage(export, process_dir, work, global_flag):
+    """Compile ``force_quadruple_stage``'s loop_matrix.f into ``work`` (the
+    export is never modified); linked before libMadLoop.a like the Born repair."""
+    prefix = madloop_prefix(process_dir)
+    source = work / "loop_matrix_quadruple.f"
+    source.write_text(force_quadruple_stage((process_dir / "loop_matrix.f").read_text(), prefix))
+    obj = work / "loop_matrix_quadruple.o"
+    subprocess.run(["gfortran", "-w", "-fPIC", *shlex.split(global_flag), "-ffixed-line-length-132",
+                    "-fallow-argument-mismatch", "-I", str(process_dir), "-I", str(export / "SubProcesses"),
+                    "-I", str(export / "Source/MODEL"), "-J", str(work), "-c", str(source), "-o", str(obj)],
+                   check=True, cwd=work)
+    return obj
+
+
 def madloop_build_flags(export, mg5):
     """The export's Fortran flags (its ``Source/make_opts``) next to MG5_aMC's
     production flags; ``production_build`` tells whether they coincide."""
@@ -401,7 +437,7 @@ def madloop_build_flags(export, mg5):
                       "MadLoop's own makefile adds -O3 for polynomial.f"}
 
 
-def build_madloop(export, work, global_flag, subprocess_dir=None):
+def build_madloop(export, work, global_flag, subprocess_dir=None, quadruple=False):
     from build import madloop_libraries
 
     process_dir = madloop_process_dir(export, subprocess_dir)
@@ -414,6 +450,8 @@ def build_madloop(export, work, global_flag, subprocess_dir=None):
     fixes, repairs = madloop_model_fix(export, work, global_flag)
     born_fixes, born_repairs = madloop_born_fix(process_dir, work, global_flag)
     fixes, repairs = [*fixes, *born_fixes], [*repairs, *born_repairs]
+    if quadruple:
+        fixes.append(madloop_quadruple_stage(export, process_dir, work, global_flag))
     subprocess.run(
         ["gfortran", "-O2", "-ffree-line-length-none", "-I", str(process_dir), str(driver),
          *map(str, fixes), str(export / "lib/libMadLoop.a"), "-L" + str(export / "lib"), "-ldhelas", "-lmodel",
@@ -426,14 +464,35 @@ def build_madloop(export, work, global_flag, subprocess_dir=None):
     return binary, repairs
 
 
-def prepare_madloop_run(spec, export, run_dir, mg5, legs):
-    """Copy cards/resources and set every scheme parameter by its card name."""
+MADLOOP_FILTERS = ("*HelFilter.dat", "*LoopFilter.dat")
+# MadLoopParams.dat CTModeRun values other than -1 (MadLoop's own table).
+MADLOOP_CTMODES = {
+    1: "double precision, loop propagators in their original order",
+    2: "double precision, loop propagators in reversed order",
+    4: "quadruple precision (at MadLoop's improved point), loop propagators in their original order",
+    5: "quadruple precision (at MadLoop's improved point), loop propagators in reversed order",
+}
+
+
+def prepare_madloop_run(spec, export, run_dir, mg5, legs, madloop_params=None):
+    """Copy cards/resources and set every scheme parameter by its card name.
+
+    MadLoop writes its numerical helicity and loop filters (``*HelFilter.dat``,
+    ``*LoopFilter.dat``) into the run's resources at the end of its
+    initialisation and loads them on later runs instead of rebuilding them: a
+    filter left by an earlier run in the same directory (another point set, or
+    a run with a broken Born) is removed, so every run builds its own.
+    ``madloop_params`` sets MadLoopParams.dat entries by name (``{"HelicityFilterLevel": "0"}``)."""
     sys.path.insert(0, str(mg5))
     from models.check_param_card import ParamCard
 
     shutil.copytree(export / "Cards", run_dir / "Cards", dirs_exist_ok=True)
-    shutil.copytree(export / "SubProcesses/MadLoop5_resources",
-                    run_dir / "SubProcesses/MadLoop5_resources", dirs_exist_ok=True, symlinks=False)
+    resources = run_dir / "SubProcesses/MadLoop5_resources"
+    shutil.copytree(export / "SubProcesses/MadLoop5_resources", resources, dirs_exist_ok=True, symlinks=False)
+    inherited = sorted(path.name for pattern in MADLOOP_FILTERS for path in resources.glob(pattern)
+                       if not (export / "SubProcesses/MadLoop5_resources" / path.name).exists())
+    for name in inherited:
+        (resources / name).unlink()
     card = ParamCard(str(run_dir / "Cards/param_card.dat"))
     by_name = {}
     for block in card.values():
@@ -473,12 +532,21 @@ def prepare_madloop_run(spec, export, run_dir, mg5, legs):
         text, n = re.subn(r"(#COLLIERGlobalCache\s*\n)\s*-?\d+", r"\g<1>0", text)
         if n != 1:
             raise RuntimeError("cannot disable the COLLIER global cache")
-        params.write_text(text)
-    for key in ("MLReductionLib", "COLLIERGlobalCache", "MLStabThres", "ImprovePSPoint"):
+    for key, entry in (madloop_params or {}).items():
+        text, n = re.subn(rf"(#{re.escape(key)}\s*\n)\s*\S+", lambda m, entry=entry: m.group(1) + str(entry), text)
+        if n != 1:
+            raise RuntimeError(f"MadLoopParams.dat has no single entry #{key}")
+    params.write_text(text)
+    for key in ("MLReductionLib", "COLLIERGlobalCache", "MLStabThres", "ImprovePSPoint", *(madloop_params or {})):
         match = re.search(rf"#{key}\s*\n\s*(\S+)", text)
         settings[key] = match.group(1) if match else None
-    return {"absent_card_parameters_fixed_to_zero": absent, "MadLoopParams": settings,
-            "param_card": (run_dir / "Cards/param_card.dat").read_text()}
+    out = {"absent_card_parameters_fixed_to_zero": absent, "MadLoopParams": settings,
+           "param_card": (run_dir / "Cards/param_card.dat").read_text()}
+    if madloop_params:
+        out["MadLoopParams_overrides"] = dict(madloop_params)
+    if inherited:
+        out["inherited_filters_removed"] = inherited
+    return out
 
 
 # ----------------------------------------------------------------- common
@@ -552,21 +620,33 @@ def madloop_sectors(values, nanswer, nloop, born_so, loop_so, step):
         born_orders[(qcd, qed)] = answer[index][0]
     loop = []
     for index, (qcd, qed) in sorted(loop_so.items()):
-        entry = {"QCD": qcd, "QED": qed, **dict(zip(LAURENT, answer[index][1:])), "accuracy": accuracy[index]}
+        entry = {"QCD": qcd, "QED": qed, **dict(zip(LAURENT, answer[index][1:], strict=True)),
+                 "accuracy": accuracy[index]}
         partner = (qcd - step["QCD"], qed - step["QED"])
         entry["born_sector"] = {"QCD": partner[0], "QED": partner[1]} if partner in born_orders else None
         loop.append(entry)
-    total = {"born": answer[0][0], **dict(zip(LAURENT, answer[0][1:])), "accuracy": accuracy[0]}
+    total = {"born": answer[0][0], **dict(zip(LAURENT, answer[0][1:], strict=True)), "accuracy": accuracy[0]}
     return {"born": born, "loop": loop, "total": total}
 
 
+MADLOOP_SECTOR_LINES = ("LOOP_SO", "HEL_INDEX", "SECTORS", "HEL_ROW")
+
+
 def parse_rows(stdout, provider, count, step=None, born_so=None):
+    """Result rows of a provider driver's output. MadLoop's per-sector lines
+    (LOOP_SO, SECTORS, HEL_INDEX, HEL_ROW) are read only with ``step`` (the
+    correction step naming each loop sector's Born sector); callers without it
+    (the G1 benchmark's timing runs) get the ROW values alone, as before the
+    driver printed sectors."""
     rows = [None] * count
     extra = {}
     born_so, loop_so, hel_tuples, dims = dict(born_so or {}), {}, {}, None
+    sectors = provider == "madloop" and step is not None
     for line in stdout.splitlines():
         fields = line.split()
         if not fields:
+            continue
+        if provider == "madloop" and not sectors and fields[0] in MADLOOP_SECTOR_LINES:
             continue
         if provider == "madloop" and fields[0] == "LOOP_SO":
             index, qcd, qed = map(int, fields[1:4])
@@ -754,15 +834,21 @@ def command_run(args):
                     raise RuntimeError(f"no live MadLoop export process for {export} (state {state!r})")
                 status_update(work, label, f"waiting for MadLoop export ({state}; pid {pids[0]})")
                 time.sleep(args.wait_interval)
-            production = args.madloop_accuracy <= 0
+            ctmode = args.madloop_ctmode
+            production = args.madloop_accuracy <= 0 and ctmode is None
             flags = madloop_build_flags(export, args.mg5)
             if production and not flags["production_build"]:
                 raise RuntimeError(
                     f"export built with {flags['export_make_opts']}, not MG5's production flags "
                     f"{flags['mg5_production']}; rebuild it with madloop_export.py --recompile")
             binary, repairs = build_madloop(export, run_dir, flags["export_make_opts"]["GLOBAL_FLAG"],
-                                            args.subprocess)
-            result["settings"] = prepare_madloop_run(spec, export, run_dir, args.mg5, legs)
+                                            args.subprocess, args.madloop_quadruple)
+            madloop_params = dict(item.split("=", 1) for item in args.madloop_param)
+            if ctmode is not None:
+                if "CTModeRun" in madloop_params:
+                    raise SystemExit("--madloop-ctmode and --madloop-param CTModeRun are exclusive")
+                madloop_params["CTModeRun"] = str(ctmode)
+            result["settings"] = prepare_madloop_run(spec, export, run_dir, args.mg5, legs, madloop_params)
             result["settings"]["export"] = str(export)
             result["settings"]["fortran_flags"] = flags
             result["settings"]["mg5_quadruple_precision_model_function_repairs"] = [
@@ -778,16 +864,27 @@ def command_run(args):
             result["version"] = f"MadLoop/MG5_aMC {mg5_version}"
             result["provenance"] = {"MG5_aMC": {"path": str(args.mg5), "version": mg5_version},
                                     "reducer_libraries": reducers}
-            result["settings"]["requested_relative_accuracy"] = (
-                "MadLoop MLStabThres (production setting)" if production else args.madloop_accuracy)
-            result["settings"]["stability_check"] = (
-                "MadLoop default (CTModeRun=-1 after initialization)" if production
-                else "forced on every call")
+            if ctmode is not None:
+                # One evaluation per point in the fixed mode: MadLoop runs no
+                # stability test and reports accuracy -1 (return code 1T0); a
+                # forced test would re-evaluate and keep the initialisation T code.
+                result["settings"]["ctmode_run"] = ctmode
+                result["settings"]["arithmetic"] = MADLOOP_CTMODES[ctmode]
+                result["settings"]["requested_relative_accuracy"] = (
+                    f"none: CTModeRun = {ctmode}, one fixed-mode evaluation per point")
+                result["settings"]["stability_check"] = (
+                    f"none (CTModeRun = {ctmode}; MadLoop reports accuracy -1)")
+            else:
+                result["settings"]["requested_relative_accuracy"] = (
+                    "MadLoop MLStabThres (production setting)" if production else args.madloop_accuracy)
+                result["settings"]["stability_check"] = (
+                    "MadLoop default (CTModeRun=-1 after initialization)" if production
+                    else "forced on every call")
             orders = spec["born_orders"], spec["loop_orders"]
             header = (f"{2 * orders[0]['QCD']} {2 * orders[0]['QED']} "
                       f"{orders[0]['QCD'] + orders[1]['QCD']} {orders[0]['QED'] + orders[1]['QED']} "
                       f"{value(spec['scheme_data'], 'aS')} {args.madloop_accuracy} "
-                      f"{0 if production else 1}\n{count}\n")
+                      f"{0 if production or ctmode is not None else 1}\n{count}\n")
             stdin = header + "\n".join(point_lines(points)) + "\n"
             if args.helicities:
                 tuples = (madloop_helicities(export, args.subprocess) if args.helicities == "all"
@@ -843,6 +940,17 @@ def command_run(args):
         born_so = (madloop_born_split_orders(madloop_process_dir(args.madloop_export.resolve(), args.subprocess))
                    if provider == "madloop" else None)
         rows, extra = parse_rows(stdout, provider, count, step, born_so)
+        if provider == "madloop" and args.madloop_quadruple:
+            result["settings"]["quadruple_precision_stage"] = (
+                "every point: the run's loop_matrix.f copy bypasses MadLoop's double-precision acceptance, so its "
+                "quadruple-precision stage (MLStabThres test over two propagator directions; Ninja, else CutTools) "
+                "evaluates every point (references.force_quadruple_stage)")
+        if provider == "madloop" and args.madloop_require_quadruple:
+            double = [i + 1 for i, row in enumerate(rows) if row["status"] // 100 not in (3, 4)]
+            if double:
+                raise RuntimeError(f"madloop: double-precision values (return code 1xx/2xx) at points {double} "
+                                   "of a run that requires quadruple precision")
+            result["settings"]["quadruple_precision_required"] = True
         if provider == "recola":
             banner = re.search(r"Version (\S+)", stdout)
             linked = linked_libraries(binary, r"recola|collier|modelfile")
@@ -945,6 +1053,64 @@ def sector_pole_error(madloop_row, pole_factor, coupling, absolute_scale=None):
     return worst
 
 
+HEL_RELATIVE_LIMIT = 1e-13  # per-helicity entries compare relatively only below this Born mismatch
+
+
+def strict_relative(a, b):
+    scale = max(abs(a), abs(b))
+    return 0.0 if scale == 0 else abs(a - b) / scale
+
+
+def ctmode_run(result):
+    return (result or {}).get("settings", {}).get("ctmode_run")
+
+
+def per_helicity_reference(entries, pole_factor):
+    """Per-helicity entries of one point: at quadruple-precision entries (return
+    code 3xx/4xx) with a universal double pole the reference Born is the entry's double pole over
+    the factor (the IR double pole is helicity-diagonal; MadLoop's printed Born
+    is its double-precision value at the binary64 input, kept as
+    ``born_binary64_input``), sectors included. Each entry gets a reference
+    record: 'absolute' against the point's summed |Born| where the helicity's
+    Born vanishes (<= 1e-12 of the sum) or its printed Born misses the implied
+    one by more than HEL_RELATIVE_LIMIT (a helicity suppressed below the
+    point's binary64 condition), else 'relative'."""
+    for entry in entries:
+        entry["reference"] = {"born_source": "madloop"}
+        if not (entry["status"] // 100 in (3, 4) and pole_factor):
+            continue
+        entry["born_binary64_input"] = entry["born"]
+        entry["born"] = entry["double_pole"] / pole_factor
+        entry["reference"]["born_source"] = "madloop_double_pole_over_universal_factor"
+        sectors = entry.get("sectors")
+        if sectors:
+            loops = {(x["born_sector"]["QCD"], x["born_sector"]["QED"]): x for x in sectors["loop"]
+                     if x["born_sector"]}
+            for born in sectors["born"]:
+                loop = loops.get((born["QCD"], born["QED"]))
+                if loop is not None:
+                    born["born_binary64_input"] = born["born"]
+                    born["born"] = loop["double_pole"] / pole_factor
+            sectors["total"]["born_binary64_input"] = sectors["total"]["born"]
+            sectors["total"]["born"] = sectors["total"]["double_pole"] / pole_factor
+    summed = sum(abs(entry["born"]) for entry in entries)
+    for entry in entries:
+        printed = entry.get("born_binary64_input", entry["born"])
+        mismatch = strict_relative(printed, entry["born"]) if "born_binary64_input" in entry else None
+        vanishing = abs(entry["born"]) <= 1e-12 * summed
+        suppressed = mismatch is not None and mismatch > HEL_RELATIVE_LIMIT
+        entry["reference"].update({
+            "status": "ok",
+            "comparison": "absolute" if vanishing or suppressed else "relative",
+            "absolute_scale": summed if vanishing or suppressed else None,
+            "born_double_pole_relative_mismatch": mismatch,
+            "reason": ("vanishing helicity: its Born is <= 1e-12 of the point's summed |Born|" if vanishing else
+                       f"suppressed helicity: the printed binary64 Born misses the implied one by {mismatch:.2g} "
+                       f"> {HEL_RELATIVE_LIMIT:g}, the reference is limited by the point's binary64 condition"
+                       if suppressed else None),
+        })
+
+
 def madloop_point(qp_point, status):
     """Which point MadLoop's loop values refer to."""
     if isinstance(status, int) and status // 100 in (3, 4):
@@ -1025,6 +1191,8 @@ def command_merge(args):
             results[provider] = json.loads(path.read_text())
     if not results:
         raise SystemExit("no provider results")
+    if ctmode_run(results.get("madloop")) is not None:
+        raise SystemExit("a fixed-CTModeRun MadLoop run (--madloop-ctmode) is a diagnostic, not a reference")
     # Persistent, documented exclusions live next to the results so that later
     # automatic merges (run_required.sh) keep them.
     record = work / "exclusions.json"
@@ -1107,24 +1275,32 @@ def command_merge(args):
         if provider not in ("madloop", "recola", "openloops"):
             continue
         secondary = json.loads(path.read_text())
+        if ctmode_run(secondary) is not None:
+            raise SystemExit(f"{path.name}: a fixed-CTModeRun MadLoop run (--madloop-ctmode) is a diagnostic")
         if "helicities" in secondary:
             # Per-helicity reference values (MadLoop SLOOPMATRIXHEL_THRES), not timings.
             if per_helicity is not None:
                 raise SystemExit(f"two per-helicity runs in {work}")
+            hel_rows = []
+            for hel_row in secondary["rows"]:
+                entries = [{"helicity": entry["helicity"], "madloop_index": entry["madloop_index"],
+                            "status": entry["status"], **{k: entry["sectors"]["total"][k] for k in COEFFICIENTS
+                                                           if k in entry["sectors"]["total"]},
+                            "accuracy": entry["sectors"]["total"]["accuracy"],
+                            **({"sectors": json.loads(json.dumps(entry["sectors"]))}
+                               if len(entry["sectors"]["loop"]) > 1 or len(entry["sectors"]["born"]) > 1 else {})}
+                           for entry in hel_row["per_helicity"]]
+                per_helicity_reference(entries, pole_factor)
+                hel_rows.append(entries)
             per_helicity = {
                 "provider": provider, "run": label,
                 "normalization": secondary.get("per_helicity_normalization"),
                 "helicities": secondary["helicities"],
                 "settings": {k: secondary["settings"][k] for k in
-                             ("requested_relative_accuracy", "stability_check", "helicities")
+                             ("requested_relative_accuracy", "stability_check", "helicities",
+                              "MadLoopParams_overrides", "quadruple_precision_stage")
                              if k in secondary.get("settings", {})},
-                "rows": [[{"helicity": entry["helicity"], "madloop_index": entry["madloop_index"],
-                           "status": entry["status"], **{k: entry["sectors"]["total"][k] for k in COEFFICIENTS
-                                                          if k in entry["sectors"]["total"]},
-                           "accuracy": entry["sectors"]["total"]["accuracy"],
-                           **({"sectors": entry["sectors"]} if len(entry["sectors"]["loop"]) > 1
-                              or len(entry["sectors"]["born"]) > 1 else {})}
-                          for entry in hel_row["per_helicity"]] for hel_row in secondary["rows"]],
+                "rows": hel_rows,
             }
             continue
         own = provider in results
@@ -1135,7 +1311,8 @@ def command_merge(args):
             deviation.append({key: relative(other[key], accurate[key], 0.0 if key == "born" else unit)
                               for key in COEFFICIENTS})
         entry = {
-            "settings": {k: secondary["settings"][k] for k in ("requested_relative_accuracy", "stability_check", "fortran_flags")
+            "settings": {k: secondary["settings"][k] for k in ("requested_relative_accuracy", "stability_check", "fortran_flags",
+                                                                 "MadLoopParams", "quadruple_precision_stage")
                          if k in secondary.get("settings", {})},
             "version": secondary.get("version"),
             "evaluation_seconds": [r["seconds"] for r in secondary["rows"]],
@@ -1338,6 +1515,16 @@ def main():
     run.add_argument("--madloop-accuracy", type=float, default=1e-11,
                      help="relative accuracy target forcing quadruple-precision rescue; <= 0 keeps "
                      "MadLoop's production MLStabThres and its default stability test")
+    run.add_argument("--madloop-ctmode", type=int, choices=sorted(MADLOOP_CTMODES),
+                     help="diagnostic: fixed MadLoop CTModeRun (4: quadruple precision with Ninja, no "
+                     "fallback and no stability test); never merged as a reference")
+    run.add_argument("--madloop-quadruple", action="store_true",
+                     help="send every point to MadLoop's quadruple-precision stage (its own library choice and "
+                     "test at --madloop-accuracy); implies --madloop-require-quadruple")
+    run.add_argument("--madloop-require-quadruple", action="store_true",
+                     help="refuse a MadLoop run that returns double-precision values at any point")
+    run.add_argument("--madloop-param", action="append", default=[], metavar="KEY=VALUE",
+                     help="set a MadLoopParams.dat entry of the run, e.g. HelicityFilterLevel=0 (recorded)")
     run.add_argument("--tag", help="suffix for a secondary run of the same provider, e.g. "
                      "'production' (writes <provider>-<tag>-result.json; never merged as values)")
     run.add_argument("--wait-for-export", action="store_true",
@@ -1368,6 +1555,8 @@ def main():
     summary = sub.add_parser("summary")
     summary.add_argument("references", nargs="+", type=Path)
     args = parser.parse_args()
+    if getattr(args, "madloop_quadruple", False):
+        args.madloop_require_quadruple = True
     if args.command == "summary":
         command_summary(args)
         return
