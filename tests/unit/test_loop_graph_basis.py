@@ -3,16 +3,37 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 
 from pyamplicol.loops.graph_basis import (
     build_color_loop_recurrence,
     build_color_tree_recurrence,
+    routed_edge_denominator,
 )
 from pyamplicol.loops.graphs import build_loop_process
 from pyamplicol.loops.recurrence import build_open_loop_recurrence
 
 pytestmark = pytest.mark.loop_fast
+
+
+@pytest.mark.parametrize("width", ["ZERO", "W", "renamed_width"])
+def test_tree_bridge_denominator_retains_symbolic_fixed_width(width):
+    from symbolica import E
+    from symbolica.community import tensor as t
+
+    mass = E("UFO::M")
+    edge = SimpleNamespace(
+        particle=SimpleNamespace(mass=mass, width_parameter=width),
+        denominator_expression=lambda **_: t.TensorExpression(E("s") - mass**2),
+    )
+    actual = routed_edge_denominator(edge, t.TensorLibrary.hep_lib_atom())
+    expected = E("s") - mass**2
+    if width != "ZERO":
+        expected += E("1i") * mass * E(f"UFO::{width}")
+    assert (actual - expected).expand() == 0
+    assert actual.replace(mass, 0) == E("s")
 
 
 @pytest.fixture(scope="module")

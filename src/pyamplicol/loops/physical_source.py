@@ -161,6 +161,18 @@ def source_bare_program(
                         "physical source masses require declared parameter symbols"
                     )
                 symbols[symbol.get_name()] = source_parameters[symbol]
+            if (
+                not edge.is_external
+                and edge.id not in graph.loop_edges
+                and edge.particle.mass != 0
+                and edge.particle.width_parameter != "ZERO"
+            ):
+                width = symbol_registry.qualified(f"UFO::{edge.particle.width_parameter}")
+                if width not in source_parameters:
+                    raise NotImplementedError(
+                        "physical source widths require declared parameter symbols"
+                    )
+                symbols[width.get_name()] = source_parameters[width]
     outputs = tuple((name, 0) for name in sorted(set(symbols.values())))
     plan = structure.scalar_bindings(outputs)
     positions = {name: index for index, (name, _power) in enumerate(outputs)}
