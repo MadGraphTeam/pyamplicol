@@ -1,7 +1,7 @@
 {
  "source": "tests/fixtures/loop/mqcd/manifest.json + campaign records (tests/unit/test_loop_v2_mqcd_*.py, PYAMPLICOL_MQCD_RESULTS)",
  "rules": "m-qcd/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
- "campaign_head": "d09d8861",
+ "campaign_head": "d09d8861 (H01 at fd3e7bc8 with the CKM relation; A24 at 808fa672+ in s2)",
  "native": "loop-native-v2-slice-5301e24a (digest 9b427122)",
  "references": "work/v2-mq-ref e4ca1aed (MQ-REF batch 2, not yet audited)",
  "date": "2026-10-28",
@@ -5943,7 +5943,7 @@
       3
      ],
      "passed": true,
-     "checks": 82,
+     "checks": 98,
      "failures": 0,
      "max_dd_vs_reference": 1.7881161964083838e-13,
      "max_binary64_vs_dd": 7.185208034654722e-14,
@@ -5958,11 +5958,12 @@
      },
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.02,
-      "export_s": 0.41,
-      "double_double_s_per_point": 4.6825,
-      "double_s_per_point": 0.05,
-      "uv_s": 5.2
+      "generate_s": 7.02,
+      "export_s": 0.46,
+      "double_double_s_per_point": 4.875,
+      "double_s_per_point": 0.0475,
+      "uv_s": 5.04,
+      "ckm_s": 13.5
      },
      "failed_checks": []
     }
