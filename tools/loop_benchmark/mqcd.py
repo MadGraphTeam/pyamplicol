@@ -262,6 +262,31 @@ def rows(manifest: Mapping[str, Any] | None = None) -> dict[str, Row]:
     return out
 
 
+def nightly_ids(manifest: Mapping[str, Any] | None = None) -> list[str]:
+    """The nightly tier's row test ids: every active gating row or variant
+    with nightly points or an extra the harness checks."""
+
+    return sorted(
+        name
+        for name, row in rows(manifest).items()
+        if row.active
+        and row.gating
+        and (row.tier_points("nightly") or set(row.extras) & IMPLEMENTED_EXTRAS)
+    )
+
+
+def nightly_job(job: int, manifest: Mapping[str, Any] | None = None) -> list[str]:
+    """The row ids of nightly file job ``job`` (manifest ``nightly_jobs``:
+    rows packed by measured cost so that each file job stays within the
+    30-minute budget of PLAN §3.2)."""
+
+    manifest = manifest or load_manifest()
+    for entry in manifest["nightly_jobs"]["jobs"]:
+        if entry["job"] == job:
+            return list(entry["rows"])
+    raise KeyError(f"no nightly job {job}")
+
+
 # --------------------------------------------------------------- references
 
 

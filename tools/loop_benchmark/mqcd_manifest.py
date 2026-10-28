@@ -1481,6 +1481,77 @@ for r in R:
         entry["extras_pending"] = pend
     rows.append(entry)
 
+# The nightly tier's file jobs (PLAN §3.2 acceptance: each nightly file job
+# <= 30 min). Seconds per nightly test id as measured by the campaign run of
+# 2026-10-28 (tmp/mq-validate/pt3: one process per id on the shared host at
+# load ~100, start-up and model compilation included; A24 from pt2, 1355 s);
+# a row without a measurement counts DEFAULT_SECONDS. A row and its variants
+# (which reuse its generation) form one group; groups are packed greedily,
+# largest first, into jobs of at most JOB_SECONDS (a group above it is a job
+# of its own); job 1 also holds the restriction smokes and the M01
+# expansion (SMOKE_SECONDS).
+MEASURED_SECONDS = {
+    "A01": 31, "A02": 28, "A03": 33, "A04": 23, "A05": 36, "A06": 26, "A07": 31,
+    "A08": 445, "A09": 40, "A09@collinear": 33, "A09@soft": 41, "A12": 20,
+    "A13": 47, "A14": 182, "A15": 68, "A18": 145, "A19": 44, "A20": 42,
+    "A21": 55, "A22": 182, "A23": 731, "A24": 1355, "A25": 31, "A26": 31,
+    "B01": 37, "B01@mt170": 32, "B01@threshold": 27, "B02": 27, "B03": 71,
+    "B05": 795, "B06": 52, "B07": 349, "B08": 34, "C01": 33, "C01@params": 33,
+    "C02": 50, "C03": 28, "C04": 31, "C05": 48, "C06": 295, "C07": 35, "C08": 36,
+    "D01": 26, "D02": 29, "D05": 39, "D06": 36, "D07": 112, "D08": 53, "D09": 26,
+    "D10": 34, "D11": 34, "D12": 31, "D13": 34, "D15": 30, "D16": 31, "D17": 31,
+    "D18": 29, "D19": 31, "D20": 36, "D21": 25, "D23": 33, "D24": 29, "D25": 31,
+    "D25@zero": 23, "D26": 35, "D27": 33, "E01": 55, "E02": 51, "E05": 27,
+    "E06": 181, "F01": 42, "F02": 30, "F04": 31, "G01": 29, "G02": 35, "H01": 37,
+    "M01@P0": 31, "M01@P2": 34, "R01": 29,
+}  # fmt: skip
+DEFAULT_SECONDS = 60
+JOB_SECONDS = 1200
+SMOKE_SECONDS = 75
+
+
+def nightly_groups(rows):
+    """(seconds, [ids]) per row with nightly test ids: the row (if it has
+    nightly points or checked extras) and its gating variants."""
+
+    checked = {"ap", "uv", "hel", "sp"}
+    groups = []
+    for r in rows:
+        ids = []
+        if r["status"] == "active" and (
+            r["points"].get("nightly") or set(r["extras"]) & checked
+        ):
+            ids.append(r["id"])
+        ids += [
+            f"{r['id']}@{v['name']}"
+            for v in r.get("variants", ())
+            if v.get("gating", True) and v["points"].get("nightly")
+        ]
+        if ids:
+            seconds = sum(MEASURED_SECONDS.get(i, DEFAULT_SECONDS) for i in ids)
+            groups.append((seconds, ids))
+    return groups
+
+
+def nightly_jobs(rows):
+    jobs = [{"job": 1, "seconds": SMOKE_SECONDS, "rows": []}]
+    for seconds, ids in sorted(nightly_groups(rows), key=lambda g: (-g[0], g[1])):
+        fits = [j for j in jobs if j["seconds"] + seconds <= JOB_SECONDS]
+        if fits:
+            job = min(fits, key=lambda j: (j["seconds"], j["job"]))
+        else:
+            job = {"job": len(jobs) + 1, "seconds": 0, "rows": []}
+            jobs.append(job)
+        job["seconds"] += seconds
+        job["rows"] += ids
+    for job in jobs:
+        job["rows"].sort()
+        suffix = "" if job["job"] == 1 else f"_{job['job']}"
+        job["file"] = f"tests/unit/test_loop_v2_mqcd_nightly{suffix}.py"
+    return jobs
+
+
+NIGHTLY_JOBS = nightly_jobs(rows)
 FEATURES = sorted({f for r in rows for f in r["features"]})
 manifest = {
     "schema_version": 1,
@@ -1521,6 +1592,11 @@ manifest = {
             "no_widths": {"row": "B08", "points_from": "B01"},
         },
         "lc_every_restriction": "MQ-NC",
+    },
+    "nightly_jobs": {
+        "budget_seconds": JOB_SECONDS,
+        "measurement": "seconds per nightly test id, campaign run of 2026-10-28 (one process per id, shared host at load ~100, start-up included)",
+        "jobs": NIGHTLY_JOBS,
     },
     "rows": rows,
 }
