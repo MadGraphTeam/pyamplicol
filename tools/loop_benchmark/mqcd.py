@@ -156,6 +156,9 @@ class Row:
     # a non-gating variant is a diagnostic the test tiers do not assert.
     base: str | None = None
     gating: bool = True
+    # A variant that is one subprocess of a multiparticle base row (its own
+    # process and generation; M01).
+    subprocess: bool = False
     # Rule 4's prediction: "python" (the Python-input path's Catani operator,
     # every row on that route) or "none" for a row on the native-input route,
     # which forms no prediction (WP3.1 I5c): rule 4 is then recorded as not
@@ -206,6 +209,7 @@ class Row:
             ignored_fixed_parameters=tuple(data.get("ignored_fixed_parameters", ())),
             notes=data.get("notes", ""),
             base=data.get("base"),
+            subprocess=bool(data.get("subprocess", False)),
             catani=data.get("catani", "python"),
             helicity_reference=data.get("helicity_reference"),
             gating=bool(data.get("gating", True)),
@@ -1772,7 +1776,11 @@ class Campaign:
             if not row.active:
                 raise ValueError(f"{name} is pending: {row.pending}")
             base = None
-            if row.base is not None and self.rows[row.base].active:
+            if (
+                row.base is not None
+                and self.rows[row.base].active
+                and not row.subprocess
+            ):
                 base = self.run(row.base)
             self._runs[name] = RowRun(
                 row, self.model(row.restriction), self.native, base=base
@@ -1782,6 +1790,51 @@ class Campaign:
     def report(self, name: str, tier: str, points=None) -> RowReport:
         run = self.run(name)
         return run_row(run, tier, points=points)
+
+
+def multiparticle_subprocesses(campaign: Campaign, name: str) -> list[Check]:
+    """A multiparticle row's concrete processes (the public route's expansion,
+    ``processes.model.expand_model_processes`` with the model's conserved
+    charges) against MadLoop's SubProcesses/P* process lists (manifest
+    ``madloop_subprocesses``), each process as a multiset of initial and of
+    final particles (side permutations are one matrix element)."""
+
+    from pyamplicol.processes.conservation import conserved_charges
+    from pyamplicol.processes.model import (
+        ModelParticleCatalog,
+        expand_model_processes,
+    )
+
+    row = campaign.rows[name]
+    data = next(r for r in load_manifest()["rows"] if r["id"] == name)
+    ir = campaign.model(row.restriction).ir
+    catalog = ModelParticleCatalog(ir.name, ir.particles, ir.parameters)
+    ours = expand_model_processes(row.process, catalog, charges=conserved_charges(ir))
+
+    def key(process: str) -> tuple:
+        """Initial and final PDG multisets (the model's own spelling of a
+        name is case-insensitive: loop_sm's gluon is ``G``)."""
+
+        initial, final = process.split(">")
+        return tuple(
+            tuple(sorted(int(catalog.resolve(n).pdg_code) for n in side.split()))
+            for side in (initial, final)
+        )
+
+    theirs = {
+        key(process)
+        for processes in data["madloop_subprocesses"].values()
+        for process in processes
+    }
+    found = {key(process) for process in ours}
+    return [
+        Check("multi", None, "", "", "subprocesses", ", ".join(sorted(ours)),
+              ", ".join(sorted(p for ps in data["madloop_subprocesses"].values()
+                               for p in ps)),
+              0.0, 0.0, found == theirs,
+              note=f"{len(found)} processes against MadLoop's "
+              f"{len(data['madloop_subprocesses'])} P directories")
+    ]  # fmt: skip
 
 
 SMOKE_TOLERANCE = 1e-14
