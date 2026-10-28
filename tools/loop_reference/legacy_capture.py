@@ -16,6 +16,11 @@ must survive the engine swap; this tool captures both for a fixed control set
 * O2, ``<name>.families.json.gz``: per denominator family the Born-weighted,
   helicity- and colour-summed numerator coefficients that the legacy engine
   hands to its reducer, at the first point, in both carriers.
+* Projections only, ``<name>.<accuracy>.json`` (``PROJECTION_CONTROLS``, option
+  ``--projection``): one colour projection of a control whose full capture is
+  out of reach, at its first point, in both carriers, with its colour degrees
+  (the O1 record's ``colour_projections`` entry and header). One accuracy per
+  file and interpreter.
 
 Every value is the engine's own decimal output string, so a regeneration with
 the same native build reproduces the files byte for byte (``--check``). The
@@ -40,6 +45,8 @@ Usage (licensed Symbolica and the staged native module are required)::
 
     python tools/loop_reference/legacy_capture.py --ufo <MG5>/models/loop_sm
     python tools/loop_reference/legacy_capture.py --ufo ... --process uux_uux --check
+    python tools/loop_reference/legacy_capture.py --ufo ... --process uux_uuxuux \
+        --projection lc
 """
 
 from __future__ import annotations
@@ -156,7 +163,26 @@ CONTROLS = {
     ),
     "uux_uux": Control("u u~ > u u~", (2, -2), (2, -2), (2, 0), "required:uux_uux"),
     "uux_uuxg": Control(
-        "u u~ > u u~ g", (2, -2), (2, -2, 21), (3, 0), "required:uux_uuxg"
+        "u u~ > u u~ g",
+        (2, -2),
+        (2, -2, 21),
+        (3, 0),
+        "required:uux_uuxg",
+        colour_projections=("lc", "nlc"),
+    ),
+}
+# Controls whose full capture is out of reach: the legacy program of one colour
+# accuracy takes over an hour at six legs (u u~ > u u~ u u~ LC: 3987 s and
+# 8.4 GB, then 543 s and 22.5 GB at 200 bits, one thread, 2026-10-27), so only
+# their colour projections at the first point (``capture_projection``).
+PROJECTION_CONTROLS = {
+    "uux_uuxuux": Control(
+        "u u~ > u u~ u u~",
+        (2, -2),
+        (2, -2, 2, -2),
+        (4, 0),
+        "required:uux_uuxuux",
+        colour_projections=("lc", "nlc"),
     ),
 }
 
@@ -373,12 +399,9 @@ def _family_coefficients(virtual, control: Control, point, scale) -> list:
     return rows
 
 
-def capture(ufo: Path, name: str) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Return the O1 and O2 records of one control process."""
-    control = CONTROLS[name]
-    points, scales = control_points(control)
-    program, insertions, fields = _program(ufo, control)
-    header = {
+def _header(name: str, control: Control, points, scales) -> dict[str, Any]:
+    """The fields every record of a control starts with."""
+    return {
         "name": name,
         "process": control.process,
         "pdgs": [*control.incoming, *control.outgoing],
@@ -402,6 +425,31 @@ def capture(ufo: Path, name: str) -> tuple[dict[str, Any], dict[str, Any]]:
         "points": points,
         "scales_squared": scales,
     }
+
+
+def _projection(ufo: Path, control: Control, accuracy: str, points, scales):
+    """The ``colour_projections`` entry of one accuracy and its last result."""
+    program, _, _ = _program(ufo, control, color_accuracy=accuracy)
+    projected = {}
+    for carrier in CARRIERS:
+        virtual = _virtual(_rebind(program, carrier))
+        projected[carrier], result = _o1_results(virtual, control, points, scales)
+    return {
+        "born_degree": result.born_color_degree,
+        "virtual_degree": result.virtual_color_degree,
+        "colour_declaration": (
+            None if control.drell_yan else str(COLOUR_DECLARATION.relative_to(ROOT))
+        ),
+        "results": projected,
+    }, result
+
+
+def capture(ufo: Path, name: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Return the O1 and O2 records of one control process."""
+    control = CONTROLS[name]
+    points, scales = control_points(control)
+    program, insertions, fields = _program(ufo, control)
+    header = _header(name, control, points, scales)
     o1 = {
         **header,
         "convention": CONVENTION,
@@ -419,20 +467,31 @@ def capture(ufo: Path, name: str) -> tuple[dict[str, Any], dict[str, Any]]:
             virtual, control, points[0], scales[0]
         )
     for accuracy in control.colour_projections:
-        program, _, _ = _program(ufo, control, color_accuracy=accuracy)
-        projected = {}
-        for carrier in CARRIERS:
-            virtual = _virtual(_rebind(program, carrier))
-            projected[carrier], result = _o1_results(virtual, control, points, scales)
-        o1.setdefault("colour_projections", {})[accuracy] = {
-            "born_degree": result.born_color_degree,
-            "virtual_degree": result.virtual_color_degree,
-            "colour_declaration": (
-                None if control.drell_yan else str(COLOUR_DECLARATION.relative_to(ROOT))
-            ),
-            "results": projected,
-        }
+        o1.setdefault("colour_projections", {})[accuracy], _ = _projection(
+            ufo, control, accuracy, points, scales
+        )
     return o1, o2
+
+
+def capture_projection(ufo: Path, name: str, accuracy: str) -> dict[str, Any]:
+    """The projection-only record of a ``PROJECTION_CONTROLS`` control: one
+    colour accuracy at its first point (module docstring)."""
+    control = PROJECTION_CONTROLS[name]
+    if accuracy not in control.colour_projections:
+        raise ValueError(f"{name} declares no {accuracy} projection")
+    points, scales = control_points(control)
+    points, scales = points[:1], scales[:1]
+    projection, result = _projection(ufo, control, accuracy, points, scales)
+    return {
+        **_header(name, control, points, scales),
+        "convention": CONVENTION,
+        "orders": _orders(result),
+        "colour_projections": {accuracy: projection},
+    }
+
+
+def projection_path(name: str, accuracy: str, directory: Path = OUTPUT) -> Path:
+    return directory / f"{name}.{accuracy}.json"
 
 
 def serialize(o1: dict[str, Any], o2: dict[str, Any]) -> tuple[bytes, bytes]:
@@ -469,7 +528,10 @@ def main() -> int:
         "--ufo", type=Path, required=True, help="MG5_aMC 3.7.0 models/loop_sm"
     )
     parser.add_argument(
-        "--process", nargs="+", choices=tuple(CONTROLS), default=list(CONTROLS)
+        "--process",
+        nargs="+",
+        choices=(*CONTROLS, *PROJECTION_CONTROLS),
+        default=list(CONTROLS),
     )
     parser.add_argument("--output-dir", type=Path, default=OUTPUT)
     parser.add_argument(
@@ -477,7 +539,31 @@ def main() -> int:
         action="store_true",
         help="compare with the existing files instead of writing",
     )
+    parser.add_argument(
+        "--projection",
+        choices=("lc", "nlc"),
+        help="one colour projection of a PROJECTION_CONTROLS process (one process)",
+    )
     args = parser.parse_args()
+    if args.projection is not None or set(args.process) & set(PROJECTION_CONTROLS):
+        if args.projection is None or len(args.process) != 1:
+            parser.error("--projection takes one PROJECTION_CONTROLS process")
+        (name,) = args.process
+        if name not in PROJECTION_CONTROLS:
+            parser.error(f"{name} has a full capture (no --projection)")
+        path = projection_path(name, args.projection, args.output_dir)
+        content = (
+            json.dumps(capture_projection(args.ufo, name, args.projection), indent=1)
+            + "\n"
+        ).encode()
+        if args.check:
+            same = path.is_file() and path.read_bytes() == content
+            print(f"{path}: {'identical' if same else 'DIFFERS'}")
+            return 0 if same else 1
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        print(f"{path}: {len(content)} bytes")
+        return 0
     if len(args.process) == 1:
         ok = _write_or_check(args.ufo, args.process[0], args.output_dir, args.check)
         return 0 if ok else 1
