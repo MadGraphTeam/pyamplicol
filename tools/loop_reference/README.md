@@ -769,11 +769,11 @@ data.
 
 | File | Role |
 |---|---|
-| `mqcd_campaign.json` (written by `make_mqcd_campaign.py`) | The 76 rows of §4.2 (class, process, restriction code and its pyAmpliCol route, reference kind E/N/R, tier, extras) and the 64 reference runs producing them (process key of `required_processes.json`, export, points family, per-helicity, second providers, MadLoop accuracy target, provider exclusions, per-point reference notes). |
-| `mqcd_campaign.py` | `export`, `points`, `run` (MadLoop accurate mode under `timeout 2700`, pinned; `split_points` runs one job per point, then `combine`), `merge`, `fixture` (absolute paths rewritten to `${LOOP_REFERENCE_ROOT}` / `${REPOSITORY}`; refuses any path left), `manifest`, `status`. Work directories `$LOOP_REFERENCE_ROOT/runs/mqcd/<run>/`. |
-| `supplied_points.py` | Points for every mass pattern `exact_points.py` cannot build (several massive subsystems, massive beams, irrational MW, light massive pairs above 800 GeV): 60-digit construction printed on a 30-digit quantum, momentum conservation exact in the printed decimals; families `regular`, `threshold`, `soft`, `collinear`, `radiation-zero`, `rest` (2->1); `--rotate x`, `--half-scale-point`, `--madloop-qp-point`. |
-| `tests/fixtures/loop/required/mqcd/<run>.json` | One merged reference per run (the `references.py merge` format plus `sectors`, `madloop_accuracy`, `per_helicity`, `restriction`, `parameter_overrides`, `mqcd_run`). |
-| `tests/fixtures/loop/required/mqcd_references.json` | The manifest MQ-VALIDATE consumes: per row the pyAmpliCol route (restriction, fixed parameters), each reference (fixture, process, orders, parameters, points, MadLoop accuracy per point and loop squared split order, notes, exclusions) and the existing references. |
+| `mqcd_campaign.json` (written by `make_mqcd_campaign.py`) | The 76 rows of §4.2 (class, process, restriction code and its pyAmpliCol route, reference kind E/N/R, tier, extras) and the 77 reference runs producing them (process key of `required_processes.json`, export, points family, per-helicity, second providers with their §4.1 trigger or 'diagnostic', MadLoop accuracy target, provider exclusions, per-point reference notes and `point_status`). |
+| `mqcd_campaign.py` | `export`, `points`, `run` (MadLoop accurate mode under `timeout 2700`, pinned; `split_points` runs one job per point, then `combine`), `merge` (passes the run's `point_status`), `fixture` (absolute paths rewritten to `${LOOP_REFERENCE_ROOT}` / `${REPOSITORY}`; refuses any `/shared`, `/home`, `/tmp` or non-compiler `/nix/store` path left), `manifest`, `status`. Work directories `$LOOP_REFERENCE_ROOT/runs/mqcd/<run>/`. |
+| `supplied_points.py` | Points for every mass pattern `exact_points.py` cannot build (several massive subsystems, massive beams, irrational MW, light massive pairs above 800 GeV): 60-digit construction printed exactly on a 30-digit quantum (no 28-digit context rounding at print time), momentum conservation exact in the printed decimals and the recorded defects those of the printed values; configurations it cannot reach are refused before the search, and the search is bounded; families `regular`, `threshold`, `soft`, `collinear`, `radiation-zero`, `rest` (2->1); `--rotate x`, `--half-scale-point`, `--madloop-qp-point`. |
+| `tests/fixtures/loop/required/mqcd/<run>.json` | One merged reference per run (the `references.py merge` format plus `sectors`, `madloop_accuracy`, `per_helicity`, `restriction`, `parameter_overrides`, a per-row `reference` record, `tolerance_scope`, `mqcd_run`). |
+| `tests/fixtures/loop/required/mqcd_references.json` | The manifest MQ-VALIDATE consumes: per row the pyAmpliCol route (restriction, fixed parameters), each reference (fixture, process, orders, parameters, points, MadLoop accuracy per point and loop squared split order, `point_reference` per point, notes, exclusions, second-provider trigger) and the existing references; `conventions` documents indexing, the per-point record and that fixture tolerances are not M-QCD acceptance values. |
 
 Typical use:
 
@@ -836,14 +836,43 @@ quadruple-precision one by 1.6e-9). The limit-point runs (S1 threshold, S2
 soft/collinear, S3 radiation zero) therefore publish MadLoop's own
 quadruple-precision point (`supplied_points.py --madloop-qp-point`, the ORIG
 formulas replicated at 60 digits) and request accuracy 1e-20, which forces the
-quadruple-precision evaluation; the merge records `born_from_madloop_double_pole`
-(the Born at that point). Findings: soft E/sqrt(s) = 1e-3, 1e-5: MadLoop =
+quadruple-precision evaluation. At those (`madloop_qp_point`) points the
+merge makes the Born at the published point, MadLoop's quadruple-precision
+double pole over the universal factor, the reference `born` of the row and of
+its sectors (`reference.born_source`), keeping MadLoop's printed value as
+`born_madloop_binary64_input` / `born_binary64_input`. Findings: soft E/sqrt(s) = 1e-3, 1e-5: MadLoop =
 OpenLoops to 1.5e-14, 2.5e-13 (Recola's double-precision COLLIER is off by
 4.6e-9 and 6e-3 and is excluded); collinear theta = 1e-4 and 1e-5: MadLoop's
 quadruple-precision evaluation is unstable (return code 420, own accuracy
 1.3e-6 and 28; OneLOop "input does not seem to represent hard kinematics") and
 no provider agrees with another, so these points carry no provider reference
-(`reference_notes`). Light massive pairs (b, c, mu) cannot reach sqrt(s) >=
+(`point_status` / `reference.status` = `none`). The S3 Born-zero points compare
+absolutely (`reference.comparison` = `absolute`, scale = the Born at the
+regular neighbour row). Per-point reference record (`rows[i].reference`, listed in the manifest as
+`point_reference`): `status` (`ok` / `none`), `comparison` (`relative` /
+`absolute` with `absolute_scale_row` and `absolute_scale`), `born_source`,
+`madloop_point` (published point, its binary64 rounding, or MadLoop's
+quadruple-precision repair of that rounding, ~1e-16 away),
+`born_double_pole_relative_mismatch` (MadLoop's printed Born against the Born
+its double pole implies: where MadLoop rescued an exact point in quadruple
+precision, the reference's sensitivity to that ~1e-16 displacement, e.g. 1.1e-12
+at g g > u u~ u u~ point 2, which MadLoop's accuracy estimate does not show)
+and `max_sector_double_pole_relative_error`. The merge refuses a point whose
+MadLoop squared split orders violate the universal double pole beyond its
+tolerance unless `--point-status` declares it, and the MadLoop run refuses
+non-finite values anywhere in its output (sectors and helicities included).
+
+MG5_aMC 3.7.0 Born defect. `born_matrix.f`'s `JAMP(colour, amplitude split
+order)` is a local array that is never zeroed; a colour flow without an
+amplitude of some split order (u u~ > t t~ QCD<=2 QED<=2: the colour-singlet
+flow has no QED amplitude) keeps uninitialised stack memory, which entered
+MadLoop's Born sectors (G02 point 2: QED^4 Born 3.6e9 instead of 9.6e-3, Inf in
+other runs). `build_madloop` compiles a copy with `JAMP(:,:) = 0` into the run
+directory (`references.fix_unassigned_jamps`; only incomplete subroutines are
+touched, recorded as `mg5_born_matrix_repairs`); of the 93 Born matrix elements
+under `runs/` only that export needs it, and its loop sectors are unchanged.
+
+Light massive pairs (b, c, mu) cannot reach sqrt(s) >=
 800 GeV with terminating parameters: `exact_points.py` now refuses them
 instead of searching forever, and those rows use `supplied_points.py`.
 
