@@ -48,6 +48,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import math
 import os
 import time
@@ -62,6 +63,7 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "tests" / "fixtures" / "loop"
 MANIFEST = FIXTURES / "mqcd" / "manifest.json"
 RESULTS_ENVIRONMENT = "PYAMPLICOL_MQCD_RESULTS"
+LOG = logging.getLogger("pyamplicol.mqcd")
 
 LAURENT = ("finite", "single_pole", "double_pole")
 COEFFICIENTS = ("born", *LAURENT)
@@ -620,8 +622,10 @@ class RowRun:
         self.row = row
         self.reference = load_reference(row)
         start = time.perf_counter()
+        LOG.info("%s: generating %s", row.id, row.process)
         self.slice = LoopSlice.generate(compiled, slice_request(row), native)
         self.generate_seconds = time.perf_counter() - start
+        LOG.info("%s: generated in %.1f s", row.id, self.generate_seconds)
         start = time.perf_counter()
         if row.inputs == "native":
             self.executor = NativeExecutor(self.slice, forward=False, inputs="native")
@@ -652,6 +656,9 @@ class RowRun:
             precision = Precision.arbitrary(int(carrier.removeprefix("arbitrary-")))
         reference = self.reference
         start = time.perf_counter()
+        LOG.info(
+            "%s: %s at points %s (poles %s)", self.row.id, carrier, list(indices), poles
+        )
         results = self.executor.evaluate(
             [reference.points[i] for i in indices],
             [reference.scales[i] for i in indices],
@@ -661,6 +668,7 @@ class RowRun:
             stability=check_configuration() if stability else None,
         )
         seconds = (time.perf_counter() - start) / max(1, len(indices))
+        LOG.info("%s: %s done, %.1f s per point", self.row.id, carrier, seconds)
         return [evaluated(r, carrier, seconds) for r in results]
 
     def legs(self) -> list[tuple[int, bool]]:
@@ -1509,6 +1517,61 @@ class Campaign:
         return run_row(run, tier, points=points)
 
 
+SMOKE_TOLERANCE = 1e-14
+
+
+def smoke(campaign: Campaign, restriction: str, spec: Mapping[str, Any]) -> list[Check]:
+    """A generation smoke (PLAN §3.2 MQ-VALIDATE item 5): the request of row
+    ``spec['row']`` generated on ``restriction`` equals the row on its own
+    restriction, binary64, at the first point of ``spec.get('points_from',
+    row)``'s reference, within 1e-14 strictly relative per sector and
+    coefficient (Born included)."""
+
+    from pyamplicol.loops.v2.assemble import LoopSlice, Precision
+
+    row = campaign.rows[spec["row"]]
+    source = campaign.rows[spec.get("points_from", row.id)]
+    reference = load_reference(source)
+    parameters = {**reference.parameters, **dict(source.parameters)}
+    values = []
+    for name in (row.restriction, restriction):
+        slice_ = LoopSlice.generate(
+            campaign.model(name), slice_request(row), campaign.native
+        )
+        values.append(
+            evaluated(
+                slice_.evaluate(
+                    reference.points[0],
+                    reference.scales[0],
+                    parameters=parameters,
+                    precision=Precision.double(),
+                ),
+                "double",
+            )
+        )
+    base, other = values
+    same = set(other.virtual) == set(base.virtual) and set(other.born) == set(base.born)
+    checks = [
+        Check("smoke", 0, "double", "", "sectors",
+              ", ".join(map(sector_text, sorted(other.virtual))),
+              ", ".join(map(sector_text, sorted(base.virtual))), 0.0, 0.0,
+              same, note=f"{restriction} against {row.restriction}")
+    ]  # fmt: skip
+    for sector, value in base.born.items():
+        error = relative(other.born.get(sector, Decimal(0)), value)
+        checks.append(Check("smoke", 0, "double", sector_text(sector), "born",
+                            str(other.born.get(sector)), str(value), error,
+                            SMOKE_TOLERANCE, error <= SMOKE_TOLERANCE))  # fmt: skip
+    for sector, laurent in base.virtual.items():
+        mine = other.virtual.get(sector, (Decimal(0),) * 3)
+        for k, name in enumerate(LAURENT):
+            error = relative(mine[k], laurent[k])
+            checks.append(Check("smoke", 0, "double", sector_text(sector), name,
+                                str(mine[k]), str(laurent[k]), error,
+                                SMOKE_TOLERANCE, error <= SMOKE_TOLERANCE))  # fmt: skip
+    return checks
+
+
 def write_result(report: RowReport, directory: str | os.PathLike | None = None) -> None:
     """Write the row's record to ``$PYAMPLICOL_MQCD_RESULTS/<row>.<tier>.json``
     when that directory is set (report data, ``build_mqcd.py``)."""
@@ -1537,6 +1600,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     run.add_argument("--work", required=True, type=Path)
     run.add_argument("--results", type=Path)
     args = parser.parse_args(argv)
+    logging.basicConfig(format="%(asctime)s %(message)s", level=logging.WARNING)
+    LOG.setLevel(logging.INFO)
 
     from pyamplicol.loops.native import load_loop_native
 
