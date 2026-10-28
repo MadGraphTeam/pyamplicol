@@ -531,6 +531,35 @@ def _mqcd(row, spec, data) -> Reference:
     )
 
 
+def _process_control(row, spec, data) -> Reference:
+    """``top-pair-ee-model-control.json`` style: ``processes[key].rows`` with
+    MadLoop's Born, Laurent coefficients, status and accuracy (strings), the
+    run's ``runtime_parameters`` (the card's other values are the
+    restriction's defaults; ``all_widths`` 0 is the row's fixed widths)."""
+
+    entries = data["processes"][spec["key"]]["rows"]
+    born = [{"madloop": {TOTAL: float(r["born"])}} for r in entries]
+    virtual = [{"madloop": {TOTAL: _laurent(r)}} for r in entries]
+    accuracy = [{"madloop": float(r["accuracy"])} for r in entries]
+    parameters = {
+        k: v
+        for k, v in data["runtime_parameters"].items()
+        if k not in ("MU_R", "all_widths")
+    }
+    return Reference(
+        "",
+        ("madloop",),
+        [_strings(p) for p in data["points"]],
+        [_scale(mu) for mu in data["mu_r"]],
+        parameters,
+        None,
+        born,
+        virtual,
+        accuracy,
+        float(parameters["aS"]),
+    )
+
+
 _LOADERS = {
     "required": _required,
     "providers": _providers,
@@ -539,6 +568,7 @@ _LOADERS = {
     "dilepton": _dilepton,
     "mixed-sm": _mixed_sm,
     "mqcd": _mqcd,
+    "process-control": _process_control,
 }
 REFERENCE_FORMATS = tuple(_LOADERS)
 
