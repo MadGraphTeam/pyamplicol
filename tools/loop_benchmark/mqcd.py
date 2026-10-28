@@ -1520,9 +1520,10 @@ def rule_hel(
     order and MG5's helicity labels, equals our helicity row of the same
     labels times the helicity average of the incoming legs (our rows keep
     the inclusive initial average); strictly relative within 1e-12 per
-    coefficient. A configuration whose Born vanishes is checked absolutely
-    against the summed Born (1e-12), the coefficients then against F of the
-    summed Born."""
+    coefficient. A configuration whose MadLoop Born is within 1e-12 of the
+    summed Born of zero (a vanishing helicity: MadLoop returns the rounding
+    of a zero) is checked absolutely, ours included: the Born against 1e-12
+    of the summed Born, the Laurent coefficients against 1e-12 of its F."""
 
     checks = []
     counts = defaultdict(set)
@@ -1532,6 +1533,7 @@ def rule_hel(
     average = math.prod(len(counts[leg]) for leg in (0, 1))
     total = sum((abs(p.total()[0]) for p in ours.values()), Decimal(0))
     found = {tuple(e["helicity"]) for e in madloop}
+    summed = sum(abs(e["born"]) for e in madloop)
     checks.append(Check(
         "hel", index, "double-double", "", "helicity rows", str(len(ours)),
         str(len(found)), 0.0, 0.0, set(ours) == found,
@@ -1544,7 +1546,9 @@ def rule_hel(
         text = "h" + "".join("+" if h > 0 else "-" if h < 0 else "0" for h in helicity)
         mine = [born * average, *(x * average for x in laurent)]
         theirs = [entry[k] for k in COEFFICIENTS]
-        if entry["born"] == 0:
+        if abs(entry["born"]) <= REFERENCE_TOLERANCE * summed:
+            # A helicity whose Born vanishes (MadLoop's value is its rounding
+            # of a zero): every coefficient absolutely, ours included.
             flux = _flux(total * average, alpha_s)
             for k, name in enumerate(COEFFICIENTS):
                 scale = float(total * average) if k == 0 else flux
