@@ -1336,7 +1336,7 @@ def rerun_variants(rid):
 
 def helicity_fixture(rid):
     """The fixture of MQ-REF's per-helicity run of a row (the index row's
-    ``helicity_reference``, a run name), or None."""
+    ``helicity_reference``: a run name, or its fixture below tests/fixtures/loop), or None."""
     entry = INDEX_ROWS.get(rid) or {}
     run = entry.get("helicity_reference")
     if not run:
@@ -1344,11 +1344,39 @@ def helicity_fixture(rid):
     found = [
         x
         for x in entry["references"]
-        if x["run"] == run and x["status"] == "committed" and x.get("fixture")
+        if run in (x["run"], x.get("fixture"), f"required/mqcd/{x['run']}.json")
     ]
-    if len(found) != 1 or not (FIXTURE_ROOT / found[0]["fixture"]).is_file():
-        raise ValueError(f"{rid}: helicity_reference {run} is not one committed run")
+    if len(found) != 1:
+        raise ValueError(f"{rid}: helicity_reference {run} is not one run of the row")
+    if found[0]["status"] != "committed":
+        return HEL_PENDING
+    if not (FIXTURE_ROOT / found[0]["fixture"]).is_file():
+        raise ValueError(f"{rid}: helicity_reference {run} has no fixture")
     return f"tests/fixtures/loop/{found[0]['fixture']}"
+
+
+# helicity_fixture of a row whose per-helicity run is not committed yet
+HEL_PENDING = "pending"
+
+
+def superseded_points(rid, reference):
+    """The points of a row's existing reference that MQ-REF's quadruple-
+    precision rerun supersedes (the index's ``existing_references[*].
+    point_binding``, schema mqcd-references/2): {point: {"path", "row"}}."""
+    entry = INDEX_ROWS.get(rid) or {}
+    if not reference:
+        return {}
+    out = {}
+    for x in entry.get("existing_references", []):
+        if f"tests/fixtures/loop/{x['fixture']}" != reference["path"]:
+            continue
+        for i, b in enumerate(x.get("point_binding") or []):
+            if not b["binding"]:
+                out[str(i)] = {
+                    "path": f"tests/fixtures/loop/{b['superseded_by']['fixture']}",
+                    "row": b["superseded_by"]["row"],
+                }
+    return out
 
 
 def index_reference(rid):
@@ -1370,7 +1398,7 @@ def index_reference(rid):
     # A per-helicity run at its own points is not the row's main reference
     # (unless it is its only run).
     hel_run = entry.get("helicity_reference")
-    main = [x for x in main if x["run"] != hel_run] or main
+    main = [x for x in main if hel_run not in (x["run"], x["fixture"])] or main
     spec = fixture = None
     if main:
         first = main[0]
@@ -1486,6 +1514,32 @@ for r in R:
         if tier == "default"
         else {"nightly": list(range(count))}
     )
+    superseded = superseded_points(r["id"], reference)
+    if superseded:
+        # MQ-REF's quadruple-precision rerun of the existing reference is
+        # the binding reference at the points it re-evaluates: the row's
+        # rule 1 holds its values there, and its gating variant keeps only
+        # the rows the row's tiers do not run (the mu_0/2 point).
+        reference = {**reference, "superseded": superseded}
+        covered = {i for tier_points in points.values() for i in tier_points}
+        for variant in variants:
+            taken = {
+                b["row"]
+                for i, b in superseded.items()
+                if int(i) in covered and b["path"] == variant["reference"]["path"]
+            }
+            if taken:
+                variant["points"] = {
+                    "nightly": [
+                        i for i in variant["points"]["nightly"] if i not in taken
+                    ]
+                }
+                variant["notes"] += (
+                    "; its rows "
+                    + ", ".join(map(str, sorted(taken)))
+                    + " supersede the row's reference at the same points (the row's rule 1 holds them)"
+                )
+        variants = [v for v in variants if v["points"]["nightly"]]
     entry = {
         "id": r["id"],
         "class": r["cls"] or CLASS[r["id"][0]],
@@ -1536,7 +1590,9 @@ for r in R:
     if variants:
         entry["variants"] = variants
     hel_fixture = helicity_fixture(r["id"])
-    if hel_fixture and (
+    if hel_fixture == HEL_PENDING:
+        pass
+    elif hel_fixture and (
         not entry.get("reference") or hel_fixture != entry["reference"]["path"]
     ):
         entry["helicity_reference"] = hel_fixture
@@ -1575,6 +1631,8 @@ for r in R:
             )
         elif e == "hel" and r["id"] not in ("A08", "B01", "D05"):
             pend[e] = "MQ-REF (per-helicity SLOOPMATRIXHEL references)"
+        elif e == "hel" and hel_fixture == HEL_PENDING:
+            pend[e] = "MQ-REF (the row's per-helicity run is not committed yet)"
         elif e == "sp" and not any(v.get("gating", True) for v in variants):
             pend[e] = "MQ-REF (supplied special points S1-S4)"
     if pend:

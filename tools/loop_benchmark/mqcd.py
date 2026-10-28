@@ -354,6 +354,11 @@ class Reference:
     # neighbour ``absolute_scale_row``, the Born's source, the reason), or
     # None where the fixture has none.
     records: list[dict[str, Any] | None] = field(default_factory=list)
+    # Per point superseded by MQ-REF's quadruple-precision rerun of the
+    # existing reference (``spec["superseded"]``, MQ-REF's ``point_binding``):
+    # the binding fixture and its row, whose primary values replaced the
+    # existing reference's (its other providers stay the second providers).
+    binding: dict[int, tuple[str, int]] = field(default_factory=dict)
 
     @property
     def primary(self) -> str:
@@ -394,7 +399,52 @@ def load_reference(row: Row) -> Reference:
         if missing:
             raise ValueError(f"{row.id}: reference lacks providers {sorted(missing)}")
         reference.providers = tuple(spec["providers"])
+    for index, binding in sorted((spec.get("superseded") or {}).items()):
+        _supersede(row, reference, int(index), binding["path"], int(binding["row"]))
     return reference
+
+
+def _supersede(
+    row: Row, reference: Reference, index: int, path: str, other: int
+) -> None:
+    """The existing reference's point ``index`` is superseded by row
+    ``other`` of MQ-REF's quadruple-precision rerun at ``path`` (the same
+    exact point and mu_R, an ok record): its primary values (per sector),
+    accuracy, evidence and record replace the existing primary's there; the
+    existing fixture's other providers stay second providers (rule 1 ii)."""
+
+    data = json.loads((ROOT / path).read_text())
+    names = list(data["rows"][0]["providers"])
+    first = data.get("primary_provider", names[0])
+    rerun = _required(
+        row, {"providers": [first, *(n for n in names if n != first)]}, data
+    )
+    primary = reference.primary
+    if rerun.primary != primary:
+        raise ValueError(f"{row.id}: {path} primary {rerun.primary} is not {primary}")
+    if (rerun.points[other], rerun.scales[other]) != (
+        reference.points[index],
+        reference.scales[index],
+    ):
+        raise ValueError(f"{row.id}: {path} row {other} is not point {index}")
+    fixed = {**(reference.fixed_parameters or {}), **reference.parameters}
+    for name, value in {**(rerun.fixed_parameters or {}), **rerun.parameters}.items():
+        if name in fixed and Fraction(str(fixed[name])) != Fraction(str(value)):
+            raise ValueError(
+                f"{row.id}: {path} has {name} = {value}, not {fixed[name]}"
+            )
+    record = rerun.record(other)
+    if record is None or record.get("status") != "ok":
+        raise ValueError(f"{row.id}: {path} row {other} is not an ok reference")
+    reference.born[index][primary] = rerun.born[other][primary]
+    reference.virtual[index][primary] = rerun.virtual[other][primary]
+    reference.accuracy[index][primary] = rerun.accuracy[other][primary]
+    if reference.evidence:
+        reference.evidence[index][primary] = rerun.evidence[other][primary]
+    while len(reference.records) <= index:
+        reference.records.append(None)
+    reference.records[index] = record
+    reference.binding[index] = (path, other)
 
 
 def _required(row, spec, data) -> Reference:
@@ -1960,6 +2010,26 @@ def reference_record_checks(row: Row, reference: Reference, index: int) -> list[
     if record is None:
         return []
     checks = []
+    if index in reference.binding:
+        path, other = reference.binding[index]
+        checks.append(Check(
+            "1", index, "double-double", "", "binding reference", path,
+            f"row {other}", 0.0, 0.0, True, asserted=False,
+            note="the existing reference's point is superseded by MQ-REF's "
+            "quadruple-precision rerun of it (point_binding): rule 1 holds its "
+            "primary values; the existing fixture's other providers stay "
+            "second providers"))  # fmt: skip
+    outlier = record.get("outlier")
+    if outlier:
+        # A declared rule 1 outlier (MQ-REF): rule 1 judges it by its
+        # conditions (the manifest's reference_outliers listing, the
+        # primary's own accuracy and a second provider); the record's ruling
+        # and evidence are carried for the report.
+        checks.append(Check(
+            "1", index, "double-double", "", "declared outlier",
+            str(outlier.get("ruling")), "", 0.0, 0.0, True, asserted=False,
+            note=f"MQ-REF: {record.get('reason') or ''}; conditions "
+            f"{outlier.get('conditions')}"))  # fmt: skip
     status = record.get("status")
     if status == "none":
         checks.append(Check(
