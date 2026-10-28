@@ -1136,6 +1136,41 @@ ZERO_POINTS = {"D25@zero": {"0": 2, "1": 2}}
 # S1 (PLAN §4.1): binary64 is expected outside the O1 scope at the limit
 # points; they are listed, double-double and rule 3 must pass.
 VARIANT_LISTINGS = {
+    # S2 soft gluon, E_g / sqrt(s) = 1e-5 (point 1): the binary64 Born itself
+    # loses digits (no estimate), the Laurent coefficients are outside the O1
+    # scope and bracketed (rule 3).
+    "A09@soft": {
+        "binary64_out_of_scope": [
+            {
+                "point": 1,
+                "sector": "QCD^6",
+                "coefficient": "born",
+                "E": None,
+                "true_error": 1.16e-11,
+            },
+            {
+                "point": 1,
+                "sector": "QCD^8",
+                "coefficient": "finite",
+                "E": 9.35e-07,
+                "true_error": 6.26e-07,
+            },
+            {
+                "point": 1,
+                "sector": "QCD^8",
+                "coefficient": "single_pole",
+                "E": 1.47e-06,
+                "true_error": 7.06e-07,
+            },
+            {
+                "point": 1,
+                "sector": "QCD^8",
+                "coefficient": "double_pole",
+                "E": 5.22e-07,
+                "true_error": 2.31e-07,
+            },
+        ]
+    },
     "B01@threshold": {
         "binary64_out_of_scope": [
             {
@@ -1290,6 +1325,9 @@ def index_reference(rid):
                     "gating": gating,
                     "tier": "nightly",
                     "notes": note,
+                    # a variant runs the core rules on its own reference
+                    "extras": [],
+                    "extras_pending": {},
                     **VARIANT_LISTINGS.get(f"{rid}@{name}", {}),
                     **(
                         {"zero_points": ZERO_POINTS[f"{rid}@{name}"]}

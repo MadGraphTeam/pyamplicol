@@ -729,6 +729,8 @@ class RowRun:
 
         self.row = row
         self.reference = load_reference(row)
+        # (point, carrier) -> the native executor's reasons for a failed point
+        self.failures: dict[tuple[int, str], str] = {}
         if base is not None:
             # A variant: the base row's request, generation and executor.
             if slice_request(row) != slice_request(base.row):
@@ -775,17 +777,27 @@ class RowRun:
         LOG.info(
             "%s: %s at points %s (poles %s)", self.row.id, carrier, list(indices), poles
         )
-        results = self.executor.evaluate(
-            [reference.points[i] for i in indices],
-            [reference.scales[i] for i in indices],
-            parameters=self.parameters,
-            precision=precision,
-            poles=poles,
-            stability=check_configuration() if stability else None,
-        )
+        from pyamplicol.loops.v2.plan_export import FailedPoints
+
+        try:
+            results = self.executor.evaluate(
+                [reference.points[i] for i in indices],
+                [reference.scales[i] for i in indices],
+                parameters=self.parameters,
+                precision=precision,
+                poles=poles,
+                stability=check_configuration() if stability else None,
+            )
+        except FailedPoints as error:
+            # A failed point fails alone (its reasons are the finding);
+            # the others are complete.
+            results = error.results
+            self.failures.update(
+                {(indices[k], carrier): "; ".join(v) for k, v in error.failures.items()}
+            )
         seconds = (time.perf_counter() - start) / max(1, len(indices))
         LOG.info("%s: %s done, %.1f s per point", self.row.id, carrier, seconds)
-        return [evaluated(r, carrier, seconds) for r in results]
+        return [None if r is None else evaluated(r, carrier, seconds) for r in results]
 
     def legs(self) -> list[tuple[int, bool]]:
         """(|colour|, massive) of every external leg (the prepared model's
@@ -1122,6 +1134,16 @@ def rule2_and_3(
                                 note=note))  # fmt: skip
             continue
         error = relative(mine, value)
+        listed = _listed(
+            row.binary64_out_of_scope, point=index, sector=text, coefficient="born"
+        )
+        if listed:
+            # A limit point's binary64 Born (S1-S3; PLAN §4.1), listed: no
+            # estimate exists for the Born, double-double holds it (rule 1).
+            checks.append(Check("2", index, "double", text, "born", repr(mine),
+                                str(value), error, O1_STRICT, True, asserted=False,
+                                note="listed limit-point binary64 Born"))  # fmt: skip
+            continue
         checks.append(
             Check(
                 "2",
@@ -1724,8 +1746,16 @@ def run_row(
     b64 = run.evaluate(indices, "double")
     timings["double_s_per_point"] = round(time.perf_counter() - start, 2) / len(indices)
     info: dict[str, float] = {}
-    by_index = dict(zip(indices, dd, strict=True))
+    by_index = {i: d for i, d in zip(indices, dd, strict=True) if d is not None}
     for index, d, b in zip(indices, dd, b64, strict=True):
+        if d is None or b is None:
+            for carrier, value in (("double-double", d), ("double", b)):
+                if value is None:
+                    reason = run.failures.get((index, carrier), "")
+                    checks.append(Check(
+                        "eval", index, carrier, "", "evaluation", "failed", "", 0.0,
+                        0.0, False, note=reason))  # fmt: skip
+            continue
         if index in row.zero_points:
             neighbour = by_index[row.zero_points[index]]
             d.scale_born = b.scale_born = abs(neighbour.total()[0])
