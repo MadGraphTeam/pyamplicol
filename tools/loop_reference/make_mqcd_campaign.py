@@ -79,14 +79,13 @@ CHARM = "§4.1: the massive-charm rows C08 and C09, after the charm fix"
 F2 = ("§4.1: rule 1 (DD against MadLoop) exceeded 1e-12 at point 1 (mq-validate finding F2: 3.25e-11 finite, "
       "4.8e-13 poles against the batch-2 MadLoop values); outcome recorded in the fixture's provider pairs: the cause "
       "was MadLoop's numerical helicity filter (HelicityFilterLevel 2 dropped and folded mass-suppressed b-quark "
-      "helicities), the campaign's HelicityFilterLevel = 0 evaluation agrees with Recola")
+      "helicities): with the campaign's HelicityFilterLevel = 0 MadLoop agrees with Recola")
 F3 = ("§4.1: rule 1 (DD against MadLoop) exceeded 1e-12 at points 0, 2, 3 (mq-validate finding F3: MadLoop's "
       "CutTools quadruple-precision values, return code 329, 3.5e-12 .. 1.2e-11 off); the installed ppjjjj library, "
       "no installation; outcome recorded in the fixture's provider pairs")
 KEEP = ("not re-evaluated (2->4/2->5 runs of 2.0-2.4 CPU-hours per batch; the per-sector batch-2 values stand): MadLoop "
-        "quadruple precision at every point (return code 328) at MLStabThres 1e-13 with its own CTModeRun -1 "
-        "quadruple-precision test, whose accuracy combines the Laurent coefficients (madloop_settings."
-        "madloop_accuracy_definition); MadLoop's helicity filter {}")
+        "quadruple precision at every point already (return code 328, MLStabThres 1e-13 with its own CTModeRun -1 "
+        "test), the evaluation the campaign forces elsewhere; MadLoop's helicity filter {}")
 G1 = "runs/g1/{}/madloop-export".format
 REQ = "runs/required/{}/madloop-export".format
 
@@ -112,7 +111,12 @@ row("A09", "Q-massless", "u u~ > g g g", "5F", "R", "d", extras=["nc", "sp:S2"],
                                   "6.0e-3 at 1e-5 against MadLoop QP and OpenLoops, which agree to 1.5e-14 and 2.5e-13)"}),
            run("uux_ggg_collinear", "uux_ggg", export=G1("uux_ggg"),
                points=S(family="collinear", values=["1/1000", "1/10000", "1/100000"], half_scale_point=False, madloop_qp_point=True),
-               second=("recola", "openloops"), trigger=S2_DIAGNOSTIC,
+               accuracy=1e-20, second=("recola", "openloops"), trigger=S2_DIAGNOSTIC,
+               keep="not re-evaluated: a fixed CTModeRun = 4 evaluation returns NaN at the theta = 1e-4, 1e-5 points "
+                    "(rows 1, 2: no reference, status none), where MadLoop's own CTModeRun -1 evaluation ends "
+                    "unstable (420); the batch-2 run (MLStabThres 1e-20: quadruple precision, return code 328 at row "
+                    "0) stands. Its helicity filter set only configurations violating helicity conservation on the "
+                    "massless quark line or with a vanishing Born to zero (no folded entry)",
                exclude={"recola": "COLLIER double precision fails at small opening angles (1e-4 relative at theta = 1e-3)"},
                point_status={
                    "1": {"status": "none", "reason": "MadLoop's quadruple-precision evaluation is unstable (return "
@@ -278,22 +282,31 @@ campaign = {
     "restriction_codes": ROUTES,
     "madloop_settings": {
         "evaluation": {
-            "ctmode_run": 4, "direction_test_ctmode_run": 5, "madloop_params": {"HelicityFilterLevel": "0"},
-            "description": "every point in quadruple precision: one MadLoop run with CTModeRun = 4 (quadruple "
-                           "precision at MadLoop's improved point, loop propagators in their original order; its "
-                           "values are the reference) and its twin with CTModeRun = 5 (propagators reversed), whose "
-                           "per-coefficient difference is the recorded accuracy (references.py DIRECTION_TEST); "
-                           "HelicityFilterLevel = 0: every helicity configuration computed, no numerical filter; "
-                           "each run starts without filters left by earlier runs",
+            "requested_relative_accuracy": 1e-13, "madloop_params": {"HelicityFilterLevel": "0"},
+            "quadruple_precision_stage": True,
+            "description": "every point in quadruple precision, chosen by MadLoop's own test: the run's copy of "
+                           "loop_matrix.f bypasses MadLoop's double-precision acceptance (references.py "
+                           "--madloop-quadruple, force_quadruple_stage), so every point goes on to MadLoop's "
+                           "quadruple-precision stage, where its CTModeRun -1 test (two propagator directions, "
+                           "forced on every call) at MLStabThres 1e-13 accepts Ninja or else CutTools, exactly as "
+                           "for a point whose double-precision estimate failed; HelicityFilterLevel = 0 (every "
+                           "helicity configuration computed, no numerical helicity filter); every run starts "
+                           "without filters of earlier runs; a run with a double-precision point is refused",
             "reason": "m-qcd/PLAN.md §1.4 rule 1 compares DD with the reference at 1e-12 per coefficient. The batch-2 "
-                      "evaluation (MLStabThres 1e-13, MadLoop's own rescue) left 209 of 303 points in binary64, whose "
-                      "accuracy estimate does not bound a cancelling coefficient (C02 point 0 finite 2.0e-12, D11 "
-                      "point 1 single pole 4.3e-12, A06 point 1 single pole 1.2e-12 against estimates of 1e-14 or "
-                      "exactly 0, where no threshold forces quadruple precision), accepted CutTools quadruple-"
-                      "precision values off by up to 1.2e-11 at an estimate of 0 (A18, return code 329), and its "
-                      "numerical helicity filter (HelicityFilterLevel 2, ZeroThres 1e-9) zeroed and folded "
-                      "mass-suppressed helicities of the massive-b rows (C01 point 1 finite 3.2e-11 off, in both "
-                      "precisions; Recola and DD agree to 1e-15)"},
+                      "evaluation (MLStabThres 1e-13, rescue only where the double-precision estimate failed) left "
+                      "209 of 303 points in binary64, whose estimate does not bound a cancelling coefficient (C02 "
+                      "point 0 finite 2.0e-12, D11 point 1 single pole 4.3e-12, A06 point 1 single pole 1.2e-12 "
+                      "against estimates of ~1e-14 or exactly 0), and MadLoop's numerical helicity filter "
+                      "(HelicityFilterLevel 2, ZeroThres 1e-9) zeroed and folded mass-suppressed helicities of the "
+                      "massive-b rows (C01 point 1 finite 3.2e-11 off in both precisions; with HelicityFilterLevel 0 "
+                      "MadLoop = Recola to 1e-15). MadLoop's own quadruple-precision selection is kept: a fixed "
+                      "CTModeRun = 4 (Ninja in quadruple precision, no fallback; references.py --madloop-ctmode, "
+                      "diagnostic) is worse where that test rejects Ninja (g g > t t~ g points 0, 3: double pole "
+                      "3.1e-11 off the universal relation, CutTools 1e-14; g g > u u~ u u~ points 0, 2, 3: 5.5e-12, "
+                      "CutTools 3.5e-13 .. 1.1e-12) while its CTModeRun = 5 twin agrees to 1e-13; and MLStabThres "
+                      "1e-20 (with NRotations_DP = 1 to fail every double-precision test) rejects Ninja on a "
+                      "one-ulp difference of its two directions, moving g g > t t~ g point 1 to CutTools (finite "
+                      "1.1e-12 away)"},
         "madloop_accuracy_definition": "MadLoop's own accuracy (CTModeRun = -1, ML5_0_COMPUTE_ACCURACY) is ONE number "
                                        "per squared split order, sum_k |v_k(mode 1) - v_k(mode 2)| / (|sum_k v_k| / 3) "
                                        "over the three Laurent coefficients k: it is not a per-coefficient relative "
@@ -308,10 +321,12 @@ campaign = {
                           "their binary64 rounding (supplied_points.py --madloop-qp-point), evaluated like every run",
         "job_timeout_seconds": 2700,
         "plan_deviations_for_coordinator_ruling": [
-                             "every point in quadruple precision (CTModeRun = 4 with its CTModeRun = 5 direction "
-                             "test, HelicityFilterLevel = 0) instead of the accurate mode of m-qcd/PLAN.md §4.1 "
+                             "every point in MadLoop's quadruple-precision stage (double-precision acceptance "
+                             "bypassed in the run's loop_matrix.f copy, MLStabThres 1e-13, HelicityFilterLevel = 0) "
+                             "instead of the accurate mode of m-qcd/PLAN.md §4.1 "
                              "(--madloop-accuracy 1e-11 with MadLoop's rescue): stricter, never looser (reason in "
-                             "evaluation); the two runs kept from batch 2 used MLStabThres 1e-13",
+                             "evaluation); the three runs kept from batch 2 used MLStabThres 1e-13 (1e-20 for the "
+                             "collinear limit points) and are in quadruple precision at every reference point",
                              "new MadLoop evaluations (no export regenerated) on the existing 2->5 exports of D07 "
                              "(u u~ > e- e+ g g g), D08 (u u~ > e- e+ d d~ g) and E06 (g g > t t~ e- e+ g) for "
                              "per-sector accuracies and the mu_R = mu_0/2 point: one job per point, each under "

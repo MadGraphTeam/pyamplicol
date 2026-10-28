@@ -386,6 +386,42 @@ def madloop_born_fix(process_dir, work, global_flag):
     return [obj], repairs
 
 
+DOUBLE_PRECISION_ACCEPTANCE = ("        ELSEIF(.NOT.DOING_QP_EVALS)THEN\n"
+                               "          CALL {prefix}COMPUTE_ACCURACY(DP_RES,N_DP_EVAL,ACC,ANS)\n")
+DOUBLE_PRECISION_TEST = "          IF(MAXVAL(ACC).GE.MLSTABTHRES) THEN\n            I_LIB=I_LIB+1\n"
+QUADRUPLE_STAGE = "          IF(.TRUE.) THEN\n            I_LIB=NLOOPLIB+1\n"
+
+
+def force_quadruple_stage(text, prefix):
+    """loop_matrix.f with MadLoop's double-precision acceptance bypassed: after
+    its double-precision evaluations every point goes on to the
+    quadruple-precision stage, where MadLoop's own test (MLStabThres, two
+    propagator directions) picks Ninja or else CutTools, exactly as for a point
+    whose double-precision estimate failed. Refuses an unknown source layout."""
+    head = DOUBLE_PRECISION_ACCEPTANCE.format(prefix=prefix)
+    if text.count(head) != 1:
+        raise RuntimeError("loop_matrix.f: MadLoop's double-precision stability branch not found")
+    start = text.index(head)
+    test = text.find(DOUBLE_PRECISION_TEST, start)
+    if test < 0 or test - start > 800:
+        raise RuntimeError("loop_matrix.f: MadLoop's double-precision acceptance test not found")
+    return text[:test] + QUADRUPLE_STAGE + text[test + len(DOUBLE_PRECISION_TEST):]
+
+
+def madloop_quadruple_stage(export, process_dir, work, global_flag):
+    """Compile ``force_quadruple_stage``'s loop_matrix.f into ``work`` (the
+    export is never modified); linked before libMadLoop.a like the Born repair."""
+    prefix = madloop_prefix(process_dir)
+    source = work / "loop_matrix_quadruple.f"
+    source.write_text(force_quadruple_stage((process_dir / "loop_matrix.f").read_text(), prefix))
+    obj = work / "loop_matrix_quadruple.o"
+    subprocess.run(["gfortran", "-w", "-fPIC", *shlex.split(global_flag), "-ffixed-line-length-132",
+                    "-fallow-argument-mismatch", "-I", str(process_dir), "-I", str(export / "SubProcesses"),
+                    "-I", str(export / "Source/MODEL"), "-J", str(work), "-c", str(source), "-o", str(obj)],
+                   check=True, cwd=work)
+    return obj
+
+
 def madloop_build_flags(export, mg5):
     """The export's Fortran flags (its ``Source/make_opts``) next to MG5_aMC's
     production flags; ``production_build`` tells whether they coincide."""
@@ -401,7 +437,7 @@ def madloop_build_flags(export, mg5):
                       "MadLoop's own makefile adds -O3 for polynomial.f"}
 
 
-def build_madloop(export, work, global_flag, subprocess_dir=None):
+def build_madloop(export, work, global_flag, subprocess_dir=None, quadruple=False):
     from build import madloop_libraries
 
     process_dir = madloop_process_dir(export, subprocess_dir)
@@ -414,6 +450,8 @@ def build_madloop(export, work, global_flag, subprocess_dir=None):
     fixes, repairs = madloop_model_fix(export, work, global_flag)
     born_fixes, born_repairs = madloop_born_fix(process_dir, work, global_flag)
     fixes, repairs = [*fixes, *born_fixes], [*repairs, *born_repairs]
+    if quadruple:
+        fixes.append(madloop_quadruple_stage(export, process_dir, work, global_flag))
     subprocess.run(
         ["gfortran", "-O2", "-ffree-line-length-none", "-I", str(process_dir), str(driver),
          *map(str, fixes), str(export / "lib/libMadLoop.a"), "-L" + str(export / "lib"), "-ldhelas", "-lmodel",
@@ -803,7 +841,7 @@ def command_run(args):
                     f"export built with {flags['export_make_opts']}, not MG5's production flags "
                     f"{flags['mg5_production']}; rebuild it with madloop_export.py --recompile")
             binary, repairs = build_madloop(export, run_dir, flags["export_make_opts"]["GLOBAL_FLAG"],
-                                            args.subprocess)
+                                            args.subprocess, args.madloop_quadruple)
             madloop_params = dict(item.split("=", 1) for item in args.madloop_param)
             if ctmode is not None:
                 if "CTModeRun" in madloop_params:
@@ -901,6 +939,17 @@ def command_run(args):
         born_so = (madloop_born_split_orders(madloop_process_dir(args.madloop_export.resolve(), args.subprocess))
                    if provider == "madloop" else None)
         rows, extra = parse_rows(stdout, provider, count, step, born_so)
+        if provider == "madloop" and args.madloop_quadruple:
+            result["settings"]["quadruple_precision_stage"] = (
+                "every point: the run's loop_matrix.f copy bypasses MadLoop's double-precision acceptance, so its "
+                "quadruple-precision stage (MLStabThres test over two propagator directions; Ninja, else CutTools) "
+                "evaluates every point (references.force_quadruple_stage)")
+        if provider == "madloop" and args.madloop_require_quadruple:
+            double = [i + 1 for i, row in enumerate(rows) if row["status"] // 100 not in (3, 4)]
+            if double:
+                raise RuntimeError(f"madloop: double-precision values (return code 1xx/2xx) at points {double} "
+                                   "of a run that requires quadruple precision")
+            result["settings"]["quadruple_precision_required"] = True
         if provider == "recola":
             banner = re.search(r"Version (\S+)", stdout)
             linked = linked_libraries(binary, r"recola|collier|modelfile")
@@ -1015,54 +1064,9 @@ def ctmode_run(result):
     return (result or {}).get("settings", {}).get("ctmode_run")
 
 
-def direction_test(rows, twins):
-    """MadLoop's propagator-direction test of a CTModeRun = 4 run against its
-    CTModeRun = 5 twin, per point, loop squared split order and Laurent
-    coefficient: strict |v4 - v5| / max(|v4|, |v5|) (0 when both printed
-    binary64 values coincide). Each loop sector's (and the total's) ``accuracy``
-    becomes the largest of its three coefficients' differences; the row's
-    ``accuracy`` is its requested sector's. Values stay the CTModeRun = 4 ones."""
-    if len(rows) != len(twins):
-        raise SystemExit("direction test: the CTModeRun = 5 twin has another number of points")
-    worst = []
-    for row, twin in zip(rows, twins, strict=True):
-        largest = sector_direction_test(row.get("sectors"), twin.get("sectors"))
-        difference = {k: strict_relative(row[k], twin[k]) for k in LAURENT}
-        row["direction_test_relative_difference"] = difference
-        row["accuracy"] = max(difference.values())
-        worst.append(max(row["accuracy"], largest))
-    return worst
-
-
-def sector_direction_test(sectors, twin):
-    """``direction_test`` of one madloop_sectors record; returns the largest difference."""
-    if not sectors:
-        return 0.0
-    other = {(s["QCD"], s["QED"]): s for s in twin["loop"]}
-    pairs = [(s, other[(s["QCD"], s["QED"])]) for s in sectors["loop"]]
-    pairs.append((sectors["total"], twin["total"]))
-    for born, twin_born in zip(sectors["born"], twin["born"], strict=True):
-        if born["born"] != twin_born["born"]:
-            raise SystemExit("direction test: the twin's Born differs (another point or model)")
-    largest = 0.0
-    for sector, other_sector in pairs:
-        difference = {k: strict_relative(sector[k], other_sector[k]) for k in LAURENT}
-        sector["direction_test_relative_difference"] = difference
-        sector["accuracy"] = max(difference.values())
-        largest = max(largest, sector["accuracy"])
-    return largest
-
-
-DIRECTION_TEST = ("MadLoop's propagator-direction test in quadruple precision: the CTModeRun = 4 values against "
-                  "their CTModeRun = 5 twin (loop propagators reversed), per point, loop squared split order and "
-                  "Laurent coefficient, strict |v4 - v5| / max(|v4|, |v5|) of the printed binary64 values (0: they "
-                  "coincide); each sector's accuracy is the largest over its coefficients. MadLoop runs no "
-                  "stability test of its own at a fixed CTModeRun (it reports -1)")
-
-
-def per_helicity_reference(entries, pole_factor, quadruple):
-    """Per-helicity entries of one point: at quadruple-precision entries with a
-    universal double pole the reference Born is the entry's double pole over
+def per_helicity_reference(entries, pole_factor):
+    """Per-helicity entries of one point: at quadruple-precision entries (return
+    code 3xx/4xx) with a universal double pole the reference Born is the entry's double pole over
     the factor (the IR double pole is helicity-diagonal; MadLoop's printed Born
     is its double-precision value at the binary64 input, kept as
     ``born_binary64_input``), sectors included. Each entry gets a reference
@@ -1072,7 +1076,7 @@ def per_helicity_reference(entries, pole_factor, quadruple):
     point's binary64 condition), else 'relative'."""
     for entry in entries:
         entry["reference"] = {"born_source": "madloop"}
-        if not (quadruple and pole_factor):
+        if not (entry["status"] // 100 in (3, 4) and pole_factor):
             continue
         entry["born_binary64_input"] = entry["born"]
         entry["born"] = entry["double_pole"] / pole_factor
@@ -1106,17 +1110,15 @@ def per_helicity_reference(entries, pole_factor, quadruple):
         })
 
 
-def madloop_point(qp_point, status, quadruple=False):
-    """Which point MadLoop's loop values refer to (``quadruple``: a run with a
-    fixed quadruple-precision CTModeRun, whose return code has H = 1)."""
-    if quadruple or (isinstance(status, int) and status // 100 in (3, 4)):
+def madloop_point(qp_point, status):
+    """Which point MadLoop's loop values refer to."""
+    if isinstance(status, int) and status // 100 in (3, 4):
         return ("published point (quadruple precision)" if qp_point else
                 "MadLoop's quadruple-precision repair of the binary64 rounding (~1e-16 from the published point)")
     return "binary64 rounding of the published point (double precision)"
 
 
-def madloop_references(rows, madloop_rows, primary, pole_factor, coupling, statuses, qp_point, tolerance,
-                       quadruple=False):
+def madloop_references(rows, madloop_rows, primary, pole_factor, coupling, statuses, qp_point, tolerance):
     """Per point: the reference Born at the published point and a
     machine-readable ``reference`` record; refuses a point whose MadLoop sector
     values violate the universal double pole beyond ``tolerance`` unless its
@@ -1161,7 +1163,7 @@ def madloop_references(rows, madloop_rows, primary, pole_factor, coupling, statu
             "absolute_scale": absolute_scale,
             "born_source": ("madloop_double_pole_over_universal_factor" if substitute and primary == "madloop"
                             else primary),
-            "madloop_point": madloop_point(qp_point, madloop_row.get("status"), quadruple),
+            "madloop_point": madloop_point(qp_point, madloop_row.get("status")),
             "born_double_pole_relative_mismatch": mismatch,
             "max_sector_double_pole_relative_error": pole_error,
             "reason": status.get("reason"),
@@ -1188,20 +1190,8 @@ def command_merge(args):
             results[provider] = json.loads(path.read_text())
     if not results:
         raise SystemExit("no provider results")
-    quadruple = ctmode_run(results.get("madloop")) in (4, 5)
-    direction = None
-    if ctmode_run(results.get("madloop")) == 4:
-        twin_path = work / "madloop-qp5-result.json"
-        if not twin_path.exists():
-            raise SystemExit("a CTModeRun = 4 MadLoop run needs its CTModeRun = 5 twin (madloop-qp5-result.json)")
-        twin = json.loads(twin_path.read_text())
-        if ctmode_run(twin) != 5:
-            raise SystemExit(f"{twin_path} is not a CTModeRun = 5 run")
-        direction = {"run": "madloop-qp5", "definition": DIRECTION_TEST,
-                     "settings": {k: twin["settings"].get(k) for k in ("ctmode_run", "arithmetic",
-                                                                         "MadLoopParams_overrides")},
-                     "evaluation_seconds": [r["seconds"] for r in twin["rows"]],
-                     "max_relative_difference": direction_test(results["madloop"]["rows"], twin["rows"])}
+    if ctmode_run(results.get("madloop")) is not None:
+        raise SystemExit("a fixed-CTModeRun MadLoop run (--madloop-ctmode) is a diagnostic, not a reference")
     # Persistent, documented exclusions live next to the results so that later
     # automatic merges (run_required.sh) keep them.
     record = work / "exclusions.json"
@@ -1262,7 +1252,7 @@ def command_merge(args):
     qp_point = bool(points.get("madloop_qp_point"))
     if "madloop" in results:
         madloop_references(rows, results["madloop"]["rows"], primary, pole_factor, coupling,
-                           point_statuses(args.point_status, len(rows)), qp_point, args.tolerance, quadruple)
+                           point_statuses(args.point_status, len(rows)), qp_point, args.tolerance)
     elif args.point_status:
         raise SystemExit("--point-status needs a MadLoop result")
     max_error = max(errors) if errors else None
@@ -1272,8 +1262,6 @@ def command_merge(args):
     for provider, result in results.items():
         providers[provider] = {k: v for k, v in result.items() if k not in ("rows",)}
         providers[provider]["evaluation_seconds"] = [r["seconds"] for r in result["rows"]]
-    if direction:
-        providers["madloop"]["direction_test"] = direction
     # Secondary timing runs (e.g. MadLoop at its production stability setting):
     # timings and their deviation from the accurate run only, never reference values.
     # Without the provider's own reference run (still running) the secondary run
@@ -1286,51 +1274,33 @@ def command_merge(args):
         if provider not in ("madloop", "recola", "openloops"):
             continue
         secondary = json.loads(path.read_text())
-        if ctmode_run(secondary) == 5:
-            continue  # a direction-test twin, read with its CTModeRun = 4 run
+        if ctmode_run(secondary) is not None:
+            raise SystemExit(f"{path.name}: a fixed-CTModeRun MadLoop run (--madloop-ctmode) is a diagnostic")
         if "helicities" in secondary:
             # Per-helicity reference values (MadLoop SLOOPMATRIXHEL_THRES), not timings.
             if per_helicity is not None:
                 raise SystemExit(f"two per-helicity runs in {work}")
-            hel_quadruple = ctmode_run(secondary) in (4, 5)
-            hel_direction = None
-            if ctmode_run(secondary) == 4:
-                twin_path = work / f"{label}-qp5-result.json"
-                if not twin_path.exists():
-                    raise SystemExit(f"{label}: a CTModeRun = 4 per-helicity run needs its twin {twin_path.name}")
-                twin = json.loads(twin_path.read_text())
-                if ctmode_run(twin) != 5 or twin["helicities"] != secondary["helicities"]:
-                    raise SystemExit(f"{twin_path} is not the CTModeRun = 5 twin of {label}")
-                hel_direction = {"run": f"{label}-qp5", "definition": DIRECTION_TEST, "max_relative_difference": [
-                    max(sector_direction_test(e["sectors"], t["sectors"])
-                        for e, t in zip(row["per_helicity"], twin_row["per_helicity"], strict=True))
-                    for row, twin_row in zip(secondary["rows"], twin["rows"], strict=True)]}
             hel_rows = []
             for hel_row in secondary["rows"]:
                 entries = [{"helicity": entry["helicity"], "madloop_index": entry["madloop_index"],
                             "status": entry["status"], **{k: entry["sectors"]["total"][k] for k in COEFFICIENTS
                                                            if k in entry["sectors"]["total"]},
                             "accuracy": entry["sectors"]["total"]["accuracy"],
-                            **({"direction_test_relative_difference":
-                                entry["sectors"]["total"]["direction_test_relative_difference"]}
-                               if hel_direction else {}),
                             **({"sectors": json.loads(json.dumps(entry["sectors"]))}
                                if len(entry["sectors"]["loop"]) > 1 or len(entry["sectors"]["born"]) > 1 else {})}
                            for entry in hel_row["per_helicity"]]
-                per_helicity_reference(entries, pole_factor, hel_quadruple)
+                per_helicity_reference(entries, pole_factor)
                 hel_rows.append(entries)
             per_helicity = {
                 "provider": provider, "run": label,
                 "normalization": secondary.get("per_helicity_normalization"),
                 "helicities": secondary["helicities"],
                 "settings": {k: secondary["settings"][k] for k in
-                             ("requested_relative_accuracy", "stability_check", "helicities", "ctmode_run",
-                              "arithmetic", "MadLoopParams_overrides")
+                             ("requested_relative_accuracy", "stability_check", "helicities",
+                              "MadLoopParams_overrides")
                              if k in secondary.get("settings", {})},
                 "rows": hel_rows,
             }
-            if hel_direction:
-                per_helicity["direction_test"] = hel_direction
             continue
         own = provider in results
         against = results[provider]["rows"] if own else rows
@@ -1421,11 +1391,7 @@ def provider_arithmetic(results):
     for provider, result in results.items():
         statuses = [row.get("status") for row in result["rows"]]
         quadruple = [isinstance(s, int) and s // 100 in (3, 4) for s in statuses]
-        if provider == "madloop" and ctmode_run(result) in (4, 5):
-            parts.append(f"MadLoop in quadruple precision at every point (CTModeRun = {ctmode_run(result)}: "
-                         f"{result['settings']['arithmetic']}; propagator-direction test against the "
-                         "CTModeRun = 5 twin)")
-        elif provider == "madloop" and statuses and all(isinstance(s, int) for s in statuses):
+        if provider == "madloop" and statuses and all(isinstance(s, int) for s in statuses):
             codes = ", ".join(str(s) for s in sorted(set(statuses)))
             if all(quadruple):
                 parts.append(f"MadLoop in quadruple precision at every point (return codes {codes})")
@@ -1548,8 +1514,13 @@ def main():
                      help="relative accuracy target forcing quadruple-precision rescue; <= 0 keeps "
                      "MadLoop's production MLStabThres and its default stability test")
     run.add_argument("--madloop-ctmode", type=int, choices=sorted(MADLOOP_CTMODES),
-                     help="fixed MadLoop CTModeRun (4: quadruple precision; 5: quadruple precision with "
-                     "the loop propagators reversed, the direction test of a 4 run); no stability test")
+                     help="diagnostic: fixed MadLoop CTModeRun (4: quadruple precision with Ninja, no "
+                     "fallback and no stability test); never merged as a reference")
+    run.add_argument("--madloop-quadruple", action="store_true",
+                     help="send every point to MadLoop's quadruple-precision stage (its own library choice and "
+                     "test at --madloop-accuracy); implies --madloop-require-quadruple")
+    run.add_argument("--madloop-require-quadruple", action="store_true",
+                     help="refuse a MadLoop run that returns double-precision values at any point")
     run.add_argument("--madloop-param", action="append", default=[], metavar="KEY=VALUE",
                      help="set a MadLoopParams.dat entry of the run, e.g. HelicityFilterLevel=0 (recorded)")
     run.add_argument("--tag", help="suffix for a secondary run of the same provider, e.g. "
@@ -1582,6 +1553,8 @@ def main():
     summary = sub.add_parser("summary")
     summary.add_argument("references", nargs="+", type=Path)
     args = parser.parse_args()
+    if getattr(args, "madloop_quadruple", False):
+        args.madloop_require_quadruple = True
     if args.command == "summary":
         command_summary(args)
         return
