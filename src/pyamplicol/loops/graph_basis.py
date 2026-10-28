@@ -274,7 +274,12 @@ def _global_factor(graph, builder, current, library):
 
 
 def routed_edge_denominator(edge, library):
-    """Materialize the dependency's exact propagator denominator locally."""
+    """Materialize a tree/bridge denominator with its source fixed width.
+
+    Integral-family denominators remain separate real-mass inputs. The graph
+    dependency supplies p^2-m^2 but does not include the particle's width.
+    """
+    from symbolica import E
     from symbolica.community import hepkit as h
     from symbolica.community import tensor as t
 
@@ -289,6 +294,10 @@ def routed_edge_denominator(edge, library):
         .to_expression()
         .replace(h.Symbols.denominator()(edge_id, momentum, mass, value), value)
     )
+    particle = edge.particle
+    if particle.mass != 0 and particle.width_parameter != "ZERO":
+        width = symbols.qualified(f"UFO::{particle.width_parameter}")
+        expression += E("1i") * particle.mass * width
     return t.TensorExpression(expression).to_tensor(library)[0]
 
 
