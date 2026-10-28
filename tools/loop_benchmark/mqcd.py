@@ -1719,13 +1719,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     run.add_argument("--ufo", required=True, type=Path)
     run.add_argument("--work", required=True, type=Path)
     run.add_argument("--results", type=Path)
+    run.add_argument(
+        "--manifest", type=Path, default=MANIFEST, help="another manifest file"
+    )
     args = parser.parse_args(argv)
     logging.basicConfig(format="%(asctime)s %(message)s", level=logging.WARNING)
     LOG.setLevel(logging.INFO)
 
     from pyamplicol.loops.native import load_loop_native
 
-    campaign = Campaign(args.ufo, load_loop_native(), args.work)
+    campaign = Campaign(
+        args.ufo, load_loop_native(), args.work, manifest=load_manifest(args.manifest)
+    )
     failed = 0
     for name in args.rows:
         row = campaign.rows[name]
