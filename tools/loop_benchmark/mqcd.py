@@ -52,6 +52,7 @@ import logging
 import math
 import os
 import time
+from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from decimal import Decimal, localcontext
@@ -93,7 +94,7 @@ UNBLOCKERS = (
 )
 EXTRAS = ("nc", "ap", "ward", "uv", "hel", "sp")
 # Extras this harness checks today (the others are listed as pending).
-IMPLEMENTED_EXTRAS = frozenset({"ap", "uv"})
+IMPLEMENTED_EXTRAS = frozenset({"ap", "uv", "hel"})
 
 
 Sector = tuple[tuple[str, int], ...]
@@ -160,6 +161,9 @@ class Row:
     # which forms no prediction (WP3.1 I5c): rule 4 is then recorded as not
     # asserted (the manifest names the gap), its poles held by rule 1 only.
     catani: str = "python"
+    # The fixture holding MadLoop's per-helicity rows (``per_helicity``) when
+    # it is not the row's reference (manifest path), for the ``hel`` extra.
+    helicity_reference: str | None = None
     variants: tuple[Mapping[str, Any], ...] = ()
 
     @classmethod
@@ -203,6 +207,7 @@ class Row:
             notes=data.get("notes", ""),
             base=data.get("base"),
             catani=data.get("catani", "python"),
+            helicity_reference=data.get("helicity_reference"),
             gating=bool(data.get("gating", True)),
             variants=tuple(data.get("variants", ())),
         )
@@ -1482,6 +1487,101 @@ def rule6(
     return checks
 
 
+# ------------------------------------------------------ per-helicity rows
+
+
+def helicity_reference(row: Row) -> dict[str, Any]:
+    """MadLoop's per-helicity rows of the row (``per_helicity`` of its
+    reference or of ``row.helicity_reference``): SLOOPMATRIXHEL |M_h|^2 with
+    the colour average and identical-particle factor and no helicity
+    average, per point a list of {helicity, born, finite, single_pole,
+    double_pole, accuracy, status}."""
+
+    path = ROOT / (row.helicity_reference or row.reference["path"])
+    found = json.loads(path.read_text()).get("per_helicity")
+    if not found:
+        raise ValueError(f"{row.id}: {path} has no per-helicity rows")
+    return found
+
+
+def rule_hel(
+    row: Row,
+    index: int,
+    ours: Mapping[tuple[int, ...], Evaluated],
+    madloop: Sequence[Mapping[str, Any]],
+    alpha_s: float,
+) -> list[Check]:
+    """Per-helicity double-double against MadLoop (PLAN §3.2 item 5, under
+    rule 1): every MadLoop helicity configuration, in the external legs'
+    order and MG5's helicity labels, equals our helicity row of the same
+    labels times the helicity average of the incoming legs (our rows keep
+    the inclusive initial average); strictly relative within 1e-12 per
+    coefficient. A configuration whose Born vanishes is checked absolutely
+    against the summed Born (1e-12), the coefficients then against F of the
+    summed Born."""
+
+    checks = []
+    counts = defaultdict(set)
+    for helicity in ours:
+        for leg, value in enumerate(helicity):
+            counts[leg].add(value)
+    average = math.prod(len(counts[leg]) for leg in (0, 1))
+    total = sum((abs(p.total()[0]) for p in ours.values()), Decimal(0))
+    found = {tuple(e["helicity"]) for e in madloop}
+    checks.append(Check(
+        "hel", index, "double-double", "", "helicity rows", str(len(ours)),
+        str(len(found)), 0.0, 0.0, set(ours) == found,
+        note="our helicity rows against MadLoop's configurations"))  # fmt: skip
+    for entry in madloop:
+        helicity = tuple(entry["helicity"])
+        if helicity not in ours:
+            continue
+        born, laurent = ours[helicity].total()
+        text = "h" + "".join("+" if h > 0 else "-" if h < 0 else "0" for h in helicity)
+        mine = [born * average, *(x * average for x in laurent)]
+        theirs = [entry[k] for k in COEFFICIENTS]
+        if entry["born"] == 0:
+            flux = _flux(total * average, alpha_s)
+            for k, name in enumerate(COEFFICIENTS):
+                scale = float(total * average) if k == 0 else flux
+                error = _absolute(mine[k], theirs[k])
+                bound = REFERENCE_TOLERANCE * scale
+                checks.append(Check("hel", index, "double-double", text, name,
+                                    str(mine[k]), repr(theirs[k]), error, bound,
+                                    error <= bound, note="vanishing helicity: "
+                                    "against the summed Born"))  # fmt: skip
+            continue
+        for k, name in enumerate(COEFFICIENTS):
+            error = relative(mine[k], theirs[k])
+            checks.append(Check("hel", index, "double-double", text, name,
+                                str(mine[k]), repr(theirs[k]), error,
+                                REFERENCE_TOLERANCE, error <= REFERENCE_TOLERANCE,
+                                note=f"MadLoop status {entry.get('status')}, "
+                                f"accuracy {entry.get('accuracy')}"))  # fmt: skip
+    return checks
+
+
+def helicity_rows(run: RowRun, indices: Sequence[int], points, scales) -> list:
+    """Our per-helicity results (double-double, native observables
+    ``NativeObservables.resolved``): per point {helicity labels: Evaluated}."""
+
+    from pyamplicol.loops.v2.assemble import Precision
+    from pyamplicol.loops.v2.observables import NativeObservables, ObservableSlice
+
+    native = NativeObservables.resolved(ObservableSlice.of(run.slice), "helicity")
+    results = native.evaluate(
+        points, scales, parameters=run.parameters, precision=Precision.double_double()
+    )
+    out = []
+    for columns in results:
+        rows = {}
+        for (row, _component), result in columns.items():
+            labels = tuple(h for _leg, h in sorted(row))
+            rows[labels] = evaluated(result, "double-double")
+        out.append(rows)
+    return out
+
+
 # ------------------------------------------------------------------ a row
 
 
@@ -1622,6 +1722,23 @@ def run_row(
             checks += rule5(
                 row, index, point, run.legs(), flavours, str(run.parameters["aS"])
             )
+    if "hel" in extras:
+        start = time.perf_counter()
+        madloop = helicity_reference(row)
+        hel_points = [i for i in indices if i < len(madloop["rows"])][:1]
+        if hel_points:
+            data = json.loads(
+                (ROOT / (row.helicity_reference or row.reference["path"])).read_text()
+            )
+            points = [_strings(data["points"][i]) for i in hel_points]
+            scales = [_scale(data["mu_r"][i]) for i in hel_points]
+            for index, ours in zip(
+                hel_points, helicity_rows(run, hel_points, points, scales), strict=True
+            ):
+                checks += rule_hel(
+                    row, index, ours, madloop["rows"][index], reference.alpha_s
+                )
+        timings["hel_s"] = round(time.perf_counter() - start, 2)
     if "ap" in extras:
         start = time.perf_counter()
         ap = run.evaluate(extra_points, f"arbitrary-{AP_DIGITS[0]}", stability=False)
