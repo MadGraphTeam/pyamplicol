@@ -39,12 +39,13 @@ tools.loop_benchmark``) and writes one JSON document for the live report
   ~08:20 item 2, MASTER_PLAN §5.8 amendment): G1 is the batched
   B = ``GATE_BATCH`` (128) verdict only. Every other timed batch (B = 1, the
   2->5 rows' B = 16, any other) keeps its checks, ratios, band and
-  uncertainty under the non-gating status ``GATE_REPORTED_STATUS``, the
-  checks' own verdict as ``measured_status``. The 5 ms floor (the user's
-  rule of 2026-10-24) is decided on the B = 128 median (``floor_bases``). A
-  configuration's verdict (its ``gate``) is its B = 128 one; without a
-  B = 128 timing it is ``GATE_MISSING_STATUS`` with the reason, never one
-  taken from another batch size;
+  uncertainty under the non-gating status ``GATE_REPORTED_STATUS``
+  ("reported", with ``gate_batch``), the checks' own verdict as
+  ``measured_status``. The 5 ms floor (the user's rule of 2026-10-24) is
+  decided on the B = 128 median (``floor_bases``). A configuration's verdict
+  (its ``gate``) is its B = 128 one; without a B = 128 timing it is
+  ``GATE_MISSING_STATUS`` with the reason, never one taken from another
+  batch size;
 - a configuration measured twice (a repeat) keeps the earlier run's batch
   times as ``earlier_runs``; the later run, with its paired provider run,
   decides; a later run without an accuracy check or physical rows keeps the
@@ -93,7 +94,7 @@ GATE_FACTOR = 1.30
 # MASTER_PLAN §5.8 amendment): the speed gate is taken at B = 128 only; every
 # other batch is reported with its checks and ratios, without a verdict.
 GATE_BATCH = 128
-GATE_REPORTED_STATUS = "reported: gated at B = 128 only (user 2026-10-28)"
+GATE_REPORTED_STATUS = "reported"
 GATE_MISSING_STATUS = "missing"
 # The user's rule of 2026-10-24 (slice-status DECISIONS ~22:35): a process
 # whose pyAmpliCol batched time per point (at B = 128, ``floor_bases``) is

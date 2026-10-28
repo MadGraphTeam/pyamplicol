@@ -54,8 +54,8 @@ uncertainty band. The gate is taken at batched B = 128 only (`GATE_BATCH`;
 the user's rule of 2026-10-28, slice-status DECISIONS ~08:20 item 2,
 MASTER_PLAN §5.8 amendment): every other timed batch (B = 1, the 2->5 rows'
 B = 16, any other) keeps its checks, ratios, band and uncertainty with the
-non-gating status `reported: gated at B = 128 only (user 2026-10-28)` and the
-checks' own verdict as `measured_status`. A configuration's G1 verdict
+non-gating status `reported` (and `gate_batch`: 128), the checks' own verdict
+as `measured_status`. A configuration's G1 verdict
 (`gate` of the configuration in `g1.json`) is its B = 128 one; without a
 B = 128 timing it is `missing`, with the reason, never one taken from another
 batch. A pyAmpliCol B = 128 time below 5 ms per point is not gated (the
