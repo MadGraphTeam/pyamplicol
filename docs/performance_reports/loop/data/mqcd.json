@@ -1,0 +1,6310 @@
+{
+ "source": "tests/fixtures/loop/mqcd/manifest.json + campaign records (tests/unit/test_loop_v2_mqcd_*.py, PYAMPLICOL_MQCD_RESULTS)",
+ "rules": "m-qcd/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
+ "campaign_head": "d09d8861",
+ "native": "loop-native-v2-slice-5301e24a (digest 9b427122)",
+ "references": "work/v2-mq-ref e4ca1aed (MQ-REF batch 2, not yet audited)",
+ "date": "2026-10-28",
+ "timings": "indicative (shared host under load)",
+ "counts": {
+  "pass": 58,
+  "fail": 13,
+  "pending": 5,
+  "not-run": 0
+ },
+ "classes": {
+  "Q-CKM": {
+   "pass": 1,
+   "rows": 3,
+   "pending": 2
+  },
+  "Q-EWBorn": {
+   "pass": 20,
+   "rows": 23,
+   "fail": 3
+  },
+  "Q-heavy": {
+   "pass": 6,
+   "rows": 10,
+   "fail": 3,
+   "pending": 1
+  },
+  "Q-massless": {
+   "pass": 17,
+   "rows": 22,
+   "fail": 5
+  },
+  "Q-mixed": {
+   "pass": 1,
+   "rows": 2,
+   "fail": 1
+  },
+  "Q-multi": {
+   "pending": 1,
+   "rows": 1
+  },
+  "Q-singletop": {
+   "fail": 1,
+   "rows": 5,
+   "pass": 3,
+   "pending": 1
+  },
+  "Q-top": {
+   "pass": 6,
+   "rows": 6
+  },
+  "Q-ttX": {
+   "pass": 4,
+   "rows": 4
+  }
+ },
+ "smokes_and_expansions": {
+  "expansion:M01": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 1,
+   "failed_checks": []
+  },
+  "smoke:no_masses": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": []
+  },
+  "smoke:no_tau_mass": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": []
+  },
+  "smoke:no_widths": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": []
+  }
+ },
+ "rows": [
+  {
+   "id": "A01",
+   "class": "Q-massless",
+   "process": "g g > g g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "default",
+   "reference": {
+    "format": "providers",
+    "path": "tests/fixtures/loop/v2/gg_gg_providers.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E v2/gg_gg_providers.json",
+   "extras": [
+    "nc",
+    "ap"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "default": {
+     "points": [
+      0,
+      1
+     ],
+     "passed": true,
+     "checks": 38,
+     "failures": 0,
+     "max_dd_vs_reference": 1.3087576735933801e-14,
+     "max_binary64_vs_dd": 3.886529271620617e-15,
+     "max_catani_dd": 4.364637900270518e-32,
+     "max_catani_binary64": 1.0604834159200059e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 6.586255387489935e-16,
+      "finite": 1.5874793134035004e-14,
+      "single_pole": 2.2696535036110253e-15,
+      "double_pole": 1.6389289155127363e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 7.12,
+      "export_s": 0.41,
+      "double_double_s_per_point": 7.245,
+      "double_s_per_point": 0.81
+     },
+     "failed_checks": []
+    },
+    "nightly": {
+     "points": [
+      2
+     ],
+     "passed": true,
+     "checks": 27,
+     "failures": 0,
+     "max_dd_vs_reference": 2.5470563167522057e-14,
+     "max_binary64_vs_dd": 1.0183005403845772e-14,
+     "max_catani_dd": 7.681932991123352e-32,
+     "max_catani_binary64": 9.083490646797345e-16,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 8.730434257992165e-17,
+      "finite": 1.528755776367642e-14,
+      "single_pole": 1.4533585034875747e-15,
+      "double_pole": 1.1621808528625777e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 6.84,
+      "export_s": 0.41,
+      "double_double_s_per_point": 8.31,
+      "double_s_per_point": 0.81,
+      "ap_s": 11.34
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 2.5470563167522057e-14,
+   "max_binary64_vs_dd": 1.0183005403845772e-14,
+   "max_catani_dd": 7.681932991123352e-32
+  },
+  {
+   "id": "A02",
+   "class": "Q-massless",
+   "process": "u u~ > g g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "component-control",
+    "path": "tests/fixtures/loop/quark-gluon-component-control.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E quark-gluon-component-control (MadLoop binary64); N ~30 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 1.2364776946639469e-14,
+     "max_binary64_vs_dd": 1.915136659524854e-14,
+     "max_catani_dd": 1.2346521332088904e-31,
+     "max_catani_binary64": 1.379755520607425e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 6.337372785843294e-16,
+      "finite": 6.786589648609132e-15,
+      "single_pole": 1.839674027476566e-15,
+      "double_pole": 5.84044961159017e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.73,
+      "export_s": 0.53,
+      "double_double_s_per_point": 5.01,
+      "double_s_per_point": 0.11666666666666665
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.2364776946639469e-14,
+   "max_binary64_vs_dd": 1.915136659524854e-14,
+   "max_catani_dd": 1.2346521332088904e-31
+  },
+  {
+   "id": "A03",
+   "class": "Q-massless",
+   "process": "g g > u u~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_uux.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~20 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.242252515928731e-13,
+     "max_binary64_vs_dd": 6.526061426125881e-14,
+     "max_catani_dd": 1.5412726804395223e-31,
+     "max_catani_binary64": 1.3683757584693024e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 3.379932152449759e-16,
+      "finite": 1.894858658541238e-13,
+      "single_pole": 2.5545396013199768e-14,
+      "double_pole": 7.69685364524517e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.71,
+      "export_s": 0.45,
+      "double_double_s_per_point": 4.895,
+      "double_s_per_point": 0.0925
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.242252515928731e-13,
+   "max_binary64_vs_dd": 6.526061426125881e-14,
+   "max_catani_dd": 1.5412726804395223e-31
+  },
+  {
+   "id": "A04",
+   "class": "Q-massless",
+   "process": "u g > u g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "default",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/ug_ug.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~20 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "default": {
+     "points": [
+      0,
+      1
+     ],
+     "passed": true,
+     "checks": 40,
+     "failures": 0,
+     "max_dd_vs_reference": 4.249617959014142e-15,
+     "max_binary64_vs_dd": 6.253480077035373e-15,
+     "max_catani_dd": 1.2746548408563948e-30,
+     "max_catani_binary64": 6.5841183877840744e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 7.679189228698022e-16,
+      "finite": 1.4306002279657436e-15,
+      "single_pole": 3.3012558704075175e-15,
+      "double_pole": 1.029389404753501e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.92,
+      "export_s": 0.56,
+      "double_double_s_per_point": 5.195,
+      "double_s_per_point": 0.12
+     },
+     "failed_checks": []
+    },
+    "nightly": {
+     "points": [
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 40,
+     "failures": 0,
+     "max_dd_vs_reference": 1.7527172049702638e-15,
+     "max_binary64_vs_dd": 7.797321396496309e-16,
+     "max_catani_dd": 8.226044896064586e-31,
+     "max_catani_binary64": 7.680934623220699e-16,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 7.679189228698022e-16,
+      "finite": 1.1972780586413346e-15,
+      "single_pole": 1.1448146374937628e-15,
+      "double_pole": 1.029389404753501e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.9,
+      "export_s": 0.43,
+      "double_double_s_per_point": 5.215,
+      "double_s_per_point": 0.125
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 4.249617959014142e-15,
+   "max_binary64_vs_dd": 6.253480077035373e-15,
+   "max_catani_dd": 1.2746548408563948e-30
+  },
+  {
+   "id": "A05",
+   "class": "Q-massless",
+   "process": "u u~ > d d~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_ddx.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s",
+   "extras": [
+    "uv"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 82,
+     "failures": 0,
+     "max_dd_vs_reference": 2.1209173199258385e-14,
+     "max_binary64_vs_dd": 6.7751919668877505e-15,
+     "max_catani_dd": 1.8525927267978423e-31,
+     "max_catani_binary64": 4.0122087720624e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 5.980703310554989e-16,
+      "finite": 1.4994400918495766e-14,
+      "single_pole": 9.080261957825468e-15,
+      "double_pole": 1.8255719430777474e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 6.63,
+      "export_s": 0.41,
+      "double_double_s_per_point": 4.9175,
+      "double_s_per_point": 0.045,
+      "uv_s": 5.13
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 2.1209173199258385e-14,
+   "max_binary64_vs_dd": 6.7751919668877505e-15,
+   "max_catani_dd": 1.8525927267978423e-31
+  },
+  {
+   "id": "A06",
+   "class": "Q-massless",
+   "process": "u u~ > u u~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/uux_uux.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E required/uux_uux",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "fail",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": false,
+     "checks": 57,
+     "failures": 1,
+     "max_dd_vs_reference": 1.1755314366247516e-12,
+     "max_binary64_vs_dd": 5.809402221152747e-13,
+     "max_catani_dd": 1.0860813315471988e-28,
+     "max_catani_binary64": 5.365412174603247e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 7.541536548302401e-16,
+      "finite": 2.8474943719219902e-15,
+      "single_pole": 1.7564716587393437e-12,
+      "double_pole": 1.8187305012898986e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.57,
+      "export_s": 0.35,
+      "double_double_s_per_point": 4.81,
+      "double_s_per_point": 0.06
+     },
+     "failed_checks": [
+      {
+       "rule": "1",
+       "point": 1,
+       "carrier": "double-double",
+       "sector": "total",
+       "coefficient": "single_pole",
+       "error": 1.1755314366247516e-12,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 216; its double pole off its Born x the universal factor by 2.35e-16; second providers recola 7.27e-13, openloops 5.19e-13)"
+      }
+     ]
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.1755314366247516e-12,
+   "max_binary64_vs_dd": 5.809402221152747e-13,
+   "max_catani_dd": 1.0860813315471988e-28
+  },
+  {
+   "id": "A07",
+   "class": "Q-massless",
+   "process": "u u > u u",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uu_uu.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~20 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.0308690384825397e-13,
+     "max_binary64_vs_dd": 2.857228281990757e-14,
+     "max_catani_dd": 1.6350805068539643e-30,
+     "max_catani_binary64": 3.294452999736543e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 5.852739631834803e-16,
+      "finite": 6.4423150373262745e-15,
+      "single_pole": 1.316591866681586e-13,
+      "double_pole": 1.4653027169510205e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.33,
+      "export_s": 0.6,
+      "double_double_s_per_point": 4.6375,
+      "double_s_per_point": 0.06
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.0308690384825397e-13,
+   "max_binary64_vs_dd": 2.857228281990757e-14,
+   "max_catani_dd": 1.6350805068539643e-30
+  },
+  {
+   "id": "A08",
+   "class": "Q-massless",
+   "process": "g g > g g g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_ggg.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "R runs/g1/gg_ggg (+NJet)",
+   "extras": [
+    "nc",
+    "ward",
+    "hel"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)",
+    "ward": "MQ-WARD (generic native Ward input)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "fail",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": false,
+     "checks": 209,
+     "failures": 6,
+     "max_dd_vs_reference": 3.412633027615142e-14,
+     "max_binary64_vs_dd": 4.952839113483384e-13,
+     "max_catani_dd": 6.590875279760875e-30,
+     "max_catani_binary64": 4.862871521391739e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 5.738073343450762e-14,
+      "finite": 4.930857231316556e-13,
+      "single_pole": 2.556780753831031e-13,
+      "double_pole": 4.451317562755011e-13
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 7.85,
+      "export_s": 0.96,
+      "double_double_s_per_point": 59.005,
+      "double_s_per_point": 29.245,
+      "hel_s": 81.33
+     },
+     "failed_checks": [
+      {
+       "rule": "hel",
+       "point": 0,
+       "carrier": "double-double",
+       "sector": "h---+-",
+       "coefficient": "born",
+       "error": 9.869999814971216e-11,
+       "bound": 1e-12,
+       "note": "MadLoop status 328, accuracy 1.0520851568504746e-14"
+      },
+      {
+       "rule": "hel",
+       "point": 0,
+       "carrier": "double-double",
+       "sector": "h---+-",
+       "coefficient": "single_pole",
+       "error": 8.049813706889624e-12,
+       "bound": 1e-12,
+       "note": "MadLoop status 328, accuracy 1.0520851568504746e-14"
+      },
+      {
+       "rule": "hel",
+       "point": 0,
+       "carrier": "double-double",
+       "sector": "h---+-",
+       "coefficient": "double_pole",
+       "error": 1.3140361328992129e-12,
+       "bound": 1e-12,
+       "note": "MadLoop status 328, accuracy 1.0520851568504746e-14"
+      },
+      {
+       "rule": "hel",
+       "point": 0,
+       "carrier": "double-double",
+       "sector": "h-+-++",
+       "coefficient": "finite",
+       "error": 4.52192099500176e-12,
+       "bound": 1e-12,
+       "note": "MadLoop status 328, accuracy 0.0"
+      },
+      {
+       "rule": "hel",
+       "point": 0,
+       "carrier": "double-double",
+       "sector": "h+++-+",
+       "coefficient": "born",
+       "error": 9.869999814971216e-11,
+       "bound": 1e-12,
+       "note": "MadLoop status 328, accuracy 1.0238444953023639e-14"
+      },
+      {
+       "rule": "hel",
+       "point": 0,
+       "carrier": "double-double",
+       "sector": "h+++-+",
+       "coefficient": "double_pole",
+       "error": 1.3140361328990572e-12,
+       "bound": 1e-12,
+       "note": "MadLoop status 328, accuracy 1.0238444953023639e-14"
+      }
+     ]
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 3.412633027615142e-14,
+   "max_binary64_vs_dd": 4.952839113483384e-13,
+   "max_catani_dd": 6.590875279760875e-30
+  },
+  {
+   "id": "A09",
+   "class": "Q-massless",
+   "process": "u u~ > g g g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "default",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_ggg.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E + R runs/g1/uux_ggg",
+   "extras": [
+    "nc",
+    "sp"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "fail",
+   "tiers": {
+    "default": {
+     "points": [
+      0,
+      1
+     ],
+     "passed": true,
+     "checks": 40,
+     "failures": 0,
+     "max_dd_vs_reference": 3.0925701715825384e-14,
+     "max_binary64_vs_dd": 1.8349285795700192e-13,
+     "max_catani_dd": 8.704175684516362e-30,
+     "max_catani_binary64": 1.4568448332292487e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.1922062864841634e-14,
+      "finite": 1.8315008564116232e-13,
+      "single_pole": 1.4277660940430403e-13,
+      "double_pole": 8.610053253166375e-14
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.42,
+      "export_s": 0.7,
+      "double_double_s_per_point": 10.97,
+      "double_s_per_point": 2.96
+     },
+     "failed_checks": []
+    },
+    "nightly": {
+     "points": [
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 40,
+     "failures": 0,
+     "max_dd_vs_reference": 3.396045201400363e-14,
+     "max_binary64_vs_dd": 8.99895475531709e-14,
+     "max_catani_dd": 4.039069888860203e-30,
+     "max_catani_binary64": 5.041363211124127e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 5.40029856585778e-14,
+      "finite": 6.354482804897037e-14,
+      "single_pole": 6.428885716686874e-14,
+      "double_pole": 9.553205868399377e-14
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 7.15,
+      "export_s": 0.61,
+      "double_double_s_per_point": 11.455,
+      "double_s_per_point": 3.0
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [
+    {
+     "id": "A09@soft",
+     "gating": true,
+     "notes": "S2: a soft gluon (E_g / sqrt(s) = 1e-3, 1e-5), MadLoop in quadruple precision",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/uux_ggg_soft.json",
+      "providers": [
+       "madloop",
+       "recola",
+       "openloops"
+      ]
+     },
+     "status": "fail",
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1
+       ],
+       "passed": false,
+       "checks": 40,
+       "failures": 1,
+       "max_dd_vs_reference": 2.7320433108463816e-11,
+       "max_binary64_vs_dd": 4.28373629218134e-11,
+       "max_catani_dd": 9.657967072446035e-23,
+       "max_catani_binary64": 4.273367064568608e-11,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 1.5670571830708317e-11,
+        "finite": 6.263229770471862e-07,
+        "single_pole": 7.058732134347603e-07,
+        "double_pole": 2.3120931145430247e-07
+       },
+       "binary64_out_of_scope": [
+        {
+         "point": 1,
+         "sector": "QCD^6",
+         "coefficient": "born",
+         "E": 1e-12,
+         "true_error": 1.1649861277938058e-11
+        },
+        {
+         "point": 1,
+         "sector": "QCD^8",
+         "coefficient": "finite",
+         "E": 9.347766634915841e-07,
+         "true_error": 6.263229089271917e-07
+        },
+        {
+         "point": 1,
+         "sector": "QCD^8",
+         "coefficient": "single_pole",
+         "E": 1.467011031562138e-06,
+         "true_error": 7.058731899486972e-07
+        },
+        {
+         "point": 1,
+         "sector": "QCD^8",
+         "coefficient": "double_pole",
+         "E": 5.222691054940066e-07,
+         "true_error": 2.3120905998649898e-07
+        }
+       ],
+       "timings": {
+        "generate_s": 0.0,
+        "export_s": 0.0,
+        "double_double_s_per_point": 8.76,
+        "double_s_per_point": 2.955
+       },
+       "failed_checks": [
+        {
+         "rule": "1",
+         "point": 1,
+         "carrier": "double-double",
+         "sector": "QCD^6",
+         "coefficient": "born",
+         "error": 2.7320433108463816e-11,
+         "bound": 1e-12,
+         "note": "against madloop; not a listed outlier (own accuracy None; status 328; its double pole off its Born x the universal factor by 2.71e-11; second providers recola 3.65e-15, openloops 1.23e-15)"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "id": "A09@collinear",
+     "gating": true,
+     "notes": "S2: a collinear pair (theta = 1e-3, 1e-5; small Gram determinants), MadLoop in quadruple precision",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/uux_ggg_collinear.json",
+      "providers": [
+       "madloop",
+       "recola",
+       "openloops"
+      ]
+     },
+     "status": "fail",
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2
+       ],
+       "passed": false,
+       "checks": 5,
+       "failures": 5,
+       "max_dd_vs_reference": null,
+       "max_binary64_vs_dd": null,
+       "max_catani_dd": null,
+       "max_catani_binary64": null,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {},
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 0.0,
+        "export_s": 0.0,
+        "double_double_s_per_point": 5.783333333333334,
+        "double_s_per_point": 0.29333333333333333
+       },
+       "failed_checks": [
+        {
+         "rule": "eval",
+         "point": 0,
+         "carrier": "double",
+         "sector": "",
+         "coefficient": "evaluation",
+         "error": 0.0,
+         "bound": 0.0,
+         "note": "family 78 lane LaneKey { family: 78, order: 0, column: 0 }: Unstable; re-test of family 78 lane LaneKey { family: 78, order: 0, column: 0 }: Unstable; family 80 lane LaneKey { family: 80, order: 0, column: 0 }: Unstable; re-test of family 80 lane LaneKey { family: 80, order: 0, column: 0 }: Unstable; rotation-0: family 78 lane LaneKey { family: 78, order: 0, column: 0 }: Unstable; rotation-0: family 80 lane LaneKey { family: 80, order: 0, column: 0 }: Unstable"
+        },
+        {
+         "rule": "eval",
+         "point": 1,
+         "carrier": "double-double",
+         "sector": "",
+         "coefficient": "evaluation",
+         "error": 0.0,
+         "bound": 0.0,
+         "note": "family 78 lane LaneKey { family: 78, order: 0, column: 0 }: CutFailed { cut_index: 0, failure: DegenerateGram }; re-test of family 78 lane LaneKey { family: 78, order: 0, column: 0 }: CutFailed { cut_index: 0, failure: DegenerateGram }; family 80 lane LaneKey { family: 80, order: 0, column: 0 }: CutFailed { cut_index: 0, failure: DegenerateGram }; re-test of family 80 lane LaneKey { family: 80, order: 0, column: 0 }: CutFailed { cut_index: 0, failure: DegenerateGram }; rotation-0: family 78 lane LaneKey { family: 78, order: 0, column: 0 }: CutFailed { cut_index: 0, failure: DegenerateGram }; rotation-0: family 80 lane LaneKey { family: 80, order: 0, column: 0 }: CutFailed { cut_index: 0, failure: DegenerateGram }"
+        },
+        {
+         "rule": "eval",
+         "point": 1,
+         "carrier": "double",
+         "sector": "",
+         "coefficient": "evaluation",
+         "error": 0.0,
+         "bound": 0.0,
+         "note": "family 78 lane LaneKey { family: 78, order: 0, column: 0 }: Unstable; re-test of family 78 lane LaneKey { family: 78, order: 0, column: 0 }: Unstable; family 80 lane LaneKey { family: 80, order: 0, column: 0 }: Unstable; re-test of family 80 lane LaneKey { family: 80, order: 0, column: 0 }: Unstable; rotation-0: family 78 lane LaneKey { family: 78, order: 0, column: 0 }: Unstable; rotation-0: family 80 lane LaneKey { family: 80, order: 0, column: 0 }: Unstable"
+        },
+        {
+         "rule": "eval",
+         "point": 2,
+         "carrier": "double-double",
+         "sector": "",
+         "coefficient": "evaluation",
+         "error": 0.0,
+         "bound": 0.0,
+         "note": "family 78 lane LaneKey { family: 78, order: 0, column: 0 }: CutFailed { cut_index: 0, failure: DegenerateGram }; re-test of family 78 lane LaneKey { family: 78, order: 0, column: 0 }: CutFailed { cut_index: 0, failure: DegenerateGram }; family 80 lane LaneKey { family: 80, order: 0, column: 0 }: CutFailed { cut_index: 0, failure: DegenerateGram }; re-test of family 80 lane LaneKey { family: 80, order: 0, column: 0 }: CutFailed { cut_index: 0, failure: DegenerateGram }; rotation-0: family 78 lane LaneKey { family: 78, order: 0, column: 0 }: CutFailed { cut_index: 0, failure: DegenerateGram }; rotation-0: family 80 lane LaneKey { family: 80, order: 0, column: 0 }: CutFailed { cut_index: 0, failure: DegenerateGram }"
+        },
+        {
+         "rule": "eval",
+         "point": 2,
+         "carrier": "double",
+         "sector": "",
+         "coefficient": "evaluation",
+         "error": 0.0,
+         "bound": 0.0,
+         "note": "family 78 lane LaneKey { family: 78, order: 0, column: 0 }: Unstable; re-test of family 78 lane LaneKey { family: 78, order: 0, column: 0 }: Unstable; family 80 lane LaneKey { family: 80, order: 0, column: 0 }: Unstable; re-test of family 80 lane LaneKey { family: 80, order: 0, column: 0 }: Unstable; rotation-0: family 78 lane LaneKey { family: 78, order: 0, column: 0 }: Unstable; rotation-0: family 80 lane LaneKey { family: 80, order: 0, column: 0 }: Unstable"
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "max_dd_vs_reference": 2.7320433108463816e-11,
+   "max_binary64_vs_dd": 4.28373629218134e-11,
+   "max_catani_dd": 9.657967072446035e-23
+  },
+  {
+   "id": "A12",
+   "class": "Q-massless",
+   "process": "u u~ > d d~ g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "default",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/uux_ddxg.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E required/uux_ddxg",
+   "extras": [
+    "nc"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "default": {
+     "points": [
+      0,
+      1
+     ],
+     "passed": true,
+     "checks": 38,
+     "failures": 0,
+     "max_dd_vs_reference": 3.188696087336251e-13,
+     "max_binary64_vs_dd": 4.526292386904746e-13,
+     "max_catani_dd": 5.721996960367653e-30,
+     "max_catani_binary64": 4.733547487504188e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.2223835183825896e-14,
+      "finite": 7.714988474239552e-13,
+      "single_pole": 4.415859736664995e-14,
+      "double_pole": 2.8334341118556718e-14
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.56,
+      "export_s": 0.67,
+      "double_double_s_per_point": 5.95,
+      "double_s_per_point": 0.3
+     },
+     "failed_checks": []
+    },
+    "nightly": {
+     "points": [
+      2
+     ],
+     "passed": true,
+     "checks": 19,
+     "failures": 0,
+     "max_dd_vs_reference": 3.663158759622007e-14,
+     "max_binary64_vs_dd": 1.0004393931216102e-13,
+     "max_catani_dd": 7.749607812732073e-30,
+     "max_catani_binary64": 6.744223887717363e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 5.1930848263796177e-14,
+      "finite": 6.341235171594325e-14,
+      "single_pole": 2.602511974312096e-15,
+      "double_pole": 1.1278094952483502e-14
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.27,
+      "export_s": 0.44,
+      "double_double_s_per_point": 6.93,
+      "double_s_per_point": 0.31
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 3.188696087336251e-13,
+   "max_binary64_vs_dd": 4.526292386904746e-13,
+   "max_catani_dd": 7.749607812732073e-30
+  },
+  {
+   "id": "A13",
+   "class": "Q-massless",
+   "process": "u u~ > u u~ g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/uux_uuxg.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E required/uux_uuxg",
+   "extras": [
+    "nc",
+    "ap"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 65,
+     "failures": 0,
+     "max_dd_vs_reference": 2.428313238266438e-13,
+     "max_binary64_vs_dd": 7.934137437454622e-13,
+     "max_catani_dd": 4.868145291053958e-30,
+     "max_catani_binary64": 9.580329604028818e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 4.37222327804089e-14,
+      "finite": 1.0362450675719132e-12,
+      "single_pole": 2.831501658176503e-14,
+      "double_pole": 1.3719299110112429e-13
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.19,
+      "export_s": 0.75,
+      "double_double_s_per_point": 6.06,
+      "double_s_per_point": 0.44,
+      "ap_s": 15.38
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 2.428313238266438e-13,
+   "max_binary64_vs_dd": 7.934137437454622e-13,
+   "max_catani_dd": 4.868145291053958e-30
+  },
+  {
+   "id": "A14",
+   "class": "Q-massless",
+   "process": "g g > g g g g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/gg_gggg.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E fixture (MadLoop QP committed by MQ-REF, + Recola, OpenLoops)",
+   "extras": [
+    "ward"
+   ],
+   "extras_pending": {
+    "ward": "MQ-WARD (generic native Ward input)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [
+    {
+     "point": 1,
+     "sector": "QCD^10",
+     "coefficient": "finite",
+     "E": 4.74e-06,
+     "true_error": 2.5e-07
+    },
+    {
+     "point": 1,
+     "sector": "QCD^10",
+     "coefficient": "single_pole",
+     "E": 2.21e-06,
+     "true_error": 1.59e-07
+    }
+   ],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 36,
+     "failures": 0,
+     "max_dd_vs_reference": 3.253088473748923e-14,
+     "max_binary64_vs_dd": 4.761324524734598e-11,
+     "max_catani_dd": null,
+     "max_catani_binary64": null,
+     "catani_not_formed": true,
+     "binary64_vs_reference": {
+      "born": 1.54906961701228e-13,
+      "finite": 2.504493232829659e-07,
+      "single_pole": 1.5872679081317923e-07,
+      "double_pole": 2.8362314793021e-12
+     },
+     "binary64_out_of_scope": [
+      {
+       "point": 1,
+       "sector": "QCD^10",
+       "coefficient": "finite",
+       "E": 4.741430976908967e-06,
+       "true_error": 2.5044931872636594e-07
+      },
+      {
+       "point": 1,
+       "sector": "QCD^10",
+       "coefficient": "single_pole",
+       "E": 2.2075673742839926e-06,
+       "true_error": 1.5872679424903198e-07
+      }
+     ],
+     "timings": {
+      "generate_s": 19.96,
+      "export_s": 14.01,
+      "double_double_s_per_point": 46.67666666666667,
+      "double_s_per_point": 1.2933333333333332
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 3.253088473748923e-14,
+   "max_binary64_vs_dd": 4.761324524734598e-11,
+   "max_catani_dd": null
+  },
+  {
+   "id": "A15",
+   "class": "Q-massless",
+   "process": "u u~ > g g g g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_gggg.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~3-5 min",
+   "extras": [
+    "nc"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 52,
+     "failures": 0,
+     "max_dd_vs_reference": 3.398492268954229e-14,
+     "max_binary64_vs_dd": 4.5969422145373936e-12,
+     "max_catani_dd": null,
+     "max_catani_binary64": null,
+     "catani_not_formed": true,
+     "binary64_vs_reference": {
+      "born": 2.7993985202402016e-14,
+      "finite": 4.594907219833276e-12,
+      "single_pole": 4.766918966924446e-13,
+      "double_pole": 4.2410593282452686e-13
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 8.08,
+      "export_s": 4.47,
+      "double_double_s_per_point": 12.075,
+      "double_s_per_point": 0.2325
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 3.398492268954229e-14,
+   "max_binary64_vs_dd": 4.5969422145373936e-12,
+   "max_catani_dd": null
+  },
+  {
+   "id": "A18",
+   "class": "Q-massless",
+   "process": "g g > u u~ u u~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_uuxuux.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~1-2 min",
+   "extras": [
+    "nc"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [
+    {
+     "point": 0,
+     "sector": "QCD^10",
+     "coefficient": "finite",
+     "E": 2.6e-08,
+     "true_error": 1.05e-08
+    },
+    {
+     "point": 0,
+     "sector": "QCD^10",
+     "coefficient": "single_pole",
+     "E": 2.43e-09,
+     "true_error": 3.11e-10
+    },
+    {
+     "point": 0,
+     "sector": "QCD^10",
+     "coefficient": "double_pole",
+     "E": 1.87e-09,
+     "true_error": 5.48e-10
+    },
+    {
+     "point": 1,
+     "sector": "QCD^10",
+     "coefficient": "finite",
+     "E": 1.82e-09,
+     "true_error": 3.58e-10
+    },
+    {
+     "point": 2,
+     "sector": "QCD^10",
+     "coefficient": "finite",
+     "E": 5.8e-08,
+     "true_error": 5.55e-08
+    },
+    {
+     "point": 2,
+     "sector": "QCD^10",
+     "coefficient": "single_pole",
+     "E": 1.24e-08,
+     "true_error": 2.23e-09
+    },
+    {
+     "point": 2,
+     "sector": "QCD^10",
+     "coefficient": "double_pole",
+     "E": 1.21e-08,
+     "true_error": 4.19e-10
+    },
+    {
+     "point": 3,
+     "sector": "QCD^10",
+     "coefficient": "finite",
+     "E": 8.69e-08,
+     "true_error": 4.52e-08
+    },
+    {
+     "point": 3,
+     "sector": "QCD^10",
+     "coefficient": "single_pole",
+     "E": 5.37e-09,
+     "true_error": 1.01e-09
+    },
+    {
+     "point": 3,
+     "sector": "QCD^10",
+     "coefficient": "double_pole",
+     "E": 1.87e-09,
+     "true_error": 5.48e-10
+    }
+   ],
+   "status": "fail",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": false,
+     "checks": 80,
+     "failures": 4,
+     "max_dd_vs_reference": 1.174435480475222e-11,
+     "max_binary64_vs_dd": 6.451170928864202e-11,
+     "max_catani_dd": 8.99415148744334e-28,
+     "max_catani_binary64": 6.451065261614849e-11,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 3.014559216963372e-15,
+      "finite": 5.547122608465279e-08,
+      "single_pole": 2.232926545436604e-09,
+      "double_pole": 5.478725615230299e-10
+     },
+     "binary64_out_of_scope": [
+      {
+       "point": 0,
+       "sector": "QCD^10",
+       "coefficient": "finite",
+       "E": 2.604317977933777e-08,
+       "true_error": 1.0502115287325264e-08
+      },
+      {
+       "point": 0,
+       "sector": "QCD^10",
+       "coefficient": "single_pole",
+       "E": 2.4346072794522782e-09,
+       "true_error": 3.1136745819707154e-10
+      },
+      {
+       "point": 0,
+       "sector": "QCD^10",
+       "coefficient": "double_pole",
+       "E": 1.8679903575698677e-09,
+       "true_error": 5.48222153789751e-10
+      },
+      {
+       "point": 1,
+       "sector": "QCD^10",
+       "coefficient": "finite",
+       "E": 1.8240408590589445e-09,
+       "true_error": 3.583206845100343e-10
+      },
+      {
+       "point": 2,
+       "sector": "QCD^10",
+       "coefficient": "finite",
+       "E": 5.8004364161704596e-08,
+       "true_error": 5.546485491953595e-08
+      },
+      {
+       "point": 2,
+       "sector": "QCD^10",
+       "coefficient": "single_pole",
+       "E": 1.2401135644878914e-08,
+       "true_error": 2.233017915358395e-09
+      },
+      {
+       "point": 2,
+       "sector": "QCD^10",
+       "coefficient": "double_pole",
+       "E": 1.2054571275169823e-08,
+       "true_error": 4.1899295480598194e-10
+      },
+      {
+       "point": 3,
+       "sector": "QCD^10",
+       "coefficient": "finite",
+       "E": 8.687398027636121e-08,
+       "true_error": 4.521581574979863e-08
+      },
+      {
+       "point": 3,
+       "sector": "QCD^10",
+       "coefficient": "single_pole",
+       "E": 5.367469845998362e-09,
+       "true_error": 1.0140697022161104e-09
+      },
+      {
+       "point": 3,
+       "sector": "QCD^10",
+       "coefficient": "double_pole",
+       "E": 1.8679903575698677e-09,
+       "true_error": 5.48222153789751e-10
+      }
+     ],
+     "timings": {
+      "generate_s": 8.51,
+      "export_s": 0.92,
+      "double_double_s_per_point": 23.7075,
+      "double_s_per_point": 9.18
+     },
+     "failed_checks": [
+      {
+       "rule": "1",
+       "point": 0,
+       "carrier": "double-double",
+       "sector": "QCD^10",
+       "coefficient": "finite",
+       "error": 3.4547909912259747e-12,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 3.54e-13; second providers none)"
+      },
+      {
+       "rule": "1",
+       "point": 2,
+       "carrier": "double-double",
+       "sector": "QCD^10",
+       "coefficient": "finite",
+       "error": 6.371165470214663e-12,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 1.06e-12; second providers none)"
+      },
+      {
+       "rule": "1",
+       "point": 2,
+       "carrier": "double-double",
+       "sector": "QCD^10",
+       "coefficient": "double_pole",
+       "error": 1.0598863421342539e-12,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 1.06e-12; second providers none)"
+      },
+      {
+       "rule": "1",
+       "point": 3,
+       "carrier": "double-double",
+       "sector": "QCD^10",
+       "coefficient": "finite",
+       "error": 1.174435480475222e-11,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 3.54e-13; second providers none)"
+      }
+     ]
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.174435480475222e-11,
+   "max_binary64_vs_dd": 6.451170928864202e-11,
+   "max_catani_dd": 8.99415148744334e-28
+  },
+  {
+   "id": "A19",
+   "class": "Q-massless",
+   "process": "u u~ > d d~ s s~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/uux_ddxssx.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E required/uux_ddxssx",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 8.421786185981588e-16,
+     "max_binary64_vs_dd": 2.0205170450940162e-13,
+     "max_catani_dd": 8.072142667019906e-30,
+     "max_catani_binary64": 9.829382732768875e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 8.64027365599661e-16,
+      "finite": 2.017855245632067e-13,
+      "single_pole": 7.8490148174978e-14,
+      "double_pole": 9.902395789279693e-14
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.77,
+      "export_s": 0.95,
+      "double_double_s_per_point": 6.913333333333333,
+      "double_s_per_point": 0.89
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 8.421786185981588e-16,
+   "max_binary64_vs_dd": 2.0205170450940162e-13,
+   "max_catani_dd": 8.072142667019906e-30
+  },
+  {
+   "id": "A20",
+   "class": "Q-massless",
+   "process": "u u~ > u u~ d d~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/uux_uuxddx.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E required/uux_uuxddx",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 1.949461182262198e-14,
+     "max_binary64_vs_dd": 2.3715351553385173e-12,
+     "max_catani_dd": 2.4797701243720132e-30,
+     "max_catani_binary64": 3.718466154034098e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 2.1630753045543024e-15,
+      "finite": 2.3520405435159413e-12,
+      "single_pole": 5.0065925168124406e-14,
+      "double_pole": 3.7086115617530924e-13
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.36,
+      "export_s": 0.55,
+      "double_double_s_per_point": 8.063333333333334,
+      "double_s_per_point": 1.3233333333333335
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.949461182262198e-14,
+   "max_binary64_vs_dd": 2.3715351553385173e-12,
+   "max_catani_dd": 2.4797701243720132e-30
+  },
+  {
+   "id": "A21",
+   "class": "Q-massless",
+   "process": "u u~ > u u~ u u~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/uux_uuxuux.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E required/uux_uuxuux",
+   "extras": [
+    "nc"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 3.713664947353161e-14,
+     "max_binary64_vs_dd": 1.1602984004553682e-11,
+     "max_catani_dd": 2.309893933088999e-29,
+     "max_catani_binary64": 1.2260022870094469e-12,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 2.282112446203274e-15,
+      "finite": 1.156584735508058e-11,
+      "single_pole": 8.551278316298588e-13,
+      "double_pole": 1.2283665971702266e-12
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 6.05,
+      "export_s": 1.34,
+      "double_double_s_per_point": 11.723333333333334,
+      "double_s_per_point": 2.2533333333333334
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 3.713664947353161e-14,
+   "max_binary64_vs_dd": 1.1602984004553682e-11,
+   "max_catani_dd": 2.309893933088999e-29
+  },
+  {
+   "id": "A22",
+   "class": "Q-massless",
+   "process": "u u~ > d d~ s s~ g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "mqcd",
+    "path": "tests/fixtures/loop/mqcd/references/uux_ddxssxg.json",
+    "providers": [
+     "madloop",
+     "recola"
+    ]
+   },
+   "reference_legend": "E sevenleg (MadLoop Ninja + Recola)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 7.016093758387826e-13,
+     "max_binary64_vs_dd": 4.809071776726813e-13,
+     "max_catani_dd": 1.3428570589460023e-28,
+     "max_catani_binary64": 4.794712039392758e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 3.0712715535861184e-14,
+      "finite": 8.948511498320275e-13,
+      "single_pole": 6.095582406316657e-13,
+      "double_pole": 9.273292355184516e-14
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 8.67,
+      "export_s": 3.19,
+      "double_double_s_per_point": 38.300000000000004,
+      "double_s_per_point": 17.896666666666665
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 7.016093758387826e-13,
+   "max_binary64_vs_dd": 4.809071776726813e-13,
+   "max_catani_dd": 1.3428570589460023e-28
+  },
+  {
+   "id": "A23",
+   "class": "Q-massless",
+   "process": "u u~ > g g g g g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/uux_ggggg.json",
+    "providers": [
+     "madloop",
+     "recola"
+    ]
+   },
+   "reference_legend": "E required/uux_ggggg",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "fail",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": false,
+     "checks": 36,
+     "failures": 6,
+     "max_dd_vs_reference": 3.183849219484248e-12,
+     "max_binary64_vs_dd": 1.4781992059360392e-12,
+     "max_catani_dd": null,
+     "max_catani_binary64": null,
+     "catani_not_formed": true,
+     "binary64_vs_reference": {
+      "born": 3.506130567776139e-14,
+      "finite": 2.0534717061289757e-12,
+      "single_pole": 2.488671405130036e-12,
+      "double_pole": 7.392556484464014e-13
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 43.25,
+      "export_s": 87.81,
+      "double_double_s_per_point": 189.85,
+      "double_s_per_point": 5.223333333333334
+     },
+     "failed_checks": [
+      {
+       "rule": "1",
+       "point": 0,
+       "carrier": "double-double",
+       "sector": "total",
+       "coefficient": "finite",
+       "error": 1.4144707896413214e-12,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 1.219278002354554e-13; status 216; its double pole off its Born x the universal factor by 8.84e-15; second providers recola 2.87e-10)"
+      },
+      {
+       "rule": "1",
+       "point": 0,
+       "carrier": "double-double",
+       "sector": "total",
+       "coefficient": "single_pole",
+       "error": 2.451384337753075e-12,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 1.219278002354554e-13; status 216; its double pole off its Born x the universal factor by 8.84e-15; second providers recola 1.21e-10)"
+      },
+      {
+       "rule": "1",
+       "point": 1,
+       "carrier": "double-double",
+       "sector": "total",
+       "coefficient": "finite",
+       "error": 2.5908747187602767e-12,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 2.329502912742552e-12; status 216; its double pole off its Born x the universal factor by 2.17e-14; second providers recola 7.81e-11)"
+      },
+      {
+       "rule": "1",
+       "point": 1,
+       "carrier": "double-double",
+       "sector": "total",
+       "coefficient": "single_pole",
+       "error": 1.2877612157431353e-12,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 2.329502912742552e-12; status 216; its double pole off its Born x the universal factor by 2.17e-14; second providers recola 5.2e-11)"
+      },
+      {
+       "rule": "1",
+       "point": 2,
+       "carrier": "double-double",
+       "sector": "total",
+       "coefficient": "finite",
+       "error": 1.020306410260054e-12,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 1.324260330658117e-12; status 216; its double pole off its Born x the universal factor by 7.67e-14; second providers recola 6.92e-11)"
+      },
+      {
+       "rule": "1",
+       "point": 2,
+       "carrier": "double-double",
+       "sector": "total",
+       "coefficient": "single_pole",
+       "error": 3.183849219484248e-12,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 1.324260330658117e-12; status 216; its double pole off its Born x the universal factor by 7.67e-14; second providers recola 6.13e-10)"
+      }
+     ]
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 3.183849219484248e-12,
+   "max_binary64_vs_dd": 1.4781992059360392e-12,
+   "max_catani_dd": null
+  },
+  {
+   "id": "A24",
+   "class": "Q-massless",
+   "process": "g g > g g g g g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/gg_ggggg_njet.json",
+    "providers": [
+     "njet_dd_oneloop_R1",
+     "njet_double_R1",
+     "njet_double_R2"
+    ]
+   },
+   "reference_legend": "E gg_ggggg_njet (NJet DD)",
+   "extras": [
+    "uv"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [
+    {
+     "point": 0,
+     "sector": "QCD^12",
+     "coefficient": "finite",
+     "E": 1.36e-08,
+     "true_error": 1.4e-09
+    },
+    {
+     "point": 0,
+     "sector": "QCD^12",
+     "coefficient": "single_pole",
+     "E": 5.15e-09,
+     "true_error": 6.79e-10
+    },
+    {
+     "point": 1,
+     "sector": "QCD^12",
+     "coefficient": "finite",
+     "E": 7.78e-08,
+     "true_error": 2e-09
+    },
+    {
+     "point": 1,
+     "sector": "QCD^12",
+     "coefficient": "single_pole",
+     "E": 5.38e-08,
+     "true_error": 2e-09
+    }
+   ],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1
+     ],
+     "passed": true,
+     "checks": 26,
+     "failures": 0,
+     "max_dd_vs_reference": 8.037130576067621e-17,
+     "max_binary64_vs_dd": 3.205666632262079e-12,
+     "max_catani_dd": null,
+     "max_catani_binary64": null,
+     "catani_not_formed": true,
+     "binary64_vs_reference": {
+      "born": 7.505123626589321e-13,
+      "finite": 2.003627410364982e-09,
+      "single_pole": 1.9950742331295843e-09,
+      "double_pole": 3.205676209541739e-12
+     },
+     "binary64_out_of_scope": [
+      {
+       "point": 0,
+       "sector": "QCD^12",
+       "coefficient": "finite",
+       "E": 1.361107494091089e-08,
+       "true_error": 1.4043380435655497e-09
+      },
+      {
+       "point": 0,
+       "sector": "QCD^12",
+       "coefficient": "single_pole",
+       "E": 5.148644308015868e-09,
+       "true_error": 6.790258065809086e-10
+      },
+      {
+       "point": 1,
+       "sector": "QCD^12",
+       "coefficient": "finite",
+       "E": 7.779333653237597e-08,
+       "true_error": 2.003627355163274e-09
+      },
+      {
+       "point": 1,
+       "sector": "QCD^12",
+       "coefficient": "single_pole",
+       "E": 5.375685643057431e-08,
+       "true_error": 1.99507431350089e-09
+      }
+     ],
+     "timings": {
+      "generate_s": 164.22,
+      "export_s": 204.13,
+      "double_double_s_per_point": 328.71,
+      "double_s_per_point": 40.505,
+      "uv_s": 434.89
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 8.037130576067621e-17,
+   "max_binary64_vs_dd": 3.205666632262079e-12,
+   "max_catani_dd": null
+  },
+  {
+   "id": "A25",
+   "class": "Q-massless",
+   "process": "u d > u d",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/ud_ud.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 2.107629808788394e-13,
+     "max_binary64_vs_dd": 5.84570729516893e-14,
+     "max_catani_dd": 9.200042438625007e-30,
+     "max_catani_binary64": 5.3811318847158145e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 4.778459805484606e-16,
+      "finite": 2.7224237949568587e-15,
+      "single_pole": 1.5230590792715902e-13,
+      "double_pole": 2.6485387590010785e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.6,
+      "export_s": 0.35,
+      "double_double_s_per_point": 4.65,
+      "double_s_per_point": 0.045
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 2.107629808788394e-13,
+   "max_binary64_vs_dd": 5.84570729516893e-14,
+   "max_catani_dd": 9.200042438625007e-30
+  },
+  {
+   "id": "A26",
+   "class": "Q-massless",
+   "process": "u~ u~ > u~ u~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uxux_uxux.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 4.3914681266334135e-14,
+     "max_binary64_vs_dd": 8.35194772559469e-14,
+     "max_catani_dd": 1.5962930729969046e-30,
+     "max_catani_binary64": 8.789172443340452e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 8.413151739731621e-16,
+      "finite": 1.2651212863155225e-14,
+      "single_pole": 3.9604795989614505e-14,
+      "double_pole": 2.284687255343944e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.64,
+      "export_s": 0.35,
+      "double_double_s_per_point": 4.6475,
+      "double_s_per_point": 0.055
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 4.3914681266334135e-14,
+   "max_binary64_vs_dd": 8.35194772559469e-14,
+   "max_catani_dd": 1.5962930729969046e-30
+  },
+  {
+   "id": "B01",
+   "class": "Q-top",
+   "process": "g g > t t~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "default",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/gg_ttx.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E required/gg_ttx (+ R for S1, S4, hel)",
+   "extras": [
+    "ap",
+    "uv",
+    "hel",
+    "sp"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "default": {
+     "points": [
+      0,
+      1
+     ],
+     "passed": true,
+     "checks": 38,
+     "failures": 0,
+     "max_dd_vs_reference": 1.9226394369907963e-15,
+     "max_binary64_vs_dd": 2.4210524052709533e-15,
+     "max_catani_dd": 1.309927550959323e-31,
+     "max_catani_binary64": 1.1183003352402908e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 5.969593892974336e-16,
+      "finite": 2.7211176709473474e-15,
+      "single_pole": 1.9682085900229116e-15,
+      "double_pole": 8.829582071131196e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.79,
+      "export_s": 0.45,
+      "double_double_s_per_point": 5.42,
+      "double_s_per_point": 0.155
+     },
+     "failed_checks": []
+    },
+    "nightly": {
+     "points": [
+      2
+     ],
+     "passed": true,
+     "checks": 94,
+     "failures": 0,
+     "max_dd_vs_reference": 2.0263223817660076e-15,
+     "max_binary64_vs_dd": 9.779422952680096e-16,
+     "max_catani_dd": 7.30002417120154e-32,
+     "max_catani_binary64": 1.1262925267165453e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.0925164364064087e-15,
+      "finite": 3.004264677033949e-15,
+      "single_pole": 5.300200125724925e-16,
+      "double_pole": 9.695597769888345e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.72,
+      "export_s": 0.45,
+      "double_double_s_per_point": 6.18,
+      "double_s_per_point": 0.17,
+      "uv_s": 4.97,
+      "hel_s": 3.75,
+      "ap_s": 9.39
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [
+    {
+     "id": "B01@threshold",
+     "gating": true,
+     "notes": "S1: top-pair threshold points (beta = 1e-1, 1e-2, 1e-3), MadLoop in quadruple precision",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/gg_ttx_threshold.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "status": "pass",
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2
+       ],
+       "passed": true,
+       "checks": 60,
+       "failures": 0,
+       "max_dd_vs_reference": 7.568891787268735e-16,
+       "max_binary64_vs_dd": 2.7145371986686236e-12,
+       "max_catani_dd": 3.7007008840280476e-26,
+       "max_catani_binary64": 2.714032186937887e-12,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 3.430449814716455e-16,
+        "finite": 1.7437236296409648e-07,
+        "single_pole": 8.701392936615515e-10,
+        "double_pole": 2.9455957078876036e-10
+       },
+       "binary64_out_of_scope": [
+        {
+         "point": 1,
+         "sector": "QCD^6",
+         "coefficient": "finite",
+         "E": 1.7334730562929495e-09,
+         "true_error": 1.213767639363748e-10
+        },
+        {
+         "point": 1,
+         "sector": "QCD^6",
+         "coefficient": "single_pole",
+         "E": 5.652577415725405e-09,
+         "true_error": 6.244470250165082e-12
+        },
+        {
+         "point": 2,
+         "sector": "QCD^6",
+         "coefficient": "finite",
+         "E": 2.8939996207949896e-06,
+         "true_error": 1.7437236291871466e-07
+        },
+        {
+         "point": 2,
+         "sector": "QCD^6",
+         "coefficient": "single_pole",
+         "E": 4.605992327314069e-05,
+         "true_error": 8.701391132028991e-10
+        },
+        {
+         "point": 2,
+         "sector": "QCD^6",
+         "coefficient": "double_pole",
+         "E": 7.487712084709222e-09,
+         "true_error": 2.945594133874827e-10
+        }
+       ],
+       "timings": {
+        "generate_s": 0.0,
+        "export_s": 0.0,
+        "double_double_s_per_point": 4.836666666666667,
+        "double_s_per_point": 0.15666666666666665
+       },
+       "failed_checks": []
+      }
+     }
+    },
+    {
+     "id": "B01@mt170",
+     "gating": true,
+     "notes": "S4: MT = 170 at run time",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/gg_ttx_mt170.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "status": "pass",
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 80,
+       "failures": 0,
+       "max_dd_vs_reference": 2.284299600104688e-14,
+       "max_binary64_vs_dd": 1.2428885831809692e-14,
+       "max_catani_dd": 2.9543124189236144e-31,
+       "max_catani_binary64": 1.1015842974826255e-14,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 1.4979884197057933e-15,
+        "finite": 1.6508374858821193e-15,
+        "single_pole": 3.527188183285629e-14,
+        "double_pole": 7.063665656904955e-16
+       },
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 0.0,
+        "export_s": 0.0,
+        "double_double_s_per_point": 5.065,
+        "double_s_per_point": 0.1525
+       },
+       "failed_checks": []
+      }
+     }
+    }
+   ],
+   "max_dd_vs_reference": 2.284299600104688e-14,
+   "max_binary64_vs_dd": 2.7145371986686236e-12,
+   "max_catani_dd": 3.7007008840280476e-26
+  },
+  {
+   "id": "B02",
+   "class": "Q-top",
+   "process": "u u~ > t t~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "model-control",
+    "path": "tests/fixtures/loop/top-pair-model.json",
+    "key": "uu",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E top-pair-model uu (MadLoop binary64); N ~15 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 3.947234765227312e-14,
+     "max_binary64_vs_dd": 8.738507572649469e-14,
+     "max_catani_dd": 4.555299284388281e-31,
+     "max_catani_binary64": 8.731953266923044e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 4.573943072482552e-16,
+      "finite": 5.883501002103292e-14,
+      "single_pole": 5.702866313662612e-14,
+      "double_pole": 4.921360678605484e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.42,
+      "export_s": 0.78,
+      "double_double_s_per_point": 4.756666666666667,
+      "double_s_per_point": 0.06333333333333334
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 3.947234765227312e-14,
+   "max_binary64_vs_dd": 8.738507572649469e-14,
+   "max_catani_dd": 4.555299284388281e-31
+  },
+  {
+   "id": "B03",
+   "class": "Q-top",
+   "process": "g g > t t~ g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_ttxg.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~20-60 s",
+   "extras": [
+    "nc",
+    "ward"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)",
+    "ward": "MQ-WARD (generic native Ward input)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [
+    {
+     "point": 0,
+     "sector": "QCD^8",
+     "coefficient": "finite",
+     "E": 1.96e-09,
+     "true_error": 1.06e-09
+    },
+    {
+     "point": 0,
+     "sector": "QCD^8",
+     "coefficient": "single_pole",
+     "E": 1.92e-09,
+     "true_error": 6.76e-10
+    },
+    {
+     "point": 0,
+     "sector": "QCD^8",
+     "coefficient": "double_pole",
+     "E": 1.23e-09,
+     "true_error": 1.18e-09
+    },
+    {
+     "point": 1,
+     "sector": "QCD^8",
+     "coefficient": "single_pole",
+     "E": 1.54e-09,
+     "true_error": 1.05e-10
+    },
+    {
+     "point": 3,
+     "sector": "QCD^8",
+     "coefficient": "finite",
+     "E": 2.14e-09,
+     "true_error": 7.69e-10
+    },
+    {
+     "point": 3,
+     "sector": "QCD^8",
+     "coefficient": "single_pole",
+     "E": 1.5e-08,
+     "true_error": 1.17e-08
+    },
+    {
+     "point": 3,
+     "sector": "QCD^8",
+     "coefficient": "double_pole",
+     "E": 1.23e-09,
+     "true_error": 1.18e-09
+    }
+   ],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 3.4098285528435984e-13,
+     "max_binary64_vs_dd": 3.378948809938522e-11,
+     "max_catani_dd": 7.575829552561944e-27,
+     "max_catani_binary64": 4.392218890773888e-12,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.855954723456886e-15,
+      "finite": 1.059540268406432e-09,
+      "single_pole": 1.1738902926599533e-08,
+      "double_pole": 1.1801426815644229e-09
+     },
+     "binary64_out_of_scope": [
+      {
+       "point": 0,
+       "sector": "QCD^8",
+       "coefficient": "finite",
+       "E": 1.9598200328323916e-09,
+       "true_error": 1.0595311336721364e-09
+      },
+      {
+       "point": 0,
+       "sector": "QCD^8",
+       "coefficient": "single_pole",
+       "E": 1.9228894268169014e-09,
+       "true_error": 6.75581211901738e-10
+      },
+      {
+       "point": 0,
+       "sector": "QCD^8",
+       "coefficient": "double_pole",
+       "E": 1.2347353995592521e-09,
+       "true_error": 1.1801481740468951e-09
+      },
+      {
+       "point": 1,
+       "sector": "QCD^8",
+       "coefficient": "single_pole",
+       "E": 1.5360054991641007e-09,
+       "true_error": 1.0493859324156339e-10
+      },
+      {
+       "point": 3,
+       "sector": "QCD^8",
+       "coefficient": "finite",
+       "E": 2.141034420247817e-09,
+       "true_error": 7.687968098286541e-10
+      },
+      {
+       "point": 3,
+       "sector": "QCD^8",
+       "coefficient": "single_pole",
+       "E": 1.497643652072523e-08,
+       "true_error": 1.1738931222235253e-08
+      },
+      {
+       "point": 3,
+       "sector": "QCD^8",
+       "coefficient": "double_pole",
+       "E": 1.2347353995592521e-09,
+       "true_error": 1.1801481740468951e-09
+      }
+     ],
+     "timings": {
+      "generate_s": 5.01,
+      "export_s": 1.46,
+      "double_double_s_per_point": 11.98,
+      "double_s_per_point": 2.525
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 3.4098285528435984e-13,
+   "max_binary64_vs_dd": 3.378948809938522e-11,
+   "max_catani_dd": 7.575829552561944e-27
+  },
+  {
+   "id": "B05",
+   "class": "Q-top",
+   "process": "g g > t t~ g g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/gg_ttxgg.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E required/gg_ttxgg",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 1.3474760235223146e-13,
+     "max_binary64_vs_dd": 8.386910896097885e-12,
+     "max_catani_dd": 1.6650135514598576e-27,
+     "max_catani_binary64": 6.3574086348326544e-12,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 5.261751001058196e-15,
+      "finite": 8.391488497325522e-12,
+      "single_pole": 6.3647146150549485e-12,
+      "double_pole": 6.115997961757038e-13
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 8.83,
+      "export_s": 2.09,
+      "double_double_s_per_point": 177.63666666666666,
+      "double_s_per_point": 87.50333333333333
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.3474760235223146e-13,
+   "max_binary64_vs_dd": 8.386910896097885e-12,
+   "max_catani_dd": 1.6650135514598576e-27
+  },
+  {
+   "id": "B06",
+   "class": "Q-top",
+   "process": "u u~ > t t~ d d~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_ttxddx.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15-60 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.4534352195822118e-14,
+     "max_binary64_vs_dd": 1.5032093835109262e-12,
+     "max_catani_dd": 1.84896433426627e-28,
+     "max_catani_binary64": 1.4302885047890202e-12,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 2.0646532899701084e-15,
+      "finite": 1.5064417212734249e-12,
+      "single_pole": 1.442366893661442e-12,
+      "double_pole": 4.3786309641981093e-13
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.66,
+      "export_s": 1.47,
+      "double_double_s_per_point": 7.9175,
+      "double_s_per_point": 1.6025
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.4534352195822118e-14,
+   "max_binary64_vs_dd": 1.5032093835109262e-12,
+   "max_catani_dd": 1.84896433426627e-28
+  },
+  {
+   "id": "B07",
+   "class": "Q-top",
+   "process": "g g > t t~ t t~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_ttxttx.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~1-4 min",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 5.433882185937215e-13,
+     "max_binary64_vs_dd": 1.7423510360832417e-13,
+     "max_catani_dd": 4.5672571985221924e-27,
+     "max_catani_binary64": 1.742510932008404e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.8859042003018767e-15,
+      "finite": 2.497941396028013e-13,
+      "single_pole": 5.536730397090901e-13,
+      "double_pole": 1.7959613805516567e-14
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 7.3,
+      "export_s": 0.83,
+      "double_double_s_per_point": 60.65,
+      "double_s_per_point": 24.2375
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 5.433882185937215e-13,
+   "max_binary64_vs_dd": 1.7423510360832417e-13,
+   "max_catani_dd": 4.5672571985221924e-27
+  },
+  {
+   "id": "B08",
+   "class": "Q-heavy",
+   "process": "g g > t t~",
+   "restriction": "default",
+   "restriction_code": "4F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_ttx_4fs.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s (4F: plain loop_sm, WT = 0; = no_widths smoke)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.6979830527830937e-14,
+     "max_binary64_vs_dd": 2.243774300852986e-14,
+     "max_catani_dd": 1.6546091491868987e-30,
+     "max_catani_binary64": 2.4560606163145567e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.0925164364064087e-15,
+      "finite": 3.692942197664833e-15,
+      "single_pole": 5.457912480699014e-15,
+      "double_pole": 9.695597769888345e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 6.06,
+      "export_s": 0.92,
+      "double_double_s_per_point": 5.1625,
+      "double_s_per_point": 0.16
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.6979830527830937e-14,
+   "max_binary64_vs_dd": 2.243774300852986e-14,
+   "max_catani_dd": 1.6546091491868987e-30
+  },
+  {
+   "id": "C01",
+   "class": "Q-heavy",
+   "process": "g g > b b~",
+   "restriction": "default",
+   "restriction_code": "4F",
+   "tier": "default",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_bbx_4fs.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~10 s",
+   "extras": [
+    "nc",
+    "ap",
+    "ward",
+    "sp"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)",
+    "ward": "MQ-WARD (generic native Ward input)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "fail",
+   "tiers": {
+    "default": {
+     "points": [
+      0,
+      1
+     ],
+     "passed": false,
+     "checks": 40,
+     "failures": 1,
+     "max_dd_vs_reference": 3.249534992413593e-11,
+     "max_binary64_vs_dd": 2.1924066184314076e-15,
+     "max_catani_dd": 1.4122821815879352e-27,
+     "max_catani_binary64": 8.646497573367202e-16,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 6.588228694338364e-16,
+      "finite": 3.249628490962249e-11,
+      "single_pole": 4.723718147976397e-13,
+      "double_pole": 4.824476610231007e-13
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.85,
+      "export_s": 0.83,
+      "double_double_s_per_point": 5.445,
+      "double_s_per_point": 0.16
+     },
+     "failed_checks": [
+      {
+       "rule": "1",
+       "point": 1,
+       "carrier": "double-double",
+       "sector": "QCD^6",
+       "coefficient": "finite",
+       "error": 3.249534992413593e-11,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 9.04287131524019e-17; status 216; its double pole off its Born x the universal factor by 4.82e-13; second providers none)"
+      }
+     ]
+    },
+    "nightly": {
+     "points": [
+      2,
+      3
+     ],
+     "passed": false,
+     "checks": 48,
+     "failures": 1,
+     "max_dd_vs_reference": 7.984121361418671e-13,
+     "max_binary64_vs_dd": 3.244964300885704e-15,
+     "max_catani_dd": 1.2260677575983071e-27,
+     "max_catani_binary64": 9.976784031427668e-16,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 3.547138315329884e-16,
+      "finite": 7.978692301903229e-13,
+      "single_pole": 7.557814655986036e-15,
+      "double_pole": 6.565100549785048e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.98,
+      "export_s": 0.56,
+      "double_double_s_per_point": 5.475,
+      "double_s_per_point": 0.165,
+      "ap_s": 9.41
+     },
+     "failed_checks": [
+      {
+       "rule": "6",
+       "point": 2,
+       "carrier": "arbitrary-40",
+       "sector": "QCD^6",
+       "coefficient": "finite",
+       "error": 4.1236107649288384e-32,
+       "bound": 1e-35,
+       "note": "against 60 digits"
+      }
+     ]
+    }
+   },
+   "variants": [
+    {
+     "id": "C01@params",
+     "gating": true,
+     "notes": "S4: MB = 4.5, aS = 0.13 at run time (cond(MB) and reglog CT terms)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/gg_bbx_4fs_params.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "status": "fail",
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": false,
+       "checks": 80,
+       "failures": 1,
+       "max_dd_vs_reference": 2.6863593165553257e-11,
+       "max_binary64_vs_dd": 5.571066219110526e-15,
+       "max_catani_dd": 2.709382798682275e-28,
+       "max_catani_binary64": 6.6399861255029114e-15,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 8.35001454911357e-16,
+        "finite": 2.6865650128045145e-11,
+        "single_pole": 3.7468870821802464e-13,
+        "double_pole": 3.6947412116891067e-13
+       },
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 0.0,
+        "export_s": 0.0,
+        "double_double_s_per_point": 5.1125,
+        "double_s_per_point": 0.155
+       },
+       "failed_checks": [
+        {
+         "rule": "1",
+         "point": 1,
+         "carrier": "double-double",
+         "sector": "QCD^6",
+         "coefficient": "finite",
+         "error": 2.6863593165553257e-11,
+         "bound": 1e-12,
+         "note": "against madloop; not a listed outlier (own accuracy 3.410217186727036e-15; status 216; its double pole off its Born x the universal factor by 3.7e-13; second providers none)"
+        }
+       ]
+      }
+     }
+    }
+   ],
+   "max_dd_vs_reference": 3.249534992413593e-11,
+   "max_binary64_vs_dd": 5.571066219110526e-15,
+   "max_catani_dd": 1.4122821815879352e-27
+  },
+  {
+   "id": "C02",
+   "class": "Q-heavy",
+   "process": "g g > g g",
+   "restriction": "default",
+   "restriction_code": "4F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_gg_4fs.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~10 s (b decoupled)",
+   "extras": [
+    "uv"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "fail",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": false,
+     "checks": 82,
+     "failures": 1,
+     "max_dd_vs_reference": 2.0952603644588113e-12,
+     "max_binary64_vs_dd": 8.991681095400892e-12,
+     "max_catani_dd": 1.0762118741900037e-29,
+     "max_catani_binary64": 5.4008500661760135e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 8.733178964272607e-16,
+      "finite": 6.896420730956532e-12,
+      "single_pole": 1.973177347111072e-13,
+      "double_pole": 8.209323865818622e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.68,
+      "export_s": 0.49,
+      "double_double_s_per_point": 6.66,
+      "double_s_per_point": 0.83,
+      "uv_s": 6.97
+     },
+     "failed_checks": [
+      {
+       "rule": "1",
+       "point": 0,
+       "carrier": "double-double",
+       "sector": "QCD^6",
+       "coefficient": "finite",
+       "error": 2.0952603644588113e-12,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 1.2165406888980595e-14; status 216; its double pole off its Born x the universal factor by 3.67e-16; second providers none)"
+      }
+     ]
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 2.0952603644588113e-12,
+   "max_binary64_vs_dd": 8.991681095400892e-12,
+   "max_catani_dd": 1.0762118741900037e-29
+  },
+  {
+   "id": "C03",
+   "class": "Q-heavy",
+   "process": "b b~ > h",
+   "restriction": "default",
+   "restriction_code": "4F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/bbx_h_4fs.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~10 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.7191057981521689e-15,
+     "max_binary64_vs_dd": 4.28755115915516e-16,
+     "max_catani_dd": 8.756424232568386e-30,
+     "max_catani_binary64": 3.8071142244625275e-16,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 3.1795151670601696e-16,
+      "finite": 2.115341086236083e-15,
+      "single_pole": 1.0279208406048828e-15,
+      "double_pole": 0.0
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.44,
+      "export_s": 0.12,
+      "double_double_s_per_point": 4.465,
+      "double_s_per_point": 0.0175
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.7191057981521689e-15,
+   "max_binary64_vs_dd": 4.28755115915516e-16,
+   "max_catani_dd": 8.756424232568386e-30
+  },
+  {
+   "id": "C04",
+   "class": "Q-heavy",
+   "process": "b b~ > h g",
+   "restriction": "default",
+   "restriction_code": "4F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/bbx_hg_4fs.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~15 s (x-rotated points)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.3709705498178263e-15,
+     "max_binary64_vs_dd": 1.8605247746943527e-15,
+     "max_catani_dd": 2.5510698373629224e-28,
+     "max_catani_binary64": 1.1081655643585638e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 9.535704245890967e-16,
+      "finite": 1.621937007388884e-15,
+      "single_pole": 1.6492418114105255e-15,
+      "double_pole": 8.875285535673135e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.23,
+      "export_s": 1.02,
+      "double_double_s_per_point": 4.71,
+      "double_s_per_point": 0.055
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [
+    {
+     "id": "C04@z",
+     "gating": false,
+     "notes": "the +-z beam-axis twin of the x-rotated points: a non-gating diagnostic (PLAN \u00a74.1)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/bbx_hg_4fs_z.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "status": "not-run",
+     "tiers": {}
+    }
+   ],
+   "max_dd_vs_reference": 1.3709705498178263e-15,
+   "max_binary64_vs_dd": 1.8605247746943527e-15,
+   "max_catani_dd": 2.5510698373629224e-28
+  },
+  {
+   "id": "C05",
+   "class": "Q-heavy",
+   "process": "g g > b b~ h",
+   "restriction": "default",
+   "restriction_code": "4F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_bbxh_4fs.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~20-60 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "fail",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": false,
+     "checks": 80,
+     "failures": 8,
+     "max_dd_vs_reference": 1.1687691439148637e-14,
+     "max_binary64_vs_dd": 2.336268247046395e-10,
+     "max_catani_dd": 4.601229264206404e-27,
+     "max_catani_binary64": 7.436104471599365e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 2.247060810113673e-15,
+      "finite": 2.336219416542618e-10,
+      "single_pole": 7.497532289807783e-13,
+      "double_pole": 5.275337621151692e-13
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 9.98,
+      "export_s": 0.75,
+      "double_double_s_per_point": 7.01,
+      "double_s_per_point": 0.3525
+     },
+     "failed_checks": [
+      {
+       "rule": "3",
+       "point": 0,
+       "carrier": "double",
+       "sector": "QCD^6 QED^2",
+       "coefficient": "finite",
+       "error": 2.182170387909009e-22,
+       "bound": 8.885827840940213e-23,
+       "note": "absolute error against 10 E"
+      },
+      {
+       "rule": "2",
+       "point": 0,
+       "carrier": "double",
+       "sector": "QCD^6 QED^2",
+       "coefficient": "finite",
+       "error": 4.802452393627148e-12,
+       "bound": 1e-12,
+       "note": "E = 1.96e-13"
+      },
+      {
+       "rule": "3",
+       "point": 1,
+       "carrier": "double",
+       "sector": "QCD^6 QED^2",
+       "coefficient": "finite",
+       "error": 2.5167356024644205e-19,
+       "bound": 2.6190649822408532e-20,
+       "note": "absolute error against 10 E"
+      },
+      {
+       "rule": "2",
+       "point": 1,
+       "carrier": "double",
+       "sector": "QCD^6 QED^2",
+       "coefficient": "finite",
+       "error": 2.336268247046395e-10,
+       "bound": 2.4312599022991487e-12,
+       "note": "E = 2.43e-12"
+      },
+      {
+       "rule": "3",
+       "point": 2,
+       "carrier": "double",
+       "sector": "QCD^6 QED^2",
+       "coefficient": "finite",
+       "error": 3.812593173379055e-22,
+       "bound": 1.193175945062973e-22,
+       "note": "absolute error against 10 E"
+      },
+      {
+       "rule": "2",
+       "point": 2,
+       "carrier": "double",
+       "sector": "QCD^6 QED^2",
+       "coefficient": "finite",
+       "error": 1.1630177866783172e-12,
+       "bound": 1e-12,
+       "note": "E = 3.64e-14"
+      },
+      {
+       "rule": "3",
+       "point": 3,
+       "carrier": "double",
+       "sector": "QCD^6 QED^2",
+       "coefficient": "finite",
+       "error": 2.1787112193418406e-22,
+       "bound": 8.458033774286198e-23,
+       "note": "absolute error against 10 E"
+      },
+      {
+       "rule": "2",
+       "point": 3,
+       "carrier": "double",
+       "sector": "QCD^6 QED^2",
+       "coefficient": "finite",
+       "error": 9.476303255576985e-12,
+       "bound": 1e-12,
+       "note": "E = 3.68e-13"
+      }
+     ]
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.1687691439148637e-14,
+   "max_binary64_vs_dd": 2.336268247046395e-10,
+   "max_catani_dd": 4.601229264206404e-27
+  },
+  {
+   "id": "C06",
+   "class": "Q-heavy",
+   "process": "g g > t t~ b b~",
+   "restriction": "default",
+   "restriction_code": "4F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_ttxbbx_4fs.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~1-4 min",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.873024736978662e-15,
+     "max_binary64_vs_dd": 1.5282730836695603e-13,
+     "max_catani_dd": 6.765324133475579e-27,
+     "max_catani_binary64": 5.6174954226577525e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 2.05876931041983e-15,
+      "finite": 1.5228597817830574e-13,
+      "single_pole": 5.931572642774381e-14,
+      "double_pole": 3.881591186096552e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 9.94,
+      "export_s": 0.92,
+      "double_double_s_per_point": 48.2575,
+      "double_s_per_point": 22.8425
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.873024736978662e-15,
+   "max_binary64_vs_dd": 1.5282730836695603e-13,
+   "max_catani_dd": 6.765324133475579e-27
+  },
+  {
+   "id": "C07",
+   "class": "Q-singletop",
+   "process": "u g > d t b~",
+   "restriction": "default",
+   "restriction_code": "4F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/ug_dtbx_4fs.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~20-60 s (4FS t-channel)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "fail",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": false,
+     "checks": 80,
+     "failures": 8,
+     "max_dd_vs_reference": 4.6510142702561815e-14,
+     "max_binary64_vs_dd": 1.7448479444446733e-14,
+     "max_catani_dd": 0.022257033582139523,
+     "max_catani_binary64": 0.022257033582139034,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 3.758064145532662e-15,
+      "finite": 2.9061663258115586e-14,
+      "single_pole": 5.6463195366508486e-14,
+      "double_pole": 7.070024232634056e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 7.2,
+      "export_s": 0.87,
+      "double_double_s_per_point": 4.895,
+      "double_s_per_point": 0.145
+     },
+     "failed_checks": [
+      {
+       "rule": "4",
+       "point": 0,
+       "carrier": "double-double",
+       "sector": "QCD^4 QED^4",
+       "coefficient": "single_pole",
+       "error": 0.001358031424364636,
+       "bound": 1e-24,
+       "note": "E = 1.19e-29"
+      },
+      {
+       "rule": "4",
+       "point": 0,
+       "carrier": "double",
+       "sector": "QCD^4 QED^4",
+       "coefficient": "single_pole",
+       "error": 0.0013580314243754649,
+       "bound": 1.1024357941994566e-12,
+       "note": "E = 1.1e-12"
+      },
+      {
+       "rule": "4",
+       "point": 1,
+       "carrier": "double-double",
+       "sector": "QCD^4 QED^4",
+       "coefficient": "single_pole",
+       "error": 0.022257033582139523,
+       "bound": 1e-24,
+       "note": "E = 3.7e-30"
+      },
+      {
+       "rule": "4",
+       "point": 1,
+       "carrier": "double",
+       "sector": "QCD^4 QED^4",
+       "coefficient": "single_pole",
+       "error": 0.022257033582139034,
+       "bound": 1e-12,
+       "note": "E = 6.1e-13"
+      },
+      {
+       "rule": "4",
+       "point": 2,
+       "carrier": "double-double",
+       "sector": "QCD^4 QED^4",
+       "coefficient": "single_pole",
+       "error": 0.0009224371100805377,
+       "bound": 1e-24,
+       "note": "E = 6.68e-30"
+      },
+      {
+       "rule": "4",
+       "point": 2,
+       "carrier": "double",
+       "sector": "QCD^4 QED^4",
+       "coefficient": "single_pole",
+       "error": 0.0009224371100872722,
+       "bound": 1e-12,
+       "note": "E = 1.53e-13"
+      },
+      {
+       "rule": "4",
+       "point": 3,
+       "carrier": "double-double",
+       "sector": "QCD^4 QED^4",
+       "coefficient": "single_pole",
+       "error": 0.0009978121527835656,
+       "bound": 1e-24,
+       "note": "E = 1.06e-29"
+      },
+      {
+       "rule": "4",
+       "point": 3,
+       "carrier": "double",
+       "sector": "QCD^4 QED^4",
+       "coefficient": "single_pole",
+       "error": 0.0009978121527923348,
+       "bound": 1.0641696062514927e-12,
+       "note": "E = 1.06e-12"
+      }
+     ]
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 4.6510142702561815e-14,
+   "max_binary64_vs_dd": 1.7448479444446733e-14,
+   "max_catani_dd": 0.022257033582139523
+  },
+  {
+   "id": "C08",
+   "class": "Q-heavy",
+   "process": "g g > c c~",
+   "restriction": "c_mass",
+   "restriction_code": "CM",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_ccx_cmass.json",
+    "providers": [
+     "madloop",
+     "recola"
+    ]
+   },
+   "reference_legend": "N ~10 s (+ Recola)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 2.6039518839708013e-13,
+     "max_binary64_vs_dd": 4.481361617486419e-15,
+     "max_catani_dd": 1.1657127018632817e-27,
+     "max_catani_binary64": 4.64398333961079e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.7451190609806322e-15,
+      "finite": 2.606714568867484e-13,
+      "single_pole": 3.271897352907602e-15,
+      "double_pole": 2.6982132189656334e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 6.06,
+      "export_s": 0.71,
+      "double_double_s_per_point": 5.2375,
+      "double_s_per_point": 0.1675
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 2.6039518839708013e-13,
+   "max_binary64_vs_dd": 4.481361617486419e-15,
+   "max_catani_dd": 1.1657127018632817e-27
+  },
+  {
+   "id": "C09",
+   "class": "Q-heavy",
+   "process": "g s > w- c",
+   "restriction": "c_mass",
+   "restriction_code": "CM",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gs_wmc_cmass.json",
+    "providers": [
+     "madloop",
+     "recola"
+    ]
+   },
+   "reference_legend": "N, S ~15 s (+ Recola; MQ-5F)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": "MQ-5F",
+   "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pending",
+   "tiers": {},
+   "variants": [],
+   "max_dd_vs_reference": null,
+   "max_binary64_vs_dd": null,
+   "max_catani_dd": null
+  },
+  {
+   "id": "D01",
+   "class": "Q-EWBorn",
+   "process": "u u~ > e- e+",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "default",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_emep.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s (+ analytic form factor)",
+   "extras": [
+    "ap"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "default": {
+     "points": [
+      0,
+      1
+     ],
+     "passed": true,
+     "checks": 40,
+     "failures": 0,
+     "max_dd_vs_reference": 1.7386008878349014e-15,
+     "max_binary64_vs_dd": 4.932559255722848e-15,
+     "max_catani_dd": 1.0017977958942646e-31,
+     "max_catani_binary64": 5.20496919211369e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 6.308456486646171e-16,
+      "finite": 7.888614039596303e-16,
+      "single_pole": 3.1939583678879526e-15,
+      "double_pole": 4.1988560495632384e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.81,
+      "export_s": 0.29,
+      "double_double_s_per_point": 4.54,
+      "double_s_per_point": 0.03
+     },
+     "failed_checks": []
+    },
+    "nightly": {
+     "points": [
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 48,
+     "failures": 0,
+     "max_dd_vs_reference": 8.095242819082367e-15,
+     "max_binary64_vs_dd": 1.8242391150414227e-15,
+     "max_catani_dd": 4.749279990701415e-32,
+     "max_catani_binary64": 1.7120907738817035e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 6.308456486646171e-16,
+      "finite": 6.797061678658163e-15,
+      "single_pole": 1.2840680804112799e-15,
+      "double_pole": 5.463115953051431e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.93,
+      "export_s": 0.29,
+      "double_double_s_per_point": 4.57,
+      "double_s_per_point": 0.03,
+      "ap_s": 5.6
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 8.095242819082367e-15,
+   "max_binary64_vs_dd": 4.932559255722848e-15,
+   "max_catani_dd": 1.0017977958942646e-31
+  },
+  {
+   "id": "D02",
+   "class": "Q-EWBorn",
+   "process": "u u~ > e- e+",
+   "restriction": "no_b_mass",
+   "restriction_code": "W",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_emep_widths.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "run on D01 with card widths",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 2.208717242755144e-15,
+     "max_binary64_vs_dd": 4.2619270017833455e-15,
+     "max_catani_dd": 2.109670258032505e-31,
+     "max_catani_binary64": 4.6134954722905805e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 6.308456488591435e-16,
+      "finite": 1.1952445518225488e-15,
+      "single_pole": 3.6671374266925156e-15,
+      "double_pole": 7.977826496630182e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 2.45,
+      "export_s": 0.83,
+      "double_double_s_per_point": 4.4775,
+      "double_s_per_point": 0.025
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 2.208717242755144e-15,
+   "max_binary64_vs_dd": 4.2619270017833455e-15,
+   "max_catani_dd": 2.109670258032505e-31
+  },
+  {
+   "id": "D05",
+   "class": "Q-EWBorn",
+   "process": "u u~ > e- e+ g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "default",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_emepg.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "R runs/g1/uux_emepg",
+   "extras": [
+    "nc",
+    "ward",
+    "uv",
+    "hel"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)",
+    "ward": "MQ-WARD (generic native Ward input)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "default": {
+     "points": [
+      0,
+      1
+     ],
+     "passed": true,
+     "checks": 40,
+     "failures": 0,
+     "max_dd_vs_reference": 7.581879121449775e-14,
+     "max_binary64_vs_dd": 2.473046960830994e-14,
+     "max_catani_dd": 4.9162419161760654e-32,
+     "max_catani_binary64": 3.2702354143063263e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 7.254461774590104e-16,
+      "finite": 1.0054926082280581e-13,
+      "single_pole": 1.1693569057216561e-14,
+      "double_pole": 2.6042865071732083e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 7.5,
+      "export_s": 2.07,
+      "double_double_s_per_point": 5.015,
+      "double_s_per_point": 0.07
+     },
+     "failed_checks": []
+    },
+    "nightly": {
+     "points": [
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 171,
+     "failures": 0,
+     "max_dd_vs_reference": 1.0320154020747693e-14,
+     "max_binary64_vs_dd": 5.2093538309378154e-15,
+     "max_catani_dd": 1.6239475035923482e-31,
+     "max_catani_binary64": 4.924033670856324e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 5.25171259638481e-16,
+      "finite": 1.4589692813424247e-14,
+      "single_pole": 6.529696824396429e-15,
+      "double_pole": 2.6042865071732083e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 8.38,
+      "export_s": 1.74,
+      "double_double_s_per_point": 5.01,
+      "double_s_per_point": 0.075,
+      "uv_s": 5.37,
+      "hel_s": 4.41
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 7.581879121449775e-14,
+   "max_binary64_vs_dd": 2.473046960830994e-14,
+   "max_catani_dd": 1.6239475035923482e-31
+  },
+  {
+   "id": "D06",
+   "class": "Q-EWBorn",
+   "process": "u u~ > e- e+ g g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "dilepton",
+    "path": "tests/fixtures/loop/dilepton-two-gluon.json",
+    "points": "precision",
+    "providers": [
+     "madloop",
+     "recola"
+    ]
+   },
+   "reference_legend": "E dilepton-two-gluon (MadLoop + Recola, binary64) + R",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 8.557281606221314e-14,
+     "max_binary64_vs_dd": 1.3527178069119578e-12,
+     "max_catani_dd": 7.784495996885612e-32,
+     "max_catani_binary64": 2.99170574790621e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 2.2006447640142412e-16,
+      "finite": 1.267144990849853e-12,
+      "single_pole": 3.896700984845504e-14,
+      "double_pole": 3.433935883177045e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 7.81,
+      "export_s": 2.37,
+      "double_double_s_per_point": 6.043333333333333,
+      "double_s_per_point": 0.32666666666666666
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 8.557281606221314e-14,
+   "max_binary64_vs_dd": 1.3527178069119578e-12,
+   "max_catani_dd": 7.784495996885612e-32
+  },
+  {
+   "id": "D07",
+   "class": "Q-EWBorn",
+   "process": "u u~ > e- e+ g g g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/uux_emepggg.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E required/uux_emepggg",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 1.7165959467985897e-13,
+     "max_binary64_vs_dd": 3.2302714487331506e-13,
+     "max_catani_dd": 8.385054499310714e-30,
+     "max_catani_binary64": 9.64091435688623e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.0950153621234667e-14,
+      "finite": 4.946867395531185e-13,
+      "single_pole": 2.5480752849655984e-13,
+      "double_pole": 1.3544791046853174e-14
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 9.96,
+      "export_s": 2.06,
+      "double_double_s_per_point": 25.45,
+      "double_s_per_point": 6.609999999999999
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.7165959467985897e-13,
+   "max_binary64_vs_dd": 3.2302714487331506e-13,
+   "max_catani_dd": 8.385054499310714e-30
+  },
+  {
+   "id": "D08",
+   "class": "Q-EWBorn",
+   "process": "u u~ > e- e+ d d~ g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/uux_emepddxg.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E required/uux_emepddxg",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 6.018198023281817e-14,
+     "max_binary64_vs_dd": 8.859610143786577e-13,
+     "max_catani_dd": 1.3782066458827704e-30,
+     "max_catani_binary64": 9.670389883295015e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.0054321904331528e-14,
+      "finite": 8.434120553434587e-13,
+      "single_pole": 1.476912715212834e-13,
+      "double_pole": 1.60609748295634e-14
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.84,
+      "export_s": 3.56,
+      "double_double_s_per_point": 10.423333333333334,
+      "double_s_per_point": 1.1466666666666667
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 6.018198023281817e-14,
+   "max_binary64_vs_dd": 8.859610143786577e-13,
+   "max_catani_dd": 1.3782066458827704e-30
+  },
+  {
+   "id": "D09",
+   "class": "Q-EWBorn",
+   "process": "u u~ > e- e+ m- m+",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/uux_emepmummp.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E required/uux_emepmummp",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 4.149427462669472e-14,
+     "max_binary64_vs_dd": 2.688083811515513e-14,
+     "max_catani_dd": 3.6298319286293405e-31,
+     "max_catani_binary64": 8.86764006208256e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.438886502195126e-15,
+      "finite": 4.9295210170535187e-14,
+      "single_pole": 6.650730046561934e-15,
+      "double_pole": 3.1491511912609848e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 3.21,
+      "export_s": 0.57,
+      "double_double_s_per_point": 4.81,
+      "double_s_per_point": 0.06333333333333334
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 4.149427462669472e-14,
+   "max_binary64_vs_dd": 2.688083811515513e-14,
+   "max_catani_dd": 3.6298319286293405e-31
+  },
+  {
+   "id": "D10",
+   "class": "Q-EWBorn",
+   "process": "u u~ > u u~ e+ e-",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/uux_uuxepem.json",
+    "providers": [
+     "madloop",
+     "recola"
+    ]
+   },
+   "reference_legend": "E required/uux_uuxepem (the 22x case)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "fail",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": false,
+     "checks": 57,
+     "failures": 3,
+     "max_dd_vs_reference": 3.0618611182099912e-15,
+     "max_binary64_vs_dd": 1.7211726680174758e-12,
+     "max_catani_dd": 2.983452203636299e-30,
+     "max_catani_binary64": 1.7218737725788538e-12,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 2.3306145751228112e-15,
+      "finite": 1.2096231622410612e-12,
+      "single_pole": 6.570512846718585e-13,
+      "double_pole": 1.7208266871766099e-12
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.69,
+      "export_s": 2.3,
+      "double_double_s_per_point": 5.596666666666667,
+      "double_s_per_point": 0.19333333333333333
+     },
+     "failed_checks": [
+      {
+       "rule": "3",
+       "point": 2,
+       "carrier": "double",
+       "sector": "QCD^6 QED^4",
+       "coefficient": "double_pole",
+       "error": 7.396986902386912e-25,
+       "bound": 3.2466708019712307e-25,
+       "note": "absolute error against 10 E"
+      },
+      {
+       "rule": "2",
+       "point": 2,
+       "carrier": "double",
+       "sector": "QCD^6 QED^4",
+       "coefficient": "double_pole",
+       "error": 1.7211726680174758e-12,
+       "bound": 1e-12,
+       "note": "E = 7.55e-14"
+      },
+      {
+       "rule": "4",
+       "point": 2,
+       "carrier": "double",
+       "sector": "QCD^6 QED^4",
+       "coefficient": "double_pole",
+       "error": 1.7218737725788538e-12,
+       "bound": 1e-12,
+       "note": "E = 7.55e-14"
+      }
+     ]
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 3.0618611182099912e-15,
+   "max_binary64_vs_dd": 1.7211726680174758e-12,
+   "max_catani_dd": 2.983452203636299e-30
+  },
+  {
+   "id": "D11",
+   "class": "Q-EWBorn",
+   "process": "u u~ > z g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_zg.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15-30 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "fail",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": false,
+     "checks": 80,
+     "failures": 1,
+     "max_dd_vs_reference": 4.26840435290197e-12,
+     "max_binary64_vs_dd": 3.3911386276184324e-14,
+     "max_catani_dd": 2.5117389065872104e-30,
+     "max_catani_binary64": 3.799442319369696e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 7.058337981462467e-16,
+      "finite": 1.517431585559027e-14,
+      "single_pole": 4.234492966625929e-12,
+      "double_pole": 1.0777697996205579e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 6.75,
+      "export_s": 2.13,
+      "double_double_s_per_point": 4.76,
+      "double_s_per_point": 0.0625
+     },
+     "failed_checks": [
+      {
+       "rule": "1",
+       "point": 1,
+       "carrier": "double-double",
+       "sector": "QCD^4 QED^2",
+       "coefficient": "single_pole",
+       "error": 4.26840435290197e-12,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy 2.1675357476383646e-14; status 216; its double pole off its Born x the universal factor by 8.69e-16; second providers none)"
+      }
+     ]
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 4.26840435290197e-12,
+   "max_binary64_vs_dd": 3.3911386276184324e-14,
+   "max_catani_dd": 2.5117389065872104e-30
+  },
+  {
+   "id": "D12",
+   "class": "Q-EWBorn",
+   "process": "u d~ > e+ ve g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/udx_epveg.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.1311484650886014e-14,
+     "max_binary64_vs_dd": 1.195482625415849e-14,
+     "max_catani_dd": 1.3852763652684824e-31,
+     "max_catani_binary64": 2.550640331442277e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.2629082206575723e-15,
+      "finite": 1.693003972003646e-15,
+      "single_pole": 4.187618454606717e-15,
+      "double_pole": 9.522523205222952e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.42,
+      "export_s": 0.38,
+      "double_double_s_per_point": 4.65,
+      "double_s_per_point": 0.0375
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.1311484650886014e-14,
+   "max_binary64_vs_dd": 1.195482625415849e-14,
+   "max_catani_dd": 1.3852763652684824e-31
+  },
+  {
+   "id": "D13",
+   "class": "Q-EWBorn",
+   "process": "u g > a u",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/ug_au.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~10 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 8.068206769140662e-15,
+     "max_binary64_vs_dd": 1.1980199384913944e-14,
+     "max_catani_dd": 4.859950205609392e-31,
+     "max_catani_binary64": 1.6103578157950673e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.0455436435501673e-15,
+      "finite": 1.5376978990981778e-14,
+      "single_pole": 7.505000983112247e-15,
+      "double_pole": 1.2869892922571884e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.32,
+      "export_s": 1.49,
+      "double_double_s_per_point": 4.6875,
+      "double_s_per_point": 0.045
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 8.068206769140662e-15,
+   "max_binary64_vs_dd": 1.1980199384913944e-14,
+   "max_catani_dd": 4.859950205609392e-31
+  },
+  {
+   "id": "D15",
+   "class": "Q-EWBorn",
+   "process": "u u~ > z z",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_zz.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.4232766006017065e-13,
+     "max_binary64_vs_dd": 1.5971605670800956e-12,
+     "max_catani_dd": 1.5121885813987106e-30,
+     "max_catani_binary64": 1.1915028943069213e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 8.692260630250216e-16,
+      "finite": 1.601213485230655e-12,
+      "single_pole": 9.096971452505835e-15,
+      "double_pole": 1.099244281022363e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 2.54,
+      "export_s": 0.49,
+      "double_double_s_per_point": 4.7025,
+      "double_s_per_point": 0.0475
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.4232766006017065e-13,
+   "max_binary64_vs_dd": 1.5971605670800956e-12,
+   "max_catani_dd": 1.5121885813987106e-30
+  },
+  {
+   "id": "D16",
+   "class": "Q-EWBorn",
+   "process": "u u~ > w+ w-",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_wpwm.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~15 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [
+    {
+     "point": 0,
+     "sector": "QCD^2 QED^4",
+     "coefficient": "finite",
+     "E": 3.93e-09,
+     "true_error": 3.06e-11
+    },
+    {
+     "point": 0,
+     "sector": "QCD^2 QED^4",
+     "coefficient": "single_pole",
+     "E": 3.18e-09,
+     "true_error": 9.81e-13
+    },
+    {
+     "point": 3,
+     "sector": "QCD^2 QED^4",
+     "coefficient": "finite",
+     "E": 6.86e-09,
+     "true_error": 2.97e-11
+    },
+    {
+     "point": 3,
+     "sector": "QCD^2 QED^4",
+     "coefficient": "single_pole",
+     "E": 1.76e-09,
+     "true_error": 4.23e-13
+    }
+   ],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.213468378948683e-13,
+     "max_binary64_vs_dd": 1.3971113894164087e-12,
+     "max_catani_dd": 5.4961926373167875e-27,
+     "max_catani_binary64": 1.1529970544151033e-12,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 2.320847990361725e-13,
+      "finite": 3.053554119270413e-11,
+      "single_pole": 1.2138449916852763e-12,
+      "double_pole": 3.997537008977393e-13
+     },
+     "binary64_out_of_scope": [
+      {
+       "point": 0,
+       "sector": "QCD^2 QED^4",
+       "coefficient": "finite",
+       "E": 3.934203478331815e-09,
+       "true_error": 3.0577607318385554e-11
+      },
+      {
+       "point": 0,
+       "sector": "QCD^2 QED^4",
+       "coefficient": "single_pole",
+       "E": 3.1752667016752506e-09,
+       "true_error": 9.81335366317479e-13
+      },
+      {
+       "point": 3,
+       "sector": "QCD^2 QED^4",
+       "coefficient": "finite",
+       "E": 6.855906479776484e-09,
+       "true_error": 2.972663484721789e-11
+      },
+      {
+       "point": 3,
+       "sector": "QCD^2 QED^4",
+       "coefficient": "single_pole",
+       "E": 1.7643726726923208e-09,
+       "true_error": 4.227602156864259e-13
+      }
+     ],
+     "timings": {
+      "generate_s": 2.86,
+      "export_s": 0.45,
+      "double_double_s_per_point": 4.6775,
+      "double_s_per_point": 0.045
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.213468378948683e-13,
+   "max_binary64_vs_dd": 1.3971113894164087e-12,
+   "max_catani_dd": 5.4961926373167875e-27
+  },
+  {
+   "id": "D17",
+   "class": "Q-EWBorn",
+   "process": "b b~ > w+ w-",
+   "restriction": "default",
+   "restriction_code": "5F*",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/bbx_wpwm.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~15 s (MQ-5F)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 3.4181966379103775e-13,
+     "max_binary64_vs_dd": 6.586717720765248e-13,
+     "max_catani_dd": 1.8670735599177758e-27,
+     "max_catani_binary64": 5.902932925892507e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 3.897418984114192e-14,
+      "finite": 8.842787283763999e-13,
+      "single_pole": 9.390448130916993e-13,
+      "double_pole": 2.539595260051097e-14
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.85,
+      "export_s": 0.59,
+      "double_double_s_per_point": 4.7675,
+      "double_s_per_point": 0.0775
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 3.4181966379103775e-13,
+   "max_binary64_vs_dd": 6.586717720765248e-13,
+   "max_catani_dd": 1.8670735599177758e-27
+  },
+  {
+   "id": "D18",
+   "class": "Q-EWBorn",
+   "process": "u u~ > z h",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_zh.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~15 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 5.637827783785664e-15,
+     "max_binary64_vs_dd": 1.9938159765890662e-12,
+     "max_catani_dd": 1.0805805794645062e-29,
+     "max_catani_binary64": 2.590212739897575e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 7.380531188418017e-16,
+      "finite": 1.9938965123158536e-12,
+      "single_pole": 2.588114835410617e-13,
+      "double_pole": 5.894904040963827e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 2.01,
+      "export_s": 0.24,
+      "double_double_s_per_point": 4.5275,
+      "double_s_per_point": 0.0275
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 5.637827783785664e-15,
+   "max_binary64_vs_dd": 1.9938159765890662e-12,
+   "max_catani_dd": 1.0805805794645062e-29
+  },
+  {
+   "id": "D19",
+   "class": "Q-EWBorn",
+   "process": "u d > u d h",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/ud_udh.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~20-60 s (VBF, QCD=0)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "fail",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": false,
+     "checks": 80,
+     "failures": 8,
+     "max_dd_vs_reference": 6.891441179862777e-16,
+     "max_binary64_vs_dd": 3.3170326383894936e-15,
+     "max_catani_dd": 0.33461667180012294,
+     "max_catani_binary64": 0.334616671800124,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 9.388193356660617e-16,
+      "finite": 2.5931837676697686e-15,
+      "single_pole": 3.25075750057329e-15,
+      "double_pole": 3.5148955709466287e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 3.98,
+      "export_s": 0.46,
+      "double_double_s_per_point": 4.5575,
+      "double_s_per_point": 0.055
+     },
+     "failed_checks": [
+      {
+       "rule": "4",
+       "point": 0,
+       "carrier": "double-double",
+       "sector": "QCD^2 QED^6",
+       "coefficient": "single_pole",
+       "error": 0.1051856197022888,
+       "bound": 1e-24,
+       "note": "E = 9.34e-31"
+      },
+      {
+       "rule": "4",
+       "point": 0,
+       "carrier": "double",
+       "sector": "QCD^2 QED^6",
+       "coefficient": "single_pole",
+       "error": 0.10518561970228738,
+       "bound": 1e-12,
+       "note": "E = 9.08e-15"
+      },
+      {
+       "rule": "4",
+       "point": 1,
+       "carrier": "double-double",
+       "sector": "QCD^2 QED^6",
+       "coefficient": "single_pole",
+       "error": 0.33461667180012294,
+       "bound": 1e-24,
+       "note": "E = 2.57e-30"
+      },
+      {
+       "rule": "4",
+       "point": 1,
+       "carrier": "double",
+       "sector": "QCD^2 QED^6",
+       "coefficient": "single_pole",
+       "error": 0.334616671800124,
+       "bound": 1e-12,
+       "note": "E = 3.91e-14"
+      },
+      {
+       "rule": "4",
+       "point": 2,
+       "carrier": "double-double",
+       "sector": "QCD^2 QED^6",
+       "coefficient": "single_pole",
+       "error": 0.09318092986388878,
+       "bound": 1e-24,
+       "note": "E = 9.68e-31"
+      },
+      {
+       "rule": "4",
+       "point": 2,
+       "carrier": "double",
+       "sector": "QCD^2 QED^6",
+       "coefficient": "single_pole",
+       "error": 0.09318092986388904,
+       "bound": 1e-12,
+       "note": "E = 2.12e-14"
+      },
+      {
+       "rule": "4",
+       "point": 3,
+       "carrier": "double-double",
+       "sector": "QCD^2 QED^6",
+       "coefficient": "single_pole",
+       "error": 0.19702609358064052,
+       "bound": 1e-24,
+       "note": "E = 9.44e-31"
+      },
+      {
+       "rule": "4",
+       "point": 3,
+       "carrier": "double",
+       "sector": "QCD^2 QED^6",
+       "coefficient": "single_pole",
+       "error": 0.1970260935806376,
+       "bound": 1e-12,
+       "note": "E = 1.44e-14"
+      }
+     ]
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 6.891441179862777e-16,
+   "max_binary64_vs_dd": 3.3170326383894936e-15,
+   "max_catani_dd": 0.33461667180012294
+  },
+  {
+   "id": "D20",
+   "class": "Q-EWBorn",
+   "process": "e+ e- > u u~ g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/epem_uuxg.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~10 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.0607040777935069e-13,
+     "max_binary64_vs_dd": 2.036820390276846e-12,
+     "max_catani_dd": 7.011944964297595e-30,
+     "max_catani_binary64": 1.5552147586783802e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 5.139682419192886e-14,
+      "finite": 2.060677511353198e-12,
+      "single_pole": 8.811253428361264e-14,
+      "double_pole": 4.981596113632229e-14
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.83,
+      "export_s": 1.72,
+      "double_double_s_per_point": 4.89,
+      "double_s_per_point": 0.0775
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.0607040777935069e-13,
+   "max_binary64_vs_dd": 2.036820390276846e-12,
+   "max_catani_dd": 7.011944964297595e-30
+  },
+  {
+   "id": "D21",
+   "class": "Q-EWBorn",
+   "process": "e+ e- > t t~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "process-control",
+    "path": "tests/fixtures/loop/required/top-pair-ee-model-control.json",
+    "key": "ee",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E required/top-pair-ee-model-control.json (committed by MQ-REF; MadLoop binary64)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 1.3493056897807905e-14,
+     "max_binary64_vs_dd": 1.7849578185996357e-14,
+     "max_catani_dd": 1.2362809694291508e-31,
+     "max_catani_binary64": 1.7521283920058066e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 9.766018291990764e-16,
+      "finite": 1.4098821066233027e-14,
+      "single_pole": 1.2515202800041477e-14,
+      "double_pole": 0.0
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 3.22,
+      "export_s": 0.32,
+      "double_double_s_per_point": 4.673333333333333,
+      "double_s_per_point": 0.04
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.3493056897807905e-14,
+   "max_binary64_vs_dd": 1.7849578185996357e-14,
+   "max_catani_dd": 1.2362809694291508e-31
+  },
+  {
+   "id": "D23",
+   "class": "Q-EWBorn",
+   "process": "a g > u u~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/ag_uux.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~10 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.4061840554677431e-14,
+     "max_binary64_vs_dd": 3.116052514260294e-13,
+     "max_catani_dd": 3.2085263665781757e-31,
+     "max_catani_binary64": 3.124576144923025e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 4.494487821343499e-16,
+      "finite": 6.344463355432686e-14,
+      "single_pole": 3.115709583785335e-13,
+      "double_pole": 1.2697897183437391e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.02,
+      "export_s": 0.72,
+      "double_double_s_per_point": 4.725,
+      "double_s_per_point": 0.05
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.4061840554677431e-14,
+   "max_binary64_vs_dd": 3.116052514260294e-13,
+   "max_catani_dd": 3.2085263665781757e-31
+  },
+  {
+   "id": "D24",
+   "class": "Q-EWBorn",
+   "process": "e- u > e- u",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/emu_emu.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~10 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 7.299032743674404e-16,
+     "max_binary64_vs_dd": 4.103080228086518e-15,
+     "max_catani_dd": 7.972353351735542e-32,
+     "max_catani_binary64": 4.195037166857207e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 0.0,
+      "finite": 1.0817696157134587e-15,
+      "single_pole": 4.754375455771501e-15,
+      "double_pole": 7.338345495317883e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 2.05,
+      "export_s": 0.28,
+      "double_double_s_per_point": 4.5275,
+      "double_s_per_point": 0.0325
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 7.299032743674404e-16,
+   "max_binary64_vs_dd": 4.103080228086518e-15,
+   "max_catani_dd": 7.972353351735542e-32
+  },
+  {
+   "id": "D25",
+   "class": "Q-EWBorn",
+   "process": "u d~ > w+ a",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/udx_wpa.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~15 s",
+   "extras": [
+    "sp"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.3991216559631416e-15,
+     "max_binary64_vs_dd": 6.173830930892738e-14,
+     "max_catani_dd": 1.5099443502498134e-27,
+     "max_catani_binary64": 1.924271760780483e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 7.808326174539588e-16,
+      "finite": 6.189593135940479e-14,
+      "single_pole": 1.8261716317995192e-14,
+      "double_pole": 4.279815223426959e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 7.09,
+      "export_s": 0.43,
+      "double_double_s_per_point": 4.7075,
+      "double_s_per_point": 0.0375
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [
+    {
+     "id": "D25@zero",
+     "gating": true,
+     "notes": "S3: the radiation-zero points (0, 1) and their regular neighbour (2); no division by the Born",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/udx_wpa_zero.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "status": "pass",
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2
+       ],
+       "passed": true,
+       "checks": 60,
+       "failures": 0,
+       "max_dd_vs_reference": 4.760026922735104e-15,
+       "max_binary64_vs_dd": 4.4314035516946935e-13,
+       "max_catani_dd": 2.3186703713618144e-27,
+       "max_catani_binary64": 2.5738648403429967e-14,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 1.501849454222615e-16,
+        "finite": 4.383803282467363e-13,
+        "single_pole": 2.6428692596551415e-14,
+        "double_pole": 1.1395650639596003e-15
+       },
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 0.0,
+        "export_s": 0.0,
+        "double_double_s_per_point": 4.566666666666666,
+        "double_s_per_point": 0.03333333333333333
+       },
+       "failed_checks": []
+      }
+     }
+    }
+   ],
+   "max_dd_vs_reference": 4.760026922735104e-15,
+   "max_binary64_vs_dd": 4.4314035516946935e-13,
+   "max_catani_dd": 2.3186703713618144e-27
+  },
+  {
+   "id": "D26",
+   "class": "Q-heavy",
+   "process": "u u~ > e- e+ g",
+   "restriction": "default",
+   "restriction_code": "4F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_emepg_4fs.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s (4F twin of D05)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 3.3042679337445256e-14,
+     "max_binary64_vs_dd": 8.50862094559073e-14,
+     "max_catani_dd": 1.5132859176745711e-31,
+     "max_catani_binary64": 5.677371298345645e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 7.254461774590104e-16,
+      "finite": 1.1812888879334976e-13,
+      "single_pole": 1.141279546958675e-14,
+      "double_pole": 2.6042865071732083e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 6.33,
+      "export_s": 2.36,
+      "double_double_s_per_point": 4.8525,
+      "double_s_per_point": 0.075
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 3.3042679337445256e-14,
+   "max_binary64_vs_dd": 8.50862094559073e-14,
+   "max_catani_dd": 1.5132859176745711e-31
+  },
+  {
+   "id": "D27",
+   "class": "Q-EWBorn",
+   "process": "g u > e+ ve d",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gu_epved.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 2.294684904309366e-13,
+     "max_binary64_vs_dd": 4.340502142203895e-14,
+     "max_catani_dd": 6.538084530705254e-31,
+     "max_catani_binary64": 4.149928559318689e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 5.923640024617029e-16,
+      "finite": 1.620264653360092e-14,
+      "single_pole": 2.7287351185296557e-13,
+      "double_pole": 9.277000988956786e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 2.77,
+      "export_s": 0.37,
+      "double_double_s_per_point": 4.6875,
+      "double_s_per_point": 0.04
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 2.294684904309366e-13,
+   "max_binary64_vs_dd": 4.340502142203895e-14,
+   "max_catani_dd": 6.538084530705254e-31
+  },
+  {
+   "id": "E01",
+   "class": "Q-ttX",
+   "process": "g g > t t~ h",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_ttxh.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~30-90 s",
+   "extras": [
+    "nc",
+    "ward",
+    "uv"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)",
+    "ward": "MQ-WARD (generic native Ward input)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 82,
+     "failures": 0,
+     "max_dd_vs_reference": 3.586354568865162e-13,
+     "max_binary64_vs_dd": 7.371906562895969e-12,
+     "max_catani_dd": 3.098966660605933e-27,
+     "max_catani_binary64": 3.1082233349956357e-12,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 9.541179896617765e-16,
+      "finite": 7.730542019779842e-12,
+      "single_pole": 3.0652930728323594e-12,
+      "double_pole": 1.4643851315901897e-12
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 7.46,
+      "export_s": 0.54,
+      "double_double_s_per_point": 7.85,
+      "double_s_per_point": 0.3275,
+      "uv_s": 8.64
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 3.586354568865162e-13,
+   "max_binary64_vs_dd": 7.371906562895969e-12,
+   "max_catani_dd": 3.098966660605933e-27
+  },
+  {
+   "id": "E02",
+   "class": "Q-ttX",
+   "process": "g g > t t~ z",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gg_ttxz.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~30-120 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 7.184965378413263e-14,
+     "max_binary64_vs_dd": 3.151729333346007e-12,
+     "max_catani_dd": 4.164265060815324e-27,
+     "max_catani_binary64": 3.1502475687662446e-12,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 3.56258956738948e-15,
+      "finite": 1.8144462709252068e-12,
+      "single_pole": 3.134721402401298e-12,
+      "double_pole": 1.3864920077313601e-12
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.83,
+      "export_s": 1.5,
+      "double_double_s_per_point": 8.7075,
+      "double_s_per_point": 0.585
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 7.184965378413263e-14,
+   "max_binary64_vs_dd": 3.151729333346007e-12,
+   "max_catani_dd": 4.164265060815324e-27
+  },
+  {
+   "id": "E05",
+   "class": "Q-ttX",
+   "process": "e+ e- > t t~ h",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "model-control",
+    "path": "tests/fixtures/loop/top-pair-higgs-model.json",
+    "key": "ee",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E top-pair-higgs-model.json (MadLoop binary64)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 5.8139605468115996e-15,
+     "max_binary64_vs_dd": 6.6061695150453176e-15,
+     "max_catani_dd": 2.4274707832205693e-31,
+     "max_catani_binary64": 3.4904228474946447e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 9.876386462834042e-16,
+      "finite": 7.625644110268673e-15,
+      "single_pole": 9.257208421616232e-15,
+      "double_pole": 0.0
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 3.79,
+      "export_s": 0.71,
+      "double_double_s_per_point": 5.08,
+      "double_s_per_point": 0.09000000000000001
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 5.8139605468115996e-15,
+   "max_binary64_vs_dd": 6.6061695150453176e-15,
+   "max_catani_dd": 2.4274707832205693e-31
+  },
+  {
+   "id": "E06",
+   "class": "Q-ttX",
+   "process": "g g > t t~ e- e+ g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/gg_ttxemepg_qcd.json",
+    "providers": [
+     "madloop",
+     "recola",
+     "openloops"
+    ]
+   },
+   "reference_legend": "E required/gg_ttxemepg_qcd + point 2 (rule 1 outlier: OpenLoops)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [
+    {
+     "point": 0,
+     "sector": "total",
+     "coefficient": "finite",
+     "provider": "madloop",
+     "note": "MadLoop binary64 (status 216, own accuracy 5.44e-12) 1.38e-12 from DD; OpenLoops 2.0e-14, Recola 9.2e-13"
+    }
+   ],
+   "listed_out_of_scope": [
+    {
+     "point": 2,
+     "sector": "QCD^8 QED^4",
+     "coefficient": "finite",
+     "E": 3.42e-08,
+     "true_error": 5.66e-09
+    }
+   ],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 57,
+     "failures": 0,
+     "max_dd_vs_reference": 1.382332489036081e-12,
+     "max_binary64_vs_dd": 1.343705445858638e-12,
+     "max_catani_dd": 5.723097486124992e-27,
+     "max_catani_binary64": 1.17684949458433e-12,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.6377576588744472e-15,
+      "finite": 5.658524050448956e-09,
+      "single_pole": 1.1087054602759246e-12,
+      "double_pole": 7.252797282289281e-13
+     },
+     "binary64_out_of_scope": [
+      {
+       "point": 2,
+       "sector": "QCD^8 QED^4",
+       "coefficient": "finite",
+       "E": 3.420535666521133e-08,
+       "true_error": 5.658542733911787e-09
+      }
+     ],
+     "timings": {
+      "generate_s": 9.69,
+      "export_s": 2.73,
+      "double_double_s_per_point": 49.23666666666667,
+      "double_s_per_point": 6.59
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.382332489036081e-12,
+   "max_binary64_vs_dd": 1.343705445858638e-12,
+   "max_catani_dd": 5.723097486124992e-27
+  },
+  {
+   "id": "F01",
+   "class": "Q-singletop",
+   "process": "u b > d t",
+   "restriction": "default",
+   "restriction_code": "5F*",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/ub_dt.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s",
+   "extras": [
+    "nc",
+    "uv",
+    "ap"
+   ],
+   "extras_pending": {
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 90,
+     "failures": 0,
+     "max_dd_vs_reference": 2.8737647842860256e-15,
+     "max_binary64_vs_dd": 8.662685855278131e-16,
+     "max_catani_dd": 1.3451211945685911e-31,
+     "max_catani_binary64": 5.409530410162733e-16,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.2629671579646399e-15,
+      "finite": 2.8622628977052233e-15,
+      "single_pole": 1.785145035353702e-15,
+      "double_pole": 1.4944362882059855e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.84,
+      "export_s": 0.25,
+      "double_double_s_per_point": 4.53,
+      "double_s_per_point": 0.0325,
+      "uv_s": 4.59,
+      "ap_s": 5.59
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 2.8737647842860256e-15,
+   "max_binary64_vs_dd": 8.662685855278131e-16,
+   "max_catani_dd": 1.3451211945685911e-31
+  },
+  {
+   "id": "F02",
+   "class": "Q-singletop",
+   "process": "b u > d t",
+   "restriction": "default",
+   "restriction_code": "5F*",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/bu_dt.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 2.990385939277663e-15,
+     "max_binary64_vs_dd": 1.8362994417422163e-15,
+     "max_catani_dd": 1.073145756158666e-31,
+     "max_catani_binary64": 7.61765768994487e-16,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.1644189405633998e-15,
+      "finite": 1.1540864975354489e-15,
+      "single_pole": 2.3981942177171427e-15,
+      "double_pole": 1.175314744968274e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.17,
+      "export_s": 0.24,
+      "double_double_s_per_point": 4.5075,
+      "double_s_per_point": 0.0325
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 2.990385939277663e-15,
+   "max_binary64_vs_dd": 1.8362994417422163e-15,
+   "max_catani_dd": 1.073145756158666e-31
+  },
+  {
+   "id": "F03",
+   "class": "Q-singletop",
+   "process": "u d~ > t b~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "default",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/udx_tbx.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": "MQ-5F",
+   "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pending",
+   "tiers": {},
+   "variants": [],
+   "max_dd_vs_reference": null,
+   "max_binary64_vs_dd": null,
+   "max_catani_dd": null
+  },
+  {
+   "id": "F04",
+   "class": "Q-singletop",
+   "process": "g b > t w-",
+   "restriction": "default",
+   "restriction_code": "5F*",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gb_twm.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~20 s",
+   "extras": [
+    "ward"
+   ],
+   "extras_pending": {
+    "ward": "MQ-WARD (generic native Ward input)"
+   },
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 2.1124249241332403e-14,
+     "max_binary64_vs_dd": 3.213803754140333e-15,
+     "max_catani_dd": 1.8022243700924547e-28,
+     "max_catani_binary64": 1.595878389645803e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.1043929024679662e-15,
+      "finite": 1.8293416131557273e-14,
+      "single_pole": 7.515348225561863e-15,
+      "double_pole": 1.1308841685365295e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.93,
+      "export_s": 1.84,
+      "double_double_s_per_point": 4.775,
+      "double_s_per_point": 0.0825
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 2.1124249241332403e-14,
+   "max_binary64_vs_dd": 3.213803754140333e-15,
+   "max_catani_dd": 1.8022243700924547e-28
+  },
+  {
+   "id": "G01",
+   "class": "Q-mixed",
+   "process": "u u~ > d d~",
+   "restriction": "none",
+   "restriction_code": "G-full",
+   "tier": "default",
+   "reference": {
+    "format": "mixed-sm",
+    "path": "tools/loop_reference/uudd_mixed_sm_qcd.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E tools/loop_reference/uudd_mixed_sm_qcd.json (= mixed-uudd-sm-qcd-control)",
+   "extras": [
+    "uv"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "default": {
+     "points": [
+      0,
+      1
+     ],
+     "passed": true,
+     "checks": 84,
+     "failures": 0,
+     "max_dd_vs_reference": 1.68686554396118e-15,
+     "max_binary64_vs_dd": 1.3511936778274671e-15,
+     "max_catani_dd": 4.973381721545582e-32,
+     "max_catani_binary64": 1.1213122471881687e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.0485509313621187e-15,
+      "finite": 2.513748421624405e-15,
+      "single_pole": 1.394156948294506e-15,
+      "double_pole": 2.1615565252219793e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 10.08,
+      "export_s": 1.08,
+      "double_double_s_per_point": 5.14,
+      "double_s_per_point": 0.12
+     },
+     "failed_checks": []
+    },
+    "nightly": {
+     "points": [
+      2
+     ],
+     "passed": true,
+     "checks": 48,
+     "failures": 0,
+     "max_dd_vs_reference": 4.598074524287263e-15,
+     "max_binary64_vs_dd": 2.44259759389765e-15,
+     "max_catani_dd": 3.0995406617043165e-32,
+     "max_catani_binary64": 6.12984028462866e-16,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 9.216341518128483e-16,
+      "finite": 2.155476930389618e-15,
+      "single_pole": 1.0156703318359183e-15,
+      "double_pole": 1.2001930603212203e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 9.92,
+      "export_s": 2.41,
+      "double_double_s_per_point": 5.34,
+      "double_s_per_point": 0.13,
+      "uv_s": 4.5
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 4.598074524287263e-15,
+   "max_binary64_vs_dd": 2.44259759389765e-15,
+   "max_catani_dd": 4.973381721545582e-32
+  },
+  {
+   "id": "G02",
+   "class": "Q-mixed",
+   "process": "u u~ > t t~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_ttx_mixed.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15-30 s (driver item 4)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "fail",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": false,
+     "checks": 168,
+     "failures": 1,
+     "max_dd_vs_reference": 0.9999999999973155,
+     "max_binary64_vs_dd": 3.111503693515707e-14,
+     "max_catani_dd": 3.729695987259872e-30,
+     "max_catani_binary64": 3.437751422094058e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 0.9999999999973155,
+      "finite": 8.076677496114069e-15,
+      "single_pole": 3.2648853638672104e-14,
+      "double_pole": 1.8424054099159184e-15
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.32,
+      "export_s": 0.93,
+      "double_double_s_per_point": 4.8525,
+      "double_s_per_point": 0.165
+     },
+     "failed_checks": [
+      {
+       "rule": "1",
+       "point": 1,
+       "carrier": "double-double",
+       "sector": "QED^4",
+       "coefficient": "born",
+       "error": 0.9999999999973155,
+       "bound": 1e-12,
+       "note": "against madloop; not a listed outlier (own accuracy None; status 216; its double pole off its Born x the universal factor by 2.07e-15; second providers none)"
+      }
+     ]
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 0.9999999999973155,
+   "max_binary64_vs_dd": 3.111503693515707e-14,
+   "max_catani_dd": 3.729695987259872e-30
+  },
+  {
+   "id": "H01",
+   "class": "Q-CKM",
+   "process": "u s~ > w+ g",
+   "restriction": "zeromass_ckm",
+   "restriction_code": "ZC",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/usx_wpg_ckm.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~15 s + CKM-factor relation",
+   "extras": [
+    "uv"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 82,
+     "failures": 0,
+     "max_dd_vs_reference": 1.7881161964083838e-13,
+     "max_binary64_vs_dd": 7.185208034654722e-14,
+     "max_catani_dd": 5.485237194288036e-27,
+     "max_catani_binary64": 7.154588272949518e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 8.026439296577662e-16,
+      "finite": 6.063561147805719e-14,
+      "single_pole": 2.5066369998737275e-13,
+      "double_pole": 7.387042565569966e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 6.02,
+      "export_s": 0.41,
+      "double_double_s_per_point": 4.6825,
+      "double_s_per_point": 0.05,
+      "uv_s": 5.2
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 1.7881161964083838e-13,
+   "max_binary64_vs_dd": 7.185208034654722e-14,
+   "max_catani_dd": 5.485237194288036e-27
+  },
+  {
+   "id": "H02",
+   "class": "Q-CKM",
+   "process": "g s > t w-",
+   "restriction": "zeromass_ckm",
+   "restriction_code": "ZC",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gs_twm_ckm.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~15 s + CKM-factor relation (MQ-5F)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": "MQ-5F",
+   "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pending",
+   "tiers": {},
+   "variants": [],
+   "max_dd_vs_reference": null,
+   "max_binary64_vs_dd": null,
+   "max_catani_dd": null
+  },
+  {
+   "id": "H03",
+   "class": "Q-CKM",
+   "process": "g d > t w-",
+   "restriction": "ckm",
+   "restriction_code": "CK",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/gd_twm_ckm4.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S ~15 s (single-provider exception; MQ-5F)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": "MQ-5F",
+   "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pending",
+   "tiers": {},
+   "variants": [],
+   "max_dd_vs_reference": null,
+   "max_binary64_vs_dd": null,
+   "max_catani_dd": null
+  },
+  {
+   "id": "M01",
+   "class": "Q-multi",
+   "process": "p p > t t~",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "tier": "nightly",
+   "reference": null,
+   "reference_legend": "N multi-P ~1-2 min",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": "MQ-MODEL",
+   "pending_reason": "the public route's multiparticle artifact (each subprocess = its single-process generation, bitwise) waits for the public route on loop_sm; the expansion against MadLoop's P directories and every P reference (variants M01@P0, M01@P2) run now",
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pending",
+   "tiers": {},
+   "variants": [
+    {
+     "id": "M01@P0",
+     "gating": true,
+     "notes": "MadLoop SubProcesses/P0_uux_ttx of p p > t t~",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/pp_ttx_P0_uux_ttx.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "status": "pass",
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 80,
+       "failures": 0,
+       "max_dd_vs_reference": 1.2166710096331119e-14,
+       "max_binary64_vs_dd": 3.111503693515707e-14,
+       "max_catani_dd": 4.001646556610976e-30,
+       "max_catani_binary64": 3.437751422094058e-14,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 8.767289976279811e-16,
+        "finite": 7.913512294172361e-15,
+        "single_pole": 4.3281747031487806e-14,
+        "double_pole": 1.908492254537706e-15
+       },
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 6.78,
+        "export_s": 0.49,
+        "double_double_s_per_point": 4.655,
+        "double_s_per_point": 0.0675
+       },
+       "failed_checks": []
+      }
+     }
+    },
+    {
+     "id": "M01@P2",
+     "gating": true,
+     "notes": "MadLoop SubProcesses/P2_gg_ttx of p p > t t~",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/pp_ttx_P2_gg_ttx.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "status": "pass",
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 80,
+       "failures": 0,
+       "max_dd_vs_reference": 8.52317873206947e-15,
+       "max_binary64_vs_dd": 1.1280979057484014e-14,
+       "max_catani_dd": 7.147669440730848e-31,
+       "max_catani_binary64": 1.2300664943515772e-14,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 1.0925164364064087e-15,
+        "finite": 3.004264677033949e-15,
+        "single_pole": 2.757800325414568e-15,
+        "double_pole": 9.695597769888345e-16
+       },
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 4.72,
+        "export_s": 0.46,
+        "double_double_s_per_point": 5.1075,
+        "double_s_per_point": 0.155
+       },
+       "failed_checks": []
+      }
+     }
+    }
+   ],
+   "max_dd_vs_reference": 1.2166710096331119e-14,
+   "max_binary64_vs_dd": 3.111503693515707e-14,
+   "max_catani_dd": 4.001646556610976e-30
+  },
+  {
+   "id": "R01",
+   "class": "Q-EWBorn",
+   "process": "u u~ > m- m+",
+   "restriction": "lepton_masses",
+   "restriction_code": "LM",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_mummp_lmass.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N ~15 s",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "listed_outliers": [],
+   "listed_out_of_scope": [],
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 9.223128895544426e-16,
+     "max_binary64_vs_dd": 1.212879475996293e-15,
+     "max_catani_dd": 4.282180491407302e-32,
+     "max_catani_binary64": 9.106816670465562e-16,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 3.2038229043036205e-16,
+      "finite": 9.981608394883701e-16,
+      "single_pole": 7.446944618606855e-16,
+      "double_pole": 4.797985089834039e-16
+     },
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.77,
+      "export_s": 0.29,
+      "double_double_s_per_point": 4.4875,
+      "double_s_per_point": 0.0325
+     },
+     "failed_checks": []
+    }
+   },
+   "variants": [],
+   "max_dd_vs_reference": 9.223128895544426e-16,
+   "max_binary64_vs_dd": 1.212879475996293e-15,
+   "max_catani_dd": 4.282180491407302e-32
+  }
+ ],
+ "findings": [
+  {
+   "id": "F1",
+   "category": "engine: Catani prediction",
+   "title": "Catani's operator mispredicts the single pole when the Born interferes colour structures joined by different electroweak exchanges (Z and W between the two quark lines of D19; the t- and s-channel W of C07)",
+   "rows": [
+    "D19",
+    "C07"
+   ],
+   "checks": "rule 4, every point, double-double and binary64, single pole of the leading sector only (D19 QCD^2 QED^6: 9.3e-2 .. 3.4e-1; C07 QCD^4 QED^4: 9.2e-4 .. 2.2e-2); the double poles agree",
+   "evidence": "rule 1 passes on both rows: our virtual equals MadLoop's per squared split order within 1e-12, poles included, so the virtual is right and the prediction is not (MG5_aMC's own FKS pole check of VBF runs on the same MadLoop virtuals). Minimal reproducer on D19's points, double-double, rule 4 only (workspace/tmp/mq-validate/s2/ew22.py): u d > u d h QCD=0 (Z and W exchange, colour structures delta_13 delta_24 and delta_14 delta_23 interfering) single pole 1.6133954759575e-9 against the predicted 1.4436894729941e-9 (rel 0.105) and 0.335 at point 1, while u c > u c h (Z only, one colour structure) and u c~ > u c~ h agree within 6e-33 .. 3e-31, and the QCD Born u d > u d (the same two colour tensors) within 9e-30. The Python reference path (LoopSlice.evaluate, 34 digits) gives the same virtual and the same prediction as the native executor (s2/catani-D19.log). The double poles agree (the row sums of <T_i.T_k> are fixed by colour conservation); no relabelling of the 4 coloured legs' momenta reproduces the virtual's single pole (all 24 tried, best rel 4.5e-2; s2/perm-D19.log); the deviation is mu-independent (points 0 and 3 share the kinematics, mu_R halved: the same -0.0313 x Born). So the colour-correlated Born of the I operator is wrong when the Born vector's colour components come from different EW exchanges, while the colour-summed Born is right. The single-structure W rows pass (F01, F02, F04, D12, D16, D17, D27, H01).",
+   "routed_to": "coordinator: owner of the strong I operator's correlated Born (loops/v2/assemble.py _qcd_poles / born_vectors, LoopSlice.dipoles); reproducer u d > u d h QCD=0 against u c > u c h; MQ-VALIDATE re-runs D19 and C07",
+   "status": "open"
+  },
+  {
+   "id": "F2",
+   "category": "reference: MadLoop double-precision result",
+   "title": "MadLoop's double-precision results (status 216) carry errors up to 3e-11 its own accuracy estimate does not report",
+   "rows": [
+    "C01",
+    "C01@params",
+    "C02",
+    "D11",
+    "A06"
+   ],
+   "checks": "rule 1: C01 point 1 finite 3.25e-11 (default tier), C01@params point 1 finite 2.69e-11, C02 point 0 finite 2.1e-12, D11 point 1 single pole 4.27e-12, A06 point 1 single pole 1.18e-12",
+   "evidence": "C01 point 1: our double-double 5.527401070600918831960220430267, 40 digits 5.52740107060091883196022043026848, 60 digits 5.52740107060091883196022043026854 (agree to 1e-31; s2/c01ap.log) against MadLoop 5.527401070421304 at status 216 (stable in double precision, Ninja) with own accuracy 9.0e-17; MadLoop's double pole there is off its Born times the universal IR factor by 4.8e-13. A06 point 1 (a cancelling single pole, 0.12 against a Born of 302): Recola 7.3e-13 and OpenLoops 5.2e-13 from our double-double, MadLoop 1.18e-12 at own accuracy 0.0. MadLoop's estimate (rotations of its own reduction) does not see errors of the scalar integrals or of cancelling pole coefficients. Not explained by the input point: double-double at MadLoop's own quadruple-precision point (its ImprovePSPoint=2 projection of the binary64 rounding, tools/loop_reference/supplied_points.madloop_qp_point) gives the same deviations (workspace/tmp/mq-validate/qp/exp.py).",
+   "routed_to": "MQ-REF: rerun these points with quadruple precision forced (MLStabThres below any double-precision estimate) and/or a second provider (PLAN \u00a74.1 trigger); rule 1 (i) as signed cannot pass while MadLoop reports accuracy 0 or 1e-16 for a value off by 3e-11 (user ruling if a forced-QP rerun does not resolve it)",
+   "status": "open"
+  },
+  {
+   "id": "F3",
+   "category": "reference: MadLoop quadruple-precision result",
+   "title": "MadLoop's quadruple-precision results (status 328/329) of g g > u u~ u u~ and u u~ > g g g g g deviate by up to 1.2e-11 at own accuracy 0",
+   "rows": [
+    "A18",
+    "A23"
+   ],
+   "checks": "rule 1: A18 points 0, 2, 3 finite 3.5e-12 .. 1.17e-11 and double pole 1.06e-12; A23 points 0-2 finite and single pole 1.0e-12 .. 3.2e-12",
+   "evidence": "A18 point 2: MadLoop's double pole is off its own Born times the universal IR factor by 1.06e-12, exactly our double-double's deviation from it, while ours equals Catani's within 9e-28 and our Born equals MadLoop's within 2e-15: MadLoop's loop is the outlier. The deviations do not move when our double-double is evaluated at MadLoop's quadruple-precision input point (workspace/tmp/mq-validate/qp/exp.py: A18 points 2, 3 unchanged to two digits). A23: MadLoop status 216 with own accuracies 1.2e-13 .. 2.3e-12 (covering some coefficients), Recola's double poles off the universal factor by up to 4.4e-11 (no second provider within 1e-12).",
+   "routed_to": "MQ-REF (rule 1 trigger: second provider for A18; A23's Recola is no better) and the user (rule 1 (i) when the provider reports no usable accuracy)",
+   "status": "open"
+  },
+  {
+   "id": "F4",
+   "category": "reference: corrupt value",
+   "title": "G02 point 1: MadLoop's QED^4 Born sector reads 3.58e9 (ours 9.6e-3)",
+   "rows": [
+    "G02"
+   ],
+   "checks": "rule 1 point 1 [QED^4] born: relative error 1",
+   "evidence": "tests/fixtures/loop/required/mqcd/uux_ttx_mixed.json rows[1].sectors.born QED^4 = 3582980135.555 (and the total Born with it), while the loop sectors of the same point, normalised by MadLoop with its internal Born, agree with ours within 1e-12 and the QED^4 Born of points 0, 2, 3 is 9.5e-3; the runner reads the per-sector Borns from born_matrix.f (madloop_driver.f90 comment), so a runner-side read of that sector is suspect",
+   "routed_to": "MQ-REF",
+   "status": "open"
+  },
+  {
+   "id": "F5",
+   "category": "reference: binary64 Born",
+   "title": "MadLoop's Borns of the references are binary64 evaluations: a soft point and suppressed helicities miss 1e-12",
+   "rows": [
+    "A09@soft",
+    "A08"
+   ],
+   "checks": "A09@soft point 1 (E_g/sqrt(s) = 1e-5) rule 1 [QCD^6] born 2.73e-11; A08 hel point 0: helicities h---+- and h+++-+ born 9.9e-11 (their Born 3.6e-11 against a summed Born of order 1) and their poles 1.3e-12 .. 8.1e-12, h-+-++ finite 4.5e-12",
+   "evidence": "A09@soft point 1: the loop coefficients agree within 2.5e-13 (the double pole = universal factor x MadLoop's internal Born), only the reported Born misses; our point equals MadLoop's quadruple-precision point within 4.9e-25, so the input does not explain it; a binary64 Born at a soft point carries the momentum-conservation rounding relative to the soft energy (1e-16 / 1e-5). A08: |ours - MadLoop| = 3.6e-21 for a helicity Born of 3.6e-11, i.e. 2 sqrt(B_h B_max) x 1e-16, the binary64 rounding of the amplitude of a helicity suppressed to 1e-11. The runner takes the per-sector Borns from born_matrix.f (binary64); MadLoop's own quadruple-precision evaluation (status 3xx) holds a quadruple-precision Born",
+   "routed_to": "MQ-REF (Borns from MadLoop's quadruple-precision evaluation, per sector and per helicity); no change to the 1e-12 rule",
+   "status": "open"
+  },
+  {
+   "id": "F6",
+   "category": "stability estimate",
+   "title": "The binary64 estimate under-reports the error of g g > b b~ h (4FS) up to 100x and of u u~ > u u~ e+ e- 23x",
+   "rows": [
+    "C05",
+    "D10"
+   ],
+   "checks": "rules 2 and 3, binary64, C05 [QCD^6 QED^2] finite at every point: error 2.34e-10 at E = 2.43e-12 (point 1), 4.8e-12 at 1.96e-13, 1.16e-12 at 3.64e-14, 9.5e-12 at 3.7e-13; D10 point 2 [QCD^6 QED^4] double pole 1.72e-12 at E = 7.55e-14 (also rule 4 binary64)",
+   "evidence": "double-double passes every rule on both rows (rule 1 within 1e-12 of MadLoop); the binary64 error is real and the one-rotation plus reduction-direction estimate does not bracket it tenfold. An error confined to functions of the invariants (scalar integrals with the small b mass) is invisible to rotations; D10 is the PLAN's '22x case'",
+   "routed_to": "MQ-STAB",
+   "status": "open"
+  },
+  {
+   "id": "F7",
+   "category": "native executor: limit points",
+   "title": "The native executor fails at the S2 collinear points (theta = 1e-3, 1e-5) in both carriers",
+   "rows": [
+    "A09@collinear"
+   ],
+   "checks": "eval: points 0-2, double-double CutFailed { DegenerateGram } and binary64 Unstable (families 78 and 80, also on the re-test), no value",
+   "evidence": "the collinear family of tools/loop_reference/supplied_points.py (the last two final gluons at opening angle theta); MadLoop evaluates them (status 3xx). PLAN \u00a74.1 S2 expects binary64 outside O1 there but double-double and rule 3 to pass",
+   "routed_to": "MQ-STAB (or the reduction owner): degenerate-Gram handling of the cut reduction at small opening angles",
+   "status": "open"
+  },
+  {
+   "id": "F8",
+   "category": "arbitrary precision",
+   "title": "40 digits do not converge to 1e-35 on g g > b b~ (4FS, massive b)",
+   "rows": [
+    "C01"
+   ],
+   "checks": "rule 6: AP(40) against AP(60) 1.0e-32 (point 1) and 4.1e-32 (point 2) > 1e-35 on the finite part; AP(40) against double-double passes",
+   "evidence": "C01 point 1 per virtual component, 40 against 60 digits (workspace/tmp/mq-validate/s2/apcomp.py): the bare loop's finite part 7.6e-33, its poles 1.2e-59; R2, UV, UV external fields, UV local and the Born 1e-59 .. 2e-59. So the arbitrary-precision path of the bare loop's finite part (the scalar integrals with the light massive b, 4FS) loses about 8 of its 40 digits, while binary64 agrees with double-double to 1.4e-15 at the same point (a stable binary64 form, a cancelling or guard-digit-free arbitrary-precision one). AP(40) against double-double passes, double-double against AP(60) agrees to 1e-31. B01 (massive top, 5FS) passes rule 6.",
+   "routed_to": "coordinator: owner of the arbitrary-precision scalar integrals (bare-loop finite part with small internal masses)",
+   "status": "open"
+  }
+ ]
+}

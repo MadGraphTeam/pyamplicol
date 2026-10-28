@@ -1484,7 +1484,8 @@ for r in R:
 # The nightly tier's file jobs (PLAN §3.2 acceptance: each nightly file job
 # <= 30 min). Seconds per nightly test id as measured by the campaign run of
 # 2026-10-28 (tmp/mq-validate/pt3: one process per id on the shared host at
-# load ~100, start-up and model compilation included; A24 from pt2, 1355 s);
+# load ~100, start-up and model compilation included; A24 1556 s on four
+# pinned cores, s2);
 # a row without a measurement counts DEFAULT_SECONDS. A row and its variants
 # (which reuse its generation) form one group; groups are packed greedily,
 # largest first, into jobs of at most JOB_SECONDS (a group above it is a job
@@ -1494,7 +1495,7 @@ MEASURED_SECONDS = {
     "A01": 31, "A02": 28, "A03": 33, "A04": 23, "A05": 36, "A06": 26, "A07": 31,
     "A08": 445, "A09": 40, "A09@collinear": 33, "A09@soft": 41, "A12": 20,
     "A13": 47, "A14": 182, "A15": 68, "A18": 145, "A19": 44, "A20": 42,
-    "A21": 55, "A22": 182, "A23": 731, "A24": 1355, "A25": 31, "A26": 31,
+    "A21": 55, "A22": 182, "A23": 731, "A24": 1556, "A25": 31, "A26": 31,
     "B01": 37, "B01@mt170": 32, "B01@threshold": 27, "B02": 27, "B03": 71,
     "B05": 795, "B06": 52, "B07": 349, "B08": 34, "C01": 33, "C01@params": 33,
     "C02": 50, "C03": 28, "C04": 31, "C05": 48, "C06": 295, "C07": 35, "C08": 36,
