@@ -533,7 +533,7 @@ def prepare_madloop_run(spec, export, run_dir, mg5, legs, madloop_params=None):
         if n != 1:
             raise RuntimeError("cannot disable the COLLIER global cache")
     for key, entry in (madloop_params or {}).items():
-        text, n = re.subn(rf"(#{re.escape(key)}\s*\n)\s*\S+", lambda m: m.group(1) + str(entry), text)
+        text, n = re.subn(rf"(#{re.escape(key)}\s*\n)\s*\S+", lambda m, entry=entry: m.group(1) + str(entry), text)
         if n != 1:
             raise RuntimeError(f"MadLoopParams.dat has no single entry #{key}")
     params.write_text(text)
@@ -620,11 +620,12 @@ def madloop_sectors(values, nanswer, nloop, born_so, loop_so, step):
         born_orders[(qcd, qed)] = answer[index][0]
     loop = []
     for index, (qcd, qed) in sorted(loop_so.items()):
-        entry = {"QCD": qcd, "QED": qed, **dict(zip(LAURENT, answer[index][1:])), "accuracy": accuracy[index]}
+        entry = {"QCD": qcd, "QED": qed, **dict(zip(LAURENT, answer[index][1:], strict=True)),
+                 "accuracy": accuracy[index]}
         partner = (qcd - step["QCD"], qed - step["QED"])
         entry["born_sector"] = {"QCD": partner[0], "QED": partner[1]} if partner in born_orders else None
         loop.append(entry)
-    total = {"born": answer[0][0], **dict(zip(LAURENT, answer[0][1:])), "accuracy": accuracy[0]}
+    total = {"born": answer[0][0], **dict(zip(LAURENT, answer[0][1:], strict=True)), "accuracy": accuracy[0]}
     return {"born": born, "loop": loop, "total": total}
 
 
