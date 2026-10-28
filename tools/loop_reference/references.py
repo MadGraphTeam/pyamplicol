@@ -1297,7 +1297,7 @@ def command_merge(args):
                 "helicities": secondary["helicities"],
                 "settings": {k: secondary["settings"][k] for k in
                              ("requested_relative_accuracy", "stability_check", "helicities",
-                              "MadLoopParams_overrides")
+                              "MadLoopParams_overrides", "quadruple_precision_stage")
                              if k in secondary.get("settings", {})},
                 "rows": hel_rows,
             }
@@ -1310,7 +1310,8 @@ def command_merge(args):
             deviation.append({key: relative(other[key], accurate[key], 0.0 if key == "born" else unit)
                               for key in COEFFICIENTS})
         entry = {
-            "settings": {k: secondary["settings"][k] for k in ("requested_relative_accuracy", "stability_check", "fortran_flags")
+            "settings": {k: secondary["settings"][k] for k in ("requested_relative_accuracy", "stability_check", "fortran_flags",
+                                                                 "MadLoopParams", "quadruple_precision_stage")
                          if k in secondary.get("settings", {})},
             "version": secondary.get("version"),
             "evaluation_seconds": [r["seconds"] for r in secondary["rows"]],

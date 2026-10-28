@@ -146,7 +146,15 @@ row("A14", "Q-massless", "g g > g g g g", "5F", "E", extras=["ward"], fixtures=[
 row("A15", "Q-massless", "u u~ > g g g g", "5F", "N", extras=["nc"],
     runs_=[run("uux_gggg", "uux_gggg", split_points=True)])
 row("A18", "Q-massless", "g g > u u~ u u~", "5F", "N", extras=["nc"],
-    runs_=[run("gg_uuxuux", "gg_uuxuux", split_points=True, second=("openloops",), trigger=F3)])
+    runs_=[run("gg_uuxuux", "gg_uuxuux", split_points=True, second=("openloops",), trigger=F3,
+               notes={str(i): (f"OUTLIER (rule 1): MadLoop's quadruple-precision stage takes CutTools (return code 329, "
+                               f"accuracy 0.0) and misses its own universal double pole by {ir} (OpenLoops {ol}); "
+                               f"MadLoop - OpenLoops (ppjjjj, binary64): finite {fin}, double pole {dp}; mq-validate "
+                               "F3: OpenLoops = DD to 5.5e-13 / 1.2e-12 / 2.6e-12 at points 0 / 2 / 3, so no provider "
+                               "is a 1e-12 reference at points 2, 3 (ruling routed to the user via the coordinator)")
+                      for i, ir, ol, fin, dp in ((0, "3.5e-13", "3.5e-14", "4.0e-12", "3.1e-13"),
+                                                 (2, "1.1e-12", "1.2e-13", "5.2e-12", "1.2e-12"),
+                                                 (3, "3.5e-13", "4.7e-14", "1.4e-11", "4.0e-13"))})])
 row("A19", "Q-massless", "u u~ > d d~ s s~", "5F", "E", fixtures=["required/uux_ddxssx.json"],
     runs_=[run("uux_ddxssx_sectors", "uux_ddxssx", export='runs/required/uux_ddxssx/madloop-export', points={"generator": "fixture", "fixture": "required/uux_ddxssx.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
 row("A20", "Q-massless", "u u~ > u u~ d d~", "5F", "E", fixtures=["required/uux_uuxddx.json"],
