@@ -1,11 +1,11 @@
 {
  "what": "Table 1 of docs/performance_reports/loop/benchmarks.typ, written by scripts/build_summary.py; do not edit by hand",
  "meta": {
-  "date": "2026-10-27",
-  "host": "AMD EPYC 9754, shared host, pinned cores without SMT siblings (128-223; SMT siblings of 128-255 offline): milestone m1026a's G1 campaign at most one job per CCX of 8 cores, each job on the least busy core of a free CCX at its launch (cores per record: host_cpus), at most one 2->5 generation at a time; the whole-suite gate ran on 0-127,256-383 and other packages' pinned timings on 224-255 at the same time; unpinned processes of other users also ran on some of these CCXs (host load average 140-230, per-core load sampled every 5 min in the campaign's logs/hostload.txt); every run on 2026-10-26 except the g g > g g g g g full-colour runtime, re-run alone on 2026-10-27 on core 163 (load average 158-287, the CCX 160-167 sampled in logs/hostload3.txt): its first run (2026-10-26, the same core and stored process) was killed by a session stop in its third round and is no input",
+  "date": "2026-10-28",
+  "host": "AMD EPYC 9754, shared host, pinned cores without SMT siblings (128-223; SMT siblings of 128-255 offline): milestone m1028a's G1 campaign on 2026-10-28 (08:55-10:12 UTC) at most one job per CCX of 8 cores, each job on the least busy core of a free CCX at its launch, and only on a CCX whose least busy core was below 50 % busy (cores per record: host_cpus), at most one 2->5 generation at a time; the campaign's scheduler on the CCXs 128-215, the public-path check and the paired A/B runs on CCX 216-223; the whole-suite gate ran on 0-127,256-383 and other packages' pinned timings on 224-255 at the same time; unpinned processes of other users also ran on these CCXs (host load average 118-371, per-core load sampled every 5 min in the campaign's logs/hostload.txt and logs/hostload-r2.txt). The ten 2->2 to 2->4 rows were timed twice: round 1 (08:55-09:02 UTC, load average 330-371, against 140-230 in milestone m1026a) measured up to 29 % above m1026a while the same-core paired A/B of the two engines measured new/old ratios of 0.95-1.16 (median 1.02, 19 configuration/B pairs), i.e. host contention; round 2 (09:21-09:27 UTC, load average 158-172), the same jobs once more for every one of these rows, decides whatever it gave (its records are listed after round 1's, which stay earlier_runs); by the same rule u u~ > e- e+ g g g LC, whose round-1 generate stage (34.5 s at 09:19 UTC, against 26.5 s in m1026a) contradicted the same-core A/B (old 26.3 s, new 15.8 s), was run once more at 09:43 UTC (generate 15.0 s; decides)",
   "gate_factor": 1.3,
-  "engine_on_loop": "11542fd5",
-  "native_build_on_loop": "loop-native-v2-slice-11542fd5",
+  "engine_on_loop": "28a16255",
+  "native_build_on_loop": "loop-native-v2-slice-5cb5ea83",
   "main_rule": {
    "rule": "every cell shows the most recent configuration that measured it; A is newer than B if B's revision is an ancestor of A's (git merge-base --is-ancestor, recorded in milestone.json ancestry) or if A is the development side and B the integrated side of one G1 campaign, transitively; equal revisions keep the order development, integrated, development_records; the registry (no run) comes last; without a measurement, the status of the newest configuration with a record of the row",
    "validation_rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it",
@@ -23,19 +23,19 @@
      "basis": "git merge-base --is-ancestor 0ea83af2 6f5a64cc (milestone.json ancestry)"
     },
     {
-     "newer": "integrated 11542fd5",
+     "newer": "integrated 28a16255",
      "older": "development_records 0ea83af2",
-     "basis": "git merge-base --is-ancestor 0ea83af2 11542fd5 (milestone.json ancestry)"
+     "basis": "git merge-base --is-ancestor 0ea83af2 28a16255 (milestone.json ancestry)"
     },
     {
-     "newer": "integrated 11542fd5",
+     "newer": "integrated 28a16255",
      "older": "development_records 6f5a64cc",
-     "basis": "git merge-base --is-ancestor 6f5a64cc 11542fd5 (milestone.json ancestry)"
+     "basis": "git merge-base --is-ancestor 6f5a64cc 28a16255 (milestone.json ancestry)"
     },
     {
-     "newer": "integrated 11542fd5",
+     "newer": "integrated 28a16255",
      "older": "development_records fef92189",
-     "basis": "git merge-base --is-ancestor fef92189 11542fd5 (milestone.json ancestry)"
+     "basis": "git merge-base --is-ancestor fef92189 28a16255 (milestone.json ancestry)"
     }
    ],
    "source": "scripts/build_summary.py MAIN_RULE, VALIDATION_RULE, GENERATION_RULE, Recency; ancestry: milestone.json ancestry"
@@ -44,10 +44,10 @@
    "integrated": {
     "kind": "g1",
     "label": "on loop",
-    "revision": "11542fd5",
-    "lc_revision": "11542fd5",
-    "native_build": "loop-native-v2-slice-11542fd5",
-    "date": "2026-10-27",
+    "revision": "28a16255",
+    "lc_revision": "28a16255",
+    "native_build": "loop-native-v2-slice-5cb5ea83",
+    "date": "2026-10-28",
     "inputs": [
      "native"
     ],
@@ -184,7 +184,7 @@
    }
   },
   "gate_decisions": {
-   "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~16:05 UTC (user answers to HANDOFF_24 section 10; decisions) and ~22:35 UTC (user GATE RULE; threshold_rule)",
+   "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~16:05 UTC (user answers to HANDOFF_24 section 10; decisions), ~22:35 UTC (user GATE RULE; threshold_rule) and 2026-10-28 ~08:20 UTC item 2 (user: the runtime speed gate is batched B = 128 only)",
    "what": "user verdicts: decisions replace a measured open (inconclusive) gate verdict of their process and batch; threshold_rule removes the blocking gate below 5 ms per point; the measured ratio and band stay as measured",
    "decisions": [
     {
@@ -203,8 +203,14 @@
     "verdict": "not gated",
     "label": "below 5 ms: not gated (user 2026-10-24)",
     "short": "<5 ms: not gated",
-    "applies": "a process whose pyAmpliCol batched time per point is below 5 ms has no blocking gate: its ratio and band stay as measured and are shown, its verdict is the label, at every batch size of that configuration (B = 1 included); the batched time is the configuration's own at its largest batch above 1, and for a configuration timed at B = 1 only (the one-lane runs) the configuration on loop's; it takes precedence over a decision; the exact-rational vs binary64 input question is therefore moot and the protocol stays",
+    "applies": "a process whose pyAmpliCol time per point at B = 128 is below 5 ms has no blocking gate: its ratio and band stay as measured and are shown, its verdict is the label; the batched time is the configuration's own at B = 128 (the gate batch, user 2026-10-28: every other batch size, B = 1 and the 2->5 rows' B = 16 included, is reported with its ratio and band and carries no verdict; a configuration without a B = 128 timing, e.g. the one-lane runs, has none, never one derived from another batch size); it takes precedence over a decision; the exact-rational vs binary64 input question is therefore moot and the protocol stays",
     "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts)"
+   },
+   "gate_batch": {
+    "batch": 128,
+    "label": "reported (user 2026-10-28)",
+    "rule": "the runtime speed gate is taken at B = 128 only: B = 1 (and B = 16 on the 2->5 rows) are measured and reported with their ratios and bands, status reported, without a pass/fail verdict or a verdict colour (tools/loop_benchmark/gate.py GATE_BATCH, package gate-b128)",
+    "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-28 ~08:20 UTC item 2 (USER, binding; MASTER_PLAN 5.8 amended) and ~09:10 UTC (coordinator: the report's tables)"
    }
   },
   "validation_decisions": {
@@ -283,13 +289,13 @@
        "estimate": 2.9837238839032454e-12,
        "within_estimate": true,
        "dd_closest": 9.399912925506945e-14,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[gg_gg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        }
       ]
@@ -297,24 +303,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 10.83433688012883,
-       "generate_s": 9.208054858027026,
-       "export_s": 1.6262820221018046,
-       "model_s": 4.549929726868868,
-       "peak_gib": 0.555,
+       "seconds": 8.56587597890757,
+       "generate_s": 7.087758519919589,
+       "export_s": 1.478117458987981,
+       "model_s": 3.00499419006519,
+       "peak_gib": 0.573,
        "plan_mb": 0.305,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[gg_gg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 76.15320496991563,
+       "ratio_to_fastest": 60.20847573652964,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -343,27 +349,27 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0014668363364762627,
-       "uncertainty": 0.0005105612338139065,
+       "seconds_per_point": 0.0014982944849180058,
+       "uncertainty": 0.004528552438072477,
        "stages": {
-        "inputs": 0.00018767475,
-        "numerator": 0.0008336967578124999,
-        "scatter": 6.773975e-05,
-        "ninjars": 0.00011258965624999997,
-        "masters": 3.5845640625e-05,
-        "glue": 0.00022317776645303143,
+        "inputs": 0.0001875824140625,
+        "numerator": 0.0008500208593749999,
+        "scatter": 7.0398203125e-05,
+        "ninjars": 0.00011824291406250004,
+        "masters": 3.920728125e-05,
+        "glue": 0.00023444473737147821,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_gg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.7255614263330835,
+       "ratio_to_fastest": 0.7411220028511294,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -400,20 +406,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0006576698124263203,
+       "seconds_per_point": 0.0007311292738449993,
        "schedule": "B",
        "families": 12,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_gg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0014668363364762627,
-       "lc_over_fc": 0.4483593677575652,
+       "fc_seconds_per_point": 0.0014982944849180058,
+       "lc_over_fc": 0.48797434763634623,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -478,7 +484,7 @@
        "estimate": 7.42363579719006e-12,
        "within_estimate": false,
        "dd_closest": 3.188177722534943e-13,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_ddxg].stability (native/full)",
        "reference_own": {
         "key": "recola",
@@ -494,7 +500,7 @@
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        }
       ]
@@ -502,24 +508,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 11.407631287816912,
-       "generate_s": 9.450759595027193,
-       "export_s": 1.9568716927897185,
-       "model_s": 4.280408112099394,
-       "peak_gib": 0.557,
+       "seconds": 8.822196591179818,
+       "generate_s": 7.034955922048539,
+       "export_s": 1.787240669131279,
+       "model_s": 2.974353832891211,
+       "peak_gib": 0.571,
        "plan_mb": 0.282,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 28.083905120888,
+       "ratio_to_fastest": 21.71894635910256,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -548,32 +554,32 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0019140802505717147,
-       "uncertainty": 0.02979544603563823,
+       "seconds_per_point": 0.0018329522736166837,
+       "uncertainty": 0.0029237225118896306,
        "stages": {
-        "inputs": 9.60062109375e-05,
-        "numerator": 0.0007776277265625001,
-        "scatter": 0.00040984039062499987,
-        "ninjars": 0.00014260497656250006,
-        "masters": 0.00011666357812500003,
-        "glue": 0.000372213860536239,
+        "inputs": 7.47249921875e-05,
+        "numerator": 0.0007521902500000001,
+        "scatter": 0.0003996741484374999,
+        "ninjars": 0.00013742057812500007,
+        "masters": 0.00011117611718750001,
+        "glue": 0.0003578648053833302,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 1.2631329138058234,
+       "ratio_to_fastest": 1.2095952327750663,
        "gate": {
         "status": "not gated",
-        "ratio_to_limit": 0.9716407029275566,
+        "ratio_to_limit": 0.9304578713654358,
         "band": [
-         0.9325222198511022,
-         1.010759186004011
+         0.9180004254372043,
+         0.9429153172936673
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.0019699465499999997,
-        "measured_status": "open",
+        "measured_status": "pass",
         "rule": "below 5 ms: not gated (user 2026-10-24)",
         "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))",
         "floor_seconds": 0.005
@@ -582,7 +588,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -619,20 +625,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0012110756870242767,
+       "seconds_per_point": 0.0011938552579522366,
        "schedule": "B",
        "families": 27,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_ddxg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0019140802505717147,
-       "lc_over_fc": 0.6327193892014411,
+       "fc_seconds_per_point": 0.0018329522736166837,
+       "lc_over_fc": 0.6513291563214492,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -692,7 +698,7 @@
        "estimate": 1.0244693923956225e-11,
        "within_estimate": false,
        "dd_closest": 2.428328642024099e-13,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_uuxg].stability (native/full)",
        "reference_own": {
         "key": "recola",
@@ -708,7 +714,7 @@
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        }
       ]
@@ -716,24 +722,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 11.051225946983323,
-       "generate_s": 8.955972896888852,
-       "export_s": 2.0952530500944704,
-       "model_s": 4.324762865900993,
-       "peak_gib": 0.557,
+       "seconds": 9.11214403086342,
+       "generate_s": 7.198224477935582,
+       "export_s": 1.9139195529278368,
+       "model_s": 3.0556207089684904,
+       "peak_gib": 0.575,
        "plan_mb": 0.388,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 23.933780481647453,
+       "ratio_to_fastest": 19.73428613242418,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -762,28 +768,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0026407693676446797,
-       "uncertainty": 0.01044370436190694,
+       "seconds_per_point": 0.0026569968576950487,
+       "uncertainty": 0.013716053788942636,
        "stages": {
-        "inputs": 0.0001241898515625,
-        "numerator": 0.0012278869453125002,
-        "scatter": 0.0004119035,
-        "ninjars": 0.00022502219531250013,
-        "masters": 0.00016281202343750001,
-        "glue": 0.00047578804536361477,
+        "inputs": 0.0001253270078125,
+        "numerator": 0.0012279791249999999,
+        "scatter": 0.0004080993593750001,
+        "ninjars": 0.00022778389843749986,
+        "masters": 0.00016435614062500003,
+        "glue": 0.00047551304699209153,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.9032217726735577,
+       "ratio_to_fastest": 0.9087720575673913,
        "gate": {
         "status": "not gated",
-        "ratio_to_limit": 0.6947859789796598,
+        "ratio_to_limit": 0.6990554288979933,
         "band": [
-         0.6785898575613277,
-         0.7109821003979918
+         0.6804722289126279,
+         0.7176386288833587
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.0038008386,
@@ -796,7 +802,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -833,29 +839,23 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0015789685003255727,
+       "seconds_per_point": 0.0015631344467692543,
        "schedule": "B",
        "families": 42,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_uuxg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0026407693676446797,
-       "lc_over_fc": 0.597919878832079,
+       "fc_seconds_per_point": 0.0026569968576950487,
+       "lc_over_fc": 0.588308729926492,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
-       ],
-       "note": {
-        "kind": "not validated",
-        "label": "cost only: value not validated (identical-flavour LC pending)",
-        "reason": "LC/NLC of identical-flavour quark lines are refused by the Python per-point path but not yet by generation, export, the native runtime or the SDK, which serve grade-0 projections that are not correct LC/NLC values (full colour is exact; pre-existing on loop 36f43250; fixes in flight in packages fail-closed and identical-flavour-lc)",
-        "source": "milestone.json cell_notes (slice-status DECISIONS 2026-10-26 ~21:10 item 1; data/g1.json known_limitations)"
-       }
+       ]
       }
      },
      "row_status": null
@@ -904,13 +904,13 @@
        "estimate": 1.1542025128657807e-12,
        "within_estimate": true,
        "dd_closest": 7.516482734555493e-15,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_emepg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        }
       ]
@@ -918,24 +918,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 18.32419562386349,
-       "generate_s": 14.699773555854335,
-       "export_s": 3.624422068009153,
-       "model_s": 4.524942562915385,
-       "peak_gib": 0.604,
+       "seconds": 12.635016105137765,
+       "generate_s": 8.91573081817478,
+       "export_s": 3.719285286962986,
+       "model_s": 3.048376200022176,
+       "peak_gib": 0.63,
        "plan_mb": 0.31,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_emepg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 26.128276673730515,
+       "ratio_to_fastest": 18.016135788364572,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -962,28 +962,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0006913817414897494,
-       "uncertainty": 0.006318784622420499,
+       "seconds_per_point": 0.0007136996719054878,
+       "uncertainty": 0.012983346765876643,
        "stages": {
-        "inputs": 5.69172109375e-05,
-        "numerator": 0.0002698916875,
-        "scatter": 0.0001233184140625,
-        "ninjars": 2.74729921875e-05,
-        "masters": 1.8076281250000006e-05,
-        "glue": 0.0001981162440579617,
+        "inputs": 4.38033828125e-05,
+        "numerator": 0.000280572421875,
+        "scatter": 0.00012457584375000002,
+        "ninjars": 3.09177265625e-05,
+        "masters": 1.9717953125e-05,
+        "glue": 0.00021324858507826261,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.7295503570709894,
+       "ratio_to_fastest": 0.7531003774530779,
        "gate": {
         "status": "not gated",
-        "ratio_to_limit": 0.7295503570709894,
+        "ratio_to_limit": 0.7531003774530779,
         "band": [
-         0.7247308401053646,
-         0.7343698740366141
+         0.7431062013231289,
+         0.7630945535830268
         ],
         "binding": "MadLoop",
         "limit_seconds": 0.000947682,
@@ -996,7 +996,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -1030,20 +1030,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.00048218346091744024,
+       "seconds_per_point": 0.0005313660221872851,
        "schedule": "B",
        "families": 7,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0006913817414897494,
-       "lc_over_fc": 0.6974200097885999,
+       "fc_seconds_per_point": 0.0007136996719054878,
+       "lc_over_fc": 0.744523282137156,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -1103,7 +1103,7 @@
        "estimate": 7.980214771773228e-13,
        "within_estimate": false,
        "dd_closest": 1.3348289027384224e-14,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_ggg].stability (native/full)",
        "reference_own": {
         "key": "openloops",
@@ -1119,7 +1119,7 @@
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        }
       ]
@@ -1127,24 +1127,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 11.514750937232748,
-       "generate_s": 9.331472007092088,
-       "export_s": 2.183278930140659,
-       "model_s": 4.524304415099323,
-       "peak_gib": 0.567,
+       "seconds": 9.142220994923264,
+       "generate_s": 7.110983876045793,
+       "export_s": 2.0312371188774705,
+       "model_s": 2.974823493976146,
+       "peak_gib": 0.586,
        "plan_mb": 0.656,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_ggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 18.15204527582283,
+       "ratio_to_fastest": 14.411949535515234,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1173,28 +1173,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.005044895273385919,
-       "uncertainty": 0.01535801984289802,
+       "seconds_per_point": 0.00526369327417342,
+       "uncertainty": 0.018998331705673766,
        "stages": {
-        "inputs": 0.000397692640625,
-        "numerator": 0.0028987496093749996,
-        "scatter": 0.0004183464062500002,
-        "ninjars": 0.00045176771875,
-        "masters": 0.00021077792187499997,
-        "glue": 0.0005779984823900018,
+        "inputs": 0.0004746267265625,
+        "numerator": 0.0029846317109375,
+        "scatter": 0.00042767359375000006,
+        "ninjars": 0.00047650948437499987,
+        "masters": 0.00022836939843750003,
+        "glue": 0.0005784992069517306,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_ggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.40728792268440356,
+       "ratio_to_fastest": 0.42495207196781026,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.3132984020649258,
+        "ratio_to_limit": 0.3268862092060079,
         "band": [
-         0.301564958639121,
-         0.32503184549073066
+         0.3134539165172414,
+         0.3403185018947744
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.01610252475
@@ -1203,7 +1203,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -1240,20 +1240,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.002524521618397557,
+       "seconds_per_point": 0.002661116570379818,
        "schedule": "B",
        "families": 62,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_ggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.005044895273385919,
-       "lc_over_fc": 0.5004111050065874,
+       "fc_seconds_per_point": 0.00526369327417342,
+       "lc_over_fc": 0.5055607216774431,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -1313,13 +1313,13 @@
        "estimate": 8.899672663324205e-06,
        "within_estimate": true,
        "dd_closest": 5.96903309784672e-12,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[gg_ggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        }
       ]
@@ -1327,24 +1327,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 13.193844565888867,
-       "generate_s": 10.368299128953367,
-       "export_s": 2.8255454369354993,
-       "model_s": 4.865361839067191,
-       "peak_gib": 0.618,
+       "seconds": 10.566844030981883,
+       "generate_s": 7.935454468009993,
+       "export_s": 2.63138956297189,
+       "model_s": 2.9302506090607494,
+       "peak_gib": 0.633,
        "plan_mb": 1.852,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[gg_ggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 1.9902967689614475,
+       "ratio_to_fastest": 1.5940126797731404,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1373,28 +1373,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.020043018914293498,
-       "uncertainty": 0.006833780007421404,
+       "seconds_per_point": 0.020298934179663775,
+       "uncertainty": 0.013424317232696027,
        "stages": {
-        "inputs": 0.0039286107734375,
-        "numerator": 0.012035714109375,
-        "scatter": 0.000499042953125,
-        "ninjars": 0.0020639144453124996,
-        "masters": 0.000497410765625,
-        "glue": 0.0009705965760645821,
+        "inputs": 0.0042482535234375,
+        "numerator": 0.01194808046875,
+        "scatter": 0.00049679596875,
+        "ninjars": 0.0021593853515624994,
+        "masters": 0.0004996956328125,
+        "glue": 0.0010768310761595512,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.20669516400333637,
+       "ratio_to_fastest": 0.20933430973147535,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.15899628000256644,
+        "ratio_to_limit": 0.1610263921011349,
         "band": [
-         0.1578620546479339,
-         0.16013050535719897
+         0.15881643418625016,
+         0.16323635001601963
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.12605967205
@@ -1403,7 +1403,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -1440,20 +1440,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.008111049975923379,
+       "seconds_per_point": 0.008213590404920978,
        "schedule": "B",
        "families": 77,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.020043018914293498,
-       "lc_over_fc": 0.40468204967561333,
+       "fc_seconds_per_point": 0.020298934179663775,
+       "lc_over_fc": 0.4046316093359058,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -1510,13 +1510,13 @@
        "estimate": 2.5408281824584713e-09,
        "within_estimate": true,
        "dd_closest": 4.306016249662366e-13,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_emepgg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        }
       ]
@@ -1524,24 +1524,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 21.293822808889672,
-       "generate_s": 17.100463500944898,
-       "export_s": 4.193359307944775,
-       "model_s": 4.599829976912588,
-       "peak_gib": 0.676,
+       "seconds": 13.612229516962543,
+       "generate_s": 9.795495837926865,
+       "export_s": 3.8167336790356785,
+       "model_s": 2.8694647178053856,
+       "peak_gib": 0.645,
        "plan_mb": 0.624,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_emepgg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 25.575501260202262,
+       "ratio_to_fastest": 16.34932328918872,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1568,28 +1568,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.004797481327841524,
-       "uncertainty": 0.008179841398915528,
+       "seconds_per_point": 0.004914136507068179,
+       "uncertainty": 0.014929614681470738,
        "stages": {
-        "inputs": 0.0001713949296875,
-        "numerator": 0.0027868249765624995,
-        "scatter": 0.0006042349609375001,
-        "ninjars": 0.0004298453828124998,
-        "masters": 0.000237704890625,
-        "glue": 0.0005189756956827229,
+        "inputs": 0.00016602553125,
+        "numerator": 0.002846154109375001,
+        "scatter": 0.000607423609375,
+        "ninjars": 0.0004495774765624998,
+        "masters": 0.00024767753125,
+        "glue": 0.0005867627675841796,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepgg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.46898314067149305,
+       "ratio_to_fastest": 0.48038689789131056,
        "gate": {
         "status": "not gated",
-        "ratio_to_limit": 0.36075626205499467,
+        "ratio_to_limit": 0.3695283829933158,
         "band": [
-         0.35657158455562077,
-         0.36494093955436857
+         0.36274771839781134,
+         0.3763090475888203
         ],
         "binding": "Recola",
         "limit_seconds": 0.013298400699999999,
@@ -1602,7 +1602,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -1636,20 +1636,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0016763881085353205,
+       "seconds_per_point": 0.0017365930470987223,
        "schedule": "B",
        "families": 33,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepgg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.004797481327841524,
-       "lc_over_fc": 0.3494308771576936,
+       "fc_seconds_per_point": 0.004914136507068179,
+       "lc_over_fc": 0.353387221661612,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -1709,13 +1709,13 @@
        "estimate": 6.031752736107641e-08,
        "within_estimate": true,
        "dd_closest": 5.504855442237677e-15,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[gg_ttxgg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        },
        {
@@ -1728,20 +1728,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 17.815703321015462,
-       "generate_s": 13.347354425815865,
-       "export_s": 4.468348895199597,
-       "model_s": 4.597604359965771,
-       "peak_gib": 0.716,
+       "seconds": 14.974339729174972,
+       "generate_s": 10.54390169098042,
+       "export_s": 4.430438038194552,
+       "model_s": 2.9242702240590006,
+       "peak_gib": 0.734,
        "plan_mb": 3.712,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -1750,7 +1750,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.2902220956360816,
+       "ratio_to_fastest": 0.24393559876142387,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1779,28 +1779,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.09407720904528105,
-       "uncertainty": 0.007184504016306192,
+       "seconds_per_point": 0.09624432517193782,
+       "uncertainty": 0.0025331059660380494,
        "stages": {
-        "inputs": 0.0111930444921875,
-        "numerator": 0.046766913867187496,
-        "scatter": 0.0009319236171874999,
-        "ninjars": 0.020571225218750003,
-        "masters": 0.006519405921875001,
-        "glue": 0.008192957783536237,
+        "inputs": 0.0117952168671875,
+        "numerator": 0.046562020171875,
+        "scatter": 0.000974122,
+        "ninjars": 0.022035311585937488,
+        "masters": 0.006369607382812498,
+        "glue": 0.008306061275702659,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.19940378881889367,
+       "ratio_to_fastest": 0.203997156020698,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.15338752986068743,
+        "ratio_to_limit": 0.15692088924669076,
         "band": [
-         0.15097278653890114,
-         0.15580227318247372
+         0.15518042260857579,
+         0.1586613558848057
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.6133302305
@@ -1809,7 +1809,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -1851,20 +1851,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.031487352500334964,
+       "seconds_per_point": 0.03265972236840753,
        "schedule": "B",
        "families": 375,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ttxgg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.09407720904528105,
-       "lc_over_fc": 0.33469692415279384,
+       "fc_seconds_per_point": 0.09624432517193782,
+       "lc_over_fc": 0.3393417981793923,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -1921,13 +1921,13 @@
        "estimate": 2.569925103011449e-09,
        "within_estimate": true,
        "dd_closest": 1.897028113555094e-13,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_gggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        }
       ]
@@ -1935,24 +1935,24 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 18.0936431188602,
-       "generate_s": 12.785654929000884,
-       "export_s": 5.307988189859316,
-       "model_s": 4.567917424952611,
-       "peak_gib": 0.728,
+       "seconds": 15.02818882605061,
+       "generate_s": 9.93935726210475,
+       "export_s": 5.08883156394586,
+       "model_s": 2.966388219036162,
+       "peak_gib": 0.744,
        "plan_mb": 4.537,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.5514876605664631,
+       "ratio_to_fastest": 0.4580537288032794,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -1976,28 +1976,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.07482716045342386,
-       "uncertainty": 0.012247390331177893,
+       "seconds_per_point": 0.07715770891445572,
+       "uncertainty": 0.007444986196473589,
        "stages": {
-        "inputs": 0.00811583546875,
-        "numerator": 0.04848329457812498,
-        "scatter": 0.0017523629843749998,
-        "ninjars": 0.009107774664062502,
-        "masters": 0.0029573092578125,
-        "glue": 0.00456835738716127,
+        "inputs": 0.00892656140625,
+        "numerator": 0.048868463617187496,
+        "scatter": 0.0017865071328125005,
+        "ninjars": 0.009672811789062506,
+        "masters": 0.0029689472031249995,
+        "glue": 0.005107347474623561,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_gggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.20016988616824108,
+       "ratio_to_fastest": 0.20640432854621552,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.1539768355140316,
+        "ratio_to_limit": 0.15877256042016577,
         "band": [
-         0.1499461603252438,
-         0.1580075107028194
+         0.15537883680718304,
+         0.1621662840331485
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.48596375034999995
@@ -2006,7 +2006,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -2041,20 +2041,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.029531175412557786,
+       "seconds_per_point": 0.03009271120208723,
        "schedule": "B",
        "families": 375,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_gggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.07482716045342386,
-       "lc_over_fc": 0.3946585067990046,
+       "fc_seconds_per_point": 0.07715770891445572,
+       "lc_over_fc": 0.39001561380536626,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         }
        ]
@@ -2114,13 +2114,13 @@
        "estimate": 4.715305570211097e-06,
        "within_estimate": true,
        "dd_closest": 4.35793642888872e-12,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[gg_gggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        },
        {
@@ -2133,20 +2133,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 35.9672971512191,
-       "generate_s": 22.737133249174803,
-       "export_s": 13.230163902044296,
-       "model_s": 4.457859273068607,
-       "peak_gib": 1.266,
+       "seconds": 33.090756251942366,
+       "generate_s": 19.921413383912295,
+       "export_s": 13.169342868030071,
+       "model_s": 2.9366515350993723,
+       "peak_gib": 1.278,
        "plan_mb": 16.103,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -2155,7 +2155,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.016925382836022507,
+       "ratio_to_fastest": 0.015571748845705141,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2184,28 +2184,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.37581796256199596,
-       "uncertainty": 0.005032778115989096,
+       "seconds_per_point": 0.39208679043804295,
+       "uncertainty": 0.006538479199622615,
        "stages": {
-        "inputs": 0.0965986594453125,
-        "numerator": 0.21616360739843754,
-        "scatter": 0.0023570547734375006,
-        "ninjars": 0.043641928257812504,
-        "masters": 0.0058111802578125005,
-        "glue": 0.010579992398987381,
+        "inputs": 0.1036417418984375,
+        "numerator": 0.21914921683593744,
+        "scatter": 0.0023883683281250003,
+        "ninjars": 0.049177835453125006,
+        "masters": 0.00587558684375,
+        "glue": 0.011698754337592376,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.13229331674843384,
+       "ratio_to_fastest": 0.13802017765912433,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.10176408980648756,
+        "ratio_to_limit": 0.10616936743009563,
         "band": [
-         0.10105577571946073,
-         0.10247240389351439
+         0.10527053171986087,
+         0.10706820314033039
         ],
         "binding": "OpenLoops",
         "limit_seconds": 3.693031238
@@ -2214,7 +2214,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -2256,20 +2256,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.14990084074997867,
+       "seconds_per_point": 0.1556508761477744,
        "schedule": "B",
        "families": 550,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_gggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.37581796256199596,
-       "lc_over_fc": 0.3988655564201528,
+       "fc_seconds_per_point": 0.39208679043804295,
+       "lc_over_fc": 0.396980668422621,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -2339,13 +2339,13 @@
        "estimate": 1.6486854729410703e-09,
        "within_estimate": true,
        "dd_closest": 5.535068690347794e-14,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_emepddxg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        },
        {
@@ -2358,20 +2358,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 22.897010582033545,
-       "generate_s": 17.251800348982215,
-       "export_s": 5.64521023305133,
-       "model_s": 4.410999405896291,
-       "peak_gib": 0.714,
+       "seconds": 15.990958039881662,
+       "generate_s": 10.881651557050645,
+       "export_s": 5.109306482831016,
+       "model_s": 3.0746204419992864,
+       "peak_gib": 0.673,
        "plan_mb": 1.129,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -2380,7 +2380,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 3.402345117709904,
+       "ratio_to_fastest": 2.3761511494948744,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2409,28 +2409,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.01583030637448246,
-       "uncertainty": 0.005029427723002574,
+       "seconds_per_point": 0.01577790365627152,
+       "uncertainty": 0.0127734101040735,
        "stages": {
-        "inputs": 0.0005249121953125,
-        "numerator": 0.008701398820312501,
-        "scatter": 0.0018259438750000004,
-        "ninjars": 0.0018968772656249987,
-        "masters": 0.0012794806718750002,
-        "glue": 0.0015406187715435136,
+        "inputs": 0.000499046515625,
+        "numerator": 0.008494384265624998,
+        "scatter": 0.0018466538125000004,
+        "ninjars": 0.0019405092734374996,
+        "masters": 0.0013069534218750002,
+        "glue": 0.0015957960845552205,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepddxg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.44820173927172424,
+       "ratio_to_fastest": 0.4467180668216086,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.3447705686705571,
+        "ratio_to_limit": 0.3436292821704681,
         "band": [
-         0.3183963671766641,
-         0.3711447701644501
+         0.3146813275142748,
+         0.37257723682666144
         ],
         "binding": "Recola",
         "limit_seconds": 0.04591548065
@@ -2439,7 +2439,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -2481,20 +2481,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.005982356102322228,
+       "seconds_per_point": 0.006390779491994181,
        "schedule": "B",
        "families": 114,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepddxg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.01583030637448246,
-       "lc_over_fc": 0.3779052635371252,
+       "fc_seconds_per_point": 0.01577790365627152,
+       "lc_over_fc": 0.4050461728769605,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -2559,13 +2559,13 @@
        "estimate": 1.0988243713152604e-09,
        "within_estimate": true,
        "dd_closest": 7.676155313492963e-14,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_emepggg].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        },
        {
@@ -2578,20 +2578,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 22.076730982866138,
-       "generate_s": 17.04941905499436,
-       "export_s": 5.027311927871779,
-       "model_s": 4.552131911972538,
-       "peak_gib": 0.733,
+       "seconds": 15.549553659046069,
+       "generate_s": 10.796217648079619,
+       "export_s": 4.75333601096645,
+       "model_s": 2.997260113945231,
+       "peak_gib": 0.695,
        "plan_mb": 2.447,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -2600,7 +2600,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 1.6491068165104652,
+       "ratio_to_fastest": 1.1615340583136915,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2629,28 +2629,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.0569293384996854,
-       "uncertainty": 0.00673977887204478,
+       "seconds_per_point": 0.059302248069798225,
+       "uncertainty": 0.009149239144504547,
        "stages": {
-        "inputs": 0.001499715828125,
-        "numerator": 0.039489113179687514,
-        "scatter": 0.0020693707421875,
-        "ninjars": 0.008015317210937501,
-        "masters": 0.002687962874999999,
-        "glue": 0.002993219142646275,
+        "inputs": 0.0016134390234375,
+        "numerator": 0.04051016784375001,
+        "scatter": 0.0021100481484375,
+        "ninjars": 0.008407947867187501,
+        "masters": 0.0027075648125000004,
+        "glue": 0.004019947268140686,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.22700105263116607,
+       "ratio_to_fastest": 0.2364628342785526,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.17461619433166622,
+        "ratio_to_limit": 0.18189448790657894,
         "band": [
-         0.16012197389116878,
-         0.18911041477216367
+         0.16635785669454103,
+         0.19743111911861685
         ],
         "binding": "Recola",
         "limit_seconds": 0.32602553684999996
@@ -2659,7 +2659,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -2701,20 +2701,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.010561313983998843,
+       "seconds_per_point": 0.0106314720633236,
        "schedule": "B",
        "families": 164,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_emepggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.0569293384996854,
-       "lc_over_fc": 0.1855161901109602,
+       "fc_seconds_per_point": 0.059302248069798225,
+       "lc_over_fc": 0.17927603774498482,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -2779,13 +2779,13 @@
        "estimate": 3.362865422808356e-08,
        "within_estimate": true,
        "dd_closest": 5.839256271708991e-13,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[gg_ttxemepg_qcd].stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        },
        {
@@ -2798,20 +2798,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 23.54274192592129,
-       "generate_s": 17.78249142691493,
-       "export_s": 5.760250499006361,
-       "model_s": 4.7330948889721185,
-       "peak_gib": 0.745,
+       "seconds": 16.148934674216434,
+       "generate_s": 10.699539461173117,
+       "export_s": 5.449395213043317,
+       "model_s": 2.994681463111192,
+       "peak_gib": 0.77,
        "plan_mb": 2.13,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -2820,7 +2820,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.8513209231968518,
+       "ratio_to_fastest": 0.5839560242710171,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -2849,28 +2849,28 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.06138784685936116,
-       "uncertainty": 0.01220709776844745,
+       "seconds_per_point": 0.06321458537604485,
+       "uncertainty": 0.00995912530547148,
        "stages": {
-        "inputs": 0.0028982239765625,
-        "numerator": 0.03899346367968749,
-        "scatter": 0.0007723154375000002,
-        "ninjars": 0.010624270343750002,
-        "masters": 0.004075986148437501,
-        "glue": 0.004174068448780287,
+        "inputs": 0.0027475517578125,
+        "numerator": 0.03974019821875,
+        "scatter": 0.0008332971093749999,
+        "ninjars": 0.011271029757812495,
+        "masters": 0.0040805176796875,
+        "glue": 0.004500006015604845,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.15206609555747536,
+       "ratio_to_fastest": 0.15659117679176174,
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.11697391965959641,
+        "ratio_to_limit": 0.12045475137827827,
         "band": [
-         0.10662482959484472,
-         0.12732300972434812
+         0.11006847897259503,
+         0.1308410237839615
         ],
         "binding": "OpenLoops",
         "limit_seconds": 0.5247994342500001
@@ -2879,7 +2879,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -2921,20 +2921,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.011239337381994119,
+       "seconds_per_point": 0.011739834601030452,
        "schedule": "B",
        "families": 164,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ttxemepg_qcd].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 0.06138784685936116,
-       "lc_over_fc": 0.18308733661474247,
+       "fc_seconds_per_point": 0.06321458537604485,
+       "lc_over_fc": 0.1857140172824618,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -2962,18 +2962,18 @@
      },
      "validation": {
       "status": "not compared",
-      "note": "in development (WP3.2): on loop the EW guards, the QED Catani operator, EW fermion lines, Feynman-gauge trees (EWI-4a), loops and counterterms (EWI-4b), on-shell external photons at alpha(0) (EWI-6b) and the UFO's EW counterterms with MadLoop's convention (EWI-0, EWI-3); open: colour-singlet fermion lines through the loop and lepton-line signs (EWI-5), Levi-Civita cells (EWI-7b), EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)"
+      "note": "in development (WP3.2): on loop the EW guards, the QED Catani operator, EW fermion lines, Feynman-gauge trees (EWI-4a), loops and counterterms (EWI-4b), on-shell external photons at alpha(0) (EWI-6b), the UFO's EW counterterms with MadLoop's convention (EWI-0, EWI-3) lowered at scale (EWI-3R), Levi-Civita cells and one reading sign per vertex (EWI-7b) and lepton lines through the loop (EWI-5); open: EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)"
      },
      "row_status": {
       "status": "in development",
-      "reason": "lepton lines through the loop (EWI-5), EW native inputs (EWI-N)",
+      "reason": "EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)",
       "package": "WP3.2",
       "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]"
      },
      "generation": {
       "main": {
        "status": "in development",
-       "reason": "lepton lines through the loop (EWI-5), EW native inputs (EWI-N)",
+       "reason": "EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)",
        "package": "WP3.2",
        "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]",
        "configuration": "registry",
@@ -3011,7 +3011,7 @@
       "gate_rule": "G1 (not timed by G1)",
       "main": {
        "status": "in development",
-       "reason": "lepton lines through the loop (EWI-5), EW native inputs (EWI-N)",
+       "reason": "EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)",
        "package": "WP3.2",
        "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]",
        "configuration": "registry",
@@ -3058,7 +3058,7 @@
      "leading_colour": {
       "main": {
        "status": "in development",
-       "reason": "lepton lines through the loop (EWI-5), EW native inputs (EWI-N)",
+       "reason": "EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)",
        "package": "WP3.2",
        "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]",
        "configuration": "registry",
@@ -3116,7 +3116,7 @@
        "estimate": 1.8549019155855338e-11,
        "within_estimate": false,
        "dd_closest": 1.4144241420398502e-12,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_ggggg].stability (native/full)",
        "reference_own": {
         "key": "recola",
@@ -3132,7 +3132,7 @@
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        },
        {
@@ -3145,20 +3145,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 133.40689600585029,
-       "generate_s": 50.60767946392298,
-       "export_s": 82.79921654192731,
-       "model_s": 4.321753704920411,
-       "peak_gib": 3.025,
+       "seconds": 129.18931757821701,
+       "generate_s": 48.71885789511725,
+       "export_s": 80.47045968309976,
+       "model_s": 2.9244196359068155,
+       "peak_gib": 3.033,
        "plan_mb": 69.176,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[uux_ggggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -3167,7 +3167,7 @@
          "status": "measured"
         }
        ],
-       "ratio_to_fastest": 0.013053462388989322,
+       "ratio_to_fastest": 0.012640785061009895,
        "ratio_basis": "G1 campaign on both sides (pinned cores of the G1 protocol)"
       },
       "providers": {
@@ -3194,29 +3194,29 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 1.709975151828985,
-       "uncertainty": 0.008293879197366273,
+       "seconds_per_point": 1.7499186762415775,
+       "uncertainty": 0.013256129014902949,
        "stages": {
-        "inputs": 0.215568387671875,
-        "numerator": 1.1593477496171873,
-        "scatter": 0.0092865756171875,
-        "ninjars": 0.23295395467968744,
-        "masters": 0.0442143409140625,
-        "glue": 0.05601901298428169,
+        "inputs": 0.2091424219140625,
+        "numerator": 1.1770000132812497,
+        "scatter": 0.009450422210937493,
+        "ninjars": 0.25880186879687495,
+        "masters": 0.04491169109374999,
+        "glue": 0.060783824668346975,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[uux_ggggg].pyamplicol['native/full'].batches['128']",
-       "ratio_to_fastest": 0.009384569854975638,
+       "ratio_to_fastest": 0.009603785201293949,
        "ratio_to_fastest_bound": "lower",
        "gate": {
         "status": "pass",
-        "ratio_to_limit": 0.003004810150355742,
+        "ratio_to_limit": 0.0030749998881817943,
         "band": [
-         0.002750722610194386,
-         0.0032588976905170977
+         0.0027997181676122336,
+         0.003350281608751355
         ],
         "binding": "MadLoop",
         "limit_seconds": 569.079265
@@ -3225,7 +3225,7 @@
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -3275,20 +3275,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 0.5286158519302262,
+       "seconds_per_point": 0.5423433722262416,
        "schedule": "B",
        "families": 2712,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[uux_ggggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 1.709975151828985,
-       "lc_over_fc": 0.30913656924477534,
+       "fc_seconds_per_point": 1.7499186762415775,
+       "lc_over_fc": 0.30992490084800417,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -3324,28 +3324,28 @@
         "key": "njet_dd_oneloop_R1",
         "short": "NJet DD",
         "points": 10,
-        "max_finite": 3.732137568931227e-08,
+        "max_finite": 3.732137557226497e-08,
         "median_finite": 2.0453792777268e-09,
         "worst_point": 4,
         "fixture": "gg_ggggg_njet"
        }
       ],
-      "max_finite": 3.732137568931227e-08,
+      "max_finite": 3.732137557226497e-08,
       "median_finite": 2.0453792777268e-09,
       "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].accuracy_check",
       "worst_point": {
        "index": 4,
        "fixture": "gg_ggggg_njet",
-       "estimate": 1.2697658781127443e-06,
+       "estimate": 1.2697658780834825e-06,
        "within_estimate": true,
        "dd_closest": 0.0,
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[gg_ggggg].fixture_stability (native/full)"
       },
       "considered": [
        {
         "configuration": "integrated",
-        "revision": "11542fd5",
+        "revision": "28a16255",
         "status": "compared"
        },
        {
@@ -3366,10 +3366,10 @@
         {
          "index": 4,
          "finite": {
-          "njet_dd_oneloop_R1": 3.732137568931227e-08
+          "njet_dd_oneloop_R1": 3.732137557226497e-08
          },
-         "max_error": 4.300543728812903e-08,
-         "estimate": 1.2697658781127443e-06,
+         "max_error": 4.3005437171081733e-08,
+         "estimate": 1.2697658780834825e-06,
          "dd_deviation": {
           "njet_dd_oneloop_R1": 0.0
          }
@@ -3388,7 +3388,7 @@
        ],
        "tolerance": 2e-08,
        "passed": false,
-       "max_error": 4.300543728812903e-08,
+       "max_error": 4.3005437171081733e-08,
        "check": "g1.json processes[gg_ggggg].pyamplicol['native/full'].accuracy_check",
        "source": "milestone.json validation_decisions"
       },
@@ -3397,20 +3397,20 @@
      "generation": {
       "main": {
        "status": "measured",
-       "seconds": 385.20783852390014,
-       "generate_s": 173.93960099690594,
-       "export_s": 211.2682375269942,
-       "model_s": 4.376979123102501,
-       "peak_gib": 9.532,
+       "seconds": 406.0246468828991,
+       "generate_s": 180.0791221128311,
+       "export_s": 225.945524770068,
+       "model_s": 3.074457230977714,
+       "peak_gib": 9.53,
        "plan_mb": 159.867,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].generation",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -3445,26 +3445,26 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 8.2000867202878,
-       "uncertainty": 0.010360442771559399,
+       "seconds_per_point": 7.675508779657321,
+       "uncertainty": 0.04227353275053766,
        "stages": {
-        "inputs": 3.52726272721875,
-        "numerator": 4.009341463640625,
-        "scatter": 0.012157197203125006,
-        "ninjars": 0.4875669291171877,
-        "masters": 0.043965857804687515,
-        "glue": 0.03489457955015318,
+        "inputs": 3.1723041249765624,
+        "numerator": 3.9360335788046865,
+        "scatter": 0.011525191593749994,
+        "ninjars": 0.4768728487265626,
+        "masters": 0.043560577375,
+        "glue": 0.03521951589457828,
         "untimed": 0.0
        },
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/full",
        "source": "g1.json processes[gg_ggggg].pyamplicol['native/full'].batches['128']",
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
@@ -3472,13 +3472,7 @@
          "revision": "6f5a64cc",
          "status": "no record"
         }
-       ],
-       "note": {
-        "kind": "run conditions",
-        "label": "busier host: about +15 % contention",
-        "reason": "re-run alone on 2026-10-27 (core 163, host load average 158-287, other users' unpinned processes on the same CCX) after a session stop killed its first run of 2026-10-26 (same engine, stored process and core) in round 3: this run's times per point lie about 15 % (B = 128) and 17 % (B = 16) above that run's blocks, its warm-ups and load took longer, the values are bitwise the same; the killed run is no input",
-        "source": "milestone.json cell_notes (data/g1.json seven_leg_rows and host)"
-       }
+       ]
       },
       "providers": {
        "madloop": {
@@ -3514,7 +3508,7 @@
           ],
           "max_rotation": 3.0248729042373344e-08,
           "max_estimate": 7.694100422732902e-08,
-          "revision": "11542fd5"
+          "revision": "28a16255"
          },
          "native/lc": {
           "points": [
@@ -3524,7 +3518,7 @@
           ],
           "max_rotation": 1.1884253316246013e-08,
           "max_estimate": 3.1764945629520285e-08,
-          "revision": "11542fd5"
+          "revision": "28a16255"
          }
         },
         "what": "binary64 finite part: relative deviation under one rotation about z by (3/5, 4/5), and the estimate E (rotation plus reduction direction)",
@@ -3532,7 +3526,7 @@
        },
        "ward": {
         "status": "pending \u2014 needs native Ward inputs",
-        "reason": "pending (coordinator ruling, slice-status DECISIONS 2026-10-25 ~19:40: a recorded, temporary deviation from ADDENDUM H; the seven-gluon Ward check moves to a generation-scale run with native Ward inputs, which generation-scale-2's first run, integrated at 11542fd5, did not include; milestone m1026a's G1 campaign did not attempt it). Attempted at seven legs on slice 7db32901 (package measure-g1-7leg, session 6): the Ward-mode generation of g g > g g g g g (Python per-point inputs with full tree kernels; point 0, leg 3, c = 1) had not finished after 55 min when the job stopped; one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs, a growth of x62-87 per added gluon, which puts one seven-gluon Ward evaluation at about 1.6e5-2.5e5 s (46-69 h) with Python per-point inputs (an estimate, not a measurement): seven gluons need native Ward inputs; the 5- and 6-gluon Ward rows pass",
+        "reason": "pending (coordinator ruling, slice-status DECISIONS 2026-10-25 ~19:40: a recorded, temporary deviation from ADDENDUM H; the seven-gluon Ward check moves to a generation-scale run with native Ward inputs, which generation-scale-2's first run, integrated at 11542fd5, did not include; the G1 campaigns of milestones m1026a and m1028a did not attempt it). Attempted at seven legs on slice 7db32901 (package measure-g1-7leg, session 6): the Ward-mode generation of g g > g g g g g (Python per-point inputs with full tree kernels; point 0, leg 3, c = 1) had not finished after 55 min when the job stopped; one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs, a growth of x62-87 per added gluon, which puts one seven-gluon Ward evaluation at about 1.6e5-2.5e5 s (46-69 h) with Python per-point inputs (an estimate, not a measurement): seven gluons need native Ward inputs; the 5- and 6-gluon Ward rows pass",
         "reason_source": "milestone.json status_notes.notes[gg_ggggg].ward",
         "lower_multiplicity": [
          {
@@ -3559,20 +3553,20 @@
       "main": {
        "status": "measured",
        "batch": 128,
-       "seconds_per_point": 3.586690328116674,
+       "seconds_per_point": 3.7856178047259164,
        "schedule": "B",
        "families": 4707,
        "inputs": "native",
-       "revision": "11542fd5",
+       "revision": "28a16255",
        "g1_configuration": "native/lc",
        "source": "g1.json processes[gg_ggggg].pyamplicol['native/lc'].batches['128']",
-       "fc_seconds_per_point": 8.2000867202878,
-       "lc_over_fc": 0.4373966337749647,
+       "fc_seconds_per_point": 7.675508779657321,
+       "lc_over_fc": 0.49320740987999084,
        "configuration": "integrated",
        "considered": [
         {
          "configuration": "integrated",
-         "revision": "11542fd5",
+         "revision": "28a16255",
          "status": "measured"
         },
         {
