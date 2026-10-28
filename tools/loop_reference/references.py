@@ -426,14 +426,28 @@ def build_madloop(export, work, global_flag, subprocess_dir=None):
     return binary, repairs
 
 
-def prepare_madloop_run(spec, export, run_dir, mg5, legs):
-    """Copy cards/resources and set every scheme parameter by its card name."""
+MADLOOP_FILTERS = ("*HelFilter.dat", "*LoopFilter.dat")
+
+
+def prepare_madloop_run(spec, export, run_dir, mg5, legs, madloop_params=None):
+    """Copy cards/resources and set every scheme parameter by its card name.
+
+    MadLoop writes its numerical helicity and loop filters (``*HelFilter.dat``,
+    ``*LoopFilter.dat``) into the run's resources at the end of its
+    initialisation and loads them on later runs instead of rebuilding them: a
+    filter left by an earlier run in the same directory (another point set, or
+    a run with a broken Born) is removed, so every run builds its own.
+    ``madloop_params`` sets MadLoopParams.dat entries by name (``{"HelicityFilterLevel": "0"}``)."""
     sys.path.insert(0, str(mg5))
     from models.check_param_card import ParamCard
 
     shutil.copytree(export / "Cards", run_dir / "Cards", dirs_exist_ok=True)
-    shutil.copytree(export / "SubProcesses/MadLoop5_resources",
-                    run_dir / "SubProcesses/MadLoop5_resources", dirs_exist_ok=True, symlinks=False)
+    resources = run_dir / "SubProcesses/MadLoop5_resources"
+    shutil.copytree(export / "SubProcesses/MadLoop5_resources", resources, dirs_exist_ok=True, symlinks=False)
+    inherited = sorted(path.name for pattern in MADLOOP_FILTERS for path in resources.glob(pattern)
+                       if not (export / "SubProcesses/MadLoop5_resources" / path.name).exists())
+    for name in inherited:
+        (resources / name).unlink()
     card = ParamCard(str(run_dir / "Cards/param_card.dat"))
     by_name = {}
     for block in card.values():
@@ -473,12 +487,21 @@ def prepare_madloop_run(spec, export, run_dir, mg5, legs):
         text, n = re.subn(r"(#COLLIERGlobalCache\s*\n)\s*-?\d+", r"\g<1>0", text)
         if n != 1:
             raise RuntimeError("cannot disable the COLLIER global cache")
-        params.write_text(text)
-    for key in ("MLReductionLib", "COLLIERGlobalCache", "MLStabThres", "ImprovePSPoint"):
+    for key, entry in (madloop_params or {}).items():
+        text, n = re.subn(rf"(#{re.escape(key)}\s*\n)\s*\S+", lambda m: m.group(1) + str(entry), text)
+        if n != 1:
+            raise RuntimeError(f"MadLoopParams.dat has no single entry #{key}")
+    params.write_text(text)
+    for key in ("MLReductionLib", "COLLIERGlobalCache", "MLStabThres", "ImprovePSPoint", *(madloop_params or {})):
         match = re.search(rf"#{key}\s*\n\s*(\S+)", text)
         settings[key] = match.group(1) if match else None
-    return {"absent_card_parameters_fixed_to_zero": absent, "MadLoopParams": settings,
-            "param_card": (run_dir / "Cards/param_card.dat").read_text()}
+    out = {"absent_card_parameters_fixed_to_zero": absent, "MadLoopParams": settings,
+           "param_card": (run_dir / "Cards/param_card.dat").read_text()}
+    if madloop_params:
+        out["MadLoopParams_overrides"] = dict(madloop_params)
+    if inherited:
+        out["inherited_filters_removed"] = inherited
+    return out
 
 
 # ----------------------------------------------------------------- common
@@ -560,13 +583,24 @@ def madloop_sectors(values, nanswer, nloop, born_so, loop_so, step):
     return {"born": born, "loop": loop, "total": total}
 
 
+MADLOOP_SECTOR_LINES = ("LOOP_SO", "HEL_INDEX", "SECTORS", "HEL_ROW")
+
+
 def parse_rows(stdout, provider, count, step=None, born_so=None):
+    """Result rows of a provider driver's output. MadLoop's per-sector lines
+    (LOOP_SO, SECTORS, HEL_INDEX, HEL_ROW) are read only with ``step`` (the
+    correction step naming each loop sector's Born sector); callers without it
+    (the G1 benchmark's timing runs) get the ROW values alone, as before the
+    driver printed sectors."""
     rows = [None] * count
     extra = {}
     born_so, loop_so, hel_tuples, dims = dict(born_so or {}), {}, {}, None
+    sectors = provider == "madloop" and step is not None
     for line in stdout.splitlines():
         fields = line.split()
         if not fields:
+            continue
+        if provider == "madloop" and not sectors and fields[0] in MADLOOP_SECTOR_LINES:
             continue
         if provider == "madloop" and fields[0] == "LOOP_SO":
             index, qcd, qed = map(int, fields[1:4])
@@ -762,7 +796,8 @@ def command_run(args):
                     f"{flags['mg5_production']}; rebuild it with madloop_export.py --recompile")
             binary, repairs = build_madloop(export, run_dir, flags["export_make_opts"]["GLOBAL_FLAG"],
                                             args.subprocess)
-            result["settings"] = prepare_madloop_run(spec, export, run_dir, args.mg5, legs)
+            result["settings"] = prepare_madloop_run(spec, export, run_dir, args.mg5, legs,
+                                                     dict(item.split("=", 1) for item in args.madloop_param))
             result["settings"]["export"] = str(export)
             result["settings"]["fortran_flags"] = flags
             result["settings"]["mg5_quadruple_precision_model_function_repairs"] = [
@@ -1338,6 +1373,8 @@ def main():
     run.add_argument("--madloop-accuracy", type=float, default=1e-11,
                      help="relative accuracy target forcing quadruple-precision rescue; <= 0 keeps "
                      "MadLoop's production MLStabThres and its default stability test")
+    run.add_argument("--madloop-param", action="append", default=[], metavar="KEY=VALUE",
+                     help="set a MadLoopParams.dat entry of the run, e.g. HelicityFilterLevel=0 (recorded)")
     run.add_argument("--tag", help="suffix for a secondary run of the same provider, e.g. "
                      "'production' (writes <provider>-<tag>-result.json; never merged as values)")
     run.add_argument("--wait-for-export", action="store_true",
