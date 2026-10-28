@@ -94,7 +94,10 @@ UNBLOCKERS = (
 )
 EXTRAS = ("nc", "ap", "ward", "uv", "hel", "sp")
 # Extras this harness checks today (the others are listed as pending).
-IMPLEMENTED_EXTRAS = frozenset({"ap", "uv", "hel"})
+# ``sp`` (PLAN §4.1 special points S1-S4) is checked by the row's gating
+# variants (``<id>@<name>``: the special-point references on the base row's
+# generation), so a row with ``sp`` and no gating variant is malformed.
+IMPLEMENTED_EXTRAS = frozenset({"ap", "uv", "hel", "sp"})
 
 
 Sector = tuple[tuple[str, int], ...]
@@ -279,6 +282,12 @@ class Reference:
     virtual: list[dict[str, dict[Any, tuple[float, float, float]]]]
     accuracy: list[dict[str, Any]]
     alpha_s: float
+    # Per point and provider, what the provider states about its own value
+    # (the return status, e.g. MadLoop's 216 = stable in double precision
+    # and 3xx = in quadruple precision, and the relative deviation of its
+    # double pole from its Born times the universal IR factor): evidence
+    # printed with a rule 1 miss, never a pass condition.
+    evidence: list[dict[str, dict[str, Any]]] = field(default_factory=list)
 
     @property
     def primary(self) -> str:
@@ -327,14 +336,20 @@ def _required(row, spec, data) -> Reference:
     sector."""
 
     providers = tuple(spec.get("providers") or data["rows"][0]["providers"])
-    born, virtual, accuracy = [], [], []
+    born, virtual, accuracy, evidence = [], [], [], []
     for entry in data["rows"]:
-        b, v, a = {}, {}, {}
+        b, v, a, e = {}, {}, {}, {}
         for name in providers:
             values = entry["providers"][name]
             b[name] = {TOTAL: float(values["born"])}
             v[name] = {TOTAL: _laurent(values)}
             a[name] = values.get("accuracy", values.get("estimated_relative_accuracy"))
+            e[name] = {
+                key: values[key]
+                for key in ("status", "universal_double_pole_relative_error")
+                if values.get(key) is not None
+            }
+        evidence.append(e)
         sectors = entry.get("sectors")
         if sectors and providers[0] == data.get("primary_provider", "madloop"):
             primary = providers[0]
@@ -369,6 +384,7 @@ def _required(row, spec, data) -> Reference:
         virtual,
         accuracy,
         float(parameters["aS"]),
+        evidence,
     )
 
 
@@ -1035,6 +1051,34 @@ def _accuracy(reference: Reference, index: int, provider: str, sector, name):
     return None if found is None or float(found) < 0 else float(found)
 
 
+def _miss_evidence(
+    reference: Reference,
+    index: int,
+    primary: str,
+    accuracy: float | None,
+    seconds: Mapping[str, float],
+) -> str:
+    """What a rule 1 miss is to be judged by (no pass condition): the
+    primary's own accuracy and status, the deviation of its double pole from
+    its Born times the universal IR factor, and the second providers'
+    deviations from double-double."""
+
+    stated = (reference.evidence[index] if reference.evidence else {}).get(primary, {})
+    parts = [f"own accuracy {accuracy!r}"]
+    if "status" in stated:
+        parts.append(f"status {stated['status']}")
+    if "universal_double_pole_relative_error" in stated:
+        parts.append(
+            "its double pole off its Born x the universal factor by "
+            f"{float(stated['universal_double_pole_relative_error']):.3g}"
+        )
+    parts.append(
+        "second providers "
+        + (", ".join(f"{p} {e:.3g}" for p, e in seconds.items()) or "none")
+    )
+    return " (" + "; ".join(parts) + ")"
+
+
 def _reference_check(
     row, reference, index, sector, name, mine, value, providers, other, flux
 ) -> Check:
@@ -1074,6 +1118,10 @@ def _reference_check(
             not listed,
             note=note,
         )
+    accuracy = _accuracy(reference, index, primary, sector, name)
+    seconds = {
+        p: relative(mine, other(p)) for p in providers[1:] if other(p) is not None
+    }
     if not listed:
         return Check(
             "1",
@@ -1086,12 +1134,9 @@ def _reference_check(
             error,
             REFERENCE_TOLERANCE,
             False,
-            note=f"against {primary}; not a listed outlier",
+            note=f"against {primary}; not a listed outlier"
+            + _miss_evidence(reference, index, primary, accuracy, seconds),
         )
-    accuracy = _accuracy(reference, index, primary, sector, name)
-    seconds = {
-        p: relative(mine, other(p)) for p in providers[1:] if other(p) is not None
-    }
     covered = accuracy is not None and accuracy >= error
     agreeing = [p for p, e in seconds.items() if e <= REFERENCE_TOLERANCE]
     passed = covered and bool(agreeing)

@@ -1475,7 +1475,7 @@ for r in R:
             pend[e] = "MQ-WARD (generic native Ward input)"
         elif e == "hel" and r["id"] not in ("A08", "B01", "D05"):
             pend[e] = "MQ-REF (per-helicity SLOOPMATRIXHEL references)"
-        elif e == "sp":
+        elif e == "sp" and not any(v.get("gating", True) for v in variants):
             pend[e] = "MQ-REF (supplied special points S1-S4)"
     if pend:
         entry["extras_pending"] = pend
