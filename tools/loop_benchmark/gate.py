@@ -35,6 +35,16 @@ tools.loop_benchmark``) and writes one JSON document for the live report
   over the limit with that band decides: pass if the whole band passes, fail
   if the whole band fails, otherwise "inconclusive" (to be repeated once,
   item 10). The ratio with the providers' means is kept beside it;
+- the **gate batch** (the user's rule of 2026-10-28, slice-status DECISIONS
+  ~08:20 item 2, MASTER_PLAN §5.8 amendment): G1 is the batched
+  B = ``GATE_BATCH`` (128) verdict only. Every other timed batch (B = 1, the
+  2->5 rows' B = 16, any other) keeps its checks, ratios, band and
+  uncertainty under the non-gating status ``GATE_REPORTED_STATUS``, the
+  checks' own verdict as ``measured_status``. The 5 ms floor (the user's
+  rule of 2026-10-24) is decided on the B = 128 median (``floor_bases``). A
+  configuration's verdict (its ``gate``) is its B = 128 one; without a
+  B = 128 timing it is ``GATE_MISSING_STATUS`` with the reason, never one
+  taken from another batch size;
 - a configuration measured twice (a repeat) keeps the earlier run's batch
   times as ``earlier_runs``; the later run, with its paired provider run,
   decides; a later run without an accuracy check or physical rows keeps the
@@ -79,10 +89,15 @@ from . import providers as provider_module
 from . import streams
 
 GATE_FACTOR = 1.30
+# The user's rule of 2026-10-28 (slice-status DECISIONS ~08:20 item 2,
+# MASTER_PLAN §5.8 amendment): the speed gate is taken at B = 128 only; every
+# other batch is reported with its checks and ratios, without a verdict.
+GATE_BATCH = 128
+GATE_REPORTED_STATUS = "reported: gated at B = 128 only (user 2026-10-28)"
+GATE_MISSING_STATUS = "missing"
 # The user's rule of 2026-10-24 (slice-status DECISIONS ~22:35): a process
-# whose pyAmpliCol batched time per point is below 5 ms has no blocking gate
-# (at every batch of that configuration, ``floor_bases``); its ratio is
-# still shown.
+# whose pyAmpliCol batched time per point (at B = 128, ``floor_bases``) is
+# below 5 ms has no blocking gate; its ratio is still shown.
 GATE_FLOOR_SECONDS = 5e-3
 GATE_FLOOR_STATUS = "below 5 ms: not gated (user 2026-10-24)"
 ADOPT_M = 0.85
@@ -144,6 +159,7 @@ def gate_verdict(
     missing: dict[str, str] | None = None,
     outside: dict[str, dict[str, Any]] | None = None,
     floor_basis: float | None = None,
+    batch: int = GATE_BATCH,
 ) -> dict[str, Any]:
     """The speed gate of one pyAmpliCol time against the matched providers.
 
@@ -152,11 +168,14 @@ def gate_verdict(
     taken on the band ratio x (1 -+ u), u the sum of both. ``missing``: the
     matched providers without a protocol-mode timing (reason); ``outside``:
     their timings outside the protocol (seconds, mode), reported as ratios
-    beside the verdict. A batched time below ``GATE_FLOOR_SECONDS`` is not
-    gated (the user's rule of 2026-10-24): its verdict is ``GATE_FLOOR_STATUS``
-    with every check and ratio kept and the checks' own verdict as
+    beside the verdict. ``batch``: the time's batch size; at any other than
+    ``GATE_BATCH`` the time is reported, not gated (the user's rule of
+    2026-10-28): its status is ``GATE_REPORTED_STATUS`` with every check and
+    ratio kept and the checks' own verdict as ``measured_status``. A batched
+    time below ``GATE_FLOOR_SECONDS`` is not gated (the user's rule of
+    2026-10-24): its verdict is ``GATE_FLOOR_STATUS``, the checks' own as
     ``measured_status``. ``floor_basis`` is that batched time (``floor_bases``:
-    the configuration's at its largest batch above 1), ``seconds`` by default."""
+    the configuration's at B = 128), ``seconds`` by default."""
 
     verdict = _verdict(
         seconds,
@@ -167,6 +186,13 @@ def gate_verdict(
         missing=missing,
         outside=outside,
     )
+    if batch != GATE_BATCH:
+        return {
+            **verdict,
+            "status": GATE_REPORTED_STATUS,
+            "measured_status": verdict["status"],
+            "gate_batch": GATE_BATCH,
+        }
     basis = seconds if floor_basis is None else floor_basis
     if basis < GATE_FLOOR_SECONDS:
         # Below the floor the checks and ratios stay, the verdict does not
@@ -184,25 +210,42 @@ def gate_verdict(
 def floor_bases(configurations: dict[str, dict[str, Any]]) -> dict[str, float | None]:
     """The batched time per point that decides the 5 ms floor of each
     configuration of a process (the user's rule concerns the batched time):
-    its median at its largest batch above 1, so every batch of it (B = 1
-    included) has the same verdict; for a configuration timed at B = 1 only
-    (the one-lane runs) that of the process's default configuration of the
-    same inputs and colour accuracy (schedule B, 16 lanes); None without
-    either."""
+    its median at B = ``GATE_BATCH``, the only batch with a verdict; None
+    without a B = 128 timing (no verdict, ``configuration_gate``)."""
 
-    own: dict[str, float | None] = {}
-    for name, record in configurations.items():
-        sizes = [int(size) for size in record.get("batches", {}) if int(size) > 1]
-        own[name] = (
-            record["batches"][str(max(sizes))]["median_seconds_per_point"]
-            if sizes
-            else None
-        )
-    bases = {}
-    for name, record in configurations.items():
-        default = f"{record['inputs']}/{record['accuracy']}"
-        bases[name] = own[name] if own[name] is not None else own.get(default)
-    return bases
+    return {
+        name: record.get("batches", {})
+        .get(str(GATE_BATCH), {})
+        .get("median_seconds_per_point")
+        for name, record in configurations.items()
+    }
+
+
+def configuration_gate(
+    record: dict[str, Any], batches: dict[str, dict[str, Any]]
+) -> dict[str, Any]:
+    """The G1 verdict of one configuration: its B = ``GATE_BATCH`` verdict
+    (``batch``, ``status``; the checks are that batch's ``gate``). Without a
+    B = 128 timing a gated configuration has none (``GATE_MISSING_STATUS``
+    with the reason); the verdict of another batch is never taken."""
+
+    if str(GATE_BATCH) in batches:
+        return {
+            "batch": GATE_BATCH,
+            "status": batches[str(GATE_BATCH)]["gate"]["status"],
+        }
+    if record.get("generation_error"):
+        why = f"generation refused: {record['generation_error'].split(':')[0]}"
+    elif str(GATE_BATCH) in record.get("skipped_batches", {}):
+        why = f"skipped: {record['skipped_batches'][str(GATE_BATCH)]}"
+    else:
+        timed = ", ".join(str(size) for size in sorted(map(int, batches))) or "none"
+        why = f"timed at B = {timed}"
+    return {
+        "status": GATE_MISSING_STATUS,
+        "reason": f"no B = {GATE_BATCH} timing ({why}); G1 is taken at "
+        f"B = {GATE_BATCH} only (user 2026-10-28)",
+    }
 
 
 def _verdict(
@@ -703,14 +746,17 @@ def build(
         for name, record in entry["pyamplicol"].items():
             batches = {}
             mine: dict[int, tuple] = {}
+            ungated = None
+            if legs < 3:
+                ungated = "no gate (2->2)"
+            elif record["accuracy"] != "full":
+                # Providers time full colour: LC/NLC carry no ratio.
+                ungated = "no gate (colour approximation)"
             for size, summary in record.get("batches", {}).items():
                 samples = summary["samples_seconds_per_point"]
                 uncertainty = median_uncertainty(samples)
-                if legs < 3:
-                    verdict = {"status": "no gate (2->2)"}
-                elif record["accuracy"] != "full":
-                    # Providers time full colour: LC/NLC carry no ratio.
-                    verdict = {"status": "no gate (colour approximation)"}
+                if ungated is not None:
+                    verdict = {"status": ungated}
                 else:
                     verdict = gate_verdict(
                         summary["median_seconds_per_point"],
@@ -721,6 +767,7 @@ def build(
                         missing=missing,
                         outside=outside,
                         floor_basis=bases[name],
+                        batch=int(size),
                     )
                 for index, value in _values_of(summary).items():
                     mine.setdefault(index, value)
@@ -764,6 +811,11 @@ def build(
                 # standing for a run that did not finish: its batches hold the
                 # completed rounds (``blocks``).
                 **({"partial": True} if record.get("partial") else {}),
+                # The configuration's G1 verdict: its B = 128 one (module
+                # docstring, the gate batch).
+                "gate": {"status": ungated}
+                if ungated is not None
+                else configuration_gate(record, batches),
                 "batches": batches,
                 "values_vs_providers": compare_values(key, mine, provider_values)
                 if record["accuracy"] == "full"
@@ -948,6 +1000,10 @@ def main(options: Any) -> int:
                         if "ratio_to_binding_limit" in gate
                         else ""
                     )
+                )
+            if config["gate"]["status"] == GATE_MISSING_STATUS:
+                line.append(
+                    f"{name} G1 {GATE_MISSING_STATUS}: {config['gate']['reason']}"
                 )
         print("; ".join(line))
     return 0
