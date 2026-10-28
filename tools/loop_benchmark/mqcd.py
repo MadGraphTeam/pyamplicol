@@ -145,6 +145,8 @@ class Row:
     binary64_out_of_scope: tuple[Mapping[str, Any], ...] = ()
     reference_outliers: tuple[Mapping[str, Any], ...] = ()
     vanishing: tuple[Mapping[str, Any], ...] = ()
+    # Reference fixed parameters the model does not have (MadLoop's WTau).
+    ignored_fixed_parameters: tuple[str, ...] = ()
     notes: str = ""
 
     @classmethod
@@ -184,6 +186,7 @@ class Row:
             binary64_out_of_scope=tuple(data.get("binary64_out_of_scope", ())),
             reference_outliers=tuple(data.get("reference_outliers", ())),
             vanishing=tuple(data.get("vanishing", ())),
+            ignored_fixed_parameters=tuple(data.get("ignored_fixed_parameters", ())),
             notes=data.get("notes", ""),
         )
 
@@ -290,7 +293,7 @@ def _required(row, spec, data) -> Reference:
         born,
         virtual,
         accuracy,
-        float(data["parameters"].get("aS", 0.118)),
+        float(data["parameters"]["aS"]),
     )
 
 
@@ -304,9 +307,7 @@ def _providers(row, spec, data) -> Reference:
         born.append(
             {p: {TOTAL: float(entry["providers"][p]["born"])} for p in providers}
         )
-        virtual.append(
-            {p: {TOTAL: _laurent(entry["providers"][p])} for p in providers}
-        )
+        virtual.append({p: {TOTAL: _laurent(entry["providers"][p])} for p in providers})
     return Reference(
         "",
         providers,
@@ -317,7 +318,7 @@ def _providers(row, spec, data) -> Reference:
         born,
         virtual,
         [{} for _ in data["rows"]],
-        float(row.parameters.get("aS", 0.118)),
+        float(row.parameters["aS"]),
     )
 
 
@@ -339,7 +340,7 @@ def _component_control(row, spec, data) -> Reference:
         born,
         virtual,
         [{} for _ in data["rows"]],
-        float(row.parameters.get("aS", 0.118)),
+        float(row.parameters["aS"]),
     )
 
 
@@ -362,15 +363,21 @@ def _model_control(row, spec, data) -> Reference:
         born,
         virtual,
         accuracy,
-        float(parameters.get("aS", 0.118)),
+        float(parameters["aS"]),
     )
 
 
 def _dilepton(row, spec, data) -> Reference:
-    """``dilepton-two-gluon.json``: MadLoop per row, Recola converted."""
+    """``dilepton-two-gluon.json``: MadLoop per row, Recola converted; with
+    ``"points": "precision"`` its exact rational points (``precision_points``,
+    exactly massless with exact momentum conservation) instead of the rounded
+    RAMBO ones."""
 
+    exact = spec.get("points") == "precision"
+    entries = data["precision_rows" if exact else "rows"]
+    points = data["precision_points" if exact else "points"]
     born, virtual = [], []
-    for entry in data["rows"]:
+    for entry in entries:
         born.append(
             {
                 "madloop": {TOTAL: float(entry["born"])},
@@ -387,14 +394,14 @@ def _dilepton(row, spec, data) -> Reference:
     return Reference(
         "",
         ("madloop", "recola"),
-        [_strings(p) for p in data["points"]],
+        [_strings(p) for p in points],
         [_scale(mu) for mu in data["mu_r"]],
         parameters,
         dict(data.get("fixed_parameters", {})),
         born,
         virtual,
-        [{} for _ in data["rows"]],
-        float(parameters.get("aS", 0.118)),
+        [{} for _ in entries],
+        float(parameters["aS"]),
     )
 
 
@@ -431,7 +438,7 @@ def _mixed_sm(row, spec, data) -> Reference:
         born,
         virtual,
         accuracy,
-        float(parameters.get("aS", 0.118)),
+        float(parameters["aS"]),
     )
 
 
@@ -461,7 +468,7 @@ def _mqcd(row, spec, data) -> Reference:
         born,
         virtual,
         accuracy,
-        float(parameters.get("aS", 0.118)),
+        float(parameters["aS"]),
     )
 
 
@@ -776,9 +783,7 @@ def _flux(born: Any, alpha_s: float) -> float:
     return abs(float(born)) * alpha_s / (2 * math.pi)
 
 
-def rule1(
-    row: Row, reference: Reference, index: int, dd: Evaluated
-) -> list[Check]:
+def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Check]:
     """Double-double against the primary provider (and the outlier rule)."""
 
     checks = []
@@ -791,7 +796,14 @@ def rule1(
         text = sector_text(sector)
         checks.append(
             _reference_check(
-                row, reference, index, text, "born", mine, value, providers,
+                row,
+                reference,
+                index,
+                text,
+                "born",
+                mine,
+                value,
+                providers,
                 lambda p, s=sector: reference.born[index][p].get(s),
                 None,
             )
@@ -801,19 +813,36 @@ def rule1(
         text = sector_text(sector)
         if mine is None:
             checks.append(
-                Check("1", index, "double-double", text, "virtual", "absent",
-                      str(laurent), math.inf, REFERENCE_TOLERANCE, False,
-                      note="the reference's sector is absent from ours")
+                Check(
+                    "1",
+                    index,
+                    "double-double",
+                    text,
+                    "virtual",
+                    "absent",
+                    str(laurent),
+                    math.inf,
+                    REFERENCE_TOLERANCE,
+                    False,
+                    note="the reference's sector is absent from ours",
+                )
             )
             continue
         flux = _flux(born, reference.alpha_s)
         for k, name in enumerate(LAURENT):
             checks.append(
                 _reference_check(
-                    row, reference, index, text, name, mine[k], laurent[k],
+                    row,
+                    reference,
+                    index,
+                    text,
+                    name,
+                    mine[k],
+                    laurent[k],
                     providers,
                     lambda p, s=sector, k=k: (
-                        None if s not in reference.virtual[index][p]
+                        None
+                        if s not in reference.virtual[index][p]
                         else reference.virtual[index][p][s][k]
                     ),
                     flux,
@@ -836,21 +865,52 @@ def _reference_check(
     if flux is not None and _vanishing(row, sector, name):
         error = _absolute(mine, value)
         bound = REFERENCE_TOLERANCE * flux
-        return Check("1", index, "double-double", sector, name, str(mine),
-                     repr(value), error, bound, error <= bound,
-                     note="vanishes identically: |a - r| <= 1e-12 F_s")
+        return Check(
+            "1",
+            index,
+            "double-double",
+            sector,
+            name,
+            str(mine),
+            repr(value),
+            error,
+            bound,
+            error <= bound,
+            note="vanishes identically: |a - r| <= 1e-12 F_s",
+        )
     error = relative(mine, value)
     listed = _listed(
         row.reference_outliers, point=index, sector=sector, coefficient=name
     )
     if error <= REFERENCE_TOLERANCE:
         note = "stale outlier listing" if listed else ""
-        return Check("1", index, "double-double", sector, name, str(mine),
-                     repr(value), error, REFERENCE_TOLERANCE, not listed, note=note)
+        return Check(
+            "1",
+            index,
+            "double-double",
+            sector,
+            name,
+            str(mine),
+            repr(value),
+            error,
+            REFERENCE_TOLERANCE,
+            not listed,
+            note=note,
+        )
     if not listed:
-        return Check("1", index, "double-double", sector, name, str(mine),
-                     repr(value), error, REFERENCE_TOLERANCE, False,
-                     note=f"against {primary}; not a listed outlier")
+        return Check(
+            "1",
+            index,
+            "double-double",
+            sector,
+            name,
+            str(mine),
+            repr(value),
+            error,
+            REFERENCE_TOLERANCE,
+            False,
+            note=f"against {primary}; not a listed outlier",
+        )
     accuracy = _accuracy(reference, index, primary, sector, name)
     seconds = {
         p: relative(mine, other(p)) for p in providers[1:] if other(p) is not None
@@ -863,8 +923,19 @@ def _reference_check(
         f"{'covers' if covered else 'does not cover'} {error:.3g}; second "
         f"providers {', '.join(f'{p} {e:.3g}' for p, e in seconds.items()) or 'none'}"
     )
-    return Check("1", index, "double-double", sector, name, str(mine), repr(value),
-                 error, REFERENCE_TOLERANCE, passed, note=note)
+    return Check(
+        "1",
+        index,
+        "double-double",
+        sector,
+        name,
+        str(mine),
+        repr(value),
+        error,
+        REFERENCE_TOLERANCE,
+        passed,
+        note=note,
+    )
 
 
 def rule2_and_3(
@@ -878,8 +949,20 @@ def rule2_and_3(
         mine = b64.born.get(sector)
         text = sector_text(sector)
         error = relative(mine, value)
-        checks.append(Check("2", index, "double", text, "born", repr(mine),
-                            str(value), error, O1_STRICT, error <= O1_STRICT))
+        checks.append(
+            Check(
+                "2",
+                index,
+                "double",
+                text,
+                "born",
+                repr(mine),
+                str(value),
+                error,
+                O1_STRICT,
+                error <= O1_STRICT,
+            )
+        )
     for sector, laurent in dd.virtual.items():
         text = sector_text(sector)
         mine = b64.virtual.get(sector)
@@ -892,55 +975,123 @@ def rule2_and_3(
             absolute = _absolute(got, truth)
             e_abs = estimate[k]
             # Rule 3: the estimate brackets the true error tenfold.
-            checks.append(Check("3", index, "double", text, name, str(got),
-                                str(truth), absolute, BRACKET * e_abs,
-                                absolute <= BRACKET * e_abs,
-                                note="absolute error against 10 E"))
+            checks.append(
+                Check(
+                    "3",
+                    index,
+                    "double",
+                    text,
+                    name,
+                    str(got),
+                    str(truth),
+                    absolute,
+                    BRACKET * e_abs,
+                    absolute <= BRACKET * e_abs,
+                    note="absolute error against 10 E",
+                )
+            )
             if _vanishing(row, text, name):
                 bound = REFERENCE_TOLERANCE * flux
-                checks.append(Check("2", index, "double", text, name, str(got),
-                                    str(truth), absolute, bound, absolute <= bound,
-                                    note="vanishes identically: 1e-12 F_s"))
+                checks.append(
+                    Check(
+                        "2",
+                        index,
+                        "double",
+                        text,
+                        name,
+                        str(got),
+                        str(truth),
+                        absolute,
+                        bound,
+                        absolute <= bound,
+                        note="vanishes identically: 1e-12 F_s",
+                    )
+                )
                 continue
             e_rel = e_abs / abs(float(got)) if float(got) else math.inf
             error = relative(got, truth)
             bound = o1_bound(e_rel)
-            listed = _listed(row.binary64_out_of_scope, point=index, sector=text,
-                             coefficient=name)
+            listed = _listed(
+                row.binary64_out_of_scope, point=index, sector=text, coefficient=name
+            )
             if bound is None:
-                checks.append(Check("2", index, "double", text, name, str(got),
-                                    str(truth), error, e_rel, listed, asserted=False,
-                                    note=f"E = {e_rel:.3g} > 1e-9: outside the "
-                                    "binary64 scope" + ("" if listed else
-                                                        ", NOT listed")))
+                checks.append(
+                    Check(
+                        "2",
+                        index,
+                        "double",
+                        text,
+                        name,
+                        str(got),
+                        str(truth),
+                        error,
+                        e_rel,
+                        listed,
+                        asserted=False,
+                        note=f"E = {e_rel:.3g} > 1e-9: outside the "
+                        "binary64 scope" + ("" if listed else ", NOT listed"),
+                    )
+                )
             else:
-                checks.append(Check("2", index, "double", text, name, str(got),
-                                    str(truth), error, bound,
-                                    error <= bound and not listed,
-                                    note=f"E = {e_rel:.3g}" + (
-                                        "; stale out-of-scope listing" if listed
-                                        else "")))
+                checks.append(
+                    Check(
+                        "2",
+                        index,
+                        "double",
+                        text,
+                        name,
+                        str(got),
+                        str(truth),
+                        error,
+                        bound,
+                        error <= bound and not listed,
+                        note=f"E = {e_rel:.3g}"
+                        + ("; stale out-of-scope listing" if listed else ""),
+                    )
+                )
     return checks
 
 
-def rule4(row: Row, index: int, point: Evaluated) -> list[Check]:
+def rule4(
+    row: Row, index: int, point: Evaluated, alpha_s: float = 0.118
+) -> list[Check]:
     """The virtual's poles against Catani's, and the sector sets."""
 
     checks = []
     predicted = set(point.catani or ())
     expected = set(row.predicted_sectors)
-    checks.append(Check(
-        "4", index, point.carrier, "", "predicted sectors",
-        ", ".join(sorted(map(sector_text, predicted))),
-        ", ".join(sorted(map(sector_text, expected))), 0.0, 0.0,
-        predicted == expected, note="Catani's predicted sectors"))
+    checks.append(
+        Check(
+            "4",
+            index,
+            point.carrier,
+            "",
+            "predicted sectors",
+            ", ".join(sorted(map(sector_text, predicted))),
+            ", ".join(sorted(map(sector_text, expected))),
+            0.0,
+            0.0,
+            predicted == expected,
+            note="Catani's predicted sectors",
+        )
+    )
     unpredicted = set(point.virtual) - predicted
     expected_un = set(row.unpredicted_sectors)
-    checks.append(Check(
-        "4", index, point.carrier, "", "unpredicted sectors",
-        ", ".join(sorted(map(sector_text, unpredicted))),
-        ", ".join(sorted(map(sector_text, expected_un))), 0.0, 0.0,
-        unpredicted == expected_un, note="sectors without a prediction"))
+    checks.append(
+        Check(
+            "4",
+            index,
+            point.carrier,
+            "",
+            "unpredicted sectors",
+            ", ".join(sorted(map(sector_text, unpredicted))),
+            ", ".join(sorted(map(sector_text, expected_un))),
+            0.0,
+            0.0,
+            unpredicted == expected_un,
+            note="sectors without a prediction",
+        )
+    )
     for sector in sorted(predicted & set(point.virtual)):
         text = sector_text(sector)
         poles = point.catani[sector]
@@ -948,38 +1099,89 @@ def rule4(row: Row, index: int, point: Evaluated) -> list[Check]:
         estimate = None if point.estimate is None else point.estimate[sector]
         for k, name in ((1, "single_pole"), (2, "double_pole")):
             got, truth = laurent[k], poles[k - 1]
+            if _vanishing(row, text, name):
+                # Absolutely, against F_s: 1e-12 in binary64, 1e-24 in DD.
+                born = point.born.get(born_sector(sector), Decimal(0))
+                strict = O1_STRICT if point.carrier == "double" else DD_FLOOR
+                bound = strict * _flux(born, alpha_s)
+                error = _absolute(got, truth)
+                checks.append(
+                    Check(
+                        "4",
+                        index,
+                        point.carrier,
+                        text,
+                        name,
+                        str(got),
+                        str(truth),
+                        error,
+                        bound,
+                        error <= bound,
+                        note="vanishes identically: |a - r| against F_s",
+                    )
+                )
+                continue
             error = relative(got, truth)
-            e_rel = (
-                estimate[k] / abs(float(got)) if float(got) else math.inf
-            )
+            e_rel = estimate[k] / abs(float(got)) if float(got) else math.inf
             if point.carrier == "double":
                 bound = o1_bound(e_rel)
                 if bound is None:
-                    listed = _listed(row.binary64_out_of_scope, point=index,
-                                     sector=text, coefficient=name)
-                    checks.append(Check("4", index, "double", text, name, str(got),
-                                        str(truth), error, e_rel, listed,
-                                        asserted=False,
-                                        note=f"E = {e_rel:.3g} > 1e-9: outside "
-                                        "the binary64 scope"))
+                    listed = _listed(
+                        row.binary64_out_of_scope,
+                        point=index,
+                        sector=text,
+                        coefficient=name,
+                    )
+                    checks.append(
+                        Check(
+                            "4",
+                            index,
+                            "double",
+                            text,
+                            name,
+                            str(got),
+                            str(truth),
+                            error,
+                            e_rel,
+                            listed,
+                            asserted=False,
+                            note=f"E = {e_rel:.3g} > 1e-9: outside the binary64 scope",
+                        )
+                    )
                     continue
             else:
                 bound = max(DD_FLOOR, BRACKET * e_rel)
-            checks.append(Check("4", index, point.carrier, text, name, str(got),
-                                str(truth), error, bound, error <= bound,
-                                note=f"E = {e_rel:.3g}"))
+            checks.append(
+                Check(
+                    "4",
+                    index,
+                    point.carrier,
+                    text,
+                    name,
+                    str(got),
+                    str(truth),
+                    error,
+                    bound,
+                    error <= bound,
+                    note=f"E = {e_rel:.3g}",
+                )
+            )
     return checks
 
 
 # Feynman-gauge Z^UV per leg (amplitude delta-Z / 2 enters the interference
-# once per leg as delta-Z x Born), single-pole coefficients over alpha_s/4pi.
-CA, CF, TF = 3.0, 4.0 / 3.0, 0.5
+# once per leg as delta-Z x Born), single-pole coefficients over alpha_s/4pi,
+# exactly.
+CA, CF, TF = Fraction(3), Fraction(4, 3), Fraction(1, 2)
+PI = Decimal(
+    "3.14159265358979323846264338327950288419716939937510582097494459230781640628621"
+)
 
 
-def field_poles(legs: Sequence[tuple[int, bool]], flavours: int) -> float:
+def field_poles(legs: Sequence[tuple[int, bool]], flavours: int) -> Fraction:
     """sum_legs delta-Z^UV (single pole, units of alpha_s / 4 pi)."""
 
-    total = 0.0
+    total = Fraction(0)
     for colour, _massive in legs:
         if colour == 8:
             total += 5 / 3 * CA - 4 / 3 * TF * flavours
@@ -991,13 +1193,22 @@ def field_poles(legs: Sequence[tuple[int, bool]], flavours: int) -> float:
 
 
 def rule5(
-    row: Row, index: int, uv: Evaluated, legs, flavours: int, alpha_s: float
+    row: Row, index: int, uv: Evaluated, legs, flavours: int, alpha_s: str
 ) -> list[Check]:
     """bare UV + UV_local + sum_legs delta-Z x Born = 0 per sector, and the
-    bare loop's UV double pole vanishes ("uv" selection, double-double)."""
+    bare loop's UV double pole vanishes ("uv" selection, double-double);
+    ``alpha_s`` is the parameter's exact decimal string."""
 
     checks = []
-    factor = Decimal(repr(field_poles(legs, flavours) * alpha_s / (4 * math.pi)))
+    poles = field_poles(legs, flavours)
+    with localcontext() as context:
+        context.prec = 80
+        factor = (
+            Decimal(poles.numerator)
+            / Decimal(poles.denominator)
+            * Decimal(alpha_s)
+            / (4 * PI)
+        )
     for sector, laurent in uv.virtual.items():
         text = sector_text(sector)
         born = uv.born.get(born_sector(sector), Decimal(0))
@@ -1011,14 +1222,37 @@ def rule5(
         e_rel = estimate[1] / scale if scale else math.inf
         bound = max(DD_FLOOR, BRACKET * e_rel)
         error = abs(float(residual)) / scale if scale else math.inf
-        checks.append(Check("5", index, uv.carrier, text, "single_pole", str(bare),
-                            str(-local[1] - factor * born), error, bound,
-                            error <= bound,
-                            note=f"n_f = {flavours}; relative to the bare UV pole"))
+        checks.append(
+            Check(
+                "5",
+                index,
+                uv.carrier,
+                text,
+                "single_pole",
+                str(bare),
+                str(-local[1] - factor * born),
+                error,
+                bound,
+                error <= bound,
+                note=f"n_f = {flavours}; relative to the bare UV pole",
+            )
+        )
         double = abs(float(laurent[2]))
-        checks.append(Check("5", index, uv.carrier, text, "double_pole",
-                            str(laurent[2]), "0", double, 0.0, double == 0.0,
-                            note="the bare loop's UV double pole"))
+        checks.append(
+            Check(
+                "5",
+                index,
+                uv.carrier,
+                text,
+                "double_pole",
+                str(laurent[2]),
+                "0",
+                double,
+                0.0,
+                double == 0.0,
+                note="the bare loop's UV double pole",
+            )
+        )
     return checks
 
 
@@ -1031,13 +1265,36 @@ def rule6(
     for sector, value in ap.born.items():
         text = sector_text(sector)
         error = relative(value, dd.born[sector])
-        checks.append(Check("6", index, ap.carrier, text, "born", str(value),
-                            str(dd.born[sector]), error, DD_FLOOR,
-                            error <= DD_FLOOR))
+        checks.append(
+            Check(
+                "6",
+                index,
+                ap.carrier,
+                text,
+                "born",
+                str(value),
+                str(dd.born[sector]),
+                error,
+                DD_FLOOR,
+                error <= DD_FLOOR,
+            )
+        )
         error = relative(value, ap60.born[sector])
-        checks.append(Check("6", index, ap.carrier, text, "born", str(value),
-                            str(ap60.born[sector]), error, AP_CONVERGENCE,
-                            error <= AP_CONVERGENCE, note="against 60 digits"))
+        checks.append(
+            Check(
+                "6",
+                index,
+                ap.carrier,
+                text,
+                "born",
+                str(value),
+                str(ap60.born[sector]),
+                error,
+                AP_CONVERGENCE,
+                error <= AP_CONVERGENCE,
+                note="against 60 digits",
+            )
+        )
     for sector, laurent in ap.virtual.items():
         text = sector_text(sector)
         estimate = dd.estimate[sector]
@@ -1048,13 +1305,37 @@ def rule6(
             bound = max(DD_FLOOR, BRACKET * e_rel)
             if _vanishing(row, text, name):
                 continue
-            checks.append(Check("6", index, ap.carrier, text, name, str(laurent[k]),
-                                str(truth), error, bound, error <= bound,
-                                note=f"E_DD = {e_rel:.3g}"))
+            checks.append(
+                Check(
+                    "6",
+                    index,
+                    ap.carrier,
+                    text,
+                    name,
+                    str(laurent[k]),
+                    str(truth),
+                    error,
+                    bound,
+                    error <= bound,
+                    note=f"E_DD = {e_rel:.3g}",
+                )
+            )
             error = relative(laurent[k], ap60.virtual[sector][k])
-            checks.append(Check("6", index, ap.carrier, text, name, str(laurent[k]),
-                                str(ap60.virtual[sector][k]), error, AP_CONVERGENCE,
-                                error <= AP_CONVERGENCE, note="against 60 digits"))
+            checks.append(
+                Check(
+                    "6",
+                    index,
+                    ap.carrier,
+                    text,
+                    name,
+                    str(laurent[k]),
+                    str(ap60.virtual[sector][k]),
+                    error,
+                    AP_CONVERGENCE,
+                    error <= AP_CONVERGENCE,
+                    note="against 60 digits",
+                )
+            )
     return checks
 
 
@@ -1069,6 +1350,9 @@ class RowReport:
     checks: list[Check]
     timings: dict[str, float]
     status: str = "active"
+    # Informational (no rule): binary64 against the primary provider, the
+    # largest strict relative deviation per coefficient over the points.
+    binary64_vs_reference: dict[str, float] = field(default_factory=dict)
 
     @property
     def failures(self) -> list[Check]:
@@ -1106,9 +1390,15 @@ class RowReport:
             "max_binary64_vs_dd": self.worst("2"),
             "max_catani_dd": self.worst("4", "double-double"),
             "max_catani_binary64": self.worst("4", "double"),
+            "binary64_vs_reference": self.binary64_vs_reference,
             "binary64_out_of_scope": [
-                {"point": c.point, "sector": c.sector, "coefficient": c.coefficient,
-                 "E": c.bound, "true_error": c.error}
+                {
+                    "point": c.point,
+                    "sector": c.sector,
+                    "coefficient": c.coefficient,
+                    "E": c.bound,
+                    "true_error": c.error,
+                }
                 for c in self.out_of_scope()
                 if c.rule == "2"
             ],
@@ -1116,8 +1406,10 @@ class RowReport:
         }
 
     def describe(self) -> str:
-        lines = [f"{self.row} ({self.tier}, points {list(self.points)}): "
-                 f"{len(self.failures)} of {len(self.checks)} checks fail"]
+        lines = [
+            f"{self.row} ({self.tier}, points {list(self.points)}): "
+            f"{len(self.failures)} of {len(self.checks)} checks fail"
+        ]
         for c in self.failures:
             lines.append(
                 f"  rule {c.rule} point {c.point} {c.carrier} [{c.sector}] "
@@ -1135,7 +1427,6 @@ def run_row(
     tier: str,
     *,
     points: Sequence[int] | None = None,
-    compiled: Any = None,
 ) -> RowReport:
     """Every rule of the row at its ``tier`` points (the core rules, plus the
     implemented extras of the nightly tier)."""
@@ -1157,11 +1448,16 @@ def run_row(
     start = time.perf_counter()
     b64 = run.evaluate(indices, "double")
     timings["double_s_per_point"] = round(time.perf_counter() - start, 2) / len(indices)
+    info: dict[str, float] = {}
     for index, d, b in zip(indices, dd, b64, strict=True):
         checks += rule1(row, reference, index, d)
+        for check in rule1(row, reference, index, b):
+            worst = info.get(check.coefficient, 0.0)
+            if check.coefficient in COEFFICIENTS and math.isfinite(check.error):
+                info[check.coefficient] = max(worst, check.error)
         checks += rule2_and_3(row, reference, index, b, d)
-        checks += rule4(row, index, d)
-        checks += rule4(row, index, b)
+        checks += rule4(row, index, d, reference.alpha_s)
+        checks += rule4(row, index, b, reference.alpha_s)
     extras = set(row.extras) & IMPLEMENTED_EXTRAS if tier == "nightly" else set()
     extra_points = indices[:1]
     if "uv" in extras:
@@ -1170,17 +1466,47 @@ def run_row(
         timings["uv_s"] = round(time.perf_counter() - start, 2)
         flavours = run.loop_flavours()
         for index, point in zip(extra_points, uv, strict=True):
-            checks += rule5(row, index, point, run.legs(), flavours,
-                            reference.alpha_s)
+            checks += rule5(
+                row, index, point, run.legs(), flavours, str(run.parameters["aS"])
+            )
     if "ap" in extras:
         start = time.perf_counter()
         ap = run.evaluate(extra_points, f"arbitrary-{AP_DIGITS[0]}", stability=False)
-        ap60 = run.evaluate(extra_points, f"arbitrary-{AP_DIGITS[1]}",
-                            stability=False)
+        ap60 = run.evaluate(extra_points, f"arbitrary-{AP_DIGITS[1]}", stability=False)
         timings["ap_s"] = round(time.perf_counter() - start, 2)
         for k, index in enumerate(extra_points):
             checks += rule6(row, index, dd[indices.index(index)], ap[k], ap60[k])
-    return RowReport(row.id, tier, indices, checks, timings)
+    return RowReport(row.id, tier, indices, checks, timings, binary64_vs_reference=info)
+
+
+class Campaign:
+    """Rows of one test module or CLI run: one compiled loop_sm per
+    restriction and one ``RowRun`` per row, built on first use."""
+
+    def __init__(self, ufo: Path, native: Any, work: Path, manifest=None):
+        self.ufo, self.native, self.work = Path(ufo), native, Path(work)
+        self.rows = rows(manifest)
+        self._models: dict[str, Any] = {}
+        self._runs: dict[str, RowRun] = {}
+
+    def model(self, restriction: str) -> Any:
+        if restriction not in self._models:
+            self._models[restriction] = compile_restriction(
+                self.ufo, restriction, self.work / f"model-{restriction}"
+            )
+        return self._models[restriction]
+
+    def run(self, name: str) -> RowRun:
+        if name not in self._runs:
+            row = self.rows[name]
+            if not row.active:
+                raise ValueError(f"{name} is pending: {row.pending}")
+            self._runs[name] = RowRun(row, self.model(row.restriction), self.native)
+        return self._runs[name]
+
+    def report(self, name: str, tier: str, points=None) -> RowReport:
+        run = self.run(name)
+        return run_row(run, tier, points=points)
 
 
 def write_result(report: RowReport, directory: str | os.PathLike | None = None) -> None:
@@ -1214,22 +1540,14 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     from pyamplicol.loops.native import load_loop_native
 
-    native = load_loop_native()
-    manifest = rows()
-    models: dict[str, Any] = {}
+    campaign = Campaign(args.ufo, load_loop_native(), args.work)
     failed = 0
     for name in args.rows:
-        row = manifest[name]
+        row = campaign.rows[name]
         if not row.active:
             print(f"{name}: pending ({row.pending})", flush=True)
             continue
-        if row.restriction not in models:
-            models[row.restriction] = compile_restriction(
-                args.ufo, row.restriction, args.work / f"model-{row.restriction}"
-            )
-        compiled = models[row.restriction]
-        report = run_row(RowRun(row, compiled, native), args.tier, points=args.points,
-                         compiled=compiled)
+        report = campaign.report(name, args.tier, points=args.points)
         print(report.describe(), flush=True)
         print(json.dumps(report.summary(), default=str), flush=True)
         write_result(report, args.results)
