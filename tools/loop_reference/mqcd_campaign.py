@@ -18,6 +18,8 @@ Subcommands (each takes run ids; ``all`` selects every run):
 ``fixture``   copy reference.json to ``tests/fixtures/loop/required/mqcd/<run>.json`` with
               every absolute path rewritten relative to ``${LOOP_REFERENCE_ROOT}``.
 ``manifest``  write ``tests/fixtures/loop/required/mqcd_references.json``.
+``relocate``  rewrite the absolute reference-root paths of committed fixtures (paths
+              below tests/fixtures/loop) by text, every value unchanged.
 ``status``    one line per run.
 
 Nothing here is process-specific: the processes, schemes and points families
@@ -380,12 +382,53 @@ def command_fixture(args, data, runs):
         print(target.relative_to(REPOSITORY))
 
 
-def sector_accuracy(fixture):
+def leaves(value, path=()):
+    """(path, leaf) of every JSON leaf."""
+    if isinstance(value, dict):
+        for k, v in value.items():
+            yield from leaves(v, (*path, k))
+    elif isinstance(value, list):
+        for i, v in enumerate(value):
+            yield from leaves(v, (*path, i))
+    else:
+        yield path, value
+
+
+def command_relocate(args, data, runs):
+    """Rewrite the reference-root and repository paths of committed fixtures
+    (paths below tests/fixtures/loop) by text, like ``fixture`` does for the
+    campaign's own: every number and every non-path byte is unchanged
+    (checked leaf by leaf); refuses a fixture with absolute host paths left."""
+    root = reference_root(args)
+    for name in args.runs:
+        path = FIXTURES / name
+        text = path.read_text()
+        new = text
+        for prefix in (str(root), *OLD_ROOTS):
+            new = new.replace(prefix, "${LOOP_REFERENCE_ROOT}")
+        new = new.replace(str(REPOSITORY), "${REPOSITORY}")
+        before, after = list(leaves(json.loads(text))), list(leaves(json.loads(new)))
+        if [p for p, _ in before] != [p for p, _ in after] or any(
+                a != b and not (isinstance(a, str) and relocate(a, root) == b)
+                for (_, a), (_, b) in zip(before, after, strict=True)):
+            raise SystemExit(f"{name}: relocation changed more than path text")
+        leftover = sorted({m.group(0) for m in ABSOLUTE.finditer(new)})
+        if leftover:
+            raise SystemExit(f"{name}: absolute paths remain after relocation: {leftover[:5]}")
+        if new != text:
+            path.write_text(new)
+            print(name)
+
+
+def sector_accuracy(fixture, binding=None):
     """Per point and loop sector: MadLoop's accuracy estimate (None when the
-    fixture's MadLoop run printed only the requested sector)."""
+    fixture's MadLoop run printed only the requested sector, or for a point
+    that is not binding)."""
     out = []
-    for row in fixture["rows"]:
-        if "sectors" in row:
+    for index, row in enumerate(fixture["rows"]):
+        if binding is not None and not binding[index]["binding"]:
+            out.append(None)
+        elif "sectors" in row:
             out.append({f"QCD^2={s['QCD']},QED^2={s['QED']}": s["accuracy"] for s in row["sectors"]["loop"]})
         else:
             accuracy = row.get("providers", {}).get("madloop", {}).get("accuracy")
@@ -408,12 +451,76 @@ def second_provider_outcome(fixture, providers):
     return out
 
 
-def superseded_deviation(fixture):
-    """Per point: the largest deviation of the batch-2 MadLoop values (secondary
-    run 'mlstabthres') from the reference, per coefficient (references.py merge's
-    relative_deviation_from_reference_run: Laurent coefficients with the loop-unit floor)."""
-    run = fixture["providers"]["madloop"].get("secondary_runs", {}).get("mlstabthres")
-    return None if run is None else run["relative_deviation_from_reference_run"]
+def return_codes(fixture):
+    """MadLoop's return code per point (None where the fixture records none)."""
+    return [row.get("madloop_status", row.get("providers", {}).get("madloop", {}).get("status"))
+            for row in fixture["rows"]]
+
+
+def evaluation_precision(code):
+    """MadLoop's arithmetic at a point from its return code 100*H + 10*T + U."""
+    if not isinstance(code, int):
+        return None
+    return {1: "double", 2: "double", 3: "quadruple", 4: "quadruple (unstable)"}.get(code // 100)
+
+
+def primary_values(fixture, index):
+    """The reference values (born and Laurent coefficients) of a fixture's point."""
+    row = fixture["rows"][index]
+    if "born" in row:
+        return row
+    providers = row["providers"]
+    return providers.get(fixture.get("primary_provider", "madloop"), next(iter(providers.values())))
+
+
+def strict(a, b):
+    scale = max(abs(a), abs(b))
+    return 0.0 if scale == 0 else abs(a - b) / scale
+
+
+def same_points(a, b):
+    """Two fixtures' points and scales (exact decimal text) are the same."""
+    from fractions import Fraction
+
+    return ([[str(x) for x in leg] for leg in a[0]] == [[str(x) for x in leg] for leg in b[0]]
+            and Fraction(str(a[1])) == Fraction(str(b[1])))
+
+
+def is_provider_reference(fixture):
+    rows = fixture.get("rows")
+    return (isinstance(rows, list) and bool(rows) and isinstance(rows[0], dict) and "points" in fixture
+            and isinstance(rows[0].get("providers"), dict))
+
+
+def existing_binding(path, fixture, row, runs):
+    """Per point of an existing provider reference: binding, or superseded by
+    the row's campaign run that re-evaluates the same point and mu_R
+    (``points`` generator 'fixture' of this path) in MadLoop's
+    quadruple-precision stage with an ok reference record."""
+    out = [{"binding": True} for _ in fixture["rows"]]
+    for run_id in row["runs"]:
+        run = runs[run_id]
+        if run["points"].get("generator") != "fixture" or run["points"].get("fixture") != path:
+            continue
+        target = FIXTURES / "required/mqcd" / f"{run_id}.json"
+        if not target.exists():
+            continue
+        rerun = json.loads(target.read_text())
+        for index in range(len(fixture["rows"])):
+            if not same_points((fixture["points"][index], fixture["mu_r"][index]),
+                               (rerun["points"][index], rerun["mu_r"][index])):
+                raise SystemExit(f"{run_id}: point {index} is not {path}'s")
+            record, code = rerun["rows"][index]["reference"], rerun["rows"][index].get("madloop_status")
+            if record["status"] != "ok" or evaluation_precision(code) != "quadruple" or record.get("outlier"):
+                continue
+            old, new = primary_values(fixture, index), rerun["rows"][index]
+            out[index] = {"binding": False,
+                          "superseded_by": {"fixture": str(target.relative_to(FIXTURES)), "row": index},
+                          "strict_relative_deviation": {k: strict(old[k], new[k]) for k in COEFFICIENTS}}
+    return out
+
+
+COEFFICIENTS = ("born", "finite", "single_pole", "double_pole")
 
 
 def run_entry(root, run, fixture_path):
@@ -427,6 +534,8 @@ def run_entry(root, run, fixture_path):
         entry["status"] = "pending"
         return entry
     fixture = json.loads(fixture_path.read_text())
+    codes = return_codes(fixture)
+    records = [row["reference"] for row in fixture["rows"]]
     entry.update({
         "status": "committed",
         "madloop_process": fixture["process"],
@@ -438,32 +547,49 @@ def run_entry(root, run, fixture_path):
         "restriction": fixture.get("restriction"),
         "madloop_model": fixture.get("madloop_model"),
         "gauge": fixture.get("gauge"),
-        "parameters": fixture["parameters"],
-        "fixed_parameters": fixture["fixed_parameters"],
         "parameter_overrides": fixture.get("parameter_overrides", {}),
-        "derived_parameters": fixture.get("derived_parameters"),
         "points": len(fixture["points"]),
         "mu_r": fixture["mu_r"],
         "point_family": fixture.get("point_construction", {}).get("family", "exact terminating decimals"),
+        "madloop_qp_point": bool(fixture.get("point_construction", {}).get("madloop_qp_point")),
         "point_labels": fixture.get("point_construction", {}).get("point_labels"),
         "scale_variation": fixture.get("point_construction", {}).get("scale_variation"),
         "primary_provider": fixture["primary_provider"],
         "validated_providers": fixture["validated_providers"],
-        "validation_status": fixture["validation_status"],
-        "madloop_return_codes": [row.get("madloop_status") for row in fixture["rows"]],
+        "madloop_return_codes": codes,
         "madloop_evaluation": run.get("madloop_evaluation", {}).get("mode", "quadruple"),
+        "evaluation_precision": [evaluation_precision(code) for code in codes],
+        "binding_rows": [i for i, record in enumerate(records) if record["status"] == "ok"],
+        "outliers": {str(i): record["outlier"] for i, record in enumerate(records) if record.get("outlier")},
         "provider_accuracy_per_sector": sector_accuracy(fixture),
         "second_provider_outcome": second_provider_outcome(fixture, run.get("second_providers", [])),
-        "batch2_relative_deviation": superseded_deviation(fixture),
         "squared_split_orders": fixture.get("squared_split_orders"),
         "per_helicity": bool(fixture.get("per_helicity")),
         "subprocess": run.get("subprocess"),
-        "point_reference": [row["reference"] for row in fixture["rows"]],
-        "per_helicity_reference": ([[{"helicity": e["helicity"], **e["reference"]} for e in entries]
-                                    for entries in fixture["per_helicity"]["rows"]]
-                                   if fixture.get("per_helicity") else None),
     })
     return entry
+
+
+def existing_entry(path, row, runs):
+    item = {"fixture": path, "status": "committed" if (FIXTURES / path).exists() else "pending"}
+    if item["status"] == "pending":
+        return item
+    fixture = json.loads((FIXTURES / path).read_text())
+    if not is_provider_reference(fixture):
+        item["kind"] = "control (no provider merge; see the fixture's scope)"
+        return item
+    binding = existing_binding(path, fixture, row, runs)
+    codes = return_codes(fixture)
+    item.update({"kind": "provider reference",
+                 "primary_provider": fixture.get("primary_provider", "madloop"),
+                 "providers": list(fixture["rows"][0]["providers"]),
+                 "validated_providers": fixture.get("validated_providers"),
+                 "points": len(fixture["points"]), "mu_r": fixture["mu_r"], "scheme": fixture.get("scheme"),
+                 "madloop_return_codes": codes,
+                 "evaluation_precision": [evaluation_precision(code) for code in codes],
+                 "provider_accuracy_per_sector": sector_accuracy(fixture, binding),
+                 "point_binding": binding})
+    return item
 
 
 def command_manifest(args, data, runs):
@@ -475,66 +601,88 @@ def command_manifest(args, data, runs):
                                         "extras")},
                  "pyamplicol_route": route, "note": row.get("note")}
         entry["references"] = [run_entry(root, runs[r], FIXTURES / "required/mqcd" / f"{r}.json") for r in row["runs"]]
-        existing = []
-        for path in row["existing_fixtures"]:
-            item = {"fixture": path, "status": "committed" if (FIXTURES / path).exists() else "pending"}
-            if (FIXTURES / path).exists() and path.startswith("required/"):
-                fixture = json.loads((FIXTURES / path).read_text())
-                if "rows" in fixture and "primary_provider" in fixture:
-                    item.update({"primary_provider": fixture["primary_provider"],
-                                 "validated_providers": fixture.get("validated_providers"),
-                                 "points": len(fixture["points"]), "scheme": fixture.get("scheme"),
-                                 "provider_accuracy_per_sector": sector_accuracy(fixture)})
-            existing.append(item)
-        entry["existing_references"] = existing
+        entry["existing_references"] = [existing_entry(path, row, runs) for path in row["existing_fixtures"]]
+        binding = []
+        for ref in entry["existing_references"] + entry["references"]:
+            if ref["status"] != "committed":
+                continue
+            if "point_binding" in ref:
+                chosen = [i for i, b in enumerate(ref["point_binding"]) if b["binding"]]
+            elif "binding_rows" in ref:
+                chosen = ref["binding_rows"]
+            else:
+                continue
+            if chosen:
+                binding.append({"fixture": ref["fixture"], "rows": chosen})
+        entry["binding_references"] = binding
+        if row.get("helicity_reference"):
+            entry["helicity_reference"] = f"required/mqcd/{row['helicity_reference']}.json"
         if row.get("primary_provider"):
             entry["primary_provider"] = row["primary_provider"]
         rows.append(entry)
     manifest = {
-        "schema": "mqcd-references/1",
+        "schema": "mqcd-references/2",
         "description": "Reference manifest of the M-QCD campaign (m-qcd/PLAN.md §4.2), written by "
                        "tools/loop_reference/mqcd_campaign.py manifest from mqcd_campaign.json and the committed "
                        "fixtures. Per row: process, pyAmpliCol route (restriction, fixed parameters), reference "
-                       "runs (fixture path below tests/fixtures/loop, orders, parameters, points, MadLoop accuracy "
-                       "per point and loop squared split order) and existing references. 'pending' marks a "
-                       "reference not committed yet. The pyAmpliCol request uses the fixture's parameters and "
-                       "fixed_parameters (the MadLoop card values).",
+                       "runs (fixture path below tests/fixtures/loop, orders, points, MadLoop return codes, "
+                       "evaluation precision and accuracy per point and loop squared split order, rule 1 outliers), "
+                       "existing references (per point binding or superseded) and binding_references: the one "
+                       "binding reference of every point. 'pending' marks a reference not committed yet. Parameters, "
+                       "per-point reference records and per-helicity rows are the fixtures' own (the pyAmpliCol "
+                       "request uses the fixture's parameters and fixed_parameters, the MadLoop card values).",
         "conventions": {
             "laurent": "MadLoop/BLHA C_eps = (4 pi)^eps / Gamma(1 - eps); physical couplings; initial spin/colour "
                        "average and final identical-particle factor included",
             "squared_split_orders": "QCD^2, QED^2 = summed g_s and e powers of the interfering amplitudes; a loop "
                                     "sector's born_sector is its orders minus the correction step",
+            "binding_references": "per row, the fixtures and rows (0-based) that are the row's rule 1 reference: "
+                                  "every ok row of the campaign runs, and the rows of an existing reference that no "
+                                  "campaign run re-evaluates. An existing reference's point_binding names, per point, "
+                                  "the run row superseding it (the same exact point and mu_R, MadLoop's "
+                                  "quadruple-precision stage, an ok record) with the strict relative deviation "
+                                  "|a - b| / max(|a|, |b|) of its values from the superseding ones; a superseded "
+                                  "point is no reference (its accuracy is not listed), while its other providers' "
+                                  "values stay the second-provider values of rule 1 (ii) at that point",
+            "evaluation_precision": "MadLoop's arithmetic per point from its return code 100 H + 10 T + U: H = 1, 2 "
+                                    "double, 3 quadruple, 4 quadruple whose stability test failed (only at points "
+                                    "with status 'none' or a declared outlier); None where the fixture keeps no code",
             "madloop_accuracy": "MadLoop's own ACC(i) of SLOOPMATRIX_THRES per point and loop squared split "
                                 "order: ONE number over the three Laurent coefficients (madloop_settings."
-                                "madloop_accuracy_definition), not a per-coefficient relative accuracy. In the "
-                                "quadruple-precision evaluation (madloop_evaluation 'quadruple') 0.0 means its two "
-                                "quadruple-precision evaluations (propagators in original and reversed order) "
-                                "printed identical binary64 values for all three coefficients; that test does not "
-                                "see a systematic error both share (g g > u u~ u u~ points 0, 2, 3: accuracy 0.0, "
-                                "reference outliers named in reference_notes)",
+                                "madloop_accuracy_definition), not a per-coefficient relative accuracy. At "
+                                "double-precision points it is the binary64 estimate, which does not bound a "
+                                "cancelling coefficient (required/uux_uux.json point 1: 0.0 with a single pole "
+                                "1.2e-12 off the quadruple-precision value). In the quadruple-precision evaluation "
+                                "0.0 means its two quadruple-precision evaluations (propagators in original and "
+                                "reversed order) printed identical binary64 values for all three coefficients; that "
+                                "test does not see an error both share: against mq-validate's double-double values "
+                                "MadLoop quadruple-precision points with accuracy 0.0 differ by up to ~3.6e-13 "
+                                "(e.g. E01 point 1, B03 point 1 with Ninja 3.4e-13) and by 3.5e-12 or more at the "
+                                "g g > u u~ u u~ outliers, so an accuracy of 0.0 never satisfies rule 1 (i) and "
+                                "every rule 1 failure at such a point is an outlier needing a ruling",
+            "outliers": "per reference run, the rule 1 reference outliers (m-qcd/PLAN.md §1.4: the manifest names "
+                        "every one), keyed by 0-based row: the fixture's reference.outlier record (rule, ruling, "
+                        "the state of conditions i and ii, provider evidence)",
             "second_provider_outcome": "per triggered second provider and point: the strict relative difference "
                                        "|a - b| / max(|a|, |b|) of each coefficient from MadLoop's (the outcome of the "
                                        "§4.1 trigger named in second_provider_trigger)",
-            "batch2_relative_deviation": "per point and coefficient: how far the batch-2 MadLoop values (MLStabThres "
-                                         "1e-13, HelicityFilterLevel 2), which this evaluation supersedes, are from "
-                                         "the reference (Laurent coefficients relative to max(|a|, |b|, "
-                                         "|Born| alpha/(2 pi)))",
-            "per_helicity_reference": "per point and helicity configuration (the fixture's per_helicity rows): "
-                                      "status, comparison, absolute_scale, born_source and "
-                                      "born_double_pole_relative_mismatch as for point_reference; 'absolute' entries "
-                                      "(a vanishing helicity, or one suppressed below the point's binary64 condition: "
-                                      "printed Born mismatch above 1e-13) compare against absolute_scale = the "
-                                      "point's summed |Born| over the configurations",
+            "helicity_reference": "the fixture holding the row's per-helicity rows (per_helicity, with a reference "
+                                  "record per entry: 'absolute' against the point's summed |Born| only for a "
+                                  "vanishing helicity, else 'relative'; status 'none' with a reason where an entry is "
+                                  "not a reference)",
             "per_helicity": "MadLoop SLOOPMATRIXHEL_THRES: colour average and identical-particle factor, no "
                             "helicity average; HelConfigs.dat helicity labels",
-            "indexing": "rows, points, mu_r, point_labels, point_reference, provider_accuracy_per_sector and "
-                        "madloop_return_codes are aligned lists (row i = point i, 0-based); reference_notes and "
-                        "point_status keys are 0-based row indices; scale_variation's point and copy_of_point are "
-                        "1-based point numbers (mqcd_campaign.py run --point), its row and copy_of_row the 0-based "
-                        "rows",
+            "indexing": "rows, points, mu_r, point_labels, binding rows, point_binding, evaluation_precision, "
+                        "provider_accuracy_per_sector and madloop_return_codes are aligned lists (row i = point i, "
+                        "0-based); reference_notes, outliers and point_status keys are 0-based row indices; "
+                        "scale_variation's point and copy_of_point are 1-based point numbers (mqcd_campaign.py run "
+                        "--point), its row and copy_of_row the 0-based rows",
             "point_reference": {
+                "where": "each fixture row's 'reference' record (rows[i].reference)",
                 "status": "'ok': the row is a reference; 'none': no usable provider reference at this point "
                           "(reason given), validate it by internal oracles only",
+                "outlier": "None, or a declared rule 1 reference outlier of an ok row (rule, ruling, conditions, "
+                           "providers)",
                 "comparison": "'relative': compare per coefficient relative to the reference value; 'absolute': "
                               "a Born-zero point (§4.1 S3), compare |value - reference| against the tolerance times "
                               "absolute_scale = |Born| at row absolute_scale_row (the nearest regular point) for the "
@@ -553,23 +701,25 @@ def command_manifest(args, data, runs):
                 "born_double_pole_relative_mismatch": "MadLoop's printed Born (double precision at the binary64 "
                                                       "input) against the Born its quadruple-precision double pole "
                                                       "implies. At a regular point both are the same Born to its "
-                                                      "binary64 rounding (~1e-16 .. 1e-15): a mismatch above that "
-                                                      "scale is a loop defect of the reference, not point "
+                                                      "binary64 rounding (<= 1.1e-13 over the campaign): a larger "
+                                                      "mismatch is a loop defect of the reference, not point "
                                                       "sensitivity (C01 point 1 of batch 2: 4.8e-13 from MadLoop's "
-                                                      "helicity filter, Recola's own relation holding to 1e-15), "
-                                                      "and the integrity tests refuse it at ok points; at "
+                                                      "helicity filter, Recola's own relation holding to 1e-15); at "
                                                       "madloop_qp_point points (S1-S3) it is the binary64 condition "
                                                       "of the limit point, bounded by the family's stated bound",
                 "max_sector_double_pole_relative_error": "largest violation of the universal double pole over the "
                                                          "loop squared split orders (MadLoop's printed values, "
-                                                         "relative to the point's largest double pole); the merge "
-                                                         "refuses ok points above its tolerance, the integrity "
-                                                         "tests ok regular points above max(10 x the sector "
-                                                         "accuracy, 1e-14). At madloop_qp_point points the "
-                                                         "reference Born is the double pole over the factor, so the "
-                                                         "relation holds there by construction for every sector "
-                                                         "with a Born partner; born_double_pole_relative_mismatch "
-                                                         "is the falsifiable quantity",
+                                                         "relative to the point's largest double pole; "
+                                                         "references.sector_pole_error); the merge refuses ok points "
+                                                         "above its tolerance, the integrity tests recompute it from "
+                                                         "the sector values and refuse ok regular points above "
+                                                         "max(10 x MadLoop's largest sector accuracy, 2e-13) unless "
+                                                         "the point is a declared outlier. At madloop_qp_point "
+                                                         "points the reference Born is the double pole over the "
+                                                         "factor, so the relation holds there by construction for "
+                                                         "every sector with a Born partner; "
+                                                         "born_double_pole_relative_mismatch is the falsifiable "
+                                                         "quantity",
             },
             "fixture_tolerance": TOLERANCE_SCOPE,
             "madloop_settings": data["madloop_settings"],
@@ -601,9 +751,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--reference-root", type=Path)
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("export", "points", "run", "combine", "merge", "fixture", "status"):
+    for name in ("export", "points", "run", "combine", "merge", "fixture", "status", "relocate"):
         p = sub.add_parser(name)
-        p.add_argument("runs", nargs="+")
+        p.add_argument("runs", nargs="+", help="run ids ('all': every run); for relocate: fixture paths below "
+                                               "tests/fixtures/loop")
     sub.add_parser("manifest")
     sub.choices["export"].add_argument("--compile-jobs", type=int, default=4)
     sub.choices["points"].add_argument("--force", action="store_true")
@@ -620,7 +771,7 @@ def main():
         args.runs = []
     {"export": command_export, "points": command_points, "run": command_run, "combine": command_combine,
      "merge": command_merge, "fixture": command_fixture, "manifest": command_manifest,
-     "status": command_status}[args.command](args, data, runs)
+     "status": command_status, "relocate": command_relocate}[args.command](args, data, runs)
 
 
 if __name__ == "__main__":
