@@ -1845,7 +1845,12 @@ def rule_hel(
     coefficient. A configuration whose MadLoop Born is within 1e-12 of the
     summed Born of zero (a vanishing helicity: MadLoop returns the rounding
     of a zero) is checked absolutely, ours included: the Born against 1e-12
-    of the summed Born, the Laurent coefficients against 1e-12 of its F."""
+    of the summed Born, the Laurent coefficients against 1e-12 of its F. So
+    is a configuration MQ-REF's per-helicity record compares absolutely
+    (``reference.comparison`` "absolute" with ``absolute_scale`` the summed
+    |Born|: a vanishing helicity, or one suppressed below the point's
+    binary64 condition, whose reason the check carries); the strict relative
+    deviation is kept in the note."""
 
     checks = []
     counts = defaultdict(set)
@@ -1868,18 +1873,32 @@ def rule_hel(
         text = "h" + "".join("+" if h > 0 else "-" if h < 0 else "0" for h in helicity)
         mine = [born * average, *(x * average for x in laurent)]
         theirs = [entry[k] for k in COEFFICIENTS]
-        if abs(entry["born"]) <= REFERENCE_TOLERANCE * summed:
+        record = entry.get("reference") or {}
+        recorded = record.get("comparison") == "absolute"
+        if recorded or abs(entry["born"]) <= REFERENCE_TOLERANCE * summed:
             # A helicity whose Born vanishes (MadLoop's value is its rounding
-            # of a zero): every coefficient absolutely, ours included.
-            flux = _flux(total * average, alpha_s)
+            # of a zero), or MQ-REF's record compares it absolutely: every
+            # coefficient against the summed Born, ours included.
+            scale_born = (
+                Decimal(str(record["absolute_scale"]))
+                if recorded and record.get("absolute_scale") is not None
+                else total * average
+            )
+            flux = _flux(scale_born, alpha_s)
+            reason = (
+                record.get("reason") or "absolute (MQ-REF)"
+                if recorded
+                else "vanishing helicity"
+            )
             for k, name in enumerate(COEFFICIENTS):
-                scale = float(total * average) if k == 0 else flux
+                scale = float(scale_born) if k == 0 else flux
                 error = _absolute(mine[k], theirs[k])
                 bound = REFERENCE_TOLERANCE * scale
+                strict = relative(mine[k], theirs[k])
+                note = f"{reason}: against the summed Born (relative {strict:.3g})"
                 checks.append(Check("hel", index, "double-double", text, name,
                                     str(mine[k]), repr(theirs[k]), error, bound,
-                                    error <= bound, note="vanishing helicity: "
-                                    "against the summed Born"))  # fmt: skip
+                                    error <= bound, note=note))  # fmt: skip
             continue
         for k, name in enumerate(COEFFICIENTS):
             error = relative(mine[k], theirs[k])
