@@ -1082,6 +1082,12 @@ FIXTURE_ROOT = INDEX.parent.parent  # .../tests/fixtures/loop
 # export, 308 s per double-double point and 69 s per binary64 point with the
 # checks, 25 GB: two points keep its nightly job within 30 min.
 NATIVE_ROWS = {"A14": [0, 1, 2], "A15": [0, 1, 2, 3], "A23": [0, 1, 2], "A24": [0, 1]}
+# The ``ward`` extra (O10 on the native input path, ``ward.ward_check``)
+# checks every external massless vector leg with c = 1 and c = i at the row's
+# first point; a 2->4 row checks one leg (g g > g g g g: one double-double
+# Ward batch of all six legs took 222 s on 16 threads, MQ-WARD's ladder
+# record ladder-gg_gggg.json, which checked every leg).
+WARD_LEGS = {"A14": [1]}
 # Rows the tools route refuses at generation (MQ-5F: a Dirac current closing
 # on a Weyl current), from the campaign's runs on MQ-REF's references.
 REFUSED_5F = {"C09", "F03", "H02", "H03"}
@@ -1470,6 +1476,8 @@ for r in R:
         )
     if r["id"] in CKM_RELATIONS:
         entry["ckm_relation"] = CKM_RELATIONS[r["id"]]
+    if r["id"] in WARD_LEGS:
+        entry["ward_legs"] = WARD_LEGS[r["id"]]
     if r["id"] in NATIVE_ROWS:
         entry["inputs"] = "native"
         entry["catani"] = "none"
@@ -1491,8 +1499,6 @@ for r in R:
             pend[e] = (
                 "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
             )
-        elif e == "ward":
-            pend[e] = "MQ-WARD (generic native Ward input)"
         elif e == "hel" and r["id"] not in ("A08", "B01", "D05"):
             pend[e] = "MQ-REF (per-helicity SLOOPMATRIXHEL references)"
         elif e == "sp" and not any(v.get("gating", True) for v in variants):

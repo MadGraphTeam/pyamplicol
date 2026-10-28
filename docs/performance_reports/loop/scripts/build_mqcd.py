@@ -29,8 +29,10 @@ Per row the output holds the manifest facts, every tier's record summary
 (points, checks, failures with their rule, point, sector, coefficient,
 error, bound and note; the largest double-double deviation from the primary
 provider, binary64 against double-double, the poles against Catani in both
-carriers, binary64 against the provider (information), the out-of-scope
-binary64 coefficients, timings), its variants' records and a status: ``pass``
+carriers, binary64 against the provider (information), the ``ward`` extra's
+worst ratios, the points without a provider reference (MQ-REF's per-point
+record), the out-of-scope binary64 coefficients, timings), its variants'
+records and a status: ``pass``
 (every run tier and gating variant passed), ``fail`` (a check failed: a
 finding), ``pending`` (the manifest's waiting package) or ``not-run``
 (active, no record given). Later directories override earlier ones per
@@ -61,6 +63,8 @@ SUMMARY_KEYS = (
     "max_catani_binary64",
     "catani_not_formed",
     "binary64_vs_reference",
+    "ward",
+    "no_reference",
     "binary64_out_of_scope",
     "timings",
 )
@@ -167,6 +171,12 @@ def build(results: list[Path], meta: dict[str, str], findings=None) -> dict:
                 ),
                 "max_binary64_vs_dd": _maximum(t["max_binary64_vs_dd"] for t in every),
                 "max_catani_dd": _maximum(t["max_catani_dd"] for t in every),
+                # The ward extra's worst double-double virtual ratio
+                # (|V_k| / scale_k; the bound is 1e-25).
+                "max_ward_dd": _maximum(
+                    (t.get("ward") or {}).get("virtual_double-double")
+                    for t in tiers.values()
+                ),
             }
         )
     classes = defaultdict(lambda: defaultdict(int))
@@ -220,6 +230,7 @@ def markdown(data: dict) -> str:
         "DD vs ref",
         "b64 vs DD",
         "Catani DD",
+        "Ward DD",
         "Failing checks",
         "Findings",
     )
@@ -259,7 +270,7 @@ def markdown(data: dict) -> str:
             f"| {row['id']}{variants} | {row['process']} | {row['tier'][0]} | "
             f"{row['status']} | {_number(row['max_dd_vs_reference'])} | "
             f"{_number(row['max_binary64_vs_dd'])} | {_number(row['max_catani_dd'])} | "
-            f"{note} | {', '.join(ids)} |"
+            f"{_number(row.get('max_ward_dd'))} | {note} | {', '.join(ids)} |"
         )
     lines.append("")
     lines.append("Counts: " + json.dumps(data["counts"]))

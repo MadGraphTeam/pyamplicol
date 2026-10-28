@@ -32,6 +32,18 @@ The rules (PLAN §1.4; no tolerance is widened):
    max(1e-24, 10 E_DD), and against 60 digits within 1e-35;
 7. (``nc``) LC/NLC projections: routed to MQ-NC (manifest ``extras_pending``).
 
+(``ward``) O10 on the native input path (``loops.v2.ward``): at the row's
+first point every external massless vector leg (or the manifest's
+``ward_legs``), epsilon_j -> c p_j / p_j^0 for c = 1 and c = i, judged by
+``ward.ward_row`` in binary64 (the O1 rule with the exact value 0) and in
+double-double (|V_k| <= 1e-25 of the physical scale, the Born within 1e-24).
+
+A reference point carries MQ-REF's record (``rows[i].reference``): status
+``none`` (no provider reference at M-QCD accuracy: rule 1 is recorded as
+not asserted with the record's reason, rules 2-4 hold the point) or ``ok``,
+compared relatively, or absolutely against a regular neighbour (the S3
+zero points, which the manifest's ``zero_points`` must name).
+
 E is the stability estimate of one exact rotation (z, 3/5, 4/5) plus the
 reduction-direction check (the O1 configuration,
 ``generation.loop_service._BINARY64_CHECK_ROTATIONS``). A coefficient that
@@ -98,7 +110,7 @@ EXTRAS = ("nc", "ap", "ward", "uv", "hel", "sp")
 # ``sp`` (PLAN §4.1 special points S1-S4) is checked by the row's gating
 # variants (``<id>@<name>``: the special-point references on the base row's
 # generation), so a row with ``sp`` and no gating variant is malformed.
-IMPLEMENTED_EXTRAS = frozenset({"ap", "uv", "hel", "sp"})
+IMPLEMENTED_EXTRAS = frozenset({"ap", "uv", "hel", "sp", "ward"})
 
 
 Sector = tuple[tuple[str, int], ...]
@@ -181,6 +193,9 @@ class Row:
     # the CKM entries (model parameter names) whose |.|^2 products form the
     # factor numerator / denominator.
     ckm_relation: Mapping[str, Any] | None = None
+    # The legs of the ``ward`` extra (None: every external massless vector
+    # leg, ``ward.gauge_legs``).
+    ward_legs: tuple[int, ...] | None = None
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Row:
@@ -231,6 +246,9 @@ class Row:
             gating=bool(data.get("gating", True)),
             variants=tuple(data.get("variants", ())),
             ckm_relation=data.get("ckm_relation"),
+            ward_legs=None
+            if data.get("ward_legs") is None
+            else tuple(int(x) for x in data["ward_legs"]),
         )
 
     @property
@@ -320,10 +338,18 @@ class Reference:
     # double pole from its Born times the universal IR factor): evidence
     # printed with a rule 1 miss, never a pass condition.
     evidence: list[dict[str, dict[str, Any]]] = field(default_factory=list)
+    # Per point, MQ-REF's reference record (``rows[i].reference``: status
+    # "ok" or "none", comparison "relative" or "absolute" with the regular
+    # neighbour ``absolute_scale_row``, the Born's source, the reason), or
+    # None where the fixture has none.
+    records: list[dict[str, Any] | None] = field(default_factory=list)
 
     @property
     def primary(self) -> str:
         return self.providers[0]
+
+    def record(self, index: int) -> dict[str, Any] | None:
+        return self.records[index] if index < len(self.records) else None
 
 
 def _strings(point) -> list[list[str]]:
@@ -368,7 +394,7 @@ def _required(row, spec, data) -> Reference:
     sector."""
 
     providers = tuple(spec.get("providers") or data["rows"][0]["providers"])
-    born, virtual, accuracy, evidence = [], [], [], []
+    born, virtual, accuracy, evidence, records = [], [], [], [], []
     for entry in data["rows"]:
         b, v, a, e = {}, {}, {}, {}
         for name in providers:
@@ -381,6 +407,18 @@ def _required(row, spec, data) -> Reference:
                 for key in ("status", "universal_double_pole_relative_error")
                 if values.get(key) is not None
             }
+        record = entry.get("reference")
+        if record is not None and providers[0] in e:
+            # The primary's Born source and its Born / double-pole mismatch
+            # (MQ-REF's per-point record): evidence with a rule 1 miss.
+            e[providers[0]].update(
+                {
+                    key: record[key]
+                    for key in ("born_source", "born_double_pole_relative_mismatch")
+                    if record.get(key) is not None
+                }
+            )
+        records.append(record)
         evidence.append(e)
         sectors = entry.get("sectors")
         if sectors and providers[0] == data.get("primary_provider", "madloop"):
@@ -417,6 +455,7 @@ def _required(row, spec, data) -> Reference:
         accuracy,
         float(parameters["aS"]),
         evidence,
+        records,
     )
 
 
@@ -779,6 +818,7 @@ class RowRun:
         self.compiled = compiled
         self.native = native
         self._twin: RowRun | None = None
+        self._ward: Any = None
         self.reference = load_reference(row)
         # (point, carrier) -> the native executor's reasons for a failed point
         self.failures: dict[tuple[int, str], str] = {}
@@ -849,6 +889,33 @@ class RowRun:
         seconds = (time.perf_counter() - start) / max(1, len(indices))
         LOG.info("%s: %s done, %.1f s per point", self.row.id, carrier, seconds)
         return [None if r is None else evaluated(r, carrier, seconds) for r in results]
+
+    def ward(self, index: int, carrier: str) -> dict[str, Any]:
+        """``ward.ward_check`` of reference point ``index`` in ``carrier``
+        on the row's Ward slice (its request on the full tree kernels,
+        ``ward.ward_slice``, with native inputs; generated once)."""
+
+        from pyamplicol.loops.v2 import ward
+        from pyamplicol.loops.v2.plan_export import NativeExecutor
+
+        if self._ward is None:
+            start = time.perf_counter()
+            slice_ = ward.ward_slice(
+                self.compiled, slice_request(self.row), self.native
+            )
+            self._ward = NativeExecutor(slice_, inputs="native", forward=False)
+            LOG.info(
+                "%s: Ward slice in %.1f s", self.row.id, time.perf_counter() - start
+            )
+        LOG.info("%s: Ward check, %s, point %d", self.row.id, carrier, index)
+        return ward.ward_check(
+            self._ward,
+            self.reference.points[index],
+            self.reference.scales[index],
+            carrier,
+            legs=self.row.ward_legs,
+            parameters=self.parameters,
+        )
 
     def twin(self) -> RowRun:
         """The row's diagonal twin (``ckm_relation.twin_process``: the same
@@ -1122,6 +1189,13 @@ def _miss_evidence(
         parts.append(
             "its double pole off its Born x the universal factor by "
             f"{float(stated['universal_double_pole_relative_error']):.3g}"
+        )
+    if "born_source" in stated:
+        parts.append(f"Born from {stated['born_source']}")
+    if "born_double_pole_relative_mismatch" in stated:
+        parts.append(
+            "Born / double-pole mismatch "
+            f"{float(stated['born_double_pole_relative_mismatch']):.3g}"
         )
     parts.append(
         "second providers "
@@ -1835,6 +1909,76 @@ def helicity_rows(run: RowRun, indices: Sequence[int], points, scales) -> list:
 # ------------------------------------------------------------------ a row
 
 
+def reference_record_checks(row: Row, reference: Reference, index: int) -> list[Check]:
+    """MQ-REF's record of the point (``Reference.records``): status "none"
+    is one not-asserted rule 1 check carrying the reason (no provider
+    reference at M-QCD accuracy; rule 1 does not run there, rules 2-4 do);
+    an absolute comparison must be the manifest's zero point with the same
+    regular neighbour (else the manifest is stale: a failing check)."""
+
+    record = reference.record(index)
+    if record is None:
+        return []
+    checks = []
+    status = record.get("status")
+    if status == "none":
+        checks.append(Check(
+            "1", index, "double-double", "", "no reference", "", "", 0.0, 0.0,
+            True, asserted=False, note="no provider reference at this point "
+            f"(MQ-REF): {record.get('reason')}; rules 2-4 hold it"))  # fmt: skip
+    elif status != "ok":
+        checks.append(Check(
+            "1", index, "double-double", "", "reference record", "", str(status),
+            math.inf, 0.0, False, note="unknown reference status"))  # fmt: skip
+    if record.get("comparison") == "absolute":
+        neighbour = record.get("absolute_scale_row")
+        named = row.zero_points.get(index)
+        checks.append(Check(
+            "1", index, "double-double", "", "reference record", str(named),
+            str(neighbour), 0.0, 0.0, named is not None and named == neighbour,
+            note="an absolute reference point against its regular neighbour: "
+            "the manifest's zero_points must name it"))  # fmt: skip
+    return checks
+
+
+def rule_ward(index: int, carrier: str, check: Mapping[str, Any]) -> list[Check]:
+    """The ``ward`` extra (O10, ``ward.ward_check`` of one point and
+    carrier): per leg and factor c the substituted Born over the physical
+    one (``ward.BORN_BOUNDS``) and the virtual's criterion (``ward.ward_row``:
+    double-double |V_k| / scale_k <= 1e-25; binary64 the O1 rule's
+    |V_k| / max(1e-12 scale_k, E_k) <= 1, E within the binary64 scope and
+    |V_k| <= 10 E_k)."""
+
+    from pyamplicol.loops.v2 import ward
+
+    checks = []
+    for row in check["rows"]:
+        label = f"leg {row['leg']}, c = {complex(*row['factor'])}"
+        checks.append(Check(
+            "ward", index, carrier, label, "born", "", "0", row["born"],
+            ward.BORN_BOUNDS[carrier], bool(row["born_passed"]),
+            note="|substituted Born| / |physical Born|"))  # fmt: skip
+        virtual = row["parts"]["virtual"]
+        if carrier == "double-double":
+            error, bound = max(virtual), ward.VIRTUAL_BOUNDS[carrier]
+            note = "max_k |V_k| / scale_k"
+        elif row.get("o1_over") is not None:
+            error, bound = max(row["o1_over"]), 1.0
+            note = (
+                f"max_k |V_k| / max(1e-12 scale_k, E_k); |V_k| / scale_k "
+                f"{max(virtual):.3g}; |V_k| / E_k {max(row['estimate_over']):.3g} "
+                f"(<= {ward.ESTIMATE_FACTOR}); E_k / scale_k "
+                f"{max(row['estimate']):.3g} (in scope: {row['in_scope']})"
+            )
+        else:
+            error, bound = max(virtual), math.nan
+            note = "no binary64 criterion without the reduction-direction check"
+        checks.append(Check(
+            "ward", index, carrier, label, "virtual", "", "0", error, bound,
+            row["virtual_passed"] is True, note=note))  # fmt: skip
+    return checks
+
+
 @dataclass
 class RowReport:
     row: str
@@ -1870,6 +2014,22 @@ class RowReport:
         ]
         return max(errors) if errors else None
 
+    def ward_summary(self) -> dict[str, Any] | None:
+        found = [c for c in self.checks if c.rule == "ward"]
+        if not found:
+            return None
+        summary: dict[str, Any] = {"checks": len(found)}
+        for carrier in ("double", "double-double"):
+            for name in ("virtual", "born"):
+                errors = [
+                    c.error
+                    for c in found
+                    if c.carrier == carrier and c.coefficient == name
+                ]
+                if errors:
+                    summary[f"{name}_{carrier}"] = max(errors)
+        return summary
+
     def summary(self) -> dict[str, Any]:
         return {
             "row": self.row,
@@ -1888,6 +2048,16 @@ class RowReport:
                 for c in self.checks
             ),
             "binary64_vs_reference": self.binary64_vs_reference,
+            # The ``ward`` extra: per carrier the worst virtual criterion
+            # ratio (double-double |V_k| / scale_k, binary64 the O1 ratio)
+            # and the worst Born ratio.
+            "ward": self.ward_summary(),
+            # Points without a provider reference (MQ-REF's record).
+            "no_reference": [
+                {"point": c.point, "reason": c.note}
+                for c in self.checks
+                if c.coefficient == "no reference"
+            ],
             "binary64_out_of_scope": [
                 {
                     "point": c.point,
@@ -1971,11 +2141,14 @@ def run_row(
             row = replace(run.row, vanishing=(*run.row.vanishing, *entries))
         else:
             row = run.row
-        checks += rule1(row, reference, index, d)
-        for check in rule1(row, reference, index, b):
-            worst = info.get(check.coefficient, 0.0)
-            if check.coefficient in COEFFICIENTS and math.isfinite(check.error):
-                info[check.coefficient] = max(worst, check.error)
+        recorded = reference_record_checks(row, reference, index)
+        checks += recorded
+        if not any(c.coefficient == "no reference" for c in recorded):
+            checks += rule1(row, reference, index, d)
+            for check in rule1(row, reference, index, b):
+                worst = info.get(check.coefficient, 0.0)
+                if check.coefficient in COEFFICIENTS and math.isfinite(check.error):
+                    info[check.coefficient] = max(worst, check.error)
         checks += rule2_and_3(row, reference, index, b, d)
         if row.catani == "none":
             checks.append(Check(
@@ -2020,6 +2193,12 @@ def run_row(
         timings["ap_s"] = round(time.perf_counter() - start, 2)
         for k, index in enumerate(extra_points):
             checks += rule6(row, index, dd[indices.index(index)], ap[k], ap60[k])
+    if "ward" in extras:
+        start = time.perf_counter()
+        for index in extra_points:
+            for carrier in ("double", "double-double"):
+                checks += rule_ward(index, carrier, run.ward(index, carrier))
+        timings["ward_s"] = round(time.perf_counter() - start, 2)
     if row.ckm_relation is not None and tier == "nightly":
         start = time.perf_counter()
         twin = run.twin()
