@@ -1021,6 +1021,8 @@ LISTINGS = {
         "binary64_out_of_scope": [
             oos(0, "QCD^12", "finite", 1.36e-08, 1.40e-09),
             oos(0, "QCD^12", "single_pole", 5.15e-09, 6.79e-10),
+            oos(1, "QCD^12", "finite", 7.78e-08, 2.00e-09),
+            oos(1, "QCD^12", "single_pole", 5.38e-08, 2.00e-09),
         ]
     },
     "E05": {
