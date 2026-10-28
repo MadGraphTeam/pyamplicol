@@ -1572,6 +1572,12 @@ for r in R:
     entry.update(LISTINGS.get(r["id"], {}))
     if indexed or r["id"] in ("D21",):
         entry.update(LISTINGS_INDEXED.get(r["id"], {}))
+    if superseded:
+        # An outlier of the existing reference at a point the rerun
+        # supersedes is no longer the reference's.
+        entry["reference_outliers"] = [
+            o for o in entry["reference_outliers"] if str(o["point"]) not in superseded
+        ]
     if r["veto"]:
         entry["particle_veto"] = r["veto"]
     if r.get("ignored"):
