@@ -76,6 +76,7 @@ O1_CAP = 1e-9  # rule 2: E above it is outside the binary64 scope
 BRACKET = 10  # rule 3 (and the 10 E bounds of rules 4-6)
 DD_FLOOR = 1e-24  # rules 4-6
 AP_CONVERGENCE = 1e-35  # rule 6
+CKM_RELATION = 1e-24  # PLAN §4.1: the H rows' CKM-factor relation in DD
 AP_DIGITS = (40, 60)
 CHECK_ROTATION = ("z", "3/5", "4/5")
 
@@ -175,6 +176,11 @@ class Row:
     # it is not the row's reference (manifest path), for the ``hel`` extra.
     helicity_reference: str | None = None
     variants: tuple[Mapping[str, Any], ...] = ()
+    # PLAN §4.1's exact relation of the H rows (manifest ``ckm_relation``):
+    # ``twin_process`` (the diagonal twin, same masses and restriction) and
+    # the CKM entries (model parameter names) whose |.|^2 products form the
+    # factor numerator / denominator.
+    ckm_relation: Mapping[str, Any] | None = None
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Row:
@@ -224,6 +230,7 @@ class Row:
             helicity_reference=data.get("helicity_reference"),
             gating=bool(data.get("gating", True)),
             variants=tuple(data.get("variants", ())),
+            ckm_relation=data.get("ckm_relation"),
         )
 
     @property
@@ -769,6 +776,9 @@ class RowRun:
         from pyamplicol.loops.v2.plan_export import NativeExecutor, export_plan
 
         self.row = row
+        self.compiled = compiled
+        self.native = native
+        self._twin: RowRun | None = None
         self.reference = load_reference(row)
         # (point, carrier) -> the native executor's reasons for a failed point
         self.failures: dict[tuple[int, str], str] = {}
@@ -839,6 +849,22 @@ class RowRun:
         seconds = (time.perf_counter() - start) / max(1, len(indices))
         LOG.info("%s: %s done, %.1f s per point", self.row.id, carrier, seconds)
         return [None if r is None else evaluated(r, carrier, seconds) for r in results]
+
+    def twin(self) -> RowRun:
+        """The row's diagonal twin (``ckm_relation.twin_process``: the same
+        request, restriction and points with the twin's process), generated
+        once."""
+
+        if self._twin is None:
+            twin = replace(
+                self.row,
+                id=f"{self.row.id}~twin",
+                process=self.row.ckm_relation["twin_process"],
+                ckm_relation=None,
+                variants=(),
+            )
+            self._twin = RowRun(twin, self.compiled, self.native)
+        return self._twin
 
     def legs(self) -> list[tuple[int, bool]]:
         """(|colour|, massive) of every external leg (the prepared model's
@@ -1606,6 +1632,110 @@ def rule6(
 # ------------------------------------------------------ per-helicity rows
 
 
+def parameter_modulus_squared(
+    compiled: Any, parameters: Mapping[str, str], name: str, digits: int = 60
+) -> Decimal:
+    """|p|^2 of a model parameter at ``parameters`` (an external one
+    exactly, an internal one by its resolved definition at ``digits``
+    digits; the engine's own evaluator, ``assemble._definition_value``)."""
+
+    from pyamplicol.loops.v2.assemble import (
+        _definition_value,
+        _kernel_parameters,
+        _substitutions,
+    )
+
+    values = _kernel_parameters(compiled, parameters)
+    with localcontext() as context:
+        context.prec = digits + 10
+        if name in values:
+            value = Decimal(values[name].numerator) / values[name].denominator
+            return value * value
+        records = {record.name: record for record in compiled.ir.parameters}
+        if name not in records or records[name].nature != "internal":
+            raise KeyError(f"{name!r} is no model parameter")
+        external = {
+            record.name: Decimal(
+                parameters.get(
+                    record.name, str(compiled.parameter_defaults[record.name][0])
+                )
+            )
+            for record in compiled.ir.parameters
+            if record.nature == "external"
+            and record.name in compiled.parameter_defaults
+        }
+        real, imaginary = _definition_value(
+            records[name].resolved_expression,
+            _substitutions(compiled, external, digits),
+            digits,
+        )
+        return real * real + imaginary * imaginary
+
+
+def ckm_factor(compiled: Any, parameters: Mapping[str, str], relation) -> Decimal:
+    """prod |V_num|^2 / prod |V_den|^2 of a ``ckm_relation``."""
+
+    with localcontext() as context:
+        context.prec = 70
+        factor = Decimal(1)
+        for name in relation["numerator"]:
+            factor *= parameter_modulus_squared(compiled, parameters, name)
+        for name in relation["denominator"]:
+            factor /= parameter_modulus_squared(compiled, parameters, name)
+        return factor
+
+
+def rule_ckm(
+    row: Row,
+    index: int,
+    ours: Evaluated,
+    twin: Evaluated,
+    factor: Decimal,
+) -> list[Check]:
+    """PLAN §4.1, the H rows: QCD corrections preserve flavour, so the row
+    equals its diagonal twin times the CKM factor, per sector and
+    coefficient (Born included), in double-double within 1e-24 (strictly
+    relative; a coefficient that vanishes in both is checked absolutely
+    against 1e-24 of the row's Born)."""
+
+    checks = []
+    scale = abs(ours.total()[0])
+    pairs = [
+        (sector_text(s), "born", ours.born.get(s), twin.born.get(s))
+        for s in sorted(set(ours.born) | set(twin.born))
+    ]
+    for s in sorted(set(ours.virtual) | set(twin.virtual)):
+        mine, theirs = ours.virtual.get(s), twin.virtual.get(s)
+        for k, name in enumerate(LAURENT):
+            pairs.append((
+                sector_text(s), name, None if mine is None else mine[k],
+                None if theirs is None else theirs[k]))  # fmt: skip
+    for sector, name, mine, theirs in pairs:
+        if mine is None or theirs is None:
+            checks.append(Check(
+                "ckm", index, "double-double", sector, name, str(mine), str(theirs),
+                math.inf, CKM_RELATION, False,
+                note="the sector is absent from the row or its twin"))  # fmt: skip
+            continue
+        with localcontext() as context:
+            context.prec = 80
+            expected = factor * Decimal(str(theirs))
+        if Decimal(str(mine)) == 0 and expected == 0:
+            error, bound, note = 0.0, CKM_RELATION, "vanishes in both"
+        elif abs(expected) <= Decimal(CKM_RELATION) * scale:
+            error = _absolute(mine, expected)
+            bound = CKM_RELATION * float(scale)
+            note = "vanishing in the twin: against 1e-24 of the Born"
+        else:
+            error, bound, note = relative(mine, expected), CKM_RELATION, ""
+        checks.append(Check(
+            "ckm", index, "double-double", sector, name, str(mine), str(expected),
+            error, bound, error <= bound,
+            note=note or f"CKM factor {float(factor):.17g} x the twin "
+            f"{row.ckm_relation['twin_process']}"))  # fmt: skip
+    return checks
+
+
 def helicity_reference(row: Row) -> dict[str, Any]:
     """MadLoop's per-helicity rows of the row (``per_helicity`` of its
     reference or of ``row.helicity_reference``): SLOOPMATRIXHEL |M_h|^2 with
@@ -1890,6 +2020,16 @@ def run_row(
         timings["ap_s"] = round(time.perf_counter() - start, 2)
         for k, index in enumerate(extra_points):
             checks += rule6(row, index, dd[indices.index(index)], ap[k], ap60[k])
+    if row.ckm_relation is not None and tier == "nightly":
+        start = time.perf_counter()
+        twin = run.twin()
+        factor = ckm_factor(run.compiled, run.parameters, row.ckm_relation)
+        values = twin.evaluate(indices, "double-double", stability=False)
+        for index, mine, theirs in zip(indices, dd, values, strict=True):
+            if mine is None or theirs is None:
+                continue
+            checks += rule_ckm(row, index, mine, theirs, factor)
+        timings["ckm_s"] = round(time.perf_counter() - start, 2)
     return RowReport(row.id, tier, indices, checks, timings, binary64_vs_reference=info)
 
 

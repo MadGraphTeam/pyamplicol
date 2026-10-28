@@ -1085,6 +1085,24 @@ NATIVE_ROWS = {"A14": [0, 1, 2], "A15": [0, 1, 2, 3], "A23": [0, 1, 2], "A24": [
 # Rows the tools route refuses at generation (MQ-5F: a Dirac current closing
 # on a Weyl current), from the campaign's runs on MQ-REF's references.
 REFUSED_5F = {"C09", "F03", "H02", "H03"}
+# PLAN §4.1: the H rows replace a second provider with an exact relation.
+# QCD corrections preserve flavour, so a single-W-line process equals its
+# diagonal twin (same masses) times |V_num|^2 / |V_den|^2, per sector and
+# coefficient, Born included (CKM entries by the model's parameter names:
+# loop_sm's Wolfenstein CKM1x2 = V_us, CKM1x1 = V_ud, CKM3x2 = V_ts,
+# CKM3x3 = V_tb), in double-double within 1e-24.
+CKM_RELATIONS = {
+    "H01": {
+        "twin_process": "u d~ > w+ g",
+        "numerator": ["CKM1x2"],
+        "denominator": ["CKM1x1"],
+    },
+    "H02": {
+        "twin_process": "g b > t w-",
+        "numerator": ["CKM3x2"],
+        "denominator": ["CKM3x3"],
+    },
+}
 # Second references of a row: runtime parameter changes (S4) and the
 # non-gating z twin of C04 (PLAN §4.1).
 VARIANTS = {
@@ -1450,6 +1468,8 @@ for r in R:
         entry["helicity_reference"] = (
             "tests/fixtures/loop/required/mqcd/gg_ttx_sectors.json"
         )
+    if r["id"] in CKM_RELATIONS:
+        entry["ckm_relation"] = CKM_RELATIONS[r["id"]]
     if r["id"] in NATIVE_ROWS:
         entry["inputs"] = "native"
         entry["catani"] = "none"
