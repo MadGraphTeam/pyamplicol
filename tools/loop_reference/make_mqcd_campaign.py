@@ -57,11 +57,16 @@ def run(rid, key, export=None, points=None, helicities=None, split_points=False,
     return rid
 
 
-def row(rid, cls, process, code, ref, tier="n", extras=(), runs_=(), fixtures=(), note=None, primary=None):
+def row(rid, cls, process, code, ref, tier="n", extras=(), runs_=(), fixtures=(), note=None, primary=None,
+        helicity_reference=None):
     e = {"row": rid, "class": cls, "process": process, "restriction_code": code, "reference_kind": ref,
          "tier": tier, "extras": list(extras), "runs": list(runs_), "existing_fixtures": list(fixtures)}
     if note:
         e["note"] = note
+    if helicity_reference:
+        if helicity_reference not in e["runs"] or not runs[helicity_reference].get("helicities"):
+            raise ValueError(f"{rid}: helicity_reference {helicity_reference} is not a per-helicity run of the row")
+        e["helicity_reference"] = helicity_reference
     if primary:
         e["primary_provider"] = primary
     rows.append(e)
@@ -81,8 +86,9 @@ F2 = ("§4.1: rule 1 (DD against MadLoop) exceeded 1e-12 at point 1 (mq-validate
       "was MadLoop's numerical helicity filter (HelicityFilterLevel 2 dropped and folded mass-suppressed b-quark "
       "helicities): with the campaign's HelicityFilterLevel = 0 MadLoop agrees with Recola")
 F3 = ("§4.1: rule 1 (DD against MadLoop) exceeded 1e-12 at points 0, 2, 3 (mq-validate finding F3: MadLoop's "
-      "CutTools quadruple-precision values, return code 329, 3.5e-12 .. 1.2e-11 off); the installed ppjjjj library, "
-      "no installation; outcome recorded in the fixture's provider pairs")
+      "CutTools quadruple-precision values, return code 329, 3.5e-12 .. 1.2e-11 off); the installed ppjjjj library "
+      "and Recola (a third independent value for the user's ruling, audit of fix round 2), no installation; outcome "
+      "recorded in the fixture's provider pairs")
 KEEP = ("not re-evaluated (2->4/2->5 runs of 2.0-2.4 CPU-hours per batch; the per-sector batch-2 values stand): MadLoop "
         "quadruple precision at every point already (return code 328, MLStabThres 1e-13 with its own CTModeRun -1 "
         "test), the evaluation the campaign forces elsewhere; MadLoop's helicity filter {}")
@@ -100,7 +106,15 @@ row("A06", "Q-massless", "u u~ > u u~", "5F", "E", fixtures=["required/uux_uux.j
     runs_=[run("uux_uux_sectors", "uux_uux", export='runs/required/uux_uux/madloop-export', points={"generator": "fixture", "fixture": "required/uux_uux.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
 row("A07", "Q-massless", "u u > u u", "5F", "N", runs_=[run("uu_uu", "uu_uu")])
 row("A08", "Q-massless", "g g > g g g", "5F", "R", extras=["nc", "ward", "hel"],
-    runs_=[run("gg_ggg", "gg_ggg", export=G1("gg_ggg"), helicities="all")], note="+ NJet (nc)")
+    runs_=[run("gg_ggg", "gg_ggg", export=G1("gg_ggg")),
+           run("gg_ggg_hel", "gg_ggg", export=G1("gg_ggg"), helicities="all",
+               points=S(count=3, half_scale_point=False, madloop_qp_point=True),
+               note="per-helicity reference at MadLoop's own quadruple-precision points (published to 30 digits): "
+                    "its quadruple-precision values refer to the published point, so every non-vanishing helicity "
+                    "is a strictly relative reference, including those suppressed by 1e-11 .. 1e-4 of the summed "
+                    "Born, whose values at the exact points of gg_ggg depend on MadLoop's 1e-16 repair of the "
+                    "binary64 rounding (gg_ggg's per-helicity run is superseded)")],
+    note="+ NJet (nc)", helicity_reference="gg_ggg_hel")
 row("A09", "Q-massless", "u u~ > g g g", "5F", "R", "d", extras=["nc", "sp:S2"],
     runs_=[run("uux_ggg", "uux_ggg", export=G1("uux_ggg")),
            run("uux_ggg_soft", "uux_ggg", export=G1("uux_ggg"),
@@ -145,16 +159,41 @@ row("A14", "Q-massless", "g g > g g g g", "5F", "E", extras=["ward"], fixtures=[
     note="MadLoop QP values committed into the fixture (never regenerated)")
 row("A15", "Q-massless", "u u~ > g g g g", "5F", "N", extras=["nc"],
     runs_=[run("uux_gggg", "uux_gggg", split_points=True)])
+A18_RECOLA = ("Recola (COLLIER, binary64) differs from MadLoop and OpenLoops by 1.7e-12 .. 5.6e-11 (Laurent coefficients) at "
+              "every point, "
+              "including point 1 where MadLoop (Ninja, 328) and OpenLoops agree to 1e-12: not a 1e-12 reference for "
+              "this process, so it decides no point")
+
+
+def a18_outlier(index, ir, ol, fin, dp, dd_openloops, condition_ii):
+    """Rule 1 outlier record of a g g > u u~ u u~ point (mq-validate F3)."""
+    return {
+        "outlier": {
+            "rule": 1, "ruling": "pending: routed to the user via the coordinator",
+            "conditions": {
+                "i": "fails: MadLoop's own accuracy at the point is 0.0 (forced quadruple-precision stage, CutTools, "
+                     "return code 329); an accuracy of 0.0 covers no nonzero difference, so rule 1 (i) cannot hold "
+                     "at any point where DD and MadLoop differ (mq-validate F3: by 3.5e-12 or more)",
+                "ii": f"{condition_ii}: OpenLoops (ppjjjj, binary64) = DD to {dd_openloops} (mq-validate F3)"},
+            "providers": {
+                "madloop": f"CutTools quadruple precision (329, accuracy 0.0); misses its own universal double pole "
+                           f"by {ir}",
+                "openloops": f"misses the universal double pole by {ol}; MadLoop - OpenLoops: finite {fin}, double "
+                             f"pole {dp}",
+                "recola": A18_RECOLA}},
+        "reason": f"rule 1 outlier at point {index}: no provider value satisfies rule 1 (i) here; ruling pending"}
+
+
 row("A18", "Q-massless", "g g > u u~ u u~", "5F", "N", extras=["nc"],
-    runs_=[run("gg_uuxuux", "gg_uuxuux", split_points=True, second=("openloops",), trigger=F3,
-               notes={str(i): (f"OUTLIER (rule 1): MadLoop's quadruple-precision stage takes CutTools (return code 329, "
-                               f"accuracy 0.0) and misses its own universal double pole by {ir} (OpenLoops {ol}); "
-                               f"MadLoop - OpenLoops (ppjjjj, binary64): finite {fin}, double pole {dp}; mq-validate "
-                               "F3: OpenLoops = DD to 5.5e-13 / 1.2e-12 / 2.6e-12 at points 0 / 2 / 3, so no provider "
-                               "is a 1e-12 reference at points 2, 3 (ruling routed to the user via the coordinator)")
-                      for i, ir, ol, fin, dp in ((0, "3.5e-13", "3.5e-14", "4.0e-12", "3.1e-13"),
-                                                 (2, "1.1e-12", "1.2e-13", "5.2e-12", "1.2e-12"),
-                                                 (3, "3.5e-13", "4.7e-14", "1.4e-11", "4.0e-13"))})])
+    runs_=[run("gg_uuxuux", "gg_uuxuux", split_points=True, second=("openloops", "recola"), trigger=F3,
+               point_status={str(i): a18_outlier(i, *values) for i, *values in (
+                   (0, "3.5e-13", "3.5e-14", "4.0e-12", "3.1e-13", "5.5e-13", "holds"),
+                   (2, "1.1e-12", "1.2e-13", "5.2e-12", "1.2e-12", "1.2e-12", "fails"),
+                   (3, "3.5e-13", "4.7e-14", "1.4e-11", "4.0e-13", "2.6e-12", "fails"))},
+               notes={"0": "OUTLIER (rule 1): reference.outlier; OpenLoops satisfies (ii) only, (i) fails",
+                      "1": "MadLoop's quadruple-precision stage takes Ninja (328) and agrees with OpenLoops to 1e-12",
+                      "2": "OUTLIER (rule 1): reference.outlier; no provider is a 1e-12 reference",
+                      "3": "OUTLIER (rule 1): reference.outlier; no provider is a 1e-12 reference"})])
 row("A19", "Q-massless", "u u~ > d d~ s s~", "5F", "E", fixtures=["required/uux_ddxssx.json"],
     runs_=[run("uux_ddxssx_sectors", "uux_ddxssx", export='runs/required/uux_ddxssx/madloop-export', points={"generator": "fixture", "fixture": "required/uux_ddxssx.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
 row("A20", "Q-massless", "u u~ > u u~ d d~", "5F", "E", fixtures=["required/uux_uuxddx.json"],
@@ -175,7 +214,8 @@ row("B01", "Q-top", "g g > t t~", "5F", "E", "d", ["ap", "uv", "hel", "sp:S1", "
            run("gg_ttx_threshold", "gg_ttx", export=REQ("gg_ttx"),
                points=S(family="threshold", values=["1/10", "1/100", "1/1000"], half_scale_point=False, madloop_qp_point=True),
                note="S1: threshold beta = 1e-1, 1e-2, 1e-3"),
-           run("gg_ttx_mt170", "gg_ttx_mt170", export=REQ("gg_ttx"), note="S4: runtime MT = 170")])
+           run("gg_ttx_mt170", "gg_ttx_mt170", export=REQ("gg_ttx"), note="S4: runtime MT = 170")],
+    helicity_reference="gg_ttx_sectors")
 row("B02", "Q-top", "u u~ > t t~", "5F", "N", runs_=[run("uux_ttx", "uux_ttx")])
 row("B03", "Q-top", "g g > t t~ g", "5F", "N", extras=["nc", "ward"], runs_=[run("gg_ttxg", "gg_ttxg")])
 row("B05", "Q-top", "g g > t t~ g g", "5F", "E", fixtures=["required/gg_ttxgg.json"],
@@ -211,7 +251,7 @@ row("D02", "Q-EWBorn", "u u~ > e- e+ (widths)", "W", "R",
     runs_=[run("uux_emep_widths", "uux_emep_widths", export="runs/mqcd/uux_emep/madloop-export",
                points={"generator": "run", "run": "uux_emep"})])
 row("D05", "Q-EWBorn", "u u~ > e- e+ g", "5F", "R", "d", ["nc", "ward", "uv", "hel"],
-    runs_=[run("uux_emepg", "uux_emepg", export=G1("uux_emepg"), helicities="all")])
+    runs_=[run("uux_emepg", "uux_emepg", export=G1("uux_emepg"), helicities="all")], helicity_reference="uux_emepg")
 row("D06", "Q-EWBorn", "u u~ > e- e+ g g", "5F", "R", fixtures=["dilepton-two-gluon.json"],
     runs_=[run("uux_emepgg", "uux_emepgg", export=G1("uux_emepgg"))], note="existing LC/NLC test (ew_lines:943)")
 row("D07", "Q-EWBorn", "u u~ > e- e+ g g g", "5F", "E", fixtures=["required/uux_emepggg.json"],

@@ -769,11 +769,11 @@ data.
 
 | File | Role |
 |---|---|
-| `mqcd_campaign.json` (written by `make_mqcd_campaign.py`) | The 76 rows of §4.2 (class, process, restriction code and its pyAmpliCol route, reference kind E/N/R, tier, extras) and the 77 reference runs producing them (process key of `required_processes.json`, export, points family, per-helicity, second providers with their §4.1 trigger or 'diagnostic', MadLoop accuracy target, provider exclusions, per-point reference notes and `point_status`). |
-| `mqcd_campaign.py` | `export`, `points`, `run` (MadLoop's quadruple-precision evaluation under `timeout 2700`, pinned; `split_points` runs one job per point, then `combine`), `merge` (passes the run's `point_status`), `fixture` (absolute paths rewritten to `${LOOP_REFERENCE_ROOT}` / `${REPOSITORY}`; refuses any `/shared`, `/home`, `/tmp` or non-compiler `/nix/store` path left), `manifest`, `status`. Work directories `$LOOP_REFERENCE_ROOT/runs/mqcd/<run>/`. |
+| `mqcd_campaign.json` (written by `make_mqcd_campaign.py`) | The 76 rows of §4.2 (class, process, restriction code and its pyAmpliCol route, reference kind E/N/R, tier, extras) and the 78 reference runs producing them (process key of `required_processes.json`, export, points family, per-helicity, second providers with their §4.1 trigger or 'diagnostic', MadLoop accuracy target, provider exclusions, per-point reference notes and `point_status`, including declared rule 1 outliers); per row the `helicity_reference` run. |
+| `mqcd_campaign.py` | `export`, `points`, `run` (MadLoop's quadruple-precision evaluation under `timeout 2700`, pinned; `split_points` runs one job per point, then `combine`), `merge` (passes the run's `point_status`), `fixture` (absolute paths rewritten to `${LOOP_REFERENCE_ROOT}` / `${REPOSITORY}`; refuses any `/shared`, `/home`, `/tmp` or non-compiler `/nix/store` path left), `relocate` (the same rewrite, by text, of committed fixtures outside the campaign; every value unchanged, checked leaf by leaf), `manifest`, `status`. Work directories `$LOOP_REFERENCE_ROOT/runs/mqcd/<run>/`. |
 | `supplied_points.py` | Points for every mass pattern `exact_points.py` cannot build (several massive subsystems, massive beams, irrational MW, light massive pairs above 800 GeV): 60-digit construction printed exactly on a 30-digit quantum (no 28-digit context rounding at print time), momentum conservation exact in the printed decimals and the recorded defects those of the printed values; configurations it cannot reach are refused before the search, and the search is bounded; families `regular`, `threshold`, `soft`, `collinear`, `radiation-zero`, `rest` (2->1); `--rotate x`, `--half-scale-point`, `--madloop-qp-point`. |
 | `tests/fixtures/loop/required/mqcd/<run>.json` | One merged reference per run (the `references.py merge` format plus `sectors`, `madloop_accuracy`, `per_helicity`, `restriction`, `parameter_overrides`, a per-row `reference` record, `tolerance_scope`, `mqcd_run`). |
-| `tests/fixtures/loop/required/mqcd_references.json` | The manifest MQ-VALIDATE consumes: per row the pyAmpliCol route (restriction, fixed parameters), each reference (fixture, process, orders, parameters, points, MadLoop accuracy per point and loop squared split order, `point_reference` per point, notes, exclusions, second-provider trigger) and the existing references; `conventions` documents indexing, the per-point record and that fixture tolerances are not M-QCD acceptance values. |
+| `tests/fixtures/loop/required/mqcd_references.json` | The manifest MQ-VALIDATE consumes: per row the pyAmpliCol route (restriction, fixed parameters), each reference run (fixture, process, orders, points, MadLoop return code, evaluation precision and accuracy per point and loop squared split order, `binding_rows`, rule 1 `outliers`, notes, exclusions, second-provider trigger and outcome), the existing references (return codes, evaluation precision, `point_binding`: binding, or superseded by the run row that re-evaluates the same point in quadruple precision, with the deviation), `binding_references` (the one binding reference of every point) and `helicity_reference`; parameters, per-point `reference` records and per-helicity rows stay in the fixtures; `conventions` documents indexing, the records and that fixture tolerances are not M-QCD acceptance values. |
 
 Typical use:
 
@@ -831,21 +831,39 @@ CPU-hours each; their helicity filters contain no folded and no
 mass-suppressed entry) and the collinear limit points (a fixed quadruple
 precision returns NaN at the unstable theta = 1e-4, 1e-5 points). The
 re-evaluated runs keep the batch-2 values as the secondary run `mlstabthres`
-(`relative_deviation_from_reference_run`; the manifest's
-`batch2_relative_deviation`). The E rows get `<key>_sectors` runs on their
-existing exports at the committed points plus a mu_R = mu_0/2 copy of point 1
-(every squared split order, MadLoop's accuracy per sector), and every new row
-has three points plus that copy.
+(`relative_deviation_from_reference_run` in the fixture). The E rows get
+`<key>_sectors` runs on their existing exports at the committed points plus a
+mu_R = mu_0/2 copy of point 1 (every squared split order, MadLoop's accuracy
+per sector), and every new row has three points plus that copy. Where such a
+run re-evaluates an existing reference's point (same exact point and mu_R) in
+MadLoop's quadruple-precision stage with an ok record, the run's row is the
+binding reference and the existing point is superseded (manifest
+`point_binding`, with its strict relative deviation; required/uux_uux.json
+point 1, a double-precision MadLoop value of batch 1 with accuracy 0.0, is
+1.2e-12 off in the single pole); the existing fixture's other providers stay
+the rule 1 (ii) values there.
 
-Reference outliers (rule 1 names them; `reference_notes` with `OUTLIER`):
-g g > u u~ u u~ (A18) points 0, 2, 3, where MadLoop's quadruple-precision
-stage takes CutTools (return code 329, accuracy 0) and misses the universal
-double pole by 3.5e-13 .. 1.1e-12; the installed OpenLoops `ppjjjj` library
-is the second provider (§4.1 trigger, outcome per point in the manifest's
-`second_provider_outcome`). The integrity tests refuse any other ok regular
-point whose printed Born misses the Born its double pole implies by more than
-2e-13 (the campaign's largest binary64 Born condition, u u~ > w+ w-, is
-1.1e-13).
+Reference outliers (rule 1 names them): declared per point in the run's
+`point_status` as `outlier` (rule, ruling, the state of conditions (i) and
+(ii), provider evidence), recorded as `reference.outlier` in the fixture and
+listed in the manifest's `outliers`. g g > u u~ u u~ (A18) points 0, 2, 3:
+MadLoop's quadruple-precision stage takes CutTools (return code 329, accuracy
+0.0) and misses the universal double pole by 3.5e-13 .. 1.1e-12; mq-validate's
+double-double differs from it by 3.5e-12 or more. Rule 1 (i) fails at all
+three points (an accuracy of 0.0 covers no nonzero difference, so every rule 1
+failure at a quadruple-precision point with accuracy 0.0 needs a ruling); (ii)
+holds at point 0 only (OpenLoops `ppjjjj` = DD to 5.5e-13; 1.2e-12 and 2.6e-12
+at points 2, 3). Recola, run as a third value, differs from both MadLoop and
+OpenLoops by 1.7e-12 .. 5.6e-11 at every point, point 1 included, where MadLoop
+(Ninja) and OpenLoops agree to 1e-12: its binary64 COLLIER values decide no
+point. The ruling on points 0, 2, 3 is the user's (via the coordinator). A
+point whose quadruple-precision stability test failed (return code 4xx) is
+refused by the merge unless declared (status `none` or an outlier). The
+integrity tests recompute `max_sector_double_pole_relative_error` from every
+sector's printed values and refuse an ok regular point (not a declared
+outlier) above max(10 x MadLoop's largest sector accuracy, 2e-13); at regular
+points the printed Born and the Born the double pole implies agree to
+<= 1.1e-13 over the campaign (u u~ > w+ w-, binary64 W momenta).
 
 Schemes added for the campaign (`required_processes.json`; every scheme names
 its MG5 `restriction`): `qcd-4fs` (loop_sm default restriction: MB = ymb = 4.7,
@@ -898,8 +916,8 @@ quadruple-precision evaluation is unstable (return code 420, own accuracy
 no provider agrees with another, so these points carry no provider reference
 (`point_status` / `reference.status` = `none`). The S3 Born-zero points compare
 absolutely (`reference.comparison` = `absolute`, scale = the Born at the
-regular neighbour row). Per-point reference record (`rows[i].reference`, listed in the manifest as
-`point_reference`): `status` (`ok` / `none`), `comparison` (`relative` /
+regular neighbour row). Per-point reference record (`rows[i].reference`): `status` (`ok` / `none`),
+`outlier` (None or the declared rule 1 outlier), `comparison` (`relative` /
 `absolute` with `absolute_scale_row` and `absolute_scale`), `born_source`,
 `madloop_point` (published point, its binary64 rounding, or MadLoop's
 quadruple-precision repair of that rounding, ~1e-16 away),
@@ -909,14 +927,22 @@ Born's binary64 rounding, <= 1.1e-13; above that a loop defect of the
 reference, e.g. C01 point 1 of batch 2 at 4.8e-13 or the A18 outliers; at
 limit points the binary64 condition of the point, bounded per family by the
 integrity tests) and `max_sector_double_pole_relative_error`. Per-helicity
-runs (`per_helicity.rows[point][configuration].reference`, listed in the
-manifest as `per_helicity_reference`): at quadruple-precision entries the
+runs (`per_helicity.rows[point][configuration].reference`; the manifest's
+`helicity_reference` names the row's run): at quadruple-precision entries the
 Born is the entry's double pole over the universal factor (the IR double pole
-is helicity-diagonal; the printed value is kept as `born_binary64_input`); a
-vanishing configuration (Born <= 1e-12 of the point's summed |Born|) or one
-whose printed Born misses that Born by more than 1e-13 (suppressed below the
-point's binary64 condition, e.g. g g > g g g's configurations at 4e-11 of
-the largest) compares absolutely against that sum. The merge refuses a point whose
+is helicity-diagonal; the printed value is kept as `born_binary64_input`).
+Only a vanishing configuration (Born <= 1e-12 of the point's summed |Born|)
+compares absolutely against that sum (§1.4: absolute only for what vanishes
+identically); every other one is strictly relative. An entry whose
+quadruple-precision test failed (4xx) is no reference (status `none`), and so
+is, at points that are not MadLoop's own quadruple-precision points, one whose
+printed binary64 Born misses its quadruple-precision Born by more than 1e-13:
+its value then depends on MadLoop's ~1e-16 repair of the binary64 rounding of
+the point (g g > g g g's configurations suppressed to 1e-11 .. 1e-4 of the
+sum at the exact points of `gg_ggg`). The A08 per-helicity reference is
+therefore `gg_ggg_hel` at MadLoop's own quadruple-precision points
+(`--madloop-qp-point`), where every non-vanishing configuration, down to
+2.7e-9 of the sum, is a relative reference. The merge refuses a point whose
 MadLoop squared split orders violate the universal double pole beyond its
 tolerance unless `--point-status` declares it, and the MadLoop run refuses
 non-finite values anywhere in its output (sectors and helicities included).

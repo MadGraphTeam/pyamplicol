@@ -999,18 +999,30 @@ POINT_STATUSES = ("ok", "none")
 COMPARISONS = ("relative", "absolute")
 
 
+OUTLIER_KEYS = {"rule", "ruling", "conditions", "providers"}
+
+
 def point_statuses(text, count):
     """Per-point reference statuses (``--point-status``): a JSON object keyed by
-    0-based row index, e.g. ``{"2": {"status": "none", "reason": "..."}}`` or
-    ``{"0": {"comparison": "absolute", "scale_row": 2, "reason": "..."}}``."""
+    0-based row index, e.g. ``{"2": {"status": "none", "reason": "..."}}``,
+    ``{"0": {"comparison": "absolute", "scale_row": 2, "reason": "..."}}`` or a
+    declared reference outlier of m-qcd/PLAN.md §1.4 rule 1 (an ok point the
+    rule's conditions do not cover): ``{"0": {"outlier": {"rule": 1, "ruling":
+    "pending", "conditions": {...}, "providers": {...}}, "reason": "..."}}``."""
     statuses = {}
     for key, entry in (json.loads(text) if text else {}).items():
         index = int(key)
         if not 0 <= index < count:
             raise SystemExit(f"--point-status: row {index} outside 0..{count - 1}")
-        unknown = set(entry) - {"status", "comparison", "scale_row", "reason"}
+        unknown = set(entry) - {"status", "comparison", "scale_row", "reason", "outlier"}
         if unknown:
             raise SystemExit(f"--point-status: unknown keys {sorted(unknown)}")
+        outlier = entry.get("outlier")
+        if outlier is not None and (not isinstance(outlier, dict) or set(outlier) - OUTLIER_KEYS
+                                    or not {"rule", "ruling"} <= set(outlier)
+                                    or entry.get("status", "ok") != "ok"):
+            raise SystemExit(f"--point-status: row {index}: an outlier is an ok point with a record of keys "
+                             f"{sorted(OUTLIER_KEYS)} (rule and ruling required)")
         entry = {"status": "ok", "comparison": "relative", **entry}
         if entry["status"] not in POINT_STATUSES or entry["comparison"] not in COMPARISONS:
             raise SystemExit(f"--point-status: row {index}: status in {POINT_STATUSES}, "
@@ -1053,7 +1065,11 @@ def sector_pole_error(madloop_row, pole_factor, coupling, absolute_scale=None):
     return worst
 
 
-HEL_RELATIVE_LIMIT = 1e-13  # per-helicity entries compare relatively only below this Born mismatch
+# At points that are not MadLoop's quadruple-precision projection, a helicity
+# entry whose printed binary64 Born misses its quadruple-precision one by more
+# than this depends on MadLoop's 1e-16 repair of the binary64 rounding of the
+# point: not asserted (status 'none'); a madloop_qp_point run is its reference.
+HEL_RELATIVE_LIMIT = 1e-13
 
 
 def strict_relative(a, b):
@@ -1065,16 +1081,20 @@ def ctmode_run(result):
     return (result or {}).get("settings", {}).get("ctmode_run")
 
 
-def per_helicity_reference(entries, pole_factor):
+def per_helicity_reference(entries, pole_factor, qp_point=False):
     """Per-helicity entries of one point: at quadruple-precision entries (return
     code 3xx/4xx) with a universal double pole the reference Born is the entry's double pole over
     the factor (the IR double pole is helicity-diagonal; MadLoop's printed Born
     is its double-precision value at the binary64 input, kept as
     ``born_binary64_input``), sectors included. Each entry gets a reference
-    record: 'absolute' against the point's summed |Born| where the helicity's
-    Born vanishes (<= 1e-12 of the sum) or its printed Born misses the implied
-    one by more than HEL_RELATIVE_LIMIT (a helicity suppressed below the
-    point's binary64 condition), else 'relative'."""
+    record (m-qcd/PLAN.md §1.4: absolute only for what vanishes identically):
+    'absolute' against the point's summed |Born| where the helicity's Born
+    vanishes (<= 1e-12 of the sum); else 'relative', and status 'none' (not
+    asserted, reason given) where MadLoop's quadruple-precision stage is
+    unstable (4xx) or, at a point that is not MadLoop's own quadruple-precision
+    point (``qp_point``), where the printed Born misses the implied one by more
+    than HEL_RELATIVE_LIMIT (the value depends on MadLoop's repair of the
+    binary64 rounding of the point)."""
     for entry in entries:
         entry["reference"] = {"born_source": "madloop"}
         if not (entry["status"] // 100 in (3, 4) and pole_factor):
@@ -1098,16 +1118,23 @@ def per_helicity_reference(entries, pole_factor):
         printed = entry.get("born_binary64_input", entry["born"])
         mismatch = strict_relative(printed, entry["born"]) if "born_binary64_input" in entry else None
         vanishing = abs(entry["born"]) <= 1e-12 * summed
-        suppressed = mismatch is not None and mismatch > HEL_RELATIVE_LIMIT
+        unstable = entry["status"] // 100 == 4
+        sensitive = not qp_point and mismatch is not None and mismatch > HEL_RELATIVE_LIMIT
+        reason = None
+        if vanishing:
+            reason = "vanishing helicity: its Born is <= 1e-12 of the point's summed |Born|"
+        elif unstable:
+            reason = f"MadLoop's quadruple-precision stage is unstable (return code {entry['status']})"
+        elif sensitive:
+            reason = (f"point-sensitive helicity: its printed binary64 Born misses the quadruple-precision one by "
+                      f"{mismatch:.2g} > {HEL_RELATIVE_LIMIT:g}, so its value depends on MadLoop's ~1e-16 repair "
+                      "of the binary64 rounding of the point; not asserted (a madloop_qp_point run is its reference)")
         entry["reference"].update({
-            "status": "ok",
-            "comparison": "absolute" if vanishing or suppressed else "relative",
-            "absolute_scale": summed if vanishing or suppressed else None,
+            "status": "none" if (unstable or sensitive) and not vanishing else "ok",
+            "comparison": "absolute" if vanishing else "relative",
+            "absolute_scale": summed if vanishing else None,
             "born_double_pole_relative_mismatch": mismatch,
-            "reason": ("vanishing helicity: its Born is <= 1e-12 of the point's summed |Born|" if vanishing else
-                       f"suppressed helicity: the printed binary64 Born misses the implied one by {mismatch:.2g} "
-                       f"> {HEL_RELATIVE_LIMIT:g}, the reference is limited by the point's binary64 condition"
-                       if suppressed else None),
+            "reason": reason,
         })
 
 
@@ -1147,7 +1174,7 @@ def madloop_references(rows, madloop_rows, primary, pole_factor, coupling, statu
                     born["born"] = loop["double_pole"] / pole_factor
             sectors["total"]["born_binary64_input"] = sectors["total"]["born"]
             sectors["total"]["born"] = sectors["total"]["double_pole"] / pole_factor
-    refused = []
+    refused, unstable = [], []
     for index, (row, madloop_row) in enumerate(zip(rows, madloop_rows, strict=True)):
         status = statuses.get(index, {"status": "ok", "comparison": "relative"})
         scale_row = status.get("scale_row")
@@ -1157,6 +1184,7 @@ def madloop_references(rows, madloop_rows, primary, pole_factor, coupling, statu
         if pole_factor:
             mismatch = relative(madloop_row["born"], madloop_row["double_pole"] / pole_factor,
                                 absolute_scale or 0.0)
+        code = madloop_row.get("status")
         row["reference"] = {
             "status": status["status"],
             "comparison": status["comparison"],
@@ -1164,17 +1192,23 @@ def madloop_references(rows, madloop_rows, primary, pole_factor, coupling, statu
             "absolute_scale": absolute_scale,
             "born_source": ("madloop_double_pole_over_universal_factor" if substitute and primary == "madloop"
                             else primary),
-            "madloop_point": madloop_point(qp_point, madloop_row.get("status")),
+            "madloop_point": madloop_point(qp_point, code),
             "born_double_pole_relative_mismatch": mismatch,
             "max_sector_double_pole_relative_error": pole_error,
+            "outlier": status.get("outlier"),
             "reason": status.get("reason"),
         }
         if status["status"] == "ok" and pole_error > tolerance:
             refused.append(f"point {index + 1}: {pole_error:.3g}")
+        if status["status"] == "ok" and isinstance(code, int) and code // 100 == 4 and not status.get("outlier"):
+            unstable.append(index + 1)
     if refused:
         raise SystemExit("MadLoop values violate the universal double pole (a non-physical Born or loop sector, "
                          f"e.g. uninitialised memory) beyond {tolerance:g}: {'; '.join(refused)}; declare a limit "
                          "point with --point-status if this is its known binary64 condition")
+    if unstable:
+        raise SystemExit(f"MadLoop's quadruple-precision stage is unstable (return code 4xx) at points {unstable}: "
+                         "declare them with --point-status (status 'none', or a rule 1 outlier)")
 
 
 def command_merge(args):
@@ -1290,7 +1324,7 @@ def command_merge(args):
                             **({"sectors": json.loads(json.dumps(entry["sectors"]))}
                                if len(entry["sectors"]["loop"]) > 1 or len(entry["sectors"]["born"]) > 1 else {})}
                            for entry in hel_row["per_helicity"]]
-                per_helicity_reference(entries, pole_factor)
+                per_helicity_reference(entries, pole_factor, qp_point)
                 hel_rows.append(entries)
             per_helicity = {
                 "provider": provider, "run": label,
