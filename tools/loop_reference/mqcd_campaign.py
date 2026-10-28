@@ -611,6 +611,7 @@ def command_manifest(args, data, runs):
             elif "binding_rows" in ref:
                 chosen = ref["binding_rows"]
             else:
+                binding.append({"fixture": ref["fixture"], "rows": None})  # a control fixture
                 continue
             if chosen:
                 binding.append({"fixture": ref["fixture"], "rows": chosen})
@@ -638,7 +639,8 @@ def command_manifest(args, data, runs):
                                     "sector's born_sector is its orders minus the correction step",
             "binding_references": "per row, the fixtures and rows (0-based) that are the row's rule 1 reference: "
                                   "every ok row of the campaign runs, and the rows of an existing reference that no "
-                                  "campaign run re-evaluates. An existing reference's point_binding names, per point, "
+                                  "campaign run re-evaluates ('rows' None: an existing control fixture, not a "
+                                  "provider merge, whose own format names its points). An existing reference's point_binding names, per point, "
                                   "the run row superseding it (the same exact point and mu_R, MadLoop's "
                                   "quadruple-precision stage, an ok record) with the strict relative deviation "
                                   "|a - b| / max(|a|, |b|) of its values from the superseding ones; a superseded "
