@@ -1,0 +1,109 @@
+{
+ "source": "triage of the failing checks of the M-QCD campaign (tests/unit/test_loop_v2_mqcd_*.py; m-qcd/PLAN.md §1.4); curated by MQ-VALIDATE from the campaign records and the scratch experiments named per finding (workspace/tmp/mq-validate/); no tolerance is widened and no failing check is listed away",
+ "findings": [
+  {
+   "id": "F1",
+   "category": "engine: Catani prediction",
+   "title": "Catani's operator mispredicts the single pole when the Born interferes colour structures joined by different electroweak exchanges (Z and W between the two quark lines of D19; the t- and s-channel W of C07)",
+   "rows": [
+    "D19",
+    "C07"
+   ],
+   "checks": "rule 4, every point, double-double and binary64, single pole of the leading sector only (D19 QCD^2 QED^6: 9.3e-2 .. 3.4e-1; C07 QCD^4 QED^4: 9.2e-4 .. 2.2e-2); the double poles agree",
+   "evidence": "rule 1 passes on both rows: our virtual equals MadLoop's per squared split order within 1e-12, poles included, so the virtual is right and the prediction is not (MG5_aMC's own FKS pole check of VBF runs on the same MadLoop virtuals). Minimal reproducer on D19's points, double-double, rule 4 only (workspace/tmp/mq-validate/s2/ew22.py): u d > u d h QCD=0 (Z and W exchange, colour structures delta_13 delta_24 and delta_14 delta_23 interfering) single pole 1.6133954759575e-9 against the predicted 1.4436894729941e-9 (rel 0.105) and 0.335 at point 1, while u c > u c h (Z only, one colour structure) and u c~ > u c~ h agree within 6e-33 .. 3e-31, and the QCD Born u d > u d (the same two colour tensors) within 9e-30. The Python reference path (LoopSlice.evaluate, 34 digits) gives the same virtual and the same prediction as the native executor (s2/catani-D19.log). The double poles agree (the row sums of <T_i.T_k> are fixed by colour conservation); no relabelling of the 4 coloured legs' momenta reproduces the virtual's single pole (all 24 tried, best rel 4.5e-2; s2/perm-D19.log); the deviation is mu-independent (points 0 and 3 share the kinematics, mu_R halved: the same -0.0313 x Born). So the colour-correlated Born of the I operator is wrong when the Born vector's colour components come from different EW exchanges, while the colour-summed Born is right. The single-structure W rows pass (F01, F02, F04, D12, D16, D17, D27, H01).",
+   "routed_to": "coordinator: owner of the strong I operator's correlated Born (loops/v2/assemble.py _qcd_poles / born_vectors, LoopSlice.dipoles); reproducer u d > u d h QCD=0 against u c > u c h; MQ-VALIDATE re-runs D19 and C07",
+   "status": "open"
+  },
+  {
+   "id": "F2",
+   "category": "reference: MadLoop double-precision result",
+   "title": "MadLoop's double-precision results (status 216) carry errors up to 3e-11 its own accuracy estimate does not report",
+   "rows": [
+    "C01",
+    "C01@params",
+    "C02",
+    "D11",
+    "A06"
+   ],
+   "checks": "rule 1: C01 point 1 finite 3.25e-11 (default tier), C01@params point 1 finite 2.69e-11, C02 point 0 finite 2.1e-12, D11 point 1 single pole 4.27e-12, A06 point 1 single pole 1.18e-12",
+   "evidence": "C01 point 1: our double-double 5.527401070600918831960220430267, 40 digits 5.52740107060091883196022043026848, 60 digits 5.52740107060091883196022043026854 (agree to 1e-31; s2/c01ap.log) against MadLoop 5.527401070421304 at status 216 (stable in double precision, Ninja) with own accuracy 9.0e-17; MadLoop's double pole there is off its Born times the universal IR factor by 4.8e-13. A06 point 1 (a cancelling single pole, 0.12 against a Born of 302): Recola 7.3e-13 and OpenLoops 5.2e-13 from our double-double, MadLoop 1.18e-12 at own accuracy 0.0. MadLoop's estimate (rotations of its own reduction) does not see errors of the scalar integrals or of cancelling pole coefficients. Not explained by the input point: double-double at MadLoop's own quadruple-precision point (its ImprovePSPoint=2 projection of the binary64 rounding, tools/loop_reference/supplied_points.madloop_qp_point) gives the same deviations (workspace/tmp/mq-validate/qp/exp.py).",
+   "routed_to": "MQ-REF: rerun these points with quadruple precision forced (MLStabThres below any double-precision estimate) and/or a second provider (PLAN §4.1 trigger); rule 1 (i) as signed cannot pass while MadLoop reports accuracy 0 or 1e-16 for a value off by 3e-11 (user ruling if a forced-QP rerun does not resolve it)",
+   "status": "open"
+  },
+  {
+   "id": "F3",
+   "category": "reference: MadLoop quadruple-precision result",
+   "title": "MadLoop's quadruple-precision results (status 328/329) of g g > u u~ u u~ and u u~ > g g g g g deviate by up to 1.2e-11 at own accuracy 0",
+   "rows": [
+    "A18",
+    "A23"
+   ],
+   "checks": "rule 1: A18 points 0, 2, 3 finite 3.5e-12 .. 1.17e-11 and double pole 1.06e-12; A23 points 0-2 finite and single pole 1.0e-12 .. 3.2e-12",
+   "evidence": "A18 point 2: MadLoop's double pole is off its own Born times the universal IR factor by 1.06e-12, exactly our double-double's deviation from it, while ours equals Catani's within 9e-28 and our Born equals MadLoop's within 2e-15: MadLoop's loop is the outlier. The deviations do not move when our double-double is evaluated at MadLoop's quadruple-precision input point (workspace/tmp/mq-validate/qp/exp.py: A18 points 2, 3 unchanged to two digits). A23: MadLoop status 216 with own accuracies 1.2e-13 .. 2.3e-12 (covering some coefficients), Recola's double poles off the universal factor by up to 4.4e-11 (no second provider within 1e-12).",
+   "routed_to": "MQ-REF (rule 1 trigger: second provider for A18; A23's Recola is no better) and the user (rule 1 (i) when the provider reports no usable accuracy)",
+   "status": "open"
+  },
+  {
+   "id": "F4",
+   "category": "reference: corrupt value",
+   "title": "G02 point 1: MadLoop's QED^4 Born sector reads 3.58e9 (ours 9.6e-3)",
+   "rows": [
+    "G02"
+   ],
+   "checks": "rule 1 point 1 [QED^4] born: relative error 1",
+   "evidence": "tests/fixtures/loop/required/mqcd/uux_ttx_mixed.json rows[1].sectors.born QED^4 = 3582980135.555 (and the total Born with it), while the loop sectors of the same point, normalised by MadLoop with its internal Born, agree with ours within 1e-12 and the QED^4 Born of points 0, 2, 3 is 9.5e-3; the runner reads the per-sector Borns from born_matrix.f (madloop_driver.f90 comment), so a runner-side read of that sector is suspect",
+   "routed_to": "MQ-REF",
+   "status": "open"
+  },
+  {
+   "id": "F5",
+   "category": "reference: binary64 Born",
+   "title": "MadLoop's Borns of the references are binary64 evaluations: a soft point and suppressed helicities miss 1e-12",
+   "rows": [
+    "A09@soft",
+    "A08"
+   ],
+   "checks": "A09@soft point 1 (E_g/sqrt(s) = 1e-5) rule 1 [QCD^6] born 2.73e-11; A08 hel point 0: helicities h---+- and h+++-+ born 9.9e-11 (their Born 3.6e-11 against a summed Born of order 1) and their poles 1.3e-12 .. 8.1e-12, h-+-++ finite 4.5e-12",
+   "evidence": "A09@soft point 1: the loop coefficients agree within 2.5e-13 (the double pole = universal factor x MadLoop's internal Born), only the reported Born misses; our point equals MadLoop's quadruple-precision point within 4.9e-25, so the input does not explain it; a binary64 Born at a soft point carries the momentum-conservation rounding relative to the soft energy (1e-16 / 1e-5). A08: |ours - MadLoop| = 3.6e-21 for a helicity Born of 3.6e-11, i.e. 2 sqrt(B_h B_max) x 1e-16, the binary64 rounding of the amplitude of a helicity suppressed to 1e-11. The runner takes the per-sector Borns from born_matrix.f (binary64); MadLoop's own quadruple-precision evaluation (status 3xx) holds a quadruple-precision Born",
+   "routed_to": "MQ-REF (Borns from MadLoop's quadruple-precision evaluation, per sector and per helicity); no change to the 1e-12 rule",
+   "status": "open"
+  },
+  {
+   "id": "F6",
+   "category": "stability estimate",
+   "title": "The binary64 estimate under-reports the error of g g > b b~ h (4FS) up to 100x and of u u~ > u u~ e+ e- 23x",
+   "rows": [
+    "C05",
+    "D10"
+   ],
+   "checks": "rules 2 and 3, binary64, C05 [QCD^6 QED^2] finite at every point: error 2.34e-10 at E = 2.43e-12 (point 1), 4.8e-12 at 1.96e-13, 1.16e-12 at 3.64e-14, 9.5e-12 at 3.7e-13; D10 point 2 [QCD^6 QED^4] double pole 1.72e-12 at E = 7.55e-14 (also rule 4 binary64)",
+   "evidence": "double-double passes every rule on both rows (rule 1 within 1e-12 of MadLoop); the binary64 error is real and the one-rotation plus reduction-direction estimate does not bracket it tenfold. An error confined to functions of the invariants (scalar integrals with the small b mass) is invisible to rotations; D10 is the PLAN's '22x case'",
+   "routed_to": "MQ-STAB",
+   "status": "open"
+  },
+  {
+   "id": "F7",
+   "category": "native executor: limit points",
+   "title": "The native executor fails at the S2 collinear points (theta = 1e-3, 1e-5) in both carriers",
+   "rows": [
+    "A09@collinear"
+   ],
+   "checks": "eval: points 0-2, double-double CutFailed { DegenerateGram } and binary64 Unstable (families 78 and 80, also on the re-test), no value",
+   "evidence": "the collinear family of tools/loop_reference/supplied_points.py (the last two final gluons at opening angle theta); MadLoop evaluates them (status 3xx). PLAN §4.1 S2 expects binary64 outside O1 there but double-double and rule 3 to pass",
+   "routed_to": "MQ-STAB (or the reduction owner): degenerate-Gram handling of the cut reduction at small opening angles",
+   "status": "open"
+  },
+  {
+   "id": "F8",
+   "category": "arbitrary precision",
+   "title": "40 digits do not converge to 1e-35 on g g > b b~ (4FS, massive b)",
+   "rows": [
+    "C01"
+   ],
+   "checks": "rule 6: AP(40) against AP(60) 1.0e-32 (point 1) and 4.1e-32 (point 2) > 1e-35 on the finite part; AP(40) against double-double passes",
+   "evidence": "s2/c01ap.log and pt3/results/C01.nightly.json; binary64 agrees with double-double to 1.4e-15 at the same point, so the 8 lost digits are not conditioning of the virtual: an input, constant or integral of the arbitrary-precision path for the massive b (4FS scheme) is evaluated at about 32 digits. B01 (massive top, 5FS) passes rule 6",
+   "routed_to": "coordinator: owner of the arbitrary-precision scalar-integral / parameter path",
+   "status": "open"
+  }
+ ]
+}
