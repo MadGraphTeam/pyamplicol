@@ -1264,31 +1264,19 @@ SUBPROCESS_VARIANTS = {
     "required/mqcd/pp_ttx_P0_uux_ttx.json": ("P0", "u u~ > t t~"),
     "required/mqcd/pp_ttx_P2_gg_ttx.json": ("P2", "g g > t t~"),
 }
-# Index references a row does not use: B01's per-sector copy of its
-# three-provider required/gg_ttx.json (one sector: the same values).
-# MQ-REF batch 2's ``*_sectors`` reruns of the rows with an existing
-# reference (the same points, MadLoop's split orders): the rows keep their
-# multi-provider fixtures (second providers for rule 1's outlier route);
-# B01's carries the per-helicity rows (``helicity_reference``).
-UNUSED = {
-    "required/mqcd/" + name
-    for name in (
-        "gg_gg_sectors.json",
-        "gg_ttxemepg_qcd_sectors.json",
-        "gg_ttxgg_sectors.json",
-        "gg_ttx_sectors.json",
-        "uux_ddxg_sectors.json",
-        "uux_ddxssx_sectors.json",
-        "uux_emepddxg_sectors.json",
-        "uux_emepggg_sectors.json",
-        "uux_emepmummp_sectors.json",
-        "uux_uuxddx_sectors.json",
-        "uux_uuxepem_sectors.json",
-        "uux_uuxg_sectors.json",
-        "uux_uux_sectors.json",
-        "uux_uuxuux_sectors.json",
-    )
-}
+# Index references a row does not use (none since MQ-REF's fix round 2).
+# MQ-REF's reruns of the rows with an existing reference (``*_sectors``: the
+# same points plus the mu_R = mu_0/2 point of PLAN §4.1, MadLoop's split
+# orders and per-sector accuracy, quadruple precision at every point since
+# fix round 2; and its MadLoop runs of A02, B02, D06, whose existing
+# references are MadLoop controls) are gating variants of the row
+# (``<id>@sectors``, ``<id>@madloop``): the rows keep their existing
+# (multi-provider) fixtures as the primary reference.
+UNUSED = set()
+# A variant's nightly points when not all of its fixture's (cost): B05's
+# rerun repeats the existing fixture's three points (263 s per point, both
+# carriers, at pt7) and adds the mu_R = mu_0/2 point 3.
+VARIANT_POINTS = {"B05@sectors": [3]}
 
 
 def resolve(path):
@@ -1301,6 +1289,49 @@ def provider_list(fixture):
     names = list(fixture["rows"][0]["providers"])
     primary = fixture.get("primary_provider", names[0])
     return [primary] + [p for p in names if p != primary]
+
+
+def rerun_variants(rid):
+    """MQ-REF's main runs of a row that keeps an existing reference, as
+    gating variants (``sectors`` for a ``*_sectors`` rerun, else
+    ``madloop``) at every point of their fixture (``VARIANT_POINTS``)."""
+
+    entry = INDEX_ROWS.get(rid)
+    if entry is None:
+        return []
+    out = []
+    for x in entry["references"]:
+        if (
+            x["status"] != "committed"
+            or not x.get("fixture")
+            or x["fixture"] in VARIANTS.get(rid, {})
+            or x["fixture"] in UNUSED
+            or not (FIXTURE_ROOT / x["fixture"]).is_file()
+        ):
+            continue
+        name = "sectors" if x["fixture"].endswith("_sectors.json") else "madloop"
+        vf = json.loads((FIXTURE_ROOT / x["fixture"]).read_text())
+        points = VARIANT_POINTS.get(f"{rid}@{name}", list(range(len(vf["points"]))))
+        out.append(
+            {
+                "name": name,
+                "gating": True,
+                "tier": "nightly",
+                "notes": "MQ-REF's MadLoop run of the row ("
+                + (x.get("note") or x["run"])
+                + "); quadruple precision at every point (fix round 2)",
+                "extras": [],
+                "extras_pending": {},
+                **VARIANT_LISTINGS.get(f"{rid}@{name}", {}),
+                "reference": {
+                    "format": "required",
+                    "path": f"tests/fixtures/loop/{x['fixture']}",
+                    "providers": provider_list(vf),
+                },
+                "points": {"nightly": points},
+            }
+        )
+    return out
 
 
 def index_reference(rid):
@@ -1393,7 +1424,9 @@ for r in R:
     variants = []
     indexed = index_reference(r["id"])
     if indexed and reference:
-        variants = indexed[2]  # an existing reference keeps it; variants join
+        # An existing reference keeps it; the variants and MQ-REF's reruns
+        # of the row (its main runs) join as gating variants.
+        variants = indexed[2] + rerun_variants(r["id"])
         indexed = None
     if indexed and indexed[0] is None:
         indexed = None
@@ -1546,6 +1579,16 @@ MEASURED_SECONDS = {
     "E06": 181, "F01": 42, "F02": 30, "F04": 31, "G01": 29, "G02": 35, "H01": 37,
     "M01@P0": 31, "M01@P2": 34, "R01": 29,
 }  # fmt: skip
+# MQ-REF's rerun variants (rerun_variants), not measured yet: estimated as
+# the base row's double-double plus binary64 seconds per point at pt7 (with
+# its checks) times the variant's points, plus 5 s.
+ESTIMATED_SECONDS = {
+    "A01@sectors": 41, "A02@madloop": 26, "A06@sectors": 25, "A12@sectors": 34,
+    "A13@sectors": 31, "A19@sectors": 36, "A20@sectors": 43, "A21@sectors": 61,
+    "B01@sectors": 30, "B02@madloop": 24, "B05@sectors": 268, "D06@madloop": 31,
+    "D07@sectors": 134, "D08@sectors": 51, "D09@sectors": 24, "D10@sectors": 28,
+    "E06@sectors": 227,
+}  # fmt: skip
 DEFAULT_SECONDS = 60
 JOB_SECONDS = 1200
 SMOKE_SECONDS = 75
@@ -1555,7 +1598,7 @@ def nightly_groups(rows):
     """(seconds, [ids]) per row with nightly test ids: the row (if it has
     nightly points or checked extras) and its gating variants."""
 
-    checked = {"ap", "uv", "hel", "sp"}
+    checked = {"ap", "uv", "hel", "sp", "ward"}
     groups = []
     for r in rows:
         ids = []
@@ -1569,7 +1612,10 @@ def nightly_groups(rows):
             if v.get("gating", True) and v["points"].get("nightly")
         ]
         if ids:
-            seconds = sum(MEASURED_SECONDS.get(i, DEFAULT_SECONDS) for i in ids)
+            seconds = sum(
+                MEASURED_SECONDS.get(i, ESTIMATED_SECONDS.get(i, DEFAULT_SECONDS))
+                for i in ids
+            )
             groups.append((seconds, ids))
     return groups
 
