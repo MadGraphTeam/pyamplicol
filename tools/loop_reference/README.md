@@ -760,6 +760,84 @@ MadLoop, Recola or OpenLoops `g g -> g g g g g` reference exists: its MadLoop
 stopped and are not restarted (REQUIREMENTS_ADDENDUM F); NJet is its
 independent reference (below).
 
+## M-QCD reference campaign (`mqcd_campaign.py`)
+
+The MadLoop references of the M-QCD milestone
+(`workspace/reports/engine-v2/m-qcd/PLAN.md` §4, package MQ-REF). Nothing in
+the runner is process-specific: rows, runs, schemes and point families are
+data.
+
+| File | Role |
+|---|---|
+| `mqcd_campaign.json` (written by `make_mqcd_campaign.py`) | The 76 rows of §4.2 (class, process, restriction code and its pyAmpliCol route, reference kind E/N/R, tier, extras) and the 64 reference runs producing them (process key of `required_processes.json`, export, points family, per-helicity, second providers, MadLoop accuracy target, provider exclusions, per-point reference notes). |
+| `mqcd_campaign.py` | `export`, `points`, `run` (MadLoop accurate mode under `timeout 2700`, pinned; `split_points` runs one job per point, then `combine`), `merge`, `fixture` (absolute paths rewritten to `${LOOP_REFERENCE_ROOT}` / `${REPOSITORY}`; refuses any path left), `manifest`, `status`. Work directories `$LOOP_REFERENCE_ROOT/runs/mqcd/<run>/`. |
+| `supplied_points.py` | Points for every mass pattern `exact_points.py` cannot build (several massive subsystems, massive beams, irrational MW, light massive pairs above 800 GeV): 60-digit construction printed on a 30-digit quantum, momentum conservation exact in the printed decimals; families `regular`, `threshold`, `soft`, `collinear`, `radiation-zero`, `rest` (2->1); `--rotate x`, `--half-scale-point`, `--madloop-qp-point`. |
+| `tests/fixtures/loop/required/mqcd/<run>.json` | One merged reference per run (the `references.py merge` format plus `sectors`, `madloop_accuracy`, `per_helicity`, `restriction`, `parameter_overrides`, `mqcd_run`). |
+| `tests/fixtures/loop/required/mqcd_references.json` | The manifest MQ-VALIDATE consumes: per row the pyAmpliCol route (restriction, fixed parameters), each reference (fixture, process, orders, parameters, points, MadLoop accuracy per point and loop squared split order, notes, exclusions) and the existing references. |
+
+Typical use:
+
+```bash
+source workspace/reference/env.sh
+export LOOP_REFERENCE_ROOT=workspace/reference LOOP_REFERENCE_PYTHON=python
+python tools/loop_reference/mqcd_campaign.py export uux_gg      # own exports only
+python tools/loop_reference/mqcd_campaign.py points uux_gg
+python tools/loop_reference/mqcd_campaign.py run uux_gg --cpu <cpu>
+python tools/loop_reference/mqcd_campaign.py merge uux_gg && \
+python tools/loop_reference/mqcd_campaign.py fixture uux_gg && \
+python tools/loop_reference/mqcd_campaign.py manifest
+```
+
+Schemes added for the campaign (`required_processes.json`; every scheme names
+its MG5 `restriction`): `qcd-4fs` (loop_sm default restriction: MB = ymb = 4.7,
+MTA = 1.777, widths 0 = no_widths, four active flavours), `qcd-cmass`
+(`c_mass`: MC = 1.55, three active flavours), `qcd-ckm` (`zeromass_ckm`,
+Wolfenstein card values), `qcd-ckm4` (`ckm`, massive b), `qcd-lmass`
+(`lepton_masses`), `qcd-widths` (`no_b_mass` with WZ, WW, WH at the card
+values, WT = 0). External masses come from the scheme for c, b, t, e, mu, tau,
+Z, H and W (MW derived at tree level to 30 digits in `required_spec.derived_mw`,
+the value Recola, OpenLoops and the point construction share); Recola's charm,
+muon and electron masses and OpenLoops' `mass(4)`, `mass(11)`, `mass(13)` are
+the scheme's (C08/C09: MadLoop = Recola to 2.6e-13 / 2.6e-14 with MC = 1.55).
+
+MadLoop driver output (`madloop_driver.f90`): besides the requested sector
+(`ROW`), every point prints the complete `ANS(0:3,0:nanswer)` and MadLoop's
+accuracy `ACC(0:nloop)` of every loop squared split order (`SECTORS`; index
+table `LOOP_SO`). The Born split orders are read from the export's
+`born_matrix.f` DATA statement: MG5 3.7.0's
+`GET_SQUARED_ORDERS_FOR_SOINDEX` reads the common block `/SQPLITORDERS/`,
+which is never initialised (its DATA fills a local array `SQSPLITORDERS`), and
+returns zeros. Per-helicity mode (`references.py run --tag hel --helicities
+all|h1,h2,...;...`): one `HEL_ROW` per HelConfigs.dat tuple from
+`SLOOPMATRIXHEL_THRES`, in MadLoop's per-helicity normalisation (colour
+average and identical-particle factor, no helicity average; the sum over all
+configurations is HELAVGFACTOR (4 for two fermion or massless vector beams) times the summed value, checked by
+`tests/unit/test_loop_reference_mqcd.py`). Multiparticle requests
+(`"multiparticle": true`) export every subprocess; `--subprocess P*` and
+`--pdgs` run one `SubProcesses/P*` directory (M01: `P0_uux_ttx`, which MadLoop
+uses for u, c, d, s, b, and `P2_gg_ttx`).
+
+Limit points. MadLoop reads binary64 momenta: in double precision it evaluates
+the rounded point as it is, in quadruple precision the point its
+`ImprovePSPoint = 2` (ORIG) method projects on shell; its Born (`ANS(0)`) is
+always the double-precision value at the rounded point. At ill-conditioned
+points this input rounding, not MadLoop's reduction, limits the reference
+(collinear theta = 1e-3: MadLoop's double-precision Born differs from its
+quadruple-precision one by 1.6e-9). The limit-point runs (S1 threshold, S2
+soft/collinear, S3 radiation zero) therefore publish MadLoop's own
+quadruple-precision point (`supplied_points.py --madloop-qp-point`, the ORIG
+formulas replicated at 60 digits) and request accuracy 1e-20, which forces the
+quadruple-precision evaluation; the merge records `born_from_madloop_double_pole`
+(the Born at that point). Findings: soft E/sqrt(s) = 1e-3, 1e-5: MadLoop =
+OpenLoops to 1.5e-14, 2.5e-13 (Recola's double-precision COLLIER is off by
+4.6e-9 and 6e-3 and is excluded); collinear theta = 1e-4 and 1e-5: MadLoop's
+quadruple-precision evaluation is unstable (return code 420, own accuracy
+1.3e-6 and 28; OneLOop "input does not seem to represent hard kinematics") and
+no provider agrees with another, so these points carry no provider reference
+(`reference_notes`). Light massive pairs (b, c, mu) cannot reach sqrt(s) >=
+800 GeV with terminating parameters: `exact_points.py` now refuses them
+instead of searching forever, and those rows use `supplied_points.py`.
+
 ## NJet: the all-gluon ladder up to g g -> g g g g g (`njet/`)
 
 NJet ([arXiv:1209.0100](https://arxiv.org/abs/1209.0100); home

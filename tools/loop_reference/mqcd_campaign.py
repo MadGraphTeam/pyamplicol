@@ -15,7 +15,7 @@ Subcommands (each takes run ids; ``all`` selects every run):
 ``run``       MadLoop accurate run (and the per-helicity run, the second provider);
               ``--cpu`` pins it; ``split_points`` runs evaluate one point per job.
 ``merge``     ``references.py merge`` into reference.json.
-``fixture``   copy reference.json to ``tests/fixtures/loop/required/<run>.json`` with
+``fixture``   copy reference.json to ``tests/fixtures/loop/required/mqcd/<run>.json`` with
               every absolute path rewritten relative to ``${LOOP_REFERENCE_ROOT}``.
 ``manifest``  write ``tests/fixtures/loop/required/mqcd_references.json``.
 ``status``    one line per run.
@@ -304,7 +304,7 @@ def command_fixture(args, data, runs):
         leftover = sorted({m.group(0) for m in re.finditer(r"/shared/\S{0,40}", text)})
         if leftover:
             raise SystemExit(f"{run['id']}: absolute paths remain after relocation: {leftover[:5]}")
-        target = FIXTURES / "required" / f"{run['id']}.json"
+        target = FIXTURES / "required/mqcd" / f"{run['id']}.json"
         if target.exists() and json.loads(target.read_text()).get("mqcd_run", {}).get("id") != run["id"]:
             raise SystemExit(f"{run['id']}: {target} is another reference; refusing to overwrite it")
         target.write_text(text)
@@ -378,7 +378,7 @@ def command_manifest(args, data, runs):
         entry = {**{k: row[k] for k in ("row", "class", "process", "restriction_code", "reference_kind", "tier",
                                         "extras")},
                  "pyamplicol_route": route, "note": row.get("note")}
-        entry["references"] = [run_entry(root, runs[r], FIXTURES / "required" / f"{r}.json") for r in row["runs"]]
+        entry["references"] = [run_entry(root, runs[r], FIXTURES / "required/mqcd" / f"{r}.json") for r in row["runs"]]
         existing = []
         for path in row["existing_fixtures"]:
             item = {"fixture": path, "status": "committed" if (FIXTURES / path).exists() else "pending"}
@@ -433,7 +433,7 @@ def command_status(args, data, runs):
             if (work / f"{label}-result.json").exists():
                 flags.append(f"{label}=done")
         flags.append(f"reference={'yes' if (work / 'reference.json').exists() else 'no'}")
-        flags.append(f"fixture={'yes' if (FIXTURES / 'required' / (run['id'] + '.json')).exists() else 'no'}")
+        flags.append(f"fixture={'yes' if (FIXTURES / 'required/mqcd' / (run['id'] + '.json')).exists() else 'no'}")
         print(run["id"], " ".join(flags))
 
 

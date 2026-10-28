@@ -212,7 +212,7 @@ row("R01", "Q-heavy", "u u~ > mu- mu+ (massive muons)", "LM", "N", runs_=[run("u
 campaign = {
     "description": "M-QCD validation campaign (workspace/reports/engine-v2/m-qcd/PLAN.md §4): the rows of §4.2 and the "
                    "MadLoop reference runs producing them. Runs live under $LOOP_REFERENCE_ROOT/runs/mqcd/<run>/ and "
-                   "their merged references are committed as tests/fixtures/loop/required/<run>.json; existing "
+                   "their merged references are committed as tests/fixtures/loop/required/mqcd/<run>.json; existing "
                    "fixtures are paths below tests/fixtures/loop/. Driven by mqcd_campaign.py.",
     "restriction_codes": ROUTES,
     "madloop_settings": {"requested_relative_accuracy": 1e-11,
