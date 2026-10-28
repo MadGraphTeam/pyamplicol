@@ -1088,6 +1088,18 @@ NATIVE_ROWS = {"A14": [0, 1, 2], "A15": [0, 1, 2, 3], "A23": [0, 1, 2], "A24": [
 # Ward batch of all six legs took 222 s on 16 threads, MQ-WARD's ladder
 # record ladder-gg_gggg.json, which checked every leg).
 WARD_LEGS = {"A14": [1]}
+# Binary64 Ward evaluations outside the O1 scope (E_k / scale_k > 1e-9),
+# from the campaign run of 2026-10-28 (tmp/mq-validate/pt6, B03 point 0):
+# the final-state gluon of g g > t t~ g, whose substituted amplitude cancels
+# to 1.2e-9 and 3.3e-9 of the physical scale with an estimate of 3.5e-8
+# (bracketed: |V_k| / E_k = 0.09, 0.17); double-double holds the identity
+# (1.9e-26 of the scale).
+WARD_OUT_OF_SCOPE = {
+    "B03": [
+        {"point": 0, "leg": 5, "factor": [1, 0], "E": 3.54e-08, "true_error": 1.24e-09},
+        {"point": 0, "leg": 5, "factor": [0, 1], "E": 3.54e-08, "true_error": 3.26e-09},
+    ]
+}
 # Rows the tools route refuses at generation (MQ-5F: a Dirac current closing
 # on a Weyl current), from the campaign's runs on MQ-REF's references.
 REFUSED_5F = {"C09", "F03", "H02", "H03"}
@@ -1478,6 +1490,8 @@ for r in R:
         entry["ckm_relation"] = CKM_RELATIONS[r["id"]]
     if r["id"] in WARD_LEGS:
         entry["ward_legs"] = WARD_LEGS[r["id"]]
+    if r["id"] in WARD_OUT_OF_SCOPE:
+        entry["ward_out_of_scope"] = WARD_OUT_OF_SCOPE[r["id"]]
     if r["id"] in NATIVE_ROWS:
         entry["inputs"] = "native"
         entry["catani"] = "none"

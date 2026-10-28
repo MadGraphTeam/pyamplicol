@@ -196,6 +196,11 @@ class Row:
     # The legs of the ``ward`` extra (None: every external massless vector
     # leg, ``ward.gauge_legs``).
     ward_legs: tuple[int, ...] | None = None
+    # Binary64 Ward evaluations outside the O1 scope (E_k > 1e-9 of the
+    # physical scale): {point, leg, factor: [re, im], E, true_error}, listed
+    # like ``binary64_out_of_scope`` (double-double holds the identity, the
+    # estimate must still bracket the value tenfold).
+    ward_out_of_scope: tuple[Mapping[str, Any], ...] = ()
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Row:
@@ -249,6 +254,7 @@ class Row:
             ward_legs=None
             if data.get("ward_legs") is None
             else tuple(int(x) for x in data["ward_legs"]),
+            ward_out_of_scope=tuple(data.get("ward_out_of_scope", ())),
         )
 
     @property
@@ -1941,41 +1947,64 @@ def reference_record_checks(row: Row, reference: Reference, index: int) -> list[
     return checks
 
 
-def rule_ward(index: int, carrier: str, check: Mapping[str, Any]) -> list[Check]:
+def rule_ward(
+    row: Row, index: int, carrier: str, check: Mapping[str, Any]
+) -> list[Check]:
     """The ``ward`` extra (O10, ``ward.ward_check`` of one point and
     carrier): per leg and factor c the substituted Born over the physical
     one (``ward.BORN_BOUNDS``) and the virtual's criterion (``ward.ward_row``:
     double-double |V_k| / scale_k <= 1e-25; binary64 the O1 rule's
     |V_k| / max(1e-12 scale_k, E_k) <= 1, E within the binary64 scope and
-    |V_k| <= 10 E_k)."""
+    |V_k| <= 10 E_k). A binary64 evaluation outside the O1 scope (E_k >
+    1e-9 of the scale) is not asserted when the manifest lists it
+    (``ward_out_of_scope``; an unlisted one fails, as does a stale listing),
+    and its estimate must still bracket |V_k| tenfold (rule 3)."""
 
     from pyamplicol.loops.v2 import ward
 
     checks = []
-    for row in check["rows"]:
-        label = f"leg {row['leg']}, c = {complex(*row['factor'])}"
+    for entry in check["rows"]:
+        label = f"leg {entry['leg']}, c = {complex(*entry['factor'])}"
         checks.append(Check(
-            "ward", index, carrier, label, "born", "", "0", row["born"],
-            ward.BORN_BOUNDS[carrier], bool(row["born_passed"]),
+            "ward", index, carrier, label, "born", "", "0", entry["born"],
+            ward.BORN_BOUNDS[carrier], bool(entry["born_passed"]),
             note="|substituted Born| / |physical Born|"))  # fmt: skip
-        virtual = row["parts"]["virtual"]
+        virtual = entry["parts"]["virtual"]
+        passed, asserted = entry["virtual_passed"] is True, True
         if carrier == "double-double":
             error, bound = max(virtual), ward.VIRTUAL_BOUNDS[carrier]
             note = "max_k |V_k| / scale_k"
-        elif row.get("o1_over") is not None:
-            error, bound = max(row["o1_over"]), 1.0
+        elif entry.get("o1_over") is not None:
+            error, bound = max(entry["o1_over"]), 1.0
+            bracket = max(entry["estimate_over"])
+            listed = _listed(
+                row.ward_out_of_scope,
+                point=index,
+                leg=entry["leg"],
+                factor=list(entry["factor"]),
+            )
             note = (
                 f"max_k |V_k| / max(1e-12 scale_k, E_k); |V_k| / scale_k "
-                f"{max(virtual):.3g}; |V_k| / E_k {max(row['estimate_over']):.3g} "
+                f"{max(virtual):.3g}; |V_k| / E_k {bracket:.3g} "
                 f"(<= {ward.ESTIMATE_FACTOR}); E_k / scale_k "
-                f"{max(row['estimate']):.3g} (in scope: {row['in_scope']})"
+                f"{max(entry['estimate']):.3g} (in scope: {entry['in_scope']})"
             )
+            if not entry["in_scope"]:
+                # Outside the binary64 scope: listed, and bracketed tenfold.
+                asserted = False
+                passed = listed and bracket <= ward.ESTIMATE_FACTOR
+                note += "; outside the binary64 scope" + (
+                    ", listed" if listed else ", NOT listed"
+                )
+            elif listed:
+                passed = False
+                note += "; stale out-of-scope listing"
         else:
             error, bound = max(virtual), math.nan
             note = "no binary64 criterion without the reduction-direction check"
         checks.append(Check(
             "ward", index, carrier, label, "virtual", "", "0", error, bound,
-            row["virtual_passed"] is True, note=note))  # fmt: skip
+            passed, asserted=asserted, note=note))  # fmt: skip
     return checks
 
 
@@ -2125,6 +2154,15 @@ def run_row(
                     checks.append(Check(
                         "eval", index, carrier, "", "evaluation", "failed", "", 0.0,
                         0.0, False, note=reason))  # fmt: skip
+            if d is not None and index not in row.zero_points:
+                # The binary64 evaluation failed alone: double-double still
+                # meets the reference and Catani's poles.
+                recorded = reference_record_checks(row, reference, index)
+                checks += recorded
+                if not any(c.coefficient == "no reference" for c in recorded):
+                    checks += rule1(row, reference, index, d)
+                if row.catani != "none":
+                    checks += rule4(row, index, d, reference.alpha_s)
             continue
         if index in row.zero_points:
             neighbour = by_index[row.zero_points[index]]
@@ -2197,7 +2235,7 @@ def run_row(
         start = time.perf_counter()
         for index in extra_points:
             for carrier in ("double", "double-double"):
-                checks += rule_ward(index, carrier, run.ward(index, carrier))
+                checks += rule_ward(row, index, carrier, run.ward(index, carrier))
         timings["ward_s"] = round(time.perf_counter() - start, 2)
     if row.ckm_relation is not None and tier == "nightly":
         start = time.perf_counter()
