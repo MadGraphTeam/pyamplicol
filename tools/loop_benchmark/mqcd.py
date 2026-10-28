@@ -273,6 +273,12 @@ def load_reference(row: Row) -> Reference:
 
 
 def _required(row, spec, data) -> Reference:
+    """A required-format fixture (``tools/loop_reference``): every provider's
+    totals per point; where a row carries MadLoop's squared split orders
+    (``rows[i].sectors``, MQ-REF item 4) the primary provider's Born and
+    Laurent coefficients per sector, with MadLoop's own accuracy per loop
+    sector."""
+
     providers = tuple(spec.get("providers") or data["rows"][0]["providers"])
     born, virtual, accuracy = [], [], []
     for entry in data["rows"]:
@@ -282,20 +288,40 @@ def _required(row, spec, data) -> Reference:
             b[name] = {TOTAL: float(values["born"])}
             v[name] = {TOTAL: _laurent(values)}
             a[name] = values.get("accuracy", values.get("estimated_relative_accuracy"))
+        sectors = entry.get("sectors")
+        if sectors and providers[0] == data.get("primary_provider", "madloop"):
+            primary = providers[0]
+            b[primary] = {
+                sector_key({k: s[k] for k in ("QCD", "QED")}): float(s["born"])
+                for s in sectors["born"]
+            }
+            v[primary] = {
+                sector_key({k: s[k] for k in ("QCD", "QED")}): _laurent(s)
+                for s in sectors["loop"]
+            }
+            a[primary] = {
+                sector_text(sector_key({k: s[k] for k in ("QCD", "QED")})): s.get(
+                    "accuracy"
+                )
+                for s in sectors["loop"]
+            }
         born.append(b)
         virtual.append(v)
         accuracy.append(a)
+    # A runtime parameter change of the run (``parameter_overrides``, the
+    # S4 rows: e.g. MB = 4.5 and aS = 0.13 on top of the card).
+    parameters = {**data["parameters"], **data.get("parameter_overrides", {})}
     return Reference(
         "",
         providers,
         [_strings(p) for p in data["points"]],
         [_scale(mu) for mu in data["mu_r"]],
-        dict(data["parameters"]),
+        parameters,
         dict(data.get("fixed_parameters", {})),
         born,
         virtual,
         accuracy,
-        float(data["parameters"]["aS"]),
+        float(parameters["aS"]),
     )
 
 
@@ -799,6 +825,20 @@ def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Che
     primary = reference.primary
     born_values = reference.born[index][primary]
     virtual_values = reference.virtual[index][primary]
+    single = len(virtual_values) == 1
+
+    def other_born(provider: str, sector) -> float | None:
+        found = reference.born[index][provider]
+        if sector not in found and single and len(born_values) == 1:
+            sector = TOTAL  # a second provider's total of the single sector
+        return found.get(sector)
+
+    def other_virtual(provider: str, sector, k: int) -> float | None:
+        found = reference.virtual[index][provider]
+        if sector not in found and single:
+            sector = TOTAL
+        return None if sector not in found else found[sector][k]
+
     for sector, value in born_values.items():
         mine = dd.total()[0] if sector == TOTAL else dd.born.get(sector, Decimal(0))
         text = sector_text(sector)
@@ -812,7 +852,7 @@ def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Che
                 mine,
                 value,
                 providers,
-                lambda p, s=sector: reference.born[index][p].get(s),
+                lambda p, s=sector: other_born(p, s),
                 None,
             )
         )
@@ -848,11 +888,7 @@ def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Che
                     mine[k],
                     laurent[k],
                     providers,
-                    lambda p, s=sector, k=k: (
-                        None
-                        if s not in reference.virtual[index][p]
-                        else reference.virtual[index][p][s][k]
-                    ),
+                    lambda p, s=sector, k=k: other_virtual(p, s, k),
                     flux,
                 )
             )
@@ -860,6 +896,9 @@ def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Che
 
 
 def _accuracy(reference: Reference, index: int, provider: str, sector, name):
+    """The provider's own accuracy of a coefficient: a number, or a mapping
+    per coefficient name or per sector (its text)."""
+
     found = reference.accuracy[index].get(provider)
     if isinstance(found, Mapping):
         found = found.get(name, found.get(sector))
