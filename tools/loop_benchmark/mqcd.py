@@ -933,6 +933,14 @@ def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Che
             sector = TOTAL
         return None if sector not in found else found[sector][k]
 
+    if TOTAL not in virtual_values:
+        # Per-sector references: our sectors are the provider's.
+        checks.append(Check(
+            "1", index, "double-double", "", "sectors",
+            ", ".join(sorted(map(sector_text, dd.virtual))),
+            ", ".join(sorted(map(sector_text, virtual_values))), 0.0, 0.0,
+            set(dd.virtual) == set(virtual_values),
+            note="virtual sectors against the provider's split orders"))  # fmt: skip
     for sector, value in born_values.items():
         mine = dd.total()[0] if sector == TOTAL else dd.born.get(sector, Decimal(0))
         text = sector_text(sector)
