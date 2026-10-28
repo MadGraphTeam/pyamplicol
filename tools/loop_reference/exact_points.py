@@ -251,6 +251,8 @@ def main():
     parser.add_argument("--count", type=int, default=3)
     parser.add_argument("--mu-r", nargs="+", default=["1000", "700", "1400"])
     parser.add_argument("--cut", default="1/1000", help="minimal 2|p_i.p_j|/s")
+    parser.add_argument("--half-scale-point", action="store_true",
+                        help="append a copy of point 1 at half its scale (mu_R = mu_0/2)")
     args = parser.parse_args()
     import required_spec
 
@@ -260,6 +262,9 @@ def main():
     resonances = [values[name] for name in ("MZ", "MW", "MH", "MT") if name in values and F(values[name])]
     points = generate(masses, args.count, F(args.cut), resonances, pdgs=spec["pdgs"])
     mu_r = list(itertools.islice(itertools.cycle(args.mu_r), args.count))
+    if args.half_scale_point:
+        points.append(points[0])
+        mu_r.append(decimal_string(F(mu_r[0]) / 2))
     report = {
         "process_name": spec["name"],
         "pdgs": spec["pdgs"],
@@ -272,6 +277,8 @@ def main():
         "points": [[[decimal_string(x) for x in leg] for leg in point] for point in points],
         "mu_r": mu_r,
     }
+    if args.half_scale_point:
+        report["scale_variation"] = {"point": len(points), "copy_of_point": 1, "mu_r_factor": "1/2"}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(args.output)

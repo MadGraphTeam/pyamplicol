@@ -51,9 +51,8 @@ def derived_parameters(scheme):
     p = {k: Decimal(v) for k, v in scheme["parameters"].items()}
     two = Decimal(2)
     if scheme["electroweak_inputs"] == "alpha_fixed":
-        alpha = 1 / p["aEWM1"]
-        mz2 = p["MZ"] ** 2
-        mw = (mz2 / 2 + (mz2 ** 2 / 4 - alpha * PI * mz2 / (p["Gf"] * two.sqrt())).sqrt()).sqrt()
+        # One derivation shared with the point construction (required_spec.masses).
+        alpha, mw = 1 / p["aEWM1"], Decimal(required_spec.derived_mw(scheme))
     elif scheme["electroweak_inputs"] == "alpha_mw":
         # alpha, MZ and MW all inputs (MG5_aMC's loop_qcd_qed_sm).
         alpha, mw = 1 / p["aEWM1"], p["MW"]
@@ -94,8 +93,10 @@ def recola_commands(spec, points, uncached):
         ("H", value(scheme, "MH"), width(scheme, "WH")),
         ("top", value(scheme, "MT"), width(scheme, "WT")),
         ("bottom", value(scheme, "MB") or zero, zero),
-        ("charm", zero, zero), ("strange", zero, zero), ("up", zero, zero), ("down", zero, zero),
-        ("tau", value(scheme, "MTA") or zero, zero), ("muon", zero, zero), ("electron", zero, zero),
+        ("charm", value(scheme, "MC") or zero, zero),
+        ("strange", zero, zero), ("up", zero, zero), ("down", zero, zero),
+        ("tau", value(scheme, "MTA") or zero, zero), ("muon", value(scheme, "MM") or zero, zero),
+        ("electron", value(scheme, "Me") or zero, zero),
     ]
     lines = [f"mass {n} {m} {w}" for n, m, w in masses]
     if scheme["electroweak_inputs"] == "alpha_fixed":
@@ -134,7 +135,9 @@ def openloops_commands(spec):
         f"double mass(25) {value(scheme, 'MH')}", f"double width(25) {width(scheme, 'WH')}",
         f"double mass(6) {value(scheme, 'MT')}", f"double width(6) {width(scheme, 'WT')}",
         f"double mass(5) {value(scheme, 'MB') or '0'}", f"double width(5) 0",
+        f"double mass(4) {value(scheme, 'MC') or '0'}",
         f"double mass(15) {value(scheme, 'MTA') or '0'}",
+        f"double mass(13) {value(scheme, 'MM') or '0'}", f"double mass(11) {value(scheme, 'Me') or '0'}",
         f"double alpha_s {value(scheme, 'aS')}",
     ]
     if spec["correction"] == "EW":
@@ -199,11 +202,46 @@ def openloops_library_version(root, library):
 
 # --------------------------------------------------------------- MadLoop
 
-def madloop_process_dir(export):
+def madloop_process_dir(export, name=None):
+    """The export's SubProcesses/P* directory: the only one, or ``name`` of a
+    multi-subprocess (multiparticle) export."""
     candidates = sorted(p for p in (export / "SubProcesses").glob("P*") if p.is_dir())
+    if name is not None:
+        chosen = [p for p in candidates if p.name == name]
+        if len(chosen) != 1:
+            raise RuntimeError(f"no subprocess directory {name} in {export}: {[p.name for p in candidates]}")
+        return chosen[0]
     if len(candidates) != 1:
-        raise RuntimeError(f"expected one SubProcesses/P* directory in {export}")
+        raise RuntimeError(f"expected one SubProcesses/P* directory in {export} (pass --subprocess)")
     return candidates[0]
+
+
+def madloop_born_split_orders(process_dir):
+    """Squared split orders of the Born indices of a MadLoop subprocess, from the
+    DATA statement of its ``SOINDEX_FOR_SQUARED_ORDERS`` (born_matrix.f). MG5
+    3.7.0's inverse routine GET_SQUARED_ORDERS_FOR_SOINDEX cannot be used: its
+    common block /SQPLITORDERS/ is never initialised (the DATA fills a local
+    array SQSPLITORDERS), so it returns zeros."""
+    text = (process_dir / "born_matrix.f").read_text()
+    text = re.sub(r"\n {5}\$", "", text)  # join fixed-form continuation lines
+    function = re.search(r"INTEGER FUNCTION ML5_\d+_SOINDEX_FOR_SQUARED_ORDERS\(ORDERS\)(.*?)\n\s+END\b",
+                         text, re.DOTALL)
+    if function is None:
+        raise RuntimeError(f"cannot find SOINDEX_FOR_SQUARED_ORDERS in {process_dir}/born_matrix.f")
+    out = {}
+    for match in re.finditer(r"DATA \(SQSPLITORDERS\(\s*(\d+),I\),I=\s*1,\s*2\) /\s*(-?\d+),\s*(-?\d+)/",
+                             function.group(1)):
+        out[int(match.group(1))] = (int(match.group(2)), int(match.group(3)))
+    if not out:
+        raise RuntimeError(f"no Born split orders in {process_dir}/born_matrix.f")
+    return out
+
+
+def madloop_helicities(export, subprocess_dir=None):
+    """MadLoop's helicity configurations of a subprocess (HelConfigs.dat order)."""
+    prefix = madloop_prefix(madloop_process_dir(export, subprocess_dir))
+    path = export / "SubProcesses/MadLoop5_resources" / f"{prefix}HelConfigs.dat"
+    return [list(map(int, line.split())) for line in path.read_text().splitlines() if line.strip()]
 
 
 def madloop_prefix(process_dir):
@@ -302,11 +340,13 @@ def madloop_build_flags(export, mg5):
                       "MadLoop's own makefile adds -O3 for polynomial.f"}
 
 
-def build_madloop(export, work, global_flag):
+def build_madloop(export, work, global_flag, subprocess_dir=None):
     from build import madloop_libraries
 
-    process_dir = madloop_process_dir(export)
-    source = (HERE / "madloop_driver.f90").read_text().replace("ML5_0_", madloop_prefix(process_dir))
+    process_dir = madloop_process_dir(export, subprocess_dir)
+    prefix = madloop_prefix(process_dir)
+    source = (HERE / "madloop_driver.f90").read_text().replace("ML5_0_", prefix).replace(
+        "HELCONFIGS_FILE", f"SubProcesses/MadLoop5_resources/{prefix}HelConfigs.dat")
     driver = work / "madloop_driver.f90"
     driver.write_text(source)
     binary = work / "madloop-driver"
@@ -431,12 +471,57 @@ def run_native(command, stdin_text, cwd, log, cpu, env=None):
     return handle_text, time.perf_counter() - start
 
 
-def parse_rows(stdout, provider, count):
+LAURENT = ("finite", "single_pole", "double_pole")
+
+
+def madloop_sectors(values, nanswer, nloop, born_so, loop_so, step):
+    """Split one SECTORS/HEL_ROW payload (ANS(0:3,0:nanswer) column-major, then
+    ACC(0:nloop)) into named squared split orders. Each loop sector names the
+    Born sector its Catani poles multiply (its orders minus the correction step)."""
+    answer = [values[4 * j:4 * j + 4] for j in range(nanswer + 1)]
+    accuracy = values[4 * (nanswer + 1):4 * (nanswer + 1) + nloop + 1]
+    if len(accuracy) != nloop + 1:
+        raise RuntimeError("madloop: truncated SECTORS line")
+    born_orders = {}
+    born = []
+    for index, (qcd, qed) in sorted(born_so.items()):
+        born.append({"QCD": qcd, "QED": qed, "born": answer[index][0]})
+        born_orders[(qcd, qed)] = answer[index][0]
+    loop = []
+    for index, (qcd, qed) in sorted(loop_so.items()):
+        entry = {"QCD": qcd, "QED": qed, **dict(zip(LAURENT, answer[index][1:])), "accuracy": accuracy[index]}
+        partner = (qcd - step["QCD"], qed - step["QED"])
+        entry["born_sector"] = {"QCD": partner[0], "QED": partner[1]} if partner in born_orders else None
+        loop.append(entry)
+    total = {"born": answer[0][0], **dict(zip(LAURENT, answer[0][1:])), "accuracy": accuracy[0]}
+    return {"born": born, "loop": loop, "total": total}
+
+
+def parse_rows(stdout, provider, count, step=None, born_so=None):
     rows = [None] * count
     extra = {}
+    born_so, loop_so, hel_tuples, dims = dict(born_so or {}), {}, {}, None
     for line in stdout.splitlines():
         fields = line.split()
         if not fields:
+            continue
+        if provider == "madloop" and fields[0] == "LOOP_SO":
+            index, qcd, qed = map(int, fields[1:4])
+            loop_so[index] = (qcd, qed)
+            continue
+        if provider == "madloop" and fields[0] == "HEL_INDEX":
+            hel_tuples[int(fields[1])] = {"madloop_index": int(fields[2]), "helicity": list(map(int, fields[3:]))}
+            continue
+        if provider == "madloop" and fields[0] == "SECTORS":
+            i = int(fields[1]) - 1
+            rows[i]["sectors"] = madloop_sectors(list(map(float, fields[3:])), dims[0], dims[1],
+                                                 born_so, loop_so, step)
+            continue
+        if provider == "madloop" and fields[0] == "HEL_ROW":
+            i, h, status = int(fields[1]) - 1, int(fields[2]), int(fields[3])
+            sectors = madloop_sectors(list(map(float, fields[5:])), dims[0], dims[1], born_so, loop_so, step)
+            rows[i].setdefault("per_helicity", []).append(
+                {**hel_tuples[h], "status": status, "seconds": float(fields[4]), "sectors": sectors})
             continue
         if fields[0] == "ROW":
             i = int(fields[1]) - 1
@@ -465,8 +550,21 @@ def parse_rows(stdout, provider, count):
                 extra["initialization_calls"] = int(fields[2])
         elif fields[0] == "SPLIT_ORDER_INDICES":
             extra["split_order_indices"] = list(map(int, fields[1:]))
+            dims = extra["split_order_indices"][2:4]
     if any(r is None for r in rows):
         raise RuntimeError(f"{provider}: missing result rows")
+    if born_so or loop_so:
+        extra["squared_split_orders"] = {
+            "born": [{"index": i, "QCD": q, "QED": e} for i, (q, e) in sorted(born_so.items())],
+            "loop": [{"index": i, "QCD": q, "QED": e} for i, (q, e) in sorted(loop_so.items())]}
+        missing = [i + 1 for i, row in enumerate(rows) if "sectors" not in row]
+        if missing:
+            raise RuntimeError(f"madloop: no SECTORS line for points {missing}")
+    if hel_tuples:
+        extra["helicities"] = [hel_tuples[h] for h in sorted(hel_tuples)]
+        short = [i + 1 for i, row in enumerate(rows) if len(row.get("per_helicity", ())) != len(hel_tuples)]
+        if short:
+            raise RuntimeError(f"madloop: incomplete per-helicity rows at points {short}")
     for row in rows:
         for key in COEFFICIENTS:
             if not math.isfinite(row[key]):
@@ -578,7 +676,8 @@ def command_run(args):
                 raise RuntimeError(
                     f"export built with {flags['export_make_opts']}, not MG5's production flags "
                     f"{flags['mg5_production']}; rebuild it with madloop_export.py --recompile")
-            binary, repairs = build_madloop(export, run_dir, flags["export_make_opts"]["GLOBAL_FLAG"])
+            binary, repairs = build_madloop(export, run_dir, flags["export_make_opts"]["GLOBAL_FLAG"],
+                                            args.subprocess)
             result["settings"] = prepare_madloop_run(spec, export, run_dir, args.mg5, legs)
             result["settings"]["export"] = str(export)
             result["settings"]["fortran_flags"] = flags
@@ -602,6 +701,18 @@ def command_run(args):
                       f"{value(spec['scheme_data'], 'aS')} {args.madloop_accuracy} "
                       f"{0 if production else 1}\n{count}\n")
             stdin = header + "\n".join(point_lines(points)) + "\n"
+            if args.helicities:
+                tuples = (madloop_helicities(export, args.subprocess) if args.helicities == "all"
+                          else [list(map(int, t.split(","))) for t in args.helicities.split(";")])
+                stdin += f"{len(tuples)}\n" + "\n".join(" ".join(map(str, t)) for t in tuples) + "\n"
+                result["settings"]["helicities"] = ("all MadLoop helicity configurations"
+                                                    if args.helicities == "all" else "selected tuples")
+                result["per_helicity_normalization"] = (
+                    "MadLoop SLOOPMATRIXHEL_THRES: |M_h|^2 with the colour average and identical-particle "
+                    "factor but no helicity average (sum over all configurations = HELAVGFACTOR x summed "
+                    "value); helicity labels in MadLoop's HelConfigs.dat convention")
+            if args.subprocess:
+                result["settings"]["subprocess_directory"] = args.subprocess
             stdout, wall = run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu)
         elif provider == "recola":
             root = args.recola.resolve()
@@ -640,7 +751,10 @@ def command_run(args):
             stdin = "\n".join(commands + [f"points {count}", *point_lines(points)]) + "\n"
             stdout, wall = run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu,
                                       env={"OpenLoopsPath": str(root)})
-        rows, extra = parse_rows(stdout, provider, count)
+        step = {k: spec["loop_orders"][k] - spec["born_orders"][k] for k in ("QCD", "QED")}
+        born_so = (madloop_born_split_orders(madloop_process_dir(args.madloop_export.resolve(), args.subprocess))
+                   if provider == "madloop" else None)
+        rows, extra = parse_rows(stdout, provider, count, step, born_so)
         if provider == "recola":
             banner = re.search(r"Version (\S+)", stdout)
             linked = linked_libraries(binary, r"recola|collier|modelfile")
@@ -960,6 +1074,9 @@ def main():
     run.add_argument("--recola-uncached", action="store_true")
     run.add_argument("--openloops", type=Path, help="OpenLoops installation")
     run.add_argument("--cpu", type=int)
+    run.add_argument("--subprocess", help="SubProcesses/P* directory of a multiparticle MadLoop export")
+    run.add_argument("--helicities", help="MadLoop per-helicity mode: 'all' (every HelConfigs.dat "
+                     "configuration) or 'h1,h2,...;h1,h2,...' tuples (use with --tag)")
     merge = sub.choices["merge"]
     merge.add_argument("--output", type=Path, required=True)
     merge.add_argument("--tolerance", type=float, default=2e-8)
