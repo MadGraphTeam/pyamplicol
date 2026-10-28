@@ -101,8 +101,8 @@
     "C01"
    ],
    "checks": "rule 6: AP(40) against AP(60) 1.0e-32 (point 1) and 4.1e-32 (point 2) > 1e-35 on the finite part; AP(40) against double-double passes",
-   "evidence": "s2/c01ap.log and pt3/results/C01.nightly.json; binary64 agrees with double-double to 1.4e-15 at the same point, so the 8 lost digits are not conditioning of the virtual: an input, constant or integral of the arbitrary-precision path for the massive b (4FS scheme) is evaluated at about 32 digits. B01 (massive top, 5FS) passes rule 6",
-   "routed_to": "coordinator: owner of the arbitrary-precision scalar-integral / parameter path",
+   "evidence": "C01 point 1 per virtual component, 40 against 60 digits (workspace/tmp/mq-validate/s2/apcomp.py): the bare loop's finite part 7.6e-33, its poles 1.2e-59; R2, UV, UV external fields, UV local and the Born 1e-59 .. 2e-59. So the arbitrary-precision path of the bare loop's finite part (the scalar integrals with the light massive b, 4FS) loses about 8 of its 40 digits, while binary64 agrees with double-double to 1.4e-15 at the same point (a stable binary64 form, a cancelling or guard-digit-free arbitrary-precision one). AP(40) against double-double passes, double-double against AP(60) agrees to 1e-31. B01 (massive top, 5FS) passes rule 6.",
+   "routed_to": "coordinator: owner of the arbitrary-precision scalar integrals (bare-loop finite part with small internal masses)",
    "status": "open"
   }
  ]
