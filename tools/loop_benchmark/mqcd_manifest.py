@@ -1110,7 +1110,29 @@ VARIANTS = {
             "the +-z beam-axis twin of the x-rotated points: a non-gating diagnostic (PLAN §4.1)",
         )
     },
+    "A09": {
+        "required/mqcd/uux_ggg_soft.json": (
+            "soft",
+            True,
+            "S2: a soft gluon (E_g / sqrt(s) = 1e-3, 1e-5), MadLoop in quadruple precision",
+        ),
+        "required/mqcd/uux_ggg_collinear.json": (
+            "collinear",
+            True,
+            "S2: a collinear pair (theta = 1e-3, 1e-5; small Gram determinants), MadLoop in quadruple precision",
+        ),
+    },
+    "D25": {
+        "required/mqcd/udx_wpa_zero.json": (
+            "zero",
+            True,
+            "S3: the radiation-zero points (0, 1) and their regular neighbour (2); no division by the Born",
+        )
+    },
 }
+# S3: the radiation-zero points and their regular neighbour (the fixture's
+# point_labels).
+ZERO_POINTS = {"D25@zero": {"0": 2, "1": 2}}
 # S1 (PLAN §4.1): binary64 is expected outside the O1 scope at the limit
 # points; they are listed, double-double and rule 3 must pass.
 VARIANT_LISTINGS = {
@@ -1173,7 +1195,29 @@ SUBPROCESS_VARIANTS = {
 }
 # Index references a row does not use: B01's per-sector copy of its
 # three-provider required/gg_ttx.json (one sector: the same values).
-UNUSED = {"required/mqcd/gg_ttx_sectors.json"}
+# MQ-REF batch 2's ``*_sectors`` reruns of the rows with an existing
+# reference (the same points, MadLoop's split orders): the rows keep their
+# multi-provider fixtures (second providers for rule 1's outlier route);
+# B01's carries the per-helicity rows (``helicity_reference``).
+UNUSED = {
+    "required/mqcd/" + name
+    for name in (
+        "gg_gg_sectors.json",
+        "gg_ttxemepg_qcd_sectors.json",
+        "gg_ttxgg_sectors.json",
+        "gg_ttx_sectors.json",
+        "uux_ddxg_sectors.json",
+        "uux_ddxssx_sectors.json",
+        "uux_emepddxg_sectors.json",
+        "uux_emepggg_sectors.json",
+        "uux_emepmummp_sectors.json",
+        "uux_uuxddx_sectors.json",
+        "uux_uuxepem_sectors.json",
+        "uux_uuxg_sectors.json",
+        "uux_uux_sectors.json",
+        "uux_uuxuux_sectors.json",
+    )
+}
 
 
 def resolve(path):
@@ -1247,6 +1291,11 @@ def index_reference(rid):
                     "tier": "nightly",
                     "notes": note,
                     **VARIANT_LISTINGS.get(f"{rid}@{name}", {}),
+                    **(
+                        {"zero_points": ZERO_POINTS[f"{rid}@{name}"]}
+                        if f"{rid}@{name}" in ZERO_POINTS
+                        else {}
+                    ),
                     "reference": {
                         "format": "required",
                         "path": f"tests/fixtures/loop/{x['fixture']}",

@@ -54,7 +54,7 @@ import os
 import time
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from decimal import Decimal, localcontext
 from fractions import Fraction
 from pathlib import Path
@@ -159,6 +159,10 @@ class Row:
     # A variant that is one subprocess of a multiparticle base row (its own
     # process and generation; M01).
     subprocess: bool = False
+    # Born-zero points (S3, a radiation zero) -> their regular neighbour:
+    # every coefficient there vanishes and is checked absolutely against
+    # 1e-12 of the neighbour's Born (its F for the Laurent coefficients).
+    zero_points: Mapping[int, int] = field(default_factory=dict)
     # Rule 4's prediction: "python" (the Python-input path's Catani operator,
     # every row on that route) or "none" for a row on the native-input route,
     # which forms no prediction (WP3.1 I5c): rule 4 is then recorded as not
@@ -210,6 +214,9 @@ class Row:
             notes=data.get("notes", ""),
             base=data.get("base"),
             subprocess=bool(data.get("subprocess", False)),
+            zero_points={
+                int(k): int(v) for k, v in data.get("zero_points", {}).items()
+            },
             catani=data.get("catani", "python"),
             helicity_reference=data.get("helicity_reference"),
             gating=bool(data.get("gating", True)),
@@ -605,6 +612,9 @@ class Evaluated:
     components: dict[str, dict[Sector, tuple[Decimal, ...]]] = field(
         default_factory=dict
     )
+    # At a Born-zero point (S3) the Born of its regular neighbour: the scale
+    # of every coefficient's absolute check (``Row.zero_points``).
+    scale_born: Decimal | None = None
 
     def total(self) -> tuple[Decimal, tuple[Decimal, Decimal, Decimal]]:
         born = sum(self.born.values(), Decimal(0))
@@ -904,6 +914,8 @@ def born_scale(row: Row, point: Evaluated, sector: Any) -> Decimal:
     colour-forbidden interference, listed in ``vanishing``) the summed
     |B| over Born sectors, the Born's own scale."""
 
+    if point.scale_born is not None:
+        return point.scale_born
     if sector == TOTAL:
         return abs(point.total()[0])
     if _vanishing(row, sector_text(sector), "born"):
@@ -1712,7 +1724,23 @@ def run_row(
     b64 = run.evaluate(indices, "double")
     timings["double_s_per_point"] = round(time.perf_counter() - start, 2) / len(indices)
     info: dict[str, float] = {}
+    by_index = dict(zip(indices, dd, strict=True))
     for index, d, b in zip(indices, dd, b64, strict=True):
+        if index in row.zero_points:
+            neighbour = by_index[row.zero_points[index]]
+            d.scale_born = b.scale_born = abs(neighbour.total()[0])
+            entries = [{"sector": TOTAL, "coefficient": c} for c in COEFFICIENTS]
+            entries += [
+                {"sector": sector_text(s), "coefficient": c}
+                for s in d.virtual
+                for c in LAURENT
+            ]
+            entries += [
+                {"sector": sector_text(s), "coefficient": "born"} for s in d.born
+            ]
+            row = replace(run.row, vanishing=(*run.row.vanishing, *entries))
+        else:
+            row = run.row
         checks += rule1(row, reference, index, d)
         for check in rule1(row, reference, index, b):
             worst = info.get(check.coefficient, 0.0)
