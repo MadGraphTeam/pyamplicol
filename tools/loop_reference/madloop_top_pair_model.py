@@ -18,6 +18,13 @@ sets the generated ``SKIPLOOPEVAL`` switch and selects counterterm interference
 indices in copies of ``loop_matrix.f`` (diffs are kept beside each binary);
 Feynman rules and the export are unchanged. Bare is full minus the generated
 counterterm sum. Correctness references only, never timing references.
+
+``--set epsilon-sign`` regenerates ``tests/fixtures/loop/epsilon-sign.json``,
+the Levi-Civita sign test of WP3.2 EWI-7b (PLAN [U6](d)):
+``u u~ > e- e+ g g / d s b [virt=QCD]``, whose closed quark loops keep only
+the up-type flavours, so the axial Z-gluon R2 (``R2_GGZ``, ``R2_GGGVa``, the
+UFO ``Epsilon``) and the bare loops' gamma5 traces no longer cancel between
+the doublet members. Bare and R2 are compared separately.
 """
 
 from __future__ import annotations
@@ -226,7 +233,38 @@ SETS = {
         "points_scope": "Exact on-shell, non-CM rational points (terminating "
         "decimals): massless beams along z, p_t^2=p_tbar^2=173^2, p_h^2=125^2",
     },
+    "epsilon-sign": {
+        "exports": {
+            "uu": (
+                "u u~ > e- e+ g g / d s b QED=2 [virt=QCD]",
+                "madloop-epsilon-sign-uux-emepgg-dsb",
+                "P0_uux_emepgg_no_dsb",
+            ),
+        },
+        "labels": {"uu": "u u~ > e- e+ g g / d s b [virt=QCD]"},
+        "legs": 6,
+        "loop_orders": None,
+        "card": (("mass", 6, 173.0), ("yukawa", 6, 173.0)),
+        "points": lambda: _fixture_points("dilepton-two-gluon.json")[0],
+        "mu_r": lambda: _fixture_points("dilepton-two-gluon.json")[1],
+        "scope": "Levi-Civita sign test (WP3.2 EWI-7b, EW-20): the d, s, b "
+        "vetoed, the axial Z-gluon R2 (R2_GGZ, R2_GGGVa: UFO Epsilon) and the "
+        "closed up-type quark loops' axial parts do not cancel; bare and R2 "
+        "components; binary64 independent MadLoop references; no timing claim",
+        "points_scope": "The three points and scales of "
+        "tests/fixtures/loop/dilepton-two-gluon.json (massless, binary64 "
+        "decimals)",
+    },
 }
+
+
+def _fixture_points(name):
+    """The points and per-point renormalisation scales of a loop fixture."""
+
+    fixture = Path(__file__).resolve().parents[2] / "tests/fixtures/loop" / name
+    data = json.loads(fixture.read_text())
+    return data["points"], data["mu_r"]
+
 
 DRIVER = """! Diagnostic only: raw MadLoop split-order Born and Laurent values.
 program top_pair_model_reference
@@ -377,8 +415,10 @@ def run(spec, mg5, builds, runs, fixture):
     from models.check_param_card import ParamCard
 
     points = spec["points"]()
+    scales = spec["mu_r"]() if "mu_r" in spec else [MU] * len(points)
     stream = f"{len(points)}\n" + "".join(
-        MU + " " + " ".join(x for leg in point for x in leg) + "\n" for point in points
+        mu + " " + " ".join(x for leg in point for x in leg) + "\n"
+        for mu, point in zip(scales, points, strict=True)
     )
     groups = {
         "full": None,
@@ -398,7 +438,7 @@ def run(spec, mg5, builds, runs, fixture):
         "convention": COMMON["convention"],
         "points_scope": spec["points_scope"],
         "points": points,
-        "mu_r": [MU] * len(points),
+        "mu_r": list(scales),
         **TAIL,
         "amplitude_counts": {},
         "rows": {},
