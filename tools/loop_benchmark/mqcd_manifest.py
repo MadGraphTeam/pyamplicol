@@ -1534,6 +1534,19 @@ for r in R:
                         i for i in variant["points"]["nightly"] if i not in taken
                     ]
                 }
+                # Point listings at the rows it keeps: its own, else the
+                # row's binary64 listings (a variant inherits them; the row's
+                # reference outliers are not the rerun's).
+                for key in ("binary64_out_of_scope", "reference_outliers"):
+                    source = variant.get(
+                        key,
+                        LISTINGS.get(r["id"], {}).get(key, [])
+                        if key == "binary64_out_of_scope"
+                        else [],
+                    )
+                    variant[key] = [
+                        e for e in source if e["point"] in variant["points"]["nightly"]
+                    ]
                 variant["notes"] += (
                     "; its rows "
                     + ", ".join(map(str, sorted(taken)))
@@ -1646,39 +1659,40 @@ for r in R:
     rows.append(entry)
 
 # The nightly tier's file jobs (PLAN §3.2 acceptance: each nightly file job
-# <= 30 min). Seconds per nightly test id as measured by the campaign run of
-# 2026-10-28 (tmp/mq-validate/pt3: one process per id on the shared host at
-# load ~100, start-up and model compilation included; A24 1556 s on four
-# pinned cores, s2);
-# a row without a measurement counts DEFAULT_SECONDS. A row and its variants
-# (which reuse its generation) form one group; groups are packed greedily,
-# largest first, into jobs of at most JOB_SECONDS (a group above it is a job
-# of its own); job 1 also holds the restriction smokes and the M01
-# expansion (SMOKE_SECONDS).
+# <= 30 min). (seconds, points) per nightly test id as measured by the
+# campaign run pt9 of 2026-10-28 ~23:00 UTC (tmp/mq-validate/pt9: the seven
+# nightly files as whole files, one process each, pytest --durations setup +
+# call + teardown, on the shared host at load ~110; the first id of a file
+# carries its model compilation); an id whose point count differs from the
+# measured one counts its seconds scaled by the point ratio, an id without a
+# measurement DEFAULT_SECONDS. A row and its variants (which reuse its
+# generation) form one group; groups are packed greedily, largest first, into
+# jobs of at most JOB_SECONDS (a group above it is a job of its own); job 1
+# also holds the restriction smokes and the M01 expansion (SMOKE_SECONDS).
 MEASURED_SECONDS = {
-    "A01": 31, "A02": 28, "A03": 33, "A04": 23, "A05": 36, "A06": 26, "A07": 31,
-    "A08": 445, "A09": 40, "A09@collinear": 33, "A09@soft": 41, "A12": 20,
-    "A13": 47, "A14": 182, "A15": 68, "A18": 145, "A19": 44, "A20": 42,
-    "A21": 55, "A22": 182, "A23": 731, "A24": 1556, "A25": 31, "A26": 31,
-    "B01": 37, "B01@mt170": 32, "B01@threshold": 27, "B02": 27, "B03": 71,
-    "B05": 795, "B06": 52, "B07": 349, "B08": 34, "C01": 33, "C01@params": 33,
-    "C02": 50, "C03": 28, "C04": 31, "C05": 48, "C06": 295, "C07": 35, "C08": 36,
-    "D01": 26, "D02": 29, "D05": 39, "D06": 36, "D07": 112, "D08": 53, "D09": 26,
-    "D10": 34, "D11": 34, "D12": 31, "D13": 34, "D15": 30, "D16": 31, "D17": 31,
-    "D18": 29, "D19": 31, "D20": 36, "D21": 25, "D23": 33, "D24": 29, "D25": 31,
-    "D25@zero": 23, "D26": 35, "D27": 33, "E01": 55, "E02": 51, "E05": 27,
-    "E06": 181, "F01": 42, "F02": 30, "F04": 31, "G01": 29, "G02": 35, "H01": 37,
-    "M01@P0": 31, "M01@P2": 34, "R01": 29,
-}  # fmt: skip
-# MQ-REF's rerun variants (rerun_variants), not measured yet: estimated as
-# the base row's double-double plus binary64 seconds per point at pt7 (with
-# its checks) times the variant's points, plus 5 s.
-ESTIMATED_SECONDS = {
-    "A01@sectors": 41, "A02@madloop": 26, "A06@sectors": 25, "A12@sectors": 34,
-    "A13@sectors": 31, "A19@sectors": 36, "A20@sectors": 43, "A21@sectors": 61,
-    "B01@sectors": 30, "B02@madloop": 24, "B05@sectors": 268, "D06@madloop": 31,
-    "D07@sectors": 134, "D08@sectors": 51, "D09@sectors": 24, "D10@sectors": 28,
-    "E06@sectors": 227,
+    "A01": (31, 1), "A01@sectors": (29, 4), "A02": (20, 3), "A02@madloop": (19, 4),
+    "A03": (32, 4), "A04": (16, 2), "A05": (29, 4), "A06": (19, 3),
+    "A06@sectors": (18, 4), "A07": (24, 4), "A08": (483, 4), "A09": (40, 2),
+    "A09@collinear": (18, 3), "A09@soft": (23, 2), "A12": (13, 1),
+    "A12@sectors": (22, 4), "A13": (39, 3), "A13@sectors": (23, 4), "A14": (254, 3),
+    "A15": (60, 4), "A18": (138, 4), "A19": (30, 3), "A19@sectors": (28, 4),
+    "A20": (34, 3), "A20@sectors": (33, 4), "A21": (51, 3), "A21@sectors": (47, 4),
+    "A22": (178, 3), "A23": (709, 3), "A24": (1351, 2), "A25": (23, 4), "A26": (24, 4),
+    "B01": (30, 1), "B01@mt170": (21, 4), "B01@sectors": (20, 4),
+    "B01@threshold": (15, 3), "B02": (19, 3), "B02@madloop": (18, 4), "B03": (86, 4),
+    "B05": (804, 3), "B05@sectors": (254, 1), "B06": (45, 4), "B07": (349, 4),
+    "B08": (30, 4), "C01": (45, 2), "C01@params": (21, 4), "C02": (43, 4),
+    "C03": (22, 4), "C04": (25, 4), "C05": (41, 4), "C06": (296, 4), "C07": (28, 4),
+    "C08": (30, 4), "D01": (20, 2), "D02": (21, 4), "D05": (45, 2), "D06": (29, 3),
+    "D06@madloop": (23, 4), "D07": (108, 3), "D07@sectors": (113, 4), "D08": (47, 3),
+    "D08@sectors": (36, 4), "D09": (20, 3), "D09@sectors": (18, 4), "D10": (24, 3),
+    "D10@sectors": (21, 4), "D11": (28, 4), "D12": (25, 4), "D13": (24, 4),
+    "D15": (22, 4), "D16": (22, 4), "D17": (26, 4), "D18": (21, 4), "D19": (23, 4),
+    "D20": (27, 4), "D21": (16, 3), "D23": (26, 4), "D24": (21, 4), "D25": (22, 4),
+    "D25@zero": (14, 3), "D26": (28, 4), "D27": (23, 4), "E01": (71, 4),
+    "E02": (43, 4), "E05": (19, 3), "E06": (175, 3), "E06@sectors": (179, 4),
+    "F01": (35, 4), "F02": (24, 4), "F04": (37, 4), "G01": (24, 1), "G02": (29, 4),
+    "H01": (48, 4), "M01@P0": (24, 4), "M01@P2": (26, 4), "R01": (24, 4),
 }  # fmt: skip
 DEFAULT_SECONDS = 60
 JOB_SECONDS = 1200
@@ -1703,12 +1717,25 @@ def nightly_groups(rows):
             if v.get("gating", True) and v["points"].get("nightly")
         ]
         if ids:
-            seconds = sum(
-                MEASURED_SECONDS.get(i, ESTIMATED_SECONDS.get(i, DEFAULT_SECONDS))
-                for i in ids
-            )
-            groups.append((seconds, ids))
+            groups.append((sum(id_seconds(r, i) for i in ids), ids))
     return groups
+
+
+def id_seconds(row, name):
+    """The measured seconds of a nightly id, scaled to its current points."""
+    if name not in MEASURED_SECONDS:
+        return DEFAULT_SECONDS
+    seconds, measured = MEASURED_SECONDS[name]
+    if "@" in name:
+        variant = next(v for v in row["variants"] if v["name"] == name.split("@")[1])
+        points = len(variant["points"]["nightly"])
+    else:
+        points = len(row["points"].get("nightly", ()))
+    return (
+        seconds
+        if points == measured or not points
+        else -(-seconds * points // measured)
+    )
 
 
 def nightly_jobs(rows):
