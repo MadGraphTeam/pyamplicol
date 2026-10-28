@@ -100,7 +100,8 @@ INPUTS_PREFERENCE = ("native", "python")
 # basis orders, or that the bases order both ways, stop the build: the order
 # is never guessed. A cell takes the newest candidate that measured it; if
 # none did, the status of the newest candidate with a record of the row
-# (refused, not timed, not batched, pending, in development, not started), so "refused"
+# (refused, not timed, not batched, no gate batch, pending, in development,
+# not started), so "refused"
 # appears only where the most recent configuration refuses.
 # The validation cell has one more condition (VALIDATION_RULE): a newer
 # comparison that is less complete than an older one (fewer points, or
@@ -361,11 +362,25 @@ def _split(stages: dict) -> dict:
     return {k: out[k] for k in order}
 
 
-def _largest_batch(cfg: dict | None) -> str | None:
+# The gate batch (user 2026-10-28, slice-status DECISIONS ~08:20 item 2;
+# tools/loop_benchmark/gate.py GATE_BATCH, package gate-b128): Table 1's
+# batched full-colour and leading-colour cells, their gate verdict and the
+# 5 ms floor take B = 128 explicitly, never the largest batch a configuration
+# timed. Every other batch size is reported in the gate-G1 details without a
+# verdict; a configuration without a B = 128 timing has no batched cell here.
+GATE_BATCH = "128"
+
+
+def _gate_batch(cfg: dict | None) -> str | None:
     if not cfg or not cfg.get("batches"):
         return None
-    sizes = [int(b) for b in cfg["batches"] if int(b) > 1]
-    return str(max(sizes)) if sizes else None
+    return GATE_BATCH if GATE_BATCH in cfg["batches"] else None
+
+
+def _no_gate_batch(cfg: dict) -> str:
+    """The status of a configuration without a B = 128 timing: no batched
+    run at all, or batches other than the gate batch only."""
+    return "not batched" if all(int(b) <= 1 for b in cfg["batches"]) else "no gate batch"
 
 
 def _provider_runtime(proc: dict) -> dict:
@@ -559,11 +574,11 @@ def _timing_of(
             "revision": cfg["revision"][:8],
             "source": source,
         }
-    batch = _largest_batch(cfg)
+    batch = _gate_batch(cfg)
     if batch is None:
         sizes = sorted(int(b) for b in cfg["batches"])
         return {
-            "status": "not batched",
+            "status": _no_gate_batch(cfg),
             "inputs": cfg["inputs"],
             "timed_batches": sizes,
             "revision": cfg["revision"][:8],
@@ -614,7 +629,7 @@ def _timing_of(
                 f" ({decisions['source']})",
             )
         # The user's gate rule (milestone.json gate_decisions.threshold_rule,
-        # 2026-10-24 ~22:35): below 5 ms per point at the largest batch the
+        # 2026-10-24 ~22:35): below 5 ms per point at B = 128 the
         # process has no blocking gate; the measured ratio, band and status
         # stay with the cell. It takes precedence over a decision. The gate
         # tool applies it (floor_seconds); the rule's words label it here,
@@ -706,9 +721,13 @@ def _lc_of(
             "revision": fc["revision"][:8],
             "source": fc_source,
         }
-    batch = _largest_batch(lc)
+    batch = _gate_batch(lc)
     if batch is None:
-        return {"status": "not batched", "source": source}
+        return {
+            "status": _no_gate_batch(lc),
+            "timed_batches": sorted(int(b) for b in lc["batches"]),
+            "source": source,
+        }
     t = lc["batches"][batch]["median_seconds_per_point"]
     out = {
         "status": "measured",
