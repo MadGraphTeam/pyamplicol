@@ -189,6 +189,34 @@ def command_points(args, data, runs):
         print(target)
 
 
+def evaluation(data, run):
+    """The run's MadLoop evaluation: the campaign's fixed quadruple-precision
+    CTModeRun pair (madloop_settings.evaluation) unless the run keeps the
+    MLStabThres-driven evaluation of an earlier batch (``madloop_evaluation``)."""
+    if run.get("madloop_evaluation", {}).get("mode") == "mlstabthres":
+        return None
+    return data["madloop_settings"]["evaluation"]
+
+
+def madloop_jobs(data, run, skip_helicities=False):
+    """(label, references.py run options) of every MadLoop job of a run."""
+    setting = evaluation(data, run)
+    if setting is None:
+        jobs = [("madloop", [])]
+        if run.get("helicities") and not skip_helicities:
+            jobs.append(("madloop-hel", ["--tag", "hel", "--helicities", run["helicities"]]))
+        return jobs
+    params = [x for key, value in setting["madloop_params"].items() for x in ("--madloop-param", f"{key}={value}")]
+    main, twin = str(setting["ctmode_run"]), str(setting["direction_test_ctmode_run"])
+    jobs = [("madloop", ["--madloop-ctmode", main, *params]),
+            ("madloop-qp5", ["--tag", "qp5", "--madloop-ctmode", twin, *params])]
+    if run.get("helicities") and not skip_helicities:
+        hel = ["--helicities", run["helicities"], *params]
+        jobs += [("madloop-hel", ["--tag", "hel", "--madloop-ctmode", main, *hel]),
+                 ("madloop-hel-qp5", ["--tag", "hel-qp5", "--madloop-ctmode", twin, *hel])]
+    return jobs
+
+
 def provider_run(args, data, root, run, work, points, extra, log, cpu):
     export = check_export(root, run)
     command = [*timeout(data), python(), str(HERE / "references.py"), "run", "--process", run["process"],
@@ -206,6 +234,9 @@ def provider_run(args, data, root, run, work, points, extra, log, cpu):
         completed = subprocess.run(command, stdout=handle, stderr=subprocess.STDOUT)
     if completed.returncode:
         raise SystemExit(f"{run['id']}: provider run failed ({completed.returncode}); see {log}")
+
+
+SPLIT_LABELS = ("madloop", "madloop-qp5")
 
 
 def combine_split(work, label, count):
@@ -234,16 +265,14 @@ def command_run(args, data, runs):
         points = work / "points.json"
         if not points.exists():
             raise SystemExit(f"{run['id']}: no points.json")
-        jobs = [("madloop", [])]
-        if run.get("helicities") and not args.skip_helicities:
-            jobs.append(("madloop-hel", ["--tag", "hel", "--helicities", run["helicities"]]))
+        jobs = madloop_jobs(data, run, args.skip_helicities)
         if args.only:
             jobs = [job for job in jobs if job[0] in args.only]
         for label, extra in jobs:
             if (work / f"{label}-result.json").exists() and not args.force:
                 print(f"{run['id']}: {label} done")
                 continue
-            if run.get("split_points") and label == "madloop":
+            if run.get("split_points") and label in SPLIT_LABELS:
                 content = json.loads(points.read_text())
                 count = len(content["points"])
                 if args.point is None:
@@ -284,8 +313,10 @@ def command_combine(args, data, runs):
             continue
         work = work_dir(root, run)
         count = len(json.loads((work / "points.json").read_text())["points"])
-        combine_split(work, "madloop", count)
-        print(work / "madloop-result.json")
+        for label in SPLIT_LABELS:
+            if label == "madloop" or evaluation(data, run) is not None:
+                combine_split(work, label, count)
+                print(work / f"{label}-result.json")
 
 
 def command_merge(args, data, runs):
@@ -507,7 +538,7 @@ def command_status(args, data, runs):
         gen = export.parent / f"{export.name}.generation.json"
         state = json.loads(gen.read_text()).get("status") if gen.exists() else "absent"
         flags = [f"export={state}", f"points={'yes' if (work / 'points.json').exists() else 'no'}"]
-        for label in ("madloop", "madloop-hel", "recola", "openloops"):
+        for label in ("madloop", "madloop-qp5", "madloop-hel", "madloop-hel-qp5", "recola", "openloops"):
             if (work / f"{label}-result.json").exists():
                 flags.append(f"{label}=done")
         flags.append(f"reference={'yes' if (work / 'reference.json').exists() else 'no'}")
@@ -529,7 +560,8 @@ def main():
     run.add_argument("--cpu", type=int)
     run.add_argument("--point", type=int, help="1-based point of a split_points run")
     run.add_argument("--force", action="store_true")
-    run.add_argument("--only", nargs="+", choices=("madloop", "madloop-hel", "recola", "openloops"))
+    run.add_argument("--only", nargs="+", choices=("madloop", "madloop-qp5", "madloop-hel", "madloop-hel-qp5",
+                                                    "recola", "openloops"))
     run.add_argument("--skip-helicities", action="store_true")
     run.add_argument("--skip-second", action="store_true")
     args = parser.parse_args()
