@@ -6218,7 +6218,7 @@
   {
    "id": "F2",
    "category": "reference: MadLoop double-precision result",
-   "title": "MadLoop's double-precision results (status 216) carry errors up to 3e-11 its own accuracy estimate does not report",
+   "title": "MadLoop's values miss our double-double by up to 3.3e-11 with an own accuracy of 0 .. 1e-16: binary64 noise at C02, D11, A06; a systematic MadLoop error at C01 (massive b) that Recola does not share",
    "rows": [
     "C01",
     "C01@params",
@@ -6227,21 +6227,21 @@
     "A06"
    ],
    "checks": "rule 1: C01 point 1 finite 3.25e-11 (default tier), C01@params point 1 finite 2.69e-11, C02 point 0 finite 2.1e-12, D11 point 1 single pole 4.27e-12, A06 point 1 single pole 1.18e-12",
-   "evidence": "C01 point 1: our double-double 5.527401070600918831960220430267, 40 digits 5.52740107060091883196022043026848, 60 digits 5.52740107060091883196022043026854 (agree to 1e-31; s2/c01ap.log) against MadLoop 5.527401070421304 at status 216 (stable in double precision, Ninja) with own accuracy 9.0e-17; MadLoop's double pole there is off its Born times the universal IR factor by 4.8e-13. A06 point 1 (a cancelling single pole, 0.12 against a Born of 302): Recola 7.3e-13 and OpenLoops 5.2e-13 from our double-double, MadLoop 1.18e-12 at own accuracy 0.0. MadLoop's estimate (rotations of its own reduction) does not see errors of the scalar integrals or of cancelling pole coefficients. Not explained by the input point: double-double at MadLoop's own quadruple-precision point (its ImprovePSPoint=2 projection of the binary64 rounding, tools/loop_reference/supplied_points.madloop_qp_point) gives the same deviations (workspace/tmp/mq-validate/qp/exp.py).",
-   "routed_to": "MQ-REF: rerun these points with quadruple precision forced (MLStabThres below any double-precision estimate) and/or a second provider (PLAN \u00a74.1 trigger); rule 1 (i) as signed cannot pass while MadLoop reports accuracy 0 or 1e-16 for a value off by 3e-11 (user ruling if a forced-QP rerun does not resolve it)",
+   "evidence": "Cross-checks run into workspace/tmp/mq-validate/qpref/ (the committed exports read only; MQ-REF's toolkit, references.py run): (a) C01 point 1: MadLoop forced to quadruple precision (--madloop-accuracy 1e-20, status 328) reproduces its binary64 value (finite 5.527401070421307, 3.25e-11 from ours; single and double pole 4.8e-13 from ours, which equal Catani's within 1e-27), while Recola (COLLIER) agrees with our double-double within 1.1e-15 on every coefficient of points 0-3 (finite 5.527401070600913 at point 1); our double-double equals 40 and 60 digits within 1e-31 there (s2/c01ap.log): MadLoop's massive-b result is off, not ours. (b) C02 point 0 and D11 point 1: forced quadruple precision brings MadLoop within 5e-14 and 7e-15 of ours (Recola 5.7e-13, 1.5e-13): binary64 noise of the status-216 runs that MadLoop's estimate does not see. (c) A06 point 1 (a cancelling single pole, 0.12 against a Born of 302): the committed Recola and OpenLoops values are 7.3e-13 and 5.2e-13 from ours, MadLoop 1.18e-12; MLStabThres = 1e-20 cannot force quadruple precision there because MadLoop's binary64 estimate is exactly 0 (status 216 again). Not explained by the input point: double-double at MadLoop's own quadruple-precision point (its ImprovePSPoint=2 projection of the binary64 rounding, supplied_points.madloop_qp_point) gives the same deviations (workspace/tmp/mq-validate/qp/exp.py).",
+   "routed_to": "MQ-REF: rerun the status-216 points in quadruple precision forced by CTModeRun (the threshold cannot force it where MadLoop's estimate is 0), which resolves C02 and D11; add Recola as the second provider of C01/C01@params (it agrees within 1e-15). User ruling needed for C01: rule 1 (i) cannot hold when the primary is wrong in both precisions while its own accuracy reads 0 (proposal: Recola primary for the massive-b rows, MadLoop recorded as an outlier with this evidence)",
    "status": "open"
   },
   {
    "id": "F3",
    "category": "reference: MadLoop quadruple-precision result",
-   "title": "MadLoop's quadruple-precision results (status 328/329) of g g > u u~ u u~ and u u~ > g g g g g deviate by up to 1.2e-11 at own accuracy 0",
+   "title": "g g > u u~ u u~ and u u~ > g g g g g: no provider reaches 1e-12 at 2->4/2->5 (MadLoop quadruple precision 1.2e-11 with a 1e-12 IR-relation defect; Recola 5e-11; OpenLoops 2.6e-12)",
    "rows": [
     "A18",
     "A23"
    ],
    "checks": "rule 1: A18 points 0, 2, 3 finite 3.5e-12 .. 1.17e-11 and double pole 1.06e-12; A23 points 0-2 finite and single pole 1.0e-12 .. 3.2e-12",
-   "evidence": "A18 point 2: MadLoop's double pole is off its own Born times the universal IR factor by 1.06e-12, exactly our double-double's deviation from it, while ours equals Catani's within 9e-28 and our Born equals MadLoop's within 2e-15: MadLoop's loop is the outlier. The deviations do not move when our double-double is evaluated at MadLoop's quadruple-precision input point (workspace/tmp/mq-validate/qp/exp.py: A18 points 2, 3 unchanged to two digits). A23: MadLoop status 216 with own accuracies 1.2e-13 .. 2.3e-12 (covering some coefficients), Recola's double poles off the universal factor by up to 4.4e-11 (no second provider within 1e-12).",
-   "routed_to": "MQ-REF (rule 1 trigger: second provider for A18; A23's Recola is no better) and the user (rule 1 (i) when the provider reports no usable accuracy)",
+   "evidence": "A18: MadLoop's quadruple-precision values (status 328/329, own accuracy 0) are up to 1.17e-11 (finite) and 1.06e-12 (double pole) from ours; MadLoop's double pole is off its own Born times the universal IR factor by exactly that 1.06e-12 at point 2 (and 3.5e-13 at points 0, 3), while ours equals Catani's within 9e-28 and our Born equals MadLoop's within 2e-15, so MadLoop's loop carries a ~1e-12 systematic error. Third opinions (workspace/tmp/mq-validate/qpref/): OpenLoops (ppjjjj, binary64) 5.5e-13 / 9.8e-13 / 1.2e-12 / 2.6e-12 on the finite part of points 0-3 and <= 1.8e-13 on the poles; Recola (binary64) up to 5.3e-11 with double poles 1.1e-11 off. The deviations do not move when our double-double is evaluated at MadLoop's quadruple-precision input point (qp/exp.py). A23 (MadLoop status 216, own accuracies 1.2e-13 .. 2.3e-12, covering some coefficients; Recola's double poles off the universal factor by up to 4.4e-11): no second provider within 1e-12; a forced quadruple-precision MadLoop 2->5 run was not attempted (estimated hours, HANDOFF \u00a70.1).",
+   "routed_to": "MQ-REF (OpenLoops ppjjjj as A18's second provider is the closest; a MadLoop quadruple-precision rerun by CTModeRun) and the user: the 1e-12 strict rule 1 at 2->4/2->5 needs a provider accurate to ~1e-13; none of the three is, while our poles meet Catani's within 1e-27",
    "status": "open"
   },
   {
