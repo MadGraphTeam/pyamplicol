@@ -788,6 +788,15 @@ python tools/loop_reference/mqcd_campaign.py fixture uux_gg && \
 python tools/loop_reference/mqcd_campaign.py manifest
 ```
 
+MadLoop runs at requested accuracy 1e-13 with the stability test forced on
+every call (quadruple-precision rescue wherever its double-precision estimate
+is worse): §1.4 rule 1 compares double-double values with the reference at
+1e-12, and at the plan's 1e-11 MadLoop keeps double-precision values with
+estimates up to ~1e-11 (g g > t t~ g 9.6e-12, g g > t t~ h 7.8e-12). The E rows
+get `<key>_sectors` runs on their existing exports at the committed points plus
+a mu_R = mu_0/2 copy of point 1 (every squared split order, MadLoop's accuracy
+per sector), and every new row has three points plus that copy.
+
 Schemes added for the campaign (`required_processes.json`; every scheme names
 its MG5 `restriction`): `qcd-4fs` (loop_sm default restriction: MB = ymb = 4.7,
 MTA = 1.777, widths 0 = no_widths, four active flavours), `qcd-cmass`
