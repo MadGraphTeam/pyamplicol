@@ -139,6 +139,23 @@ def points_from_fixture(path, pdgs, half_scale_point=False):
     return out
 
 
+def supplied_command(run, target):
+    """The supplied_points.py command writing a 'supplied' run's points to ``target``."""
+    spec = run["points"]
+    options = ["--family", spec.get("family", "regular"), "--count", str(spec.get("count", 3))]
+    if spec.get("values"):
+        options += ["--values", *spec["values"]]
+    if spec.get("madloop_qp_point"):
+        options.append("--madloop-qp-point")
+    for key in ("rotate", "zero_cosine", "neighbour_cosine"):
+        if key in spec:
+            options.append(f"--{key.replace('_', '-')}={spec[key]}")  # values may start with '-'
+    if spec.get("half_scale_point", True):
+        options.append("--half-scale-point")
+    return [python(), str(HERE / "supplied_points.py"), "--process", run["process"], "--output", str(target),
+            *options]
+
+
 def command_points(args, data, runs):
     root = reference_root(args)
     for run in select(runs, args.runs):
@@ -161,18 +178,7 @@ def command_points(args, data, runs):
                             "--count", str(spec.get("count", 3)), *(["--half-scale-point"] if spec.get(
                                 "half_scale_point", True) else [])], check=True, stdout=subprocess.DEVNULL)
         elif spec["generator"] == "supplied":
-            options = ["--family", spec.get("family", "regular"), "--count", str(spec.get("count", 3))]
-            if spec.get("values"):
-                options += ["--values", *spec["values"]]
-            if spec.get("madloop_qp_point"):
-                options.append("--madloop-qp-point")
-            for key in ("rotate", "zero_cosine", "neighbour_cosine"):
-                if key in spec:
-                    options.append(f"--{key.replace('_', '-')}={spec[key]}")  # values may start with '-'
-            if spec.get("half_scale_point", True):
-                options.append("--half-scale-point")
-            subprocess.run([python(), str(HERE / "supplied_points.py"), "--process", run["process"], "--output",
-                            str(target), *options], check=True, stdout=subprocess.DEVNULL)
+            subprocess.run(supplied_command(run, target), check=True, stdout=subprocess.DEVNULL)
         else:
             raise SystemExit(f"unknown points generator {spec['generator']!r}")
         if pdgs:
@@ -208,9 +214,16 @@ def combine_split(work, label, count):
     combined = dict(parts[0])
     combined["rows"] = [part["rows"][0] for part in parts]
     combined["points_file"] = str(work / "points.json")
+    # Whole-run quantities: summed over the jobs (per-job values below), never point 1's alone.
+    combined["process_wall_seconds"] = sum(p["process_wall_seconds"] for p in parts)
+    cpus = [p.get("cpu") for p in parts]
+    combined["cpu"] = cpus[0] if len(set(cpus)) == 1 else None
     combined["split_points"] = {"jobs": count, "initial_call_seconds": [p.get("initial_call_seconds") for p in parts],
-                                "cpus": [p.get("cpu") for p in parts],
-                                "note": "one job per point: every point is also the job's initialisation point"}
+                                "process_wall_seconds": [p["process_wall_seconds"] for p in parts],
+                                "cpus": cpus,
+                                "note": "one job per point: every point is also the job's initialisation point; "
+                                        "process_wall_seconds is the sum over the jobs, initial_call_seconds the "
+                                        "first job's (all jobs listed here)"}
     (work / f"{label}-result.json").write_text(json.dumps(combined, indent=2) + "\n")
 
 
@@ -285,6 +298,8 @@ def command_merge(args, data, runs):
             command += ["--pdgs", ",".join(map(str, run["pdgs"]))]
         for provider, reason in run.get("exclude_providers", {}).items():
             command += ["--exclude", f"{provider}={reason}"]
+        if run.get("point_status"):
+            command += ["--point-status", json.dumps(run["point_status"])]
         completed = subprocess.run(command, capture_output=True, text=True)
         print(completed.stdout.strip() or completed.stderr.strip()[-400:])
         # exit status 2 = fewer than two providers (single-provider reference): expected.
@@ -307,7 +322,11 @@ def relocate(value, root):
     return value
 
 
-ABSOLUTE = re.compile(r"(?<![\w$}])/(shared|home|tmp|nix/store/[0-9a-z]{32}-(?!gcc|gfortran))")
+# Host paths a relocated fixture may not contain (compiler wrappers of the Nix store excepted).
+ABSOLUTE = re.compile(r"(?<![\w$}])/(shared|home|tmp|nix/store/[0-9a-z]{32}-(?!gcc|gfortran))\S{0,40}")
+TOLERANCE_SCOPE = ("'tolerance' and 'validation_status' are the references.py merge's provider-agreement check "
+                   "(the G1 2e-8 tolerance); they are not M-QCD acceptance values: m-qcd/PLAN.md §1.4 applies, with "
+                   "each point's 'reference' record")
 
 
 def command_fixture(args, data, runs):
@@ -318,10 +337,11 @@ def command_fixture(args, data, runs):
             print(f"{run['id']}: no reference.json")
             continue
         content = relocate(json.loads(source.read_text()), root)
+        content["tolerance_scope"] = TOLERANCE_SCOPE
         content["mqcd_run"] = {k: run[k] for k in run if k != "points"}
         content["mqcd_run"]["points"] = run["points"]
         text = json.dumps(content, indent=1) + "\n"
-        leftover = sorted({m.group(0) for m in re.finditer(r"/shared/\S{0,40}", text)})
+        leftover = sorted({m.group(0) for m in ABSOLUTE.finditer(text)})
         if leftover:
             raise SystemExit(f"{run['id']}: absolute paths remain after relocation: {leftover[:5]}")
         target = FIXTURES / "required/mqcd" / f"{run['id']}.json"
@@ -353,7 +373,9 @@ def run_entry(root, run, fixture_path):
     entry = {"run": run["id"], "fixture": str(fixture_path.relative_to(FIXTURES)) if fixture_path.exists() else None,
              "process_key": run["process"], "note": run.get("note"),
              "reference_notes": run.get("reference_notes", {}),
-             "excluded_providers": run.get("exclude_providers", {})}
+             "excluded_providers": run.get("exclude_providers", {}),
+             "second_providers": run.get("second_providers", []),
+             "second_provider_trigger": run.get("second_provider_trigger")}
     if not fixture_path.exists():
         entry["status"] = "pending"
         return entry
@@ -386,6 +408,7 @@ def run_entry(root, run, fixture_path):
         "squared_split_orders": fixture.get("squared_split_orders"),
         "per_helicity": bool(fixture.get("per_helicity")),
         "subprocess": run.get("subprocess"),
+        "point_reference": [row["reference"] for row in fixture["rows"]],
     })
     return entry
 
@@ -432,6 +455,41 @@ def command_manifest(args, data, runs):
                                 "(ACC(i) of SLOOPMATRIX_THRES); 0.0 when its stability test found no difference",
             "per_helicity": "MadLoop SLOOPMATRIXHEL_THRES: colour average and identical-particle factor, no "
                             "helicity average; HelConfigs.dat helicity labels",
+            "indexing": "rows, points, mu_r, point_labels, point_reference, provider_accuracy_per_sector and "
+                        "madloop_return_codes are aligned lists (row i = point i, 0-based); reference_notes and "
+                        "point_status keys are 0-based row indices; scale_variation's point and copy_of_point are "
+                        "1-based point numbers (mqcd_campaign.py run --point), its row and copy_of_row the 0-based "
+                        "rows",
+            "point_reference": {
+                "status": "'ok': the row is a reference; 'none': no usable provider reference at this point "
+                          "(reason given), validate it by internal oracles only",
+                "comparison": "'relative': compare per coefficient relative to the reference value; 'absolute': "
+                              "a Born-zero point (§4.1 S3), compare |value - reference| against the tolerance times "
+                              "absolute_scale = |Born| at row absolute_scale_row (the nearest regular point), never "
+                              "dividing by the vanishing Born",
+                "born_source": "which value the row's (and its sectors') 'born' is: 'madloop' = MadLoop's printed "
+                               "Born; 'madloop_double_pole_over_universal_factor' = at madloop_qp_point points, "
+                               "MadLoop's printed Born is its double-precision Born at the binary64 rounding of the "
+                               "point, not at the published point, so the reference Born is its quadruple-precision "
+                               "double pole over universal_double_pole_factor (the printed value is kept as "
+                               "born_madloop_binary64_input / born_binary64_input)",
+                "madloop_point": "the point MadLoop's loop values refer to: the published point (quadruple "
+                                 "precision at a madloop_qp_point point), the binary64 rounding of the published "
+                                 "point (double precision), or MadLoop's quadruple-precision repair of that rounding "
+                                 "(~1e-16 from an exact published point)",
+                "born_double_pole_relative_mismatch": "MadLoop's printed (binary64-input) Born against the Born its "
+                                                      "double pole implies: for points rescued in quadruple "
+                                                      "precision at MadLoop's own repaired point, the sensitivity "
+                                                      "of the reference to the ~1e-16 displacement from the "
+                                                      "published point (the published point limits the reference "
+                                                      "at about this level, which MadLoop's accuracy does not "
+                                                      "show); at madloop_qp_point points, the binary64 condition "
+                                                      "of the point",
+                "max_sector_double_pole_relative_error": "largest violation of the universal double pole over the "
+                                                         "loop squared split orders (MadLoop's printed values); the "
+                                                         "merge refuses ok points above its tolerance",
+            },
+            "fixture_tolerance": TOLERANCE_SCOPE,
             "madloop_settings": data["madloop_settings"],
         },
         "rows": rows,

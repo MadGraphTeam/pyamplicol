@@ -3,13 +3,14 @@
 """Write mqcd_campaign.json: the rows of m-qcd/PLAN.md §4.2 and the MadLoop reference runs producing them.
 
 Usage: make_mqcd_campaign.py tools/loop_reference/mqcd_campaign.json (the committed JSON is its output)."""
-import json, sys
+import json
+import sys
 from pathlib import Path
 
 ROUTES = {
     "5F": {"restriction": "no_b_mass", "fixed_parameters": {"WT": "0", "WZ": "0", "WW": "0", "WH": "0"}, "scheme": "qcd"},
     "5F*": {"restriction": "default", "fixed_parameters": {"MB": "0", "ymb": "0", "WT": "0", "WZ": "0", "WW": "0", "WH": "0"},
-            "scheme": "qcd", "note": "default restriction with MB = ymb = 0 (until MQ-5F, then also 5F); the MadLoop reference is the 5F (no_b_mass) one, identical parameter values"},
+            "scheme": "qcd", "note": "default restriction with MB = ymb = 0 (until MQ-5F, then also 5F); the MadLoop reference is the 5F (no_b_mass) one: the same QCD parameter values (default keeps MTA = ymtau = 1.777 where no_b_mass has 0; no tau enters these QCD rows)"},
     "4F": {"restriction": "default", "fixed_parameters": {"WT": "0", "WZ": "0", "WW": "0", "WH": "0"}, "scheme": "qcd-4fs",
            "note": "= no_widths"},
     "CM": {"restriction": "c_mass", "fixed_parameters": {"WT": "0", "WZ": "0", "WW": "0", "WH": "0"}, "scheme": "qcd-cmass"},
@@ -23,7 +24,7 @@ rows, runs = [], {}
 
 
 def run(rid, key, export=None, points=None, helicities=None, split_points=False, recola=False, subprocess=None,
-        pdgs=None, note=None, second=(), accuracy=None, exclude=None, notes=None):
+        pdgs=None, note=None, second=(), accuracy=None, exclude=None, notes=None, point_status=None, trigger=None):
     r = {"id": rid, "process": key, "export": export or f"runs/mqcd/{key}/madloop-export",
          "points": points or {"generator": "exact"}}
     if helicities:
@@ -32,6 +33,11 @@ def run(rid, key, export=None, points=None, helicities=None, split_points=False,
         r["split_points"] = True
     if recola or second:
         r["second_providers"] = list(second) or ["recola"]
+        if not trigger:
+            raise ValueError(f"{rid}: a second provider needs its m-qcd/PLAN.md §4.1 trigger (or 'diagnostic')")
+        r["second_provider_trigger"] = trigger
+    if point_status:
+        r["point_status"] = point_status
     if accuracy:
         r["madloop_accuracy"] = accuracy
     if exclude:
@@ -58,7 +64,15 @@ def row(rid, cls, process, code, ref, tier="n", extras=(), runs_=(), fixtures=()
     rows.append(e)
 
 
-S = lambda **kw: {"generator": "supplied", "family": "regular", **kw}
+def S(**kw):
+    return {"generator": "supplied", "family": "regular", **kw}
+
+
+S2_DIAGNOSTIC = ("diagnostic outside the §4.1 triggers (recorded, not a trigger): the installed ppjjj library and "
+                 "Recola, < 1 min per run, to test MadLoop's quadruple-precision evaluation at the S2 limit points "
+                 "where no other cross-check exists; it exposed MadLoop's unstable collinear theta = 1e-4, 1e-5 "
+                 "evaluations")
+CHARM = "§4.1: the massive-charm rows C08 and C09, after the charm fix"
 G1 = "runs/g1/{}/madloop-export".format
 REQ = "runs/required/{}/madloop-export".format
 
@@ -78,13 +92,21 @@ row("A09", "Q-massless", "u u~ > g g g", "5F", "R", "d", extras=["nc", "sp:S2"],
     runs_=[run("uux_ggg", "uux_ggg", export=G1("uux_ggg")),
            run("uux_ggg_soft", "uux_ggg", export=G1("uux_ggg"),
                points=S(family="soft", values=["1/1000", "1/100000"], half_scale_point=False, madloop_qp_point=True),
-               accuracy=1e-20, second=("recola", "openloops"), note="S2: soft gluon E/sqrt(s) = 1e-3, 1e-5",
+               accuracy=1e-20, second=("recola", "openloops"), trigger=S2_DIAGNOSTIC,
+               note="S2: soft gluon E/sqrt(s) = 1e-3, 1e-5",
                exclude={"recola": "COLLIER double precision fails in the soft limit (4.6e-9 at E/sqrt(s) = 1e-3, "
                                   "6.0e-3 at 1e-5 against MadLoop QP and OpenLoops, which agree to 1.5e-14 and 2.5e-13)"}),
            run("uux_ggg_collinear", "uux_ggg", export=G1("uux_ggg"),
                points=S(family="collinear", values=["1/1000", "1/10000", "1/100000"], half_scale_point=False, madloop_qp_point=True),
-               accuracy=1e-20, second=("recola", "openloops"),
+               accuracy=1e-20, second=("recola", "openloops"), trigger=S2_DIAGNOSTIC,
                exclude={"recola": "COLLIER double precision fails at small opening angles (1e-4 relative at theta = 1e-3)"},
+               point_status={
+                   "1": {"status": "none", "reason": "MadLoop's quadruple-precision evaluation is unstable (return "
+                                                     "code 420, own accuracy 1.3e-6) and OpenLoops differs by 4.3e-5: "
+                                                     "good to ~1e-6 at best, no reference at M-QCD accuracies"},
+                   "2": {"status": "none", "reason": "MadLoop's quadruple-precision evaluation is unstable (return "
+                                                     "code 420, own accuracy 28) and MadLoop, Recola and OpenLoops "
+                                                     "disagree at O(1)"}},
                notes={"0": "MadLoop quadruple precision at its own projected point (published); OpenLoops reads the "
                            "binary64 rounding of the point, whose Born condition (~1e7: MadLoop's double-precision "
                            "Born at the binary64 point differs from its quadruple-precision one by 1.6e-9) limits "
@@ -150,8 +172,8 @@ row("C04", "Q-heavy", "b b~ > h g (x-rotated)", "4F", "N",
 row("C05", "Q-heavy", "g g > b b~ h", "4F", "N", runs_=[run("gg_bbxh_4fs", "gg_bbxh_4fs", points=S())])
 row("C06", "Q-heavy", "g g > t t~ b b~", "4F", "N", runs_=[run("gg_ttxbbx_4fs", "gg_ttxbbx_4fs", points=S(), split_points=True)])
 row("C07", "Q-singletop", "u g > d t b~ (4FS t-channel)", "4F", "N", runs_=[run("ug_dtbx_4fs", "ug_dtbx_4fs", points=S())])
-row("C08", "Q-heavy", "g g > c c~", "CM", "N", runs_=[run("gg_ccx_cmass", "gg_ccx_cmass", points=S(), recola=True)])
-row("C09", "Q-heavy", "g s > w- c", "CM", "N", runs_=[run("gs_wmc_cmass", "gs_wmc_cmass", points=S(), recola=True)],
+row("C08", "Q-heavy", "g g > c c~", "CM", "N", runs_=[run("gg_ccx_cmass", "gg_ccx_cmass", points=S(), recola=True, trigger=CHARM)])
+row("C09", "Q-heavy", "g s > w- c", "CM", "N", runs_=[run("gs_wmc_cmass", "gs_wmc_cmass", points=S(), recola=True, trigger=CHARM)],
     note="MQ-5F (Dirac-Weyl closure)")
 # D: colour-singlet bosons (5F)
 row("D01", "Q-EWBorn", "u u~ > e- e+", "5F", "N", "d", ["ap"], runs_=[run("uux_emep", "uux_emep")],
@@ -189,6 +211,10 @@ row("D25", "Q-EWBorn", "u d~ > w+ a (radiation zero)", "5F", "N", extras=["sp:S3
            run("udx_wpa_zero", "udx_wpa", export="runs/mqcd/udx_wpa/madloop-export",
                points=S(family="radiation-zero", count=2, zero_cosine="-1/3", neighbour_cosine="-1/5", half_scale_point=False,
                         madloop_qp_point=True), accuracy=1e-20,
+               point_status={str(i): {"comparison": "absolute", "scale_row": 2,
+                                      "reason": "§4.1 S3 Born-zero point: the Born and the double pole vanish to "
+                                                "rounding; compare absolutely against the regular neighbour's Born"}
+                             for i in (0, 1)},
                note="S3: Born-zero points cos(u, photon) = -1/3 and one regular neighbour")])
 row("D26", "Q-heavy", "u u~ > e- e+ g (4F twin of D05)", "4F", "N", runs_=[run("uux_emepg_4fs", "uux_emepg_4fs")])
 row("D27", "Q-EWBorn", "g u > e+ ve d", "5F", "N", runs_=[run("gu_epved", "gu_epved")])
@@ -234,7 +260,15 @@ campaign = {
     "madloop_settings": {"requested_relative_accuracy": 1e-13,
                          "requested_relative_accuracy_reason": "m-qcd/PLAN.md §1.4 rule 1 compares DD with the reference at 1e-12, so the reference must be well below it: MadLoop's double-precision evaluations reach estimates up to ~1e-11 at the plan's 1e-11 target (g g > t t~ g 9.6e-12, g g > t t~ h 7.8e-12); at 1e-13 every point whose double-precision estimate is worse is rescued in quadruple precision (stricter than the plan's 1e-11, never looser)",
                          "special_points": "limit-point runs (S1-S3) request 1e-20, forcing MadLoop's quadruple-precision evaluation, at points that are MadLoop's own quadruple-precision projection of their binary64 rounding (supplied_points.py --madloop-qp-point)", "stability_check": "forced on every call",
-                         "rescue": "quadruple precision (MadLoop's own)", "job_timeout_seconds": 2700},
+                         "rescue": "quadruple precision (MadLoop's own)", "job_timeout_seconds": 2700,
+                         "plan_deviations_for_coordinator_ruling": [
+                             "requested MadLoop accuracy 1e-13 instead of the 1e-11 of m-qcd/PLAN.md §1.3/§4.1 "
+                             "(stricter, never looser; reason above)",
+                             "new MadLoop evaluations (no export regenerated) on the existing 2->5 exports of D07 "
+                             "(u u~ > e- e+ g g g), D08 (u u~ > e- e+ d d~ g) and E06 (g g > t t~ e- e+ g) for "
+                             "per-sector accuracies and the mu_R = mu_0/2 point: one job per point, each under "
+                             "timeout 2700 (largest 2185 s); §3.2/§4.3's 'nothing is regenerated for any 2->5' read "
+                             "as exports/generations (HANDOFF §0.1)"]},
     "rows": rows,
     "runs": list(runs.values()),
 }

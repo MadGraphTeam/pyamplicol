@@ -55,6 +55,7 @@ from pathlib import Path
 CONSTRUCTION_DIGITS = 60
 PRINTED_DIGITS = 30
 SEED = 20261028
+MAX_TRIALS = 200000  # candidates per point before an unreachable configuration is refused
 _PYTHAGOREAN = [(F(3, 5), F(4, 5)), (F(7, 25), F(24, 25)), (F(117, 125), F(44, 125)),
                 (F(4, 5), F(3, 5)), (F(527, 625), F(336, 625)), (F(-3, 5), F(4, 5)),
                 (F(-7, 25), F(-24, 25)), (F(4, 5), F(-3, 5))]
@@ -271,7 +272,10 @@ def print_digits(point, sqrt_s):
 
 
 def text(x):
-    t = format(x.normalize(), "f")
+    """Exact decimal text of ``x`` (no rounding: ``format`` of a Decimal keeps
+    every digit, whatever the context precision; ``normalize`` would round to
+    the context's 28 digits outside the construction context)."""
+    t = format(x, "f")
     if "." in t:
         t = t.rstrip("0").rstrip(".")
     return "0" if t in ("", "-0") else t
@@ -352,16 +356,37 @@ def generate(masses, family="regular", count=3, values=(), cut=F(1, 1000), reson
     scales_ok = [s for s in _SQRT_S if D(s) > threshold * D(F(13, 10)) and D(s) > threshold + 50]
     if not scales_ok:
         raise ValueError("threshold above the sqrt(s) list")
+    # Configuration errors are refused before the search (inside it a ValueError
+    # only rejects one candidate), and the search itself is bounded.
+    if family not in ("regular", "soft", "collinear"):
+        raise ValueError(f"unknown family {family!r}")
+    if family == "soft" and final[-1]:
+        raise ValueError("soft family needs a massless last particle")
+    if family == "collinear" and (len(final) < 2 or final[-1] or final[-2]):
+        raise ValueError("collinear family needs two massless last particles")
+    if family in ("soft", "collinear") and not values:
+        raise ValueError(f"family {family!r} needs --values")
+    if family == "soft":
+        rest_threshold = sum(D(m) for m in final[:-1])
+        for target in values:
+            # The recoiling system's mass sqrt(s - 2 E sqrt(s)) must exceed its threshold
+            # at one sqrt(s) of the list at least.
+            if not any(D(s) ** 2 * (1 - 2 * D(target)) > rest_threshold ** 2 for s in scales_ok):
+                raise ValueError(f"soft energy fraction {target} leaves no room for the other particles")
+    if family == "regular" and count > len(scales_ok):
+        raise ValueError(f"{count} regular points need {count} distinct sqrt(s) values; "
+                         f"only {len(scales_ok)} lie above threshold")
     targets = list(values) if family in ("soft", "collinear") else [None] * count
     for target in targets:
         for trial in itertools.count(1):
+            if trial > MAX_TRIALS:
+                raise ValueError(f"no {family} point found in {MAX_TRIALS} candidates "
+                                 f"(target {target}); the configuration is unreachable")
             if trial % 10000 == 0:
                 print(f"supplied_points: {trial} candidates tried", file=sys.stderr)
             sqrt_s = chooser.choice(scales_ok)
             try:
                 if family == "soft":
-                    if final[-1]:
-                        raise ValueError("soft family needs a massless last particle")
                     order = [len(final) - 1, *range(len(final) - 1)]
                     reordered = [final[i] for i in order]
                     energy = D(target) * D(sqrt_s)
@@ -371,8 +396,6 @@ def generate(masses, family="regular", count=3, values=(), cut=F(1, 1000), reson
                     for slot, p in zip(order, momenta, strict=False):
                         final_momenta[slot] = p
                 elif family == "collinear":
-                    if final[-1] or final[-2]:
-                        raise ValueError("collinear family needs two massless last particles")
                     final_momenta = collinear_pair(sqrt_s, final, D(target), chooser)
                 else:
                     final_momenta = sequential(sqrt_s, final, chooser)
@@ -428,9 +451,12 @@ def main():
         resonances.append(required_spec.derived_mw(spec["scheme_data"]))
     with localcontext() as context:
         context.prec = CONSTRUCTION_DIGITS
-        points, scales, labels = generate(
-            masses, args.family, args.count, [F(v) for v in args.values], F(args.cut),
-            [F(r) for r in resonances], spec["pdgs"], args.rotate, F(args.zero_cosine), F(args.neighbour_cosine))
+        try:
+            points, scales, labels = generate(
+                masses, args.family, args.count, [F(v) for v in args.values], F(args.cut),
+                [F(r) for r in resonances], spec["pdgs"], args.rotate, F(args.zero_cosine), F(args.neighbour_cosine))
+        except ValueError as error:
+            raise SystemExit(f"supplied_points: {args.process}, family {args.family}: {error}") from None
         printed = [quantise(p, s) for p, s in zip(points, scales, strict=False)]
         if args.madloop_qp_point:
             printed = [print_digits(madloop_qp_point(p, masses), s) for p, s in zip(printed, scales, strict=False)]
