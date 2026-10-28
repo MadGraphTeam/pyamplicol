@@ -1334,6 +1334,23 @@ def rerun_variants(rid):
     return out
 
 
+def helicity_fixture(rid):
+    """The fixture of MQ-REF's per-helicity run of a row (the index row's
+    ``helicity_reference``, a run name), or None."""
+    entry = INDEX_ROWS.get(rid) or {}
+    run = entry.get("helicity_reference")
+    if not run:
+        return None
+    found = [
+        x
+        for x in entry["references"]
+        if x["run"] == run and x["status"] == "committed" and x.get("fixture")
+    ]
+    if len(found) != 1 or not (FIXTURE_ROOT / found[0]["fixture"]).is_file():
+        raise ValueError(f"{rid}: helicity_reference {run} is not one committed run")
+    return f"tests/fixtures/loop/{found[0]['fixture']}"
+
+
 def index_reference(rid):
     """(reference spec, fixture, variants) of a row from MQ-REF's index."""
     entry = INDEX_ROWS.get(rid)
@@ -1350,6 +1367,10 @@ def index_reference(rid):
     if not found:
         return None
     main = [x for x in found if x["fixture"] not in VARIANTS.get(rid, {})]
+    # A per-helicity run at its own points is not the row's main reference
+    # (unless it is its only run).
+    hel_run = entry.get("helicity_reference")
+    main = [x for x in main if x["run"] != hel_run] or main
     spec = fixture = None
     if main:
         first = main[0]
@@ -1514,8 +1535,14 @@ for r in R:
         entry["notes"] = r["notes"]
     if variants:
         entry["variants"] = variants
-    if r["id"] == "B01":
-        # MQ-REF's per-helicity run of B01's points
+    hel_fixture = helicity_fixture(r["id"])
+    if hel_fixture and (
+        not entry.get("reference") or hel_fixture != entry["reference"]["path"]
+    ):
+        entry["helicity_reference"] = hel_fixture
+    elif r["id"] == "B01" and not hel_fixture:
+        # MQ-REF's per-helicity run of B01's points (an index without the
+        # row's ``helicity_reference``)
         entry["helicity_reference"] = (
             "tests/fixtures/loop/required/mqcd/gg_ttx_sectors.json"
         )

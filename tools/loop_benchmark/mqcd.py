@@ -87,6 +87,11 @@ O1_STRICT = 1e-12  # rule 2: E <= 1e-12
 O1_CAP = 1e-9  # rule 2: E above it is outside the binary64 scope
 BRACKET = 10  # rule 3 (and the 10 E bounds of rules 4-6)
 DD_FLOOR = 1e-24  # rules 4-6
+# A helicity configuration vanishes (its Born is an exact zero, so MadLoop's
+# values are the rounding of a zero and are compared absolutely) when our
+# double-double Born is at most this fraction of the summed Born; physical
+# helicity suppressions are many orders larger.
+VANISHING_HELICITY = 1e-24
 AP_CONVERGENCE = 1e-35  # rule 6
 CKM_RELATION = 1e-24  # PLAN §4.1: the H rows' CKM-factor relation in DD
 AP_DIGITS = (40, 60)
@@ -1836,21 +1841,23 @@ def rule_hel(
     ours: Mapping[tuple[int, ...], Evaluated],
     madloop: Sequence[Mapping[str, Any]],
     alpha_s: float,
+    source: str = "",
 ) -> list[Check]:
     """Per-helicity double-double against MadLoop (PLAN §3.2 item 5, under
     rule 1): every MadLoop helicity configuration, in the external legs'
     order and MG5's helicity labels, equals our helicity row of the same
     labels times the helicity average of the incoming legs (our rows keep
     the inclusive initial average); strictly relative within 1e-12 per
-    coefficient. A configuration whose MadLoop Born is within 1e-12 of the
-    summed Born of zero (a vanishing helicity: MadLoop returns the rounding
-    of a zero) is checked absolutely, ours included: the Born against 1e-12
-    of the summed Born, the Laurent coefficients against 1e-12 of its F. So
-    is a configuration MQ-REF's per-helicity record compares absolutely
-    (``reference.comparison`` "absolute" with ``absolute_scale`` the summed
-    |Born|: a vanishing helicity, or one suppressed below the point's
-    binary64 condition, whose reason the check carries); the strict relative
-    deviation is kept in the note."""
+    coefficient. Only a vanishing configuration is checked absolutely: our
+    double-double Born at most ``VANISHING_HELICITY`` of the summed Born (an
+    exact zero) and MadLoop's within 1e-12 of it (MadLoop returns the
+    rounding of a zero); then every coefficient, ours included, against
+    1e-12 of the summed Born (its F for the Laurent coefficients). A
+    configuration MQ-REF's per-helicity record compares absolutely
+    (``reference.comparison`` "absolute") that does not vanish by that test
+    (a suppressed helicity) stays strictly relative: the record's reason is
+    kept in the note, and is not honoured (an absolute comparison of a
+    suppressed helicity would loosen rule 1)."""
 
     checks = []
     counts = defaultdict(set)
@@ -1864,7 +1871,8 @@ def rule_hel(
     checks.append(Check(
         "hel", index, "double-double", "", "helicity rows", str(len(ours)),
         str(len(found)), 0.0, 0.0, set(ours) == found,
-        note="our helicity rows against MadLoop's configurations"))  # fmt: skip
+        note="our helicity rows against MadLoop's configurations"
+        + (f" (point {index} of {source})" if source else "")))  # fmt: skip
     for entry in madloop:
         helicity = tuple(entry["helicity"])
         if helicity not in ours:
@@ -1875,38 +1883,45 @@ def rule_hel(
         theirs = [entry[k] for k in COEFFICIENTS]
         record = entry.get("reference") or {}
         recorded = record.get("comparison") == "absolute"
-        if recorded or abs(entry["born"]) <= REFERENCE_TOLERANCE * summed:
-            # A helicity whose Born vanishes (MadLoop's value is its rounding
-            # of a zero), or MQ-REF's record compares it absolutely: every
-            # coefficient against the summed Born, ours included.
-            scale_born = (
-                Decimal(str(record["absolute_scale"]))
-                if recorded and record.get("absolute_scale") is not None
-                else total * average
-            )
+        ratio = float(abs(born) / total) if total else 0.0
+        if (
+            ratio <= VANISHING_HELICITY
+            and abs(entry["born"]) <= REFERENCE_TOLERANCE * summed
+        ):
+            # A vanishing helicity (MadLoop's value is its rounding of a
+            # zero): every coefficient against the summed Born, ours included.
+            scale_born = total * average
             flux = _flux(scale_born, alpha_s)
-            reason = (
-                record.get("reason") or "absolute (MQ-REF)"
-                if recorded
-                else "vanishing helicity"
+            reason = "vanishing helicity" + (
+                f" (MQ-REF: {record.get('reason') or 'absolute'})" if recorded else ""
             )
             for k, name in enumerate(COEFFICIENTS):
                 scale = float(scale_born) if k == 0 else flux
                 error = _absolute(mine[k], theirs[k])
                 bound = REFERENCE_TOLERANCE * scale
                 strict = relative(mine[k], theirs[k])
-                note = f"{reason}: against the summed Born (relative {strict:.3g})"
+                note = (
+                    f"{reason}: our double-double Born {ratio:.3g} of the summed "
+                    f"Born; against the summed Born (relative {strict:.3g})"
+                )
                 checks.append(Check("hel", index, "double-double", text, name,
                                     str(mine[k]), repr(theirs[k]), error, bound,
                                     error <= bound, note=note))  # fmt: skip
             continue
+        note = f"MadLoop status {entry.get('status')}, accuracy {entry.get('accuracy')}"
+        if recorded:
+            note += (
+                f"; MQ-REF's record compares it absolutely "
+                f"({record.get('reason') or 'no reason'}), not honoured: our "
+                f"double-double Born is {ratio:.3g} of the summed Born (not a "
+                f"vanishing helicity, <= {VANISHING_HELICITY:g})"
+            )
         for k, name in enumerate(COEFFICIENTS):
             error = relative(mine[k], theirs[k])
             checks.append(Check("hel", index, "double-double", text, name,
                                 str(mine[k]), repr(theirs[k]), error,
                                 REFERENCE_TOLERANCE, error <= REFERENCE_TOLERANCE,
-                                note=f"MadLoop status {entry.get('status')}, "
-                                f"accuracy {entry.get('accuracy')}"))  # fmt: skip
+                                note=note))  # fmt: skip
     return checks
 
 
@@ -2227,21 +2242,25 @@ def run_row(
                 row, index, point, run.legs(), flavours, str(run.parameters["aS"])
             )
     if "hel" in extras:
+        # At the first tier point of the helicity reference: the row's own
+        # reference, or MQ-REF's per-helicity run of the row
+        # (``row.helicity_reference``, its own points).
         start = time.perf_counter()
         madloop = helicity_reference(row)
         hel_points = [i for i in indices if i < len(madloop["rows"])][:1]
         if hel_points:
-            data = json.loads(
-                (ROOT / (row.helicity_reference or row.reference["path"])).read_text()
-            )
+            source = row.helicity_reference or row.reference["path"]
+            data = json.loads((ROOT / source).read_text())
             points = [_strings(data["points"][i]) for i in hel_points]
             scales = [_scale(data["mu_r"][i]) for i in hel_points]
+            separate = source != row.reference["path"]
             for index, ours in zip(
                 hel_points, helicity_rows(run, hel_points, points, scales), strict=True
             ):
                 checks += rule_hel(
-                    row, index, ours, madloop["rows"][index], reference.alpha_s
-                )
+                    row, index, ours, madloop["rows"][index], reference.alpha_s,
+                    source=source if separate else "",
+                )  # fmt: skip
         timings["hel_s"] = round(time.perf_counter() - start, 2)
     if "ap" in extras:
         start = time.perf_counter()
