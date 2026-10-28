@@ -817,6 +817,20 @@ def _flux(born: Any, alpha_s: float) -> float:
     return abs(float(born)) * alpha_s / (2 * math.pi)
 
 
+def born_scale(row: Row, point: Evaluated, sector: Any) -> Decimal:
+    """|B_s| of a Born sector (``TOTAL``: the summed Born), the scale of the
+    absolute checks of identically vanishing coefficients (F_s = |B_s|
+    alpha_s / 2 pi); for a Born sector that itself vanishes identically (a
+    colour-forbidden interference, listed in ``vanishing``) the summed
+    |B| over Born sectors, the Born's own scale."""
+
+    if sector == TOTAL:
+        return abs(point.total()[0])
+    if _vanishing(row, sector_text(sector), "born"):
+        return sum((abs(b) for b in point.born.values()), Decimal(0))
+    return abs(point.born.get(sector, Decimal(0)))
+
+
 def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Check]:
     """Double-double against the primary provider (and the outlier rule)."""
 
@@ -853,11 +867,12 @@ def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Che
                 value,
                 providers,
                 lambda p, s=sector: other_born(p, s),
-                None,
+                # A vanishing Born sector: absolutely, against the Born.
+                float(born_scale(row, dd, TOTAL)),
             )
         )
     for sector, laurent in virtual_values.items():
-        born, mine, _estimate = _ours(dd, sector)
+        _born, mine, _estimate = _ours(dd, sector)
         text = sector_text(sector)
         if mine is None:
             checks.append(
@@ -876,7 +891,10 @@ def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Che
                 )
             )
             continue
-        flux = _flux(born, reference.alpha_s)
+        flux = _flux(
+            born_scale(row, dd, sector if sector == TOTAL else born_sector(sector)),
+            reference.alpha_s,
+        )
         for k, name in enumerate(LAURENT):
             checks.append(
                 _reference_check(
@@ -909,7 +927,7 @@ def _reference_check(
     row, reference, index, sector, name, mine, value, providers, other, flux
 ) -> Check:
     primary = providers[0]
-    if flux is not None and _vanishing(row, sector, name):
+    if _vanishing(row, sector, name):
         error = _absolute(mine, value)
         bound = REFERENCE_TOLERANCE * flux
         return Check(
@@ -995,6 +1013,14 @@ def rule2_and_3(
     for sector, value in dd.born.items():
         mine = b64.born.get(sector)
         text = sector_text(sector)
+        if _vanishing(row, text, "born"):
+            error = _absolute(mine, value)
+            bound = O1_STRICT * float(born_scale(row, dd, TOTAL))
+            note = "vanishes identically: against the Born"
+            checks.append(Check("2", index, "double", text, "born", repr(mine),
+                                str(value), error, bound, error <= bound,
+                                note=note))  # fmt: skip
+            continue
         error = relative(mine, value)
         checks.append(
             Check(
@@ -1014,8 +1040,7 @@ def rule2_and_3(
         text = sector_text(sector)
         mine = b64.virtual.get(sector)
         estimate = None if b64.estimate is None else b64.estimate.get(sector)
-        born = dd.born.get(born_sector(sector), Decimal(0))
-        flux = _flux(born, reference.alpha_s)
+        flux = _flux(born_scale(row, dd, born_sector(sector)), reference.alpha_s)
         for k, name in enumerate(LAURENT):
             truth = laurent[k]
             got = mine[k]
@@ -1148,7 +1173,7 @@ def rule4(
             got, truth = laurent[k], poles[k - 1]
             if _vanishing(row, text, name):
                 # Absolutely, against F_s: 1e-12 in binary64, 1e-24 in DD.
-                born = point.born.get(born_sector(sector), Decimal(0))
+                born = born_scale(row, point, born_sector(sector))
                 strict = O1_STRICT if point.carrier == "double" else DD_FLOOR
                 bound = strict * _flux(born, alpha_s)
                 error = _absolute(got, truth)
@@ -1231,7 +1256,7 @@ def field_poles(legs: Sequence[tuple[int, bool]], flavours: int) -> Fraction:
     total = Fraction(0)
     for colour, _massive in legs:
         if colour == 8:
-            total += 5 / 3 * CA - 4 / 3 * TF * flavours
+            total += Fraction(5, 3) * CA - Fraction(4, 3) * TF * flavours
         elif colour == 3:
             total -= CF
         elif colour != 1:
