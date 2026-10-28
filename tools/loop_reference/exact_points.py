@@ -188,7 +188,15 @@ def generate(masses, count=3, cut=F(1, 1000), resonances=(), scale_window=(F(800
     final_masses = [F(m) for m in masses[incoming:]]
     if any(F(m) for m in masses[:incoming]):
         raise ValueError("massive initial states are not implemented")
-    (_, *_), additions = plan(final_masses)
+    (kind, a, _), additions = plan(final_masses)
+    if kind != "massless":
+        # The seed mass is at most m (k + 1/k) and each massless addition
+        # multiplies it by j <= 4: refuse a window no candidate can reach.
+        reachable = final_masses[a] * (_K_SEED[-1] + 1 / _K_SEED[-1]) * F(_K_ADD[-1]) ** len(additions)
+        if reachable < scale_window[0]:
+            raise ValueError(
+                f"masses {[str(m) for m in final_masses]} cannot reach sqrt(s) >= {scale_window[0]} with "
+                "terminating parameters; use supplied_points.py")
     accepted = []
     seen_scales = set()
     chooser = random.Random(20261020)

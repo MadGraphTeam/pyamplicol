@@ -44,12 +44,12 @@ appends a copy of point 1 at half its scale.
 """
 
 import argparse
-from decimal import Decimal, localcontext, ROUND_HALF_EVEN
-from fractions import Fraction as F
 import itertools
 import json
 import random
 import sys
+from decimal import ROUND_HALF_EVEN, Decimal, localcontext
+from fractions import Fraction as F
 from pathlib import Path
 
 CONSTRUCTION_DIGITS = 60
@@ -97,9 +97,9 @@ def boost(q, frame):
     gamma = frame[0] / mass
     beta = [x / frame[0] for x in frame[1:]]
     b2 = sum(x * x for x in beta)
-    bq = sum(b * x for b, x in zip(beta, q[1:]))
+    bq = sum(b * x for b, x in zip(beta, q[1:], strict=False))
     factor = ((gamma - 1) * bq / b2 if b2 else 0) + gamma * q[0]
-    return [gamma * (q[0] + bq), *(x + factor * b for x, b in zip(q[1:], beta))]
+    return [gamma * (q[0] + bq), *(x + factor * b for x, b in zip(q[1:], beta, strict=False))]
 
 
 def beams(sqrt_s, m1, m2):
@@ -178,8 +178,8 @@ def collinear_pair(sqrt_s, final, theta, chooser, z=F(2, 5)):
     e = [helper[1] * n[2] - helper[2] * n[1], helper[2] * n[0] - helper[0] * n[2], helper[0] * n[1] - helper[1] * n[0]]
     norm = sum(x * x for x in e).sqrt()
     e = [x / norm for x in e]
-    p4 = [e4, *(e4 * (cos_a * a + sin_a * b) for a, b in zip(n, e))]
-    p5 = [e5, *(e5 * (cos_b * a - sin_b * b) for a, b in zip(n, e))]
+    p4 = [e4, *(e4 * (cos_a * a + sin_a * b) for a, b in zip(n, e, strict=False))]
+    p5 = [e5, *(e5 * (cos_b * a - sin_b * b) for a, b in zip(n, e, strict=False))]
     if len(rest) == 1:
         others = [system]
     else:
@@ -214,6 +214,62 @@ def quantise(point, sqrt_s, incoming=2):
     return rounded
 
 
+def madloop_qp_point(point, masses, incoming=2):
+    """The point MadLoop evaluates in quadruple precision for ``point``.
+
+    MadLoop reads binary64 momenta (correctly rounded) and, in quadruple
+    precision with ImprovePSPoint = 2, restores on-shellness and momentum
+    conservation by its ORIG method (``MP_ORIG_IMPROVE_PS_POINT_PRECISION``
+    of the export's improve_ps.f): the final-state E, px, py are kept and pz is
+    put on shell; the two massless beams along +-z absorb the imbalance. This
+    replica uses the same formulas at the construction precision, so a limit
+    point and MadLoop's quadruple-precision evaluation describe the same
+    kinematics to ~1e-33 instead of the ~1e-16 of the binary64 input. Only for
+    massless beams along the z axis (MadLoop's preconditions for ORIG)."""
+    p = [[Decimal(float(x)) for x in leg] for leg in point]
+    if incoming != 2 or any(D(m) for m in masses[:2]):
+        raise ValueError("the ORIG projection needs two massless beams")
+    ref = sum(abs(leg[0]) for leg in p)
+    if any(abs(p[i][j]) / ref > Decimal("1e-15") for i in (0, 1) for j in (1, 2)):
+        raise ValueError("the ORIG projection needs beams along the z axis")
+    new = [list(leg) for leg in p]
+    for i in range(incoming, len(p)):
+        e, x, y, z = p[i]
+        new[i][3] = (abs(e * e - x * x - y * y - D(masses[i]) ** 2)).sqrt().copy_sign(z)
+    pt = [sum(new[i][mu] for i in range(incoming, len(p))) for mu in range(4)]
+    if p[0][3] > 0:
+        a, b = 0, 1
+    elif p[1][3] > 0:
+        a, b = 1, 0
+    else:
+        raise ValueError("no beam along +z")
+    discr = abs(-pt[0] ** 2 + pt[1] ** 2 + pt[2] ** 2 + pt[3] ** 2)
+    d0 = 2 * (pt[0] - pt[3]) * (pt[0] + pt[3])
+    shift_e1 = (pt[0] * (-2 * p[a][0] * pt[0] + pt[0] ** 2 + pt[1] ** 2 + pt[2] ** 2)
+                + (2 * p[a][0] - pt[0]) * pt[3] ** 2 + pt[3] * discr) / d0
+    shift_e2 = -(pt[0] * (2 * p[b][0] * pt[0] - pt[0] ** 2 + pt[1] ** 2 + pt[2] ** 2)
+                 + (-2 * p[b][0] + pt[0]) * pt[3] ** 2 + pt[3] * discr) / d0
+    d1 = 2 * (pt[0] ** 2 - pt[3] ** 2)
+    shift_z1 = (-2 * p[a][3] * (pt[0] ** 2 - pt[3] ** 2) + pt[3] * (pt[0] ** 2 + pt[1] ** 2 + pt[2] ** 2 - pt[3] ** 2)
+                + pt[0] * discr) / d1
+    shift_z2 = -(2 * p[b][3] * (pt[0] ** 2 - pt[3] ** 2) + pt[3] * (-pt[0] ** 2 + pt[1] ** 2 + pt[2] ** 2 + pt[3] ** 2)
+                 + pt[0] * discr) / d1
+    new[a][0], new[a][3] = p[a][0] + shift_e1, p[a][3] + shift_z1
+    new[b][0], new[b][3] = p[b][0] + shift_e2, p[b][3] + shift_z2
+    new[b][1], new[b][2] = p[b][1], p[b][2]
+    for j in (1, 2):
+        new[a][j] = sum(p[i][j] for i in range(incoming, len(p))) - p[b][j]
+    return new
+
+
+def print_digits(point, sqrt_s):
+    """Round to the printed quantum without moving the residual (a projected
+    point is already conserving to the construction precision)."""
+    exponent = D(sqrt_s).adjusted() - PRINTED_DIGITS + 1
+    quantum = Decimal(1).scaleb(exponent)
+    return [[x.quantize(quantum, rounding=ROUND_HALF_EVEN) for x in leg] for leg in point]
+
+
 def text(x):
     t = format(x.normalize(), "f")
     if "." in t:
@@ -222,7 +278,7 @@ def text(x):
 
 
 def passes_cuts(point, masses, cut, resonances, pdgs, incoming=2):
-    s = dot([a + b for a, b in zip(point[0], point[1])], [a + b for a, b in zip(point[0], point[1])])
+    s = dot([a + b for a, b in zip(point[0], point[1], strict=False)], [a + b for a, b in zip(point[0], point[1], strict=False)])
     for (i, p), (j, q) in itertools.combinations(enumerate(point), 2):
         if not masses[i] and not masses[j] and 2 * abs(dot(p, q)) < D(cut) * s:
             return False
@@ -230,7 +286,7 @@ def passes_cuts(point, masses, cut, resonances, pdgs, incoming=2):
     for (i, p), (j, q) in itertools.combinations(enumerate(final), 2):
         if pdgs is not None and pdgs[incoming + i] != -pdgs[incoming + j]:
             continue
-        pair = [x + y for x, y in zip(p, q)]
+        pair = [x + y for x, y in zip(p, q, strict=False)]
         pair_s = dot(pair, pair)
         if any(abs(pair_s - D(r) ** 2) < D(r) ** 2 / 10 for r in resonances):
             return False
@@ -287,8 +343,8 @@ def generate(masses, family="regular", count=3, values=(), cut=F(1, 1000), reson
         for index, (cosine, label) in enumerate(cosines):
             sqrt_s = sqrt_s_list[min(index, len(sqrt_s_list) - 1)]
             n = direction(cosine, _PYTHAGOREAN[index % len(_PYTHAGOREAN)])
-            other = [-x for x in n]
-            first, second = (n, other) if photon == 0 else (other, n)
+            # two_body puts final[0] along its direction: the massless particle along n.
+            first = n if photon == 0 else [-x for x in n]
             pair = two_body(sqrt_s, final[0], final[1], first)
             finish(list(pair), sqrt_s, f"{label} cos(beam1, massless)={cosine}")
         return points, scales, labels
@@ -312,7 +368,7 @@ def generate(masses, family="regular", count=3, values=(), cut=F(1, 1000), reson
                     m_rest = (D(sqrt_s) ** 2 - 2 * D(sqrt_s) * energy).sqrt()
                     momenta = sequential(sqrt_s, reordered, chooser, [m_rest] + [None] * (len(final) - 2))
                     final_momenta = [None] * len(final)
-                    for slot, p in zip(order, momenta):
+                    for slot, p in zip(order, momenta, strict=False):
                         final_momenta[slot] = p
                 elif family == "collinear":
                     if final[-1] or final[-2]:
@@ -334,7 +390,7 @@ def generate(masses, family="regular", count=3, values=(), cut=F(1, 1000), reson
 
 def measure(point, masses, incoming=2):
     """Largest |p^2 - m^2| / E^2 and largest momentum-conservation defect / E."""
-    shell = max(abs(dot(p, p) - D(m) ** 2) / p[0] ** 2 for p, m in zip(point, masses))
+    shell = max(abs(dot(p, p) - D(m) ** 2) / p[0] ** 2 for p, m in zip(point, masses, strict=False))
     scale = max(p[0] for p in point)
     conservation = max(abs(sum(p[mu] for p in point[:incoming]) - sum(p[mu] for p in point[incoming:]))
                        for mu in range(4)) / scale
@@ -356,6 +412,9 @@ def main():
     parser.add_argument("--mu-r", nargs="+", default=["1000", "700", "1400"])
     parser.add_argument("--cut", default="1/1000", help="minimal 2|p_i.p_j|/s of massless pairs (regular family)")
     parser.add_argument("--half-scale-point", action="store_true")
+    parser.add_argument("--madloop-qp-point", action="store_true",
+                        help="publish the point MadLoop evaluates in quadruple precision (madloop_qp_point); "
+                        "use with a MadLoop accuracy target that forces its quadruple-precision evaluation")
     args = parser.parse_args()
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import required_spec
@@ -372,7 +431,9 @@ def main():
         points, scales, labels = generate(
             masses, args.family, args.count, [F(v) for v in args.values], F(args.cut),
             [F(r) for r in resonances], spec["pdgs"], args.rotate, F(args.zero_cosine), F(args.neighbour_cosine))
-        printed = [quantise(p, s) for p, s in zip(points, scales)]
+        printed = [quantise(p, s) for p, s in zip(points, scales, strict=False)]
+        if args.madloop_qp_point:
+            printed = [print_digits(madloop_qp_point(p, masses), s) for p, s in zip(printed, scales, strict=False)]
         defects = [measure(p, masses) for p in printed]
     if args.half_scale_point:
         printed.append(printed[0])
@@ -393,6 +454,10 @@ def main():
         "family": args.family,
         "family_values": args.values,
         "rotation": "about x by cos=3/5, sin=4/5 (beams off the z axis)" if args.rotate == "x" else None,
+        "madloop_qp_point": (
+            "each point is MadLoop's quadruple-precision point of its binary64 rounding (ImprovePSPoint=2, "
+            "ORIG method of improve_ps.f, replicated at the construction precision)" if args.madloop_qp_point
+            else None),
         "point_labels": labels,
         "cuts": {"min_2pipj_over_s": args.cut, "resonance_exclusion":
                  "|s_ij-M^2| >= M^2/10 for final particle-antiparticle pairs (regular family)",

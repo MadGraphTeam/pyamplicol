@@ -633,6 +633,8 @@ def command_run(args):
     reference_root = provider_paths.reference_root(args.reference_root)
     check_provider_paths(args, reference_root)
     spec = required_spec.load_process(args.spec, args.process, roots)
+    if args.pdgs:
+        spec["pdgs"] = [int(x) for x in args.pdgs.split(",")]  # one subprocess of a multiparticle export
     points = json.loads(args.points.read_text())
     if points["pdgs"] != spec["pdgs"]:
         raise SystemExit("points JSON belongs to another process")
@@ -788,6 +790,8 @@ def relative(a, b, floor=0.0):
 
 def command_merge(args):
     spec = required_spec.load_process(args.spec, args.process)
+    if args.pdgs:
+        spec["pdgs"] = [int(x) for x in args.pdgs.split(",")]
     points = json.loads(args.points.read_text())
     check_point_masses(spec, points)
     work = args.work_dir.resolve()
@@ -817,12 +821,24 @@ def command_merge(args):
     names = list(results)
     for index in range(len(points["points"])):
         row = {key: results[primary]["rows"][index][key] for key in COEFFICIENTS}
+        if "madloop" in results:
+            madloop_row = results["madloop"]["rows"][index]
+            row["madloop_accuracy"] = madloop_row.get("accuracy")
+            row["madloop_status"] = madloop_row.get("status")
+            if "sectors" in madloop_row:
+                row["sectors"] = madloop_row["sectors"]
+            if pole_factor:
+                # MadLoop's Born (ANS(0)) is evaluated in double precision at the
+                # binary64 input point, its quadruple-precision loop at the improved
+                # point: there the Born is the double pole over the universal factor.
+                row["born_from_madloop_double_pole"] = madloop_row["double_pole"] / pole_factor
         row["providers"] = {}
         row["provider_pair_relative_errors"] = {}
         row["provider_pair_strict_relative_errors"] = {}
         for provider, result in results.items():
             values = result["rows"][index]
-            row["providers"][provider] = {k: v for k, v in values.items() if k != "total_all_orders"}
+            row["providers"][provider] = {k: v for k, v in values.items()
+                                          if k not in ("total_all_orders", "sectors")}
             unit = abs(values["born"]) * coupling / (2 * math.pi)
             pole_error = relative(values["double_pole"], pole_factor * values["born"], unit)
             row["providers"][provider]["universal_double_pole_relative_error"] = pole_error
@@ -855,12 +871,33 @@ def command_merge(args):
     # Without the provider's own reference run (still running) the secondary run
     # is reported separately and compared with the merged reference values.
     timing_only = {}
+    per_helicity = None
     for path in sorted(work.glob("*-*-result.json")):
         label = path.name[: -len("-result.json")]
         provider, _, tag = label.partition("-")
         if provider not in ("madloop", "recola", "openloops"):
             continue
         secondary = json.loads(path.read_text())
+        if "helicities" in secondary:
+            # Per-helicity reference values (MadLoop SLOOPMATRIXHEL_THRES), not timings.
+            if per_helicity is not None:
+                raise SystemExit(f"two per-helicity runs in {work}")
+            per_helicity = {
+                "provider": provider, "run": label,
+                "normalization": secondary.get("per_helicity_normalization"),
+                "helicities": secondary["helicities"],
+                "settings": {k: secondary["settings"][k] for k in
+                             ("requested_relative_accuracy", "stability_check", "helicities")
+                             if k in secondary.get("settings", {})},
+                "rows": [[{"helicity": entry["helicity"], "madloop_index": entry["madloop_index"],
+                           "status": entry["status"], **{k: entry["sectors"]["total"][k] for k in COEFFICIENTS
+                                                          if k in entry["sectors"]["total"]},
+                           "accuracy": entry["sectors"]["total"]["accuracy"],
+                           **({"sectors": entry["sectors"]} if len(entry["sectors"]["loop"]) > 1
+                              or len(entry["sectors"]["born"]) > 1 else {})}
+                          for entry in hel_row["per_helicity"]] for hel_row in secondary["rows"]],
+            }
+            continue
         own = provider in results
         against = results[provider]["rows"] if own else rows
         deviation = []
@@ -893,6 +930,12 @@ def command_merge(args):
         "loop_orders": spec["loop_orders"],
         "scheme": spec["scheme"],
         "scheme_description": scheme["description"],
+        "restriction": scheme.get("restriction"),
+        "madloop_model": Path(spec["madloop"]["model"]).name if "madloop" in spec else None,
+        "gauge": spec.get("madloop", {}).get("gauge", "Feynman"),
+        "parameter_overrides": scheme.get("parameter_overrides", {}),
+        "born_orders_all": spec["born_orders_all"],
+        "squared_split_orders": results.get("madloop", {}).get("squared_split_orders"),
         "source": "independent references: " + "; ".join(
             results[p].get("version", p) for p in results),
         "scope": "Independent provider references at exact on-shell decimal points; "
@@ -905,13 +948,16 @@ def command_merge(args):
         "normalization_denominator": normalization["denominator"],
         "points": points["points"],
         "mu_r": points["mu_r"],
-        "point_construction": {k: points[k] for k in ("construction", "cuts", "sqrt_s") if k in points},
+        "point_construction": {k: points[k] for k in ("construction", "cuts", "sqrt_s", "family", "family_values",
+                                                     "rotation", "point_labels", "precision", "scale_variation")
+                               if k in points},
         "parameters": scheme["parameters"],
         "fixed_parameters": scheme["fixed_parameters"],
         "derived_parameters": derived,
         "active_flavours": scheme["active_flavours"],
         "loop_quark_flavours": scheme["loop_quark_flavours"],
         "rows": rows,
+        "per_helicity": per_helicity,
         "primary_provider": primary,
         "universal_double_pole_factor": pole_factor,
         "maximum_provider_relative_error": max_error,
@@ -1054,6 +1100,7 @@ def main():
         p.add_argument("--process", required=True)
         p.add_argument("--points", type=Path, required=True)
         p.add_argument("--work-dir", type=Path, required=True)
+        p.add_argument("--pdgs", help="comma-separated PDGs of one subprocess of a multiparticle export")
     run = sub.choices["run"]
     run.add_argument("--provider", choices=("madloop", "recola", "openloops"), required=True)
     run.add_argument("--mg5", type=Path, help="MG5_aMC tree (MadLoop card handling, version)")
