@@ -865,7 +865,13 @@ arbitrary precision:
 * `tests/fixtures/loop/legacy/<name>.families.json.gz` (O2): per denominator
   family (shifts as external-momentum combinations, squared masses, monomial
   powers) the Born-weighted numerator coefficients the legacy engine reduces,
-  at the first point.
+  at the first point;
+* `tests/fixtures/loop/legacy/<name>.<accuracy>.json` (projection only,
+  `--projection lc|nlc`, `PROJECTION_CONTROLS`): one colour projection of a
+  control whose full capture is out of reach, at its first point, with its
+  colour degrees. uu~->uu~uu~ (three identical-flavour lines) takes about
+  75 min and 22.5 GB per accuracy on one thread (program 3987 s, 200-bit
+  evaluation 543 s; 2026-10-27).
 
 It uses the generic source compiler on MG5_aMC `loop_sm` with `MB=0` (the
 providers' `loop_sm-no_b_mass` scheme), the points of the committed provider
