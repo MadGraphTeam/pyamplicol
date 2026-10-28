@@ -1932,6 +1932,13 @@ def rule_hel(
         mine = [born * average, *(x * average for x in laurent)]
         theirs = [entry[k] for k in COEFFICIENTS]
         record = entry.get("reference") or {}
+        if record.get("status") == "none":
+            # No MadLoop reference for this configuration (MQ-REF's reason).
+            checks.append(Check(
+                "hel", index, "double-double", text, "no reference", "", "", 0.0,
+                0.0, True, asserted=False,
+                note=f"MQ-REF: {record.get('reason')}"))  # fmt: skip
+            continue
         recorded = record.get("comparison") == "absolute"
         ratio = float(abs(born) / total) if total else 0.0
         if (
