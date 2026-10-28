@@ -1,14 +1,14 @@
 {
  "source": "tests/fixtures/loop/mqcd/manifest.json + campaign records (tests/unit/test_loop_v2_mqcd_*.py, PYAMPLICOL_MQCD_RESULTS)",
  "rules": "m-qcd/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
- "campaign_head": "d09d8861 (H01 at fd3e7bc8 with the CKM relation; A24 at 808fa672+ in s2)",
- "native": "loop-native-v2-slice-5301e24a (digest 9b427122)",
- "references": "work/v2-mq-ref e4ca1aed (MQ-REF batch 2, not yet audited)",
+ "campaign_head": "a765a9cc (slice d3081568 + MQ-REF 8c27352e; B03 and A09@collinear rerun at e7029190 with the Ward out-of-scope listing and double-double rules at binary64-only failures)",
+ "native": "loop-native-v2-slice-d3081568 (digest 58a7bab6)",
+ "references": "work/v2-mq-ref 8c27352e (MQ-REF fix round, not yet re-audited)",
  "date": "2026-10-28",
  "timings": "indicative (shared host under load)",
  "counts": {
-  "pass": 58,
-  "fail": 13,
+  "pass": 59,
+  "fail": 12,
   "pending": 5,
   "not-run": 0
  },
@@ -35,9 +35,8 @@
    "fail": 5
   },
   "Q-mixed": {
-   "pass": 1,
-   "rows": 2,
-   "fail": 1
+   "pass": 2,
+   "rows": 2
   },
   "Q-multi": {
    "pending": 1,
@@ -134,12 +133,14 @@
       "single_pole": 2.2696535036110253e-15,
       "double_pole": 1.6389289155127363e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.12,
-      "export_s": 0.41,
-      "double_double_s_per_point": 7.245,
-      "double_s_per_point": 0.81
+      "generate_s": 6.98,
+      "export_s": 0.42,
+      "double_double_s_per_point": 7.29,
+      "double_s_per_point": 0.795
      },
      "failed_checks": []
     },
@@ -161,13 +162,15 @@
       "single_pole": 1.4533585034875747e-15,
       "double_pole": 1.1621808528625777e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.84,
-      "export_s": 0.41,
-      "double_double_s_per_point": 8.31,
-      "double_s_per_point": 0.81,
-      "ap_s": 11.34
+      "generate_s": 6.97,
+      "export_s": 0.42,
+      "double_double_s_per_point": 8.3,
+      "double_s_per_point": 0.82,
+      "ap_s": 10.88
      },
      "failed_checks": []
     }
@@ -175,7 +178,8 @@
    "variants": [],
    "max_dd_vs_reference": 2.5470563167522057e-14,
    "max_binary64_vs_dd": 1.0183005403845772e-14,
-   "max_catani_dd": 7.681932991123352e-32
+   "max_catani_dd": 7.681932991123352e-32,
+   "max_ward_dd": null
   },
   {
    "id": "A02",
@@ -220,11 +224,13 @@
       "single_pole": 1.839674027476566e-15,
       "double_pole": 5.84044961159017e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.73,
-      "export_s": 0.53,
-      "double_double_s_per_point": 5.01,
+      "generate_s": 4.57,
+      "export_s": 0.51,
+      "double_double_s_per_point": 5.026666666666666,
       "double_s_per_point": 0.11666666666666665
      },
      "failed_checks": []
@@ -233,7 +239,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.2364776946639469e-14,
    "max_binary64_vs_dd": 1.915136659524854e-14,
-   "max_catani_dd": 1.2346521332088904e-31
+   "max_catani_dd": 1.2346521332088904e-31,
+   "max_ward_dd": null
   },
   {
    "id": "A03",
@@ -279,12 +286,14 @@
       "single_pole": 2.5545396013199768e-14,
       "double_pole": 7.69685364524517e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.71,
-      "export_s": 0.45,
-      "double_double_s_per_point": 4.895,
-      "double_s_per_point": 0.0925
+      "generate_s": 4.66,
+      "export_s": 0.43,
+      "double_double_s_per_point": 4.97,
+      "double_s_per_point": 0.1
      },
      "failed_checks": []
     }
@@ -292,7 +301,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.242252515928731e-13,
    "max_binary64_vs_dd": 6.526061426125881e-14,
-   "max_catani_dd": 1.5412726804395223e-31
+   "max_catani_dd": 1.5412726804395223e-31,
+   "max_ward_dd": null
   },
   {
    "id": "A04",
@@ -336,11 +346,13 @@
       "single_pole": 3.3012558704075175e-15,
       "double_pole": 1.029389404753501e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.92,
-      "export_s": 0.56,
-      "double_double_s_per_point": 5.195,
+      "generate_s": 4.71,
+      "export_s": 0.54,
+      "double_double_s_per_point": 5.235,
       "double_s_per_point": 0.12
      },
      "failed_checks": []
@@ -364,12 +376,14 @@
       "single_pole": 1.1448146374937628e-15,
       "double_pole": 1.029389404753501e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.9,
+      "generate_s": 4.67,
       "export_s": 0.43,
-      "double_double_s_per_point": 5.215,
-      "double_s_per_point": 0.125
+      "double_double_s_per_point": 5.24,
+      "double_s_per_point": 0.12
      },
      "failed_checks": []
     }
@@ -377,7 +391,8 @@
    "variants": [],
    "max_dd_vs_reference": 4.249617959014142e-15,
    "max_binary64_vs_dd": 6.253480077035373e-15,
-   "max_catani_dd": 1.2746548408563948e-30
+   "max_catani_dd": 1.2746548408563948e-30,
+   "max_ward_dd": null
   },
   {
    "id": "A05",
@@ -425,13 +440,15 @@
       "single_pole": 9.080261957825468e-15,
       "double_pole": 1.8255719430777474e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.63,
-      "export_s": 0.41,
-      "double_double_s_per_point": 4.9175,
-      "double_s_per_point": 0.045,
-      "uv_s": 5.13
+      "generate_s": 6.79,
+      "export_s": 0.42,
+      "double_double_s_per_point": 4.845,
+      "double_s_per_point": 0.0425,
+      "uv_s": 5.06
      },
      "failed_checks": []
     }
@@ -439,7 +456,8 @@
    "variants": [],
    "max_dd_vs_reference": 2.1209173199258385e-14,
    "max_binary64_vs_dd": 6.7751919668877505e-15,
-   "max_catani_dd": 1.8525927267978423e-31
+   "max_catani_dd": 1.8525927267978423e-31,
+   "max_ward_dd": null
   },
   {
    "id": "A06",
@@ -486,12 +504,14 @@
       "single_pole": 1.7564716587393437e-12,
       "double_pole": 1.8187305012898986e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.57,
+      "generate_s": 4.39,
       "export_s": 0.35,
-      "double_double_s_per_point": 4.81,
-      "double_s_per_point": 0.06
+      "double_double_s_per_point": 4.76,
+      "double_s_per_point": 0.05666666666666667
      },
      "failed_checks": [
       {
@@ -510,7 +530,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.1755314366247516e-12,
    "max_binary64_vs_dd": 5.809402221152747e-13,
-   "max_catani_dd": 1.0860813315471988e-28
+   "max_catani_dd": 1.0860813315471988e-28,
+   "max_ward_dd": null
   },
   {
    "id": "A07",
@@ -556,12 +577,14 @@
       "single_pole": 1.316591866681586e-13,
       "double_pole": 1.4653027169510205e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.33,
-      "export_s": 0.6,
-      "double_double_s_per_point": 4.6375,
-      "double_s_per_point": 0.06
+      "generate_s": 4.24,
+      "export_s": 0.51,
+      "double_double_s_per_point": 4.7025,
+      "double_s_per_point": 0.0575
      },
      "failed_checks": []
     }
@@ -569,7 +592,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.0308690384825397e-13,
    "max_binary64_vs_dd": 2.857228281990757e-14,
-   "max_catani_dd": 1.6350805068539643e-30
+   "max_catani_dd": 1.6350805068539643e-30,
+   "max_ward_dd": null
   },
   {
    "id": "A08",
@@ -592,8 +616,7 @@
     "hel"
    ],
    "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)",
-    "ward": "MQ-WARD (generic native Ward input)"
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
    },
    "waits_for": null,
    "pending_reason": null,
@@ -609,7 +632,7 @@
       3
      ],
      "passed": false,
-     "checks": 209,
+     "checks": 249,
      "failures": 6,
      "max_dd_vs_reference": 3.412633027615142e-14,
      "max_binary64_vs_dd": 4.952839113483384e-13,
@@ -622,13 +645,22 @@
       "single_pole": 2.556780753831031e-13,
       "double_pole": 4.451317562755011e-13
      },
+     "ward": {
+      "checks": 40,
+      "virtual_double": 0.10063189100888019,
+      "born_double": 3.8295802558494867e-16,
+      "virtual_double-double": 3.2608642830988496e-30,
+      "born_double-double": 2.1293016669738232e-32
+     },
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.85,
-      "export_s": 0.96,
-      "double_double_s_per_point": 59.005,
-      "double_s_per_point": 29.245,
-      "hel_s": 81.33
+      "generate_s": 7.86,
+      "export_s": 0.99,
+      "double_double_s_per_point": 59.245,
+      "double_s_per_point": 30.095,
+      "hel_s": 80.68,
+      "ward_s": 35.58
      },
      "failed_checks": [
       {
@@ -697,7 +729,8 @@
    "variants": [],
    "max_dd_vs_reference": 3.412633027615142e-14,
    "max_binary64_vs_dd": 4.952839113483384e-13,
-   "max_catani_dd": 6.590875279760875e-30
+   "max_catani_dd": 6.590875279760875e-30,
+   "max_ward_dd": 3.2608642830988496e-30
   },
   {
    "id": "A09",
@@ -746,12 +779,14 @@
       "single_pole": 1.4277660940430403e-13,
       "double_pole": 8.610053253166375e-14
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.42,
-      "export_s": 0.7,
-      "double_double_s_per_point": 10.97,
-      "double_s_per_point": 2.96
+      "generate_s": 5.29,
+      "export_s": 0.68,
+      "double_double_s_per_point": 10.905,
+      "double_s_per_point": 3.015
      },
      "failed_checks": []
     },
@@ -774,12 +809,14 @@
       "single_pole": 6.428885716686874e-14,
       "double_pole": 9.553205868399377e-14
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.15,
-      "export_s": 0.61,
-      "double_double_s_per_point": 11.455,
-      "double_s_per_point": 3.0
+      "generate_s": 7.32,
+      "export_s": 0.6,
+      "double_double_s_per_point": 11.275,
+      "double_s_per_point": 2.965
      },
      "failed_checks": []
     }
@@ -798,75 +835,66 @@
        "openloops"
       ]
      },
-     "status": "fail",
+     "status": "pass",
      "tiers": {
       "nightly": {
        "points": [
         0,
         1
        ],
-       "passed": false,
+       "passed": true,
        "checks": 40,
-       "failures": 1,
-       "max_dd_vs_reference": 2.7320433108463816e-11,
-       "max_binary64_vs_dd": 4.28373629218134e-11,
-       "max_catani_dd": 9.657967072446035e-23,
+       "failures": 0,
+       "max_dd_vs_reference": 2.5146786165557695e-13,
+       "max_binary64_vs_dd": 4.283736292181344e-11,
+       "max_catani_dd": 2.9783679097328735e-23,
        "max_catani_binary64": 4.273367064568608e-11,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 1.5670571830708317e-11,
-        "finite": 6.263229770471862e-07,
-        "single_pole": 7.058732134347603e-07,
-        "double_pole": 2.3120931145430247e-07
+        "born": 1.1398516018057906e-11,
+        "finite": 6.311367549400764e-07,
+        "single_pole": 7.23180182166673e-07,
+        "double_pole": 2.3121056484160844e-07
        },
+       "ward": null,
+       "no_reference": [],
        "binary64_out_of_scope": [
         {
          "point": 1,
          "sector": "QCD^6",
          "coefficient": "born",
          "E": 1e-12,
-         "true_error": 1.1649861277938058e-11
+         "true_error": 1.1649861277939056e-11
         },
         {
          "point": 1,
          "sector": "QCD^8",
          "coefficient": "finite",
-         "E": 9.347766634915841e-07,
-         "true_error": 6.263229089271917e-07
+         "E": 9.245130921392626e-07,
+         "true_error": 6.311366868200821e-07
         },
         {
          "point": 1,
          "sector": "QCD^8",
          "coefficient": "single_pole",
-         "E": 1.467011031562138e-06,
-         "true_error": 7.058731899486972e-07
+         "E": 1.393254093825812e-06,
+         "true_error": 7.231801586806102e-07
         },
         {
          "point": 1,
          "sector": "QCD^8",
          "coefficient": "double_pole",
-         "E": 5.222691054940066e-07,
-         "true_error": 2.3120905998649898e-07
+         "E": 4.618431450187734e-07,
+         "true_error": 2.3121031337380494e-07
         }
        ],
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 8.76,
-        "double_s_per_point": 2.955
+        "double_double_s_per_point": 8.775,
+        "double_s_per_point": 2.965
        },
-       "failed_checks": [
-        {
-         "rule": "1",
-         "point": 1,
-         "carrier": "double-double",
-         "sector": "QCD^6",
-         "coefficient": "born",
-         "error": 2.7320433108463816e-11,
-         "bound": 1e-12,
-         "note": "against madloop; not a listed outlier (own accuracy None; status 328; its double pole off its Born x the universal factor by 2.71e-11; second providers recola 3.65e-15, openloops 1.23e-15)"
-        }
-       ]
+       "failed_checks": []
       }
      }
     },
@@ -892,19 +920,21 @@
         2
        ],
        "passed": false,
-       "checks": 5,
+       "checks": 14,
        "failures": 5,
-       "max_dd_vs_reference": null,
+       "max_dd_vs_reference": 7.776971333329394e-13,
        "max_binary64_vs_dd": null,
-       "max_catani_dd": null,
+       "max_catani_dd": 1.2818496696135695e-22,
        "max_catani_binary64": null,
        "catani_not_formed": false,
        "binary64_vs_reference": {},
+       "ward": null,
+       "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.783333333333334,
+        "double_double_s_per_point": 10.596666666666666,
         "double_s_per_point": 0.29333333333333333
        },
        "failed_checks": [
@@ -963,9 +993,10 @@
      }
     }
    ],
-   "max_dd_vs_reference": 2.7320433108463816e-11,
-   "max_binary64_vs_dd": 4.28373629218134e-11,
-   "max_catani_dd": 9.657967072446035e-23
+   "max_dd_vs_reference": 7.776971333329394e-13,
+   "max_binary64_vs_dd": 4.283736292181344e-11,
+   "max_catani_dd": 1.2818496696135695e-22,
+   "max_ward_dd": null
   },
   {
    "id": "A12",
@@ -1015,12 +1046,14 @@
       "single_pole": 4.415859736664995e-14,
       "double_pole": 2.8334341118556718e-14
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.56,
-      "export_s": 0.67,
-      "double_double_s_per_point": 5.95,
-      "double_s_per_point": 0.3
+      "generate_s": 4.52,
+      "export_s": 0.64,
+      "double_double_s_per_point": 5.98,
+      "double_s_per_point": 0.295
      },
      "failed_checks": []
     },
@@ -1042,12 +1075,14 @@
       "single_pole": 2.602511974312096e-15,
       "double_pole": 1.1278094952483502e-14
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.27,
-      "export_s": 0.44,
-      "double_double_s_per_point": 6.93,
-      "double_s_per_point": 0.31
+      "generate_s": 5.25,
+      "export_s": 0.45,
+      "double_double_s_per_point": 6.97,
+      "double_s_per_point": 0.3
      },
      "failed_checks": []
     }
@@ -1055,7 +1090,8 @@
    "variants": [],
    "max_dd_vs_reference": 3.188696087336251e-13,
    "max_binary64_vs_dd": 4.526292386904746e-13,
-   "max_catani_dd": 7.749607812732073e-30
+   "max_catani_dd": 7.749607812732073e-30,
+   "max_ward_dd": null
   },
   {
    "id": "A13",
@@ -1107,13 +1143,15 @@
       "single_pole": 2.831501658176503e-14,
       "double_pole": 1.3719299110112429e-13
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.19,
-      "export_s": 0.75,
-      "double_double_s_per_point": 6.06,
-      "double_s_per_point": 0.44,
-      "ap_s": 15.38
+      "generate_s": 5.11,
+      "export_s": 0.7,
+      "double_double_s_per_point": 6.05,
+      "double_s_per_point": 0.43,
+      "ap_s": 14.9
      },
      "failed_checks": []
     }
@@ -1121,7 +1159,8 @@
    "variants": [],
    "max_dd_vs_reference": 2.428313238266438e-13,
    "max_binary64_vs_dd": 7.934137437454622e-13,
-   "max_catani_dd": 4.868145291053958e-30
+   "max_catani_dd": 4.868145291053958e-30,
+   "max_ward_dd": null
   },
   {
    "id": "A14",
@@ -1143,9 +1182,7 @@
    "extras": [
     "ward"
    ],
-   "extras_pending": {
-    "ward": "MQ-WARD (generic native Ward input)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "listed_outliers": [],
@@ -1174,7 +1211,7 @@
       2
      ],
      "passed": true,
-     "checks": 36,
+     "checks": 44,
      "failures": 0,
      "max_dd_vs_reference": 3.253088473748923e-14,
      "max_binary64_vs_dd": 4.761324524734598e-11,
@@ -1187,6 +1224,14 @@
       "single_pole": 1.5872679081317923e-07,
       "double_pole": 2.8362314793021e-12
      },
+     "ward": {
+      "checks": 8,
+      "virtual_double": 0.2599516234117782,
+      "born_double": 1.5085095457626056e-16,
+      "virtual_double-double": 5.080510011066763e-28,
+      "born_double-double": 7.977120007659555e-33
+     },
+     "no_reference": [],
      "binary64_out_of_scope": [
       {
        "point": 1,
@@ -1204,10 +1249,11 @@
       }
      ],
      "timings": {
-      "generate_s": 19.96,
-      "export_s": 14.01,
-      "double_double_s_per_point": 46.67666666666667,
-      "double_s_per_point": 1.2933333333333332
+      "generate_s": 19.22,
+      "export_s": 12.52,
+      "double_double_s_per_point": 46.64333333333334,
+      "double_s_per_point": 1.1833333333333333,
+      "ward_s": 82.3
      },
      "failed_checks": []
     }
@@ -1215,7 +1261,8 @@
    "variants": [],
    "max_dd_vs_reference": 3.253088473748923e-14,
    "max_binary64_vs_dd": 4.761324524734598e-11,
-   "max_catani_dd": null
+   "max_catani_dd": null,
+   "max_ward_dd": 5.080510011066763e-28
   },
   {
    "id": "A15",
@@ -1265,12 +1312,14 @@
       "single_pole": 4.766918966924446e-13,
       "double_pole": 4.2410593282452686e-13
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.08,
-      "export_s": 4.47,
-      "double_double_s_per_point": 12.075,
-      "double_s_per_point": 0.2325
+      "generate_s": 7.89,
+      "export_s": 3.88,
+      "double_double_s_per_point": 11.965,
+      "double_s_per_point": 0.2175
      },
      "failed_checks": []
     }
@@ -1278,7 +1327,8 @@
    "variants": [],
    "max_dd_vs_reference": 3.398492268954229e-14,
    "max_binary64_vs_dd": 4.5969422145373936e-12,
-   "max_catani_dd": null
+   "max_catani_dd": null,
+   "max_ward_dd": null
   },
   {
    "id": "A18",
@@ -1399,6 +1449,8 @@
       "single_pole": 2.232926545436604e-09,
       "double_pole": 5.478725615230299e-10
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [
       {
        "point": 0,
@@ -1472,10 +1524,10 @@
       }
      ],
      "timings": {
-      "generate_s": 8.51,
-      "export_s": 0.92,
-      "double_double_s_per_point": 23.7075,
-      "double_s_per_point": 9.18
+      "generate_s": 9.41,
+      "export_s": 0.87,
+      "double_double_s_per_point": 23.1225,
+      "double_s_per_point": 8.8625
      },
      "failed_checks": [
       {
@@ -1486,7 +1538,7 @@
        "coefficient": "finite",
        "error": 3.4547909912259747e-12,
        "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 3.54e-13; second providers none)"
+       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 3.54e-13; Born from madloop; Born / double-pole mismatch 3.54e-13; second providers none)"
       },
       {
        "rule": "1",
@@ -1496,7 +1548,7 @@
        "coefficient": "finite",
        "error": 6.371165470214663e-12,
        "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 1.06e-12; second providers none)"
+       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 1.06e-12; Born from madloop; Born / double-pole mismatch 1.06e-12; second providers none)"
       },
       {
        "rule": "1",
@@ -1506,7 +1558,7 @@
        "coefficient": "double_pole",
        "error": 1.0598863421342539e-12,
        "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 1.06e-12; second providers none)"
+       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 1.06e-12; Born from madloop; Born / double-pole mismatch 1.06e-12; second providers none)"
       },
       {
        "rule": "1",
@@ -1516,7 +1568,7 @@
        "coefficient": "finite",
        "error": 1.174435480475222e-11,
        "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 3.54e-13; second providers none)"
+       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 3.54e-13; Born from madloop; Born / double-pole mismatch 3.54e-13; second providers none)"
       }
      ]
     }
@@ -1524,7 +1576,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.174435480475222e-11,
    "max_binary64_vs_dd": 6.451170928864202e-11,
-   "max_catani_dd": 8.99415148744334e-28
+   "max_catani_dd": 8.99415148744334e-28,
+   "max_ward_dd": null
   },
   {
    "id": "A19",
@@ -1571,11 +1624,13 @@
       "single_pole": 7.8490148174978e-14,
       "double_pole": 9.902395789279693e-14
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.77,
-      "export_s": 0.95,
-      "double_double_s_per_point": 6.913333333333333,
+      "generate_s": 4.86,
+      "export_s": 0.9,
+      "double_double_s_per_point": 6.98,
       "double_s_per_point": 0.89
      },
      "failed_checks": []
@@ -1584,7 +1639,8 @@
    "variants": [],
    "max_dd_vs_reference": 8.421786185981588e-16,
    "max_binary64_vs_dd": 2.0205170450940162e-13,
-   "max_catani_dd": 8.072142667019906e-30
+   "max_catani_dd": 8.072142667019906e-30,
+   "max_ward_dd": null
   },
   {
    "id": "A20",
@@ -1631,12 +1687,14 @@
       "single_pole": 5.0065925168124406e-14,
       "double_pole": 3.7086115617530924e-13
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.36,
-      "export_s": 0.55,
-      "double_double_s_per_point": 8.063333333333334,
-      "double_s_per_point": 1.3233333333333335
+      "generate_s": 5.44,
+      "export_s": 0.57,
+      "double_double_s_per_point": 8.143333333333333,
+      "double_s_per_point": 1.3066666666666666
      },
      "failed_checks": []
     }
@@ -1644,7 +1702,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.949461182262198e-14,
    "max_binary64_vs_dd": 2.3715351553385173e-12,
-   "max_catani_dd": 2.4797701243720132e-30
+   "max_catani_dd": 2.4797701243720132e-30,
+   "max_ward_dd": null
   },
   {
    "id": "A21",
@@ -1695,12 +1754,14 @@
       "single_pole": 8.551278316298588e-13,
       "double_pole": 1.2283665971702266e-12
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.05,
-      "export_s": 1.34,
-      "double_double_s_per_point": 11.723333333333334,
-      "double_s_per_point": 2.2533333333333334
+      "generate_s": 5.98,
+      "export_s": 1.21,
+      "double_double_s_per_point": 11.506666666666668,
+      "double_s_per_point": 2.3000000000000003
      },
      "failed_checks": []
     }
@@ -1708,7 +1769,8 @@
    "variants": [],
    "max_dd_vs_reference": 3.713664947353161e-14,
    "max_binary64_vs_dd": 1.1602984004553682e-11,
-   "max_catani_dd": 2.309893933088999e-29
+   "max_catani_dd": 2.309893933088999e-29,
+   "max_ward_dd": null
   },
   {
    "id": "A22",
@@ -1754,12 +1816,14 @@
       "single_pole": 6.095582406316657e-13,
       "double_pole": 9.273292355184516e-14
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.67,
-      "export_s": 3.19,
-      "double_double_s_per_point": 38.300000000000004,
-      "double_s_per_point": 17.896666666666665
+      "generate_s": 10.63,
+      "export_s": 1.14,
+      "double_double_s_per_point": 37.166666666666664,
+      "double_s_per_point": 17.62333333333333
      },
      "failed_checks": []
     }
@@ -1767,7 +1831,8 @@
    "variants": [],
    "max_dd_vs_reference": 7.016093758387826e-13,
    "max_binary64_vs_dd": 4.809071776726813e-13,
-   "max_catani_dd": 1.3428570589460023e-28
+   "max_catani_dd": 1.3428570589460023e-28,
+   "max_ward_dd": null
   },
   {
    "id": "A23",
@@ -1813,12 +1878,14 @@
       "single_pole": 2.488671405130036e-12,
       "double_pole": 7.392556484464014e-13
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 43.25,
-      "export_s": 87.81,
-      "double_double_s_per_point": 189.85,
-      "double_s_per_point": 5.223333333333334
+      "generate_s": 43.66,
+      "export_s": 81.43,
+      "double_double_s_per_point": 188.03333333333333,
+      "double_s_per_point": 4.943333333333333
      },
      "failed_checks": [
       {
@@ -1887,7 +1954,8 @@
    "variants": [],
    "max_dd_vs_reference": 3.183849219484248e-12,
    "max_binary64_vs_dd": 1.4781992059360392e-12,
-   "max_catani_dd": null
+   "max_catani_dd": null,
+   "max_ward_dd": null
   },
   {
    "id": "A24",
@@ -1964,6 +2032,8 @@
       "single_pole": 1.9950742331295843e-09,
       "double_pole": 3.205676209541739e-12
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [
       {
        "point": 0,
@@ -1995,11 +2065,11 @@
       }
      ],
      "timings": {
-      "generate_s": 164.22,
-      "export_s": 204.13,
-      "double_double_s_per_point": 328.71,
-      "double_s_per_point": 40.505,
-      "uv_s": 434.89
+      "generate_s": 168.07,
+      "export_s": 220.35,
+      "double_double_s_per_point": 268.79,
+      "double_s_per_point": 33.315,
+      "uv_s": 378.01
      },
      "failed_checks": []
     }
@@ -2007,7 +2077,8 @@
    "variants": [],
    "max_dd_vs_reference": 8.037130576067621e-17,
    "max_binary64_vs_dd": 3.205666632262079e-12,
-   "max_catani_dd": null
+   "max_catani_dd": null,
+   "max_ward_dd": null
   },
   {
    "id": "A25",
@@ -2053,11 +2124,13 @@
       "single_pole": 1.5230590792715902e-13,
       "double_pole": 2.6485387590010785e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.6,
-      "export_s": 0.35,
-      "double_double_s_per_point": 4.65,
+      "generate_s": 4.4,
+      "export_s": 0.34,
+      "double_double_s_per_point": 4.6525,
       "double_s_per_point": 0.045
      },
      "failed_checks": []
@@ -2066,7 +2139,8 @@
    "variants": [],
    "max_dd_vs_reference": 2.107629808788394e-13,
    "max_binary64_vs_dd": 5.84570729516893e-14,
-   "max_catani_dd": 9.200042438625007e-30
+   "max_catani_dd": 9.200042438625007e-30,
+   "max_ward_dd": null
   },
   {
    "id": "A26",
@@ -2112,11 +2186,13 @@
       "single_pole": 3.9604795989614505e-14,
       "double_pole": 2.284687255343944e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.64,
-      "export_s": 0.35,
-      "double_double_s_per_point": 4.6475,
+      "generate_s": 4.61,
+      "export_s": 0.34,
+      "double_double_s_per_point": 4.68,
       "double_s_per_point": 0.055
      },
      "failed_checks": []
@@ -2125,7 +2201,8 @@
    "variants": [],
    "max_dd_vs_reference": 4.3914681266334135e-14,
    "max_binary64_vs_dd": 8.35194772559469e-14,
-   "max_catani_dd": 1.5962930729969046e-30
+   "max_catani_dd": 1.5962930729969046e-30,
+   "max_ward_dd": null
   },
   {
    "id": "B01",
@@ -2176,12 +2253,14 @@
       "single_pole": 1.9682085900229116e-15,
       "double_pole": 8.829582071131196e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.79,
+      "generate_s": 4.65,
       "export_s": 0.45,
-      "double_double_s_per_point": 5.42,
-      "double_s_per_point": 0.155
+      "double_double_s_per_point": 5.525,
+      "double_s_per_point": 0.165
      },
      "failed_checks": []
     },
@@ -2203,15 +2282,17 @@
       "single_pole": 5.300200125724925e-16,
       "double_pole": 9.695597769888345e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.72,
-      "export_s": 0.45,
-      "double_double_s_per_point": 6.18,
-      "double_s_per_point": 0.17,
-      "uv_s": 4.97,
+      "generate_s": 4.7,
+      "export_s": 0.44,
+      "double_double_s_per_point": 6.15,
+      "double_s_per_point": 0.18,
+      "uv_s": 5.11,
       "hel_s": 3.75,
-      "ap_s": 9.39
+      "ap_s": 9.3
      },
      "failed_checks": []
     }
@@ -2239,58 +2320,60 @@
        "passed": true,
        "checks": 60,
        "failures": 0,
-       "max_dd_vs_reference": 7.568891787268735e-16,
+       "max_dd_vs_reference": 2.722457656880623e-16,
        "max_binary64_vs_dd": 2.7145371986686236e-12,
-       "max_catani_dd": 3.7007008840280476e-26,
+       "max_catani_dd": 3.257595600773474e-26,
        "max_catani_binary64": 2.714032186937887e-12,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 3.430449814716455e-16,
+        "born": 8.106359347873778e-16,
         "finite": 1.7437236296409648e-07,
         "single_pole": 8.701392936615515e-10,
         "double_pole": 2.9455957078876036e-10
        },
+       "ward": null,
+       "no_reference": [],
        "binary64_out_of_scope": [
         {
          "point": 1,
          "sector": "QCD^6",
          "coefficient": "finite",
          "E": 1.7334730562929495e-09,
-         "true_error": 1.213767639363748e-10
+         "true_error": 1.2137676393637522e-10
         },
         {
          "point": 1,
          "sector": "QCD^6",
          "coefficient": "single_pole",
          "E": 5.652577415725405e-09,
-         "true_error": 6.244470250165082e-12
+         "true_error": 6.244470250165083e-12
         },
         {
          "point": 2,
          "sector": "QCD^6",
          "coefficient": "finite",
          "E": 2.8939996207949896e-06,
-         "true_error": 1.7437236291871466e-07
+         "true_error": 1.7437236291871495e-07
         },
         {
          "point": 2,
          "sector": "QCD^6",
          "coefficient": "single_pole",
          "E": 4.605992327314069e-05,
-         "true_error": 8.701391132028991e-10
+         "true_error": 8.701391132028992e-10
         },
         {
          "point": 2,
          "sector": "QCD^6",
          "coefficient": "double_pole",
          "E": 7.487712084709222e-09,
-         "true_error": 2.945594133874827e-10
+         "true_error": 2.9455941338748263e-10
         }
        ],
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.836666666666667,
+        "double_double_s_per_point": 4.843333333333333,
         "double_s_per_point": 0.15666666666666665
        },
        "failed_checks": []
@@ -2331,11 +2414,13 @@
         "single_pole": 3.527188183285629e-14,
         "double_pole": 7.063665656904955e-16
        },
+       "ward": null,
+       "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.065,
+        "double_double_s_per_point": 5.085,
         "double_s_per_point": 0.1525
        },
        "failed_checks": []
@@ -2345,7 +2430,8 @@
    ],
    "max_dd_vs_reference": 2.284299600104688e-14,
    "max_binary64_vs_dd": 2.7145371986686236e-12,
-   "max_catani_dd": 3.7007008840280476e-26
+   "max_catani_dd": 3.257595600773474e-26,
+   "max_ward_dd": null
   },
   {
    "id": "B02",
@@ -2391,11 +2477,13 @@
       "single_pole": 5.702866313662612e-14,
       "double_pole": 4.921360678605484e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.42,
-      "export_s": 0.78,
-      "double_double_s_per_point": 4.756666666666667,
+      "generate_s": 4.24,
+      "export_s": 0.76,
+      "double_double_s_per_point": 4.75,
       "double_s_per_point": 0.06333333333333334
      },
      "failed_checks": []
@@ -2404,7 +2492,8 @@
    "variants": [],
    "max_dd_vs_reference": 3.947234765227312e-14,
    "max_binary64_vs_dd": 8.738507572649469e-14,
-   "max_catani_dd": 4.555299284388281e-31
+   "max_catani_dd": 4.555299284388281e-31,
+   "max_ward_dd": null
   },
   {
    "id": "B03",
@@ -2426,8 +2515,7 @@
     "ward"
    ],
    "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)",
-    "ward": "MQ-WARD (generic native Ward input)"
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
    },
    "waits_for": null,
    "pending_reason": null,
@@ -2493,7 +2581,7 @@
       3
      ],
      "passed": true,
-     "checks": 80,
+     "checks": 104,
      "failures": 0,
      "max_dd_vs_reference": 3.4098285528435984e-13,
      "max_binary64_vs_dd": 3.378948809938522e-11,
@@ -2506,6 +2594,14 @@
       "single_pole": 1.1738902926599533e-08,
       "double_pole": 1.1801426815644229e-09
      },
+     "ward": {
+      "checks": 24,
+      "virtual_double": 0.2653104197393163,
+      "born_double": 1.2668950394112198e-16,
+      "virtual_double-double": 1.9291735669192894e-26,
+      "born_double-double": 6.212684401137827e-33
+     },
+     "no_reference": [],
      "binary64_out_of_scope": [
       {
        "point": 0,
@@ -2558,10 +2654,11 @@
       }
      ],
      "timings": {
-      "generate_s": 5.01,
-      "export_s": 1.46,
-      "double_double_s_per_point": 11.98,
-      "double_s_per_point": 2.525
+      "generate_s": 6.94,
+      "export_s": 0.58,
+      "double_double_s_per_point": 12.055,
+      "double_s_per_point": 2.4775,
+      "ward_s": 22.63
      },
      "failed_checks": []
     }
@@ -2569,7 +2666,8 @@
    "variants": [],
    "max_dd_vs_reference": 3.4098285528435984e-13,
    "max_binary64_vs_dd": 3.378948809938522e-11,
-   "max_catani_dd": 7.575829552561944e-27
+   "max_catani_dd": 7.575829552561944e-27,
+   "max_ward_dd": 1.9291735669192894e-26
   },
   {
    "id": "B05",
@@ -2616,12 +2714,14 @@
       "single_pole": 6.3647146150549485e-12,
       "double_pole": 6.115997961757038e-13
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.83,
-      "export_s": 2.09,
-      "double_double_s_per_point": 177.63666666666666,
-      "double_s_per_point": 87.50333333333333
+      "generate_s": 8.34,
+      "export_s": 1.91,
+      "double_double_s_per_point": 176.9466666666667,
+      "double_s_per_point": 86.35000000000001
      },
      "failed_checks": []
     }
@@ -2629,7 +2729,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.3474760235223146e-13,
    "max_binary64_vs_dd": 8.386910896097885e-12,
-   "max_catani_dd": 1.6650135514598576e-27
+   "max_catani_dd": 1.6650135514598576e-27,
+   "max_ward_dd": null
   },
   {
    "id": "B06",
@@ -2675,12 +2776,14 @@
       "single_pole": 1.442366893661442e-12,
       "double_pole": 4.3786309641981093e-13
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.66,
-      "export_s": 1.47,
-      "double_double_s_per_point": 7.9175,
-      "double_s_per_point": 1.6025
+      "generate_s": 4.81,
+      "export_s": 0.61,
+      "double_double_s_per_point": 8.1,
+      "double_s_per_point": 1.6125
      },
      "failed_checks": []
     }
@@ -2688,7 +2791,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.4534352195822118e-14,
    "max_binary64_vs_dd": 1.5032093835109262e-12,
-   "max_catani_dd": 1.84896433426627e-28
+   "max_catani_dd": 1.84896433426627e-28,
+   "max_ward_dd": null
   },
   {
    "id": "B07",
@@ -2723,31 +2827,34 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 5.433882185937215e-13,
-     "max_binary64_vs_dd": 1.7423510360832417e-13,
-     "max_catani_dd": 4.5672571985221924e-27,
+     "max_dd_vs_reference": 5.433882185937213e-13,
+     "max_binary64_vs_dd": 1.7423510360832475e-13,
+     "max_catani_dd": 1.4274557372768173e-29,
      "max_catani_binary64": 1.742510932008404e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.8859042003018767e-15,
       "finite": 2.497941396028013e-13,
-      "single_pole": 5.536730397090901e-13,
+      "single_pole": 5.530251531682314e-13,
       "double_pole": 1.7959613805516567e-14
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.3,
-      "export_s": 0.83,
-      "double_double_s_per_point": 60.65,
-      "double_s_per_point": 24.2375
+      "generate_s": 6.84,
+      "export_s": 0.81,
+      "double_double_s_per_point": 60.215,
+      "double_s_per_point": 24.1825
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 5.433882185937215e-13,
-   "max_binary64_vs_dd": 1.7423510360832417e-13,
-   "max_catani_dd": 4.5672571985221924e-27
+   "max_dd_vs_reference": 5.433882185937213e-13,
+   "max_binary64_vs_dd": 1.7423510360832475e-13,
+   "max_catani_dd": 1.4274557372768173e-29,
+   "max_ward_dd": null
   },
   {
    "id": "B08",
@@ -2793,12 +2900,14 @@
       "single_pole": 5.457912480699014e-15,
       "double_pole": 9.695597769888345e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.06,
-      "export_s": 0.92,
+      "generate_s": 5.85,
+      "export_s": 0.87,
       "double_double_s_per_point": 5.1625,
-      "double_s_per_point": 0.16
+      "double_s_per_point": 0.1625
      },
      "failed_checks": []
     }
@@ -2806,7 +2915,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.6979830527830937e-14,
    "max_binary64_vs_dd": 2.243774300852986e-14,
-   "max_catani_dd": 1.6546091491868987e-30
+   "max_catani_dd": 1.6546091491868987e-30,
+   "max_ward_dd": null
   },
   {
    "id": "C01",
@@ -2830,8 +2940,7 @@
     "sp"
    ],
    "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)",
-    "ward": "MQ-WARD (generic native Ward input)"
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
    },
    "waits_for": null,
    "pending_reason": null,
@@ -2848,8 +2957,8 @@
      "checks": 40,
      "failures": 1,
      "max_dd_vs_reference": 3.249534992413593e-11,
-     "max_binary64_vs_dd": 2.1924066184314076e-15,
-     "max_catani_dd": 1.4122821815879352e-27,
+     "max_binary64_vs_dd": 2.1924066184286245e-15,
+     "max_catani_dd": 1.5926635822098892e-29,
      "max_catani_binary64": 8.646497573367202e-16,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -2858,12 +2967,14 @@
       "single_pole": 4.723718147976397e-13,
       "double_pole": 4.824476610231007e-13
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.85,
-      "export_s": 0.83,
-      "double_double_s_per_point": 5.445,
-      "double_s_per_point": 0.16
+      "generate_s": 5.94,
+      "export_s": 0.85,
+      "double_double_s_per_point": 5.505,
+      "double_s_per_point": 0.165
      },
      "failed_checks": [
       {
@@ -2874,7 +2985,7 @@
        "coefficient": "finite",
        "error": 3.249534992413593e-11,
        "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 9.04287131524019e-17; status 216; its double pole off its Born x the universal factor by 4.82e-13; second providers none)"
+       "note": "against madloop; not a listed outlier (own accuracy 9.04287131524019e-17; status 216; its double pole off its Born x the universal factor by 4.82e-13; Born from madloop; Born / double-pole mismatch 4.82e-13; second providers none)"
       }
      ]
     },
@@ -2884,11 +2995,11 @@
       3
      ],
      "passed": false,
-     "checks": 48,
+     "checks": 64,
      "failures": 1,
-     "max_dd_vs_reference": 7.984121361418671e-13,
-     "max_binary64_vs_dd": 3.244964300885704e-15,
-     "max_catani_dd": 1.2260677575983071e-27,
+     "max_dd_vs_reference": 7.984121361418676e-13,
+     "max_binary64_vs_dd": 3.244964300882222e-15,
+     "max_catani_dd": 8.146807703162943e-29,
      "max_catani_binary64": 9.976784031427668e-16,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -2897,13 +3008,22 @@
       "single_pole": 7.557814655986036e-15,
       "double_pole": 6.565100549785048e-15
      },
+     "ward": {
+      "checks": 16,
+      "virtual_double": 0.0011637337832878763,
+      "born_double": 9.535010319932362e-17,
+      "virtual_double-double": 4.215290557567934e-31,
+      "born_double-double": 8.237308577194492e-32
+     },
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.98,
-      "export_s": 0.56,
-      "double_double_s_per_point": 5.475,
-      "double_s_per_point": 0.165,
-      "ap_s": 9.41
+      "generate_s": 5.9,
+      "export_s": 0.58,
+      "double_double_s_per_point": 5.445,
+      "double_s_per_point": 0.16,
+      "ap_s": 9.27,
+      "ward_s": 16.83
      },
      "failed_checks": [
       {
@@ -2912,7 +3032,7 @@
        "carrier": "arbitrary-40",
        "sector": "QCD^6",
        "coefficient": "finite",
-       "error": 4.1236107649288384e-32,
+       "error": 4.573222326590986e-32,
        "bound": 1e-35,
        "note": "against 60 digits"
       }
@@ -2944,8 +3064,8 @@
        "checks": 80,
        "failures": 1,
        "max_dd_vs_reference": 2.6863593165553257e-11,
-       "max_binary64_vs_dd": 5.571066219110526e-15,
-       "max_catani_dd": 2.709382798682275e-28,
+       "max_binary64_vs_dd": 5.571066219110278e-15,
+       "max_catani_dd": 3.426007490572344e-29,
        "max_catani_binary64": 6.6399861255029114e-15,
        "catani_not_formed": false,
        "binary64_vs_reference": {
@@ -2954,12 +3074,14 @@
         "single_pole": 3.7468870821802464e-13,
         "double_pole": 3.6947412116891067e-13
        },
+       "ward": null,
+       "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.1125,
-        "double_s_per_point": 0.155
+        "double_double_s_per_point": 5.1525,
+        "double_s_per_point": 0.16
        },
        "failed_checks": [
         {
@@ -2970,7 +3092,7 @@
          "coefficient": "finite",
          "error": 2.6863593165553257e-11,
          "bound": 1e-12,
-         "note": "against madloop; not a listed outlier (own accuracy 3.410217186727036e-15; status 216; its double pole off its Born x the universal factor by 3.7e-13; second providers none)"
+         "note": "against madloop; not a listed outlier (own accuracy 3.410217186727036e-15; status 216; its double pole off its Born x the universal factor by 3.7e-13; Born from madloop; Born / double-pole mismatch 3.7e-13; second providers none)"
         }
        ]
       }
@@ -2978,8 +3100,9 @@
     }
    ],
    "max_dd_vs_reference": 3.249534992413593e-11,
-   "max_binary64_vs_dd": 5.571066219110526e-15,
-   "max_catani_dd": 1.4122821815879352e-27
+   "max_binary64_vs_dd": 5.571066219110278e-15,
+   "max_catani_dd": 8.146807703162943e-29,
+   "max_ward_dd": 4.215290557567934e-31
   },
   {
    "id": "C02",
@@ -3027,13 +3150,15 @@
       "single_pole": 1.973177347111072e-13,
       "double_pole": 8.209323865818622e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.68,
-      "export_s": 0.49,
-      "double_double_s_per_point": 6.66,
-      "double_s_per_point": 0.83,
-      "uv_s": 6.97
+      "generate_s": 4.72,
+      "export_s": 0.47,
+      "double_double_s_per_point": 6.7025,
+      "double_s_per_point": 0.81,
+      "uv_s": 6.85
      },
      "failed_checks": [
       {
@@ -3044,7 +3169,7 @@
        "coefficient": "finite",
        "error": 2.0952603644588113e-12,
        "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 1.2165406888980595e-14; status 216; its double pole off its Born x the universal factor by 3.67e-16; second providers none)"
+       "note": "against madloop; not a listed outlier (own accuracy 1.2165406888980595e-14; status 216; its double pole off its Born x the universal factor by 3.67e-16; Born from madloop; Born / double-pole mismatch 3.31e-16; second providers none)"
       }
      ]
     }
@@ -3052,7 +3177,8 @@
    "variants": [],
    "max_dd_vs_reference": 2.0952603644588113e-12,
    "max_binary64_vs_dd": 8.991681095400892e-12,
-   "max_catani_dd": 1.0762118741900037e-29
+   "max_catani_dd": 1.0762118741900037e-29,
+   "max_ward_dd": null
   },
   {
    "id": "C03",
@@ -3087,9 +3213,9 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 1.7191057981521689e-15,
-     "max_binary64_vs_dd": 4.28755115915516e-16,
-     "max_catani_dd": 8.756424232568386e-30,
+     "max_dd_vs_reference": 1.7191057981521825e-15,
+     "max_binary64_vs_dd": 4.287551159155024e-16,
+     "max_catani_dd": 9.878894659833615e-31,
      "max_catani_binary64": 3.8071142244625275e-16,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3098,20 +3224,23 @@
       "single_pole": 1.0279208406048828e-15,
       "double_pole": 0.0
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.44,
+      "generate_s": 4.73,
       "export_s": 0.12,
-      "double_double_s_per_point": 4.465,
-      "double_s_per_point": 0.0175
+      "double_double_s_per_point": 4.555,
+      "double_s_per_point": 0.02
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 1.7191057981521689e-15,
-   "max_binary64_vs_dd": 4.28755115915516e-16,
-   "max_catani_dd": 8.756424232568386e-30
+   "max_dd_vs_reference": 1.7191057981521825e-15,
+   "max_binary64_vs_dd": 4.287551159155024e-16,
+   "max_catani_dd": 9.878894659833615e-31,
+   "max_ward_dd": null
   },
   {
    "id": "C04",
@@ -3146,9 +3275,9 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 1.3709705498178263e-15,
-     "max_binary64_vs_dd": 1.8605247746943527e-15,
-     "max_catani_dd": 2.5510698373629224e-28,
+     "max_dd_vs_reference": 1.3709705498177445e-15,
+     "max_binary64_vs_dd": 1.86052477469458e-15,
+     "max_catani_dd": 3.175795817067007e-30,
      "max_catani_binary64": 1.1081655643585638e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3157,11 +3286,13 @@
       "single_pole": 1.6492418114105255e-15,
       "double_pole": 8.875285535673135e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.23,
-      "export_s": 1.02,
-      "double_double_s_per_point": 4.71,
+      "generate_s": 5.17,
+      "export_s": 0.98,
+      "double_double_s_per_point": 4.7575,
       "double_s_per_point": 0.055
      },
      "failed_checks": []
@@ -3183,9 +3314,10 @@
      "tiers": {}
     }
    ],
-   "max_dd_vs_reference": 1.3709705498178263e-15,
-   "max_binary64_vs_dd": 1.8605247746943527e-15,
-   "max_catani_dd": 2.5510698373629224e-28
+   "max_dd_vs_reference": 1.3709705498177445e-15,
+   "max_binary64_vs_dd": 1.86052477469458e-15,
+   "max_catani_dd": 3.175795817067007e-30,
+   "max_ward_dd": null
   },
   {
    "id": "C05",
@@ -3220,9 +3352,9 @@
      "passed": false,
      "checks": 80,
      "failures": 8,
-     "max_dd_vs_reference": 1.1687691439148637e-14,
+     "max_dd_vs_reference": 1.1687691439148549e-14,
      "max_binary64_vs_dd": 2.336268247046395e-10,
-     "max_catani_dd": 4.601229264206404e-27,
+     "max_catani_dd": 1.598818087111162e-29,
      "max_catani_binary64": 7.436104471599365e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3231,12 +3363,14 @@
       "single_pole": 7.497532289807783e-13,
       "double_pole": 5.275337621151692e-13
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 9.98,
-      "export_s": 0.75,
-      "double_double_s_per_point": 7.01,
-      "double_s_per_point": 0.3525
+      "generate_s": 8.59,
+      "export_s": 0.74,
+      "double_double_s_per_point": 6.99,
+      "double_s_per_point": 0.3375
      },
      "failed_checks": [
       {
@@ -3245,8 +3379,8 @@
        "carrier": "double",
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
-       "error": 2.182170387909009e-22,
-       "bound": 8.885827840940213e-23,
+       "error": 2.18217038790901e-22,
+       "bound": 8.855888998930656e-23,
        "note": "absolute error against 10 E"
       },
       {
@@ -3255,9 +3389,9 @@
        "carrier": "double",
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
-       "error": 4.802452393627148e-12,
+       "error": 4.8024523936271495e-12,
        "bound": 1e-12,
-       "note": "E = 1.96e-13"
+       "note": "E = 1.95e-13"
       },
       {
        "rule": "3",
@@ -3266,7 +3400,7 @@
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
        "error": 2.5167356024644205e-19,
-       "bound": 2.6190649822408532e-20,
+       "bound": 2.6190687350225916e-20,
        "note": "absolute error against 10 E"
       },
       {
@@ -3276,7 +3410,7 @@
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
        "error": 2.336268247046395e-10,
-       "bound": 2.4312599022991487e-12,
+       "bound": 2.431263385980472e-12,
        "note": "E = 2.43e-12"
       },
       {
@@ -3285,8 +3419,8 @@
        "carrier": "double",
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
-       "error": 3.812593173379055e-22,
-       "bound": 1.193175945062973e-22,
+       "error": 3.812593173379056e-22,
+       "bound": 1.1901895970990783e-22,
        "note": "absolute error against 10 E"
       },
       {
@@ -3295,9 +3429,9 @@
        "carrier": "double",
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
-       "error": 1.1630177866783172e-12,
+       "error": 1.1630177866783176e-12,
        "bound": 1e-12,
-       "note": "E = 3.64e-14"
+       "note": "E = 3.63e-14"
       },
       {
        "rule": "3",
@@ -3305,8 +3439,8 @@
        "carrier": "double",
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
-       "error": 2.1787112193418406e-22,
-       "bound": 8.458033774286198e-23,
+       "error": 2.1787112193418415e-22,
+       "bound": 8.402118883362888e-23,
        "note": "absolute error against 10 E"
       },
       {
@@ -3315,17 +3449,18 @@
        "carrier": "double",
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
-       "error": 9.476303255576985e-12,
+       "error": 9.476303255576988e-12,
        "bound": 1e-12,
-       "note": "E = 3.68e-13"
+       "note": "E = 3.65e-13"
       }
      ]
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 1.1687691439148637e-14,
+   "max_dd_vs_reference": 1.1687691439148549e-14,
    "max_binary64_vs_dd": 2.336268247046395e-10,
-   "max_catani_dd": 4.601229264206404e-27
+   "max_catani_dd": 1.598818087111162e-29,
+   "max_ward_dd": null
   },
   {
    "id": "C06",
@@ -3360,9 +3495,9 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 1.873024736978662e-15,
-     "max_binary64_vs_dd": 1.5282730836695603e-13,
-     "max_catani_dd": 6.765324133475579e-27,
+     "max_dd_vs_reference": 1.873024736985765e-15,
+     "max_binary64_vs_dd": 1.528273083669631e-13,
+     "max_catani_dd": 2.3415131443296232e-29,
      "max_catani_binary64": 5.6174954226577525e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3371,20 +3506,23 @@
       "single_pole": 5.931572642774381e-14,
       "double_pole": 3.881591186096552e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 9.94,
-      "export_s": 0.92,
-      "double_double_s_per_point": 48.2575,
-      "double_s_per_point": 22.8425
+      "generate_s": 7.6,
+      "export_s": 0.9,
+      "double_double_s_per_point": 49.3875,
+      "double_s_per_point": 22.8225
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 1.873024736978662e-15,
-   "max_binary64_vs_dd": 1.5282730836695603e-13,
-   "max_catani_dd": 6.765324133475579e-27
+   "max_dd_vs_reference": 1.873024736985765e-15,
+   "max_binary64_vs_dd": 1.528273083669631e-13,
+   "max_catani_dd": 2.3415131443296232e-29,
+   "max_ward_dd": null
   },
   {
    "id": "C07",
@@ -3419,23 +3557,25 @@
      "passed": false,
      "checks": 80,
      "failures": 8,
-     "max_dd_vs_reference": 4.6510142702561815e-14,
-     "max_binary64_vs_dd": 1.7448479444446733e-14,
+     "max_dd_vs_reference": 4.6510142702561045e-14,
+     "max_binary64_vs_dd": 1.6286012914121327e-14,
      "max_catani_dd": 0.022257033582139523,
-     "max_catani_binary64": 0.022257033582139034,
+     "max_catani_binary64": 0.02225703358213931,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 3.758064145532662e-15,
-      "finite": 2.9061663258115586e-14,
-      "single_pole": 5.6463195366508486e-14,
+      "finite": 3.0224129788440207e-14,
+      "single_pole": 5.817977459589192e-14,
       "double_pole": 7.070024232634056e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.2,
-      "export_s": 0.87,
-      "double_double_s_per_point": 4.895,
-      "double_s_per_point": 0.145
+      "generate_s": 7.39,
+      "export_s": 0.88,
+      "double_double_s_per_point": 4.9825,
+      "double_s_per_point": 0.1425
      },
      "failed_checks": [
       {
@@ -3446,7 +3586,7 @@
        "coefficient": "single_pole",
        "error": 0.001358031424364636,
        "bound": 1e-24,
-       "note": "E = 1.19e-29"
+       "note": "E = 1.11e-29"
       },
       {
        "rule": "4",
@@ -3454,9 +3594,9 @@
        "carrier": "double",
        "sector": "QCD^4 QED^4",
        "coefficient": "single_pole",
-       "error": 0.0013580314243754649,
-       "bound": 1.1024357941994566e-12,
-       "note": "E = 1.1e-12"
+       "error": 0.0013580314243771792,
+       "bound": 1.106815327228785e-12,
+       "note": "E = 1.11e-12"
       },
       {
        "rule": "4",
@@ -3466,7 +3606,7 @@
        "coefficient": "single_pole",
        "error": 0.022257033582139523,
        "bound": 1e-24,
-       "note": "E = 3.7e-30"
+       "note": "E = 3.62e-30"
       },
       {
        "rule": "4",
@@ -3474,9 +3614,9 @@
        "carrier": "double",
        "sector": "QCD^4 QED^4",
        "coefficient": "single_pole",
-       "error": 0.022257033582139034,
+       "error": 0.02225703358213931,
        "bound": 1e-12,
-       "note": "E = 6.1e-13"
+       "note": "E = 6.12e-13"
       },
       {
        "rule": "4",
@@ -3486,7 +3626,7 @@
        "coefficient": "single_pole",
        "error": 0.0009224371100805377,
        "bound": 1e-24,
-       "note": "E = 6.68e-30"
+       "note": "E = 5.78e-30"
       },
       {
        "rule": "4",
@@ -3496,7 +3636,7 @@
        "coefficient": "single_pole",
        "error": 0.0009224371100872722,
        "bound": 1e-12,
-       "note": "E = 1.53e-13"
+       "note": "E = 1.55e-13"
       },
       {
        "rule": "4",
@@ -3506,7 +3646,7 @@
        "coefficient": "single_pole",
        "error": 0.0009978121527835656,
        "bound": 1e-24,
-       "note": "E = 1.06e-29"
+       "note": "E = 1.04e-29"
       },
       {
        "rule": "4",
@@ -3514,17 +3654,18 @@
        "carrier": "double",
        "sector": "QCD^4 QED^4",
        "coefficient": "single_pole",
-       "error": 0.0009978121527923348,
-       "bound": 1.0641696062514927e-12,
-       "note": "E = 1.06e-12"
+       "error": 0.0009978121527930996,
+       "bound": 1.0731000037295212e-12,
+       "note": "E = 1.07e-12"
       }
      ]
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 4.6510142702561815e-14,
-   "max_binary64_vs_dd": 1.7448479444446733e-14,
-   "max_catani_dd": 0.022257033582139523
+   "max_dd_vs_reference": 4.6510142702561045e-14,
+   "max_binary64_vs_dd": 1.6286012914121327e-14,
+   "max_catani_dd": 0.022257033582139523,
+   "max_ward_dd": null
   },
   {
    "id": "C08",
@@ -3560,9 +3701,9 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 2.6039518839708013e-13,
-     "max_binary64_vs_dd": 4.481361617486419e-15,
-     "max_catani_dd": 1.1657127018632817e-27,
+     "max_dd_vs_reference": 2.6039518839708003e-13,
+     "max_binary64_vs_dd": 4.481361617486464e-15,
+     "max_catani_dd": 4.872413250531566e-29,
      "max_catani_binary64": 4.64398333961079e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3571,20 +3712,23 @@
       "single_pole": 3.271897352907602e-15,
       "double_pole": 2.6982132189656334e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.06,
-      "export_s": 0.71,
-      "double_double_s_per_point": 5.2375,
-      "double_s_per_point": 0.1675
+      "generate_s": 5.84,
+      "export_s": 0.68,
+      "double_double_s_per_point": 5.2075,
+      "double_s_per_point": 0.16
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 2.6039518839708013e-13,
-   "max_binary64_vs_dd": 4.481361617486419e-15,
-   "max_catani_dd": 1.1657127018632817e-27
+   "max_dd_vs_reference": 2.6039518839708003e-13,
+   "max_binary64_vs_dd": 4.481361617486464e-15,
+   "max_catani_dd": 4.872413250531566e-29,
+   "max_ward_dd": null
   },
   {
    "id": "C09",
@@ -3613,7 +3757,8 @@
    "variants": [],
    "max_dd_vs_reference": null,
    "max_binary64_vs_dd": null,
-   "max_catani_dd": null
+   "max_catani_dd": null,
+   "max_ward_dd": null
   },
   {
    "id": "D01",
@@ -3659,12 +3804,14 @@
       "single_pole": 3.1939583678879526e-15,
       "double_pole": 4.1988560495632384e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.81,
-      "export_s": 0.29,
-      "double_double_s_per_point": 4.54,
-      "double_s_per_point": 0.03
+      "generate_s": 4.79,
+      "export_s": 0.3,
+      "double_double_s_per_point": 4.6,
+      "double_s_per_point": 0.025
      },
      "failed_checks": []
     },
@@ -3687,13 +3834,15 @@
       "single_pole": 1.2840680804112799e-15,
       "double_pole": 5.463115953051431e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.93,
+      "generate_s": 4.96,
       "export_s": 0.29,
-      "double_double_s_per_point": 4.57,
-      "double_s_per_point": 0.03,
-      "ap_s": 5.6
+      "double_double_s_per_point": 4.53,
+      "double_s_per_point": 0.025,
+      "ap_s": 5.56
      },
      "failed_checks": []
     }
@@ -3701,7 +3850,8 @@
    "variants": [],
    "max_dd_vs_reference": 8.095242819082367e-15,
    "max_binary64_vs_dd": 4.932559255722848e-15,
-   "max_catani_dd": 1.0017977958942646e-31
+   "max_catani_dd": 1.0017977958942646e-31,
+   "max_ward_dd": null
   },
   {
    "id": "D02",
@@ -3747,12 +3897,14 @@
       "single_pole": 3.6671374266925156e-15,
       "double_pole": 7.977826496630182e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
       "generate_s": 2.45,
-      "export_s": 0.83,
-      "double_double_s_per_point": 4.4775,
-      "double_s_per_point": 0.025
+      "export_s": 0.79,
+      "double_double_s_per_point": 4.515,
+      "double_s_per_point": 0.03
      },
      "failed_checks": []
     }
@@ -3760,7 +3912,8 @@
    "variants": [],
    "max_dd_vs_reference": 2.208717242755144e-15,
    "max_binary64_vs_dd": 4.2619270017833455e-15,
-   "max_catani_dd": 2.109670258032505e-31
+   "max_catani_dd": 2.109670258032505e-31,
+   "max_ward_dd": null
   },
   {
    "id": "D05",
@@ -3784,8 +3937,7 @@
     "hel"
    ],
    "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)",
-    "ward": "MQ-WARD (generic native Ward input)"
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
    },
    "waits_for": null,
    "pending_reason": null,
@@ -3812,11 +3964,13 @@
       "single_pole": 1.1693569057216561e-14,
       "double_pole": 2.6042865071732083e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.5,
-      "export_s": 2.07,
-      "double_double_s_per_point": 5.015,
+      "generate_s": 7.31,
+      "export_s": 2.0,
+      "double_double_s_per_point": 5.08,
       "double_s_per_point": 0.07
      },
      "failed_checks": []
@@ -3827,7 +3981,7 @@
       3
      ],
      "passed": true,
-     "checks": 171,
+     "checks": 179,
      "failures": 0,
      "max_dd_vs_reference": 1.0320154020747693e-14,
      "max_binary64_vs_dd": 5.2093538309378154e-15,
@@ -3840,14 +3994,23 @@
       "single_pole": 6.529696824396429e-15,
       "double_pole": 2.6042865071732083e-15
      },
+     "ward": {
+      "checks": 8,
+      "virtual_double": 0.001989611500564391,
+      "born_double": 6.976890813601124e-17,
+      "virtual_double-double": 7.875600446892332e-32,
+      "born_double-double": 6.155567074007642e-33
+     },
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.38,
-      "export_s": 1.74,
-      "double_double_s_per_point": 5.01,
-      "double_s_per_point": 0.075,
-      "uv_s": 5.37,
-      "hel_s": 4.41
+      "generate_s": 7.13,
+      "export_s": 2.88,
+      "double_double_s_per_point": 5.095,
+      "double_s_per_point": 0.07,
+      "uv_s": 5.4,
+      "hel_s": 4.43,
+      "ward_s": 13.66
      },
      "failed_checks": []
     }
@@ -3855,7 +4018,8 @@
    "variants": [],
    "max_dd_vs_reference": 7.581879121449775e-14,
    "max_binary64_vs_dd": 2.473046960830994e-14,
-   "max_catani_dd": 1.6239475035923482e-31
+   "max_catani_dd": 1.6239475035923482e-31,
+   "max_ward_dd": 7.875600446892332e-32
   },
   {
    "id": "D06",
@@ -3902,12 +4066,14 @@
       "single_pole": 3.896700984845504e-14,
       "double_pole": 3.433935883177045e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.81,
-      "export_s": 2.37,
-      "double_double_s_per_point": 6.043333333333333,
-      "double_s_per_point": 0.32666666666666666
+      "generate_s": 8.05,
+      "export_s": 2.31,
+      "double_double_s_per_point": 6.023333333333333,
+      "double_s_per_point": 0.3233333333333333
      },
      "failed_checks": []
     }
@@ -3915,7 +4081,8 @@
    "variants": [],
    "max_dd_vs_reference": 8.557281606221314e-14,
    "max_binary64_vs_dd": 1.3527178069119578e-12,
-   "max_catani_dd": 7.784495996885612e-32
+   "max_catani_dd": 7.784495996885612e-32,
+   "max_ward_dd": null
   },
   {
    "id": "D07",
@@ -3962,12 +4129,14 @@
       "single_pole": 2.5480752849655984e-13,
       "double_pole": 1.3544791046853174e-14
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 9.96,
-      "export_s": 2.06,
-      "double_double_s_per_point": 25.45,
-      "double_s_per_point": 6.609999999999999
+      "generate_s": 9.72,
+      "export_s": 2.02,
+      "double_double_s_per_point": 25.156666666666666,
+      "double_s_per_point": 6.72
      },
      "failed_checks": []
     }
@@ -3975,7 +4144,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.7165959467985897e-13,
    "max_binary64_vs_dd": 3.2302714487331506e-13,
-   "max_catani_dd": 8.385054499310714e-30
+   "max_catani_dd": 8.385054499310714e-30,
+   "max_ward_dd": null
   },
   {
    "id": "D08",
@@ -4022,12 +4192,14 @@
       "single_pole": 1.476912715212834e-13,
       "double_pole": 1.60609748295634e-14
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.84,
-      "export_s": 3.56,
-      "double_double_s_per_point": 10.423333333333334,
-      "double_s_per_point": 1.1466666666666667
+      "generate_s": 5.81,
+      "export_s": 3.2,
+      "double_double_s_per_point": 10.156666666666666,
+      "double_s_per_point": 1.0733333333333335
      },
      "failed_checks": []
     }
@@ -4035,7 +4207,8 @@
    "variants": [],
    "max_dd_vs_reference": 6.018198023281817e-14,
    "max_binary64_vs_dd": 8.859610143786577e-13,
-   "max_catani_dd": 1.3782066458827704e-30
+   "max_catani_dd": 1.3782066458827704e-30,
+   "max_ward_dd": null
   },
   {
    "id": "D09",
@@ -4080,12 +4253,14 @@
       "single_pole": 6.650730046561934e-15,
       "double_pole": 3.1491511912609848e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.21,
-      "export_s": 0.57,
-      "double_double_s_per_point": 4.81,
-      "double_s_per_point": 0.06333333333333334
+      "generate_s": 3.1,
+      "export_s": 0.58,
+      "double_double_s_per_point": 4.843333333333333,
+      "double_s_per_point": 0.06666666666666667
      },
      "failed_checks": []
     }
@@ -4093,7 +4268,8 @@
    "variants": [],
    "max_dd_vs_reference": 4.149427462669472e-14,
    "max_binary64_vs_dd": 2.688083811515513e-14,
-   "max_catani_dd": 3.6298319286293405e-31
+   "max_catani_dd": 3.6298319286293405e-31,
+   "max_ward_dd": null
   },
   {
    "id": "D10",
@@ -4139,12 +4315,14 @@
       "single_pole": 6.570512846718585e-13,
       "double_pole": 1.7208266871766099e-12
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.69,
-      "export_s": 2.3,
-      "double_double_s_per_point": 5.596666666666667,
-      "double_s_per_point": 0.19333333333333333
+      "generate_s": 4.72,
+      "export_s": 2.36,
+      "double_double_s_per_point": 5.616666666666667,
+      "double_s_per_point": 0.19666666666666666
      },
      "failed_checks": [
       {
@@ -4183,7 +4361,8 @@
    "variants": [],
    "max_dd_vs_reference": 3.0618611182099912e-15,
    "max_binary64_vs_dd": 1.7211726680174758e-12,
-   "max_catani_dd": 2.983452203636299e-30
+   "max_catani_dd": 2.983452203636299e-30,
+   "max_ward_dd": null
   },
   {
    "id": "D11",
@@ -4229,12 +4408,14 @@
       "single_pole": 4.234492966625929e-12,
       "double_pole": 1.0777697996205579e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.75,
-      "export_s": 2.13,
-      "double_double_s_per_point": 4.76,
-      "double_s_per_point": 0.0625
+      "generate_s": 6.83,
+      "export_s": 2.06,
+      "double_double_s_per_point": 4.7225,
+      "double_s_per_point": 0.06
      },
      "failed_checks": [
       {
@@ -4245,7 +4426,7 @@
        "coefficient": "single_pole",
        "error": 4.26840435290197e-12,
        "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 2.1675357476383646e-14; status 216; its double pole off its Born x the universal factor by 8.69e-16; second providers none)"
+       "note": "against madloop; not a listed outlier (own accuracy 2.1675357476383646e-14; status 216; its double pole off its Born x the universal factor by 8.69e-16; Born from madloop; Born / double-pole mismatch 8.63e-16; second providers none)"
       }
      ]
     }
@@ -4253,7 +4434,8 @@
    "variants": [],
    "max_dd_vs_reference": 4.26840435290197e-12,
    "max_binary64_vs_dd": 3.3911386276184324e-14,
-   "max_catani_dd": 2.5117389065872104e-30
+   "max_catani_dd": 2.5117389065872104e-30,
+   "max_ward_dd": null
   },
   {
    "id": "D12",
@@ -4299,12 +4481,14 @@
       "single_pole": 4.187618454606717e-15,
       "double_pole": 9.522523205222952e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.42,
+      "generate_s": 5.39,
       "export_s": 0.38,
-      "double_double_s_per_point": 4.65,
-      "double_s_per_point": 0.0375
+      "double_double_s_per_point": 4.6375,
+      "double_s_per_point": 0.04
      },
      "failed_checks": []
     }
@@ -4312,7 +4496,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.1311484650886014e-14,
    "max_binary64_vs_dd": 1.195482625415849e-14,
-   "max_catani_dd": 1.3852763652684824e-31
+   "max_catani_dd": 1.3852763652684824e-31,
+   "max_ward_dd": null
   },
   {
    "id": "D13",
@@ -4358,12 +4543,14 @@
       "single_pole": 7.505000983112247e-15,
       "double_pole": 1.2869892922571884e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.32,
-      "export_s": 1.49,
-      "double_double_s_per_point": 4.6875,
-      "double_s_per_point": 0.045
+      "generate_s": 4.41,
+      "export_s": 1.42,
+      "double_double_s_per_point": 4.785,
+      "double_s_per_point": 0.0425
      },
      "failed_checks": []
     }
@@ -4371,7 +4558,8 @@
    "variants": [],
    "max_dd_vs_reference": 8.068206769140662e-15,
    "max_binary64_vs_dd": 1.1980199384913944e-14,
-   "max_catani_dd": 4.859950205609392e-31
+   "max_catani_dd": 4.859950205609392e-31,
+   "max_ward_dd": null
   },
   {
    "id": "D15",
@@ -4417,12 +4605,14 @@
       "single_pole": 9.096971452505835e-15,
       "double_pole": 1.099244281022363e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.54,
-      "export_s": 0.49,
-      "double_double_s_per_point": 4.7025,
-      "double_s_per_point": 0.0475
+      "generate_s": 2.46,
+      "export_s": 0.46,
+      "double_double_s_per_point": 4.67,
+      "double_s_per_point": 0.045
      },
      "failed_checks": []
     }
@@ -4430,7 +4620,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.4232766006017065e-13,
    "max_binary64_vs_dd": 1.5971605670800956e-12,
-   "max_catani_dd": 1.5121885813987106e-30
+   "max_catani_dd": 1.5121885813987106e-30,
+   "max_ward_dd": null
   },
   {
    "id": "D16",
@@ -4494,9 +4685,9 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 1.213468378948683e-13,
-     "max_binary64_vs_dd": 1.3971113894164087e-12,
-     "max_catani_dd": 5.4961926373167875e-27,
+     "max_dd_vs_reference": 1.2134683789499523e-13,
+     "max_binary64_vs_dd": 1.3971113894164106e-12,
+     "max_catani_dd": 3.224853344832941e-28,
      "max_catani_binary64": 1.1529970544151033e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -4505,49 +4696,52 @@
       "single_pole": 1.2138449916852763e-12,
       "double_pole": 3.997537008977393e-13
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [
       {
        "point": 0,
        "sector": "QCD^2 QED^4",
        "coefficient": "finite",
        "E": 3.934203478331815e-09,
-       "true_error": 3.0577607318385554e-11
+       "true_error": 3.057760731838563e-11
       },
       {
        "point": 0,
        "sector": "QCD^2 QED^4",
        "coefficient": "single_pole",
        "E": 3.1752667016752506e-09,
-       "true_error": 9.81335366317479e-13
+       "true_error": 9.813353663173578e-13
       },
       {
        "point": 3,
        "sector": "QCD^2 QED^4",
        "coefficient": "finite",
        "E": 6.855906479776484e-09,
-       "true_error": 2.972663484721789e-11
+       "true_error": 2.9726634847217724e-11
       },
       {
        "point": 3,
        "sector": "QCD^2 QED^4",
        "coefficient": "single_pole",
        "E": 1.7643726726923208e-09,
-       "true_error": 4.227602156864259e-13
+       "true_error": 4.2276021568630167e-13
       }
      ],
      "timings": {
-      "generate_s": 2.86,
-      "export_s": 0.45,
-      "double_double_s_per_point": 4.6775,
-      "double_s_per_point": 0.045
+      "generate_s": 2.49,
+      "export_s": 0.43,
+      "double_double_s_per_point": 4.665,
+      "double_s_per_point": 0.0425
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 1.213468378948683e-13,
-   "max_binary64_vs_dd": 1.3971113894164087e-12,
-   "max_catani_dd": 5.4961926373167875e-27
+   "max_dd_vs_reference": 1.2134683789499523e-13,
+   "max_binary64_vs_dd": 1.3971113894164106e-12,
+   "max_catani_dd": 3.224853344832941e-28,
+   "max_ward_dd": null
   },
   {
    "id": "D17",
@@ -4582,9 +4776,9 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 3.4181966379103775e-13,
-     "max_binary64_vs_dd": 6.586717720765248e-13,
-     "max_catani_dd": 1.8670735599177758e-27,
+     "max_dd_vs_reference": 3.4181966379102053e-13,
+     "max_binary64_vs_dd": 6.586717720765177e-13,
+     "max_catani_dd": 5.658664394906378e-29,
      "max_catani_binary64": 5.902932925892507e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -4593,20 +4787,23 @@
       "single_pole": 9.390448130916993e-13,
       "double_pole": 2.539595260051097e-14
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.85,
-      "export_s": 0.59,
-      "double_double_s_per_point": 4.7675,
-      "double_s_per_point": 0.0775
+      "generate_s": 5.51,
+      "export_s": 0.58,
+      "double_double_s_per_point": 4.7625,
+      "double_s_per_point": 0.075
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 3.4181966379103775e-13,
-   "max_binary64_vs_dd": 6.586717720765248e-13,
-   "max_catani_dd": 1.8670735599177758e-27
+   "max_dd_vs_reference": 3.4181966379102053e-13,
+   "max_binary64_vs_dd": 6.586717720765177e-13,
+   "max_catani_dd": 5.658664394906378e-29,
+   "max_ward_dd": null
   },
   {
    "id": "D18",
@@ -4641,9 +4838,9 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 5.637827783785664e-15,
+     "max_dd_vs_reference": 5.637827783785832e-15,
      "max_binary64_vs_dd": 1.9938159765890662e-12,
-     "max_catani_dd": 1.0805805794645062e-29,
+     "max_catani_dd": 1.0837442109626435e-29,
      "max_catani_binary64": 2.590212739897575e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -4652,20 +4849,23 @@
       "single_pole": 2.588114835410617e-13,
       "double_pole": 5.894904040963827e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.01,
+      "generate_s": 1.98,
       "export_s": 0.24,
-      "double_double_s_per_point": 4.5275,
+      "double_double_s_per_point": 4.4975,
       "double_s_per_point": 0.0275
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 5.637827783785664e-15,
+   "max_dd_vs_reference": 5.637827783785832e-15,
    "max_binary64_vs_dd": 1.9938159765890662e-12,
-   "max_catani_dd": 1.0805805794645062e-29
+   "max_catani_dd": 1.0837442109626435e-29,
+   "max_ward_dd": null
   },
   {
    "id": "D19",
@@ -4711,11 +4911,13 @@
       "single_pole": 3.25075750057329e-15,
       "double_pole": 3.5148955709466287e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.98,
-      "export_s": 0.46,
-      "double_double_s_per_point": 4.5575,
+      "generate_s": 3.65,
+      "export_s": 0.44,
+      "double_double_s_per_point": 4.5925,
       "double_s_per_point": 0.055
      },
      "failed_checks": [
@@ -4805,7 +5007,8 @@
    "variants": [],
    "max_dd_vs_reference": 6.891441179862777e-16,
    "max_binary64_vs_dd": 3.3170326383894936e-15,
-   "max_catani_dd": 0.33461667180012294
+   "max_catani_dd": 0.33461667180012294,
+   "max_ward_dd": null
   },
   {
    "id": "D20",
@@ -4851,12 +5054,14 @@
       "single_pole": 8.811253428361264e-14,
       "double_pole": 4.981596113632229e-14
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.83,
-      "export_s": 1.72,
-      "double_double_s_per_point": 4.89,
-      "double_s_per_point": 0.0775
+      "generate_s": 4.7,
+      "export_s": 1.7,
+      "double_double_s_per_point": 4.835,
+      "double_s_per_point": 0.075
      },
      "failed_checks": []
     }
@@ -4864,7 +5069,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.0607040777935069e-13,
    "max_binary64_vs_dd": 2.036820390276846e-12,
-   "max_catani_dd": 7.011944964297595e-30
+   "max_catani_dd": 7.011944964297595e-30,
+   "max_ward_dd": null
   },
   {
    "id": "D21",
@@ -4910,11 +5116,13 @@
       "single_pole": 1.2515202800041477e-14,
       "double_pole": 0.0
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.22,
-      "export_s": 0.32,
-      "double_double_s_per_point": 4.673333333333333,
+      "generate_s": 2.81,
+      "export_s": 0.31,
+      "double_double_s_per_point": 4.596666666666667,
       "double_s_per_point": 0.04
      },
      "failed_checks": []
@@ -4923,7 +5131,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.3493056897807905e-14,
    "max_binary64_vs_dd": 1.7849578185996357e-14,
-   "max_catani_dd": 1.2362809694291508e-31
+   "max_catani_dd": 1.2362809694291508e-31,
+   "max_ward_dd": null
   },
   {
    "id": "D23",
@@ -4969,12 +5178,14 @@
       "single_pole": 3.115709583785335e-13,
       "double_pole": 1.2697897183437391e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.02,
-      "export_s": 0.72,
-      "double_double_s_per_point": 4.725,
-      "double_s_per_point": 0.05
+      "generate_s": 4.9,
+      "export_s": 0.68,
+      "double_double_s_per_point": 4.735,
+      "double_s_per_point": 0.0525
      },
      "failed_checks": []
     }
@@ -4982,7 +5193,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.4061840554677431e-14,
    "max_binary64_vs_dd": 3.116052514260294e-13,
-   "max_catani_dd": 3.2085263665781757e-31
+   "max_catani_dd": 3.2085263665781757e-31,
+   "max_ward_dd": null
   },
   {
    "id": "D24",
@@ -5028,11 +5240,13 @@
       "single_pole": 4.754375455771501e-15,
       "double_pole": 7.338345495317883e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.05,
+      "generate_s": 2.02,
       "export_s": 0.28,
-      "double_double_s_per_point": 4.5275,
+      "double_double_s_per_point": 4.52,
       "double_s_per_point": 0.0325
      },
      "failed_checks": []
@@ -5041,7 +5255,8 @@
    "variants": [],
    "max_dd_vs_reference": 7.299032743674404e-16,
    "max_binary64_vs_dd": 4.103080228086518e-15,
-   "max_catani_dd": 7.972353351735542e-32
+   "max_catani_dd": 7.972353351735542e-32,
+   "max_ward_dd": null
   },
   {
    "id": "D25",
@@ -5078,9 +5293,9 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 1.3991216559631416e-15,
-     "max_binary64_vs_dd": 6.173830930892738e-14,
-     "max_catani_dd": 1.5099443502498134e-27,
+     "max_dd_vs_reference": 1.39912165596336e-15,
+     "max_binary64_vs_dd": 6.173830930892494e-14,
+     "max_catani_dd": 3.409479818867949e-29,
      "max_catani_binary64": 1.924271760780483e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -5089,12 +5304,14 @@
       "single_pole": 1.8261716317995192e-14,
       "double_pole": 4.279815223426959e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.09,
-      "export_s": 0.43,
-      "double_double_s_per_point": 4.7075,
-      "double_s_per_point": 0.0375
+      "generate_s": 4.9,
+      "export_s": 0.42,
+      "double_double_s_per_point": 4.6675,
+      "double_s_per_point": 0.035
      },
      "failed_checks": []
     }
@@ -5120,11 +5337,11 @@
         2
        ],
        "passed": true,
-       "checks": 60,
+       "checks": 62,
        "failures": 0,
-       "max_dd_vs_reference": 4.760026922735104e-15,
-       "max_binary64_vs_dd": 4.4314035516946935e-13,
-       "max_catani_dd": 2.3186703713618144e-27,
+       "max_dd_vs_reference": 4.7600269227589266e-15,
+       "max_binary64_vs_dd": 4.4314035516949313e-13,
+       "max_catani_dd": 1.3399181652465598e-28,
        "max_catani_binary64": 2.5738648403429967e-14,
        "catani_not_formed": false,
        "binary64_vs_reference": {
@@ -5133,11 +5350,13 @@
         "single_pole": 2.6428692596551415e-14,
         "double_pole": 1.1395650639596003e-15
        },
+       "ward": null,
+       "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.566666666666666,
+        "double_double_s_per_point": 4.453333333333333,
         "double_s_per_point": 0.03333333333333333
        },
        "failed_checks": []
@@ -5145,9 +5364,10 @@
      }
     }
    ],
-   "max_dd_vs_reference": 4.760026922735104e-15,
-   "max_binary64_vs_dd": 4.4314035516946935e-13,
-   "max_catani_dd": 2.3186703713618144e-27
+   "max_dd_vs_reference": 4.7600269227589266e-15,
+   "max_binary64_vs_dd": 4.4314035516949313e-13,
+   "max_catani_dd": 1.3399181652465598e-28,
+   "max_ward_dd": null
   },
   {
    "id": "D26",
@@ -5193,11 +5413,13 @@
       "single_pole": 1.141279546958675e-14,
       "double_pole": 2.6042865071732083e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.33,
-      "export_s": 2.36,
-      "double_double_s_per_point": 4.8525,
+      "generate_s": 6.66,
+      "export_s": 2.46,
+      "double_double_s_per_point": 4.84,
       "double_s_per_point": 0.075
      },
      "failed_checks": []
@@ -5206,7 +5428,8 @@
    "variants": [],
    "max_dd_vs_reference": 3.3042679337445256e-14,
    "max_binary64_vs_dd": 8.50862094559073e-14,
-   "max_catani_dd": 1.5132859176745711e-31
+   "max_catani_dd": 1.5132859176745711e-31,
+   "max_ward_dd": null
   },
   {
    "id": "D27",
@@ -5252,12 +5475,14 @@
       "single_pole": 2.7287351185296557e-13,
       "double_pole": 9.277000988956786e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.77,
-      "export_s": 0.37,
-      "double_double_s_per_point": 4.6875,
-      "double_s_per_point": 0.04
+      "generate_s": 2.86,
+      "export_s": 0.38,
+      "double_double_s_per_point": 4.67,
+      "double_s_per_point": 0.0425
      },
      "failed_checks": []
     }
@@ -5265,7 +5490,8 @@
    "variants": [],
    "max_dd_vs_reference": 2.294684904309366e-13,
    "max_binary64_vs_dd": 4.340502142203895e-14,
-   "max_catani_dd": 6.538084530705254e-31
+   "max_catani_dd": 6.538084530705254e-31,
+   "max_ward_dd": null
   },
   {
    "id": "E01",
@@ -5288,8 +5514,7 @@
     "uv"
    ],
    "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)",
-    "ward": "MQ-WARD (generic native Ward input)"
+    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
    },
    "waits_for": null,
    "pending_reason": null,
@@ -5305,11 +5530,11 @@
       3
      ],
      "passed": true,
-     "checks": 82,
+     "checks": 98,
      "failures": 0,
-     "max_dd_vs_reference": 3.586354568865162e-13,
-     "max_binary64_vs_dd": 7.371906562895969e-12,
-     "max_catani_dd": 3.098966660605933e-27,
+     "max_dd_vs_reference": 3.5863545688653515e-13,
+     "max_binary64_vs_dd": 7.371906562895949e-12,
+     "max_catani_dd": 6.820738024730851e-30,
      "max_catani_binary64": 3.1082233349956357e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -5318,21 +5543,31 @@
       "single_pole": 3.0652930728323594e-12,
       "double_pole": 1.4643851315901897e-12
      },
+     "ward": {
+      "checks": 16,
+      "virtual_double": 0.025153304239772415,
+      "born_double": 4.751985873564509e-16,
+      "virtual_double-double": 2.0300346713130966e-31,
+      "born_double-double": 5.46217515100638e-31
+     },
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.46,
-      "export_s": 0.54,
-      "double_double_s_per_point": 7.85,
-      "double_s_per_point": 0.3275,
-      "uv_s": 8.64
+      "generate_s": 8.87,
+      "export_s": 0.58,
+      "double_double_s_per_point": 7.94,
+      "double_s_per_point": 0.33,
+      "uv_s": 8.52,
+      "ward_s": 19.92
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 3.586354568865162e-13,
-   "max_binary64_vs_dd": 7.371906562895969e-12,
-   "max_catani_dd": 3.098966660605933e-27
+   "max_dd_vs_reference": 3.5863545688653515e-13,
+   "max_binary64_vs_dd": 7.371906562895949e-12,
+   "max_catani_dd": 6.820738024730851e-30,
+   "max_ward_dd": 2.0300346713130966e-31
   },
   {
    "id": "E02",
@@ -5367,31 +5602,34 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 7.184965378413263e-14,
+     "max_dd_vs_reference": 7.18496537841298e-14,
      "max_binary64_vs_dd": 3.151729333346007e-12,
-     "max_catani_dd": 4.164265060815324e-27,
+     "max_catani_dd": 5.833144575641443e-30,
      "max_catani_binary64": 3.1502475687662446e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 3.56258956738948e-15,
-      "finite": 1.8144462709252068e-12,
+      "finite": 1.813173949322597e-12,
       "single_pole": 3.134721402401298e-12,
       "double_pole": 1.3864920077313601e-12
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.83,
+      "generate_s": 4.78,
       "export_s": 1.5,
-      "double_double_s_per_point": 8.7075,
-      "double_s_per_point": 0.585
+      "double_double_s_per_point": 8.7125,
+      "double_s_per_point": 0.58
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 7.184965378413263e-14,
+   "max_dd_vs_reference": 7.18496537841298e-14,
    "max_binary64_vs_dd": 3.151729333346007e-12,
-   "max_catani_dd": 4.164265060815324e-27
+   "max_catani_dd": 5.833144575641443e-30,
+   "max_ward_dd": null
   },
   {
    "id": "E05",
@@ -5437,12 +5675,14 @@
       "single_pole": 9.257208421616232e-15,
       "double_pole": 0.0
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.79,
-      "export_s": 0.71,
-      "double_double_s_per_point": 5.08,
-      "double_s_per_point": 0.09000000000000001
+      "generate_s": 3.84,
+      "export_s": 0.81,
+      "double_double_s_per_point": 5.023333333333333,
+      "double_s_per_point": 0.08333333333333333
      },
      "failed_checks": []
     }
@@ -5450,7 +5690,8 @@
    "variants": [],
    "max_dd_vs_reference": 5.8139605468115996e-15,
    "max_binary64_vs_dd": 6.6061695150453176e-15,
-   "max_catani_dd": 2.4274707832205693e-31
+   "max_catani_dd": 2.4274707832205693e-31,
+   "max_ward_dd": null
   },
   {
    "id": "E06",
@@ -5513,6 +5754,8 @@
       "single_pole": 1.1087054602759246e-12,
       "double_pole": 7.252797282289281e-13
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [
       {
        "point": 2,
@@ -5523,10 +5766,10 @@
       }
      ],
      "timings": {
-      "generate_s": 9.69,
-      "export_s": 2.73,
-      "double_double_s_per_point": 49.23666666666667,
-      "double_s_per_point": 6.59
+      "generate_s": 9.35,
+      "export_s": 2.56,
+      "double_double_s_per_point": 48.919999999999995,
+      "double_s_per_point": 6.466666666666666
      },
      "failed_checks": []
     }
@@ -5534,7 +5777,8 @@
    "variants": [],
    "max_dd_vs_reference": 1.382332489036081e-12,
    "max_binary64_vs_dd": 1.343705445858638e-12,
-   "max_catani_dd": 5.723097486124992e-27
+   "max_catani_dd": 5.723097486124992e-27,
+   "max_ward_dd": null
   },
   {
    "id": "F01",
@@ -5586,14 +5830,16 @@
       "single_pole": 1.785145035353702e-15,
       "double_pole": 1.4944362882059855e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.84,
-      "export_s": 0.25,
-      "double_double_s_per_point": 4.53,
+      "generate_s": 6.0,
+      "export_s": 0.26,
+      "double_double_s_per_point": 4.54,
       "double_s_per_point": 0.0325,
-      "uv_s": 4.59,
-      "ap_s": 5.59
+      "uv_s": 4.6,
+      "ap_s": 5.61
      },
      "failed_checks": []
     }
@@ -5601,7 +5847,8 @@
    "variants": [],
    "max_dd_vs_reference": 2.8737647842860256e-15,
    "max_binary64_vs_dd": 8.662685855278131e-16,
-   "max_catani_dd": 1.3451211945685911e-31
+   "max_catani_dd": 1.3451211945685911e-31,
+   "max_ward_dd": null
   },
   {
    "id": "F02",
@@ -5647,12 +5894,14 @@
       "single_pole": 2.3981942177171427e-15,
       "double_pole": 1.175314744968274e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.17,
+      "generate_s": 4.24,
       "export_s": 0.24,
-      "double_double_s_per_point": 4.5075,
-      "double_s_per_point": 0.0325
+      "double_double_s_per_point": 4.5725,
+      "double_s_per_point": 0.035
      },
      "failed_checks": []
     }
@@ -5660,7 +5909,8 @@
    "variants": [],
    "max_dd_vs_reference": 2.990385939277663e-15,
    "max_binary64_vs_dd": 1.8362994417422163e-15,
-   "max_catani_dd": 1.073145756158666e-31
+   "max_catani_dd": 1.073145756158666e-31,
+   "max_ward_dd": null
   },
   {
    "id": "F03",
@@ -5688,7 +5938,8 @@
    "variants": [],
    "max_dd_vs_reference": null,
    "max_binary64_vs_dd": null,
-   "max_catani_dd": null
+   "max_catani_dd": null,
+   "max_ward_dd": null
   },
   {
    "id": "F04",
@@ -5708,9 +5959,7 @@
    "extras": [
     "ward"
    ],
-   "extras_pending": {
-    "ward": "MQ-WARD (generic native Ward input)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "listed_outliers": [],
@@ -5725,11 +5974,11 @@
       3
      ],
      "passed": true,
-     "checks": 80,
+     "checks": 88,
      "failures": 0,
-     "max_dd_vs_reference": 2.1124249241332403e-14,
-     "max_binary64_vs_dd": 3.213803754140333e-15,
-     "max_catani_dd": 1.8022243700924547e-28,
+     "max_dd_vs_reference": 2.112424924133207e-14,
+     "max_binary64_vs_dd": 3.213803754140161e-15,
+     "max_catani_dd": 3.3988633003743326e-30,
      "max_catani_binary64": 1.595878389645803e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -5738,20 +5987,30 @@
       "single_pole": 7.515348225561863e-15,
       "double_pole": 1.1308841685365295e-15
      },
+     "ward": {
+      "checks": 8,
+      "virtual_double": 0.00633880830809871,
+      "born_double": 3.050981311367709e-16,
+      "virtual_double-double": 3.816968435243488e-31,
+      "born_double-double": 4.222323655640552e-31
+     },
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.93,
-      "export_s": 1.84,
-      "double_double_s_per_point": 4.775,
-      "double_s_per_point": 0.0825
+      "generate_s": 5.2,
+      "export_s": 1.85,
+      "double_double_s_per_point": 4.84,
+      "double_s_per_point": 0.0825,
+      "ward_s": 10.75
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 2.1124249241332403e-14,
-   "max_binary64_vs_dd": 3.213803754140333e-15,
-   "max_catani_dd": 1.8022243700924547e-28
+   "max_dd_vs_reference": 2.112424924133207e-14,
+   "max_binary64_vs_dd": 3.213803754140161e-15,
+   "max_catani_dd": 3.3988633003743326e-30,
+   "max_ward_dd": 3.816968435243488e-31
   },
   {
    "id": "G01",
@@ -5797,11 +6056,13 @@
       "single_pole": 1.394156948294506e-15,
       "double_pole": 2.1615565252219793e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 10.08,
-      "export_s": 1.08,
-      "double_double_s_per_point": 5.14,
+      "generate_s": 10.2,
+      "export_s": 1.18,
+      "double_double_s_per_point": 5.175,
       "double_s_per_point": 0.12
      },
      "failed_checks": []
@@ -5824,13 +6085,15 @@
       "single_pole": 1.0156703318359183e-15,
       "double_pole": 1.2001930603212203e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 9.92,
-      "export_s": 2.41,
-      "double_double_s_per_point": 5.34,
+      "generate_s": 11.55,
+      "export_s": 1.09,
+      "double_double_s_per_point": 5.46,
       "double_s_per_point": 0.13,
-      "uv_s": 4.5
+      "uv_s": 4.55
      },
      "failed_checks": []
     }
@@ -5838,7 +6101,8 @@
    "variants": [],
    "max_dd_vs_reference": 4.598074524287263e-15,
    "max_binary64_vs_dd": 2.44259759389765e-15,
-   "max_catani_dd": 4.973381721545582e-32
+   "max_catani_dd": 4.973381721545582e-32,
+   "max_ward_dd": null
   },
   {
    "id": "G02",
@@ -5861,7 +6125,7 @@
    "pending_reason": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
-   "status": "fail",
+   "status": "pass",
    "tiers": {
     "nightly": {
      "points": [
@@ -5870,45 +6134,37 @@
       2,
       3
      ],
-     "passed": false,
+     "passed": true,
      "checks": 168,
-     "failures": 1,
-     "max_dd_vs_reference": 0.9999999999973155,
+     "failures": 0,
+     "max_dd_vs_reference": 6.376389057382816e-14,
      "max_binary64_vs_dd": 3.111503693515707e-14,
      "max_catani_dd": 3.729695987259872e-30,
      "max_catani_binary64": 3.437751422094058e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
-      "born": 0.9999999999973155,
+      "born": 9.44163109393664e-16,
       "finite": 8.076677496114069e-15,
       "single_pole": 3.2648853638672104e-14,
       "double_pole": 1.8424054099159184e-15
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.32,
-      "export_s": 0.93,
-      "double_double_s_per_point": 4.8525,
-      "double_s_per_point": 0.165
+      "generate_s": 5.53,
+      "export_s": 0.96,
+      "double_double_s_per_point": 4.85,
+      "double_s_per_point": 0.1675
      },
-     "failed_checks": [
-      {
-       "rule": "1",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QED^4",
-       "coefficient": "born",
-       "error": 0.9999999999973155,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy None; status 216; its double pole off its Born x the universal factor by 2.07e-15; second providers none)"
-      }
-     ]
+     "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 0.9999999999973155,
+   "max_dd_vs_reference": 6.376389057382816e-14,
    "max_binary64_vs_dd": 3.111503693515707e-14,
-   "max_catani_dd": 3.729695987259872e-30
+   "max_catani_dd": 3.729695987259872e-30,
+   "max_ward_dd": null
   },
   {
    "id": "H01",
@@ -5945,9 +6201,9 @@
      "passed": true,
      "checks": 98,
      "failures": 0,
-     "max_dd_vs_reference": 1.7881161964083838e-13,
-     "max_binary64_vs_dd": 7.185208034654722e-14,
-     "max_catani_dd": 5.485237194288036e-27,
+     "max_dd_vs_reference": 1.7881161964084242e-13,
+     "max_binary64_vs_dd": 7.185208034654318e-14,
+     "max_catani_dd": 4.63644103869966e-29,
      "max_catani_binary64": 7.154588272949518e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -5956,22 +6212,25 @@
       "single_pole": 2.5066369998737275e-13,
       "double_pole": 7.387042565569966e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.02,
-      "export_s": 0.46,
-      "double_double_s_per_point": 4.875,
-      "double_s_per_point": 0.0475,
-      "uv_s": 5.04,
-      "ckm_s": 13.5
+      "generate_s": 6.19,
+      "export_s": 0.41,
+      "double_double_s_per_point": 4.7025,
+      "double_s_per_point": 0.0525,
+      "uv_s": 5.18,
+      "ckm_s": 13.3
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 1.7881161964083838e-13,
-   "max_binary64_vs_dd": 7.185208034654722e-14,
-   "max_catani_dd": 5.485237194288036e-27
+   "max_dd_vs_reference": 1.7881161964084242e-13,
+   "max_binary64_vs_dd": 7.185208034654318e-14,
+   "max_catani_dd": 4.63644103869966e-29,
+   "max_ward_dd": null
   },
   {
    "id": "H02",
@@ -5999,7 +6258,8 @@
    "variants": [],
    "max_dd_vs_reference": null,
    "max_binary64_vs_dd": null,
-   "max_catani_dd": null
+   "max_catani_dd": null,
+   "max_ward_dd": null
   },
   {
    "id": "H03",
@@ -6027,7 +6287,8 @@
    "variants": [],
    "max_dd_vs_reference": null,
    "max_binary64_vs_dd": null,
-   "max_catani_dd": null
+   "max_catani_dd": null,
+   "max_ward_dd": null
   },
   {
    "id": "M01",
@@ -6081,12 +6342,14 @@
         "single_pole": 4.3281747031487806e-14,
         "double_pole": 1.908492254537706e-15
        },
+       "ward": null,
+       "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 6.78,
-        "export_s": 0.49,
-        "double_double_s_per_point": 4.655,
-        "double_s_per_point": 0.0675
+        "generate_s": 7.3,
+        "export_s": 0.5,
+        "double_double_s_per_point": 4.7325,
+        "double_s_per_point": 0.065
        },
        "failed_checks": []
       }
@@ -6126,11 +6389,13 @@
         "single_pole": 2.757800325414568e-15,
         "double_pole": 9.695597769888345e-16
        },
+       "ward": null,
+       "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 4.72,
-        "export_s": 0.46,
-        "double_double_s_per_point": 5.1075,
+        "generate_s": 4.8,
+        "export_s": 0.45,
+        "double_double_s_per_point": 5.115,
         "double_s_per_point": 0.155
        },
        "failed_checks": []
@@ -6140,7 +6405,8 @@
    ],
    "max_dd_vs_reference": 1.2166710096331119e-14,
    "max_binary64_vs_dd": 3.111503693515707e-14,
-   "max_catani_dd": 4.001646556610976e-30
+   "max_catani_dd": 4.001646556610976e-30,
+   "max_ward_dd": null
   },
   {
    "id": "R01",
@@ -6175,9 +6441,9 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 9.223128895544426e-16,
-     "max_binary64_vs_dd": 1.212879475996293e-15,
-     "max_catani_dd": 4.282180491407302e-32,
+     "max_dd_vs_reference": 9.223128895547425e-16,
+     "max_binary64_vs_dd": 1.2128794759962507e-15,
+     "max_catani_dd": 3.862872953918568e-32,
      "max_catani_binary64": 9.106816670465562e-16,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -6186,20 +6452,23 @@
       "single_pole": 7.446944618606855e-16,
       "double_pole": 4.797985089834039e-16
      },
+     "ward": null,
+     "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.77,
-      "export_s": 0.29,
-      "double_double_s_per_point": 4.4875,
-      "double_s_per_point": 0.0325
+      "generate_s": 4.61,
+      "export_s": 0.31,
+      "double_double_s_per_point": 4.5725,
+      "double_s_per_point": 0.03
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 9.223128895544426e-16,
-   "max_binary64_vs_dd": 1.212879475996293e-15,
-   "max_catani_dd": 4.282180491407302e-32
+   "max_dd_vs_reference": 9.223128895547425e-16,
+   "max_binary64_vs_dd": 1.2128794759962507e-15,
+   "max_catani_dd": 3.862872953918568e-32,
+   "max_ward_dd": null
   }
  ],
  "findings": [
@@ -6212,8 +6481,8 @@
     "C07"
    ],
    "checks": "rule 4, every point, double-double and binary64, single pole of the leading sector only (D19 QCD^2 QED^6: 9.3e-2 .. 3.4e-1; C07 QCD^4 QED^4: 9.2e-4 .. 2.2e-2); the double poles agree",
-   "evidence": "rule 1 passes on both rows: our virtual equals MadLoop's per squared split order within 1e-12, poles included. Both follow MadLoop's [virt=QCD] loop selection (loops/orders.py LoopEligibility: every circulating species perturbative in a selected correction), so a loop carrying a W or Z next to the gluon (the boxes and pentagons exchanging a gluon between the two quark lines) is not computed. Catani's operator describes the complete O(alpha_s) virtual, whose non-factorisable poles <T_i.T_k> between the lines are nonzero when the Born interferes colour structures joined by different EW exchanges. Minimal reproducer on D19's points, double-double, rule 4 only (workspace/tmp/mq-validate/s2/ew22.py): u d > u d h QCD=0 (Z and W exchange, colour structures delta_13 delta_24 and delta_14 delta_23) single pole 1.6133954759575e-9 against the predicted 1.4436894729941e-9 (rel 0.105; 0.335 at point 1), while u c > u c h and u c~ > u c~ h (one colour structure, where the non-factorisable interference vanishes by colour) agree within 6e-33 .. 3e-31 and the QCD Born u d > u d within 9e-30. The operator's inputs are right: its Born vectors contracted with the Gram matrix give the engine's Born exactly (5.416202339758131e-9) and its C_ij are the expected colour algebra (s2/vec.py); the Python path (LoopSlice.evaluate, 34 digits) and the native executor give the same virtual and prediction (s2/catani-D19.log); no relabelling of the legs reproduces the virtual (24 tried, s2/perm-D19.log); the deviation is mu-independent (points 0 and 3: same kinematics, mu_R halved, the same -0.0313 x Born). poles.predicted_sectors only checks the trees left by a soft exchange of each coupling (L - 2c), not the loops the species condition removes. The same mechanism applies to C07 (W joining the light u->d line and the t b~ line).",
-   "routed_to": "coordinator: owner of loops/v2/poles.py predicted_sectors (a sector whose Born has colour-connected structures joined only by non-correction bosons with a nonzero non-factorisable <T_i.T_k> is not predicted, or the operator is restricted to the computed loops); also check what poles='ir' returns for such sectors (ADDENDUM I). MQ-VALIDATE then moves the D19 and C07 sectors to unpredicted (rule 4 keeps checking them against MadLoop per split order)",
+   "evidence": "rule 1 passes on both rows: our virtual equals MadLoop's per squared split order within 1e-12, poles included. Both follow MadLoop's [virt=QCD] loop selection (loops/orders.py LoopEligibility: every circulating species perturbative in a selected correction), so a loop carrying a W or Z next to the gluon (the boxes and pentagons exchanging a gluon between the two quark lines) is not computed. Catani's operator describes the complete O(alpha_s) virtual, whose non-factorisable poles <T_i.T_k> between the lines are nonzero when the Born interferes colour structures joined by different EW exchanges. Minimal reproducer on D19's points, double-double, rule 4 only (workspace/tmp/mq-validate/s2/ew22.py): u d > u d h QCD=0 (Z and W exchange, colour structures delta_13 delta_24 and delta_14 delta_23) single pole 1.6133954759575e-9 against the predicted 1.4436894729941e-9 (rel 0.105; 0.335 at point 1), while u c > u c h and u c~ > u c~ h (one colour structure, where the non-factorisable interference vanishes by colour) agree within 6e-33 .. 3e-31 and the QCD Born u d > u d within 9e-30. The operator's inputs are right: its Born vectors contracted with the Gram matrix give the engine's Born exactly (5.416202339758131e-9) and its C_ij are the expected colour algebra (s2/vec.py); the Python path (LoopSlice.evaluate, 34 digits) and the native executor give the same virtual and prediction (s2/catani-D19.log); no relabelling of the legs reproduces the virtual (24 tried, s2/perm-D19.log); the deviation is mu-independent (points 0 and 3: same kinematics, mu_R halved, the same -0.0313 x Born). poles.predicted_sectors only checks the trees left by a soft exchange of each coupling (L - 2c), not the loops the species condition removes. The same mechanism applies to C07 (W joining the light u->d line and the t b~ line). Pole selection (2026-10-28, workspace/tmp/mq-validate/s3/irmode-D19.log, D19 point 0, double-double, slice d3081568): poles='ir' returns the same virtual as poles='all' to every printed digit (finite -3.973456325044482e-9, single -1.613395475957548e-9, double -5.424950094330169e-10), its UV-origin pole parts are 0 and its IR-origin parts are the whole poles, so the renormalised virtual's IR poles are the computed ones (the user-facing 'ir' output is consistent with rule 1); only the Catani prediction (single -1.443689472994084e-9, double equal) misses.",
+   "routed_to": "coordinator: owner of loops/v2/poles.py predicted_sectors (a sector whose Born has colour-connected structures joined only by non-correction bosons with a nonzero non-factorisable <T_i.T_k> is not predicted, or the operator is restricted to the computed loops; poles='ir' itself is consistent, see the evidence). MQ-VALIDATE then moves the D19 and C07 sectors to unpredicted (rule 4 keeps checking them against MadLoop per split order)",
    "status": "open"
   },
   {
@@ -6228,7 +6497,7 @@
     "A06"
    ],
    "checks": "rule 1: C01 point 1 finite 3.25e-11 (default tier), C01@params point 1 finite 2.69e-11, C02 point 0 finite 2.1e-12, D11 point 1 single pole 4.27e-12, A06 point 1 single pole 1.18e-12",
-   "evidence": "Cross-checks run into workspace/tmp/mq-validate/qpref/ (the committed exports read only; MQ-REF's toolkit, references.py run): (a) C01 point 1: MadLoop forced to quadruple precision (--madloop-accuracy 1e-20, status 328) reproduces its binary64 value (finite 5.527401070421307, 3.25e-11 from ours; single and double pole 4.8e-13 from ours, which equal Catani's within 1e-27), while Recola (COLLIER) agrees with our double-double within 1.1e-15 on every coefficient of points 0-3 (finite 5.527401070600913 at point 1); our double-double equals 40 and 60 digits within 1e-31 there (s2/c01ap.log): MadLoop's massive-b result is off, not ours. (b) C02 point 0 and D11 point 1: forced quadruple precision brings MadLoop within 5e-14 and 7e-15 of ours (Recola 5.7e-13, 1.5e-13): binary64 noise of the status-216 runs that MadLoop's estimate does not see. (c) A06 point 1 (a cancelling single pole, 0.12 against a Born of 302): the committed Recola and OpenLoops values are 7.3e-13 and 5.2e-13 from ours, MadLoop 1.18e-12; MLStabThres = 1e-20 cannot force quadruple precision there because MadLoop's binary64 estimate is exactly 0 (status 216 again). Not explained by the input point: double-double at MadLoop's own quadruple-precision point (its ImprovePSPoint=2 projection of the binary64 rounding, supplied_points.madloop_qp_point) gives the same deviations (workspace/tmp/mq-validate/qp/exp.py).",
+   "evidence": "Cross-checks run into workspace/tmp/mq-validate/qpref/ (the committed exports read only; MQ-REF's toolkit, references.py run): (a) C01 point 1: MadLoop forced to quadruple precision (--madloop-accuracy 1e-20, status 328) reproduces its binary64 value (finite 5.527401070421307, 3.25e-11 from ours; single and double pole 4.8e-13 from ours, which equal Catani's within 1e-27), while Recola (COLLIER) agrees with our double-double within 1.1e-15 on every coefficient of points 0-3 (finite 5.527401070600913 at point 1); our double-double equals 40 and 60 digits within 1e-31 there (s2/c01ap.log): MadLoop's massive-b result is off, not ours. (b) C02 point 0 and D11 point 1: forced quadruple precision brings MadLoop within 5e-14 and 7e-15 of ours (Recola 5.7e-13, 1.5e-13): binary64 noise of the status-216 runs that MadLoop's estimate does not see. (c) A06 point 1 (a cancelling single pole, 0.12 against a Born of 302): the committed Recola and OpenLoops values are 7.3e-13 and 5.2e-13 from ours, MadLoop 1.18e-12; MLStabThres = 1e-20 cannot force quadruple precision there because MadLoop's binary64 estimate is exactly 0 (status 216 again). Not explained by the input point: double-double at MadLoop's own quadruple-precision point (its ImprovePSPoint=2 projection of the binary64 rounding, supplied_points.madloop_qp_point) gives the same deviations (workspace/tmp/mq-validate/qp/exp.py). MQ-REF's per-point records (fix round 06dfb9c5) show MadLoop's own inconsistency at the failing massive-b points: at C01 point 1 its printed Born and the Born its double pole implies differ by 4.82e-13 (C01@params point 1: 3.7e-13), against 3e-16 .. 1e-15 at the other rows' points; C02 point 0 and D11 point 1 show 3.3e-16 and 8.6e-16 (binary64 noise in the finite and single pole only). The fix round added no second provider to C01, C02, D11 (campaign pt6 at a765a9cc: the same five failures).",
    "routed_to": "MQ-REF: rerun the status-216 points in quadruple precision forced by CTModeRun (the threshold cannot force it where MadLoop's estimate is 0), which resolves C02 and D11; add Recola as the second provider of C01/C01@params (it agrees within 1e-15). User ruling needed for C01: rule 1 (i) cannot hold when the primary is wrong in both precisions while its own accuracy reads 0 (proposal: Recola primary for the massive-b rows, MadLoop recorded as an outlier with this evidence)",
    "status": "open"
   },
@@ -6253,21 +6522,20 @@
     "G02"
    ],
    "checks": "rule 1 point 1 [QED^4] born: relative error 1",
-   "evidence": "tests/fixtures/loop/required/mqcd/uux_ttx_mixed.json rows[1].sectors.born QED^4 = 3582980135.555 (and the total Born with it), while the loop sectors of the same point, normalised by MadLoop with its internal Born, agree with ours within 1e-12 and the QED^4 Born of points 0, 2, 3 is 9.5e-3; the runner reads the per-sector Borns from born_matrix.f (madloop_driver.f90 comment), so a runner-side read of that sector is suspect",
+   "evidence": "tests/fixtures/loop/required/mqcd/uux_ttx_mixed.json rows[1].sectors.born QED^4 = 3582980135.555 (and the total Born with it), while the loop sectors of the same point, normalised by MadLoop with its internal Born, agree with ours within 1e-12 and the QED^4 Born of points 0, 2, 3 is 9.5e-3; the runner reads the per-sector Borns from born_matrix.f (madloop_driver.f90 comment), so a runner-side read of that sector is suspect Resolved by MQ-REF's fix round 06dfb9c5 (MG5 3.7.0 born_matrix.f leaves the (colour flow, split order) JAMP entry unassigned; the runner now zero-initialises it): the point's QED^4 Born is 9.6187e-3, and G02 passes every rule at the campaign run pt6 (2026-10-28, head a765a9cc).",
    "routed_to": "MQ-REF",
-   "status": "open"
+   "status": "resolved"
   },
   {
    "id": "F5",
    "category": "reference: binary64 Born",
-   "title": "MadLoop's Borns of the references are binary64 evaluations: a soft point and suppressed helicities miss 1e-12",
+   "title": "MadLoop's per-helicity references miss 1e-12 on suppressed helicities and on a cancelling finite part (A09@soft resolved)",
    "rows": [
-    "A09@soft",
     "A08"
    ],
-   "checks": "A09@soft point 1 (E_g/sqrt(s) = 1e-5) rule 1 [QCD^6] born 2.73e-11; A08 hel point 0: helicities h---+- and h+++-+ born 9.9e-11 (their Born 3.6e-11 against a summed Born of order 1) and their poles 1.3e-12 .. 8.1e-12, h-+-++ finite 4.5e-12",
-   "evidence": "A09@soft point 1: the loop coefficients agree within 2.5e-13 (the double pole = universal factor x MadLoop's internal Born), only the reported Born misses; our point equals MadLoop's quadruple-precision point within 4.9e-25, so the input does not explain it; a binary64 Born at a soft point carries the momentum-conservation rounding relative to the soft energy (1e-16 / 1e-5). A08: |ours - MadLoop| = 3.6e-21 for a helicity Born of 3.6e-11, i.e. 2 sqrt(B_h B_max) x 1e-16, the binary64 rounding of the amplitude of a helicity suppressed to 1e-11. The runner takes the per-sector Borns from born_matrix.f (binary64); MadLoop's own quadruple-precision evaluation (status 3xx) holds a quadruple-precision Born",
-   "routed_to": "MQ-REF (Borns from MadLoop's quadruple-precision evaluation, per sector and per helicity); no change to the 1e-12 rule",
+   "checks": "A08 hel point 0: helicities h---+- and h+++-+ born 9.9e-11 (their Born 3.6e-11 against a summed Born of order 1) and their poles 1.3e-12 .. 8.1e-12, h-+-++ finite 4.5e-12 (a finite part 100x below its poles); A09@soft resolved",
+   "evidence": "A09@soft point 1: the loop coefficients agree within 2.5e-13 (the double pole = universal factor x MadLoop's internal Born), only the reported Born misses; our point equals MadLoop's quadruple-precision point within 4.9e-25, so the input does not explain it; a binary64 Born at a soft point carries the momentum-conservation rounding relative to the soft energy (1e-16 / 1e-5). A08: |ours - MadLoop| = 3.6e-21 for a helicity Born of 3.6e-11, i.e. 2 sqrt(B_h B_max) x 1e-16, the binary64 rounding of the amplitude of a helicity suppressed to 1e-11. The runner takes the per-sector Borns from born_matrix.f (binary64); MadLoop's own quadruple-precision evaluation (status 3xx) holds a quadruple-precision Born A09@soft: resolved by MQ-REF's fix round 06dfb9c5 (at madloop_qp_point points the reference Born is MadLoop's quadruple-precision double pole over the universal factor, born_source 'madloop_double_pole_over_universal_factor'): A09@soft passes every rule at pt6. A08 (status 328, quadruple precision) is unchanged: the per-helicity rows carry no born_source record, and at a rescued point MadLoop evaluates its own quadruple-precision repair of the binary64 point (~1e-16 from the published one), to which a helicity suppressed to 1e-11 and a finite part cancelling 100x are sensitive at the observed level.",
+   "routed_to": "MQ-REF (per-helicity Borns and Laurent coefficients at the published point: the quadruple-precision double pole over the universal factor per helicity, as for the soft points, or a quadruple-precision evaluation at the published point); no change to the 1e-12 rule",
    "status": "open"
   },
   {
@@ -6286,13 +6554,13 @@
   {
    "id": "F7",
    "category": "native executor: limit points",
-   "title": "The native executor fails at the S2 collinear points (theta = 1e-3, 1e-5) in both carriers",
+   "title": "The native executor fails at the S2 collinear points theta = 1e-4, 1e-5 in double-double and at every collinear point in binary64",
    "rows": [
     "A09@collinear"
    ],
-   "checks": "eval: points 0-2, double-double CutFailed { DegenerateGram } and binary64 Unstable (families 78 and 80, also on the re-test), no value",
-   "evidence": "the collinear family of tools/loop_reference/supplied_points.py (the last two final gluons at opening angle theta); MadLoop evaluates them (status 3xx). PLAN \u00a74.1 S2 expects binary64 outside O1 there but double-double and rule 3 to pass",
-   "routed_to": "MQ-STAB (or the reduction owner): degenerate-Gram handling of the cut reduction at small opening angles",
+   "checks": "eval: points 1-2 (theta = 1e-4, 1e-5) double-double CutFailed { DegenerateGram } and binary64 Unstable (families 78 and 80, also on the re-test and the rotation), point 0 (theta = 1e-3) binary64 Unstable; at point 0 double-double meets MadLoop's quadruple precision (worst finite 7.8e-13) and Catani's poles (4.8e-23 against 10 E = 1e-20)",
+   "evidence": "the collinear family of tools/loop_reference/supplied_points.py (the last two final gluons at opening angle theta = 1e-3, 1e-4, 1e-5 after MQ-REF's fix round). MQ-REF records no provider reference at theta = 1e-4 and 1e-5 (status 'none': MadLoop's quadruple-precision evaluation unstable, return code 420, own accuracy 1.3e-6 and 28; Recola and OpenLoops disagree), so points 1-2 are held by the internal oracles (rules 2-4), which need a value. PLAN \u00a74.1 S2 expects binary64 outside O1 there but double-double and rule 3 to pass; a typed binary64 refusal at a limit point is no value for rule 3. Campaign pt6 and the rerun s3/r1a09 (2026-10-28, head e7029190).",
+   "routed_to": "MQ-STAB (or the reduction owner): degenerate-Gram handling of the cut reduction at small opening angles (double-double at theta <= 1e-4) and a binary64 value with an out-of-scope estimate instead of a refusal at theta = 1e-3",
    "status": "open"
   },
   {

@@ -220,8 +220,11 @@ def markdown(data: dict) -> str:
 
     explained = {}
     for finding in data.get("findings", ()):
+        label = finding["id"]
+        if finding.get("status") == "resolved":
+            label += " (resolved)"
         for name in finding["rows"]:
-            explained.setdefault(name, []).append(finding["id"])
+            explained.setdefault(name, []).append(label)
     columns = (
         "Row",
         "Process",
