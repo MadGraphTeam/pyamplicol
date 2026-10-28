@@ -304,7 +304,7 @@ def command_run(args):
         ),
         "alphas": args.alphas,
         "nf": args.nf,
-        "nc": "3",
+        "nc": args.nc,
         "scheme": args.scheme,
         "renorm": args.renorm,
     }
@@ -315,6 +315,8 @@ def command_run(args):
         f"alphas={args.alphas}",
     ]
     if args.mode == "blha":
+        if args.nc != "3":
+            raise SystemExit("blha mode uses the contract's N_c = 3")
         options.update(multiprec=args.multiprec, precision=args.precision)
         for key in ("prec", "scaling", "scheme", "renorm"):
             options.pop(key)
@@ -330,7 +332,7 @@ def command_run(args):
             f"prec={args.prec}",
             f"scaling={args.scaling}",
             f"nf={args.nf}",
-            "nc=3",
+            f"nc={args.nc}",
             f"scheme={args.scheme}",
             f"renorm={args.renorm}",
         ]
@@ -782,6 +784,12 @@ def main():
     r.add_argument("--scheme", choices=("cdr", "fdh", "none"), default="cdr")
     r.add_argument("--renorm", choices=("0", "1"), default="1")
     r.add_argument("--nf", default="5")
+    r.add_argument(
+        "--nc",
+        default="3",
+        help="direct mode: NJet's N_c (NJetNc; MQ-NC's N_c-scan oracle); the "
+        "driver's normalisation keeps the N_c = 3 colour average",
+    )
     r.add_argument("--alphas", default="0.118")
     r.add_argument("--multiprec", default="0", help="blha: NJetMultiPrec")
     r.add_argument("--precision", default="1e-5", help="blha: rescue threshold")
