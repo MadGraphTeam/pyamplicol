@@ -150,6 +150,17 @@ class Row:
     # Reference fixed parameters the model does not have (MadLoop's WTau).
     ignored_fixed_parameters: tuple[str, ...] = ()
     notes: str = ""
+    # A variant ("<id>@<name>") shares its base row's request and generation
+    # with another reference (a runtime parameter change, a diagnostic twin);
+    # a non-gating variant is a diagnostic the test tiers do not assert.
+    base: str | None = None
+    gating: bool = True
+    # Rule 4's prediction: "python" (the Python-input path's Catani operator,
+    # every row on that route) or "none" for a row on the native-input route,
+    # which forms no prediction (WP3.1 I5c): rule 4 is then recorded as not
+    # asserted (the manifest names the gap), its poles held by rule 1 only.
+    catani: str = "python"
+    variants: tuple[Mapping[str, Any], ...] = ()
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Row:
@@ -190,6 +201,10 @@ class Row:
             vanishing=tuple(data.get("vanishing", ())),
             ignored_fixed_parameters=tuple(data.get("ignored_fixed_parameters", ())),
             notes=data.get("notes", ""),
+            base=data.get("base"),
+            catani=data.get("catani", "python"),
+            gating=bool(data.get("gating", True)),
+            variants=tuple(data.get("variants", ())),
         )
 
     @property
@@ -208,8 +223,24 @@ def load_manifest(path: Path = MANIFEST) -> dict[str, Any]:
 
 
 def rows(manifest: Mapping[str, Any] | None = None) -> dict[str, Row]:
+    """The manifest's rows and their variants (``<id>@<name>``)."""
+
     manifest = manifest or load_manifest()
-    return {data["id"]: Row.from_dict(data) for data in manifest["rows"]}
+    out = {}
+    for data in manifest["rows"]:
+        out[data["id"]] = Row.from_dict(data)
+        for variant in data.get("variants", ()):
+            merged = {
+                **data,
+                "pending": None,
+                "status": "active",
+                "variants": [],
+                **variant,
+                "id": f"{data['id']}@{variant['name']}",
+                "base": data["id"],
+            }
+            out[merged["id"]] = Row.from_dict(merged)
+    return out
 
 
 # --------------------------------------------------------------- references
@@ -641,12 +672,22 @@ class RowRun:
     """A row's generated slice and native executor (generated once, shared by
     every carrier, point and check of the row)."""
 
-    def __init__(self, row: Row, compiled: Any, native: Any):
+    def __init__(
+        self, row: Row, compiled: Any, native: Any, base: RowRun | None = None
+    ):
         from pyamplicol.loops.v2.assemble import LoopSlice
         from pyamplicol.loops.v2.plan_export import NativeExecutor, export_plan
 
         self.row = row
         self.reference = load_reference(row)
+        if base is not None:
+            # A variant: the base row's request, generation and executor.
+            if slice_request(row) != slice_request(base.row):
+                raise ValueError(f"{row.id} changes its base row's request")
+            self.slice, self.executor = base.slice, base.executor
+            self.generate_seconds = self.export_seconds = 0.0
+            self.parameters = {**self.reference.parameters, **dict(row.parameters)}
+            return
         start = time.perf_counter()
         LOG.info("%s: generating %s", row.id, row.process)
         self.slice = LoopSlice.generate(compiled, slice_request(row), native)
@@ -1462,6 +1503,10 @@ class RowReport:
             "max_binary64_vs_dd": self.worst("2"),
             "max_catani_dd": self.worst("4", "double-double"),
             "max_catani_binary64": self.worst("4", "double"),
+            "catani_not_formed": any(
+                c.rule == "4" and not c.asserted and c.coefficient == "poles"
+                for c in self.checks
+            ),
             "binary64_vs_reference": self.binary64_vs_reference,
             "binary64_out_of_scope": [
                 {
@@ -1528,8 +1573,14 @@ def run_row(
             if check.coefficient in COEFFICIENTS and math.isfinite(check.error):
                 info[check.coefficient] = max(worst, check.error)
         checks += rule2_and_3(row, reference, index, b, d)
-        checks += rule4(row, index, d, reference.alpha_s)
-        checks += rule4(row, index, b, reference.alpha_s)
+        if row.catani == "none":
+            checks.append(Check(
+                "4", index, "double-double", "", "poles", "", "", 0.0, 0.0, True,
+                asserted=False, note="no Catani prediction on the native-input "
+                "route (WP3.1 I5c); the poles are held by rule 1"))  # fmt: skip
+        else:
+            checks += rule4(row, index, d, reference.alpha_s)
+            checks += rule4(row, index, b, reference.alpha_s)
     extras = set(row.extras) & IMPLEMENTED_EXTRAS if tier == "nightly" else set()
     extra_points = indices[:1]
     if "uv" in extras:
@@ -1573,7 +1624,12 @@ class Campaign:
             row = self.rows[name]
             if not row.active:
                 raise ValueError(f"{name} is pending: {row.pending}")
-            self._runs[name] = RowRun(row, self.model(row.restriction), self.native)
+            base = None
+            if row.base is not None and self.rows[row.base].active:
+                base = self.run(row.base)
+            self._runs[name] = RowRun(
+                row, self.model(row.restriction), self.native, base=base
+            )
         return self._runs[name]
 
     def report(self, name: str, tier: str, points=None) -> RowReport:
