@@ -63,12 +63,14 @@ G1 = "runs/g1/{}/madloop-export".format
 REQ = "runs/required/{}/madloop-export".format
 
 # A: massless QCD (5F)
-row("A01", "Q-massless", "g g > g g", "5F", "E", "d", ["nc", "ap"], fixtures=["v2/gg_gg_providers.json"])
+row("A01", "Q-massless", "g g > g g", "5F", "E", "d", ["nc", "ap"], fixtures=["v2/gg_gg_providers.json"],
+    runs_=[run("gg_gg_sectors", "gg_gg", export='runs/g1/gg_gg/madloop-export', points={"generator": "fixture", "fixture": "v2/gg_gg_providers.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
 row("A02", "Q-massless", "u u~ > g g", "5F", "N", runs_=[run("uux_gg", "uux_gg")])
 row("A03", "Q-massless", "g g > u u~", "5F", "N", runs_=[run("gg_uux", "gg_uux")])
 row("A04", "Q-massless", "u g > u g", "5F", "N", "d", runs_=[run("ug_ug", "ug_ug")])
 row("A05", "Q-massless", "u u~ > d d~", "5F", "N", extras=["uv"], runs_=[run("uux_ddx", "uux_ddx")])
-row("A06", "Q-massless", "u u~ > u u~", "5F", "E", fixtures=["required/uux_uux.json"])
+row("A06", "Q-massless", "u u~ > u u~", "5F", "E", fixtures=["required/uux_uux.json"],
+    runs_=[run("uux_uux_sectors", "uux_uux", export='runs/required/uux_uux/madloop-export', points={"generator": "fixture", "fixture": "required/uux_uux.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
 row("A07", "Q-massless", "u u > u u", "5F", "N", runs_=[run("uu_uu", "uu_uu")])
 row("A08", "Q-massless", "g g > g g g", "5F", "R", extras=["nc", "ward", "hel"],
     runs_=[run("gg_ggg", "gg_ggg", export=G1("gg_ggg"), helicities="all")], note="+ NJet (nc)")
@@ -95,16 +97,21 @@ row("A09", "Q-massless", "u u~ > g g g", "5F", "R", "d", extras=["nc", "sp:S2"],
                            "MadLoop, Recola and OpenLoops disagree at O(1); validate by internal oracles only"},
                note="S2: collinear gluon pair theta = 1e-3, 1e-5 (small Gram determinants)")],
     note="+ NJet, BDK (nc)")
-row("A12", "Q-massless", "u u~ > d d~ g", "5F", "E", "d", ["nc"], fixtures=["required/uux_ddxg.json"])
-row("A13", "Q-massless", "u u~ > u u~ g", "5F", "E", extras=["nc", "ap"], fixtures=["required/uux_uuxg.json"])
+row("A12", "Q-massless", "u u~ > d d~ g", "5F", "E", "d", ["nc"], fixtures=["required/uux_ddxg.json"],
+    runs_=[run("uux_ddxg_sectors", "uux_ddxg", export='runs/required/uux_ddxg/madloop-export', points={"generator": "fixture", "fixture": "required/uux_ddxg.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
+row("A13", "Q-massless", "u u~ > u u~ g", "5F", "E", extras=["nc", "ap"], fixtures=["required/uux_uuxg.json"],
+    runs_=[run("uux_uuxg_sectors", "uux_uuxg", export='runs/required/uux_uuxg/madloop-export', points={"generator": "fixture", "fixture": "required/uux_uuxg.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
 row("A14", "Q-massless", "g g > g g g g", "5F", "E", extras=["ward"], fixtures=["required/gg_gggg.json"],
     note="MadLoop QP values committed into the fixture (never regenerated)")
 row("A15", "Q-massless", "u u~ > g g g g", "5F", "N", extras=["nc"],
     runs_=[run("uux_gggg", "uux_gggg", split_points=True)])
 row("A18", "Q-massless", "g g > u u~ u u~", "5F", "N", extras=["nc"], runs_=[run("gg_uuxuux", "gg_uuxuux", split_points=True)])
-row("A19", "Q-massless", "u u~ > d d~ s s~", "5F", "E", fixtures=["required/uux_ddxssx.json"])
-row("A20", "Q-massless", "u u~ > u u~ d d~", "5F", "E", fixtures=["required/uux_uuxddx.json"])
-row("A21", "Q-massless", "u u~ > u u~ u u~", "5F", "E", extras=["nc"], fixtures=["required/uux_uuxuux.json"])
+row("A19", "Q-massless", "u u~ > d d~ s s~", "5F", "E", fixtures=["required/uux_ddxssx.json"],
+    runs_=[run("uux_ddxssx_sectors", "uux_ddxssx", export='runs/required/uux_ddxssx/madloop-export', points={"generator": "fixture", "fixture": "required/uux_ddxssx.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
+row("A20", "Q-massless", "u u~ > u u~ d d~", "5F", "E", fixtures=["required/uux_uuxddx.json"],
+    runs_=[run("uux_uuxddx_sectors", "uux_uuxddx", export='runs/required/uux_uuxddx/madloop-export', points={"generator": "fixture", "fixture": "required/uux_uuxddx.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
+row("A21", "Q-massless", "u u~ > u u~ u u~", "5F", "E", extras=["nc"], fixtures=["required/uux_uuxuux.json"],
+    runs_=[run("uux_uuxuux_sectors", "uux_uuxuux", export='runs/required/uux_uuxuux/madloop-export', points={"generator": "fixture", "fixture": "required/uux_uuxuux.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
 row("A22", "Q-massless", "u u~ > d d~ s s~ g", "5F", "E", fixtures=["multiquark-sevenleg-component-control.json"],
     note="Recola <= 4e-11 (existing control)")
 row("A23", "Q-massless", "u u~ > g g g g g", "5F", "E", fixtures=["required/uux_ggggg.json"])
@@ -114,7 +121,7 @@ row("A25", "Q-massless", "u d > u d", "5F", "N", runs_=[run("ud_ud", "ud_ud")])
 row("A26", "Q-massless", "u~ u~ > u~ u~", "5F", "N", runs_=[run("uxux_uxux", "uxux_uxux")])
 # B: top (5F, WT = 0)
 row("B01", "Q-top", "g g > t t~", "5F", "E", "d", ["ap", "uv", "hel", "sp:S1", "sp:S4"], fixtures=["required/gg_ttx.json"],
-    runs_=[run("gg_ttx_sectors", "gg_ttx", export=REQ("gg_ttx"), points={"generator": "fixture", "fixture": "required/gg_ttx.json"},
+    runs_=[run("gg_ttx_sectors", "gg_ttx", export=REQ("gg_ttx"), points={"generator": "fixture", "fixture": "required/gg_ttx.json", "half_scale_point": True},
                helicities="all", note="per-sector and per-helicity MadLoop run at the committed fixture's points"),
            run("gg_ttx_threshold", "gg_ttx", export=REQ("gg_ttx"),
                points=S(family="threshold", values=["1/10", "1/100", "1/1000"], half_scale_point=False, madloop_qp_point=True),
@@ -123,7 +130,8 @@ row("B01", "Q-top", "g g > t t~", "5F", "E", "d", ["ap", "uv", "hel", "sp:S1", "
            run("gg_ttx_mt170", "gg_ttx_mt170", export=REQ("gg_ttx"), note="S4: runtime MT = 170")])
 row("B02", "Q-top", "u u~ > t t~", "5F", "N", runs_=[run("uux_ttx", "uux_ttx")])
 row("B03", "Q-top", "g g > t t~ g", "5F", "N", extras=["nc", "ward"], runs_=[run("gg_ttxg", "gg_ttxg")])
-row("B05", "Q-top", "g g > t t~ g g", "5F", "E", fixtures=["required/gg_ttxgg.json"])
+row("B05", "Q-top", "g g > t t~ g g", "5F", "E", fixtures=["required/gg_ttxgg.json"],
+    runs_=[run("gg_ttxgg_sectors", "gg_ttxgg", export='runs/required/gg_ttxgg/madloop-export', points={"generator": "fixture", "fixture": "required/gg_ttxgg.json", "half_scale_point": True}, split_points=True, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
 row("B06", "Q-top", "u u~ > t t~ d d~", "5F", "N", runs_=[run("uux_ttxddx", "uux_ttxddx")])
 row("B07", "Q-top", "g g > t t~ t t~", "5F", "N", runs_=[run("gg_ttxttx", "gg_ttxttx", points=S(), split_points=True)])
 row("B08", "Q-top", "g g > t t~ (4F)", "4F", "N", runs_=[run("gg_ttx_4fs", "gg_ttx_4fs")],
@@ -155,10 +163,14 @@ row("D05", "Q-EWBorn", "u u~ > e- e+ g", "5F", "R", "d", ["nc", "ward", "uv", "h
     runs_=[run("uux_emepg", "uux_emepg", export=G1("uux_emepg"), helicities="all")])
 row("D06", "Q-EWBorn", "u u~ > e- e+ g g", "5F", "R", fixtures=["dilepton-two-gluon.json"],
     runs_=[run("uux_emepgg", "uux_emepgg", export=G1("uux_emepgg"))], note="existing LC/NLC test (ew_lines:943)")
-row("D07", "Q-EWBorn", "u u~ > e- e+ g g g", "5F", "E", fixtures=["required/uux_emepggg.json"])
-row("D08", "Q-EWBorn", "u u~ > e- e+ d d~ g", "5F", "E", fixtures=["required/uux_emepddxg.json"])
-row("D09", "Q-EWBorn", "u u~ > e- e+ mu- mu+", "5F", "E", fixtures=["required/uux_emepmummp.json"])
-row("D10", "Q-EWBorn", "u u~ > u u~ e+ e-", "5F", "E", fixtures=["required/uux_uuxepem.json"], note="22x case (MQ-STAB)")
+row("D07", "Q-EWBorn", "u u~ > e- e+ g g g", "5F", "E", fixtures=["required/uux_emepggg.json"],
+    runs_=[run("uux_emepggg_sectors", "uux_emepggg", export='runs/required/uux_emepggg/madloop-export', points={"generator": "fixture", "fixture": "required/uux_emepggg.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
+row("D08", "Q-EWBorn", "u u~ > e- e+ d d~ g", "5F", "E", fixtures=["required/uux_emepddxg.json"],
+    runs_=[run("uux_emepddxg_sectors", "uux_emepddxg", export='runs/required/uux_emepddxg/madloop-export', points={"generator": "fixture", "fixture": "required/uux_emepddxg.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
+row("D09", "Q-EWBorn", "u u~ > e- e+ mu- mu+", "5F", "E", fixtures=["required/uux_emepmummp.json"],
+    runs_=[run("uux_emepmummp_sectors", "uux_emepmummp", export='runs/required/uux_emepmummp/madloop-export', points={"generator": "fixture", "fixture": "required/uux_emepmummp.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
+row("D10", "Q-EWBorn", "u u~ > u u~ e+ e-", "5F", "E", fixtures=["required/uux_uuxepem.json"], note="22x case (MQ-STAB)",
+    runs_=[run("uux_uuxepem_sectors", "uux_uuxepem", export='runs/required/uux_uuxepem/madloop-export', points={"generator": "fixture", "fixture": "required/uux_uuxepem.json", "half_scale_point": True}, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
 row("D11", "Q-EWBorn", "u u~ > z g", "5F", "N", runs_=[run("uux_zg", "uux_zg")])
 row("D12", "Q-EWBorn", "u d~ > e+ ve g", "5F", "N", runs_=[run("udx_epveg", "udx_epveg")])
 row("D13", "Q-EWBorn", "u g > a u", "5F", "N", runs_=[run("ug_au", "ug_au")])
@@ -185,7 +197,11 @@ row("E01", "Q-ttX", "g g > t t~ h", "5F", "N", extras=["nc", "ward", "uv"], runs
 row("E02", "Q-ttX", "g g > t t~ z", "5F", "N", runs_=[run("gg_ttxz", "gg_ttxz", points=S())])
 row("E05", "Q-ttX", "e+ e- > t t~ h", "5F", "E", fixtures=["top-pair-higgs-model.json"])
 row("E06", "Q-ttX", "g g > t t~ e- e+ g", "5F", "E", fixtures=["required/gg_ttxemepg_qcd.json"],
-    note="point 2: rule 1 outlier (DD vs MadLoop 1.43e-8, vs OpenLoops 5.8e-13)")
+    note="point 2: the plan lists a rule 1 outlier (DD vs MadLoop 1.43e-8, vs OpenLoops 5.8e-13); the provider "
+         "references themselves do not show it: at that point MadLoop (quadruple precision, code 328) = OpenLoops to "
+         "6.0e-13 in the finite part (committed fixture and the 1e-13 rerun alike) and Recola is the outlier "
+         "(1.0e-8); MQ-VALIDATE re-checks the DD comparison",
+    runs_=[run("gg_ttxemepg_qcd_sectors", "gg_ttxemepg_qcd", export='runs/required/gg_ttxemepg_qcd/madloop-export', points={"generator": "fixture", "fixture": "required/gg_ttxemepg_qcd.json", "half_scale_point": True}, split_points=True, note="per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points")])
 # F: single top (MadLoop on 5F; pyAmpliCol on 5F*, and 5F after MQ-5F)
 row("F01", "Q-singletop", "u b > d t", "5F*", "N", extras=["nc", "uv", "ap"], runs_=[run("ub_dt", "ub_dt")])
 row("F02", "Q-singletop", "b u > d t", "5F*", "N", runs_=[run("bu_dt", "bu_dt")])
@@ -215,7 +231,8 @@ campaign = {
                    "their merged references are committed as tests/fixtures/loop/required/mqcd/<run>.json; existing "
                    "fixtures are paths below tests/fixtures/loop/. Driven by mqcd_campaign.py.",
     "restriction_codes": ROUTES,
-    "madloop_settings": {"requested_relative_accuracy": 1e-11,
+    "madloop_settings": {"requested_relative_accuracy": 1e-13,
+                         "requested_relative_accuracy_reason": "m-qcd/PLAN.md §1.4 rule 1 compares DD with the reference at 1e-12, so the reference must be well below it: MadLoop's double-precision evaluations reach estimates up to ~1e-11 at the plan's 1e-11 target (g g > t t~ g 9.6e-12, g g > t t~ h 7.8e-12); at 1e-13 every point whose double-precision estimate is worse is rescued in quadruple precision (stricter than the plan's 1e-11, never looser)",
                          "special_points": "limit-point runs (S1-S3) request 1e-20, forcing MadLoop's quadruple-precision evaluation, at points that are MadLoop's own quadruple-precision projection of their binary64 rounding (supplied_points.py --madloop-qp-point)", "stability_check": "forced on every call",
                          "rescue": "quadruple precision (MadLoop's own)", "job_timeout_seconds": 2700},
     "rows": rows,

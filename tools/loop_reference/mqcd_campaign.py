@@ -111,13 +111,32 @@ def command_export(args, data, runs):
                            cwd=export.parent, stdout=handle, stderr=subprocess.STDOUT, check=True)
 
 
-def points_from_fixture(path, pdgs):
+def points_from_fixture(path, pdgs, half_scale_point=False):
+    """The points of a committed reference (optionally with a copy of its first
+    point at half its scale, the campaign's mu_R = mu_0/2 point)."""
     fixture = json.loads(path.read_text())
-    if fixture["pdgs"] != pdgs:
+    if fixture.get("pdgs", pdgs) != pdgs:
         raise SystemExit(f"{path} belongs to {fixture['pdgs']}, not {pdgs}")
-    return {"process_name": fixture.get("name"), "pdgs": pdgs, "points": fixture["points"], "mu_r": fixture["mu_r"],
-            "construction": f"copied from the committed fixture {path.relative_to(FIXTURES)} "
-                            f"({fixture.get('point_construction', {}).get('construction', 'see that fixture')})"}
+    construction = fixture.get("point_construction", {}).get("construction", "see that fixture")
+    def exact_text(x):
+        # Integer momenta (older fixtures) convert exactly; refuse floats (lossy).
+        if isinstance(x, bool) or not isinstance(x, (str, int)):
+            raise SystemExit(f"{path}: momentum component {x!r} is not exact")
+        return str(x)
+
+    points = [[[exact_text(x) for x in leg] for leg in point] for point in fixture["points"]]
+    out = {"process_name": fixture.get("name"), "pdgs": pdgs, "points": points,
+           "mu_r": list(fixture["mu_r"]),
+           "construction": f"copied from the committed fixture {path.relative_to(FIXTURES)} ({construction})"}
+    if half_scale_point:
+        from fractions import Fraction
+
+        from exact_points import decimal_string
+
+        out["points"].append(out["points"][0])
+        out["mu_r"].append(decimal_string(Fraction(out["mu_r"][0]) / 2))
+        out["scale_variation"] = {"point": len(out["points"]), "copy_of_point": 1, "mu_r_factor": "1/2"}
+    return out
 
 
 def command_points(args, data, runs):
@@ -133,7 +152,8 @@ def command_points(args, data, runs):
         pdgs = run.get("pdgs")
         if spec["generator"] == "fixture":
             ref_spec = required_spec.load_process(required_spec.DEFAULT_SPEC, run["process"])
-            target.write_text(json.dumps(points_from_fixture(FIXTURES / spec["fixture"], ref_spec["pdgs"]), indent=2) + "\n")
+            target.write_text(json.dumps(points_from_fixture(FIXTURES / spec["fixture"], ref_spec["pdgs"],
+                                                             spec.get("half_scale_point", False)), indent=2) + "\n")
         elif spec["generator"] == "run":
             shutil.copyfile(work_dir(root, runs[spec["run"]]) / "points.json", target)
         elif spec["generator"] == "exact":
