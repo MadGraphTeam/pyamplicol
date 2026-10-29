@@ -1502,7 +1502,7 @@ SMOKE_RESTRICTIONS = {
         "with_technical",
     ),
 }
-SMOKE_SECONDS = 360
+SMOKE_SECONDS = 400
 smokes = [
     {"id": f"{CODES[next(r['code'] for r in R if r['id'] == base)][0]}:{name}",
      "row": base, "restriction": name, "executor": "native"}
