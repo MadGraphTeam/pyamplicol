@@ -1123,6 +1123,29 @@ REFUSED_5F = set() if MQ5F_LANDED else {"C09", "F03", "H02", "H03"}
 # same request and reference (variant ``<id>@5F``, its own generation); the
 # tools route refuses that request at generation until MQ-5F lands.
 RESTRICTED_5F = ("D17", "F01", "F02", "F04")
+# True once MQ-NC is on the slice: rule 7 (the ``nc`` extra) of a row is
+# MQ-NC's test ids for it (``NC_COLUMN`` of NC_TESTS: the LC/NLC projection
+# against the N_c scan within 1e-24 in double-double, then the row's
+# independent oracles), run by MQ-NC's test files and read by build_mqcd.py
+# from their JUnit XML; the LC/NLC smoke on every shipped restriction is
+# NC_SMOKE (PLAN §3.2 MQ-VALIDATE item 5, MQ-NC acceptance). Not repeated by
+# this harness.
+MQNC_LANDED = False
+NC_TESTS = "tests/unit/test_loop_v2_nc_projection.py"
+NC_SMOKE = "tests/unit/test_loop_v2_nc_declaration.py::test_lc_and_nlc_smoke_on_every_shipped_restriction"
+
+
+def nc_columns():
+    """MQ-NC's ``NC_COLUMN`` (row -> its rule 7 test ids), read from NC_TESTS."""
+    import importlib
+
+    if str(WT) not in sys.path:
+        sys.path.insert(0, str(WT))
+    module = importlib.import_module(NC_TESTS[:-3].replace("/", "."))
+    return {name: list(ids) for name, ids in module.NC_COLUMN.items()}
+
+
+NC_COLUMNS = nc_columns() if MQNC_LANDED else {}
 # PLAN §4.1: the H rows replace a second provider with an exact relation.
 # QCD corrections preserve flavour, so a single-W-line process equals its
 # diagonal twin (same masses) times |V_num|^2 / |V_den|^2, per sector and
@@ -1692,7 +1715,10 @@ for r in R:
         entry["madloop_subprocesses"] = MADLOOP_SUBPROCESSES
     pend = {}
     for e in r["extras"]:
-        if e == "nc":
+        if e == "nc" and MQNC_LANDED:
+            # A row's nc extra without MQ-NC ids is a KeyError here.
+            entry["nc_column"] = NC_COLUMNS[r["id"]]
+        elif e == "nc":
             pend[e] = (
                 "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
             )
@@ -1705,6 +1731,10 @@ for r in R:
     if pend:
         entry["extras_pending"] = pend
     rows.append(entry)
+# MQ-NC's columns are the nc rows', no more and no fewer.
+assert not MQNC_LANDED or set(NC_COLUMNS) == {
+    r["id"] for r in rows if "nc" in r["extras"]
+}, sorted(set(NC_COLUMNS) ^ {r["id"] for r in rows if "nc" in r["extras"]})
 
 # The nightly tier's file jobs (PLAN §3.2 acceptance: each nightly file job
 # <= 30 min). (seconds, points) per nightly test id as measured by the
@@ -1846,7 +1876,7 @@ manifest = {
             "no_tau_mass": {"row": "A12"},
             "no_widths": {"row": "B08", "points_from": "B01"},
         },
-        "lc_every_restriction": "MQ-NC",
+        "lc_every_restriction": {"test": NC_SMOKE} if MQNC_LANDED else "MQ-NC",
     },
     "nightly_jobs": {
         "budget_seconds": JOB_SECONDS,

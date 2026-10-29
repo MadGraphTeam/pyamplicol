@@ -3,7 +3,7 @@
 
 Usage: python scripts/build_mqcd.py RESULTS_DIR... [--output data/mqcd.json]
        [--findings data/mqcd-findings.json] [--markdown TABLE.md]
-       [--meta key=value ...]
+       [--junit JUNIT.xml ...] [--meta key=value ...]
 
 Inputs:
 
@@ -19,6 +19,13 @@ Inputs:
                                            ``smoke:<restriction>`` and
                                            ``expansion:<row>`` records of the
                                            nightly smokes and the M01 expansion
+- JUNIT.xml (optional)                     pytest --junitxml of the test
+                                           files that hold a row's delegated
+                                           column: rule 7 (``nc``) is MQ-NC's
+                                           test ids (manifest ``nc_column``),
+                                           the LC/NLC smoke on every shipped
+                                           restriction its test (manifest
+                                           ``smokes.lc_every_restriction``)
 - data/mqcd-findings.json (optional)       the triage of the failing checks:
                                            per finding the rows and checks it
                                            explains, its evidence and the
@@ -34,11 +41,13 @@ provider, binary64 against double-double, the poles against Catani in both
 carriers, binary64 against the provider (information), the ``ward`` extra's
 worst ratios, the points without a provider reference (MQ-REF's per-point
 record), the out-of-scope binary64 coefficients, timings), its variants'
-records and a status: ``pass``
-(every run tier and gating variant passed), ``fail`` (a check failed: a
-finding), ``pending`` (the manifest's waiting package) or ``not-run``
-(active, no record given). Later directories override earlier ones per
-(row, tier). Nothing is estimated: a value without a record stays null. The
+records, the ``nc`` column (per MQ-NC test id its outcome: passed,
+failed, skipped or null when absent) and a status: ``pass``
+(every run tier, gating variant and the nc column passed), ``fail`` (a check
+or an nc test failed: a finding), ``pending`` (the manifest's waiting
+package) or ``not-run`` (active, a record or an nc test missing). Later
+directories override earlier ones per (row, tier). Nothing is estimated: a
+value without a record stays null. The
 per-class matrix of the report (PLAN §5.2) is the ``classes`` section;
 ``--markdown`` writes the per-row table.
 """
@@ -47,6 +56,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import xml.etree.ElementTree as ET
 from collections import defaultdict
 from pathlib import Path
 
@@ -106,24 +116,93 @@ def _tiers(records, name: str) -> dict:
     }
 
 
-def _status(pending: bool, tiers: dict, gating: list[dict]) -> str:
+def _status(pending: bool, tiers: dict, gating: list[dict], columns=()) -> str:
     if pending:
         return "pending"
     if not tiers and not gating:
         return "not-run"
-    if all(t["passed"] for t in tiers.values()) and all(
-        v["status"] == "pass" for v in gating
+    if (
+        all(t["passed"] for t in tiers.values())
+        and all(v["status"] == "pass" for v in gating)
+        and all(c == "pass" for c in columns)
     ):
         return "pass"
-    if any(not t["passed"] for t in tiers.values()) or any(
-        v["status"] == "fail" for v in gating
+    if (
+        any(not t["passed"] for t in tiers.values())
+        or any(v["status"] == "fail" for v in gating)
+        or "fail" in columns
     ):
         return "fail"
     return "not-run"
 
 
-def build(results: list[Path], meta: dict[str, str], findings=None) -> dict:
+def _node_id(classname: str, name: str) -> str:
+    """The pytest node id of a JUnit test case (classname: the test file's
+    dotted path, then its classes)."""
+
+    parts = classname.split(".")
+    for cut in range(len(parts), 0, -1):
+        path = "/".join(parts[:cut]) + ".py"
+        if (ROOT / path).is_file():
+            return "::".join([path, *parts[cut:], name])
+    return f"{classname.replace('.', '/')}.py::{name}"
+
+
+def junit_outcomes(paths) -> dict[str, str]:
+    """Node id -> passed | failed | skipped from pytest JUnit XML files
+    (later files override)."""
+
+    outcomes = {}
+    for path in paths:
+        for case in ET.parse(path).iter("testcase"):
+            tags = {child.tag for child in case}
+            outcome = (
+                "failed"
+                if tags & {"failure", "error"}
+                else "skipped"
+                if "skipped" in tags
+                else "passed"
+            )
+            outcomes[_node_id(case.get("classname", ""), case.get("name", ""))] = (
+                outcome
+            )
+    return outcomes
+
+
+def column(ids, outcomes: dict[str, str]) -> dict:
+    """A delegated column (another package's test ids): each id's outcome
+    (an unparametrised id stands for all its parametrisations; null when
+    absent) and the column's status: fail (one failed), pass (every id
+    passed) or not-run."""
+
+    tests = {}
+    for node in ids:
+        found = [
+            o for n, o in outcomes.items() if n == node or n.startswith(node + "[")
+        ]
+        tests[node] = (
+            None
+            if not found
+            else "failed"
+            if "failed" in found
+            else "skipped"
+            if "skipped" in found
+            else "passed"
+        )
+    values = list(tests.values())
+    status = (
+        "fail"
+        if "failed" in values
+        else "pass"
+        if values and all(v == "passed" for v in values)
+        else "not-run"
+    )
+    return {"status": status, "tests": tests}
+
+
+def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) -> dict:
     manifest = json.loads(MANIFEST.read_text())
+    outcomes = junit_outcomes(junit)
     records: dict[tuple[str, str], dict] = {}
     for directory in results:
         for path in sorted(Path(directory).glob("*.json")):
@@ -151,7 +230,10 @@ def build(results: list[Path], meta: dict[str, str], findings=None) -> dict:
         # A pending variant (waiting for its package) is reported, and does
         # not hold its row's status.
         gating = [v for v in variants if v["gating"] and v["status"] != "pending"]
-        status = _status(row["status"] == "pending", tiers, gating)
+        nc = column(row["nc_column"], outcomes) if row.get("nc_column") else None
+        status = _status(
+            row["status"] == "pending", tiers, gating, [nc["status"]] if nc else []
+        )
         every = [*tiers.values(), *(t for v in gating for t in v["tiers"].values())]
         rows.append(
             {
@@ -173,6 +255,7 @@ def build(results: list[Path], meta: dict[str, str], findings=None) -> dict:
                 "status": status,
                 "tiers": tiers,
                 "variants": variants,
+                "nc": nc,
                 "max_dd_vs_reference": _maximum(
                     t["max_dd_vs_reference"] for t in every
                 ),
@@ -199,9 +282,13 @@ def build(results: list[Path], meta: dict[str, str], findings=None) -> dict:
                 "checks": record["checks"],
                 "failed_checks": _entry(record)["failed_checks"],
             }
+    smoke = manifest.get("smokes", {}).get("lc_every_restriction")
+    if isinstance(smoke, dict):
+        checks["lc:every_restriction"] = column([smoke["test"]], outcomes)
     data = {
         "source": "tests/fixtures/loop/mqcd/manifest.json + campaign records "
-        "(tests/unit/test_loop_v2_mqcd_*.py, PYAMPLICOL_MQCD_RESULTS)",
+        "(tests/unit/test_loop_v2_mqcd_*.py, PYAMPLICOL_MQCD_RESULTS)"
+        + (" + JUnit XML of the delegated columns" if junit else ""),
         "rules": "m-qcd/PLAN.md §1.4 (tools/loop_benchmark/mqcd.py)",
         **meta,
         "counts": {
@@ -218,6 +305,12 @@ def build(results: list[Path], meta: dict[str, str], findings=None) -> dict:
 
 def _number(value) -> str:
     return "-" if value is None else f"{value:.1e}"
+
+
+def _nc_cell(row: dict) -> str:
+    if row.get("nc"):
+        return row["nc"]["status"]
+    return "pending" if "nc" in row.get("extras_pending", {}) else ""
 
 
 def markdown(data: dict) -> str:
@@ -242,6 +335,7 @@ def markdown(data: dict) -> str:
         "b64 vs DD",
         "Catani DD",
         "Ward DD",
+        "nc",
         "Failing checks",
         "Findings",
     )
@@ -266,6 +360,13 @@ def markdown(data: dict) -> str:
                         text += f" {check['error']:.2g}>{check['bound']:.2g}"
                     if text not in fails:
                         fails.append(text)
+        nc = row.get("nc")
+        if nc:
+            fails += [
+                f"r7 {node.split('::')[-1]} {outcome or 'absent'}"
+                for node, outcome in nc["tests"].items()
+                if outcome == "failed"
+            ]
         note = "; ".join(fails[:3]) + (
             f" (+{len(fails) - 3})" if len(fails) > 3 else ""
         )
@@ -285,7 +386,8 @@ def markdown(data: dict) -> str:
             f"{row['status']} | {row['reference_tolerance']:.0e} | "
             f"{_number(row['max_dd_vs_reference'])} | "
             f"{_number(row['max_binary64_vs_dd'])} | {_number(row['max_catani_dd'])} | "
-            f"{_number(row.get('max_ward_dd'))} | {note} | {', '.join(ids)} |"
+            f"{_number(row.get('max_ward_dd'))} | {_nc_cell(row)} | {note} | "
+            f"{', '.join(ids)} |"
         )
     lines.append("")
     lines.append("Counts: " + json.dumps(data["counts"]))
@@ -298,11 +400,12 @@ def main(argv=None) -> int:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--findings", type=Path)
     parser.add_argument("--markdown", type=Path)
+    parser.add_argument("--junit", nargs="*", type=Path, default=[])
     parser.add_argument("--meta", nargs="*", default=[])
     args = parser.parse_args(argv)
     meta = dict(item.split("=", 1) for item in args.meta)
     findings = json.loads(args.findings.read_text()) if args.findings else None
-    data = build(args.results, meta, findings)
+    data = build(args.results, meta, findings, args.junit)
     args.output.write_text(json.dumps(data, indent=1, default=str) + "\n")
     if args.markdown:
         args.markdown.write_text(markdown(data))

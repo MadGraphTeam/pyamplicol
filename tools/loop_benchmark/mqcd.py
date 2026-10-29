@@ -35,7 +35,11 @@ The rules (PLAN §1.4; no tolerance is widened):
    request), in double-double within max(1e-24, 10 E_DD);
 6. (``ap``) arbitrary precision at 40 digits against double-double within
    max(1e-24, 10 E_DD), and against 60 digits within 1e-35;
-7. (``nc``) LC/NLC projections: routed to MQ-NC (manifest ``extras_pending``).
+7. (``nc``) LC/NLC projections: MQ-NC's test ids of the row (manifest
+   ``nc_column``: the formal projection against the N_c scan within 1e-24 in
+   double-double, then the row's independent N_c oracles), run by MQ-NC's
+   test files, not repeated here; ``build_mqcd.py --junit`` reads their
+   outcomes. Until MQ-NC lands the extra is pending (``extras_pending``).
 
 (``ward``) O10 on the native input path (``loops.v2.ward``): at the row's
 first point every external massless vector leg (or the manifest's
@@ -126,6 +130,9 @@ EXTRAS = ("nc", "ap", "ward", "uv", "hel", "sp")
 # variants (``<id>@<name>``: the special-point references on the base row's
 # generation), so a row with ``sp`` and no gating variant is malformed.
 IMPLEMENTED_EXTRAS = frozenset({"ap", "uv", "hel", "sp", "ward"})
+# Extras another package's tests check, by the test ids the row lists
+# (``nc``: MQ-NC's rule 7 column, ``Row.nc_column``).
+DELEGATED_EXTRAS = frozenset({"nc"})
 
 
 Sector = tuple[tuple[str, int], ...]
@@ -219,6 +226,8 @@ class Row:
     # Rule 1's relative tolerance (``REFERENCE_TOLERANCE`` at 2->2 and 2->3,
     # ``REFERENCE_TOLERANCE_HIGH`` from 2->4 up; the manifest states it).
     reference_tolerance: float = REFERENCE_TOLERANCE
+    # Rule 7 (the ``nc`` extra): MQ-NC's pytest node ids for this row.
+    nc_column: tuple[str, ...] = ()
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Row:
@@ -276,6 +285,7 @@ class Row:
             reference_tolerance=float(
                 data.get("reference_tolerance", REFERENCE_TOLERANCE)
             ),
+            nc_column=tuple(data.get("nc_column", ())),
         )
 
     @property
@@ -306,6 +316,8 @@ def rows(manifest: Mapping[str, Any] | None = None) -> dict[str, Row]:
                 "pending": None,
                 "status": "active",
                 "variants": [],
+                # Rule 7's column is the base row's (MQ-NC's ids name it).
+                "nc_column": [],
                 **variant,
                 "id": f"{data['id']}@{variant['name']}",
                 "base": data["id"],
