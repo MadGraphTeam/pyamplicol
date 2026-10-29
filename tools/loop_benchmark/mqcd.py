@@ -139,12 +139,13 @@ UNBLOCKERS = (
     "MQ-STAB",
     "MQ-VALIDATE",
 )
-EXTRAS = ("nc", "ap", "ward", "uv", "hel", "sp")
+EXTRAS = ("nc", "ap", "ward", "uv", "hel", "sp", "ff")
 # Extras this harness checks today (the others are listed as pending).
 # ``sp`` (PLAN §4.1 special points S1-S4) is checked by the row's gating
 # variants (``<id>@<name>``: the special-point references on the base row's
 # generation), so a row with ``sp`` and no gating variant is malformed.
-IMPLEMENTED_EXTRAS = frozenset({"ap", "uv", "hel", "sp", "ward"})
+# ``ff`` is the analytic quark form factor (PLAN §4.2 D01, ``rule_ff``).
+IMPLEMENTED_EXTRAS = frozenset({"ap", "uv", "hel", "sp", "ward", "ff"})
 # Extras another package's tests check, by the test ids the row lists
 # (``nc``: MQ-NC's rule 7 column, ``Row.nc_column``).
 DELEGATED_EXTRAS = frozenset({"nc"})
@@ -223,6 +224,10 @@ class Row:
     # or "none" (M01's public-route variants: their tools-route twins hold
     # rule 4; recorded as not asserted).
     catani: str = "python"
+    # The committed tree-engine colour correlations of a "tree" row
+    # (``tools/loop_benchmark/mqcd_tree_correlations.py``), or None (the
+    # tree engine runs in the harness).
+    tree_correlations: str | None = None
     # The fixture holding MadLoop's per-helicity rows (``per_helicity``) when
     # it is not the row's reference (manifest path), for the ``hel`` extra.
     helicity_reference: str | None = None
@@ -293,6 +298,7 @@ class Row:
                 int(k): int(v) for k, v in data.get("zero_points", {}).items()
             },
             catani=data.get("catani", "python"),
+            tree_correlations=data.get("tree_correlations"),
             helicity_reference=data.get("helicity_reference"),
             gating=bool(data.get("gating", True)),
             variants=tuple(data.get("variants", ())),
@@ -918,6 +924,112 @@ def slice_request(row: Row, **changes: Any) -> Any:
     )
 
 
+def coloured_legs(row: Row) -> list[int]:
+    """The one-based labels of a row's coloured external legs: the process's
+    names other than loop_sm's colourless ones (``RowRun.tree_catani``
+    checks them against the prepared model's colours)."""
+
+    names = row.process.replace(">", " ").split()
+    return [k for k, name in enumerate(names, 1) if name not in COLOURLESS]
+
+
+# loop_sm's colourless particle names (leptons, neutrinos, bosons, Higgs).
+COLOURLESS = frozenset(
+    [
+        "e-",
+        "e+",
+        "mu-",
+        "mu+",
+        "m-",
+        "m+",
+        "ta-",
+        "ta+",
+        "tt-",
+        "tt+",
+        "ve",
+        "ve~",
+        "vm",
+        "vm~",
+        "vt",
+        "vt~",
+        "a",
+        "z",
+        "w+",
+        "w-",
+        "h",
+    ]
+)
+
+
+def tree_runtime(row: Row, ufo: Path, output: Path) -> Any:
+    """The tree engine's artifact of the row's process with every dipole
+    <T_j.T_k> of its coloured legs (``Generator.generate(...,
+    correlators=...)``, full colour, the row's restriction and Born orders as
+    explicit maxima), loaded; an existing artifact at ``output`` is loaded."""
+
+    from itertools import combinations
+
+    from pyamplicol import (
+        ColorCorrelator,
+        CorrelatorConfig,
+        Generator,
+        ModelSource,
+        Runtime,
+    )
+    from pyamplicol.config import ColorConfig, RunConfig
+    from pyamplicol.config.models import ProcessConfig
+
+    if not (output / "artifact.json").is_file():
+        config = RunConfig(
+            action="generate",
+            color=ColorConfig(accuracy="full"),
+            process=ProcessConfig(
+                coupling_order_policy="explicit",
+                max_coupling_orders=dict(row.born_orders),
+            ),
+        )
+        dipoles = tuple(
+            ColorCorrelator.dipole(f"T{j}_{k}", j, k)
+            for j, k in combinations(coloured_legs(row), 2)
+        )
+        Generator(config).generate(
+            row.process,
+            output,
+            model=ModelSource.from_path(ufo, restriction=row.restriction),
+            correlators=CorrelatorConfig(color_correlations=dipoles),
+            mode="replace",
+        )
+    return Runtime.load(output)
+
+
+def tree_point(runtime: Any, row: Row, point: Sequence[Sequence[str]]) -> dict:
+    """The Born and every dipole of the tree engine's artifact at one point
+    (decimal momenta, ``TREE_DIGITS`` digits), as fixture strings."""
+
+    from itertools import combinations
+
+    from pyamplicol.correlators import CorrelatedRequest
+
+    pairs = [f"T{j}_{k}" for j, k in combinations(coloured_legs(row), 2)]
+    requests = {name: CorrelatedRequest(color_correlation=name) for name in pairs}
+    requests["born"] = CorrelatedRequest(color_correlation="born")
+    momenta = (tuple(tuple(Decimal(x) for x in leg) for leg in point),)
+    values = runtime.evaluate_correlated_many(momenta, requests, precision=TREE_DIGITS)
+    return {
+        "momenta": [list(leg) for leg in point],
+        "born": str(values["born"][0].real),
+        "dipoles": {name: str(values[name][0].real) for name in pairs},
+    }
+
+
+def _correlations(entry: Mapping[str, Any]) -> tuple[Decimal, dict]:
+    correlated = {}
+    for name, value in entry["dipoles"].items():
+        j, k = (int(x) for x in name[1:].split("_"))
+        correlated[j, k] = correlated[k, j] = Decimal(value)
+    return Decimal(entry["born"]), correlated
+
+
 class RowRun:
     """A row's generated slice and native executor (generated once, shared by
     every carrier, point and check of the row)."""
@@ -1071,69 +1183,34 @@ class RowRun:
         ]
 
     def tree_correlations(self, index: int) -> tuple[Decimal, dict]:
-        """(Born, {(j, k): <T_j.T_k>}) at reference point ``index`` from the
-        tree engine (``Generator.generate(..., correlators=...)``, every
-        dipole of the coloured legs, full colour, ``TREE_DIGITS`` digits at
-        the point's decimal momenta): the colour-correlated Born of rule 4's
-        "tree" prediction, independent of the loop engine. The artifact is
-        generated once per row, on the row's restriction and Born orders."""
+        """(Born, {(j, k): <T_j.T_k>}) of the tree engine at reference point
+        ``index``: the row's committed tree-correlation fixture
+        (``row.tree_correlations``, ``tree_correlations_fixture``; checked
+        to hold this point's momenta) or the tree engine run here
+        (``tree_runtime``, generated once per row)."""
 
-        from itertools import combinations
-
-        from pyamplicol import (
-            ColorCorrelator,
-            CorrelatorConfig,
-            Generator,
-            ModelSource,
-            Runtime,
-        )
-        from pyamplicol.config import ColorConfig, RunConfig
-        from pyamplicol.config.models import ProcessConfig
-        from pyamplicol.correlators import CorrelatedRequest
-
-        coloured = [label for label, (colour, _m) in enumerate(self.legs(), 1)
-                    if colour != 1]  # fmt: skip
-        pairs = list(combinations(coloured, 2))
+        point = self.reference.points[index]
+        if self.row.tree_correlations is not None:
+            data = json.loads((ROOT / self.row.tree_correlations).read_text())
+            entry = next((e for e in data["points"] if e["index"] == index), None)
+            if entry is None or entry["momenta"] != point:
+                raise ValueError(
+                    f"{self.row.id}: {self.row.tree_correlations} lacks point {index}"
+                )
+            return _correlations(entry)
         if self._tree is None:
             if self.ufo is None or self.work is None:
                 raise ValueError(f"{self.row.id}: no UFO or work directory")
             start = time.perf_counter()
-            config = RunConfig(
-                action="generate",
-                color=ColorConfig(accuracy="full"),
-                process=ProcessConfig(
-                    coupling_order_policy="explicit",
-                    max_coupling_orders=dict(self.row.born_orders),
-                ),
+            self._tree = tree_runtime(
+                self.row, self.ufo, self.work / f"tree-{self.row.id}"
             )
-            dipoles = tuple(ColorCorrelator.dipole(f"T{j}_{k}", j, k) for j, k in pairs)
-            generated = Generator(config).generate(
-                self.row.process,
-                self.work / f"tree-{self.row.id}",
-                model=ModelSource.from_path(self.ufo, restriction=self.row.restriction),
-                correlators=CorrelatorConfig(color_correlations=dipoles),
-                mode="replace",
+            LOG.info(
+                "%s: tree correlators in %.1f s",
+                self.row.id,
+                time.perf_counter() - start,
             )
-            # The restriction card's parameters: rule 4 checks the tree
-            # engine's Born against ours (the same parameters) at 1e-24.
-            self._tree = Runtime.load(generated.output)
-            self.tree_seconds = time.perf_counter() - start
-            LOG.info("%s: tree correlators in %.1f s", self.row.id, self.tree_seconds)
-        momenta = tuple(
-            tuple(Decimal(x) for x in leg) for leg in self.reference.points[index]
-        )
-        requests = {"born": CorrelatedRequest(color_correlation="born")}
-        requests.update(
-            {f"T{j}_{k}": CorrelatedRequest(color_correlation=f"T{j}_{k}")
-             for j, k in pairs}
-        )  # fmt: skip
-        values = self._tree.evaluate_correlated_many(
-            (momenta,), requests, precision=TREE_DIGITS
-        )
-        correlated = {}
-        for j, k in pairs:
-            correlated[j, k] = correlated[k, j] = values[f"T{j}_{k}"][0].real
-        return values["born"][0].real, correlated
+        return _correlations(tree_point(self._tree, self.row, point))
 
     def tree_catani(self, index: int) -> tuple[Decimal, dict[Sector, tuple]]:
         """(the tree engine's Born, rule 4's "tree" prediction {sector:
@@ -1154,6 +1231,10 @@ class RowRun:
         sector = sector_key(
             {k: born_orders.get(k, 0) + loop.get(k, 0) for k in {*born_orders, *loop}}
         )
+        if coloured_legs(self.row) != [
+            k for k, leg in enumerate(legs, 1) if leg[0] != 1
+        ]:
+            raise ValueError(f"{self.row.id}: coloured legs differ from the model's")
         born, correlated = self.tree_correlations(index)
         gluon = (
             Fraction(11, 6) * CA - Fraction(2, 3) * TF * self.light_flavours()
@@ -1983,6 +2064,57 @@ def massless_catani(
         return +(prefactor * single), +(prefactor * double)
 
 
+def rule_ff(
+    row: Row,
+    index: int,
+    dd: Evaluated,
+    legs: Sequence[tuple[int, bool]],
+    reference: Reference,
+    alpha_s: Decimal,
+) -> list[Check]:
+    """The analytic quark form factor (PLAN §4.2 D01): a massless q q~ pair
+    annihilating into colour singlets at QCD order zero has, per Born, V/B =
+    (alpha_s / 2 pi) C_F (-2/eps^2 - (3 + 2L)/eps - 8 + pi^2 - L^2 - 3L),
+    L = log(mu^2 / s), in the (4 pi)^eps / Gamma(1 - eps) normalisation of
+    the 't Hooft-Veltman scheme (the time-like one-loop vertex; massless
+    quarks need no field renormalisation). Double-double per coefficient at
+    max(1e-24, 10 E_DD), strictly relative."""
+
+    if [leg for leg in legs if leg[0] != 1] != [(3, False), (3, False)] or any(
+        colour != 1 for colour, _m in legs[2:]
+    ):
+        raise ValueError(f"{row.id}: no massless q q~ -> colour singlets form factor")
+    ((sector, laurent),) = dd.virtual.items()
+    born = dd.total()[0]
+    a, b = ([Fraction(x) for x in leg] for leg in reference.points[index][:2])
+    total = [x + y for x, y in zip(a, b, strict=True)]
+    s = total[0] ** 2 - total[1] ** 2 - total[2] ** 2 - total[3] ** 2
+    checks = []
+    with localcontext() as context:
+        context.prec = TREE_DIGITS
+        log = _decimal(Fraction(reference.scales[index]) / s).ln()
+        factor = alpha_s / (2 * PI) * _decimal(CF) * born
+        expected = (
+            factor * (-8 + PI * PI - log * log - 3 * log),
+            factor * (-3 - 2 * log),
+            factor * -2,
+        )
+    estimate = None if dd.estimate is None else dd.estimate[sector]
+    for k, name in enumerate(LAURENT):
+        error = relative(laurent[k], expected[k])
+        e_rel = (
+            estimate[k] / abs(float(laurent[k]))
+            if estimate is not None and float(laurent[k])
+            else 0.0
+        )
+        bound = max(DD_FLOOR, BRACKET * e_rel)
+        checks.append(Check(
+            "ff", index, dd.carrier, sector_text(sector), name, str(laurent[k]),
+            str(expected[k]), error, bound, error <= bound,
+            note=f"analytic quark form factor; E_DD = {e_rel:.3g}"))  # fmt: skip
+    return checks
+
+
 def field_poles(legs: Sequence[tuple[int, bool]], flavours: int) -> Fraction:
     """sum_legs delta-Z^UV (single pole, units of alpha_s / 4 pi)."""
 
@@ -2771,6 +2903,11 @@ def run_row(
             checks += rule6(
                 row, index, dd[indices.index(index)], ap[k], ap60[k], reference.alpha_s
             )
+    if "ff" in extras:
+        legs, alpha_s = run.legs(), Decimal(str(run.parameters["aS"]))
+        for index, point in zip(indices, dd, strict=True):
+            if point is not None:
+                checks += rule_ff(row, index, point, legs, reference, alpha_s)
     if "ward" in extras:
         start = time.perf_counter()
         for index in extra_points:
@@ -2901,6 +3038,45 @@ def multiparticle_subprocesses(campaign: Campaign, name: str) -> list[Check]:
 
 
 SMOKE_TOLERANCE = 1e-14
+
+
+# Rule 4's "tree" prediction against the Python-input executor's Catani:
+# rows with the tree rows' colour structures (gluons only; one quark line).
+TREE_ORACLE_ROWS = ("A01", "A09")
+TREE_ORACLE_TOLERANCE = 1e-30
+
+
+def tree_oracle(campaign: Campaign, names: Sequence[str] = TREE_ORACLE_ROWS):
+    """The "tree" prediction (``RowRun.tree_catani``, the tree engine run
+    here) against the Python-input executor's own Catani at point 0 in
+    double-double, per sector and pole within ``TREE_ORACLE_TOLERANCE``
+    (measured 1e-40), its Born against ours within 1e-24."""
+
+    checks = []
+    for name in names:
+        run = campaign.run(name)
+        (dd,) = run.evaluate([0], "double-double", stability=False)
+        born, prediction = run.tree_catani(0)
+        error = relative(dd.total()[0], born)
+        checks.append(Check(
+            "4", 0, "double-double", f"{name} {TOTAL}", "tree born",
+            str(dd.total()[0]), str(born), error, DD_FLOOR, error <= DD_FLOOR,
+            note="the tree engine's Born against ours"))  # fmt: skip
+        if set(prediction) != set(dd.catani or ()):
+            checks.append(Check(
+                "4", 0, "double-double", name, "predicted sectors",
+                str(sorted(prediction)), str(sorted(dd.catani or ())), math.inf,
+                0.0, False, note="tree and executor sectors differ"))  # fmt: skip
+            continue
+        for sector, poles in prediction.items():
+            for k, coefficient in enumerate(("single_pole", "double_pole")):
+                error = relative(poles[k], dd.catani[sector][k])
+                checks.append(Check(
+                    "4", 0, "double-double", f"{name} {sector_text(sector)}",
+                    coefficient, str(poles[k]), str(dd.catani[sector][k]), error,
+                    TREE_ORACLE_TOLERANCE, error <= TREE_ORACLE_TOLERANCE,
+                    note="tree prediction against the executor's Catani"))  # fmt: skip
+    return checks
 
 
 def smoke(campaign: Campaign, restriction: str, spec: Mapping[str, Any]) -> list[Check]:

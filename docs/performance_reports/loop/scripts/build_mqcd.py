@@ -53,7 +53,9 @@ record), the out-of-scope binary64 coefficients, timings), its variants'
 records, the delegated columns (``delegated``, rule 7's as ``nc``: per
 test id its outcome, passed, failed, skipped or null when absent) and a
 status: ``pass`` (every run tier, gating variant and delegated column
-passed, and a composite row's expansion check), ``fail`` (a check or a
+passed, and a composite row's expansion check), ``partial`` (likewise, but
+rule 4 not formed: a native-input row without the tree engine's committed
+correlations, manifest ``catani`` "none"), ``fail`` (a check or a
 delegated test failed: a finding), ``pending`` (the manifest's waiting
 package) or ``not-run`` (active, a delegated test or an expected record
 missing: a default-tier row's default and nightly records, a nightly row's
@@ -106,7 +108,7 @@ CHECK_KEYS = (
     "bound",
     "note",
 )
-STATUSES = ("pass", "fail", "pending", "not-run")
+STATUSES = ("pass", "partial", "fail", "pending", "not-run")
 
 
 def _maximum(values):
@@ -300,6 +302,14 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
             [c["status"] for c in delegated.values()],
             missing,
         )
+        if (
+            status == "pass"
+            and row.get("catani") == "none"
+            and row.get("route", "tools") != "public"
+        ):
+            # Every asserted check passed, but rule 4 was not formed (a
+            # native-input row without the tree engine's correlations).
+            status = "partial"
         every = [*tiers.values(), *(t for v in gating for t in v["tiers"].values())]
         rows.append(
             {
@@ -345,18 +355,20 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
     checks = {}
     for (name, tier), found in sorted(records.items()):
         record = found[-1]
-        if name.startswith(("smoke:", "expansion:")):
+        if name.startswith(("smoke:", "expansion:", "oracle:")):
             checks[name] = {
                 "tier": tier,
                 "passed": record["passed"],
                 "checks": record["checks"],
                 "failed_checks": _entry(record)["failed_checks"],
             }
-    # The nightly smokes and composite expansions the manifest declares
-    # (tests/unit/test_loop_v2_mqcd_nightly.py): absent records not-run.
+    # The nightly smokes, composite expansions and the "tree" Catani oracle
+    # check (tests/unit/test_loop_v2_mqcd_nightly.py): absent records not-run.
     declared = [
         f"smoke:{r}" for r in manifest.get("smokes", {}).get("same_request", {})
     ]
+    if any(r.get("catani") == "tree" for r in manifest["rows"]):
+        declared.append("oracle:tree-catani")
     declared += [
         f"expansion:{r['id']}" for r in manifest["rows"] if r["status"] == "composite"
     ]

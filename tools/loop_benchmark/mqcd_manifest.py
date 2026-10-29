@@ -532,7 +532,7 @@ row(
     (0, 2),
     "5F",
     "N ~15 s (+ analytic form factor)",
-    ["ap"],
+    ["ap", "ff"],
     ["initial:qqbar", "2->2", "ew:dilepton"],
     waits="MQ-MODEL",
     notes="stock loop_sm on the public route needs the SSS1 repair (MQ-MODEL); its reference is new (MQ-REF)",
@@ -796,7 +796,7 @@ row(
     (0, 3),
     "5F",
     "E top-pair-higgs-model.json (MadLoop binary64)",
-    [],
+    ["ap"],  # PLAN §1.3 AP per class (the §4.2 table names no Q-ttX row)
     ["initial:leptons", "2->3", "ttX", "yukawa:top"],
     {
         "format": "model-control",
@@ -863,7 +863,7 @@ row(
     (2, 2),
     "G-full",
     "E tools/loop_reference/uudd_mixed_sm_qcd.json (= mixed-uudd-sm-qcd-control)",
-    ["uv"],
+    ["uv", "ap"],  # PLAN §1.3 AP per class (the §4.2 table names no Q-mixed row)
     ["initial:qqbar", "2->2", "mixed-born-orders", "ew:W-exchange"],
     {
         "format": "mixed-sm",
@@ -889,7 +889,7 @@ row(
     (1, 1),
     "ZC",
     "N, S ~15 s + CKM-factor relation",
-    ["uv"],
+    ["uv", "ap"],  # PLAN §1.3 AP per class (the §4.2 table names no Q-CKM row)
     ["initial:qqbar", "2->2", "ckm:non-diagonal"],
     waits=MQREF,
 )
@@ -1099,10 +1099,15 @@ FIXTURE_ROOT = INDEX.parent.parent  # .../tests/fixtures/loop
 # g g > g g g g point took > 22 min, u u~ > g g g g g > 22 min at 17 GB):
 # the native-input route, whose executor forms no Catani prediction (WP3.1
 # I5c): rule 4 takes the harness's massless Catani operator on the tree
-# engine's colour-correlated Born (catani "tree"). g g > g g g g g natively: generation 180 s plus
+# engine's colour-correlated Born (catani "tree"), committed per row by
+# tools/loop_benchmark/mqcd_tree_correlations.py (TREE_FIXTURE: the tree
+# artifact of g g > g g g g takes 968 s and 11 GB, too much for the nightly
+# job); a row without the fixture keeps catani "none" (rule 4 not formed,
+# the report's status "partial"). g g > g g g g g natively: generation 180 s plus
 # export, 308 s per double-double point and 69 s per binary64 point with the
 # checks, 25 GB: two points keep its nightly job within 30 min.
 NATIVE_ROWS = {"A14": [0, 1, 2], "A15": [0, 1, 2, 3], "A23": [0, 1, 2], "A24": [0, 1]}
+TREE_FIXTURE = "tests/fixtures/loop/mqcd/references/tree-correlations-{}.json"
 # The ``ward`` extra (O10 on the native input path, ``ward.ward_check``)
 # checks every external massless vector leg with c = 1 and c = i at the row's
 # first point; a 2->4 row checks one leg (g g > g g g g: one double-double
@@ -1722,7 +1727,11 @@ for r in R:
         entry["ward_out_of_scope"] = WARD_OUT_OF_SCOPE[r["id"]]
     if r["id"] in NATIVE_ROWS:
         entry["inputs"] = "native"
-        entry["catani"] = "tree"
+        tree = TREE_FIXTURE.format(r["id"])
+        if (WT / tree).is_file():
+            entry["catani"], entry["tree_correlations"] = "tree", tree
+        else:
+            entry["catani"] = "none"
         entry["points"] = {"nightly": NATIVE_ROWS[r["id"]]}
     if status == "pending" and r["id"] in REFUSED_5F and indexed:
         entry["pending"]["reason"] = (
