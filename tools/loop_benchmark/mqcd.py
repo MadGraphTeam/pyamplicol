@@ -259,6 +259,27 @@ class Row:
     # M01's ``bitwise``: MQ-MODEL's).
     delegated: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
     route: str = "tools"
+    # The row's model (a key of the campaign's ``ufos``: loop_sm, or an EW
+    # UFO of the M-SM manifest, m-sm/PLAN.md §4.1 model codes), its
+    # structural source-compatibility profile and scale parameter
+    # (``SliceRequest.compatibility`` / ``scale_parameter``).
+    model: str = "loop_sm"
+    compatibility: str | None = None
+    scale_parameter: str | None = None
+    # The loop coupling alpha of each correction other than the strong one
+    # (QED: the scheme's alpha_Gmu or alpha(M_Z)), for F_s (m-sm/PLAN.md
+    # §1.4: F_s = |B_s| alpha_c / 2 pi, the largest over the corrections
+    # reaching s); the strong one is the reference's aS.
+    alphas: Mapping[str, float] = field(default_factory=dict)
+    # Rule 4's typed reasons (sector text -> ``poles.UNPREDICTED_REASONS``
+    # entry) of the unpredicted sectors, asserted to be the slice's
+    # (``LoopSlice.unpredicted_sectors``); None: the sets only (M-QCD).
+    unpredicted_reasons: Mapping[str, str] | None = None
+    # The R2 rule (m-sm/PLAN.md §1.4 rule 1, Q7): the UFO R2 couplings the
+    # engine's counterterm program inserts and MadLoop's export does not
+    # call (its label matching), found structurally per row; None: not
+    # determined (no MadLoop export R2 list for the row).
+    madloop_omitted_r2: tuple[str, ...] | None = None
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Row:
@@ -318,6 +339,16 @@ class Row:
             ),
             delegated={k: tuple(v) for k, v in (data.get("delegated") or {}).items()},
             route=data.get("route", "tools"),
+            model=data.get("model", "loop_sm"),
+            compatibility=data.get("compatibility"),
+            scale_parameter=data.get("scale_parameter"),
+            alphas={k: float(v) for k, v in (data.get("alphas") or {}).items()},
+            unpredicted_reasons=None
+            if data.get("unpredicted_reasons") is None
+            else dict(data["unpredicted_reasons"]),
+            madloop_omitted_r2=None
+            if data.get("madloop_omitted_r2") is None
+            else tuple(data["madloop_omitted_r2"]),
         )
 
     @property
@@ -424,6 +455,18 @@ class Reference:
     # the binding fixture and its row, whose primary values replaced the
     # existing reference's (its other providers stay the second providers).
     binding: dict[int, tuple[str, int]] = field(default_factory=dict)
+    # Per point, the primary provider's instrumented components (MadLoop's
+    # Born x CT interference split, ``madloop_ct_selection.py``) in the
+    # engine's names: ``bare``, ``r2``, ``uv`` (UV counterterms, field
+    # factors included) and ``ct`` (r2 + uv), each {sector or TOTAL:
+    # Laurent}; empty where the reference has none (rule 5's EW form).
+    components: list[dict[str, dict[Any, tuple[float, float, float]]]] = field(
+        default_factory=list
+    )
+    # The MadLoop export's called R2 couplings (as the export spells them,
+    # merged couplings included), where the reference records them (the
+    # R2 rule's input, m-sm/PLAN.md §1.4); None otherwise.
+    madloop_r2: tuple[str, ...] | None = None
 
     @property
     def primary(self) -> str:
@@ -466,7 +509,62 @@ def load_reference(row: Row) -> Reference:
         reference.providers = tuple(spec["providers"])
     for index, binding in sorted((spec.get("superseded") or {}).items()):
         _supersede(row, reference, int(index), binding["path"], int(binding["row"]))
+    if spec.get("photon_conversion"):
+        _photon_conversion(reference, spec["photon_conversion"], data)
+    calls = spec.get("madloop_r2")
+    if calls is None:
+        calls = next(
+            (data[key] for key in R2_CALL_KEYS if isinstance(data.get(key), list)),
+            None,
+        )
+    reference.madloop_r2 = None if calls is None else tuple(calls)
     return reference
+
+
+# Where a reference records the R2 couplings its MadLoop export calls (MS-REF,
+# m-sm/PLAN.md §3.2 item 6); the manifest's ``madloop_r2`` (read from an
+# existing export) otherwise.
+R2_CALL_KEYS = ("madloop_r2_couplings", "r2_couplings")
+
+
+def _photon_conversion(
+    reference: Reference, spec: Mapping[str, Any], data: Mapping[str, Any]
+) -> None:
+    """MG5_aMC's alpha(0) conversion of raw MadLoop G_mu values over the
+    tagged photon legs (m-sm/PLAN.md §4.1 photon rows;
+    ``export_fks.write_rescale_a0gmu_file``, as ``test_loop_v2_external_
+    photons``): with r = (alpha(0) / alpha)^n for n tagged photons, the Born
+    and the virtual times r and the virtual of the electromagnetic correction
+    minus 2 n DGmua0 Born, DGmua0 the UFO's conversion parameter
+    (``spec['counterterm']``) as MadLoop evaluates it at the card's MU_R
+    (``spec['parameters']``, ``madloop-ct-parameters.json``), applied to
+    every provider's values of the sector it corrects (``spec['sector']``,
+    or the single sector)."""
+
+    tagged = int(spec["tagged"])
+    values = json.loads((ROOT / spec["parameters"]).read_text())["models"][
+        spec["model"]
+    ]
+    card_scale = _scale(values["card"]["MU_R"])
+    if any(scale != card_scale for scale in reference.scales):
+        raise ValueError(f"{reference.source}: the conversion needs MU_R = the card's")
+    delta = values["values"][spec["counterterm"]]
+    pole, finite = (float(delta[k]["double"][0]) for k in ("-1", "0"))
+    alpha = float(Fraction(data["derived_parameters"]["alpha"]))
+    ratio = (1 / float(spec["alpha0_inverse"]) / alpha) ** tagged
+    corrected = sector_key(spec["sector"]) if spec.get("sector") else None
+    for index in range(len(reference.points)):
+        for provider in reference.providers:
+            born = reference.born[index][provider]
+            total = sum(born.values())
+            for key in born:
+                born[key] *= ratio
+            virtual = reference.virtual[index][provider]
+            for key, (fin, single, double) in list(virtual.items()):
+                if corrected is None or key in (corrected, TOTAL):
+                    fin -= 2 * tagged * finite * total
+                    single -= 2 * tagged * pole * total
+                virtual[key] = (ratio * fin, ratio * single, ratio * double)
 
 
 def _supersede(
@@ -563,6 +661,19 @@ def _required(row, spec, data) -> Reference:
                 )
                 for s in sectors["loop"]
             }
+        if spec.get("sector"):
+            # One squared sector of a request with several (m-sm/PLAN.md
+            # §4.2 TV07): every provider's totals are that sector's values.
+            sector = sector_key(spec["sector"])
+            born_key = sector_key(spec["born_sector"])
+            text = sector_text(sector)
+            for name in providers:
+                if TOTAL in b[name]:
+                    b[name] = {born_key: b[name][TOTAL]}
+                if TOTAL in v[name]:
+                    v[name] = {sector: v[name][TOTAL]}
+                    if not isinstance(a.get(name), Mapping):
+                        a[name] = {text: a.get(name)}
         born.append(b)
         virtual.append(v)
         accuracy.append(a)
@@ -789,7 +900,207 @@ def _process_control(row, spec, data) -> Reference:
     )
 
 
+def _ew_control(row, spec, data) -> Reference:
+    """A MadLoop electroweak control (``electroweak-*-control.json``): per
+    row the Born and the full virtual of its one squared-order sector ("1"),
+    MadLoop's accuracy and its instrumented components; the points the
+    control's ``exact_points`` or those of the manifest's ``points_path``
+    (the controls' phase-space fixture), cycled over the rows; the scales
+    the control's ``mu_r2``, each row's or the manifest's ``mu_r2``; the
+    parameters the manifest's (the control states them in words)."""
+
+    if data.get("exact_points"):
+        points = data["exact_points"]
+    else:
+        points = json.loads((ROOT / spec["points_path"]).read_text())["points"]
+    points = [_strings(p) for p in points]
+    entries = data["rows"]
+    scales = data.get("mu_r2") or [e.get("mu_r2") or spec["mu_r2"] for e in entries]
+    born = [{"madloop": {TOTAL: float(e["born"]["1"])}} for e in entries]
+    virtual = [{"madloop": {TOTAL: _laurent(e["full"]["1"])}} for e in entries]
+    accuracy = [{"madloop": e.get("accuracy")} for e in entries]
+    names = (("bare", "bare"), ("r2", "r2"), ("uv", "uv"), ("ct", "ct"))
+    components = [
+        {ours: {TOTAL: _laurent(e[key]["1"])} for ours, key in names if key in e}
+        for e in entries
+    ]
+    parameters = dict(spec["parameters"])
+    return Reference(
+        "",
+        ("madloop",),
+        [points[i % len(points)] for i in range(len(entries))],
+        [str(scale) for scale in scales],
+        parameters,
+        None,
+        born,
+        virtual,
+        accuracy,
+        float(parameters["aS"]),
+        components=components,
+    )
+
+
+def _madloop_components(row, spec, data) -> Reference:
+    """``goldstone-mixing.json`` style: ``processes[key]`` with MadLoop's
+    Born, virtual (its accuracy) and its Born x CT interference ``ct`` and
+    ``r2`` per point. With ``spec['omitted_r2']`` the R2 rule's correction
+    (m-sm/PLAN.md §1.4 rule 1): MadLoop's export omits an R2 coupling whose
+    vertex term is proportional to one it calls (its label matching), so
+    ``ratio`` x that coupling's component (``component``) is added to the
+    virtual, the R2 and the counterterm components."""
+
+    entry = data["processes"][spec["key"]]
+    omitted = spec.get("omitted_r2")
+    born, virtual, accuracy, components = [], [], [], []
+    for e in entry["rows"]:
+        extra = (0.0, 0.0, 0.0)
+        if omitted:
+            ratio = float(Fraction(omitted["ratio"]))
+            extra = tuple(ratio * x for x in _laurent(e[omitted["component"]]))
+        full, ct, r2 = _laurent(e["virtual"]), _laurent(e["ct"]), _laurent(e["r2"])
+        born.append({"madloop": {TOTAL: float(e["born"])}})
+        virtual.append(
+            {"madloop": {TOTAL: tuple(a + b for a, b in zip(full, extra, strict=True))}}
+        )
+        accuracy.append({"madloop": e.get("virtual_accuracy")})
+        components.append(
+            {
+                "bare": {TOTAL: tuple(a - b for a, b in zip(full, ct, strict=True))},
+                "r2": {TOTAL: tuple(a + b for a, b in zip(r2, extra, strict=True))},
+                "uv": {TOTAL: tuple(a - b for a, b in zip(ct, r2, strict=True))},
+                "ct": {TOTAL: tuple(a + b for a, b in zip(ct, extra, strict=True))},
+            }
+        )
+    parameters = dict(entry["parameters"])
+    return Reference(
+        "",
+        ("madloop",),
+        [_strings(p) for p in entry["points"]],
+        [_scale(mu) for mu in entry["mu_r"]],
+        parameters,
+        dict(entry.get("fixed_parameters", {})),
+        born,
+        virtual,
+        accuracy,
+        float(parameters["aS"]),
+        components=components,
+    )
+
+
+def _process_components(row, spec, data) -> Reference:
+    """``epsilon-sign.json`` style: ``rows[key]`` with MadLoop's Born, status,
+    accuracy and its components (``full``, ``bare``, ``r2``, ``uv``) at the
+    fixture's points, scales and parameters."""
+
+    entries = data["rows"][spec["key"]]
+    born = [{"madloop": {TOTAL: float(e["born"])}} for e in entries]
+    virtual = [{"madloop": {TOTAL: _laurent(e["components"]["full"])}} for e in entries]
+    accuracy = [{"madloop": e.get("madloop_accuracy")} for e in entries]
+    components = []
+    for e in entries:
+        found = {
+            name: {TOTAL: _laurent(e["components"][name])}
+            for name in ("bare", "r2", "uv")
+            if name in e["components"]
+        }
+        if {"r2", "uv"} <= set(found):
+            found["ct"] = {
+                TOTAL: tuple(
+                    a + b
+                    for a, b in zip(found["r2"][TOTAL], found["uv"][TOTAL], strict=True)
+                )
+            }
+        components.append(found)
+    parameters = {k: v for k, v in data["parameters"].items() if k != "MU_R"}
+    return Reference(
+        "",
+        ("madloop",),
+        [_strings(p) for p in data["points"]],
+        [_scale(mu) for mu in data["mu_r"]],
+        parameters,
+        dict(data.get("fixed_parameters", {})),
+        born,
+        virtual,
+        accuracy,
+        float(parameters["aS"]),
+        components=components,
+    )
+
+
+def _sectors(row, spec, data) -> Reference:
+    """Per-sector references from several required fixtures of one request
+    (``spec['parts']``: each fixture's totals are the values of its squared
+    sector ``sector``, its Born that of ``born_sector``), at the same points
+    and scales: e.g. g g > t t~ joint, the QCD fixture's s^6 and the EW
+    fixture's s^4 e^2 (m-sm/PLAN.md §4.2 TT01). Providers: those of every
+    part, primary first (``spec['providers']``)."""
+
+    parts = [
+        (part, json.loads((ROOT / part["path"]).read_text())) for part in spec["parts"]
+    ]
+    first = parts[0][1]
+    names = [set(d["rows"][0]["providers"]) for _part, d in parts]
+    providers = tuple(
+        p for p in (spec.get("providers") or first["rows"][0]["providers"])
+        if all(p in n for n in names)
+    )  # fmt: skip
+    # The model's inputs are those of part ``parameters_from`` (the parts may
+    # come from different UFOs: loop_sm's QCD fixture beside the G_mu EW
+    # one); the inputs the parts share must agree.
+    parameters = dict(parts[int(spec.get("parameters_from", 0))][1]["parameters"])
+    for _part, d in parts:
+        if _strings_all(d["points"]) != _strings_all(first["points"]) or list(
+            d["mu_r"]
+        ) != list(first["mu_r"]):
+            raise ValueError(f"{row.id}: the parts' points or scales differ")
+        for name, value in d["parameters"].items():
+            if name in parameters and Fraction(parameters[name]) != Fraction(value):
+                raise ValueError(f"{row.id}: the parts' {name} differ")
+    born, virtual, accuracy, evidence = [], [], [], []
+    for index in range(len(first["rows"])):
+        b: dict[str, dict] = {p: {} for p in providers}
+        v: dict[str, dict] = {p: {} for p in providers}
+        a: dict[str, dict] = {p: {} for p in providers}
+        for part, d in parts:
+            sector, born_key = (
+                sector_key(part["sector"]),
+                sector_key(part["born_sector"]),
+            )
+            for p in providers:
+                values = d["rows"][index]["providers"][p]
+                b[p].setdefault(born_key, float(values["born"]))
+                v[p][sector] = _laurent(values)
+                a[p][sector_text(sector)] = values.get(
+                    "accuracy", values.get("estimated_relative_accuracy")
+                )
+        born.append(b)
+        virtual.append(v)
+        accuracy.append(a)
+        evidence.append({})
+    return Reference(
+        "",
+        providers,
+        [_strings(p) for p in first["points"]],
+        [_scale(mu) for mu in first["mu_r"]],
+        parameters,
+        dict(first.get("fixed_parameters", {})),
+        born,
+        virtual,
+        accuracy,
+        float(parameters["aS"]),
+        evidence,
+    )
+
+
+def _strings_all(points) -> list:
+    return [_strings(p) for p in points]
+
+
 _LOADERS = {
+    "ew-control": _ew_control,
+    "madloop-components": _madloop_components,
+    "process-components": _process_components,
+    "sectors": _sectors,
     "required": _required,
     "providers": _providers,
     "component-control": _component_control,
@@ -923,6 +1234,14 @@ def slice_request(row: Row, **changes: Any) -> Any:
         corrections=tuple(row.corrections),
         fixed_parameters=dict(row.fixed_parameters),
         particle_veto=tuple(row.particle_veto),
+        **{
+            key: value
+            for key, value in (
+                ("compatibility", row.compatibility),
+                ("scale_parameter", row.scale_parameter),
+            )
+            if value is not None
+        },
         **changes,
     )
 
@@ -1510,13 +1829,41 @@ def _vanishing(row: Row, sector: str, coefficient: str) -> bool:
     return _listed(row.vanishing, sector=sector, coefficient=coefficient)
 
 
-def born_sector(sector: Sector) -> Sector:
-    """The Born sector of a QCD-corrected virtual sector (two QCD powers
-    fewer)."""
+def born_sector(sector: Sector, correction: str = "QCD") -> Sector:
+    """The Born sector of a virtual sector under ``correction`` (two powers
+    of its order fewer; QCD by default)."""
 
     orders = dict(sector)
-    orders["QCD"] = orders.get("QCD", 0) - 2
+    orders[correction] = orders.get(correction, 0) - 2
     return sector_key(orders)
+
+
+def alphas(row: Row, reference: Reference) -> dict[str, float]:
+    """The loop coupling per correction: aS (the reference's) for QCD, the
+    row's ``alphas`` for the others."""
+
+    return {"QCD": reference.alpha_s, **dict(row.alphas)}
+
+
+def sector_flux(
+    row: Row, point: Evaluated, sector: Any, couplings: Mapping[str, float]
+) -> float:
+    """F_s of a virtual sector (``TOTAL``: the summed Born times the largest
+    alpha): the largest |B_{s - 2c}| alpha_c / 2 pi over the row's
+    corrections c reaching s (m-sm/PLAN.md §1.4; a QCD row's |B_{s-2}|
+    alpha_s / 2 pi, m-qcd/PLAN.md §1.4)."""
+
+    if sector == TOTAL:
+        alpha = max(couplings[c] for c in row.corrections)
+        return _flux(born_scale(row, point, TOTAL), alpha)
+    reaching = [c for c in row.corrections if dict(sector).get(c, 0) >= 2]
+    return max(
+        (
+            _flux(born_scale(row, point, born_sector(sector, c)), couplings[c])
+            for c in reaching or ("QCD",)
+        ),
+        default=0.0,
+    )
 
 
 def _ours(
@@ -1575,13 +1922,20 @@ def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Che
         return None if sector not in found else found[sector][k]
 
     if TOTAL not in virtual_values:
-        # Per-sector references: our sectors are the provider's.
+        # Per-sector references: our sectors are the provider's (a reference
+        # of some of the request's sectors, ``sectors_subset``: among ours).
+        subset = bool((row.reference or {}).get("sectors_subset"))
+        same = (
+            set(virtual_values) <= set(dd.virtual)
+            if subset
+            else set(dd.virtual) == set(virtual_values)
+        )
         checks.append(Check(
             "1", index, "double-double", "", "sectors",
             ", ".join(sorted(map(sector_text, dd.virtual))),
-            ", ".join(sorted(map(sector_text, virtual_values))), 0.0, 0.0,
-            set(dd.virtual) == set(virtual_values),
-            note="virtual sectors against the provider's split orders"))  # fmt: skip
+            ", ".join(sorted(map(sector_text, virtual_values))), 0.0, 0.0, same,
+            note="virtual sectors against the provider's split orders"
+            + (" (the reference's among ours)" if subset else "")))  # fmt: skip
     for sector, value in born_values.items():
         mine = dd.total()[0] if sector == TOTAL else dd.born.get(sector, Decimal(0))
         text = sector_text(sector)
@@ -1620,10 +1974,7 @@ def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Che
                 )
             )
             continue
-        flux = _flux(
-            born_scale(row, dd, sector if sector == TOTAL else born_sector(sector)),
-            reference.alpha_s,
-        )
+        flux = sector_flux(row, dd, sector, alphas(row, reference))
         for k, name in enumerate(LAURENT):
             checks.append(
                 _reference_check(
@@ -1810,7 +2161,7 @@ def rule2_and_3(
         text = sector_text(sector)
         mine = b64.virtual.get(sector)
         estimate = None if b64.estimate is None else b64.estimate.get(sector)
-        flux = _flux(born_scale(row, dd, born_sector(sector)), reference.alpha_s)
+        flux = sector_flux(row, dd, sector, alphas(row, reference))
         for k, name in enumerate(LAURENT):
             truth = laurent[k]
             got = mine[k]
@@ -1891,9 +2242,18 @@ def rule2_and_3(
 
 
 def rule4(
-    row: Row, index: int, point: Evaluated, alpha_s: float = 0.118
+    row: Row,
+    index: int,
+    point: Evaluated,
+    alpha_s: float = 0.118,
+    couplings: Mapping[str, float] | None = None,
 ) -> list[Check]:
-    """The virtual's poles against Catani's, and the sector sets."""
+    """The virtual's poles against Catani's (the engine's operators, QCD and
+    QED per correction, ``PointResult.ir_poles``), and the sector sets
+    (``couplings``: the loop coupling per correction for F_s, default the
+    strong one ``alpha_s``)."""
+
+    couplings = dict(couplings or {"QCD": alpha_s})
 
     checks = []
     predicted = set(point.catani or ())
@@ -1939,9 +2299,8 @@ def rule4(
             got, truth = laurent[k], poles[k - 1]
             if _vanishing(row, text, name):
                 # Absolutely, against F_s: 1e-12 in binary64, 1e-24 in DD.
-                born = born_scale(row, point, born_sector(sector))
                 strict = O1_STRICT if point.carrier == "double" else DD_FLOOR
-                bound = strict * _flux(born, alpha_s)
+                bound = strict * sector_flux(row, point, sector, couplings)
                 error = _absolute(got, truth)
                 checks.append(
                     Check(
@@ -1999,6 +2358,28 @@ def rule4(
                 )
             )
     return checks
+
+
+def rule4_reasons(row: Row, found: Mapping[Sector, str]) -> list[Check]:
+    """Rule 4's typed reasons (m-sm/PLAN.md §1.4): the slice's unpredicted
+    sectors and their reasons (``LoopSlice.unpredicted_sectors``) are the
+    manifest's (``Row.unpredicted_reasons``), every one of them a listed
+    reason (``poles.UNPREDICTED_REASONS``)."""
+
+    from pyamplicol.loops.v2.poles import UNPREDICTED_REASONS
+
+    if row.unpredicted_reasons is None:
+        return []
+    ours = {sector_text(sector): reason for sector, reason in found.items()}
+    expected = dict(row.unpredicted_reasons)
+    text = ", ".join(f"{k}: {v}" for k, v in sorted(ours.items()))
+    want = ", ".join(f"{k}: {v}" for k, v in sorted(expected.items()))
+    listed = all(reason in UNPREDICTED_REASONS for reason in ours.values())
+    return [
+        Check("4", None, "", "", "unpredicted reasons", text or "none",
+              want or "none", 0.0, 0.0, ours == expected and listed,
+              note="the slice's typed reasons of its unpredicted sectors")
+    ]  # fmt: skip
 
 
 # Feynman-gauge Z^UV per leg (amplitude delta-Z / 2 enters the interference
@@ -2276,6 +2657,175 @@ def rule6(
                     note="against 60 digits",
                 )
             )
+    return checks
+
+
+def rule5_components(
+    row: Row,
+    index: int,
+    dd: Evaluated,
+    reference: Reference,
+    couplings: Mapping[str, float],
+) -> list[Check]:
+    """Rule 5's EW form (m-sm/PLAN.md §1.4): the bare, R2 and UV-counterterm
+    components (and their CT sum) per sector equal the primary provider's
+    instrumented components (``Reference.components``; MadLoop's Born x CT
+    interference split, its omitted R2 component added where the row has
+    one), in double-double within the row's rule 1 tolerance, relative to
+    max(|a|, |r|, F_s) (a component may vanish identically: UV finite parts,
+    the R2 poles)."""
+
+    theirs = reference.components[index] if index < len(reference.components) else {}
+    checks = []
+    mine_parts = {
+        "bare": ("bare",),
+        "r2": ("r2",),
+        "uv": ("uv",),
+        "ct": ("r2", "uv"),
+    }
+    for name, values in sorted(theirs.items()):
+        for sector, laurent in values.items():
+            parts = [dd.components.get(part, {}) for part in mine_parts[name]]
+            if sector == TOTAL:
+                mine = [
+                    sum((v[k] for part in parts for v in part.values()), Decimal(0))
+                    for k in range(3)
+                ]
+            else:
+                mine = [
+                    sum(
+                        (part[sector][k] for part in parts if sector in part),
+                        Decimal(0),
+                    )
+                    for k in range(3)
+                ]
+            flux = sector_flux(row, dd, sector, couplings)
+            text = sector_text(sector)
+            for k, coefficient in enumerate(LAURENT):
+                error = _absolute(mine[k], laurent[k]) / max(
+                    abs(float(mine[k])), abs(laurent[k]), flux
+                )
+                bound = max(row.reference_tolerance, row.relaxed.get("5", 0.0))
+                checks.append(Check(
+                    "5", index, dd.carrier, text, f"{name} {coefficient}",
+                    str(mine[k]), repr(laurent[k]), error, bound, error <= bound,
+                    note=f"the {name} component against {reference.primary}'s, "
+                    "relative to max(|a|, |r|, F_s)"))  # fmt: skip
+    return checks
+
+
+def engine_r2(slice_: Any) -> dict[str, frozenset[str]]:
+    """CT vertex name -> the UFO R2 couplings the slice's counterterm program
+    inserts at it: its admitted R2 rules (one per loop-particle group,
+    ``CountertermRecursion.admission``), inert ones left out."""
+
+    program = getattr(slice_, "counterterm_program", None)
+    if program is None:
+        return {}
+    recursion = program.recursion
+    found: dict[str, set[str]] = defaultdict(set)
+    for name, rule in recursion.rules.items():
+        if rule.kind != "R2" or not recursion.admission.get(name):
+            continue
+        if name in recursion.inert:
+            continue
+        for _alias, entry in rule.couplings:
+            found[entry.vertex_name].add(entry.coupling.name)
+    return {vertex: frozenset(names) for vertex, names in found.items()}
+
+
+def export_couplings(
+    calls: Iterable[str], known: Iterable[str]
+) -> tuple[frozenset[str], tuple[str, ...]]:
+    """(the UFO coupling names, unresolved tokens) of an export's called R2
+    tokens: MG5_aMC writes a coupling's Laurent coefficient with a ``_<k>``
+    suffix and merges couplings of one structure into one name (their names
+    joined by ``_``), upper case; a token splits into ``known`` names (any
+    case) with at most one trailing integer suffix."""
+
+    lookup = {name.upper(): name for name in known}
+    names: set[str] = set()
+    unresolved = []
+    for token in calls:
+        parts = token.upper().split("_")
+        found = None
+        for stop in (len(parts), len(parts) - 1):
+            if stop < len(parts) and not parts[stop].isdigit():
+                continue
+            memo: dict[int, list[str] | None] = {}
+
+            def split(i: int, stop: int = stop, memo=memo, parts=parts):
+                if i == stop:
+                    return []
+                if i in memo:
+                    return memo[i]
+                memo[i] = None
+                for j in range(stop, i, -1):
+                    name = lookup.get("_".join(parts[i:j]))
+                    if name is not None:
+                        rest = split(j)
+                        if rest is not None:
+                            memo[i] = [name, *rest]
+                            break
+                return memo[i]
+
+            found = split(0)
+            if found:
+                break
+        if found:
+            names.update(found)
+        else:
+            unresolved.append(token)
+    return frozenset(names), tuple(unresolved)
+
+
+def omitted_r2(
+    engine: Mapping[str, frozenset[str]], called: Iterable[str]
+) -> tuple[str, ...]:
+    """The R2 rule's omitted couplings (m-sm/PLAN.md §1.4 rule 1, Q7): at
+    every CT vertex whose R2 MadLoop's export calls (some coupling of it),
+    the couplings the engine inserts there and the export does not call
+    (MadLoop's label matching drops a loop-particle group of the vertex)."""
+
+    called = set(called)
+    return tuple(
+        sorted(
+            {
+                coupling
+                for couplings in engine.values()
+                if couplings & called
+                for coupling in couplings - called
+            }
+        )
+    )
+
+
+def rule_r2(row: Row, slice_: Any, reference: Reference) -> list[Check]:
+    """The R2 rule's structural check: the engine inserts every coupling of
+    the row's ``madloop_omitted_r2``, and, where the reference records the
+    export's called R2 couplings, the omitted set found from them
+    (``omitted_r2``) is the manifest's."""
+
+    if row.madloop_omitted_r2 is None:
+        return []
+    engine = engine_r2(slice_)
+    inserted = set().union(*engine.values()) if engine else set()
+    listed = tuple(sorted(row.madloop_omitted_r2))
+    checks = [
+        Check("r2", None, "", "", "inserted", ", ".join(sorted(set(listed) - inserted))
+              or "all", "all", 0.0, 0.0, set(listed) <= inserted,
+              note="the manifest's omitted R2 couplings are in the engine's "
+              "counterterm program")
+    ]  # fmt: skip
+    if reference.madloop_r2 is not None:
+        called, unresolved = export_couplings(reference.madloop_r2, inserted)
+        found = omitted_r2(engine, called)
+        checks.append(Check(
+            "r2", None, "", "", "omitted", ", ".join(found) or "none",
+            ", ".join(listed) or "none", 0.0, 0.0, found == listed,
+            note="engine R2 couplings MadLoop's export does not call, at the "
+            "vertices it calls; tokens the engine does not insert: "
+            + (", ".join(unresolved) or "none")))  # fmt: skip
     return checks
 
 
@@ -2771,7 +3321,7 @@ def run_row(
             for point in points:
                 point.catani = prediction
         for point in points:
-            found += rule4(row, index, point, reference.alpha_s)
+            found += rule4(row, index, point, reference.alpha_s, alphas(row, reference))
         return found
 
     for index, d, b in zip(indices, dd, b64, strict=True):
@@ -2819,9 +3369,20 @@ def run_row(
         checks += poles(index, d, b)
     if tree_seconds:
         timings["tree_catani_s"] = round(tree_seconds, 2)
+    if row.unpredicted_reasons is not None and row.catani != "none":
+        checks += rule4_reasons(row, run.slice.unpredicted_sectors())
     extras = set(row.extras) & IMPLEMENTED_EXTRAS if tier == "nightly" else set()
     extra_points = indices[:1]
-    if "uv" in extras:
+    if row.madloop_omitted_r2 is not None and hasattr(run, "slice"):
+        checks += rule_r2(row, run.slice, reference)
+    if "uv" in extras and reference.components:
+        # Rule 5's EW form: the components against the provider's.
+        for index, point in zip(indices, dd, strict=True):
+            if point is not None:
+                checks += rule5_components(
+                    row, index, point, reference, alphas(row, reference)
+                )
+    elif "uv" in extras:
         start = time.perf_counter()
         uv = run.evaluate(extra_points, "double-double", poles="uv")
         timings["uv_s"] = round(time.perf_counter() - start, 2)
@@ -2885,23 +3446,77 @@ def run_row(
 
 
 class Campaign:
-    """Rows of one test module or CLI run: one compiled loop_sm per
-    restriction and one ``RowRun`` per row, built on first use."""
+    """Rows of one test module or CLI run: one compiled model per (model,
+    restriction) and one ``RowRun`` per row, built on first use. ``ufo`` is
+    loop_sm's; ``ufos`` the other models of the manifest (its ``models``
+    section: the M-SM EW UFOs) by name."""
 
-    def __init__(self, ufo: Path, native: Any, work: Path, manifest=None):
+    def __init__(
+        self,
+        ufo: Path,
+        native: Any,
+        work: Path,
+        manifest=None,
+        ufos: Mapping[str, Path] | None = None,
+    ):
         self.ufo, self.native, self.work = Path(ufo), native, Path(work)
-        self.rows = rows(manifest)
-        self._models: dict[str, Any] = {}
+        self.manifest = manifest or load_manifest()
+        self.rows = rows(self.manifest)
+        self.ufos = {
+            "loop_sm": self.ufo,
+            **{k: Path(v) for k, v in (ufos or {}).items()},
+        }
+        self._models: dict[tuple[str, str], Any] = {}
         self._runs: dict[str, RowRun | PublicRun] = {}
         # base row -> its public-route artifact and generation seconds
         self._public: dict[str, tuple[Path, float]] = {}
 
-    def model(self, restriction: str) -> Any:
-        if restriction not in self._models:
-            self._models[restriction] = compile_restriction(
-                self.ufo, restriction, self.work / f"model-{restriction}"
+    def ufo_path(self, name: str) -> Path:
+        """The UFO of model ``name``: a campaign input, or a copy of its
+        ``base`` with a reference's restriction card (manifest ``models``:
+        ``restriction_card_from``, e.g. the massive-muon G_mu copy MadLoop's
+        control was generated with)."""
+
+        if name in self.ufos:
+            return self.ufos[name]
+        spec = (self.manifest.get("models") or {}).get(name)
+        if spec is None or "restriction_card_from" not in spec:
+            raise KeyError(f"no UFO for model {name!r}")
+        import hashlib
+        import shutil
+
+        data = json.loads((ROOT / spec["restriction_card_from"]).read_text())
+        card = data["restriction_card_text"]
+        if hashlib.sha256(card.encode()).hexdigest() != data["restriction_card_sha256"]:
+            raise ValueError(f"{spec['restriction_card_from']}: card digest differs")
+        target = self.work / f"ufo-{name}"
+        if not target.is_dir():
+            shutil.copytree(
+                self.ufo_path(spec["base"]),
+                target,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pkl"),
             )
-        return self._models[restriction]
+            (target / "restrict_default.dat").write_text(card)
+        self.ufos[name] = target
+        return target
+
+    def model(self, restriction: str, name: str = "loop_sm") -> Any:
+        key = (name, restriction)
+        if key not in self._models:
+            if name == "loop_sm":
+                self._models[key] = compile_restriction(
+                    self.ufo, restriction, self.work / f"model-{restriction}"
+                )
+            else:
+                from pyamplicol.models.loading import compile_model_source
+
+                self._models[key] = compile_model_source(
+                    self.ufo_path(name),
+                    restriction=restriction,
+                    require_supported=False,
+                    cache_dir=self.work / f"model-{name}-{restriction}",
+                )
+        return self._models[key]
 
     def run(self, name: str) -> RowRun | PublicRun:
         if name not in self._runs:
@@ -2920,7 +3535,7 @@ class Campaign:
                     row,
                     artifact,
                     seconds if first else 0.0,
-                    self.model(row.restriction),
+                    self.model(row.restriction, row.model),
                 )
                 return self._runs[name]
             base = None
@@ -2932,11 +3547,12 @@ class Campaign:
                 and self.rows[row.base].active
                 and not row.subprocess
                 and row.restriction == self.rows[row.base].restriction
+                and row.model == self.rows[row.base].model
             ):
                 base = self.run(row.base)
             self._runs[name] = RowRun(
                 row,
-                self.model(row.restriction),
+                self.model(row.restriction, row.model),
                 self.native,
                 base=base,
                 ufo=self.ufo,
@@ -2964,7 +3580,7 @@ def multiparticle_subprocesses(campaign: Campaign, name: str) -> list[Check]:
 
     row = campaign.rows[name]
     data = next(r for r in load_manifest()["rows"] if r["id"] == name)
-    ir = campaign.model(row.restriction).ir
+    ir = campaign.model(row.restriction, row.model).ir
     catalog = ModelParticleCatalog(ir.name, ir.particles, ir.parameters)
     ours = expand_model_processes(row.process, catalog, charges=conserved_charges(ir))
 
@@ -3052,7 +3668,7 @@ def smoke(campaign: Campaign, restriction: str, spec: Mapping[str, Any]) -> list
     values = []
     for name in (row.restriction, restriction):
         slice_ = LoopSlice.generate(
-            campaign.model(name), slice_request(row), campaign.native
+            campaign.model(name, row.model), slice_request(row), campaign.native
         )
         values.append(
             evaluated(
