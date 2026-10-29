@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: 0BSD
 """Process specifications and generic physics metadata for provider references."""
 
+from decimal import Decimal, localcontext
 from fractions import Fraction
 import json
 import math
@@ -34,16 +35,31 @@ def load(path=DEFAULT_SPEC):
 
 
 def load_process(path, name, roots=None):
-    """Return one process merged with its scheme and derived loop orders."""
+    """Return one process merged with its scheme and derived loop orders.
+
+    A process may override scheme parameters (``parameter_overrides``, e.g. a
+    runtime-parameter variant of a row reusing another row's export); the
+    overrides replace the scheme's value wherever it is listed (``parameters``
+    or ``fixed_parameters``) and are recorded in ``scheme_data``."""
     data = load(path)
     matches = [p for p in data["processes"] if p["name"] == name]
     if len(matches) != 1:
         raise KeyError(f"process {name!r} not uniquely defined in {path}")
     process = json.loads(json.dumps(matches[0]))
-    scheme = data["schemes"][process["scheme"]]
+    scheme = json.loads(json.dumps(data["schemes"][process["scheme"]]))
+    overrides = process.get("parameter_overrides", {})
+    for key, text in overrides.items():
+        block = "fixed_parameters" if key in scheme["fixed_parameters"] else "parameters"
+        scheme[block][key] = text
+    if overrides:
+        scheme["parameter_overrides"] = dict(overrides)
     process["scheme_data"] = scheme
     step = CORRECTION_STEP[process["correction"]]
     process["loop_orders"] = {k: process["born_orders"][k] + step[k] for k in ("QCD", "QED")}
+    # Requests with several Born amplitude orders (mixed Borns, every squared
+    # split order printed by the MadLoop driver) list all of them; ``born_orders``
+    # stays the primary one (the ROW line of the driver).
+    process["born_orders_all"] = process.get("born_orders_all") or [dict(process["born_orders"])]
     process.setdefault("madloop", {})
     process["madloop"].setdefault("model", scheme["madloop_model"])
     for key, value in (roots or {}).items():
@@ -51,14 +67,45 @@ def load_process(path, name, roots=None):
     return process
 
 
+MASS_PARAMETERS = {4: "MC", 5: "MB", 6: "MT", 11: "Me", 13: "MM", 15: "MTA", 23: "MZ", 24: "MW", 25: "MH"}
+DERIVED_DIGITS = 30  # significant digits of a derived parameter (shared by every provider)
+
+
+def derived_mw(scheme):
+    """Tree-level W mass of an ``alpha_fixed`` scheme (MG5 loop_sm: alpha, G_F
+    and MZ inputs), as the decimal text every provider and the point
+    construction share: ``DERIVED_DIGITS`` significant digits of
+    sqrt(MZ^2/2 + sqrt(MZ^4/4 - alpha pi MZ^2 / (G_F sqrt 2))). Other schemes
+    take MW as an input."""
+    values = {**scheme["parameters"], **scheme["fixed_parameters"]}
+    if "MW" in values:
+        return values["MW"]
+    if scheme["electroweak_inputs"] != "alpha_fixed":
+        raise ValueError(f"no MW input and no tree-level derivation for {scheme['electroweak_inputs']!r}")
+    with localcontext() as context:
+        context.prec = 60
+        pi = Decimal("3.14159265358979323846264338327950288419716939937510582097494459")
+        alpha = 1 / Decimal(values["aEWM1"])
+        mz2 = Decimal(values["MZ"]) ** 2
+        two = Decimal(2)
+        mw = (mz2 / 2 + (mz2 ** 2 / 4 - alpha * pi * mz2 / (Decimal(values["Gf"]) * two.sqrt())).sqrt()).sqrt()
+        return f"{mw:.{DERIVED_DIGITS}g}"
+
+
 def masses(process):
-    """Exact on-shell masses of the external legs from the scheme parameters."""
-    values = {**process["scheme_data"]["parameters"], **process["scheme_data"]["fixed_parameters"]}
-    names = {5: "MB", 6: "MT", 15: "MTA", 23: "MZ", 24: "MW", 25: "MH"}
+    """On-shell masses of the external legs from the scheme parameters: the
+    scheme's (exact decimal) value of each mass parameter, MW derived at tree
+    level (``derived_mw``) when the scheme does not list it, and 0 for a mass
+    the scheme does not list (a parameter the restriction removed)."""
+    scheme = process["scheme_data"]
+    values = {**scheme["parameters"], **scheme["fixed_parameters"]}
     out = []
     for pdg in process["pdgs"]:
-        name = names.get(abs(pdg))
-        out.append(Fraction(values[name]) if name and name in values else Fraction(0))
+        name = MASS_PARAMETERS.get(abs(pdg))
+        if name == "MW" and name not in values:
+            out.append(Fraction(derived_mw(scheme)))
+        else:
+            out.append(Fraction(values[name]) if name and name in values else Fraction(0))
     return out
 
 
