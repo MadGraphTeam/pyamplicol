@@ -1424,7 +1424,14 @@ for r in R:
 # The nightly tier's file jobs (each within PLAN §3.2's 30 minutes): measured
 # seconds per id where a run measured them (mqcd_manifest's packing), else
 # DEFAULT_SECONDS per EW generation.
-MEASURED_SECONDS: dict[str, tuple[int, int]] = {}
+# (seconds, points) per id, wall time of one process per row (the c2 run of
+# tmp/ms-validate, 2026-10-29 ~22:40 UTC, 4 cores each, host load ~80;
+# generation 40-250 s each, the extras included).
+MEASURED_SECONDS: dict[str, tuple[int, int]] = {
+    "DY05": (652, 3), "LL01": (293, 3), "LL02": (306, 3), "LL03": (68, 3),
+    "LL10": (322, 3), "SC01": (330, 4), "SC05": (30, 3), "TT01": (472, 3),
+    "TT05": (453, 3), "TV06": (453, 3), "VJ03": (256, 3), "VV06": (247, 3),
+}  # fmt: skip
 DEFAULT_SECONDS = 600
 JOB_SECONDS = 1500
 

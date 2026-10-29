@@ -415,6 +415,7 @@ def nightly_ids(manifest: Mapping[str, Any] | None = None) -> list[str]:
         for name, row in rows(manifest).items()
         if row.active
         and row.gating
+        and row.tier != "campaign"
         and (row.tier_points("nightly") or set(row.extras) & IMPLEMENTED_EXTRAS)
     )
 
