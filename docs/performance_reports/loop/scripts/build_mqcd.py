@@ -25,7 +25,9 @@ Inputs:
                                            package it is routed to (curated,
                                            not computed)
 
-Per row the output holds the manifest facts, every tier's record summary
+Per row the output holds the manifest facts (rule 1's tolerance
+``reference_tolerance`` among them: 1e-12 at 2->2 and 2->3, 1e-10 from 2->4
+up, the user's ruling of 2026-10-29 ~01:12), every tier's record summary
 (points, checks, failures with their rule, point, sector, coefficient,
 error, bound and note; the largest double-double deviation from the primary
 provider, binary64 against double-double, the poles against Catani in both
@@ -161,6 +163,7 @@ def build(results: list[Path], meta: dict[str, str], findings=None) -> dict:
                 "extras_pending": row.get("extras_pending", {}),
                 "waits_for": (row.get("pending") or {}).get("waits_for"),
                 "pending_reason": (row.get("pending") or {}).get("reason"),
+                "reference_tolerance": row.get("reference_tolerance", 1e-12),
                 "listed_outliers": row.get("reference_outliers", []),
                 "listed_out_of_scope": row.get("binary64_out_of_scope", []),
                 "status": status,
@@ -230,6 +233,7 @@ def markdown(data: dict) -> str:
         "Process",
         "Tier",
         "Status",
+        "Rule 1 tol",
         "DD vs ref",
         "b64 vs DD",
         "Catani DD",
@@ -271,7 +275,8 @@ def markdown(data: dict) -> str:
             ids += [f for f in explained.get(name, []) if f not in ids]
         lines.append(
             f"| {row['id']}{variants} | {row['process']} | {row['tier'][0]} | "
-            f"{row['status']} | {_number(row['max_dd_vs_reference'])} | "
+            f"{row['status']} | {row['reference_tolerance']:.0e} | "
+            f"{_number(row['max_dd_vs_reference'])} | "
             f"{_number(row['max_binary64_vs_dd'])} | {_number(row['max_catani_dd'])} | "
             f"{_number(row.get('max_ward_dd'))} | {note} | {', '.join(ids)} |"
         )
