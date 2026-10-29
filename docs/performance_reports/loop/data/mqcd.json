@@ -1,14 +1,14 @@
 {
  "source": "tests/fixtures/loop/mqcd/manifest.json + campaign records (tests/unit/test_loop_v2_mqcd_*.py, PYAMPLICOL_MQCD_RESULTS)",
  "rules": "m-qcd/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
- "campaign_head": "f9fd78fd (pt7: slice d3081568 + MQ-REF fix round 2 75db7231, rows whose fixtures changed) + 61d1a6d9 (pt8: the 17 MQ-REF rerun variants); A24, A23, B05, E06 from pt6 (a765a9cc, fixtures unchanged)",
- "native": "loop-native-v2-slice-d3081568 (digest 58a7bab6)",
- "references": "work/v2-mq-ref 75db7231 (MQ-REF fix round 2, not yet re-audited)",
- "date": "2026-10-28",
+ "campaign_head": "a22c4b9d (pt11: every tier as whole files, one pytest process per file; rule 1 at each row's stated tolerance, user ruling 2026-10-29 ~01:12)",
+ "native": "loop-native-v2-slice-da6980b0 (_rusticol.so edf5ac8c)",
+ "references": "slice 141fe125 (MQ-REF integrated: binding quadruple-precision references, gg_ggg_hel)",
+ "date": "2026-10-29",
  "timings": "indicative (shared host under load)",
  "counts": {
-  "pass": 62,
-  "fail": 9,
+  "pass": 65,
+  "fail": 6,
   "pending": 5,
   "not-run": 0
  },
@@ -30,9 +30,9 @@
    "pending": 1
   },
   "Q-massless": {
-   "pass": 18,
+   "pass": 21,
    "rows": 22,
-   "fail": 4
+   "fail": 1
   },
   "Q-mixed": {
    "pass": 2,
@@ -98,7 +98,21 @@
      "madloop",
      "recola",
      "openloops"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/gg_gg_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/gg_gg_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/gg_gg_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E v2/gg_gg_providers.json",
    "extras": [
@@ -110,6 +124,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -120,27 +135,27 @@
       1
      ],
      "passed": true,
-     "checks": 38,
+     "checks": 42,
      "failures": 0,
-     "max_dd_vs_reference": 1.3087576735933801e-14,
-     "max_binary64_vs_dd": 3.886529271620617e-15,
-     "max_catani_dd": 4.364637900270518e-32,
-     "max_catani_binary64": 1.0604834159200059e-15,
+     "max_dd_vs_reference": 1.0640223891151496e-15,
+     "max_binary64_vs_dd": 2.879167316960233e-14,
+     "max_catani_dd": 5.24608286668542e-32,
+     "max_catani_binary64": 2.5556876415440204e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 6.586255387489935e-16,
-      "finite": 1.5874793134035004e-14,
-      "single_pole": 2.2696535036110253e-15,
-      "double_pole": 1.6389289155127363e-15
+      "finite": 2.953052916331196e-14,
+      "single_pole": 2.005231841826847e-15,
+      "double_pole": 1.6389289155127353e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.09,
+      "generate_s": 6.85,
       "export_s": 0.41,
-      "double_double_s_per_point": 7.235,
-      "double_s_per_point": 0.805
+      "double_double_s_per_point": 7.25,
+      "double_s_per_point": 0.795
      },
      "failed_checks": []
     },
@@ -149,28 +164,28 @@
       2
      ],
      "passed": true,
-     "checks": 27,
+     "checks": 29,
      "failures": 0,
-     "max_dd_vs_reference": 2.5470563167522057e-14,
-     "max_binary64_vs_dd": 1.0183005403845772e-14,
-     "max_catani_dd": 7.681932991123352e-32,
-     "max_catani_binary64": 9.083490646797345e-16,
+     "max_dd_vs_reference": 5.97774432193381e-16,
+     "max_binary64_vs_dd": 7.16837265792674e-15,
+     "max_catani_dd": 3.128388900276985e-32,
+     "max_catani_binary64": 9.684840440521477e-16,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 8.730434257992165e-17,
-      "finite": 1.528755776367642e-14,
-      "single_pole": 1.4533585034875747e-15,
-      "double_pole": 1.1621808528625777e-16
+      "finite": 7.338027726564555e-15,
+      "single_pole": 4.72341513633462e-16,
+      "double_pole": 1.2396595763867492e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.24,
-      "export_s": 0.41,
-      "double_double_s_per_point": 8.26,
-      "double_s_per_point": 0.82,
-      "ap_s": 11.76
+      "generate_s": 6.89,
+      "export_s": 0.4,
+      "double_double_s_per_point": 8.27,
+      "double_s_per_point": 0.8,
+      "ap_s": 10.93
      },
      "failed_checks": []
     }
@@ -179,7 +194,7 @@
     {
      "id": "A01@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/gg_gg_sectors.json",
@@ -191,24 +206,21 @@
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
        "passed": true,
-       "checks": 80,
+       "checks": 20,
        "failures": 0,
-       "max_dd_vs_reference": 1.0640223891151496e-15,
-       "max_binary64_vs_dd": 1.0183005403845772e-14,
-       "max_catani_dd": 8.705151650856652e-32,
-       "max_catani_binary64": 1.0604834159200059e-15,
+       "max_dd_vs_reference": 4.3063648731802815e-16,
+       "max_binary64_vs_dd": 1.054838673323902e-14,
+       "max_catani_dd": 1.177693626127006e-31,
+       "max_catani_binary64": 3.709080591321167e-15,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 6.586255387489935e-16,
-        "finite": 1.0013350335207956e-14,
-        "single_pole": 3.6333962587189406e-16,
-        "double_pole": 9.68484044052148e-16
+        "born": 3.2590111041583183e-16,
+        "finite": 1.0443206084828704e-14,
+        "single_pole": 3.1662883096644102e-15,
+        "double_pole": 1.6389289155127353e-15
        },
        "ward": null,
        "no_reference": [],
@@ -216,17 +228,17 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 6.76,
-        "double_s_per_point": 0.8
+        "double_double_s_per_point": 6.32,
+        "double_s_per_point": 0.82
        },
        "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 2.5470563167522057e-14,
-   "max_binary64_vs_dd": 1.0183005403845772e-14,
-   "max_catani_dd": 8.705151650856652e-32,
+   "max_dd_vs_reference": 1.0640223891151496e-15,
+   "max_binary64_vs_dd": 2.879167316960233e-14,
+   "max_catani_dd": 1.177693626127006e-31,
    "max_ward_dd": null
   },
   {
@@ -248,6 +260,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -262,23 +275,23 @@
      "checks": 57,
      "failures": 0,
      "max_dd_vs_reference": 1.2364776946639469e-14,
-     "max_binary64_vs_dd": 1.915136659524854e-14,
-     "max_catani_dd": 1.2346521332088904e-31,
-     "max_catani_binary64": 1.379755520607425e-15,
+     "max_binary64_vs_dd": 2.2494015228145497e-14,
+     "max_catani_dd": 9.802152283635443e-32,
+     "max_catani_binary64": 1.2647758938901397e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 6.337372785843294e-16,
-      "finite": 6.786589648609132e-15,
-      "single_pole": 1.839674027476566e-15,
-      "double_pole": 5.84044961159017e-16
+      "finite": 1.0129238281506134e-14,
+      "single_pole": 1.7856442760325735e-15,
+      "double_pole": 1.8819226526234993e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.73,
-      "export_s": 0.53,
-      "double_double_s_per_point": 5.066666666666666,
+      "generate_s": 4.57,
+      "export_s": 0.52,
+      "double_double_s_per_point": 5.033333333333333,
       "double_s_per_point": 0.11666666666666665
      },
      "failed_checks": []
@@ -309,15 +322,15 @@
        "checks": 80,
        "failures": 0,
        "max_dd_vs_reference": 6.673062423346946e-15,
-       "max_binary64_vs_dd": 2.196587290444234e-13,
-       "max_catani_dd": 1.1753732781189824e-31,
-       "max_catani_binary64": 5.4663574685589046e-14,
+       "max_binary64_vs_dd": 4.150997654990777e-13,
+       "max_catani_dd": 1.3561069566587021e-31,
+       "max_catani_binary64": 9.706803887183643e-14,
        "catani_not_formed": false,
        "binary64_vs_reference": {
         "born": 1.478720316696768e-15,
-        "finite": 2.1940537129944822e-13,
-        "single_pole": 5.4814301454023565e-14,
-        "double_pole": 1.2364392176676093e-15
+        "finite": 4.1484640775410257e-13,
+        "single_pole": 9.721876564027094e-14,
+        "double_pole": 1.4742159902959953e-15
        },
        "ward": null,
        "no_reference": [],
@@ -325,7 +338,7 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.9325,
+        "double_double_s_per_point": 4.64,
         "double_s_per_point": 0.115
        },
        "failed_checks": []
@@ -334,8 +347,8 @@
     }
    ],
    "max_dd_vs_reference": 1.2364776946639469e-14,
-   "max_binary64_vs_dd": 2.196587290444234e-13,
-   "max_catani_dd": 1.2346521332088904e-31,
+   "max_binary64_vs_dd": 4.150997654990777e-13,
+   "max_catani_dd": 1.3561069566587021e-31,
    "max_ward_dd": null
   },
   {
@@ -357,6 +370,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -371,33 +385,33 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 6.625079170408455e-15,
-     "max_binary64_vs_dd": 6.526061426125881e-14,
-     "max_catani_dd": 1.5412726804395223e-31,
-     "max_catani_binary64": 1.3683757584693024e-14,
+     "max_dd_vs_reference": 6.6250791704084565e-15,
+     "max_binary64_vs_dd": 4.174623815067699e-14,
+     "max_catani_dd": 1.5507084905949217e-31,
+     "max_catani_binary64": 1.6166841532829185e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 3.379932152449759e-16,
-      "finite": 5.863553509085074e-14,
-      "single_pole": 1.339793497195792e-14,
-      "double_pole": 7.614215789924974e-16
+      "finite": 4.672053858244756e-14,
+      "single_pole": 1.5881018920094083e-14,
+      "double_pole": 1.0152287719899965e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.75,
-      "export_s": 0.43,
-      "double_double_s_per_point": 4.92,
-      "double_s_per_point": 0.0975
+      "generate_s": 4.71,
+      "export_s": 0.59,
+      "double_double_s_per_point": 4.895,
+      "double_s_per_point": 0.095
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 6.625079170408455e-15,
-   "max_binary64_vs_dd": 6.526061426125881e-14,
-   "max_catani_dd": 1.5412726804395223e-31,
+   "max_dd_vs_reference": 6.6250791704084565e-15,
+   "max_binary64_vs_dd": 4.174623815067699e-14,
+   "max_catani_dd": 1.5507084905949217e-31,
    "max_ward_dd": null
   },
   {
@@ -419,6 +433,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -431,25 +446,25 @@
      "passed": true,
      "checks": 40,
      "failures": 0,
-     "max_dd_vs_reference": 1.0463033528991505e-15,
-     "max_binary64_vs_dd": 6.253480077035373e-15,
-     "max_catani_dd": 1.2746548408563948e-30,
-     "max_catani_binary64": 6.5841183877840744e-15,
+     "max_dd_vs_reference": 1.0463033528991514e-15,
+     "max_binary64_vs_dd": 7.255411136045984e-15,
+     "max_catani_dd": 2.1827547060664683e-30,
+     "max_catani_binary64": 7.586049446794687e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 7.679189228698022e-16,
-      "finite": 6.656854127482402e-16,
-      "single_pole": 7.299783429934517e-15,
-      "double_pole": 9.259561409503601e-16
+      "finite": 3.357369907773724e-15,
+      "single_pole": 8.30171448894513e-15,
+      "double_pole": 7.720420535651262e-16
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.96,
-      "export_s": 0.57,
-      "double_double_s_per_point": 5.24,
-      "double_s_per_point": 0.125
+      "generate_s": 4.66,
+      "export_s": 0.43,
+      "double_double_s_per_point": 5.28,
+      "double_s_per_point": 0.12
      },
      "failed_checks": []
     },
@@ -462,32 +477,32 @@
      "checks": 40,
      "failures": 0,
      "max_dd_vs_reference": 4.573832458487312e-16,
-     "max_binary64_vs_dd": 7.797321396496309e-16,
-     "max_catani_dd": 8.226044896064586e-31,
-     "max_catani_binary64": 7.680934623220699e-16,
+     "max_binary64_vs_dd": 1.0935080120863208e-15,
+     "max_catani_dd": 7.039780204465409e-31,
+     "max_catani_binary64": 7.720420535651262e-16,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 7.679189228698022e-16,
-      "finite": 7.470633616639816e-16,
+      "finite": 1.0411113553402915e-15,
       "single_pole": 8.203820803782044e-16,
-      "double_pole": 7.680934623220699e-16
+      "double_pole": 7.720420535651262e-16
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.8,
-      "export_s": 0.43,
-      "double_double_s_per_point": 5.19,
-      "double_s_per_point": 0.135
+      "generate_s": 6.75,
+      "export_s": 0.49,
+      "double_double_s_per_point": 5.69,
+      "double_s_per_point": 0.165
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 1.0463033528991505e-15,
-   "max_binary64_vs_dd": 6.253480077035373e-15,
-   "max_catani_dd": 1.2746548408563948e-30,
+   "max_dd_vs_reference": 1.0463033528991514e-15,
+   "max_binary64_vs_dd": 7.255411136045984e-15,
+   "max_catani_dd": 2.1827547060664683e-30,
    "max_ward_dd": null
   },
   {
@@ -511,6 +526,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -540,11 +556,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.78,
-      "export_s": 0.42,
-      "double_double_s_per_point": 4.8575,
-      "double_s_per_point": 0.045,
-      "uv_s": 5.07
+      "generate_s": 4.53,
+      "export_s": 0.34,
+      "double_double_s_per_point": 4.6175,
+      "double_s_per_point": 0.0425,
+      "uv_s": 5.08
      },
      "failed_checks": []
     }
@@ -569,16 +585,31 @@
      "madloop",
      "recola",
      "openloops"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uux_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uux_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uux_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/uux_uux",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
-   "status": "fail",
+   "status": "pass",
    "tiers": {
     "nightly": {
      "points": [
@@ -586,48 +617,37 @@
       1,
       2
      ],
-     "passed": false,
-     "checks": 57,
-     "failures": 1,
-     "max_dd_vs_reference": 1.1755314366247516e-12,
+     "passed": true,
+     "checks": 63,
+     "failures": 0,
+     "max_dd_vs_reference": 2.7693210368913304e-14,
      "max_binary64_vs_dd": 5.809402221152747e-13,
      "max_catani_dd": 1.0860813315471988e-28,
      "max_catani_binary64": 5.365412174603247e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 7.541536548302401e-16,
-      "finite": 2.8474943719219902e-15,
-      "single_pole": 1.7564716587393437e-12,
+      "finite": 9.481535634426582e-16,
+      "single_pole": 5.532470117463767e-13,
       "double_pole": 1.8187305012898986e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.6,
+      "generate_s": 4.53,
       "export_s": 0.36,
-      "double_double_s_per_point": 4.82,
+      "double_double_s_per_point": 4.7299999999999995,
       "double_s_per_point": 0.06
      },
-     "failed_checks": [
-      {
-       "rule": "1",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "total",
-       "coefficient": "single_pole",
-       "error": 1.1755314366247516e-12,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 216; its double pole off its Born x the universal factor by 2.35e-16; second providers recola 7.27e-13, openloops 5.19e-13)"
-      }
-     ]
+     "failed_checks": []
     }
    },
    "variants": [
     {
      "id": "A06@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/uux_uux_sectors.json",
@@ -639,24 +659,21 @@
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
        "passed": true,
-       "checks": 80,
+       "checks": 20,
        "failures": 0,
-       "max_dd_vs_reference": 2.7693210368913304e-14,
-       "max_binary64_vs_dd": 5.809402221152747e-13,
-       "max_catani_dd": 1.0860813315471988e-28,
-       "max_catani_binary64": 5.365412174603247e-13,
+       "max_dd_vs_reference": 5.116357955467605e-16,
+       "max_binary64_vs_dd": 2.155092038115368e-15,
+       "max_catani_dd": 6.438445638863464e-32,
+       "max_catani_binary64": 6.0235006314218e-16,
        "catani_not_formed": false,
        "binary64_vs_reference": {
         "born": 7.541536548302401e-16,
         "finite": 2.217668535722728e-15,
-        "single_pole": 5.532470117463767e-13,
-        "double_pole": 1.8187305012898986e-15
+        "single_pole": 1.297754334751175e-16,
+        "double_pole": 6.0235006314218e-16
        },
        "ward": null,
        "no_reference": [],
@@ -664,15 +681,15 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.6975,
-        "double_s_per_point": 0.0575
+        "double_double_s_per_point": 5.1,
+        "double_s_per_point": 0.06
        },
        "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 1.1755314366247516e-12,
+   "max_dd_vs_reference": 2.7693210368913304e-14,
    "max_binary64_vs_dd": 5.809402221152747e-13,
    "max_catani_dd": 1.0860813315471988e-28,
    "max_ward_dd": null
@@ -696,6 +713,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -725,10 +743,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.41,
-      "export_s": 0.64,
-      "double_double_s_per_point": 4.6625,
-      "double_s_per_point": 0.06
+      "generate_s": 4.43,
+      "export_s": 0.35,
+      "double_double_s_per_point": 4.6825,
+      "double_s_per_point": 0.1025
      },
      "failed_checks": []
     }
@@ -764,6 +782,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -779,41 +798,41 @@
      "checks": 249,
      "failures": 0,
      "max_dd_vs_reference": 3.412633027615142e-14,
-     "max_binary64_vs_dd": 4.952839113483384e-13,
-     "max_catani_dd": 6.590875279760875e-30,
-     "max_catani_binary64": 4.862871521391739e-13,
+     "max_binary64_vs_dd": 4.490793351880737e-13,
+     "max_catani_dd": 6.1084685477650646e-30,
+     "max_catani_binary64": 4.864957098884829e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 5.738073343450762e-14,
-      "finite": 4.930857231316556e-13,
-      "single_pole": 2.556780753831031e-13,
-      "double_pole": 4.451317562755011e-13
+      "finite": 4.1943548079842956e-13,
+      "single_pole": 2.555202494106444e-13,
+      "double_pole": 4.4534031402481015e-13
      },
      "ward": {
       "checks": 40,
-      "virtual_double": 0.10063189100888019,
+      "virtual_double": 0.08942995168049177,
       "born_double": 3.8295802558494867e-16,
-      "virtual_double-double": 3.2608642830988496e-30,
+      "virtual_double-double": 2.015565832974175e-30,
       "born_double-double": 2.1293016669738232e-32
      },
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.06,
-      "export_s": 1.05,
-      "double_double_s_per_point": 59.695,
-      "double_s_per_point": 29.4975,
-      "hel_s": 81.49,
-      "ward_s": 36.24
+      "generate_s": 7.9,
+      "export_s": 0.94,
+      "double_double_s_per_point": 59.3825,
+      "double_s_per_point": 29.4425,
+      "hel_s": 78.07,
+      "ward_s": 35.76
      },
      "failed_checks": []
     }
    },
    "variants": [],
    "max_dd_vs_reference": 3.412633027615142e-14,
-   "max_binary64_vs_dd": 4.952839113483384e-13,
-   "max_catani_dd": 6.590875279760875e-30,
-   "max_ward_dd": 3.2608642830988496e-30
+   "max_binary64_vs_dd": 4.490793351880737e-13,
+   "max_catani_dd": 6.1084685477650646e-30,
+   "max_ward_dd": 2.015565832974175e-30
   },
   {
    "id": "A09",
@@ -839,6 +858,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "fail",
@@ -852,24 +872,24 @@
      "checks": 40,
      "failures": 0,
      "max_dd_vs_reference": 3.0925701715825384e-14,
-     "max_binary64_vs_dd": 1.8349285795700192e-13,
-     "max_catani_dd": 8.704175684516362e-30,
-     "max_catani_binary64": 1.4568448332292487e-13,
+     "max_binary64_vs_dd": 2.2699354422471415e-13,
+     "max_catani_dd": 9.733789299117832e-30,
+     "max_catani_binary64": 1.6327712053058345e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.1922062864841634e-14,
-      "finite": 1.8315008564116232e-13,
-      "single_pole": 1.4277660940430403e-13,
-      "double_pole": 8.610053253166375e-14
+      "finite": 2.2665077190887456e-13,
+      "single_pole": 1.6036924661196267e-13,
+      "double_pole": 8.706076151900572e-14
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.68,
-      "export_s": 0.72,
-      "double_double_s_per_point": 11.015,
-      "double_s_per_point": 3.0
+      "generate_s": 5.37,
+      "export_s": 0.66,
+      "double_double_s_per_point": 10.93,
+      "double_s_per_point": 2.985
      },
      "failed_checks": []
     },
@@ -882,24 +902,24 @@
      "checks": 40,
      "failures": 0,
      "max_dd_vs_reference": 3.396045201400363e-14,
-     "max_binary64_vs_dd": 8.99895475531709e-14,
-     "max_catani_dd": 4.039069888860203e-30,
-     "max_catani_binary64": 5.041363211124127e-14,
+     "max_binary64_vs_dd": 9.037167578790688e-14,
+     "max_catani_dd": 3.957089075184802e-30,
+     "max_catani_binary64": 5.079576034597726e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 5.40029856585778e-14,
-      "finite": 6.354482804897037e-14,
-      "single_pole": 6.428885716686874e-14,
-      "double_pole": 9.553205868399377e-14
+      "finite": 3.050026311503732e-14,
+      "single_pole": 6.122748301606546e-14,
+      "double_pole": 9.591418691872973e-14
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.33,
-      "export_s": 0.61,
-      "double_double_s_per_point": 11.45,
-      "double_s_per_point": 3.035
+      "generate_s": 6.99,
+      "export_s": 0.6,
+      "double_double_s_per_point": 11.255,
+      "double_s_per_point": 2.985
      },
      "failed_checks": []
     }
@@ -928,16 +948,16 @@
        "passed": true,
        "checks": 40,
        "failures": 0,
-       "max_dd_vs_reference": 2.5146786165557695e-13,
-       "max_binary64_vs_dd": 4.283736292181344e-11,
-       "max_catani_dd": 2.9783679097328735e-23,
-       "max_catani_binary64": 4.273367064568608e-11,
+       "max_dd_vs_reference": 2.5146786165557937e-13,
+       "max_binary64_vs_dd": 4.488636590401006e-11,
+       "max_catani_dd": 2.9793230948933057e-23,
+       "max_catani_binary64": 4.478267362788291e-11,
        "catani_not_formed": false,
        "binary64_vs_reference": {
         "born": 1.1398516018057906e-11,
-        "finite": 6.311367549400764e-07,
-        "single_pole": 7.23180182166673e-07,
-        "double_pole": 2.3121056484160844e-07
+        "finite": 6.330556294360211e-07,
+        "single_pole": 7.348906867661915e-07,
+        "double_pole": 2.312353513659077e-07
        },
        "ward": null,
        "no_reference": [],
@@ -953,29 +973,29 @@
          "point": 1,
          "sector": "QCD^8",
          "coefficient": "finite",
-         "E": 9.245130921392626e-07,
-         "true_error": 6.311366868200821e-07
+         "E": 9.350979800886755e-07,
+         "true_error": 6.330555613160269e-07
         },
         {
          "point": 1,
          "sector": "QCD^8",
          "coefficient": "single_pole",
-         "E": 1.393254093825812e-06,
-         "true_error": 7.231801586806102e-07
+         "E": 1.3948454830800716e-06,
+         "true_error": 7.348906632801289e-07
         },
         {
          "point": 1,
          "sector": "QCD^8",
          "coefficient": "double_pole",
-         "E": 4.618431450187734e-07,
-         "true_error": 2.3121031337380494e-07
+         "E": 4.6185214116251784e-07,
+         "true_error": 2.312350998981042e-07
         }
        ],
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 8.925,
-        "double_s_per_point": 2.965
+        "double_double_s_per_point": 8.71,
+        "double_s_per_point": 2.98
        },
        "failed_checks": []
       }
@@ -1005,9 +1025,9 @@
        "passed": false,
        "checks": 14,
        "failures": 5,
-       "max_dd_vs_reference": 7.776971333329394e-13,
+       "max_dd_vs_reference": 7.776971332929062e-13,
        "max_binary64_vs_dd": null,
-       "max_catani_dd": 1.2818496696135695e-22,
+       "max_catani_dd": 1.1731808814312099e-22,
        "max_catani_binary64": null,
        "catani_not_formed": false,
        "binary64_vs_reference": {},
@@ -1017,8 +1037,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.873333333333334,
-        "double_s_per_point": 0.29333333333333333
+        "double_double_s_per_point": 5.736666666666667,
+        "double_s_per_point": 0.27999999999999997
        },
        "failed_checks": [
         {
@@ -1076,9 +1096,9 @@
      }
     }
    ],
-   "max_dd_vs_reference": 7.776971333329394e-13,
-   "max_binary64_vs_dd": 4.283736292181344e-11,
-   "max_catani_dd": 1.2818496696135695e-22,
+   "max_dd_vs_reference": 7.776971332929062e-13,
+   "max_binary64_vs_dd": 4.488636590401006e-11,
+   "max_catani_dd": 1.1731808814312099e-22,
    "max_ward_dd": null
   },
   {
@@ -1095,7 +1115,21 @@
      "madloop",
      "recola",
      "openloops"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_ddxg_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_ddxg_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_ddxg_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/uux_ddxg",
    "extras": [
@@ -1106,6 +1140,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -1116,27 +1151,27 @@
       1
      ],
      "passed": true,
-     "checks": 38,
+     "checks": 42,
      "failures": 0,
-     "max_dd_vs_reference": 3.188696087336251e-13,
+     "max_dd_vs_reference": 3.750288622276572e-14,
      "max_binary64_vs_dd": 4.526292386904746e-13,
      "max_catani_dd": 5.721996960367653e-30,
      "max_catani_binary64": 4.733547487504188e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.2223835183825896e-14,
-      "finite": 7.714988474239552e-13,
-      "single_pole": 4.415859736664995e-14,
-      "double_pole": 2.8334341118556718e-14
+      "finite": 4.504778116728514e-13,
+      "single_pole": 4.521755653611393e-14,
+      "double_pole": 3.863773788894058e-14
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.81,
-      "export_s": 0.73,
-      "double_double_s_per_point": 5.875,
-      "double_s_per_point": 0.305
+      "generate_s": 4.68,
+      "export_s": 0.65,
+      "double_double_s_per_point": 5.94,
+      "double_s_per_point": 0.295
      },
      "failed_checks": []
     },
@@ -1145,26 +1180,26 @@
       2
      ],
      "passed": true,
-     "checks": 19,
+     "checks": 21,
      "failures": 0,
-     "max_dd_vs_reference": 3.663158759622007e-14,
+     "max_dd_vs_reference": 1.2459131819071548e-14,
      "max_binary64_vs_dd": 1.0004393931216102e-13,
      "max_catani_dd": 7.749607812732073e-30,
      "max_catani_binary64": 6.744223887717363e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 5.1930848263796177e-14,
-      "finite": 6.341235171594325e-14,
-      "single_pole": 2.602511974312096e-15,
-      "double_pole": 1.1278094952483502e-14
+      "finite": 9.225647502820235e-14,
+      "single_pole": 2.2604675434025124e-14,
+      "double_pole": 1.2850890507081687e-14
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.57,
-      "export_s": 0.47,
-      "double_double_s_per_point": 6.95,
+      "generate_s": 5.05,
+      "export_s": 0.56,
+      "double_double_s_per_point": 7.03,
       "double_s_per_point": 0.31
      },
      "failed_checks": []
@@ -1174,7 +1209,7 @@
     {
      "id": "A12@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/uux_ddxg_sectors.json",
@@ -1186,23 +1221,20 @@
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
        "passed": true,
-       "checks": 80,
+       "checks": 20,
        "failures": 0,
        "max_dd_vs_reference": 4.9812157280921775e-14,
-       "max_binary64_vs_dd": 4.526292386904746e-13,
-       "max_catani_dd": 7.749607812732073e-30,
-       "max_catani_binary64": 6.744223887717363e-14,
+       "max_binary64_vs_dd": 1.2083763987821281e-13,
+       "max_catani_dd": 1.984594398107107e-30,
+       "max_catani_binary64": 2.3847378008873924e-14,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 5.1930848263796177e-14,
-        "finite": 4.504778116728514e-13,
-        "single_pole": 4.521755653611393e-14,
+        "born": 1.2223835183825896e-14,
+        "finite": 7.102548259729459e-14,
+        "single_pole": 4.4002421522197276e-14,
         "double_pole": 3.863773788894058e-14
        },
        "ward": null,
@@ -1211,15 +1243,15 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.5,
-        "double_s_per_point": 0.2875
+        "double_double_s_per_point": 5.06,
+        "double_s_per_point": 0.29
        },
        "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 3.188696087336251e-13,
+   "max_dd_vs_reference": 4.9812157280921775e-14,
    "max_binary64_vs_dd": 4.526292386904746e-13,
    "max_catani_dd": 7.749607812732073e-30,
    "max_ward_dd": null
@@ -1238,7 +1270,21 @@
      "madloop",
      "recola",
      "openloops"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uuxg_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uuxg_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uuxg_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/uux_uuxg",
    "extras": [
@@ -1250,6 +1296,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -1261,28 +1308,28 @@
       2
      ],
      "passed": true,
-     "checks": 65,
+     "checks": 71,
      "failures": 0,
-     "max_dd_vs_reference": 2.428313238266438e-13,
+     "max_dd_vs_reference": 6.257102924180504e-14,
      "max_binary64_vs_dd": 7.934137437454622e-13,
      "max_catani_dd": 4.868145291053958e-30,
      "max_catani_binary64": 9.580329604028818e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 4.37222327804089e-14,
-      "finite": 1.0362450675719132e-12,
-      "single_pole": 2.831501658176503e-14,
-      "double_pole": 1.3719299110112429e-13
+      "finite": 7.972629458373705e-13,
+      "single_pole": 9.543339914437978e-14,
+      "double_pole": 4.153406795412046e-14
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.24,
-      "export_s": 0.73,
-      "double_double_s_per_point": 6.073333333333333,
-      "double_s_per_point": 0.44,
-      "ap_s": 16.02
+      "generate_s": 6.89,
+      "export_s": 0.54,
+      "double_double_s_per_point": 6.359999999999999,
+      "double_s_per_point": 0.4466666666666667,
+      "ap_s": 15.22
      },
      "failed_checks": []
     }
@@ -1291,7 +1338,7 @@
     {
      "id": "A13@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/uux_uuxg_sectors.json",
@@ -1303,23 +1350,20 @@
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
        "passed": true,
-       "checks": 80,
+       "checks": 20,
        "failures": 0,
-       "max_dd_vs_reference": 6.257102924180504e-14,
-       "max_binary64_vs_dd": 7.934137437454622e-13,
+       "max_dd_vs_reference": 3.483411795970031e-14,
+       "max_binary64_vs_dd": 9.091004032877339e-14,
        "max_catani_dd": 5.2831111093571315e-30,
-       "max_catani_binary64": 9.580329604028818e-14,
+       "max_catani_binary64": 1.1303350886218186e-14,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 4.37222327804089e-14,
-        "finite": 7.972629458373705e-13,
-        "single_pole": 9.543339914437978e-14,
+        "born": 9.566302177315745e-15,
+        "finite": 5.607592236907504e-14,
+        "single_pole": 4.4297867336018215e-14,
         "double_pole": 4.153406795412046e-14
        },
        "ward": null,
@@ -1328,15 +1372,15 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.8975,
-        "double_s_per_point": 0.425
+        "double_double_s_per_point": 6.86,
+        "double_s_per_point": 0.43
        },
        "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 2.428313238266438e-13,
+   "max_dd_vs_reference": 6.257102924180504e-14,
    "max_binary64_vs_dd": 7.934137437454622e-13,
    "max_catani_dd": 5.2831111093571315e-30,
    "max_ward_dd": null
@@ -1364,6 +1408,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [
     {
@@ -1393,21 +1438,21 @@
      "checks": 44,
      "failures": 0,
      "max_dd_vs_reference": 3.253088473748923e-14,
-     "max_binary64_vs_dd": 4.761324524734598e-11,
+     "max_binary64_vs_dd": 4.9794630364972237e-11,
      "max_catani_dd": null,
      "max_catani_binary64": null,
      "catani_not_formed": true,
      "binary64_vs_reference": {
       "born": 1.54906961701228e-13,
-      "finite": 2.504493232829659e-07,
-      "single_pole": 1.5872679081317923e-07,
-      "double_pole": 2.8362314793021e-12
+      "finite": 1.4697206655096703e-08,
+      "single_pole": 3.419702763622869e-08,
+      "double_pole": 2.8146182870278978e-12
      },
      "ward": {
       "checks": 8,
-      "virtual_double": 0.2599516234117782,
+      "virtual_double": 0.25957320376557164,
       "born_double": 1.5085095457626056e-16,
-      "virtual_double-double": 5.080510011066763e-28,
+      "virtual_double-double": 3.344167472772481e-28,
       "born_double-double": 7.977120007659555e-33
      },
      "no_reference": [],
@@ -1416,32 +1461,32 @@
        "point": 1,
        "sector": "QCD^10",
        "coefficient": "finite",
-       "E": 4.741430976908967e-06,
-       "true_error": 2.5044931872636594e-07
+       "E": 3.2709861795322726e-06,
+       "true_error": 1.4697202098495612e-08
       },
       {
        "point": 1,
        "sector": "QCD^10",
        "coefficient": "single_pole",
-       "E": 2.2075673742839926e-06,
-       "true_error": 1.5872679424903198e-07
+       "E": 1.6258406169984624e-06,
+       "true_error": 3.419703107208185e-08
       }
      ],
      "timings": {
-      "generate_s": 19.74,
-      "export_s": 15.63,
-      "double_double_s_per_point": 46.919999999999995,
-      "double_s_per_point": 1.2833333333333334,
-      "ward_s": 88.97
+      "generate_s": 17.42,
+      "export_s": 12.37,
+      "double_double_s_per_point": 46.82,
+      "double_s_per_point": 1.2166666666666666,
+      "ward_s": 81.29
      },
      "failed_checks": []
     }
    },
    "variants": [],
    "max_dd_vs_reference": 3.253088473748923e-14,
-   "max_binary64_vs_dd": 4.761324524734598e-11,
+   "max_binary64_vs_dd": 4.9794630364972237e-11,
    "max_catani_dd": null,
-   "max_ward_dd": 5.080510011066763e-28
+   "max_ward_dd": 3.344167472772481e-28
   },
   {
    "id": "A15",
@@ -1466,6 +1511,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -1481,31 +1527,31 @@
      "checks": 52,
      "failures": 0,
      "max_dd_vs_reference": 3.398492268954229e-14,
-     "max_binary64_vs_dd": 4.5969422145373936e-12,
+     "max_binary64_vs_dd": 4.633997917923146e-12,
      "max_catani_dd": null,
      "max_catani_binary64": null,
      "catani_not_formed": true,
      "binary64_vs_reference": {
       "born": 2.7993985202402016e-14,
-      "finite": 4.594907219833276e-12,
-      "single_pole": 4.766918966924446e-13,
-      "double_pole": 4.2410593282452686e-13
+      "finite": 4.631962923219028e-12,
+      "single_pole": 4.914291564644609e-13,
+      "double_pole": 4.1765436138844787e-13
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.57,
-      "export_s": 4.28,
-      "double_double_s_per_point": 12.19,
-      "double_s_per_point": 0.2475
+      "generate_s": 7.74,
+      "export_s": 4.08,
+      "double_double_s_per_point": 11.985,
+      "double_s_per_point": 0.2275
      },
      "failed_checks": []
     }
    },
    "variants": [],
    "max_dd_vs_reference": 3.398492268954229e-14,
-   "max_binary64_vs_dd": 4.5969422145373936e-12,
+   "max_binary64_vs_dd": 4.633997917923146e-12,
    "max_catani_dd": null,
    "max_ward_dd": null
   },
@@ -1521,6 +1567,7 @@
     "path": "tests/fixtures/loop/required/mqcd/gg_uuxuux.json",
     "providers": [
      "madloop",
+     "recola",
      "openloops"
     ]
    },
@@ -1533,6 +1580,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [
     {
@@ -1606,7 +1654,7 @@
      "true_error": 5.48e-10
     }
    ],
-   "status": "fail",
+   "status": "pass",
    "tiers": {
     "nightly": {
      "points": [
@@ -1615,19 +1663,19 @@
       2,
       3
      ],
-     "passed": false,
-     "checks": 80,
-     "failures": 4,
-     "max_dd_vs_reference": 1.174435480475222e-11,
-     "max_binary64_vs_dd": 6.451170928864202e-11,
-     "max_catani_dd": 8.99415148744334e-28,
-     "max_catani_binary64": 6.451065261614849e-11,
+     "passed": true,
+     "checks": 83,
+     "failures": 0,
+     "max_dd_vs_reference": 1.1744354804752223e-11,
+     "max_binary64_vs_dd": 1.0507174218424434e-10,
+     "max_catani_dd": 1.4008766107805169e-27,
+     "max_catani_binary64": 1.0507068551175087e-10,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 3.014559216963372e-15,
-      "finite": 5.547122608465279e-08,
-      "single_pole": 2.232926545436604e-09,
-      "double_pole": 5.478725615230299e-10
+      "finite": 5.547094837611016e-08,
+      "single_pole": 2.2306240036674247e-09,
+      "double_pole": 5.440954365262756e-10
      },
      "ward": null,
      "no_reference": [],
@@ -1636,127 +1684,86 @@
        "point": 0,
        "sector": "QCD^10",
        "coefficient": "finite",
-       "E": 2.604317977933777e-08,
-       "true_error": 1.0502115287325264e-08
+       "E": 2.5901486179722237e-08,
+       "true_error": 1.0515055096054193e-08
       },
       {
        "point": 0,
        "sector": "QCD^10",
        "coefficient": "single_pole",
-       "E": 2.4346072794522782e-09,
-       "true_error": 3.1136745819707154e-10
+       "E": 2.4160419900025037e-09,
+       "true_error": 3.115024154613571e-10
       },
       {
        "point": 0,
        "sector": "QCD^10",
        "coefficient": "double_pole",
-       "E": 1.8679903575698677e-09,
-       "true_error": 5.48222153789751e-10
+       "E": 1.8523080116924438e-09,
+       "true_error": 5.444450287929979e-10
       },
       {
        "point": 1,
        "sector": "QCD^10",
        "coefficient": "finite",
-       "E": 1.8240408590589445e-09,
-       "true_error": 3.583206845100343e-10
+       "E": 2.413234193295242e-09,
+       "true_error": 5.514244135552536e-10
       },
       {
        "point": 2,
        "sector": "QCD^10",
        "coefficient": "finite",
-       "E": 5.8004364161704596e-08,
-       "true_error": 5.546485491953595e-08
+       "E": 5.789524042506046e-08,
+       "true_error": 5.546457721099332e-08
       },
       {
        "point": 2,
        "sector": "QCD^10",
        "coefficient": "single_pole",
-       "E": 1.2401135644878914e-08,
-       "true_error": 2.233017915358395e-09
+       "E": 1.2375039100083346e-08,
+       "true_error": 2.230715373589216e-09
       },
       {
        "point": 2,
        "sector": "QCD^10",
        "coefficient": "double_pole",
-       "E": 1.2054571275169823e-08,
-       "true_error": 4.1899295480598194e-10
+       "E": 1.2054572848486496e-08,
+       "true_error": 4.157700204424129e-10
       },
       {
        "point": 3,
        "sector": "QCD^10",
        "coefficient": "finite",
-       "E": 8.687398027636121e-08,
-       "true_error": 4.521581574979863e-08
+       "E": 8.629104657368355e-08,
+       "true_error": 4.524367155823193e-08
       },
       {
        "point": 3,
        "sector": "QCD^10",
        "coefficient": "single_pole",
-       "E": 5.367469845998362e-09,
-       "true_error": 1.0140697022161104e-09
+       "E": 5.320511756078058e-09,
+       "true_error": 1.0111318702423441e-09
       },
       {
        "point": 3,
        "sector": "QCD^10",
        "coefficient": "double_pole",
-       "E": 1.8679903575698677e-09,
-       "true_error": 5.48222153789751e-10
+       "E": 1.8523080116924438e-09,
+       "true_error": 5.444450287929979e-10
       }
      ],
      "timings": {
-      "generate_s": 10.52,
-      "export_s": 0.9,
-      "double_double_s_per_point": 23.105,
-      "double_s_per_point": 9.0875
+      "generate_s": 7.35,
+      "export_s": 0.91,
+      "double_double_s_per_point": 23.125,
+      "double_s_per_point": 8.92
      },
-     "failed_checks": [
-      {
-       "rule": "1",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^10",
-       "coefficient": "finite",
-       "error": 3.4547909912259747e-12,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 3.54e-13; Born from madloop; Born / double-pole mismatch 3.54e-13; second providers openloops 5.46e-13)"
-      },
-      {
-       "rule": "1",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^10",
-       "coefficient": "finite",
-       "error": 6.371165470214663e-12,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 1.06e-12; Born from madloop; Born / double-pole mismatch 1.06e-12; second providers openloops 1.16e-12)"
-      },
-      {
-       "rule": "1",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^10",
-       "coefficient": "double_pole",
-       "error": 1.0598863421342539e-12,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 1.06e-12; Born from madloop; Born / double-pole mismatch 1.06e-12; second providers openloops 1.14e-13)"
-      },
-      {
-       "rule": "1",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^10",
-       "coefficient": "finite",
-       "error": 1.174435480475222e-11,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 329; its double pole off its Born x the universal factor by 3.54e-13; Born from madloop; Born / double-pole mismatch 3.54e-13; second providers openloops 2.55e-12)"
-      }
-     ]
+     "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 1.174435480475222e-11,
-   "max_binary64_vs_dd": 6.451170928864202e-11,
-   "max_catani_dd": 8.99415148744334e-28,
+   "max_dd_vs_reference": 1.1744354804752223e-11,
+   "max_binary64_vs_dd": 1.0507174218424434e-10,
+   "max_catani_dd": 1.4008766107805169e-27,
    "max_ward_dd": null
   },
   {
@@ -1773,13 +1780,28 @@
      "madloop",
      "recola",
      "openloops"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_ddxssx_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_ddxssx_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_ddxssx_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/uux_ddxssx",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -1791,9 +1813,9 @@
       2
      ],
      "passed": true,
-     "checks": 57,
+     "checks": 63,
      "failures": 0,
-     "max_dd_vs_reference": 8.421786185981588e-16,
+     "max_dd_vs_reference": 8.421786185982121e-16,
      "max_binary64_vs_dd": 2.0205170450940162e-13,
      "max_catani_dd": 8.072142667019906e-30,
      "max_catani_binary64": 9.829382732768875e-14,
@@ -1808,10 +1830,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.85,
-      "export_s": 1.05,
-      "double_double_s_per_point": 6.926666666666667,
-      "double_s_per_point": 0.8866666666666667
+      "generate_s": 5.23,
+      "export_s": 0.7,
+      "double_double_s_per_point": 6.91,
+      "double_s_per_point": 0.8733333333333334
      },
      "failed_checks": []
     }
@@ -1820,7 +1842,7 @@
     {
      "id": "A19@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/uux_ddxssx_sectors.json",
@@ -1832,24 +1854,21 @@
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
        "passed": true,
-       "checks": 80,
+       "checks": 20,
        "failures": 0,
-       "max_dd_vs_reference": 8.421786185982121e-16,
-       "max_binary64_vs_dd": 2.0205170450940162e-13,
-       "max_catani_dd": 8.072142667019906e-30,
+       "max_dd_vs_reference": 2.9541986727814076e-16,
+       "max_binary64_vs_dd": 1.6159587529100953e-13,
+       "max_catani_dd": 5.754483332189849e-30,
        "max_catani_binary64": 1.6143410652445985e-13,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 8.64027365599661e-16,
-        "finite": 2.017855245632067e-13,
+        "born": 0.0,
+        "finite": 1.469803251143605e-13,
         "single_pole": 1.6152113299697978e-13,
-        "double_pole": 9.902395789279693e-14
+        "double_pole": 5.451711719909817e-14
        },
        "ward": null,
        "no_reference": [],
@@ -1857,8 +1876,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 6.72,
-        "double_s_per_point": 0.8775
+        "double_double_s_per_point": 7.78,
+        "double_s_per_point": 0.86
        },
        "failed_checks": []
       }
@@ -1884,13 +1903,28 @@
      "madloop",
      "recola",
      "openloops"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uuxddx_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uuxddx_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uuxddx_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/uux_uuxddx",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -1902,9 +1936,9 @@
       2
      ],
      "passed": true,
-     "checks": 57,
+     "checks": 63,
      "failures": 0,
-     "max_dd_vs_reference": 1.949461182262198e-14,
+     "max_dd_vs_reference": 1.9494611822621934e-14,
      "max_binary64_vs_dd": 2.3715351553385173e-12,
      "max_catani_dd": 2.4797701243720132e-30,
      "max_catani_binary64": 3.718466154034098e-13,
@@ -1919,10 +1953,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.44,
-      "export_s": 0.56,
-      "double_double_s_per_point": 8.066666666666666,
-      "double_s_per_point": 1.31
+      "generate_s": 5.1,
+      "export_s": 0.79,
+      "double_double_s_per_point": 8.116666666666667,
+      "double_s_per_point": 1.3366666666666667
      },
      "failed_checks": []
     }
@@ -1931,7 +1965,7 @@
     {
      "id": "A20@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/uux_uuxddx_sectors.json",
@@ -1943,24 +1977,21 @@
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
        "passed": true,
-       "checks": 80,
+       "checks": 20,
        "failures": 0,
-       "max_dd_vs_reference": 1.9494611822621934e-14,
-       "max_binary64_vs_dd": 2.3715351553385173e-12,
-       "max_catani_dd": 2.4797701243720132e-30,
-       "max_catani_binary64": 3.718466154034098e-13,
+       "max_dd_vs_reference": 4.234607459347157e-15,
+       "max_binary64_vs_dd": 2.895669609992851e-14,
+       "max_catani_dd": 2.0657923038927948e-30,
+       "max_catani_binary64": 5.60921625125408e-15,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 2.1630753045543024e-15,
-        "finite": 2.3520405435159413e-12,
-        "single_pole": 5.0065925168124406e-14,
-        "double_pole": 3.7086115617530924e-13
+        "born": 5.437041042812952e-16,
+        "finite": 2.472208864058146e-14,
+        "single_pole": 1.648631525862138e-15,
+        "double_pole": 8.68523806645793e-15
        },
        "ward": null,
        "no_reference": [],
@@ -1968,15 +1999,15 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 8.045,
-        "double_s_per_point": 1.315
+        "double_double_s_per_point": 8.77,
+        "double_s_per_point": 1.3
        },
        "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 1.949461182262198e-14,
+   "max_dd_vs_reference": 1.9494611822621934e-14,
    "max_binary64_vs_dd": 2.3715351553385173e-12,
    "max_catani_dd": 2.4797701243720132e-30,
    "max_ward_dd": null
@@ -1995,7 +2026,21 @@
      "madloop",
      "recola",
      "openloops"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uuxuux_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uuxuux_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uuxuux_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/uux_uuxuux",
    "extras": [
@@ -2006,6 +2051,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -2017,9 +2063,9 @@
       2
      ],
      "passed": true,
-     "checks": 57,
+     "checks": 63,
      "failures": 0,
-     "max_dd_vs_reference": 3.713664947353161e-14,
+     "max_dd_vs_reference": 3.713664947353139e-14,
      "max_binary64_vs_dd": 1.1602984004553682e-11,
      "max_catani_dd": 2.309893933088999e-29,
      "max_catani_binary64": 1.2260022870094469e-12,
@@ -2034,10 +2080,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.0,
-      "export_s": 1.35,
-      "double_double_s_per_point": 11.776666666666666,
-      "double_s_per_point": 2.2466666666666666
+      "generate_s": 5.9,
+      "export_s": 0.62,
+      "double_double_s_per_point": 11.533333333333333,
+      "double_s_per_point": 2.1766666666666667
      },
      "failed_checks": []
     }
@@ -2046,7 +2092,7 @@
     {
      "id": "A21@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/uux_uuxuux_sectors.json",
@@ -2058,22 +2104,19 @@
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
        "passed": true,
-       "checks": 80,
+       "checks": 20,
        "failures": 0,
-       "max_dd_vs_reference": 3.713664947353139e-14,
-       "max_binary64_vs_dd": 1.1602984004553682e-11,
-       "max_catani_dd": 2.309893933088999e-29,
+       "max_dd_vs_reference": 5.805270170028976e-15,
+       "max_binary64_vs_dd": 4.09859140030182e-12,
+       "max_catani_dd": 5.6915468916864854e-30,
        "max_catani_binary64": 2.377077003480294e-12,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 2.282112446203274e-15,
-        "finite": 1.156584735508058e-11,
+        "born": 1.2917066063340035e-16,
+        "finite": 4.1030721415200306e-12,
         "single_pole": 2.3819669384728618e-12,
         "double_pole": 1.2283665971702266e-12
        },
@@ -2083,15 +2126,15 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 10.97,
-        "double_s_per_point": 2.1925
+        "double_double_s_per_point": 11.33,
+        "double_s_per_point": 2.19
        },
        "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 3.713664947353161e-14,
+   "max_dd_vs_reference": 3.713664947353139e-14,
    "max_binary64_vs_dd": 1.1602984004553682e-11,
    "max_catani_dd": 2.309893933088999e-29,
    "max_ward_dd": null
@@ -2116,6 +2159,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -2144,10 +2188,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 12.28,
-      "export_s": 1.14,
-      "double_double_s_per_point": 37.45666666666667,
-      "double_s_per_point": 17.956666666666667
+      "generate_s": 9.47,
+      "export_s": 1.06,
+      "double_double_s_per_point": 37.74666666666666,
+      "double_s_per_point": 17.733333333333334
      },
      "failed_checks": []
     }
@@ -2178,9 +2222,10 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
-   "status": "fail",
+   "status": "pass",
    "tiers": {
     "nightly": {
      "points": [
@@ -2188,96 +2233,35 @@
       1,
       2
      ],
-     "passed": false,
+     "passed": true,
      "checks": 36,
-     "failures": 6,
+     "failures": 0,
      "max_dd_vs_reference": 3.183849219484248e-12,
-     "max_binary64_vs_dd": 1.4781992059360392e-12,
+     "max_binary64_vs_dd": 1.4175498944343862e-12,
      "max_catani_dd": null,
      "max_catani_binary64": null,
      "catani_not_formed": true,
      "binary64_vs_reference": {
       "born": 3.506130567776139e-14,
-      "finite": 2.0534717061289757e-12,
-      "single_pole": 2.488671405130036e-12,
-      "double_pole": 7.392556484464014e-13
+      "finite": 1.938409594850328e-12,
+      "single_pole": 2.5174620297268012e-12,
+      "double_pole": 7.173977674465637e-13
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 43.66,
-      "export_s": 81.43,
-      "double_double_s_per_point": 188.03333333333333,
-      "double_s_per_point": 4.943333333333333
+      "generate_s": 43.63,
+      "export_s": 83.13,
+      "double_double_s_per_point": 188.01999999999998,
+      "double_s_per_point": 5.003333333333333
      },
-     "failed_checks": [
-      {
-       "rule": "1",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "total",
-       "coefficient": "finite",
-       "error": 1.4144707896413214e-12,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 1.219278002354554e-13; status 216; its double pole off its Born x the universal factor by 8.84e-15; second providers recola 2.87e-10)"
-      },
-      {
-       "rule": "1",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "total",
-       "coefficient": "single_pole",
-       "error": 2.451384337753075e-12,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 1.219278002354554e-13; status 216; its double pole off its Born x the universal factor by 8.84e-15; second providers recola 1.21e-10)"
-      },
-      {
-       "rule": "1",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "total",
-       "coefficient": "finite",
-       "error": 2.5908747187602767e-12,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 2.329502912742552e-12; status 216; its double pole off its Born x the universal factor by 2.17e-14; second providers recola 7.81e-11)"
-      },
-      {
-       "rule": "1",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "total",
-       "coefficient": "single_pole",
-       "error": 1.2877612157431353e-12,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 2.329502912742552e-12; status 216; its double pole off its Born x the universal factor by 2.17e-14; second providers recola 5.2e-11)"
-      },
-      {
-       "rule": "1",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "total",
-       "coefficient": "finite",
-       "error": 1.020306410260054e-12,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 1.324260330658117e-12; status 216; its double pole off its Born x the universal factor by 7.67e-14; second providers recola 6.92e-11)"
-      },
-      {
-       "rule": "1",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "total",
-       "coefficient": "single_pole",
-       "error": 3.183849219484248e-12,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 1.324260330658117e-12; status 216; its double pole off its Born x the universal factor by 7.67e-14; second providers recola 6.13e-10)"
-      }
-     ]
+     "failed_checks": []
     }
    },
    "variants": [],
    "max_dd_vs_reference": 3.183849219484248e-12,
-   "max_binary64_vs_dd": 1.4781992059360392e-12,
+   "max_binary64_vs_dd": 1.4175498944343862e-12,
    "max_catani_dd": null,
    "max_ward_dd": null
   },
@@ -2304,6 +2288,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [
     {
@@ -2345,16 +2330,16 @@
      "passed": true,
      "checks": 26,
      "failures": 0,
-     "max_dd_vs_reference": 8.037130576067621e-17,
-     "max_binary64_vs_dd": 3.205666632262079e-12,
+     "max_dd_vs_reference": 8.037130580272202e-17,
+     "max_binary64_vs_dd": 3.270428648241244e-12,
      "max_catani_dd": null,
      "max_catani_binary64": null,
      "catani_not_formed": true,
      "binary64_vs_reference": {
       "born": 7.505123626589321e-13,
-      "finite": 2.003627410364982e-09,
-      "single_pole": 1.9950742331295843e-09,
-      "double_pole": 3.205676209541739e-12
+      "finite": 1.05759447647816e-09,
+      "single_pole": 7.361283010717663e-10,
+      "double_pole": 3.2704382255209038e-12
      },
      "ward": null,
      "no_reference": [],
@@ -2363,44 +2348,44 @@
        "point": 0,
        "sector": "QCD^12",
        "coefficient": "finite",
-       "E": 1.361107494091089e-08,
-       "true_error": 1.4043380435655497e-09
+       "E": 1.3088595827993766e-08,
+       "true_error": 3.3963339023461046e-11
       },
       {
        "point": 0,
        "sector": "QCD^12",
        "coefficient": "single_pole",
-       "E": 5.148644308015868e-09,
-       "true_error": 6.790258065809086e-10
+       "E": 5.294147561779624e-09,
+       "true_error": 1.1486166695994701e-10
       },
       {
        "point": 1,
        "sector": "QCD^12",
        "coefficient": "finite",
-       "E": 7.779333653237597e-08,
-       "true_error": 2.003627355163274e-09
+       "E": 6.3706173920971e-08,
+       "true_error": 1.0575945316798686e-09
       },
       {
        "point": 1,
        "sector": "QCD^12",
        "coefficient": "single_pole",
-       "E": 5.375685643057431e-08,
-       "true_error": 1.99507431350089e-09
+       "E": 4.367219906123197e-08,
+       "true_error": 7.361282207004606e-10
       }
      ],
      "timings": {
-      "generate_s": 168.07,
-      "export_s": 220.35,
-      "double_double_s_per_point": 268.79,
-      "double_s_per_point": 33.315,
-      "uv_s": 378.01
+      "generate_s": 163.6,
+      "export_s": 206.0,
+      "double_double_s_per_point": 265.41,
+      "double_s_per_point": 31.805,
+      "uv_s": 361.52
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 8.037130576067621e-17,
-   "max_binary64_vs_dd": 3.205666632262079e-12,
+   "max_dd_vs_reference": 8.037130580272202e-17,
+   "max_binary64_vs_dd": 3.270428648241244e-12,
    "max_catani_dd": null,
    "max_ward_dd": null
   },
@@ -2423,6 +2408,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -2452,10 +2438,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.67,
-      "export_s": 0.34,
-      "double_double_s_per_point": 4.6225,
-      "double_s_per_point": 0.045
+      "generate_s": 4.25,
+      "export_s": 0.66,
+      "double_double_s_per_point": 4.675,
+      "double_s_per_point": 0.0425
      },
      "failed_checks": []
     }
@@ -2485,6 +2471,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -2514,10 +2501,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.76,
-      "export_s": 0.36,
-      "double_double_s_per_point": 4.6775,
-      "double_s_per_point": 0.06
+      "generate_s": 4.33,
+      "export_s": 0.35,
+      "double_double_s_per_point": 4.675,
+      "double_s_per_point": 0.055
      },
      "failed_checks": []
     }
@@ -2542,7 +2529,21 @@
      "madloop",
      "recola",
      "openloops"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/gg_ttx_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/gg_ttx_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/gg_ttx_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/gg_ttx (+ R for S1, S4, hel)",
    "extras": [
@@ -2554,6 +2555,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -2564,27 +2566,27 @@
       1
      ],
      "passed": true,
-     "checks": 38,
+     "checks": 42,
      "failures": 0,
-     "max_dd_vs_reference": 1.9226394369907963e-15,
+     "max_dd_vs_reference": 8.776732187941585e-16,
      "max_binary64_vs_dd": 2.4210524052709533e-15,
-     "max_catani_dd": 1.309927550959323e-31,
-     "max_catani_binary64": 1.1183003352402908e-15,
+     "max_catani_dd": 9.925704940802247e-32,
+     "max_catani_binary64": 9.712540278244315e-16,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 5.969593892974336e-16,
-      "finite": 2.7211176709473474e-15,
-      "single_pole": 1.9682085900229116e-15,
+      "finite": 2.1380210271729156e-15,
+      "single_pole": 1.1925936958106093e-15,
       "double_pole": 8.829582071131196e-16
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.9,
-      "export_s": 0.46,
+      "generate_s": 4.71,
+      "export_s": 0.44,
       "double_double_s_per_point": 5.475,
-      "double_s_per_point": 0.16
+      "double_s_per_point": 0.175
      },
      "failed_checks": []
     },
@@ -2593,30 +2595,30 @@
       2
      ],
      "passed": true,
-     "checks": 94,
+     "checks": 96,
      "failures": 0,
-     "max_dd_vs_reference": 2.0263223817660076e-15,
-     "max_binary64_vs_dd": 9.779422952680096e-16,
-     "max_catani_dd": 7.30002417120154e-32,
+     "max_dd_vs_reference": 4.67161482622887e-16,
+     "max_binary64_vs_dd": 1.8124602611107716e-15,
+     "max_catani_dd": 6.914660392584989e-32,
      "max_catani_binary64": 1.1262925267165453e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.0925164364064087e-15,
-      "finite": 3.004264677033949e-15,
-      "single_pole": 5.300200125724925e-16,
-      "double_pole": 9.695597769888345e-16
+      "finite": 1.8359395248540786e-15,
+      "single_pole": 6.625250157156151e-16,
+      "double_pole": 1.0577015748969098e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.56,
-      "export_s": 0.43,
+      "generate_s": 4.89,
+      "export_s": 0.46,
       "double_double_s_per_point": 6.18,
       "double_s_per_point": 0.16,
-      "uv_s": 4.94,
-      "hel_s": 3.75,
-      "ap_s": 9.35
+      "uv_s": 5.0,
+      "hel_s": 3.74,
+      "ap_s": 10.19
      },
      "failed_checks": []
     }
@@ -2644,16 +2646,16 @@
        "passed": true,
        "checks": 60,
        "failures": 0,
-       "max_dd_vs_reference": 3.063888372540039e-16,
-       "max_binary64_vs_dd": 2.7145371986686236e-12,
-       "max_catani_dd": 3.257595600773474e-26,
-       "max_catani_binary64": 2.714032186937887e-12,
+       "max_dd_vs_reference": 3.0638883725400437e-16,
+       "max_binary64_vs_dd": 8.519056958679154e-12,
+       "max_catani_dd": 2.9589725031919947e-26,
+       "max_catani_binary64": 8.519561970409888e-12,
        "catani_not_formed": false,
        "binary64_vs_reference": {
         "born": 8.106359347873778e-16,
-        "finite": 1.7437236296409648e-07,
-        "single_pole": 8.701392936615515e-10,
-        "double_pole": 2.9455957078876036e-10
+        "finite": 1.7437371740174794e-07,
+        "single_pole": 1.1355858043004792e-09,
+        "double_pole": 5.355189640613735e-10
        },
        "ward": null,
        "no_reference": [],
@@ -2662,43 +2664,43 @@
          "point": 1,
          "sector": "QCD^6",
          "coefficient": "finite",
-         "E": 1.7334730562929495e-09,
-         "true_error": 1.2137676393637522e-10
+         "E": 1.7299279155702796e-09,
+         "true_error": 1.214925980807954e-10
         },
         {
          "point": 1,
          "sector": "QCD^6",
          "coefficient": "single_pole",
-         "E": 5.652577415725405e-09,
-         "true_error": 6.244470250165083e-12
+         "E": 5.6341039688011406e-09,
+         "true_error": 7.953743633712079e-13
         },
         {
          "point": 2,
          "sector": "QCD^6",
          "coefficient": "finite",
-         "E": 2.8939996207949896e-06,
-         "true_error": 1.7437236291871495e-07
+         "E": 2.893983071738154e-06,
+         "true_error": 1.743737173563664e-07
         },
         {
          "point": 2,
          "sector": "QCD^6",
          "coefficient": "single_pole",
-         "E": 4.605992327314069e-05,
-         "true_error": 8.701391132028992e-10
+         "E": 4.605999320079863e-05,
+         "true_error": 1.1355856238418268e-09
         },
         {
          "point": 2,
          "sector": "QCD^6",
          "coefficient": "double_pole",
-         "E": 7.487712084709222e-09,
-         "true_error": 2.9455941338748263e-10
+         "E": 7.316832220061184e-09,
+         "true_error": 5.355188066600958e-10
         }
        ],
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.803333333333334,
-        "double_s_per_point": 0.15333333333333335
+        "double_double_s_per_point": 4.843333333333333,
+        "double_s_per_point": 0.15
        },
        "failed_checks": []
       }
@@ -2728,15 +2730,15 @@
        "checks": 80,
        "failures": 0,
        "max_dd_vs_reference": 1.6778467746475445e-15,
-       "max_binary64_vs_dd": 1.2428885831809692e-14,
-       "max_catani_dd": 2.9543124189236144e-31,
-       "max_catani_binary64": 1.1015842974826255e-14,
+       "max_binary64_vs_dd": 1.5447650493180345e-14,
+       "max_catani_dd": 2.591291849130468e-31,
+       "max_catani_binary64": 1.4034607636196911e-14,
        "catani_not_formed": false,
        "binary64_vs_reference": {
         "born": 1.4979884197057933e-15,
-        "finite": 1.7778249847961284e-15,
-        "single_pole": 1.0751039057162165e-14,
-        "double_pole": 9.748919691075958e-16
+        "finite": 7.770092154546446e-16,
+        "single_pole": 1.3769803718532821e-14,
+        "double_pole": 7.946623864018077e-16
        },
        "ward": null,
        "no_reference": [],
@@ -2744,7 +2746,7 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.065,
+        "double_double_s_per_point": 5.0925,
         "double_s_per_point": 0.15
        },
        "failed_checks": []
@@ -2754,7 +2756,7 @@
     {
      "id": "B01@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector and per-helicity MadLoop run at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector and per-helicity MadLoop run at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/gg_ttx_sectors.json",
@@ -2766,23 +2768,20 @@
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
        "passed": true,
-       "checks": 80,
+       "checks": 20,
        "failures": 0,
-       "max_dd_vs_reference": 8.776732187941585e-16,
-       "max_binary64_vs_dd": 1.1280979057484014e-14,
-       "max_catani_dd": 7.147669440730848e-31,
-       "max_catani_binary64": 1.2300664943515772e-14,
+       "max_dd_vs_reference": 4.2725339966952134e-16,
+       "max_binary64_vs_dd": 1.4914271549696805e-14,
+       "max_catani_dd": 6.64001439603564e-31,
+       "max_catani_binary64": 1.5933957435728557e-14,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 1.0925164364064087e-15,
-        "finite": 2.1380210271729156e-15,
-        "single_pole": 1.1118750518338099e-14,
+        "born": 5.969593892974336e-16,
+        "finite": 1.866839398364119e-15,
+        "single_pole": 1.475204301055089e-14,
         "double_pole": 8.829582071131196e-16
        },
        "ward": null,
@@ -2791,17 +2790,17 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.1075,
-        "double_s_per_point": 0.1525
+        "double_double_s_per_point": 4.83,
+        "double_s_per_point": 0.15
        },
        "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 2.0263223817660076e-15,
-   "max_binary64_vs_dd": 2.7145371986686236e-12,
-   "max_catani_dd": 3.257595600773474e-26,
+   "max_dd_vs_reference": 1.6778467746475445e-15,
+   "max_binary64_vs_dd": 8.519056958679154e-12,
+   "max_catani_dd": 2.9589725031919947e-26,
    "max_ward_dd": null
   },
   {
@@ -2824,6 +2823,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -2852,9 +2852,9 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.35,
-      "export_s": 0.84,
-      "double_double_s_per_point": 4.743333333333333,
+      "generate_s": 5.06,
+      "export_s": 0.47,
+      "double_double_s_per_point": 4.786666666666666,
       "double_s_per_point": 0.06666666666666667
      },
      "failed_checks": []
@@ -2901,8 +2901,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.7425,
-        "double_s_per_point": 0.065
+        "double_double_s_per_point": 4.5225,
+        "double_s_per_point": 0.0625
        },
        "failed_checks": []
       }
@@ -2938,6 +2938,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [
     {
@@ -3002,22 +3003,22 @@
      "passed": true,
      "checks": 104,
      "failures": 0,
-     "max_dd_vs_reference": 3.4098285528435984e-13,
-     "max_binary64_vs_dd": 3.378948809938522e-11,
-     "max_catani_dd": 7.575829552561944e-27,
-     "max_catani_binary64": 4.392218890773888e-12,
+     "max_dd_vs_reference": 3.409828552843598e-13,
+     "max_binary64_vs_dd": 3.370119023123033e-11,
+     "max_catani_dd": 7.495521072585222e-27,
+     "max_catani_binary64": 4.376767803628234e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.855954723456886e-15,
-      "finite": 1.059540268406432e-09,
-      "single_pole": 1.1738902926599533e-08,
-      "double_pole": 1.1801426815644229e-09
+      "finite": 1.0591852530716774e-09,
+      "single_pole": 1.1735349731809806e-08,
+      "double_pole": 1.1802523748959908e-09
      },
      "ward": {
       "checks": 24,
-      "virtual_double": 0.2653104197393163,
+      "virtual_double": 0.26516440449098744,
       "born_double": 1.2668950394112198e-16,
-      "virtual_double-double": 1.9291735669192894e-26,
+      "virtual_double-double": 1.929454801358015e-26,
       "born_double-double": 6.212684401137827e-33
      },
      "no_reference": [],
@@ -3026,67 +3027,67 @@
        "point": 0,
        "sector": "QCD^8",
        "coefficient": "finite",
-       "E": 1.9598200328323916e-09,
-       "true_error": 1.0595311336721364e-09
+       "E": 1.959299680416807e-09,
+       "true_error": 1.0591761183373816e-09
       },
       {
        "point": 0,
        "sector": "QCD^8",
        "coefficient": "single_pole",
-       "E": 1.9228894268169014e-09,
-       "true_error": 6.75581211901738e-10
+       "E": 1.922518554905017e-09,
+       "true_error": 6.748049083978042e-10
       },
       {
        "point": 0,
        "sector": "QCD^8",
        "coefficient": "double_pole",
-       "E": 1.2347353995592521e-09,
-       "true_error": 1.1801481740468951e-09
+       "E": 1.23544554756836e-09,
+       "true_error": 1.180257867378463e-09
       },
       {
        "point": 1,
        "sector": "QCD^8",
        "coefficient": "single_pole",
-       "E": 1.5360054991641007e-09,
-       "true_error": 1.0493859324156339e-10
+       "E": 1.52592061619928e-09,
+       "true_error": 1.0413850488405501e-10
       },
       {
        "point": 3,
        "sector": "QCD^8",
        "coefficient": "finite",
-       "E": 2.141034420247817e-09,
-       "true_error": 7.687968098286541e-10
+       "E": 2.1395329668354127e-09,
+       "true_error": 7.686461550464682e-10
       },
       {
        "point": 3,
        "sector": "QCD^8",
        "coefficient": "single_pole",
-       "E": 1.497643652072523e-08,
-       "true_error": 1.1738931222235253e-08
+       "E": 1.4966477098181663e-08,
+       "true_error": 1.1735378027445524e-08
       },
       {
        "point": 3,
        "sector": "QCD^8",
        "coefficient": "double_pole",
-       "E": 1.2347353995592521e-09,
-       "true_error": 1.1801481740468951e-09
+       "E": 1.23544554756836e-09,
+       "true_error": 1.180257867378463e-09
       }
      ],
      "timings": {
-      "generate_s": 4.87,
-      "export_s": 1.45,
-      "double_double_s_per_point": 11.91,
-      "double_s_per_point": 2.4775,
-      "ward_s": 23.69
+      "generate_s": 4.88,
+      "export_s": 0.5,
+      "double_double_s_per_point": 12.1225,
+      "double_s_per_point": 2.475,
+      "ward_s": 22.31
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 3.4098285528435984e-13,
-   "max_binary64_vs_dd": 3.378948809938522e-11,
-   "max_catani_dd": 7.575829552561944e-27,
-   "max_ward_dd": 1.9291735669192894e-26
+   "max_dd_vs_reference": 3.409828552843598e-13,
+   "max_binary64_vs_dd": 3.370119023123033e-11,
+   "max_catani_dd": 7.495521072585222e-27,
+   "max_ward_dd": 1.929454801358015e-26
   },
   {
    "id": "B05",
@@ -3102,13 +3103,28 @@
      "madloop",
      "recola",
      "openloops"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/gg_ttxgg_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/gg_ttxgg_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/gg_ttxgg_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/gg_ttxgg",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3120,27 +3136,27 @@
       2
      ],
      "passed": true,
-     "checks": 57,
+     "checks": 63,
      "failures": 0,
-     "max_dd_vs_reference": 1.3474760235223146e-13,
-     "max_binary64_vs_dd": 8.386910896097885e-12,
-     "max_catani_dd": 1.6650135514598576e-27,
-     "max_catani_binary64": 6.3574086348326544e-12,
+     "max_dd_vs_reference": 1.3474760235223015e-13,
+     "max_binary64_vs_dd": 3.214282292352919e-11,
+     "max_catani_dd": 1.422069554807584e-27,
+     "max_catani_binary64": 3.2129428388183004e-11,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 5.261751001058196e-15,
-      "finite": 8.391488497325522e-12,
-      "single_pole": 6.3647146150549485e-12,
-      "double_pole": 6.115997961757038e-13
+      "finite": 1.3952086083976322e-11,
+      "single_pole": 3.200807532118127e-11,
+      "double_pole": 6.119794360243539e-13
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.34,
-      "export_s": 1.91,
-      "double_double_s_per_point": 176.9466666666667,
-      "double_s_per_point": 86.35000000000001
+      "generate_s": 10.11,
+      "export_s": 1.8,
+      "double_double_s_per_point": 176.05999999999997,
+      "double_s_per_point": 86.81
      },
      "failed_checks": []
     }
@@ -3149,7 +3165,7 @@
     {
      "id": "B05@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/gg_ttxgg_sectors.json",
@@ -3166,16 +3182,16 @@
        "passed": true,
        "checks": 20,
        "failures": 0,
-       "max_dd_vs_reference": 2.210068582032598e-15,
-       "max_binary64_vs_dd": 3.867032543887516e-12,
-       "max_catani_dd": 1.4221007012313363e-27,
-       "max_catani_binary64": 1.1692846269105983e-12,
+       "max_dd_vs_reference": 2.210068582032595e-15,
+       "max_binary64_vs_dd": 3.8247825720308e-12,
+       "max_catani_dd": 1.422069554807584e-27,
+       "max_catani_binary64": 1.1963566062155038e-12,
        "catani_not_formed": false,
        "binary64_vs_reference": {
         "born": 0.0,
-        "finite": 3.864822475305492e-12,
-        "single_pole": 1.171100957790478e-12,
-        "double_pole": 5.036194452629998e-13
+        "finite": 3.822572503448776e-12,
+        "single_pole": 1.1981729370953835e-12,
+        "double_pole": 4.990750222957562e-13
        },
        "ward": null,
        "no_reference": [],
@@ -3183,17 +3199,17 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 202.56,
-        "double_s_per_point": 89.06
+        "double_double_s_per_point": 166.7,
+        "double_s_per_point": 86.14
        },
        "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 1.3474760235223146e-13,
-   "max_binary64_vs_dd": 8.386910896097885e-12,
-   "max_catani_dd": 1.6650135514598576e-27,
+   "max_dd_vs_reference": 1.3474760235223015e-13,
+   "max_binary64_vs_dd": 3.214282292352919e-11,
+   "max_catani_dd": 1.422069554807584e-27,
    "max_ward_dd": null
   },
   {
@@ -3215,6 +3231,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3244,10 +3261,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.92,
+      "generate_s": 5.35,
       "export_s": 0.62,
-      "double_double_s_per_point": 8.2275,
-      "double_s_per_point": 1.63
+      "double_double_s_per_point": 8.14,
+      "double_s_per_point": 1.6375
      },
      "failed_checks": []
     }
@@ -3277,6 +3294,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3292,32 +3310,32 @@
      "checks": 80,
      "failures": 0,
      "max_dd_vs_reference": 2.4745233082488845e-14,
-     "max_binary64_vs_dd": 1.7423510360832475e-13,
-     "max_catani_dd": 1.4274557372768173e-29,
-     "max_catani_binary64": 1.742510932008404e-13,
+     "max_binary64_vs_dd": 1.4246375766757454e-13,
+     "max_catani_dd": 1.4293207947189702e-29,
+     "max_catani_binary64": 1.4247974726009018e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.8859042003018767e-15,
-      "finite": 3.5485455646172994e-14,
-      "single_pole": 1.989803366908093e-13,
-      "double_pole": 1.2494979177513236e-14
+      "finite": 3.7771576790994856e-14,
+      "single_pole": 1.6720899075005987e-13,
+      "double_pole": 1.165072382768127e-14
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.95,
-      "export_s": 0.84,
-      "double_double_s_per_point": 60.8625,
-      "double_s_per_point": 24.7425
+      "generate_s": 9.2,
+      "export_s": 0.87,
+      "double_double_s_per_point": 58.99,
+      "double_s_per_point": 24.755
      },
      "failed_checks": []
     }
    },
    "variants": [],
    "max_dd_vs_reference": 2.4745233082488845e-14,
-   "max_binary64_vs_dd": 1.7423510360832475e-13,
-   "max_catani_dd": 1.4274557372768173e-29,
+   "max_binary64_vs_dd": 1.4246375766757454e-13,
+   "max_catani_dd": 1.4293207947189702e-29,
    "max_ward_dd": null
   },
   {
@@ -3339,6 +3357,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3353,33 +3372,33 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 1.9279377088764983e-15,
-     "max_binary64_vs_dd": 2.243774300852986e-14,
-     "max_catani_dd": 1.6546091491868987e-30,
-     "max_catani_binary64": 2.4560606163145567e-14,
+     "max_dd_vs_reference": 1.927937708876498e-15,
+     "max_binary64_vs_dd": 3.052714900670851e-14,
+     "max_catani_dd": 1.4898339105717668e-30,
+     "max_catani_binary64": 3.26500121613242e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.0925164364064087e-15,
-      "finite": 3.109846061191438e-15,
-      "single_pole": 2.4365680717406316e-14,
-      "double_pole": 8.829582071131196e-16
+      "finite": 2.7211153035425096e-15,
+      "single_pole": 3.245508671558495e-14,
+      "double_pole": 1.0577015748969098e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.14,
-      "export_s": 0.96,
-      "double_double_s_per_point": 5.1175,
-      "double_s_per_point": 0.1625
+      "generate_s": 5.89,
+      "export_s": 0.95,
+      "double_double_s_per_point": 5.1675,
+      "double_s_per_point": 0.1575
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 1.9279377088764983e-15,
-   "max_binary64_vs_dd": 2.243774300852986e-14,
-   "max_catani_dd": 1.6546091491868987e-30,
+   "max_dd_vs_reference": 1.927937708876498e-15,
+   "max_binary64_vs_dd": 3.052714900670851e-14,
+   "max_catani_dd": 1.4898339105717668e-30,
    "max_ward_dd": null
   },
   {
@@ -3409,6 +3428,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "fail",
@@ -3422,24 +3442,24 @@
      "checks": 40,
      "failures": 0,
      "max_dd_vs_reference": 9.262759220143373e-16,
-     "max_binary64_vs_dd": 2.1924066184286245e-15,
-     "max_catani_dd": 1.5926635822098892e-29,
-     "max_catani_binary64": 8.646497573367202e-16,
+     "max_binary64_vs_dd": 9.349854865891838e-16,
+     "max_catani_dd": 1.582371555039096e-29,
+     "max_catani_binary64": 6.392754936294263e-16,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 6.588228694338364e-16,
-      "finite": 1.9806588922695575e-15,
-      "single_pole": 2.366409862184708e-15,
-      "double_pole": 1.124376948408457e-15
+      "finite": 1.0855011104427955e-15,
+      "single_pole": 1.8203152786036223e-15,
+      "double_pole": 9.894517145994423e-16
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.13,
-      "export_s": 0.97,
-      "double_double_s_per_point": 5.44,
-      "double_s_per_point": 0.165
+      "generate_s": 6.23,
+      "export_s": 0.56,
+      "double_double_s_per_point": 5.53,
+      "double_s_per_point": 0.17
      },
      "failed_checks": []
     },
@@ -3451,33 +3471,33 @@
      "passed": false,
      "checks": 64,
      "failures": 1,
-     "max_dd_vs_reference": 4.229649935587826e-16,
-     "max_binary64_vs_dd": 3.244964300882222e-15,
-     "max_catani_dd": 8.146807703162943e-29,
-     "max_catani_binary64": 9.976784031427668e-16,
+     "max_dd_vs_reference": 4.229649935587827e-16,
+     "max_binary64_vs_dd": 1.5104294533213636e-15,
+     "max_catani_dd": 8.137554537877675e-29,
+     "max_catani_binary64": 1.230341920741911e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 3.547138315329884e-16,
-      "finite": 2.952083834064634e-15,
-      "single_pole": 6.413646877346358e-16,
-      "double_pole": 3.929813709378374e-16
+      "finite": 7.375385747738232e-16,
+      "single_pole": 1.9333944468801455e-15,
+      "double_pole": 1.1558275615818737e-15
      },
      "ward": {
       "checks": 16,
-      "virtual_double": 0.0011637337832878763,
+      "virtual_double": 0.0010171569233707238,
       "born_double": 9.535010319932362e-17,
-      "virtual_double-double": 4.215290557567934e-31,
+      "virtual_double-double": 3.897451961236833e-31,
       "born_double-double": 8.237308577194492e-32
      },
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.97,
-      "export_s": 0.56,
-      "double_double_s_per_point": 5.45,
+      "generate_s": 7.08,
+      "export_s": 0.55,
+      "double_double_s_per_point": 5.525,
       "double_s_per_point": 0.165,
-      "ap_s": 9.56,
-      "ward_s": 16.96
+      "ap_s": 9.33,
+      "ward_s": 15.8
      },
      "failed_checks": [
       {
@@ -3519,14 +3539,14 @@
        "checks": 80,
        "failures": 0,
        "max_dd_vs_reference": 9.159089221102e-16,
-       "max_binary64_vs_dd": 5.571066219110278e-15,
-       "max_catani_dd": 3.426007490572344e-29,
-       "max_catani_binary64": 6.6399861255029114e-15,
+       "max_binary64_vs_dd": 6.209526423485553e-15,
+       "max_catani_dd": 3.430753678120463e-29,
+       "max_catani_binary64": 7.278446329878186e-15,
        "catani_not_formed": false,
        "binary64_vs_reference": {
         "born": 8.35001454911357e-16,
-        "finite": 5.055149260100766e-15,
-        "single_pole": 5.1076816350022395e-15,
+        "finite": 4.674654154501786e-15,
+        "single_pole": 5.746141839377516e-15,
         "double_pole": 1.2101371706048667e-15
        },
        "ward": null,
@@ -3535,8 +3555,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.0525,
-        "double_s_per_point": 0.1625
+        "double_double_s_per_point": 5.1025,
+        "double_s_per_point": 0.155
        },
        "failed_checks": []
       }
@@ -3544,9 +3564,9 @@
     }
    ],
    "max_dd_vs_reference": 9.262759220143373e-16,
-   "max_binary64_vs_dd": 5.571066219110278e-15,
-   "max_catani_dd": 8.146807703162943e-29,
-   "max_ward_dd": 4.215290557567934e-31
+   "max_binary64_vs_dd": 6.209526423485553e-15,
+   "max_catani_dd": 8.137554537877675e-29,
+   "max_ward_dd": 3.897451961236833e-31
   },
   {
    "id": "C02",
@@ -3569,6 +3589,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3583,34 +3604,34 @@
      "passed": true,
      "checks": 82,
      "failures": 0,
-     "max_dd_vs_reference": 4.9926461940329565e-14,
+     "max_dd_vs_reference": 4.992646194032952e-14,
      "max_binary64_vs_dd": 8.991681095400892e-12,
-     "max_catani_dd": 1.0762118741900037e-29,
-     "max_catani_binary64": 5.4008500661760135e-14,
+     "max_catani_dd": 1.747583943518142e-29,
+     "max_catani_binary64": 1.1976589944386944e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 8.733178964272607e-16,
       "finite": 8.94175463346101e-12,
-      "single_pole": 5.022881638273327e-14,
-      "double_pole": 1.876416883615685e-15
+      "single_pole": 8.196905665359916e-15,
+      "double_pole": 1.3486746350987743e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.09,
-      "export_s": 0.48,
-      "double_double_s_per_point": 6.755,
-      "double_s_per_point": 0.8625,
-      "uv_s": 6.88
+      "generate_s": 4.7,
+      "export_s": 0.47,
+      "double_double_s_per_point": 6.655,
+      "double_s_per_point": 0.81,
+      "uv_s": 7.29
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 4.9926461940329565e-14,
+   "max_dd_vs_reference": 4.992646194032952e-14,
    "max_binary64_vs_dd": 8.991681095400892e-12,
-   "max_catani_dd": 1.0762118741900037e-29,
+   "max_catani_dd": 1.747583943518142e-29,
    "max_ward_dd": null
   },
   {
@@ -3632,6 +3653,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3661,9 +3683,9 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.64,
+      "generate_s": 4.1,
       "export_s": 0.12,
-      "double_double_s_per_point": 4.46,
+      "double_double_s_per_point": 4.525,
       "double_s_per_point": 0.0175
      },
      "failed_checks": []
@@ -3694,6 +3716,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3723,10 +3746,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.19,
-      "export_s": 1.06,
-      "double_double_s_per_point": 4.72,
-      "double_s_per_point": 0.0575
+      "generate_s": 5.52,
+      "export_s": 0.58,
+      "double_double_s_per_point": 4.8225,
+      "double_s_per_point": 0.055
      },
      "failed_checks": []
     }
@@ -3771,6 +3794,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "fail",
@@ -3786,24 +3810,24 @@
      "checks": 80,
      "failures": 8,
      "max_dd_vs_reference": 4.993922176995788e-15,
-     "max_binary64_vs_dd": 2.336268247046395e-10,
-     "max_catani_dd": 1.598818087111162e-29,
-     "max_catani_binary64": 7.436104471599365e-13,
+     "max_binary64_vs_dd": 2.336264533874071e-10,
+     "max_catani_dd": 1.5960855491823237e-29,
+     "max_catani_binary64": 7.432766003218476e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 2.247060810113673e-15,
-      "finite": 2.336219416542618e-10,
-      "single_pole": 7.497532289807783e-13,
-      "double_pole": 5.275337621151692e-13
+      "finite": 2.336215703370294e-10,
+      "single_pole": 7.494193821426892e-13,
+      "double_pole": 5.270735698248683e-13
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.88,
-      "export_s": 0.76,
-      "double_double_s_per_point": 7.0325,
-      "double_s_per_point": 0.3425
+      "generate_s": 7.46,
+      "export_s": 1.25,
+      "double_double_s_per_point": 6.985,
+      "double_s_per_point": 0.3275
      },
      "failed_checks": [
       {
@@ -3813,7 +3837,7 @@
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
        "error": 2.18217038790901e-22,
-       "bound": 8.855888998930656e-23,
+       "bound": 9.300310797963775e-23,
        "note": "absolute error against 10 E"
       },
       {
@@ -3824,7 +3848,7 @@
        "coefficient": "finite",
        "error": 4.8024523936271495e-12,
        "bound": 1e-12,
-       "note": "E = 1.95e-13"
+       "note": "E = 2.05e-13"
       },
       {
        "rule": "3",
@@ -3832,8 +3856,8 @@
        "carrier": "double",
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
-       "error": 2.5167356024644205e-19,
-       "bound": 2.6190687350225916e-20,
+       "error": 2.5167316024644204e-19,
+       "bound": 2.6187166880425146e-20,
        "note": "absolute error against 10 E"
       },
       {
@@ -3842,8 +3866,8 @@
        "carrier": "double",
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
-       "error": 2.336268247046395e-10,
-       "bound": 2.431263385980472e-12,
+       "error": 2.336264533874071e-10,
+       "bound": 2.4309365832046003e-12,
        "note": "E = 2.43e-12"
       },
       {
@@ -3852,8 +3876,8 @@
        "carrier": "double",
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
-       "error": 3.812593173379056e-22,
-       "bound": 1.1901895970990783e-22,
+       "error": 3.8177931733790563e-22,
+       "bound": 1.1658120074036224e-22,
        "note": "absolute error against 10 E"
       },
       {
@@ -3862,9 +3886,9 @@
        "carrier": "double",
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
-       "error": 1.1630177866783176e-12,
+       "error": 1.1646040279098625e-12,
        "bound": 1e-12,
-       "note": "E = 3.63e-14"
+       "note": "E = 3.56e-14"
       },
       {
        "rule": "3",
@@ -3872,8 +3896,8 @@
        "carrier": "double",
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
-       "error": 2.1787112193418415e-22,
-       "bound": 8.402118883362888e-23,
+       "error": 2.1790512193418415e-22,
+       "bound": 8.982814625043034e-23,
        "note": "absolute error against 10 E"
       },
       {
@@ -3882,17 +3906,17 @@
        "carrier": "double",
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
-       "error": 9.476303255576988e-12,
+       "error": 9.477782085390822e-12,
        "bound": 1e-12,
-       "note": "E = 3.65e-13"
+       "note": "E = 3.91e-13"
       }
      ]
     }
    },
    "variants": [],
    "max_dd_vs_reference": 4.993922176995788e-15,
-   "max_binary64_vs_dd": 2.336268247046395e-10,
-   "max_catani_dd": 1.598818087111162e-29,
+   "max_binary64_vs_dd": 2.336264533874071e-10,
+   "max_catani_dd": 1.5960855491823237e-29,
    "max_ward_dd": null
   },
   {
@@ -3914,6 +3938,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3928,33 +3953,33 @@
      "passed": true,
      "checks": 80,
      "failures": 0,
-     "max_dd_vs_reference": 1.873024736985765e-15,
-     "max_binary64_vs_dd": 1.528273083669631e-13,
-     "max_catani_dd": 2.3415131443296232e-29,
-     "max_catani_binary64": 5.6174954226577525e-14,
+     "max_dd_vs_reference": 1.8730247369857607e-15,
+     "max_binary64_vs_dd": 1.491718931298938e-13,
+     "max_catani_dd": 1.9184922006701073e-29,
+     "max_catani_binary64": 6.289010957739872e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 2.05876931041983e-15,
-      "finite": 1.5228597817830574e-13,
-      "single_pole": 5.931572642774381e-14,
-      "double_pole": 3.881591186096552e-15
+      "finite": 1.4863056294123645e-13,
+      "single_pole": 6.00238043151582e-14,
+      "double_pole": 4.74835426648704e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.61,
-      "export_s": 0.92,
-      "double_double_s_per_point": 49.645,
-      "double_s_per_point": 23.06
+      "generate_s": 7.54,
+      "export_s": 0.99,
+      "double_double_s_per_point": 48.08,
+      "double_s_per_point": 22.9
      },
      "failed_checks": []
     }
    },
    "variants": [],
-   "max_dd_vs_reference": 1.873024736985765e-15,
-   "max_binary64_vs_dd": 1.528273083669631e-13,
-   "max_catani_dd": 2.3415131443296232e-29,
+   "max_dd_vs_reference": 1.8730247369857607e-15,
+   "max_binary64_vs_dd": 1.491718931298938e-13,
+   "max_catani_dd": 1.9184922006701073e-29,
    "max_ward_dd": null
   },
   {
@@ -3976,6 +4001,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "fail",
@@ -4005,10 +4031,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.34,
-      "export_s": 0.89,
-      "double_double_s_per_point": 4.89,
-      "double_s_per_point": 0.1525
+      "generate_s": 7.2,
+      "export_s": 0.85,
+      "double_double_s_per_point": 4.9075,
+      "double_s_per_point": 0.145
      },
      "failed_checks": [
       {
@@ -4120,6 +4146,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4136,12 +4163,12 @@
      "failures": 0,
      "max_dd_vs_reference": 1.6774297843777372e-15,
      "max_binary64_vs_dd": 4.481361617486464e-15,
-     "max_catani_dd": 4.872413250531566e-29,
+     "max_catani_dd": 4.8688031141536626e-29,
      "max_catani_binary64": 4.64398333961079e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.7451190609806322e-15,
-      "finite": 4.2084717670768365e-15,
+      "finite": 3.884743169609387e-15,
       "single_pole": 4.221803036009809e-15,
       "double_pole": 1.4562549665310116e-15
      },
@@ -4149,10 +4176,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.91,
-      "export_s": 0.69,
-      "double_double_s_per_point": 5.525,
-      "double_s_per_point": 0.17
+      "generate_s": 5.9,
+      "export_s": 0.67,
+      "double_double_s_per_point": 5.2,
+      "double_s_per_point": 0.3175
      },
      "failed_checks": []
     }
@@ -4160,7 +4187,7 @@
    "variants": [],
    "max_dd_vs_reference": 1.6774297843777372e-15,
    "max_binary64_vs_dd": 4.481361617486464e-15,
-   "max_catani_dd": 4.872413250531566e-29,
+   "max_catani_dd": 4.8688031141536626e-29,
    "max_ward_dd": null
   },
   {
@@ -4183,6 +4210,7 @@
    "extras_pending": {},
    "waits_for": "MQ-5F",
    "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pending",
@@ -4214,6 +4242,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4241,9 +4270,9 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.08,
+      "generate_s": 4.83,
       "export_s": 0.29,
-      "double_double_s_per_point": 4.53,
+      "double_double_s_per_point": 4.615,
       "double_s_per_point": 0.03
      },
      "failed_checks": []
@@ -4271,11 +4300,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.1,
+      "generate_s": 4.37,
       "export_s": 0.28,
-      "double_double_s_per_point": 4.56,
+      "double_double_s_per_point": 4.555,
       "double_s_per_point": 0.03,
-      "ap_s": 5.66
+      "ap_s": 5.6
      },
      "failed_checks": []
     }
@@ -4305,6 +4334,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4334,10 +4364,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.54,
-      "export_s": 0.91,
-      "double_double_s_per_point": 4.49,
-      "double_s_per_point": 0.0325
+      "generate_s": 4.49,
+      "export_s": 0.28,
+      "double_double_s_per_point": 4.5125,
+      "double_s_per_point": 0.025
      },
      "failed_checks": []
     }
@@ -4374,6 +4404,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4401,10 +4432,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.76,
-      "export_s": 2.03,
-      "double_double_s_per_point": 4.995,
-      "double_s_per_point": 0.075
+      "generate_s": 7.55,
+      "export_s": 2.07,
+      "double_double_s_per_point": 5.055,
+      "double_s_per_point": 0.07
      },
      "failed_checks": []
     },
@@ -4437,13 +4468,13 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.28,
-      "export_s": 3.0,
-      "double_double_s_per_point": 5.055,
-      "double_s_per_point": 0.08,
-      "uv_s": 5.43,
-      "hel_s": 4.53,
-      "ward_s": 13.76
+      "generate_s": 7.02,
+      "export_s": 1.69,
+      "double_double_s_per_point": 5.005,
+      "double_s_per_point": 0.07,
+      "uv_s": 5.41,
+      "hel_s": 5.1,
+      "ward_s": 14.33
      },
      "failed_checks": []
     }
@@ -4475,6 +4506,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4489,24 +4521,24 @@
      "checks": 57,
      "failures": 0,
      "max_dd_vs_reference": 8.557281606221314e-14,
-     "max_binary64_vs_dd": 1.3527178069119578e-12,
-     "max_catani_dd": 7.784495996885612e-32,
-     "max_catani_binary64": 2.99170574790621e-14,
+     "max_binary64_vs_dd": 1.1255990201865676e-12,
+     "max_catani_dd": 6.221739024835541e-32,
+     "max_catani_binary64": 4.5944052557131084e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 2.2006447640142412e-16,
-      "finite": 1.267144990849853e-12,
-      "single_pole": 3.896700984845504e-14,
-      "double_pole": 3.433935883177045e-15
+      "finite": 1.127758213633337e-12,
+      "single_pole": 6.041268335370276e-14,
+      "double_pole": 3.8741840733279464e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.21,
-      "export_s": 2.47,
-      "double_double_s_per_point": 6.0566666666666675,
-      "double_s_per_point": 0.32666666666666666
+      "generate_s": 7.75,
+      "export_s": 3.17,
+      "double_double_s_per_point": 6.083333333333333,
+      "double_s_per_point": 0.32
      },
      "failed_checks": []
     }
@@ -4536,15 +4568,15 @@
        "checks": 80,
        "failures": 0,
        "max_dd_vs_reference": 2.1053455841388094e-15,
-       "max_binary64_vs_dd": 4.0012575944713953e-14,
-       "max_catani_dd": 2.7144253858463177e-31,
-       "max_catani_binary64": 7.632269575029988e-15,
+       "max_binary64_vs_dd": 7.34873727066838e-14,
+       "max_catani_dd": 2.6853902881472266e-31,
+       "max_catani_binary64": 6.951456796036708e-15,
        "catani_not_formed": false,
        "binary64_vs_reference": {
         "born": 1.3997148555340079e-15,
-        "finite": 3.889337897164409e-14,
-        "single_pole": 9.574855977288812e-15,
-        "double_pole": 1.110799797304834e-14
+        "finite": 7.236817573361398e-14,
+        "single_pole": 7.924018739825237e-15,
+        "double_pole": 1.0427185194055062e-14
        },
        "ward": null,
        "no_reference": [],
@@ -4552,8 +4584,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.95,
-        "double_s_per_point": 0.32
+        "double_double_s_per_point": 5.3525,
+        "double_s_per_point": 0.3075
        },
        "failed_checks": []
       }
@@ -4561,8 +4593,8 @@
     }
    ],
    "max_dd_vs_reference": 8.557281606221314e-14,
-   "max_binary64_vs_dd": 1.3527178069119578e-12,
-   "max_catani_dd": 2.7144253858463177e-31,
+   "max_binary64_vs_dd": 1.1255990201865676e-12,
+   "max_catani_dd": 2.6853902881472266e-31,
    "max_ward_dd": null
   },
   {
@@ -4579,13 +4611,28 @@
      "madloop",
      "recola",
      "openloops"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_emepggg_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_emepggg_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_emepggg_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/uux_emepggg",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4597,27 +4644,27 @@
       2
      ],
      "passed": true,
-     "checks": 57,
+     "checks": 63,
      "failures": 0,
-     "max_dd_vs_reference": 1.7165959467985897e-13,
-     "max_binary64_vs_dd": 3.2302714487331506e-13,
-     "max_catani_dd": 8.385054499310714e-30,
-     "max_catani_binary64": 9.64091435688623e-14,
+     "max_dd_vs_reference": 1.2778375040628002e-14,
+     "max_binary64_vs_dd": 2.488623434628536e-13,
+     "max_catani_dd": 2.4126550910453974e-30,
+     "max_catani_binary64": 7.288260584951665e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.0950153621234667e-14,
-      "finite": 4.946867395531185e-13,
-      "single_pole": 2.5480752849655984e-13,
-      "double_pole": 1.3544791046853174e-14
+      "finite": 2.500926908080644e-13,
+      "single_pole": 6.460418068620852e-14,
+      "double_pole": 1.838846331892808e-14
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 10.15,
-      "export_s": 2.01,
-      "double_double_s_per_point": 25.51,
-      "double_s_per_point": 6.636666666666667
+      "generate_s": 6.16,
+      "export_s": 3.56,
+      "double_double_s_per_point": 24.646666666666665,
+      "double_s_per_point": 6.516666666666667
      },
      "failed_checks": []
     }
@@ -4626,7 +4673,7 @@
     {
      "id": "D07@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/uux_emepggg_sectors.json",
@@ -4638,24 +4685,21 @@
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
        "passed": true,
-       "checks": 80,
+       "checks": 20,
        "failures": 0,
        "max_dd_vs_reference": 1.2778375040628002e-14,
-       "max_binary64_vs_dd": 3.9063715182574943e-13,
-       "max_catani_dd": 8.385054499310714e-30,
-       "max_catani_binary64": 9.64091435688623e-14,
+       "max_binary64_vs_dd": 5.206798205778191e-13,
+       "max_catani_dd": 7.980875157342144e-31,
+       "max_catani_binary64": 1.1132090701543125e-13,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 1.0950153621234667e-14,
-        "finite": 3.8902481652149677e-13,
-        "single_pole": 9.858127331998052e-14,
-        "double_pole": 1.662034184595423e-14
+        "born": 4.338894093543339e-15,
+        "finite": 5.190674852735666e-13,
+        "single_pole": 1.0289327633034514e-13,
+        "double_pole": 1.838846331892808e-14
        },
        "ward": null,
        "no_reference": [],
@@ -4663,17 +4707,17 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 24.1675,
-        "double_s_per_point": 6.5775
+        "double_double_s_per_point": 24.65,
+        "double_s_per_point": 6.72
        },
        "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 1.7165959467985897e-13,
-   "max_binary64_vs_dd": 3.9063715182574943e-13,
-   "max_catani_dd": 8.385054499310714e-30,
+   "max_dd_vs_reference": 1.2778375040628002e-14,
+   "max_binary64_vs_dd": 5.206798205778191e-13,
+   "max_catani_dd": 2.4126550910453974e-30,
    "max_ward_dd": null
   },
   {
@@ -4690,13 +4734,28 @@
      "madloop",
      "recola",
      "openloops"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_emepddxg_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_emepddxg_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_emepddxg_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/uux_emepddxg",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4708,27 +4767,27 @@
       2
      ],
      "passed": true,
-     "checks": 57,
+     "checks": 63,
      "failures": 0,
-     "max_dd_vs_reference": 6.018198023281817e-14,
+     "max_dd_vs_reference": 1.0972277834803216e-14,
      "max_binary64_vs_dd": 8.859610143786577e-13,
      "max_catani_dd": 1.3782066458827704e-30,
      "max_catani_binary64": 9.670389883295015e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.0054321904331528e-14,
-      "finite": 8.434120553434587e-13,
-      "single_pole": 1.476912715212834e-13,
-      "double_pole": 1.60609748295634e-14
+      "finite": 8.862718128009907e-13,
+      "single_pole": 9.466010119354428e-14,
+      "double_pole": 7.30784200612579e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.14,
-      "export_s": 4.28,
-      "double_double_s_per_point": 10.333333333333334,
-      "double_s_per_point": 1.1066666666666667
+      "generate_s": 7.28,
+      "export_s": 1.79,
+      "double_double_s_per_point": 10.13,
+      "double_s_per_point": 1.0733333333333335
      },
      "failed_checks": []
     }
@@ -4737,7 +4796,7 @@
     {
      "id": "D08@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/uux_emepddxg_sectors.json",
@@ -4749,23 +4808,20 @@
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
        "passed": true,
-       "checks": 80,
+       "checks": 20,
        "failures": 0,
        "max_dd_vs_reference": 1.0972277834803216e-14,
-       "max_binary64_vs_dd": 8.859610143786577e-13,
-       "max_catani_dd": 1.3782066458827704e-30,
-       "max_catani_binary64": 9.670389883295015e-14,
+       "max_binary64_vs_dd": 2.977908092577773e-13,
+       "max_catani_dd": 3.6302229718330393e-31,
+       "max_catani_binary64": 6.826027556098774e-14,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 1.0054321904331528e-14,
-        "finite": 8.862718128009907e-13,
-        "single_pole": 9.466010119354428e-14,
+        "born": 3.778276557893728e-15,
+        "finite": 2.969253206711387e-13,
+        "single_pole": 6.061285879689368e-14,
         "double_pole": 7.30784200612579e-15
        },
        "ward": null,
@@ -4774,15 +4830,15 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 9.8575,
-        "double_s_per_point": 1.04
+        "double_double_s_per_point": 10.61,
+        "double_s_per_point": 0.95
        },
        "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 6.018198023281817e-14,
+   "max_dd_vs_reference": 1.0972277834803216e-14,
    "max_binary64_vs_dd": 8.859610143786577e-13,
    "max_catani_dd": 1.3782066458827704e-30,
    "max_ward_dd": null
@@ -4799,13 +4855,28 @@
     "path": "tests/fixtures/loop/required/uux_emepmummp.json",
     "providers": [
      "madloop"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_emepmummp_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_emepmummp_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_emepmummp_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/uux_emepmummp",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4817,26 +4888,26 @@
       2
      ],
      "passed": true,
-     "checks": 57,
+     "checks": 63,
      "failures": 0,
-     "max_dd_vs_reference": 4.149427462669472e-14,
+     "max_dd_vs_reference": 8.91833354346394e-16,
      "max_binary64_vs_dd": 2.688083811515513e-14,
      "max_catani_dd": 3.6298319286293405e-31,
      "max_catani_binary64": 8.86764006208256e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.438886502195126e-15,
-      "finite": 4.9295210170535187e-14,
-      "single_pole": 6.650730046561934e-15,
-      "double_pole": 3.1491511912609848e-15
+      "finite": 2.6647327755548938e-14,
+      "single_pole": 9.196071175493022e-15,
+      "double_pole": 2.0469482743196404e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.31,
-      "export_s": 0.57,
-      "double_double_s_per_point": 4.78,
+      "generate_s": 4.37,
+      "export_s": 0.56,
+      "double_double_s_per_point": 4.82,
       "double_s_per_point": 0.06666666666666667
      },
      "failed_checks": []
@@ -4846,7 +4917,7 @@
     {
      "id": "D09@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/uux_emepmummp_sectors.json",
@@ -4858,13 +4929,10 @@
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
        "passed": true,
-       "checks": 80,
+       "checks": 20,
        "failures": 0,
        "max_dd_vs_reference": 8.91833354346394e-16,
        "max_binary64_vs_dd": 2.6928542705347675e-14,
@@ -4872,8 +4940,8 @@
        "max_catani_binary64": 2.6890787663739822e-14,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 1.438886502195126e-15,
-        "finite": 2.6647327755548938e-14,
+        "born": 8.674152883540359e-16,
+        "finite": 2.017110768269048e-14,
         "single_pole": 2.6890787663739822e-14,
         "double_pole": 2.0469482743196404e-15
        },
@@ -4883,15 +4951,15 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.7825,
-        "double_s_per_point": 0.065
+        "double_double_s_per_point": 5.17,
+        "double_s_per_point": 0.06
        },
        "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 4.149427462669472e-14,
+   "max_dd_vs_reference": 8.91833354346394e-16,
    "max_binary64_vs_dd": 2.6928542705347675e-14,
    "max_catani_dd": 5.3012875128412145e-31,
    "max_ward_dd": null
@@ -4909,13 +4977,28 @@
     "providers": [
      "madloop",
      "recola"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uuxepem_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uuxepem_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/uux_uuxepem_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/uux_uuxepem (the 22x case)",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-10,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "fail",
@@ -4927,9 +5010,9 @@
       2
      ],
      "passed": false,
-     "checks": 57,
+     "checks": 63,
      "failures": 3,
-     "max_dd_vs_reference": 3.0618611182099912e-15,
+     "max_dd_vs_reference": 3.0618611182098855e-15,
      "max_binary64_vs_dd": 1.7211726680174758e-12,
      "max_catani_dd": 2.983452203636299e-30,
      "max_catani_binary64": 1.7218737725788538e-12,
@@ -4944,10 +5027,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.7,
-      "export_s": 2.42,
-      "double_double_s_per_point": 5.623333333333334,
-      "double_s_per_point": 0.20333333333333334
+      "generate_s": 8.39,
+      "export_s": 1.72,
+      "double_double_s_per_point": 5.63,
+      "double_s_per_point": 0.19333333333333333
      },
      "failed_checks": [
       {
@@ -4987,7 +5070,7 @@
     {
      "id": "D10@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/uux_uuxepem_sectors.json",
@@ -4995,28 +5078,25 @@
        "madloop"
       ]
      },
-     "status": "fail",
+     "status": "pass",
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
-       "passed": false,
-       "checks": 80,
-       "failures": 3,
-       "max_dd_vs_reference": 3.0618611182098855e-15,
-       "max_binary64_vs_dd": 1.7211726680174758e-12,
-       "max_catani_dd": 2.983452203636299e-30,
-       "max_catani_binary64": 1.7218737725788538e-12,
+       "passed": true,
+       "checks": 20,
+       "failures": 0,
+       "max_dd_vs_reference": 1.4836656512545556e-15,
+       "max_binary64_vs_dd": 5.570000219017936e-13,
+       "max_catani_dd": 9.90554509817164e-31,
+       "max_catani_binary64": 5.591546196344087e-13,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 2.3306145751228112e-15,
-        "finite": 1.2096231622410612e-12,
-        "single_pole": 6.570512846718585e-13,
-        "double_pole": 1.7208266871766099e-12
+        "born": 7.530019025151755e-16,
+        "finite": 2.9890727809909025e-13,
+        "single_pole": 4.909615492279236e-13,
+        "double_pole": 5.565734819199681e-13
        },
        "ward": null,
        "no_reference": [],
@@ -5024,46 +5104,15 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.4375,
-        "double_s_per_point": 0.1875
+        "double_double_s_per_point": 6.52,
+        "double_s_per_point": 0.19
        },
-       "failed_checks": [
-        {
-         "rule": "3",
-         "point": 2,
-         "carrier": "double",
-         "sector": "QCD^6 QED^4",
-         "coefficient": "double_pole",
-         "error": 7.396986902386912e-25,
-         "bound": 3.2466708019712307e-25,
-         "note": "absolute error against 10 E"
-        },
-        {
-         "rule": "2",
-         "point": 2,
-         "carrier": "double",
-         "sector": "QCD^6 QED^4",
-         "coefficient": "double_pole",
-         "error": 1.7211726680174758e-12,
-         "bound": 1e-12,
-         "note": "E = 7.55e-14"
-        },
-        {
-         "rule": "4",
-         "point": 2,
-         "carrier": "double",
-         "sector": "QCD^6 QED^4",
-         "coefficient": "double_pole",
-         "error": 1.7218737725788538e-12,
-         "bound": 1e-12,
-         "note": "E = 7.55e-14"
-        }
-       ]
+       "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 3.0618611182099912e-15,
+   "max_dd_vs_reference": 3.0618611182098855e-15,
    "max_binary64_vs_dd": 1.7211726680174758e-12,
    "max_catani_dd": 2.983452203636299e-30,
    "max_ward_dd": null
@@ -5087,6 +5136,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5116,10 +5166,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.91,
-      "export_s": 2.25,
-      "double_double_s_per_point": 4.75,
-      "double_s_per_point": 0.065
+      "generate_s": 6.66,
+      "export_s": 2.28,
+      "double_double_s_per_point": 4.7875,
+      "double_s_per_point": 0.0625
      },
      "failed_checks": []
     }
@@ -5149,6 +5199,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5178,10 +5229,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.5,
+      "generate_s": 3.35,
       "export_s": 0.38,
-      "double_double_s_per_point": 4.665,
-      "double_s_per_point": 0.04
+      "double_double_s_per_point": 4.6425,
+      "double_s_per_point": 0.0375
      },
      "failed_checks": []
     }
@@ -5211,6 +5262,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5240,10 +5292,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.25,
-      "export_s": 1.49,
-      "double_double_s_per_point": 4.73,
-      "double_s_per_point": 0.055
+      "generate_s": 4.33,
+      "export_s": 0.68,
+      "double_double_s_per_point": 4.715,
+      "double_s_per_point": 0.0425
      },
      "failed_checks": []
     }
@@ -5273,6 +5325,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5302,10 +5355,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.7,
-      "export_s": 0.48,
-      "double_double_s_per_point": 4.7975,
-      "double_s_per_point": 0.05
+      "generate_s": 3.54,
+      "export_s": 0.47,
+      "double_double_s_per_point": 4.7125,
+      "double_s_per_point": 0.0475
      },
      "failed_checks": []
     }
@@ -5335,6 +5388,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [
     {
@@ -5422,10 +5476,10 @@
       }
      ],
      "timings": {
-      "generate_s": 2.63,
-      "export_s": 0.45,
-      "double_double_s_per_point": 4.705,
-      "double_s_per_point": 0.05
+      "generate_s": 2.69,
+      "export_s": 0.43,
+      "double_double_s_per_point": 4.7175,
+      "double_s_per_point": 0.0475
      },
      "failed_checks": []
     }
@@ -5455,6 +5509,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5484,10 +5539,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.9,
-      "export_s": 0.6,
-      "double_double_s_per_point": 4.795,
-      "double_s_per_point": 0.0825
+      "generate_s": 5.04,
+      "export_s": 0.59,
+      "double_double_s_per_point": 4.7375,
+      "double_s_per_point": 0.075
      },
      "failed_checks": []
     }
@@ -5517,6 +5572,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5546,10 +5602,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.02,
+      "generate_s": 2.04,
       "export_s": 0.24,
-      "double_double_s_per_point": 4.5025,
-      "double_s_per_point": 0.0325
+      "double_double_s_per_point": 4.5275,
+      "double_s_per_point": 0.0275
      },
      "failed_checks": []
     }
@@ -5579,6 +5635,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "fail",
@@ -5608,10 +5665,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.01,
-      "export_s": 0.46,
-      "double_double_s_per_point": 4.57,
-      "double_s_per_point": 0.0575
+      "generate_s": 4.27,
+      "export_s": 0.45,
+      "double_double_s_per_point": 4.5925,
+      "double_s_per_point": 0.055
      },
      "failed_checks": [
       {
@@ -5722,6 +5779,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5751,9 +5809,9 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.07,
-      "export_s": 1.78,
-      "double_double_s_per_point": 4.88,
+      "generate_s": 4.94,
+      "export_s": 1.72,
+      "double_double_s_per_point": 4.8575,
       "double_s_per_point": 0.0775
      },
      "failed_checks": []
@@ -5785,6 +5843,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5813,9 +5872,9 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.04,
-      "export_s": 0.32,
-      "double_double_s_per_point": 4.596666666666667,
+      "generate_s": 4.76,
+      "export_s": 0.3,
+      "double_double_s_per_point": 4.58,
       "double_s_per_point": 0.04
      },
      "failed_checks": []
@@ -5846,6 +5905,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5875,10 +5935,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.9,
-      "export_s": 0.7,
-      "double_double_s_per_point": 4.71,
-      "double_s_per_point": 0.0575
+      "generate_s": 5.95,
+      "export_s": 0.68,
+      "double_double_s_per_point": 4.7175,
+      "double_s_per_point": 0.05
      },
      "failed_checks": []
     }
@@ -5908,6 +5968,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5937,10 +5998,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.03,
+      "generate_s": 4.37,
       "export_s": 0.28,
-      "double_double_s_per_point": 4.51,
-      "double_s_per_point": 0.0325
+      "double_double_s_per_point": 4.5175,
+      "double_s_per_point": 0.03
      },
      "failed_checks": []
     }
@@ -5972,6 +6033,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6001,10 +6063,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.02,
+      "generate_s": 2.53,
       "export_s": 0.41,
-      "double_double_s_per_point": 4.685,
-      "double_s_per_point": 0.035
+      "double_double_s_per_point": 4.645,
+      "double_s_per_point": 0.0325
      },
      "failed_checks": []
     }
@@ -6050,7 +6112,7 @@
         "generate_s": 0.0,
         "export_s": 0.0,
         "double_double_s_per_point": 4.47,
-        "double_s_per_point": 0.03333333333333333
+        "double_s_per_point": 0.03
        },
        "failed_checks": []
       }
@@ -6081,6 +6143,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6110,10 +6173,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.52,
-      "export_s": 2.38,
-      "double_double_s_per_point": 4.8275,
-      "double_s_per_point": 0.08
+      "generate_s": 5.02,
+      "export_s": 3.53,
+      "double_double_s_per_point": 4.8225,
+      "double_s_per_point": 0.0725
      },
      "failed_checks": []
     }
@@ -6143,6 +6206,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6172,10 +6236,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.0,
-      "export_s": 0.41,
-      "double_double_s_per_point": 4.675,
-      "double_s_per_point": 0.05
+      "generate_s": 2.73,
+      "export_s": 0.38,
+      "double_double_s_per_point": 4.6775,
+      "double_s_per_point": 0.04
      },
      "failed_checks": []
     }
@@ -6211,6 +6275,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6226,41 +6291,41 @@
      "checks": 98,
      "failures": 0,
      "max_dd_vs_reference": 3.5863545688653515e-13,
-     "max_binary64_vs_dd": 7.371906562895949e-12,
-     "max_catani_dd": 6.820738024730851e-30,
-     "max_catani_binary64": 3.1082233349956357e-12,
+     "max_binary64_vs_dd": 7.434010870574243e-12,
+     "max_catani_dd": 6.715542556896723e-30,
+     "max_catani_binary64": 3.108585106867797e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 9.541179896617765e-16,
-      "finite": 7.730542019779842e-12,
-      "single_pole": 3.0652930728323594e-12,
-      "double_pole": 1.4643851315901897e-12
+      "finite": 7.79264632745811e-12,
+      "single_pole": 3.065654844704521e-12,
+      "double_pole": 1.4642910496671838e-12
      },
      "ward": {
       "checks": 16,
-      "virtual_double": 0.025153304239772415,
+      "virtual_double": 0.027491099933490155,
       "born_double": 4.751985873564509e-16,
-      "virtual_double-double": 2.0300346713130966e-31,
+      "virtual_double-double": 3.2209521197286096e-31,
       "born_double-double": 5.46217515100638e-31
      },
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 9.3,
-      "export_s": 0.6,
-      "double_double_s_per_point": 8.035,
-      "double_s_per_point": 0.345,
-      "uv_s": 8.56,
-      "ward_s": 20.18
+      "generate_s": 8.96,
+      "export_s": 0.54,
+      "double_double_s_per_point": 7.81,
+      "double_s_per_point": 0.3325,
+      "uv_s": 8.55,
+      "ward_s": 19.94
      },
      "failed_checks": []
     }
    },
    "variants": [],
    "max_dd_vs_reference": 3.5863545688653515e-13,
-   "max_binary64_vs_dd": 7.371906562895949e-12,
-   "max_catani_dd": 6.820738024730851e-30,
-   "max_ward_dd": 2.0300346713130966e-31
+   "max_binary64_vs_dd": 7.434010870574243e-12,
+   "max_catani_dd": 6.715542556896723e-30,
+   "max_ward_dd": 3.2209521197286096e-31
   },
   {
    "id": "E02",
@@ -6281,6 +6346,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6296,32 +6362,32 @@
      "checks": 80,
      "failures": 0,
      "max_dd_vs_reference": 7.18496537841298e-14,
-     "max_binary64_vs_dd": 3.151729333346007e-12,
-     "max_catani_dd": 5.833144575641443e-30,
-     "max_catani_binary64": 3.1502475687662446e-12,
+     "max_binary64_vs_dd": 3.152945935934309e-12,
+     "max_catani_dd": 5.80392226092663e-30,
+     "max_catani_binary64": 3.1514641713545468e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 3.56258956738948e-15,
-      "finite": 1.813173949322597e-12,
-      "single_pole": 3.134721402401298e-12,
-      "double_pole": 1.3864920077313601e-12
+      "finite": 1.7507145251944718e-12,
+      "single_pole": 3.1359380049896e-12,
+      "double_pole": 1.38762116483514e-12
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.81,
-      "export_s": 1.52,
-      "double_double_s_per_point": 8.85,
-      "double_s_per_point": 0.5975
+      "generate_s": 7.21,
+      "export_s": 1.45,
+      "double_double_s_per_point": 8.585,
+      "double_s_per_point": 0.575
      },
      "failed_checks": []
     }
    },
    "variants": [],
    "max_dd_vs_reference": 7.18496537841298e-14,
-   "max_binary64_vs_dd": 3.151729333346007e-12,
-   "max_catani_dd": 5.833144575641443e-30,
+   "max_binary64_vs_dd": 3.152945935934309e-12,
+   "max_catani_dd": 5.80392226092663e-30,
    "max_ward_dd": null
   },
   {
@@ -6344,6 +6410,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6372,10 +6439,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.94,
-      "export_s": 0.72,
-      "double_double_s_per_point": 5.093333333333333,
-      "double_s_per_point": 0.09333333333333334
+      "generate_s": 2.82,
+      "export_s": 0.68,
+      "double_double_s_per_point": 5.12,
+      "double_s_per_point": 0.08
      },
      "failed_checks": []
     }
@@ -6400,22 +6467,29 @@
      "madloop",
      "recola",
      "openloops"
-    ]
+    ],
+    "superseded": {
+     "0": {
+      "path": "tests/fixtures/loop/required/mqcd/gg_ttxemepg_qcd_sectors.json",
+      "row": 0
+     },
+     "1": {
+      "path": "tests/fixtures/loop/required/mqcd/gg_ttxemepg_qcd_sectors.json",
+      "row": 1
+     },
+     "2": {
+      "path": "tests/fixtures/loop/required/mqcd/gg_ttxemepg_qcd_sectors.json",
+      "row": 2
+     }
+    }
    },
    "reference_legend": "E required/gg_ttxemepg_qcd + point 2 (rule 1 outlier: OpenLoops)",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "listed_outliers": [
-    {
-     "point": 0,
-     "sector": "total",
-     "coefficient": "finite",
-     "provider": "madloop",
-     "note": "MadLoop binary64 (status 216, own accuracy 5.44e-12) 1.38e-12 from DD; OpenLoops 2.0e-14, Recola 9.2e-13"
-    }
-   ],
+   "reference_tolerance": 1e-10,
+   "listed_outliers": [],
    "listed_out_of_scope": [
     {
      "point": 2,
@@ -6434,18 +6508,18 @@
       2
      ],
      "passed": true,
-     "checks": 57,
+     "checks": 63,
      "failures": 0,
-     "max_dd_vs_reference": 1.382332489036081e-12,
-     "max_binary64_vs_dd": 1.343705445858638e-12,
-     "max_catani_dd": 5.723097486124992e-27,
-     "max_catani_binary64": 1.17684949458433e-12,
+     "max_dd_vs_reference": 6.726699876238847e-14,
+     "max_binary64_vs_dd": 1.3352473680071976e-12,
+     "max_catani_dd": 5.6632219224567896e-27,
+     "max_catani_binary64": 1.146922737677409e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.6377576588744472e-15,
-      "finite": 5.658524050448956e-09,
-      "single_pole": 1.1087054602759246e-12,
-      "double_pole": 7.252797282289281e-13
+      "finite": 5.710216257741808e-09,
+      "single_pole": 1.0787787033690015e-12,
+      "double_pole": 7.884331961287091e-13
      },
      "ward": null,
      "no_reference": [],
@@ -6454,15 +6528,15 @@
        "point": 2,
        "sector": "QCD^8 QED^4",
        "coefficient": "finite",
-       "E": 3.420535666521133e-08,
-       "true_error": 5.658542733911787e-09
+       "E": 3.4162925747356716e-08,
+       "true_error": 5.710234941204639e-09
       }
      ],
      "timings": {
-      "generate_s": 9.35,
-      "export_s": 2.56,
-      "double_double_s_per_point": 48.919999999999995,
-      "double_s_per_point": 6.466666666666666
+      "generate_s": 11.36,
+      "export_s": 2.0,
+      "double_double_s_per_point": 48.48333333333333,
+      "double_s_per_point": 6.3999999999999995
      },
      "failed_checks": []
     }
@@ -6471,7 +6545,7 @@
     {
      "id": "E06@sectors",
      "gating": true,
-     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2)",
+     "notes": "MQ-REF's MadLoop run of the row (per-sector MadLoop accuracy and the mu_R = mu_0/2 point at the committed fixture's points); quadruple precision at every point (fix round 2); its rows 0, 1, 2 supersede the row's reference at the same points (the row's rule 1 holds them)",
      "reference": {
       "format": "required",
       "path": "tests/fixtures/loop/required/mqcd/gg_ttxemepg_qcd_sectors.json",
@@ -6483,50 +6557,39 @@
      "tiers": {
       "nightly": {
        "points": [
-        0,
-        1,
-        2,
         3
        ],
        "passed": true,
-       "checks": 80,
+       "checks": 20,
        "failures": 0,
-       "max_dd_vs_reference": 6.726699876238847e-14,
-       "max_binary64_vs_dd": 4.3426726476246326e-12,
-       "max_catani_dd": 5.723097486124992e-27,
-       "max_catani_binary64": 1.17684949458433e-12,
+       "max_dd_vs_reference": 3.603654583684581e-14,
+       "max_binary64_vs_dd": 4.376074038881927e-12,
+       "max_catani_dd": 9.609928621259184e-30,
+       "max_catani_binary64": 1.9544979034105965e-13,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 1.6377576588744472e-15,
-        "finite": 5.658524050448956e-09,
-        "single_pole": 1.1087054602759246e-12,
-        "double_pole": 7.252797282289281e-13
+        "born": 7.573712394602225e-16,
+        "finite": 4.412110584718615e-12,
+        "single_pole": 1.842453767695724e-13,
+        "double_pole": 1.5862346146189376e-14
        },
        "ward": null,
        "no_reference": [],
-       "binary64_out_of_scope": [
-        {
-         "point": 2,
-         "sector": "QCD^8 QED^4",
-         "coefficient": "finite",
-         "E": 3.420535666521133e-08,
-         "true_error": 5.658542733911787e-09
-        }
-       ],
+       "binary64_out_of_scope": [],
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 44.6925,
-        "double_s_per_point": 6.355
+        "double_double_s_per_point": 37.41,
+        "double_s_per_point": 6.32
        },
        "failed_checks": []
       }
      }
     }
    ],
-   "max_dd_vs_reference": 1.382332489036081e-12,
-   "max_binary64_vs_dd": 4.3426726476246326e-12,
-   "max_catani_dd": 5.723097486124992e-27,
+   "max_dd_vs_reference": 6.726699876238847e-14,
+   "max_binary64_vs_dd": 4.376074038881927e-12,
+   "max_catani_dd": 5.6632219224567896e-27,
    "max_ward_dd": null
   },
   {
@@ -6554,6 +6617,7 @@
    },
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6583,12 +6647,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.23,
-      "export_s": 0.25,
-      "double_double_s_per_point": 4.5575,
-      "double_s_per_point": 0.03,
-      "uv_s": 4.66,
-      "ap_s": 5.63
+      "generate_s": 4.1,
+      "export_s": 0.24,
+      "double_double_s_per_point": 4.4925,
+      "double_s_per_point": 0.0325,
+      "uv_s": 4.69,
+      "ap_s": 5.54
      },
      "failed_checks": []
     }
@@ -6618,6 +6682,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6647,9 +6712,9 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.29,
-      "export_s": 0.25,
-      "double_double_s_per_point": 4.52,
+      "generate_s": 3.47,
+      "export_s": 0.24,
+      "double_double_s_per_point": 4.51,
       "double_s_per_point": 0.0325
      },
      "failed_checks": []
@@ -6680,6 +6745,7 @@
    "extras_pending": {},
    "waits_for": "MQ-5F",
    "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pending",
@@ -6711,6 +6777,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6746,11 +6813,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.15,
-      "export_s": 1.94,
-      "double_double_s_per_point": 4.765,
+      "generate_s": 5.02,
+      "export_s": 0.58,
+      "double_double_s_per_point": 4.7725,
       "double_s_per_point": 0.0775,
-      "ward_s": 10.72
+      "ward_s": 11.72
      },
      "failed_checks": []
     }
@@ -6782,6 +6849,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6809,10 +6877,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 10.19,
-      "export_s": 1.09,
-      "double_double_s_per_point": 5.13,
-      "double_s_per_point": 0.115
+      "generate_s": 10.42,
+      "export_s": 1.56,
+      "double_double_s_per_point": 5.03,
+      "double_s_per_point": 0.12
      },
      "failed_checks": []
     },
@@ -6838,11 +6906,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 11.54,
-      "export_s": 1.11,
-      "double_double_s_per_point": 5.5,
+      "generate_s": 9.51,
+      "export_s": 2.37,
+      "double_double_s_per_point": 5.44,
       "double_s_per_point": 0.13,
-      "uv_s": 4.45
+      "uv_s": 4.54
      },
      "failed_checks": []
     }
@@ -6872,6 +6940,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6901,10 +6970,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.22,
-      "export_s": 0.94,
-      "double_double_s_per_point": 4.825,
-      "double_s_per_point": 0.1625
+      "generate_s": 5.21,
+      "export_s": 0.93,
+      "double_double_s_per_point": 4.835,
+      "double_s_per_point": 0.155
      },
      "failed_checks": []
     }
@@ -6936,6 +7005,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6965,12 +7035,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.02,
+      "generate_s": 7.91,
       "export_s": 0.39,
-      "double_double_s_per_point": 4.66,
-      "double_s_per_point": 0.05,
-      "uv_s": 5.13,
-      "ckm_s": 13.31
+      "double_double_s_per_point": 4.6875,
+      "double_s_per_point": 0.0525,
+      "uv_s": 5.23,
+      "ckm_s": 13.23
      },
      "failed_checks": []
     }
@@ -7000,6 +7070,7 @@
    "extras_pending": {},
    "waits_for": "MQ-5F",
    "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pending",
@@ -7029,6 +7100,7 @@
    "extras_pending": {},
    "waits_for": "MQ-5F",
    "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pending",
@@ -7052,6 +7124,7 @@
    "extras_pending": {},
    "waits_for": "MQ-MODEL",
    "pending_reason": "the public route's multiparticle artifact (each subprocess = its single-process generation, bitwise) waits for the public route on loop_sm; the expansion against MadLoop's P directories and every P reference (variants M01@P0, M01@P2) run now",
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pending",
@@ -7095,10 +7168,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 7.03,
-        "export_s": 0.48,
-        "double_double_s_per_point": 4.72,
-        "double_s_per_point": 0.0675
+        "generate_s": 4.69,
+        "export_s": 0.47,
+        "double_double_s_per_point": 4.705,
+        "double_s_per_point": 0.065
        },
        "failed_checks": []
       }
@@ -7128,24 +7201,24 @@
        "checks": 80,
        "failures": 0,
        "max_dd_vs_reference": 8.776732187941585e-16,
-       "max_binary64_vs_dd": 1.1280979057484014e-14,
-       "max_catani_dd": 7.147669440730848e-31,
-       "max_catani_binary64": 1.2300664943515772e-14,
+       "max_binary64_vs_dd": 1.4914271549696805e-14,
+       "max_catani_dd": 6.64001439603564e-31,
+       "max_catani_binary64": 1.5933957435728557e-14,
        "catani_not_formed": false,
        "binary64_vs_reference": {
         "born": 1.0925164364064087e-15,
         "finite": 2.1380210271729156e-15,
-        "single_pole": 1.1118750518338099e-14,
-        "double_pole": 8.829582071131196e-16
+        "single_pole": 1.475204301055089e-14,
+        "double_pole": 1.0577015748969098e-15
        },
        "ward": null,
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 4.44,
-        "export_s": 0.45,
-        "double_double_s_per_point": 5.1425,
-        "double_s_per_point": 0.155
+        "generate_s": 4.47,
+        "export_s": 0.44,
+        "double_double_s_per_point": 5.1325,
+        "double_s_per_point": 0.15
        },
        "failed_checks": []
       }
@@ -7176,6 +7249,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
+   "reference_tolerance": 1e-12,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -7205,10 +7279,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.24,
+      "generate_s": 4.48,
       "export_s": 0.29,
-      "double_double_s_per_point": 4.49,
-      "double_s_per_point": 0.0325
+      "double_double_s_per_point": 4.5425,
+      "double_s_per_point": 0.03
      },
      "failed_checks": []
     }
@@ -7229,7 +7303,7 @@
     "D19",
     "C07"
    ],
-   "checks": "rule 4, every point, double-double and binary64, single pole of the leading sector only (D19 QCD^2 QED^6: 9.3e-2 .. 3.4e-1; C07 QCD^4 QED^4: 9.2e-4 .. 2.2e-2); the double poles agree",
+   "checks": "rule 4, every point, double-double and binary64, single pole of the leading sector only (D19 QCD^2 QED^6: 9.3e-2 .. 3.4e-1; C07 QCD^4 QED^4: 9.2e-4 .. 2.2e-2); the double poles agree; unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files)",
    "evidence": "rule 1 passes on both rows: our virtual equals MadLoop's per squared split order within 1e-12, poles included. Both follow MadLoop's [virt=QCD] loop selection (loops/orders.py LoopEligibility: every circulating species perturbative in a selected correction), so a loop carrying a W or Z next to the gluon (the boxes and pentagons exchanging a gluon between the two quark lines) is not computed. Catani's operator describes the complete O(alpha_s) virtual, whose non-factorisable poles <T_i.T_k> between the lines are nonzero when the Born interferes colour structures joined by different EW exchanges. Minimal reproducer on D19's points, double-double, rule 4 only (workspace/tmp/mq-validate/s2/ew22.py): u d > u d h QCD=0 (Z and W exchange, colour structures delta_13 delta_24 and delta_14 delta_23) single pole 1.6133954759575e-9 against the predicted 1.4436894729941e-9 (rel 0.105; 0.335 at point 1), while u c > u c h and u c~ > u c~ h (one colour structure, where the non-factorisable interference vanishes by colour) agree within 6e-33 .. 3e-31 and the QCD Born u d > u d within 9e-30. The operator's inputs are right: its Born vectors contracted with the Gram matrix give the engine's Born exactly (5.416202339758131e-9) and its C_ij are the expected colour algebra (s2/vec.py); the Python path (LoopSlice.evaluate, 34 digits) and the native executor give the same virtual and prediction (s2/catani-D19.log); no relabelling of the legs reproduces the virtual (24 tried, s2/perm-D19.log); the deviation is mu-independent (points 0 and 3: same kinematics, mu_R halved, the same -0.0313 x Born). poles.predicted_sectors only checks the trees left by a soft exchange of each coupling (L - 2c), not the loops the species condition removes. The same mechanism applies to C07 (W joining the light u->d line and the t b~ line). Pole selection (2026-10-28, workspace/tmp/mq-validate/s3/irmode-D19.log, D19 point 0, double-double, slice d3081568): poles='ir' returns the same virtual as poles='all' to every printed digit (finite -3.973456325044482e-9, single -1.613395475957548e-9, double -5.424950094330169e-10), its UV-origin pole parts are 0 and its IR-origin parts are the whole poles, so the renormalised virtual's IR poles are the computed ones (the user-facing 'ir' output is consistent with rule 1); only the Catani prediction (single -1.443689472994084e-9, double equal) misses.",
    "routed_to": "coordinator: owner of loops/v2/poles.py predicted_sectors (a sector whose Born has colour-connected structures joined only by non-correction bosons with a nonzero non-factorisable <T_i.T_k> is not predicted, or the operator is restricted to the computed loops; poles='ir' itself is consistent, see the evidence). MQ-VALIDATE then moves the D19 and C07 sectors to unpredicted (rule 4 keeps checking them against MadLoop per split order)",
    "status": "open"
@@ -7237,27 +7311,27 @@
   {
    "id": "F2",
    "category": "reference: MadLoop double-precision result",
-   "title": "MadLoop's double-precision values: C01, C01@params, C02, D11 resolved by MQ-REF's fix round 2; A06 misses only against the G1 fixture's binary64 MadLoop, which MQ-REF's quadruple-precision rerun corrects",
+   "title": "MadLoop's double-precision values (C01, C01@params, C02, D11, A06): resolved by MQ-REF's quadruple-precision references",
    "rows": [
     "A06"
    ],
    "checks": "rule 1: A06 point 1 single pole 1.18e-12 against tests/fixtures/loop/required/uux_uux.json's MadLoop (status 216, own accuracy 0.0); resolved: C01 point 1 finite 3.25e-11, C01@params point 1 finite 2.69e-11, C02 point 0 finite 2.1e-12, D11 point 1 single pole 4.27e-12 (all pass at pt7)",
-   "evidence": "Cross-checks run into workspace/tmp/mq-validate/qpref/ (the committed exports read only; MQ-REF's toolkit, references.py run): (a) C01 point 1: MadLoop forced to quadruple precision (--madloop-accuracy 1e-20, status 328) reproduces its binary64 value (finite 5.527401070421307, 3.25e-11 from ours; single and double pole 4.8e-13 from ours, which equal Catani's within 1e-27), while Recola (COLLIER) agrees with our double-double within 1.1e-15 on every coefficient of points 0-3 (finite 5.527401070600913 at point 1); our double-double equals 40 and 60 digits within 1e-31 there (s2/c01ap.log): MadLoop's massive-b result is off, not ours. (b) C02 point 0 and D11 point 1: forced quadruple precision brings MadLoop within 5e-14 and 7e-15 of ours (Recola 5.7e-13, 1.5e-13): binary64 noise of the status-216 runs that MadLoop's estimate does not see. (c) A06 point 1 (a cancelling single pole, 0.12 against a Born of 302): the committed Recola and OpenLoops values are 7.3e-13 and 5.2e-13 from ours, MadLoop 1.18e-12; MLStabThres = 1e-20 cannot force quadruple precision there because MadLoop's binary64 estimate is exactly 0 (status 216 again). Not explained by the input point: double-double at MadLoop's own quadruple-precision point (its ImprovePSPoint=2 projection of the binary64 rounding, supplied_points.madloop_qp_point) gives the same deviations (workspace/tmp/mq-validate/qp/exp.py). MQ-REF's per-point records (fix round 06dfb9c5) show MadLoop's own inconsistency at the failing massive-b points: at C01 point 1 its printed Born and the Born its double pole implies differ by 4.82e-13 (C01@params point 1: 3.7e-13), against 3e-16 .. 1e-15 at the other rows' points; C02 point 0 and D11 point 1 show 3.3e-16 and 8.6e-16 (binary64 noise in the finite and single pole only). The fix round added no second provider to C01, C02, D11 (campaign pt6 at a765a9cc: the same five failures). Cause of the C01 miss (MQ-REF's fix-round-2 experiment, workspace/tmp/mq-ref/r3/c01_hf0 against c01_hf2, read only): MadLoop's numerical helicity filter (HelicityFilterLevel 2, the export's default) drops helicity configurations that vanish for a massless b but not for the massive one; with HelicityFilterLevel 0 MadLoop's C01 point 1 finite part is 5.527401070600928, 1.7e-15 from our double-double (5.5274010706009188), at its own binary64 accuracy 1.1e-15. MQ-REF's fix round 2 (in progress at 828ebaf0) reruns every point with the filter off and in quadruple precision. Campaign pt7 (2026-10-28, head f9fd78fd, MQ-REF fix round 2 75db7231: every point in MadLoop's quadruple-precision stage, HelicityFilterLevel 0, Recola as C01's second provider): C01, C01@params, C02 and D11 pass every rule (the default tier passes). A06 keeps its PLAN reference, the G1 three-provider fixture required/uux_uux.json (MadLoop binary64, status 216), where the miss stays; its MQ-REF quadruple-precision rerun at the same points plus mu_0/2 (variant A06@sectors, pt8) passes every rule with the point-1 single pole 2.8e-14 from double-double, and Recola and OpenLoops agree within 7.3e-13 and 5.2e-13.",
-   "routed_to": "coordinator: A06's primary reference (the G1 fixture's binary64 MadLoop) is superseded by MQ-REF's quadruple-precision rerun (A06@sectors, passing); proposal: make the rerun the primary of the rows whose PLAN reference is a G1 required fixture (A01, A06, A12, A13, A19, A20, A21, B01, B05, D07, D08, D09, D10, E06), keeping the G1 fixture's Recola and OpenLoops as the outlier route",
-   "status": "open"
+   "evidence": "Cross-checks run into workspace/tmp/mq-validate/qpref/ (the committed exports read only; MQ-REF's toolkit, references.py run): (a) C01 point 1: MadLoop forced to quadruple precision (--madloop-accuracy 1e-20, status 328) reproduces its binary64 value (finite 5.527401070421307, 3.25e-11 from ours; single and double pole 4.8e-13 from ours, which equal Catani's within 1e-27), while Recola (COLLIER) agrees with our double-double within 1.1e-15 on every coefficient of points 0-3 (finite 5.527401070600913 at point 1); our double-double equals 40 and 60 digits within 1e-31 there (s2/c01ap.log): MadLoop's massive-b result is off, not ours. (b) C02 point 0 and D11 point 1: forced quadruple precision brings MadLoop within 5e-14 and 7e-15 of ours (Recola 5.7e-13, 1.5e-13): binary64 noise of the status-216 runs that MadLoop's estimate does not see. (c) A06 point 1 (a cancelling single pole, 0.12 against a Born of 302): the committed Recola and OpenLoops values are 7.3e-13 and 5.2e-13 from ours, MadLoop 1.18e-12; MLStabThres = 1e-20 cannot force quadruple precision there because MadLoop's binary64 estimate is exactly 0 (status 216 again). Not explained by the input point: double-double at MadLoop's own quadruple-precision point (its ImprovePSPoint=2 projection of the binary64 rounding, supplied_points.madloop_qp_point) gives the same deviations (workspace/tmp/mq-validate/qp/exp.py). MQ-REF's per-point records (fix round 06dfb9c5) show MadLoop's own inconsistency at the failing massive-b points: at C01 point 1 its printed Born and the Born its double pole implies differ by 4.82e-13 (C01@params point 1: 3.7e-13), against 3e-16 .. 1e-15 at the other rows' points; C02 point 0 and D11 point 1 show 3.3e-16 and 8.6e-16 (binary64 noise in the finite and single pole only). The fix round added no second provider to C01, C02, D11 (campaign pt6 at a765a9cc: the same five failures). Cause of the C01 miss (MQ-REF's fix-round-2 experiment, workspace/tmp/mq-ref/r3/c01_hf0 against c01_hf2, read only): MadLoop's numerical helicity filter (HelicityFilterLevel 2, the export's default) drops helicity configurations that vanish for a massless b but not for the massive one; with HelicityFilterLevel 0 MadLoop's C01 point 1 finite part is 5.527401070600928, 1.7e-15 from our double-double (5.5274010706009188), at its own binary64 accuracy 1.1e-15. MQ-REF's fix round 2 (in progress at 828ebaf0) reruns every point with the filter off and in quadruple precision. Campaign pt7 (2026-10-28, head f9fd78fd, MQ-REF fix round 2 75db7231: every point in MadLoop's quadruple-precision stage, HelicityFilterLevel 0, Recola as C01's second provider): C01, C01@params, C02 and D11 pass every rule (the default tier passes). A06 keeps its PLAN reference, the G1 three-provider fixture required/uux_uux.json (MadLoop binary64, status 216), where the miss stays; its MQ-REF quadruple-precision rerun at the same points plus mu_0/2 (variant A06@sectors, pt8) passes every rule with the point-1 single pole 2.8e-14 from double-double, and Recola and OpenLoops agree within 7.3e-13 and 5.2e-13. Resolved: MQ-REF's integrated references (slice 141fe125) bind A06's points 0-2 (and those of the 13 other rows that keep a G1 fixture) to its quadruple-precision rerun (point_binding); Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files): A06 passes every rule (point-1 single pole 2.8e-14 from double-double), A06@sectors passes its mu_0/2 point.",
+   "routed_to": "MQ-REF (done: binding quadruple-precision references, integrated by the coordinator)",
+   "status": "resolved"
   },
   {
    "id": "F3",
    "category": "reference: MadLoop quadruple-precision result",
-   "title": "g g > u u~ u u~ and u u~ > g g g g g: no provider reaches 1e-12 at 2->4/2->5 (MadLoop quadruple precision 1.2e-11 with a 1e-12 IR-relation defect; Recola 5e-11; OpenLoops 2.6e-12)",
+   "title": "g g > u u~ u u~ and u u~ > g g g g g: no provider reaches 1e-12 at 2->4/2->5; resolved by the user's rule 1 tolerance of 1e-10 from 2->4 up",
    "rows": [
     "A18",
     "A23"
    ],
    "checks": "rule 1: A18 points 0, 2, 3 finite 3.5e-12 .. 1.17e-11 and double pole 1.06e-12; A23 points 0-2 finite and single pole 1.0e-12 .. 3.2e-12",
-   "evidence": "A18: MadLoop's quadruple-precision values (status 328/329, own accuracy 0) are up to 1.17e-11 (finite) and 1.06e-12 (double pole) from ours; MadLoop's double pole is off its own Born times the universal IR factor by exactly that 1.06e-12 at point 2 (and 3.5e-13 at points 0, 3), while ours equals Catani's within 9e-28 and our Born equals MadLoop's within 2e-15, so MadLoop's loop carries a ~1e-12 systematic error. Third opinions (workspace/tmp/mq-validate/qpref/): OpenLoops (ppjjjj, binary64) 5.5e-13 / 9.8e-13 / 1.2e-12 / 2.6e-12 on the finite part of points 0-3 and <= 1.8e-13 on the poles; Recola (binary64) up to 5.3e-11 with double poles 1.1e-11 off. The deviations do not move when our double-double is evaluated at MadLoop's quadruple-precision input point (qp/exp.py). A23 (MadLoop status 216, own accuracies 1.2e-13 .. 2.3e-12, covering some coefficients; Recola's double poles off the universal factor by up to 4.4e-11): no second provider within 1e-12; a forced quadruple-precision MadLoop 2->5 run was not attempted (estimated hours, HANDOFF \u00a70.1). MQ-REF fix round 2 (75db7231): OpenLoops (ppjjjj) is A18's recorded second provider and MadLoop's points 0, 2, 3 are named OUTLIER in the fixture (CutTools quadruple precision, return code 329, own accuracy 0.0, its double pole off its Born x the universal factor by 3.5e-13 .. 1.1e-12). Campaign pt7: A18 misses at point 0 finite 3.45e-12 (OpenLoops 5.5e-13 from double-double), point 2 finite 6.37e-12 and double pole 1.06e-12 (OpenLoops 1.16e-12 and 1.1e-13), point 3 finite 1.17e-11 (OpenLoops 2.55e-12); rule 1 (i) cannot pass where MadLoop's own accuracy reads 0.0, and at points 2 and 3 no provider is within 1e-12 of double-double (whose poles equal Catani's within 1e-27). A23 (2->5, not regenerated) is unchanged.",
-   "routed_to": "user ruling via the coordinator (rule 1 at 2->4/2->5 when every provider misses 1e-12 and the primary's own accuracy reads 0; proposals: OpenLoops as A18's primary at its 1e-12 points, or rule 1 against the closest provider with the Catani/Ward/rotation internal oracles for the rest) and MQ-REF (a MadLoop quadruple-precision Ninja evaluation for A18, a forced quadruple-precision 2->5 run for A23 only if it fits HANDOFF \u00a70.1)",
-   "status": "open"
+   "evidence": "A18: MadLoop's quadruple-precision values (status 328/329, own accuracy 0) are up to 1.17e-11 (finite) and 1.06e-12 (double pole) from ours; MadLoop's double pole is off its own Born times the universal IR factor by exactly that 1.06e-12 at point 2 (and 3.5e-13 at points 0, 3), while ours equals Catani's within 9e-28 and our Born equals MadLoop's within 2e-15, so MadLoop's loop carries a ~1e-12 systematic error. Third opinions (workspace/tmp/mq-validate/qpref/): OpenLoops (ppjjjj, binary64) 5.5e-13 / 9.8e-13 / 1.2e-12 / 2.6e-12 on the finite part of points 0-3 and <= 1.8e-13 on the poles; Recola (binary64) up to 5.3e-11 with double poles 1.1e-11 off. The deviations do not move when our double-double is evaluated at MadLoop's quadruple-precision input point (qp/exp.py). A23 (MadLoop status 216, own accuracies 1.2e-13 .. 2.3e-12, covering some coefficients; Recola's double poles off the universal factor by up to 4.4e-11): no second provider within 1e-12; a forced quadruple-precision MadLoop 2->5 run was not attempted (estimated hours, HANDOFF \u00a70.1). MQ-REF fix round 2 (75db7231): OpenLoops (ppjjjj) is A18's recorded second provider and MadLoop's points 0, 2, 3 are named OUTLIER in the fixture (CutTools quadruple precision, return code 329, own accuracy 0.0, its double pole off its Born x the universal factor by 3.5e-13 .. 1.1e-12). Campaign pt7: A18 misses at point 0 finite 3.45e-12 (OpenLoops 5.5e-13 from double-double), point 2 finite 6.37e-12 and double pole 1.06e-12 (OpenLoops 1.16e-12 and 1.1e-13), point 3 finite 1.17e-11 (OpenLoops 2.55e-12); rule 1 (i) cannot pass where MadLoop's own accuracy reads 0.0, and at points 2 and 3 no provider is within 1e-12 of double-double (whose poles equal Catani's within 1e-27). A23 (2->5, not regenerated) is unchanged. Resolved by the user's ruling (slice-status DECISIONS 2026-10-29 ~01:12): rule 1 is 1e-10 relative from 2->4 up (up to 1e-7 at 2->5 and beyond where the providers require it; stated per row, manifest reference_tolerance). Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files): A18 passes every rule at 1e-10 (worst double-double against MadLoop 1.17e-11), A23 passes at 1e-10 (worst 3.18e-12); no row needs more than 1e-10. The internal oracles (Catani, Ward, rotations) are unchanged.",
+   "routed_to": "user ruling (given 2026-10-29 ~01:12)",
+   "status": "resolved"
   },
   {
    "id": "F4",
@@ -7274,13 +7348,13 @@
   {
    "id": "F5",
    "category": "reference: binary64 Born",
-   "title": "MadLoop's per-helicity references miss 1e-12 on suppressed helicities and on a cancelling finite part (A09@soft resolved)",
+   "title": "MadLoop's per-helicity references on suppressed helicities (A08) and the soft-point Born (A09@soft): resolved by MQ-REF's quadruple-precision references",
    "rows": [
     "A08"
    ],
    "checks": "A08 hel point 0: helicities h---+- and h+++-+ born 9.9e-11 (their Born 3.6e-11 against a summed Born of order 1) and their poles 1.3e-12 .. 8.1e-12, h-+-++ finite 4.5e-12 (a finite part 100x below its poles); A09@soft resolved",
-   "evidence": "A09@soft point 1: the loop coefficients agree within 2.5e-13 (the double pole = universal factor x MadLoop's internal Born), only the reported Born misses; our point equals MadLoop's quadruple-precision point within 4.9e-25, so the input does not explain it; a binary64 Born at a soft point carries the momentum-conservation rounding relative to the soft energy (1e-16 / 1e-5). A08: |ours - MadLoop| = 3.6e-21 for a helicity Born of 3.6e-11, i.e. 2 sqrt(B_h B_max) x 1e-16, the binary64 rounding of the amplitude of a helicity suppressed to 1e-11. The runner takes the per-sector Borns from born_matrix.f (binary64); MadLoop's own quadruple-precision evaluation (status 3xx) holds a quadruple-precision Born A09@soft: resolved by MQ-REF's fix round 06dfb9c5 (at madloop_qp_point points the reference Born is MadLoop's quadruple-precision double pole over the universal factor, born_source 'madloop_double_pole_over_universal_factor'): A09@soft passes every rule at pt6. A08 (status 328, quadruple precision) is unchanged: the per-helicity rows carry no born_source record, and at a rescued point MadLoop evaluates its own quadruple-precision repair of the binary64 point (~1e-16 from the published one), to which a helicity suppressed to 1e-11 and a finite part cancelling 100x are sensitive at the observed level. Resolved by MQ-REF's fix round 2 (75db7231) per-helicity reference records: at quadruple-precision entries the helicity Born is its double pole over the universal factor, and an entry whose printed binary64 Born misses that by more than 1e-13 (a helicity suppressed below the point's binary64 condition) or that vanishes is compared absolutely against the summed Born (72 of A08's 128 entries; the harness reads the record, rule_hel). A08 passes every rule at pt7; the formerly failing h---+-, h+++-+ (Born mismatch 1e-10) and h-+-++ (3.8e-13) are absolute entries now, h-+-++'s finite part within 8.4e-19 of a bound 3.5e-14 (strictly relative 4.5e-12 as before). The absolute per-helicity convention is MQ-REF's (pending its re-audit and the coordinator's acceptance); without it A08 fails as in pt6.",
-   "routed_to": "MQ-REF (per-helicity Borns and Laurent coefficients at the published point: the quadruple-precision double pole over the universal factor per helicity, as for the soft points, or a quadruple-precision evaluation at the published point); no change to the 1e-12 rule",
+   "evidence": "A09@soft point 1: the loop coefficients agree within 2.5e-13 (the double pole = universal factor x MadLoop's internal Born), only the reported Born misses; our point equals MadLoop's quadruple-precision point within 4.9e-25, so the input does not explain it; a binary64 Born at a soft point carries the momentum-conservation rounding relative to the soft energy (1e-16 / 1e-5). A08: |ours - MadLoop| = 3.6e-21 for a helicity Born of 3.6e-11, i.e. 2 sqrt(B_h B_max) x 1e-16, the binary64 rounding of the amplitude of a helicity suppressed to 1e-11. The runner takes the per-sector Borns from born_matrix.f (binary64); MadLoop's own quadruple-precision evaluation (status 3xx) holds a quadruple-precision Born A09@soft: resolved by MQ-REF's fix round 06dfb9c5 (at madloop_qp_point points the reference Born is MadLoop's quadruple-precision double pole over the universal factor, born_source 'madloop_double_pole_over_universal_factor'): A09@soft passes every rule at pt6. A08 (status 328, quadruple precision) is unchanged: the per-helicity rows carry no born_source record, and at a rescued point MadLoop evaluates its own quadruple-precision repair of the binary64 point (~1e-16 from the published one), to which a helicity suppressed to 1e-11 and a finite part cancelling 100x are sensitive at the observed level. Resolved by MQ-REF's fix round 2 (75db7231) per-helicity reference records: at quadruple-precision entries the helicity Born is its double pole over the universal factor, and an entry whose printed binary64 Born misses that by more than 1e-13 (a helicity suppressed below the point's binary64 condition) or that vanishes is compared absolutely against the summed Born (72 of A08's 128 entries; the harness reads the record, rule_hel). A08 passes every rule at pt7; the formerly failing h---+-, h+++-+ (Born mismatch 1e-10) and h-+-++ (3.8e-13) are absolute entries now, h-+-++'s finite part within 8.4e-19 of a bound 3.5e-14 (strictly relative 4.5e-12 as before). The absolute per-helicity convention is MQ-REF's (pending its re-audit and the coordinator's acceptance); without it A08 fails as in pt6. Reopened at df691379 (MQ-REF fix round 2 re-audit: comparing a suppressed helicity absolutely loosens rule 1): the harness compares absolutely only a vanishing helicity (our double-double Born <= 1e-24 of the summed Born and MadLoop's within 1e-12), and keeps an MQ-REF record that compares a suppressed helicity absolutely strictly relative (not honoured, reason in the note). Of A08's 24 suppressed-helicity entries at pt7, h---+- (born 1.31e-12, single pole 8.05e-12, double pole 1.31e-12), h+++-+ (born and double pole 1.31e-12) and h-+-++ (finite 4.52e-12) exceed 1e-12 strictly relative. MQ-REF fix round 3 (in progress) adds a per-helicity run at MadLoop's own quadruple-precision points published to 30 digits (gg_ggg_hel, the index row's helicity_reference, read by the manifest generator), where every non-vanishing helicity is a strictly relative reference. Resolved: MQ-REF fix round 3 (integrated, slice 141fe125) publishes A08's per-helicity reference at MadLoop's own quadruple-precision points (required/mqcd/gg_ggg_hel.json, the row's helicity_reference); Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files): A08 passes every rule with every non-vanishing helicity strictly relative within 1e-12 (no absolute comparison of a suppressed helicity).",
+   "routed_to": "MQ-REF (done: gg_ggg_hel); the 1e-12 rule unchanged",
    "status": "resolved"
   },
   {
@@ -7289,10 +7363,9 @@
    "title": "The binary64 estimate under-reports the error of g g > b b~ h (4FS) up to 100x and of u u~ > u u~ e+ e- 23x",
    "rows": [
     "C05",
-    "D10",
-    "D10@sectors"
+    "D10"
    ],
-   "checks": "rules 2 and 3, binary64, C05 [QCD^6 QED^2] finite at every point: error 2.34e-10 at E = 2.43e-12 (point 1), 4.8e-12 at 1.96e-13, 1.16e-12 at 3.64e-14, 9.5e-12 at 3.7e-13; D10 point 2 [QCD^6 QED^4] double pole 1.72e-12 at E = 7.55e-14 (also rule 4 binary64); D10@sectors (MQ-REF's quadruple-precision rerun at the same points, pt8): the same point-2 double pole, rules 2/3/4",
+   "checks": "rules 2 and 3, binary64, C05 [QCD^6 QED^2] finite at every point: error 2.34e-10 at E = 2.43e-12 (point 1), 4.8e-12 at 1.96e-13, 1.16e-12 at 3.64e-14, 9.5e-12 at 3.7e-13; D10 point 2 [QCD^6 QED^4] double pole 1.72e-12 at E = 7.55e-14 (also rule 4 binary64); D10@sectors (MQ-REF's quadruple-precision rerun at the same points, pt8): the same point-2 double pole, rules 2/3/4; Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files): C05 every point (finite of [QCD^6 QED^2], rules 2 and 3), D10 point 2 (double pole of [QCD^6 QED^4], rules 2, 3 and 4 in binary64); D10@sectors now runs only its mu_0/2 point (points 0-2 are D10's binding references) and passes",
    "evidence": "double-double passes every rule on both rows (rule 1 within 1e-12 of MadLoop); the binary64 error is real and the one-rotation plus reduction-direction estimate does not bracket it tenfold. An error confined to functions of the invariants (scalar integrals with the small b mass) is invisible to rotations; D10 is the PLAN's '22x case' Localisation (2026-10-28, slice d3081568, workspace/tmp/mq-validate/s3/stabfam.py, stabfam-C05.log, stabfam-D10.log): the binary64 error is invariant under the check rotation. C05 point 0: the bare finite's binary64 error is 2.2e-22 (of 8.3e-11) while the binary64 evaluation at the rotated point moves it by 8.0e-25; the summed family lanes' finite part carries 6.7e-18 (4.7e-11 relative) and moves 3e-21 under the rotation; R2, UV and field parts are accurate to 1e-26. D10 point 2: the double pole's binary64 error is 7.4e-25 (1.7e-12 relative) and the rotation moves it by 7.2e-27. Double-double is rotation-invariant to all printed digits at both points. So the error sits in what the rotation does not re-round: the master integrals evaluated from the on-shell external invariants (the same exact invariants in both frames, design: precision-ap) with a light b (C05) or cancelling lanes (D10), which the reduction-direction check (same masters) does not see either. An estimate that also perturbs the masters' inputs (or re-evaluates the masters at a second precision) would see it.",
    "routed_to": "MQ-STAB: the O1 estimate's checks (rotation + reduction direction) do not re-round the master integrals' inputs; the error found is rotation-invariant (localisation in the evidence)",
    "status": "open"
@@ -7304,7 +7377,7 @@
    "rows": [
     "A09@collinear"
    ],
-   "checks": "eval: points 1-2 (theta = 1e-4, 1e-5) double-double CutFailed { DegenerateGram } and binary64 Unstable (families 78 and 80, also on the re-test and the rotation), point 0 (theta = 1e-3) binary64 Unstable; at point 0 double-double meets MadLoop's quadruple precision (worst finite 7.8e-13) and Catani's poles (4.8e-23 against 10 E = 1e-20)",
+   "checks": "eval: points 1-2 (theta = 1e-4, 1e-5) double-double CutFailed { DegenerateGram } and binary64 Unstable (families 78 and 80, also on the re-test and the rotation), point 0 (theta = 1e-3) binary64 Unstable; at point 0 double-double meets MadLoop's quadruple precision (worst finite 7.8e-13) and Catani's poles (4.8e-23 against 10 E = 1e-20); unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files)",
    "evidence": "the collinear family of tools/loop_reference/supplied_points.py (the last two final gluons at opening angle theta = 1e-3, 1e-4, 1e-5 after MQ-REF's fix round). MQ-REF records no provider reference at theta = 1e-4 and 1e-5 (status 'none': MadLoop's quadruple-precision evaluation unstable, return code 420, own accuracy 1.3e-6 and 28; Recola and OpenLoops disagree), so points 1-2 are held by the internal oracles (rules 2-4), which need a value. PLAN \u00a74.1 S2 expects binary64 outside O1 there but double-double and rule 3 to pass; a typed binary64 refusal at a limit point is no value for rule 3. Campaign pt6 and the rerun s3/r1a09 (2026-10-28, head e7029190).",
    "routed_to": "MQ-STAB (or the reduction owner): degenerate-Gram handling of the cut reduction at small opening angles (double-double at theta <= 1e-4) and a binary64 value with an out-of-scope estimate instead of a refusal at theta = 1e-3",
    "status": "open"
@@ -7316,7 +7389,7 @@
    "rows": [
     "C01"
    ],
-   "checks": "rule 6: AP(40) against AP(60) 1.0e-32 (point 1) and 4.1e-32 (point 2) > 1e-35 on the finite part; AP(40) against double-double passes",
+   "checks": "rule 6: AP(40) against AP(60) 1.0e-32 (point 1) and 4.1e-32 (point 2) > 1e-35 on the finite part; AP(40) against double-double passes; unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files)",
    "evidence": "C01 point 1 per virtual component, 40 against 60 digits (workspace/tmp/mq-validate/s2/apcomp.py): the bare loop's finite part 7.6e-33, its poles 1.2e-59; R2, UV, UV external fields, UV local and the Born 1e-59 .. 2e-59. So the arbitrary-precision path of the bare loop's finite part (the scalar integrals with the light massive b, 4FS) loses about 8 of its 40 digits, while binary64 agrees with double-double to 1.4e-15 at the same point (a stable binary64 form, a cancelling or guard-digit-free arbitrary-precision one). AP(40) against double-double passes, double-double against AP(60) agrees to 1e-31. B01 (massive top, 5FS) passes rule 6. Localisation (2026-10-28, slice d3081568, C01 point 2, workspace/tmp/mq-validate/s3/apdigits-C01.log and apfam-C01.log): against a 100-digit evaluation the bare finite is off by 1.8e-31 (double-double), 3.5e-32 (40 digits), 3.4e-38 (50), 7.1e-44 (60) and 1.2e-52 (80), i.e. about 10^-(0.6 d + 8) for d requested digits (d + 20 working digits), while its single and double poles agree between 40 and 60 digits within 3e-60 and every loop family's Laurent coefficients (the executor's family lanes, finite parts up to 2.5e5) agree between 40 and 60 digits within 2e-55 absolute: the loss is in the native bare output outside the family lanes (output['bare'] already carries it), not in the families' reduction; a fixed cancellation would lose a fixed number of digits, so a step whose own precision is about 0.6 of the working one is the candidate.",
    "routed_to": "coordinator: owner of the arbitrary-precision scalar integrals (bare-loop finite part with small internal masses)",
    "status": "open"
