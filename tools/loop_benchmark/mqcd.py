@@ -284,6 +284,9 @@ class Row:
     # call (its label matching), as the row's reference records them; the
     # harness checks that the engine inserts them (``rule_r2``).
     madloop_omitted_r2: tuple[str, ...] | None = None
+    # [U2]: the request lowers a Levi-Civita cell its veto keeps from
+    # cancelling (``SliceRequest.allow_anomalous_veto``; SC05's d s b veto).
+    allow_anomalous_veto: bool = False
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Row:
@@ -353,6 +356,7 @@ class Row:
             madloop_omitted_r2=None
             if data.get("madloop_omitted_r2") is None
             else tuple(data["madloop_omitted_r2"]),
+            allow_anomalous_veto=bool(data.get("allow_anomalous_veto", False)),
         )
 
     @property
@@ -1227,6 +1231,7 @@ def slice_request(row: Row, **changes: Any) -> Any:
             for key, value in (
                 ("compatibility", row.compatibility),
                 ("scale_parameter", row.scale_parameter),
+                ("allow_anomalous_veto", row.allow_anomalous_veto or None),
             )
             if value is not None
         },
@@ -3321,7 +3326,13 @@ def run_row(
         timings[f"{row.catani}_catani_s"] = round(tree_seconds, 2)
     if row.unpredicted_reasons is not None and row.catani != "none":
         checks += rule4_reasons(row, run.slice.unpredicted_sectors())
-    extras = set(row.extras) & IMPLEMENTED_EXTRAS if tier == "nightly" else set()
+    # The extras the harness checks on the nightly tier (the campaign tier's
+    # rows too), less those the manifest lists as waiting for a package.
+    extras = (
+        (set(row.extras) & IMPLEMENTED_EXTRAS) - set(row.extras_pending)
+        if tier in ("nightly", "campaign")
+        else set()
+    )
     extra_points = indices[:1]
     if row.madloop_omitted_r2 is not None and hasattr(run, "slice"):
         checks += rule_r2(row, run.slice, reference)

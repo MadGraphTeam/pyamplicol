@@ -1083,6 +1083,8 @@ row(
     [],
     ["2->4", "epsilon-sign", "loop_sm"],
     veto=[1, 3, 5],
+    allow_anomalous_veto=True,
+    notes="the d s b veto leaves the axial Z-gluon R2 and the closed up-type loops' axial parts uncancelled: lowered by request ([U2], as test_loop_v2_epsilon_sign)",
 )
 row(
     "SC06",
@@ -1231,6 +1233,15 @@ def point_count(reference):
     return len(data["points"])
 
 
+# Identically vanishing coefficients (checked absolutely against F_s),
+# recorded from the campaign's runs (tmp/ms-validate/c1, 2026-10-29): the
+# QCD x EW sector of g g > t t~ has no 1/eps^2 (soft photons between the
+# massive tops, neutral gluons): ours 1e-35, the providers' 1e-13 of the
+# Born (their rounding of a zero).
+VANISHING = {
+    "TT01": [{"sector": "QCD^4 QED^2", "coefficient": "double_pole"}],
+}
+
 rows = []
 for r in R:
     model, restriction, fixed, scheme, alpha = CODES[r["code"]]
@@ -1294,7 +1305,7 @@ for r in R:
     if model != LOOPSM:
         entry["compatibility"] = "gmu_particle_anti"
         entry["scale_parameter"] = "MU_R"
-    for key in ("parameters", "inputs", "variants", "catani"):
+    for key in ("parameters", "inputs", "variants", "catani", "allow_anomalous_veto"):
         if key in r["more"]:
             entry[key] = r["more"][key]
     if "veto" in r["more"]:
@@ -1303,6 +1314,8 @@ for r in R:
         entry["ignored_fixed_parameters"] = ignored
     if r["notes"]:
         entry["notes"] = r["notes"]
+    if r["id"] in VANISHING:
+        entry["vanishing"] = VANISHING[r["id"]]
     if status == "pending":
         entry["pending"] = {
             "waits_for": waits[0] if len(waits) == 1 else list(waits),
