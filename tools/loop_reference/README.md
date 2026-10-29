@@ -28,15 +28,8 @@ Its 102 real/complex off-shell polarization checks validate only the local
 Lorentz structures. Scalar CT normalization and physical process assembly need
 separate controls. The independent ALOHA comparison uses binary64.
 
-For an isolated top-pair external-field component report containing the
-reference `born` and `wf` Laurent columns, run:
-
-```bash
-python3 tools/loop_reference/wavefunction_oracle.py \
-  --ufo "$LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0/models/loop_sm" \
-  --reference "$LOOP_REFERENCE_ROOT/runs/top-pair-component-control.json" \
-  --output "$LOOP_REFERENCE_ROOT/runs/top-pair-field-factor-oracle.json"
-```
+(The external-field component oracle `wavefunction_oracle.py` ran the legacy
+engine and was removed with it, MQ-LEGACY-REMOVE.)
 
 This derives the model's external-field factors, retains the two physical top
 legs, and evaluates their interference factors in one native batch. The Born
@@ -405,12 +398,8 @@ comparisons and 34 exact MadGraph colour overlaps. The model preparation helper
 `loops.model_gluons.prepare_gluon_counterterm_basis` exposes exact ordinary basis
 representatives and the separately checked two-/four-point R2 primitives.
 
-`wavefunction_oracle.py` also accepts the gluon-scattering component fixture. It
-first proves that all four Born graphs receive identical source external-field
-factors, then compares their interference using reference Born values. The three
-heavy-quark groups and four external legs retain their source multiplicity;
-mass-zero branches are evaluated by the native conditional evaluator. This is
-an independent field-factor control, not a full amplitude calculation.
+The removed `wavefunction_oracle.py` (legacy engine) also accepted the
+gluon-scattering component fixture.
 
 ## Flavour-changing FFV and full-source mixed-order control
 
