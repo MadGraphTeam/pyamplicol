@@ -2973,14 +2973,14 @@
      "row_status": {
       "status": "in development",
       "reason": "EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)",
-      "package": "WP3.2",
+      "package": "WP3.2, M-SM",
       "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]"
      },
      "generation": {
       "main": {
        "status": "in development",
        "reason": "EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)",
-       "package": "WP3.2",
+       "package": "WP3.2, M-SM",
        "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]",
        "configuration": "registry",
        "considered": [
@@ -3018,7 +3018,7 @@
       "main": {
        "status": "in development",
        "reason": "EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)",
-       "package": "WP3.2",
+       "package": "WP3.2, M-SM",
        "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]",
        "configuration": "registry",
        "considered": [
@@ -3065,7 +3065,7 @@
       "main": {
        "status": "in development",
        "reason": "EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)",
-       "package": "WP3.2",
+       "package": "WP3.2, M-SM",
        "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]",
        "configuration": "registry",
        "considered": [
