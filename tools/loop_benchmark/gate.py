@@ -338,11 +338,18 @@ def _provider_values(key: str, record: dict[str, Any]) -> dict[str, dict[int, tu
     """(born, finite in MadLoop's convention) per provider and stream index."""
 
     spec = streams.spec(key)
-    factor = provider_module.universal_double_pole(spec)
+    # Recola's finite part takes pi^2/6 x the universal double pole (QCD);
+    # a non-QCD correction (the indicative EW row) has none, so its Recola
+    # values are not compared (MadLoop's and OpenLoops' are).
+    factor = (
+        provider_module.universal_double_pole(spec)
+        if spec["correction"] == "QCD"
+        else None
+    )
     out: dict[str, dict[int, tuple]] = {}
     for name, result in record["providers"].items():
         rows = result.get("rows")
-        if not rows:
+        if not rows or (name == "recola" and factor is None):
             continue
         values = {}
         for index, row in enumerate(rows):
