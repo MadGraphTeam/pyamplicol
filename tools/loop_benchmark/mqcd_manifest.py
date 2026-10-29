@@ -1051,7 +1051,7 @@ TREE_FIXTURE = "tests/fixtures/loop/mqcd/references/tree-correlations-{}.json"
 WARD_LEGS = {"A14": [1]}
 # True once MQ-5F is on the slice: its rows and variants turn active
 # (MQ-5F's own records of them: workspace/reports/engine-v2/mq-5f/records/).
-MQ5F_LANDED = False
+MQ5F_LANDED = True
 # Rows the tools route refuses at generation (MQ-5F: a Dirac current closing
 # on a Weyl current), from the campaign's runs on MQ-REF's references.
 REFUSED_5F = set() if MQ5F_LANDED else {"C09", "F03", "H02", "H03"}
