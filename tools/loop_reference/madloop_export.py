@@ -182,42 +182,70 @@ def main():
     command.exec_cmd(f"import model {madloop['model']}")
     command.exec_cmd(f"set gauge {madloop.get('gauge', 'Feynman')}")
     command.exec_cmd("generate " + madloop["process"])
-    if len(command._curr_amps) != 1:
-        raise RuntimeError("expected exactly one MadLoop amplitude")
-    amplitude = command._curr_amps[0]
-    born = Counter(_orders(d) for d in amplitude["born_diagrams"])
-    loops = Counter()
-    for diagram in amplitude["loop_diagrams"]:
-        loops[_orders(diagram)] += diagram["multiplier"]
-    expected_born = {(spec["born_orders"]["QCD"], spec["born_orders"]["QED"])}
+    multiparticle = bool(spec.get("multiparticle"))
+    if not command._curr_amps or (len(command._curr_amps) != 1 and not multiparticle):
+        raise RuntimeError(f"expected exactly one MadLoop amplitude, got {len(command._curr_amps)} "
+                           "(a multiparticle request sets \"multiparticle\": true)")
+    step = {k: spec["loop_orders"][k] - spec["born_orders"][k] for k in ("QCD", "QED")}
+    expected_born = {(o["QCD"], o["QED"]) for o in spec["born_orders_all"]}
     expected_loop = {(spec["loop_orders"]["QCD"], spec["loop_orders"]["QED"])}
-    report.update(
-        {
-            "graph_generation_s": time.perf_counter() - start,
+    allowed_loop = {(q + step["QCD"], e + step["QED"]) for q, e in expected_born}
+    subprocesses = []
+    for amplitude in command._curr_amps:
+        born = Counter(_orders(d) for d in amplitude["born_diagrams"])
+        loops = Counter()
+        for diagram in amplitude["loop_diagrams"]:
+            loops[_orders(diagram)] += diagram["multiplier"]
+        legs = amplitude["process"]["legs"]
+        subprocesses.append({
             "process": amplitude["process"].nice_string(),
+            "pdgs": [leg["id"] for leg in legs],
             "born": len(amplitude["born_diagrams"]),
             "loops": sum(loops.values()),
             "identified_loop_records": len(amplitude["loop_diagrams"]),
-            "count_convention": "loops: sum of native diagram.multiplier",
             "born_orders": [{"QCD": q, "QED": e, "count": n} for (q, e), n in sorted(born.items())],
             "loop_orders": [{"QCD": q, "QED": e, "count": n} for (q, e), n in sorted(loops.items())],
             "UVCT_diagrams": len(amplitude["loop_UVCT_diagrams"]),
             "attached_CT_vertices": sum(len(d["CT_vertices"]) for d in amplitude["loop_diagrams"]),
+            "_born": born, "_loops": loops,
+        })
+    first = subprocesses[0]
+    report.update(
+        {
+            "graph_generation_s": time.perf_counter() - start,
+            "process": first["process"],
+            "born": sum(sp["born"] for sp in subprocesses),
+            "loops": sum(sp["loops"] for sp in subprocesses),
+            "identified_loop_records": sum(sp["identified_loop_records"] for sp in subprocesses),
+            "count_convention": "loops: sum of native diagram.multiplier",
+            "born_orders": first["born_orders"],
+            "loop_orders": first["loop_orders"],
+            "UVCT_diagrams": sum(sp["UVCT_diagrams"] for sp in subprocesses),
+            "attached_CT_vertices": sum(sp["attached_CT_vertices"] for sp in subprocesses),
         }
     )
+    if multiparticle:
+        report["subprocesses"] = [{k: v for k, v in sp.items() if not k.startswith("_")} for sp in subprocesses]
     # Loop records of other orders may remain in the export; the driver selects
-    # the Born-virtual interference by its squared split orders.
-    if set(born) != expected_born or not expected_loop <= set(loops):
-        report["status"] = "unexpected amplitude orders"
-        write()
-        raise RuntimeError(
-            f"Born/loop orders {dict(born)}/{dict(loops)} differ from {expected_born}/{expected_loop}"
-        )
+    # the Born-virtual interference by its squared split orders. A mixed-order
+    # request (born_orders_all) admits loop records of every Born order's
+    # correction step.
+    for sp in subprocesses:
+        born, loops = sp["_born"], sp["_loops"]
+        if set(born) != expected_born or not expected_loop <= set(loops) or (
+                len(expected_born) > 1 and not set(loops) <= allowed_loop):
+            report["status"] = "unexpected amplitude orders"
+            write()
+            raise RuntimeError(
+                f"{sp['process']}: Born/loop orders {dict(born)}/{dict(loops)} differ from "
+                f"{expected_born}/{expected_loop}")
     report["status"] = "exporting"
     write()
-    amplitude["process"].set("split_orders", ["QCD", "QED"])
+    for amplitude in command._curr_amps:
+        amplitude["process"].set("split_orders", ["QCD", "QED"])
     command.exec_cmd(f"output standalone {output}")
     report["source_export_s"] = time.perf_counter() - start - report["graph_generation_s"]
+    report["subprocess_directories"] = sorted(p.name for p in (output / "SubProcesses").glob("P*") if p.is_dir())
     report["status"] = "exported"
     write()
     if not args.no_compile:
