@@ -394,9 +394,7 @@ The remaining pure-gluon local source tensors can be checked with
 `gluon_vertex_oracle.py --ufo MODEL --madloop-build EXPORT --mg5-source MG5
 --build-dir WORKSPACE_BUILD --output REPORT`. This covers the off-shell derivative
 three-gluon tensor and ordinary/UV quartic bases with 1,672 ALOHA component
-comparisons and 34 exact MadGraph colour overlaps. The model preparation helper
-`loops.model_gluons.prepare_gluon_counterterm_basis` exposes exact ordinary basis
-representatives and the separately checked two-/four-point R2 primitives.
+comparisons and 34 exact MadGraph colour overlaps.
 
 The removed `wavefunction_oracle.py` (legacy engine) also accepted the
 gluon-scattering component fixture.
