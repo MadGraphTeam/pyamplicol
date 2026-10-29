@@ -2760,9 +2760,9 @@ def rule_joint(row: Row, run: RowRun, index: int, dd: Evaluated) -> list[Check]:
     loops = row.loop_orders
     loops = (loops,) if isinstance(loops, Mapping) else tuple(loops)
     if len(loops) < 2:
+        note = "one loop order: the joint request is the separate one"
         return [Check("joint", index, "double-double", "", "requests", "1", "",
-                      0.0, 0.0, True, asserted=False,
-                      note="one loop order: the joint request is the separate one")]  # fmt: skip
+                      0.0, 0.0, True, asserted=False, note=note)]  # fmt: skip
     checks = []
     for k, loop in enumerate(loops):
         single = replace(
@@ -2775,9 +2775,10 @@ def rule_joint(row: Row, run: RowRun, index: int, dd: Evaluated) -> list[Check]:
         separate = RowRun(single, run.compiled, run.native)
         (theirs,) = separate.evaluate([index], "double-double")
         if theirs is None:
+            note = separate.failures.get((index, "double-double"), "")
             checks.append(Check("joint", index, "double-double", str(dict(loop)),
                                 "evaluation", "failed", "", math.inf, 0.0, False,
-                                note=separate.failures.get((index, "double-double"), "")))  # fmt: skip
+                                note=note))  # fmt: skip
             continue
         pairs = [
             (sector_text(s), "born", dd.born.get(s), v, None)
