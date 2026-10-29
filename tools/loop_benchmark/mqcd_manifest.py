@@ -1094,7 +1094,7 @@ REFUSED_5F = set() if MQ5F_LANDED else {"C09", "F03", "H02", "H03"}
 # with MB = ymb = 0 (code 5F*) also run on the restricted UFO (no_b_mass), the
 # same request and reference (variant ``<id>@5F``, its own generation); the
 # tools route refuses that request at generation until MQ-5F lands.
-RESTRICTED_5F = ("D17", "F01", "F02", "F04")
+RESTRICTED_5F = ("D17", "D29", "F01", "F02", "F04")
 # True once MQ-NC is on the slice: rule 7 (the ``nc`` extra) of a row is
 # MQ-NC's test ids for it (``NC_COLUMN`` of NC_TESTS: the LC/NLC projection
 # against the N_c scan within 1e-24 in double-double, then the row's
