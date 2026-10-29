@@ -1054,6 +1054,18 @@ LISTINGS = {
 }
 
 
+# Rule 1's relative tolerance per row (user, slice-status DECISIONS
+# 2026-10-29 ~01:12): 1e-12 at 2->2 and 2->3, 1e-10 from 2->4 up (the
+# providers' own precision; 2->5 and beyond could go up to 1e-7 where a row's
+# providers require it, and no row needs it today).
+RULE1_LOW, RULE1_HIGH = 1e-12, 1e-10
+
+
+def reference_tolerance(process):
+    final = len(process.split(">")[1].split())
+    return RULE1_HIGH if final >= 4 else RULE1_LOW
+
+
 def loop_orders(born, loop):
     if loop is not None:
         return loop
@@ -1577,6 +1589,7 @@ for r in R:
         "binary64_out_of_scope": [],
         "reference_outliers": [],
         "vanishing": [],
+        "reference_tolerance": reference_tolerance(r["process"]),
     }
     if params:
         entry["parameters"] = params

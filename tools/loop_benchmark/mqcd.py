@@ -13,9 +13,14 @@ that vanish identically).
 The rules (PLAN §1.4; no tolerance is widened):
 
 1. double-double against the row's primary provider, strictly relative,
-   rel <= 1e-12 per sector and coefficient, Born included; a listed reference
+   rel <= the row's ``reference_tolerance`` per sector and coefficient, Born
+   included: 1e-12 at 2->2 and 2->3, 1e-10 from 2->4 up (the user's ruling of
+   2026-10-29 ~01:12: up to 1e-7 at 2->5 and beyond only where the
+   providers' own precision requires it, stated per row); a listed reference
    outlier passes only if the provider's own accuracy covers the difference
-   and a second provider agrees with double-double within 1e-12;
+   and a second provider agrees with double-double within the same
+   tolerance; a coefficient that vanishes identically stays absolute at
+   1e-12 F_s;
 2. binary64 against our own double-double at the same point (the user's O1
    rule): E <= 1e-12 -> 1e-12, 1e-12 < E <= 1e-9 -> E, E > 1e-9 outside the
    binary64 scope, listed (an unlisted one fails, as does a stale listing);
@@ -82,7 +87,12 @@ LAURENT = ("finite", "single_pole", "double_pole")
 COEFFICIENTS = ("born", *LAURENT)
 TOTAL = "total"
 
-REFERENCE_TOLERANCE = 1e-12  # rule 1
+REFERENCE_TOLERANCE = 1e-12  # rule 1 at 2->2 and 2->3 (the absolute checks)
+# Rule 1 from 2->4 up (user, slice-status DECISIONS 2026-10-29 ~01:12): the
+# providers' own precision; 2->5 and beyond may go up to the ceiling where a
+# row's providers require it (the manifest states each row's tolerance).
+REFERENCE_TOLERANCE_HIGH = 1e-10
+REFERENCE_TOLERANCE_CEILING = 1e-7
 O1_STRICT = 1e-12  # rule 2: E <= 1e-12
 O1_CAP = 1e-9  # rule 2: E above it is outside the binary64 scope
 BRACKET = 10  # rule 3 (and the 10 E bounds of rules 4-6)
@@ -206,6 +216,9 @@ class Row:
     # like ``binary64_out_of_scope`` (double-double holds the identity, the
     # estimate must still bracket the value tenfold).
     ward_out_of_scope: tuple[Mapping[str, Any], ...] = ()
+    # Rule 1's relative tolerance (``REFERENCE_TOLERANCE`` at 2->2 and 2->3,
+    # ``REFERENCE_TOLERANCE_HIGH`` from 2->4 up; the manifest states it).
+    reference_tolerance: float = REFERENCE_TOLERANCE
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Row:
@@ -260,6 +273,9 @@ class Row:
             if data.get("ward_legs") is None
             else tuple(int(x) for x in data["ward_legs"]),
             ward_out_of_scope=tuple(data.get("ward_out_of_scope", ())),
+            reference_tolerance=float(
+                data.get("reference_tolerance", REFERENCE_TOLERANCE)
+            ),
         )
 
     @property
@@ -1192,7 +1208,7 @@ def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Che
                     "absent",
                     str(laurent),
                     math.inf,
-                    REFERENCE_TOLERANCE,
+                    row.reference_tolerance,
                     False,
                     note="the reference's sector is absent from ours",
                 )
@@ -1286,10 +1302,11 @@ def _reference_check(
             note="vanishes identically: |a - r| <= 1e-12 F_s",
         )
     error = relative(mine, value)
+    tolerance = row.reference_tolerance
     listed = _listed(
         row.reference_outliers, point=index, sector=sector, coefficient=name
     )
-    if error <= REFERENCE_TOLERANCE:
+    if error <= tolerance:
         note = "stale outlier listing" if listed else ""
         return Check(
             "1",
@@ -1300,7 +1317,7 @@ def _reference_check(
             str(mine),
             repr(value),
             error,
-            REFERENCE_TOLERANCE,
+            tolerance,
             not listed,
             note=note,
         )
@@ -1318,13 +1335,13 @@ def _reference_check(
             str(mine),
             repr(value),
             error,
-            REFERENCE_TOLERANCE,
+            tolerance,
             False,
             note=f"against {primary}; not a listed outlier"
             + _miss_evidence(reference, index, primary, accuracy, seconds),
         )
     covered = accuracy is not None and accuracy >= error
-    agreeing = [p for p, e in seconds.items() if e <= REFERENCE_TOLERANCE]
+    agreeing = [p for p, e in seconds.items() if e <= tolerance]
     passed = covered and bool(agreeing)
     note = (
         f"listed outlier of {primary}: own accuracy {accuracy!r} "
@@ -1340,7 +1357,7 @@ def _reference_check(
         str(mine),
         repr(value),
         error,
-        REFERENCE_TOLERANCE,
+        tolerance,
         passed,
         note=note,
     )
