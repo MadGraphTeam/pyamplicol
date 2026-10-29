@@ -1,5 +1,10 @@
 # Photon-source reference controls
 
+> Historical: this describes the per-diagram legacy one-loop engine, removed on
+> 2026-10-29 (MQ-LEGACY-REMOVE; v2 is the only one-loop engine, see
+> `docs/development/loop_v2/DESIGN.md` and §13.3 there). The modules, tools and tests named
+> here may no longer exist.
+
 `photon_sources.json` contains complete QCD Born–loop interference for
 `u u~ -> A g` and `u A -> u g`, evaluated with Recola2 2.3.0 and SM2.2.3.
 `recola_photon_sources.f90` is the independent provider driver. It selects

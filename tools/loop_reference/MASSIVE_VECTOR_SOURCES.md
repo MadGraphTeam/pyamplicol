@@ -1,5 +1,10 @@
 # Stable W± source controls
 
+> Historical: this describes the per-diagram legacy one-loop engine, removed on
+> 2026-10-29 (MQ-LEGACY-REMOVE; v2 is the only one-loop engine, see
+> `docs/development/loop_v2/DESIGN.md` and §13.3 there). The modules, tools and tests named
+> here may no longer exist.
+
 `wg_sources.json` records complete QCD Born–loop interference for
 `u d~ -> W+ g`, `d W+ -> u g` and `d u~ -> W- g`. Values are Born followed by finite, single-pole
 and double-pole coefficients, with physical couplings and the original incoming

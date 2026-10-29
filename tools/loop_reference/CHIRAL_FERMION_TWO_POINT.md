@@ -1,5 +1,10 @@
 # Local chiral fermion two-point control
 
+> Historical: this describes the per-diagram legacy one-loop engine, removed on
+> 2026-10-29 (MQ-LEGACY-REMOVE; v2 is the only one-loop engine, see
+> `docs/development/loop_v2/DESIGN.md` and §13.3 there). The modules, tools and tests named
+> here may no longer exist.
+
 `chiral_fermion_two_point_oracle.py` independently checks the two chiral slashes
 in the official sgluon NLO UFO. The actual ordered source ports are `u~ u`, with
 `Identity(1,2)` colour and first-leg momentum:

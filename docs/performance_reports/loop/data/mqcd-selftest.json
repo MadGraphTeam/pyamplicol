@@ -1,0 +1,73 @@
+{
+ "source": "campaign-m1029-mqcd wheel self-test at the pin e18a024b: release host wheel built from a clean clone (sha256 8a82f722...), installed in two fresh venvs (PyPI dependencies; Community Symbolica), pyamplicol self-test --json (records workspace/reports/engine-v2/m-qcd/records/m1029-mqcd/wheel)",
+ "pypi": {
+  "checks": [
+   {
+    "detail": "3.11.15",
+    "name": "python",
+    "status": "pass"
+   },
+   {
+    "detail": "91 verified files",
+    "name": "model-assets",
+    "status": "pass"
+   },
+   {
+    "detail": "package 1.0.1, C ABI 1",
+    "name": "rusticol-python",
+    "status": "pass"
+   },
+   {
+    "detail": "x86_64-unknown-linux-gnu; ABI 1; librusticol_capi.a",
+    "name": "native-sdk",
+    "status": "pass"
+   },
+   {
+    "detail": "d_dbar_to_z; shape (1, 12, 1); direct SymJIT on x86_64-unknown-linux-gnu",
+    "name": "physics-f64",
+    "status": "pass"
+   },
+   {
+    "detail": "u u~ > e- e+ / Z [virt=QCD] on the shipped loop_sm-no_b_mass (full colour): Born and Laurent coefficients = MadLoop to 2.8e-13 at 3 points; generated in 9 s; Symbolica licensed",
+    "name": "physics-virtual",
+    "status": "pass"
+   }
+  ],
+  "package_version": "1.0.1"
+ },
+ "community": {
+  "checks": [
+   {
+    "detail": "3.11.15",
+    "name": "python",
+    "status": "pass"
+   },
+   {
+    "detail": "91 verified files",
+    "name": "model-assets",
+    "status": "pass"
+   },
+   {
+    "detail": "package 1.0.1, C ABI 1",
+    "name": "rusticol-python",
+    "status": "pass"
+   },
+   {
+    "detail": "x86_64-unknown-linux-gnu; ABI 1; librusticol_capi.a",
+    "name": "native-sdk",
+    "status": "pass"
+   },
+   {
+    "detail": "d_dbar_to_z; shape (1, 12, 1); direct SymJIT on x86_64-unknown-linux-gnu",
+    "name": "physics-f64",
+    "status": "pass"
+   },
+   {
+    "detail": "u u~ > e- e+ / Z [virt=QCD] on the shipped loop_sm-no_b_mass (full colour): Born and Laurent coefficients = MadLoop to 2.8e-13 at 3 points; generated in 10 s; Symbolica licensed",
+    "name": "physics-virtual",
+    "status": "pass"
+   }
+  ],
+  "package_version": "1.0.1"
+ }
+}

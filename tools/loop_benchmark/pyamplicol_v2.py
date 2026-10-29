@@ -8,11 +8,17 @@ One run measures one process at one colour accuracy on one checkout:
    export of ``plan_export.NativeExecutor``, each with its wall time and the
    peak resident memory of that stage (``/proc/self/clear_refs`` resets the
    high-water mark between stages).
-2. **Accuracy at the frozen points**: the stream's first block in the
-   timed configuration, its Born and finite part against every provider of
-   the committed reference (``tests/fixtures/loop/required/<key>.json``) with
-   the fixture's metric; the finite parts of every timed point are kept for
-   ``gate.py``'s comparison with the providers' own runs on the stream.
+2. **Accuracy at the frozen points** (untimed): the reference fixture's
+   points (``tests/fixtures/loop/required/<key>.json``, the stream's first
+   points) in the timed configuration with the recommended stability checks
+   on, their Born and finite part against every provider of the fixture with
+   its metric and tolerance. The binary64 finite part is asserted where its
+   estimate E (the O1 rule's, ``mqcd``) is at most ``mqcd.O1_CAP`` = 1e-9;
+   above it (the user's ruling of 2026-10-29 on E1: g g > g g g g point 1)
+   a double-double evaluation of the point is asserted instead, and E and
+   the binary64 errors are recorded (``accuracy_record``). The finite parts
+   of every timed point are kept for ``gate.py``'s comparison with the
+   providers' own runs on the stream.
 3. **Event timing**: the public runtime's evaluation call
    (``NativeExecutor.evaluate``, which ``loops.v2.artifact.V2VirtualRuntime``
    calls) in the speed-gate configuration: binary64, finite part only (the
@@ -109,6 +115,7 @@ from typing import Any
 from tools.loop_v2_generate import LEADING_CASIMIRS
 
 from . import providers, streams
+from .mqcd import O1_CAP, check_configuration
 
 ROOT = streams.ROOT
 STAGES = (
@@ -218,19 +225,18 @@ def process_text(key: str, compiled: Any) -> str:
 
 def _request(key: str, accuracy: str, compiled: Any) -> Any:
     from pyamplicol.loops.v2.assemble import SliceRequest
-    from pyamplicol.models.loop_color_declaration import LoopColorDeclaration
+    from pyamplicol.models.loop_color_declaration import (
+        resolve_loop_color_declaration,
+    )
 
     process = streams.spec(key)
     text = process_text(key, compiled)
     declaration = None
     if accuracy != "full":
-        if str(ROOT) not in sys.path:
-            sys.path.insert(0, str(ROOT))
-        from tools.loop_reference import legacy_capture
-
-        declaration = LoopColorDeclaration.from_dict(
-            json.loads(legacy_capture.COLOUR_DECLARATION.read_text())
-        )
+        # The model's declaration: for loop_sm the shipped one (MQ-NC), which
+        # covers every counterterm vertex (the example QCD subset does not
+        # cover the closed quark loops with electroweak legs).
+        declaration = resolve_loop_color_declaration(compiled.raw_loop_model)
     return SliceRequest(
         text,
         dict(process["born_orders"]),
@@ -363,6 +369,106 @@ def reference_errors(
         if row:
             errors[provider] = row
     return errors
+
+
+BINARY64 = "double"
+DOUBLE_DOUBLE = "double-double"
+
+
+def finite_estimate(result: Any) -> float:
+    """The binary64 relative estimate E of a point's finite part, the O1
+    rule's (``mqcd``: the recommended checks' absolute budget of the
+    coefficient over its value), with the budgets summed over the
+    squared-order sectors and taken over the summed finite part G1 compares.
+    Without an estimate, or for a nonzero budget of a vanishing finite part,
+    inf."""
+
+    stability = result.stability
+    if stability is None:
+        return math.inf
+    budget = sum(abs(float(b.coefficients[0])) for b in stability.absolute.values())
+    finite = abs(_totals(result)[1])
+    if finite:
+        return budget / finite
+    return 0.0 if budget == 0 else math.inf
+
+
+def asserted_carrier(estimate: float) -> str:
+    """The carrier the accuracy check asserts at a point (the user's ruling
+    of 2026-10-29 on E1, m-qcd PLAN §1.4 rule 2): binary64 where E <= O1_CAP,
+    double-double above it (or for a NaN estimate)."""
+
+    return BINARY64 if estimate <= O1_CAP else DOUBLE_DOUBLE
+
+
+def accuracy_record(
+    name: str,
+    fixture: dict[str, Any],
+    binary64: dict[int, tuple[float, float]],
+    estimates: dict[int, float],
+    double_double: dict[int, tuple[float, float]],
+    alpha: float,
+) -> dict[str, Any]:
+    """The accuracy check of the fixture's points ``binary64`` (index ->
+    (Born, finite)) with their finite parts' estimates E (``estimates``) and
+    the double-double values of the points above ``O1_CAP``
+    (``double_double``). Per row: the binary64 errors against every provider
+    (``errors``, as before), E, the carrier asserted per quantity
+    (``asserted``; the Born, a tree outside the loop estimate, in binary64),
+    the double-double values and errors where evaluated and the row's
+    largest asserted error. ``max_error`` and ``passed`` are those of the
+    asserted carriers against ``tolerance``; ``max_error_binary64`` is the
+    largest binary64 error at any point."""
+
+    tolerance = float(fixture.get("tolerance", REQUIRED_TOLERANCE))
+    rows = []
+    worst = worst_binary64 = 0.0
+    for index, (born, finite) in sorted(binary64.items()):
+        references = fixture["rows"][index]["providers"]
+        errors = reference_errors(born, finite, references, alpha)
+        estimate = estimates[index]
+        carrier = asserted_carrier(estimate)
+        row: dict[str, Any] = {
+            "index": index,
+            "mu_r": fixture["mu_r"][index],
+            "born": born,
+            "finite": finite,
+            "errors": errors,
+            "estimate": {"finite": estimate},
+            "asserted": {"born": BINARY64, "finite": carrier},
+        }
+        asserted = [e["born"] for e in errors.values() if "born" in e]
+        finites = errors
+        if carrier == DOUBLE_DOUBLE:
+            dd_born, dd_finite = double_double[index]
+            finites = reference_errors(dd_born, dd_finite, references, alpha)
+            row["double_double"] = {
+                "born": dd_born,
+                "finite": dd_finite,
+                "errors": finites,
+            }
+        asserted += [e["finite"] for e in finites.values() if "finite" in e]
+        row["max_error"] = max(asserted, default=0.0)
+        worst = max(worst, row["max_error"])
+        worst_binary64 = max(
+            [worst_binary64, *(e for r in errors.values() for e in r.values())]
+        )
+        rows.append(row)
+    return {
+        "fixture": name,
+        "metric": fixture["error_metric"],
+        "tolerance": tolerance,
+        "tolerance_source": "fixture" if "tolerance" in fixture else "required",
+        "checks": CHECKS,
+        "estimate_cap": O1_CAP,
+        "double_double_points": [
+            row["index"] for row in rows if row["asserted"]["finite"] == DOUBLE_DOUBLE
+        ],
+        "max_error": worst,
+        "max_error_binary64": worst_binary64,
+        "passed": worst <= tolerance,
+        "rows": rows,
+    }
 
 
 def reference_fixture(key: str) -> tuple[str, dict[str, Any]] | None:
@@ -736,10 +842,16 @@ class Run:
         (``streams.fixture_name``: the required fixture of the process, or the
         specification's ``reference_fixture``, e.g. NJet's) against each of
         its providers, at the fixture's own points and scales in one batch of
-        at most one chunk of lanes. The required fixtures' points and scales
-        are the stream's first points (``streams.campaign_agreement``); an
-        NJet fixture's points are the stream's first points at its own
-        scale (``points_are_stream_points``)."""
+        at most one chunk of lanes, with the recommended stability checks
+        (``mqcd.check_configuration``); the points whose finite part's
+        binary64 estimate exceeds ``O1_CAP`` are evaluated again in
+        double-double, which the check asserts there (``accuracy_record``).
+        Untimed. The required fixtures' points and scales are the stream's
+        first points (``streams.campaign_agreement``); an NJet fixture's
+        points are the stream's first points at its own scale
+        (``points_are_stream_points``)."""
+
+        from pyamplicol.loops.v2.assemble import Precision
 
         found = reference_fixture(self.key)
         if found is None or self.options.accuracy != "full":
@@ -754,46 +866,58 @@ class Run:
         }
         if self.options.schedule == "M":
             options["schedule"] = "M"
-        results = self.executor.evaluate(points, scales, **options)
+        results = self.executor.evaluate(
+            points, scales, stability=check_configuration(), **options
+        )
         values = {index: _totals(result) for index, result in enumerate(results)}
+        estimates = {
+            index: finite_estimate(result) for index, result in enumerate(results)
+        }
+        outside = [
+            index
+            for index in range(count)
+            if asserted_carrier(estimates[index]) == DOUBLE_DOUBLE
+        ]
+        double_double: dict[int, tuple[float, float]] = {}
+        if outside:
+            points, scales = fixture_batch(fixture, outside)
+            precise = self.executor.evaluate(
+                points, scales, precision=Precision.double_double(), **options
+            )
+            double_double = {
+                index: _totals(result)
+                for index, result in zip(outside, precise, strict=True)
+            }
         same = [
             index
             for index in range(count)
             if index < len(self.stream["points"])
             and self.stream["points"][index] == fixture["points"][index]
         ]
-        alpha = float(self.parameters["aS"])
-        rows = []
-        worst = 0.0
-        for index, (born, finite) in sorted(values.items()):
-            errors = reference_errors(
-                born, finite, fixture["rows"][index]["providers"], alpha
-            )
-            worst = max(worst, *(e for row in errors.values() for e in row.values()))
-            rows.append(
-                {
-                    "index": index,
-                    "mu_r": fixture["mu_r"][index],
-                    "born": born,
-                    "finite": finite,
-                    "errors": errors,
-                }
-            )
         # NJet fixtures state no tolerance: the required fixtures' (2e-8,
         # tools/loop_v2_generate.py validate).
-        tolerance = float(fixture.get("tolerance", REQUIRED_TOLERANCE))
+        check = accuracy_record(
+            name,
+            fixture,
+            values,
+            estimates,
+            double_double,
+            float(self.parameters["aS"]),
+        )
         self.record["accuracy_check"] = {
             "fixture": name,
             "points": count,
             "points_are_stream_points": same,
-            "metric": fixture["error_metric"],
-            "tolerance": tolerance,
-            "tolerance_source": "fixture" if "tolerance" in fixture else "required",
-            "max_error": worst,
-            "passed": worst <= tolerance,
-            "rows": rows,
+            **{k: v for k, v in check.items() if k != "fixture"},
         }
-        print(self.key, "accuracy vs providers: max", f"{worst:.2e}", flush=True)
+        print(
+            self.key,
+            "accuracy vs providers: max",
+            f"{check['max_error']:.2e}",
+            f"(binary64 {check['max_error_binary64']:.2e}; double-double at",
+            f"{check['double_double_points']})",
+            flush=True,
+        )
 
     def freeze_heap(self) -> None:
         """Collect, then move every object alive to the cyclic collector's
@@ -1047,7 +1171,10 @@ def _summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
     return out
 
 
-CHECKS = "rotation about z by (3/5, 4/5) and the reduction direction"
+CHECKS = (
+    "the recommended checks (loops.v2.stability.RECOMMENDED_CHECKS): one generic "
+    "exact rotation and the rescaled reduction check"
+)
 
 
 def stability_rows(
@@ -1056,25 +1183,25 @@ def stability_rows(
     arithmetics: list[str],
     fixture: tuple[str, dict[str, Any]] | None = None,
 ) -> list:
-    """Stream points of a generated run evaluated with one rotation about z
-    by (3/5, 4/5) and the reduction-direction check, finite part only: the
-    estimate E and each check's relative deviation (``checks``: the rotated
-    evaluation's is the rotational-invariance test). With ``fixture`` (name,
+    """Stream points of a generated run evaluated with the recommended checks
+    (``RECOMMENDED_CHECKS``: one generic exact rotation and the rescaled
+    reduction check; a rotation about the beam axis under-reports, package
+    mq-stab), finite part only: the estimate E and each check's relative
+    deviation (``checks``: the rotated evaluation's is the
+    rotational-invariance test). With ``fixture`` (name,
     content: ``reference_fixture``) the indices are the fixture's points at
     its own scales, and each row also has the finite part's deviation from
     every reference of the fixture that states one
     (``deviation_vs_references``, the fixture metric of ``reference_errors``)."""
 
     from pyamplicol.loops.v2.assemble import Precision
-    from pyamplicol.loops.v2.stability import Rotation, StabilityChecks
+    from pyamplicol.loops.v2.stability import RECOMMENDED_CHECKS
 
     precisions = {
         "double": Precision.double(),
         "double-double": Precision.double_double(),
     }
-    checks = StabilityChecks(
-        rotations=(Rotation.about("z", "3/5", "4/5"),), reduction_direction=True
-    )
+    checks = RECOMMENDED_CHECKS
     rows = []
     # One batch of at most one chunk of lanes per arithmetic: at seven legs
     # a chunk costs as much as one of its points.
@@ -1140,8 +1267,8 @@ def stability_rows(
 
 
 def check_points(options: Any) -> int:
-    """Evaluate chosen stream points with stability checks (one rotation about
-    z by (3/5, 4/5) and the reduction-direction check) in the configuration
+    """Evaluate chosen stream points with stability checks (the recommended
+    checks, ``stability_rows``) in the configuration
     of a run, in each arithmetic of ``--arithmetic`` (binary64 and/or
     double-double): the estimate E beside the value, for the points where the
     timed binary64 values deviate most from the providers (``gate.py``). The
