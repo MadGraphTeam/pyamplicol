@@ -877,8 +877,11 @@ def check_configuration():
 
 def compile_restriction(ufo: Path, restriction: str, root: Path) -> Any:
     """loop_sm under ``restriction`` with the scalar-arity view of the tools
-    route (``tests/conftest.py`` ``loop_sm_compiled_model``; MQ-MODEL moves
-    the repair into production)."""
+    route (``tests/conftest.py`` ``loop_sm_compiled_model``): the rows' main
+    route, a test oracle of the model preparation. Production prepares the
+    shipped loop_sm itself (MQ-MODEL, repairing only the reached vertices);
+    the public route (``route: public``, ``PublicRun``) runs that path and
+    M01's public variants hold it against the same references."""
 
     from dataclasses import replace
 
