@@ -328,6 +328,10 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
                 "waits_for": (row.get("pending") or {}).get("waits_for"),
                 "pending_reason": (row.get("pending") or {}).get("reason"),
                 "reference_tolerance": row.get("reference_tolerance", 1e-12),
+                # Rule 4's prediction ("python", "tree", "none") and the
+                # ward extra's legs (null: every massless vector leg).
+                "catani": row.get("catani", "python"),
+                "ward_legs": row.get("ward_legs"),
                 "listed_outliers": row.get("reference_outliers", []),
                 "listed_out_of_scope": row.get("binary64_out_of_scope", []),
                 "status": status,
@@ -398,6 +402,8 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
     }
     if findings is not None:
         data["findings"] = findings["findings"]
+        # What the campaign covers short of the plan, stated (curated).
+        data["coverage_notes"] = findings.get("coverage_notes", [])
     return data
 
 
