@@ -203,6 +203,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -310,6 +311,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -656,6 +658,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -939,6 +942,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -1015,6 +1019,7 @@
       ]
      },
      "status": "fail",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -1218,6 +1223,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -1347,6 +1353,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -1851,6 +1858,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -1974,6 +1982,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -2101,6 +2110,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -2636,6 +2646,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -2718,6 +2729,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -2765,6 +2777,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -2873,6 +2886,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -3174,6 +3188,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -3527,6 +3542,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -3767,6 +3783,7 @@
       ]
      },
      "status": "not-run",
+     "waits_for": null,
      "tiers": {}
     }
    ],
@@ -4556,6 +4573,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -4682,6 +4700,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -4805,6 +4824,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -4926,6 +4946,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -5079,6 +5100,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -5547,7 +5569,23 @@
      "failed_checks": []
     }
    },
-   "variants": [],
+   "variants": [
+    {
+     "id": "D17@5F",
+     "gating": true,
+     "notes": "PLAN \u00a73.0 MQ-5F: the row's request on the restricted UFO (no_b_mass), against the row's reference (so equal to its default-restriction MB = ymb = 0 route under \u00a71.4)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/bbx_wpwm.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "status": "pending",
+     "waits_for": "MQ-5F",
+     "tiers": {}
+    }
+   ],
    "max_dd_vs_reference": 4.646110763363323e-14,
    "max_binary64_vs_dd": 6.586717720765177e-13,
    "max_catani_dd": 5.658664394906378e-29,
@@ -6084,6 +6122,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -6554,6 +6593,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -6657,7 +6697,23 @@
      "failed_checks": []
     }
    },
-   "variants": [],
+   "variants": [
+    {
+     "id": "F01@5F",
+     "gating": true,
+     "notes": "PLAN \u00a73.0 MQ-5F: the row's request on the restricted UFO (no_b_mass), against the row's reference (so equal to its default-restriction MB = ymb = 0 route under \u00a71.4)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/ub_dt.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "status": "pending",
+     "waits_for": "MQ-5F",
+     "tiers": {}
+    }
+   ],
    "max_dd_vs_reference": 1.2029343796721553e-15,
    "max_binary64_vs_dd": 8.662685855278131e-16,
    "max_catani_dd": 1.3451211945685911e-31,
@@ -6720,7 +6776,23 @@
      "failed_checks": []
     }
    },
-   "variants": [],
+   "variants": [
+    {
+     "id": "F02@5F",
+     "gating": true,
+     "notes": "PLAN \u00a73.0 MQ-5F: the row's request on the restricted UFO (no_b_mass), against the row's reference (so equal to its default-restriction MB = ymb = 0 route under \u00a71.4)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/bu_dt.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "status": "pending",
+     "waits_for": "MQ-5F",
+     "tiers": {}
+    }
+   ],
    "max_dd_vs_reference": 1.217858757758286e-15,
    "max_binary64_vs_dd": 1.8362994417422163e-15,
    "max_catani_dd": 1.073145756158666e-31,
@@ -6822,7 +6894,23 @@
      "failed_checks": []
     }
    },
-   "variants": [],
+   "variants": [
+    {
+     "id": "F04@5F",
+     "gating": true,
+     "notes": "PLAN \u00a73.0 MQ-5F: the row's request on the restricted UFO (no_b_mass), against the row's reference (so equal to its default-restriction MB = ymb = 0 route under \u00a71.4)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/gb_twm.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "status": "pending",
+     "waits_for": "MQ-5F",
+     "tiers": {}
+    }
+   ],
    "max_dd_vs_reference": 6.219207281265026e-16,
    "max_binary64_vs_dd": 3.213803754140161e-15,
    "max_catani_dd": 3.3988633003743326e-30,
@@ -7142,6 +7230,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [
@@ -7189,6 +7278,7 @@
       ]
      },
      "status": "pass",
+     "waits_for": null,
      "tiers": {
       "nightly": {
        "points": [

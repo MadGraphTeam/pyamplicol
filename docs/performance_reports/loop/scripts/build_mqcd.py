@@ -135,18 +135,22 @@ def build(results: list[Path], meta: dict[str, str], findings=None) -> dict:
         for variant in row.get("variants", ()):
             name = f"{row['id']}@{variant['name']}"
             tiers = _tiers(records, name)
+            pending = variant.get("status") == "pending"
             variants.append(
                 {
                     "id": name,
                     "gating": variant.get("gating", True),
                     "notes": variant.get("notes"),
                     "reference": variant.get("reference"),
-                    "status": _status(False, tiers, []),
+                    "status": _status(pending, tiers, []),
+                    "waits_for": (variant.get("pending") or {}).get("waits_for"),
                     "tiers": tiers,
                 }
             )
         tiers = _tiers(records, row["id"])
-        gating = [v for v in variants if v["gating"]]
+        # A pending variant (waiting for its package) is reported, and does
+        # not hold its row's status.
+        gating = [v for v in variants if v["gating"] and v["status"] != "pending"]
         status = _status(row["status"] == "pending", tiers, gating)
         every = [*tiers.values(), *(t for v in gating for t in v["tiers"].values())]
         rows.append(
@@ -268,7 +272,10 @@ def markdown(data: dict) -> str:
         if row["status"] == "pending":
             note = f"waits for {row['waits_for']}"
         variants = "".join(
-            f" +{v['id'].split('@', 1)[1]}" for v in row["variants"] if v["gating"]
+            f" +{v['id'].split('@', 1)[1]}"
+            + (f" (waits for {v['waits_for']})" if v["status"] == "pending" else "")
+            for v in row["variants"]
+            if v["gating"]
         )
         ids = []
         for name in [row["id"]] + [v["id"] for v in row["variants"]]:

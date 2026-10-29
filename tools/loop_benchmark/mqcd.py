@@ -2405,10 +2405,14 @@ class Campaign:
             if not row.active:
                 raise ValueError(f"{name} is pending: {row.pending}")
             base = None
+            # A variant shares its base row's generation unless it is a
+            # subprocess of it (M01) or runs on another restriction (the
+            # restricted-UFO variants of the 5F* rows).
             if (
                 row.base is not None
                 and self.rows[row.base].active
                 and not row.subprocess
+                and row.restriction == self.rows[row.base].restriction
             ):
                 base = self.run(row.base)
             self._runs[name] = RowRun(

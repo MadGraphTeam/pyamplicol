@@ -1112,9 +1112,17 @@ WARD_OUT_OF_SCOPE = {
         {"point": 0, "leg": 5, "factor": [0, 1], "E": 3.54e-08, "true_error": 3.26e-09},
     ]
 }
+# True once MQ-5F is on the slice: its rows and variants turn active
+# (MQ-5F's own records of them: workspace/reports/engine-v2/mq-5f/records/).
+MQ5F_LANDED = False
 # Rows the tools route refuses at generation (MQ-5F: a Dirac current closing
 # on a Weyl current), from the campaign's runs on MQ-REF's references.
-REFUSED_5F = {"C09", "F03", "H02", "H03"}
+REFUSED_5F = set() if MQ5F_LANDED else {"C09", "F03", "H02", "H03"}
+# PLAN §3.0 MQ-5F: the rows the campaign runs on the default restriction
+# with MB = ymb = 0 (code 5F*) also run on the restricted UFO (no_b_mass), the
+# same request and reference (variant ``<id>@5F``, its own generation); the
+# tools route refuses that request at generation until MQ-5F lands.
+RESTRICTED_5F = ("D17", "F01", "F02", "F04")
 # PLAN §4.1: the H rows replace a second provider with an exact relation.
 # QCD corrections preserve flavour, so a single-W-line process equals its
 # diagonal twin (same masses) times |V_num|^2 / |V_den|^2, per sector and
@@ -1619,6 +1627,33 @@ for r in R:
         }
     if r["notes"]:
         entry["notes"] = r["notes"]
+    if r["id"] in RESTRICTED_5F and reference:
+        variants.append(
+            {
+                "name": "5F",
+                "gating": True,
+                "tier": "nightly",
+                "restriction": "no_b_mass",
+                "restriction_code": "5F",
+                "fixed_parameters": dict(ZERO_WIDTHS),
+                "notes": "PLAN §3.0 MQ-5F: the row's request on the restricted UFO (no_b_mass), against the row's reference (so equal to its default-restriction MB = ymb = 0 route under §1.4)",
+                "extras": [],
+                "extras_pending": {},
+                "reference": reference,
+                "points": {"nightly": sorted({i for t in points.values() for i in t})},
+                **(
+                    {}
+                    if MQ5F_LANDED
+                    else {
+                        "status": "pending",
+                        "pending": {
+                            "waits_for": "MQ-5F",
+                            "reason": "the tools route refuses the restricted-UFO request at generation (a Dirac current closing on a Weyl current: the MQ-5F class)",
+                        },
+                    }
+                ),
+            }
+        )
     if variants:
         entry["variants"] = variants
     hel_fixture = helicity_fixture(r["id"])
@@ -1727,7 +1762,9 @@ def nightly_groups(rows):
         ids += [
             f"{r['id']}@{v['name']}"
             for v in r.get("variants", ())
-            if v.get("gating", True) and v["points"].get("nightly")
+            if v.get("gating", True)
+            and v.get("status", "active") == "active"
+            and v["points"].get("nightly")
         ]
         if ids:
             groups.append((sum(id_seconds(r, i) for i in ids), ids))
