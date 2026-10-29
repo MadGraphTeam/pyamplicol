@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: 0BSD
-"""NJet references for the all-gluon ladder g g -> (n-2) g, n = 4..7.
+"""NJet references for the all-gluon ladder g g -> (n-2) g, n = 4..7, and
+(BLHA mode, ``--process``) for NJet's other massless QCD channels.
 
 Subcommands
 -----------
@@ -8,7 +9,14 @@ Subcommands
                (pyAmpliCol's generator and order) or the points of a
                ``tests/fixtures/loop/required`` fixture.
 ``run``        evaluate NJet (``njet_driver.cpp``) at a points JSON, one pinned
-               CPU, and write a result JSON with provenance.
+               CPU, and write a result JSON with provenance. ``--nc N`` sets
+               NJet's N_c (MQ-NC's oracle): direct mode keeps the N_c = 3
+               colour average of its normalisation; blha mode (``Extra NJetNc
+               N`` in the order file) has NJet's average at N_c, which the
+               result corrects to the N_c = 3 one (``colour_average``).
+``nc-entry``   one process entry of the N_c-scan fixture
+               (``tests/fixtures/loop/nc/njet_nc_scan.json``) from ``run``
+               results at several N_c.
 ``openloops``  the matching OpenLoops 2 values (``../openloops_driver.cpp``)
                with the top quark in the loops (``nf=6``, as the fixtures) or
                without it (``nf=5``, massless five-flavour QCD as NJet).
@@ -238,10 +246,50 @@ def build_driver(build, out_dir):
     return binary, version
 
 
-def sign_contract(build, run_dir, legs, amp, options):
-    """Order file -> contract signed by the build's own njet.py."""
+def blha_process(text, legs):
+    """(initial PDG codes, final PDG codes) of a BLHA process line
+    ``"2 -2 -> 21 21 21"``; ``None`` is the all-gluon channel of ``legs``."""
+
+    if text is None:
+        return [21, 21], [21] * (legs - 2)
+    initial, arrow, final = text.partition("->")
+    if not arrow:
+        raise SystemExit(f"--process must read 'a b -> c d ...', got {text!r}")
+    initial, final = [int(x) for x in initial.split()], [int(x) for x in final.split()]
+    if len(initial) != 2 or len(initial) + len(final) != legs:
+        raise SystemExit(f"--process {text!r} does not have the points' {legs} legs")
+    return initial, final
+
+
+def colour_states(pdg, nc):
+    """NJet's colour states of a leg at N_c = ``nc`` (njet.py
+    ``Process.get_colour_dof``): N_c for a quark, N_c^2 - 1 for the gluon, 1
+    for a colour singlet."""
+
+    if pdg == 21:
+        return nc * nc - 1
+    return nc if 1 <= abs(pdg) <= 6 else 1
+
+
+def colour_average(initial, nc):
+    """NJet's initial-state colour average at N_c = ``nc`` (njet.py
+    ``Process.get_process``: the product of the incoming legs' states)."""
+
+    out = Fraction(1)
+    for pdg in initial:
+        out *= colour_states(pdg, nc)
+    return out
+
+
+def sign_contract(build, run_dir, legs, amp, options, process=None):
+    """Order file -> contract signed by the build's own njet.py.
+
+    ``process`` is the BLHA line (``blha_process``); with ``options["nc"]``
+    the order file sets NJet's global ``NJetNc``, which changes the colour
+    sums and NJet's initial colour average (``colour_average``)."""
     prefix, _, _ = njet_install(build)
     amplitude = {"standard": "loop", "ds": "loopds"}[amp]
+    initial, final = blha_process(process, legs)
     lines = [
         "CorrectionType QCD",
         "IRregularisation CDR",
@@ -250,8 +298,9 @@ def sign_contract(build, run_dir, legs, amp, options):
         "Extra NJetReturnAccuracy 2",
         f"Extra NJetMultiPrec {options['multiprec']}",
         f"Extra Precision {options['precision']}",
+        f"Extra NJetNc {options.get('nc', '3')}",
         f"SetParameter qcd(Nf) {options['nf']}",
-        "21 21 -> " + " ".join(["21"] * (legs - 2)),
+        " ".join(map(str, initial)) + " -> " + " ".join(map(str, final)),
     ]
     order = run_dir / "OLE_order.lh"
     order.write_text("\n".join(lines) + "\n")
@@ -273,6 +322,23 @@ def sign_contract(build, run_dir, legs, amp, options):
     if "Error" in text or "| 1 1 #" not in text:
         raise SystemExit(f"njet.py did not accept the order file:\n{text}")
     return contract
+
+
+def corrected_row(row, factor):
+    """``row`` with its values times ``factor`` (32 digits) and the raw NJet
+    values under ``"njet"``."""
+
+    if factor == 1:
+        return row
+    from decimal import Decimal, localcontext
+
+    out = dict(row, njet={key: row[key] for key in COEFFICIENTS})
+    with localcontext() as context:
+        context.prec = 32
+        scale = Decimal(factor.numerator) / Decimal(factor.denominator)
+        for key in COEFFICIENTS:
+            out[key] = str(Decimal(row[key]) * scale)
+    return out
 
 
 def command_run(args):
@@ -304,7 +370,7 @@ def command_run(args):
         ),
         "alphas": args.alphas,
         "nf": args.nf,
-        "nc": "3",
+        "nc": args.nc,
         "scheme": args.scheme,
         "renorm": args.renorm,
     }
@@ -314,23 +380,46 @@ def command_run(args):
         f"points={run_dir / 'points.txt'}",
         f"alphas={args.alphas}",
     ]
+    correction = None
     if args.mode == "blha":
-        options.update(multiprec=args.multiprec, precision=args.precision)
+        options.update(
+            multiprec=args.multiprec, precision=args.precision, process=args.process
+        )
         for key in ("prec", "scaling", "scheme", "renorm"):
             options.pop(key)
         if args.scheme != "cdr" or args.renorm != "1":
             raise SystemExit("blha mode uses the contract's CDR and renormalisation")
-        command.append(
-            f"contract={sign_contract(args.njet_build, run_dir, legs, args.amp, options)}"
+        contract = sign_contract(
+            args.njet_build, run_dir, legs, args.amp, options, args.process
         )
+        command.append(f"contract={contract}")
+        # NJetNc also changes NJet's initial colour average; the values are
+        # brought to the N_c = 3 average (pyAmpliCol's N_c scan keeps the
+        # request's, tests/unit/loop_nc_scan.py): times avg(N_c) / avg(3).
+        initial, _ = blha_process(args.process, legs)
+        nc = Fraction(args.nc)
+        factor = colour_average(initial, nc) / colour_average(initial, Fraction(3))
+        correction = {
+            "nc": args.nc,
+            "njet_average": str(colour_average(initial, nc)),
+            "reference_average": str(colour_average(initial, Fraction(3))),
+            "factor": str(factor),
+            "note": "NJet's BLHA output divides by its initial colour average at "
+            "N_c (njet.py get_colour_dof); born/double_pole/single_pole/finite are "
+            "multiplied by factor = avg(N_c)/avg(3) (the N_c = 3 average); the raw "
+            "NJet values are under 'njet'",
+        }
+        options["colour_average"] = correction
     else:
+        if args.process is not None:
+            raise SystemExit("direct mode evaluates the all-gluon channels only")
         command += [
             f"legs={legs}",
             f"amp={args.amp}",
             f"prec={args.prec}",
             f"scaling={args.scaling}",
             f"nf={args.nf}",
-            "nc=3",
+            f"nc={args.nc}",
             f"scheme={args.scheme}",
             f"renorm={args.renorm}",
         ]
@@ -350,6 +439,8 @@ def command_run(args):
                 init = row["initialisation_seconds"]
             elif "index" in row:
                 row["index"] = indices[row["index"]]
+                if correction is not None:
+                    row = corrected_row(row, Fraction(correction["factor"]))
                 rows.append(row)
                 print(
                     json.dumps({k: row[k] for k in ("index", "seconds", "finite")}),
@@ -569,6 +660,70 @@ def command_openloops(args):
     print(args.output)
 
 
+# ------------------------------------------------------------- N_c fixture
+
+
+def command_nc_entry(args):
+    """One process entry of an N_c-scan fixture (tests/fixtures/loop/nc/
+    njet_nc_scan.json) from ``run`` results at several N_c: the points, the
+    provider options and per N_c its rows (values at the N_c = 3 colour
+    average; blha mode's raw values and average correction kept)."""
+
+    results = {}
+    for item in args.result:
+        nc, _, path = item.partition("=")
+        results[nc] = json.loads(Path(path).read_text())
+    first = next(iter(results.values()))
+    options = {
+        k: v for k, v in first["options"].items() if k not in ("nc", "colour_average")
+    }
+    for nc, data in results.items():
+        other = {
+            k: v
+            for k, v in data["options"].items()
+            if k not in ("nc", "colour_average")
+        }
+        if (
+            other != options
+            or data["points"] != first["points"]
+            or data["options"]["nc"] != nc
+        ):
+            raise SystemExit(f"result at N_c = {nc} differs in options or points")
+    build = Path(first["njet_build"])
+    entry = {
+        "process": args.process,
+        "born_orders": json.loads(args.born_orders),
+        "points_source": f"{first['points_source']}; indices {first['indices']}",
+        "points": first["points"],
+        "mu_r": first["mu_r"],
+        "provider": {
+            "tool": first["tool"],
+            "build": f"workspace/builds/{build.name}",
+            "options": options,
+            "driver_source_sha256": first["driver"]["source_sha256"],
+            "host": first["host"],
+            "cpu_model": first["cpu_model"],
+        },
+    }
+    if options["mode"] == "blha":
+        entry["colour_average"] = {
+            nc: {
+                k: data["options"]["colour_average"][k]
+                for k in ("njet_average", "reference_average", "factor")
+            }
+            for nc, data in results.items()
+        }
+    keep = ("index", *COEFFICIENTS, "errors", "relative_accuracy", "njet")
+    entry["nc"] = {
+        nc: [{k: row[k] for k in keep if k in row} for row in data["rows"]]
+        for nc, data in results.items()
+    }
+    fixture = json.loads(Path(args.fixture).read_text())
+    fixture["processes"][args.name] = entry
+    Path(args.fixture).write_text(json.dumps(fixture, indent=1) + "\n")
+    print(args.fixture, args.name)
+
+
 # ------------------------------------------------------------------ compare
 
 
@@ -782,6 +937,18 @@ def main():
     r.add_argument("--scheme", choices=("cdr", "fdh", "none"), default="cdr")
     r.add_argument("--renorm", choices=("0", "1"), default="1")
     r.add_argument("--nf", default="5")
+    r.add_argument(
+        "--nc",
+        default="3",
+        help="NJet's N_c (NJetNc; MQ-NC's N_c-scan oracle); direct mode's "
+        "normalisation keeps the N_c = 3 colour average, blha mode's values are "
+        "corrected to it (avg(N_c)/avg(3))",
+    )
+    r.add_argument(
+        "--process",
+        help="blha: the BLHA process line, e.g. '2 -2 -> 21 21 21' in the points' "
+        "leg order (default: the all-gluon channel)",
+    )
     r.add_argument("--alphas", default="0.118")
     r.add_argument("--multiprec", default="0", help="blha: NJetMultiPrec")
     r.add_argument("--precision", default="1e-5", help="blha: rescue threshold")
@@ -824,6 +991,16 @@ def main():
     k.add_argument("--entry", action="append", required=True)
     k.add_argument("--alphas", default="0.118")
     k.add_argument("--output", required=True)
+    e = sub.add_parser("nc-entry")
+    e.add_argument("--fixture", required=True, help="N_c-scan fixture to update")
+    e.add_argument("--name", required=True, help="process key in the fixture")
+    e.add_argument(
+        "--process", required=True, help="pyAmpliCol process, e.g. 'u u~ > g g g'"
+    )
+    e.add_argument(
+        "--born-orders", required=True, help='JSON, e.g. {"QCD": 3, "QED": 0}'
+    )
+    e.add_argument("--result", action="append", required=True, help="N=run result JSON")
     t = sub.add_parser("timing")
     t.add_argument("results", nargs="+")
     args = parser.parse_args()
@@ -836,6 +1013,7 @@ def main():
         "add-top": command_add_top,
         "catani": command_catani,
         "timing": command_timing,
+        "nc-entry": command_nc_entry,
     }[args.command](args)
 
 
