@@ -36,10 +36,19 @@ The rules (PLAN §1.4; no tolerance is widened):
 6. (``ap``) arbitrary precision at 40 digits against double-double within
    max(1e-24, 10 E_DD), and against 60 digits within 1e-35;
 7. (``nc``) LC/NLC projections: MQ-NC's test ids of the row (manifest
-   ``nc_column``: the formal projection against the N_c scan within 1e-24 in
-   double-double, then the row's independent N_c oracles), run by MQ-NC's
+   ``delegated.nc``: the formal projection against the N_c scan within 1e-24
+   in double-double, then the row's independent N_c oracles), run by MQ-NC's
    test files, not repeated here; ``build_mqcd.py --junit`` reads their
    outcomes. Until MQ-NC lands the extra is pending (``extras_pending``).
+
+A row's ``delegated`` columns name other packages' pytest ids that hold part
+of it (``nc``; M01's ``bitwise``: MQ-MODEL's test that each subprocess of the
+public route's multiparticle artifact is bitwise its own single-process
+generation). A ``composite`` row (M01) has no evaluation of its own: its
+gating variants (each subprocess's single-process generation, and on the
+public route the multiparticle artifact's subprocess, ``route: public``,
+against MadLoop's P references), its expansion check and its delegated
+columns make it up.
 
 (``ward``) O10 on the native input path (``loops.v2.ward``): at the row's
 first point every external massless vector leg (or the manifest's
@@ -112,7 +121,13 @@ AP_DIGITS = (40, 60)
 CHECK_ROTATION = ("z", "3/5", "4/5")
 
 TIERS = ("default", "nightly")
-STATUSES = ("active", "pending")
+# ``composite``: a row made of its gating variants, checks and delegated
+# columns, without an evaluation of its own (M01).
+STATUSES = ("active", "pending", "composite")
+# The routes a row's generation takes: the tools route (``LoopSlice``, the
+# native executor) or the public route (``Generator`` / ``Runtime`` on the
+# shipped loop_sm; M01's multiparticle artifact).
+ROUTES = ("tools", "public")
 # The packages a pending row or extra may wait for (PLAN §3.0).
 UNBLOCKERS = (
     "MQ-REF",
@@ -226,8 +241,10 @@ class Row:
     # Rule 1's relative tolerance (``REFERENCE_TOLERANCE`` at 2->2 and 2->3,
     # ``REFERENCE_TOLERANCE_HIGH`` from 2->4 up; the manifest states it).
     reference_tolerance: float = REFERENCE_TOLERANCE
-    # Rule 7 (the ``nc`` extra): MQ-NC's pytest node ids for this row.
-    nc_column: tuple[str, ...] = ()
+    # Other packages' pytest node ids per column (rule 7's ``nc``: MQ-NC's;
+    # M01's ``bitwise``: MQ-MODEL's).
+    delegated: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
+    route: str = "tools"
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Row:
@@ -285,12 +302,18 @@ class Row:
             reference_tolerance=float(
                 data.get("reference_tolerance", REFERENCE_TOLERANCE)
             ),
-            nc_column=tuple(data.get("nc_column", ())),
+            delegated={k: tuple(v) for k, v in (data.get("delegated") or {}).items()},
+            route=data.get("route", "tools"),
         )
 
     @property
     def active(self) -> bool:
         return self.status == "active"
+
+    @property
+    def nc_column(self) -> tuple[str, ...]:
+        """Rule 7's column: MQ-NC's test ids of the row."""
+        return self.delegated.get("nc", ())
 
     def tier_points(self, tier: str) -> tuple[int, ...]:
         """The reference point indices this row runs in ``tier`` (a default
@@ -316,8 +339,8 @@ def rows(manifest: Mapping[str, Any] | None = None) -> dict[str, Row]:
                 "pending": None,
                 "status": "active",
                 "variants": [],
-                # Rule 7's column is the base row's (MQ-NC's ids name it).
-                "nc_column": [],
+                # Delegated columns are the base row's (their ids name it).
+                "delegated": {},
                 **variant,
                 "id": f"{data['id']}@{variant['name']}",
                 "base": data["id"],
@@ -1053,6 +1076,160 @@ class RowRun:
             if abs(int(record["color"])) == 3 and int(record["spin"]) == 2:
                 count += 1
         return count
+
+
+# ---------------------------------------------------------- the public route
+
+
+def public_card(row: Row, output: Path) -> str:
+    """The public route's generation card of ``row``: the shipped loop_sm
+    (``model.source = "loop_sm"``, no ``[loop.model]``, the default full
+    colour), the row's restriction and fixed parameters, its corrections,
+    the model's R2 and the minimal Born orders (PLAN §4.2 M01)."""
+
+    if row.particle_veto or row.gauge != "unitary":
+        raise ValueError(f"{row.id}: the public-route card states no veto or gauge")
+    fixed = ", ".join(f"{k} = {json.dumps(v)}" for k, v in row.fixed_parameters.items())
+    return f"""action = "generate"
+[model]
+source = "loop_sm"
+restriction = {json.dumps(row.restriction)}
+[process]
+entries = [{{expression = {json.dumps(row.process)}, name = {json.dumps(row.id)}}}]
+loop_coupling_orders = {json.dumps(list(row.corrections))}
+coupling_order_policy = "minimal"
+[loop]
+r2_strategy = "model"
+engine = "v2"
+[loop.preparation]
+fixed_parameters = {{{fixed}}}
+[generation]
+output = {json.dumps(str(output))}
+emit_api_bundle = false
+[generation.validation]
+post_build_validation = false
+"""
+
+
+def generate_public(row: Row, work: Path) -> tuple[Path, float]:
+    """``row``'s public-route artifact (``Generator``) and its seconds."""
+
+    from pyamplicol.api import Generator, ProcessRequest, ProcessSet
+    from pyamplicol.config import resolve_config
+
+    work.mkdir(parents=True, exist_ok=True)
+    output = work / "artifact"
+    card = work / "card.toml"
+    card.write_text(public_card(row, output))
+    start = time.perf_counter()
+    LOG.info("%s: generating %s on the public route", row.id, row.process)
+    Generator(resolve_config(card)).generate(
+        ProcessSet((ProcessRequest.parse(row.process, name=row.id),)), output
+    )
+    seconds = time.perf_counter() - start
+    LOG.info("%s: generated in %.1f s", row.id, seconds)
+    return output, seconds
+
+
+def public_evaluated(result: Any, k: int, carrier: str, seconds: float) -> Evaluated:
+    """``Evaluated`` of point ``k`` of a public ``VirtualEvaluation``. Its
+    stability estimate is relative per coefficient for the whole point, so
+    it becomes absolute per sector only for a single loop sector."""
+
+    born = {
+        sector_key(order): _number(value)
+        for order, value in zip(result.born_orders, result.born_values[k], strict=True)
+    }
+    virtual = {
+        sector_key(sector.order): tuple(
+            _number(getattr(laurent, name)) for name in LAURENT
+        )
+        for sector, laurent in zip(result.sectors, result.values[k], strict=True)
+    }
+    estimate = None
+    found = result.stability[k] if result.stability is not None else None
+    if found is not None:
+        if len(virtual) != 1:
+            raise ValueError("a public-route estimate per sector needs one sector")
+        ((sector, values),) = virtual.items()
+        largest = max(abs(float(v)) for v in values)
+        estimate = {
+            sector: tuple(
+                rel * abs(float(v)) if math.isfinite(rel) else found.relative * largest
+                for rel, v in zip(
+                    (found.finite, found.single_pole, found.double_pole),
+                    values,
+                    strict=True,
+                )
+            )
+        }
+    return Evaluated(carrier, born, virtual, None, estimate, seconds)
+
+
+class PublicRun:
+    """A subprocess variant on the public route (``route: public``; PLAN
+    §4.2 M01): its base row's request generated once by ``Generator`` on the
+    shipped loop_sm (a multiparticle label: one artifact of every
+    subprocess), the variant's process loaded from it by expression and
+    evaluated through ``Runtime`` at the variant's reference points with the
+    O1 checks (one exact rotation and the reduction direction). The public
+    route takes the model card's parameter values, which must be the
+    reference's."""
+
+    def __init__(self, row: Row, artifact: Path, generate_seconds: float, model):
+        from pyamplicol import Runtime
+
+        self.row = row
+        self.reference = load_reference(row)
+        self.failures: dict[tuple[int, str], str] = {}
+        self.generate_seconds, self.export_seconds = generate_seconds, 0.0
+        values = {record.name: record.value for record in model.ir.parameters}
+        for name, value in self.reference.parameters.items():
+            ours = values[name][0] if isinstance(values[name], tuple) else values[name]
+            if Decimal(str(ours)) != Decimal(value):
+                raise ValueError(
+                    f"{row.id}: the model card's {name} = {ours} is not the "
+                    f"reference's {value} (the public route takes the card)"
+                )
+        self.runtime = Runtime.load(artifact, process=row.process)
+
+    def evaluate(
+        self,
+        indices: Sequence[int],
+        carrier: str,
+        *,
+        poles: str = "all",
+        stability: bool = True,
+    ) -> list[Evaluated]:
+        from pyamplicol.api.virtual_results import VirtualStabilityChecks
+
+        if carrier not in ("double", "double-double"):
+            raise ValueError(f"{self.row.id}: no {carrier} on the public route here")
+        reference = self.reference
+        start = time.perf_counter()
+        LOG.info("%s: %s at points %s (public)", self.row.id, carrier, list(indices))
+        result = self.runtime.evaluate(
+            [reference.points[i] for i in indices],
+            mu_r2=[reference.scales[i] for i in indices],
+            arithmetic=carrier,
+            poles=poles,
+            stability_checks=VirtualStabilityChecks((check_rotation(),), True)
+            if stability
+            else None,
+            on_failure="return",
+        )
+        seconds = (time.perf_counter() - start) / max(1, len(indices))
+        out = []
+        for k, index in enumerate(indices):
+            if not result.valid[k]:
+                diagnostic = result.diagnostics[k]
+                self.failures[index, carrier] = (
+                    f"{diagnostic.status}: {diagnostic.detail}"
+                )
+                out.append(None)
+                continue
+            out.append(public_evaluated(result, k, carrier, seconds))
+        return out
 
 
 # --------------------------------------------------------------- the rules
@@ -2329,10 +2506,15 @@ def run_row(
                     info[check.coefficient] = max(worst, check.error)
         checks += rule2_and_3(row, reference, index, b, d)
         if row.catani == "none":
+            route = (
+                "the public route (the tools-route variant holds rule 4)"
+                if row.route == "public"
+                else "the native-input route (WP3.1 I5c)"
+            )
             checks.append(Check(
                 "4", index, "double-double", "", "poles", "", "", 0.0, 0.0, True,
-                asserted=False, note="no Catani prediction on the native-input "
-                "route (WP3.1 I5c); the poles are held by rule 1"))  # fmt: skip
+                asserted=False, note=f"no Catani prediction on {route}; the "
+                "poles are held by rule 1"))  # fmt: skip
         else:
             checks += rule4(row, index, d, reference.alpha_s)
             checks += rule4(row, index, b, reference.alpha_s)
@@ -2402,7 +2584,9 @@ class Campaign:
         self.ufo, self.native, self.work = Path(ufo), native, Path(work)
         self.rows = rows(manifest)
         self._models: dict[str, Any] = {}
-        self._runs: dict[str, RowRun] = {}
+        self._runs: dict[str, RowRun | PublicRun] = {}
+        # base row -> its public-route artifact and generation seconds
+        self._public: dict[str, tuple[Path, float]] = {}
 
     def model(self, restriction: str) -> Any:
         if restriction not in self._models:
@@ -2411,11 +2595,26 @@ class Campaign:
             )
         return self._models[restriction]
 
-    def run(self, name: str) -> RowRun:
+    def run(self, name: str) -> RowRun | PublicRun:
         if name not in self._runs:
             row = self.rows[name]
             if not row.active:
-                raise ValueError(f"{name} is pending: {row.pending}")
+                raise ValueError(f"{name} is {row.status}: {row.pending}")
+            if row.route == "public":
+                # One artifact per base row, its seconds on the first variant.
+                first = row.base not in self._public
+                if first:
+                    self._public[row.base] = generate_public(
+                        self.rows[row.base], self.work / f"public-{row.base}"
+                    )
+                artifact, seconds = self._public[row.base]
+                self._runs[name] = PublicRun(
+                    row,
+                    artifact,
+                    seconds if first else 0.0,
+                    self.model(row.restriction),
+                )
+                return self._runs[name]
             base = None
             # A variant shares its base row's generation unless it is a
             # subprocess of it (M01) or runs on another restriction (the
@@ -2556,12 +2755,18 @@ def write_result(report: RowReport, directory: str | os.PathLike | None = None) 
 
 def delegated_ids(manifest: Mapping[str, Any] | None = None) -> list[str]:
     """The pytest node ids of the delegated columns, once each in manifest
-    order: every row's rule 7 column (``nc_column``, MQ-NC's ids), then the
-    LC/NLC smoke on every shipped restriction when it names its test. Run
-    them with ``--junitxml`` for ``build_mqcd.py --junit``."""
+    order: every row's columns (``delegated``: rule 7's MQ-NC ids, M01's
+    MQ-MODEL id), then the LC/NLC smoke on every shipped restriction when it
+    names its test. Run them with ``--junitxml`` for ``build_mqcd.py
+    --junit``."""
 
     manifest = manifest or load_manifest()
-    ids = [node for row in rows(manifest).values() for node in row.nc_column]
+    ids = [
+        node
+        for row in rows(manifest).values()
+        for column in row.delegated.values()
+        for node in column
+    ]
     smoke = manifest.get("smokes", {}).get("lc_every_restriction")
     if isinstance(smoke, Mapping):
         ids.append(smoke["test"])
@@ -2573,7 +2778,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser(
         "delegated-ids",
-        help="print the delegated columns' pytest ids (rule 7: MQ-NC's)",
+        help="print the delegated columns' pytest ids (MQ-NC's, MQ-MODEL's)",
     )
     run = sub.add_parser("run", help="run campaign rows outside pytest")
     run.add_argument("rows", nargs="+")

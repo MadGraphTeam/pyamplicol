@@ -21,10 +21,11 @@ Inputs:
                                            nightly smokes and the M01 expansion
 - JUNIT.xml (optional)                     pytest --junitxml of the test
                                            files that hold a row's delegated
-                                           column: rule 7 (``nc``) is MQ-NC's
-                                           test ids (manifest ``nc_column``),
+                                           columns (manifest ``delegated``:
+                                           rule 7's ``nc``, MQ-NC's ids;
+                                           M01's ``bitwise``, MQ-MODEL's) and
                                            the LC/NLC smoke on every shipped
-                                           restriction its test (manifest
+                                           restriction (manifest
                                            ``smokes.lc_every_restriction``)
 - data/mqcd-findings.json (optional)       the triage of the failing checks:
                                            per finding the rows and checks it
@@ -41,11 +42,14 @@ provider, binary64 against double-double, the poles against Catani in both
 carriers, binary64 against the provider (information), the ``ward`` extra's
 worst ratios, the points without a provider reference (MQ-REF's per-point
 record), the out-of-scope binary64 coefficients, timings), its variants'
-records, the ``nc`` column (per MQ-NC test id its outcome: passed,
-failed, skipped or null when absent) and a status: ``pass``
-(every run tier, gating variant and the nc column passed), ``fail`` (a check
-or an nc test failed: a finding), ``pending`` (the manifest's waiting
-package) or ``not-run`` (active, a record or an nc test missing). Later
+records, the delegated columns (``delegated``, rule 7's as ``nc``: per
+test id its outcome, passed, failed, skipped or null when absent) and a
+status: ``pass`` (every run tier, gating variant and delegated column
+passed, and a composite row's expansion check), ``fail`` (a check or a
+delegated test failed: a finding), ``pending`` (the manifest's waiting
+package) or ``not-run`` (active, a record or a delegated test missing). A
+composite row (M01) has no tier of its own: its gating variants, its
+``expansion:<id>`` record and its delegated columns make it up. Later
 directories override earlier ones per (row, tier). Nothing is estimated: a
 value without a record stays null. The
 per-class matrix of the report (PLAN §5.2) is the ``classes`` section;
@@ -230,9 +234,28 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
         # A pending variant (waiting for its package) is reported, and does
         # not hold its row's status.
         gating = [v for v in variants if v["gating"] and v["status"] != "pending"]
-        nc = column(row["nc_column"], outcomes) if row.get("nc_column") else None
+        delegated = {
+            name: column(ids, outcomes)
+            for name, ids in (row.get("delegated") or {}).items()
+        }
+        if row["status"] == "composite":
+            # Its expansion check is one of its parts.
+            expansion = records.get((f"expansion:{row['id']}", "nightly"))
+            gating.append(
+                {
+                    "tiers": {},
+                    "status": "not-run"
+                    if expansion is None
+                    else "pass"
+                    if expansion["passed"]
+                    else "fail",
+                }
+            )
         status = _status(
-            row["status"] == "pending", tiers, gating, [nc["status"]] if nc else []
+            row["status"] == "pending",
+            tiers,
+            gating,
+            [c["status"] for c in delegated.values()],
         )
         every = [*tiers.values(), *(t for v in gating for t in v["tiers"].values())]
         rows.append(
@@ -255,7 +278,8 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
                 "status": status,
                 "tiers": tiers,
                 "variants": variants,
-                "nc": nc,
+                "nc": delegated.get("nc"),
+                "delegated": delegated,
                 "max_dd_vs_reference": _maximum(
                     t["max_dd_vs_reference"] for t in every
                 ),
@@ -360,11 +384,11 @@ def markdown(data: dict) -> str:
                         text += f" {check['error']:.2g}>{check['bound']:.2g}"
                     if text not in fails:
                         fails.append(text)
-        nc = row.get("nc")
-        if nc:
+        for name, found in row.get("delegated", {}).items():
+            label = "r7" if name == "nc" else name
             fails += [
-                f"r7 {node.split('::')[-1]} {outcome or 'absent'}"
-                for node, outcome in nc["tests"].items()
+                f"{label} {node.split('::')[-1]} failed"
+                for node, outcome in found["tests"].items()
                 if outcome == "failed"
             ]
         note = "; ".join(fails[:3]) + (

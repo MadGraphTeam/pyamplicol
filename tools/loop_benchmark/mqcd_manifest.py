@@ -1135,6 +1135,11 @@ NC_TESTS = "tests/unit/test_loop_v2_nc_projection.py"
 NC_SMOKE = "tests/unit/test_loop_v2_nc_declaration.py::test_lc_and_nlc_smoke_on_every_shipped_restriction"
 
 
+# MQ-MODEL's test of M01's bitwise half (the public route's p p > t t~
+# artifact: each subprocess equals its own single-process generation).
+M01_BITWISE = "tests/unit/test_loop_v2_stock_loop_sm.py::test_multiparticle_subprocesses_are_madloops_and_their_own_generations"
+
+
 def nc_columns():
     """MQ-NC's ``NC_COLUMN`` (row -> its rule 7 test ids), read from NC_TESTS."""
     import importlib
@@ -1457,20 +1462,31 @@ def index_reference(rid):
         for x in found:
             name, process = SUBPROCESS_VARIANTS[x["fixture"]]
             vf = json.loads((FIXTURE_ROOT / x["fixture"]).read_text())
+            single = {
+                "name": name,
+                "gating": True,
+                "tier": "nightly",
+                "subprocess": True,
+                "process": process,
+                "notes": f"MadLoop SubProcesses/{vf['mqcd_run']['subprocess']} of p p > t t~ (its single-process generation, tools route)",
+                "reference": {
+                    "format": "required",
+                    "path": f"tests/fixtures/loop/{x['fixture']}",
+                    "providers": provider_list(vf),
+                },
+                "points": {"nightly": list(range(len(vf["points"])))},
+            }
+            variants.append(single)
+            # PLAN §4.2 M01 on the public route (MQ-MODEL): the same
+            # subprocess in the multiparticle artifact of p p > t t~ on the
+            # shipped loop_sm, at the same points and reference.
             variants.append(
                 {
-                    "name": name,
-                    "gating": True,
-                    "tier": "nightly",
-                    "subprocess": True,
-                    "process": process,
-                    "notes": f"MadLoop SubProcesses/{vf['mqcd_run']['subprocess']} of p p > t t~",
-                    "reference": {
-                        "format": "required",
-                        "path": f"tests/fixtures/loop/{x['fixture']}",
-                        "providers": provider_list(vf),
-                    },
-                    "points": {"nightly": list(range(len(vf["points"])))},
+                    **single,
+                    "name": f"public-{name}",
+                    "route": "public",
+                    "catani": "none",
+                    "notes": f"MadLoop SubProcesses/{vf['mqcd_run']['subprocess']}: the subprocess {process} of the public route's multiparticle artifact of p p > t t~ (model.source = loop_sm)",
                 }
             )
         return spec, fixture, variants
@@ -1524,12 +1540,8 @@ for r in R:
         indexed = None
     if indexed:
         reference, fixture0, variants = indexed
-        if r["id"] in REFUSED_5F:
-            r["waits"] = "MQ-5F"
-        elif r["id"] == "M01":
-            r["waits"] = "MQ-MODEL"
-        else:
-            r["waits"] = None
+        # M01 is composite (its parts below; MQ-MODEL is on the slice).
+        r["waits"] = "MQ-5F" if r["id"] in REFUSED_5F else None
         restriction = INDEX_ROWS[r["id"]]["pyamplicol_route"]["restriction"]
     params = {}
     if reference:
@@ -1708,17 +1720,21 @@ for r in R:
             "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)"
         )
     if r["id"] == "M01" and indexed:
+        # PLAN §4.2 M01, a row of its parts: the expansion against MadLoop's
+        # P directories (``madloop_subprocesses``), each P reference against
+        # the subprocess's own generation (M01@P<n>) and against the public
+        # route's multiparticle artifact (M01@public-P<n>), and MQ-MODEL's
+        # test that each subprocess of that artifact is bitwise its own
+        # single-process generation (``delegated``).
+        entry["status"] = "composite"
         entry["reference"] = None
-        entry["pending"] = {
-            "waits_for": "MQ-MODEL",
-            "reason": "the public route's multiparticle artifact (each subprocess = its single-process generation, bitwise) waits for the public route on loop_sm; the expansion against MadLoop's P directories and every P reference (variants M01@P0, M01@P2) run now",
-        }
         entry["madloop_subprocesses"] = MADLOOP_SUBPROCESSES
+        entry["delegated"] = {"bitwise": [M01_BITWISE]}
     pend = {}
     for e in r["extras"]:
         if e == "nc" and MQNC_LANDED:
             # A row's nc extra without MQ-NC ids is a KeyError here.
-            entry["nc_column"] = NC_COLUMNS[r["id"]]
+            entry.setdefault("delegated", {})["nc"] = NC_COLUMNS[r["id"]]
         elif e == "nc":
             pend[e] = (
                 "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
@@ -1777,6 +1793,9 @@ MEASURED_SECONDS = {
     # (tmp/mq-validate/s7, 2026-10-29 ~02:05 UTC, one process per file job).
     "C09": (31, 4), "F03": (18, 2), "H02": (43, 4), "H03": (30, 4),
     "D17@5F": (31, 4), "F01@5F": (23, 4), "F02@5F": (22, 4), "F04@5F": (26, 4),
+    # M01 on the public route (tmp/mq-validate/s8, ~02:35 UTC; the first
+    # carries the multiparticle generation).
+    "M01@public-P0": (55, 4), "M01@public-P2": (15, 4),
 }  # fmt: skip
 DEFAULT_SECONDS = 60
 JOB_SECONDS = 1200
