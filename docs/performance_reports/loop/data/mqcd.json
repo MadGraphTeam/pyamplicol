@@ -1,34 +1,31 @@
 {
  "source": "tests/fixtures/loop/mqcd/manifest.json + campaign records (tests/unit/test_loop_v2_mqcd_*.py, PYAMPLICOL_MQCD_RESULTS) + JUnit XML of the delegated columns",
  "rules": "m-qcd/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py) under the user's ruling of 2026-10-29 ~10:20 (relaxed per-row tolerances, manifest 'relaxed')",
- "campaign_head": "5c6ceee5 (pt15: every tier as whole files, one pytest process per file, slice a2aa0d84; MQ-MODEL's bitwise test with --junitxml); later commits change findings and report data only",
- "native": "loop-native-v2-slice-da6980b0 (_rusticol.so edf5ac8c)",
- "references": "slice a2aa0d84 (MQ-REF, MQ-MODEL, MQ-STAB integrated)",
+ "campaign_head": "e18a024b (M-QCD pin; campaign-m1029-mqcd: default, manifest and nightly jobs n1-n7 as whole files, one pytest process per job; delegated ids with --junitxml)",
+ "native": "loop-native-v2-slice-d0fef168 (_rusticol.so df718cf3)",
+ "references": "slice e18a024b (all M-QCD packages integrated)",
  "estimate": "loops.v2.stability.RECOMMENDED_CHECKS (one generic rotation + the rescaled reduction check)",
  "date": "2026-10-29",
  "timings": "indicative (shared host under load)",
  "counts": {
-  "pass": 68,
+  "pass": 76,
   "partial": 1,
-  "fail": 3,
-  "pending": 4,
+  "fail": 1,
+  "pending": 0,
   "not-run": 0
  },
  "classes": {
   "Q-CKM": {
-   "pass": 1,
-   "rows": 3,
-   "pending": 2
+   "pass": 3,
+   "rows": 3
   },
   "Q-EWBorn": {
-   "pass": 22,
-   "rows": 23,
-   "fail": 1
+   "pass": 25,
+   "rows": 25
   },
   "Q-heavy": {
-   "pass": 9,
-   "rows": 10,
-   "pending": 1
+   "pass": 10,
+   "rows": 10
   },
   "Q-massless": {
    "pass": 20,
@@ -45,10 +42,8 @@
    "rows": 1
   },
   "Q-singletop": {
-   "fail": 1,
-   "rows": 5,
-   "pass": 3,
-   "pending": 1
+   "pass": 5,
+   "rows": 5
   },
   "Q-top": {
    "pass": 6,
@@ -94,6 +89,12 @@
    "checks": 5,
    "failed_checks": [],
    "status": "pass"
+  },
+  "lc:every_restriction": {
+   "status": "pass",
+   "tests": {
+    "tests/unit/test_loop_v2_nc_declaration.py::test_lc_and_nlc_smoke_on_every_shipped_restriction": "passed"
+   }
   }
  },
  "rows": [
@@ -132,9 +133,7 @@
     "nc",
     "ap"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -167,10 +166,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 10.64,
-      "export_s": 0.61,
-      "double_double_s_per_point": 7.325,
-      "double_s_per_point": 0.79
+      "generate_s": 7.05,
+      "export_s": 0.45,
+      "double_double_s_per_point": 7.465,
+      "double_s_per_point": 0.89
      },
      "failed_checks": []
     },
@@ -196,11 +195,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.21,
-      "export_s": 0.46,
-      "double_double_s_per_point": 8.54,
-      "double_s_per_point": 0.86,
-      "ap_s": 11.16
+      "generate_s": 7.61,
+      "export_s": 0.45,
+      "double_double_s_per_point": 8.4,
+      "double_s_per_point": 0.94,
+      "ap_s": 11.55
      },
      "failed_checks": []
     }
@@ -246,8 +245,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 6.32,
-        "double_s_per_point": 0.81
+        "double_double_s_per_point": 6.24,
+        "double_s_per_point": 0.84
        },
        "failed_checks": []
       }
@@ -255,8 +254,24 @@
      "missing_records": []
     }
    ],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A01]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_gg_gg": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_poles_at_other_nc_equal_catani_on_gg_gg": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A01]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_gg_gg": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_poles_at_other_nc_equal_catani_on_gg_gg": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 1.0640223891151496e-15,
    "max_binary64_vs_dd": 2.879167316960233e-14,
    "max_catani_dd": 1.177693626127006e-31,
@@ -312,10 +327,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.03,
-      "export_s": 0.56,
-      "double_double_s_per_point": 5.16,
-      "double_s_per_point": 0.11666666666666665
+      "generate_s": 4.78,
+      "export_s": 0.44,
+      "double_double_s_per_point": 5.0633333333333335,
+      "double_s_per_point": 0.12
      },
      "failed_checks": []
     }
@@ -364,8 +379,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.0925,
-        "double_s_per_point": 0.1175
+        "double_double_s_per_point": 4.5625,
+        "double_s_per_point": 0.115
        },
        "failed_checks": []
       }
@@ -431,10 +446,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.71,
-      "export_s": 0.55,
-      "double_double_s_per_point": 4.875,
-      "double_s_per_point": 0.095
+      "generate_s": 4.96,
+      "export_s": 0.7,
+      "double_double_s_per_point": 6.2925,
+      "double_s_per_point": 0.1375
      },
      "failed_checks": []
     }
@@ -497,10 +512,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.96,
-      "export_s": 0.42,
-      "double_double_s_per_point": 5.475,
-      "double_s_per_point": 0.13
+      "generate_s": 4.99,
+      "export_s": 0.53,
+      "double_double_s_per_point": 5.245,
+      "double_s_per_point": 0.12
      },
      "failed_checks": []
     },
@@ -527,10 +542,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.38,
-      "export_s": 0.54,
-      "double_double_s_per_point": 5.765,
-      "double_s_per_point": 0.16
+      "generate_s": 8.07,
+      "export_s": 0.52,
+      "double_double_s_per_point": 6.04,
+      "double_s_per_point": 0.195
      },
      "failed_checks": []
     }
@@ -597,11 +612,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.54,
-      "export_s": 0.35,
-      "double_double_s_per_point": 4.6675,
-      "double_s_per_point": 0.0425,
-      "uv_s": 5.04
+      "generate_s": 7.0,
+      "export_s": 0.55,
+      "double_double_s_per_point": 4.88,
+      "double_s_per_point": 0.045,
+      "uv_s": 5.08
      },
      "failed_checks": []
     }
@@ -681,10 +696,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.51,
-      "export_s": 0.34,
-      "double_double_s_per_point": 4.803333333333334,
-      "double_s_per_point": 0.05666666666666667
+      "generate_s": 5.17,
+      "export_s": 0.39,
+      "double_double_s_per_point": 4.773333333333333,
+      "double_s_per_point": 0.06
      },
      "failed_checks": []
     }
@@ -730,7 +745,7 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.02,
+        "double_double_s_per_point": 5.35,
         "double_s_per_point": 0.06
        },
        "failed_checks": []
@@ -797,10 +812,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.22,
-      "export_s": 0.53,
-      "double_double_s_per_point": 4.7825,
-      "double_s_per_point": 0.0575
+      "generate_s": 5.23,
+      "export_s": 0.38,
+      "double_double_s_per_point": 4.6775,
+      "double_s_per_point": 0.06
      },
      "failed_checks": []
     }
@@ -834,9 +849,7 @@
     "ward",
     "hel"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -877,20 +890,36 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.15,
-      "export_s": 1.05,
-      "double_double_s_per_point": 60.9,
-      "double_s_per_point": 32.13,
-      "hel_s": 83.28,
-      "ward_s": 37.38
+      "generate_s": 8.29,
+      "export_s": 0.84,
+      "double_double_s_per_point": 63.7725,
+      "double_s_per_point": 29.9675,
+      "hel_s": 77.91,
+      "ward_s": 37.44
      },
      "failed_checks": []
     }
    },
    "missing_records": [],
    "variants": [],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A08]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_gg_ggg[0]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_gg_ggg[1]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A08]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_gg_ggg[0]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_gg_ggg[1]": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 3.412633027615142e-14,
    "max_binary64_vs_dd": 4.490793351880737e-13,
    "max_catani_dd": 6.1084685477650646e-30,
@@ -915,9 +944,7 @@
     "nc",
     "sp"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -950,10 +977,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.44,
-      "export_s": 0.68,
-      "double_double_s_per_point": 11.27,
-      "double_s_per_point": 2.97
+      "generate_s": 5.61,
+      "export_s": 0.81,
+      "double_double_s_per_point": 10.905,
+      "double_s_per_point": 3.015
      },
      "failed_checks": []
     },
@@ -980,9 +1007,9 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.38,
-      "export_s": 0.62,
-      "double_double_s_per_point": 11.37,
+      "generate_s": 7.24,
+      "export_s": 0.73,
+      "double_double_s_per_point": 11.365,
       "double_s_per_point": 2.955
      },
      "failed_checks": []
@@ -1056,8 +1083,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 9.705,
-        "double_s_per_point": 2.915
+        "double_double_s_per_point": 8.785,
+        "double_s_per_point": 2.935
        },
        "failed_checks": []
       }
@@ -1102,8 +1129,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.8933333333333335,
-        "double_s_per_point": 0.2866666666666667
+        "double_double_s_per_point": 5.716666666666666,
+        "double_s_per_point": 0.2833333333333333
        },
        "failed_checks": [
         {
@@ -1162,8 +1189,30 @@
      "missing_records": []
     }
    ],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A09]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_quark_rows[A09-0]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_quark_rows[A09-1]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_ward_identity_at_other_nc_needs_the_declared_r2": "passed",
+     "tests/unit/test_loop_v2_colour.py::test_bdk_five_point_colour_sum_o14": "passed",
+     "tests/unit/test_loop_v2_observables_nightly.py::test_bdk_partial_amplitudes_reproduce_the_colour_sum_o14": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A09]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_quark_rows[A09-0]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_quark_rows[A09-1]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_ward_identity_at_other_nc_needs_the_declared_r2": "passed",
+      "tests/unit/test_loop_v2_colour.py::test_bdk_five_point_colour_sum_o14": "passed",
+      "tests/unit/test_loop_v2_observables_nightly.py::test_bdk_partial_amplitudes_reproduce_the_colour_sum_o14": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 7.776971332929062e-13,
    "max_binary64_vs_dd": 4.488636590401006e-11,
    "max_catani_dd": 1.1731808814312099e-22,
@@ -1203,9 +1252,7 @@
    "extras": [
     "nc"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -1238,10 +1285,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.72,
-      "export_s": 0.64,
-      "double_double_s_per_point": 5.92,
-      "double_s_per_point": 0.31
+      "generate_s": 5.04,
+      "export_s": 0.66,
+      "double_double_s_per_point": 6.36,
+      "double_s_per_point": 0.475
      },
      "failed_checks": []
     },
@@ -1267,10 +1314,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.5,
-      "export_s": 0.57,
-      "double_double_s_per_point": 7.01,
-      "double_s_per_point": 0.32
+      "generate_s": 5.44,
+      "export_s": 0.61,
+      "double_double_s_per_point": 6.92,
+      "double_s_per_point": 0.31
      },
      "failed_checks": []
     }
@@ -1316,8 +1363,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.25,
-        "double_s_per_point": 0.3
+        "double_double_s_per_point": 4.86,
+        "double_s_per_point": 0.29
        },
        "failed_checks": []
       }
@@ -1325,8 +1372,28 @@
      "missing_records": []
     }
    ],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A12]": "passed",
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_at_the_nightly_points_of_default_rows[A12]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_uux_ddxg": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_quark_rows[A12-0]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_quark_rows[A12-1]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A12]": "passed",
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_at_the_nightly_points_of_default_rows[A12]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_uux_ddxg": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_quark_rows[A12-0]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_quark_rows[A12-1]": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 4.9812157280921775e-14,
    "max_binary64_vs_dd": 4.526292386904746e-13,
    "max_catani_dd": 7.749607812732073e-30,
@@ -1367,9 +1434,7 @@
     "nc",
     "ap"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -1403,11 +1468,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 10.68,
-      "export_s": 0.9,
-      "double_double_s_per_point": 6.329999999999999,
-      "double_s_per_point": 0.44,
-      "ap_s": 16.1
+      "generate_s": 5.51,
+      "export_s": 0.66,
+      "double_double_s_per_point": 6.113333333333333,
+      "double_s_per_point": 0.4366666666666667,
+      "ap_s": 14.68
      },
      "failed_checks": []
     }
@@ -1453,8 +1518,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 6.86,
-        "double_s_per_point": 0.43
+        "double_double_s_per_point": 6.83,
+        "double_s_per_point": 0.48
        },
        "failed_checks": []
       }
@@ -1462,8 +1527,24 @@
      "missing_records": []
     }
    ],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A13]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_quark_rows[A13-0]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_quark_rows[A13-1]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A13]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_quark_rows[A13-0]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_full_colour_at_other_nc_equals_njet_on_quark_rows[A13-1]": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 6.257102924180504e-14,
    "max_binary64_vs_dd": 7.934137437454622e-13,
    "max_catani_dd": 5.2831111093571315e-30,
@@ -1546,12 +1627,12 @@
       }
      ],
      "timings": {
-      "generate_s": 20.42,
-      "export_s": 12.73,
-      "double_double_s_per_point": 48.01333333333333,
-      "double_s_per_point": 1.3066666666666666,
+      "generate_s": 19.4,
+      "export_s": 13.34,
+      "double_double_s_per_point": 49.99333333333333,
+      "double_s_per_point": 1.9100000000000001,
       "tree_catani_s": 0.01,
-      "ward_s": 85.31
+      "ward_s": 86.21
      },
      "failed_checks": []
     }
@@ -1583,9 +1664,7 @@
    "extras": [
     "nc"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -1620,10 +1699,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.1,
-      "export_s": 4.25,
-      "double_double_s_per_point": 12.0,
-      "double_s_per_point": 0.2325,
+      "generate_s": 8.3,
+      "export_s": 3.93,
+      "double_double_s_per_point": 14.74,
+      "double_s_per_point": 0.2375,
       "tree_catani_s": 0.01
      },
      "failed_checks": []
@@ -1631,8 +1710,20 @@
    },
    "missing_records": [],
    "variants": [],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A15]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A15]": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 3.398492268954229e-14,
    "max_binary64_vs_dd": 4.633997917923146e-12,
    "max_catani_dd": 1.7471580271635195e-29,
@@ -1658,9 +1749,7 @@
    "extras": [
     "nc"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-10,
@@ -1766,18 +1855,30 @@
       }
      ],
      "timings": {
-      "generate_s": 7.58,
-      "export_s": 0.89,
-      "double_double_s_per_point": 23.4875,
-      "double_s_per_point": 9.0525
+      "generate_s": 7.26,
+      "export_s": 1.43,
+      "double_double_s_per_point": 23.565,
+      "double_s_per_point": 9.085
      },
      "failed_checks": []
     }
    },
    "missing_records": [],
    "variants": [],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A18]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A18]": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 1.1744354804752223e-11,
    "max_binary64_vs_dd": 1.0507174218424434e-10,
    "max_catani_dd": 1.4008766107805169e-27,
@@ -1849,10 +1950,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.12,
-      "export_s": 0.72,
-      "double_double_s_per_point": 7.04,
-      "double_s_per_point": 0.8766666666666666
+      "generate_s": 5.76,
+      "export_s": 0.74,
+      "double_double_s_per_point": 7.123333333333334,
+      "double_s_per_point": 0.9266666666666666
      },
      "failed_checks": []
     }
@@ -1898,8 +1999,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 7.91,
-        "double_s_per_point": 0.87
+        "double_double_s_per_point": 8.15,
+        "double_s_per_point": 0.99
        },
        "failed_checks": []
       }
@@ -1980,10 +2081,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.77,
-      "export_s": 0.55,
-      "double_double_s_per_point": 8.27,
-      "double_s_per_point": 1.3333333333333333
+      "generate_s": 6.54,
+      "export_s": 0.67,
+      "double_double_s_per_point": 8.356666666666667,
+      "double_s_per_point": 1.3499999999999999
      },
      "failed_checks": []
     }
@@ -2029,8 +2130,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 8.81,
-        "double_s_per_point": 1.35
+        "double_double_s_per_point": 9.81,
+        "double_s_per_point": 1.38
        },
        "failed_checks": []
       }
@@ -2079,9 +2180,7 @@
    "extras": [
     "nc"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -2123,10 +2222,10 @@
       }
      ],
      "timings": {
-      "generate_s": 6.79,
-      "export_s": 0.62,
-      "double_double_s_per_point": 11.686666666666667,
-      "double_s_per_point": 2.2466666666666666
+      "generate_s": 6.17,
+      "export_s": 1.26,
+      "double_double_s_per_point": 11.200000000000001,
+      "double_s_per_point": 2.4566666666666666
      },
      "failed_checks": []
     }
@@ -2172,8 +2271,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 11.61,
-        "double_s_per_point": 2.25
+        "double_double_s_per_point": 11.59,
+        "double_s_per_point": 2.38
        },
        "failed_checks": []
       }
@@ -2181,8 +2280,20 @@
      "missing_records": []
     }
    ],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A21]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[A21]": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 3.713664947353139e-14,
    "max_binary64_vs_dd": 4.09859140030182e-12,
    "max_catani_dd": 2.309893933088999e-29,
@@ -2239,10 +2350,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 10.92,
-      "export_s": 1.06,
-      "double_double_s_per_point": 43.44,
-      "double_s_per_point": 25.430000000000003
+      "generate_s": 9.35,
+      "export_s": 2.11,
+      "double_double_s_per_point": 37.333333333333336,
+      "double_s_per_point": 17.63
      },
      "failed_checks": []
     }
@@ -2307,10 +2418,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 75.16,
-      "export_s": 98.58,
-      "double_double_s_per_point": 198.53666666666666,
-      "double_s_per_point": 5.526666666666666,
+      "generate_s": 45.09,
+      "export_s": 83.34,
+      "double_double_s_per_point": 196.58333333333334,
+      "double_s_per_point": 11.103333333333333,
       "tree_catani_s": 0.01
      },
      "failed_checks": []
@@ -2407,11 +2518,11 @@
       }
      ],
      "timings": {
-      "generate_s": 167.49,
-      "export_s": 228.59,
-      "double_double_s_per_point": 327.005,
-      "double_s_per_point": 36.26,
-      "uv_s": 371.76
+      "generate_s": 180.29,
+      "export_s": 222.41,
+      "double_double_s_per_point": 273.18,
+      "double_s_per_point": 42.375,
+      "uv_s": 419.99
      },
      "failed_checks": []
     }
@@ -2476,9 +2587,9 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.31,
+      "generate_s": 4.45,
       "export_s": 0.35,
-      "double_double_s_per_point": 4.655,
+      "double_double_s_per_point": 4.7075,
       "double_s_per_point": 0.045
      },
      "failed_checks": []
@@ -2544,10 +2655,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.43,
-      "export_s": 0.35,
-      "double_double_s_per_point": 4.7025,
-      "double_s_per_point": 0.06
+      "generate_s": 4.65,
+      "export_s": 0.59,
+      "double_double_s_per_point": 4.78,
+      "double_s_per_point": 0.0625
      },
      "failed_checks": []
     }
@@ -2631,10 +2742,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.95,
-      "export_s": 0.47,
-      "double_double_s_per_point": 5.99,
-      "double_s_per_point": 0.155
+      "generate_s": 7.79,
+      "export_s": 0.86,
+      "double_double_s_per_point": 8.545,
+      "double_s_per_point": 0.17
      },
      "failed_checks": []
     },
@@ -2660,13 +2771,13 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 17.86,
-      "export_s": 3.73,
-      "double_double_s_per_point": 12.55,
-      "double_s_per_point": 0.21,
-      "uv_s": 6.1,
-      "hel_s": 4.33,
-      "ap_s": 11.95
+      "generate_s": 5.29,
+      "export_s": 0.45,
+      "double_double_s_per_point": 6.18,
+      "double_s_per_point": 0.16,
+      "uv_s": 5.07,
+      "hel_s": 3.73,
+      "ap_s": 10.1
      },
      "failed_checks": []
     }
@@ -2743,8 +2854,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.863333333333333,
-        "double_s_per_point": 0.15333333333333335
+        "double_double_s_per_point": 4.843333333333333,
+        "double_s_per_point": 0.16
        },
        "failed_checks": []
       }
@@ -2793,7 +2904,7 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.5675,
+        "double_double_s_per_point": 5.1175,
         "double_s_per_point": 0.1525
        },
        "failed_checks": []
@@ -2840,8 +2951,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.87,
-        "double_s_per_point": 0.15
+        "double_double_s_per_point": 4.82,
+        "double_s_per_point": 0.16
        },
        "failed_checks": []
       }
@@ -2907,10 +3018,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.43,
+      "generate_s": 4.74,
       "export_s": 0.49,
-      "double_double_s_per_point": 4.786666666666666,
-      "double_s_per_point": 0.07666666666666667
+      "double_double_s_per_point": 4.7299999999999995,
+      "double_s_per_point": 0.07333333333333333
      },
      "failed_checks": []
     }
@@ -2959,8 +3070,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.5175,
-        "double_s_per_point": 0.065
+        "double_double_s_per_point": 4.4325,
+        "double_s_per_point": 0.0625
        },
        "failed_checks": []
       }
@@ -2994,9 +3105,7 @@
     "nc",
     "ward"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -3087,19 +3196,35 @@
       }
      ],
      "timings": {
-      "generate_s": 5.32,
-      "export_s": 0.52,
-      "double_double_s_per_point": 16.57,
-      "double_s_per_point": 2.635,
-      "ward_s": 23.13
+      "generate_s": 6.44,
+      "export_s": 0.54,
+      "double_double_s_per_point": 12.045,
+      "double_s_per_point": 2.4825,
+      "ward_s": 23.88
      },
      "failed_checks": []
     }
    },
    "missing_records": [],
    "variants": [],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[B03]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_poles_at_other_nc_equal_catani[B03]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_ward_identity_at_other_nc[B03]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[B03]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_poles_at_other_nc_equal_catani[B03]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_ward_identity_at_other_nc[B03]": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 3.409828552843598e-13,
    "max_binary64_vs_dd": 3.370119023123033e-11,
    "max_catani_dd": 7.495521072585222e-27,
@@ -3171,10 +3296,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 9.59,
-      "export_s": 1.9,
-      "double_double_s_per_point": 195.45333333333335,
-      "double_s_per_point": 98.55
+      "generate_s": 10.61,
+      "export_s": 1.85,
+      "double_double_s_per_point": 183.74333333333334,
+      "double_s_per_point": 87.04333333333334
      },
      "failed_checks": []
     }
@@ -3220,8 +3345,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 167.89,
-        "double_s_per_point": 86.04
+        "double_double_s_per_point": 175.18,
+        "double_s_per_point": 93.77
        },
        "failed_checks": []
       }
@@ -3287,10 +3412,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.42,
+      "generate_s": 5.25,
       "export_s": 0.61,
-      "double_double_s_per_point": 8.455,
-      "double_s_per_point": 1.63
+      "double_double_s_per_point": 8.16,
+      "double_s_per_point": 1.705
      },
      "failed_checks": []
     }
@@ -3355,10 +3480,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 10.36,
-      "export_s": 0.92,
-      "double_double_s_per_point": 63.6325,
-      "double_s_per_point": 33.41
+      "generate_s": 10.13,
+      "export_s": 0.93,
+      "double_double_s_per_point": 61.355,
+      "double_s_per_point": 24.7125
      },
      "failed_checks": []
     }
@@ -3423,10 +3548,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.58,
-      "export_s": 0.59,
-      "double_double_s_per_point": 5.1275,
-      "double_s_per_point": 0.1625
+      "generate_s": 6.38,
+      "export_s": 1.06,
+      "double_double_s_per_point": 5.1525,
+      "double_s_per_point": 0.16
      },
      "failed_checks": []
     }
@@ -3462,9 +3587,7 @@
     "ward",
     "sp"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -3499,10 +3622,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.89,
-      "export_s": 0.8,
-      "double_double_s_per_point": 5.415,
-      "double_s_per_point": 0.16
+      "generate_s": 6.38,
+      "export_s": 0.87,
+      "double_double_s_per_point": 5.53,
+      "double_s_per_point": 0.165
      },
      "failed_checks": []
     },
@@ -3535,12 +3658,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.32,
-      "export_s": 0.55,
-      "double_double_s_per_point": 5.53,
-      "double_s_per_point": 0.165,
-      "ap_s": 9.42,
-      "ward_s": 16.25
+      "generate_s": 6.47,
+      "export_s": 0.56,
+      "double_double_s_per_point": 5.59,
+      "double_s_per_point": 0.17,
+      "ap_s": 9.41,
+      "ward_s": 16.31
      },
      "failed_checks": []
     }
@@ -3592,8 +3715,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.1,
-        "double_s_per_point": 0.1575
+        "double_double_s_per_point": 5.2525,
+        "double_s_per_point": 0.1525
        },
        "failed_checks": []
       }
@@ -3601,8 +3724,22 @@
      "missing_records": []
     }
    ],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[C01]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_poles_at_other_nc_equal_catani[C01]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[C01]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_poles_at_other_nc_equal_catani[C01]": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 9.262759220143373e-16,
    "max_binary64_vs_dd": 6.209526423485553e-15,
    "max_catani_dd": 8.137554537877675e-29,
@@ -3661,11 +3798,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.92,
-      "export_s": 0.47,
-      "double_double_s_per_point": 6.735,
-      "double_s_per_point": 0.825,
-      "uv_s": 7.12
+      "generate_s": 4.63,
+      "export_s": 0.49,
+      "double_double_s_per_point": 6.9025,
+      "double_s_per_point": 0.8375,
+      "uv_s": 7.05
      },
      "failed_checks": []
     }
@@ -3730,10 +3867,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.48,
-      "export_s": 0.12,
-      "double_double_s_per_point": 4.49,
-      "double_s_per_point": 0.0175
+      "generate_s": 4.83,
+      "export_s": 0.13,
+      "double_double_s_per_point": 4.5,
+      "double_s_per_point": 0.02
      },
      "failed_checks": []
     }
@@ -3798,10 +3935,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.19,
-      "export_s": 0.61,
-      "double_double_s_per_point": 4.7625,
-      "double_s_per_point": 0.0525
+      "generate_s": 5.6,
+      "export_s": 0.59,
+      "double_double_s_per_point": 4.76,
+      "double_s_per_point": 0.055
      },
      "failed_checks": []
     }
@@ -3888,10 +4025,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.99,
-      "export_s": 1.36,
-      "double_double_s_per_point": 8.4825,
-      "double_s_per_point": 1.09
+      "generate_s": 8.19,
+      "export_s": 1.3,
+      "double_double_s_per_point": 7.0575,
+      "double_s_per_point": 0.3475
      },
      "failed_checks": []
     }
@@ -3956,10 +4093,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 20.95,
-      "export_s": 1.78,
-      "double_double_s_per_point": 50.765,
-      "double_s_per_point": 22.945
+      "generate_s": 7.48,
+      "export_s": 1.67,
+      "double_double_s_per_point": 52.0375,
+      "double_s_per_point": 24.6775
      },
      "failed_checks": []
     }
@@ -3997,7 +4134,7 @@
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {},
-   "status": "fail",
+   "status": "pass",
    "tiers": {
     "nightly": {
      "points": [
@@ -4006,13 +4143,13 @@
       2,
       3
      ],
-     "passed": false,
-     "checks": 80,
-     "failures": 8,
+     "passed": true,
+     "checks": 64,
+     "failures": 0,
      "max_dd_vs_reference": 7.95935663079713e-15,
      "max_binary64_vs_dd": 1.6286012914121327e-14,
-     "max_catani_dd": 0.022257033582139523,
-     "max_catani_binary64": 0.02225703358213931,
+     "max_catani_dd": null,
+     "max_catani_binary64": null,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 3.758064145532662e-15,
@@ -4024,93 +4161,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 25.69,
-      "export_s": 1.74,
-      "double_double_s_per_point": 8.12,
-      "double_s_per_point": 0.21
+      "generate_s": 7.97,
+      "export_s": 0.88,
+      "double_double_s_per_point": 4.94,
+      "double_s_per_point": 0.1525
      },
-     "failed_checks": [
-      {
-       "rule": "4",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^4",
-       "coefficient": "single_pole",
-       "error": 0.001358031424364636,
-       "bound": 1e-24,
-       "note": "E = 1.36e-26"
-      },
-      {
-       "rule": "4",
-       "point": 0,
-       "carrier": "double",
-       "sector": "QCD^4 QED^4",
-       "coefficient": "single_pole",
-       "error": 0.0013580314243771792,
-       "bound": 1.4435078825428532e-12,
-       "note": "E = 1.44e-12"
-      },
-      {
-       "rule": "4",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^4",
-       "coefficient": "single_pole",
-       "error": 0.022257033582139523,
-       "bound": 1e-24,
-       "note": "E = 7.05e-28"
-      },
-      {
-       "rule": "4",
-       "point": 1,
-       "carrier": "double",
-       "sector": "QCD^4 QED^4",
-       "coefficient": "single_pole",
-       "error": 0.02225703358213931,
-       "bound": 1e-12,
-       "note": "E = 6.42e-13"
-      },
-      {
-       "rule": "4",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^4",
-       "coefficient": "single_pole",
-       "error": 0.0009224371100805377,
-       "bound": 1e-24,
-       "note": "E = 2.48e-27"
-      },
-      {
-       "rule": "4",
-       "point": 2,
-       "carrier": "double",
-       "sector": "QCD^4 QED^4",
-       "coefficient": "single_pole",
-       "error": 0.0009224371100872722,
-       "bound": 1e-12,
-       "note": "E = 3.83e-13"
-      },
-      {
-       "rule": "4",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^4",
-       "coefficient": "single_pole",
-       "error": 0.0009978121527835656,
-       "bound": 1e-24,
-       "note": "E = 1.18e-26"
-      },
-      {
-       "rule": "4",
-       "point": 3,
-       "carrier": "double",
-       "sector": "QCD^4 QED^4",
-       "coefficient": "single_pole",
-       "error": 0.0009978121527930996,
-       "bound": 1.2978936056817616e-12,
-       "note": "E = 1.3e-12"
-      }
-     ]
+     "failed_checks": []
     }
    },
    "missing_records": [],
@@ -4119,7 +4175,7 @@
    "delegated": {},
    "max_dd_vs_reference": 7.95935663079713e-15,
    "max_binary64_vs_dd": 1.6286012914121327e-14,
-   "max_catani_dd": 0.022257033582139523,
+   "max_catani_dd": null,
    "max_ward_dd": null
   },
   {
@@ -4174,10 +4230,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.6,
-      "export_s": 0.87,
-      "double_double_s_per_point": 5.685,
-      "double_s_per_point": 0.1725
+      "generate_s": 6.3,
+      "export_s": 0.69,
+      "double_double_s_per_point": 5.1375,
+      "double_s_per_point": 0.1625
      },
      "failed_checks": []
     }
@@ -4209,22 +4265,55 @@
    "reference_legend": "N, S ~15 s (+ Recola; MQ-5F)",
    "extras": [],
    "extras_pending": {},
-   "waits_for": "MQ-5F",
-   "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
+   "waits_for": null,
+   "pending_reason": null,
    "reference_tolerance": 1e-12,
    "catani": "python",
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {},
-   "status": "pending",
-   "tiers": {},
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 4.625067687001069e-16,
+     "max_binary64_vs_dd": 1.497764348633477e-14,
+     "max_catani_dd": 1.148427460178407e-28,
+     "max_catani_binary64": 1.7769409422921547e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 3.9687212608923936e-16,
+      "finite": 1.5267196343964106e-14,
+      "single_pole": 2.1979432247986213e-15,
+      "double_pole": 4.61967178185025e-16
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 6.07,
+      "export_s": 0.58,
+      "double_double_s_per_point": 4.7875,
+      "double_s_per_point": 0.0725
+     },
+     "failed_checks": []
+    }
+   },
    "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": null,
-   "max_binary64_vs_dd": null,
-   "max_catani_dd": null,
+   "max_dd_vs_reference": 4.625067687001069e-16,
+   "max_binary64_vs_dd": 1.497764348633477e-14,
+   "max_catani_dd": 1.148427460178407e-28,
    "max_ward_dd": null
   },
   {
@@ -4279,9 +4368,9 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.74,
-      "export_s": 0.28,
-      "double_double_s_per_point": 4.51,
+      "generate_s": 4.94,
+      "export_s": 0.29,
+      "double_double_s_per_point": 4.665,
       "double_s_per_point": 0.03
      },
      "failed_checks": []
@@ -4309,11 +4398,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.1,
-      "export_s": 0.29,
-      "double_double_s_per_point": 4.975,
-      "double_s_per_point": 0.03,
-      "ap_s": 9.37
+      "generate_s": 4.66,
+      "export_s": 0.28,
+      "double_double_s_per_point": 4.545,
+      "double_s_per_point": 0.19,
+      "ap_s": 6.28
      },
      "failed_checks": []
     }
@@ -4378,10 +4467,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.37,
-      "export_s": 0.28,
-      "double_double_s_per_point": 4.445,
-      "double_s_per_point": 0.025
+      "generate_s": 2.68,
+      "export_s": 0.62,
+      "double_double_s_per_point": 4.5,
+      "double_s_per_point": 0.03
      },
      "failed_checks": []
     }
@@ -4416,9 +4505,7 @@
     "uv",
     "hel"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -4451,10 +4538,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.58,
-      "export_s": 2.01,
-      "double_double_s_per_point": 4.935,
-      "double_s_per_point": 0.07
+      "generate_s": 7.7,
+      "export_s": 2.05,
+      "double_double_s_per_point": 4.95,
+      "double_s_per_point": 0.075
      },
      "failed_checks": []
     },
@@ -4487,21 +4574,39 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.85,
-      "export_s": 1.71,
-      "double_double_s_per_point": 5.09,
-      "double_s_per_point": 0.08,
-      "uv_s": 5.5,
-      "hel_s": 4.5,
-      "ward_s": 14.7
+      "generate_s": 7.3,
+      "export_s": 2.41,
+      "double_double_s_per_point": 5.015,
+      "double_s_per_point": 0.09,
+      "uv_s": 5.36,
+      "hel_s": 4.46,
+      "ward_s": 15.18
      },
      "failed_checks": []
     }
    },
    "missing_records": [],
    "variants": [],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[D05]": "passed",
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_at_the_nightly_points_of_default_rows[D05]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_poles_at_other_nc_equal_catani[D05]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_ward_identity_at_other_nc[D05]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[D05]": "passed",
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_at_the_nightly_points_of_default_rows[D05]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_poles_at_other_nc_equal_catani[D05]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_ward_identity_at_other_nc[D05]": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 2.3295032600480672e-14,
    "max_binary64_vs_dd": 2.473046960830994e-14,
    "max_catani_dd": 1.6239475035923482e-31,
@@ -4559,10 +4664,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.9,
-      "export_s": 1.73,
-      "double_double_s_per_point": 6.023333333333333,
-      "double_s_per_point": 0.3233333333333333
+      "generate_s": 8.96,
+      "export_s": 1.79,
+      "double_double_s_per_point": 6.153333333333333,
+      "double_s_per_point": 0.32666666666666666
      },
      "failed_checks": []
     }
@@ -4611,7 +4716,7 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.2775,
+        "double_double_s_per_point": 5.275,
         "double_s_per_point": 0.3075
        },
        "failed_checks": []
@@ -4693,10 +4798,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 9.14,
-      "export_s": 3.42,
-      "double_double_s_per_point": 25.51,
-      "double_s_per_point": 6.66
+      "generate_s": 10.21,
+      "export_s": 2.03,
+      "double_double_s_per_point": 25.776666666666667,
+      "double_s_per_point": 6.54
      },
      "failed_checks": []
     }
@@ -4742,8 +4847,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 24.66,
-        "double_s_per_point": 6.66
+        "double_double_s_per_point": 25.38,
+        "double_s_per_point": 6.59
        },
        "failed_checks": []
       }
@@ -4824,10 +4929,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.91,
-      "export_s": 1.78,
-      "double_double_s_per_point": 10.61,
-      "double_s_per_point": 1.0566666666666666
+      "generate_s": 7.52,
+      "export_s": 1.93,
+      "double_double_s_per_point": 10.826666666666666,
+      "double_s_per_point": 1.1833333333333333
      },
      "failed_checks": []
     }
@@ -4873,8 +4978,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 10.54,
-        "double_s_per_point": 0.98
+        "double_double_s_per_point": 11.01,
+        "double_s_per_point": 1.0
        },
        "failed_checks": []
       }
@@ -4953,10 +5058,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.09,
-      "export_s": 1.82,
-      "double_double_s_per_point": 8.673333333333334,
-      "double_s_per_point": 0.11
+      "generate_s": 2.66,
+      "export_s": 0.92,
+      "double_double_s_per_point": 4.843333333333333,
+      "double_s_per_point": 0.06999999999999999
      },
      "failed_checks": []
     }
@@ -5002,7 +5107,7 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 6.16,
+        "double_double_s_per_point": 5.16,
         "double_s_per_point": 0.07
        },
        "failed_checks": []
@@ -5083,10 +5188,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.75,
-      "export_s": 1.84,
-      "double_double_s_per_point": 6.023333333333333,
-      "double_s_per_point": 0.20333333333333334
+      "generate_s": 5.55,
+      "export_s": 3.42,
+      "double_double_s_per_point": 5.760000000000001,
+      "double_s_per_point": 0.22
      },
      "failed_checks": []
     }
@@ -5132,8 +5237,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 6.48,
-        "double_s_per_point": 0.19
+        "double_double_s_per_point": 7.16,
+        "double_s_per_point": 0.21
        },
        "failed_checks": []
       }
@@ -5199,10 +5304,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.76,
-      "export_s": 1.41,
-      "double_double_s_per_point": 4.9125,
-      "double_s_per_point": 0.0675
+      "generate_s": 7.74,
+      "export_s": 1.47,
+      "double_double_s_per_point": 4.7825,
+      "double_s_per_point": 0.065
      },
      "failed_checks": []
     }
@@ -5267,10 +5372,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.48,
-      "export_s": 0.41,
-      "double_double_s_per_point": 4.6775,
-      "double_s_per_point": 0.0475
+      "generate_s": 6.36,
+      "export_s": 0.42,
+      "double_double_s_per_point": 4.7,
+      "double_s_per_point": 0.0425
      },
      "failed_checks": []
     }
@@ -5335,10 +5440,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.71,
-      "export_s": 0.72,
-      "double_double_s_per_point": 4.6875,
-      "double_s_per_point": 0.0425
+      "generate_s": 7.76,
+      "export_s": 0.7,
+      "double_double_s_per_point": 4.72,
+      "double_s_per_point": 0.045
      },
      "failed_checks": []
     }
@@ -5411,9 +5516,9 @@
       }
      ],
      "timings": {
-      "generate_s": 4.64,
-      "export_s": 0.45,
-      "double_double_s_per_point": 4.615,
+      "generate_s": 2.83,
+      "export_s": 0.47,
+      "double_double_s_per_point": 4.675,
       "double_s_per_point": 0.0475
      },
      "failed_checks": []
@@ -5522,10 +5627,10 @@
       }
      ],
      "timings": {
-      "generate_s": 2.96,
-      "export_s": 0.46,
-      "double_double_s_per_point": 4.6625,
-      "double_s_per_point": 0.0525
+      "generate_s": 2.57,
+      "export_s": 0.92,
+      "double_double_s_per_point": 4.84,
+      "double_s_per_point": 0.045
      },
      "failed_checks": []
     }
@@ -5590,9 +5695,9 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.34,
-      "export_s": 0.62,
-      "double_double_s_per_point": 4.73,
+      "generate_s": 7.18,
+      "export_s": 0.61,
+      "double_double_s_per_point": 4.8375,
       "double_s_per_point": 0.08
      },
      "failed_checks": []
@@ -5612,12 +5717,43 @@
       ]
      },
      "relaxed": {},
-     "status": "pending",
-     "waits_for": "MQ-5F",
-     "tiers": {},
-     "missing_records": [
-      "nightly"
-     ]
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 80,
+       "failures": 0,
+       "max_dd_vs_reference": 4.646110763363323e-14,
+       "max_binary64_vs_dd": 6.586717720765177e-13,
+       "max_catani_dd": 5.658664394906378e-29,
+       "max_catani_binary64": 5.907026854232959e-13,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 3.897418984114192e-14,
+        "finite": 6.629940565110867e-13,
+        "single_pole": 6.0119337679571e-13,
+        "double_pole": 3.79996135668036e-14
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 5.53,
+        "export_s": 0.6,
+        "double_double_s_per_point": 4.735,
+        "double_s_per_point": 0.0575
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -5678,10 +5814,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.27,
+      "generate_s": 1.98,
       "export_s": 0.24,
-      "double_double_s_per_point": 7.615,
-      "double_s_per_point": 0.03
+      "double_double_s_per_point": 4.55,
+      "double_s_per_point": 0.0275
      },
      "failed_checks": []
     }
@@ -5719,7 +5855,7 @@
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {},
-   "status": "fail",
+   "status": "pass",
    "tiers": {
     "nightly": {
      "points": [
@@ -5728,13 +5864,13 @@
       2,
       3
      ],
-     "passed": false,
-     "checks": 80,
-     "failures": 8,
+     "passed": true,
+     "checks": 64,
+     "failures": 0,
      "max_dd_vs_reference": 5.93319552206182e-16,
      "max_binary64_vs_dd": 3.3170326383894936e-15,
-     "max_catani_dd": 0.33461667180012294,
-     "max_catani_binary64": 0.334616671800124,
+     "max_catani_dd": null,
+     "max_catani_binary64": null,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 9.388193356660617e-16,
@@ -5746,93 +5882,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.17,
+      "generate_s": 3.61,
       "export_s": 0.46,
-      "double_double_s_per_point": 4.5675,
+      "double_double_s_per_point": 4.585,
       "double_s_per_point": 0.0575
      },
-     "failed_checks": [
-      {
-       "rule": "4",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^2 QED^6",
-       "coefficient": "single_pole",
-       "error": 0.1051856197022888,
-       "bound": 1e-24,
-       "note": "E = 1.01e-30"
-      },
-      {
-       "rule": "4",
-       "point": 0,
-       "carrier": "double",
-       "sector": "QCD^2 QED^6",
-       "coefficient": "single_pole",
-       "error": 0.10518561970228738,
-       "bound": 1e-12,
-       "note": "E = 1.27e-14"
-      },
-      {
-       "rule": "4",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^2 QED^6",
-       "coefficient": "single_pole",
-       "error": 0.33461667180012294,
-       "bound": 1e-24,
-       "note": "E = 3.39e-30"
-      },
-      {
-       "rule": "4",
-       "point": 1,
-       "carrier": "double",
-       "sector": "QCD^2 QED^6",
-       "coefficient": "single_pole",
-       "error": 0.334616671800124,
-       "bound": 1e-12,
-       "note": "E = 8.79e-14"
-      },
-      {
-       "rule": "4",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^2 QED^6",
-       "coefficient": "single_pole",
-       "error": 0.09318092986388878,
-       "bound": 1e-24,
-       "note": "E = 3.38e-30"
-      },
-      {
-       "rule": "4",
-       "point": 2,
-       "carrier": "double",
-       "sector": "QCD^2 QED^6",
-       "coefficient": "single_pole",
-       "error": 0.09318092986388904,
-       "bound": 1e-12,
-       "note": "E = 2.25e-14"
-      },
-      {
-       "rule": "4",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^2 QED^6",
-       "coefficient": "single_pole",
-       "error": 0.19702609358064052,
-       "bound": 1e-24,
-       "note": "E = 1.12e-30"
-      },
-      {
-       "rule": "4",
-       "point": 3,
-       "carrier": "double",
-       "sector": "QCD^2 QED^6",
-       "coefficient": "single_pole",
-       "error": 0.1970260935806376,
-       "bound": 1e-12,
-       "note": "E = 2.03e-14"
-      }
-     ]
+     "failed_checks": []
     }
    },
    "missing_records": [],
@@ -5841,7 +5896,7 @@
    "delegated": {},
    "max_dd_vs_reference": 5.93319552206182e-16,
    "max_binary64_vs_dd": 3.3170326383894936e-15,
-   "max_catani_dd": 0.33461667180012294,
+   "max_catani_dd": null,
    "max_ward_dd": null
   },
   {
@@ -5895,10 +5950,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.4,
-      "export_s": 2.88,
-      "double_double_s_per_point": 4.8475,
-      "double_s_per_point": 0.0775
+      "generate_s": 5.37,
+      "export_s": 3.31,
+      "double_double_s_per_point": 5.025,
+      "double_s_per_point": 0.0825
      },
      "failed_checks": []
     }
@@ -5963,10 +6018,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.18,
-      "export_s": 0.35,
-      "double_double_s_per_point": 7.383333333333333,
-      "double_s_per_point": 0.06666666666666667
+      "generate_s": 2.1,
+      "export_s": 0.31,
+      "double_double_s_per_point": 4.523333333333333,
+      "double_s_per_point": 0.04
      },
      "failed_checks": []
     }
@@ -6031,10 +6086,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.81,
-      "export_s": 0.68,
-      "double_double_s_per_point": 4.7,
-      "double_s_per_point": 0.0525
+      "generate_s": 4.21,
+      "export_s": 1.29,
+      "double_double_s_per_point": 4.7175,
+      "double_s_per_point": 0.055
      },
      "failed_checks": []
     }
@@ -6099,10 +6154,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.9,
-      "export_s": 0.3,
-      "double_double_s_per_point": 4.505,
-      "double_s_per_point": 0.03
+      "generate_s": 2.03,
+      "export_s": 0.28,
+      "double_double_s_per_point": 4.5475,
+      "double_s_per_point": 0.035
      },
      "failed_checks": []
     }
@@ -6169,9 +6224,9 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.24,
-      "export_s": 0.42,
-      "double_double_s_per_point": 4.6375,
+      "generate_s": 2.69,
+      "export_s": 0.44,
+      "double_double_s_per_point": 4.7175,
       "double_s_per_point": 0.035
      },
      "failed_checks": []
@@ -6220,7 +6275,7 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.44,
+        "double_double_s_per_point": 4.47,
         "double_s_per_point": 0.03333333333333333
        },
        "failed_checks": []
@@ -6287,10 +6342,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.94,
-      "export_s": 2.3,
-      "double_double_s_per_point": 4.7325,
-      "double_s_per_point": 0.075
+      "generate_s": 5.54,
+      "export_s": 4.39,
+      "double_double_s_per_point": 5.2325,
+      "double_s_per_point": 0.085
      },
      "failed_checks": []
     }
@@ -6355,10 +6410,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.82,
-      "export_s": 0.39,
-      "double_double_s_per_point": 4.595,
-      "double_s_per_point": 0.0425
+      "generate_s": 2.79,
+      "export_s": 0.38,
+      "double_double_s_per_point": 4.9225,
+      "double_s_per_point": 0.0475
      },
      "failed_checks": []
     }
@@ -6371,6 +6426,211 @@
    "max_binary64_vs_dd": 4.340502142203895e-14,
    "max_catani_dd": 6.538084530705254e-31,
    "max_ward_dd": null
+  },
+  {
+   "id": "D28",
+   "class": "Q-EWBorn",
+   "process": "u u~ > w+ w- g",
+   "restriction": "default",
+   "restriction_code": "4F",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/uux_wpwmg_4fs.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S (VV + jet, 4F)",
+   "extras": [
+    "ward"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "reference_tolerance": 1e-11,
+   "catani": "python",
+   "ward_legs": null,
+   "listed_outliers": [],
+   "relaxed": {},
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 88,
+     "failures": 0,
+     "max_dd_vs_reference": 1.832094398384809e-12,
+     "max_binary64_vs_dd": 1.444503607334337e-11,
+     "max_catani_dd": 2.6290513920372e-28,
+     "max_catani_binary64": 2.7258913496013573e-12,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 3.349815037022382e-14,
+      "finite": 1.2612941674981668e-11,
+      "single_pole": 2.754490113550347e-12,
+      "double_pole": 4.8483272709898955e-14
+     },
+     "ward": {
+      "checks": 8,
+      "virtual_double": 0.1081757597687396,
+      "born_double": 1.291398264947582e-15,
+      "virtual_double-double": 2.4980762250718676e-29,
+      "born_double-double": 4.794355115828722e-31
+     },
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.43,
+      "export_s": 2.94,
+      "double_double_s_per_point": 5.605,
+      "double_s_per_point": 0.19,
+      "ward_s": 19.35
+     },
+     "failed_checks": []
+    }
+   },
+   "missing_records": [],
+   "variants": [],
+   "nc": null,
+   "delegated": {},
+   "max_dd_vs_reference": 1.832094398384809e-12,
+   "max_binary64_vs_dd": 1.444503607334337e-11,
+   "max_catani_dd": 2.6290513920372e-28,
+   "max_ward_dd": 2.4980762250718676e-29
+  },
+  {
+   "id": "D29",
+   "class": "Q-EWBorn",
+   "process": "b b~ > w+ w- g",
+   "restriction": "default",
+   "restriction_code": "5F*",
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/mqcd/bbx_wpwmg.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "N, S (VV + jet, massive t-channel line; MQ-5F)",
+   "extras": [
+    "ward"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
+   "listed_outliers": [],
+   "relaxed": {},
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 88,
+     "failures": 0,
+     "max_dd_vs_reference": 1.7192727853170296e-13,
+     "max_binary64_vs_dd": 8.768776441123508e-12,
+     "max_catani_dd": 4.388154251838455e-28,
+     "max_catani_binary64": 8.739413520119552e-12,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 5.1303895901006664e-14,
+      "finite": 1.4970271369839585e-12,
+      "single_pole": 8.940703719653704e-12,
+      "double_pole": 2.9740039510381e-14
+     },
+     "ward": {
+      "checks": 8,
+      "virtual_double": 0.10339633597860727,
+      "born_double": 1.3267882997355035e-15,
+      "virtual_double-double": 1.052689903184482e-28,
+      "born_double-double": 2.707756174138825e-31
+     },
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 8.31,
+      "export_s": 5.1,
+      "double_double_s_per_point": 6.405,
+      "double_s_per_point": 0.355,
+      "ward_s": 16.95
+     },
+     "failed_checks": []
+    }
+   },
+   "missing_records": [],
+   "variants": [
+    {
+     "id": "D29@5F",
+     "gating": true,
+     "notes": "PLAN \u00a73.0 MQ-5F: the row's request on the restricted UFO (no_b_mass), against the row's reference (so equal to its default-restriction MB = ymb = 0 route under \u00a71.4)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/mqcd/bbx_wpwmg.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "relaxed": {},
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 80,
+       "failures": 0,
+       "max_dd_vs_reference": 1.7192727853170296e-13,
+       "max_binary64_vs_dd": 3.013566957445027e-12,
+       "max_catani_dd": 4.4601102384269375e-28,
+       "max_catani_binary64": 2.9842040364409023e-12,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 5.1303895901006664e-14,
+        "finite": 1.1976981340134573e-12,
+        "single_pole": 3.1854942359762118e-12,
+        "double_pole": 4.457666128392514e-14
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 7.75,
+        "export_s": 4.96,
+        "double_double_s_per_point": 6.0075,
+        "double_s_per_point": 0.25
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
+    }
+   ],
+   "nc": null,
+   "delegated": {},
+   "max_dd_vs_reference": 1.7192727853170296e-13,
+   "max_binary64_vs_dd": 8.768776441123508e-12,
+   "max_catani_dd": 4.4601102384269375e-28,
+   "max_ward_dd": 1.052689903184482e-28
   },
   {
    "id": "E01",
@@ -6392,9 +6652,7 @@
     "ward",
     "uv"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -6435,20 +6693,34 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.22,
-      "export_s": 0.53,
-      "double_double_s_per_point": 7.765,
-      "double_s_per_point": 0.3175,
-      "uv_s": 8.55,
-      "ward_s": 21.58
+      "generate_s": 8.11,
+      "export_s": 0.56,
+      "double_double_s_per_point": 8.265,
+      "double_s_per_point": 0.3325,
+      "uv_s": 9.08,
+      "ward_s": 25.6
      },
      "failed_checks": []
     }
    },
    "missing_records": [],
    "variants": [],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[E01]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_poles_at_other_nc_equal_catani[E01]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[E01]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_poles_at_other_nc_equal_catani[E01]": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 3.5863545688653515e-13,
    "max_binary64_vs_dd": 7.434010870574243e-12,
    "max_catani_dd": 6.715542556896723e-30,
@@ -6505,10 +6777,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.86,
-      "export_s": 1.52,
-      "double_double_s_per_point": 8.225,
-      "double_s_per_point": 0.5875
+      "generate_s": 8.84,
+      "export_s": 1.69,
+      "double_double_s_per_point": 8.81,
+      "double_s_per_point": 0.6575
      },
      "failed_checks": []
     }
@@ -6575,11 +6847,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.8,
-      "export_s": 0.9,
-      "double_double_s_per_point": 5.026666666666666,
-      "double_s_per_point": 0.08333333333333333,
-      "ap_s": 7.85
+      "generate_s": 2.37,
+      "export_s": 0.75,
+      "double_double_s_per_point": 5.223333333333334,
+      "double_s_per_point": 0.17,
+      "ap_s": 7.98
      },
      "failed_checks": []
     }
@@ -6667,10 +6939,10 @@
       }
      ],
      "timings": {
-      "generate_s": 6.39,
-      "export_s": 2.01,
-      "double_double_s_per_point": 48.50666666666667,
-      "double_s_per_point": 6.453333333333333
+      "generate_s": 9.81,
+      "export_s": 2.04,
+      "double_double_s_per_point": 53.556666666666665,
+      "double_s_per_point": 6.993333333333333
      },
      "failed_checks": []
     }
@@ -6716,8 +6988,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 37.3,
-        "double_s_per_point": 6.32
+        "double_double_s_per_point": 40.36,
+        "double_s_per_point": 6.8
        },
        "failed_checks": []
       }
@@ -6752,9 +7024,7 @@
     "uv",
     "ap"
    ],
-   "extras_pending": {
-    "nc": "MQ-NC (shipped N_c declaration and its independent oracles; rule 7)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -6789,12 +7059,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.42,
-      "export_s": 0.24,
-      "double_double_s_per_point": 4.485,
-      "double_s_per_point": 0.0325,
-      "uv_s": 4.58,
-      "ap_s": 5.56
+      "generate_s": 7.98,
+      "export_s": 0.27,
+      "double_double_s_per_point": 4.91,
+      "double_s_per_point": 0.0375,
+      "uv_s": 4.83,
+      "ap_s": 7.31
      },
      "failed_checks": []
     }
@@ -6813,16 +7083,61 @@
       ]
      },
      "relaxed": {},
-     "status": "pending",
-     "waits_for": "MQ-5F",
-     "tiers": {},
-     "missing_records": [
-      "nightly"
-     ]
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 80,
+       "failures": 0,
+       "max_dd_vs_reference": 1.2029343796721553e-15,
+       "max_binary64_vs_dd": 8.662685855278131e-16,
+       "max_catani_dd": 1.3451211945685911e-31,
+       "max_catani_binary64": 7.573342574227825e-16,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 1.2629671579646399e-15,
+        "finite": 6.222310647185264e-16,
+        "single_pole": 1.1666357044550424e-15,
+        "double_pole": 5.604136080772444e-16
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 7.58,
+        "export_s": 0.25,
+        "double_double_s_per_point": 5.0875,
+        "double_s_per_point": 0.03
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
     }
    ],
-   "nc": null,
-   "delegated": {},
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[F01]": "passed",
+     "tests/unit/test_loop_v2_nc_oracles.py::test_poles_at_other_nc_equal_catani[F01]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_nc_projection.py::test_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[F01]": "passed",
+      "tests/unit/test_loop_v2_nc_oracles.py::test_poles_at_other_nc_equal_catani[F01]": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 1.2029343796721553e-15,
    "max_binary64_vs_dd": 8.662685855278131e-16,
    "max_catani_dd": 1.3451211945685911e-31,
@@ -6879,10 +7194,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.53,
-      "export_s": 0.24,
-      "double_double_s_per_point": 4.4775,
-      "double_s_per_point": 0.035
+      "generate_s": 7.63,
+      "export_s": 0.3,
+      "double_double_s_per_point": 5.155,
+      "double_s_per_point": 0.045
      },
      "failed_checks": []
     }
@@ -6901,12 +7216,43 @@
       ]
      },
      "relaxed": {},
-     "status": "pending",
-     "waits_for": "MQ-5F",
-     "tiers": {},
-     "missing_records": [
-      "nightly"
-     ]
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 80,
+       "failures": 0,
+       "max_dd_vs_reference": 1.217858757758286e-15,
+       "max_binary64_vs_dd": 1.8362994417422163e-15,
+       "max_catani_dd": 1.073145756158666e-31,
+       "max_catani_binary64": 7.61765768994487e-16,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 1.1644189405633998e-15,
+        "finite": 1.7311297463031752e-15,
+        "single_pole": 1.334647216816496e-15,
+        "double_pole": 8.346450432080668e-16
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 5.73,
+        "export_s": 0.29,
+        "double_double_s_per_point": 4.9075,
+        "double_s_per_point": 0.045
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -6933,22 +7279,83 @@
    "reference_legend": "N ~15 s",
    "extras": [],
    "extras_pending": {},
-   "waits_for": "MQ-5F",
-   "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
+   "waits_for": null,
+   "pending_reason": null,
    "reference_tolerance": 1e-12,
    "catani": "python",
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {},
-   "status": "pending",
-   "tiers": {},
+   "status": "pass",
+   "tiers": {
+    "default": {
+     "points": [
+      0,
+      1
+     ],
+     "passed": true,
+     "checks": 40,
+     "failures": 0,
+     "max_dd_vs_reference": 1.2759112641389938e-15,
+     "max_binary64_vs_dd": 4.108533960251112e-16,
+     "max_catani_dd": 8.57376808517851e-32,
+     "max_catani_binary64": 7.890986089759805e-16,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 8.65057868113883e-16,
+      "finite": 9.218308523546842e-16,
+      "single_pole": 3.390730934385087e-16,
+      "double_pole": 4.606202446434952e-16
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 3.66,
+      "export_s": 0.2,
+      "double_double_s_per_point": 4.6,
+      "double_s_per_point": 0.03
+     },
+     "failed_checks": []
+    },
+    "nightly": {
+     "points": [
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 40,
+     "failures": 0,
+     "max_dd_vs_reference": 1.7020048241759712e-15,
+     "max_binary64_vs_dd": 4.108533960251112e-16,
+     "max_catani_dd": 4.819438512359674e-32,
+     "max_catani_binary64": 2.8268055483488504e-16,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.6564090541543453e-15,
+      "finite": 4.514091143318434e-16,
+      "single_pole": 9.893819419220966e-16,
+      "double_pole": 4.606202446434952e-16
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 3.6,
+      "export_s": 0.2,
+      "double_double_s_per_point": 4.83,
+      "double_s_per_point": 0.045
+     },
+     "failed_checks": []
+    }
+   },
    "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": null,
-   "max_binary64_vs_dd": null,
-   "max_catani_dd": null,
+   "max_dd_vs_reference": 1.7020048241759712e-15,
+   "max_binary64_vs_dd": 4.108533960251112e-16,
+   "max_catani_dd": 8.57376808517851e-32,
    "max_ward_dd": null
   },
   {
@@ -7010,11 +7417,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.47,
-      "export_s": 0.58,
-      "double_double_s_per_point": 4.7525,
-      "double_s_per_point": 0.075,
-      "ward_s": 10.65
+      "generate_s": 7.78,
+      "export_s": 0.64,
+      "double_double_s_per_point": 5.0375,
+      "double_s_per_point": 0.09,
+      "ward_s": 11.91
      },
      "failed_checks": []
     }
@@ -7033,12 +7440,43 @@
       ]
      },
      "relaxed": {},
-     "status": "pending",
-     "waits_for": "MQ-5F",
-     "tiers": {},
-     "missing_records": [
-      "nightly"
-     ]
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 80,
+       "failures": 0,
+       "max_dd_vs_reference": 6.219207281265026e-16,
+       "max_binary64_vs_dd": 3.0890218858033285e-15,
+       "max_catani_dd": 3.3988633003743326e-30,
+       "max_catani_binary64": 1.595878389645803e-15,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 1.1043929024679662e-15,
+        "finite": 3.369110445094477e-15,
+        "single_pole": 1.994847987057253e-15,
+        "double_pole": 7.916189179755708e-16
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 8.2,
+        "export_s": 0.77,
+        "double_double_s_per_point": 5.78,
+        "double_s_per_point": 0.09
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -7100,10 +7538,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 10.98,
-      "export_s": 1.43,
-      "double_double_s_per_point": 4.88,
-      "double_s_per_point": 0.115
+      "generate_s": 10.42,
+      "export_s": 1.58,
+      "double_double_s_per_point": 4.97,
+      "double_s_per_point": 0.125
      },
      "failed_checks": []
     },
@@ -7129,12 +7567,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 11.49,
-      "export_s": 1.12,
-      "double_double_s_per_point": 5.32,
+      "generate_s": 11.32,
+      "export_s": 1.13,
+      "double_double_s_per_point": 5.44,
       "double_s_per_point": 0.13,
-      "uv_s": 4.42,
-      "ap_s": 7.79
+      "uv_s": 4.55,
+      "ap_s": 8.39
      },
      "failed_checks": []
     }
@@ -7199,10 +7637,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.5,
-      "export_s": 0.91,
-      "double_double_s_per_point": 4.78,
-      "double_s_per_point": 0.1575
+      "generate_s": 7.09,
+      "export_s": 1.02,
+      "double_double_s_per_point": 5.0875,
+      "double_s_per_point": 0.2025
      },
      "failed_checks": []
     }
@@ -7270,13 +7708,13 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.15,
-      "export_s": 0.38,
-      "double_double_s_per_point": 4.6275,
-      "double_s_per_point": 0.0475,
-      "uv_s": 5.01,
-      "ap_s": 7.63,
-      "ckm_s": 13.26
+      "generate_s": 7.0,
+      "export_s": 0.42,
+      "double_double_s_per_point": 4.8375,
+      "double_s_per_point": 0.075,
+      "uv_s": 5.23,
+      "ap_s": 8.02,
+      "ckm_s": 14.89
      },
      "failed_checks": []
     }
@@ -7307,22 +7745,56 @@
    "reference_legend": "N, S ~15 s + CKM-factor relation (MQ-5F)",
    "extras": [],
    "extras_pending": {},
-   "waits_for": "MQ-5F",
-   "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
+   "waits_for": null,
+   "pending_reason": null,
    "reference_tolerance": 1e-12,
    "catani": "python",
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {},
-   "status": "pending",
-   "tiers": {},
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 96,
+     "failures": 0,
+     "max_dd_vs_reference": 1.2215333150994465e-15,
+     "max_binary64_vs_dd": 7.626659095372561e-15,
+     "max_catani_dd": 2.7908449066709228e-30,
+     "max_catani_binary64": 6.9928833678895805e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.2806017192529454e-15,
+      "finite": 3.9868369589105804e-15,
+      "single_pole": 7.303678184240227e-15,
+      "double_pole": 6.72280688073289e-16
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 3.18,
+      "export_s": 0.62,
+      "double_double_s_per_point": 4.915,
+      "double_s_per_point": 0.0975,
+      "ckm_s": 16.3
+     },
+     "failed_checks": []
+    }
+   },
    "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": null,
-   "max_binary64_vs_dd": null,
-   "max_catani_dd": null,
+   "max_dd_vs_reference": 1.2215333150994465e-15,
+   "max_binary64_vs_dd": 7.626659095372561e-15,
+   "max_catani_dd": 2.7908449066709228e-30,
    "max_ward_dd": null
   },
   {
@@ -7342,22 +7814,55 @@
    "reference_legend": "N, S ~15 s (single-provider exception; MQ-5F)",
    "extras": [],
    "extras_pending": {},
-   "waits_for": "MQ-5F",
-   "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
+   "waits_for": null,
+   "pending_reason": null,
    "reference_tolerance": 1e-12,
    "catani": "python",
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {},
-   "status": "pending",
-   "tiers": {},
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 80,
+     "failures": 0,
+     "max_dd_vs_reference": 1.1887163699493153e-15,
+     "max_binary64_vs_dd": 5.5505755675105494e-15,
+     "max_catani_dd": 4.452421162542971e-30,
+     "max_catani_binary64": 4.9540042946027774e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.4871739452817183e-15,
+      "finite": 4.571228841223825e-15,
+      "single_pole": 6.699164898383289e-15,
+      "double_pole": 5.5819592460629335e-16
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 7.11,
+      "export_s": 0.85,
+      "double_double_s_per_point": 5.6775,
+      "double_s_per_point": 0.1275
+     },
+     "failed_checks": []
+    }
+   },
    "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": null,
-   "max_binary64_vs_dd": null,
-   "max_catani_dd": null,
+   "max_dd_vs_reference": 1.1887163699493153e-15,
+   "max_binary64_vs_dd": 5.5505755675105494e-15,
+   "max_catani_dd": 4.452421162542971e-30,
    "max_ward_dd": null
   },
   {
@@ -7422,10 +7927,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 4.46,
-        "export_s": 0.46,
-        "double_double_s_per_point": 4.605,
-        "double_s_per_point": 0.065
+        "generate_s": 5.56,
+        "export_s": 0.56,
+        "double_double_s_per_point": 4.86,
+        "double_s_per_point": 0.07
        },
        "failed_checks": []
       }
@@ -7472,9 +7977,9 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 33.49,
+        "generate_s": 40.83,
         "export_s": 0.0,
-        "double_double_s_per_point": 3.415,
+        "double_double_s_per_point": 3.5925,
         "double_s_per_point": 0.005
        },
        "failed_checks": []
@@ -7522,10 +8027,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 4.47,
-        "export_s": 2.46,
-        "double_double_s_per_point": 5.05,
-        "double_s_per_point": 0.1525
+        "generate_s": 5.63,
+        "export_s": 0.49,
+        "double_double_s_per_point": 5.885,
+        "double_s_per_point": 0.1675
        },
        "failed_checks": []
       }
@@ -7574,8 +8079,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 3.5325,
-        "double_s_per_point": 0.0075
+        "double_double_s_per_point": 3.74,
+        "double_s_per_point": 0.0125
        },
        "failed_checks": []
       }
@@ -7648,10 +8153,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.24,
-      "export_s": 0.28,
-      "double_double_s_per_point": 4.5075,
-      "double_s_per_point": 0.035
+      "generate_s": 4.52,
+      "export_s": 0.3,
+      "double_double_s_per_point": 4.6075,
+      "double_s_per_point": 0.0325
      },
      "failed_checks": []
     }
@@ -7677,8 +8182,8 @@
    ],
    "checks": "rule 4, every point, double-double and binary64, single pole of the leading sector only (D19 QCD^2 QED^6: 9.3e-2 .. 3.4e-1; C07 QCD^4 QED^4: 9.2e-4 .. 2.2e-2); the double poles agree; unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files); unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native); unchanged in campaign pt13 (2026-10-29 ~03:30-03:56 UTC, head 191efa9f = slice a2aa0d84 with MQ-STAB integrated, native loop-native-v2-slice-da6980b0, every tier as whole files; the O1 estimate is loops.v2.stability.RECOMMENDED_CHECKS)",
    "evidence": "rule 1 passes on both rows: our virtual equals MadLoop's per squared split order within 1e-12, poles included. Both follow MadLoop's [virt=QCD] loop selection (loops/orders.py LoopEligibility: every circulating species perturbative in a selected correction), so a loop carrying a W or Z next to the gluon (the boxes and pentagons exchanging a gluon between the two quark lines) is not computed. Catani's operator describes the complete O(alpha_s) virtual, whose non-factorisable poles <T_i.T_k> between the lines are nonzero when the Born interferes colour structures joined by different EW exchanges. Minimal reproducer on D19's points, double-double, rule 4 only (reports/engine-v2/mq-validate/evidence/ew22.py): u d > u d h QCD=0 (Z and W exchange, colour structures delta_13 delta_24 and delta_14 delta_23) single pole 1.6133954759575e-9 against the predicted 1.4436894729941e-9 (rel 0.105; 0.335 at point 1), while u c > u c h and u c~ > u c~ h (one colour structure, where the non-factorisable interference vanishes by colour) agree within 6e-33 .. 3e-31 and the QCD Born u d > u d within 9e-30. The operator's inputs are right: its Born vectors contracted with the Gram matrix give the engine's Born exactly (5.416202339758131e-9) and its C_ij are the expected colour algebra (reports/engine-v2/mq-validate/evidence/vec.py); the Python path (LoopSlice.evaluate, 34 digits) and the native executor give the same virtual and prediction (reports/engine-v2/mq-validate/evidence/catani-D19.log); no relabelling of the legs reproduces the virtual (24 tried, reports/engine-v2/mq-validate/evidence/perm-D19.log); the deviation is mu-independent (points 0 and 3: same kinematics, mu_R halved, the same -0.0313 x Born). poles.predicted_sectors only checks the trees left by a soft exchange of each coupling (L - 2c), not the loops the species condition removes. The same mechanism applies to C07 (W joining the light u->d line and the t b~ line). Pole selection (2026-10-28, reports/engine-v2/mq-validate/evidence/irmode-D19.log, D19 point 0, double-double, slice d3081568): poles='ir' returns the same virtual as poles='all' to every printed digit (finite -3.973456325044482e-9, single -1.613395475957548e-9, double -5.424950094330169e-10), its UV-origin pole parts are 0 and its IR-origin parts are the whole poles, so the renormalised virtual's IR poles are the computed ones (the user-facing 'ir' output is consistent with rule 1); only the Catani prediction (single -1.443689472994084e-9, double equal) misses.",
-   "routed_to": "coordinator: owner of loops/v2/poles.py predicted_sectors (a sector whose Born has colour-connected structures joined only by non-correction bosons with a nonzero non-factorisable <T_i.T_k> is not predicted, or the operator is restricted to the computed loops; poles='ir' itself is consistent, see the evidence). MQ-VALIDATE then moves the D19 and C07 sectors to unpredicted (rule 4 keeps checking them against MadLoop per split order)",
-   "status": "open"
+   "routed_to": "resolved by mq-ewjoin: poles.sector_predictions leaves such sectors unpredicted (reason 'separated-exchange', poles.separated_exchange: the Born trees join the quark lines through different weak exchanges); D19 QCD^2 QED^6 and C07 QCD^4 QED^4 moved to the manifest's unpredicted sectors and pass rule 4 against MadLoop per split order (also u b > d t g)",
+   "status": "resolved"
   },
   {
    "id": "F2",
@@ -7748,10 +8253,11 @@
    "rows": [
     "A09@collinear"
    ],
-   "checks": "eval: points 1-2 (theta = 1e-4, 1e-5) double-double CutFailed { DegenerateGram } and binary64 Unstable (families 78 and 80, also on the re-test and the rotation), point 0 (theta = 1e-3) binary64 Unstable; at point 0 double-double meets MadLoop's quadruple precision (worst finite 7.8e-13) and Catani's poles (4.8e-23 against 10 E = 1e-20); unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files); unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native); unchanged in campaign pt13 (2026-10-29 ~03:30-03:56 UTC, head 191efa9f = slice a2aa0d84 with MQ-STAB integrated, native loop-native-v2-slice-da6980b0, every tier as whole files; the O1 estimate is loops.v2.stability.RECOMMENDED_CHECKS)",
+   "checks": "eval: points 1-2 (theta = 1e-4, 1e-5) double-double CutFailed { DegenerateGram } and binary64 Unstable (families 78 and 80, also on the re-test and the rotation), point 0 (theta = 1e-3) binary64 Unstable; at point 0 double-double meets MadLoop's quadruple precision (worst finite 7.8e-13) and Catani's poles (4.8e-23 against 10 E = 1e-20); unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files); unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native); unchanged in campaign pt13 (2026-10-29 ~03:30-03:56 UTC, head 191efa9f = slice a2aa0d84 with MQ-STAB integrated, native loop-native-v2-slice-da6980b0, every tier as whole files; the O1 estimate is loops.v2.stability.RECOMMENDED_CHECKS); unchanged in campaign m1029-mqcd (2026-10-29 ~17:20-18:00 UTC, pin e18a024b = work/v2-slice after every M-QCD package, native loop-native-v2-slice-d0fef168, every tier as whole files)",
    "evidence": "the collinear family of tools/loop_reference/supplied_points.py (the last two final gluons at opening angle theta = 1e-3, 1e-4, 1e-5 after MQ-REF's fix round). MQ-REF records no provider reference at theta = 1e-4 and 1e-5 (status 'none': MadLoop's quadruple-precision evaluation unstable, return code 420, own accuracy 1.3e-6 and 28; Recola and OpenLoops disagree), so points 1-2 are held by the internal oracles (rules 2-4), which need a value. PLAN \u00a74.1 S2 expects binary64 outside O1 there but double-double and rule 3 to pass; a typed binary64 refusal at a limit point is no value for rule 3. Campaign pt6 and the rerun s3/r1a09 (2026-10-28, head e7029190).",
    "routed_to": "MQ-STAB (or the reduction owner): degenerate-Gram handling of the cut reduction at small opening angles (double-double at theta <= 1e-4) and a binary64 value with an out-of-scope estimate instead of a refusal at theta = 1e-3",
-   "status": "open"
+   "status": "open",
+   "status_note": "accepted limitation for the M-QCD gate (coordinator ruling 2026-10-29 ~11:25 (a)): typed failures, no wrong value"
   },
   {
    "id": "F8",
@@ -7797,10 +8303,11 @@
    "rows": [
     "A24"
    ],
-   "checks": "rule 4 (catani_not_formed) at points 0 and 1; every asserted check passes (rule 1 8e-17 against NJet's double-double, rules 2 and 3, the uv extra)",
+   "checks": "rule 4 (catani_not_formed) at points 0 and 1; every asserted check passes (rule 1 8e-17 against NJet's double-double, rules 2 and 3, the uv extra); unchanged in campaign m1029-mqcd (2026-10-29 ~17:20-18:00 UTC, pin e18a024b = work/v2-slice after every M-QCD package, native loop-native-v2-slice-d0fef168, every tier as whole files)",
    "evidence": "The native-input executor forms no Catani prediction (plan_export.NativeExecutor: 'not formed natively', WP3.1 I5c); the Python-input route exceeds the job (one g g > g g g g point > 22 min). Rule 4's 'tree' prediction needs the tree engine's 21 dipoles of seven gluons in full colour. Its correlated generation (compiled lane, the only one with correlators) is single-threaded and JIT-independent: 5 gluons (A08) 31 s and 0.54 GB at O0 and O2 alike, 6 gluons (A14) 968 s and 11 GB, i.e. about 31x time and 20x memory per gluon, so 7 gluons extrapolate to ~8 h and ~220 GB, above ADDENDUM H's 150 GB (the seven-gluon attempt was at 14 GB after 25 min when stopped; 2026-10-29, reports/engine-v2/mq-validate/evidence/treegen-scaling.txt). The poles themselves agree with NJet's double-double within 8e-17 at both points (rule 1 holds every coefficient, poles included, at 1e-12), and A23 (u u~ > g g g g g) forms rule 4 at 2->5 with the tree engine (2.7e-29). The double pole alone (colour conservation, -C_A n B) is not a substitute for rule 4.",
    "routed_to": "coordinator: owner of the native executor's Catani prediction (WP3.1 I5c, plan_export native inputs), or of a scalable colour-correlated Born in the tree engine (recurrence/on-the-fly correlators: 'not implemented', docs/user/generation-modes-and-evaluators.md)",
-   "status": "open"
+   "status": "open",
+   "status_note": "accepted 'partial' for the M-QCD gate (coordinator ruling 2026-10-29 ~11:25 (b))"
   }
  ],
  "coverage_notes": [

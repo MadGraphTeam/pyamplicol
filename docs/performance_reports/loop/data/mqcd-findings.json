@@ -1,5 +1,5 @@
 {
- "source": "triage of the failing checks of the M-QCD campaign (tests/unit/test_loop_v2_mqcd_*.py; m-qcd/PLAN.md \u00a71.4); curated by MQ-VALIDATE from the campaign records and the experiments named per finding (their scripts and logs kept under the workspace's reports/engine-v2/mq-validate/evidence/); no tolerance is widened and no failing check is listed away",
+ "source": "triage of the failing checks of the M-QCD campaign (tests/unit/test_loop_v2_mqcd_*.py; m-qcd/PLAN.md \u00a71.4); curated by MQ-VALIDATE from the campaign records and the experiments named per finding (their scripts and logs kept under the workspace's reports/engine-v2/mq-validate/evidence/); no tolerance is widened and no failing check is listed away; re-run at the M-QCD pin e18a024b by campaign-m1029-mqcd (no new finding)",
  "findings": [
   {
    "id": "F1",
@@ -82,10 +82,11 @@
    "rows": [
     "A09@collinear"
    ],
-   "checks": "eval: points 1-2 (theta = 1e-4, 1e-5) double-double CutFailed { DegenerateGram } and binary64 Unstable (families 78 and 80, also on the re-test and the rotation), point 0 (theta = 1e-3) binary64 Unstable; at point 0 double-double meets MadLoop's quadruple precision (worst finite 7.8e-13) and Catani's poles (4.8e-23 against 10 E = 1e-20); unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files); unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native); unchanged in campaign pt13 (2026-10-29 ~03:30-03:56 UTC, head 191efa9f = slice a2aa0d84 with MQ-STAB integrated, native loop-native-v2-slice-da6980b0, every tier as whole files; the O1 estimate is loops.v2.stability.RECOMMENDED_CHECKS)",
+   "checks": "eval: points 1-2 (theta = 1e-4, 1e-5) double-double CutFailed { DegenerateGram } and binary64 Unstable (families 78 and 80, also on the re-test and the rotation), point 0 (theta = 1e-3) binary64 Unstable; at point 0 double-double meets MadLoop's quadruple precision (worst finite 7.8e-13) and Catani's poles (4.8e-23 against 10 E = 1e-20); unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files); unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native); unchanged in campaign pt13 (2026-10-29 ~03:30-03:56 UTC, head 191efa9f = slice a2aa0d84 with MQ-STAB integrated, native loop-native-v2-slice-da6980b0, every tier as whole files; the O1 estimate is loops.v2.stability.RECOMMENDED_CHECKS); unchanged in campaign m1029-mqcd (2026-10-29 ~17:20-18:00 UTC, pin e18a024b = work/v2-slice after every M-QCD package, native loop-native-v2-slice-d0fef168, every tier as whole files)",
    "evidence": "the collinear family of tools/loop_reference/supplied_points.py (the last two final gluons at opening angle theta = 1e-3, 1e-4, 1e-5 after MQ-REF's fix round). MQ-REF records no provider reference at theta = 1e-4 and 1e-5 (status 'none': MadLoop's quadruple-precision evaluation unstable, return code 420, own accuracy 1.3e-6 and 28; Recola and OpenLoops disagree), so points 1-2 are held by the internal oracles (rules 2-4), which need a value. PLAN \u00a74.1 S2 expects binary64 outside O1 there but double-double and rule 3 to pass; a typed binary64 refusal at a limit point is no value for rule 3. Campaign pt6 and the rerun s3/r1a09 (2026-10-28, head e7029190).",
    "routed_to": "MQ-STAB (or the reduction owner): degenerate-Gram handling of the cut reduction at small opening angles (double-double at theta <= 1e-4) and a binary64 value with an out-of-scope estimate instead of a refusal at theta = 1e-3",
-   "status": "open"
+   "status": "open",
+   "status_note": "accepted limitation for the M-QCD gate (coordinator ruling 2026-10-29 ~11:25 (a)): typed failures, no wrong value"
   },
   {
    "id": "F8",
@@ -131,10 +132,11 @@
    "rows": [
     "A24"
    ],
-   "checks": "rule 4 (catani_not_formed) at points 0 and 1; every asserted check passes (rule 1 8e-17 against NJet's double-double, rules 2 and 3, the uv extra)",
+   "checks": "rule 4 (catani_not_formed) at points 0 and 1; every asserted check passes (rule 1 8e-17 against NJet's double-double, rules 2 and 3, the uv extra); unchanged in campaign m1029-mqcd (2026-10-29 ~17:20-18:00 UTC, pin e18a024b = work/v2-slice after every M-QCD package, native loop-native-v2-slice-d0fef168, every tier as whole files)",
    "evidence": "The native-input executor forms no Catani prediction (plan_export.NativeExecutor: 'not formed natively', WP3.1 I5c); the Python-input route exceeds the job (one g g > g g g g point > 22 min). Rule 4's 'tree' prediction needs the tree engine's 21 dipoles of seven gluons in full colour. Its correlated generation (compiled lane, the only one with correlators) is single-threaded and JIT-independent: 5 gluons (A08) 31 s and 0.54 GB at O0 and O2 alike, 6 gluons (A14) 968 s and 11 GB, i.e. about 31x time and 20x memory per gluon, so 7 gluons extrapolate to ~8 h and ~220 GB, above ADDENDUM H's 150 GB (the seven-gluon attempt was at 14 GB after 25 min when stopped; 2026-10-29, reports/engine-v2/mq-validate/evidence/treegen-scaling.txt). The poles themselves agree with NJet's double-double within 8e-17 at both points (rule 1 holds every coefficient, poles included, at 1e-12), and A23 (u u~ > g g g g g) forms rule 4 at 2->5 with the tree engine (2.7e-29). The double pole alone (colour conservation, -C_A n B) is not a substitute for rule 4.",
    "routed_to": "coordinator: owner of the native executor's Catani prediction (WP3.1 I5c, plan_export native inputs), or of a scalable colour-correlated Born in the tree engine (recurrence/on-the-fly correlators: 'not implemented', docs/user/generation-modes-and-evaluators.md)",
-   "status": "open"
+   "status": "open",
+   "status_note": "accepted 'partial' for the M-QCD gate (coordinator ruling 2026-10-29 ~11:25 (b))"
   }
  ],
  "coverage_notes": [

@@ -1,13 +1,13 @@
 {
- "date": "2026-10-28",
- "engine_revision": "28a16255",
- "previous_loop": "8335e9e8",
- "previous_engine": "11542fd5",
+ "date": "2026-10-29",
+ "engine_revision": "e18a024b",
+ "previous_loop": "de18f169",
+ "previous_engine": "28a16255",
  "native_build": {
-  "name": "loop-native-v2-slice-5cb5ea83",
-  "digest": "f813c625",
+  "name": "loop-native-v2-slice-d0fef168",
+  "digest": "1be09f92",
   "profile": "release, codegen-units 1, thin LTO, rustc 1.97.1",
-  "source": "workspace/reports/engine-v2/slice-status.md, identical-flavour-lc integration (5cb5ea83, UPDATE 2026-10-28 ~08:50 UTC): integrator release build of the merge commit (digest f813c625b1b5921878809435c2b356101bc5f427c065f9148b64854244d77270), the fourth native change since 8335e9e8 (after ew-ct's loop-native-v2-slice-59d47cb3, fail-closed's loop-native-v2-slice-fb54246c and sdk-parity's loop-native-v2-slice-f6619f34; ew-epsilon, ew-leptons and gate-b128 changed no native input: the gate-b128 integration UPDATE ~08:55 staged this build on 28a16255, which accepted the digest). G1 was re-measured on this build at this milestone (data/g1.json slice_revision 28a16255, slice_build, slice_native_digest; the campaign restaged it with build_loop_native.py stage --source, which accepted the digest). The native libraries support glibc >= 2.42 only (user 2026-10-28, slice-status DECISIONS ~07:40; the clean load-time error is a later package)"
+  "source": "workspace/reports/engine-v2/slice-status.md, mq-legacy-remove integration (539dffdd, UPDATE 2026-10-29 ~17:00 UTC): integrator release build (digest 1be09f92d757614f...); g1-accuracy (e18a024b) changed no native input and stage --source accepted the digest on e18a024b; G1 and the M-QCD campaign ran on it. Release natives need glibc >= 2.38 with a typed load-time error below (glibc-floor, 5301e24a)"
  },
  "development": {
   "source": "git: 889af02c and the G1 scratch commit 39824f9b (tag g1-native-inputs-39824f9b) are on work/v2-generation-scale; work/v2-generation-scale d7e40cfb was integrated into work/v2-slice at 4e9b5a9e (G-int; 889af02c, fef92189, 0ea83af2 and 6f5a64cc are ancestors of 4e9b5a9e, the scratch commit 39824f9b is not); workspace/reports/engine-v2/slice-status.md, G-int integration block and DECISIONS 2026-10-24 ~21:50 UTC; label and integration: HANDOFF_24_10_2026.md section 6.2 (WP3.1 generation-scale, integration package G-int)",
@@ -21,8 +21,8 @@
   "integrated_at": "4e9b5a9e"
  },
  "ancestry": {
-  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout; 2026-10-25: milestone m1025a for 1d27426b, in the main checkout; 2026-10-26: milestone m1025c for 4fc72e39, in the report worktree at 4fc72e39 (it replaces db13c260, the pin of the m1025b attempt, which was not pushed); 2026-10-27: milestone m1026a for 11542fd5, in the report worktree at 11542fd5; 2026-10-28: milestone m1028a for 28a16255, in the report worktree at 28a16255); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
-  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records) and of the engine on loop: every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. 28a16255 is the engine on loop at this milestone (m1028a) and its G1 campaign (slice_revision; every other revision of the data is its ancestor); 11542fd5 was the engine on loop and the G1 campaign of milestone m1026a (its runs are earlier_runs in data/g1.json now); 4fc72e39 was the engine on loop at m1025c (not a G1 campaign); 1d27426b was the G1 campaign of milestone m1025a and of the 2->5 rows (earlier_runs), 4e9b5a9e G-int's (earlier_runs too); 1c971289 and 889af02c were the sides of the campaign before (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e, 1d27426b, 4fc72e39, 11542fd5 or 28a16255 and is no candidate)",
+  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout; 2026-10-25: milestone m1025a for 1d27426b, in the main checkout; 2026-10-26: milestone m1025c for 4fc72e39, in the report worktree at 4fc72e39 (it replaces db13c260, the pin of the m1025b attempt, which was not pushed); 2026-10-27: milestone m1026a for 11542fd5, in the report worktree at 11542fd5; 2026-10-28: milestone m1028a for 28a16255, in the report worktree at 28a16255; 2026-10-29: milestone M-QCD for e18a024b, in the report worktree at e18a024b); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present",
+  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records) and of the engine on loop: every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. e18a024b is the engine on loop at this milestone (M-QCD) and its G1 campaign (slice_revision; every other revision of the data is its ancestor); 28a16255 was the engine on loop and the G1 campaign of milestone m1028a (earlier_runs now); 11542fd5 was the engine on loop and the G1 campaign of milestone m1026a (earlier_runs); 4fc72e39 was the engine on loop at m1025c (not a G1 campaign); 1d27426b was the G1 campaign of milestone m1025a and of the 2->5 rows (earlier_runs), 4e9b5a9e G-int's (earlier_runs too); 1c971289 and 889af02c were the sides of the campaign before (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e, 1d27426b, 4fc72e39, 11542fd5, 28a16255 or e18a024b and is no candidate)",
   "revisions": [
    "1c971289",
    "889af02c",
@@ -33,7 +33,8 @@
    "1d27426b",
    "4fc72e39",
    "11542fd5",
-   "28a16255"
+   "28a16255",
+   "e18a024b"
   ],
   "ancestors": [
    [
@@ -203,6 +204,46 @@
    [
     "11542fd5",
     "28a16255"
+   ],
+   [
+    "1c971289",
+    "e18a024b"
+   ],
+   [
+    "889af02c",
+    "e18a024b"
+   ],
+   [
+    "fef92189",
+    "e18a024b"
+   ],
+   [
+    "0ea83af2",
+    "e18a024b"
+   ],
+   [
+    "6f5a64cc",
+    "e18a024b"
+   ],
+   [
+    "4e9b5a9e",
+    "e18a024b"
+   ],
+   [
+    "1d27426b",
+    "e18a024b"
+   ],
+   [
+    "4fc72e39",
+    "e18a024b"
+   ],
+   [
+    "11542fd5",
+    "e18a024b"
+   ],
+   [
+    "28a16255",
+    "e18a024b"
    ]
   ]
  },
@@ -219,51 +260,99 @@
  },
  "integrated": [
   {
-   "sha": "59d47cb3",
-   "wp": "WP3.2 ew-ct",
-   "title": "EWI-3R: EW counterterm lowering at scale",
-   "detail": "the model compiler's kernel-equivalence proofs run natively and in parallel (rusticol model_proofs, the Python stage the oracle: counterterm model IR equal); one reference pair per Laurent coefficient, shared Horner schemes; the target's counterterm lowering ~26 s cold (26.8 / 26.4 s, 11.1 s warm on 8 threads, 13,403 kernels unchanged) against 259 s before, 8.4 % of the G_mu g g > t t~ EW generation (criterion < 20 %, user 2026-10-28); non-polynomial or below-eps^-2 coupling terms refused when reachable (CountertermCouplingError); new native build"
+   "sha": "6e123fdb",
+   "wp": "onshell-threshold",
+   "title": "Fast binary64 lanes routed at their thresholds",
+   "detail": "binary64 points at the fast engine's absolute on-shell thresholds go to the generic binary64 engine (genericity audit 2 G2-M3); new native build"
   },
   {
-   "sha": "6da37352",
-   "wp": "WP3.2 ew-epsilon",
-   "title": "EWI-7b: Lorentz Epsilon lowered",
-   "detail": "UFO Lorentz Epsilon lowered (dense Levi-Civita tree kernels = ALOHA; sign = MadLoop to 1e-12 per Laurent coefficient); one root-closure reading sign for every fermionless vertex (genericity audit 2 G2-M7); Goldstone-vector mixing sign from the tree engine's momenta, confirmed against MadLoop's counterterm selection (<= 4.4e-14 on g t > t t t~ QED); [U2] anomalous vetoes (a veto that breaks a doublet) refused by default with a recorded override (allow_anomalous_veto)"
+   "sha": "1acb393f",
+   "wp": "fail-closed-2",
+   "title": "Restricted couplings leave the loop catalogue",
+   "detail": "vertices whose couplings vanish at the restriction leave the loop catalogue; listed loop-vertex-outside-tree-model refusal"
   },
   {
-   "sha": "fb54246c",
-   "wp": "fail-closed",
-   "title": "Typed refusals of genericity audit 2",
-   "detail": "listed, typed generation refusals for every silent-wrong-value path of genericity audit 2 (G2-M1 colour-accuracy-nc-exact, G2-M4 plane-mismatch, G2-m4 external-photon alpha(0) at export, G2-m1 representation-changing fermion lines), visible in the dry run; one plane-compile entry point; plans the guards do not refuse keep their bytes; new native build"
+   "sha": "5301e24a",
+   "wp": "glibc-floor",
+   "title": "Typed glibc-floor error",
+   "detail": "release natives need glibc >= 2.38; a lower glibc gives the typed NativePlatformError at load"
   },
   {
-   "sha": "f6619f34",
-   "wp": "sdk-parity",
-   "title": "SDK v4 parameter parity",
-   "detail": "one parameter rule in the Python API, the stored-process view, V2Runtime, the Rust SDK and the C/C++/Fortran clients: ASCII decimal values checked before names, unknown, generation-fixed (naming who fixed them) and scale parameters refused with typed errors (genericity audit 2 G2-M2, m3, m7, m8); scale-dependent batches partitioned by scale; new native build"
+   "sha": "d3081568",
+   "wp": "MQ-WARD",
+   "title": "Generic gauge-Ward check",
+   "detail": "one external gluon's polarisation replaced by its momentum on the native per-point input path, any multiplicity; g g > g g g g g as a nightly test; new native build"
   },
   {
-   "sha": "b82d8280",
-   "wp": "WP3.2 ew-leptons",
-   "title": "EWI-5: lepton lines through the loop",
-   "detail": "arbitrary lepton and colour-singlet fermion lines in the loop and at the root (Koszul signs, one reading-sign rule and one fermion classifier from the tree engine; G2-M5, G2-M6); Bhabha against MadLoop, g g > t t~ e- e+ (EW) against three providers, e- e+ > t t~ h against Recola; MadLoop's omitted R2_G0tt_b shown from its own output and with Recola; photon-only QED on loop_qcd_qed_sm refused (veto-unlabelled-counterterms; full EW on that model works)"
+   "sha": "da6980b0",
+   "wp": "MQ-FFT",
+   "title": "Symmetric-group FFT of the seed contraction",
+   "detail": "certified FFT in the native executor at full colour and NLC (binary64, double-double, MPFR), auto | direct | fft policy reporting the algorithm run, public color.contraction route; new native build"
   },
   {
-   "sha": "5cb5ea83",
-   "wp": "identical-flavour-lc",
-   "title": "Exact LC and NLC of identical flavours",
-   "detail": "LC and NLC of identical-flavour quark lines (u u~ > u u~ g upward, any number of lines) are exact formal-N_c projections: the loop-request blocks and the counterterm program split by U(1)-subtraction N_c grade in the Python and Rust lanes, block grades order-free (G2-M1); legacy LC/NLC oracles of u u~ > u u~ g and LC of u u~ > u u~ u u~; full colour bitwise; new native build"
+   "sha": "141fe125",
+   "wp": "MQ-REF",
+   "title": "M-QCD reference campaign",
+   "detail": "MadLoop quadruple-precision references with every helicity and per-sector accuracy, second providers where needed, the binding reference per point"
   },
   {
-   "sha": "28a16255",
-   "wp": "gate-b128",
-   "title": "G1 speed gate at B = 128 only",
-   "detail": "tools/loop_benchmark gate gives pass/fail at B = 128 only (user 2026-10-28): every other batch size keeps its ratio, band and checks with status reported; the 5 ms floor decided on the B = 128 time; a configuration without a B = 128 timing has no verdict (missing)"
+   "sha": "321efdb4",
+   "wp": "MQ-MODEL",
+   "title": "Stock loop_sm on the public route",
+   "detail": "shipped loop_sm UFO and [loop.model] profile, source repair as a recorded compatibility rule, typed process refusals, full colour the loop default, wheel self-test virtual on loop_sm"
+  },
+  {
+   "sha": "a2aa0d84",
+   "wp": "MQ-STAB",
+   "title": "Recommended stability checks",
+   "detail": "loops.v2.stability.RECOMMENDED_CHECKS (one generic exact rotation and the rescaled reduction check) as the O1 estimate; rescaled check public"
+  },
+  {
+   "sha": "01e80d7c",
+   "wp": "MQ-VALIDATE",
+   "title": "M-QCD validation campaign",
+   "detail": "manifest of the QCD classes on loop_sm, acceptance rules 1-7 against the binding references, default and nightly tiers, data/mqcd.json"
+  },
+  {
+   "sha": "d8d9349f",
+   "wp": "MQ-NC",
+   "title": "Shipped N_c declaration of loop_sm",
+   "detail": "LC/NLC as formal N_c projections of every loop_sm counterterm vertex, resolved by structural digest; independent N_c oracles (NJet N_c scans, Catani at N_c != 3); merge 0428c882"
+  },
+  {
+   "sha": "6b78dc3b",
+   "wp": "MQ-5F",
+   "title": "Five flavours and massive b",
+   "detail": "Dirac-Weyl closures in loop Born admission with typed DiracWeylClosureUnsupported, Rust tree-lane guard; restricted-UFO rows against MadLoop; merge 1070a071; new native build"
+  },
+  {
+   "sha": "d525a09c",
+   "wp": "MQ-EWJOIN",
+   "title": "q q~ > V V + jet and the Catani sector rule",
+   "detail": "loops attach the sum of a field current's tree blocks split by flavour flow (native block_row_terms); separated-exchange sectors unpredicted; merge 3b07f944; new native build"
+  },
+  {
+   "sha": "e4964fc3",
+   "wp": "MQ-SELECT",
+   "title": "LC helicity and colour-flow selection",
+   "detail": "helicities= / color_flows= at generation and evaluation for leading-colour virtuals, recursion pruned to the selection, tree-engine IDs; merge 19ccaf7e; new native build"
+  },
+  {
+   "sha": "539dffdd",
+   "wp": "MQ-LEGACY-REMOVE",
+   "title": "v2 the only one-loop engine",
+   "detail": "the per-diagram legacy engine, its plan v3 artifacts and rescue options removed; loop.engine / --loop-engine refused with the removal reason; frozen captures keep the legacy-oracle tests independent; merges 9c0f649d, 683983e7; new native build"
+  },
+  {
+   "sha": "e18a024b",
+   "wp": "g1-accuracy",
+   "title": "G1 accuracy check per the E1 ruling",
+   "detail": "binary64 asserted against the providers only where the estimate E <= 1e-9, double-double asserted beyond (user 2026-10-29 ~03:45)"
   }
  ],
- "integrated_tip": "28a16255",
+ "integrated_tip": "e18a024b",
  "after_integration": [],
- "already_on_loop": "v2 waves 0-1 (gates S1, G0), native executor, colour, stability API, schedule M, observables, NJet reference, public v2 engine with plan v4 artifacts, counterterms as plain tree insertions (addendum J), runtime pole selection, Rust A0-A3, the G1 harness, G-int (native per-point inputs and generation stages), the summary-first report; at milestone m1025a ct-perf, ew-poles (EW guards, QED Catani operator), lc-perf, artifact-portability and ew-lines; at m1025c native-dag A4, ew-gauge EWI-4a, precision-ap, ew-ct EWI-0/EWI-3, measure-g1-7leg (G1 at 2->5), reference-relocate, model-determinism, native-lowering D phase 1 part 1 and onshell-consistency; at m1026a ew-gauge EWI-4b, native-seeds B phase 1, native-cells C phase 1, genericity-fixes, ew-poles EWI-6b, fermion-lines and generation-scale-2",
+ "already_on_loop": "v2 waves 0-1 (gates S1, G0), native executor, colour, stability API, schedule M, observables, NJet reference, public v2 engine with plan v4 artifacts, counterterms as plain tree insertions (addendum J), runtime pole selection, Rust A0-A3, the G1 harness, G-int (native per-point inputs and generation stages), the summary-first report; at milestone m1025a ct-perf, ew-poles (EW guards, QED Catani operator), lc-perf, artifact-portability and ew-lines; at m1025c native-dag A4, ew-gauge EWI-4a, precision-ap, ew-ct EWI-0/EWI-3, measure-g1-7leg (G1 at 2->5), reference-relocate, model-determinism, native-lowering D phase 1 part 1 and onshell-consistency; at m1026a ew-gauge EWI-4b, native-seeds B phase 1, native-cells C phase 1, genericity-fixes, ew-poles EWI-6b, fermion-lines and generation-scale-2; at m1028a ew-ct EWI-3R, ew-epsilon EWI-7b, fail-closed, sdk-parity, ew-leptons EWI-5, identical-flavour-lc and gate-b128",
  "addendum_commits": [
   "b91d23a8",
   "2dd36f65",
@@ -271,7 +360,7 @@
   "f21495ed"
  ],
  "gate_references": {
-  "source": "docs/development/loop_v2/DESIGN.md \u00a71.3 Table 1b (production mode, one pinned core, this host, measured 2026-10-20 for the design), OpenLoops and Recola transcribed as text; MadLoop's production-build times are read from the reference runs' records (data/measured.json provider_generation, madloop-production-result.json); scripts/build_summary.py computes the gate limit from the lower ends (MadLoop, 1.30 \u00d7 Recola, 1.30 \u00d7 OpenLoops) when every matched provider has a production time; the 2->4 rows and the seven-leg QCD rows are measured by G1 (data/g1.json; the seven-leg rows since package measure-g1-7leg, all rows re-measured at milestones m1026a and m1028a), so these references serve the rows G1 does not time (the EW row)",
+  "source": "docs/development/loop_v2/DESIGN.md \u00a71.3 Table 1b (production mode, one pinned core, this host, measured 2026-10-20 for the design), OpenLoops and Recola transcribed as text; MadLoop's production-build times are read from the reference runs' records (data/measured.json provider_generation, madloop-production-result.json); scripts/build_summary.py computes the gate limit from the lower ends (MadLoop, 1.30 \u00d7 Recola, 1.30 \u00d7 OpenLoops) when every matched provider has a production time; the 2->4 rows and the seven-leg QCD rows are measured by G1 (data/g1.json; the seven-leg rows since package measure-g1-7leg, all rows re-measured at milestones m1026a, m1028a and M-QCD), so these references serve the rows G1 does not time (the EW row)",
   "rows": [
    {
     "label": "u overline(u) -> e^- e^+ g g g",
@@ -458,7 +547,7 @@
   "catani_native_vs_njet": 2.3e-14
  },
  "status_notes": {
-  "source": "HANDOFF_24_10_2026.md sections 0.1 and 9 items 2 and 4; HANDOFF_22_10_2026.md section 0.1 (provider jobs stopped); DESIGN.md WP3.2; workspace/reports/engine-v2/slice-status.md, ew-poles (8b52179b), ew-lines (1d27426b), ew-gauge EWI-4a (6c87e276) and ew-ct EWI-0/EWI-3 (392d3f4a), ew-gauge EWI-4b (8b19dae8), ew-poles batch 2 (e6e7543a), ew-ct EWI-3R (59d47cb3), ew-epsilon EWI-7b (6da37352) and ew-leptons EWI-5 (b82d8280) integrations and DECISIONS 2026-10-28 ~08:10 UTC (WP3.2 in progress, the EW row not generated by any configuration: EW native inputs (EWI-N) open; its open increments: workspace/reports/engine-v2/wp32/PLAN.md); the seven-gluon Ward check: DESIGN.md WP3.1 generation-scale-2 status (native Ward inputs: its next run); workspace/reports/engine-v2/slice-status.md, G-int integration (4e9b5a9e: the V+jets rows that the engine with Python per-point inputs refused generate on loop with the native generator, data/g1.json; the 2->5 V+jets and g g > t t~ e- e+ g (QCD) records of the branch are ancestors of 4e9b5a9e); the configuration of the gg_ggggg validation: tests/fixtures/loop/required/gg_ggggg_njet.json names the scheme massless-qcd-nf5, for which tools/loop_v2_generate.py validate (work/v2-generation-scale, 0ea83af2) vetoes the top; the seven-gluon Ward attempt: workspace/reports/engine-v2/measure-g1-7leg/records (measure-g1-7leg session 6) and README.md there",
+  "source": "HANDOFF_24_10_2026.md sections 0.1 and 9 items 2 and 4; HANDOFF_22_10_2026.md section 0.1 (provider jobs stopped); DESIGN.md WP3.2; workspace/reports/engine-v2/slice-status.md, ew-poles (8b52179b), ew-lines (1d27426b), ew-gauge EWI-4a (6c87e276) and ew-ct EWI-0/EWI-3 (392d3f4a), ew-gauge EWI-4b (8b19dae8), ew-poles batch 2 (e6e7543a), ew-ct EWI-3R (59d47cb3), ew-epsilon EWI-7b (6da37352) and ew-leptons EWI-5 (b82d8280) integrations and DECISIONS 2026-10-28 ~08:10 UTC (WP3.2 in progress, the EW row not generated by any configuration: EW native inputs (EWI-N) open; its open increments: workspace/reports/engine-v2/wp32/PLAN.md); the seven-gluon Ward check: DESIGN.md WP3.1 generation-scale-2 status (native Ward inputs: its next run); workspace/reports/engine-v2/slice-status.md, G-int integration (4e9b5a9e: the V+jets rows that the engine with Python per-point inputs refused generate on loop with the native generator, data/g1.json; the 2->5 V+jets and g g > t t~ e- e+ g (QCD) records of the branch are ancestors of 4e9b5a9e); the configuration of the gg_ggggg validation: tests/fixtures/loop/required/gg_ggggg_njet.json names the scheme massless-qcd-nf5, for which tools/loop_v2_generate.py validate (work/v2-generation-scale, 0ea83af2) vetoes the top; the seven-gluon Ward attempt: workspace/reports/engine-v2/measure-g1-7leg/records (measure-g1-7leg session 6) and README.md there; the seven-gluon Ward check: slice-status UPDATE 2026-10-28 ~21:50 UTC (mq-ward)",
   "what": "short attributions of the registry: a refusal attributed to the engine on loop (with its basis where it is inferred), a capability in development that no configuration generates yet, or one nobody has started, printed in Table 1 only where the most recent configuration of the row refuses or no configuration has a record (scripts/build_summary.py, main-configuration rule); short labels of records and the configuration of a development record where the record does not carry it; measured numbers never come from here",
   "notes": {
    "gg_ttxemepg_ew": {
@@ -474,13 +563,13 @@
      6
     ],
     "providers": "stopped 22 Oct; not to be restarted (HANDOFF section 0.1)",
-    "ward_status": "pending \u2014 needs native Ward inputs",
-    "ward": "pending (coordinator ruling, slice-status DECISIONS 2026-10-25 ~19:40: a recorded, temporary deviation from ADDENDUM H; the seven-gluon Ward check moves to a generation-scale run with native Ward inputs, which generation-scale-2's first run, integrated at 11542fd5, did not include; the G1 campaigns of milestones m1026a and m1028a did not attempt it). Attempted at seven legs on slice 7db32901 (package measure-g1-7leg, session 6): the Ward-mode generation of g g > g g g g g (Python per-point inputs with full tree kernels; point 0, leg 3, c = 1) had not finished after 55 min when the job stopped; one binary64 Ward evaluation took 33-43 s at 5 legs and 2,659-2,860 s at 6 legs, a growth of x62-87 per added gluon, which puts one seven-gluon Ward evaluation at about 1.6e5-2.5e5 s (46-69 h) with Python per-point inputs (an estimate, not a measurement): seven gluons need native Ward inputs; the 5- and 6-gluon Ward rows pass"
+    "ward_status": "passed (MQ-WARD)",
+    "ward": "MQ-WARD (d3081568, native Ward inputs): legs 1, 4 and 7 of the top-free g g > g g g g g, virtual <= 2.9e-10 (binary64) and 2.8e-26 (double-double) of the physical scale, Born 9.8e-16 / 5.3e-32 (27 GB, ~27 min on 12 threads); nightly test tests/unit/test_loop_v2_ward.py::test_seven_gluon_ward_identity; records workspace/reports/engine-v2/mq-ward/records/gg_ggggg.json"
    }
   }
  },
  "pending": {
-  "source": "HANDOFF_24_10_2026.md section 6.5 (measure-g1-7leg); its 2->5 rows are timed in g1.json (batched, full and leading colour, on the integrated configuration of slice_revision 28a16255), so no row waits for it today; a row with development records and no batched timing would",
+  "source": "HANDOFF_24_10_2026.md section 6.5 (measure-g1-7leg); its 2->5 rows are timed in g1.json (batched, full and leading colour, on the integrated configuration of slice_revision e18a024b), so no row waits for it today; a row with development records and no batched timing would",
   "what": "the package that will time, in batches, a row whose most recent configuration has no batched timing (the development validation records time single points only)",
   "batched": "measure-g1-7leg"
  },
@@ -534,8 +623,20 @@
   ]
  },
  "cell_notes": {
-  "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS 2026-10-26 ~21:10 UTC item 1 (the identical-flavour LC/NLC limitation, removed at milestone m1028a by identical-flavour-lc, 5cb5ea83) and 2026-10-28 ~09:00 UTC (milestone m1028a); data/g1.json known_limitations, host and seven_leg_rows (milestone m1028a's G1 campaign)",
-  "what": "notes on single measured cells of Table 1: each names its process, cell (generation, full_colour, leading_colour), G1 configuration and revision; scripts/build_summary.py attaches it to that main cell (summary.json <cell>.main.note) and stops the build when the cell's main value is not that configuration at that revision (a newer measurement needs a new decision); the value stays as measured; none at milestone m1028a: the identical-flavour LC note of m1026a is removed (u u~ > u u~ g's LC is a validated value since identical-flavour-lc) and the seven-gluon full-colour contention note qualified m1026a's re-run of 2026-10-27, which this campaign's run replaces; round 1's host contention of the small rows was repeated and round 2 decides (data/g1.json host)",
-  "notes": []
- }
+  "source": "data/g1.json host and repeats (milestone M-QCD's G1 campaign, workspace/reports/engine-v2/measure-g1/records/m1029-mqcd)",
+  "what": "notes on single measured cells of Table 1: each names its process, cell (generation, full_colour, leading_colour), G1 configuration and revision; scripts/build_summary.py attaches it to that main cell (summary.json <cell>.main.note) and stops the build when the cell's main value is not that configuration at that revision; the value stays as measured",
+  "notes": [
+   {
+    "process": "uux_ddxg",
+    "cell": "full_colour",
+    "configuration": "native/full",
+    "revision": "e18a024b",
+    "kind": "run conditions",
+    "label": "busy host: 1.88-1.91 ms in two other runs",
+    "reason": "2.20 ms per point (1.12 of OpenLoops's limit, below 5 ms: not gated) against 1.83 ms at m1028a; the same engine and native ran it at 1.88 ms (smoke run) and 1.91 ms (public path); not repeated (one timing round, user 2026-10-28)",
+    "source": "G1 campaign m1029-mqcd (STATE.md, confirm/)"
+   }
+  ]
+ },
+ "milestone": "M-QCD (m1029-mqcd)"
 }
