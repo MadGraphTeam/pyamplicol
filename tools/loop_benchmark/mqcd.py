@@ -3721,14 +3721,21 @@ def smoke(campaign: Campaign, restriction: str, spec: Mapping[str, Any]) -> list
         base = campaign.run(row.id).evaluate([0], "double", stability=False)[0]
         model = campaign.model(restriction, row.model)
         externals = _external_parameters(model)
-        # The restriction's parameters (a parameter it restricts away, e.g. a
-        # width of no_widths, is not set).
+        # The base restriction's values of the parameters it removes and the
+        # other keeps (its card: e.g. MB = 0 under with_b_mass, epsUV = 1
+        # under with_technical, the Wolfenstein parameters 0 under ckm), and
+        # none the other restricts away (a width of no_widths).
+        kept = externals - _external_parameters(
+            campaign.model(row.restriction, row.model)
+        )
+        card = restriction_card(campaign.ufo_path(row.model), row.restriction)
         restricted = replace(
             row,
             id=f"{row.id}~{restriction}",
             restriction=restriction,
             fixed_parameters={
-                k: v for k, v in row.fixed_parameters.items() if k in externals
+                **{k: v for k, v in row.fixed_parameters.items() if k in externals},
+                **{k: card[k] for k in sorted(kept) if k in card},
             },
         )
         run = RowRun(restricted, model, campaign.native)
@@ -3756,6 +3763,21 @@ def smoke(campaign: Campaign, restriction: str, spec: Mapping[str, Any]) -> list
         )
     base, other = values
     return _smoke_checks(base, other, restriction, row.restriction)
+
+
+def restriction_card(ufo: Path, restriction: str) -> dict[str, str]:
+    """Parameter name -> value of a UFO's ``restrict_<restriction>.dat``
+    (an MG5 param card: ``<codes> <value> # <name>`` lines)."""
+
+    import re
+
+    pattern = re.compile(r"^\s*\d+(?:\s+\d+)*\s+([-+0-9.eE]+)\s*#\s*(\S+)")
+    values = {}
+    for line in (Path(ufo) / f"restrict_{restriction}.dat").read_text().splitlines():
+        found = pattern.match(line)
+        if found:
+            values[found.group(2)] = format(Decimal(found.group(1)).normalize(), "f")
+    return values
 
 
 def _smoke_checks(
