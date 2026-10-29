@@ -56,6 +56,20 @@ def derived_parameters(scheme):
     elif scheme["electroweak_inputs"] == "alpha_mw":
         # alpha, MZ and MW all inputs (MG5_aMC's loop_qcd_qed_sm).
         alpha, mw = 1 / p["aEWM1"], p["MW"]
+    elif scheme.get("complex_mass_scheme"):
+        # The G_mu UFO under MG5's complex-mass scheme with GfRedefinitionChoice = 1:
+        # alpha = sqrt(2) Gf |mu_W^2 (1 - mu_W^2 / mu_Z^2)| / pi, mu^2 = M^2 - i M Gamma.
+        choice = scheme.get("conventions", {}).get("GfRedefinitionChoice", "")
+        if not choice.startswith("1"):
+            raise NotImplementedError(f"complex-mass G_mu alpha for GfRedefinitionChoice {choice!r}")
+        mw = p["MW"]
+        w = (mw ** 2, -mw * Decimal(width(scheme, "WW")))
+        z = (p["MZ"] ** 2, -p["MZ"] * Decimal(width(scheme, "WZ")))
+        w2 = (w[0] ** 2 - w[1] ** 2, 2 * w[0] * w[1])
+        norm = z[0] ** 2 + z[1] ** 2
+        ratio = ((w2[0] * z[0] + w2[1] * z[1]) / norm, (w2[1] * z[0] - w2[0] * z[1]) / norm)
+        x = (w[0] - ratio[0], w[1] - ratio[1])
+        alpha = two.sqrt() * p["Gf"] * (x[0] ** 2 + x[1] ** 2).sqrt() / PI
     else:
         mw = p["MW"]
         alpha = two.sqrt() * p["Gf"] * mw ** 2 * (1 - mw ** 2 / p["MZ"] ** 2) / PI
@@ -323,6 +337,59 @@ def madloop_model_fix(export, work, global_flag):
                     "-I", str(source.parent), "-J", str(work), "-c", str(fixed), "-o", str(obj)],
                    check=True, cwd=work)
     return [obj], repairs
+
+
+def ufo_model_directory(model):
+    """The UFO directory of an MG5 model path (``<dir>-<restriction>`` names a
+    restriction card of ``<dir>``)."""
+    path = Path(model)
+    if not path.is_dir() and "-" in path.name:
+        path = path.with_name(path.name.rsplit("-", 1)[0])
+    if not (path / "__init__.py").exists():
+        raise FileNotFoundError(f"no UFO model at {path}")
+    return path
+
+
+def ufo_r2_coupling_names(model):
+    """Names of the couplings of the UFO's R2 counterterm vertices (``all_CTvertices``
+    of type R2), read by importing the UFO under a private module name."""
+    import importlib.util
+
+    directory = ufo_model_directory(model)
+    name = "_ufo_r2_" + re.sub(r"\W", "_", str(directory))
+    module = sys.modules.get(name)
+    if module is None:
+        spec = importlib.util.spec_from_file_location(name, directory / "__init__.py",
+                                                      submodule_search_locations=[str(directory)])
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+    names = set()
+    for vertex in module.all_CTvertices:
+        if str(getattr(vertex, "type", "")).upper().startswith("R2"):
+            names.update(coupling.name for coupling in vertex.couplings.values())
+    return names
+
+
+def madloop_r2_couplings(export, model):
+    """The UFO R2 couplings a MadLoop export calls: every R2 CT-vertex coupling
+    name of the model found (as a Fortran token, case-insensitively) in the
+    export's SubProcesses/P*/*.f sources. MadLoop inserts an R2 coupling only for
+    loops whose propagator set matches the coupling's loop-particle label, so an
+    R2 coupling of the UFO can be missing here although the engine inserts it
+    (the input of the rule-1 R2 correction of m-sm/PLAN.md §1.4); couplings the
+    restriction sets to zero are absent as well."""
+    names = {n.upper(): n for n in ufo_r2_coupling_names(model)}
+    found = set()
+    token = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+    for source in sorted(Path(export).glob("SubProcesses/P*/*.f")):
+        for word in token.findall(source.read_text(errors="replace")):
+            hit = names.get(word.upper())
+            if hit:
+                found.add(hit)
+    return {"called": sorted(found), "ufo_r2_couplings": len(names),
+            "source": "UFO R2 CT-vertex couplings (all_CTvertices of type R2) found as tokens in the export's "
+                      "SubProcesses/P*/*.f"}
 
 
 def fix_unassigned_jamps(text):
@@ -605,10 +672,24 @@ def run_native(command, stdin_text, cwd, log, cpu, env=None):
 LAURENT = ("finite", "single_pole", "double_pole")
 
 
+def correction_steps(step):
+    """``step`` as an ordered {correction: step} map: a single step (dict of
+    orders) is the primary correction alone; a joint request passes one step
+    per correction (primary first)."""
+    if "QCD" in step and isinstance(step["QCD"], int):
+        return {"primary": step}
+    return dict(step)
+
+
 def madloop_sectors(values, nanswer, nloop, born_so, loop_so, step):
     """Split one SECTORS/HEL_ROW payload (ANS(0:3,0:nanswer) column-major, then
     ACC(0:nloop)) into named squared split orders. Each loop sector names the
-    Born sector its Catani poles multiply (its orders minus the correction step)."""
+    Born sector its Catani poles multiply (its orders minus the correction step).
+    With several corrections (``step`` = {correction: step}, primary first) a
+    loop sector lists the Born sector of each correction (``born_sectors``, None
+    where that correction reaches no Born sector) and ``born_sector`` is the
+    first one present."""
+    steps = correction_steps(step)
     answer = [values[4 * j:4 * j + 4] for j in range(nanswer + 1)]
     accuracy = values[4 * (nanswer + 1):4 * (nanswer + 1) + nloop + 1]
     if len(accuracy) != nloop + 1:
@@ -622,8 +703,13 @@ def madloop_sectors(values, nanswer, nloop, born_so, loop_so, step):
     for index, (qcd, qed) in sorted(loop_so.items()):
         entry = {"QCD": qcd, "QED": qed, **dict(zip(LAURENT, answer[index][1:], strict=True)),
                  "accuracy": accuracy[index]}
-        partner = (qcd - step["QCD"], qed - step["QED"])
-        entry["born_sector"] = {"QCD": partner[0], "QED": partner[1]} if partner in born_orders else None
+        partners = {}
+        for name, one in steps.items():
+            partner = (qcd - one["QCD"], qed - one["QED"])
+            partners[name] = {"QCD": partner[0], "QED": partner[1]} if partner in born_orders else None
+        entry["born_sector"] = next((x for x in partners.values() if x is not None), None)
+        if len(steps) > 1:
+            entry["born_sectors"] = partners
         loop.append(entry)
     total = {"born": answer[0][0], **dict(zip(LAURENT, answer[0][1:], strict=True)), "accuracy": accuracy[0]}
     return {"born": born, "loop": loop, "total": total}
@@ -937,6 +1023,8 @@ def command_run(args):
             stdout, wall = run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu,
                                       env={"OpenLoopsPath": str(root)})
         step = {k: spec["loop_orders"][k] - spec["born_orders"][k] for k in ("QCD", "QED")}
+        if len(spec["corrections"]) > 1:
+            step = {c: required_spec.CORRECTION_STEP[c] for c in spec["corrections"]}
         born_so = (madloop_born_split_orders(madloop_process_dir(args.madloop_export.resolve(), args.subprocess))
                    if provider == "madloop" else None)
         rows, extra = parse_rows(stdout, provider, count, step, born_so)
@@ -1046,22 +1134,35 @@ def sector_pole_error(madloop_row, pole_factor, coupling, absolute_scale=None):
     Born|, the point's largest |D|, |Born| * coupling/(2 pi), |factor| *
     absolute_scale). MadLoop's values as printed (Born in double precision at
     the binary64 input): a garbage or overflowing Born sector violates it at
-    O(1); limit points violate it by their binary64 Born condition."""
+    O(1); limit points violate it by their binary64 Born condition. A joint
+    request passes ``pole_factor`` and ``coupling`` as {correction: value} maps
+    (the keys of each sector's ``born_sectors``): the expected double pole of a
+    sector is then the sum over corrections of factor * Born(its born sector)."""
     sectors = madloop_row.get("sectors")
+    joint = isinstance(pole_factor, dict)
+    factors = pole_factor if joint else {"primary": pole_factor}
+    couplings = coupling if joint else {"primary": coupling}
     pairs = []
     if sectors:
         born = {(b["QCD"], b["QED"]): b["born"] for b in sectors["born"]}
         for loop in sectors["loop"]:
-            partner = loop["born_sector"]
-            pairs.append((loop["double_pole"], born[(partner["QCD"], partner["QED"])] if partner else 0.0))
+            partners = loop.get("born_sectors") if joint else {"primary": loop["born_sector"]}
+            expected, unit = 0.0, 0.0
+            for name, partner in partners.items():
+                if partner:
+                    value_ = born[(partner["QCD"], partner["QED"])]
+                    expected += factors[name] * value_
+                    unit = max(unit, abs(value_) * couplings[name] / (2 * math.pi))
+            pairs.append((loop["double_pole"], expected, unit))
     else:
-        pairs.append((madloop_row["double_pole"], madloop_row["born"]))
-    largest = max(abs(d) for d, _ in pairs)
+        primary = next(iter(factors))
+        pairs.append((madloop_row["double_pole"], factors[primary] * madloop_row["born"],
+                      abs(madloop_row["born"]) * couplings[primary] / (2 * math.pi)))
+    largest = max(abs(d) for d, _, _ in pairs)
+    scale = max(abs(f) for f in factors.values()) * (absolute_scale or 0.0)
     worst = 0.0
-    for double_pole, born_value in pairs:
-        floor = max(largest, abs(born_value) * coupling / (2 * math.pi),
-                    abs(pole_factor) * (absolute_scale or 0.0))
-        worst = max(worst, relative(double_pole, pole_factor * born_value, floor))
+    for double_pole, expected, unit in pairs:
+        worst = max(worst, relative(double_pole, expected, max(largest, unit, scale)))
     return worst
 
 
@@ -1081,7 +1182,49 @@ def ctmode_run(result):
     return (result or {}).get("settings", {}).get("ctmode_run")
 
 
-def per_helicity_reference(entries, pole_factor, qp_point=False):
+def double_pole_partners(sectors, pole_factor):
+    """{born sector: (loop sector, factor)} of the loop sectors whose universal
+    double pole is factor * that one Born sector: every sector with a Born
+    partner for a single correction; for a joint request (``pole_factor`` a
+    {correction: factor} map) only sectors reached by exactly one correction."""
+    out = {}
+    for loop in sectors["loop"]:
+        if isinstance(pole_factor, dict):
+            present = [(name, x) for name, x in (loop.get("born_sectors") or {}).items() if x]
+            if len(present) != 1 or not pole_factor[present[0][0]]:
+                continue
+            (name, partner), = present
+            out[(partner["QCD"], partner["QED"])] = (loop, pole_factor[name])
+        elif loop["born_sector"]:
+            out[(loop["born_sector"]["QCD"], loop["born_sector"]["QED"])] = (loop, pole_factor)
+    return out
+
+
+def substitute_sector_borns(sectors, pole_factor, sector_factors=None):
+    """Replace each Born sector by its loop partner's double pole over the
+    universal factor (``double_pole_partners``) and return (total Born, whether
+    every Born sector was replaced). The total is the total double pole over the
+    factor for a single correction; for a joint request the sum of the replaced
+    sectors, or the printed total where some Born sector has no single partner."""
+    loops = double_pole_partners(sectors, sector_factors or pole_factor)
+    complete = True
+    for born in sectors["born"]:
+        loop, factor = loops.get((born["QCD"], born["QED"]), (None, None))
+        if loop is None:
+            complete = False
+            continue
+        born["born_binary64_input"] = born["born"]
+        born["born"] = loop["double_pole"] / factor
+    sectors["total"]["born_binary64_input"] = sectors["total"]["born"]
+    if not sector_factors:
+        total = sectors["total"]["double_pole"] / pole_factor
+    else:
+        total = sum(b["born"] for b in sectors["born"]) if complete else sectors["total"]["born"]
+    sectors["total"]["born"] = total
+    return total, complete
+
+
+def per_helicity_reference(entries, pole_factor, qp_point=False, sector_factors=None):
     """Per-helicity entries of one point: at quadruple-precision entries (return
     code 3xx/4xx) with a universal double pole the reference Born is the entry's double pole over
     the factor (the IR double pole is helicity-diagonal; MadLoop's printed Born
@@ -1099,20 +1242,15 @@ def per_helicity_reference(entries, pole_factor, qp_point=False):
         entry["reference"] = {"born_source": "madloop"}
         if not (entry["status"] // 100 in (3, 4) and pole_factor):
             continue
-        entry["born_binary64_input"] = entry["born"]
-        entry["born"] = entry["double_pole"] / pole_factor
-        entry["reference"]["born_source"] = "madloop_double_pole_over_universal_factor"
         sectors = entry.get("sectors")
+        total = entry["double_pole"] / pole_factor
         if sectors:
-            loops = {(x["born_sector"]["QCD"], x["born_sector"]["QED"]): x for x in sectors["loop"]
-                     if x["born_sector"]}
-            for born in sectors["born"]:
-                loop = loops.get((born["QCD"], born["QED"]))
-                if loop is not None:
-                    born["born_binary64_input"] = born["born"]
-                    born["born"] = loop["double_pole"] / pole_factor
-            sectors["total"]["born_binary64_input"] = sectors["total"]["born"]
-            sectors["total"]["born"] = sectors["total"]["double_pole"] / pole_factor
+            total, complete = substitute_sector_borns(sectors, pole_factor, sector_factors)
+            if sector_factors and not complete:
+                continue  # a joint sector without a single partner: the printed Born stays
+        entry["born_binary64_input"] = entry["born"]
+        entry["born"] = total
+        entry["reference"]["born_source"] = "madloop_double_pole_over_universal_factor"
     summed = sum(abs(entry["born"]) for entry in entries)
     for entry in entries:
         printed = entry.get("born_binary64_input", entry["born"])
@@ -1146,7 +1284,8 @@ def madloop_point(qp_point, status):
     return "binary64 rounding of the published point (double precision)"
 
 
-def madloop_references(rows, madloop_rows, primary, pole_factor, coupling, statuses, qp_point, tolerance):
+def madloop_references(rows, madloop_rows, primary, pole_factor, coupling, statuses, qp_point, tolerance,
+                       sector_factors=None, sector_couplings=None):
     """Per point: the reference Born at the published point and a
     machine-readable ``reference`` record; refuses a point whose MadLoop sector
     values violate the universal double pole beyond ``tolerance`` unless its
@@ -1165,21 +1304,14 @@ def madloop_references(rows, madloop_rows, primary, pole_factor, coupling, statu
         sectors = row.get("sectors")
         if sectors:
             sectors = row["sectors"] = json.loads(json.dumps(sectors))
-            loops = {(s["born_sector"]["QCD"], s["born_sector"]["QED"]): s for s in sectors["loop"]
-                     if s["born_sector"]}
-            for born in sectors["born"]:
-                loop = loops.get((born["QCD"], born["QED"]))
-                if loop is not None:
-                    born["born_binary64_input"] = born["born"]
-                    born["born"] = loop["double_pole"] / pole_factor
-            sectors["total"]["born_binary64_input"] = sectors["total"]["born"]
-            sectors["total"]["born"] = sectors["total"]["double_pole"] / pole_factor
+            substitute_sector_borns(sectors, pole_factor, sector_factors)
     refused, unstable = [], []
     for index, (row, madloop_row) in enumerate(zip(rows, madloop_rows, strict=True)):
         status = statuses.get(index, {"status": "ok", "comparison": "relative"})
         scale_row = status.get("scale_row")
         absolute_scale = abs(rows[scale_row]["born"]) if scale_row is not None else None
-        pole_error = sector_pole_error(madloop_row, pole_factor, coupling, absolute_scale)
+        pole_error = sector_pole_error(madloop_row, sector_factors or pole_factor, sector_couplings or coupling,
+                                       absolute_scale)
         mismatch = None
         if pole_factor:
             mismatch = relative(madloop_row["born"], madloop_row["double_pole"] / pole_factor,
@@ -1240,8 +1372,14 @@ def command_merge(args):
     primary = validated[0]
     scheme = spec["scheme_data"]
     derived = derived_parameters(scheme)
-    coupling = float(Decimal(value(scheme, "aS"))) if spec["correction"] == "QCD" else float(Decimal(derived["alpha"]))
+    couplings = {c: float(Decimal(value(scheme, "aS"))) if c == "QCD" else float(Decimal(derived["alpha"]))
+                 for c in spec["corrections"]}
+    coupling = couplings[spec["correction"]]
     pole_factor = required_spec.double_pole_factor(spec, coupling)
+    sector_factors = sector_couplings = None
+    if len(spec["corrections"]) > 1:
+        sector_couplings = couplings
+        sector_factors = {c: required_spec.double_pole_factor(spec, couplings[c], c) for c in spec["corrections"]}
     rows, errors, pole_errors = [], [], []
     names = list(results)
     for index in range(len(points["points"])):
@@ -1287,7 +1425,8 @@ def command_merge(args):
     qp_point = bool(points.get("madloop_qp_point"))
     if "madloop" in results:
         madloop_references(rows, results["madloop"]["rows"], primary, pole_factor, coupling,
-                           point_statuses(args.point_status, len(rows)), qp_point, args.tolerance)
+                           point_statuses(args.point_status, len(rows)), qp_point, args.tolerance,
+                           sector_factors, sector_couplings)
     elif args.point_status:
         raise SystemExit("--point-status needs a MadLoop result")
     max_error = max(errors) if errors else None
@@ -1324,7 +1463,7 @@ def command_merge(args):
                             **({"sectors": json.loads(json.dumps(entry["sectors"]))}
                                if len(entry["sectors"]["loop"]) > 1 or len(entry["sectors"]["born"]) > 1 else {})}
                            for entry in hel_row["per_helicity"]]
-                per_helicity_reference(entries, pole_factor, qp_point)
+                per_helicity_reference(entries, pole_factor, qp_point, sector_factors)
                 hel_rows.append(entries)
             per_helicity = {
                 "provider": provider, "run": label,
@@ -1366,11 +1505,16 @@ def command_merge(args):
         "name": spec["name"],
         "pdgs": spec["pdgs"],
         "correction": spec["correction"],
+        **({"corrections": spec["corrections"],
+            "universal_double_pole_factors": sector_factors} if sector_factors else {}),
         "born_orders": spec["born_orders"],
         "loop_orders": spec["loop_orders"],
         "scheme": spec["scheme"],
         "scheme_description": scheme["description"],
         "restriction": scheme.get("restriction"),
+        "complex_mass_scheme": bool(scheme.get("complex_mass_scheme")),
+        **({"scheme_conventions": scheme["conventions"]} if scheme.get("conventions") else {}),
+        **({"tagged_photon_legs": spec["tagged_photon_legs"]} if "tagged_photon_legs" in spec else {}),
         "madloop_model": Path(spec["madloop"]["model"]).name if "madloop" in spec else None,
         "gauge": spec.get("madloop", {}).get("gauge", "Feynman"),
         "parameter_overrides": scheme.get("parameter_overrides", {}),

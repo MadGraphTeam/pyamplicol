@@ -137,7 +137,7 @@ def main():
     if args.spec is None or args.process is None:
         parser.error("--spec and --process are required to generate an export")
 
-    from required_spec import load_process
+    from required_spec import CORRECTION_STEP, load_process
 
     mg5 = args.mg5.resolve()
     roots = {"mg5": mg5, "reference": (args.reference_root or mg5.parent.parent).resolve()}
@@ -186,10 +186,12 @@ def main():
     if not command._curr_amps or (len(command._curr_amps) != 1 and not multiparticle):
         raise RuntimeError(f"expected exactly one MadLoop amplitude, got {len(command._curr_amps)} "
                            "(a multiparticle request sets \"multiparticle\": true)")
-    step = {k: spec["loop_orders"][k] - spec["born_orders"][k] for k in ("QCD", "QED")}
+    # One correction step per correction of the request (a joint [virt=QCD QED]
+    # request over several loop sectors lists both; spec["corrections"]).
+    steps = [CORRECTION_STEP[c] for c in spec["corrections"]]
     expected_born = {(o["QCD"], o["QED"]) for o in spec["born_orders_all"]}
     expected_loop = {(spec["loop_orders"]["QCD"], spec["loop_orders"]["QED"])}
-    allowed_loop = {(q + step["QCD"], e + step["QED"]) for q, e in expected_born}
+    allowed_loop = {(q + step["QCD"], e + step["QED"]) for q, e in expected_born for step in steps}
     subprocesses = []
     for amplitude in command._curr_amps:
         born = Counter(_orders(d) for d in amplitude["born_diagrams"])
@@ -233,7 +235,7 @@ def main():
     for sp in subprocesses:
         born, loops = sp["_born"], sp["_loops"]
         if set(born) != expected_born or not expected_loop <= set(loops) or (
-                len(expected_born) > 1 and not set(loops) <= allowed_loop):
+                (len(expected_born) > 1 or len(steps) > 1) and not set(loops) <= allowed_loop):
             report["status"] = "unexpected amplitude orders"
             write()
             raise RuntimeError(
