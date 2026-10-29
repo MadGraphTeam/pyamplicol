@@ -386,9 +386,7 @@ def finite_estimate(result: Any) -> float:
     stability = result.stability
     if stability is None:
         return math.inf
-    budget = sum(
-        abs(float(b.coefficients[0])) for b in stability.absolute.values()
-    )
+    budget = sum(abs(float(b.coefficients[0])) for b in stability.absolute.values())
     finite = abs(_totals(result)[1])
     if finite:
         return budget / finite

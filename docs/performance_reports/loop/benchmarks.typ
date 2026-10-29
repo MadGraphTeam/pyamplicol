@@ -1831,8 +1831,9 @@ schedule-M run of `measure-g1-7leg` stopped; G1 and Table 1 time schedule B).
     binary64-unstable points)]: $E$ is the binary64 estimate, DD
     the DD value's deviation from the closest provider (named). Campaign: the
     first three points against the committed references
-    (`tests/fixtures/loop/required`; $g g -> g g g g g$: NJet's ten points), fixture metric and tolerance, native
-    inputs (`loop`) and Python inputs (history); ‡ points above the tolerance that the user accepted (below the table).],
+    (`tests/fixtures/loop/required`; $g g -> g g g g g$: NJet's ten points), fixture metric and tolerance, asserted
+    in binary64 where its estimate $E <= 10^(-9)$ and in DD elsewhere (user 2026-10-29; earlier records: binary64
+    throughout), native inputs (`loop`) and Python inputs (history); ‡ points above the tolerance that the user accepted (below the table).],
   tstyle(table(
     columns: (2.7cm, 0.65cm, 1fr, 1fr, 1fr, 1.25fr, 1.45fr, 1fr, 1fr),
     align: (x, y) => if x == 0 { left + horizon } else { right + horizon },
