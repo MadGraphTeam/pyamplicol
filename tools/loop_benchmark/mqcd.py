@@ -2540,32 +2540,15 @@ def reference_record_checks(row: Row, reference: Reference, index: int) -> list[
     is one not-asserted rule 1 check carrying the reason (no provider
     reference at M-QCD accuracy; rule 1 does not run there, rules 2-4 do);
     an absolute comparison must be the manifest's zero point with the same
-    regular neighbour (else the manifest is stale: a failing check)."""
+    regular neighbour (else the manifest is stale: a failing check). A
+    superseded point's binding rerun (``Reference.binding``) and a declared
+    outlier need no check of their own: rule 1 holds the binding values and
+    judges an outlier by the manifest's listing."""
 
     record = reference.record(index)
     if record is None:
         return []
     checks = []
-    if index in reference.binding:
-        path, other = reference.binding[index]
-        checks.append(Check(
-            "1", index, "double-double", "", "binding reference", path,
-            f"row {other}", 0.0, 0.0, True, asserted=False,
-            note="the existing reference's point is superseded by MQ-REF's "
-            "quadruple-precision rerun of it (point_binding): rule 1 holds its "
-            "primary values; the existing fixture's other providers stay "
-            "second providers"))  # fmt: skip
-    outlier = record.get("outlier")
-    if outlier:
-        # A declared rule 1 outlier (MQ-REF): rule 1 judges it by its
-        # conditions (the manifest's reference_outliers listing, the
-        # primary's own accuracy and a second provider); the record's ruling
-        # and evidence are carried for the report.
-        checks.append(Check(
-            "1", index, "double-double", "", "declared outlier",
-            str(outlier.get("ruling")), "", 0.0, 0.0, True, asserted=False,
-            note=f"MQ-REF: {record.get('reason') or ''}; conditions "
-            f"{outlier.get('conditions')}"))  # fmt: skip
     status = record.get("status")
     if status == "none":
         checks.append(Check(
