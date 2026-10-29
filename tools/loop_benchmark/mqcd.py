@@ -1316,7 +1316,6 @@ loop_coupling_orders = {json.dumps(list(row.corrections))}
 coupling_order_policy = "minimal"
 [loop]
 r2_strategy = "model"
-engine = "v2"
 [loop.preparation]
 fixed_parameters = {{{fixed}}}
 [generation]
