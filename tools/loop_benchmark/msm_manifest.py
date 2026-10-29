@@ -1281,6 +1281,11 @@ RELAXED = {"SC05": {"4": 1e-12}, "TT05": {"4": 1e-14}}
 # 3 (alpha/2pi) Born (test_loop_v2_qed_catani's docstring; c1: 9.9e-5 =
 # 3 x 3.30e-5 at point 0): not a reference of the operator.
 NO_CATANI = {"LL02", "SC02"}
+# Rows run on the native point inputs (the production route; rule 4 from the
+# engine's operators on the Python-input Born): the 2->5 target and EWI-7's
+# root-closure rows, checked with native inputs once EWI-7 lands (PLAN §3.2
+# MS-VALIDATE item 6; a failure goes to the owner of the failing site).
+NATIVE_ROWS = {"TV07", "TT04", "SC06", "SC07", "SC08", "SC09"}
 
 rows = []
 for r in R:
@@ -1360,6 +1365,8 @@ for r in R:
         entry["reference_tolerance"] = RULE1[r["id"]]
     if r["id"] in RELAXED:
         entry["relaxed"] = RELAXED[r["id"]]
+    if r["id"] in NATIVE_ROWS:
+        entry["inputs"], entry["catani"] = "native", "engine"
     if r["id"] in NO_CATANI:
         entry["catani"] = "none"
         entry["catani_reason"] = (
