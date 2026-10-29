@@ -1,14 +1,16 @@
 {
  "source": "tests/fixtures/loop/mqcd/manifest.json + campaign records (tests/unit/test_loop_v2_mqcd_*.py, PYAMPLICOL_MQCD_RESULTS) + JUnit XML of the delegated columns",
  "rules": "m-qcd/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
- "campaign_head": "b381ce58 (pt12: every tier as whole files, one pytest process per file, slice 321efdb4 with MQ-MODEL merged); M01's parts at d2e49e36 (tmp/mq-validate/s8: M01@P0, M01@P2, M01@public-P0, M01@public-P2, expansion; MQ-MODEL's bitwise test with --junitxml), which changes only the public route and M01 for the other rows",
+ "campaign_head": "191efa9f (pt13: every tier as whole files, one pytest process per file, slice a2aa0d84 with MQ-STAB merged; MQ-MODEL's bitwise test with --junitxml); e0c9545c (pt14, campaign CLI: A21, A23, B01@threshold, D15, D16 after the listings at the recommended checks' estimate and A23's tree correlations); 64ea288a drops two not-asserted bookkeeping checks only",
  "native": "loop-native-v2-slice-da6980b0 (_rusticol.so edf5ac8c)",
- "references": "slice 321efdb4 (MQ-REF and MQ-MODEL integrated)",
+ "references": "slice a2aa0d84 (MQ-REF, MQ-MODEL, MQ-STAB integrated)",
+ "estimate": "loops.v2.stability.RECOMMENDED_CHECKS (one generic rotation + the rescaled reduction check)",
  "date": "2026-10-29",
  "timings": "indicative (shared host under load)",
  "counts": {
   "pass": 66,
-  "fail": 6,
+  "partial": 1,
+  "fail": 5,
   "pending": 4,
   "not-run": 0
  },
@@ -19,9 +21,9 @@
    "pending": 2
   },
   "Q-EWBorn": {
-   "pass": 21,
+   "pass": 22,
    "rows": 23,
-   "fail": 2
+   "fail": 1
   },
   "Q-heavy": {
    "pass": 7,
@@ -30,9 +32,10 @@
    "pending": 1
   },
   "Q-massless": {
-   "pass": 21,
+   "pass": 20,
    "rows": 22,
-   "fail": 1
+   "fail": 1,
+   "partial": 1
   },
   "Q-mixed": {
    "pass": 2,
@@ -62,25 +65,36 @@
    "tier": "nightly",
    "passed": true,
    "checks": 1,
-   "failed_checks": []
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "oracle:tree-catani": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 6,
+   "failed_checks": [],
+   "status": "pass"
   },
   "smoke:no_masses": {
    "tier": "nightly",
    "passed": true,
    "checks": 5,
-   "failed_checks": []
+   "failed_checks": [],
+   "status": "pass"
   },
   "smoke:no_tau_mass": {
    "tier": "nightly",
    "passed": true,
    "checks": 5,
-   "failed_checks": []
+   "failed_checks": [],
+   "status": "pass"
   },
   "smoke:no_widths": {
    "tier": "nightly",
    "passed": true,
    "checks": 5,
-   "failed_checks": []
+   "failed_checks": [],
+   "status": "pass"
   }
  },
  "rows": [
@@ -125,6 +139,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -152,10 +168,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.21,
-      "export_s": 0.44,
-      "double_double_s_per_point": 7.43,
-      "double_s_per_point": 0.815
+      "generate_s": 6.99,
+      "export_s": 0.4,
+      "double_double_s_per_point": 7.17,
+      "double_s_per_point": 0.79
      },
      "failed_checks": []
     },
@@ -181,15 +197,16 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.23,
-      "export_s": 0.43,
-      "double_double_s_per_point": 9.06,
-      "double_s_per_point": 1.01,
-      "ap_s": 11.98
+      "generate_s": 6.95,
+      "export_s": 0.44,
+      "double_double_s_per_point": 8.31,
+      "double_s_per_point": 0.82,
+      "ap_s": 11.32
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "A01@sectors",
@@ -229,12 +246,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 6.49,
-        "double_s_per_point": 0.81
+        "double_double_s_per_point": 6.25,
+        "double_s_per_point": 0.79
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -264,6 +282,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -292,14 +312,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.31,
-      "export_s": 0.45,
-      "double_double_s_per_point": 5.343333333333334,
-      "double_s_per_point": 0.12666666666666668
+      "generate_s": 4.55,
+      "export_s": 0.51,
+      "double_double_s_per_point": 5.1000000000000005,
+      "double_s_per_point": 0.11333333333333334
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "A02@madloop",
@@ -342,12 +363,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.8075,
-        "double_s_per_point": 0.1225
+        "double_double_s_per_point": 4.625,
+        "double_s_per_point": 0.115
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -377,6 +399,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -406,14 +430,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.85,
-      "export_s": 0.62,
-      "double_double_s_per_point": 5.4075,
-      "double_s_per_point": 0.1175
+      "generate_s": 4.55,
+      "export_s": 0.54,
+      "double_double_s_per_point": 4.965,
+      "double_s_per_point": 0.0925
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -442,6 +467,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -469,10 +496,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.77,
-      "export_s": 0.43,
-      "double_double_s_per_point": 5.295,
-      "double_s_per_point": 0.125
+      "generate_s": 4.68,
+      "export_s": 0.42,
+      "double_double_s_per_point": 5.365,
+      "double_s_per_point": 0.12
      },
      "failed_checks": []
     },
@@ -499,14 +526,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.14,
+      "generate_s": 6.99,
       "export_s": 0.55,
-      "double_double_s_per_point": 6.61,
-      "double_s_per_point": 0.155
+      "double_double_s_per_point": 5.77,
+      "double_s_per_point": 0.12
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -537,6 +565,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -566,15 +596,16 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.26,
-      "export_s": 0.38,
-      "double_double_s_per_point": 5.4425,
-      "double_s_per_point": 0.0475,
-      "uv_s": 5.65
+      "generate_s": 4.45,
+      "export_s": 0.34,
+      "double_double_s_per_point": 4.6625,
+      "double_s_per_point": 0.0425,
+      "uv_s": 5.08
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -619,6 +650,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -647,14 +680,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.78,
+      "generate_s": 4.38,
       "export_s": 0.36,
-      "double_double_s_per_point": 5.306666666666667,
-      "double_s_per_point": 0.07333333333333333
+      "double_double_s_per_point": 4.773333333333333,
+      "double_s_per_point": 0.05666666666666667
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "A06@sectors",
@@ -694,12 +728,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 7.18,
-        "double_s_per_point": 0.1
+        "double_double_s_per_point": 5.1,
+        "double_s_per_point": 0.06
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -729,6 +764,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -758,14 +795,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.12,
-      "export_s": 0.69,
-      "double_double_s_per_point": 4.8825,
-      "double_s_per_point": 0.06
+      "generate_s": 4.39,
+      "export_s": 0.54,
+      "double_double_s_per_point": 4.6675,
+      "double_s_per_point": 0.055
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -800,6 +838,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -835,16 +875,17 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.58,
-      "export_s": 1.04,
-      "double_double_s_per_point": 63.8875,
-      "double_s_per_point": 29.715,
-      "hel_s": 79.25,
-      "ward_s": 39.06
+      "generate_s": 7.99,
+      "export_s": 0.94,
+      "double_double_s_per_point": 59.4475,
+      "double_s_per_point": 29.2375,
+      "hel_s": 77.08,
+      "ward_s": 35.71
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -878,6 +919,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "fail",
@@ -905,10 +948,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.39,
-      "export_s": 0.66,
-      "double_double_s_per_point": 11.05,
-      "double_s_per_point": 3.005
+      "generate_s": 5.08,
+      "export_s": 0.64,
+      "double_double_s_per_point": 11.045,
+      "double_s_per_point": 2.895
      },
      "failed_checks": []
     },
@@ -935,14 +978,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.68,
-      "export_s": 0.64,
-      "double_double_s_per_point": 12.29,
-      "double_s_per_point": 3.135
+      "generate_s": 7.2,
+      "export_s": 0.6,
+      "double_double_s_per_point": 11.455,
+      "double_s_per_point": 3.12
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "A09@soft",
@@ -993,33 +1037,34 @@
          "point": 1,
          "sector": "QCD^8",
          "coefficient": "finite",
-         "E": 9.350979800886755e-07,
+         "E": 2.351442324079195e-06,
          "true_error": 6.330555613160269e-07
         },
         {
          "point": 1,
          "sector": "QCD^8",
          "coefficient": "single_pole",
-         "E": 1.3948454830800716e-06,
+         "E": 4.437025956405615e-06,
          "true_error": 7.348906632801289e-07
         },
         {
          "point": 1,
          "sector": "QCD^8",
          "coefficient": "double_pole",
-         "E": 4.6185214116251784e-07,
+         "E": 8.001266250557252e-07,
          "true_error": 2.312350998981042e-07
         }
        ],
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 9.365,
-        "double_s_per_point": 3.27
+        "double_double_s_per_point": 8.9,
+        "double_s_per_point": 2.98
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     },
     {
      "id": "A09@collinear",
@@ -1058,8 +1103,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 6.0566666666666675,
-        "double_s_per_point": 0.36000000000000004
+        "double_double_s_per_point": 5.803333333333334,
+        "double_s_per_point": 0.2866666666666667
        },
        "failed_checks": [
         {
@@ -1114,7 +1159,8 @@
         }
        ]
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -1164,6 +1210,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -1191,10 +1239,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.68,
-      "export_s": 0.64,
-      "double_double_s_per_point": 6.015,
-      "double_s_per_point": 0.305
+      "generate_s": 4.66,
+      "export_s": 0.61,
+      "double_double_s_per_point": 5.85,
+      "double_s_per_point": 0.29
      },
      "failed_checks": []
     },
@@ -1220,14 +1268,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.94,
-      "export_s": 0.62,
-      "double_double_s_per_point": 7.29,
-      "double_s_per_point": 0.32
+      "generate_s": 5.2,
+      "export_s": 0.54,
+      "double_double_s_per_point": 6.99,
+      "double_s_per_point": 0.3
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "A12@sectors",
@@ -1267,12 +1316,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.15,
-        "double_s_per_point": 0.33
+        "double_double_s_per_point": 4.92,
+        "double_s_per_point": 0.29
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -1323,6 +1373,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -1351,15 +1403,16 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.64,
-      "export_s": 0.66,
-      "double_double_s_per_point": 6.756666666666667,
-      "double_s_per_point": 0.45333333333333337,
-      "ap_s": 16.28
+      "generate_s": 8.77,
+      "export_s": 1.03,
+      "double_double_s_per_point": 11.776666666666666,
+      "double_s_per_point": 0.7200000000000001,
+      "ap_s": 23.33
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "A13@sectors",
@@ -1399,12 +1452,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 7.42,
-        "double_s_per_point": 0.48
+        "double_double_s_per_point": 12.63,
+        "double_s_per_point": 0.72
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -1437,22 +1491,26 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "tree",
+   "ward_legs": [
+    1
+   ],
    "listed_outliers": [],
    "listed_out_of_scope": [
     {
      "point": 1,
      "sector": "QCD^10",
      "coefficient": "finite",
-     "E": 4.74e-06,
-     "true_error": 2.5e-07
+     "E": 2.1e-06,
+     "true_error": 1.47e-08
     },
     {
      "point": 1,
      "sector": "QCD^10",
      "coefficient": "single_pole",
-     "E": 2.21e-06,
-     "true_error": 1.59e-07
+     "E": 1.06e-06,
+     "true_error": 3.42e-08
     }
    ],
    "status": "pass",
@@ -1464,13 +1522,13 @@
       2
      ],
      "passed": true,
-     "checks": 44,
+     "checks": 68,
      "failures": 0,
      "max_dd_vs_reference": 3.253088473748923e-14,
      "max_binary64_vs_dd": 4.9794630364972237e-11,
-     "max_catani_dd": null,
-     "max_catani_binary64": null,
-     "catani_not_formed": true,
+     "max_catani_dd": 1.4124755766576518e-23,
+     "max_catani_binary64": 4.918668974749061e-12,
+     "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.54906961701228e-13,
       "finite": 1.4697206655096703e-08,
@@ -1490,33 +1548,35 @@
        "point": 1,
        "sector": "QCD^10",
        "coefficient": "finite",
-       "E": 3.2709861795322726e-06,
+       "E": 2.0952430552769394e-06,
        "true_error": 1.4697202098495612e-08
       },
       {
        "point": 1,
        "sector": "QCD^10",
        "coefficient": "single_pole",
-       "E": 1.6258406169984624e-06,
+       "E": 1.0636822125534557e-06,
        "true_error": 3.419703107208185e-08
       }
      ],
      "timings": {
-      "generate_s": 19.46,
-      "export_s": 14.61,
-      "double_double_s_per_point": 53.31666666666666,
-      "double_s_per_point": 1.6233333333333333,
-      "ward_s": 88.66
+      "generate_s": 19.14,
+      "export_s": 12.82,
+      "double_double_s_per_point": 47.64333333333334,
+      "double_s_per_point": 1.28,
+      "tree_catani_s": 0.01,
+      "ward_s": 83.57
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
    "max_dd_vs_reference": 3.253088473748923e-14,
    "max_binary64_vs_dd": 4.9794630364972237e-11,
-   "max_catani_dd": null,
+   "max_catani_dd": 1.4124755766576518e-23,
    "max_ward_dd": 3.344167472772481e-28
   },
   {
@@ -1542,7 +1602,9 @@
    },
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "tree",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -1555,13 +1617,13 @@
       3
      ],
      "passed": true,
-     "checks": 52,
+     "checks": 84,
      "failures": 0,
      "max_dd_vs_reference": 3.398492268954229e-14,
      "max_binary64_vs_dd": 4.633997917923146e-12,
-     "max_catani_dd": null,
-     "max_catani_binary64": null,
-     "catani_not_formed": true,
+     "max_catani_dd": 1.7471580271635195e-29,
+     "max_catani_binary64": 4.855348519389766e-13,
+     "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 2.7993985202402016e-14,
       "finite": 4.631962923219028e-12,
@@ -1572,20 +1634,22 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 9.05,
-      "export_s": 4.6,
-      "double_double_s_per_point": 13.3625,
-      "double_s_per_point": 0.5375
+      "generate_s": 7.62,
+      "export_s": 4.07,
+      "double_double_s_per_point": 11.9325,
+      "double_s_per_point": 0.2325,
+      "tree_catani_s": 0.01
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
    "max_dd_vs_reference": 3.398492268954229e-14,
    "max_binary64_vs_dd": 4.633997917923146e-12,
-   "max_catani_dd": null,
+   "max_catani_dd": 1.7471580271635195e-29,
    "max_ward_dd": null
   },
   {
@@ -1614,77 +1678,79 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-10,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [
     {
      "point": 0,
      "sector": "QCD^10",
      "coefficient": "finite",
-     "E": 2.6e-08,
+     "E": 3.2e-08,
      "true_error": 1.05e-08
     },
     {
      "point": 0,
      "sector": "QCD^10",
      "coefficient": "single_pole",
-     "E": 2.43e-09,
+     "E": 2.85e-09,
      "true_error": 3.11e-10
     },
     {
      "point": 0,
      "sector": "QCD^10",
      "coefficient": "double_pole",
-     "E": 1.87e-09,
-     "true_error": 5.48e-10
+     "E": 2.49e-09,
+     "true_error": 5.44e-10
     },
     {
      "point": 1,
      "sector": "QCD^10",
      "coefficient": "finite",
-     "E": 1.82e-09,
-     "true_error": 3.58e-10
+     "E": 2.76e-09,
+     "true_error": 5.51e-10
     },
     {
      "point": 2,
      "sector": "QCD^10",
      "coefficient": "finite",
-     "E": 5.8e-08,
+     "E": 1.25e-07,
      "true_error": 5.55e-08
     },
     {
      "point": 2,
      "sector": "QCD^10",
      "coefficient": "single_pole",
-     "E": 1.24e-08,
+     "E": 1.96e-08,
      "true_error": 2.23e-09
     },
     {
      "point": 2,
      "sector": "QCD^10",
      "coefficient": "double_pole",
-     "E": 1.21e-08,
-     "true_error": 4.19e-10
+     "E": 6.52e-09,
+     "true_error": 4.16e-10
     },
     {
      "point": 3,
      "sector": "QCD^10",
      "coefficient": "finite",
-     "E": 8.69e-08,
+     "E": 1.08e-07,
      "true_error": 4.52e-08
     },
     {
      "point": 3,
      "sector": "QCD^10",
      "coefficient": "single_pole",
-     "E": 5.37e-09,
+     "E": 6.51e-09,
      "true_error": 1.01e-09
     },
     {
      "point": 3,
      "sector": "QCD^10",
      "coefficient": "double_pole",
-     "E": 1.87e-09,
-     "true_error": 5.48e-10
+     "E": 2.49e-09,
+     "true_error": 5.44e-10
     }
    ],
    "status": "pass",
@@ -1717,82 +1783,83 @@
        "point": 0,
        "sector": "QCD^10",
        "coefficient": "finite",
-       "E": 2.5901486179722237e-08,
+       "E": 3.19751066072067e-08,
        "true_error": 1.0515055096054193e-08
       },
       {
        "point": 0,
        "sector": "QCD^10",
        "coefficient": "single_pole",
-       "E": 2.4160419900025037e-09,
+       "E": 2.8511979973194265e-09,
        "true_error": 3.115024154613571e-10
       },
       {
        "point": 0,
        "sector": "QCD^10",
        "coefficient": "double_pole",
-       "E": 1.8523080116924438e-09,
+       "E": 2.4923047829660082e-09,
        "true_error": 5.444450287929979e-10
       },
       {
        "point": 1,
        "sector": "QCD^10",
        "coefficient": "finite",
-       "E": 2.413234193295242e-09,
+       "E": 2.7634133159231047e-09,
        "true_error": 5.514244135552536e-10
       },
       {
        "point": 2,
        "sector": "QCD^10",
        "coefficient": "finite",
-       "E": 5.789524042506046e-08,
+       "E": 1.2543060371887138e-07,
        "true_error": 5.546457721099332e-08
       },
       {
        "point": 2,
        "sector": "QCD^10",
        "coefficient": "single_pole",
-       "E": 1.2375039100083346e-08,
+       "E": 1.9563964097225215e-08,
        "true_error": 2.230715373589216e-09
       },
       {
        "point": 2,
        "sector": "QCD^10",
        "coefficient": "double_pole",
-       "E": 1.2054572848486496e-08,
+       "E": 6.5154411285933325e-09,
        "true_error": 4.157700204424129e-10
       },
       {
        "point": 3,
        "sector": "QCD^10",
        "coefficient": "finite",
-       "E": 8.629104657368355e-08,
+       "E": 1.0778044946728716e-07,
        "true_error": 4.524367155823193e-08
       },
       {
        "point": 3,
        "sector": "QCD^10",
        "coefficient": "single_pole",
-       "E": 5.320511756078058e-09,
+       "E": 6.510186038463647e-09,
        "true_error": 1.0111318702423441e-09
       },
       {
        "point": 3,
        "sector": "QCD^10",
        "coefficient": "double_pole",
-       "E": 1.8523080116924438e-09,
+       "E": 2.4923047829660082e-09,
        "true_error": 5.444450287929979e-10
       }
      ],
      "timings": {
-      "generate_s": 8.63,
-      "export_s": 1.88,
-      "double_double_s_per_point": 24.5175,
-      "double_s_per_point": 9.2875
+      "generate_s": 7.36,
+      "export_s": 1.37,
+      "double_double_s_per_point": 23.2625,
+      "double_s_per_point": 9.0625
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -1836,7 +1903,9 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -1865,14 +1934,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.98,
-      "export_s": 0.77,
-      "double_double_s_per_point": 7.010000000000001,
-      "double_s_per_point": 0.89
+      "generate_s": 5.23,
+      "export_s": 0.73,
+      "double_double_s_per_point": 6.8999999999999995,
+      "double_s_per_point": 0.8766666666666666
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "A19@sectors",
@@ -1912,12 +1982,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 7.97,
-        "double_s_per_point": 0.9
+        "double_double_s_per_point": 7.77,
+        "double_s_per_point": 0.85
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -1962,7 +2033,9 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -1991,14 +2064,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.84,
-      "export_s": 0.83,
-      "double_double_s_per_point": 8.503333333333334,
-      "double_s_per_point": 1.3766666666666667
+      "generate_s": 5.23,
+      "export_s": 0.53,
+      "double_double_s_per_point": 8.13,
+      "double_s_per_point": 1.2766666666666666
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "A20@sectors",
@@ -2038,12 +2112,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 9.01,
-        "double_s_per_point": 1.32
+        "double_double_s_per_point": 8.79,
+        "double_s_per_point": 1.3
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -2092,9 +2167,19 @@
    },
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
-   "listed_out_of_scope": [],
+   "listed_out_of_scope": [
+    {
+     "point": 2,
+     "sector": "QCD^10",
+     "coefficient": "finite",
+     "E": 1.56e-09,
+     "true_error": 1.16e-11
+    }
+   ],
    "status": "pass",
    "tiers": {
     "nightly": {
@@ -2107,7 +2192,7 @@
      "checks": 63,
      "failures": 0,
      "max_dd_vs_reference": 3.713664947353139e-14,
-     "max_binary64_vs_dd": 1.1602984004553682e-11,
+     "max_binary64_vs_dd": 2.559884657278884e-12,
      "max_catani_dd": 2.309893933088999e-29,
      "max_catani_binary64": 1.2260022870094469e-12,
      "catani_not_formed": false,
@@ -2119,16 +2204,25 @@
      },
      "ward": null,
      "no_reference": [],
-     "binary64_out_of_scope": [],
+     "binary64_out_of_scope": [
+      {
+       "point": 2,
+       "sector": "QCD^10",
+       "coefficient": "finite",
+       "E": 1.5636227530193642e-09,
+       "true_error": 1.1602984004553682e-11
+      }
+     ],
      "timings": {
-      "generate_s": 6.29,
-      "export_s": 0.64,
-      "double_double_s_per_point": 11.530000000000001,
-      "double_s_per_point": 2.2666666666666666
+      "generate_s": 7.97,
+      "export_s": 0.83,
+      "double_double_s_per_point": 11.706666666666665,
+      "double_s_per_point": 2.216666666666667
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "A21@sectors",
@@ -2168,18 +2262,19 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 11.97,
-        "double_s_per_point": 2.3
+        "double_double_s_per_point": 11.47,
+        "double_s_per_point": 2.28
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
    "delegated": {},
    "max_dd_vs_reference": 3.713664947353139e-14,
-   "max_binary64_vs_dd": 1.1602984004553682e-11,
+   "max_binary64_vs_dd": 4.09859140030182e-12,
    "max_catani_dd": 2.309893933088999e-29,
    "max_ward_dd": null
   },
@@ -2203,7 +2298,9 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -2232,14 +2329,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 9.09,
-      "export_s": 1.1,
-      "double_double_s_per_point": 37.766666666666666,
-      "double_s_per_point": 18.143333333333334
+      "generate_s": 9.48,
+      "export_s": 1.05,
+      "double_double_s_per_point": 37.623333333333335,
+      "double_s_per_point": 17.886666666666667
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -2269,6 +2367,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-10,
+   "catani": "tree",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -2280,13 +2380,13 @@
       2
      ],
      "passed": true,
-     "checks": 36,
+     "checks": 60,
      "failures": 0,
      "max_dd_vs_reference": 3.183849219484248e-12,
      "max_binary64_vs_dd": 1.4175498944343862e-12,
-     "max_catani_dd": null,
-     "max_catani_binary64": null,
-     "catani_not_formed": true,
+     "max_catani_dd": 2.6870130117601545e-29,
+     "max_catani_binary64": 6.663871897591245e-13,
+     "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 3.506130567776139e-14,
       "finite": 1.938409594850328e-12,
@@ -2297,20 +2397,22 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 47.79,
-      "export_s": 87.64,
-      "double_double_s_per_point": 194.24,
-      "double_s_per_point": 5.8133333333333335
+      "generate_s": 43.69,
+      "export_s": 80.92,
+      "double_double_s_per_point": 192.9333333333333,
+      "double_s_per_point": 5.22,
+      "tree_catani_s": 0.01
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
    "max_dd_vs_reference": 3.183849219484248e-12,
    "max_binary64_vs_dd": 1.4175498944343862e-12,
-   "max_catani_dd": null,
+   "max_catani_dd": 2.6870130117601545e-29,
    "max_ward_dd": null
   },
   {
@@ -2336,39 +2438,41 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "none",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [
     {
      "point": 0,
      "sector": "QCD^12",
      "coefficient": "finite",
-     "E": 1.36e-08,
-     "true_error": 1.4e-09
+     "E": 1.77e-08,
+     "true_error": 3.4e-11
     },
     {
      "point": 0,
      "sector": "QCD^12",
      "coefficient": "single_pole",
-     "E": 5.15e-09,
-     "true_error": 6.79e-10
+     "E": 6.93e-09,
+     "true_error": 1.15e-10
     },
     {
      "point": 1,
      "sector": "QCD^12",
      "coefficient": "finite",
-     "E": 7.78e-08,
-     "true_error": 2e-09
+     "E": 1.11e-07,
+     "true_error": 1.06e-09
     },
     {
      "point": 1,
      "sector": "QCD^12",
      "coefficient": "single_pole",
-     "E": 5.38e-08,
-     "true_error": 2e-09
+     "E": 7.75e-08,
+     "true_error": 7.36e-10
     }
    ],
-   "status": "pass",
+   "status": "partial",
    "tiers": {
     "nightly": {
      "points": [
@@ -2396,41 +2500,42 @@
        "point": 0,
        "sector": "QCD^12",
        "coefficient": "finite",
-       "E": 1.3088595827993766e-08,
+       "E": 1.774646928474394e-08,
        "true_error": 3.3963339023461046e-11
       },
       {
        "point": 0,
        "sector": "QCD^12",
        "coefficient": "single_pole",
-       "E": 5.294147561779624e-09,
+       "E": 6.925096032724917e-09,
        "true_error": 1.1486166695994701e-10
       },
       {
        "point": 1,
        "sector": "QCD^12",
        "coefficient": "finite",
-       "E": 6.3706173920971e-08,
+       "E": 1.1144102699329919e-07,
        "true_error": 1.0575945316798686e-09
       },
       {
        "point": 1,
        "sector": "QCD^12",
        "coefficient": "single_pole",
-       "E": 4.367219906123197e-08,
+       "E": 7.746480904071434e-08,
        "true_error": 7.361282207004606e-10
       }
      ],
      "timings": {
-      "generate_s": 183.46,
-      "export_s": 217.77,
-      "double_double_s_per_point": 280.58,
-      "double_s_per_point": 32.94,
-      "uv_s": 373.37
+      "generate_s": 163.11,
+      "export_s": 205.1,
+      "double_double_s_per_point": 279.505,
+      "double_s_per_point": 39.49,
+      "uv_s": 386.34
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -2459,6 +2564,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -2488,14 +2595,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.9,
+      "generate_s": 4.92,
       "export_s": 0.34,
-      "double_double_s_per_point": 4.6875,
-      "double_s_per_point": 0.045
+      "double_double_s_per_point": 4.665,
+      "double_s_per_point": 0.0425
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -2524,6 +2632,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -2553,14 +2663,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.39,
+      "generate_s": 4.26,
       "export_s": 0.34,
-      "double_double_s_per_point": 4.64,
-      "double_s_per_point": 0.0575
+      "double_double_s_per_point": 4.69,
+      "double_s_per_point": 0.055
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -2610,6 +2721,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -2637,10 +2750,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.8,
+      "generate_s": 4.64,
       "export_s": 0.43,
-      "double_double_s_per_point": 5.475,
-      "double_s_per_point": 0.16
+      "double_double_s_per_point": 5.415,
+      "double_s_per_point": 0.155
      },
      "failed_checks": []
     },
@@ -2666,17 +2779,18 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.1,
-      "export_s": 0.45,
-      "double_double_s_per_point": 6.13,
+      "generate_s": 4.9,
+      "export_s": 0.43,
+      "double_double_s_per_point": 6.11,
       "double_s_per_point": 0.17,
-      "uv_s": 4.96,
-      "hel_s": 3.96,
-      "ap_s": 10.38
+      "uv_s": 4.94,
+      "hel_s": 3.73,
+      "ap_s": 9.96
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "B01@threshold",
@@ -2702,7 +2816,7 @@
        "checks": 60,
        "failures": 0,
        "max_dd_vs_reference": 3.0638883725400437e-16,
-       "max_binary64_vs_dd": 8.519056958679154e-12,
+       "max_binary64_vs_dd": 1.214925980807954e-10,
        "max_catani_dd": 2.9589725031919947e-26,
        "max_catani_binary64": 8.519561970409888e-12,
        "catani_not_formed": false,
@@ -2718,48 +2832,42 @@
         {
          "point": 1,
          "sector": "QCD^6",
-         "coefficient": "finite",
-         "E": 1.7299279155702796e-09,
-         "true_error": 1.214925980807954e-10
-        },
-        {
-         "point": 1,
-         "sector": "QCD^6",
          "coefficient": "single_pole",
-         "E": 5.6341039688011406e-09,
+         "E": 2.216425416898964e-09,
          "true_error": 7.953743633712079e-13
         },
         {
          "point": 2,
          "sector": "QCD^6",
          "coefficient": "finite",
-         "E": 2.893983071738154e-06,
+         "E": 9.722280308133683e-07,
          "true_error": 1.743737173563664e-07
         },
         {
          "point": 2,
          "sector": "QCD^6",
          "coefficient": "single_pole",
-         "E": 4.605999320079863e-05,
+         "E": 1.9983881945178433e-05,
          "true_error": 1.1355856238418268e-09
         },
         {
          "point": 2,
          "sector": "QCD^6",
          "coefficient": "double_pole",
-         "E": 7.316832220061184e-09,
+         "E": 2.915116674655682e-08,
          "true_error": 5.355188066600958e-10
         }
        ],
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.79,
-        "double_s_per_point": 0.16
+        "double_double_s_per_point": 6.41,
+        "double_s_per_point": 0.16666666666666666
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     },
     {
      "id": "B01@mt170",
@@ -2802,12 +2910,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.81,
-        "double_s_per_point": 0.1525
+        "double_double_s_per_point": 5.02,
+        "double_s_per_point": 0.15
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     },
     {
      "id": "B01@sectors",
@@ -2847,18 +2956,19 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.82,
-        "double_s_per_point": 0.17
+        "double_double_s_per_point": 4.75,
+        "double_s_per_point": 0.15
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
    "delegated": {},
    "max_dd_vs_reference": 1.6778467746475445e-15,
-   "max_binary64_vs_dd": 8.519056958679154e-12,
+   "max_binary64_vs_dd": 1.214925980807954e-10,
    "max_catani_dd": 2.9589725031919947e-26,
    "max_ward_dd": null
   },
@@ -2883,6 +2993,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -2911,14 +3023,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.4,
-      "export_s": 0.5,
-      "double_double_s_per_point": 4.756666666666667,
-      "double_s_per_point": 0.06333333333333334
+      "generate_s": 4.8,
+      "export_s": 0.47,
+      "double_double_s_per_point": 4.753333333333333,
+      "double_s_per_point": 0.07666666666666667
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "B02@madloop",
@@ -2961,12 +3074,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.6075,
-        "double_s_per_point": 0.0675
+        "double_double_s_per_point": 4.5825,
+        "double_s_per_point": 0.065
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -3001,55 +3115,57 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [
     {
      "point": 0,
      "sector": "QCD^8",
      "coefficient": "finite",
-     "E": 1.96e-09,
+     "E": 1.44e-08,
      "true_error": 1.06e-09
     },
     {
      "point": 0,
      "sector": "QCD^8",
      "coefficient": "single_pole",
-     "E": 1.92e-09,
-     "true_error": 6.76e-10
+     "E": 2.61e-08,
+     "true_error": 6.75e-10
     },
     {
      "point": 0,
      "sector": "QCD^8",
      "coefficient": "double_pole",
-     "E": 1.23e-09,
+     "E": 1.46e-08,
      "true_error": 1.18e-09
     },
     {
      "point": 1,
      "sector": "QCD^8",
      "coefficient": "single_pole",
-     "E": 1.54e-09,
-     "true_error": 1.05e-10
+     "E": 1.23e-09,
+     "true_error": 1.04e-10
     },
     {
      "point": 3,
      "sector": "QCD^8",
      "coefficient": "finite",
-     "E": 2.14e-09,
+     "E": 1.97e-08,
      "true_error": 7.69e-10
     },
     {
      "point": 3,
      "sector": "QCD^8",
      "coefficient": "single_pole",
-     "E": 1.5e-08,
+     "E": 2e-07,
      "true_error": 1.17e-08
     },
     {
      "point": 3,
      "sector": "QCD^8",
      "coefficient": "double_pole",
-     "E": 1.23e-09,
+     "E": 1.46e-08,
      "true_error": 1.18e-09
     }
    ],
@@ -3089,62 +3205,63 @@
        "point": 0,
        "sector": "QCD^8",
        "coefficient": "finite",
-       "E": 1.959299680416807e-09,
+       "E": 1.4429091980188211e-08,
        "true_error": 1.0591761183373816e-09
       },
       {
        "point": 0,
        "sector": "QCD^8",
        "coefficient": "single_pole",
-       "E": 1.922518554905017e-09,
+       "E": 2.609930497119453e-08,
        "true_error": 6.748049083978042e-10
       },
       {
        "point": 0,
        "sector": "QCD^8",
        "coefficient": "double_pole",
-       "E": 1.23544554756836e-09,
+       "E": 1.4627743500498057e-08,
        "true_error": 1.180257867378463e-09
       },
       {
        "point": 1,
        "sector": "QCD^8",
        "coefficient": "single_pole",
-       "E": 1.52592061619928e-09,
+       "E": 1.2271442409767942e-09,
        "true_error": 1.0413850488405501e-10
       },
       {
        "point": 3,
        "sector": "QCD^8",
        "coefficient": "finite",
-       "E": 2.1395329668354127e-09,
+       "E": 1.9706054914175242e-08,
        "true_error": 7.686461550464682e-10
       },
       {
        "point": 3,
        "sector": "QCD^8",
        "coefficient": "single_pole",
-       "E": 1.4966477098181663e-08,
+       "E": 1.995663171234763e-07,
        "true_error": 1.1735378027445524e-08
       },
       {
        "point": 3,
        "sector": "QCD^8",
        "coefficient": "double_pole",
-       "E": 1.23544554756836e-09,
+       "E": 1.4627743500498057e-08,
        "true_error": 1.180257867378463e-09
       }
      ],
      "timings": {
       "generate_s": 4.81,
-      "export_s": 1.52,
-      "double_double_s_per_point": 11.7725,
-      "double_s_per_point": 2.495,
-      "ward_s": 22.38
+      "export_s": 0.5,
+      "double_double_s_per_point": 12.1775,
+      "double_s_per_point": 2.5975,
+      "ward_s": 23.04
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -3188,7 +3305,9 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3217,14 +3336,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 10.67,
-      "export_s": 2.22,
-      "double_double_s_per_point": 182.47333333333333,
-      "double_s_per_point": 86.67666666666666
+      "generate_s": 11.59,
+      "export_s": 1.97,
+      "double_double_s_per_point": 176.0533333333333,
+      "double_s_per_point": 88.72000000000001
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "B05@sectors",
@@ -3264,12 +3384,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 164.44,
-        "double_s_per_point": 85.63
+        "double_double_s_per_point": 169.62,
+        "double_s_per_point": 87.05
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -3298,7 +3419,9 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3328,14 +3451,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.7,
-      "export_s": 0.62,
-      "double_double_s_per_point": 7.9875,
-      "double_s_per_point": 1.595
+      "generate_s": 5.07,
+      "export_s": 0.61,
+      "double_double_s_per_point": 8.0125,
+      "double_s_per_point": 1.59
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -3363,7 +3487,9 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3393,14 +3519,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 9.85,
-      "export_s": 0.88,
-      "double_double_s_per_point": 59.2775,
-      "double_s_per_point": 25.5475
+      "generate_s": 9.3,
+      "export_s": 0.86,
+      "double_double_s_per_point": 59.2975,
+      "double_s_per_point": 23.8675
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -3429,6 +3556,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3458,14 +3587,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.46,
-      "export_s": 0.99,
-      "double_double_s_per_point": 5.16,
-      "double_s_per_point": 0.155
+      "generate_s": 5.87,
+      "export_s": 0.55,
+      "double_double_s_per_point": 5.1775,
+      "double_s_per_point": 0.1575
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -3502,6 +3632,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "fail",
@@ -3529,10 +3661,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.28,
-      "export_s": 0.56,
-      "double_double_s_per_point": 5.54,
-      "double_s_per_point": 0.165
+      "generate_s": 5.76,
+      "export_s": 0.81,
+      "double_double_s_per_point": 5.4,
+      "double_s_per_point": 0.16
      },
      "failed_checks": []
     },
@@ -3565,12 +3697,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.96,
-      "export_s": 0.54,
-      "double_double_s_per_point": 5.455,
-      "double_s_per_point": 0.165,
-      "ap_s": 9.2,
-      "ward_s": 16.02
+      "generate_s": 7.59,
+      "export_s": 0.55,
+      "double_double_s_per_point": 5.505,
+      "double_s_per_point": 0.175,
+      "ap_s": 9.97,
+      "ward_s": 16.65
      },
      "failed_checks": [
       {
@@ -3586,6 +3718,7 @@
      ]
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "C01@params",
@@ -3629,12 +3762,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.0375,
-        "double_s_per_point": 0.1525
+        "double_double_s_per_point": 5.2025,
+        "double_s_per_point": 0.1625
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -3666,6 +3800,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3695,15 +3831,16 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.55,
-      "export_s": 0.46,
-      "double_double_s_per_point": 6.725,
-      "double_s_per_point": 0.8175,
+      "generate_s": 5.21,
+      "export_s": 0.47,
+      "double_double_s_per_point": 6.785,
+      "double_s_per_point": 0.805,
       "uv_s": 6.87
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -3732,6 +3869,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3761,14 +3900,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.27,
+      "generate_s": 4.1,
       "export_s": 0.12,
-      "double_double_s_per_point": 4.4475,
+      "double_double_s_per_point": 4.43,
       "double_s_per_point": 0.0175
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -3797,6 +3937,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -3826,14 +3968,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.65,
-      "export_s": 0.57,
-      "double_double_s_per_point": 4.7125,
+      "generate_s": 5.97,
+      "export_s": 0.58,
+      "double_double_s_per_point": 4.75,
       "double_s_per_point": 0.0525
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "C04@z",
@@ -3848,7 +3991,10 @@
      },
      "status": "not-run",
      "waits_for": null,
-     "tiers": {}
+     "tiers": {},
+     "missing_records": [
+      "nightly"
+     ]
     }
    ],
    "nc": null,
@@ -3878,6 +4024,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "fail",
@@ -3891,7 +4039,7 @@
      ],
      "passed": false,
      "checks": 80,
-     "failures": 8,
+     "failures": 1,
      "max_dd_vs_reference": 4.993922176995788e-15,
      "max_binary64_vs_dd": 2.336264533874071e-10,
      "max_catani_dd": 1.5960855491823237e-29,
@@ -3907,42 +4055,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.44,
-      "export_s": 1.36,
-      "double_double_s_per_point": 7.3275,
-      "double_s_per_point": 0.3425
+      "generate_s": 7.68,
+      "export_s": 1.34,
+      "double_double_s_per_point": 6.975,
+      "double_s_per_point": 0.33
      },
      "failed_checks": [
-      {
-       "rule": "3",
-       "point": 0,
-       "carrier": "double",
-       "sector": "QCD^6 QED^2",
-       "coefficient": "finite",
-       "error": 2.18217038790901e-22,
-       "bound": 9.300310797963775e-23,
-       "note": "absolute error against 10 E"
-      },
-      {
-       "rule": "2",
-       "point": 0,
-       "carrier": "double",
-       "sector": "QCD^6 QED^2",
-       "coefficient": "finite",
-       "error": 4.8024523936271495e-12,
-       "bound": 1e-12,
-       "note": "E = 2.05e-13"
-      },
-      {
-       "rule": "3",
-       "point": 1,
-       "carrier": "double",
-       "sector": "QCD^6 QED^2",
-       "coefficient": "finite",
-       "error": 2.5167316024644204e-19,
-       "bound": 2.6187166880425146e-20,
-       "note": "absolute error against 10 E"
-      },
       {
        "rule": "2",
        "point": 1,
@@ -3950,52 +4068,13 @@
        "sector": "QCD^6 QED^2",
        "coefficient": "finite",
        "error": 2.336264533874071e-10,
-       "bound": 2.4309365832046003e-12,
-       "note": "E = 2.43e-12"
-      },
-      {
-       "rule": "3",
-       "point": 2,
-       "carrier": "double",
-       "sector": "QCD^6 QED^2",
-       "coefficient": "finite",
-       "error": 3.8177931733790563e-22,
-       "bound": 1.1658120074036224e-22,
-       "note": "absolute error against 10 E"
-      },
-      {
-       "rule": "2",
-       "point": 2,
-       "carrier": "double",
-       "sector": "QCD^6 QED^2",
-       "coefficient": "finite",
-       "error": 1.1646040279098625e-12,
-       "bound": 1e-12,
-       "note": "E = 3.56e-14"
-      },
-      {
-       "rule": "3",
-       "point": 3,
-       "carrier": "double",
-       "sector": "QCD^6 QED^2",
-       "coefficient": "finite",
-       "error": 2.1790512193418415e-22,
-       "bound": 8.982814625043034e-23,
-       "note": "absolute error against 10 E"
-      },
-      {
-       "rule": "2",
-       "point": 3,
-       "carrier": "double",
-       "sector": "QCD^6 QED^2",
-       "coefficient": "finite",
-       "error": 9.477782085390822e-12,
-       "bound": 1e-12,
-       "note": "E = 3.91e-13"
+       "bound": 3.202883739782681e-11,
+       "note": "E = 3.2e-11"
       }
      ]
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -4023,7 +4102,9 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4053,14 +4134,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.5,
+      "generate_s": 7.22,
       "export_s": 0.92,
-      "double_double_s_per_point": 48.0575,
-      "double_s_per_point": 23.1725
+      "double_double_s_per_point": 49.9175,
+      "double_s_per_point": 23.035
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -4089,6 +4171,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "fail",
@@ -4118,10 +4202,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.53,
-      "export_s": 0.88,
-      "double_double_s_per_point": 5.335,
-      "double_s_per_point": 0.145
+      "generate_s": 7.34,
+      "export_s": 0.85,
+      "double_double_s_per_point": 4.9225,
+      "double_s_per_point": 0.14
      },
      "failed_checks": [
       {
@@ -4132,7 +4216,7 @@
        "coefficient": "single_pole",
        "error": 0.001358031424364636,
        "bound": 1e-24,
-       "note": "E = 1.11e-29"
+       "note": "E = 1.36e-26"
       },
       {
        "rule": "4",
@@ -4141,8 +4225,8 @@
        "sector": "QCD^4 QED^4",
        "coefficient": "single_pole",
        "error": 0.0013580314243771792,
-       "bound": 1.106815327228785e-12,
-       "note": "E = 1.11e-12"
+       "bound": 1.4435078825428532e-12,
+       "note": "E = 1.44e-12"
       },
       {
        "rule": "4",
@@ -4152,7 +4236,7 @@
        "coefficient": "single_pole",
        "error": 0.022257033582139523,
        "bound": 1e-24,
-       "note": "E = 3.62e-30"
+       "note": "E = 7.05e-28"
       },
       {
        "rule": "4",
@@ -4162,7 +4246,7 @@
        "coefficient": "single_pole",
        "error": 0.02225703358213931,
        "bound": 1e-12,
-       "note": "E = 6.12e-13"
+       "note": "E = 6.42e-13"
       },
       {
        "rule": "4",
@@ -4172,7 +4256,7 @@
        "coefficient": "single_pole",
        "error": 0.0009224371100805377,
        "bound": 1e-24,
-       "note": "E = 5.78e-30"
+       "note": "E = 2.48e-27"
       },
       {
        "rule": "4",
@@ -4182,7 +4266,7 @@
        "coefficient": "single_pole",
        "error": 0.0009224371100872722,
        "bound": 1e-12,
-       "note": "E = 1.55e-13"
+       "note": "E = 3.83e-13"
       },
       {
        "rule": "4",
@@ -4192,7 +4276,7 @@
        "coefficient": "single_pole",
        "error": 0.0009978121527835656,
        "bound": 1e-24,
-       "note": "E = 1.04e-29"
+       "note": "E = 1.18e-26"
       },
       {
        "rule": "4",
@@ -4201,12 +4285,13 @@
        "sector": "QCD^4 QED^4",
        "coefficient": "single_pole",
        "error": 0.0009978121527930996,
-       "bound": 1.0731000037295212e-12,
-       "note": "E = 1.07e-12"
+       "bound": 1.2978936056817616e-12,
+       "note": "E = 1.3e-12"
       }
      ]
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -4236,6 +4321,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4265,14 +4352,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.01,
-      "export_s": 1.48,
-      "double_double_s_per_point": 5.3525,
+      "generate_s": 5.74,
+      "export_s": 0.67,
+      "double_double_s_per_point": 5.1875,
       "double_s_per_point": 0.165
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -4302,10 +4390,13 @@
    "waits_for": "MQ-5F",
    "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pending",
    "tiers": {},
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -4330,12 +4421,15 @@
    },
    "reference_legend": "N ~15 s (+ analytic form factor)",
    "extras": [
-    "ap"
+    "ap",
+    "ff"
    ],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4363,10 +4457,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.65,
-      "export_s": 0.28,
-      "double_double_s_per_point": 4.57,
-      "double_s_per_point": 0.03
+      "generate_s": 4.52,
+      "export_s": 0.27,
+      "double_double_s_per_point": 4.485,
+      "double_s_per_point": 0.025
      },
      "failed_checks": []
     },
@@ -4376,7 +4470,7 @@
       3
      ],
      "passed": true,
-     "checks": 48,
+     "checks": 54,
      "failures": 0,
      "max_dd_vs_reference": 3.7772497100460036e-16,
      "max_binary64_vs_dd": 1.8242391150414227e-15,
@@ -4393,15 +4487,16 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.4,
+      "generate_s": 4.79,
       "export_s": 0.28,
-      "double_double_s_per_point": 4.515,
+      "double_double_s_per_point": 4.655,
       "double_s_per_point": 0.03,
-      "ap_s": 5.43
+      "ap_s": 6.31
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -4430,6 +4525,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4459,14 +4556,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.7,
-      "export_s": 3.35,
-      "double_double_s_per_point": 4.5175,
-      "double_s_per_point": 0.0275
+      "generate_s": 5.33,
+      "export_s": 0.29,
+      "double_double_s_per_point": 4.5375,
+      "double_s_per_point": 0.025
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -4502,6 +4600,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4529,10 +4629,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.91,
-      "export_s": 2.01,
-      "double_double_s_per_point": 5.1,
-      "double_s_per_point": 0.075
+      "generate_s": 7.2,
+      "export_s": 1.98,
+      "double_double_s_per_point": 4.99,
+      "double_s_per_point": 0.07
      },
      "failed_checks": []
     },
@@ -4565,17 +4665,18 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.1,
-      "export_s": 1.68,
-      "double_double_s_per_point": 4.935,
+      "generate_s": 7.81,
+      "export_s": 1.71,
+      "double_double_s_per_point": 5.08,
       "double_s_per_point": 0.07,
-      "uv_s": 5.29,
-      "hel_s": 4.96,
-      "ward_s": 14.77
+      "uv_s": 5.42,
+      "hel_s": 4.36,
+      "ward_s": 14.12
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -4605,7 +4706,9 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4634,14 +4737,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 9.12,
-      "export_s": 1.75,
-      "double_double_s_per_point": 5.983333333333333,
-      "double_s_per_point": 0.3233333333333333
+      "generate_s": 8.73,
+      "export_s": 1.77,
+      "double_double_s_per_point": 6.140000000000001,
+      "double_s_per_point": 0.32
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "D06@madloop",
@@ -4684,12 +4788,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.245,
-        "double_s_per_point": 0.31
+        "double_double_s_per_point": 5.4375,
+        "double_s_per_point": 0.32
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -4734,7 +4839,9 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4763,14 +4870,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.66,
-      "export_s": 2.04,
-      "double_double_s_per_point": 25.099999999999998,
-      "double_s_per_point": 6.670000000000001
+      "generate_s": 9.52,
+      "export_s": 3.53,
+      "double_double_s_per_point": 26.12,
+      "double_s_per_point": 6.763333333333333
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "D07@sectors",
@@ -4810,12 +4918,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 24.8,
-        "double_s_per_point": 6.79
+        "double_double_s_per_point": 25.64,
+        "double_s_per_point": 6.98
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -4860,7 +4969,9 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -4889,14 +5000,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.87,
-      "export_s": 1.87,
-      "double_double_s_per_point": 10.786666666666667,
-      "double_s_per_point": 1.0766666666666667
+      "generate_s": 6.14,
+      "export_s": 1.85,
+      "double_double_s_per_point": 10.766666666666666,
+      "double_s_per_point": 1.11
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "D08@sectors",
@@ -4936,12 +5048,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 10.53,
-        "double_s_per_point": 0.96
+        "double_double_s_per_point": 10.88,
+        "double_s_per_point": 1.03
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -4984,7 +5097,9 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5013,14 +5128,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.51,
-      "export_s": 0.55,
-      "double_double_s_per_point": 4.776666666666666,
-      "double_s_per_point": 0.06666666666666667
+      "generate_s": 5.14,
+      "export_s": 0.61,
+      "double_double_s_per_point": 4.886666666666667,
+      "double_s_per_point": 0.06999999999999999
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "D09@sectors",
@@ -5060,12 +5176,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.1,
-        "double_s_per_point": 0.06
+        "double_double_s_per_point": 5.36,
+        "double_s_per_point": 0.07
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -5109,10 +5226,12 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
-   "status": "fail",
+   "status": "pass",
    "tiers": {
     "nightly": {
      "points": [
@@ -5120,9 +5239,9 @@
       1,
       2
      ],
-     "passed": false,
+     "passed": true,
      "checks": 63,
-     "failures": 3,
+     "failures": 0,
      "max_dd_vs_reference": 3.0618611182098855e-15,
      "max_binary64_vs_dd": 1.7211726680174758e-12,
      "max_catani_dd": 2.983452203636299e-30,
@@ -5138,45 +5257,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.34,
-      "export_s": 1.71,
-      "double_double_s_per_point": 5.623333333333334,
-      "double_s_per_point": 0.18999999999999997
+      "generate_s": 8.12,
+      "export_s": 1.73,
+      "double_double_s_per_point": 6.05,
+      "double_s_per_point": 0.20333333333333334
      },
-     "failed_checks": [
-      {
-       "rule": "3",
-       "point": 2,
-       "carrier": "double",
-       "sector": "QCD^6 QED^4",
-       "coefficient": "double_pole",
-       "error": 7.396986902386912e-25,
-       "bound": 3.2466708019712307e-25,
-       "note": "absolute error against 10 E"
-      },
-      {
-       "rule": "2",
-       "point": 2,
-       "carrier": "double",
-       "sector": "QCD^6 QED^4",
-       "coefficient": "double_pole",
-       "error": 1.7211726680174758e-12,
-       "bound": 1e-12,
-       "note": "E = 7.55e-14"
-      },
-      {
-       "rule": "4",
-       "point": 2,
-       "carrier": "double",
-       "sector": "QCD^6 QED^4",
-       "coefficient": "double_pole",
-       "error": 1.7218737725788538e-12,
-       "bound": 1e-12,
-       "note": "E = 7.55e-14"
-      }
-     ]
+     "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "D10@sectors",
@@ -5216,12 +5305,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 6.4,
-        "double_s_per_point": 0.2
+        "double_double_s_per_point": 6.59,
+        "double_s_per_point": 0.19
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -5251,6 +5341,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5280,14 +5372,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.68,
-      "export_s": 2.27,
-      "double_double_s_per_point": 4.7125,
-      "double_s_per_point": 0.0575
+      "generate_s": 7.09,
+      "export_s": 1.54,
+      "double_double_s_per_point": 5.2275,
+      "double_s_per_point": 0.0675
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -5316,6 +5409,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5345,14 +5440,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.25,
-      "export_s": 0.37,
-      "double_double_s_per_point": 4.64,
-      "double_s_per_point": 0.04
+      "generate_s": 5.06,
+      "export_s": 0.48,
+      "double_double_s_per_point": 4.845,
+      "double_s_per_point": 0.0425
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -5381,6 +5477,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5410,14 +5508,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.32,
-      "export_s": 0.7,
-      "double_double_s_per_point": 4.6975,
-      "double_s_per_point": 0.0425
+      "generate_s": 4.6,
+      "export_s": 0.73,
+      "double_double_s_per_point": 4.86,
+      "double_s_per_point": 0.0475
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -5446,8 +5545,18 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
-   "listed_out_of_scope": [],
+   "listed_out_of_scope": [
+    {
+     "point": 3,
+     "sector": "QCD^2 QED^4",
+     "coefficient": "finite",
+     "E": 1.74e-09,
+     "true_error": 1.6e-12
+    }
+   ],
    "status": "pass",
    "tiers": {
     "nightly": {
@@ -5461,7 +5570,7 @@
      "checks": 80,
      "failures": 0,
      "max_dd_vs_reference": 3.178654713366527e-15,
-     "max_binary64_vs_dd": 1.5971605670800956e-12,
+     "max_binary64_vs_dd": 2.760802734336158e-13,
      "max_catani_dd": 1.5121885813987106e-30,
      "max_catani_binary64": 1.1915028943069213e-14,
      "catani_not_formed": false,
@@ -5473,21 +5582,30 @@
      },
      "ward": null,
      "no_reference": [],
-     "binary64_out_of_scope": [],
+     "binary64_out_of_scope": [
+      {
+       "point": 3,
+       "sector": "QCD^2 QED^4",
+       "coefficient": "finite",
+       "E": 1.7371480832743348e-09,
+       "true_error": 1.5971605670800956e-12
+      }
+     ],
      "timings": {
-      "generate_s": 3.45,
-      "export_s": 0.48,
-      "double_double_s_per_point": 4.635,
+      "generate_s": 5.8,
+      "export_s": 0.47,
+      "double_double_s_per_point": 4.9575,
       "double_s_per_point": 0.0475
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
    "max_dd_vs_reference": 3.178654713366527e-15,
-   "max_binary64_vs_dd": 1.5971605670800956e-12,
+   "max_binary64_vs_dd": 2.760802734336158e-13,
    "max_catani_dd": 1.5121885813987106e-30,
    "max_ward_dd": null
   },
@@ -5511,35 +5629,51 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [
     {
      "point": 0,
      "sector": "QCD^2 QED^4",
      "coefficient": "finite",
-     "E": 3.93e-09,
+     "E": 9.91e-09,
      "true_error": 3.06e-11
     },
     {
      "point": 0,
      "sector": "QCD^2 QED^4",
      "coefficient": "single_pole",
-     "E": 3.18e-09,
-     "true_error": 9.81e-13
+     "E": 7.97e-09,
+     "true_error": 8.7e-13
+    },
+    {
+     "point": 0,
+     "sector": "QCD^2 QED^4",
+     "coefficient": "double_pole",
+     "E": 2.49e-09,
+     "true_error": 5.21e-13
     },
     {
      "point": 3,
      "sector": "QCD^2 QED^4",
      "coefficient": "finite",
-     "E": 6.86e-09,
+     "E": 1.72e-08,
      "true_error": 2.97e-11
     },
     {
      "point": 3,
      "sector": "QCD^2 QED^4",
      "coefficient": "single_pole",
-     "E": 1.76e-09,
-     "true_error": 4.23e-13
+     "E": 4.43e-09,
+     "true_error": 3.12e-13
+    },
+    {
+     "point": 3,
+     "sector": "QCD^2 QED^4",
+     "coefficient": "double_pole",
+     "E": 2.49e-09,
+     "true_error": 5.21e-13
     }
    ],
    "status": "pass",
@@ -5572,40 +5706,55 @@
        "point": 0,
        "sector": "QCD^2 QED^4",
        "coefficient": "finite",
-       "E": 3.934203478331815e-09,
+       "E": 9.910528331519966e-09,
        "true_error": 3.057760731838563e-11
       },
       {
        "point": 0,
        "sector": "QCD^2 QED^4",
        "coefficient": "single_pole",
-       "E": 3.1752667016752506e-09,
+       "E": 7.969636774652153e-09,
        "true_error": 9.813353663173578e-13
+      },
+      {
+       "point": 0,
+       "sector": "QCD^2 QED^4",
+       "coefficient": "double_pole",
+       "E": 2.488679622057258e-09,
+       "true_error": 4.1018769212923564e-13
       },
       {
        "point": 3,
        "sector": "QCD^2 QED^4",
        "coefficient": "finite",
-       "E": 6.855906479776484e-09,
+       "E": 1.7205934934872624e-08,
        "true_error": 2.9726634847217724e-11
       },
       {
        "point": 3,
        "sector": "QCD^2 QED^4",
        "coefficient": "single_pole",
-       "E": 1.7643726726923208e-09,
+       "E": 4.425803708322919e-09,
        "true_error": 4.2276021568630167e-13
+      },
+      {
+       "point": 3,
+       "sector": "QCD^2 QED^4",
+       "coefficient": "double_pole",
+       "E": 2.488679622057258e-09,
+       "true_error": 4.1018769212923564e-13
       }
      ],
      "timings": {
-      "generate_s": 2.88,
-      "export_s": 0.46,
-      "double_double_s_per_point": 4.775,
-      "double_s_per_point": 0.045
+      "generate_s": 6.54,
+      "export_s": 0.52,
+      "double_double_s_per_point": 4.9025,
+      "double_s_per_point": 0.055
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -5634,6 +5783,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5663,14 +5814,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.92,
+      "generate_s": 6.69,
       "export_s": 0.62,
-      "double_double_s_per_point": 4.7675,
-      "double_s_per_point": 0.08
+      "double_double_s_per_point": 4.86,
+      "double_s_per_point": 0.0775
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "D17@5F",
@@ -5685,7 +5837,10 @@
      },
      "status": "pending",
      "waits_for": "MQ-5F",
-     "tiers": {}
+     "tiers": {},
+     "missing_records": [
+      "nightly"
+     ]
     }
    ],
    "nc": null,
@@ -5715,6 +5870,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5744,14 +5901,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.06,
-      "export_s": 0.24,
-      "double_double_s_per_point": 4.5125,
+      "generate_s": 2.18,
+      "export_s": 0.23,
+      "double_double_s_per_point": 4.48,
       "double_s_per_point": 0.0275
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -5780,6 +5938,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "fail",
@@ -5809,10 +5969,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.02,
+      "generate_s": 3.17,
       "export_s": 0.45,
-      "double_double_s_per_point": 4.5625,
-      "double_s_per_point": 0.055
+      "double_double_s_per_point": 4.6925,
+      "double_s_per_point": 0.0625
      },
      "failed_checks": [
       {
@@ -5823,7 +5983,7 @@
        "coefficient": "single_pole",
        "error": 0.1051856197022888,
        "bound": 1e-24,
-       "note": "E = 9.34e-31"
+       "note": "E = 1.01e-30"
       },
       {
        "rule": "4",
@@ -5833,7 +5993,7 @@
        "coefficient": "single_pole",
        "error": 0.10518561970228738,
        "bound": 1e-12,
-       "note": "E = 9.08e-15"
+       "note": "E = 1.27e-14"
       },
       {
        "rule": "4",
@@ -5843,7 +6003,7 @@
        "coefficient": "single_pole",
        "error": 0.33461667180012294,
        "bound": 1e-24,
-       "note": "E = 2.57e-30"
+       "note": "E = 3.39e-30"
       },
       {
        "rule": "4",
@@ -5853,7 +6013,7 @@
        "coefficient": "single_pole",
        "error": 0.334616671800124,
        "bound": 1e-12,
-       "note": "E = 3.91e-14"
+       "note": "E = 8.79e-14"
       },
       {
        "rule": "4",
@@ -5863,7 +6023,7 @@
        "coefficient": "single_pole",
        "error": 0.09318092986388878,
        "bound": 1e-24,
-       "note": "E = 9.68e-31"
+       "note": "E = 3.38e-30"
       },
       {
        "rule": "4",
@@ -5873,7 +6033,7 @@
        "coefficient": "single_pole",
        "error": 0.09318092986388904,
        "bound": 1e-12,
-       "note": "E = 2.12e-14"
+       "note": "E = 2.25e-14"
       },
       {
        "rule": "4",
@@ -5883,7 +6043,7 @@
        "coefficient": "single_pole",
        "error": 0.19702609358064052,
        "bound": 1e-24,
-       "note": "E = 9.44e-31"
+       "note": "E = 1.12e-30"
       },
       {
        "rule": "4",
@@ -5893,11 +6053,12 @@
        "coefficient": "single_pole",
        "error": 0.1970260935806376,
        "bound": 1e-12,
-       "note": "E = 1.44e-14"
+       "note": "E = 2.03e-14"
       }
      ]
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -5926,6 +6087,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -5955,14 +6118,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.94,
-      "export_s": 1.67,
-      "double_double_s_per_point": 4.8725,
+      "generate_s": 5.31,
+      "export_s": 2.98,
+      "double_double_s_per_point": 4.9375,
       "double_s_per_point": 0.0775
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -5992,6 +6156,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6020,14 +6186,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.37,
+      "generate_s": 2.27,
       "export_s": 0.31,
-      "double_double_s_per_point": 4.8133333333333335,
-      "double_s_per_point": 0.04
+      "double_double_s_per_point": 4.576666666666667,
+      "double_s_per_point": 0.03666666666666667
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -6056,6 +6223,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6085,14 +6254,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.85,
+      "generate_s": 5.28,
       "export_s": 0.69,
-      "double_double_s_per_point": 4.695,
-      "double_s_per_point": 0.05
+      "double_double_s_per_point": 4.815,
+      "double_s_per_point": 0.0525
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -6121,6 +6291,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6150,14 +6322,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.52,
-      "export_s": 0.27,
-      "double_double_s_per_point": 4.4875,
+      "generate_s": 2.2,
+      "export_s": 0.28,
+      "double_double_s_per_point": 4.5375,
       "double_s_per_point": 0.03
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -6188,6 +6361,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6217,14 +6392,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.52,
-      "export_s": 0.41,
-      "double_double_s_per_point": 4.64,
-      "double_s_per_point": 0.0325
+      "generate_s": 3.22,
+      "export_s": 0.42,
+      "double_double_s_per_point": 4.7425,
+      "double_s_per_point": 0.0375
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "D25@zero",
@@ -6266,12 +6442,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 4.443333333333333,
-        "double_s_per_point": 0.03
+        "double_double_s_per_point": 4.536666666666666,
+        "double_s_per_point": 0.03333333333333333
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -6301,6 +6478,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6330,14 +6509,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.16,
-      "export_s": 3.52,
-      "double_double_s_per_point": 4.7225,
-      "double_s_per_point": 0.075
+      "generate_s": 7.14,
+      "export_s": 2.4,
+      "double_double_s_per_point": 4.995,
+      "double_s_per_point": 0.085
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -6366,6 +6546,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6395,14 +6577,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 2.7,
-      "export_s": 0.38,
-      "double_double_s_per_point": 4.6075,
-      "double_s_per_point": 0.04
+      "generate_s": 3.29,
+      "export_s": 0.41,
+      "double_double_s_per_point": 4.8175,
+      "double_s_per_point": 0.0425
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -6437,6 +6620,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6472,16 +6657,17 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 8.3,
-      "export_s": 0.53,
-      "double_double_s_per_point": 7.7825,
-      "double_s_per_point": 0.3275,
-      "uv_s": 8.46,
-      "ward_s": 21.75
+      "generate_s": 7.66,
+      "export_s": 0.56,
+      "double_double_s_per_point": 8.0275,
+      "double_s_per_point": 0.33,
+      "uv_s": 8.63,
+      "ward_s": 22.11
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -6510,6 +6696,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6539,14 +6727,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 7.29,
-      "export_s": 1.45,
-      "double_double_s_per_point": 8.525,
-      "double_s_per_point": 0.5825
+      "generate_s": 9.07,
+      "export_s": 1.53,
+      "double_double_s_per_point": 8.475,
+      "double_s_per_point": 0.5975
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -6571,11 +6760,15 @@
     ]
    },
    "reference_legend": "E top-pair-higgs-model.json (MadLoop binary64)",
-   "extras": [],
+   "extras": [
+    "ap"
+   ],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6587,7 +6780,7 @@
       2
      ],
      "passed": true,
-     "checks": 57,
+     "checks": 65,
      "failures": 0,
      "max_dd_vs_reference": 5.8139605468115996e-15,
      "max_binary64_vs_dd": 6.6061695150453176e-15,
@@ -6604,14 +6797,16 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.04,
-      "export_s": 0.72,
-      "double_double_s_per_point": 5.9366666666666665,
-      "double_s_per_point": 0.09999999999999999
+      "generate_s": 2.91,
+      "export_s": 0.69,
+      "double_double_s_per_point": 4.986666666666667,
+      "double_s_per_point": 0.08,
+      "ap_s": 7.86
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -6655,15 +6850,17 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [
     {
      "point": 2,
      "sector": "QCD^8 QED^4",
      "coefficient": "finite",
-     "E": 3.42e-08,
-     "true_error": 5.66e-09
+     "E": 5.69e-08,
+     "true_error": 5.71e-09
     }
    ],
    "status": "pass",
@@ -6695,19 +6892,20 @@
        "point": 2,
        "sector": "QCD^8 QED^4",
        "coefficient": "finite",
-       "E": 3.4162925747356716e-08,
+       "E": 5.693411987110014e-08,
        "true_error": 5.710234941204639e-09
       }
      ],
      "timings": {
-      "generate_s": 8.78,
-      "export_s": 1.97,
-      "double_double_s_per_point": 48.416666666666664,
-      "double_s_per_point": 6.573333333333333
+      "generate_s": 6.75,
+      "export_s": 2.06,
+      "double_double_s_per_point": 49.49,
+      "double_s_per_point": 6.416666666666667
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "E06@sectors",
@@ -6747,12 +6945,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 37.72,
-        "double_s_per_point": 6.54
+        "double_double_s_per_point": 37.89,
+        "double_s_per_point": 6.4
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -6788,6 +6987,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6817,16 +7018,17 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.03,
-      "export_s": 0.24,
-      "double_double_s_per_point": 4.4925,
-      "double_s_per_point": 0.03,
-      "uv_s": 4.53,
-      "ap_s": 5.51
+      "generate_s": 4.29,
+      "export_s": 0.25,
+      "double_double_s_per_point": 4.67,
+      "double_s_per_point": 0.0325,
+      "uv_s": 4.81,
+      "ap_s": 5.93
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "F01@5F",
@@ -6841,7 +7043,10 @@
      },
      "status": "pending",
      "waits_for": "MQ-5F",
-     "tiers": {}
+     "tiers": {},
+     "missing_records": [
+      "nightly"
+     ]
     }
    ],
    "nc": null,
@@ -6871,6 +7076,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -6900,14 +7107,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 3.42,
+      "generate_s": 3.81,
       "export_s": 0.24,
-      "double_double_s_per_point": 4.4675,
-      "double_s_per_point": 0.03
+      "double_double_s_per_point": 4.595,
+      "double_s_per_point": 0.0325
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "F02@5F",
@@ -6922,7 +7130,10 @@
      },
      "status": "pending",
      "waits_for": "MQ-5F",
-     "tiers": {}
+     "tiers": {},
+     "missing_records": [
+      "nightly"
+     ]
     }
    ],
    "nc": null,
@@ -6952,10 +7163,13 @@
    "waits_for": "MQ-5F",
    "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pending",
    "tiers": {},
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -6986,6 +7200,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -7021,15 +7237,16 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.92,
+      "generate_s": 6.52,
       "export_s": 0.58,
-      "double_double_s_per_point": 4.73,
-      "double_s_per_point": 0.4125,
-      "ward_s": 10.2
+      "double_double_s_per_point": 4.8625,
+      "double_s_per_point": 0.0875,
+      "ward_s": 10.83
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [
     {
      "id": "F04@5F",
@@ -7044,7 +7261,10 @@
      },
      "status": "pending",
      "waits_for": "MQ-5F",
-     "tiers": {}
+     "tiers": {},
+     "missing_records": [
+      "nightly"
+     ]
     }
    ],
    "nc": null,
@@ -7070,12 +7290,15 @@
    },
    "reference_legend": "E tools/loop_reference/uudd_mixed_sm_qcd.json (= mixed-uudd-sm-qcd-control)",
    "extras": [
-    "uv"
+    "uv",
+    "ap"
    ],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -7103,10 +7326,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 10.06,
-      "export_s": 1.47,
-      "double_double_s_per_point": 5.035,
-      "double_s_per_point": 0.125
+      "generate_s": 9.68,
+      "export_s": 1.43,
+      "double_double_s_per_point": 4.92,
+      "double_s_per_point": 0.115
      },
      "failed_checks": []
     },
@@ -7115,7 +7338,7 @@
       2
      ],
      "passed": true,
-     "checks": 48,
+     "checks": 72,
      "failures": 0,
      "max_dd_vs_reference": 4.598074524287263e-15,
      "max_binary64_vs_dd": 2.44259759389765e-15,
@@ -7132,15 +7355,17 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 9.52,
-      "export_s": 2.39,
-      "double_double_s_per_point": 5.3,
+      "generate_s": 11.4,
+      "export_s": 1.09,
+      "double_double_s_per_point": 5.52,
       "double_s_per_point": 0.13,
-      "uv_s": 4.47
+      "uv_s": 4.62,
+      "ap_s": 8.19
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -7169,6 +7394,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -7198,14 +7425,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.36,
-      "export_s": 0.91,
-      "double_double_s_per_point": 4.82,
-      "double_s_per_point": 0.1575
+      "generate_s": 5.32,
+      "export_s": 0.97,
+      "double_double_s_per_point": 4.945,
+      "double_s_per_point": 0.1675
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -7230,12 +7458,15 @@
    },
    "reference_legend": "N, S ~15 s + CKM-factor relation",
    "extras": [
-    "uv"
+    "uv",
+    "ap"
    ],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -7248,7 +7479,7 @@
       3
      ],
      "passed": true,
-     "checks": 98,
+     "checks": 106,
      "failures": 0,
      "max_dd_vs_reference": 1.3812052775155262e-15,
      "max_binary64_vs_dd": 7.185208034654318e-14,
@@ -7265,16 +7496,18 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.95,
-      "export_s": 0.38,
+      "generate_s": 6.06,
+      "export_s": 0.42,
       "double_double_s_per_point": 4.695,
       "double_s_per_point": 0.05,
-      "uv_s": 5.1,
-      "ckm_s": 13.08
+      "uv_s": 5.04,
+      "ap_s": 7.74,
+      "ckm_s": 13.21
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -7303,10 +7536,13 @@
    "waits_for": "MQ-5F",
    "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pending",
    "tiers": {},
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -7335,10 +7571,13 @@
    "waits_for": "MQ-5F",
    "pending_reason": "the reference exists (MQ-REF); the tools route refuses the request at generation: a Dirac (massive) current cannot close on a Weyl current (the MQ-5F class)",
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pending",
    "tiers": {},
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -7361,10 +7600,13 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
    "tiers": {},
+   "missing_records": [],
    "variants": [
     {
      "id": "M01@P0",
@@ -7405,14 +7647,15 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 7.58,
-        "export_s": 0.59,
-        "double_double_s_per_point": 5.63,
+        "generate_s": 4.66,
+        "export_s": 0.51,
+        "double_double_s_per_point": 4.68,
         "double_s_per_point": 0.065
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     },
     {
      "id": "M01@public-P0",
@@ -7453,14 +7696,15 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 41.3,
+        "generate_s": 37.01,
         "export_s": 0.0,
-        "double_double_s_per_point": 3.445,
+        "double_double_s_per_point": 3.4175,
         "double_s_per_point": 0.005
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     },
     {
      "id": "M01@P2",
@@ -7501,14 +7745,15 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 5.03,
-        "export_s": 0.55,
-        "double_double_s_per_point": 5.2775,
+        "generate_s": 6.38,
+        "export_s": 0.46,
+        "double_double_s_per_point": 5.115,
         "double_s_per_point": 0.1525
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     },
     {
      "id": "M01@public-P2",
@@ -7551,12 +7796,13 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 3.65,
+        "double_double_s_per_point": 3.605,
         "double_s_per_point": 0.0075
        },
        "failed_checks": []
       }
-     }
+     },
+     "missing_records": []
     }
    ],
    "nc": null,
@@ -7593,6 +7839,8 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
    "listed_outliers": [],
    "listed_out_of_scope": [],
    "status": "pass",
@@ -7622,14 +7870,15 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.69,
-      "export_s": 0.3,
-      "double_double_s_per_point": 4.5375,
-      "double_s_per_point": 0.03
+      "generate_s": 4.29,
+      "export_s": 0.28,
+      "double_double_s_per_point": 4.61,
+      "double_s_per_point": 0.0325
      },
      "failed_checks": []
     }
    },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
@@ -7648,8 +7897,8 @@
     "D19",
     "C07"
    ],
-   "checks": "rule 4, every point, double-double and binary64, single pole of the leading sector only (D19 QCD^2 QED^6: 9.3e-2 .. 3.4e-1; C07 QCD^4 QED^4: 9.2e-4 .. 2.2e-2); the double poles agree; unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files); unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native)",
-   "evidence": "rule 1 passes on both rows: our virtual equals MadLoop's per squared split order within 1e-12, poles included. Both follow MadLoop's [virt=QCD] loop selection (loops/orders.py LoopEligibility: every circulating species perturbative in a selected correction), so a loop carrying a W or Z next to the gluon (the boxes and pentagons exchanging a gluon between the two quark lines) is not computed. Catani's operator describes the complete O(alpha_s) virtual, whose non-factorisable poles <T_i.T_k> between the lines are nonzero when the Born interferes colour structures joined by different EW exchanges. Minimal reproducer on D19's points, double-double, rule 4 only (workspace/tmp/mq-validate/s2/ew22.py): u d > u d h QCD=0 (Z and W exchange, colour structures delta_13 delta_24 and delta_14 delta_23) single pole 1.6133954759575e-9 against the predicted 1.4436894729941e-9 (rel 0.105; 0.335 at point 1), while u c > u c h and u c~ > u c~ h (one colour structure, where the non-factorisable interference vanishes by colour) agree within 6e-33 .. 3e-31 and the QCD Born u d > u d within 9e-30. The operator's inputs are right: its Born vectors contracted with the Gram matrix give the engine's Born exactly (5.416202339758131e-9) and its C_ij are the expected colour algebra (s2/vec.py); the Python path (LoopSlice.evaluate, 34 digits) and the native executor give the same virtual and prediction (s2/catani-D19.log); no relabelling of the legs reproduces the virtual (24 tried, s2/perm-D19.log); the deviation is mu-independent (points 0 and 3: same kinematics, mu_R halved, the same -0.0313 x Born). poles.predicted_sectors only checks the trees left by a soft exchange of each coupling (L - 2c), not the loops the species condition removes. The same mechanism applies to C07 (W joining the light u->d line and the t b~ line). Pole selection (2026-10-28, workspace/tmp/mq-validate/s3/irmode-D19.log, D19 point 0, double-double, slice d3081568): poles='ir' returns the same virtual as poles='all' to every printed digit (finite -3.973456325044482e-9, single -1.613395475957548e-9, double -5.424950094330169e-10), its UV-origin pole parts are 0 and its IR-origin parts are the whole poles, so the renormalised virtual's IR poles are the computed ones (the user-facing 'ir' output is consistent with rule 1); only the Catani prediction (single -1.443689472994084e-9, double equal) misses.",
+   "checks": "rule 4, every point, double-double and binary64, single pole of the leading sector only (D19 QCD^2 QED^6: 9.3e-2 .. 3.4e-1; C07 QCD^4 QED^4: 9.2e-4 .. 2.2e-2); the double poles agree; unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files); unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native); unchanged in campaign pt13 (2026-10-29 ~03:30-03:56 UTC, head 191efa9f = slice a2aa0d84 with MQ-STAB integrated, native loop-native-v2-slice-da6980b0, every tier as whole files; the O1 estimate is loops.v2.stability.RECOMMENDED_CHECKS)",
+   "evidence": "rule 1 passes on both rows: our virtual equals MadLoop's per squared split order within 1e-12, poles included. Both follow MadLoop's [virt=QCD] loop selection (loops/orders.py LoopEligibility: every circulating species perturbative in a selected correction), so a loop carrying a W or Z next to the gluon (the boxes and pentagons exchanging a gluon between the two quark lines) is not computed. Catani's operator describes the complete O(alpha_s) virtual, whose non-factorisable poles <T_i.T_k> between the lines are nonzero when the Born interferes colour structures joined by different EW exchanges. Minimal reproducer on D19's points, double-double, rule 4 only (reports/engine-v2/mq-validate/evidence/ew22.py): u d > u d h QCD=0 (Z and W exchange, colour structures delta_13 delta_24 and delta_14 delta_23) single pole 1.6133954759575e-9 against the predicted 1.4436894729941e-9 (rel 0.105; 0.335 at point 1), while u c > u c h and u c~ > u c~ h (one colour structure, where the non-factorisable interference vanishes by colour) agree within 6e-33 .. 3e-31 and the QCD Born u d > u d within 9e-30. The operator's inputs are right: its Born vectors contracted with the Gram matrix give the engine's Born exactly (5.416202339758131e-9) and its C_ij are the expected colour algebra (reports/engine-v2/mq-validate/evidence/vec.py); the Python path (LoopSlice.evaluate, 34 digits) and the native executor give the same virtual and prediction (reports/engine-v2/mq-validate/evidence/catani-D19.log); no relabelling of the legs reproduces the virtual (24 tried, reports/engine-v2/mq-validate/evidence/perm-D19.log); the deviation is mu-independent (points 0 and 3: same kinematics, mu_R halved, the same -0.0313 x Born). poles.predicted_sectors only checks the trees left by a soft exchange of each coupling (L - 2c), not the loops the species condition removes. The same mechanism applies to C07 (W joining the light u->d line and the t b~ line). Pole selection (2026-10-28, reports/engine-v2/mq-validate/evidence/irmode-D19.log, D19 point 0, double-double, slice d3081568): poles='ir' returns the same virtual as poles='all' to every printed digit (finite -3.973456325044482e-9, single -1.613395475957548e-9, double -5.424950094330169e-10), its UV-origin pole parts are 0 and its IR-origin parts are the whole poles, so the renormalised virtual's IR poles are the computed ones (the user-facing 'ir' output is consistent with rule 1); only the Catani prediction (single -1.443689472994084e-9, double equal) misses.",
    "routed_to": "coordinator: owner of loops/v2/poles.py predicted_sectors (a sector whose Born has colour-connected structures joined only by non-correction bosons with a nonzero non-factorisable <T_i.T_k> is not predicted, or the operator is restricted to the computed loops; poles='ir' itself is consistent, see the evidence). MQ-VALIDATE then moves the D19 and C07 sectors to unpredicted (rule 4 keeps checking them against MadLoop per split order)",
    "status": "open"
   },
@@ -7661,20 +7910,20 @@
     "A06"
    ],
    "checks": "rule 1: A06 point 1 single pole 1.18e-12 against tests/fixtures/loop/required/uux_uux.json's MadLoop (status 216, own accuracy 0.0); resolved: C01 point 1 finite 3.25e-11, C01@params point 1 finite 2.69e-11, C02 point 0 finite 2.1e-12, D11 point 1 single pole 4.27e-12 (all pass at pt7)",
-   "evidence": "Cross-checks run into workspace/tmp/mq-validate/qpref/ (the committed exports read only; MQ-REF's toolkit, references.py run): (a) C01 point 1: MadLoop forced to quadruple precision (--madloop-accuracy 1e-20, status 328) reproduces its binary64 value (finite 5.527401070421307, 3.25e-11 from ours; single and double pole 4.8e-13 from ours, which equal Catani's within 1e-27), while Recola (COLLIER) agrees with our double-double within 1.1e-15 on every coefficient of points 0-3 (finite 5.527401070600913 at point 1); our double-double equals 40 and 60 digits within 1e-31 there (s2/c01ap.log): MadLoop's massive-b result is off, not ours. (b) C02 point 0 and D11 point 1: forced quadruple precision brings MadLoop within 5e-14 and 7e-15 of ours (Recola 5.7e-13, 1.5e-13): binary64 noise of the status-216 runs that MadLoop's estimate does not see. (c) A06 point 1 (a cancelling single pole, 0.12 against a Born of 302): the committed Recola and OpenLoops values are 7.3e-13 and 5.2e-13 from ours, MadLoop 1.18e-12; MLStabThres = 1e-20 cannot force quadruple precision there because MadLoop's binary64 estimate is exactly 0 (status 216 again). Not explained by the input point: double-double at MadLoop's own quadruple-precision point (its ImprovePSPoint=2 projection of the binary64 rounding, supplied_points.madloop_qp_point) gives the same deviations (workspace/tmp/mq-validate/qp/exp.py). MQ-REF's per-point records (fix round 06dfb9c5) show MadLoop's own inconsistency at the failing massive-b points: at C01 point 1 its printed Born and the Born its double pole implies differ by 4.82e-13 (C01@params point 1: 3.7e-13), against 3e-16 .. 1e-15 at the other rows' points; C02 point 0 and D11 point 1 show 3.3e-16 and 8.6e-16 (binary64 noise in the finite and single pole only). The fix round added no second provider to C01, C02, D11 (campaign pt6 at a765a9cc: the same five failures). Cause of the C01 miss (MQ-REF's fix-round-2 experiment, workspace/tmp/mq-ref/r3/c01_hf0 against c01_hf2, read only): MadLoop's numerical helicity filter (HelicityFilterLevel 2, the export's default) drops helicity configurations that vanish for a massless b but not for the massive one; with HelicityFilterLevel 0 MadLoop's C01 point 1 finite part is 5.527401070600928, 1.7e-15 from our double-double (5.5274010706009188), at its own binary64 accuracy 1.1e-15. MQ-REF's fix round 2 (in progress at 828ebaf0) reruns every point with the filter off and in quadruple precision. Campaign pt7 (2026-10-28, head f9fd78fd, MQ-REF fix round 2 75db7231: every point in MadLoop's quadruple-precision stage, HelicityFilterLevel 0, Recola as C01's second provider): C01, C01@params, C02 and D11 pass every rule (the default tier passes). A06 keeps its PLAN reference, the G1 three-provider fixture required/uux_uux.json (MadLoop binary64, status 216), where the miss stays; its MQ-REF quadruple-precision rerun at the same points plus mu_0/2 (variant A06@sectors, pt8) passes every rule with the point-1 single pole 2.8e-14 from double-double, and Recola and OpenLoops agree within 7.3e-13 and 5.2e-13. Resolved: MQ-REF's integrated references (slice 141fe125) bind A06's points 0-2 (and those of the 13 other rows that keep a G1 fixture) to its quadruple-precision rerun (point_binding); Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files): A06 passes every rule (point-1 single pole 2.8e-14 from double-double), A06@sectors passes its mu_0/2 point.",
+   "evidence": "Cross-checks run into reports/engine-v2/mq-validate/evidence/qpref/ (the committed exports read only; MQ-REF's toolkit, references.py run): (a) C01 point 1: MadLoop forced to quadruple precision (--madloop-accuracy 1e-20, status 328) reproduces its binary64 value (finite 5.527401070421307, 3.25e-11 from ours; single and double pole 4.8e-13 from ours, which equal Catani's within 1e-27), while Recola (COLLIER) agrees with our double-double within 1.1e-15 on every coefficient of points 0-3 (finite 5.527401070600913 at point 1); our double-double equals 40 and 60 digits within 1e-31 there (reports/engine-v2/mq-validate/evidence/c01ap.log): MadLoop's massive-b result is off, not ours. (b) C02 point 0 and D11 point 1: forced quadruple precision brings MadLoop within 5e-14 and 7e-15 of ours (Recola 5.7e-13, 1.5e-13): binary64 noise of the status-216 runs that MadLoop's estimate does not see. (c) A06 point 1 (a cancelling single pole, 0.12 against a Born of 302): the committed Recola and OpenLoops values are 7.3e-13 and 5.2e-13 from ours, MadLoop 1.18e-12; MLStabThres = 1e-20 cannot force quadruple precision there because MadLoop's binary64 estimate is exactly 0 (status 216 again). Not explained by the input point: double-double at MadLoop's own quadruple-precision point (its ImprovePSPoint=2 projection of the binary64 rounding, supplied_points.madloop_qp_point) gives the same deviations (reports/engine-v2/mq-validate/evidence/qp-exp.py). MQ-REF's per-point records (fix round 06dfb9c5) show MadLoop's own inconsistency at the failing massive-b points: at C01 point 1 its printed Born and the Born its double pole implies differ by 4.82e-13 (C01@params point 1: 3.7e-13), against 3e-16 .. 1e-15 at the other rows' points; C02 point 0 and D11 point 1 show 3.3e-16 and 8.6e-16 (binary64 noise in the finite and single pole only). The fix round added no second provider to C01, C02, D11 (campaign pt6 at a765a9cc: the same five failures). Cause of the C01 miss (MQ-REF's fix-round-2 experiment, workspace/tmp/mq-ref/r3/c01_hf0 against c01_hf2, read only): MadLoop's numerical helicity filter (HelicityFilterLevel 2, the export's default) drops helicity configurations that vanish for a massless b but not for the massive one; with HelicityFilterLevel 0 MadLoop's C01 point 1 finite part is 5.527401070600928, 1.7e-15 from our double-double (5.5274010706009188), at its own binary64 accuracy 1.1e-15. MQ-REF's fix round 2 (in progress at 828ebaf0) reruns every point with the filter off and in quadruple precision. Campaign pt7 (2026-10-28, head f9fd78fd, MQ-REF fix round 2 75db7231: every point in MadLoop's quadruple-precision stage, HelicityFilterLevel 0, Recola as C01's second provider): C01, C01@params, C02 and D11 pass every rule (the default tier passes). A06 keeps its PLAN reference, the G1 three-provider fixture required/uux_uux.json (MadLoop binary64, status 216), where the miss stays; its MQ-REF quadruple-precision rerun at the same points plus mu_0/2 (variant A06@sectors, pt8) passes every rule with the point-1 single pole 2.8e-14 from double-double, and Recola and OpenLoops agree within 7.3e-13 and 5.2e-13. Resolved: MQ-REF's integrated references (slice 141fe125) bind A06's points 0-2 (and those of the 13 other rows that keep a G1 fixture) to its quadruple-precision rerun (point_binding); Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files): A06 passes every rule (point-1 single pole 2.8e-14 from double-double), A06@sectors passes its mu_0/2 point.",
    "routed_to": "MQ-REF (done: binding quadruple-precision references, integrated by the coordinator)",
    "status": "resolved"
   },
   {
    "id": "F3",
    "category": "reference: MadLoop quadruple-precision result",
-   "title": "g g > u u~ u u~ and u u~ > g g g g g: no provider reaches 1e-12 at 2->4/2->5; resolved by the user's rule 1 tolerance of 1e-10 from 2->4 up",
+   "title": "g g > u u~ u u~ and u u~ > g g g g g: no provider reaches 1e-12 at 2->4/2->5; resolved by the user's ruling (1e-10 'if need be'): these two rows hold rule 1 at 1e-10, every other row at 1e-12",
    "rows": [
     "A18",
     "A23"
    ],
    "checks": "rule 1: A18 points 0, 2, 3 finite 3.5e-12 .. 1.17e-11 and double pole 1.06e-12; A23 points 0-2 finite and single pole 1.0e-12 .. 3.2e-12",
-   "evidence": "A18: MadLoop's quadruple-precision values (status 328/329, own accuracy 0) are up to 1.17e-11 (finite) and 1.06e-12 (double pole) from ours; MadLoop's double pole is off its own Born times the universal IR factor by exactly that 1.06e-12 at point 2 (and 3.5e-13 at points 0, 3), while ours equals Catani's within 9e-28 and our Born equals MadLoop's within 2e-15, so MadLoop's loop carries a ~1e-12 systematic error. Third opinions (workspace/tmp/mq-validate/qpref/): OpenLoops (ppjjjj, binary64) 5.5e-13 / 9.8e-13 / 1.2e-12 / 2.6e-12 on the finite part of points 0-3 and <= 1.8e-13 on the poles; Recola (binary64) up to 5.3e-11 with double poles 1.1e-11 off. The deviations do not move when our double-double is evaluated at MadLoop's quadruple-precision input point (qp/exp.py). A23 (MadLoop status 216, own accuracies 1.2e-13 .. 2.3e-12, covering some coefficients; Recola's double poles off the universal factor by up to 4.4e-11): no second provider within 1e-12; a forced quadruple-precision MadLoop 2->5 run was not attempted (estimated hours, HANDOFF \u00a70.1). MQ-REF fix round 2 (75db7231): OpenLoops (ppjjjj) is A18's recorded second provider and MadLoop's points 0, 2, 3 are named OUTLIER in the fixture (CutTools quadruple precision, return code 329, own accuracy 0.0, its double pole off its Born x the universal factor by 3.5e-13 .. 1.1e-12). Campaign pt7: A18 misses at point 0 finite 3.45e-12 (OpenLoops 5.5e-13 from double-double), point 2 finite 6.37e-12 and double pole 1.06e-12 (OpenLoops 1.16e-12 and 1.1e-13), point 3 finite 1.17e-11 (OpenLoops 2.55e-12); rule 1 (i) cannot pass where MadLoop's own accuracy reads 0.0, and at points 2 and 3 no provider is within 1e-12 of double-double (whose poles equal Catani's within 1e-27). A23 (2->5, not regenerated) is unchanged. Resolved by the user's ruling (slice-status DECISIONS 2026-10-29 ~01:12): rule 1 is 1e-10 relative from 2->4 up (up to 1e-7 at 2->5 and beyond where the providers require it; stated per row, manifest reference_tolerance). Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files): A18 passes every rule at 1e-10 (worst double-double against MadLoop 1.17e-11), A23 passes at 1e-10 (worst 3.18e-12); no row needs more than 1e-10. The internal oracles (Catani, Ward, rotations) are unchanged.",
+   "evidence": "A18: MadLoop's quadruple-precision values (status 328/329, own accuracy 0) are up to 1.17e-11 (finite) and 1.06e-12 (double pole) from ours; MadLoop's double pole is off its own Born times the universal IR factor by exactly that 1.06e-12 at point 2 (and 3.5e-13 at points 0, 3), while ours equals Catani's within 9e-28 and our Born equals MadLoop's within 2e-15, so MadLoop's loop carries a ~1e-12 systematic error. Third opinions (reports/engine-v2/mq-validate/evidence/qpref/): OpenLoops (ppjjjj, binary64) 5.5e-13 / 9.8e-13 / 1.2e-12 / 2.6e-12 on the finite part of points 0-3 and <= 1.8e-13 on the poles; Recola (binary64) up to 5.3e-11 with double poles 1.1e-11 off. The deviations do not move when our double-double is evaluated at MadLoop's quadruple-precision input point (reports/engine-v2/mq-validate/evidence/qp-exp.py). A23 (MadLoop status 216, own accuracies 1.2e-13 .. 2.3e-12, covering some coefficients; Recola's double poles off the universal factor by up to 4.4e-11): no second provider within 1e-12; a forced quadruple-precision MadLoop 2->5 run was not attempted (estimated hours, HANDOFF \u00a70.1). MQ-REF fix round 2 (75db7231): OpenLoops (ppjjjj) is A18's recorded second provider and MadLoop's points 0, 2, 3 are named OUTLIER in the fixture (CutTools quadruple precision, return code 329, own accuracy 0.0, its double pole off its Born x the universal factor by 3.5e-13 .. 1.1e-12). Campaign pt7: A18 misses at point 0 finite 3.45e-12 (OpenLoops 5.5e-13 from double-double), point 2 finite 6.37e-12 and double pole 1.06e-12 (OpenLoops 1.16e-12 and 1.1e-13), point 3 finite 1.17e-11 (OpenLoops 2.55e-12); rule 1 (i) cannot pass where MadLoop's own accuracy reads 0.0, and at points 2 and 3 no provider is within 1e-12 of double-double (whose poles equal Catani's within 1e-27). A23 (2->5, not regenerated) is unchanged. Resolved by the user's ruling (slice-status DECISIONS 2026-10-29 ~01:12): rule 1 is 1e-10 relative from 2->4 up (up to 1e-7 at 2->5 and beyond where the providers require it; stated per row, manifest reference_tolerance). Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files): A18 passes every rule at 1e-10 (worst double-double against MadLoop 1.17e-11), A23 passes at 1e-10 (worst 3.18e-12); no row needs more than 1e-10. The internal oracles (Catani, Ward, rotations) are unchanged. Fix round of 2026-10-29 (audits of f79be573): the 1e-10 tolerance is applied only where the providers need it (manifest reference_tolerance 1e-10 on A18 and A23 alone); every other 2->4/2->5 row holds 1e-12 (worst A22 7.0e-13 in pt12), including A19-A21, the processes of the retired test_loop_v2_fermion_lines ids.",
    "routed_to": "user ruling (given 2026-10-29 ~01:12)",
    "status": "resolved"
   },
@@ -7705,14 +7954,13 @@
   {
    "id": "F6",
    "category": "stability estimate",
-   "title": "The binary64 estimate under-reports the error of g g > b b~ h (4FS) up to 100x and of u u~ > u u~ e+ e- 23x",
+   "title": "The binary64 estimate under-reports the error of g g > b b~ h (4FS) 7.3x at one point (rule 2); u u~ > u u~ e+ e- resolved by MQ-STAB's recommended checks",
    "rows": [
-    "C05",
-    "D10"
+    "C05"
    ],
-   "checks": "rules 2 and 3, binary64, C05 [QCD^6 QED^2] finite at every point: error 2.34e-10 at E = 2.43e-12 (point 1), 4.8e-12 at 1.96e-13, 1.16e-12 at 3.64e-14, 9.5e-12 at 3.7e-13; D10 point 2 [QCD^6 QED^4] double pole 1.72e-12 at E = 7.55e-14 (also rule 4 binary64); D10@sectors (MQ-REF's quadruple-precision rerun at the same points, pt8): the same point-2 double pole, rules 2/3/4; Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files): C05 every point (finite of [QCD^6 QED^2], rules 2 and 3), D10 point 2 (double pole of [QCD^6 QED^4], rules 2, 3 and 4 in binary64); D10@sectors now runs only its mu_0/2 point (points 0-2 are D10's binding references) and passes; unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native)",
-   "evidence": "double-double passes every rule on both rows (rule 1 within 1e-12 of MadLoop); the binary64 error is real and the one-rotation plus reduction-direction estimate does not bracket it tenfold. An error confined to functions of the invariants (scalar integrals with the small b mass) is invisible to rotations; D10 is the PLAN's '22x case' Localisation (2026-10-28, slice d3081568, workspace/tmp/mq-validate/s3/stabfam.py, stabfam-C05.log, stabfam-D10.log): the binary64 error is invariant under the check rotation. C05 point 0: the bare finite's binary64 error is 2.2e-22 (of 8.3e-11) while the binary64 evaluation at the rotated point moves it by 8.0e-25; the summed family lanes' finite part carries 6.7e-18 (4.7e-11 relative) and moves 3e-21 under the rotation; R2, UV and field parts are accurate to 1e-26. D10 point 2: the double pole's binary64 error is 7.4e-25 (1.7e-12 relative) and the rotation moves it by 7.2e-27. Double-double is rotation-invariant to all printed digits at both points. So the error sits in what the rotation does not re-round: the master integrals evaluated from the on-shell external invariants (the same exact invariants in both frames, design: precision-ap) with a light b (C05) or cancelling lanes (D10), which the reduction-direction check (same masters) does not see either. An estimate that also perturbs the masters' inputs (or re-evaluates the masters at a second precision) would see it.",
-   "routed_to": "MQ-STAB: the O1 estimate's checks (rotation + reduction direction) do not re-round the master integrals' inputs; the error found is rotation-invariant (localisation in the evidence)",
+   "checks": "rules 2 and 3, binary64, C05 [QCD^6 QED^2] finite at every point: error 2.34e-10 at E = 2.43e-12 (point 1), 4.8e-12 at 1.96e-13, 1.16e-12 at 3.64e-14, 9.5e-12 at 3.7e-13; D10 point 2 [QCD^6 QED^4] double pole 1.72e-12 at E = 7.55e-14 (also rule 4 binary64); D10@sectors (MQ-REF's quadruple-precision rerun at the same points, pt8): the same point-2 double pole, rules 2/3/4; Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files): C05 every point (finite of [QCD^6 QED^2], rules 2 and 3), D10 point 2 (double pole of [QCD^6 QED^4], rules 2, 3 and 4 in binary64); D10@sectors now runs only its mu_0/2 point (points 0-2 are D10's binding references) and passes; unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native); campaign pt13 (2026-10-29 ~03:30-03:56 UTC, head 191efa9f = slice a2aa0d84 with MQ-STAB integrated, native loop-native-v2-slice-da6980b0, every tier as whole files; the O1 estimate is loops.v2.stability.RECOMMENDED_CHECKS): D10 and D10@sectors pass every rule; C05 fails rule 2 only at point 1 ([QCD^6 QED^2] finite, error 2.34e-10 > E = 3.20e-11; rule 3 holds, error = 0.73 x 10 E), points 0, 2, 3 pass",
+   "evidence": "double-double passes every rule on both rows (rule 1 within 1e-12 of MadLoop); the binary64 error is real and the one-rotation plus reduction-direction estimate does not bracket it tenfold. An error confined to functions of the invariants (scalar integrals with the small b mass) is invisible to rotations; D10 is the PLAN's '22x case' Localisation (2026-10-28, slice d3081568, reports/engine-v2/mq-validate/evidence/stabfam.py, stabfam-C05.log, stabfam-D10.log): the binary64 error is invariant under the check rotation. C05 point 0: the bare finite's binary64 error is 2.2e-22 (of 8.3e-11) while the binary64 evaluation at the rotated point moves it by 8.0e-25; the summed family lanes' finite part carries 6.7e-18 (4.7e-11 relative) and moves 3e-21 under the rotation; R2, UV and field parts are accurate to 1e-26. D10 point 2: the double pole's binary64 error is 7.4e-25 (1.7e-12 relative) and the rotation moves it by 7.2e-27. Double-double is rotation-invariant to all printed digits at both points. So the error sits in what the rotation does not re-round: the master integrals evaluated from the on-shell external invariants (the same exact invariants in both frames, design: precision-ap) with a light b (C05) or cancelling lanes (D10), which the reduction-direction check (same masters) does not see either. An estimate that also perturbs the masters' inputs (or re-evaluates the masters at a second precision) would see it. MQ-STAB (integrated in slice a2aa0d84) found the cause: the harness's rotation about the beam axis (z, 3/5, 4/5) keeps every energy and p_z and the cached reduction check reuses the masters; its RECOMMENDED_CHECKS (a generic rotation plus the rescaled reduction check, which re-evaluates the masters at rescaled inputs) is now the campaign's O1 estimate. It brackets C05 tenfold (MQ-STAB: 0.14-0.24x, 7.5x at the worst point) but the O1 band 1e-12 < E <= 1e-9 requires error <= E, which point 1 misses by 7.3x.",
+   "routed_to": "MQ-STAB follow-up (coordinator): C05 point 1's estimate is below the true error (rule 2), though within rule 3's tenfold bracket; D10 resolved",
    "status": "open"
   },
   {
@@ -7722,7 +7970,7 @@
    "rows": [
     "A09@collinear"
    ],
-   "checks": "eval: points 1-2 (theta = 1e-4, 1e-5) double-double CutFailed { DegenerateGram } and binary64 Unstable (families 78 and 80, also on the re-test and the rotation), point 0 (theta = 1e-3) binary64 Unstable; at point 0 double-double meets MadLoop's quadruple precision (worst finite 7.8e-13) and Catani's poles (4.8e-23 against 10 E = 1e-20); unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files); unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native)",
+   "checks": "eval: points 1-2 (theta = 1e-4, 1e-5) double-double CutFailed { DegenerateGram } and binary64 Unstable (families 78 and 80, also on the re-test and the rotation), point 0 (theta = 1e-3) binary64 Unstable; at point 0 double-double meets MadLoop's quadruple precision (worst finite 7.8e-13) and Catani's poles (4.8e-23 against 10 E = 1e-20); unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files); unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native); unchanged in campaign pt13 (2026-10-29 ~03:30-03:56 UTC, head 191efa9f = slice a2aa0d84 with MQ-STAB integrated, native loop-native-v2-slice-da6980b0, every tier as whole files; the O1 estimate is loops.v2.stability.RECOMMENDED_CHECKS)",
    "evidence": "the collinear family of tools/loop_reference/supplied_points.py (the last two final gluons at opening angle theta = 1e-3, 1e-4, 1e-5 after MQ-REF's fix round). MQ-REF records no provider reference at theta = 1e-4 and 1e-5 (status 'none': MadLoop's quadruple-precision evaluation unstable, return code 420, own accuracy 1.3e-6 and 28; Recola and OpenLoops disagree), so points 1-2 are held by the internal oracles (rules 2-4), which need a value. PLAN \u00a74.1 S2 expects binary64 outside O1 there but double-double and rule 3 to pass; a typed binary64 refusal at a limit point is no value for rule 3. Campaign pt6 and the rerun s3/r1a09 (2026-10-28, head e7029190).",
    "routed_to": "MQ-STAB (or the reduction owner): degenerate-Gram handling of the cut reduction at small opening angles (double-double at theta <= 1e-4) and a binary64 value with an out-of-scope estimate instead of a refusal at theta = 1e-3",
    "status": "open"
@@ -7734,10 +7982,55 @@
    "rows": [
     "C01"
    ],
-   "checks": "rule 6: AP(40) against AP(60) 1.0e-32 (point 1) and 4.1e-32 (point 2) > 1e-35 on the finite part; AP(40) against double-double passes; unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files); unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native)",
-   "evidence": "C01 point 1 per virtual component, 40 against 60 digits (workspace/tmp/mq-validate/s2/apcomp.py): the bare loop's finite part 7.6e-33, its poles 1.2e-59; R2, UV, UV external fields, UV local and the Born 1e-59 .. 2e-59. So the arbitrary-precision path of the bare loop's finite part (the scalar integrals with the light massive b, 4FS) loses about 8 of its 40 digits, while binary64 agrees with double-double to 1.4e-15 at the same point (a stable binary64 form, a cancelling or guard-digit-free arbitrary-precision one). AP(40) against double-double passes, double-double against AP(60) agrees to 1e-31. B01 (massive top, 5FS) passes rule 6. Localisation (2026-10-28, slice d3081568, C01 point 2, workspace/tmp/mq-validate/s3/apdigits-C01.log and apfam-C01.log): against a 100-digit evaluation the bare finite is off by 1.8e-31 (double-double), 3.5e-32 (40 digits), 3.4e-38 (50), 7.1e-44 (60) and 1.2e-52 (80), i.e. about 10^-(0.6 d + 8) for d requested digits (d + 20 working digits), while its single and double poles agree between 40 and 60 digits within 3e-60 and every loop family's Laurent coefficients (the executor's family lanes, finite parts up to 2.5e5) agree between 40 and 60 digits within 2e-55 absolute: the loss is in the native bare output outside the family lanes (output['bare'] already carries it), not in the families' reduction; a fixed cancellation would lose a fixed number of digits, so a step whose own precision is about 0.6 of the working one is the candidate.",
+   "checks": "rule 6: AP(40) against AP(60) 1.0e-32 (point 1) and 4.1e-32 (point 2) > 1e-35 on the finite part; AP(40) against double-double passes; unchanged in Campaign pt11 (2026-10-29, head a22c4b9d = slice 141fe125 with MQ-REF integrated, native loop-native-v2-slice-da6980b0, every tier as whole files); unchanged in campaign pt12 (2026-10-29 ~02:30 UTC, head b381ce58 = slice 321efdb4 with MQ-MODEL integrated, same native); unchanged in campaign pt13 (2026-10-29 ~03:30-03:56 UTC, head 191efa9f = slice a2aa0d84 with MQ-STAB integrated, native loop-native-v2-slice-da6980b0, every tier as whole files; the O1 estimate is loops.v2.stability.RECOMMENDED_CHECKS)",
+   "evidence": "C01 point 1 per virtual component, 40 against 60 digits (reports/engine-v2/mq-validate/evidence/apcomp.py): the bare loop's finite part 7.6e-33, its poles 1.2e-59; R2, UV, UV external fields, UV local and the Born 1e-59 .. 2e-59. So the arbitrary-precision path of the bare loop's finite part (the scalar integrals with the light massive b, 4FS) loses about 8 of its 40 digits, while binary64 agrees with double-double to 1.4e-15 at the same point (a stable binary64 form, a cancelling or guard-digit-free arbitrary-precision one). AP(40) against double-double passes, double-double against AP(60) agrees to 1e-31. B01 (massive top, 5FS) passes rule 6. Localisation (2026-10-28, slice d3081568, C01 point 2, reports/engine-v2/mq-validate/evidence/apdigits-C01.log and apfam-C01.log): against a 100-digit evaluation the bare finite is off by 1.8e-31 (double-double), 3.5e-32 (40 digits), 3.4e-38 (50), 7.1e-44 (60) and 1.2e-52 (80), i.e. about 10^-(0.6 d + 8) for d requested digits (d + 20 working digits), while its single and double poles agree between 40 and 60 digits within 3e-60 and every loop family's Laurent coefficients (the executor's family lanes, finite parts up to 2.5e5) agree between 40 and 60 digits within 2e-55 absolute: the loss is in the native bare output outside the family lanes (output['bare'] already carries it), not in the families' reduction; a fixed cancellation would lose a fixed number of digits, so a step whose own precision is about 0.6 of the working one is the candidate.",
    "routed_to": "coordinator: owner of the arbitrary-precision scalar integrals (bare-loop finite part with small internal masses)",
    "status": "open"
+  },
+  {
+   "id": "F9",
+   "category": "binary64 out of the O1 scope at more than one point",
+   "title": "Rows with more than one binary64 point outside the O1 scope (E > 1e-9), PLAN \u00a71.4 rule 2's routing to MQ-STAB",
+   "rows": [
+    "A18",
+    "A24",
+    "B03",
+    "D16"
+   ],
+   "checks": "rule 2, binary64, listed and bracketed (rule 3 holds), campaign pt13 (2026-10-29 ~03:30-03:56 UTC, head 191efa9f = slice a2aa0d84 with MQ-STAB integrated, native loop-native-v2-slice-da6980b0, every tier as whole files; the O1 estimate is loops.v2.stability.RECOMMENDED_CHECKS): A18 (g g > u u~ u u~) points 0-3, finite E 2.8e-9 .. 1.25e-7 (error 3.1e-10 .. 5.6e-8); A24 (g g > g g g g g) points 0, 1, E 6.9e-9 .. 1.1e-7 (error 3.4e-11 .. 1.1e-9); B03 (g g > t t~ g) points 0, 1, 3, E 1.2e-9 .. 2.0e-7 (error 1.0e-10 .. 1.2e-8); D16 (u u~ > w+ w-) points 0 and 3 (the same kinematics, mu_R halved), E 2.5e-9 .. 1.7e-8 against errors 3.1e-13 .. 3.1e-11. B01@threshold's points 1 and 2 are top-pair threshold points (S1, beta = 1e-2, 1e-3), out of scope by design.",
+   "evidence": "Double-double passes every rule at these points (rules 1 and 4); binary64 itself is not accurate to 1e-9 there (A18, A24, B03: errors up to 5.6e-8) or the estimate is conservative (D16: E about 300x the error). The listings carry E and the true error (tools/loop_benchmark/mqcd_manifest.py LISTINGS); one out-of-scope point per row (A14, A21, D15, E06, A09@soft) stays with the row.",
+   "routed_to": "MQ-STAB (PLAN \u00a71.4 rule 2): escalation or acceptance of these binary64 points",
+   "status": "open"
+  },
+  {
+   "id": "F10",
+   "category": "tree engine: correlated exact path",
+   "title": "The tree engine's colour-correlated Born (Runtime.evaluate_correlated, 40 to 80 digits) is off by 2e-18 .. 3e-17 on processes with two quark lines",
+   "rows": [],
+   "checks": "none of the campaign's rows: rule 4's 'tree' prediction is used on the native-input rows only (A14 gluons, A15 one quark line, A23 one quark line), whose colour structures the oracle check (test_tree_catani_is_the_executor_s: g g > g g, u u~ > g g g) holds within 1e-30 (measured 1e-40; Born 1e-28)",
+   "evidence": "Cross-check of the tree engine's correlated path against the loop engine on Python-input rows at point 0 (2026-10-29, slice a2aa0d84, reports/engine-v2/mq-validate/evidence/cross.py): g g > g g, g g > g g g, u u~ > g g g: Born 1e-28 .. 2e-29 and Catani poles 1e-40 from the executor's; u u~ > d d~ (A05): Born 5e-29 but the single pole 2.7e-17 off; u u~ > u u~ (A06) Born 4.7e-18, u u > u u (A07) 8.9e-18, u u~ > d d~ g (A12) 9.0e-18, u u~ > u u~ g (A13) 8.0e-18. The analytic Born of u u~ > u u~, g^4 [4/9 ((s^2+u^2)/t^2 + (t^2+u^2)/s^2) - 8/27 u^2/(s t)] at 50 digits (reports/engine-v2/mq-validate/evidence/a06exact.py), equals the loop engine's double-double Born within 6.0e-50 and 6.6e-50 at points 0 and 1, while the tree engine's correlated Born is 4.7e-18 and 2.6e-18 off; its value does not change between 40, 60 and 80 digits (and its double-double arithmetic agrees), so a binary64-rounded constant enters the correlated path's colour weights of multi-quark-line processes. Ordinary tree evaluation is not affected by this check (binary64 only).",
+   "routed_to": "coordinator: owner of the tree engine's correlators (runtime/correlations.py, correlated_exact.py); the campaign's 'tree' rows are unaffected",
+   "status": "open"
+  },
+  {
+   "id": "F11",
+   "category": "rule 4 not formed",
+   "title": "g g > g g g g g (A24): no Catani prediction on the native-input route and no tree-engine colour correlations; the row is 'partial'",
+   "rows": [
+    "A24"
+   ],
+   "checks": "rule 4 (catani_not_formed) at points 0 and 1; every asserted check passes (rule 1 8e-17 against NJet's double-double, rules 2 and 3, the uv extra)",
+   "evidence": "The native-input executor forms no Catani prediction (plan_export.NativeExecutor: 'not formed natively', WP3.1 I5c); the Python-input route exceeds the job (one g g > g g g g point > 22 min). Rule 4's 'tree' prediction needs the tree engine's 21 dipoles of seven gluons in full colour: its correlated generation (compiled, every amplitude retained) took 968 s and 11 GB for six gluons (A14) and was still generating after 25 min at 14 GB for seven, stopped (estimated hours; HANDOFF \u00a70.1). The double pole alone (colour conservation, -C_A n B) is not a substitute for rule 4.",
+   "routed_to": "coordinator: owner of the native executor's Catani prediction (WP3.1 I5c, plan_export native inputs), or of a cheaper colour-correlated Born at seven gluons in the tree engine",
+   "status": "open"
   }
+ ],
+ "coverage_notes": [
+  "A14's ward extra checks leg 1 only (WARD_LEGS): one double-double Ward batch of all six legs of g g > g g g g took 222 s on 16 threads; MQ-WARD's ladder record (ladder-gg_gggg.json) checked every leg.",
+  "No mu_R = mu_0/2 point on A22, D21 and E05 (their references have none; a new MadLoop run is MQ-REF's) nor on A14, A23 and A24 (2->4/2->5 provider generations, HANDOFF \u00a70.1); every other row has one or its sectors variant supplies it.",
+  "AP (rule 6) on one row per class: A01/A13 (Q-massless), B01 (Q-top), C01 (Q-heavy), D01 (Q-EWBorn), F01 (Q-singletop) as PLAN \u00a74.2 lists, and E05 (Q-ttX), G01 (Q-mixed), H01 (Q-CKM) added for PLAN \u00a71.3 (the \u00a74.2 table names none for these classes).",
+  "D01's analytic quark form factor (PLAN \u00a74.2 '+ analytic form factor') is the ff extra: V/B = (alpha_s/2pi) C_F (-2/eps^2 - (3+2L)/eps - 8 + pi^2 - L^2 - 3L), double-double at every nightly point within max(1e-24, 10 E_DD).",
+  "Rule 4 on the native-input rows takes the tree engine's committed colour correlations (A14, A15, A23 where present; tests/fixtures/loop/mqcd/references/tree-correlations-<row>.json); a row without them is 'partial' (F11).",
+  "Rule 1 holds 1e-12 on every row except A18 and A23 (1e-10, the user's ruling ~01:12, needed by their providers' precision: F3)."
  ]
 }
