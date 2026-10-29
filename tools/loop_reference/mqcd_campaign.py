@@ -246,6 +246,8 @@ def provider_run(args, data, root, run, work, points, extra, log, cpu):
     command += extra
     if run.get("subprocess"):
         command += ["--subprocess", run["subprocess"]]
+    if run.get("reuse_initial_call") and run.get("split_points") and "--helicities" not in extra:
+        command.append("--madloop-reuse-initial-call")
     if run.get("pdgs"):
         command += ["--pdgs", ",".join(map(str, run["pdgs"]))]
     if cpu is not None:
@@ -398,8 +400,8 @@ def command_fixture(args, data, runs):
 
             spec = required_spec.load_process(required_spec.DEFAULT_SPEC, run["process"],
                                               {"mg5": root / "sources/MG5_aMC_v3_7_0", "reference": root})
-            content["madloop_r2_couplings"] = references.madloop_r2_couplings(root / run["export"],
-                                                                              spec["madloop"]["model"])
+            content["madloop_r2_couplings"] = references.madloop_r2_couplings(
+                root / run["export"], spec["madloop"]["model"], run.get("subprocess"))
         content["mqcd_run"] = {k: run[k] for k in run if k != "points"}
         content["mqcd_run"]["points"] = run["points"]
         text = json.dumps(content, indent=1) + "\n"
@@ -409,6 +411,7 @@ def command_fixture(args, data, runs):
         target = fixture_path(run["id"])
         if target.exists() and json.loads(target.read_text()).get("mqcd_run", {}).get("id") != run["id"]:
             raise SystemExit(f"{run['id']}: {target} is another reference; refusing to overwrite it")
+        target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text)
         print(target.relative_to(REPOSITORY))
 

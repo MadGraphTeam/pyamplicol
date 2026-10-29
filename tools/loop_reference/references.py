@@ -350,28 +350,42 @@ def ufo_model_directory(model):
     return path
 
 
+UFO_R2_NAMES = """
+import json, sys
+sys.path.insert(0, sys.argv[1])
+sys.dont_write_bytecode = True
+names = set()
+try:
+    import CT_vertices as V  # UFOs with absolute imports (loop_qcd_qed_sm)
+    vertices = V.all_CTvertices
+except ImportError:
+    import importlib.util, os
+    spec = importlib.util.spec_from_file_location("ufo", os.path.join(sys.argv[1], "__init__.py"),
+                                                  submodule_search_locations=[sys.argv[1]])
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["ufo"] = module
+    spec.loader.exec_module(module)
+    vertices = module.all_CTvertices
+for vertex in vertices:
+    if str(getattr(vertex, "type", "")).upper().startswith("R2"):
+        names.update(c.name for c in vertex.couplings.values())
+print(json.dumps(sorted(names)))
+"""
+
+
 def ufo_r2_coupling_names(model):
     """Names of the couplings of the UFO's R2 counterterm vertices (``all_CTvertices``
-    of type R2), read by importing the UFO under a private module name."""
-    import importlib.util
-
+    of type R2), read by importing the UFO in a separate Python process (UFOs use
+    relative or absolute imports of their own modules)."""
     directory = ufo_model_directory(model)
-    name = "_ufo_r2_" + re.sub(r"\W", "_", str(directory))
-    module = sys.modules.get(name)
-    if module is None:
-        spec = importlib.util.spec_from_file_location(name, directory / "__init__.py",
-                                                      submodule_search_locations=[str(directory)])
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[name] = module
-        spec.loader.exec_module(module)
-    names = set()
-    for vertex in module.all_CTvertices:
-        if str(getattr(vertex, "type", "")).upper().startswith("R2"):
-            names.update(coupling.name for coupling in vertex.couplings.values())
-    return names
+    completed = subprocess.run([sys.executable, "-c", UFO_R2_NAMES, str(directory)], capture_output=True, text=True,
+                               cwd=directory)
+    if completed.returncode:
+        raise RuntimeError(f"cannot read the R2 couplings of {directory}: {completed.stderr.strip()[-400:]}")
+    return set(json.loads(completed.stdout))
 
 
-def madloop_r2_couplings(export, model):
+def madloop_r2_couplings(export, model, subprocess_dir=None):
     """The UFO R2 couplings a MadLoop export calls: every R2 CT-vertex coupling
     name of the model found (as a Fortran token, case-insensitively) in the
     export's SubProcesses/P*/*.f sources. MadLoop inserts an R2 coupling only for
@@ -382,14 +396,17 @@ def madloop_r2_couplings(export, model):
     names = {n.upper(): n for n in ufo_r2_coupling_names(model)}
     found = set()
     token = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
-    for source in sorted(Path(export).glob("SubProcesses/P*/*.f")):
-        for word in token.findall(source.read_text(errors="replace")):
-            hit = names.get(word.upper())
-            if hit:
-                found.add(hit)
+    for source in sorted(Path(export).glob(f"SubProcesses/{subprocess_dir or 'P*'}/*.f")):
+        for line in source.read_text(errors="replace").splitlines():
+            if line[:1] in ("C", "c", "*", "!"):
+                continue  # fixed-form comment line
+            for word in token.findall(line.split("!", 1)[0]):
+                hit = names.get(word.upper())
+                if hit:
+                    found.add(hit)
     return {"called": sorted(found), "ufo_r2_couplings": len(names),
             "source": "UFO R2 CT-vertex couplings (all_CTvertices of type R2) found as tokens in the export's "
-                      "SubProcesses/P*/*.f"}
+                      f"SubProcesses/{subprocess_dir or 'P*'}/*.f"}
 
 
 def fix_unassigned_jamps(text):
@@ -972,6 +989,11 @@ def command_run(args):
                       f"{value(spec['scheme_data'], 'aS')} {args.madloop_accuracy} "
                       f"{0 if production or ctmode is not None else 1}\n{count}\n")
             stdin = header + "\n".join(point_lines(points)) + "\n"
+            if args.madloop_reuse_initial_call:
+                if count != 1:
+                    raise SystemExit("--madloop-reuse-initial-call needs a one-point job")
+                result["settings"]["initial_call_reused"] = (
+                    "one-point job: the point's last initialization call is its value (MADLOOP_REUSE_INITIAL_CALL)")
             if args.helicities:
                 tuples = (madloop_helicities(export, args.subprocess) if args.helicities == "all"
                           else [list(map(int, t.split(","))) for t in args.helicities.split(";")])
@@ -984,7 +1006,9 @@ def command_run(args):
                     "value); helicity labels in MadLoop's HelConfigs.dat convention")
             if args.subprocess:
                 result["settings"]["subprocess_directory"] = args.subprocess
-            stdout, wall = run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu)
+            stdout, wall = run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu,
+                                      env={"MADLOOP_REUSE_INITIAL_CALL": "1"} if args.madloop_reuse_initial_call
+                                      else None)
         elif provider == "recola":
             root = args.recola.resolve()
             binary = run_dir / "recola-driver"
@@ -1699,6 +1723,9 @@ def main():
     run.add_argument("--madloop-quadruple", action="store_true",
                      help="send every point to MadLoop's quadruple-precision stage (its own library choice and "
                      "test at --madloop-accuracy); implies --madloop-require-quadruple")
+    run.add_argument("--madloop-reuse-initial-call", action="store_true",
+                     help="one-point MadLoop job: the point's last initialization call is its value (no second "
+                     "evaluation; recorded)")
     run.add_argument("--madloop-require-quadruple", action="store_true",
                      help="refuse a MadLoop run that returns double-precision values at any point")
     run.add_argument("--madloop-param", action="append", default=[], metavar="KEY=VALUE",

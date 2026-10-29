@@ -32,7 +32,8 @@ ROUTES = {
             "scheme": "ew-gmu-a0-cms", "note": "as Gc on the a0 restriction"},
     "Lc": {"model": "loop_sm", "restriction": "no_b_mass", "mass_scheme": "complex-mass",
            "fixed_parameters": {"WT": "1.4915", "WZ": "0", "WW": "0", "WH": "0"}, "scheme": "qcd-cms",
-           "note": "MadLoop: the loop_sm_cms_top copy (no_b_mass with WZ = WW = WH = 0 at import)"},
+           "note": "MadLoop: loop_sm-no_b_mass under CMS, which MG5 switches to (aEWM1, MZ, MW) inputs; MW = the "
+                   "tree-level value of the alpha_fixed scheme, so the couplings are the same"},
     "Az": {"model": "loop_qcd_qed_sm", "restriction": "default", "fixed_parameters": ZERO_WIDTHS,
            "scheme": "ew-qcd-qed-sm"},
     "L5": {"model": "loop_sm", "restriction": "no_b_mass", "fixed_parameters": ZERO_WIDTHS, "scheme": "qcd",
@@ -150,7 +151,10 @@ row("VV05", "W-V", "u d~ > w+ a", "Ga", "N", extras=["a0", "ward", "sp:S1"], sec
                                       "reason": "§4.1 S1 radiation zero: the Born and the double pole vanish to "
                                                 "rounding; compare absolutely against the regular neighbour's Born"}
                              for i in (0, 1)},
-               note="S1: Born-zero points cos(u, photon) = -1/3 and one regular neighbour")])
+               split_points=True,
+               note="S1: Born-zero points cos(u, photon) = -1/3 and one regular neighbour; one job per point: "
+                    "after MadLoop's initialisation at a Born-zero point the neighbour's QCD double pole missed "
+                    "the universal one by 2.9e-5 in a three-point job (alone: 1e-15)")])
 row("VV06", "W-V", "u u~ > a a", "Ga", "E", extras=["a0"], sectors=["s^2e^4", "e^6"],
     fixtures=["required/uux_aa_ew.json"],
     runs_=[run("uux_aa_ew_qcd", points=F("required/uux_aa_ew.json"), note=TOPUP + ": s^2e^4 (ew-gmu = Ga raw)")])
@@ -236,9 +240,32 @@ row("CM09", "W-CMS", "u d~ > e+ ve a CMS (Gamma_W, Gamma_Z > 0)", "Gca", "N", ex
 row("CM10", "W-CMS", "u d~ > w+ b b~ QCD=0 CMS (Gamma_t > 0)", "Lc", "N", runs_=[run("udx_wpbbx_cms")],
     sectors=["s^2e^6"], note="CMS on loop_sm (no CMSParam), coloured width [MS-CMS-N]")
 # MP (multiparticle; runs per Born subprocess directory are added once the export lists them)
+def member(process, directory, pdgs, key=None):
+    """One run per Born subprocess directory of a multiparticle export (exact points of the parent's masses)."""
+    rid = run(f"{process}_{directory}", key or process, export=f"runs/msm/{process}/madloop-export",
+              points={"generator": "exact", "pdgs": pdgs})
+    runs[rid].update({"subprocess": directory, "pdgs": pdgs})
+    return rid
+
+
+MP_NOTE = ("Q2(a): only Born members are compared; MG5 adds the photon to p on this QED-perturbed model, so its "
+           "multi-P export also holds the photon-initiated members (references for requests that add the photon "
+           "through process.multiparticles)")
 row("MP01", "W-multi", "p p > e- e+", "G0", "N", sectors=["per Born subprocess"],
-    note="Q2(a): only Born members compared; the loop-squared member is skipped")
-row("MP02", "W-multi", "p p > t t~", "G0", "N", sectors=["per Born subprocess"], note="Q2(a)")
+    runs_=[member("pp_emep_ew", "P2_uux_emep", [2, -2, 11, -11]),
+           member("pp_emep_ew", "P3_ddx_emep", [1, -1, 11, -11]),
+           member("pp_emep_ew", "P4_bbx_emep", [5, -5, 11, -11]),
+           member("pp_emep_ew", "P5_aa_emep", [22, 22, 11, -11], "pp_emep_ew_aa")],
+    note=MP_NOTE + "; P0_gg_emep is MG5's loop-squared member (sqrvirt), skipped (typed loop-induced on the "
+                   "pyAmpliCol side)")
+row("MP02", "W-multi", "p p > t t~", "G0", "N", sectors=["per Born subprocess"],
+    runs_=[member("pp_ttx_ew", "P2_gg_ttx", [21, 21, 6, -6]),
+           member("pp_ttx_ew", "P3_uux_ttx", [2, -2, 6, -6]),
+           member("pp_ttx_ew", "P4_ddx_ttx", [1, -1, 6, -6]),
+           member("pp_ttx_ew", "P6_bbx_ttx", [5, -5, 6, -6]),
+           member("pp_ttx_ew", "P0_ga_ttx", [21, 22, 6, -6], "pp_ttx_ew_ga"),
+           member("pp_ttx_ew", "P5_aa_ttx", [22, 22, 6, -6], "pp_ttx_ew_aa")],
+    note=MP_NOTE)
 # SC
 row("SC01", "W-scheme", "e- e+ > u u~", "G0", "E", extras=["nc"], fixtures=["electroweak-eeuu-control.json"],
     sectors=["e^6"])
