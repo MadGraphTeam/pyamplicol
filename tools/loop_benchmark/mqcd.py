@@ -287,6 +287,9 @@ class Row:
     # [U2]: the request lowers a Levi-Civita cell its veto keeps from
     # cancelling (``SliceRequest.allow_anomalous_veto``; SC05's d s b veto).
     allow_anomalous_veto: bool = False
+    # Why a row forms no rule 4 (``catani`` "none"), when not the public
+    # route's reason.
+    catani_reason: str = ""
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Row:
@@ -357,6 +360,7 @@ class Row:
             if data.get("madloop_omitted_r2") is None
             else tuple(data["madloop_omitted_r2"]),
             allow_anomalous_veto=bool(data.get("allow_anomalous_veto", False)),
+            catani_reason=data.get("catani_reason", ""),
         )
 
     @property
@@ -2366,6 +2370,9 @@ def rule4(
                     continue
             else:
                 bound = max(DD_FLOOR, BRACKET * e_rel)
+            # The user's ruling of 2026-10-29 ~10:20: a row's relaxed rule 4
+            # (``relaxed["4"]``, at most ``ATTENTION``).
+            bound = max(bound, row.relaxed.get("4", 0.0))
             checks.append(
                 Check(
                     "4",
@@ -3251,10 +3258,13 @@ def run_row(
 
         nonlocal tree_seconds
         if row.catani == "none":
+            reason = row.catani_reason or (
+                "no Catani prediction on the public route (the tools-route "
+                "variant holds rule 4)"
+            )
             return [Check(
                 "4", index, "double-double", "", "poles", "", "", 0.0, 0.0, True,
-                asserted=False, note="no Catani prediction on the public route "
-                "(the tools-route variant holds rule 4)")]  # fmt: skip
+                asserted=False, note=reason)]  # fmt: skip
         found = []
         if row.catani == "engine":
             start = time.perf_counter()

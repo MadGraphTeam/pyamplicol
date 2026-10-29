@@ -1240,7 +1240,30 @@ def point_count(reference):
 # Born (their rounding of a zero).
 VANISHING = {
     "TT01": [{"sector": "QCD^4 QED^2", "coefficient": "double_pole"}],
+    # g t > t t t~ with QED corrections: massive tops, a neutral gluon (ours
+    # exactly 0, MadLoop's 1e-17 of the Born).
+    "TT05": [{"sector": "total", "coefficient": "double_pole"}],
 }
+# Rule 1's tolerance per row (nominal 1e-12; 1e-10 from 2->4 up where the
+# providers' precision needs it, the user's ruling of 2026-10-29 ~01:12; and
+# below ~1e-5 relative no finding, ~10:20), with the evidence of c1:
+# LL10 against Recola (the R2 rule's primary; MadLoop, which omits
+# R2_G0tt_b, is 5.6e-4 and 1.1e-2 off): 3.9e-12 and 7.4e-12 at points 1, 2,
+# Recola's double-precision finite part; TV06 (2->4) 1.16e-12 against
+# MadLoop's quadruple precision at point 2.
+RULE1 = {"LL10": 1e-10, "TV06": 1e-10, "TV07": 1e-10}
+# Relaxed rules per row (the user's ruling of ~10:20, at most 1e-5): SC05's
+# poles against Catani in double-double, 2.9e-14 and 4.2e-14 at point 0
+# (the fixture's binary64 points are on shell and conserve momentum to
+# rounding only); TT05's, 1.2e-16 to 2.7e-16 (the massive QED operator).
+RELAXED = {"SC05": {"4": 1e-12}, "TT05": {"4": 1e-14}}
+# Rule 4 not formed (status partial): the massive-muon copy of the G_mu UFO
+# (code Gm) changes only the muon mass in the restriction card, while the
+# UFO writes the lepton field renormalisation for massless leptons, so its
+# single pole (ours = MadLoop's) exceeds the massive QED operator by exactly
+# 3 (alpha/2pi) Born (test_loop_v2_qed_catani's docstring; c1: 9.9e-5 =
+# 3 x 3.30e-5 at point 0): not a reference of the operator.
+NO_CATANI = {"LL02", "SC02"}
 
 rows = []
 for r in R:
@@ -1316,6 +1339,17 @@ for r in R:
         entry["notes"] = r["notes"]
     if r["id"] in VANISHING:
         entry["vanishing"] = VANISHING[r["id"]]
+    if r["id"] in RULE1:
+        entry["reference_tolerance"] = RULE1[r["id"]]
+    if r["id"] in RELAXED:
+        entry["relaxed"] = RELAXED[r["id"]]
+    if r["id"] in NO_CATANI:
+        entry["catani"] = "none"
+        entry["catani_reason"] = (
+            "the massive-muon UFO copy: the UFO writes the lepton field "
+            "renormalisation for massless leptons (single pole = the massive "
+            "QED operator + 3 alpha/2pi Born)"
+        )
     if status == "pending":
         entry["pending"] = {
             "waits_for": waits[0] if len(waits) == 1 else list(waits),
