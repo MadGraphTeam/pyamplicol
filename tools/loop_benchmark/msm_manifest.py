@@ -158,6 +158,19 @@ def photons(tagged, sector=None):
 
 
 N = "N"  # a new MadLoop job (MS-REF)
+# EWI-7 (ew-validate) brings its fixtures (ttx_ttx_ew, ttx_zh_ew, udx_tbx_ew);
+# its rows activate when they are on the branch (re-run this script after
+# merging the slice that integrates it).
+EWI7 = (WT / REQ / "ttx_ttx_ew.json").is_file()
+
+
+def ewi7(name, providers=None):
+    """(reference, waits) of a row on an EWI-7 fixture."""
+
+    if EWI7:
+        return req(name, providers), None
+    return None, "EWI-7"
+
 
 # ---- LL: lepton-only
 row(
@@ -589,10 +602,10 @@ row(
     [(0, 6)],
     [(0, 2)],
     "E required/ttx_ttx_ew (ew-validate; Recola primary: R2 rule, 7.7 %)",
-    None,
+    ewi7("ttx_ttx_ew", ["recola", "madloop"])[0],
     [],
     ["2->2", "root-mixing", "r2-rule"],
-    waits="EWI-7",
+    waits=ewi7("ttx_ttx_ew")[1],
 )
 row(
     "TT05",
@@ -733,10 +746,10 @@ row(
     [(0, 6)],
     [(0, 2)],
     "E required/udx_tbx_ew (ew-validate; MadLoop + Recola)",
-    None,
+    ewi7("udx_tbx_ew")[0],
     [],
     ["2->2", "single-top"],
-    waits="EWI-7",
+    waits=ewi7("udx_tbx_ew")[1],
 )
 row(
     "ST03",
@@ -1133,10 +1146,10 @@ row(
     [(0, 6)],
     [(0, 2)],
     "E required/ttx_zh_ew (ew-validate; MadLoop + Recola; Recola primary: R2 rule, 2.5 %)",
-    None,
+    ewi7("ttx_zh_ew", ["recola", "madloop"])[0],
     [],
     ["2->2", "root-mixing", "r2-rule"],
-    waits="EWI-7",
+    waits=ewi7("ttx_zh_ew")[1],
 )
 
 assert len(R) == 70, len(R)
@@ -1164,7 +1177,12 @@ COMPONENT_FORMATS = {"ew-control", "madloop-components", "process-components"}
 # couplings of equal value (LL03's export calls R2_AAU and R2_AAD where the
 # UFO's V_R2AA groups take R2_AAu3, R2_AAc3, ...), so names differ where the
 # insertion is the same (LL03 = MadLoop to 4e-15).
-OMITTED = {"LL10": ["R2_G0tt_b"], "TT05": ["R2_G0tt_b"]}
+OMITTED = {
+    "LL10": ["R2_G0tt_b"],
+    "TT05": ["R2_G0tt_b"],
+    "TT04": ["R2_G0tt_b"],
+    "SC09": ["R2_G0tt_b"],
+}
 # TT05's omitted component (``goldstone-mixing.json`` omitted_r2): MadLoop's
 # Born x CT interference of the R2_G0tt amplitudes times R2_G0tt_b / R2_G0tt
 # at the card, the UFO's couplings (``test_loop_v2_ew_gauge.
