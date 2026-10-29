@@ -6,11 +6,15 @@ The manifest (``tests/fixtures/loop/mqcd/manifest.json``) holds one record
 per campaign row (PLAN §4.2): the request (process, restriction, fixed
 parameters, gauge, Born and loop orders, vetoes), its reference, the points
 per tier, the expected predicted and unpredicted pole sectors, the extras and
-the structural features it covers, and the listings the rules require (the
-binary64 points outside the O1 scope, named reference outliers, coefficients
-that vanish identically).
+the structural features it covers, the listings the rules require (named
+reference outliers, coefficients that vanish identically) and the row's
+relaxed tolerances (``relaxed``).
 
-The rules (PLAN §1.4; no tolerance is widened):
+The rules (PLAN §1.4). The user's ruling of 2026-10-29 ~10:20 overrides
+their tolerances: a discrepancy below ~1e-5 relative is not a finding, a
+check failing at that level gets its row's tolerance relaxed (``relaxed``:
+rule -> tolerance, stated per row, at most ``ATTENTION``) and passing
+checks keep their tolerances; no exemption lists:
 
 1. double-double against the row's primary provider, strictly relative,
    rel <= the row's ``reference_tolerance`` per sector and coefficient, Born
@@ -23,8 +27,8 @@ The rules (PLAN §1.4; no tolerance is widened):
    1e-12 F_s;
 2. binary64 against our own double-double at the same point (the user's O1
    rule): E <= 1e-12 -> 1e-12, 1e-12 < E <= 1e-9 -> E, E > 1e-9 outside the
-   binary64 scope, listed (an unlisted one fails, as does a stale listing);
-   the Born (no estimate) is held to 1e-12;
+   binary64 scope: reported with E and the true error, not asserted (rule 3
+   still holds it); the Born (no estimate) is held to 1e-12;
 3. the binary64 error against double-double is at most 10 E per coefficient
    at every point;
 4. the poles equal Catani's: double-double within max(1e-24, 10 E_DD),
@@ -107,6 +111,10 @@ REFERENCE_TOLERANCE = 1e-12  # rule 1 (and the absolute checks)
 # may go up to the ceiling (the manifest states each row's tolerance).
 REFERENCE_TOLERANCE_HIGH = 1e-10
 REFERENCE_TOLERANCE_CEILING = 1e-7
+# The user's attention threshold (slice-status DECISIONS 2026-10-29 ~10:20:
+# "only really bad cases (worse than around 1e-5 of relative prec or so
+# require attention)"): the ceiling of a row's ``relaxed`` tolerances.
+ATTENTION = 1e-5
 O1_STRICT = 1e-12  # rule 2: E <= 1e-12
 O1_CAP = 1e-9  # rule 2: E above it is outside the binary64 scope
 BRACKET = 10  # rule 3 (and the 10 E bounds of rules 4-6)
@@ -199,7 +207,6 @@ class Row:
     parameters: Mapping[str, str] = field(default_factory=dict)
     pending: Mapping[str, str] | None = None
     extras_pending: Mapping[str, str] = field(default_factory=dict)
-    binary64_out_of_scope: tuple[Mapping[str, Any], ...] = ()
     reference_outliers: tuple[Mapping[str, Any], ...] = ()
     vanishing: tuple[Mapping[str, Any], ...] = ()
     # Reference fixed parameters the model does not have (MadLoop's WTau).
@@ -241,11 +248,10 @@ class Row:
     # The legs of the ``ward`` extra (None: every external massless vector
     # leg, ``ward.gauge_legs``).
     ward_legs: tuple[int, ...] | None = None
-    # Binary64 Ward evaluations outside the O1 scope (E_k > 1e-9 of the
-    # physical scale): {point, leg, factor: [re, im], E, true_error}, listed
-    # like ``binary64_out_of_scope`` (double-double holds the identity, the
-    # estimate must still bracket the value tenfold).
-    ward_out_of_scope: tuple[Mapping[str, Any], ...] = ()
+    # Rule -> tolerance of the checks the user's ruling of 2026-10-29 ~10:20
+    # relaxes on this row ("2": rule 2's binary64 bound, at least this; "6":
+    # rule 6's 40 against 60 digits), at most ``ATTENTION``.
+    relaxed: Mapping[str, float] = field(default_factory=dict)
     # Rule 1's relative tolerance (``REFERENCE_TOLERANCE``; a 2->4+ row whose
     # providers need it ``REFERENCE_TOLERANCE_HIGH``; the manifest states it).
     reference_tolerance: float = REFERENCE_TOLERANCE
@@ -288,7 +294,6 @@ class Row:
             parameters=dict(data.get("parameters", {})),
             pending=data.get("pending"),
             extras_pending=dict(data.get("extras_pending", {})),
-            binary64_out_of_scope=tuple(data.get("binary64_out_of_scope", ())),
             reference_outliers=tuple(data.get("reference_outliers", ())),
             vanishing=tuple(data.get("vanishing", ())),
             ignored_fixed_parameters=tuple(data.get("ignored_fixed_parameters", ())),
@@ -307,7 +312,7 @@ class Row:
             ward_legs=None
             if data.get("ward_legs") is None
             else tuple(int(x) for x in data["ward_legs"]),
-            ward_out_of_scope=tuple(data.get("ward_out_of_scope", ())),
+            relaxed={k: float(v) for k, v in (data.get("relaxed") or {}).items()},
             reference_tolerance=float(
                 data.get("reference_tolerance", REFERENCE_TOLERANCE)
             ),
@@ -1769,9 +1774,12 @@ def rule2_and_3(
     row: Row, reference: Reference, index: int, b64: Evaluated, dd: Evaluated
 ) -> list[Check]:
     """Binary64 against double-double at the same point: the O1 bands (rule
-    2) and the tenfold bracketing of the estimate (rule 3)."""
+    2; at least the row's ``relaxed["2"]``) and the tenfold bracketing of the
+    estimate (rule 3). A coefficient outside the O1 scope is reported with E
+    and its true error, not asserted."""
 
     checks = []
+    floor = row.relaxed.get("2", 0.0)
     for sector, value in dd.born.items():
         mine = b64.born.get(sector)
         text = sector_text(sector)
@@ -1784,16 +1792,7 @@ def rule2_and_3(
                                 note=note))  # fmt: skip
             continue
         error = relative(mine, value)
-        listed = _listed(
-            row.binary64_out_of_scope, point=index, sector=text, coefficient="born"
-        )
-        if listed:
-            # A limit point's binary64 Born (S1-S3; PLAN §4.1), listed: no
-            # estimate exists for the Born, double-double holds it (rule 1).
-            checks.append(Check("2", index, "double", text, "born", repr(mine),
-                                str(value), error, O1_STRICT, True, asserted=False,
-                                note="listed limit-point binary64 Born"))  # fmt: skip
-            continue
+        bound = max(O1_STRICT, floor)
         checks.append(
             Check(
                 "2",
@@ -1804,8 +1803,8 @@ def rule2_and_3(
                 repr(mine),
                 str(value),
                 error,
-                O1_STRICT,
-                error <= O1_STRICT,
+                bound,
+                error <= bound,
             )
         )
     for sector, laurent in dd.virtual.items():
@@ -1855,9 +1854,6 @@ def rule2_and_3(
             e_rel = e_abs / abs(float(got)) if float(got) else math.inf
             error = relative(got, truth)
             bound = o1_bound(e_rel)
-            listed = _listed(
-                row.binary64_out_of_scope, point=index, sector=text, coefficient=name
-            )
             if bound is None:
                 checks.append(
                     Check(
@@ -1870,13 +1866,13 @@ def rule2_and_3(
                         str(truth),
                         error,
                         e_rel,
-                        listed,
+                        True,
                         asserted=False,
-                        note=f"E = {e_rel:.3g} > 1e-9: outside the "
-                        "binary64 scope" + ("" if listed else ", NOT listed"),
+                        note=f"E = {e_rel:.3g} > 1e-9: outside the binary64 scope",
                     )
                 )
             else:
+                bound = max(bound, floor)
                 checks.append(
                     Check(
                         "2",
@@ -1888,9 +1884,8 @@ def rule2_and_3(
                         str(truth),
                         error,
                         bound,
-                        error <= bound and not listed,
-                        note=f"E = {e_rel:.3g}"
-                        + ("; stale out-of-scope listing" if listed else ""),
+                        error <= bound,
+                        note=f"E = {e_rel:.3g}",
                     )
                 )
     return checks
@@ -1967,17 +1962,8 @@ def rule4(
                 continue
             error = relative(got, truth)
             e_rel = estimate[k] / abs(float(got)) if float(got) else math.inf
-            stale = False
             if point.carrier == "double":
                 bound = o1_bound(e_rel)
-                listed = _listed(
-                    row.binary64_out_of_scope,
-                    point=index,
-                    sector=text,
-                    coefficient=name,
-                )
-                # An in-scope coefficient listed out of scope: a stale listing.
-                stale = bound is not None and listed
                 if bound is None:
                     checks.append(
                         Check(
@@ -1990,7 +1976,7 @@ def rule4(
                             str(truth),
                             error,
                             e_rel,
-                            listed,
+                            True,
                             asserted=False,
                             note=f"E = {e_rel:.3g} > 1e-9: outside the binary64 scope",
                         )
@@ -2009,9 +1995,8 @@ def rule4(
                     str(truth),
                     error,
                     bound,
-                    error <= bound and not stale,
-                    note=f"E = {e_rel:.3g}"
-                    + ("; stale out-of-scope listing" if stale else ""),
+                    error <= bound,
+                    note=f"E = {e_rel:.3g}",
                 )
             )
     return checks
@@ -2201,10 +2186,12 @@ def rule6(
     ap60: Evaluated,
     alpha_s: float = 0.118,
 ) -> list[Check]:
-    """Arbitrary precision against double-double and against 60 digits (a
-    coefficient that vanishes identically absolutely, against F_s)."""
+    """Arbitrary precision against double-double and against 60 digits
+    (``AP_CONVERGENCE``, at least the row's ``relaxed["6"]``; a coefficient
+    that vanishes identically absolutely, against F_s)."""
 
     checks = []
+    convergence = max(AP_CONVERGENCE, row.relaxed.get("6", 0.0))
     for sector, value in ap.born.items():
         text = sector_text(sector)
         error = relative(value, dd.born[sector])
@@ -2233,8 +2220,8 @@ def rule6(
                 str(value),
                 str(ap60.born[sector]),
                 error,
-                AP_CONVERGENCE,
-                error <= AP_CONVERGENCE,
+                convergence,
+                error <= convergence,
                 note="against 60 digits",
             )
         )
@@ -2250,7 +2237,7 @@ def rule6(
                 flux = _flux(born_scale(row, dd, born_sector(sector)), alpha_s)
                 for other, scale, note in (
                     (truth, DD_FLOOR, "double-double"),
-                    (ap60.virtual[sector][k], AP_CONVERGENCE, "60 digits"),
+                    (ap60.virtual[sector][k], convergence, "60 digits"),
                 ):
                     error = _absolute(laurent[k], other)
                     checks.append(Check(
@@ -2285,8 +2272,8 @@ def rule6(
                     str(laurent[k]),
                     str(ap60.virtual[sector][k]),
                     error,
-                    AP_CONVERGENCE,
-                    error <= AP_CONVERGENCE,
+                    convergence,
+                    error <= convergence,
                     note="against 60 digits",
                 )
             )
@@ -2579,9 +2566,8 @@ def rule_ward(
     double-double |V_k| / scale_k <= 1e-25; binary64 the O1 rule's
     |V_k| / max(1e-12 scale_k, E_k) <= 1, E within the binary64 scope and
     |V_k| <= 10 E_k). A binary64 evaluation outside the O1 scope (E_k >
-    1e-9 of the scale) is not asserted when the manifest lists it
-    (``ward_out_of_scope``; an unlisted one fails, as does a stale listing),
-    and its estimate must still bracket |V_k| tenfold (rule 3)."""
+    1e-9 of the scale) is not asserted; its estimate must still bracket
+    |V_k| tenfold (rule 3)."""
 
     from pyamplicol.loops.v2 import ward
 
@@ -2600,12 +2586,6 @@ def rule_ward(
         elif entry.get("o1_over") is not None:
             error, bound = max(entry["o1_over"]), 1.0
             bracket = max(entry["estimate_over"])
-            listed = _listed(
-                row.ward_out_of_scope,
-                point=index,
-                leg=entry["leg"],
-                factor=list(entry["factor"]),
-            )
             note = (
                 f"max_k |V_k| / max(1e-12 scale_k, E_k); |V_k| / scale_k "
                 f"{max(virtual):.3g}; |V_k| / E_k {bracket:.3g} "
@@ -2613,15 +2593,10 @@ def rule_ward(
                 f"{max(entry['estimate']):.3g} (in scope: {entry['in_scope']})"
             )
             if not entry["in_scope"]:
-                # Outside the binary64 scope: listed, and bracketed tenfold.
+                # Outside the binary64 scope: bracketed tenfold only.
                 asserted = False
-                passed = listed and bracket <= ward.ESTIMATE_FACTOR
-                note += "; outside the binary64 scope" + (
-                    ", listed" if listed else ", NOT listed"
-                )
-            elif listed:
-                passed = False
-                note += "; stale out-of-scope listing"
+                passed = bracket <= ward.ESTIMATE_FACTOR
+                note += "; outside the binary64 scope"
         else:
             error, bound = max(virtual), math.nan
             note = "no binary64 criterion without the reduction-direction check"

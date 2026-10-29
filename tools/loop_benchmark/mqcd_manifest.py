@@ -10,9 +10,10 @@ orders, restriction code, reference legend, extras, structural features);
 the references come from the committed fixtures named here and, for the rows
 MQ-REF produced, from its index ``tests/fixtures/loop/required/
 mqcd_references.json`` (or MQ-REF-INDEX). The data-dependent listings of the
-acceptance rules (rule 1 outliers, binary64 coefficients outside the O1
-scope, identically vanishing coefficients, sector sets) are recorded from
-the campaign's runs with their evidence in comments. Re-run it when MQ-REF
+acceptance rules (rule 1 outliers, identically vanishing coefficients,
+sector sets, the relaxed tolerances of the user's ruling of 2026-10-29
+~10:20) are recorded from the campaign's runs with their evidence in
+comments. Re-run it when MQ-REF
 adds references; the manifest is the committed source the tests read.
 """
 
@@ -944,20 +945,10 @@ SECTORS = {
 }
 
 
-def oos(point, sector, coefficient, E, err):
-    return {
-        "point": point,
-        "sector": sector,
-        "coefficient": coefficient,
-        "E": E,
-        "true_error": err,
-    }
-
-
-# The binary64_out_of_scope entries' E and true errors: campaign pt13
-# (2026-10-29, slice a2aa0d84, the O1 estimate of the recommended checks,
-# loops.v2.stability.RECOMMENDED_CHECKS); a listing matches by point, sector
-# and coefficient (rule 2 fails a stale or a missing one).
+# Identically vanishing coefficients (checked absolutely) and named rule 1
+# reference outliers. Binary64 coefficients outside the O1 scope are reported
+# by the records (E, true error), not listed: the user's ruling of
+# 2026-10-29 ~10:20 (no exemption lists below ~1e-5).
 LISTINGS_INDEXED = {
     # massive tops, colourless leptons: no 1/eps^2
     "D21": {
@@ -976,74 +967,8 @@ LISTINGS_INDEXED = {
     },
     # massive b, colourless h: no 1/eps^2
     "C03": {"vanishing": [{"sector": "QCD^2 QED^2", "coefficient": "double_pole"}]},
-    "D16": {
-        "binary64_out_of_scope": [
-            oos(0, "QCD^2 QED^4", "finite", 9.91e-09, 3.06e-11),
-            oos(0, "QCD^2 QED^4", "single_pole", 7.97e-09, 8.7e-13),
-            oos(0, "QCD^2 QED^4", "double_pole", 2.49e-09, 5.21e-13),
-            oos(3, "QCD^2 QED^4", "finite", 1.72e-08, 2.97e-11),
-            oos(3, "QCD^2 QED^4", "single_pole", 4.43e-09, 3.12e-13),
-            oos(3, "QCD^2 QED^4", "double_pole", 2.49e-09, 5.21e-13),
-        ]
-    },
-    "B03": {
-        "binary64_out_of_scope": [
-            oos(0, "QCD^8", "finite", 1.44e-08, 1.06e-09),
-            oos(0, "QCD^8", "single_pole", 2.61e-08, 6.75e-10),
-            oos(0, "QCD^8", "double_pole", 1.46e-08, 1.18e-09),
-            oos(1, "QCD^8", "single_pole", 1.23e-09, 1.04e-10),
-            oos(3, "QCD^8", "finite", 1.97e-08, 7.69e-10),
-            oos(3, "QCD^8", "single_pole", 2e-07, 1.17e-08),
-            oos(3, "QCD^8", "double_pole", 1.46e-08, 1.18e-09),
-        ]
-    },
-    # the first three points' binary64 (precedent test_loop_v2_fermion_lines.py)
-    "A18": {
-        "binary64_out_of_scope": [
-            oos(0, "QCD^10", "finite", 3.2e-08, 1.05e-08),
-            oos(0, "QCD^10", "single_pole", 2.85e-09, 3.11e-10),
-            oos(0, "QCD^10", "double_pole", 2.49e-09, 5.44e-10),
-            oos(1, "QCD^10", "finite", 2.76e-09, 5.51e-10),
-            oos(2, "QCD^10", "finite", 1.25e-07, 5.55e-08),
-            oos(2, "QCD^10", "single_pole", 1.96e-08, 2.23e-09),
-            oos(2, "QCD^10", "double_pole", 6.52e-09, 4.16e-10),
-            oos(3, "QCD^10", "finite", 1.08e-07, 4.52e-08),
-            oos(3, "QCD^10", "single_pole", 6.51e-09, 1.01e-09),
-            oos(3, "QCD^10", "double_pole", 2.49e-09, 5.44e-10),
-        ]
-    },
 }
 LISTINGS = {
-    # u u~ > u u~ u u~ point 2 (pt13, the recommended checks' estimate)
-    "A21": {
-        "binary64_out_of_scope": [
-            oos(2, "QCD^10", "finite", 1.56e-09, 1.16e-11),
-        ]
-    },
-    # u u~ > z z point 3 (pt13, the recommended checks' estimate)
-    "D15": {
-        "binary64_out_of_scope": [
-            oos(3, "QCD^2 QED^4", "finite", 1.74e-09, 1.6e-12),
-        ]
-    },
-    # the E1 point (PLAN §6: G1 binary64 2.42e-7 with E = 4.72e-6): outside
-    # the O1 binary64 scope, bracketed (rule 3); E1 stays open for the user
-    "A14": {
-        "binary64_out_of_scope": [
-            oos(1, "QCD^10", "finite", 2.1e-06, 1.47e-08),
-            oos(1, "QCD^10", "single_pole", 1.06e-06, 3.42e-08),
-        ]
-    },
-    # g g > g g g g g binary64 at points 0, 1 (the G1 record g1.json had
-    # E = 1.36e-8 / 7.69e-8 with the earlier checks)
-    "A24": {
-        "binary64_out_of_scope": [
-            oos(0, "QCD^12", "finite", 1.77e-08, 3.4e-11),
-            oos(0, "QCD^12", "single_pole", 6.93e-09, 1.15e-10),
-            oos(1, "QCD^12", "finite", 1.11e-07, 1.06e-09),
-            oos(1, "QCD^12", "single_pole", 7.75e-08, 7.36e-10),
-        ]
-    },
     "E05": {
         "vanishing": [
             {"sector": "total", "coefficient": "double_pole"},
@@ -1059,9 +984,6 @@ LISTINGS = {
                 "provider": "madloop",
                 "note": "MadLoop binary64 (status 216, own accuracy 5.44e-12) 1.38e-12 from DD; OpenLoops 2.0e-14, Recola 9.2e-13",
             }
-        ],
-        "binary64_out_of_scope": [
-            oos(2, "QCD^8 QED^4", "finite", 5.69e-08, 5.71e-09),
         ],
     },
 }
@@ -1127,18 +1049,6 @@ TREE_FIXTURE = "tests/fixtures/loop/mqcd/references/tree-correlations-{}.json"
 # Ward batch of all six legs took 222 s on 16 threads, MQ-WARD's ladder
 # record ladder-gg_gggg.json, which checked every leg).
 WARD_LEGS = {"A14": [1]}
-# Binary64 Ward evaluations outside the O1 scope (E_k / scale_k > 1e-9),
-# from the campaign run of 2026-10-28 (tmp/mq-validate/pt6, B03 point 0):
-# the final-state gluon of g g > t t~ g, whose substituted amplitude cancels
-# to 1.2e-9 and 3.3e-9 of the physical scale with an estimate of 3.5e-8
-# (bracketed: |V_k| / E_k = 0.09, 0.17); double-double holds the identity
-# (1.9e-26 of the scale).
-WARD_OUT_OF_SCOPE = {
-    "B03": [
-        {"point": 0, "leg": 5, "factor": [1, 0], "E": 3.54e-08, "true_error": 1.24e-09},
-        {"point": 0, "leg": 5, "factor": [0, 1], "E": 3.54e-08, "true_error": 3.26e-09},
-    ]
-}
 # True once MQ-5F is on the slice: its rows and variants turn active
 # (MQ-5F's own records of them: workspace/reports/engine-v2/mq-5f/records/).
 MQ5F_LANDED = False
@@ -1244,29 +1154,25 @@ VARIANTS = {
 # S3: the radiation-zero points and their regular neighbour (the fixture's
 # point_labels).
 ZERO_POINTS = {"D25@zero": {"0": 2, "1": 2}}
-# S1 (PLAN §4.1): binary64 is expected outside the O1 scope at the limit
-# points; they are listed, double-double and rule 3 must pass.
-VARIANT_LISTINGS = {
+# Checks failing below the user's attention threshold get their row's
+# tolerance relaxed, stated per row (slice-status DECISIONS 2026-10-29 ~10:20:
+# a discrepancy below ~1e-5 relative is not a finding; at most
+# mqcd.ATTENTION, with margin over the campaign's value; passing checks keep
+# theirs). Rule -> tolerance ("2": rule 2's binary64 bound is at least this;
+# "6": rule 6's 40 against 60 digits), campaign pt13 (slice a2aa0d84):
+RELAXED = {
+    # g g > b b~ (4FS, massive b) point 2: 40 digits reach 4.6e-32 of 60
+    # digits on the finite part (the masters' arbitrary-precision small-mass
+    # digits, former finding F8)
+    "C01": {"6": 1e-30},
+    # g g > b b~ h (4FS) point 1: binary64 finite 2.3e-10 from double-double
+    # at E = 3.2e-11 (within rule 3's 10 E; former finding F6)
+    "C05": {"2": 1e-8},
     # S2 soft gluon, E_g / sqrt(s) = 1e-5 (point 1): the binary64 Born itself
-    # loses digits (no estimate), the Laurent coefficients are outside the O1
-    # scope and bracketed (rule 3).
-    "A09@soft": {
-        "binary64_out_of_scope": [
-            oos(1, "QCD^6", "born", None, 1.16e-11),
-            oos(1, "QCD^8", "finite", 2.35e-06, 6.33e-07),
-            oos(1, "QCD^8", "single_pole", 4.44e-06, 7.35e-07),
-            oos(1, "QCD^8", "double_pole", 8e-07, 2.31e-07),
-        ]
-    },
-    "B01@threshold": {
-        "binary64_out_of_scope": [
-            oos(1, "QCD^6", "single_pole", 2.22e-09, 7.96e-13),
-            oos(2, "QCD^6", "finite", 9.72e-07, 1.74e-07),
-            oos(2, "QCD^6", "single_pole", 2e-05, 1.14e-09),
-            oos(2, "QCD^6", "double_pole", 2.92e-08, 5.36e-10),
-        ]
-    },
+    # is 1.16e-11 from double-double (no estimate exists for the Born)
+    "A09@soft": {"2": 1e-9},
 }
+assert all(0 < t <= 1e-5 for rules in RELAXED.values() for t in rules.values())
 # M01: MadLoop's SubProcesses/P* of `generate p p > t t~ [virt=QCD]` on
 # loop_sm-no_b_mass (workspace/reference/runs/mqcd/pp_ttx/madloop-export,
 # the "C Process:" lines), and one subprocess variant per P reference.
@@ -1342,7 +1248,6 @@ def rerun_variants(rid):
                 + "); quadruple precision at every point (fix round 2)",
                 "extras": [],
                 "extras_pending": {},
-                **VARIANT_LISTINGS.get(f"{rid}@{name}", {}),
                 "reference": {
                     "format": "required",
                     "path": f"tests/fixtures/loop/{x['fixture']}",
@@ -1475,7 +1380,11 @@ def index_reference(rid):
                     # a variant runs the core rules on its own reference
                     "extras": [],
                     "extras_pending": {},
-                    **VARIANT_LISTINGS.get(f"{rid}@{name}", {}),
+                    **(
+                        {"relaxed": RELAXED[f"{rid}@{name}"]}
+                        if f"{rid}@{name}" in RELAXED
+                        else {}
+                    ),
                     **(
                         {"zero_points": ZERO_POINTS[f"{rid}@{name}"]}
                         if f"{rid}@{name}" in ZERO_POINTS
@@ -1561,19 +1470,13 @@ for r in R:
                         i for i in variant["points"]["nightly"] if i not in taken
                     ]
                 }
-                # Point listings at the rows it keeps: its own, else the
-                # row's binary64 listings (a variant inherits them; the row's
+                # Its own outlier listings at the rows it keeps (the row's
                 # reference outliers are not the rerun's).
-                for key in ("binary64_out_of_scope", "reference_outliers"):
-                    source = variant.get(
-                        key,
-                        LISTINGS.get(r["id"], {}).get(key, [])
-                        if key == "binary64_out_of_scope"
-                        else [],
-                    )
-                    variant[key] = [
-                        e for e in source if e["point"] in variant["points"]["nightly"]
-                    ]
+                variant["reference_outliers"] = [
+                    e
+                    for e in variant.get("reference_outliers", [])
+                    if e["point"] in variant["points"]["nightly"]
+                ]
                 variant["notes"] += (
                     "; its rows "
                     + ", ".join(map(str, sorted(taken)))
@@ -1601,7 +1504,6 @@ for r in R:
         "features": r["features"],
         "predicted_sectors": predicted(r["born"], r["loop"]) or [],
         "unpredicted_sectors": [],
-        "binary64_out_of_scope": [],
         "reference_outliers": [],
         "vanishing": [],
         "reference_tolerance": reference_tolerance(r["id"], r["process"]),
@@ -1681,8 +1583,8 @@ for r in R:
         entry["ckm_relation"] = CKM_RELATIONS[r["id"]]
     if r["id"] in WARD_LEGS:
         entry["ward_legs"] = WARD_LEGS[r["id"]]
-    if r["id"] in WARD_OUT_OF_SCOPE:
-        entry["ward_out_of_scope"] = WARD_OUT_OF_SCOPE[r["id"]]
+    if r["id"] in RELAXED:
+        entry["relaxed"] = RELAXED[r["id"]]
     if r["id"] in NATIVE_ROWS:
         entry["inputs"] = "native"
         tree = TREE_FIXTURE.format(r["id"])

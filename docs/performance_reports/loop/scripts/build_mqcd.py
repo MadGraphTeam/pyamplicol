@@ -42,7 +42,9 @@ Inputs:
 
 Per row the output holds the manifest facts (rule 1's tolerance
 ``reference_tolerance`` among them: 1e-12, relaxed to 1e-10 only on the
-2->4+ rows whose providers need it, the user's ruling of 2026-10-29 ~01:12),
+2->4+ rows whose providers need it, the user's ruling of 2026-10-29 ~01:12;
+and ``relaxed``, the rule -> tolerance of checks the user's ruling of
+2026-10-29 ~10:20 relaxes on the row, at most 1e-5),
 every tier's expected record summary at the manifest's points
 (points, checks, failures with their rule, point, sector, coefficient,
 error, bound and note; the largest double-double deviation from the primary
@@ -269,6 +271,7 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
                     "gating": variant.get("gating", True),
                     "notes": variant.get("notes"),
                     "reference": variant.get("reference"),
+                    "relaxed": variant.get("relaxed", row.get("relaxed", {})),
                     "status": _status(pending, tiers, [], missing=missing),
                     "waits_for": (variant.get("pending") or {}).get("waits_for"),
                     "tiers": tiers,
@@ -333,7 +336,7 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
                 "catani": row.get("catani", "python"),
                 "ward_legs": row.get("ward_legs"),
                 "listed_outliers": row.get("reference_outliers", []),
-                "listed_out_of_scope": row.get("binary64_out_of_scope", []),
+                "relaxed": row.get("relaxed", {}),
                 "status": status,
                 "tiers": tiers,
                 # Expected tier records absent at the manifest's points.
@@ -434,7 +437,7 @@ def markdown(data: dict) -> str:
         "Process",
         "Tier",
         "Status",
-        "Rule 1 tol",
+        "Tolerances",
         "DD vs ref",
         "b64 vs DD",
         "Catani DD",
@@ -490,7 +493,7 @@ def markdown(data: dict) -> str:
             ids += [f for f in explained.get(name, []) if f not in ids]
         lines.append(
             f"| {row['id']}{variants} | {row['process']} | {row['tier'][0]} | "
-            f"{row['status']} | {row['reference_tolerance']:.0e} | "
+            f"{row['status']} | {_tolerances(row)} | "
             f"{_number(row['max_dd_vs_reference'])} | "
             f"{_number(row['max_binary64_vs_dd'])} | {_number(row['max_catani_dd'])} | "
             f"{_number(row.get('max_ward_dd'))} | {_nc_cell(row)} | {note} | "
@@ -499,6 +502,20 @@ def markdown(data: dict) -> str:
     lines.append("")
     lines.append("Counts: " + json.dumps(data["counts"]))
     return "\n".join(lines) + "\n"
+
+
+def _tolerances(row: dict) -> str:
+    """Rule 1's tolerance, then each relaxed rule's (the row's and its
+    gating variants')."""
+
+    cells = [f"{row['reference_tolerance']:.0e}"]
+    for name, relaxed in [("", row.get("relaxed") or {})] + [
+        (v["id"].split("@", 1)[1] + ": ", v.get("relaxed") or {})
+        for v in row["variants"]
+        if v["gating"] and v.get("relaxed") != row.get("relaxed")
+    ]:
+        cells += [f"{name}r{rule} {value:.0e}" for rule, value in relaxed.items()]
+    return "; ".join(cells)
 
 
 def main(argv=None) -> int:
