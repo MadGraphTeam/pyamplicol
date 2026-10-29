@@ -281,8 +281,8 @@ class Row:
     unpredicted_reasons: Mapping[str, str] | None = None
     # The R2 rule (m-sm/PLAN.md §1.4 rule 1, Q7): the UFO R2 couplings the
     # engine's counterterm program inserts and MadLoop's export does not
-    # call (its label matching), found structurally per row; None: not
-    # determined (no MadLoop export R2 list for the row).
+    # call (its label matching), as the row's reference records them; the
+    # harness checks that the engine inserts them (``rule_r2``).
     madloop_omitted_r2: tuple[str, ...] | None = None
 
     @classmethod
@@ -467,10 +467,6 @@ class Reference:
     components: list[dict[str, dict[Any, tuple[float, float, float]]]] = field(
         default_factory=list
     )
-    # The MadLoop export's called R2 couplings (as the export spells them,
-    # merged couplings included), where the reference records them (the
-    # R2 rule's input, m-sm/PLAN.md §1.4); None otherwise.
-    madloop_r2: tuple[str, ...] | None = None
 
     @property
     def primary(self) -> str:
@@ -516,20 +512,7 @@ def load_reference(row: Row) -> Reference:
         _supersede(row, reference, int(index), binding["path"], int(binding["row"]))
     if spec.get("photon_conversion"):
         _photon_conversion(reference, spec["photon_conversion"], data)
-    calls = spec.get("madloop_r2")
-    if calls is None:
-        calls = next(
-            (data[key] for key in R2_CALL_KEYS if isinstance(data.get(key), list)),
-            None,
-        )
-    reference.madloop_r2 = None if calls is None else tuple(calls)
     return reference
-
-
-# Where a reference records the R2 couplings its MadLoop export calls (MS-REF,
-# m-sm/PLAN.md §3.2 item 6); the manifest's ``madloop_r2`` (read from an
-# existing export) otherwise.
-R2_CALL_KEYS = ("madloop_r2_couplings", "r2_couplings")
 
 
 def _photon_conversion(
@@ -2770,99 +2753,24 @@ def engine_r2(slice_: Any) -> dict[str, frozenset[str]]:
     return {vertex: frozenset(names) for vertex, names in found.items()}
 
 
-def export_couplings(
-    calls: Iterable[str], known: Iterable[str]
-) -> tuple[frozenset[str], tuple[str, ...]]:
-    """(the UFO coupling names, unresolved tokens) of an export's called R2
-    tokens: MG5_aMC writes a coupling's Laurent coefficient with a ``_<k>``
-    suffix and merges couplings of one structure into one name (their names
-    joined by ``_``), upper case; a token splits into ``known`` names (any
-    case) with at most one trailing integer suffix."""
-
-    lookup = {name.upper(): name for name in known}
-    names: set[str] = set()
-    unresolved = []
-    for token in calls:
-        parts = token.upper().split("_")
-        found = None
-        for stop in (len(parts), len(parts) - 1):
-            if stop < len(parts) and not parts[stop].isdigit():
-                continue
-            memo: dict[int, list[str] | None] = {}
-
-            def split(i: int, stop: int = stop, memo=memo, parts=parts):
-                if i == stop:
-                    return []
-                if i in memo:
-                    return memo[i]
-                memo[i] = None
-                for j in range(stop, i, -1):
-                    name = lookup.get("_".join(parts[i:j]))
-                    if name is not None:
-                        rest = split(j)
-                        if rest is not None:
-                            memo[i] = [name, *rest]
-                            break
-                return memo[i]
-
-            found = split(0)
-            if found:
-                break
-        if found:
-            names.update(found)
-        else:
-            unresolved.append(token)
-    return frozenset(names), tuple(unresolved)
-
-
-def omitted_r2(
-    engine: Mapping[str, frozenset[str]], called: Iterable[str]
-) -> tuple[str, ...]:
-    """The R2 rule's omitted couplings (m-sm/PLAN.md §1.4 rule 1, Q7): at
-    every CT vertex whose R2 MadLoop's export calls (some coupling of it),
-    the couplings the engine inserts there and the export does not call
-    (MadLoop's label matching drops a loop-particle group of the vertex)."""
-
-    called = set(called)
-    return tuple(
-        sorted(
-            {
-                coupling
-                for couplings in engine.values()
-                if couplings & called
-                for coupling in couplings - called
-            }
-        )
-    )
-
-
 def rule_r2(row: Row, slice_: Any, reference: Reference) -> list[Check]:
-    """The R2 rule's structural check: the engine inserts every coupling of
-    the row's ``madloop_omitted_r2``, and, where the reference records the
-    export's called R2 couplings, the omitted set found from them
-    (``omitted_r2``) is the manifest's."""
+    """The R2 rule's structural check (m-sm/PLAN.md §1.4 rule 1, Q7): every
+    R2 coupling the row lists as omitted by MadLoop's label matching
+    (``madloop_omitted_r2``) is inserted by the engine's counterterm program
+    (``engine_r2``), so rule 1 holds the UFO-complete insertion against
+    Recola or MadLoop plus the omitted component."""
 
-    if row.madloop_omitted_r2 is None:
+    if not row.madloop_omitted_r2:
         return []
     engine = engine_r2(slice_)
     inserted = set().union(*engine.values()) if engine else set()
-    listed = tuple(sorted(row.madloop_omitted_r2))
-    checks = [
-        Check("r2", None, "", "", "inserted", ", ".join(sorted(set(listed) - inserted))
-              or "all", "all", 0.0, 0.0, set(listed) <= inserted,
-              note="the manifest's omitted R2 couplings are in the engine's "
-              "counterterm program")
+    listed = set(row.madloop_omitted_r2)
+    return [
+        Check("r2", None, "", "", "inserted", ", ".join(sorted(listed - inserted))
+              or "all", ", ".join(sorted(listed)), 0.0, 0.0, listed <= inserted,
+              note="MadLoop's omitted R2 couplings are in the engine's "
+              f"counterterm program (rule 1 against {reference.primary})")
     ]  # fmt: skip
-    if reference.madloop_r2 is not None:
-        called, unresolved = export_couplings(reference.madloop_r2, inserted)
-        found = omitted_r2(engine, called)
-        checks.append(Check(
-            "r2", None, "", "", "omitted", ", ".join(found) or "none",
-            ", ".join(listed) or "none", 0.0, 0.0, found == listed,
-            note="engine R2 couplings MadLoop's export does not call, at the "
-            "vertices it calls; tokens the engine does not insert: "
-            + (", ".join(unresolved) or "none")))  # fmt: skip
-    return checks
 
 
 # ------------------------------------------------------ per-helicity rows
@@ -3800,6 +3708,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     run.add_argument(
         "--manifest", type=Path, default=MANIFEST, help="another manifest file"
     )
+    run.add_argument(
+        "--model-ufo",
+        nargs="*",
+        default=[],
+        metavar="NAME=PATH",
+        help="the UFO of a manifest model other than loop_sm (its ``models``)",
+    )
     args = parser.parse_args(argv)
     if args.command == "delegated-ids":
         for node in delegated_ids():
@@ -3811,7 +3726,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     from pyamplicol.loops.native import load_loop_native
 
     campaign = Campaign(
-        args.ufo, load_loop_native(), args.work, manifest=load_manifest(args.manifest)
+        args.ufo,
+        load_loop_native(),
+        args.work,
+        manifest=load_manifest(args.manifest),
+        ufos=dict(item.split("=", 1) for item in args.model_ufo),
     )
     failed = 0
     for name in args.rows:

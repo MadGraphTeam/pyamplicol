@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import sys
 from pathlib import Path
 
@@ -83,7 +82,7 @@ CODES = {
     ),
     "Lc": (LOOPSM, "default", {"WW": "0", "WZ": "0", "WH": "0"}, "qcd-cms", ALPHA_MZ),
     "Az": (QCDQED, "default", ZERO_WIDTHS, "ew-qcd-qed-sm", ALPHA_MZ),
-    "L5": (LOOPSM, "no_b_mass", G_MU_FIXED, "qcd", ALPHA_MZ),
+    "L5": (LOOPSM, "default", G_MU_FIXED, "qcd", ALPHA_MZ),
 }
 MODELS = {
     GMU: {"fixture": "loop_gmu_ufo"},
@@ -1074,7 +1073,7 @@ row(
 )
 row(
     "SC05",
-    "u u~ > e- e+ g g / d s b",
+    "u u~ > e- e+ g g",
     "QCD",
     "L5",
     [(6, 4)],
@@ -1153,22 +1152,17 @@ PENDING_EXTRAS = {
 COMPONENT_FORMATS = {"ew-control", "madloop-components", "process-components"}
 
 # The R2 rule (m-sm/PLAN.md §1.4 rule 1, Q7): per row the R2 couplings the
-# engine inserts that MadLoop's export does not call, found from the
-# export's called R2 couplings (``madloop_r2``: read here from the export of
-# an existing reference; MS-REF records them in new fixtures) and checked
-# against the engine's counterterm program by the harness (``mqcd.rule_r2``).
-# Known (PLAN §1.4): LL10, TT04, SC09, TT05 (R2_G0tt_b of V_ttG02). Only
-# rows whose reference covers the whole request (a joint request's other
-# sectors call R2 couplings the export of one sector does not).
-EXPORTS = {
-    "LL10": "emep_ttxh_ew",
-    "LL03": "emep_emep_ew",
-    "TT05": "gt_tttx_ew",
-    "TV06": "gg_ttxemep_ew",
-    "DY05": "uux_emepg_ew",
-    "VJ03": "uux_ag_ew",
-    "VV06": "uux_aa_ew",
-}
+# engine inserts that MadLoop's label matching omits, as the rows'
+# references record them (``goldstone-mixing.json`` omitted_r2; the e+e- >
+# t t~ h fixture's Recola agreement), checked against the engine's
+# counterterm program by the harness (``mqcd.rule_r2``); rule 1 is then
+# against Recola (LL10) or MadLoop plus the omitted component (TT05).
+# Known (PLAN §1.4): LL10, TT04, SC09, TT05 (R2_G0tt_b of V_ttG02); TT04 and
+# SC09 join with EWI-7's fixtures. A comparison by coupling name with the
+# export's called couplings is not used: MG5_aMC's restricted model merges
+# couplings of equal value (LL03's export calls R2_AAU and R2_AAD where the
+# UFO's V_R2AA groups take R2_AAu3, R2_AAc3, ...), so names differ where the
+# insertion is the same (LL03 = MadLoop to 4e-15).
 OMITTED = {"LL10": ["R2_G0tt_b"], "TT05": ["R2_G0tt_b"]}
 # TT05's omitted component (``goldstone-mixing.json`` omitted_r2): MadLoop's
 # Born x CT interference of the R2_G0tt amplitudes times R2_G0tt_b / R2_G0tt
@@ -1176,22 +1170,6 @@ OMITTED = {"LL10": ["R2_G0tt_b"], "TT05": ["R2_G0tt_b"]}
 # _ufo_coupling_ratio``, binary64; 0.869 at lhv = 1), computed when this
 # script runs with the G_mu UFO.
 OMITTED_COMPONENT = {"TT05": ("r2_g0tt", "R2_G0tt_b", "R2_G0tt")}
-
-
-def export_r2(name: str) -> list[str] | None:
-    """The R2 coupling tokens a MadLoop export's SubProcesses call (its
-    helas, CT and coefficient files; the model library defines every
-    coupling, so it is not read), or None without the export."""
-
-    root = WORKSPACE / "reference/runs/required" / name / "madloop-export/SubProcesses"
-    if not root.is_dir():
-        return None
-    tokens = set()
-    for path in sorted(root.glob("P*/*.f")):
-        tokens.update(
-            re.findall(r"\bR2_[A-Za-z0-9_]+", path.read_text(errors="replace"))
-        )
-    return sorted(tokens)
 
 
 def coupling_ratio(name, numerator, denominator, card) -> str | None:
@@ -1344,11 +1322,8 @@ for r in R:
             )
     if pend:
         entry["extras_pending"] = pend
-    if r["id"] in EXPORTS and status == "active":
-        calls = export_r2(EXPORTS[r["id"]])
-        if calls is not None:
-            entry["madloop_omitted_r2"] = OMITTED.get(r["id"], [])
-            entry["reference"] = {**entry["reference"], "madloop_r2": calls}
+    if r["id"] in OMITTED and status == "active":
+        entry["madloop_omitted_r2"] = OMITTED[r["id"]]
     if r["id"] in OMITTED_COMPONENT and status == "active":
         component, numerator, denominator = OMITTED_COMPONENT[r["id"]]
         data = json.loads((WT / reference["path"]).read_text())["processes"][
