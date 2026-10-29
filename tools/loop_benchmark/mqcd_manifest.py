@@ -1054,16 +1054,24 @@ LISTINGS = {
 }
 
 
-# Rule 1's relative tolerance per row (user, slice-status DECISIONS
-# 2026-10-29 ~01:12): 1e-12 at 2->2 and 2->3, 1e-10 from 2->4 up (the
-# providers' own precision; 2->5 and beyond could go up to 1e-7 where a row's
-# providers require it, and no row needs it today).
+# Rule 1's relative tolerance per row. The user's ruling (slice-status
+# DECISIONS 2026-10-29 ~01:12) allows 1e-10 from 2->4 up, and up to 1e-7 at
+# 2->5 and beyond, "if need be": every row holds 1e-12 unless its providers'
+# own precision needs more, and only such a 2->4+ row is relaxed, with its
+# evidence. Campaign pt12 (slice 321efdb4), worst double-double deviation
+# from the binding reference: A18 (g g > u u~ u u~) 1.17e-11 at point 2
+# (MadLoop quadruple precision, Recola agrees with double-double; PLAN §6a)
+# and A23 (u u~ > g g g g g) 3.18e-12 (MadLoop quadruple precision). Every
+# other 2->4 and 2->5 row stays below 1e-12 (largest A22 7.0e-13).
 RULE1_LOW, RULE1_HIGH = 1e-12, 1e-10
+RULE1_RELAXED = {"A18": RULE1_HIGH, "A23": RULE1_HIGH}
 
 
-def reference_tolerance(process):
+def reference_tolerance(row_id, process):
     final = len(process.split(">")[1].split())
-    return RULE1_HIGH if final >= 4 else RULE1_LOW
+    tolerance = RULE1_RELAXED.get(row_id, RULE1_LOW)
+    assert tolerance == RULE1_LOW or final >= 4, row_id
+    return tolerance
 
 
 def loop_orders(born, loop):
@@ -1632,7 +1640,7 @@ for r in R:
         "binary64_out_of_scope": [],
         "reference_outliers": [],
         "vanishing": [],
-        "reference_tolerance": reference_tolerance(r["process"]),
+        "reference_tolerance": reference_tolerance(r["id"], r["process"]),
     }
     if params:
         entry["parameters"] = params

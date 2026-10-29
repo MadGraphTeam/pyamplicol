@@ -14,9 +14,9 @@ The rules (PLAN §1.4; no tolerance is widened):
 
 1. double-double against the row's primary provider, strictly relative,
    rel <= the row's ``reference_tolerance`` per sector and coefficient, Born
-   included: 1e-12 at 2->2 and 2->3, 1e-10 from 2->4 up (the user's ruling of
-   2026-10-29 ~01:12: up to 1e-7 at 2->5 and beyond only where the
-   providers' own precision requires it, stated per row); a listed reference
+   included: 1e-12, relaxed per row to 1e-10 from 2->4 up (and up to 1e-7 at
+   2->5 and beyond) only where the providers' own precision requires it (the
+   user's ruling of 2026-10-29 ~01:12, stated per row); a listed reference
    outlier passes only if the provider's own accuracy covers the difference
    and a second provider agrees with double-double within the same
    tolerance; a coefficient that vanishes identically stays absolute at
@@ -100,10 +100,10 @@ LAURENT = ("finite", "single_pole", "double_pole")
 COEFFICIENTS = ("born", *LAURENT)
 TOTAL = "total"
 
-REFERENCE_TOLERANCE = 1e-12  # rule 1 at 2->2 and 2->3 (the absolute checks)
-# Rule 1 from 2->4 up (user, slice-status DECISIONS 2026-10-29 ~01:12): the
-# providers' own precision; 2->5 and beyond may go up to the ceiling where a
-# row's providers require it (the manifest states each row's tolerance).
+REFERENCE_TOLERANCE = 1e-12  # rule 1 (and the absolute checks)
+# Rule 1 of a 2->4+ row whose providers' precision needs it (user,
+# slice-status DECISIONS 2026-10-29 ~01:12, "if need be"); 2->5 and beyond
+# may go up to the ceiling (the manifest states each row's tolerance).
 REFERENCE_TOLERANCE_HIGH = 1e-10
 REFERENCE_TOLERANCE_CEILING = 1e-7
 O1_STRICT = 1e-12  # rule 2: E <= 1e-12
@@ -238,8 +238,8 @@ class Row:
     # like ``binary64_out_of_scope`` (double-double holds the identity, the
     # estimate must still bracket the value tenfold).
     ward_out_of_scope: tuple[Mapping[str, Any], ...] = ()
-    # Rule 1's relative tolerance (``REFERENCE_TOLERANCE`` at 2->2 and 2->3,
-    # ``REFERENCE_TOLERANCE_HIGH`` from 2->4 up; the manifest states it).
+    # Rule 1's relative tolerance (``REFERENCE_TOLERANCE``; a 2->4+ row whose
+    # providers need it ``REFERENCE_TOLERANCE_HIGH``; the manifest states it).
     reference_tolerance: float = REFERENCE_TOLERANCE
     # Other packages' pytest node ids per column (rule 7's ``nc``: MQ-NC's;
     # M01's ``bitwise``: MQ-MODEL's).

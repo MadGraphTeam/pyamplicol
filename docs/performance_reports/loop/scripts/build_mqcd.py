@@ -41,8 +41,9 @@ Inputs:
                                            not computed)
 
 Per row the output holds the manifest facts (rule 1's tolerance
-``reference_tolerance`` among them: 1e-12 at 2->2 and 2->3, 1e-10 from 2->4
-up, the user's ruling of 2026-10-29 ~01:12), every tier's record summary
+``reference_tolerance`` among them: 1e-12, relaxed to 1e-10 only on the
+2->4+ rows whose providers need it, the user's ruling of 2026-10-29 ~01:12),
+every tier's expected record summary at the manifest's points
 (points, checks, failures with their rule, point, sector, coefficient,
 error, bound and note; the largest double-double deviation from the primary
 provider, binary64 against double-double, the poles against Catani in both
@@ -54,10 +55,14 @@ test id its outcome, passed, failed, skipped or null when absent) and a
 status: ``pass`` (every run tier, gating variant and delegated column
 passed, and a composite row's expansion check), ``fail`` (a check or a
 delegated test failed: a finding), ``pending`` (the manifest's waiting
-package) or ``not-run`` (active, a record or a delegated test missing). A
+package) or ``not-run`` (active, a delegated test or an expected record
+missing: a default-tier row's default and nightly records, a nightly row's
+nightly record, each at the manifest's points, ``missing_records``). A
 composite row (M01) has no tier of its own: its gating variants, its
 ``expansion:<id>`` record and its delegated columns make it up. Later
-directories override earlier ones per (row, tier). Nothing is estimated: a
+directories override earlier ones per (row, tier) among the records at the
+manifest's points (a partial ``--points`` rerun is no tier record). Nothing
+is estimated: a
 value without a record stays null. The
 per-class matrix of the report (PLAN §5.2) is the ``classes`` section;
 ``--markdown`` writes the per-row table.
@@ -119,31 +124,59 @@ def _entry(record: dict) -> dict:
     return entry
 
 
-def _tiers(records, name: str) -> dict:
-    return {
-        tier: _entry(records[name, tier])
-        for tier in ("default", "nightly")
-        if (name, tier) in records
-    }
+def expected_tiers(entry: dict, base: dict | None = None) -> dict[str, list[int]]:
+    """tier -> the manifest's points of a row (or of a variant, ``base`` its
+    row) that the campaign's tier modules run: a default-tier row's default
+    points (tests/unit/test_loop_v2_mqcd_default.py) and every row's nightly
+    points (the nightly file jobs, extras included). A composite row runs no
+    tier of its own."""
+
+    if base is None and entry.get("status") == "composite":
+        return {}
+    points = entry.get("points") or (base or {}).get("points") or {}
+    tier = entry.get("tier") or (base or {}).get("tier")
+    tiers = ("default", "nightly") if tier == "default" else ("nightly",)
+    return {t: list(points[t]) for t in tiers if points.get(t)}
 
 
-def _status(pending: bool, tiers: dict, gating: list[dict], columns=()) -> str:
+def _tiers(records, name: str, expected: dict[str, list[int]]) -> tuple[dict, list]:
+    """The summaries of the expected tiers' records and the expected tiers
+    without one: a record counts only at the manifest's points (a partial
+    ``--points`` rerun is not a tier record; the latest matching directory
+    wins)."""
+
+    tiers, missing = {}, []
+    for tier, points in expected.items():
+        found = [r for r in records.get((name, tier), ()) if r["points"] == points]
+        if found:
+            tiers[tier] = _entry(found[-1])
+        else:
+            missing.append(tier)
+    return tiers, missing
+
+
+def _status(
+    pending: bool, tiers: dict, gating: list[dict], columns=(), missing=()
+) -> str:
+    """pending, else fail (a failed check, gating variant or delegated test),
+    else pass (every expected record, gating variant and delegated test
+    present and passed), else not-run."""
+
     if pending:
         return "pending"
-    if not tiers and not gating:
-        return "not-run"
-    if (
-        all(t["passed"] for t in tiers.values())
-        and all(v["status"] == "pass" for v in gating)
-        and all(c == "pass" for c in columns)
-    ):
-        return "pass"
     if (
         any(not t["passed"] for t in tiers.values())
         or any(v["status"] == "fail" for v in gating)
         or "fail" in columns
     ):
         return "fail"
+    if (
+        (tiers or gating)
+        and not missing
+        and all(v["status"] == "pass" for v in gating)
+        and all(c == "pass" for c in columns)
+    ):
+        return "pass"
     return "not-run"
 
 
@@ -214,17 +247,17 @@ def column(ids, outcomes: dict[str, str]) -> dict:
 def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) -> dict:
     manifest = json.loads(MANIFEST.read_text())
     outcomes = junit_outcomes(junit)
-    records: dict[tuple[str, str], dict] = {}
+    records: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for directory in results:
         for path in sorted(Path(directory).glob("*.json")):
             record = json.loads(path.read_text())
-            records[record["row"], record["tier"]] = record
+            records[record["row"], record["tier"]].append(record)
     rows = []
     for row in manifest["rows"]:
         variants = []
         for variant in row.get("variants", ()):
             name = f"{row['id']}@{variant['name']}"
-            tiers = _tiers(records, name)
+            tiers, missing = _tiers(records, name, expected_tiers(variant, row))
             pending = variant.get("status") == "pending"
             variants.append(
                 {
@@ -232,12 +265,13 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
                     "gating": variant.get("gating", True),
                     "notes": variant.get("notes"),
                     "reference": variant.get("reference"),
-                    "status": _status(pending, tiers, []),
+                    "status": _status(pending, tiers, [], missing=missing),
                     "waits_for": (variant.get("pending") or {}).get("waits_for"),
                     "tiers": tiers,
+                    "missing_records": missing,
                 }
             )
-        tiers = _tiers(records, row["id"])
+        tiers, missing = _tiers(records, row["id"], expected_tiers(row))
         # A pending variant (waiting for its package) is reported, and does
         # not hold its row's status.
         gating = [v for v in variants if v["gating"] and v["status"] != "pending"]
@@ -247,7 +281,8 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
         }
         if row["status"] == "composite":
             # Its expansion check is one of its parts.
-            expansion = records.get((f"expansion:{row['id']}", "nightly"))
+            found = records.get((f"expansion:{row['id']}", "nightly"))
+            expansion = found[-1] if found else None
             gating.append(
                 {
                     "tiers": {},
@@ -263,6 +298,7 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
             tiers,
             gating,
             [c["status"] for c in delegated.values()],
+            missing,
         )
         every = [*tiers.values(), *(t for v in gating for t in v["tiers"].values())]
         rows.append(
@@ -284,6 +320,8 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
                 "listed_out_of_scope": row.get("binary64_out_of_scope", []),
                 "status": status,
                 "tiers": tiers,
+                # Expected tier records absent at the manifest's points.
+                "missing_records": missing if row["status"] == "active" else [],
                 "variants": variants,
                 "nc": delegated.get("nc"),
                 "delegated": delegated,
@@ -305,7 +343,8 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
         classes[row["class"]][row["status"]] += 1
         classes[row["class"]]["rows"] += 1
     checks = {}
-    for (name, tier), record in sorted(records.items()):
+    for (name, tier), found in sorted(records.items()):
+        record = found[-1]
         if name.startswith(("smoke:", "expansion:")):
             checks[name] = {
                 "tier": tier,
@@ -313,6 +352,20 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
                 "checks": record["checks"],
                 "failed_checks": _entry(record)["failed_checks"],
             }
+    # The nightly smokes and composite expansions the manifest declares
+    # (tests/unit/test_loop_v2_mqcd_nightly.py): absent records not-run.
+    declared = [
+        f"smoke:{r}" for r in manifest.get("smokes", {}).get("same_request", {})
+    ]
+    declared += [
+        f"expansion:{r['id']}" for r in manifest["rows"] if r["status"] == "composite"
+    ]
+    for name in declared:
+        checks.setdefault(
+            name, {"tier": "nightly", "passed": None, "status": "not-run"}
+        )
+    for entry in checks.values():
+        entry.setdefault("status", "pass" if entry["passed"] else "fail")
     smoke = manifest.get("smokes", {}).get("lc_every_restriction")
     if isinstance(smoke, dict):
         checks["lc:every_restriction"] = column([smoke["test"]], outcomes)
