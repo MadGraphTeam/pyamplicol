@@ -1053,8 +1053,10 @@ report is `workspace/reports/engine-v2/njet-benchmark.md`.
 
 ## Legacy-engine oracles for the v2 engine (WP0.1)
 
-`legacy_capture.py` freezes the legacy per-diagram engine before the v2 engine
-replaces it (oracles O1 and O2 of `docs/development/loop_v2/DESIGN.md` section
+The legacy per-diagram engine was removed (user ruling 2026-10-28, M-QCD Q3);
+its outputs are frozen. `legacy_capture.py` captured them before the v2 engine
+replaced it (its capture code is in the git history; the module keeps the
+control set and conventions the fixtures are read with) (oracles O1 and O2 of `docs/development/loop_v2/DESIGN.md` section
 14) for the control set gg->gg, uu~->dd~g, uu~->ggg, Drell-Yan (photon only),
 uu~->dd~, uu~->tt~, uu~->uu~ and uu~->uu~g, in binary64 and in 200-bit
 arbitrary precision:
@@ -1079,9 +1081,12 @@ providers' `loop_sm-no_b_mass` scheme), the points of the committed provider
 references, and stores the engine's own decimal strings, so a rerun reproduces
 the files byte for byte:
 
-```bash
-python tools/loop_reference/legacy_capture.py --ufo <MG5>/models/loop_sm [--process ...] [--check]
-```
+(The capture command, `legacy_capture.py --ufo <MG5>/models/loop_sm
+[--process ...] [--check]`, no longer exists: the engine it ran was removed.
+The last captures, for the former live comparisons of the v2 tests, are
+`tests/fixtures/loop/legacy/reduction/`, `ew_families_*.json.gz`,
+`gg_gg_non_default_parameters.json`, `gg_ttx_model_defaults.json` and
+`gg_gg_qcd_qed_sm.json`, each with a one-line provenance.)
 
 The fixtures were last regenerated for the coordinated re-pin (b5c5e83b; native
 b71edd24: NinjaRS aa6a6307, oneloopmaster 8ec256fc, Symbolica 9cdc2949).
