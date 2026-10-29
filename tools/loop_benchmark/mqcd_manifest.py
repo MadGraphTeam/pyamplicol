@@ -1067,7 +1067,7 @@ RESTRICTED_5F = ("D17", "F01", "F02", "F04")
 # from their JUnit XML; the LC/NLC smoke on every shipped restriction is
 # NC_SMOKE (PLAN §3.2 MQ-VALIDATE item 5, MQ-NC acceptance). Not repeated by
 # this harness.
-MQNC_LANDED = False
+MQNC_LANDED = True
 NC_TESTS = "tests/unit/test_loop_v2_nc_projection.py"
 NC_SMOKE = "tests/unit/test_loop_v2_nc_declaration.py::test_lc_and_nlc_smoke_on_every_shipped_restriction"
 
