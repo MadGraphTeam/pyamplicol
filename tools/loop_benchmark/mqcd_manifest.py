@@ -1658,7 +1658,8 @@ for r in R:
                 "tier": "nightly",
                 "restriction": "no_b_mass",
                 "restriction_code": "5F",
-                "fixed_parameters": dict(ZERO_WIDTHS),
+                # The row's (and its reference's) parameters, code 5F's.
+                "fixed_parameters": dict(CODES["5F"][1]),
                 "notes": "PLAN §3.0 MQ-5F: the row's request on the restricted UFO (no_b_mass), against the row's reference (so equal to its default-restriction MB = ymb = 0 route under §1.4)",
                 "extras": [],
                 "extras_pending": {},
