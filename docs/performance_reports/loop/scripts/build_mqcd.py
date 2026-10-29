@@ -5,6 +5,13 @@ Usage: python scripts/build_mqcd.py RESULTS_DIR... [--output data/mqcd.json]
        [--findings data/mqcd-findings.json] [--markdown TABLE.md]
        [--junit JUNIT.xml ...] [--meta key=value ...]
 
+The campaign: PYAMPLICOL_MQCD_RESULTS=RESULTS_DIR pytest on
+tests/unit/test_loop_v2_mqcd_default.py (-m "not loop_nightly") and on each
+nightly file job tests/unit/test_loop_v2_mqcd_nightly*.py (-m loop_nightly),
+one process per file; the delegated columns by
+pytest --junitxml JUNIT.xml $(python -m tools.loop_benchmark.mqcd
+delegated-ids).
+
 Inputs:
 
 - tests/fixtures/loop/mqcd/manifest.json   the 76 campaign rows (m-qcd/PLAN.md
