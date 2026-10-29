@@ -2596,11 +2596,14 @@ def rule6(
     ap: Evaluated,
     ap60: Evaluated,
     alpha_s: float = 0.118,
+    couplings: Mapping[str, float] | None = None,
 ) -> list[Check]:
     """Arbitrary precision against double-double and against 60 digits
     (``AP_CONVERGENCE``, at least the row's ``relaxed["6"]``; a coefficient
-    that vanishes identically absolutely, against F_s)."""
+    that vanishes identically absolutely, against F_s; ``couplings`` the
+    loop coupling per correction, default the strong one ``alpha_s``)."""
 
+    couplings = dict(couplings or {"QCD": alpha_s})
     checks = []
     convergence = max(AP_CONVERGENCE, row.relaxed.get("6", 0.0))
     for sector, value in ap.born.items():
@@ -2645,7 +2648,7 @@ def rule6(
             e_rel = estimate[k] / abs(float(truth)) if float(truth) else math.inf
             bound = max(DD_FLOOR, BRACKET * e_rel)
             if _vanishing(row, text, name):
-                flux = _flux(born_scale(row, dd, born_sector(sector)), alpha_s)
+                flux = sector_flux(row, dd, sector, couplings)
                 for other, scale, note in (
                     (truth, DD_FLOOR, "double-double"),
                     (ap60.virtual[sector][k], convergence, "60 digits"),
@@ -3390,7 +3393,13 @@ def run_row(
         timings["ap_s"] = round(time.perf_counter() - start, 2)
         for k, index in enumerate(extra_points):
             checks += rule6(
-                row, index, dd[indices.index(index)], ap[k], ap60[k], reference.alpha_s
+                row,
+                index,
+                dd[indices.index(index)],
+                ap[k],
+                ap60[k],
+                reference.alpha_s,
+                alphas(row, reference),
             )
     if "ff" in extras:
         legs, alpha_s = run.legs(), Decimal(str(run.parameters["aS"]))
