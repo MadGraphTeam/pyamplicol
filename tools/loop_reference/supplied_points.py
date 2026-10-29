@@ -38,6 +38,10 @@ Families (``--family``):
 * ``rest``: a 2->1 process at sqrt(s) = the final mass, the beam axis turned
   by a different rational rotation per point.
 
+``--sqrt-s v1 v2 ...`` (regular family) builds one point per listed sqrt(s), in
+order (repeats allowed), without the resonance exclusion: points at or near a
+resonance (sqrt(s) = M_Z, M_W) or at one high energy.
+
 ``--rotate x`` turns the whole event (beams included) about the x axis by the
 rational angle cos = 3/5, sin = 4/5 (beams off the z axis). ``--half-scale-point``
 appends a copy of point 1 at half its scale.
@@ -298,7 +302,7 @@ def passes_cuts(point, masses, cut, resonances, pdgs, incoming=2):
 
 
 def generate(masses, family="regular", count=3, values=(), cut=F(1, 1000), resonances=(), pdgs=None,
-             rotate=None, zero_cosine=None, neighbour_cosine=None, incoming=2):
+             rotate=None, zero_cosine=None, neighbour_cosine=None, incoming=2, sqrt_s_values=None):
     """Return (points, sqrt_s list, labels) as Decimal momenta [[E, px, py, pz], ...]."""
     if incoming != 2:
         raise ValueError("only 2->n scattering is implemented")
@@ -354,6 +358,12 @@ def generate(masses, family="regular", count=3, values=(), cut=F(1, 1000), reson
         return points, scales, labels
 
     scales_ok = [s for s in _SQRT_S if D(s) > threshold * D(F(13, 10)) and D(s) > threshold + 50]
+    if sqrt_s_values:
+        if family != "regular":
+            raise ValueError("--sqrt-s applies to the regular family only")
+        if any(D(s) <= threshold for s in sqrt_s_values):
+            raise ValueError(f"a listed sqrt(s) is not above the threshold {threshold}")
+        scales_ok, count = list(sqrt_s_values), len(sqrt_s_values)
     if not scales_ok:
         raise ValueError("threshold above the sqrt(s) list")
     # Configuration errors are refused before the search (inside it a ValueError
@@ -377,14 +387,14 @@ def generate(masses, family="regular", count=3, values=(), cut=F(1, 1000), reson
         raise ValueError(f"{count} regular points need {count} distinct sqrt(s) values; "
                          f"only {len(scales_ok)} lie above threshold")
     targets = list(values) if family in ("soft", "collinear") else [None] * count
-    for target in targets:
+    for index, target in enumerate(targets):
         for trial in itertools.count(1):
             if trial > MAX_TRIALS:
                 raise ValueError(f"no {family} point found in {MAX_TRIALS} candidates "
                                  f"(target {target}); the configuration is unreachable")
             if trial % 10000 == 0:
                 print(f"supplied_points: {trial} candidates tried", file=sys.stderr)
-            sqrt_s = chooser.choice(scales_ok)
+            sqrt_s = sqrt_s_values[index] if sqrt_s_values else chooser.choice(scales_ok)
             try:
                 if family == "soft":
                     order = [len(final) - 1, *range(len(final) - 1)]
@@ -404,7 +414,7 @@ def generate(masses, family="regular", count=3, values=(), cut=F(1, 1000), reson
             b1, b2 = beams(sqrt_s, *initial)
             if family == "regular" and not passes_cuts([b1, b2, *final_momenta], masses, cut, resonances, pdgs):
                 continue
-            if sqrt_s in scales and family == "regular":
+            if sqrt_s in scales and family == "regular" and not sqrt_s_values:
                 continue
             finish(final_momenta, sqrt_s, family if target is None else f"{family} {target}")
             break
@@ -432,6 +442,8 @@ def main():
     parser.add_argument("--zero-cosine", default="-1/3")
     parser.add_argument("--neighbour-cosine", default="-1/5")
     parser.add_argument("--rotate", choices=("x",))
+    parser.add_argument("--sqrt-s", nargs="+", help="regular family: one point per listed sqrt(s), no resonance "
+                        "exclusion")
     parser.add_argument("--mu-r", nargs="+", default=["1000", "700", "1400"])
     parser.add_argument("--cut", default="1/1000", help="minimal 2|p_i.p_j|/s of massless pairs (regular family)")
     parser.add_argument("--half-scale-point", action="store_true")
@@ -449,12 +461,15 @@ def main():
     resonances = [values[n] for n in ("MZ", "MW", "MH", "MT") if n in values and F(values[n])]
     if "MW" not in values:
         resonances.append(required_spec.derived_mw(spec["scheme_data"]))
+    if args.sqrt_s:
+        resonances = []
     with localcontext() as context:
         context.prec = CONSTRUCTION_DIGITS
         try:
             points, scales, labels = generate(
                 masses, args.family, args.count, [F(v) for v in args.values], F(args.cut),
-                [F(r) for r in resonances], spec["pdgs"], args.rotate, F(args.zero_cosine), F(args.neighbour_cosine))
+                [F(r) for r in resonances], spec["pdgs"], args.rotate, F(args.zero_cosine), F(args.neighbour_cosine),
+                sqrt_s_values=[F(v) for v in args.sqrt_s] if args.sqrt_s else None)
         except ValueError as error:
             raise SystemExit(f"supplied_points: {args.process}, family {args.family}: {error}") from None
         printed = [quantise(p, s) for p, s in zip(points, scales, strict=False)]
@@ -486,6 +501,7 @@ def main():
             else None),
         "point_labels": labels,
         "cuts": {"min_2pipj_over_s": args.cut, "resonance_exclusion":
+                 "none (--sqrt-s)" if args.sqrt_s else
                  "|s_ij-M^2| >= M^2/10 for final particle-antiparticle pairs (regular family)",
                  "resonances": [str(r) for r in resonances]},
         "sqrt_s": [text(D(s)) for s in scales] + ([text(D(scales[0]))] if args.half_scale_point else []),
