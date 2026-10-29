@@ -954,6 +954,10 @@ def oos(point, sector, coefficient, E, err):
     }
 
 
+# The binary64_out_of_scope entries' E and true errors: campaign pt13
+# (2026-10-29, slice a2aa0d84, the O1 estimate of the recommended checks,
+# loops.v2.stability.RECOMMENDED_CHECKS); a listing matches by point, sector
+# and coefficient (rule 2 fails a stale or a missing one).
 LISTINGS_INDEXED = {
     # massive tops, colourless leptons: no 1/eps^2
     "D21": {
@@ -974,55 +978,70 @@ LISTINGS_INDEXED = {
     "C03": {"vanishing": [{"sector": "QCD^2 QED^2", "coefficient": "double_pole"}]},
     "D16": {
         "binary64_out_of_scope": [
-            oos(0, "QCD^2 QED^4", "finite", 3.93e-09, 3.06e-11),
-            oos(0, "QCD^2 QED^4", "single_pole", 3.18e-09, 9.81e-13),
-            oos(3, "QCD^2 QED^4", "finite", 6.86e-09, 2.97e-11),
-            oos(3, "QCD^2 QED^4", "single_pole", 1.76e-09, 4.23e-13),
+            oos(0, "QCD^2 QED^4", "finite", 9.91e-09, 3.06e-11),
+            oos(0, "QCD^2 QED^4", "single_pole", 7.97e-09, 8.7e-13),
+            oos(0, "QCD^2 QED^4", "double_pole", 2.49e-09, 5.21e-13),
+            oos(3, "QCD^2 QED^4", "finite", 1.72e-08, 2.97e-11),
+            oos(3, "QCD^2 QED^4", "single_pole", 4.43e-09, 3.12e-13),
+            oos(3, "QCD^2 QED^4", "double_pole", 2.49e-09, 5.21e-13),
         ]
     },
     "B03": {
         "binary64_out_of_scope": [
-            oos(0, "QCD^8", "finite", 1.96e-09, 1.06e-09),
-            oos(0, "QCD^8", "single_pole", 1.92e-09, 6.76e-10),
-            oos(0, "QCD^8", "double_pole", 1.23e-09, 1.18e-09),
-            oos(1, "QCD^8", "single_pole", 1.54e-09, 1.05e-10),
-            oos(3, "QCD^8", "finite", 2.14e-09, 7.69e-10),
-            oos(3, "QCD^8", "single_pole", 1.50e-08, 1.17e-08),
-            oos(3, "QCD^8", "double_pole", 1.23e-09, 1.18e-09),
+            oos(0, "QCD^8", "finite", 1.44e-08, 1.06e-09),
+            oos(0, "QCD^8", "single_pole", 2.61e-08, 6.75e-10),
+            oos(0, "QCD^8", "double_pole", 1.46e-08, 1.18e-09),
+            oos(1, "QCD^8", "single_pole", 1.23e-09, 1.04e-10),
+            oos(3, "QCD^8", "finite", 1.97e-08, 7.69e-10),
+            oos(3, "QCD^8", "single_pole", 2e-07, 1.17e-08),
+            oos(3, "QCD^8", "double_pole", 1.46e-08, 1.18e-09),
         ]
     },
     # the first three points' binary64 (precedent test_loop_v2_fermion_lines.py)
     "A18": {
         "binary64_out_of_scope": [
-            oos(0, "QCD^10", "finite", 2.60e-08, 1.05e-08),
-            oos(0, "QCD^10", "single_pole", 2.43e-09, 3.11e-10),
-            oos(0, "QCD^10", "double_pole", 1.87e-09, 5.48e-10),
-            oos(1, "QCD^10", "finite", 1.82e-09, 3.58e-10),
-            oos(2, "QCD^10", "finite", 5.80e-08, 5.55e-08),
-            oos(2, "QCD^10", "single_pole", 1.24e-08, 2.23e-09),
-            oos(2, "QCD^10", "double_pole", 1.21e-08, 4.19e-10),
-            oos(3, "QCD^10", "finite", 8.69e-08, 4.52e-08),
-            oos(3, "QCD^10", "single_pole", 5.37e-09, 1.01e-09),
-            oos(3, "QCD^10", "double_pole", 1.87e-09, 5.48e-10),
+            oos(0, "QCD^10", "finite", 3.2e-08, 1.05e-08),
+            oos(0, "QCD^10", "single_pole", 2.85e-09, 3.11e-10),
+            oos(0, "QCD^10", "double_pole", 2.49e-09, 5.44e-10),
+            oos(1, "QCD^10", "finite", 2.76e-09, 5.51e-10),
+            oos(2, "QCD^10", "finite", 1.25e-07, 5.55e-08),
+            oos(2, "QCD^10", "single_pole", 1.96e-08, 2.23e-09),
+            oos(2, "QCD^10", "double_pole", 6.52e-09, 4.16e-10),
+            oos(3, "QCD^10", "finite", 1.08e-07, 4.52e-08),
+            oos(3, "QCD^10", "single_pole", 6.51e-09, 1.01e-09),
+            oos(3, "QCD^10", "double_pole", 2.49e-09, 5.44e-10),
         ]
     },
 }
 LISTINGS = {
+    # u u~ > u u~ u u~ point 2 (pt13, the recommended checks' estimate)
+    "A21": {
+        "binary64_out_of_scope": [
+            oos(2, "QCD^10", "finite", 1.56e-09, 1.16e-11),
+        ]
+    },
+    # u u~ > z z point 3 (pt13, the recommended checks' estimate)
+    "D15": {
+        "binary64_out_of_scope": [
+            oos(3, "QCD^2 QED^4", "finite", 1.74e-09, 1.6e-12),
+        ]
+    },
     # the E1 point (PLAN §6: G1 binary64 2.42e-7 with E = 4.72e-6): outside
     # the O1 binary64 scope, bracketed (rule 3); E1 stays open for the user
     "A14": {
         "binary64_out_of_scope": [
-            oos(1, "QCD^10", "finite", 4.74e-06, 2.50e-07),
-            oos(1, "QCD^10", "single_pole", 2.21e-06, 1.59e-07),
+            oos(1, "QCD^10", "finite", 2.1e-06, 1.47e-08),
+            oos(1, "QCD^10", "single_pole", 1.06e-06, 3.42e-08),
         ]
     },
-    # g g > g g g g g binary64 (g1.json: E = 1.36e-8 / 7.69e-8 at points 0, 1)
+    # g g > g g g g g binary64 at points 0, 1 (the G1 record g1.json had
+    # E = 1.36e-8 / 7.69e-8 with the earlier checks)
     "A24": {
         "binary64_out_of_scope": [
-            oos(0, "QCD^12", "finite", 1.36e-08, 1.40e-09),
-            oos(0, "QCD^12", "single_pole", 5.15e-09, 6.79e-10),
-            oos(1, "QCD^12", "finite", 7.78e-08, 2.00e-09),
-            oos(1, "QCD^12", "single_pole", 5.38e-08, 2.00e-09),
+            oos(0, "QCD^12", "finite", 1.77e-08, 3.4e-11),
+            oos(0, "QCD^12", "single_pole", 6.93e-09, 1.15e-10),
+            oos(1, "QCD^12", "finite", 1.11e-07, 1.06e-09),
+            oos(1, "QCD^12", "single_pole", 7.75e-08, 7.36e-10),
         ]
     },
     "E05": {
@@ -1042,13 +1061,7 @@ LISTINGS = {
             }
         ],
         "binary64_out_of_scope": [
-            {
-                "point": 2,
-                "sector": "QCD^8 QED^4",
-                "coefficient": "finite",
-                "E": 3.42e-08,
-                "true_error": 5.66e-09,
-            }
+            oos(2, "QCD^8 QED^4", "finite", 5.69e-08, 5.71e-09),
         ],
     },
 }
@@ -1239,73 +1252,18 @@ VARIANT_LISTINGS = {
     # scope and bracketed (rule 3).
     "A09@soft": {
         "binary64_out_of_scope": [
-            {
-                "point": 1,
-                "sector": "QCD^6",
-                "coefficient": "born",
-                "E": None,
-                "true_error": 1.16e-11,
-            },
-            {
-                "point": 1,
-                "sector": "QCD^8",
-                "coefficient": "finite",
-                "E": 9.35e-07,
-                "true_error": 6.26e-07,
-            },
-            {
-                "point": 1,
-                "sector": "QCD^8",
-                "coefficient": "single_pole",
-                "E": 1.47e-06,
-                "true_error": 7.06e-07,
-            },
-            {
-                "point": 1,
-                "sector": "QCD^8",
-                "coefficient": "double_pole",
-                "E": 5.22e-07,
-                "true_error": 2.31e-07,
-            },
+            oos(1, "QCD^6", "born", None, 1.16e-11),
+            oos(1, "QCD^8", "finite", 2.35e-06, 6.33e-07),
+            oos(1, "QCD^8", "single_pole", 4.44e-06, 7.35e-07),
+            oos(1, "QCD^8", "double_pole", 8e-07, 2.31e-07),
         ]
     },
     "B01@threshold": {
         "binary64_out_of_scope": [
-            {
-                "point": 1,
-                "sector": "QCD^6",
-                "coefficient": "finite",
-                "E": 1.73e-09,
-                "true_error": 1.21e-10,
-            },
-            {
-                "point": 1,
-                "sector": "QCD^6",
-                "coefficient": "single_pole",
-                "E": 5.65e-09,
-                "true_error": 6.24e-12,
-            },
-            {
-                "point": 2,
-                "sector": "QCD^6",
-                "coefficient": "finite",
-                "E": 2.89e-06,
-                "true_error": 1.74e-07,
-            },
-            {
-                "point": 2,
-                "sector": "QCD^6",
-                "coefficient": "single_pole",
-                "E": 4.61e-05,
-                "true_error": 8.7e-10,
-            },
-            {
-                "point": 2,
-                "sector": "QCD^6",
-                "coefficient": "double_pole",
-                "E": 7.49e-09,
-                "true_error": 2.95e-10,
-            },
+            oos(1, "QCD^6", "single_pole", 2.22e-09, 7.96e-13),
+            oos(2, "QCD^6", "finite", 9.72e-07, 1.74e-07),
+            oos(2, "QCD^6", "single_pole", 2e-05, 1.14e-09),
+            oos(2, "QCD^6", "double_pole", 2.92e-08, 5.36e-10),
         ]
     },
 }
