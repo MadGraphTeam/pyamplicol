@@ -54,8 +54,8 @@ records, the delegated columns (``delegated``, rule 7's as ``nc``: per
 test id its outcome, passed, failed, skipped or null when absent) and a
 status: ``pass`` (every run tier, gating variant and delegated column
 passed, and a composite row's expansion check), ``partial`` (likewise, but
-rule 4 not formed: a native-input row without the tree engine's committed
-correlations, manifest ``catani`` "none"), ``fail`` (a check or a
+a record forms no rule 4, ``catani_not_formed``: a native-input row without
+the tree engine's committed correlations), ``fail`` (a check or a
 delegated test failed: a finding), ``pending`` (the manifest's waiting
 package) or ``not-run`` (active, a delegated test or an expected record
 missing: a default-tier row's default and nightly records, a nightly row's
@@ -109,6 +109,8 @@ CHECK_KEYS = (
     "note",
 )
 STATUSES = ("pass", "partial", "fail", "pending", "not-run")
+# Short carrier names of the per-row table.
+CARRIERS = {"double": "b64", "double-double": "DD"}
 
 
 def _maximum(values):
@@ -304,8 +306,8 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
         )
         if (
             status == "pass"
-            and row.get("catani") == "none"
             and row.get("route", "tools") != "public"
+            and any(t["catani_not_formed"] for t in tiers.values())
         ):
             # Every asserted check passed, but rule 4 was not formed (a
             # native-input row without the tree engine's correlations).
@@ -448,12 +450,15 @@ def markdown(data: dict) -> str:
             for tier in tiers.values():
                 for check in tier["failed_checks"]:
                     label = name.split("@", 1)[1] + ": " if "@" in name else ""
-                    text = (
-                        f"{label}r{check['rule']} p{check['point']} "
-                        f"{check['carrier'][:2]} {check['coefficient'][:6]}"
-                    )
-                    if check["rule"] != "eval":
-                        text += f" {check['error']:.2g}>{check['bound']:.2g}"
+                    carrier = CARRIERS.get(check["carrier"], check["carrier"])
+                    if check["rule"] == "eval":
+                        text = f"{label}p{check['point']} {carrier} evaluation failed"
+                    else:
+                        text = (
+                            f"{label}r{check['rule']} p{check['point']} {carrier} "
+                            f"{check['sector'] or ''} {check['coefficient']} "
+                            f"{check['error']:.2g}>{check['bound']:.2g}"
+                        ).replace("  ", " ")
                     if text not in fails:
                         fails.append(text)
         for name, found in row.get("delegated", {}).items():

@@ -37,8 +37,9 @@ def write(name: str, ufo: Path, work: Path) -> Path:
     row = mqcd.rows()[name]
     reference = mqcd.load_reference(row)
     start = time.perf_counter()
+    reused = (work / f"tree-{name}" / "artifact.json").is_file()
     runtime = mqcd.tree_runtime(row, ufo, work / f"tree-{name}")
-    generated = time.perf_counter() - start
+    generated = None if reused else round(time.perf_counter() - start, 1)
     points = sorted({i for indices in row.points.values() for i in indices})
     entries = []
     for index in points:
@@ -58,7 +59,8 @@ def write(name: str, ufo: Path, work: Path) -> Path:
         "CorrelatorConfig(color_correlations=every dipole T_j.T_k)), "
         "Runtime.evaluate_correlated_many (tools/loop_benchmark/"
         "mqcd_tree_correlations.py)",
-        "generation_seconds": round(generated, 1),
+        # None: an artifact generated earlier was reused.
+        "generation_seconds": generated,
         "points": entries,
     }
     path = fixture_path(name)
