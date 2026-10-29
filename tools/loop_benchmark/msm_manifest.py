@@ -1,0 +1,1469 @@
+# SPDX-License-Identifier: 0BSD
+# The row table quotes m-sm/PLAN.md §4.2's processes and legends.
+# ruff: noqa: E501
+"""Write tests/fixtures/loop/msm/manifest.json, the M-SM campaign rows.
+
+Usage: python tools/loop_benchmark/msm_manifest.py
+
+The rows are m-sm/PLAN.md §4.2's 70 core rows (``row(...)`` below: process,
+corrections, model code, squared sectors, Born amplitude orders, reference
+legend, extras, the package a pending row waits for), written in the record
+type of the M-QCD manifest (``tools/loop_benchmark/mqcd.py`` ``Row``; the
+harness ``mqcd.py``, the tier bodies ``tests/unit/loop_mqcd_tiers.py`` and the
+report data ``docs/performance_reports/loop/scripts/build_mqcd.py`` read
+both manifests). Each record adds what an EW row needs: the model and its
+restriction (§4.1 model codes), the corrections, the loop amplitude orders
+derived from the sectors and the Born amplitude orders, the loop coupling per
+correction (F_s), the expected predicted and unpredicted sectors with their
+typed reasons, the R2 rule's ``madloop_omitted_r2`` and the package
+dependency of a pending row (never an xfail). Re-run it when MS-REF or an
+unblocking package lands; the manifest is the committed source the tests
+read.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+WT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(WT))
+
+from tools.loop_benchmark import mqcd  # noqa: E402
+
+REQ = "tests/fixtures/loop/required"
+FIX = "tests/fixtures/loop"
+OUT = WT / "tests/fixtures/loop/msm/manifest.json"
+WORKSPACE = Path(
+    os.environ.get(
+        "PYAMPLICOL_LOOP_WORKSPACE", "/shared/vhirschi/t3code/pyamplicol/workspace"
+    )
+)
+
+ZERO_WIDTHS = {"WT": "0", "WW": "0", "WZ": "0", "WH": "0"}
+G_MU_FIXED = {"MB": "0", "ymb": "0", "MTA": "0", "ymtau": "0", **ZERO_WIDTHS}
+GMU, QCDQED, LOOPSM = "loop_qcd_qed_sm_Gmu", "loop_qcd_qed_sm", "loop_sm"
+MASSIVE_MUON = "loop_qcd_qed_sm_Gmu_massive_muon"
+# alpha_Gmu at the G_mu card (Gf, MW = 80.419, MZ = 91.188; the required
+# fixtures' derived alpha) and alpha(M_Z) of loop_qcd_qed_sm's default card
+# (aEWM1 = 132.507): the loop coupling of the QED correction (F_s).
+ALPHA_GMU = 0.00754677226134035151919702202521
+ALPHA_MZ = 1 / 132.507
+# m-sm/PLAN.md §4.1 model codes: (model, restriction, fixed parameters,
+# toolkit scheme, QED loop alpha).
+CODES = {
+    "G0": (GMU, "default", G_MU_FIXED, "ew-gmu", ALPHA_GMU),
+    "Ga": (GMU, "a0", G_MU_FIXED, "ew-gmu-a0", ALPHA_GMU),
+    "Gb": (
+        GMU,
+        "with_b_mass",
+        {"MTA": "0", "ymtau": "0", **ZERO_WIDTHS},
+        "ew-gmu-b-mass",
+        ALPHA_GMU,
+    ),
+    "Gm": (MASSIVE_MUON, "default", ZERO_WIDTHS, "ew-gmu-mm", ALPHA_GMU),
+    "Gk": (GMU, "ckm", G_MU_FIXED, "ew-gmu-ckm", ALPHA_GMU),
+    "Gt": (GMU, "with_technical", ZERO_WIDTHS, "ew-gmu-tech", ALPHA_GMU),
+    "Gc": (
+        GMU,
+        "default",
+        {"MB": "0", "ymb": "0", "MTA": "0", "ymtau": "0"},
+        "ew-gmu-cms",
+        ALPHA_GMU,
+    ),
+    "Gca": (
+        GMU,
+        "a0",
+        {"MB": "0", "ymb": "0", "MTA": "0", "ymtau": "0"},
+        "ew-gmu-a0-cms",
+        ALPHA_GMU,
+    ),
+    "Lc": (LOOPSM, "default", {"WW": "0", "WZ": "0", "WH": "0"}, "qcd-cms", ALPHA_MZ),
+    "Az": (QCDQED, "default", ZERO_WIDTHS, "ew-qcd-qed-sm", ALPHA_MZ),
+    "L5": (LOOPSM, "no_b_mass", G_MU_FIXED, "qcd", ALPHA_MZ),
+}
+MODELS = {
+    GMU: {"fixture": "loop_gmu_ufo"},
+    QCDQED: {"fixture": "loop_qcd_qed_sm_ufo"},
+    MASSIVE_MUON: {
+        "base": GMU,
+        "restriction_card_from": f"{FIX}/electroweak-massive-mumu-control.json",
+    },
+}
+CLASS = {
+    "LL": "W-lep", "DY": "W-DY", "VJ": "W-V", "VV": "W-V", "V3": "W-V",
+    "VH": "W-V", "TT": "W-top", "TV": "W-top", "ST": "W-singletop",
+    "JJ": "W-jets", "PI": "W-photon", "CM": "W-CMS", "MP": "W-multi",
+    "SC": "W-scheme",
+}  # fmt: skip
+# Packages a pending row waits for (m-sm/PLAN.md §3.0).
+UNBLOCKERS = (
+    "MS-REF",
+    "EWI-7",
+    "MS-PHOTON",
+    "MS-CMS",
+    "MS-CMS-N",
+    "MS-MODEL",
+    "MS-VALIDATE",
+)
+# The G_mu inputs of the MadLoop electroweak controls (their ``parameters``,
+# as ``test_loop_v2_ew_leptons.CONTROL_PARAMETERS``).
+CONTROL_PARAMETERS = {
+    "Gf": "0.0000116639",
+    "MW": "80.419",
+    "MZ": "91.188",
+    "MH": "125",
+    "MT": "173.3",
+    "ymt": "173.3",
+    "aS": "0.118",
+}
+CONTROL_POINTS = "tools/loop_reference/uudd_qcd.json"
+ALPHA0_INVERSE = "137.035999"
+
+R = []
+
+
+def row(id_, process, corr, code, sectors, born, legend, ref=None, extras=(),
+        features=(), waits=None, tier="nightly", notes="", **more):  # fmt: skip
+    R.append(dict(id=id_, process=process, corr=tuple(corr.split()), code=code,
+                  sectors=[tuple(s) for s in sectors], born=[tuple(b) for b in born],
+                  legend=legend, ref=ref, extras=list(extras), features=list(features),
+                  waits=waits, tier=tier, notes=notes, more=more))  # fmt: skip
+
+
+def req(name, providers=None, **spec):
+    data = json.loads((WT / REQ / f"{name}.json").read_text())
+    names = list(data["rows"][0]["providers"])
+    primary = data.get("primary_provider", names[0])
+    return {
+        "format": "required",
+        "path": f"{REQ}/{name}.json",
+        "providers": providers or [primary] + [p for p in names if p != primary],
+        **spec,
+    }
+
+
+def photons(tagged, sector=None):
+    """MG5_aMC's alpha(0) conversion of the raw MadLoop G_mu reference over
+    ``tagged`` final-state photons (Q1 (a): final photons tagged)."""
+
+    spec = {"tagged": tagged, "alpha0_inverse": ALPHA0_INVERSE,
+            "parameters": f"{FIX}/madloop-ct-parameters.json", "model": "gmu",
+            "counterterm": "eCoup_DGmua0_UV_EW"}  # fmt: skip
+    if sector:
+        spec["sector"] = {"QCD": sector[0], "QED": sector[1]}
+    return spec
+
+
+N = "N"  # a new MadLoop job (MS-REF)
+
+# ---- LL: lepton-only
+row(
+    "LL01",
+    "e- e+ > m- m+",
+    "QED",
+    "G0",
+    [(0, 6)],
+    [(0, 2)],
+    "E electroweak-mumu-control.json (+ scale control)",
+    {
+        "format": "ew-control",
+        "path": f"{FIX}/electroweak-mumu-control.json",
+        "points_path": CONTROL_POINTS,
+        "mu_r2": "1000000",
+        "parameters": CONTROL_PARAMETERS,
+    },
+    ["ap", "uv"],
+    ["2->2", "leptons-only", "two-lepton-lines"],
+)
+row(
+    "LL02",
+    "e- e+ > m- m+",
+    "QED",
+    "Gm",
+    [(0, 6)],
+    [(0, 2)],
+    "E electroweak-massive-mumu-control.json",
+    {
+        "format": "ew-control",
+        "path": f"{FIX}/electroweak-massive-mumu-control.json",
+        "mu_r2": "1000000",
+        "parameters": {**CONTROL_PARAMETERS, "MM": "0.105658", "ymm": "0.105658"},
+    },
+    [],
+    ["2->2", "massive:muon"],
+)
+row(
+    "LL03",
+    "e- e+ > e- e+",
+    "QED",
+    "Az",
+    [(0, 6)],
+    [(0, 2)],
+    "E required/emep_emep_ew.json",
+    req("emep_emep_ew"),
+    [],
+    ["2->2", "lepton-line-through-loop", "scheme:alpha-mz"],
+)
+row(
+    "LL05",
+    "e- e+ > w+ w-",
+    "QED",
+    "G0",
+    [(0, 6)],
+    [(0, 2)],
+    "N ~2 min",
+    None,
+    [],
+    ["2->2", "internal-W"],
+    waits=("MS-REF", "EWI-7"),
+)
+row(
+    "LL08",
+    "e- e+ > m- m+ a",
+    "QED",
+    "Ga",
+    [(0, 8)],
+    [(0, 3)],
+    "N ~3-5 min",
+    None,
+    ["a0"],
+    ["2->3", "photon:final"],
+    waits="MS-REF",
+)
+row(
+    "LL09",
+    "e- e+ > t t~",
+    "QCD QED",
+    "G0",
+    [(0, 6), (2, 4)],
+    [(0, 2)],
+    "N ~1-2 min",
+    None,
+    [],
+    ["2->2", "massive:top"],
+    waits="MS-REF",
+)
+row(
+    "LL10",
+    "e- e+ > t t~ h",
+    "QED",
+    "G0",
+    [(0, 8)],
+    [(0, 3)],
+    "E required/emep_ttxh_ew.json (Recola primary: R2 rule)",
+    req("emep_ttxh_ew", ["recola", "madloop"]),
+    [],
+    ["2->3", "r2-rule", "massive:top"],
+)
+# ---- DY: Drell-Yan and lepton-quark
+row(
+    "DY01",
+    "u u~ > e- e+",
+    "QCD QED",
+    "G0",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~1 min",
+    None,
+    ["uv", "hel", "sp"],
+    ["2->2"],
+    waits="MS-REF",
+)
+row(
+    "DY02",
+    "u d~ > e+ ve",
+    "QCD QED",
+    "G0",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~1 min",
+    None,
+    [],
+    ["2->2", "charged-current"],
+    waits=("MS-REF", "EWI-7"),
+)
+row(
+    "DY03",
+    "u u~ > e- e+",
+    "QED",
+    "Az",
+    [(0, 6)],
+    [(0, 2)],
+    "N ~1 min",
+    None,
+    [],
+    ["2->2", "scheme:alpha-mz"],
+    waits="MS-REF",
+)
+row(
+    "DY04",
+    "e- u > e- u",
+    "QCD QED",
+    "G0",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~1 min",
+    None,
+    [],
+    ["2->2", "lepton-hadron"],
+    waits="MS-REF",
+)
+row(
+    "DY05",
+    "u u~ > e- e+ g",
+    "QCD QED",
+    "G0",
+    [(2, 6)],
+    [(1, 2)],
+    "E required/uux_emepg_ew.json (3 providers, s^2e^6) + N top-up s^4e^4 ~3 min",
+    req("uux_emepg_ew"),
+    ["ward", "joint", "ap", "nc"],
+    ["2->3", "initial:qqbar"],
+    notes="the s^2e^6 sector of the existing reference; the s^4e^4 top-up (MS-REF) extends the request to both sectors",
+)
+row(
+    "DY07",
+    "u u~ > e- e+ m- m+",
+    "QED",
+    "G0",
+    [(0, 10)],
+    [(0, 4)],
+    "N ~8-15 min",
+    None,
+    [],
+    ["2->4", "two-lepton-lines"],
+    waits="MS-REF",
+    notes="the 2->4 cost probe (m-sm/PLAN.md §3.2 item 3): generation 255 s, native export 95 s, peak 11.2 GB (tmp/ms-validate/probe/dy07, 2026-10-29): nightly",
+)
+row(
+    "DY08",
+    "u u~ > e- e+ g g",
+    "QCD QED",
+    "G0",
+    [(6, 4), (4, 6)],
+    [(2, 2)],
+    "N ~8-15 min",
+    None,
+    ["nc"],
+    ["2->4"],
+    waits="MS-REF",
+)
+# ---- VJ, VV, V3, VH: vector bosons
+row(
+    "VJ01",
+    "u u~ > z g",
+    "QCD QED",
+    "G0",
+    [(4, 2), (2, 4)],
+    [(1, 1)],
+    "N ~1 min",
+    None,
+    ["ward"],
+    ["2->2", "external:Z"],
+    waits="MS-REF",
+)
+row(
+    "VJ02",
+    "u d~ > w+ g",
+    "QCD QED",
+    "G0",
+    [(4, 2), (2, 4)],
+    [(1, 1)],
+    "N ~1 min",
+    None,
+    ["uv"],
+    ["2->2", "external:W"],
+    waits="MS-REF",
+    tier="default",
+)
+row(
+    "VJ03",
+    "u u~ > a g",
+    "QCD QED",
+    "Ga",
+    [(2, 4)],
+    [(1, 1)],
+    "E uux_ag_ew (s^2e^4) + N top-up ~1 min",
+    req("uux_ag_ew", photon_conversion=photons(1)),
+    ["a0", "ward"],
+    ["2->2", "photon:final"],
+    parameters={"aEW0M1": ALPHA0_INVERSE},
+    notes="raw MadLoop G_mu x MG5_aMC's alpha(0) formula over the tagged final photon (Q1 (a)); the s^4e^2 top-up (MS-REF) extends the request",
+)
+row(
+    "VV01",
+    "u u~ > w+ w-",
+    "QCD QED",
+    "G0",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~2 min",
+    None,
+    ["sp"],
+    ["2->2", "internal-W"],
+    waits=("MS-REF", "EWI-7"),
+)
+row(
+    "VV02",
+    "u u~ > z z",
+    "QCD QED",
+    "G0",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~2 min",
+    None,
+    ["hel"],
+    ["2->2"],
+    waits="MS-REF",
+)
+row(
+    "VV03",
+    "u d~ > w+ z",
+    "QCD QED",
+    "G0",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~2 min",
+    None,
+    [],
+    ["2->2", "internal-W"],
+    waits=("MS-REF", "EWI-7"),
+)
+row(
+    "VV05",
+    "u d~ > w+ a",
+    "QCD QED",
+    "Ga",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N, S ~2 min",
+    None,
+    ["a0", "ward", "sp"],
+    ["2->2", "photon:final", "radiation-zero"],
+    waits="MS-REF",
+)
+row(
+    "VV06",
+    "u u~ > a a",
+    "QCD QED",
+    "Ga",
+    [(0, 6)],
+    [(0, 2)],
+    "E uux_aa_ew (e^6) + N top-up ~1 min",
+    req("uux_aa_ew", photon_conversion=photons(2)),
+    ["a0"],
+    ["2->2", "photon:final"],
+    parameters={"aEW0M1": ALPHA0_INVERSE},
+    notes="raw MadLoop G_mu x MG5_aMC's alpha(0) formula over the two tagged final photons (Q1 (a)); the s^2e^4 top-up (MS-REF) extends the request",
+)
+row(
+    "VV07",
+    "u u~ > w+ w- g",
+    "QCD QED",
+    "G0",
+    [(4, 4), (2, 6)],
+    [(1, 2)],
+    "N ~5 min",
+    None,
+    ["ward"],
+    ["2->3", "internal-W"],
+    waits=("MS-REF", "EWI-7"),
+)
+row(
+    "V301",
+    "u u~ > w+ w- z",
+    "QED",
+    "G0",
+    [(0, 8)],
+    [(0, 3)],
+    "N ~10-15 min",
+    None,
+    [],
+    ["2->3", "internal-W"],
+    waits=("MS-REF", "EWI-7"),
+)
+row(
+    "VH01",
+    "u u~ > z h",
+    "QCD QED",
+    "G0",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~1-2 min",
+    None,
+    [],
+    ["2->2", "higgs"],
+    waits="MS-REF",
+)
+row(
+    "VH02",
+    "u d~ > w+ h",
+    "QCD QED",
+    "G0",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~1-2 min",
+    None,
+    [],
+    ["2->2", "higgs"],
+    waits="MS-REF",
+)
+row(
+    "VH03",
+    "u d > u d h QCD=0",
+    "QCD QED",
+    "G0",
+    [(2, 6), (0, 8)],
+    [(0, 3)],
+    "N ~3 min",
+    None,
+    [],
+    ["2->3", "vbf", "capped"],
+    waits="MS-REF",
+    notes="capped (QCD = 0): typed unpredicted sectors are allowed",
+)
+# ---- TT, TV, ST: top quarks
+row(
+    "TT01",
+    "g g > t t~",
+    "QCD QED",
+    "G0",
+    [(6, 0), (4, 2)],
+    [(2, 0)],
+    "E required/gg_ttx + gg_ttx_ew (3 providers)",
+    {
+        "format": "sectors",
+        "parameters_from": 1,
+        "parts": [
+            {
+                "path": f"{REQ}/gg_ttx.json",
+                "sector": {"QCD": 6},
+                "born_sector": {"QCD": 4},
+            },
+            {
+                "path": f"{REQ}/gg_ttx_ew.json",
+                "sector": {"QCD": 4, "QED": 2},
+                "born_sector": {"QCD": 4},
+            },
+        ],
+        "providers": ["madloop", "recola", "openloops"],
+    },
+    ["joint", "ap", "uv"],
+    ["2->2", "massive:top", "joint"],
+    notes="joint QCD + QED request; s^6 against loop_sm's QCD fixture (pure QCD, independent of the EW inputs), s^4e^2 against the G_mu fixture",
+)
+row(
+    "TT02",
+    "u u~ > t t~",
+    "QCD QED",
+    "G0",
+    [(6, 0), (4, 2), (2, 4), (0, 6)],
+    [(2, 0), (0, 2)],
+    "N ~1-2 min",
+    None,
+    ["so"],
+    ["2->2", "massive:top", "mixed-born"],
+    waits="MS-REF",
+)
+row(
+    "TT03",
+    "g g > t t~ g",
+    "QCD QED",
+    "G0",
+    [(8, 0), (6, 2)],
+    [(3, 0)],
+    "N ~4-6 min",
+    None,
+    ["ward"],
+    ["2->3", "massive:top"],
+    waits="MS-REF",
+)
+row(
+    "TT04",
+    "t t~ > t t~ QCD=0",
+    "QCD QED",
+    "G0",
+    [(0, 6)],
+    [(0, 2)],
+    "E required/ttx_ttx_ew (ew-validate; Recola primary: R2 rule, 7.7 %)",
+    None,
+    [],
+    ["2->2", "root-mixing", "r2-rule"],
+    waits="EWI-7",
+)
+row(
+    "TT05",
+    "g t > t t t~",
+    "QCD QED",
+    "G0",
+    [(2, 6)],
+    [(1, 2)],
+    "E gt_tttx_ew (goldstone-mixing.json, MadLoop double) + its omitted R2_G0tt_b component",
+    {
+        "format": "madloop-components",
+        "path": f"{FIX}/goldstone-mixing.json",
+        "key": "gt_tttx_ew",
+    },
+    ["uv"],
+    ["2->3", "massive:top", "r2-rule", "goldstone-vector-mixing"],
+)
+row(
+    "TT06",
+    "g b > t t~ b",
+    "QCD QED",
+    "Gb",
+    [(2, 6)],
+    [(1, 2)],
+    "E goldstone-mixing.json (gb_ttxb_ew_mb, MadLoop double)",
+    None,
+    [],
+    ["2->3", "massive:b"],
+    waits="EWI-7",
+)
+row(
+    "TV01",
+    "g g > t t~ h",
+    "QCD QED",
+    "G0",
+    [(6, 2), (4, 4)],
+    [(2, 1)],
+    "N ~8-12 min",
+    None,
+    [],
+    ["2->3", "higgs"],
+    waits="MS-REF",
+)
+row(
+    "TV02",
+    "g g > t t~ z",
+    "QCD QED",
+    "G0",
+    [(6, 2), (4, 4)],
+    [(2, 1)],
+    "N ~8-12 min",
+    None,
+    [],
+    ["2->3", "external:Z"],
+    waits="MS-REF",
+)
+row(
+    "TV03",
+    "u d~ > t t~ w+",
+    "QCD QED",
+    "G0",
+    [(6, 2), (4, 4), (2, 6)],
+    [(2, 1), (0, 3)],
+    "N ~4-6 min",
+    None,
+    ["so"],
+    ["2->3", "mixed-born"],
+    waits="MS-REF",
+)
+row(
+    "TV06",
+    "g g > t t~ e- e+",
+    "QCD QED",
+    "G0",
+    [(4, 6)],
+    [(2, 2)],
+    "E required/gg_ttxemep_ew (3 providers)",
+    req("gg_ttxemep_ew"),
+    [],
+    ["2->4", "massive:top"],
+)
+row(
+    "TV07",
+    "g g > t t~ e- e+ g",
+    "QCD QED",
+    "G0",
+    [(6, 6), (8, 4)],
+    [(3, 2)],
+    "E required/gg_ttxemepg_ew (3 providers) + gg_ttxemepg_qcd",
+    req(
+        "gg_ttxemepg_ew",
+        sector={"QCD": 6, "QED": 6},
+        born_sector={"QCD": 6, "QED": 4},
+        sectors_subset=True,
+    ),
+    ["ward", "joint"],
+    ["2->5", "massive:top", "target"],
+    tier="campaign",
+    inputs="native",
+    catani="engine",
+    notes="the required 2->5 target (EWI-9): the joint request's s^6e^6 sector against gg_ttxemepg_ew, its s^8e^4 sector (variant @qcd) against gg_ttxemepg_qcd at loop_sm's derived MW",
+    variants=[
+        {
+            "name": "qcd",
+            "gating": True,
+            "tier": "campaign",
+            "notes": "the joint twin: the s^8e^4 sector against gg_ttxemepg_qcd (loop_sm, MW derived from aEWM1 = 132.507: the G_mu inputs at that MW give the same alpha)",
+            "reference": req(
+                "gg_ttxemepg_qcd",
+                sector={"QCD": 8, "QED": 4},
+                born_sector={"QCD": 6, "QED": 4},
+                sectors_subset=True,
+            ),
+            "parameters": {"MW": "80.4190024457561601055171371731"},
+            "extras": [],
+            "extras_pending": {},
+        }
+    ],
+)
+row(
+    "ST01",
+    "u b > d t",
+    "QCD QED",
+    "G0",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~1 min",
+    None,
+    [],
+    ["2->2", "single-top"],
+    waits="MS-REF",
+)
+row(
+    "ST02",
+    "u d~ > t b~ QCD=0",
+    "QED",
+    "G0",
+    [(0, 6)],
+    [(0, 2)],
+    "E required/udx_tbx_ew (ew-validate; MadLoop + Recola)",
+    None,
+    [],
+    ["2->2", "single-top"],
+    waits="EWI-7",
+)
+row(
+    "ST03",
+    "g b > t w-",
+    "QCD QED",
+    "G0",
+    [(4, 2), (2, 4)],
+    [(1, 1)],
+    "N ~1-2 min",
+    None,
+    ["ward"],
+    ["2->2", "single-top"],
+    waits="MS-REF",
+)
+row(
+    "ST04",
+    "u d~ > t b~ QCD=0",
+    "QED",
+    "Gb",
+    [(0, 6)],
+    [(0, 2)],
+    "R commit ew-validate's workspace run udx_tbx_ew_mb (MadLoop)",
+    None,
+    [],
+    ["2->2", "single-top", "massive:b"],
+    waits=("MS-REF", "EWI-7"),
+)
+# ---- JJ, PI: QCD with EW orders, photon-initiated
+row(
+    "JJ01",
+    "u u~ > d d~",
+    "QCD QED",
+    "G0",
+    [(6, 0), (4, 2), (2, 4), (0, 6)],
+    [(2, 0), (0, 2)],
+    "N ~1 min",
+    None,
+    ["so", "uv"],
+    ["2->2", "mixed-born"],
+    waits="MS-REF",
+)
+row(
+    "JJ02",
+    "u u~ > u u~",
+    "QCD QED",
+    "G0",
+    [(6, 0), (4, 2), (2, 4), (0, 6)],
+    [(2, 0), (0, 2)],
+    "N ~1 min",
+    None,
+    [],
+    ["2->2", "identical-flavours"],
+    waits="MS-REF",
+)
+row(
+    "JJ03",
+    "u u~ > g g",
+    "QCD QED",
+    "G0",
+    [(6, 0), (4, 2)],
+    [(2, 0)],
+    "N ~1 min",
+    None,
+    [],
+    ["2->2"],
+    waits="MS-REF",
+)
+row(
+    "JJ04",
+    "u u~ > d d~ g",
+    "QCD QED",
+    "G0",
+    [(8, 0), (6, 2), (4, 4)],
+    [(3, 0), (1, 2)],
+    "N ~3-5 min",
+    None,
+    ["so"],
+    ["2->3", "cross-order-catani"],
+    waits="MS-REF",
+)
+row(
+    "PI01",
+    "a a > e- e+",
+    "QED",
+    "G0",
+    [(0, 6)],
+    [(0, 2)],
+    "N ~1 min (one job serves both twins)",
+    None,
+    ["a0"],
+    ["2->2", "photon:initial"],
+    waits=("MS-REF", "MS-PHOTON"),
+)
+row(
+    "PI02",
+    "a a > w+ w-",
+    "QED",
+    "G0",
+    [(0, 6)],
+    [(0, 2)],
+    "N ~2-3 min",
+    None,
+    [],
+    ["2->2", "photon:initial", "internal-W"],
+    waits=("MS-REF", "MS-PHOTON", "EWI-7"),
+)
+row(
+    "PI03",
+    "a g > u u~",
+    "QCD QED",
+    "G0",
+    [(4, 2), (2, 4)],
+    [(1, 1)],
+    "N ~1 min",
+    None,
+    [],
+    ["2->2", "photon:initial"],
+    waits=("MS-REF", "MS-PHOTON"),
+)
+row(
+    "PI04",
+    "a u > a u",
+    "QCD QED",
+    "Ga",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~1 min",
+    None,
+    ["a0"],
+    ["2->2", "photon:initial", "photon:final"],
+    waits=("MS-REF", "MS-PHOTON"),
+)
+# ---- CM, MP, SC
+row(
+    "CM01",
+    "e- e+ > m- m+",
+    "QED",
+    "Gc",
+    [(0, 6)],
+    [(0, 2)],
+    "E cms-ufo-standard-gmu.json + cms-source-gmu.json + small-width control (MadLoop double)",
+    None,
+    ["ap", "sp"],
+    ["2->2", "cms"],
+    waits="MS-CMS",
+)
+row(
+    "CM02",
+    "u u~ > e- e+",
+    "QCD QED",
+    "Gc",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N, S ~2 min (at and off sqrt(s) = M_Z)",
+    None,
+    ["sp"],
+    ["2->2", "cms"],
+    waits=("MS-REF", "MS-CMS"),
+)
+row(
+    "CM03",
+    "u d~ > e+ ve",
+    "QCD QED",
+    "Gc",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N, S ~2 min (near M_W)",
+    None,
+    ["sp"],
+    ["2->2", "cms"],
+    waits=("MS-REF", "MS-CMS", "EWI-7"),
+)
+row(
+    "CM04",
+    "g g > t t~",
+    "QCD QED",
+    "Gc",
+    [(6, 0), (4, 2)],
+    [(2, 0)],
+    "N ~2 min",
+    None,
+    [],
+    ["2->2", "cms"],
+    waits=("MS-REF", "MS-CMS"),
+)
+row(
+    "CM05",
+    "u u~ > e- e+ g",
+    "QCD QED",
+    "Gc",
+    [(4, 4), (2, 6)],
+    [(1, 2)],
+    "N ~3 min",
+    None,
+    ["ward"],
+    ["2->3", "cms"],
+    waits=("MS-REF", "MS-CMS"),
+)
+row(
+    "CM07",
+    "g g > t t~ e- e+ g",
+    "QCD QED",
+    "Gc",
+    [(6, 6)],
+    [(3, 2)],
+    "N ~35-45 min",
+    None,
+    ["ward"],
+    ["2->5", "cms", "U4"],
+    waits=("MS-REF", "MS-CMS-N"),
+    tier="campaign",
+)
+row(
+    "CM08",
+    "u d~ > e+ ve b b~ QCD=0",
+    "QCD",
+    "Gc",
+    [(2, 8)],
+    [(0, 4)],
+    "N ~10 min (2->4)",
+    None,
+    [],
+    ["2->4", "cms", "coloured-width"],
+    waits=("MS-REF", "MS-CMS-N"),
+)
+row(
+    "CM09",
+    "u d~ > e+ ve a",
+    "QCD QED",
+    "Gca",
+    [(2, 6), (0, 8)],
+    [(0, 3)],
+    "N ~3-5 min (MadLoop CMS x the MG5 formula)",
+    None,
+    ["a0", "ward"],
+    ["2->3", "cms", "photon:final"],
+    waits=("MS-REF", "MS-CMS-N"),
+)
+row(
+    "CM10",
+    "u d~ > w+ b b~ QCD=0",
+    "QCD",
+    "Lc",
+    [(2, 6)],
+    [(0, 3)],
+    "N ~3 min",
+    None,
+    [],
+    ["2->3", "cms", "coloured-width", "loop_sm"],
+    waits=("MS-REF", "MS-CMS-N"),
+)
+row(
+    "MP01",
+    "p p > e- e+",
+    "QCD QED",
+    "G0",
+    [],
+    [(0, 2)],
+    "N multi-P ~3-5 min",
+    None,
+    [],
+    ["multiparticle"],
+    waits=("MS-REF", "MS-MODEL"),
+)
+row(
+    "MP02",
+    "p p > t t~",
+    "QCD QED",
+    "G0",
+    [],
+    [(2, 0), (0, 2)],
+    "N multi-P ~4-6 min",
+    None,
+    [],
+    ["multiparticle"],
+    waits=("MS-REF", "MS-MODEL"),
+)
+row(
+    "SC01",
+    "e- e+ > u u~",
+    "QED",
+    "G0",
+    [(0, 6)],
+    [(0, 2)],
+    "E electroweak-eeuu-control.json",
+    {
+        "format": "ew-control",
+        "path": f"{FIX}/electroweak-eeuu-control.json",
+        "points_path": CONTROL_POINTS,
+        "mu_r2": "1000000",
+        "parameters": CONTROL_PARAMETERS,
+    },
+    ["nc"],
+    ["2->2", "quark-final-state"],
+)
+row(
+    "SC02",
+    "u u~ > m- m+",
+    "QCD QED",
+    "Gm",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~1 min",
+    None,
+    [],
+    ["2->2", "massive:muon"],
+    waits="MS-REF",
+)
+row(
+    "SC03",
+    "u d~ > e+ ve",
+    "QCD QED",
+    "Gk",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~1-2 min",
+    None,
+    [],
+    ["2->2", "ckm"],
+    waits=("MS-REF", "EWI-7"),
+)
+row(
+    "SC04",
+    "b b~ > w+ w-",
+    "QCD QED",
+    "Gb",
+    [(2, 4), (0, 6)],
+    [(0, 2)],
+    "N ~2 min",
+    None,
+    [],
+    ["2->2", "massive:b"],
+    waits="MS-REF",
+)
+row(
+    "SC05",
+    "u u~ > e- e+ g g / d s b",
+    "QCD",
+    "L5",
+    [(6, 4)],
+    [(2, 2)],
+    "E epsilon-sign.json",
+    {"format": "process-components", "path": f"{FIX}/epsilon-sign.json", "key": "uu"},
+    [],
+    ["2->4", "epsilon-sign", "loop_sm"],
+    veto=[1, 3, 5],
+)
+row(
+    "SC06",
+    "w+ w- > w+ w-",
+    "QED",
+    "G0",
+    [(0, 6)],
+    [(0, 2)],
+    "N, S ~2-4 min",
+    None,
+    [],
+    ["2->2", "massive-initial", "root-closure"],
+    waits=("MS-REF", "EWI-7"),
+)
+row(
+    "SC07",
+    "h h > h h",
+    "QED",
+    "G0",
+    [(0, 6)],
+    [(0, 2)],
+    "N ~1-2 min",
+    None,
+    [],
+    ["2->2", "scalar-loops", "root-closure"],
+    waits=("MS-REF", "EWI-7"),
+)
+row(
+    "SC08",
+    "t t~ > w+ w-",
+    "QED",
+    "G0",
+    [(0, 6)],
+    [(0, 2)],
+    "N ~2 min",
+    None,
+    [],
+    ["2->2", "root-closure"],
+    waits=("MS-REF", "EWI-7"),
+)
+row(
+    "SC09",
+    "t t~ > z h QCD=0",
+    "QCD QED",
+    "G0",
+    [(0, 6)],
+    [(0, 2)],
+    "E required/ttx_zh_ew (ew-validate; MadLoop + Recola; Recola primary: R2 rule, 2.5 %)",
+    None,
+    [],
+    ["2->2", "root-mixing", "r2-rule"],
+    waits="EWI-7",
+)
+
+assert len(R) == 70, len(R)
+
+# Extras the harness checks (``mqcd.IMPLEMENTED_EXTRAS``) and why the others
+# wait (m-sm/PLAN.md §4.1 extras).
+PENDING_EXTRAS = {
+    "nc": "Q4 (a, recommended, pending with the user): EW LC/NLC is M-FINAL (typed colour-declaration-coverage refusal)",
+    "hel": "MS-REF (per-helicity SLOOPMATRIXHEL references)",
+    "sp": "MS-REF (special points S1-S4)",
+    "joint": "MS-VALIDATE (joint = the separate requests per sector: next increment)",
+}
+# A row's ``uv`` extra is rule 5's EW component form: it needs the
+# reference's instrumented components (MadLoop's Born x CT split).
+COMPONENT_FORMATS = {"ew-control", "madloop-components", "process-components"}
+
+# The R2 rule (m-sm/PLAN.md §1.4 rule 1, Q7): per row the R2 couplings the
+# engine inserts that MadLoop's export does not call, found from the
+# export's called R2 couplings (``madloop_r2``: read here from the export of
+# an existing reference; MS-REF records them in new fixtures) and checked
+# against the engine's counterterm program by the harness (``mqcd.rule_r2``).
+# Known (PLAN §1.4): LL10, TT04, SC09, TT05 (R2_G0tt_b of V_ttG02). Only
+# rows whose reference covers the whole request (a joint request's other
+# sectors call R2 couplings the export of one sector does not).
+EXPORTS = {
+    "LL10": "emep_ttxh_ew",
+    "LL03": "emep_emep_ew",
+    "TT05": "gt_tttx_ew",
+    "TV06": "gg_ttxemep_ew",
+    "DY05": "uux_emepg_ew",
+    "VJ03": "uux_ag_ew",
+    "VV06": "uux_aa_ew",
+}
+OMITTED = {"LL10": ["R2_G0tt_b"], "TT05": ["R2_G0tt_b"]}
+# TT05's omitted component (``goldstone-mixing.json`` omitted_r2): MadLoop's
+# Born x CT interference of the R2_G0tt amplitudes times R2_G0tt_b / R2_G0tt
+# at the card, the UFO's couplings (``test_loop_v2_ew_gauge.
+# _ufo_coupling_ratio``, binary64; 0.869 at lhv = 1), computed when this
+# script runs with the G_mu UFO.
+OMITTED_COMPONENT = {"TT05": ("r2_g0tt", "R2_G0tt_b", "R2_G0tt")}
+
+
+def export_r2(name: str) -> list[str] | None:
+    """The R2 coupling tokens a MadLoop export's SubProcesses call (its
+    helas, CT and coefficient files; the model library defines every
+    coupling, so it is not read), or None without the export."""
+
+    root = WORKSPACE / "reference/runs/required" / name / "madloop-export/SubProcesses"
+    if not root.is_dir():
+        return None
+    tokens = set()
+    for path in sorted(root.glob("P*/*.f")):
+        tokens.update(
+            re.findall(r"\bR2_[A-Za-z0-9_]+", path.read_text(errors="replace"))
+        )
+    return sorted(tokens)
+
+
+def coupling_ratio(name, numerator, denominator, card) -> str | None:
+    ufo = Path(
+        os.environ.get(
+            "PYAMPLICOL_EW_UFO_REFERENCE",
+            WORKSPACE / "reference/models/loop_qcd_qed_sm_Gmu_py3",
+        )
+    )
+    if not ufo.is_dir():
+        return None
+    from tests.unit.test_loop_v2_ew_gauge import _ufo_coupling_ratio
+
+    return repr(_ufo_coupling_ratio(ufo, numerator, denominator, card))
+
+
+def loop_orders(born, corrections, sectors):
+    """The loop amplitude orders of a request: each Born amplitude order
+    with two powers of a correction, kept where its interference with some
+    Born amplitude order is one of the row's sectors (every one if the row
+    lists none)."""
+
+    out = set()
+    for b in born:
+        for c in corrections:
+            loop = (b[0] + 2, b[1]) if c == "QCD" else (b[0], b[1] + 2)
+            if not sectors or any(
+                (x[0] + loop[0], x[1] + loop[1]) in sectors for x in born
+            ):
+                out.add(loop)
+    orders = [{"QCD": q, "QED": e} for q, e in sorted(out, reverse=True)]
+    return orders[0] if len(orders) == 1 else orders
+
+
+def sector_orders(sector):
+    return {"QCD": sector[0], "QED": sector[1]}
+
+
+def point_count(reference):
+    if reference is None:
+        return 3
+    fmt = reference["format"]
+    data = json.loads(
+        (
+            WT
+            / (
+                reference["path"]
+                if "path" in reference
+                else reference["parts"][0]["path"]
+            )
+        ).read_text()
+    )
+    if fmt == "ew-control":
+        return len(data["rows"])
+    if fmt == "madloop-components":
+        return len(data["processes"][reference["key"]]["points"])
+    if fmt == "process-components":
+        return len(data["rows"][reference["key"]])
+    return len(data["points"])
+
+
+rows = []
+for r in R:
+    model, restriction, fixed, scheme, alpha = CODES[r["code"]]
+    reference = r["ref"]
+    waits = r["waits"]
+    waits = tuple(waits) if isinstance(waits, tuple) else ((waits,) if waits else ())
+    status = "active" if reference and not waits else "pending"
+    tier = r["tier"]
+    count = point_count(reference)
+    if tier == "default":
+        points = {"default": [0, 1], "nightly": list(range(2, count))}
+    else:
+        points = {tier: list(range(count))}
+    process = r["process"]
+    sectors = r["sectors"]
+    corrections = list(r["corr"])
+    ignored = []
+    fixed = dict(fixed)
+    if reference and reference.get("format") == "required":
+        data = json.loads((WT / reference["path"]).read_text())
+        # The providers' WTau: the G_mu and alpha(M_Z) UFOs have none.
+        ignored = sorted(
+            k
+            for k in data.get("fixed_parameters", {})
+            if k not in fixed and k == "WTau"
+        )
+    born = [b for b in r["born"]]
+    entry = {
+        "id": r["id"],
+        "class": CLASS[r["id"][:2]],
+        "process": process,
+        # The request's Born bounds and the Born amplitude orders they hold.
+        "born_orders": {"QCD": max(b[0] for b in born), "QED": max(b[1] for b in born)},
+        "born_amplitude_orders": [{"QCD": q, "QED": e} for q, e in born],
+        "loop_orders": loop_orders(born, corrections, sectors),
+        "corrections": corrections,
+        "model": model,
+        "restriction": restriction,
+        "restriction_code": r["code"],
+        "fixed_parameters": fixed,
+        "gauge": "feynman" if model != LOOPSM else "unitary",
+        "scheme": scheme,
+        "tier": tier,
+        "status": status,
+        "reference_legend": r["legend"],
+        "reference": reference,
+        "points": points,
+        "extras": r["extras"],
+        "features": r["features"],
+        "sectors": [sector_orders(s) for s in sectors],
+        # Every sector predicted unless the row states otherwise (a joint
+        # QCD + QED request without caps must predict every one, PLAN §1.4).
+        "predicted_sectors": [sector_orders(s) for s in sectors],
+        "unpredicted_sectors": [],
+        "unpredicted_reasons": {},
+        "reference_outliers": [],
+        "vanishing": [],
+        "reference_tolerance": mqcd.REFERENCE_TOLERANCE,
+        "alphas": {"QED": alpha} if "QED" in corrections else {},
+    }
+    if model != LOOPSM:
+        entry["compatibility"] = "gmu_particle_anti"
+        entry["scale_parameter"] = "MU_R"
+    for key in ("parameters", "inputs", "variants", "catani"):
+        if key in r["more"]:
+            entry[key] = r["more"][key]
+    if "veto" in r["more"]:
+        entry["particle_veto"] = r["more"]["veto"]
+    if ignored:
+        entry["ignored_fixed_parameters"] = ignored
+    if r["notes"]:
+        entry["notes"] = r["notes"]
+    if status == "pending":
+        entry["pending"] = {
+            "waits_for": waits[0] if len(waits) == 1 else list(waits),
+            "reason": "reference not yet produced (PLAN §4.2 legend: "
+            + r["legend"]
+            + ")"
+            if "MS-REF" in waits
+            else "the row's package: " + ", ".join(waits),
+        }
+    pend = {}
+    for extra in r["extras"]:
+        if extra in PENDING_EXTRAS:
+            pend[extra] = PENDING_EXTRAS[extra]
+        elif extra == "uv" and (reference or {}).get("format") not in COMPONENT_FORMATS:
+            pend[extra] = (
+                "MS-REF (component runs: bare / R2 / UV-CT, madloop_ct_selection.py)"
+            )
+    if pend:
+        entry["extras_pending"] = pend
+    if r["id"] in EXPORTS and status == "active":
+        calls = export_r2(EXPORTS[r["id"]])
+        if calls is not None:
+            entry["madloop_omitted_r2"] = OMITTED.get(r["id"], [])
+            entry["reference"] = {**entry["reference"], "madloop_r2": calls}
+    if r["id"] in OMITTED_COMPONENT and status == "active":
+        component, numerator, denominator = OMITTED_COMPONENT[r["id"]]
+        data = json.loads((WT / reference["path"]).read_text())["processes"][
+            reference["key"]
+        ]
+        ratio = coupling_ratio(
+            r["id"],
+            numerator,
+            denominator,
+            {**data["parameters"], **data["fixed_parameters"]},
+        )
+        if ratio is None:
+            raise SystemExit(
+                f"{r['id']}: the G_mu UFO is needed for the omitted R2 ratio"
+            )
+        entry["reference"] = {
+            **entry["reference"],
+            "omitted_r2": {
+                "component": component,
+                "coupling": numerator,
+                "proportional_to": denominator,
+                "ratio": ratio,
+            },
+        }
+    rows.append(entry)
+
+# The nightly tier's file jobs (each within PLAN §3.2's 30 minutes): measured
+# seconds per id where a run measured them (mqcd_manifest's packing), else
+# DEFAULT_SECONDS per EW generation.
+MEASURED_SECONDS: dict[str, tuple[int, int]] = {}
+DEFAULT_SECONDS = 600
+JOB_SECONDS = 1500
+
+
+def nightly_ids_of(entry):
+    ids = []
+    if (
+        entry["status"] == "active"
+        and (
+            entry["points"].get("nightly")
+            or set(entry["extras"]) & mqcd.IMPLEMENTED_EXTRAS
+        )
+        and entry["tier"] != "campaign"
+    ):
+        ids.append(entry["id"])
+    for v in entry.get("variants", ()):
+        if (
+            v.get("gating", True)
+            and v.get("tier", "nightly") == "nightly"
+            and entry["status"] == "active"
+        ):
+            ids.append(f"{entry['id']}@{v['name']}")
+    return ids
+
+
+jobs = []
+for entry in sorted(rows, key=lambda e: e["id"]):
+    ids = nightly_ids_of(entry)
+    if not ids:
+        continue
+    seconds = sum(MEASURED_SECONDS.get(i, (DEFAULT_SECONDS, 0))[0] for i in ids)
+    fits = [j for j in jobs if j["seconds"] + seconds <= JOB_SECONDS]
+    if fits:
+        job = min(fits, key=lambda j: (j["seconds"], j["job"]))
+    else:
+        job = {"job": len(jobs) + 1, "seconds": 0, "rows": []}
+        jobs.append(job)
+    job["seconds"] += seconds
+    job["rows"] += ids
+for job in jobs:
+    job["rows"].sort()
+    job["file"] = (
+        "tests/unit/test_loop_v2_msm_nightly"
+        + ("" if job["job"] == 1 else f"_{job['job']}")
+        + ".py"
+    )
+
+manifest = {
+    "schema_version": 1,
+    "plan": "workspace/reports/engine-v2/m-sm/PLAN.md §1.4, §3.2 MS-VALIDATE, §4",
+    "description": "M-SM validation campaign rows (one per PLAN §4.2 core row), in the record type of the M-QCD manifest. tools/loop_benchmark/mqcd.py reads it; tests/unit/test_loop_v2_msm_*.py run it.",
+    "models": MODELS,
+    "restriction_codes": {
+        k: {
+            "model": v[0],
+            "restriction": v[1],
+            "fixed_parameters": v[2],
+            "scheme": v[3],
+            "alpha": v[4],
+        }
+        for k, v in CODES.items()
+    },
+    "unblockers": list(UNBLOCKERS),
+    "classes": sorted(set(CLASS.values())),
+    "features": sorted({f for e in rows for f in e["features"]}),
+    "cost_probes": {
+        "DY07": {
+            "process": "u u~ > e- e+ m- m+",
+            "corrections": ["QED"],
+            "model": "G0",
+            "generate_s": 255.2,
+            "export_native_s": 95.3,
+            "peak_gb": 11.2,
+            "source": "workspace/tmp/ms-validate/probe/dy07 (2026-10-29, 4 cores, host load ~70)",
+            "tier": "the 2->4 EW rows (DY07, DY08, CM08) are nightly: one generation fits a 30-min job",
+        },
+    },
+    "nightly_jobs": {
+        "budget_seconds": JOB_SECONDS,
+        "measurement": "DEFAULT_SECONDS per id until a nightly run measures them",
+        "jobs": jobs,
+    },
+    "rows": rows,
+}
+OUT.parent.mkdir(parents=True, exist_ok=True)
+OUT.write_text(json.dumps(manifest, indent=1) + "\n")
+print("rows", len(rows), "active", sum(e["status"] == "active" for e in rows),
+      "nightly jobs", len(jobs))  # fmt: skip

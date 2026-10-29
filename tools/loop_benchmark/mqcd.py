@@ -128,7 +128,9 @@ AP_CONVERGENCE = 1e-35  # rule 6
 CKM_RELATION = 1e-24  # PLAN §4.1: the H rows' CKM-factor relation in DD
 AP_DIGITS = (40, 60)
 
-TIERS = ("default", "nightly")
+# ``campaign``: rows run by the campaign CLI only (m-sm/PLAN.md §4.3: the
+# 2->5 target and CM07, jobs above the nightly budget).
+TIERS = ("default", "nightly", "campaign")
 # ``composite``: a row made of its gating variants, checks and delegated
 # columns, without an evaluation of its own (M01).
 STATUSES = ("active", "pending", "composite")
@@ -225,7 +227,9 @@ class Row:
     # 1e-12 of the neighbour's Born (its F for the Laurent coefficients).
     zero_points: Mapping[int, int] = field(default_factory=dict)
     # Rule 4's prediction: "python" (the Python-input path's Catani operator,
-    # every row on that route), "tree" (a row on the native-input route,
+    # every row on that route), "engine" (a native-input row: the engine's
+    # operators on the Python-input Born, ``RowRun.engine_catani``, the M-SM
+    # rows), "tree" (a row on the native-input route,
     # whose executor forms none, WP3.1 I5c: the harness's massless Catani
     # operator on the tree engine's colour-correlated Born, ``tree_catani``)
     # or "none" (recorded as not asserted: M01's public-route variants, whose
@@ -496,12 +500,13 @@ def load_reference(row: Row) -> Reference:
     spec = row.reference
     if spec is None:
         raise ValueError(f"{row.id} has no reference yet")
-    path = ROOT / spec["path"]
-    data = json.loads(path.read_text())
+    # A ``sectors`` reference names its parts' fixtures instead of one path.
+    source = spec.get("path") or spec["parts"][0]["path"]
+    data = json.loads((ROOT / source).read_text())
     kind = spec["format"]
     loader = _LOADERS[kind]
     reference = loader(row, spec, data)
-    reference.source = spec["path"]
+    reference.source = source
     if "providers" in spec:
         missing = set(spec["providers"]) - set(reference.providers)
         if missing:
@@ -1577,6 +1582,37 @@ class RowRun:
             Decimal(str(self.parameters["aS"])),
         )
         return born, {sector: poles}
+
+    def engine_catani(self, index: int) -> dict[Sector, tuple[Decimal, Decimal]] | None:
+        """Rule 4's "engine" prediction of a native-input row (whose executor
+        forms none, WP3.1 I5c): the engine's own operators (QCD and QED per
+        correction, ``_PointEvaluation._ir_poles``) on the Python-input Born
+        of reference point ``index`` in double-double, without the loops."""
+
+        from pyamplicol.loops.v2.assemble import Precision, _fraction, _Numbers
+
+        reference = self.reference
+        point = tuple(
+            tuple(_fraction(x) for x in leg) for leg in reference.points[index]
+        )
+        precision = Precision.double_double()
+        with _Numbers(precision).scope():
+            evaluation = self.slice._point(
+                point,
+                _fraction(reference.scales[index]),
+                dict(self.parameters),
+                precision,
+                "all",
+            )
+            if not evaluation._stable_coloured_legs():
+                return None
+            found = evaluation._ir_poles()
+        if found is None:
+            return None
+        return {
+            sector: (_number(single), _number(double))
+            for sector, (single, double) in found.items()
+        }
 
     def light_flavours(self) -> int:
         """The n_f of Catani's gamma_g: the loop flavours (``loop_flavours``)
@@ -3307,6 +3343,12 @@ def run_row(
                 asserted=False, note="no Catani prediction on the public route "
                 "(the tools-route variant holds rule 4)")]  # fmt: skip
         found = []
+        if row.catani == "engine":
+            start = time.perf_counter()
+            prediction = run.engine_catani(index)
+            tree_seconds += time.perf_counter() - start
+            for point in points:
+                point.catani = prediction
         if row.catani == "tree":
             start = time.perf_counter()
             born, prediction = run.tree_catani(index)
@@ -3368,7 +3410,7 @@ def run_row(
         checks += rule2_and_3(row, reference, index, b, d)
         checks += poles(index, d, b)
     if tree_seconds:
-        timings["tree_catani_s"] = round(tree_seconds, 2)
+        timings[f"{row.catani}_catani_s"] = round(tree_seconds, 2)
     if row.unpredicted_reasons is not None and row.catani != "none":
         checks += rule4_reasons(row, run.slice.unpredicted_sectors())
     extras = set(row.extras) & IMPLEMENTED_EXTRAS if tier == "nightly" else set()
