@@ -28,15 +28,8 @@ Its 102 real/complex off-shell polarization checks validate only the local
 Lorentz structures. Scalar CT normalization and physical process assembly need
 separate controls. The independent ALOHA comparison uses binary64.
 
-For an isolated top-pair external-field component report containing the
-reference `born` and `wf` Laurent columns, run:
-
-```bash
-python3 tools/loop_reference/wavefunction_oracle.py \
-  --ufo "$LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0/models/loop_sm" \
-  --reference "$LOOP_REFERENCE_ROOT/runs/top-pair-component-control.json" \
-  --output "$LOOP_REFERENCE_ROOT/runs/top-pair-field-factor-oracle.json"
-```
+(The external-field component oracle `wavefunction_oracle.py` ran the legacy
+engine and was removed with it, MQ-LEGACY-REMOVE.)
 
 This derives the model's external-field factors, retains the two physical top
 legs, and evaluates their interference factors in one native batch. The Born
@@ -401,16 +394,10 @@ The remaining pure-gluon local source tensors can be checked with
 `gluon_vertex_oracle.py --ufo MODEL --madloop-build EXPORT --mg5-source MG5
 --build-dir WORKSPACE_BUILD --output REPORT`. This covers the off-shell derivative
 three-gluon tensor and ordinary/UV quartic bases with 1,672 ALOHA component
-comparisons and 34 exact MadGraph colour overlaps. The model preparation helper
-`loops.model_gluons.prepare_gluon_counterterm_basis` exposes exact ordinary basis
-representatives and the separately checked two-/four-point R2 primitives.
+comparisons and 34 exact MadGraph colour overlaps.
 
-`wavefunction_oracle.py` also accepts the gluon-scattering component fixture. It
-first proves that all four Born graphs receive identical source external-field
-factors, then compares their interference using reference Born values. The three
-heavy-quark groups and four external legs retain their source multiplicity;
-mass-zero branches are evaluated by the native conditional evaluator. This is
-an independent field-factor control, not a full amplitude calculation.
+The removed `wavefunction_oracle.py` (legacy engine) also accepted the
+gluon-scattering component fixture.
 
 ## Flavour-changing FFV and full-source mixed-order control
 
@@ -1054,8 +1041,10 @@ report is `workspace/reports/engine-v2/njet-benchmark.md`.
 
 ## Legacy-engine oracles for the v2 engine (WP0.1)
 
-`legacy_capture.py` freezes the legacy per-diagram engine before the v2 engine
-replaces it (oracles O1 and O2 of `docs/development/loop_v2/DESIGN.md` section
+The legacy per-diagram engine was removed (user ruling 2026-10-28, M-QCD Q3);
+its outputs are frozen. `legacy_capture.py` captured them before the v2 engine
+replaced it (its capture code is in the git history; the module keeps the
+control set and conventions the fixtures are read with) (oracles O1 and O2 of `docs/development/loop_v2/DESIGN.md` section
 14) for the control set gg->gg, uu~->dd~g, uu~->ggg, Drell-Yan (photon only),
 uu~->dd~, uu~->tt~, uu~->uu~ and uu~->uu~g, in binary64 and in 200-bit
 arbitrary precision:
@@ -1080,9 +1069,12 @@ providers' `loop_sm-no_b_mass` scheme), the points of the committed provider
 references, and stores the engine's own decimal strings, so a rerun reproduces
 the files byte for byte:
 
-```bash
-python tools/loop_reference/legacy_capture.py --ufo <MG5>/models/loop_sm [--process ...] [--check]
-```
+(The capture command, `legacy_capture.py --ufo <MG5>/models/loop_sm
+[--process ...] [--check]`, no longer exists: the engine it ran was removed.
+The last captures, for the former live comparisons of the v2 tests, are
+`tests/fixtures/loop/legacy/reduction/`, `ew_families_*.json.gz`,
+`gg_gg_non_default_parameters.json`, `gg_ttx_model_defaults.json` and
+`gg_gg_qcd_qed_sm.json`, each with a one-line provenance.)
 
 The fixtures were last regenerated for the coordinated re-pin (b5c5e83b; native
 b71edd24: NinjaRS aa6a6307, oneloopmaster 8ec256fc, Symbolica 9cdc2949).
