@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: 0BSD
-"""Bare, R2 and UV-counterterm components of a MadLoop reference, per loop squared split order.
+"""Bare, R2 and UV-counterterm components of a MadLoop reference per loop sector.
 
 For every loop sector of a committed reference fixture that has a Born partner,
 ``madloop_ct_selection.py`` evaluates the Born x CT interference of the export's
@@ -29,6 +29,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 GROUPS = {"r2": "R2", "uv": "UV"}
+DEFINITION = (
+    "per loop squared split order and point: the Born x CT interference of the "
+    "export's CT amplitudes whose calls pass an R2 coupling (r2), a UV coupling (uv), "
+    "neither (rest) and all (ct), evaluated by madloop_ct_selection.py in double "
+    "precision (CTModeRun 1); bare = the reference's sector value (quadruple "
+    "precision) - ct"
+)
 LAURENT = ("finite", "single_pole", "double_pole")
 
 
@@ -42,27 +49,62 @@ def components(work: Path, fixture: dict, scratch: Path) -> dict:
         key = f"QCD^2={sector['QCD']},QED^2={sector['QED']}"
         output = scratch / key.replace("^", "").replace(",", "_").replace("=", "")
         orders = [partner["QCD"], partner["QED"], sector["QCD"], sector["QED"]]
-        subprocess.run([sys.executable, str(HERE / "madloop_ct_selection.py"), "--work", str(work),
-                        "--orders", *map(str, orders), "--alpha-s", alpha_s,
-                        *(x for name, pattern in GROUPS.items() for x in ("--group", f"{name}={pattern}")),
-                        "--output", str(output)], check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(
+            [
+                sys.executable,
+                str(HERE / "madloop_ct_selection.py"),
+                "--work",
+                str(work),
+                "--orders",
+                *map(str, orders),
+                "--alpha-s",
+                alpha_s,
+                *(
+                    x
+                    for name, pattern in GROUPS.items()
+                    for x in ("--group", f"{name}={pattern}")
+                ),
+                "--output",
+                str(output),
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+        )
         report = json.loads((output / "components.json").read_text())
         variants = report["variants"]
         rows = []
         for index, row in enumerate(fixture["rows"]):
-            total = next(s for s in row["sectors"]["loop"] if (s["QCD"], s["QED"]) == (sector["QCD"], sector["QED"]))
-            entry = {name: {k: variants[name][index][k] for k in LAURENT} for name in variants}
+            total = next(
+                s
+                for s in row["sectors"]["loop"]
+                if (s["QCD"], s["QED"]) == (sector["QCD"], sector["QED"])
+            )
+            entry = {
+                name: {k: variants[name][index][k] for k in LAURENT}
+                for name in variants
+            }
             entry["bare"] = {k: total[k] - variants["ct"][index][k] for k in LAURENT}
             entry["total"] = {k: total[k] for k in LAURENT}
             rows.append(entry)
-        sectors[key] = {"born_sector": partner, "ct_amplitude_counts": report["ct_amplitude_counts"], "rows": rows}
+        sectors[key] = {
+            "born_sector": partner,
+            "ct_amplitude_counts": report["ct_amplitude_counts"],
+            "rows": rows,
+        }
     return sectors
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--work", type=Path, required=True, help="the run's work directory (madloop-export, "
-                        "madloop-run/Cards, points.json)")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--work",
+        type=Path,
+        required=True,
+        help="the run's work directory (madloop-export, "
+        "madloop-run/Cards, points.json)",
+    )
     parser.add_argument("--fixture", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -73,12 +115,11 @@ def main() -> int:
     with tempfile.TemporaryDirectory(dir=args.work) as scratch:
         sectors = components(args.work, fixture, Path(scratch))
     report = {
-        "reference": args.fixture.name, "process": fixture["process"], "points": len(fixture["points"]),
+        "reference": args.fixture.name,
+        "process": fixture["process"],
+        "points": len(fixture["points"]),
         "groups": GROUPS,
-        "definition": "per loop squared split order and point: the Born x CT interference of the export's CT "
-                      "amplitudes whose calls pass an R2 coupling (r2), a UV coupling (uv), neither (rest) and all "
-                      "(ct), evaluated by madloop_ct_selection.py in double precision (CTModeRun 1); bare = the "
-                      "reference's sector value (quadruple precision) - ct",
+        "definition": DEFINITION,
         "sectors": sectors,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
