@@ -226,14 +226,28 @@ def main():
             "attached_CT_vertices": sum(sp["attached_CT_vertices"] for sp in subprocesses),
         }
     )
-    if multiparticle:
-        report["subprocesses"] = [{k: v for k, v in sp.items() if not k.startswith("_")} for sp in subprocesses]
+    def public(items):
+        return [{k: v for k, v in sp.items() if not k.startswith("_")} for sp in items]
+
     # Loop records of other orders may remain in the export; the driver selects
     # the Born-virtual interference by its squared split orders. A mixed-order
     # request (born_orders_all) admits loop records of every Born order's
-    # correction step.
+    # correction step. A multiparticle request checks each subprocess against
+    # its own Born orders (its members differ, e.g. q q~, a a and g g initial
+    # states) and records a member without a Born (MG5's loop-squared
+    # [sqrvirt] subprocess, m-sm/PLAN.md Q2(a)) as skipped: it is not compared.
     for sp in subprocesses:
         born, loops = sp["_born"], sp["_loops"]
+        if multiparticle:
+            own = {(q + step["QCD"], e + step["QED"]) for q, e in born for step in steps}
+            if not born:
+                sp["skipped"] = "no Born: MG5's loop-squared member (sqrvirt), not a Born x virtual reference"
+            elif not set(loops) <= own or not set(loops):
+                report["status"] = "unexpected amplitude orders"
+                report["subprocesses"] = public(subprocesses)
+                write()
+                raise RuntimeError(f"{sp['process']}: loop orders {dict(loops)} outside {own}")
+            continue
         if set(born) != expected_born or not expected_loop <= set(loops) or (
                 (len(expected_born) > 1 or len(steps) > 1) and not set(loops) <= allowed_loop):
             report["status"] = "unexpected amplitude orders"
@@ -241,6 +255,8 @@ def main():
             raise RuntimeError(
                 f"{sp['process']}: Born/loop orders {dict(born)}/{dict(loops)} differ from "
                 f"{expected_born}/{expected_loop}")
+    if multiparticle:
+        report["subprocesses"] = public(subprocesses)
     report["status"] = "exporting"
     write()
     for amplitude in command._curr_amps:
