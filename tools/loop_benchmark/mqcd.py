@@ -149,13 +149,13 @@ UNBLOCKERS = (
     "MQ-STAB",
     "MQ-VALIDATE",
 )
-EXTRAS = ("nc", "ap", "ward", "uv", "hel", "sp", "ff")
+EXTRAS = ("nc", "ap", "ward", "uv", "hel", "sp", "ff", "joint")
 # Extras this harness checks today (the others are listed as pending).
 # ``sp`` (PLAN §4.1 special points S1-S4) is checked by the row's gating
 # variants (``<id>@<name>``: the special-point references on the base row's
 # generation), so a row with ``sp`` and no gating variant is malformed.
 # ``ff`` is the analytic quark form factor (PLAN §4.2 D01, ``rule_ff``).
-IMPLEMENTED_EXTRAS = frozenset({"ap", "uv", "hel", "sp", "ward", "ff"})
+IMPLEMENTED_EXTRAS = frozenset({"ap", "uv", "hel", "sp", "ward", "ff", "joint"})
 # Extras another package's tests check, by the test ids the row lists
 # (``nc``: MQ-NC's rule 7 column, ``Row.nc_column``).
 DELEGATED_EXTRAS = frozenset({"nc"})
@@ -2748,6 +2748,66 @@ def rule5_components(
     return checks
 
 
+def rule_joint(row: Row, run: RowRun, index: int, dd: Evaluated) -> list[Check]:
+    """The ``joint`` extra (m-sm/PLAN.md §1.2): a joint request equals the
+    separate requests per sector. Each loop amplitude order of the row's
+    request is generated as a request of its own (the same process, Born
+    orders, corrections and model) and evaluated in double-double at point
+    ``index``; its Born and each of its sectors' Laurent coefficients equal
+    the joint request's within max(1e-24, 10 E_DD), strictly relative (a
+    coefficient that vanishes in both passes)."""
+
+    loops = row.loop_orders
+    loops = (loops,) if isinstance(loops, Mapping) else tuple(loops)
+    if len(loops) < 2:
+        return [Check("joint", index, "double-double", "", "requests", "1", "",
+                      0.0, 0.0, True, asserted=False,
+                      note="one loop order: the joint request is the separate one")]  # fmt: skip
+    checks = []
+    for k, loop in enumerate(loops):
+        single = replace(
+            row,
+            id=f"{row.id}~loop{k}",
+            loop_orders=dict(loop),
+            variants=(),
+            madloop_omitted_r2=None,
+        )
+        separate = RowRun(single, run.compiled, run.native)
+        (theirs,) = separate.evaluate([index], "double-double")
+        if theirs is None:
+            checks.append(Check("joint", index, "double-double", str(dict(loop)),
+                                "evaluation", "failed", "", math.inf, 0.0, False,
+                                note=separate.failures.get((index, "double-double"), "")))  # fmt: skip
+            continue
+        pairs = [
+            (sector_text(s), "born", dd.born.get(s), v, None)
+            for s, v in theirs.born.items()
+        ]
+        for sector, laurent in theirs.virtual.items():
+            mine = dd.virtual.get(sector)
+            estimate = None if dd.estimate is None else dd.estimate.get(sector)
+            for j, name in enumerate(LAURENT):
+                pairs.append((
+                    sector_text(sector), name, None if mine is None else mine[j],
+                    laurent[j], None if estimate is None else estimate[j]))  # fmt: skip
+        for sector, name, mine, value, estimate in pairs:
+            if mine is None:
+                checks.append(Check("joint", index, "double-double", sector, name,
+                                    "absent", str(value), math.inf, 0.0, False,
+                                    note="the separate request's sector is absent "
+                                    "from the joint one"))  # fmt: skip
+                continue
+            error = relative(mine, value)
+            e_rel = estimate / abs(float(mine)) if estimate and float(mine) else 0.0
+            bound = max(DD_FLOOR, BRACKET * e_rel)
+            checks.append(Check(
+                "joint", index, "double-double", sector, name, str(mine), str(value),
+                error, bound, error <= bound,
+                note=f"the joint request against the separate request of loop "
+                f"order {dict(loop)}"))  # fmt: skip
+    return checks
+
+
 def engine_r2(slice_: Any) -> dict[str, frozenset[str]]:
     """CT vertex name -> the UFO R2 couplings the slice's counterterm program
     inserts at it: its admitted R2 rules (one per loop-particle group,
@@ -3406,6 +3466,13 @@ def run_row(
         for index, point in zip(indices, dd, strict=True):
             if point is not None:
                 checks += rule_ff(row, index, point, legs, reference, alpha_s)
+    if "joint" in extras:
+        start = time.perf_counter()
+        for index in extra_points:
+            point = dd[indices.index(index)]
+            if point is not None:
+                checks += rule_joint(row, run, index, point)
+        timings["joint_s"] = round(time.perf_counter() - start, 2)
     if "ward" in extras:
         start = time.perf_counter()
         for index in extra_points:

@@ -1147,7 +1147,6 @@ PENDING_EXTRAS = {
     "nc": "Q4 (a, recommended, pending with the user): EW LC/NLC is M-FINAL (typed colour-declaration-coverage refusal)",
     "hel": "MS-REF (per-helicity SLOOPMATRIXHEL references)",
     "sp": "MS-REF (special points S1-S4)",
-    "joint": "MS-VALIDATE (joint = the separate requests per sector: next increment)",
 }
 # A row's ``uv`` extra is rule 5's EW component form: it needs the
 # reference's instrumented components (MadLoop's Born x CT split).
