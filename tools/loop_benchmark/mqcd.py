@@ -3710,6 +3710,30 @@ def smoke(campaign: Campaign, restriction: str, spec: Mapping[str, Any]) -> list
     from pyamplicol.loops.v2.assemble import LoopSlice, Precision
 
     row = campaign.rows[spec["row"]]
+    if spec.get("executor") == "native":
+        # The M-SM smokes (m-sm/PLAN.md §3.2 MS-VALIDATE item 8): the row's
+        # own generation and native executor against the request generated
+        # on the restriction, both through the native executor (Python
+        # inputs) at the row's first reference point.
+        from tools.loop_v2_generate import _external_parameters
+
+        base = campaign.run(row.id).evaluate([0], "double", stability=False)[0]
+        model = campaign.model(restriction, row.model)
+        externals = _external_parameters(model)
+        # The restriction's parameters (a parameter it restricts away, e.g. a
+        # width of no_widths, is not set).
+        restricted = replace(
+            row,
+            id=f"{row.id}~{restriction}",
+            restriction=restriction,
+            fixed_parameters={
+                k: v for k, v in row.fixed_parameters.items() if k in externals
+            },
+        )
+        run = RowRun(restricted, model, campaign.native)
+        run.parameters = {k: v for k, v in run.parameters.items() if k in externals}
+        other = run.evaluate([0], "double", stability=False)[0]
+        return _smoke_checks(base, other, restriction, row.restriction)
     source = campaign.rows[spec.get("points_from", row.id)]
     reference = load_reference(source)
     parameters = {**reference.parameters, **dict(source.parameters)}
@@ -3730,12 +3754,21 @@ def smoke(campaign: Campaign, restriction: str, spec: Mapping[str, Any]) -> list
             )
         )
     base, other = values
+    return _smoke_checks(base, other, restriction, row.restriction)
+
+
+def _smoke_checks(
+    base: Evaluated, other: Evaluated, restriction: str, own: str
+) -> list[Check]:
+    """The smoke's checks: the same sectors, every coefficient within
+    ``SMOKE_TOLERANCE`` strictly relative."""
+
     same = set(other.virtual) == set(base.virtual) and set(other.born) == set(base.born)
     checks = [
         Check("smoke", 0, "double", "", "sectors",
               ", ".join(map(sector_text, sorted(other.virtual))),
               ", ".join(map(sector_text, sorted(base.virtual))), 0.0, 0.0,
-              same, note=f"{restriction} against {row.restriction}")
+              same, note=f"{restriction} against {own}")
     ]  # fmt: skip
     for sector, value in base.born.items():
         error = relative(other.born.get(sector, Decimal(0)), value)

@@ -391,9 +391,10 @@ def build(
             }
     # The nightly smokes, composite expansions and the "tree" Catani oracle
     # check (tests/unit/test_loop_v2_mqcd_nightly.py): absent records not-run.
-    declared = [
-        f"smoke:{r}" for r in manifest.get("smokes", {}).get("same_request", {})
-    ]
+    smokes = manifest.get("smokes", {})
+    declared = [f"smoke:{r}" for r in smokes.get("same_request", {})]
+    # The M-SM restriction smokes (tests/unit/test_loop_v2_msm_smokes*.py).
+    declared += [f"smoke:{e['id']}" for e in smokes.get("restrictions", ())]
     if any(r.get("catani") == "tree" for r in manifest["rows"]):
         declared.append("oracle:tree-catani")
     declared += [

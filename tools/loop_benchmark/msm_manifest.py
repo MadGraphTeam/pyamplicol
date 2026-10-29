@@ -1465,6 +1465,51 @@ for job in jobs:
         + ".py"
     )
 
+# PLAN §3.2 MS-VALIDATE item 8: each shipped restriction of both UFOs
+# generates the request of a base row on its model, compared with the base
+# row's generation (native executor, binary64, the row's first point, the
+# row's parameters: the restrictions that change MT, MH or widths are
+# evaluated at the row's values; with_b_mass at the row's MB = 0) within
+# 1e-14. parallel_test* are out of scope (PLAN §1.1).
+SMOKE_RESTRICTIONS = {
+    "LL01": (
+        "a0",
+        "ckm",
+        "no_widths",
+        "with_b_mass",
+        "with_b_mass_no_width",
+        "with_technical",
+    ),
+    "LL03": (
+        "ckm",
+        "no_widths",
+        "with_b_mass",
+        "with_b_mass_no_widths",
+        "with_technical",
+    ),
+}
+SMOKE_SECONDS = 360
+smokes = [
+    {"id": f"{CODES[next(r['code'] for r in R if r['id'] == base)][0]}:{name}",
+     "row": base, "restriction": name, "executor": "native"}
+    for base, names in SMOKE_RESTRICTIONS.items()
+    for name in names
+]  # fmt: skip
+smoke_jobs = []
+for entry in smokes:
+    if (
+        not smoke_jobs
+        or len(smoke_jobs[-1]["smokes"]) * SMOKE_SECONDS >= JOB_SECONDS - SMOKE_SECONDS
+    ):
+        smoke_jobs.append({"job": len(smoke_jobs) + 1, "smokes": []})
+    smoke_jobs[-1]["smokes"].append(entry["id"])
+for job in smoke_jobs:
+    job["file"] = (
+        "tests/unit/test_loop_v2_msm_smokes"
+        + ("" if job["job"] == 1 else f"_{job['job']}")
+        + ".py"
+    )
+
 manifest = {
     "schema_version": 1,
     "plan": "workspace/reports/engine-v2/m-sm/PLAN.md §1.4, §3.2 MS-VALIDATE, §4",
@@ -1495,6 +1540,7 @@ manifest = {
             "tier": "the 2->4 EW rows (DY07, DY08, CM08) are nightly: one generation fits a 30-min job",
         },
     },
+    "smokes": {"restrictions": smokes, "jobs": smoke_jobs},
     "nightly_jobs": {
         "budget_seconds": JOB_SECONDS,
         "measurement": "DEFAULT_SECONDS per id until a nightly run measures them",
