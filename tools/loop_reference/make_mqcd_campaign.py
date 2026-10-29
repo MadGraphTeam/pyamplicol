@@ -287,6 +287,11 @@ row("D25", "Q-EWBorn", "u d~ > w+ a (radiation zero)", "5F", "N", extras=["sp:S3
                note="S3: Born-zero points cos(u, photon) = -1/3 and one regular neighbour")])
 row("D26", "Q-heavy", "u u~ > e- e+ g (4F twin of D05)", "4F", "N", runs_=[run("uux_emepg_4fs", "uux_emepg_4fs")])
 row("D27", "Q-EWBorn", "g u > e+ ve d", "5F", "N", runs_=[run("gu_epved", "gu_epved")])
+row("D28", "Q-EWBorn", "u u~ > w+ w- g (4F)", "4F", "N", extras=["ward"],
+    runs_=[run("uux_wpwmg_4fs", "uux_wpwmg_4fs", points=S())],
+    note="VV + jet (mq-ewjoin: the loop vertex attaches the sum of a field current's flavour-flow trees)")
+row("D29", "Q-EWBorn", "b b~ > w+ w- g", "5F*", "N", extras=["ward"], runs_=[run("bbx_wpwmg", "bbx_wpwmg", points=S())],
+    note="MQ-5F; VV + jet with a massive t-channel line (mq-ewjoin)")
 # E: tt + X
 row("E01", "Q-ttX", "g g > t t~ h", "5F", "N", extras=["nc", "ward", "uv"], runs_=[run("gg_ttxh", "gg_ttxh", points=S())])
 row("E02", "Q-ttX", "g g > t t~ z", "5F", "N", runs_=[run("gg_ttxz", "gg_ttxz", points=S())])
@@ -386,6 +391,6 @@ campaign = {
     "rows": rows,
     "runs": list(runs.values()),
 }
-assert len(rows) == 76, len(rows)
+assert len(rows) == 78, len(rows)
 Path(sys.argv[1]).write_text(json.dumps(campaign, indent=1) + "\n")
 print(len(rows), "rows,", len(runs), "runs")

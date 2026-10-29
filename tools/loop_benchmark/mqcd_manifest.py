@@ -770,6 +770,27 @@ row(
     ["initial:qg", "2->3", "ew:W-leptons"],
     waits=MQREF,
 )
+# VV + jet (mq-ewjoin): every flavour-flow tree of a field current in the loops
+row(
+    "D28",
+    "u u~ > w+ w- g",
+    (1, 2),
+    "4F",
+    "N, S (VV + jet, 4F)",
+    ["ward"],
+    ["initial:qqbar", "2->3", "ew:VV+jet", "scheme:4FS"],
+    waits=MQREF,
+)
+row(
+    "D29",
+    "b b~ > w+ w- g",
+    (1, 2),
+    "5F*",
+    "N, S (VV + jet, massive t-channel line; MQ-5F)",
+    ["ward"],
+    ["initial:qqbar", "2->3", "ew:VV+jet"],
+    waits=MQREF,
+)
 # ---- E: tt + X (5F, WT = 0)
 row(
     "E01",
@@ -935,11 +956,18 @@ row(
     waits=MQREF,
 )
 
-assert len(R) == 76, len(R)
+assert len(R) == 78, len(R)
 
 # Data-dependent listings (rule 1 outliers, rule 2 out-of-scope binary64
 # coefficients, identically vanishing coefficients) and sector sets.
 SECTORS = {
+    # Born trees joining the quark lines through different weak exchanges
+    # (Z or W; the gluon on the light or on the heavy line): the QCD loops
+    # leave out the gluon exchanges across the lines, so the sector has no
+    # Catani prediction (poles.SEPARATED_EXCHANGE; former finding F1, closed
+    # by mq-ewjoin) and rule 4 checks it against MadLoop per split order.
+    "D19": ([], [{"QCD": 2, "QED": 6}]),
+    "C07": ([], [{"QCD": 4, "QED": 4}]),
     "G01": ([{"QCD": 6}], [{"QCD": 4, "QED": 2}, {"QCD": 2, "QED": 4}]),
     "G02": ([{"QCD": 6}], [{"QCD": 4, "QED": 2}, {"QCD": 2, "QED": 4}]),
 }
@@ -1000,10 +1028,17 @@ LISTINGS = {
 # other 2->4 and 2->5 row stays below 1e-12 (largest A22 7.0e-13).
 RULE1_LOW, RULE1_HIGH = 1e-12, 1e-10
 RULE1_RELAXED = {"A18": RULE1_HIGH, "A23": RULE1_HIGH}
+# The user's ruling of 2026-10-29 ~10:20 (below ~1e-5 relative is not a
+# finding): D28 (u u~ > w+ w- g) point 1, finite part 1.83e-12 from MadLoop's
+# quadruple-precision value while 40-digit arbitrary precision equals our
+# double-double to 1.2e-28 (mq-ewjoin, slice d8d9349f).
+RULE1_ATTENTION = {"D28": 1e-11}
 
 
 def reference_tolerance(row_id, process):
     final = len(process.split(">")[1].split())
+    if row_id in RULE1_ATTENTION:
+        return RULE1_ATTENTION[row_id]
     tolerance = RULE1_RELAXED.get(row_id, RULE1_LOW)
     assert tolerance == RULE1_LOW or final >= 4, row_id
     return tolerance
@@ -1059,7 +1094,7 @@ REFUSED_5F = set() if MQ5F_LANDED else {"C09", "F03", "H02", "H03"}
 # with MB = ymb = 0 (code 5F*) also run on the restricted UFO (no_b_mass), the
 # same request and reference (variant ``<id>@5F``, its own generation); the
 # tools route refuses that request at generation until MQ-5F lands.
-RESTRICTED_5F = ("D17", "F01", "F02", "F04")
+RESTRICTED_5F = ("D17", "D29", "F01", "F02", "F04")
 # True once MQ-NC is on the slice: rule 7 (the ``nc`` extra) of a row is
 # MQ-NC's test ids for it (``NC_COLUMN`` of NC_TESTS: the LC/NLC projection
 # against the N_c scan within 1e-24 in double-double, then the row's
@@ -1663,6 +1698,8 @@ MEASURED_SECONDS = {
     "D15": (22, 4), "D16": (22, 4), "D17": (26, 4), "D18": (21, 4), "D19": (23, 4),
     "D20": (27, 4), "D21": (16, 3), "D23": (26, 4), "D24": (21, 4), "D25": (22, 4),
     "D25@zero": (14, 3), "D26": (28, 4), "D27": (23, 4), "E01": (71, 4),
+    # mq-ewjoin (tmp/mq-ewjoin/h-d28, h-d29, 2026-10-29 ~11:25 UTC).
+    "D28": (50, 4), "D29": (50, 4),
     "E02": (43, 4), "E05": (19, 3), "E06": (175, 3), "E06@sectors": (179, 4),
     "F01": (35, 4), "F02": (24, 4), "F04": (37, 4), "G01": (24, 1), "G02": (29, 4),
     "H01": (48, 4), "M01@P0": (24, 4), "M01@P2": (26, 4), "R01": (24, 4),
