@@ -4,8 +4,13 @@
 The per-diagram legacy one-loop engine was removed (user ruling 2026-10-28,
 M-QCD Q3). Before that, this tool captured its outputs once as the frozen
 oracles of the v2 engine (DESIGN.md section 14) below
-``tests/fixtures/loop/legacy/``; the capture code is in the git history. What
-stays is what the frozen files are read with:
+``tests/fixtures/loop/legacy/``. The O1/O2 capture code is in the git history;
+the captures of the former live comparisons (``reduction/``,
+``ew_families_*``, ``gg_gg_non_default_parameters``, ``gg_ttx_model_defaults``,
+``gg_gg_qcd_qed_sm``; each file states its source and precision) were taken
+once, on slice 321efdb4, by the removed tests' own legacy calls, in a scratch
+script that was not committed. What stays is what the frozen files are read
+with:
 
 * O1, ``<name>.json``: Born and the six virtual components (virtual, bare, uv,
   r2, uv_local, uv_external_fields) per squared coupling order and Laurent
