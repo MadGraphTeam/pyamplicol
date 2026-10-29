@@ -2554,9 +2554,27 @@ def write_result(report: RowReport, directory: str | os.PathLike | None = None) 
 # ---------------------------------------------------------------------- CLI
 
 
+def delegated_ids(manifest: Mapping[str, Any] | None = None) -> list[str]:
+    """The pytest node ids of the delegated columns, once each in manifest
+    order: every row's rule 7 column (``nc_column``, MQ-NC's ids), then the
+    LC/NLC smoke on every shipped restriction when it names its test. Run
+    them with ``--junitxml`` for ``build_mqcd.py --junit``."""
+
+    manifest = manifest or load_manifest()
+    ids = [node for row in rows(manifest).values() for node in row.nc_column]
+    smoke = manifest.get("smokes", {}).get("lc_every_restriction")
+    if isinstance(smoke, Mapping):
+        ids.append(smoke["test"])
+    return list(dict.fromkeys(ids))
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m tools.loop_benchmark.mqcd")
     sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser(
+        "delegated-ids",
+        help="print the delegated columns' pytest ids (rule 7: MQ-NC's)",
+    )
     run = sub.add_parser("run", help="run campaign rows outside pytest")
     run.add_argument("rows", nargs="+")
     run.add_argument("--tier", choices=TIERS, default="default")
@@ -2568,6 +2586,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--manifest", type=Path, default=MANIFEST, help="another manifest file"
     )
     args = parser.parse_args(argv)
+    if args.command == "delegated-ids":
+        for node in delegated_ids():
+            print(node)
+        return 0
     logging.basicConfig(format="%(asctime)s %(message)s", level=logging.WARNING)
     LOG.setLevel(logging.INFO)
 
