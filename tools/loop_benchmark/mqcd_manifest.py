@@ -1772,6 +1772,11 @@ MEASURED_SECONDS = {
     "E02": (43, 4), "E05": (19, 3), "E06": (175, 3), "E06@sectors": (179, 4),
     "F01": (35, 4), "F02": (24, 4), "F04": (37, 4), "G01": (24, 1), "G02": (29, 4),
     "H01": (48, 4), "M01@P0": (24, 4), "M01@P2": (26, 4), "R01": (24, 4),
+    # MQ-5F's ids (pending until MQ5F_LANDED), measured the same way on the
+    # merge tree of this branch and work/v2-mq-5f ef1c12f0 with its native
+    # (tmp/mq-validate/s7, 2026-10-29 ~02:05 UTC, one process per file job).
+    "C09": (31, 4), "F03": (18, 2), "H02": (43, 4), "H03": (30, 4),
+    "D17@5F": (31, 4), "F01@5F": (23, 4), "F02@5F": (22, 4), "F04@5F": (26, 4),
 }  # fmt: skip
 DEFAULT_SECONDS = 60
 JOB_SECONDS = 1200
