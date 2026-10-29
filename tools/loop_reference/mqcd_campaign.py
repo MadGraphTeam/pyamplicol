@@ -564,6 +564,8 @@ def run_entry(root, run, fixture_path):
              "excluded_providers": run.get("exclude_providers", {}),
              "second_providers": run.get("second_providers", []),
              "second_provider_trigger": run.get("second_provider_trigger")}
+    if run.get("components"):
+        entry["components"] = run["components"]  # rule 5 components per sector (madloop_components.py)
     if run.get("binding") is False:
         entry["binding"] = False  # an oracle run of another card (e.g. a technical epsIR = 0 run): no rule 1 reference
     if not fixture_path.exists():

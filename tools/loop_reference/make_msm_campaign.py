@@ -286,6 +286,12 @@ row("SC08", "W-scheme", "t t~ > w+ w-", "G0", "N", runs_=[run("ttx_wpwm_ew", poi
 row("SC09", "W-scheme", "t t~ > z h QCD=0", "G0", "E", fixtures=["required/ttx_zh_ew.json"], sectors=["e^6"],
     primary="recola", note=f"{R2RULE} (2.5 %); root mixing; ew-validate's fixture {EWI7}")
 
+# Rule 5 (m-sm/PLAN.md §1.4): bare, R2 and UV-CT components per sector on one row per class
+# (madloop_components.py; the uv extras DY01, VJ02, JJ01 and one row of every other class).
+for rid in ("uux_emep_ew", "udx_wpg_ew", "uux_ddx_ew", "emep_ttx_ew", "uux_ttx_ew", "ub_dt_ew", "ag_uux_ew",
+            "gg_ttx_cms", "udx_epve_ew_ckm"):
+    runs[rid]["components"] = f"required/msm/components/{rid}.json"
+
 campaign = {
     "description": "M-SM validation campaign (workspace/reports/engine-v2/m-sm/PLAN.md §4): the 70 core rows of §4.2 "
                    "(the decay rows XX01/XX02 wait for the user's Q3) and the MadLoop reference runs producing them. "
