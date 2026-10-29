@@ -1097,8 +1097,9 @@ FIXTURE_ROOT = INDEX.parent.parent  # .../tests/fixtures/loop
 
 # Rows whose Python per-point inputs exceed the nightly job budget (one
 # g g > g g g g point took > 22 min, u u~ > g g g g g > 22 min at 17 GB):
-# the native-input route, which forms no Catani prediction (rule 4 recorded
-# as not formed; WP3.1 I5c). g g > g g g g g natively: generation 180 s plus
+# the native-input route, whose executor forms no Catani prediction (WP3.1
+# I5c): rule 4 takes the harness's massless Catani operator on the tree
+# engine's colour-correlated Born (catani "tree"). g g > g g g g g natively: generation 180 s plus
 # export, 308 s per double-double point and 69 s per binary64 point with the
 # checks, 25 GB: two points keep its nightly job within 30 min.
 NATIVE_ROWS = {"A14": [0, 1, 2], "A15": [0, 1, 2, 3], "A23": [0, 1, 2], "A24": [0, 1]}
@@ -1721,7 +1722,7 @@ for r in R:
         entry["ward_out_of_scope"] = WARD_OUT_OF_SCOPE[r["id"]]
     if r["id"] in NATIVE_ROWS:
         entry["inputs"] = "native"
-        entry["catani"] = "none"
+        entry["catani"] = "tree"
         entry["points"] = {"nightly": NATIVE_ROWS[r["id"]]}
     if status == "pending" and r["id"] in REFUSED_5F and indexed:
         entry["pending"]["reason"] = (

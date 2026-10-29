@@ -217,9 +217,11 @@ class Row:
     # 1e-12 of the neighbour's Born (its F for the Laurent coefficients).
     zero_points: Mapping[int, int] = field(default_factory=dict)
     # Rule 4's prediction: "python" (the Python-input path's Catani operator,
-    # every row on that route) or "none" for a row on the native-input route,
-    # which forms no prediction (WP3.1 I5c): rule 4 is then recorded as not
-    # asserted (the manifest names the gap), its poles held by rule 1 only.
+    # every row on that route), "tree" (a row on the native-input route,
+    # whose executor forms none, WP3.1 I5c: the harness's massless Catani
+    # operator on the tree engine's colour-correlated Born, ``tree_catani``)
+    # or "none" (M01's public-route variants: their tools-route twins hold
+    # rule 4; recorded as not asserted).
     catani: str = "python"
     # The fixture holding MadLoop's per-helicity rows (``per_helicity``) when
     # it is not the row's reference (manifest path), for the ``hel`` extra.
@@ -921,7 +923,14 @@ class RowRun:
     every carrier, point and check of the row)."""
 
     def __init__(
-        self, row: Row, compiled: Any, native: Any, base: RowRun | None = None
+        self,
+        row: Row,
+        compiled: Any,
+        native: Any,
+        base: RowRun | None = None,
+        *,
+        ufo: Path | None = None,
+        work: Path | None = None,
     ):
         from pyamplicol.loops.v2.assemble import LoopSlice
         from pyamplicol.loops.v2.plan_export import NativeExecutor, export_plan
@@ -929,6 +938,10 @@ class RowRun:
         self.row = row
         self.compiled = compiled
         self.native = native
+        # The UFO and a work directory of the tree engine's artifact (the
+        # "tree" Catani prediction).
+        self.ufo, self.work = ufo, work
+        self._tree: Any = None
         self._twin: RowRun | None = None
         self._ward: Any = None
         self.reference = load_reference(row)
@@ -1057,7 +1070,118 @@ class RowRun:
             for leg in self.slice.families.legs
         ]
 
-    def loop_flavours(self) -> int:
+    def tree_correlations(self, index: int) -> tuple[Decimal, dict]:
+        """(Born, {(j, k): <T_j.T_k>}) at reference point ``index`` from the
+        tree engine (``Generator.generate(..., correlators=...)``, every
+        dipole of the coloured legs, full colour, ``TREE_DIGITS`` digits at
+        the point's decimal momenta): the colour-correlated Born of rule 4's
+        "tree" prediction, independent of the loop engine. The artifact is
+        generated once per row, on the row's restriction and Born orders."""
+
+        from itertools import combinations
+
+        from pyamplicol import (
+            ColorCorrelator,
+            CorrelatorConfig,
+            Generator,
+            ModelSource,
+            Runtime,
+        )
+        from pyamplicol.config import ColorConfig, RunConfig
+        from pyamplicol.config.models import ProcessConfig
+        from pyamplicol.correlators import CorrelatedRequest
+
+        coloured = [label for label, (colour, _m) in enumerate(self.legs(), 1)
+                    if colour != 1]  # fmt: skip
+        pairs = list(combinations(coloured, 2))
+        if self._tree is None:
+            if self.ufo is None or self.work is None:
+                raise ValueError(f"{self.row.id}: no UFO or work directory")
+            start = time.perf_counter()
+            config = RunConfig(
+                action="generate",
+                color=ColorConfig(accuracy="full"),
+                process=ProcessConfig(
+                    coupling_order_policy="explicit",
+                    max_coupling_orders=dict(self.row.born_orders),
+                ),
+            )
+            dipoles = tuple(ColorCorrelator.dipole(f"T{j}_{k}", j, k) for j, k in pairs)
+            generated = Generator(config).generate(
+                self.row.process,
+                self.work / f"tree-{self.row.id}",
+                model=ModelSource.from_path(self.ufo, restriction=self.row.restriction),
+                correlators=CorrelatorConfig(color_correlations=dipoles),
+                mode="replace",
+            )
+            # The restriction card's parameters: rule 4 checks the tree
+            # engine's Born against ours (the same parameters) at 1e-24.
+            self._tree = Runtime.load(generated.output)
+            self.tree_seconds = time.perf_counter() - start
+            LOG.info("%s: tree correlators in %.1f s", self.row.id, self.tree_seconds)
+        momenta = tuple(
+            tuple(Decimal(x) for x in leg) for leg in self.reference.points[index]
+        )
+        requests = {"born": CorrelatedRequest(color_correlation="born")}
+        requests.update(
+            {f"T{j}_{k}": CorrelatedRequest(color_correlation=f"T{j}_{k}")
+             for j, k in pairs}
+        )  # fmt: skip
+        values = self._tree.evaluate_correlated_many(
+            (momenta,), requests, precision=TREE_DIGITS
+        )
+        correlated = {}
+        for j, k in pairs:
+            correlated[j, k] = correlated[k, j] = values[f"T{j}_{k}"][0].real
+        return values["born"][0].real, correlated
+
+    def tree_catani(self, index: int) -> tuple[Decimal, dict[Sector, tuple]]:
+        """(the tree engine's Born, rule 4's "tree" prediction {sector:
+        (single, double)}) at reference point ``index``: the harness's
+        massless Catani operator (``massless_catani``) on the tree engine's
+        colour-correlated Born. Only for a QCD correction of one Born and one
+        virtual sector with massless coloured legs (the native-input rows);
+        anything else raises."""
+
+        legs, loop = self.legs(), self.row.loop_orders
+        if (
+            tuple(self.row.corrections) != ("QCD",)
+            or not isinstance(loop, Mapping)
+            or any(massive for colour, massive in legs if colour != 1)
+        ):
+            raise NotImplementedError(f"{self.row.id}: no tree Catani prediction")
+        born_orders = self.row.born_orders
+        sector = sector_key(
+            {k: born_orders.get(k, 0) + loop.get(k, 0) for k in {*born_orders, *loop}}
+        )
+        born, correlated = self.tree_correlations(index)
+        gluon = (
+            Fraction(11, 6) * CA - Fraction(2, 3) * TF * self.light_flavours()
+        )  # gamma_g = beta_0 over the massless flavours
+        coloured = {
+            label: (colour, gluon if colour == 8 else Fraction(3, 2) * CF)
+            for label, (colour, _m) in enumerate(legs, 1)
+            if colour != 1
+        }
+        if any(colour not in (3, 8) for colour, _gamma in coloured.values()):
+            raise NotImplementedError(f"{self.row.id}: no tree Catani prediction")
+        point = [[Fraction(x) for x in leg] for leg in self.reference.points[index]]
+        poles = massless_catani(
+            coloured,
+            point,
+            correlated,
+            Fraction(self.reference.scales[index]),
+            Decimal(str(self.parameters["aS"])),
+        )
+        return born, {sector: poles}
+
+    def light_flavours(self) -> int:
+        """The n_f of Catani's gamma_g: the loop flavours (``loop_flavours``)
+        that are massless at the row's parameters."""
+
+        return self.loop_flavours(massless=True)
+
+    def loop_flavours(self, massless: bool = False) -> int:
         """The n_f of the gluon's Z^UV: colour-triplet fermion species that
         are perturbative in the strong order and not vetoed (the request's
         loop quarks, massive ones included: UV poles do not decouple)."""
@@ -1074,8 +1198,16 @@ class RowRun:
             if record is None or pdg in veto or "QCD" not in set(species_orders):
                 continue
             if abs(int(record["color"])) == 3 and int(record["spin"]) == 2:
+                if massless and not self._massless(record["mass"]):
+                    continue
                 count += 1
         return count
+
+    def _massless(self, mass: str) -> bool:
+        if mass == "ZERO":
+            return True
+        values = {**dict(self.row.fixed_parameters), **self.parameters}
+        return mass in values and Fraction(str(values[mass])) == 0
 
 
 # ---------------------------------------------------------- the public route
@@ -1754,15 +1886,18 @@ def rule4(
                 continue
             error = relative(got, truth)
             e_rel = estimate[k] / abs(float(got)) if float(got) else math.inf
+            stale = False
             if point.carrier == "double":
                 bound = o1_bound(e_rel)
+                listed = _listed(
+                    row.binary64_out_of_scope,
+                    point=index,
+                    sector=text,
+                    coefficient=name,
+                )
+                # An in-scope coefficient listed out of scope: a stale listing.
+                stale = bound is not None and listed
                 if bound is None:
-                    listed = _listed(
-                        row.binary64_out_of_scope,
-                        point=index,
-                        sector=text,
-                        coefficient=name,
-                    )
                     checks.append(
                         Check(
                             "4",
@@ -1793,8 +1928,9 @@ def rule4(
                     str(truth),
                     error,
                     bound,
-                    error <= bound,
-                    note=f"E = {e_rel:.3g}",
+                    error <= bound and not stale,
+                    note=f"E = {e_rel:.3g}"
+                    + ("; stale out-of-scope listing" if stale else ""),
                 )
             )
     return checks
@@ -1807,6 +1943,44 @@ CA, CF, TF = Fraction(3), Fraction(4, 3), Fraction(1, 2)
 PI = Decimal(
     "3.14159265358979323846264338327950288419716939937510582097494459230781640628621"
 )
+
+
+TREE_DIGITS = 40  # the tree engine's colour-correlated Born (rule 4 "tree")
+
+
+def _decimal(value: Fraction) -> Decimal:
+    return Decimal(value.numerator) / Decimal(value.denominator)
+
+
+def massless_catani(
+    legs: Mapping[int, tuple[int, Fraction]],
+    point: Sequence[Sequence[Fraction]],
+    correlated: Mapping[tuple[int, int], Decimal],
+    mu2: Fraction,
+    alpha_s: Decimal,
+) -> tuple[Decimal, Decimal]:
+    """(single, double) pole of the renormalised virtual by Catani's operator
+    for massless coloured legs: (alpha_s / 2 pi) sum_j sum_{k != j}
+    <T_j.T_k> (1/eps^2 + (gamma_j / C_j + log(mu^2 / |2 p_j.p_k|)) / eps),
+    with <T_j.T_k> the colour-correlated Born (``correlated``, both orders)
+    and ``legs`` (|colour|, gamma_j) per coloured leg (one-based labels into
+    ``point``), in ``TREE_DIGITS`` decimal digits."""
+
+    with localcontext() as context:
+        context.prec = TREE_DIGITS
+        single = double = Decimal(0)
+        for j, (colour, gamma) in legs.items():
+            ratio = _decimal(gamma / (CA if colour == 8 else CF))
+            for k in legs:
+                if k == j:
+                    continue
+                a, b = point[j - 1], point[k - 1]
+                dot = a[0] * b[0] - a[1] * b[1] - a[2] * b[2] - a[3] * b[3]
+                log = _decimal(mu2 / abs(2 * dot)).ln()
+                double += correlated[j, k]
+                single += (ratio + log) * correlated[j, k]
+        prefactor = alpha_s / (2 * PI)
+        return +(prefactor * single), +(prefactor * double)
 
 
 def field_poles(legs: Sequence[tuple[int, bool]], flavours: int) -> Fraction:
@@ -1888,9 +2062,15 @@ def rule5(
 
 
 def rule6(
-    row: Row, index: int, dd: Evaluated, ap: Evaluated, ap60: Evaluated
+    row: Row,
+    index: int,
+    dd: Evaluated,
+    ap: Evaluated,
+    ap60: Evaluated,
+    alpha_s: float = 0.118,
 ) -> list[Check]:
-    """Arbitrary precision against double-double and against 60 digits."""
+    """Arbitrary precision against double-double and against 60 digits (a
+    coefficient that vanishes identically absolutely, against F_s)."""
 
     checks = []
     for sector, value in ap.born.items():
@@ -1935,6 +2115,17 @@ def rule6(
             e_rel = estimate[k] / abs(float(truth)) if float(truth) else math.inf
             bound = max(DD_FLOOR, BRACKET * e_rel)
             if _vanishing(row, text, name):
+                flux = _flux(born_scale(row, dd, born_sector(sector)), alpha_s)
+                for other, scale, note in (
+                    (truth, DD_FLOOR, "double-double"),
+                    (ap60.virtual[sector][k], AP_CONVERGENCE, "60 digits"),
+                ):
+                    error = _absolute(laurent[k], other)
+                    checks.append(Check(
+                        "6", index, ap.carrier, text, name, str(laurent[k]),
+                        str(other), error, scale * flux, error <= scale * flux,
+                        note=f"vanishes identically: |a - r| against F_s ({note})",
+                    ))  # fmt: skip
                 continue
             checks.append(
                 Check(
@@ -2463,6 +2654,37 @@ def run_row(
     timings["double_s_per_point"] = round(time.perf_counter() - start, 2) / len(indices)
     info: dict[str, float] = {}
     by_index = {i: d for i, d in zip(indices, dd, strict=True) if d is not None}
+    tree_seconds = 0.0
+
+    def poles(index: int, *points: Evaluated) -> list[Check]:
+        """Rule 4 at ``index`` in each evaluated carrier (double-double
+        first): the executor's prediction, the tree engine's ("tree", with
+        its Born against ours) or none (recorded as not formed)."""
+
+        nonlocal tree_seconds
+        if row.catani == "none":
+            return [Check(
+                "4", index, "double-double", "", "poles", "", "", 0.0, 0.0, True,
+                asserted=False, note="no Catani prediction on the public route "
+                "(the tools-route variant holds rule 4)")]  # fmt: skip
+        found = []
+        if row.catani == "tree":
+            start = time.perf_counter()
+            born, prediction = run.tree_catani(index)
+            tree_seconds += time.perf_counter() - start
+            ours = points[0].total()[0]
+            error = relative(ours, born)
+            found.append(Check(
+                "4", index, points[0].carrier, TOTAL, "tree born", str(ours),
+                str(born), error, DD_FLOOR, error <= DD_FLOOR,
+                note="the tree engine's Born (the prediction's colour-correlated "
+                "Born) against ours"))  # fmt: skip
+            for point in points:
+                point.catani = prediction
+        for point in points:
+            found += rule4(row, index, point, reference.alpha_s)
+        return found
+
     for index, d, b in zip(indices, dd, b64, strict=True):
         if d is None or b is None:
             for carrier, value in (("double-double", d), ("double", b)):
@@ -2479,7 +2701,7 @@ def run_row(
                 if not any(c.coefficient == "no reference" for c in recorded):
                     checks += rule1(row, reference, index, d)
                 if row.catani != "none":
-                    checks += rule4(row, index, d, reference.alpha_s)
+                    checks += poles(index, d)
             continue
         if index in row.zero_points:
             neighbour = by_index[row.zero_points[index]]
@@ -2505,19 +2727,9 @@ def run_row(
                 if check.coefficient in COEFFICIENTS and math.isfinite(check.error):
                     info[check.coefficient] = max(worst, check.error)
         checks += rule2_and_3(row, reference, index, b, d)
-        if row.catani == "none":
-            route = (
-                "the public route (the tools-route variant holds rule 4)"
-                if row.route == "public"
-                else "the native-input route (WP3.1 I5c)"
-            )
-            checks.append(Check(
-                "4", index, "double-double", "", "poles", "", "", 0.0, 0.0, True,
-                asserted=False, note=f"no Catani prediction on {route}; the "
-                "poles are held by rule 1"))  # fmt: skip
-        else:
-            checks += rule4(row, index, d, reference.alpha_s)
-            checks += rule4(row, index, b, reference.alpha_s)
+        checks += poles(index, d, b)
+    if tree_seconds:
+        timings["tree_catani_s"] = round(tree_seconds, 2)
     extras = set(row.extras) & IMPLEMENTED_EXTRAS if tier == "nightly" else set()
     extra_points = indices[:1]
     if "uv" in extras:
@@ -2556,7 +2768,9 @@ def run_row(
         ap60 = run.evaluate(extra_points, f"arbitrary-{AP_DIGITS[1]}", stability=False)
         timings["ap_s"] = round(time.perf_counter() - start, 2)
         for k, index in enumerate(extra_points):
-            checks += rule6(row, index, dd[indices.index(index)], ap[k], ap60[k])
+            checks += rule6(
+                row, index, dd[indices.index(index)], ap[k], ap60[k], reference.alpha_s
+            )
     if "ward" in extras:
         start = time.perf_counter()
         for index in extra_points:
@@ -2627,7 +2841,12 @@ class Campaign:
             ):
                 base = self.run(row.base)
             self._runs[name] = RowRun(
-                row, self.model(row.restriction), self.native, base=base
+                row,
+                self.model(row.restriction),
+                self.native,
+                base=base,
+                ufo=self.ufo,
+                work=self.work,
             )
         return self._runs[name]
 
