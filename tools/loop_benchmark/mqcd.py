@@ -62,11 +62,12 @@ not asserted with the record's reason, rules 2-4 hold the point) or ``ok``,
 compared relatively, or absolutely against a regular neighbour (the S3
 zero points, which the manifest's ``zero_points`` must name).
 
-E is the stability estimate of one exact rotation (z, 3/5, 4/5) plus the
-reduction-direction check (the O1 configuration,
-``generation.loop_service._BINARY64_CHECK_ROTATIONS``). A coefficient that
-vanishes identically (manifest ``vanishing``) is checked absolutely,
-|a - r| <= 1e-12 F_s with F_s = |B_s| alpha_s / 2 pi.
+E is the stability estimate of the recommended checks, the O1 rule's
+estimate (``loops.v2.stability.RECOMMENDED_CHECKS``, MQ-STAB: one generic
+exact rotation plus the rescaled reduction check; the earlier beam-axis
+rotation with the cached check missed errors by up to 100x, finding F6).
+A coefficient that vanishes identically (manifest ``vanishing``) is checked
+absolutely, |a - r| <= 1e-12 F_s with F_s = |B_s| alpha_s / 2 pi.
 
 ``python -m tools.loop_benchmark.mqcd run A12 --points 0 1`` runs rows outside
 pytest; the test modules ``tests/unit/test_loop_v2_mqcd_*.py`` run the tiers
@@ -118,7 +119,6 @@ VANISHING_HELICITY = 1e-24
 AP_CONVERGENCE = 1e-35  # rule 6
 CKM_RELATION = 1e-24  # PLAN §4.1: the H rows' CKM-factor relation in DD
 AP_DIGITS = (40, 60)
-CHECK_ROTATION = ("z", "3/5", "4/5")
 
 TIERS = ("default", "nightly")
 # ``composite``: a row made of its gating variants, checks and delegated
@@ -866,19 +866,13 @@ def evaluated(result: Any, carrier: str, seconds: float = 0.0) -> Evaluated:
     return Evaluated(carrier, born, virtual, catani, estimate, seconds, components)
 
 
-def check_rotation():
-    from pyamplicol.loops.v2.stability import Rotation
-
-    return Rotation.about(*CHECK_ROTATION)
-
-
 def check_configuration():
-    """The O1 estimate's checks: one exact rotation plus the reduction
-    direction."""
+    """The O1 estimate's checks: ``stability.RECOMMENDED_CHECKS`` (one
+    generic exact rotation plus the rescaled reduction check)."""
 
-    from pyamplicol.loops.v2.stability import StabilityChecks
+    from pyamplicol.loops.v2.stability import RECOMMENDED_CHECKS
 
-    return StabilityChecks((check_rotation(),), True)
+    return RECOMMENDED_CHECKS
 
 
 def compile_restriction(ufo: Path, restriction: str, root: Path) -> Any:
@@ -1426,7 +1420,9 @@ class PublicRun:
             mu_r2=[reference.scales[i] for i in indices],
             arithmetic=carrier,
             poles=poles,
-            stability_checks=VirtualStabilityChecks((check_rotation(),), True)
+            stability_checks=VirtualStabilityChecks(
+                check_configuration().rotations, True, rescaled=True
+            )
             if stability
             else None,
             on_failure="return",
