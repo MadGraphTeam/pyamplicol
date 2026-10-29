@@ -218,19 +218,18 @@ def process_text(key: str, compiled: Any) -> str:
 
 def _request(key: str, accuracy: str, compiled: Any) -> Any:
     from pyamplicol.loops.v2.assemble import SliceRequest
-    from pyamplicol.models.loop_color_declaration import LoopColorDeclaration
+    from pyamplicol.models.loop_color_declaration import (
+        resolve_loop_color_declaration,
+    )
 
     process = streams.spec(key)
     text = process_text(key, compiled)
     declaration = None
     if accuracy != "full":
-        if str(ROOT) not in sys.path:
-            sys.path.insert(0, str(ROOT))
-        from tools.loop_reference import legacy_capture
-
-        declaration = LoopColorDeclaration.from_dict(
-            json.loads(legacy_capture.COLOUR_DECLARATION.read_text())
-        )
+        # The model's declaration: for loop_sm the shipped one (MQ-NC), which
+        # covers every counterterm vertex (the example QCD subset does not
+        # cover the closed quark loops with electroweak legs).
+        declaration = resolve_loop_color_declaration(compiled.raw_loop_model)
     return SliceRequest(
         text,
         dict(process["born_orders"]),
