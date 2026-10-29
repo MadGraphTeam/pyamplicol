@@ -720,9 +720,7 @@ def command_nc_entry(args):
     }
     fixture = json.loads(Path(args.fixture).read_text())
     fixture["processes"][args.name] = entry
-    Path(args.fixture).write_text(
-        json.dumps(fixture, indent=1) + "\n"
-    )
+    Path(args.fixture).write_text(json.dumps(fixture, indent=1) + "\n")
     print(args.fixture, args.name)
 
 
