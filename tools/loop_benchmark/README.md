@@ -9,9 +9,10 @@ frozen phase-space points for every tool.
 |---|---|
 | `processes.json` | Process specifications in the required-references format (`tools/loop_reference/required_processes.json`, scheme `qcd` = loop_sm-no_b_mass). |
 | `streams.py`, `streams/` | Frozen streams of 128 distinct exact points per process; the first three are the reference campaign's. |
-| `pyamplicol_v2.py` | pyAmpliCol v2 through `NativeExecutor.evaluate` (the public v2 runtime's call): generation time and memory, the accuracy check at the campaign points, per-batch timings with the stage split (Python per-point inputs, the native report's stages, master integrals), and `stability` estimates at chosen points. |
+| `pyamplicol_v2.py` | pyAmpliCol v2 through `NativeExecutor.evaluate` (the public v2 runtime's call): generation time and memory, the accuracy check at the campaign points (untimed, against the fixture's providers at its tolerance: binary64 where the finite part's O1 estimate E <= 1e-9, `mqcd.O1_CAP`, else a double-double evaluation of the point, with E and the binary64 errors recorded; the user's ruling of 2026-10-29 on E1), per-batch timings with the stage split (Python per-point inputs, the native report's stages, master integrals), and `stability` estimates at chosen points. |
 | `providers.py` | MadLoop, Recola and OpenLoops in production mode through the toolkit's drivers; optionally MadLoop's stage split from an instrumented copy. |
 | `gate.py` | Combines the records into `docs/performance_reports/loop/data/g1.json`: gate verdicts, value comparison, cost-model recalibration. |
+| `mqcd.py` | The M-QCD validation campaign (m-qcd/PLAN.md §1.4, §4): the row manifest `tests/fixtures/loop/mqcd/manifest.json`, reference adapters, generation per row (shared by carriers, points and checks), the acceptance rules 1-6 (the O1 estimate is `loops.v2.stability.RECOMMENDED_CHECKS`; rule 4 on the native-input rows takes the tree engine's committed colour correlations, `mqcd_tree_correlations.py`, `tests/fixtures/loop/mqcd/references/tree-correlations-<row>.json`), the extras (`ap`, `uv`, `hel`, `sp` through the special-point variants, `ward` through `loops.v2.ward.ward_check` on the native input path, `ff` D01's analytic quark form factor, the H rows' CKM relation; `nc` is MQ-NC's rule 7 test ids per row, manifest `nc_column` once `mqcd_manifest.MQNC_LANDED`, read by `build_mqcd.py --junit` from their JUnit XML, pending MQ-NC until then), M01 as a composite row (each MadLoop P reference against the subprocess's own generation and, `route: public`, against the public route's multiparticle artifact; MQ-MODEL's bitwise test as a `delegated` column; `delegated-ids` lists the delegated pytest ids), MQ-REF's per-point reference records (a point without a provider reference runs rules 2-4 only) and the restriction smokes; `python -m tools.loop_benchmark.mqcd run ROW... --ufo LOOP_SM --work DIR [--results DIR]` outside pytest. `mqcd_manifest.py` writes the manifest (the PLAN rows, MQ-REF's reference index, the rules' listings and the per-row tolerances the user's ruling of 2026-10-29 ~10:20 relaxes, with their evidence; binary64 points outside the O1 scope are reported by the records, not listed). The tiers are `tests/unit/test_loop_v2_mqcd_{manifest,default}.py` and the nightly file jobs `test_loop_v2_mqcd_nightly{,_2,...,_7}.py` (manifest `nightly_jobs`: rows packed by measured cost, each job within 30 min; shared bodies in `tests/unit/loop_mqcd_tiers.py`); `docs/performance_reports/loop/scripts/build_mqcd.py` turns the per-row records into `data/mqcd.json` (with the curated triage `data/mqcd-findings.json` and a per-row markdown table). |
 
 Typical campaign (one of our jobs per CCX on cores without SMT siblings; the
 host is shared, so others' jobs are not controlled):
@@ -139,8 +140,10 @@ Accepted deviation (user decision of 2026-10-25, slice-status DECISIONS
 ten, above its 2e-8 tolerance, are "accepted (user 2026-10-25): O(1e-8)
 binary64, within the estimate, DD = NJet": both lie within pyAmpliCol's own
 binary64 estimate E (1.3e-6, 2.5e-7) and the double-double values equal
-NJet's double-double values; the points are not timed stream points. The
-run's accuracy check keeps the 2e-8 tolerance and `passed: false`; the
-acceptance lives in `docs/performance_reports/loop/data/milestone.json`
+NJet's double-double values; the points are not timed stream points. Since
+the user's ruling of 2026-10-29 on E1 the run's accuracy check asserts
+these points (E > 1e-9) in double-double at the unchanged 2e-8 tolerance,
+their binary64 errors recorded beside; the acceptance of the binary64
+deviations lives in `docs/performance_reports/loop/data/milestone.json`
 (`validation_decisions`), and the report builder checks its claims against
 `g1.json` and marks the points (`summary.json` `validation.accepted`).

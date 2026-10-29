@@ -1,0 +1,707 @@
+{
+ "source": "scripts/build_mqcd_matrix.py from data/mqcd.json, mqcd-findings.json, mqcd-public.json, mqcd-fft-cost.json and mqcd-fft-worst.json",
+ "campaign": {
+  "campaign_head": "e18a024b (M-QCD pin; campaign-m1029-mqcd: default, manifest and nightly jobs n1-n7 as whole files, one pytest process per job; delegated ids with --junitxml)",
+  "native": "loop-native-v2-slice-d0fef168 (_rusticol.so df718cf3)",
+  "date": "2026-10-29",
+  "counts": {
+   "pass": 76,
+   "partial": 1,
+   "fail": 1,
+   "pending": 0,
+   "not-run": 0
+  }
+ },
+ "public_route": "public (Generator on model.source = 'loop_sm', Runtime.load / Runtime.evaluate; harness PublicRun, rules 1-3; rule 4 on the tools-route rows)",
+ "classes": [
+  {
+   "class": "Q-massless",
+   "content": "gluons and massless quark lines, every initial state",
+   "rows": 22,
+   "counts": {
+    "pass": 20,
+    "fail": 1,
+    "partial": 1
+   },
+   "max_outgoing": 5,
+   "public": [
+    {
+     "row": "A12@public",
+     "process": "u u~ > d d~ g",
+     "passed": true,
+     "points": 3,
+     "dd_vs_reference": 3.7502886222765726e-14,
+     "binary64_vs_dd": 3.809019949238151e-13
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 1.1744354804752223e-11,
+    "row": "A18",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 1.0507174218424434e-10,
+    "row": "A18"
+   },
+   "binary64_vs_reference": {
+    "value": 7.348906867661915e-07,
+    "row": "A09",
+    "reference": "MadLoop",
+    "rows_out_of_scope": [
+     "A09",
+     "A14",
+     "A18",
+     "A21",
+     "A24"
+    ]
+   },
+   "catani_dd": {
+    "value": 1.1731808814312099e-22,
+    "row": "A09",
+    "no_predicted_sector": [],
+    "not_formed": [
+     "A24"
+    ]
+   },
+   "nc": {
+    "rows": [
+     "A01",
+     "A08",
+     "A09",
+     "A12",
+     "A13",
+     "A15",
+     "A18",
+     "A21"
+    ],
+    "status": [
+     "pass"
+    ],
+    "smoke_every_restriction": "pass"
+   },
+   "fft": [
+    "gg_gg",
+    "gg_ggg",
+    "gg_gggg",
+    "gg_ggggg",
+    "uux_ggg",
+    "uux_gggg",
+    "uux_ggggg",
+    "gg_uuxddx",
+    "uux_ddxg"
+   ],
+   "findings": [
+    {
+     "id": "F7",
+     "rows": [
+      "A09@collinear"
+     ],
+     "accepted": true,
+     "note": "accepted limitation for the M-QCD gate (coordinator ruling 2026-10-29 ~11:25 (a)): typed failures, no wrong value"
+    },
+    {
+     "id": "F11",
+     "rows": [
+      "A24"
+     ],
+     "accepted": true,
+     "note": "accepted 'partial' for the M-QCD gate (coordinator ruling 2026-10-29 ~11:25 (b))"
+    }
+   ],
+   "status": "accepted"
+  },
+  {
+   "class": "Q-top",
+   "content": "t t~ + jets, t t~ with quark lines, four tops",
+   "rows": 6,
+   "counts": {
+    "pass": 6
+   },
+   "max_outgoing": 4,
+   "public": [
+    {
+     "row": "M01@public-P0",
+     "process": null,
+     "passed": true,
+     "points": 4,
+     "dd_vs_reference": 1.9561206984200443e-15,
+     "binary64_vs_dd": 4.1325626333069107e-14
+    },
+    {
+     "row": "M01@public-P2",
+     "process": null,
+     "passed": true,
+     "points": 4,
+     "dd_vs_reference": 8.776732187941585e-16,
+     "binary64_vs_dd": 5.196308498236031e-15
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 3.409828552843598e-13,
+    "row": "B03",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 1.214925980807954e-10,
+    "row": "B01"
+   },
+   "binary64_vs_reference": {
+    "value": 1.7437371740174794e-07,
+    "row": "B01",
+    "reference": "MadLoop",
+    "rows_out_of_scope": [
+     "B01",
+     "B03"
+    ]
+   },
+   "catani_dd": {
+    "value": 2.9589725031919947e-26,
+    "row": "B01",
+    "no_predicted_sector": [],
+    "not_formed": []
+   },
+   "nc": {
+    "rows": [
+     "B03"
+    ],
+    "status": [
+     "pass"
+    ],
+    "smoke_every_restriction": "pass"
+   },
+   "fft": [
+    "gg_ttxgg"
+   ],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "Q-heavy",
+   "content": "massive b (4FS) and c, b-Yukawa Higgs",
+   "rows": 10,
+   "counts": {
+    "pass": 10
+   },
+   "max_outgoing": 4,
+   "public": [
+    {
+     "row": "C01@public",
+     "process": "g g > b b~",
+     "passed": true,
+     "points": 4,
+     "dd_vs_reference": 9.262759220143375e-16,
+     "binary64_vs_dd": 1.4610799503393067e-15
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 4.992646194032952e-14,
+    "row": "C02",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 2.336264533874071e-10,
+    "row": "C05"
+   },
+   "binary64_vs_reference": {
+    "value": 2.336215703370294e-10,
+    "row": "C05",
+    "reference": "MadLoop",
+    "rows_out_of_scope": []
+   },
+   "catani_dd": {
+    "value": 1.148427460178407e-28,
+    "row": "C09",
+    "no_predicted_sector": [],
+    "not_formed": []
+   },
+   "nc": {
+    "rows": [
+     "C01"
+    ],
+    "status": [
+     "pass"
+    ],
+    "smoke_every_restriction": "pass"
+   },
+   "fft": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "Q-EWBorn",
+   "content": "QCD corrections to Borns with QED >= 1",
+   "rows": 25,
+   "counts": {
+    "pass": 25
+   },
+   "max_outgoing": 5,
+   "public": [
+    {
+     "row": "D05@public",
+     "process": "u u~ > e- e+ g",
+     "passed": true,
+     "points": 4,
+     "dd_vs_reference": 2.329503260048067e-14,
+     "binary64_vs_dd": 2.2933498521683757e-13
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 1.832094398384809e-12,
+    "row": "D28",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 1.444503607334337e-11,
+    "row": "D28"
+   },
+   "binary64_vs_reference": {
+    "value": 3.053554119270413e-11,
+    "row": "D16",
+    "reference": "MadLoop",
+    "rows_out_of_scope": [
+     "D15",
+     "D16"
+    ]
+   },
+   "catani_dd": {
+    "value": 4.4601102384269375e-28,
+    "row": "D29",
+    "no_predicted_sector": [
+     "D19"
+    ],
+    "not_formed": []
+   },
+   "nc": {
+    "rows": [
+     "D05"
+    ],
+    "status": [
+     "pass"
+    ],
+    "smoke_every_restriction": "pass"
+   },
+   "fft": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "Q-ttX",
+   "content": "t t~ + H/Z, t t~ + leptons, e+ e- > t t~ (h)",
+   "rows": 4,
+   "counts": {
+    "pass": 4
+   },
+   "max_outgoing": 5,
+   "public": [
+    {
+     "row": "E01@public",
+     "process": "g g > t t~ h",
+     "passed": true,
+     "points": 4,
+     "dd_vs_reference": 3.5863545688653515e-13,
+     "binary64_vs_dd": 7.386800764592052e-12
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 3.5863545688653515e-13,
+    "row": "E01",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 7.434010870574243e-12,
+    "row": "E01"
+   },
+   "binary64_vs_reference": {
+    "value": 5.710216257741808e-09,
+    "row": "E06",
+    "reference": "MadLoop",
+    "rows_out_of_scope": [
+     "E06"
+    ]
+   },
+   "catani_dd": {
+    "value": 5.6632219224567896e-27,
+    "row": "E06",
+    "no_predicted_sector": [],
+    "not_formed": []
+   },
+   "nc": {
+    "rows": [
+     "E01"
+    ],
+    "status": [
+     "pass"
+    ],
+    "smoke_every_restriction": "pass"
+   },
+   "fft": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "Q-singletop",
+   "content": "s- and t-channel, tW, 4FS t-channel",
+   "rows": 5,
+   "counts": {
+    "pass": 5
+   },
+   "max_outgoing": 3,
+   "public": [
+    {
+     "row": "F03@public",
+     "process": "u d~ > t b~",
+     "passed": true,
+     "points": 4,
+     "dd_vs_reference": 1.7020048241759712e-15,
+     "binary64_vs_dd": 1.4247245508150966e-15
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 7.95935663079713e-15,
+    "row": "C07",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 1.6286012914121327e-14,
+    "row": "C07"
+   },
+   "binary64_vs_reference": {
+    "value": 1.6042038118480287e-14,
+    "row": "C07",
+    "reference": "MadLoop",
+    "rows_out_of_scope": []
+   },
+   "catani_dd": {
+    "value": 3.3988633003743326e-30,
+    "row": "F04",
+    "no_predicted_sector": [
+     "C07"
+    ],
+    "not_formed": []
+   },
+   "nc": {
+    "rows": [
+     "F01"
+    ],
+    "status": [
+     "pass"
+    ],
+    "smoke_every_restriction": "pass"
+   },
+   "fft": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "Q-mixed",
+   "content": "several Born orders, every squared split order",
+   "rows": 2,
+   "counts": {
+    "pass": 2
+   },
+   "max_outgoing": 2,
+   "public": [
+    {
+     "row": "G02@public",
+     "process": "u u~ > t t~",
+     "passed": true,
+     "points": 4,
+     "dd_vs_reference": 1.9561206984200435e-15,
+     "binary64_vs_dd": 3.229092857291651e-14
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 4.598074524287263e-15,
+    "row": "G01",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 3.111503693515707e-14,
+    "row": "G02"
+   },
+   "binary64_vs_reference": {
+    "value": 2.9158916236737074e-14,
+    "row": "G02",
+    "reference": "MadLoop",
+    "rows_out_of_scope": []
+   },
+   "catani_dd": {
+    "value": 3.729695987259872e-30,
+    "row": "G02",
+    "no_predicted_sector": [],
+    "not_formed": []
+   },
+   "nc": {
+    "rows": [],
+    "status": [],
+    "smoke_every_restriction": "pass"
+   },
+   "fft": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "Q-CKM",
+   "content": "non-diagonal CKM on W lines",
+   "rows": 3,
+   "counts": {
+    "pass": 3
+   },
+   "max_outgoing": 2,
+   "public": [
+    {
+     "row": "H01@public",
+     "process": "u s~ > w+ g",
+     "passed": true,
+     "points": 4,
+     "dd_vs_reference": 1.3812058713718121e-15,
+     "binary64_vs_dd": 7.143022902904602e-14
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 1.3812052775155262e-15,
+    "row": "H01",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 7.185208034654318e-14,
+    "row": "H01"
+   },
+   "binary64_vs_reference": {
+    "value": 7.323328562405861e-14,
+    "row": "H01",
+    "reference": "MadLoop",
+    "rows_out_of_scope": []
+   },
+   "catani_dd": {
+    "value": 4.63644103869966e-29,
+    "row": "H01",
+    "no_predicted_sector": [],
+    "not_formed": []
+   },
+   "nc": {
+    "rows": [],
+    "status": [],
+    "smoke_every_restriction": "pass"
+   },
+   "fft": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "Q-multi",
+   "content": "multiparticle labels (p p > t t~)",
+   "rows": 1,
+   "counts": {
+    "pass": 1
+   },
+   "max_outgoing": 2,
+   "public": [
+    {
+     "row": "M01@public-P0",
+     "process": null,
+     "passed": true,
+     "points": 4,
+     "dd_vs_reference": 1.9561206984200443e-15,
+     "binary64_vs_dd": 4.1325626333069107e-14
+    },
+    {
+     "row": "M01@public-P2",
+     "process": null,
+     "passed": true,
+     "points": 4,
+     "dd_vs_reference": 8.776732187941585e-16,
+     "binary64_vs_dd": 5.196308498236031e-15
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 1.9561206984200475e-15,
+    "row": "M01",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 4.1325626333069107e-14,
+    "row": "M01"
+   },
+   "binary64_vs_reference": {
+    "value": 4.328174703148907e-14,
+    "row": "M01",
+    "reference": "MadLoop",
+    "rows_out_of_scope": []
+   },
+   "catani_dd": {
+    "value": 4.001646556610976e-30,
+    "row": "M01",
+    "no_predicted_sector": [],
+    "not_formed": []
+   },
+   "nc": {
+    "rows": [],
+    "status": [],
+    "smoke_every_restriction": "pass"
+   },
+   "fft": [],
+   "findings": [],
+   "status": "pass"
+  }
+ ],
+ "fft": {
+  "protocol": "B = 128 G1-stream points (gg_uuxddx: the gg_gggg six-leg stream), binary64, poles none, no checks, timed evaluations pinned to one core (THREADS=1), generation/export on 8 cores; one paired round per class (REPS 2: best of 2, 2->5: 1); indicative, shared host; pin e18a024b, native loop-native-v2-slice-d0fef168",
+  "rows": [
+   {
+    "name": "gg_gg",
+    "process": "g g > g g",
+    "class": "Q-massless",
+    "group_order": 6,
+    "pairs": 2,
+    "algorithm": "symmetric-group-fft",
+    "total_fft_s": 0.26566892489790916,
+    "total_direct_s": 0.20548231899738312,
+    "total_ratio": 1.2929040619854624,
+    "seed_fft_s": 0.002003837,
+    "seed_direct_s": 0.00033871099999999995,
+    "seed_ratio": 5.916067089642794
+   },
+   {
+    "name": "gg_ggg",
+    "process": "g g > g g g",
+    "class": "Q-massless",
+    "group_order": 24,
+    "pairs": 2,
+    "algorithm": "symmetric-group-fft",
+    "total_fft_s": 2.581857476150617,
+    "total_direct_s": 2.7644563862122595,
+    "total_ratio": 0.9339476249390819,
+    "seed_fft_s": 0.010531433,
+    "seed_direct_s": 0.0070331890000000005,
+    "seed_ratio": 1.497390870627819
+   },
+   {
+    "name": "gg_gggg",
+    "process": "g g > g g g g",
+    "class": "Q-massless",
+    "group_order": 120,
+    "pairs": 2,
+    "algorithm": "symmetric-group-fft",
+    "total_fft_s": 49.26975866407156,
+    "total_direct_s": 52.13701956602745,
+    "total_ratio": 0.945005277903837,
+    "seed_fft_s": 0.17963194000000002,
+    "seed_direct_s": 0.25522848,
+    "seed_ratio": 0.7038083680943444
+   },
+   {
+    "name": "gg_ggggg",
+    "process": "g g > g g g g g",
+    "class": "Q-massless",
+    "group_order": 720,
+    "pairs": 2,
+    "algorithm": "symmetric-group-fft",
+    "total_fft_s": 1275.4125764179043,
+    "total_direct_s": 1246.3164977408014,
+    "total_ratio": 1.0233456579687787,
+    "seed_fft_s": 8.161139055,
+    "seed_direct_s": 17.714436399999997,
+    "seed_ratio": 0.4607055438128419
+   },
+   {
+    "name": "uux_ggg",
+    "process": "u u~ > g g g",
+    "class": "Q-massless",
+    "group_order": 6,
+    "pairs": 19,
+    "algorithm": "symmetric-group-fft",
+    "total_fft_s": 0.8004037081263959,
+    "total_direct_s": 0.8254411108791828,
+    "total_ratio": 0.9696678510159018,
+    "seed_fft_s": 0.011381996,
+    "seed_direct_s": 0.006734609,
+    "seed_ratio": 1.6900752515847617
+   },
+   {
+    "name": "uux_gggg",
+    "process": "u u~ > g g g g",
+    "class": "Q-massless",
+    "group_order": 24,
+    "pairs": 40,
+    "algorithm": "symmetric-group-fft",
+    "total_fft_s": 10.618156041018665,
+    "total_direct_s": 10.196069560013711,
+    "total_ratio": 1.0413969793478328,
+    "seed_fft_s": 0.357415483,
+    "seed_direct_s": 0.311652388,
+    "seed_ratio": 1.1468401872152507
+   },
+   {
+    "name": "uux_ggggg",
+    "process": "u u~ > g g g g g",
+    "class": "Q-massless",
+    "group_order": 120,
+    "pairs": 74,
+    "algorithm": "symmetric-group-fft",
+    "total_fft_s": 239.6514497420285,
+    "total_direct_s": 247.3109935701359,
+    "total_ratio": 0.969028696551109,
+    "seed_fft_s": 24.345490983,
+    "seed_direct_s": 34.652401578,
+    "seed_ratio": 0.7025628780216024
+   },
+   {
+    "name": "gg_ttxgg",
+    "process": "g g > t t~ g g",
+    "class": "Q-top",
+    "group_order": 24,
+    "pairs": 40,
+    "algorithm": "symmetric-group-fft",
+    "total_fft_s": 13.166252525988966,
+    "total_direct_s": 13.715680161956698,
+    "total_ratio": 0.959941641283552,
+    "seed_fft_s": 0.22421692000000001,
+    "seed_direct_s": 0.19759664,
+    "seed_ratio": 1.1347203069849772
+   },
+   {
+    "name": "gg_uuxddx",
+    "process": "g g > u u~ d d~",
+    "class": "Q-massless",
+    "group_order": 2,
+    "pairs": 2340,
+    "algorithm": "symmetric-group-fft",
+    "total_fft_s": 4.951963651925325,
+    "total_direct_s": 4.5493256989866495,
+    "total_ratio": 1.0885049740510693,
+    "seed_fft_s": 0.260031691,
+    "seed_direct_s": 0.08982414899999999,
+    "seed_ratio": 2.894897351045319
+   },
+   {
+    "name": "uux_ddxg",
+    "process": "u u~ > d d~ g",
+    "class": "Q-massless",
+    "group_order": null,
+    "pairs": null,
+    "algorithm": "direct",
+    "total_fft_s": 0.5191776528954506,
+    "total_direct_s": 0.4196913428604603,
+    "total_ratio": 1.2370463716428568,
+    "seed_fft_s": 0.0028848099999999994,
+    "seed_direct_s": 0.00287807,
+    "seed_ratio": 1.0023418471406182
+   }
+  ],
+  "worst": {
+   "what": "FFT vs direct at the cost run worst binary64 points (G1 streams) against the acceptance envelope 10(E_fft+E_direct)+16uS (reduction-direction estimates); ratio <= 1 passes; gg_ggggg double-double not run (killed, not needed)",
+   "max_by_carrier": {
+    "double": {
+     "ratio_to_envelope": 0.028144672425398056,
+     "relative": 15.515947651347076
+    },
+    "double-double": {
+     "ratio_to_envelope": 0.01668982222429429,
+     "relative": 1.0910986083634515e-19
+    }
+   },
+   "points": 21
+  }
+ }
+}

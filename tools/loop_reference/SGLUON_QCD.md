@@ -1,5 +1,10 @@
 # Saved scalar-QCD 2→3 control
 
+> Historical: this describes the per-diagram legacy one-loop engine, removed on
+> 2026-10-29 (MQ-LEGACY-REMOVE; v2 is the only one-loop engine, see
+> `docs/development/loop_v2/DESIGN.md` and §13.3 there). The modules, tools and tests named
+> here may no longer exist.
+
 The complete full-colour `u u~ -> sig8 sig8 g [QCD]` control passes against
 independently generated MadLoop 3.7.0 at its binary64 accuracy. Genuine
 DoubleFloat, AP60 and AP80 saved executions also pass that external comparison

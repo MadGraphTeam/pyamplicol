@@ -69,9 +69,16 @@ measured: in amber a known limitation, in grey run conditions. None at
 m1028a: the identical-flavour LC/NLC limitation of m1026a (u u~ > u u~ g's
 LC cell, then a cost measurement only) is fixed by identical-flavour-lc
 (`5cb5ea83`), and the seven-gluon contention note qualified m1026a's
-re-run. Then a status page (what is on `loop`, the
-gate, what is in development or missing with the known limitations, the
-timing protocol), the gate-G1
+re-run. Milestone M-QCD (2026-10-29, engine `e18a024b` on `loop`, build
+`loop-native-v2-slice-d0fef168`; full QCD one-loop support on the stock
+`loop_sm`, reproducing MadLoop) re-measured G1 at B = 128 only (B = 1 and the
+2 → 5 rows' B = 16 are `28a16255`'s earlier runs, marked ° in the tables) and
+adds the QCD capability matrix and the FFT cost table (section "QCD capability
+matrix", from `data/mqcd-matrix.json`) and the campaign's per-row appendix
+(from `data/mqcd.json`). Then a status page (what is on `loop`, M-QCD, the
+gate, what is missing with the typed refusal keys and the accepted
+limitations, what is next, the timing protocol), the QCD capability matrix,
+the gate-G1
 details (provider grid with B = 1 and B = 128, gate bands, stage
 split, levers, leading colour, throughput and recalibration, schedule B
 against M, values), the required processes, the seven-gluon comparison with
@@ -159,6 +166,9 @@ revision ("record 0ea83af2").
 | `g1-values.json` | The per-point values behind `g1.json`: pyAmpliCol's Born and finite part per configuration and stream point, and every provider run's per-point Born, finite part and time, from which the value comparison and the provider statistics can be re-derived. Recola's `finite` is stored as Recola returns it (equal to its `raw_finite`, Recola's own normalisation): the comparison first converts it to MadLoop's convention, finite + π²/6 × D × Born with D the universal double-pole coefficient of the process (`tools/loop_benchmark/gate.py` `_provider_values`, D from `providers.universal_double_pole`); compared as stored it differs at O(1). |
 | `milestone.json` | Hand-maintained registry, each block with its source: integrated packages at the pinned engine revision and the commits after the last integration, `previous_loop` and `previous_engine` (the `loop` head and engine before this milestone), `development` (the branch of the development revisions G1 timed: the gate tool records a detached checkout as `HEAD`; `integrated_at`, the revision that integrated it into `loop`), OpenLoops and Recola production timings of the seven-leg gates as transcribed from DESIGN §1.3 Table 1b (text; MadLoop's come from its records in `measured.json`; the gate limit is computed by `build_summary.py`), the required-set validation notes (DESIGN WP3.1 status), NJet Table 5 and the re-measured NJet timings (`njet-benchmark.md`), NJet validation figures, `gate_decisions` (user verdicts replacing a measured open gate verdict of their process and batch, each with the revision it was made for: the u u~ > u u~ g pass of 2026-10-24, made for `39824f9b`, no longer applies, the re-measure on `loop` passing; `gate_batch`, the user's rule of 2026-10-28 (slice-status DECISIONS ~08:20 item 2): the runtime speed gate is taken at B = 128 only, every other batch size is reported with its ratio and band, without a verdict; and `threshold_rule`, the user's gate rule of 2026-10-24 ~22:35: below 5 ms per point at B = 128 the process has no blocking gate, its ratio and band shown as measured (a configuration without a B = 128 timing has no verdict at all); today u u~ > d d~ g, u u~ > u u~ g, u u~ > e- e+ g and u u~ > e- e+ g g, g g > g g being 2 → 2 without a gate), `status_notes`: the registry's short refusal and status attributions (a refusal attributed to `loop`, with its basis where it is inferred rather than run; a capability in development that no configuration generates yet (`in_development`, today the EW row, WP3.2) or not started (`not_started`), with its work package; the V+jets refusals of the Python-input engine left at the G-int milestone), printed in Table 1 only where the most recent configuration refuses or nobody has a record, and the configuration of a development record that does not carry it (`particle_veto` of the top-free seven-gluon validation), and `pending`: the package that will time a row whose most recent configuration has no batched timing (`measure-g1-7leg`); `development` also gives the label and integration package of the development branch (Table 1's provenance); `ancestry`: the git ancestry of the revisions the main-configuration rule orders (every [older, newer] pair, as data, checked against git where present); `development_records`: the run conditions of the development validation records (shared host under load, from DESIGN WP3.1) and `threads`, the generation threads each increment states (by revision), stated wherever a record supplies a main value; `cell_notes`: notes on single measured cells (process, cell, G1 configuration, revision, kind `not validated` or `run conditions`, label, reason, source), which `build_summary.py` attaches to the main cell and which stop the build when that cell's main value is no longer the noted measurement; no measured numbers. |
 | `measured.json` | Development records written by `scripts/collect_milestone.py`: the seven-gluon records of 23 October (generation with its counts and `particle_veto`, read from the run's command line — empty, so top loops included —, counterterm program, native bare loop, first virtual and its rotation); `njet_single_evaluation`, the mean time of one NJet 3.1.2 seven-gluon evaluation without the scaling test (standard and de-symmetrised) from NJet's raw timing records; `required_native`, the WP3.1 native validations of the required set, the newest record per process with the DESIGN record that reports it (`record`, and `revision`, that increment's docs-only commit: the ninth increment, 6f5a64cc, re-ran g g > g g g g, u u~ > e- e+ d d~ g and g g > g g g g g after the ct-simplify merge; the eighth, 0ea83af2, re-ran the set on its merged head; u u~ > g g g g g's newest record is the seventh increment's, fef92189), each with generation and export cost, largest deviation per reference and coefficient, per-point estimates and single-point evaluation times, and `superseded`, an earlier record of a process whose newest record re-ran fewer points (g g > g g g g g: the eighth increment's points 0-2; the ninth re-ran point 0, bitwise equal), an older candidate of Table 1's validation cell (`VALIDATION_RULE`: it stays there and in Table 14 while the newer record only repeats part of it), never of the generation cell; `provider_generation`, the provider reference runs' records of the seven-leg rows (MadLoop export, MadLoop's production-build times per point from `madloop-production-result.json` or its run state, Recola generation and its protocol run's times per point or its unfinished status, the OpenLoops library, and the reference merge's largest provider-to-provider distance). |
+| `mqcd.json`, `mqcd-findings.json` | The M-QCD validation campaign (`m-qcd/PLAN.md` §4): per row the manifest facts, every tier's summary (points, checks, failures, largest deviations: DD from the reference, binary64 from DD, poles from Catani), variants, delegated columns and status; the findings' triage (curated by MQ-VALIDATE, re-checked at the pin). Written by `scripts/build_mqcd.py` from the campaign's records (see its docstring); the appendix table reads it. |
+| `mqcd-public.json`, `mqcd-fft-cost.json`, `mqcd-fft-worst.json`, `mqcd-selftest.json` | The campaign's public-route representatives (one row per class through `Generator` on the shipped `loop_sm`), the FFT against direct seed contraction at B = 128 and at the worst binary64 points, and the wheel self-test of two fresh venvs; copied from `workspace/tmp/campaign-m1029-mqcd` (records archived in `workspace/reports/engine-v2/m-qcd/records/m1029-mqcd/`). |
+| `mqcd-matrix.json` | The QCD capability matrix per class and the FFT cost rows, written by `scripts/build_mqcd_matrix.py` from the five files above (never by hand). |
 | `measurements.json`, `provider-cold.json`, `legacy-labels.json` | The legacy per-diagram engine's timing snapshot of 2026-10-18 (unchanged, cited by `docs/development/loop_v2/DESIGN.md`) and its labels; no longer shown (the history table is in the report revisions up to `ba7d510d`). |
 | `colour-measurements.json` | The legacy engine's LC/FC runs; not shown, kept for the citations in DESIGN.md and `research-leading-colour-structure.md`. |
 
@@ -233,6 +243,18 @@ Table 1 once, in its column header).
   slice_lc_revision=28a16255 slice_build=… slice_native_digest=…
   slice_tool_revisions=28a16255` and the same text fields.
 
+  The re-measure at milestone M-QCD (`e18a024b`, 2026-10-29, 17:21-19:07
+  UTC; build `loop-native-v2-slice-d0fef168`, records in
+  `records/m1029-mqcd/`, a copy of `workspace/tmp/g1-m1029-mqcd/`) timed every
+  configuration at B = 128 only, one round (timings indicative), and passed
+  the gate tool of `e18a024b` (g1-accuracy: binary64 asserted where E <= 1e-9,
+  DD elsewhere) the previous campaigns' inputs and its own (357 in
+  `inputs-final.txt`, labels `meta-final.json`).
+- `mqcd.json`: `python scripts/build_mqcd.py <campaign>/c1/results --junit
+  <campaign>/c1/junit-*.xml --findings data/mqcd-findings.json --meta ...`
+  (the campaign's labels: `campaign_head`, `native`, `references`,
+  `estimate`, `date`, `timings`, `rules`); then `python
+  scripts/build_mqcd_matrix.py` and recompile.
 - `measured.json`: `python scripts/collect_milestone.py <workspace>` reads the
   run records under `<workspace>/tmp/generation-scale/runs/` and
   `<workspace>/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs: wall,
@@ -263,7 +285,7 @@ Table 1 once, in its column header).
   m1025c `4fc72e39`, the engine on `loop`, with its seven, although no G1
   campaign ran there; at milestone m1026a `11542fd5`, engine and G1 campaign,
   with its eight; at milestone m1028a `28a16255`, engine and G1 campaign,
-  with its nine); the 2 → 5 rows kept the development validation
+  with its nine; at milestone M-QCD `e18a024b` with its ten); the 2 → 5 rows kept the development validation
   records (made on the branch before its integration,
   `development.integrated_at`) until the seven-leg G1 rows
   (`measure-g1-7leg`) were added to `g1.json`, which now supplies their
@@ -282,9 +304,10 @@ Table 1 once, in its column header).
   Figure 1 say "refused on the development branch"; the stage-split table of
   the gate-G1 details still assumes a generable native-input configuration);
   a cell only the integrated side measured (shown with its origin). The status page's gate
-  box reads Table 1's values; its hand-written boxes ("In development",
-  "Missing or incomplete") and the capability matrix are updated by hand at
-  each milestone. Keep the `status_notes`, `pending`, `development` (label,
+  box reads Table 1's values, its M-QCD box `data/mqcd-matrix.json`; its
+  hand-written boxes ("In development", "Missing or incomplete") and the
+  feature capability matrix are updated by hand at each milestone (the QCD
+  capability matrix is generated). Keep the `status_notes`, `pending`, `development` (label,
   integration package, revisions) and `gate_decisions` of `milestone.json`
   current; a decision applies to a measured open verdict of its process and
   batch only; `gate_decisions.threshold_rule` (the user's 5 ms rule) applies
