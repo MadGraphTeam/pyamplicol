@@ -221,8 +221,9 @@ class Row:
     # every row on that route), "tree" (a row on the native-input route,
     # whose executor forms none, WP3.1 I5c: the harness's massless Catani
     # operator on the tree engine's colour-correlated Born, ``tree_catani``)
-    # or "none" (M01's public-route variants: their tools-route twins hold
-    # rule 4; recorded as not asserted).
+    # or "none" (recorded as not asserted: M01's public-route variants, whose
+    # tools-route twins hold rule 4, and a native-input row without the tree
+    # engine's committed correlations, reported "partial").
     catani: str = "python"
     # The committed tree-engine colour correlations of a "tree" row
     # (``tools/loop_benchmark/mqcd_tree_correlations.py``), or None (the
@@ -1182,8 +1183,8 @@ class RowRun:
     def tree_correlations(self, index: int) -> tuple[Decimal, dict]:
         """(Born, {(j, k): <T_j.T_k>}) of the tree engine at reference point
         ``index``: the row's committed tree-correlation fixture
-        (``row.tree_correlations``, ``tree_correlations_fixture``; checked
-        to hold this point's momenta) or the tree engine run here
+        (``row.tree_correlations``, written by ``mqcd_tree_correlations.py``;
+        checked to hold this point's momenta) or the tree engine run here
         (``tree_runtime``, generated once per row)."""
 
         point = self.reference.points[index]
