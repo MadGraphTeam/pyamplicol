@@ -1047,7 +1047,10 @@ def _summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
     return out
 
 
-CHECKS = "rotation about z by (3/5, 4/5) and the reduction direction"
+CHECKS = (
+    "the recommended checks (loops.v2.stability.RECOMMENDED_CHECKS): one generic "
+    "exact rotation and the rescaled reduction check"
+)
 
 
 def stability_rows(
@@ -1056,25 +1059,25 @@ def stability_rows(
     arithmetics: list[str],
     fixture: tuple[str, dict[str, Any]] | None = None,
 ) -> list:
-    """Stream points of a generated run evaluated with one rotation about z
-    by (3/5, 4/5) and the reduction-direction check, finite part only: the
-    estimate E and each check's relative deviation (``checks``: the rotated
-    evaluation's is the rotational-invariance test). With ``fixture`` (name,
+    """Stream points of a generated run evaluated with the recommended checks
+    (``RECOMMENDED_CHECKS``: one generic exact rotation and the rescaled
+    reduction check; a rotation about the beam axis under-reports, package
+    mq-stab), finite part only: the estimate E and each check's relative
+    deviation (``checks``: the rotated evaluation's is the
+    rotational-invariance test). With ``fixture`` (name,
     content: ``reference_fixture``) the indices are the fixture's points at
     its own scales, and each row also has the finite part's deviation from
     every reference of the fixture that states one
     (``deviation_vs_references``, the fixture metric of ``reference_errors``)."""
 
     from pyamplicol.loops.v2.assemble import Precision
-    from pyamplicol.loops.v2.stability import Rotation, StabilityChecks
+    from pyamplicol.loops.v2.stability import RECOMMENDED_CHECKS
 
     precisions = {
         "double": Precision.double(),
         "double-double": Precision.double_double(),
     }
-    checks = StabilityChecks(
-        rotations=(Rotation.about("z", "3/5", "4/5"),), reduction_direction=True
-    )
+    checks = RECOMMENDED_CHECKS
     rows = []
     # One batch of at most one chunk of lanes per arithmetic: at seven legs
     # a chunk costs as much as one of its points.
@@ -1140,8 +1143,8 @@ def stability_rows(
 
 
 def check_points(options: Any) -> int:
-    """Evaluate chosen stream points with stability checks (one rotation about
-    z by (3/5, 4/5) and the reduction-direction check) in the configuration
+    """Evaluate chosen stream points with stability checks (the recommended
+    checks, ``stability_rows``) in the configuration
     of a run, in each arithmetic of ``--arithmetic`` (binary64 and/or
     double-double): the estimate E beside the value, for the points where the
     timed binary64 values deviate most from the providers (``gate.py``). The
