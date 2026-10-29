@@ -188,7 +188,15 @@ def generate(masses, count=3, cut=F(1, 1000), resonances=(), scale_window=(F(800
     final_masses = [F(m) for m in masses[incoming:]]
     if any(F(m) for m in masses[:incoming]):
         raise ValueError("massive initial states are not implemented")
-    (_, *_), additions = plan(final_masses)
+    (kind, a, _), additions = plan(final_masses)
+    if kind != "massless":
+        # The seed mass is at most m (k + 1/k) and each massless addition
+        # multiplies it by j <= 4: refuse a window no candidate can reach.
+        reachable = final_masses[a] * (_K_SEED[-1] + 1 / _K_SEED[-1]) * F(_K_ADD[-1]) ** len(additions)
+        if reachable < scale_window[0]:
+            raise ValueError(
+                f"masses {[str(m) for m in final_masses]} cannot reach sqrt(s) >= {scale_window[0]} with "
+                "terminating parameters; use supplied_points.py")
     accepted = []
     seen_scales = set()
     chooser = random.Random(20261020)
@@ -251,6 +259,8 @@ def main():
     parser.add_argument("--count", type=int, default=3)
     parser.add_argument("--mu-r", nargs="+", default=["1000", "700", "1400"])
     parser.add_argument("--cut", default="1/1000", help="minimal 2|p_i.p_j|/s")
+    parser.add_argument("--half-scale-point", action="store_true",
+                        help="append a copy of point 1 at half its scale (mu_R = mu_0/2)")
     args = parser.parse_args()
     import required_spec
 
@@ -260,6 +270,9 @@ def main():
     resonances = [values[name] for name in ("MZ", "MW", "MH", "MT") if name in values and F(values[name])]
     points = generate(masses, args.count, F(args.cut), resonances, pdgs=spec["pdgs"])
     mu_r = list(itertools.islice(itertools.cycle(args.mu_r), args.count))
+    if args.half_scale_point:
+        points.append(points[0])
+        mu_r.append(decimal_string(F(mu_r[0]) / 2))
     report = {
         "process_name": spec["name"],
         "pdgs": spec["pdgs"],
@@ -272,6 +285,8 @@ def main():
         "points": [[[decimal_string(x) for x in leg] for leg in point] for point in points],
         "mu_r": mu_r,
     }
+    if args.half_scale_point:
+        report["scale_variation"] = {"point": len(points), "copy_of_point": 1, "mu_r_factor": "1/2"}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(args.output)
