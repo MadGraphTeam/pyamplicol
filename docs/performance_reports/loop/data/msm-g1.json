@@ -71,8 +71,55 @@
     },
     "recola": {
      "provider": "recola",
-     "error": "RuntimeError: /shared/vhirschi/t3code/pyamplicol/workspace/tmp/ms-validate/g1/providers-work/recola-run/recola-driver-production failed with 127; see /shared/vhirschi/t3code/pyamplicol/workspace/tmp/ms-validate/g1/providers-work/recola-run/output.log",
-     "harness_wall_seconds": 0.24863459705375135,
+     "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
+     "version": "Recola2 (tree recola2-2.3.0) / libcollier.so 1.2.8 / libmodelfile.so 2.2.3 / librecola.so 2.2.5",
+     "collier_cache": {
+      "on": true,
+      "collier": "1.2.8",
+      "reason": "COLLIER 1.2.8 has no N = 7 cache defect"
+     },
+     "libraries": {
+      "libcollier.so": "sources/COLLIER-1.2.8/libcollier.so",
+      "libmodelfile.so": "models/SM_2.2.3/libmodelfile.so",
+      "librecola.so": "sources/recola2-2.3.0/librecola.so"
+     },
+     "commands": [
+      "mass W 80.419 0",
+      "mass Z 91.188 0",
+      "mass H 125 0",
+      "mass top 173 0",
+      "mass bottom 0 0",
+      "mass charm 0 0",
+      "mass strange 0 0",
+      "mass up 0 0",
+      "mass down 0 0",
+      "mass tau 0 0",
+      "mass muon 0 0",
+      "mass electron 0 0",
+      "gfermi 0.0000116639",
+      "onshell",
+      "alphas 0.118 1000 5",
+      "legs 7",
+      "born_gs 3",
+      "loop_gs 3",
+      "pow_lo 3",
+      "pow_nlo 3",
+      "process g g -> t t~ e- e+ g",
+      "irpoles 0",
+      "generate"
+     ],
+     "finite_convention": "Recola (Gamma(1+eps)); MadLoop's adds pi^2/6 D",
+     "points": 16,
+     "mean_seconds_per_point": 1.07359147,
+     "median_seconds_per_point": 0.986733744,
+     "min_seconds_per_point": 0.957680389,
+     "max_seconds_per_point": 2.34992101,
+     "setup": {
+      "generation_seconds": 23.5111924,
+      "initial_call_seconds": 1.82314708
+     },
+     "process_wall_seconds": 42.549813074059784,
+     "harness_wall_seconds": 42.85673176613636,
      "cpu": 121
     },
     "madloop": {
@@ -137,6 +184,14 @@
       "points": 16
      }
     ],
+    "recola": [
+     {
+      "cpu": 121,
+      "median_seconds_per_point": 0.986733744,
+      "mean_seconds_per_point": 1.07359147,
+      "points": 16
+     }
+    ],
     "madloop": [
      {
       "cpu": 121,
@@ -148,6 +203,10 @@
    },
    "provider_uncertainty": {
     "openloops": {
+     "relative": 0.0,
+     "assumed": true
+    },
+    "recola": {
      "relative": 0.0,
      "assumed": true
     },

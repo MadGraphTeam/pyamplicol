@@ -338,8 +338,10 @@ def _provider_values(key: str, record: dict[str, Any]) -> dict[str, dict[int, tu
     """(born, finite in MadLoop's convention) per provider and stream index."""
 
     spec = streams.spec(key)
-    # Recola's finite part takes pi^2/6 x the universal double pole (QCD);
-    # a non-QCD correction (the indicative EW row) has none, so its Recola
+    # Recola's finite part takes pi^2/6 x the universal double pole, which
+    # ``universal_double_pole`` implements for QCD only; for an EW
+    # correction (the indicative EW row; QED has double poles where charged
+    # legs are massless) that conversion is not implemented, so its Recola
     # values are not compared (MadLoop's and OpenLoops' are).
     factor = (
         provider_module.universal_double_pole(spec)

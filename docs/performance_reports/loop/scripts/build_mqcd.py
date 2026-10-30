@@ -410,7 +410,9 @@ def build(
     if isinstance(smoke, dict):
         checks["lc:every_restriction"] = column([smoke["test"]], outcomes)
     name = Path(manifest_path).resolve().parent.name
-    plan = "m-sm" if name == "msm" else "m-qcd"
+    # The manifest's own plan ("workspace/reports/engine-v2/m-sm/PLAN.md
+    # §1.4, ..."): its directory names the campaign's PLAN.
+    plan = Path(manifest["plan"].split()[0]).parent.name
     data = {
         "source": f"tests/fixtures/loop/{name}/manifest.json + campaign records "
         f"(tests/unit/test_loop_v2_{name}_*.py, PYAMPLICOL_MQCD_RESULTS)"
