@@ -1644,7 +1644,9 @@ COMPONENT_FORMATS = {"ew-control", "madloop-components", "process-components"}
 # component, TT05); the harness finds them structurally on every row with
 # MS-REF's called-coupling lists (``mqcd.rule_r2``): the R2 couplings of
 # the counterterm program's admitted rules whose vertex a tree of the
-# request can hold (``mqcd.r2_reachability``), less those whose MG5
+# export's sectors can hold (``mqcd.r2_reachability``, ``mqcd.
+# r2_export_sectors``; a joint row's other sectors have their own export),
+# less the listed vanishing insertions (``R2_VANISHING``) and those whose MG5
 # identical-coupling class the MadLoop export calls (MG5's restricted model
 # merges couplings of equal value: LL03's export calls R2_AAU and R2_AAD
 # where the UFO's V_R2AA groups take R2_AAu3, R2_AAc3, ...), must equal the
@@ -1663,6 +1665,14 @@ OMITTED = {
 # coupling_ratio``, binary64; 0.869 at lhv = 1), computed when this
 # script runs with the G_mu UFO.
 OMITTED_COMPONENT = {"TT05": ("r2_g0tt", "R2_G0tt_b", "R2_G0tt")}
+# R2 couplings the engine inserts in the export's sectors whose insertion
+# vanishes there, so MadLoop calls none (``mqcd.Row.r2_vanishing``): u d~ >
+# e+ ve b b~ (QCD corrections, sector QCD^2 QED^8): the W self-energy R2
+# with a quark loop on the QCD^2 QED^2 tree (g -> b b~, a colour octet)
+# against the QED^4 Born (b b~ a singlet) is Tr T^a = 0; the reachability
+# sweep is colour-blind (tmp/ms-validate/probe-r2; rule 1 = MadLoop CMS to
+# 1e-12 at every point, fs2).
+R2_VANISHING = {"CM08": ["R2_WWcs1", "R2_WWtb1", "R2_WWtb3", "R2_WWud1"]}
 
 
 def coupling_ratio(name, numerator, denominator, card) -> str | None:
@@ -1787,6 +1797,9 @@ VANISHING = {
     # (ours 1e-33, MadLoop's 1e-17 of the Born; tmp/ms-validate/f1 with the
     # plan-rank fix of finding F1).
     "SC07": [{"sector": "QED^6", "coefficient": "single_pole"}],
+    # z z > h h: neutral legs only, as SC07 (ours 1e-32, MadLoop's 1e-16 of
+    # the Born; tmp/ms-validate/fs2).
+    "SC10": [{"sector": "QED^6", "coefficient": "single_pole"}],
     # a a > w+ w- with QED corrections: neutral initial photons, massive
     # charged final W's, so no soft-collinear photon pole (ours 7e-33,
     # MadLoop's 1.5e-34 of the Born; tmp/ms-validate/fs 2026-10-30).
@@ -1877,6 +1890,10 @@ RELAXED = {
     # residue of the cancelling UV poles, -3.3e-15 = 1e-11 F_s at points 0
     # and 3 (double-double 8e-33; tmp/ms-validate/f4).
     "SC07": {"2": 1e-10, "4": 1e-10},
+    # z z > h h: the same residue in binary64, 7.0e-13 = 2.6e-9 F_s at points
+    # 0 and 3 (within its estimate, rule 3; double-double 4e-32;
+    # tmp/ms-validate/fs2).
+    "SC10": {"2": 1e-8, "4": 1e-8},
 }
 # Rule 4 not formed (status partial): the massive-muon copy of the G_mu UFO
 # (code Gm) changes only the muon mass in the restriction card, while the
@@ -2238,6 +2255,8 @@ for r in R:
     called = called_couplings(reference)
     if called is not None:
         entry["madloop_r2_called"] = called
+        if r["id"] in R2_VANISHING:
+            entry["r2_vanishing"] = R2_VANISHING[r["id"]]
         for variant in entry.get("variants", ()):
             variant["madloop_r2_called"] = called_couplings(variant["reference"])
     if r["id"] in OMITTED_COMPONENT and status == "active":
@@ -2306,6 +2325,8 @@ MEASURED_SECONDS: dict[str, tuple[int, int]] = {
     "ST03": (120, 4), "TV03": (257, 4), "V301": (279, 4), "VH01": (149, 4),
     "VH02": (154, 4), "VH03": (201, 4), "MP01@P4": (145, 4),
     "MP02@P6": (188, 4), "VV02": (412, 4),
+    # MS-UFODB's row (tmp/ms-validate/fs2, 2026-10-30).
+    "SC10": (195, 4),
 }  # fmt: skip
 DEFAULT_SECONDS = 600
 JOB_SECONDS = 1500

@@ -301,6 +301,12 @@ class Row:
     # (MS-REF's ``madloop_r2_couplings``), for the structural difference
     # with the engine's (``rule_r2``); None where the reference lists none.
     madloop_r2_called: tuple[str, ...] | None = None
+    # R2 couplings the engine inserts in the export's sectors whose
+    # contribution vanishes there (colour: a colour-octet tree against the
+    # singlet Born, which the colour-blind reachability keeps), so MadLoop
+    # calls none of them; listed with the reason, they are no omission
+    # (``rule_r2``).
+    r2_vanishing: tuple[str, ...] = ()
     # [U2]: the request lowers a Levi-Civita cell its veto keeps from
     # cancelling (``SliceRequest.allow_anomalous_veto``; SC05's d s b veto).
     allow_anomalous_veto: bool = False
@@ -396,6 +402,7 @@ class Row:
             madloop_r2_called=None
             if data.get("madloop_r2_called") is None
             else tuple(data["madloop_r2_called"]),
+            r2_vanishing=tuple(data.get("r2_vanishing") or ()),
             allow_anomalous_veto=bool(data.get("allow_anomalous_veto", False)),
             external_photons=data.get("external_photons")
             if not isinstance(data.get("external_photons"), list)
@@ -3015,15 +3022,21 @@ def rule_joint(row: Row, run: RowRun, index: int, dd: Evaluated) -> list[Check]:
     return checks
 
 
-def r2_reachability(slice_: Any) -> Callable[[Any], bool]:
+def r2_reachability(
+    slice_: Any, sectors: Iterable[Sector] | None = None
+) -> Callable[[Any], bool]:
     """Whether a CT rule's vertex can enter a tree of the slice's request:
     ``ct_closure.InsertionReachability.admits`` over the CT program's
     lowered model, process, order limits and vetoed particles (the sweep
     production runs for its inert rules: species and coupling orders, no
-    colour or flavour; a vertex it finds in no tree enters none)."""
+    colour or flavour; a vertex it finds in no tree enters none). With
+    ``sectors`` (squared-order sector keys) the physical order limits are
+    those of the loop amplitude orders that reach them (``LoopSlice.
+    sectors``): a tree of the request's other sectors is not held."""
 
     from pyamplicol.loops.v2.blocks import vetoed_particle_ids
     from pyamplicol.loops.v2.ct_closure import InsertionReachability
+    from pyamplicol.models.loading import COUNTERTERM_INSERTION_ORDER
     from pyamplicol.processes.model import build_model_process_ir
 
     recursion = slice_.counterterm_program.recursion
@@ -3031,12 +3044,45 @@ def r2_reachability(slice_: Any) -> Callable[[Any], bool]:
     ir = build_model_process_ir(
         slice_.request.process, lowered.compiled.ir, color_accuracy="full"
     )
+    limits = recursion.coupling_order_limits()
+    if sectors is not None:
+        wanted = set(sectors)
+        # ``LoopSlice.sectors``: per sector its (Born, loop) amplitude orders.
+        loops = [
+            dict(loop)
+            for sector, pairs in slice_.sectors
+            if sector_key(sector) in wanted
+            for _born, loop in pairs
+        ]
+        if loops:
+            insertion = COUNTERTERM_INSERTION_ORDER.upper()
+            limits = {
+                name: bound
+                if name.upper() == insertion
+                else max(loop.get(name, 0) for loop in loops)
+                for name, bound in limits.items()
+            }
     return InsertionReachability.build(
         lowered.tree_model(),
         ir,
-        recursion.coupling_order_limits(),
+        limits,
         ignored_particle_ids=vetoed_particle_ids(recursion.model.veto),
     ).admits
+
+
+def r2_export_sectors(reference: Reference) -> frozenset[Sector] | None:
+    """The sectors of the MadLoop export whose called R2 couplings the row
+    lists (``madloop_r2_called``): those MadLoop's values report at the
+    reference's points (the primary's without MadLoop values); None where a
+    provider reports only the total."""
+
+    found: set[Any] = set()
+    for values in reference.virtual:
+        name = "madloop" if "madloop" in values else reference.primary
+        found |= set(values.get(name, {}))
+    if not found or TOTAL in found:
+        return None
+    return frozenset(found)
 
 
 def engine_r2(
@@ -3083,8 +3129,9 @@ def rule_r2(
     (``madloop_r2_called``) and ``classes`` gives MG5_aMC's identical-coupling
     classes (``r2_value_classes``), the omission found structurally, the
     engine's inserted couplings that no called coupling's class holds,
-    equals the listed set: an unlisted omission fails here, before rule 1
-    against MadLoop."""
+    equals the listed set (less the row's ``r2_vanishing``, couplings whose
+    insertion vanishes in its sectors, each of them in that difference): an
+    unlisted omission fails here, before rule 1 against MadLoop."""
 
     if engine is None:
         engine = engine_r2(slice_)
@@ -3104,9 +3151,12 @@ def rule_r2(
             for name in inserted
             if classes.get(name) is not None and classes[name] not in called
         }
+        vanishing = set(getattr(row, "r2_vanishing", ()) or ())
+        found = omitted - vanishing
         checks.append(Check(
-            "r2", None, "", "", "omitted", ", ".join(sorted(omitted)) or "none",
-            ", ".join(sorted(listed)) or "none", 0.0, 0.0, listed == omitted,
+            "r2", None, "", "", "omitted", ", ".join(sorted(found)) or "none",
+            ", ".join(sorted(listed)) or "none", 0.0, 0.0,
+            listed == found and vanishing <= omitted,
             note="the engine's inserted R2 couplings (on vertices a tree of the "
             "request can hold) whose MG5 identical-coupling class MadLoop's "
             "export does not call = the row's madloop_omitted_r2"))  # fmt: skip
@@ -3742,7 +3792,10 @@ def run_row(
     ) and hasattr(run, "slice"):
         ufo = getattr(run, "model_ufo", None)
         classes = None
-        engine = engine_r2(run.slice)
+        # The R2 couplings of the sectors the MadLoop export covers.
+        engine = engine_r2(
+            run.slice, r2_reachability(run.slice, r2_export_sectors(reference))
+        )
         if ufo is not None and row.madloop_r2_called is not None:
             inserted = set().union(*engine.values()) if engine else set()
             classes = r2_value_classes(
