@@ -1585,6 +1585,9 @@ RULE1 = {
     # SC03 (CKM, massive b and tau): 1.15e-12 (rule 1), 2.3e-12 (rule 5's
     # CT components, MadLoop's double-precision CT runs) in m2.
     "SC03": 1e-10,
+    # SC02 (massive muon, m^2/s = 1e-8) against MadLoop's CutTools
+    # quadruple precision (MS-REF's re-run): finite parts to 4.9e-9 (c7).
+    "SC02": 1e-8,
 }
 # Relaxed rules per row (the user's ruling of ~10:20, at most 1e-5): SC05's
 # poles against Catani in double-double, 2.9e-14 and 4.2e-14 at point 0

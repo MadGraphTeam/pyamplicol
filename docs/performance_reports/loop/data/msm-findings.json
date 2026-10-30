@@ -72,8 +72,8 @@
    ],
    "checks": "rule 1, QED^6 finite and single pole at every point (double pole and the QCD^2 QED^4 sector agree)",
    "evidence": "probe-sc02 (double-double, points 0 and 2): the QED-only and the joint request give the same QED^6 values; ours = the engine's massive QED Catani operator + 3 (alpha/2pi) Born to seven digits (the copy's massless lepton field renormalisation, as on LL02, where ours = MadLoop's control), while MadLoop's single pole is the operator - 42 (alpha/2pi) Born. Per PLAN \u00a74.1 Recola arbitrates a discrepancy above ~1e-5 (its own massive muon differs from the copy by the same field renormalisation)",
-   "status": "open",
-   "routed": "MS-REF (Recola on uux_mummp_ew_mm) / coordinator"
+   "status": "resolved by MS-REF's integrated re-run of uux_mummp_ew_mm (CutTools in the quadruple-precision stage, 047841b6): ours = MadLoop to 4.9e-9 in the QED^6 finite part (rule 1 at 1e-8 on SC02, the user's ~10:20 ruling), the poles to 1e-12 (c7)",
+   "routed": "closed"
   },
   {
    "id": "F6",
