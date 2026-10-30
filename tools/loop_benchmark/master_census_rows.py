@@ -66,7 +66,7 @@ def _row(row: str, cache: Path) -> tuple[Any, Any, list, list, dict, float]:
     kind, fixture, process = ROWS[row]
     # The tests' copy (conftest ``loop_gmu_ufo``): UFOmodeldb's.
     gmu = Path(os.environ["PYAMPLICOL_LOOP_WORKSPACE"]) / (
-        "reference/models/ufodb-6ca4b120/loop_qcd_qed_sm_Gmu_py3"
+        "reference/models/ufodb-6ca4b120-patched/loop_qcd_qed_sm_Gmu_py3"
     )
     if kind == "cm01":
         ref = json.loads((FIXTURES / "cms-ufo-standard-gmu.json").read_text())
