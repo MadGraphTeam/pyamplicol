@@ -7,7 +7,13 @@ amplitudes, evaluated on the run's own cards, points and scales
 (``runs/required/<name>``: ``madloop-export``, ``madloop-run/Cards``,
 ``points.json``). Each amplitude of the process's helas-call files is
 classified by the coupling names its call passes; a ``--group NAME=REGEX``
-holds the amplitudes whose call arguments match REGEX. Evaluated variants:
+holds the amplitudes whose call arguments match REGEX. With ``--ct-couplings``
+(the export's ``ct_couplings.json`` of ``madloop_ct_couplings.py``) every call
+name is first replaced by the UFO couplings it stands for (MG5 calls merged
+couplings by one name, e.g. the UV coupling ``c_UVvexveA1EW_1eps`` as
+``R2_AWWcs``); a name standing for couplings of two groups is refused.
+``--export``/``--subprocess`` select another export and subprocess directory
+(a run of a multi-subprocess export). Evaluated variants:
 ``ct`` (every CT amplitude), one per group, and ``rest`` (the amplitudes of
 no group). The instrumentation is that of ``madloop_ct_component.py`` (a copy
 of ``loop_matrix.f`` with the generated ``SKIPLOOPEVAL`` switch on and the
@@ -53,17 +59,35 @@ def statements(path: Path) -> list[str]:
     return out
 
 
-def classify(process: Path, groups: dict[str, re.Pattern[str]]) -> dict[int, str]:
-    """Group of every counterterm amplitude (``rest`` for none); an amplitude
-    whose calls match two groups, or whose calls differ in group, is refused."""
+TOKEN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
+
+def ufo_names(text: str, tokens: dict[str, list[str]] | None) -> str:
+    """``text`` with every call name replaced by the UFO couplings it stands for."""
+    if tokens is None:
+        return text
+    return TOKEN.sub(lambda m: " ".join(tokens.get(m[0].upper(), [m[0]])), text)
+
+
+def classify(
+    process: Path,
+    groups: dict[str, re.Pattern[str]],
+    tokens: dict[str, dict[str, list[str]]] | None = None,
+) -> dict[int, str]:
+    """Group of every counterterm amplitude (``rest`` for none); an amplitude
+    whose calls match two groups, or whose calls differ in group, is refused.
+    ``tokens``: the ``ct_tokens`` record of the subprocess (call name -> UFO
+    couplings, per file kind ``ampb``/``uvct``)."""
+
+    ampb = None if tokens is None else tokens["ampb"]
+    uvct_tokens = None if tokens is None else tokens["uvct"]
     found: dict[int, set[str]] = {}
     for path in sorted(process.glob("helas_calls_ampb_*.f")):
         for statement in statements(path):
             match = re.search(r"AMPL\([123],(\d+)\)", statement)
             if not (match and statement.startswith("CALL ")):
                 continue
-            arguments = statement[statement.index("(") + 1 :]
+            arguments = ufo_names(statement[statement.index("(") + 1 :], ampb)
             names = {
                 name for name, pattern in groups.items() if pattern.search(arguments)
             }
@@ -80,6 +104,7 @@ def classify(process: Path, groups: dict[str, re.Pattern[str]]) -> dict[int, str
             if not match:
                 continue
             text = statement[statement.index("(") + 1 :] if statement.startswith("CALL ") else statement
+            text = ufo_names(text, uvct_tokens)
             uvct.setdefault(int(match[1]), set()).update(
                 name for name, pattern in groups.items() if pattern.search(text))
     for index, names in uvct.items():
@@ -106,6 +131,9 @@ def main() -> int:
     )
     parser.add_argument("--alpha-s", required=True)
     parser.add_argument("--group", action="append", default=[], metavar="NAME=REGEX")
+    parser.add_argument("--ct-couplings", type=Path, help="the export's ct_couplings.json")
+    parser.add_argument("--export", type=Path, help="default: WORK/madloop-export")
+    parser.add_argument("--subprocess", help="subprocess directory (default: the export's only one)")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     groups = {}
@@ -114,9 +142,16 @@ def main() -> int:
         if not pattern or name in ("ct", "rest") or name in groups:
             raise SystemExit(f"bad group {item!r}")
         groups[name] = re.compile(pattern, re.I)
-    export = args.work / "madloop-export"
-    (process,) = sorted(p for p in (export / "SubProcesses").glob("P*_*") if p.is_dir())
-    kinds = classify(process, groups)
+    export = args.export or args.work / "madloop-export"
+    if args.subprocess:
+        process = export / "SubProcesses" / args.subprocess
+    else:
+        (process,) = sorted(p for p in (export / "SubProcesses").glob("P*_*") if p.is_dir())
+    tokens = None
+    if args.ct_couplings:
+        record = json.loads(args.ct_couplings.read_text())
+        tokens = record["subprocesses"][process.name.split("_", 1)[1]]["ct_tokens"]
+    kinds = classify(process, groups, tokens)
     points = json.loads((args.work / "points.json").read_text())
     stdin = (
         " ".join(map(str, args.orders))
@@ -140,6 +175,7 @@ def main() -> int:
         "orders": args.orders,
         "alpha_s": args.alpha_s,
         "groups": {name: pattern.pattern for name, pattern in groups.items()},
+        "classified_by": "UFO couplings (ct_couplings.json)" if tokens else "call names",
         "ct_amplitude_counts": {
             name: sum(1 for kind in kinds.values() if kind == name)
             for name in ("rest", *groups)

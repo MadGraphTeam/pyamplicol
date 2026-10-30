@@ -46,8 +46,11 @@ CAMPAIGN = HERE / "mqcd_campaign.json"
 FIXTURES = REPOSITORY / "tests/fixtures/loop"
 MANIFEST = FIXTURES / "required/mqcd_references.json"
 # The campaign layout (``layout`` of the campaign JSON; these are M-QCD's).
-LAYOUT = {"name": "M-QCD", "runs": "runs/mqcd", "fixtures": "required/mqcd",
-          "manifest": "required/mqcd_references.json", "schema": "mqcd-references/2", "plan": "m-qcd/PLAN.md"}
+DEFAULT_CAMPAIGN = CAMPAIGN
+DEFAULT_LAYOUT = {"name": "M-QCD", "runs": "runs/mqcd", "fixtures": "required/mqcd",
+                  "manifest": "required/mqcd_references.json", "schema": "mqcd-references/2",
+                  "plan": "m-qcd/PLAN.md"}
+LAYOUT = dict(DEFAULT_LAYOUT)
 OLD_ROOTS = ("/shared/external/pyLoopAmpliCol/workspace/reference",)
 sys.path.insert(0, str(HERE))
 import required_spec  # noqa: E402
@@ -55,11 +58,13 @@ import required_spec  # noqa: E402
 
 def load(path=None):
     """The campaign and its runs by id; sets the layout (work, fixture and
-    manifest paths) of the campaign at ``path`` (default: M-QCD's)."""
+    manifest paths) of the campaign at ``path`` (default: M-QCD's), replacing
+    that of any earlier call."""
     global CAMPAIGN, MANIFEST
-    CAMPAIGN = Path(path).resolve() if path else CAMPAIGN
+    CAMPAIGN = Path(path).resolve() if path else DEFAULT_CAMPAIGN
     data = json.loads(CAMPAIGN.read_text())
-    LAYOUT.update(data.get("layout", {}))
+    LAYOUT.clear()
+    LAYOUT.update(DEFAULT_LAYOUT, **data.get("layout", {}))
     MANIFEST = FIXTURES / LAYOUT["manifest"]
     return data, {r["id"]: r for r in data["runs"]}
 

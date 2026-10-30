@@ -965,8 +965,9 @@ $C fixture uux_emep_ew && $C manifest
 |---|---|
 | `make_msm_campaign.py` -> `msm_campaign.json` | the 70 core rows of §4.2 (the decay rows wait for the user's Q3) with their model codes (`restriction_codes`: G0, Ga, Gb, Gm, Gk, Gt, Gc, Gca, Lc, Az, L5) and 69 MadLoop runs; `layout` puts work directories under `runs/msm/`, fixtures under `tests/fixtures/loop/required/msm/` and the manifest at `required/msm_references.json` (`msm-references/1`) |
 | `required_processes.json` | new schemes `ew-gmu-a0`, `ew-gmu-cms`, `ew-gmu-a0-cms`, `qcd-cms`, `ew-gmu-ckm`, `ew-gmu-mm`, `ew-gmu-tech` and the `role: msm` processes (new keys only) |
-| `madloop_components.py` | rule-5 components per loop sector (bare / R2 / UV-CT, via `madloop_ct_selection.py`) on one row per class: `required/msm/components/<run>.json` |
-| `required/msm/existing_r2_couplings.json` | the R2 couplings the exports of the existing EW references call |
+| `madloop_ct_couplings.py` | the UFO counterterm couplings behind an export's calls (`<export>.ct_couplings.json`; madloop_export.py writes it for new exports) |
+| `madloop_components.py` | rule-5 components per loop sector (bare / R2 / UV-CT, via `madloop_ct_selection.py`, classified by the UFO couplings of the calls) on one row per class: `required/msm/components/<run>.json` |
+| `required/msm/existing_r2_couplings.json` | the UFO R2 couplings the exports of the existing EW references insert |
 
 Evaluation as M-QCD: every point in MadLoop's quadruple-precision stage, `HelicityFilterLevel = 0`, every
 squared split order printed. What M-SM adds:
@@ -983,9 +984,14 @@ squared split order printed. What M-SM adds:
   unless its electroweak inputs switch (`sminputs (2,) not define` whenever no W width is set at import, also on
   the stock `no_widths` restriction), so `qcd-cms` uses `loop_sm-no_b_mass` with MG5's switch to (aEWM1, MZ, MW)
   and MW = the tree-level value of the alpha_fixed scheme (identical couplings), WW = WZ = WH = 0 at run time.
-* **R2 name lists.** Every fixture records the UFO R2 couplings its export calls (`madloop_r2_couplings`, per
-  subprocess directory), the input of the rule-1 R2 correction (MadLoop inserts an R2 coupling only for loops whose
-  propagators match its label: `R2_G0tt_b` is absent from every massless-b export).
+* **R2 name lists.** Every fixture records the UFO R2 couplings its export inserts (`madloop_r2_couplings.called`,
+  per subprocess directory), the input of the rule-1 R2 correction (MadLoop inserts an R2 coupling only for loops
+  whose propagators match its label: `R2_G0tt_b` is absent from every massless-b export). The export's call names
+  do not give them: MG5 renames couplings with identical expressions at the UFO conversion and merges couplings of
+  equal value at the restriction point, up to a sign (`R2_uuA2Cp` is called as `R2_ccA2Cp`, `R2_GTT2Cpb` as
+  `R2_GCC2Cps`, the UV coupling `c_UVvexveA1EW_1eps` as `R2_AWWcs`). `madloop_ct_couplings.py` regenerates the
+  export's amplitudes with its own MG5 settings, records both renamings and the R2 vertices attached to the loops
+  (`<export>.ct_couplings.json`, checked against the export's sources); `called_as` lists the merged call names.
 * **Photons.** Processes with tagged photons record `tagged_photon_legs` (0-based legs of MG5's alpha(0) formula,
   Q1 (a): final-state photons); MadLoop standalone converts none, so the values are raw.
 * **Multiparticle.** `p p > e- e+` / `p p > t t~` exports include MG5's photon-initiated members and a loop-squared
@@ -994,8 +1000,10 @@ squared split order printed. What M-SM adds:
   at M_Z and M_W, VV01 at 4 TeV). The VV05 radiation-zero run evaluates one point per job: after MadLoop's
   initialisation at a Born-zero point, the regular neighbour's QCD double pole missed the universal one by 2.9e-5 in
   a three-point job (alone: 1e-15).
-* **Long one-point jobs** (CM07, g g > t t~ e- e+ g under CMS): `--madloop-reuse-initial-call` takes the point's
-  last initialization call as its value instead of evaluating it twice.
+* **Long one-point jobs.** A run with `split_points` may set `reuse_initial_call` (`--madloop-reuse-initial-call`:
+  the point's last initialization call is its value instead of a second evaluation). No committed run uses it: the
+  CM07 fixture (g g > t t~ e- e+ g under CMS) comes from the normal point jobs (~27 min each); reuse jobs on the
+  same points gave bitwise the same values (~13 min each).
 * **ST04** commits ew-validate's workspace run `udx_tbx_ew_mb` as `required/udx_tbx_ew_mb.json`, re-merged with
   Recola excluded (its massive-b setting differs by 3e-4..1e-3; §4.1).
 

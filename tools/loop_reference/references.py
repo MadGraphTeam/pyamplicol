@@ -386,27 +386,35 @@ def ufo_r2_coupling_names(model):
 
 
 def madloop_r2_couplings(export, model, subprocess_dir=None):
-    """The UFO R2 couplings a MadLoop export calls: every R2 CT-vertex coupling
-    name of the model found (as a Fortran token, case-insensitively) in the
-    export's SubProcesses/P*/*.f sources. MadLoop inserts an R2 coupling only for
-    loops whose propagator set matches the coupling's loop-particle label, so an
-    R2 coupling of the UFO can be missing here although the engine inserts it
-    (the input of the rule-1 R2 correction of m-sm/PLAN.md §1.4); couplings the
-    restriction sets to zero are absent as well."""
-    names = {n.upper(): n for n in ufo_r2_coupling_names(model)}
-    found = set()
-    token = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
-    for source in sorted(Path(export).glob(f"SubProcesses/{subprocess_dir or 'P*'}/*.f")):
-        for line in source.read_text(errors="replace").splitlines():
-            if line[:1] in ("C", "c", "*", "!"):
-                continue  # fixed-form comment line
-            for word in token.findall(line.split("!", 1)[0]):
-                hit = names.get(word.upper())
-                if hit:
-                    found.add(hit)
-    return {"called": sorted(found), "ufo_r2_couplings": len(names),
-            "source": "UFO R2 CT-vertex couplings (all_CTvertices of type R2) found as tokens in the export's "
-                      f"SubProcesses/{subprocess_dir or 'P*'}/*.f"}
+    """The UFO R2 couplings a MadLoop export inserts, the input of the rule-1 R2
+    correction of m-sm/PLAN.md §1.4: the couplings of the R2 vertices MG5
+    attaches to the loops of the subprocess (``subprocess_dir``; default: the
+    export's only one), read from ``<export>.ct_couplings.json``
+    (``madloop_ct_couplings.py``). MadLoop inserts an R2 coupling only for loops
+    whose propagator set matches the coupling's loop-particle label, so an R2
+    coupling of the UFO can be missing here although the engine inserts it;
+    couplings the restriction sets to zero are absent as well. MG5 calls many
+    of them by another name (identical expressions, or equal values at the
+    restriction point up to a sign): ``called_as`` maps those to the name their
+    call passes, and every such name must occur in the subprocess's sources."""
+    import madloop_ct_couplings
+
+    path = madloop_ct_couplings.record_path(export)
+    if not path.exists():
+        raise FileNotFoundError(f"{path}: run madloop_ct_couplings.py on the export first")
+    record = json.loads(path.read_text())
+    if subprocess_dir is None:
+        (subprocess_dir,) = sorted(p.name for p in (Path(export) / "SubProcesses").glob("P*_*") if p.is_dir())
+    entry = record["subprocesses"][madloop_ct_couplings.subprocess_key(subprocess_dir)]
+    calls = {entry["r2_called_as"].get(name, name).lstrip("-").upper() for name in entry["r2"]}
+    absent = sorted(calls - madloop_ct_couplings.fortran_tokens(export, subprocess_dir))
+    if absent:
+        raise RuntimeError(f"{path}: R2 call names absent from {subprocess_dir}'s sources: {absent[:8]}")
+    ufo = ufo_r2_coupling_names(model)
+    if set(entry["r2"]) - ufo:
+        raise RuntimeError(f"{path}: {sorted(set(entry['r2']) - ufo)[:8]} are not R2 couplings of {model}")
+    return {"called": entry["r2"], "called_as": entry["r2_called_as"], "ufo_r2_couplings": len(ufo),
+            "source": f"{madloop_ct_couplings.SOURCE} ({subprocess_dir})"}
 
 
 def fix_unassigned_jamps(text):
@@ -1430,7 +1438,7 @@ def command_merge(args):
             pole_error = relative(values["double_pole"], pole_factor * values["born"], unit)
             row["providers"][provider]["universal_double_pole_relative_error"] = pole_error
             if provider not in excluded:
-                pole_errors.append(pole_error)
+                pole_errors.append((index, pole_error))
         # Every unordered provider pair; excluded providers are compared too but
         # never enter the agreement check.
         for i, a in enumerate(names):
@@ -1453,8 +1461,14 @@ def command_merge(args):
                            sector_factors, sector_couplings)
     elif args.point_status:
         raise SystemExit("--point-status needs a MadLoop result")
+    # Rows compared absolutely (§4.1 S1 radiation zeros: Born and double pole
+    # vanish to rounding) carry their check in their 'reference' record only.
+    absolute_rows = {i for i, row in enumerate(rows) if row.get("reference", {}).get("comparison") == "absolute"}
+    pole_errors = [error for i, error in pole_errors if i not in absolute_rows]
+    max_pole_error = max(pole_errors) if pole_errors else None
     max_error = max(errors) if errors else None
-    passed = (len(validated) >= 2 and max_error < args.tolerance and max(pole_errors) < args.tolerance)
+    passed = (len(validated) >= 2 and max_error < args.tolerance and max_pole_error is not None
+              and max_pole_error < args.tolerance)
     normalization = required_spec.normalization(spec)
     providers = {}
     for provider, result in results.items():
@@ -1569,7 +1583,8 @@ def command_merge(args):
         "maximum_provider_relative_error": max_error,
         "error_metric": "|a-b|/max(|a|,|b|,|Born|*coupling/(2pi)) for Laurent coefficients, "
                         "|a-b|/max(|a|,|b|) for Born; strict relative errors also listed per row",
-        "maximum_universal_double_pole_relative_error": max(pole_errors),
+        "maximum_universal_double_pole_relative_error": max_pole_error,
+        **({"universal_double_pole_absolute_rows": sorted(absolute_rows)} if absolute_rows else {}),
         "tolerance": args.tolerance,
         "validation_status": "passed" if passed else (
             "single provider; no cross-check" if len(validated) < 2 else "FAILED"),
@@ -1581,7 +1596,7 @@ def command_merge(args):
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(f"{spec['name']}: providers={validated} excluded={list(excluded)} max_rel={max_error} "
-          f"max_pole_identity={max(pole_errors):.3g} status={report['validation_status']}")
+          f"max_pole_identity={max_pole_error} status={report['validation_status']}")
     if not passed:
         sys.exit(2)
 
