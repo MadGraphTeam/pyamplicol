@@ -2,8 +2,8 @@
  "source": "tests/fixtures/loop/msm/manifest.json + campaign records (tests/unit/test_loop_v2_msm_*.py, PYAMPLICOL_MQCD_RESULTS)",
  "rules": "m-sm/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
  "branch": "work/v2-ms-validate",
- "records": "fs (70b47429: the non-CMS rows), cm1/cm2 (ecbf8f88) and cm3 (bb9cc017): complex-mass rows, mp1 (9f679158: VV02 after MS-MODEL's split, the MP expansion), cm4 (f30a55b2: CM07 after MS-CMS's fix round 1), mp3 (19c5e23e..f9cc1625: the MP members, CM04), d2 (23c5254e: the default tier VJ02 + TT01, TT01 nightly), f4 (5901ede1 = d3a4f891 + the F1 and F2 fixes: the F1 and F2 rows), r5 (baab3247, + the F9 fix and SC07's binary64 tolerance: SC04, SC07, TT06), restriction smokes s3 (566e263f) and s4 (0c170bcf); later override earlier; non-CMS plans byte-identical across the CMS and MS-GEN merges",
- "natives": "loop-native-v2-slice-54ec03c5 (fs), loop-native-v2-slice-a359965c (cm1-cm4, mp1, mp3), loop-native-v2-slice-b27a8e5c (d2, f4, r5)",
+ "records": "fs (70b47429: the non-CMS rows), cm1/cm2 (ecbf8f88) and cm3 (bb9cc017): complex-mass rows, mp1 (9f679158: VV02 after MS-MODEL's split, the MP expansion), cm4 (f30a55b2: CM07 after MS-CMS's fix round 1), mp3 (19c5e23e..f9cc1625: the MP members, CM04), d2 (23c5254e: the default tier VJ02 + TT01, TT01 nightly), f4 (5901ede1 = d3a4f891 + the F1 and F2 fixes: the F1 and F2 rows), r5 (baab3247, + the F9 fix and SC07's binary64 tolerance: SC04, SC07, TT06), r6 (157b9258: SC08, TT05, DY01) and d3 (157b9258: the default tier VJ02 + TT01), restriction smokes s3 (566e263f) and s4 (0c170bcf); later override earlier; non-CMS plans byte-identical across the CMS and MS-GEN merges",
+ "natives": "loop-native-v2-slice-54ec03c5 (fs), loop-native-v2-slice-a359965c (cm1-cm4, mp1, mp3), loop-native-v2-slice-b27a8e5c (d2, f4, r5, r6, d3)",
  "counts": {
   "pass": 67,
   "partial": 3,
@@ -798,7 +798,7 @@
      "failures": 0,
      "max_dd_vs_reference": 1.168520723990611e-15,
      "max_binary64_vs_dd": 1.9288498937140046e-14,
-     "max_catani_dd": 1.9069005688564947e-31,
+     "max_catani_dd": 1.060289664193563e-31,
      "max_catani_binary64": 1.880774380956097e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -811,11 +811,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 259.64,
-      "export_s": 24.68,
-      "double_double_s_per_point": 6.0925,
-      "double_s_per_point": 0.8325,
-      "hel_s": 26.27
+      "generate_s": 85.18,
+      "export_s": 24.54,
+      "double_double_s_per_point": 6.165,
+      "double_s_per_point": 0.855,
+      "hel_s": 26.81
      },
      "failed_checks": []
     }
@@ -1495,10 +1495,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 82.26,
-      "export_s": 7.07,
-      "double_double_s_per_point": 6.04,
-      "double_s_per_point": 0.48
+      "generate_s": 88.38,
+      "export_s": 6.89,
+      "double_double_s_per_point": 6.205,
+      "double_s_per_point": 0.66
      },
      "failed_checks": []
     },
@@ -3039,10 +3039,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 74.98,
-      "export_s": 15.76,
-      "double_double_s_per_point": 7.475,
-      "double_s_per_point": 0.745
+      "generate_s": 83.19,
+      "export_s": 18.35,
+      "double_double_s_per_point": 8.245,
+      "double_s_per_point": 0.825
      },
      "failed_checks": []
     },
@@ -3515,10 +3515,10 @@
       }
      ],
      "timings": {
-      "generate_s": 257.18,
-      "export_s": 26.73,
-      "double_double_s_per_point": 27.33666666666667,
-      "double_s_per_point": 1.5533333333333335
+      "generate_s": 107.38,
+      "export_s": 25.57,
+      "double_double_s_per_point": 27.84,
+      "double_s_per_point": 1.5133333333333334
      },
      "failed_checks": []
     }
@@ -7648,11 +7648,11 @@
       }
      ],
      "timings": {
-      "generate_s": 95.26,
-      "export_s": 73.18,
-      "double_double_s_per_point": 6.1175,
-      "double_s_per_point": 0.065,
-      "engine_catani_s": 8.8
+      "generate_s": 104.27,
+      "export_s": 76.89,
+      "double_double_s_per_point": 6.08,
+      "double_s_per_point": 0.155,
+      "engine_catani_s": 9.13
      },
      "failed_checks": []
     }
