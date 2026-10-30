@@ -1540,6 +1540,9 @@ VANISHING = {
     "TV01": [{"sector": "QCD^4 QED^4", "coefficient": "double_pole"}],
     "TV02": [{"sector": "QCD^4 QED^4", "coefficient": "double_pole"}],
     "TT03": [{"sector": "QCD^6 QED^2", "coefficient": "double_pole"}],
+    # The QCD x EW Born interference of s-channel q q~ > t t~ (a colour
+    # octet against singlets: Tr T^a = 0; ours 0, MadLoop's 1e-17).
+    "TT02": [{"sector": "QCD^2 QED^2", "coefficient": "born"}],
 }
 # Rule 1's tolerance per row (nominal 1e-12; 1e-10 from 2->4 up where the
 # providers' precision needs it, the user's ruling of 2026-10-29 ~01:12; and
@@ -1573,6 +1576,26 @@ RELAXED = {"SC05": {"4": 1e-12}, "TT05": {"4": 1e-14}, "TT06": {"4": 1e-13}}
 # 3 (alpha/2pi) Born (test_loop_v2_qed_catani's docstring; c1: 9.9e-5 =
 # 3 x 3.30e-5 at point 0): not a reference of the operator.
 NO_CATANI = {"LL02", "SC02"}
+# The Ward extra in the real-mass scheme (m-sm/PLAN.md §1.4 Ward): the
+# identity holds only where no external coloured (gluon Ward) or charged
+# (photon Ward) particle has an absorptive self-energy at its mass, which
+# the scheme's real on-shell counterterms (Re Sigma) leave unrenormalised:
+# TT03's gluon Ward residual of the EW virtual is 3.3e-4 of the physical
+# scale in double-double with the top unstable (t -> b W open) and 5e-30 with
+# MW = 180, MZ = 200 (tmp/ms-validate/probe-ward, 2026-10-30; bare, R2 and
+# UV parts 1e-2 each). The top-pair rows, whose W and Z are internal, check
+# it there; a row with an external W (its massless-fermion decays) or an
+# external top beside an external W has no such point: its Ward check is
+# CMS's (CM05, CM07, CM09: a gauge diagnostic, PLAN §1.5).
+STABLE_TOP = {"MW": "180", "MZ": "200"}
+WARD_PARAMETERS = {"TT03": STABLE_TOP, "TV07": STABLE_TOP}
+NO_REAL_SCHEME_WARD = {
+    "VV05": "the photon Ward identity with an external W: its absorptive "
+    "self-energy (W -> f f') is not renormalised in the real-mass scheme "
+    "(c = i residual 4e-4 of the scale, m1 2026-10-30); under CMS: CM09",
+    "ST03": "the gluon Ward identity with an external top beside an external "
+    "W: no parameter point closes t -> b W at the W's own mass; under CMS",
+}
 # Rows run on the native point inputs (the production route; rule 4 from the
 # engine's operators on the Python-input Born): the 2->5 target and EWI-7's
 # root-closure rows, checked with native inputs once EWI-7 lands (PLAN §3.2
@@ -1672,6 +1695,8 @@ for r in R:
         entry["relaxed"] = RELAXED[r["id"]]
     if r["id"] in NATIVE_ROWS:
         entry["inputs"], entry["catani"] = "native", "engine"
+    if r["id"] in WARD_PARAMETERS:
+        entry["ward_parameters"] = WARD_PARAMETERS[r["id"]]
     if r["id"] in NO_CATANI:
         entry["catani"] = "none"
         entry["catani_reason"] = (
@@ -1700,7 +1725,9 @@ for r in R:
             # The special points are variants (S1, S3, S4) or the run's own
             # labelled points (S2).
             continue
-        if extra in PENDING_EXTRAS:
+        if extra == "ward" and r["id"] in NO_REAL_SCHEME_WARD:
+            pend[extra] = NO_REAL_SCHEME_WARD[r["id"]]
+        elif extra in PENDING_EXTRAS:
             pend[extra] = PENDING_EXTRAS[extra]
         elif extra == "uv" and (reference or {}).get("components"):
             continue

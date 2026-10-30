@@ -256,6 +256,13 @@ class Row:
     # The legs of the ``ward`` extra (None: every external massless vector
     # leg, ``ward.gauge_legs``).
     ward_legs: tuple[int, ...] | None = None
+    # Runtime parameters of the ``ward`` extra only (on the row's points):
+    # in the real-mass scheme the Ward identity holds only where no external
+    # coloured (gluon Ward) or charged (photon Ward) particle has an
+    # absorptive self-energy at its mass, which the scheme's real on-shell
+    # counterterms leave unrenormalised; e.g. a stable top (MW, MZ above MT)
+    # for the top-pair rows, whose W and Z are internal.
+    ward_parameters: Mapping[str, str] = field(default_factory=dict)
     # Rule -> tolerance of the checks the user's ruling of 2026-10-29 ~10:20
     # relaxes on this row ("2": rule 2's binary64 bound, at least this; "6":
     # rule 6's 40 against 60 digits), at most ``ATTENTION``.
@@ -352,6 +359,7 @@ class Row:
             ward_legs=None
             if data.get("ward_legs") is None
             else tuple(int(x) for x in data["ward_legs"]),
+            ward_parameters=dict(data.get("ward_parameters") or {}),
             relaxed={k: float(v) for k, v in (data.get("relaxed") or {}).items()},
             reference_tolerance=float(
                 data.get("reference_tolerance", REFERENCE_TOLERANCE)
@@ -1571,7 +1579,7 @@ class RowRun:
             self.reference.scales[index],
             carrier,
             legs=self.row.ward_legs,
-            parameters=self.parameters,
+            parameters={**self.parameters, **self.row.ward_parameters},
         )
 
     def twin(self) -> RowRun:
