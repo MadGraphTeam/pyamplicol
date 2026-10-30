@@ -44,10 +44,12 @@ rows, runs = [], {}
 
 
 def run(rid, key=None, export=None, points=None, helicities=None, split_points=False, note=None, binding=True,
-        point_status=None, notes=None):
+        point_status=None, notes=None, madloop_params=None):
     key = key or rid
     r = {"id": rid, "process": key, "export": export or f"runs/msm/{key}/madloop-export",
          "points": points or {"generator": "exact"}}
+    if madloop_params:
+        r["madloop_params"] = madloop_params  # over madloop_settings.evaluation's, this run only
     if helicities:
         r["helicities"] = helicities
     if split_points:
@@ -269,7 +271,10 @@ row("MP02", "W-multi", "p p > t t~", "G0", "N", sectors=["per Born subprocess"],
 # SC
 row("SC01", "W-scheme", "e- e+ > u u~", "G0", "E", extras=["nc"], fixtures=["electroweak-eeuu-control.json"],
     sectors=["e^6"])
-row("SC02", "W-scheme", "u u~ > mu- mu+ (massive mu)", "Gm", "N", runs_=[run("uux_mummp_ew_mm", points=S())],
+row("SC02", "W-scheme", "u u~ > mu- mu+ (massive mu)", "Gm", "N",
+    runs_=[run("uux_mummp_ew_mm", points=S(), madloop_params={"MLReductionLib": "1"},
+               note="CutTools only: MadLoop's quadruple-precision Ninja stage mis-evaluates the e^6 sector at "
+                    "m_mu^2/s ~ 1e-9 (3 of 4 points, wrong single pole, undetected by its own test)")],
     sectors=["s^2e^4", "e^6"])
 row("SC03", "W-scheme", "u d~ > e+ ve (CKM)", "Gk", "N", runs_=[run("udx_epve_ew_ckm")], sectors=["s^2e^4", "e^6"],
     note=EWI7)

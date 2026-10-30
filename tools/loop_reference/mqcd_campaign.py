@@ -229,9 +229,9 @@ def madloop_jobs(data, run, skip_helicities=False):
     setting = evaluation(data, run)
     options = []
     if setting is not None:
+        params = {**setting["madloop_params"], **run.get("madloop_params", {})}
         options = ["--madloop-accuracy", str(setting["requested_relative_accuracy"]),
-                   *(x for key, value in setting["madloop_params"].items()
-                     for x in ("--madloop-param", f"{key}={value}"))]
+                   *(x for key, value in params.items() for x in ("--madloop-param", f"{key}={value}"))]
     if setting is not None and setting.get("quadruple_precision_stage"):
         options.append("--madloop-quadruple")
     jobs = [("madloop", options)]
@@ -579,6 +579,8 @@ def run_entry(root, run, fixture_path):
              "second_provider_trigger": run.get("second_provider_trigger")}
     if run.get("components"):
         entry["components"] = run["components"]  # rule 5 components per sector (madloop_components.py)
+    if run.get("madloop_params"):
+        entry["madloop_params"] = run["madloop_params"]  # this run's MadLoop parameters over the campaign's
     if run.get("binding") is False:
         entry["binding"] = False  # an oracle run of another card (e.g. a technical epsIR = 0 run): no rule 1 reference
     if not fixture_path.exists():
