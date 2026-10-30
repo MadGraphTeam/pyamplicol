@@ -1889,6 +1889,8 @@ MULTIPARTICLE_ROWS = {
             # 1e-37 of the Born; tmp/ms-validate/mp1).
             "P0": [{"sector": "QCD^2 QED^4", "coefficient": "double_pole"}],
             "P5": [{"sector": "QED^6", "coefficient": "double_pole"}],
+            # g g > t t~: the QCD x EW sector has no 1/eps^2 (as TT01).
+            "P2": [{"sector": "QCD^4 QED^2", "coefficient": "double_pole"}],
         },
         "parts": {
             "required/msm/pp_ttx_ew_P0_ga_ttx.json": ("P0", "g a > t t~", [(1, 1)]),
