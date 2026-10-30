@@ -2321,7 +2321,9 @@ def rule2_and_3(
                 )
             )
             if _vanishing(row, text, name):
-                bound = REFERENCE_TOLERANCE * flux
+                # At least the row's relaxed rule-2 factor (a binary64
+                # rounding residue of a cancelling coefficient, ~10:20).
+                bound = max(REFERENCE_TOLERANCE, row.relaxed.get("2", 0.0)) * flux
                 checks.append(
                     Check(
                         "2",
@@ -2435,8 +2437,13 @@ def rule4(
         for k, name in ((1, "single_pole"), (2, "double_pole")):
             got, truth = laurent[k], poles[k - 1]
             if _vanishing(row, text, name):
-                # Absolutely, against F_s: 1e-12 in binary64, 1e-24 in DD.
-                strict = O1_STRICT if point.carrier == "double" else DD_FLOOR
+                # Absolutely, against F_s: 1e-12 in binary64 (at least the
+                # row's relaxed rule-4 factor), 1e-24 in DD.
+                strict = (
+                    max(O1_STRICT, row.relaxed.get("4", 0.0))
+                    if point.carrier == "double"
+                    else DD_FLOOR
+                )
                 bound = strict * sector_flux(row, point, sector, couplings)
                 error = _absolute(got, truth)
                 checks.append(

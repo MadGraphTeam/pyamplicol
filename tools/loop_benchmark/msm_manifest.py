@@ -1588,7 +1588,15 @@ RULE1 = {
 # (the fixture's binary64 points are on shell and conserve momentum to
 # rounding only); TT05's, 1.2e-16 to 2.7e-16, and TT06's, 9.5e-16 to
 # 1.5e-14 (the massive QED operator's double-double prediction).
-RELAXED = {"SC05": {"4": 1e-12}, "TT05": {"4": 1e-14}, "TT06": {"4": 1e-13}}
+# TT03's vanishing QCD^6 QED^2 double pole in binary64 (m2: 7e-10 F_s, the
+# rounding residue of the cancelling soft-photon terms between massive
+# tops; double-double 1e-30): rules 2 and 4 against 1e-8 F_s there.
+RELAXED = {
+    "SC05": {"4": 1e-12},
+    "TT05": {"4": 1e-14},
+    "TT06": {"4": 1e-13},
+    "TT03": {"2": 1e-8, "4": 1e-8},
+}
 # Rule 4 not formed (status partial): the massive-muon copy of the G_mu UFO
 # (code Gm) changes only the muon mass in the restriction card, while the
 # UFO writes the lepton field renormalisation for massless leptons, so its
