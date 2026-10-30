@@ -1721,7 +1721,7 @@ VANISHING = {
     # h h > h h: neutral scalars only, no IR pole and the UV poles cancel
     # (ours 1e-33, MadLoop's 1e-17 of the Born; tmp/ms-validate/f1 with the
     # plan-rank fix of finding F1).
-    "SC07": [{"sector": "total", "coefficient": "single_pole"}],
+    "SC07": [{"sector": "QED^6", "coefficient": "single_pole"}],
     # a a > w+ w- with QED corrections: neutral initial photons, massive
     # charged final W's, so no soft-collinear photon pole (ours 7e-33,
     # MadLoop's 1.5e-34 of the Born; tmp/ms-validate/fs 2026-10-30).
