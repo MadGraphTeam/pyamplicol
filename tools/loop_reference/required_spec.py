@@ -56,6 +56,13 @@ def load_process(path, name, roots=None):
     process["scheme_data"] = scheme
     step = CORRECTION_STEP[process["correction"]]
     process["loop_orders"] = {k: process["born_orders"][k] + step[k] for k in ("QCD", "QED")}
+    # A joint request ([virt=QCD QED] over several loop sectors) lists every
+    # correction reaching its sectors; ``correction`` stays the primary one
+    # (the ROW sector of the driver, ``loop_orders``).
+    process["corrections"] = list(process.get("corrections") or [process["correction"]])
+    if process["corrections"][0] != process["correction"] or len(set(process["corrections"])) != len(
+            process["corrections"]) or set(process["corrections"]) - set(CORRECTION_STEP):
+        raise ValueError(f"{name}: corrections {process['corrections']} must start with {process['correction']!r}")
     # Requests with several Born amplitude orders (mixed Borns, every squared
     # split order printed by the MadLoop driver) list all of them; ``born_orders``
     # stays the primary one (the ROW line of the driver).
@@ -125,20 +132,22 @@ def normalization(process, n_initial=2):
             "denominator": denominator * symmetry}
 
 
-def double_pole_factor(process, coupling):
-    """Universal one-loop double pole D/Born for the declared correction.
+def double_pole_factor(process, coupling, correction=None):
+    """Universal one-loop double pole D/Born for the declared correction
+    (``correction``: one of the process's ``corrections``; default the primary).
 
     QCD: -alpha_s/(2 pi) * sum of C_F/C_A over massless coloured legs.
     EW: -alpha/(2 pi) * sum of Q^2 over massless charged legs (photon-exchange
     soft-collinear singularity; massive W/Z exchange is IR finite). Uses the
     MadLoop/BLHA C_epsilon normalization.
     """
+    correction = correction or process["correction"]
     total = Fraction(0)
     for pdg, mass in zip(process["pdgs"], masses(process)):
         if mass:
             continue
         info = particle(pdg)
-        if process["correction"] == "QCD":
+        if correction == "QCD":
             total += {3: Fraction(4, 3), 8: Fraction(3), 1: Fraction(0)}[info["colour"]]
         else:
             total += info["charge"] ** 2
