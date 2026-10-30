@@ -566,7 +566,8 @@ row(
     },
     ["joint", "ap", "uv"],
     ["2->2", "massive:top", "joint"],
-    notes="joint QCD + QED request; s^6 against loop_sm's QCD fixture (pure QCD, independent of the EW inputs), s^4e^2 against the G_mu fixture",
+    notes="joint QCD + QED request; s^6 against loop_sm's QCD fixture (pure QCD, independent of the EW inputs), s^4e^2 against the G_mu fixture; in the default tier since MS-GEN (PLAN §3.2 item 3: generation 58 s, < 60 s; LL01 83 s and DY01 84 s stay nightly; tmp/ms-validate/gen60 at e16b620f)",
+    tier="default",
 )
 row(
     "TT02",
