@@ -987,7 +987,8 @@ squared split order printed. What M-SM adds:
   and MW = the tree-level value of the alpha_fixed scheme (identical couplings), WW = WZ = WH = 0 at run time.
 * **R2 name lists.** Every fixture records the UFO R2 couplings its export inserts (`madloop_r2_couplings.called`,
   per subprocess directory), the input of the rule-1 R2 correction (MadLoop inserts an R2 coupling only for loops
-  whose propagators match its label: `R2_G0tt_b` is absent from every massless-b export). The export's call names
+  whose propagators match its label: `R2_G0tt_b` is absent from every massless-b export of the unpatched models; the
+  patched ones split it by loop content and their exports call `R2_G0tt_b_WG`). The export's call names
   do not give them: MG5 renames couplings with identical expressions at the UFO conversion and merges couplings of
   equal value at the restriction point, up to a sign (`R2_uuA2Cp` is called as `R2_ccA2Cp`, `R2_GTT2Cpb` as
   `R2_GCC2Cps`, the UV coupling `c_UVvexveA1EW_1eps` as `R2_AWWcs`). `madloop_ct_couplings.py` regenerates the
@@ -1010,8 +1011,9 @@ squared split order printed. What M-SM adds:
   (`madloop_params: MLReductionLib = 1`, a run's own parameters over the campaign's). Model properties the check
   records (the engine on the same UFO reproduces them; MS-VALIDATE's rule 4 sees them): `ew-gmu-mm` keeps the
   massless muon's counterterms (`massless_field_counterterms`: +3/2 Q^2 (alpha/2pi) Born per muon leg, up to
-  O(m_mu^2/M_W^2)); `ew-gmu-ckm` is not UV finite (`ir_single_pole_remnant`: the UFO's O(lambda^3) Wolfenstein
-  CKM is not unitary; -2.1e-2, -8.1e-4, -5.0e-5 (alpha/2pi) Born at lamWS = 0.2253, 0.1, 0.05).
+  O(m_mu^2/M_W^2)); `ew-gmu-ckm` keeps the tau-mass residual of the patched models (their EW counterterms omit
+  MTA; `ir_single_pole_remnant`); before the UFOmodeldb issue-1 patch its O(lambda^3) Wolfenstein CKM was not
+  unitary and the EW single pole missed by -2.1e-2, -8.1e-4, -5.0e-5 (alpha/2pi) Born at lamWS = 0.2253, 0.1, 0.05.
 * **Double-pole summary.** The merge now leaves absolutely compared rows out of
   `maximum_universal_double_pole_relative_error` and lists them in `universal_double_pole_absolute_rows`; M-QCD
   fixtures merged before (`mqcd/udx_wpa_zero.json` has absolute rows) keep the old maximum over all rows (no test
@@ -1019,6 +1021,15 @@ squared split order printed. What M-SM adds:
 * **ST04** commits ew-validate's workspace run `udx_tbx_ew_mb` as `required/udx_tbx_ew_mb.json`, re-merged with
   Recola excluded (it differs by 9.48e-5 x Born: the G_mu UFO's CT couplings omit `dMB_eCoup_UV_EW`, the b-mass term
   of the charge counterterm, a UFO defect found by MS-UFODB; MadLoop and pyAmpliCol read the UFO).
+* **Patched models (MS-UFO-PATCH).** Every EW scheme but the `ew-gmu-mg5` control reads
+  `models/ufodb-6ca4b120-patched/` (UFOmodeldb with the issue-1 model patch, README.txt there). The rows the patch
+  changes have new runs on it with Recola as second provider: LL10 `emep_ttxh_ew`, TT04 `ttx_ttx_ew`, SC09
+  `ttx_zh_ew`, ST04 `udx_tbx_ew_mb` (at the existing fixtures' points, which they supersede), TT05 `gt_tttx_ew`, TT06
+  `gb_ttxb_ew_mb`, SC04 `bbx_wpwm_ew_mb` (+ its e^6 control `bbx_wpwm_ew_mb_qed`, MadLoop and Recola) and SC03
+  `udx_epve_ew_ckm` (Recola's SM model has no CKM); MadLoop = Recola to <= 5.3e-11 on all of them. The runs of the
+  unpatched model that were regenerated in place are under `runs/msm-ufodb-6ca4b120/`. `ew-gmu-ckm`'s single-pole
+  remnant is now the tau-mass residual MTA^2/(2 sw^2 (s - MW^2)) (alpha/2pi) Born (`tau_mass_counterterms_omitted`,
+  checked exactly by `test_loop_reference_msm.py`).
 
 ## NJet: the all-gluon ladder up to g g -> g g g g g (`njet/`)
 
