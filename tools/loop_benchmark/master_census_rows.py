@@ -64,8 +64,9 @@ def _row(row: str, cache: Path) -> tuple[Any, Any, list, list, dict, float]:
     from pyamplicol.models.loading import compile_model_source
 
     kind, fixture, process = ROWS[row]
+    # The tests' copy (conftest ``loop_gmu_ufo``): UFOmodeldb's.
     gmu = Path(os.environ["PYAMPLICOL_LOOP_WORKSPACE"]) / (
-        "reference/models/loop_qcd_qed_sm_Gmu_py3"
+        "reference/models/ufodb-6ca4b120/loop_qcd_qed_sm_Gmu_py3"
     )
     if kind == "cm01":
         ref = json.loads((FIXTURES / "cms-ufo-standard-gmu.json").read_text())
@@ -206,6 +207,7 @@ def _difference(mine, theirs, coupling: float) -> float:
 def main(argv: list[str] | None = None) -> None:
     from pyamplicol.loops.native import load_loop_native
     from pyamplicol.loops.v2.assemble import LoopSlice, Precision
+    from pyamplicol.loops.v2.native_trees import NativeExportUnsupported
     from pyamplicol.loops.v2.plan_export import NativeExecutor
     from tools.loop_benchmark.master_census import slice_census
 
@@ -236,7 +238,13 @@ def main(argv: list[str] | None = None) -> None:
     log(
         "generated; maxrss GB", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6
     )
-    executor = NativeExecutor(slice_, inputs="native")
+    try:
+        executor = NativeExecutor(slice_, inputs="native")
+    except NativeExportUnsupported as refusal:
+        # The census needs the plan's families and masses only; the carriers
+        # then run with Python point inputs.
+        log("native export refused, Python inputs:", refusal)
+        executor = NativeExecutor(slice_, inputs="python")
     found = slice_census(executor, points, scales, parameters)
     record: dict[str, Any] = {
         "row": args.row,
