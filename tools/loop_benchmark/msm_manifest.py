@@ -2038,14 +2038,18 @@ MEASURED_SECONDS: dict[str, tuple[int, int]] = {
     "VJ02": (213, 4), "VJ03": (460, 3), "VV01": (389, 4), "VV01@4tev": (76, 2),
     "VV03": (378, 4), "VV05": (372, 4), "VV05@zero": (79, 3), "VV06": (306, 3),
     "VV07": (823, 4),
+    # tmp/ms-validate fs, cm1, cm2 (2026-10-30): the photon-initiated and
+    # complex-mass rows.
+    "PI01": (339, 4), "PI01@all": (329, 4), "PI02": (399, 4), "PI03": (256, 4),
+    "PI04": (336, 4), "CM01": (541, 4), "CM01@zero": (77, 3),
+    "CM01@small": (750, 3), "CM01@source": (492, 4), "CM02": (508, 4),
+    "CM03": (498, 4), "CM04": (376, 4), "CM08": (265, 4), "CM09": (870, 4),
+    "CM10": (88, 4),
 }  # fmt: skip
 DEFAULT_SECONDS = 600
 JOB_SECONDS = 1500
-# Ids without a measurement whose cost differs from one EW generation:
-# variants that share their base row's generation (runtime widths: an
-# evaluation of their points in both carriers), and the 2->4 CMS row CM08
-# (ms-cms-n's test: generation ~10 min, 25 GB).
-ESTIMATED_SECONDS = {"CM01@zero": 90, "CM01@small": 90, "CM08": 1200}
+# Ids without a measurement whose cost differs from one EW generation.
+ESTIMATED_SECONDS: dict[str, int] = {}
 
 
 def nightly_ids_of(entry):
@@ -2069,11 +2073,26 @@ def nightly_ids_of(entry):
     return ids
 
 
-jobs = []
-for entry in sorted(rows, key=lambda e: e["id"]):
+# A variant with its own generation (another restriction, photon tags,
+# mass scheme or reglog convention: ``mqcd.Campaign.run``) is packed on its
+# own; the others share their base row's generation and stay in its job.
+OWN_GENERATION = ("restriction", "external_photons", "mass_scheme", "reglog_convention")
+
+
+def packing_units(entry):
     ids = nightly_ids_of(entry)
-    if not ids:
-        continue
+    own = {
+        f"{entry['id']}@{v['name']}"
+        for v in entry.get("variants", ())
+        if any(k in v and v[k] != entry.get(k) for k in OWN_GENERATION)
+    }
+    shared = [i for i in ids if i not in own]
+    return ([shared] if shared else []) + [[i] for i in ids if i in own]
+
+
+units = [unit for entry in sorted(rows, key=lambda e: e["id"]) for unit in packing_units(entry)]
+jobs = []
+for ids in units:
     seconds = sum(
         MEASURED_SECONDS.get(i, (ESTIMATED_SECONDS.get(i, DEFAULT_SECONDS), 0))[0]
         for i in ids
