@@ -3839,6 +3839,22 @@ class Campaign:
         run = self.run(name)
         return run_row(run, tier, points=points)
 
+    def record(self, name: str, tier: str, points=None) -> RowReport:
+        """The row's report, or, when its generation or evaluation raises,
+        a failed report holding the error (one "eval" check), so that the
+        campaign records a crash as the row's failure, not as a missing
+        record (the tiers and the CLI write it)."""
+
+        try:
+            return self.report(name, tier, points=points)
+        except Exception as error:  # noqa: BLE001 - a crash is the row's record
+            LOG.exception("%s: raised", name)
+            row = self.rows[name]
+            return RowReport(name, tier, tuple(points or row.tier_points(tier)), [
+                Check("eval", None, "", "", "generation or evaluation", "raised",
+                      "", math.inf, 0.0, False,
+                      note=f"{type(error).__name__}: {error}")], {})  # fmt: skip
+
 
 def multiparticle_subprocesses(campaign: Campaign, name: str) -> list[Check]:
     """A multiparticle row's concrete processes (the public route's expansion,
@@ -4136,17 +4152,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not row.active:
             print(f"{name}: pending ({row.pending})", flush=True)
             continue
-        try:
-            report = campaign.report(name, args.tier, points=args.points)
-        except Exception as error:  # noqa: BLE001 - a crash is the row's record
-            # The campaign records a row whose generation or evaluation
-            # raises as failed (one "eval" check holding the error), so the
-            # report data shows it as a failure, not a missing record.
-            points = tuple(args.points or row.tier_points(args.tier))
-            report = RowReport(name, args.tier, points, [Check(
-                "eval", None, "", "", "generation or evaluation", "raised", "",
-                math.inf, 0.0, False, note=f"{type(error).__name__}: {error}")],
-                {})  # fmt: skip
+        report = campaign.record(name, args.tier, points=args.points)
         print(report.describe(), flush=True)
         print(json.dumps(report.summary(), default=str), flush=True)
         write_result(report, args.results)

@@ -481,7 +481,11 @@ def markdown(data: dict) -> str:
                 for check in tier["failed_checks"]:
                     label = name.split("@", 1)[1] + ": " if "@" in name else ""
                     carrier = CARRIERS.get(check["carrier"], check["carrier"])
-                    if check["rule"] == "eval":
+                    if check["rule"] == "eval" and check["point"] is None:
+                        # The row's generation or evaluation raised.
+                        error = (check["note"] or "").split(":", 1)[0]
+                        text = f"{label}raised {error}".rstrip()
+                    elif check["rule"] == "eval":
                         text = f"{label}p{check['point']} {carrier} evaluation failed"
                     else:
                         text = (
