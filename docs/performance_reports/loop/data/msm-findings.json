@@ -87,8 +87,8 @@
    ],
    "checks": "rule 4, QED^6 single pole at every point (rule 1 = MadLoop QP; the QCD^2 QED^4 sector meets its operator exactly)",
    "evidence": "probe-sc03 (double-double, points 0 and 1): the offset is -0.021297 / -0.021183 (alpha/2pi) Born and independent of MB to 1e-6 (MB = ymb = 4.7, 2.35, 0.47); MS-REF's scheme record ew-gmu-ckm: the UFO's O(lambda^3) Wolfenstein CKM is not unitary, the remnant scales as lambda^4 (lamWS scan), MadLoop alike",
-   "status": "open (model property; rule 4 not formed on the row)",
-   "routed": "coordinator (PLAN \u00a74.2 SC03: CKM rows need a CKM counterterm or a UV-pole exemption)"
+   "status": "known model defect: UFOmodeldb issue #1 item 2 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1; DECISIONS 2026-10-30 ~11:45); rule 4 not formed on the row; the user's UFO patch (DECISIONS ~12:45, ms-ufo-patch) makes the CKM exactly unitary",
+   "routed": "upstream (UFOmodeldb #1 item 2); ms-ufo-patch"
   },
   {
    "id": "F7",
@@ -127,6 +127,20 @@
    "evidence": "tmp/ms-validate/f3 (SC04 runs only with the candidate F1 fix, which changes no Born tree): point 1 = incoming b and b~ at E = 400, |p_z| = 399.97 (m_b^2/s = 3.2e-5); points 0, 2, 3 agree in binary64; probe-f9 (2026-10-30): native inputs are right in binary64 (0.011483087026326617), the Python-input Born is ~1e-49 in every helicity; probe-f9b: the b~ source (leg 2, along -z) is ~1e-24 in the binary64 carrier's Python inputs (sources at 40 + 10 digits) and right at 52 + 10: runtime/symbolica_exact._massive_dirac computes |p| = sqrt(pz^2), which at 50 digits exceeds |pz| = 399.974686699045993514867962107 by 1e-47, so pp3 = |p| + pz = 1e-47 instead of 0 and, with zero transverse momentum, chi = (sqrt(pp3/2|p|), 0) ~ (1e-25, 0) instead of (0, -nh): a vanishing spinor",
    "status": "fixed on work/v2-ms-validate (baab3247: on the z axis |p| = |pz| exactly; unit test test_massive_dirac_sources_on_the_beam_axis_do_not_hang_on_rounding fails without it): SC04 134/134 incl. point 1 in binary64, TT06 59/59 (massive initial b) at baab3247 (tmp/ms-validate/r5)",
    "routed": "MS-VALIDATE (fixed in the package; the shared exact runtime, also the tree engine's)"
+  },
+  {
+   "id": "F10",
+   "category": "model: G_mu massive-b charge counterterm",
+   "title": "With a massive b (restrict_with_b_mass), the G_mu UFO's 186 CT couplings that use (eCoup_a0_UV_EW + eCoup_DGmua0_UV_EW) omit dMB_eCoup_UV_EW",
+   "rows": [
+    "SC04",
+    "TT06",
+    "ST04"
+   ],
+   "checks": "none fail: ours = MadLoop (both read the UFO as shipped); a provider with its own renormalisation differs by the omitted term (ST04's MadLoop-Recola offset)",
+   "evidence": "MS-UFODB (slice 0e5930c2): the omitted term explains ST04's MadLoop-Recola offset exactly",
+   "status": "known model defect: UFOmodeldb issue #1 item 3 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1; DECISIONS 2026-10-30 ~11:45); the user's UFO patch (DECISIONS ~12:45, ms-ufo-patch) restores the term",
+   "routed": "upstream (UFOmodeldb #1 item 3); ms-ufo-patch"
   }
  ],
  "coverage_notes": [
