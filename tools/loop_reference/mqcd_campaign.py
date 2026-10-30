@@ -25,6 +25,10 @@ Subcommands (each takes run ids; ``all`` selects every run):
 Nothing here is process-specific: the processes, schemes and points families
 come from the JSON files. Each provider job runs under ``timeout`` (the
 campaign's ``job_timeout_seconds``).
+
+``--campaign <json>`` drives another campaign of the same format (the M-SM one:
+``msm_campaign.json``); its ``layout`` names the work directories
+(``runs/<name>``), the fixture directory and the manifest (defaults: M-QCD's).
 """
 
 import argparse
@@ -41,14 +45,32 @@ REPOSITORY = HERE.parent.parent
 CAMPAIGN = HERE / "mqcd_campaign.json"
 FIXTURES = REPOSITORY / "tests/fixtures/loop"
 MANIFEST = FIXTURES / "required/mqcd_references.json"
+# The campaign layout (``layout`` of the campaign JSON; these are M-QCD's).
+DEFAULT_CAMPAIGN = CAMPAIGN
+DEFAULT_LAYOUT = {"name": "M-QCD", "runs": "runs/mqcd", "fixtures": "required/mqcd",
+                  "manifest": "required/mqcd_references.json", "schema": "mqcd-references/2",
+                  "plan": "m-qcd/PLAN.md"}
+LAYOUT = dict(DEFAULT_LAYOUT)
 OLD_ROOTS = ("/shared/external/pyLoopAmpliCol/workspace/reference",)
 sys.path.insert(0, str(HERE))
 import required_spec  # noqa: E402
 
 
-def load():
+def load(path=None):
+    """The campaign and its runs by id; sets the layout (work, fixture and
+    manifest paths) of the campaign at ``path`` (default: M-QCD's), replacing
+    that of any earlier call."""
+    global CAMPAIGN, MANIFEST
+    CAMPAIGN = Path(path).resolve() if path else DEFAULT_CAMPAIGN
     data = json.loads(CAMPAIGN.read_text())
+    LAYOUT.clear()
+    LAYOUT.update(DEFAULT_LAYOUT, **data.get("layout", {}))
+    MANIFEST = FIXTURES / LAYOUT["manifest"]
     return data, {r["id"]: r for r in data["runs"]}
+
+
+def fixture_path(run_id):
+    return FIXTURES / LAYOUT["fixtures"] / f"{run_id}.json"
 
 
 def reference_root(args):
@@ -68,7 +90,7 @@ def select(runs, names):
 
 
 def work_dir(root, run):
-    return root / "runs/mqcd" / run["id"]
+    return root / LAYOUT["runs"] / run["id"]
 
 
 def python():
@@ -100,7 +122,7 @@ def command_export(args, data, runs):
     root = reference_root(args)
     for run in select(runs, args.runs):
         export = root / run["export"]
-        if export.parent != root / "runs/mqcd" / run["process"] or export.exists():
+        if export.parent != root / LAYOUT["runs"] / run["process"] or export.exists():
             print(f"{run['id']}: export {export} exists or belongs to another row; skipped")
             continue
         export.parent.mkdir(parents=True, exist_ok=True)
@@ -147,6 +169,8 @@ def supplied_command(run, target):
     options = ["--family", spec.get("family", "regular"), "--count", str(spec.get("count", 3))]
     if spec.get("values"):
         options += ["--values", *spec["values"]]
+    if spec.get("sqrt_s"):
+        options += ["--sqrt-s", *spec["sqrt_s"]]
     if spec.get("madloop_qp_point"):
         options.append("--madloop-qp-point")
     for key in ("rotate", "zero_cosine", "neighbour_cosine"):
@@ -205,9 +229,9 @@ def madloop_jobs(data, run, skip_helicities=False):
     setting = evaluation(data, run)
     options = []
     if setting is not None:
+        params = {**setting["madloop_params"], **run.get("madloop_params", {})}
         options = ["--madloop-accuracy", str(setting["requested_relative_accuracy"]),
-                   *(x for key, value in setting["madloop_params"].items()
-                     for x in ("--madloop-param", f"{key}={value}"))]
+                   *(x for key, value in params.items() for x in ("--madloop-param", f"{key}={value}"))]
     if setting is not None and setting.get("quadruple_precision_stage"):
         options.append("--madloop-quadruple")
     jobs = [("madloop", options)]
@@ -360,6 +384,10 @@ TOLERANCE_SCOPE = ("'tolerance' and 'validation_status' are the references.py me
                    "each point's 'reference' record")
 
 
+def tolerance_scope():
+    return TOLERANCE_SCOPE.replace("M-QCD", LAYOUT["name"]).replace("m-qcd/PLAN.md", LAYOUT["plan"])
+
+
 def command_fixture(args, data, runs):
     root = reference_root(args)
     for run in select(runs, args.runs):
@@ -368,16 +396,33 @@ def command_fixture(args, data, runs):
             print(f"{run['id']}: no reference.json")
             continue
         content = relocate(json.loads(source.read_text()), root)
-        content["tolerance_scope"] = TOLERANCE_SCOPE
+        content["tolerance_scope"] = tolerance_scope()
+        if LAYOUT.get("r2_couplings"):
+            # The R2 couplings the MadLoop export calls (m-sm/PLAN.md §1.4, rule-1 R2 correction).
+            import references
+
+            spec = required_spec.load_process(required_spec.DEFAULT_SPEC, run["process"],
+                                              {"mg5": root / "sources/MG5_aMC_v3_7_0", "reference": root})
+            content["madloop_r2_couplings"] = references.madloop_r2_couplings(
+                root / run["export"], spec["madloop"]["model"], run.get("subprocess"))
+        if run.get("export_parameters"):
+            # Model parameters of the export at the run's card per mu_R (madloop_parameters.py).
+            record = json.loads((work_dir(root, run) / "export_parameters.json").read_text())
+            if set(record["values"]) != set(run["export_parameters"]) or record["mu_r"] != [
+                    str(m) for m in content["mu_r"]]:
+                raise SystemExit(f"{run['id']}: export_parameters.json does not hold {run['export_parameters']} "
+                                 "at the fixture's mu_r")
+            content["export_parameters"] = record
         content["mqcd_run"] = {k: run[k] for k in run if k != "points"}
         content["mqcd_run"]["points"] = run["points"]
         text = json.dumps(content, indent=1) + "\n"
         leftover = sorted({m.group(0) for m in ABSOLUTE.finditer(text)})
         if leftover:
             raise SystemExit(f"{run['id']}: absolute paths remain after relocation: {leftover[:5]}")
-        target = FIXTURES / "required/mqcd" / f"{run['id']}.json"
+        target = fixture_path(run["id"])
         if target.exists() and json.loads(target.read_text()).get("mqcd_run", {}).get("id") != run["id"]:
             raise SystemExit(f"{run['id']}: {target} is another reference; refusing to overwrite it")
+        target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(text)
         print(target.relative_to(REPOSITORY))
 
@@ -502,7 +547,7 @@ def existing_binding(path, fixture, row, runs):
         run = runs[run_id]
         if run["points"].get("generator") != "fixture" or run["points"].get("fixture") != path:
             continue
-        target = FIXTURES / "required/mqcd" / f"{run_id}.json"
+        target = fixture_path(run_id)
         if not target.exists():
             continue
         rerun = json.loads(target.read_text())
@@ -530,6 +575,12 @@ def run_entry(root, run, fixture_path):
              "excluded_providers": run.get("exclude_providers", {}),
              "second_providers": run.get("second_providers", []),
              "second_provider_trigger": run.get("second_provider_trigger")}
+    if run.get("components"):
+        entry["components"] = run["components"]  # rule 5 components per sector (madloop_components.py)
+    if run.get("madloop_params"):
+        entry["madloop_params"] = run["madloop_params"]  # this run's MadLoop parameters over the campaign's
+    if run.get("binding") is False:
+        entry["binding"] = False  # an oracle run of another card (e.g. a technical epsIR = 0 run): no rule 1 reference
     if not fixture_path.exists():
         entry["status"] = "pending"
         return entry
@@ -567,11 +618,79 @@ def run_entry(root, run, fixture_path):
         "per_helicity": bool(fixture.get("per_helicity")),
         "subprocess": run.get("subprocess"),
     })
+    # Records of the M-SM campaign's fixtures (absent from M-QCD's).
+    entry.update({key: fixture[key] for key in RUN_RECORDS if key in fixture})
     return entry
+
+
+RUN_RECORDS = ("corrections", "complex_mass_scheme", "scheme_conventions", "tagged_photon_legs",
+               "madloop_r2_couplings", "export_parameters")
+
+
+EXISTING_R2 = "existing_r2_couplings.json"
+QCD_ONLY_R2 = "QCD-only reference: MadLoop inserts the complete QCD R2 set (M-QCD)"
+
+
+def existing_r2_targets(row, path):
+    """The MadLoop exports (paths below the reference root) giving an existing
+    fixture's R2 name list, or the reason it has none: the row's
+    existing_r2_exports, else runs/required/<name>/madloop-export of
+    required/<name>.json for an EW process (no list for a QCD-only one)."""
+    explicit = row.get("existing_r2_exports", {})
+    if path in explicit:
+        return explicit[path]
+    name = Path(path).stem
+    if not path.startswith("required/"):
+        raise SystemExit(f"{row['row']}: no R2 export known for {path} (set existing_r2_exports)")
+    spec = required_spec.load_process(required_spec.DEFAULT_SPEC, name)
+    if "EW" not in spec["corrections"]:
+        return QCD_ONLY_R2
+    return [f"runs/required/{name}/madloop-export"]
+
+
+def command_existing_r2(args, data, runs):
+    """Write the R2 name lists of the MadLoop exports behind the rows' existing
+    fixtures (references.madloop_r2_couplings, from each export's
+    ct_couplings.json) to <fixtures>/existing_r2_couplings.json."""
+    import references
+
+    root = reference_root(args)
+    exports, without = {}, {}
+    for row in data["rows"]:
+        for path in row["existing_fixtures"]:
+            targets = existing_r2_targets(row, path)
+            if isinstance(targets, str):
+                without[path] = targets
+                continue
+            for export in targets:
+                key = Path(export).parent.name
+                if key in exports:
+                    if path not in exports[key]["fixtures"]:
+                        exports[key]["fixtures"].append(path)
+                    continue
+                model = required_spec.load_process(required_spec.DEFAULT_SPEC, key, {
+                    "mg5": root / "sources/MG5_aMC_v3_7_0", "reference": root})["madloop"]["model"]
+                exports[key] = {"fixture": path, "fixtures": [path], "export": f"${{LOOP_REFERENCE_ROOT}}/{export}",
+                                "madloop_model": Path(model).name,
+                                **references.madloop_r2_couplings(root / export, model)}
+    content = {"description": "The UFO R2 couplings the MadLoop exports of the existing M-SM references insert "
+                              "(written by mqcd_campaign.py --campaign msm_campaign.json existing-r2: "
+                              "references.madloop_r2_couplings on each export's ct_couplings.json; called_as = the "
+                              "merged name MG5's call passes; the input of the rule-1 R2 correction, m-sm/PLAN.md "
+                              "§1.4). Keyed by process; fixture paths below tests/fixtures/loop; without_r2_list: "
+                              "the existing fixtures with no list and why.",
+               "exports": exports, "without_r2_list": without}
+    target = FIXTURES / LAYOUT["fixtures"] / EXISTING_R2
+    target.write_text(json.dumps(content, indent=1) + "\n")
+    print(f"{target.relative_to(REPOSITORY)}: {len(exports)} exports, {len(without)} fixtures without a list")
 
 
 def existing_entry(path, row, runs):
     item = {"fixture": path, "status": "committed" if (FIXTURES / path).exists() else "pending"}
+    if LAYOUT.get("r2_couplings"):
+        targets = existing_r2_targets(row, path)
+        item["r2_couplings"] = targets if isinstance(targets, str) else [
+            f"{LAYOUT['fixtures']}/{EXISTING_R2}#{Path(t).parent.name}" for t in targets]
     if item["status"] == "pending":
         return item
     fixture = json.loads((FIXTURES / path).read_text())
@@ -600,11 +719,11 @@ def command_manifest(args, data, runs):
         entry = {**{k: row[k] for k in ("row", "class", "process", "restriction_code", "reference_kind", "tier",
                                         "extras")},
                  "pyamplicol_route": route, "note": row.get("note")}
-        entry["references"] = [run_entry(root, runs[r], FIXTURES / "required/mqcd" / f"{r}.json") for r in row["runs"]]
+        entry["references"] = [run_entry(root, runs[r], fixture_path(r)) for r in row["runs"]]
         entry["existing_references"] = [existing_entry(path, row, runs) for path in row["existing_fixtures"]]
         binding = []
         for ref in entry["existing_references"] + entry["references"]:
-            if ref["status"] != "committed":
+            if ref["status"] != "committed" or ref.get("binding") is False:
                 continue
             if "point_binding" in ref:
                 chosen = [i for i, b in enumerate(ref["point_binding"]) if b["binding"]]
@@ -617,14 +736,16 @@ def command_manifest(args, data, runs):
                 binding.append({"fixture": ref["fixture"], "rows": chosen})
         entry["binding_references"] = binding
         if row.get("helicity_reference"):
-            entry["helicity_reference"] = f"required/mqcd/{row['helicity_reference']}.json"
+            entry["helicity_reference"] = f"{LAYOUT['fixtures']}/{row['helicity_reference']}.json"
         if row.get("primary_provider"):
             entry["primary_provider"] = row["primary_provider"]
+        if row.get("components"):
+            entry["components"] = row["components"]  # the row's rule 5 components (madloop_components.py)
         rows.append(entry)
     manifest = {
-        "schema": "mqcd-references/2",
-        "description": "Reference manifest of the M-QCD campaign (m-qcd/PLAN.md §4.2), written by "
-                       "tools/loop_reference/mqcd_campaign.py manifest from mqcd_campaign.json and the committed "
+        "schema": LAYOUT["schema"],
+        "description": f"Reference manifest of the {LAYOUT['name']} campaign ({LAYOUT['plan']} §4.2), written by "
+                       f"tools/loop_reference/mqcd_campaign.py manifest from {CAMPAIGN.name} and the committed "
                        "fixtures. Per row: process, pyAmpliCol route (restriction, fixed parameters), reference "
                        "runs (fixture path below tests/fixtures/loop, orders, points, MadLoop return codes, "
                        "evaluation precision and accuracy per point and loop squared split order, rule 1 outliers), "
@@ -723,7 +844,7 @@ def command_manifest(args, data, runs):
                                                          "born_double_pole_relative_mismatch is the falsifiable "
                                                          "quantity",
             },
-            "fixture_tolerance": TOLERANCE_SCOPE,
+            "fixture_tolerance": tolerance_scope(),
             "madloop_settings": data["madloop_settings"],
         },
         "rows": rows,
@@ -745,19 +866,21 @@ def command_status(args, data, runs):
             if (work / f"{label}-result.json").exists():
                 flags.append(f"{label}=done")
         flags.append(f"reference={'yes' if (work / 'reference.json').exists() else 'no'}")
-        flags.append(f"fixture={'yes' if (FIXTURES / 'required/mqcd' / (run['id'] + '.json')).exists() else 'no'}")
+        flags.append(f"fixture={'yes' if fixture_path(run['id']).exists() else 'no'}")
         print(run["id"], " ".join(flags))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--reference-root", type=Path)
+    parser.add_argument("--campaign", type=Path, help="campaign JSON (default: mqcd_campaign.json)")
     sub = parser.add_subparsers(dest="command", required=True)
     for name in ("export", "points", "run", "combine", "merge", "fixture", "status", "relocate"):
         p = sub.add_parser(name)
         p.add_argument("runs", nargs="+", help="run ids ('all': every run); for relocate: fixture paths below "
                                                "tests/fixtures/loop")
     sub.add_parser("manifest")
+    sub.add_parser("existing-r2", help="R2 name lists of the existing fixtures' exports (r2_couplings layouts)")
     sub.choices["export"].add_argument("--compile-jobs", type=int, default=4)
     sub.choices["points"].add_argument("--force", action="store_true")
     run = sub.choices["run"]
@@ -768,12 +891,13 @@ def main():
     run.add_argument("--skip-helicities", action="store_true")
     run.add_argument("--skip-second", action="store_true")
     args = parser.parse_args()
-    data, runs = load()
-    if args.command == "manifest":
+    data, runs = load(args.campaign)
+    if args.command in ("manifest", "existing-r2"):
         args.runs = []
     {"export": command_export, "points": command_points, "run": command_run, "combine": command_combine,
      "merge": command_merge, "fixture": command_fixture, "manifest": command_manifest,
-     "status": command_status, "relocate": command_relocate}[args.command](args, data, runs)
+     "status": command_status, "relocate": command_relocate,
+     "existing-r2": command_existing_r2}[args.command](args, data, runs)
 
 
 if __name__ == "__main__":
