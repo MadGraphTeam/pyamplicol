@@ -1834,11 +1834,14 @@ VANISHING = {
 # Recola's double-precision finite part, MadLoop's double-precision CT
 # parameters; MS-UFO-PATCH's MadLoop QP runs replace them).
 # VV07 and TT03 (2->3) against MadLoop's quadruple precision (m1: up to
-# 5.3e-11 and 1.4e-11): 1e-10, as the 2->4 rows.
+# 5.3e-11 and 1.4e-11): 1e-10, as the 2->4 rows; TT05 and TT06 (2->3)
+# against MS-UFO-PATCH's MadLoop QP runs (fs4: up to 3.9e-12 and 1.2e-11).
 RULE1 = {
     "TV06": 1e-10,
     "TV07": 1e-10,
     "VV07": 1e-10,
+    "TT05": 1e-10,
+    "TT06": 1e-10,
     "TT03": 1e-10,
     # ew-validate's udx_tbx_ew_mb run: MadLoop in double precision (status
     # 216; m1: 3.7e-11).
@@ -1905,6 +1908,13 @@ RELAXED = {
     # 0 and 3 (within its estimate, rule 3; double-double 4e-32;
     # tmp/ms-validate/fs2).
     "SC10": {"2": 1e-8, "4": 1e-8},
+    # u d~ > e+ ve on restrict_ckm (the patched model's unitary CKM): the EW
+    # counterterms omit the tau mass (MTA = 1.777 there; the user's retained
+    # model limitation, DECISIONS 2026-10-30 ~12:45), so the QED^6 single
+    # pole exceeds Catani's by MTA^2/(2 sw^2 (s - MW^2)) (alpha/2pi) Born
+    # (MS-UFO-PATCH's note on udx_epve_ew_ckm), = MadLoop's: 3.1e-7 to
+    # 1.1e-6 relative in both carriers (tmp/ms-validate/fs4).
+    "SC03": {"4": 1e-5, "4dd": 1e-5},
 }
 # Rule 4 not formed (status partial): the massive-muon copy of the G_mu UFO
 # (code Gm) changes only the muon mass in the restriction card, while the
