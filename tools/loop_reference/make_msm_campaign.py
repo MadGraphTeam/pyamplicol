@@ -306,6 +306,13 @@ row("SC08", "W-scheme", "t t~ > w+ w-", "G0", "N", runs_=[run("ttx_wpwm_ew", poi
     note=f"root closure, R2 rule checked first {EWI7}")
 row("SC09", "W-scheme", "t t~ > z h QCD=0", "G0", "E", fixtures=["required/ttx_zh_ew.json"], sectors=["e^6"],
     primary="recola", note=f"{R2RULE} (2.5 %); root mixing; ew-validate's fixture {EWI7}")
+row("SC10", "W-scheme", "z z > h h", "G0", "N", sectors=["e^6"],
+    runs_=[run("zz_hh_ew", points=S()),
+           run("zz_hh_ew_mg5", points={"generator": "run", "run": "zz_hh_ew"}, binding=False,
+               note="control: MadLoop on MG5_aMC's online-database G_mu model, whose R2_ZZHH predates UFOmodeldb's "
+                    "fix (the only difference)")],
+    note="the R2 vertices Z Z H H and Z Z G0 G0 (coupling R2_ZZHH, fixed in UFOmodeldb 6ca4b120; no other row "
+         "reaches them) on the UFOmodeldb model [MS-UFODB]")
 
 # Rule 5 (m-sm/PLAN.md §1.4): bare, R2 and UV-CT components per sector on one row per class
 # (madloop_components.py; the uv extras DY01, VJ02, JJ01, TT01 (its technical-card run) and one row of every
@@ -330,7 +337,8 @@ for e in rows:
 
 campaign = {
     "description": "M-SM validation campaign (workspace/reports/engine-v2/m-sm/PLAN.md §4): the 70 core rows of §4.2 "
-                   "(the decay rows XX01/XX02 wait for the user's Q3) and the MadLoop reference runs producing them. "
+                   "(the decay rows XX01/XX02 wait for the user's Q3), SC10 (the R2_ZZHH row of MS-UFODB) and the "
+                   "MadLoop reference runs producing them. "
                    "Runs live under $LOOP_REFERENCE_ROOT/runs/msm/<run>/ and their merged references are committed "
                    "as tests/fixtures/loop/required/msm/<run>.json; existing fixtures are paths below "
                    "tests/fixtures/loop/. Driven by mqcd_campaign.py --campaign msm_campaign.json.",
@@ -359,6 +367,6 @@ campaign = {
     "rows": rows,
     "runs": list(runs.values()),
 }
-assert len(rows) == 70, len(rows)
+assert len(rows) == 71, len(rows)
 Path(sys.argv[1]).write_text(json.dumps(campaign, indent=1) + "\n")
 print(len(rows), "rows,", len(runs), "runs")

@@ -963,7 +963,7 @@ $C fixture uux_emep_ew && $C manifest
 
 | File | Role |
 |---|---|
-| `make_msm_campaign.py` -> `msm_campaign.json` | the 70 core rows of §4.2 (the decay rows wait for the user's Q3) with their model codes (`restriction_codes`: G0, Ga, Gb, Gm, Gk, Gt, Gc, Gca, Lc, Az, L5) and 69 MadLoop runs; `layout` puts work directories under `runs/msm/`, fixtures under `tests/fixtures/loop/required/msm/` and the manifest at `required/msm_references.json` (`msm-references/1`) |
+| `make_msm_campaign.py` -> `msm_campaign.json` | the 70 core rows of §4.2 (the decay rows wait for the user's Q3) and SC10 (z z > h h: the R2 vertices of the coupling R2_ZZHH, MS-UFODB) with their model codes (`restriction_codes`: G0, Ga, Gb, Gm, Gk, Gt, Gc, Gca, Lc, Az, L5) and 71 MadLoop runs; `layout` puts work directories under `runs/msm/`, fixtures under `tests/fixtures/loop/required/msm/` and the manifest at `required/msm_references.json` (`msm-references/1`) |
 | `required_processes.json` | new schemes `ew-gmu-a0`, `ew-gmu-cms`, `ew-gmu-a0-cms`, `qcd-cms`, `ew-gmu-ckm`, `ew-gmu-mm`, `ew-gmu-tech` and the `role: msm` processes (new keys only) |
 | `madloop_ct_couplings.py` | the UFO counterterm couplings behind an export's calls (`<export>.ct_couplings.json`; madloop_export.py writes it for new exports) |
 | `madloop_parameters.py` | model parameters of an export at a run's card per mu_R (`<work>/export_parameters.json`, copied into the fixture of a run listing `export_parameters`: CM09's complex photon conversion parameter) |
