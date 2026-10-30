@@ -1601,6 +1601,10 @@ VANISHING = {
     # (ours 1e-33, MadLoop's 1e-17 of the Born; tmp/ms-validate/f1 with the
     # plan-rank fix of finding F1).
     "SC07": [{"sector": "total", "coefficient": "single_pole"}],
+    # a a > w+ w- with QED corrections: neutral initial photons, massive
+    # charged final W's, so no soft-collinear photon pole (ours 7e-33,
+    # MadLoop's 1.5e-34 of the Born; tmp/ms-validate/fs 2026-10-30).
+    "PI02": [{"sector": "QED^6", "coefficient": "double_pole"}],
 }
 # Rule 1's tolerance per row (nominal 1e-12; 1e-10 from 2->4 up where the
 # providers' precision needs it, the user's ruling of 2026-10-29 ~01:12; and
