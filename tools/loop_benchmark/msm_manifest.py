@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -68,21 +69,14 @@ CODES = {
     # sets them (MB = ymb = 4.7) at runtime; only the widths are fixed.
     "Gk": (GMU, "ckm", ZERO_WIDTHS, "ew-gmu-ckm", ALPHA_GMU),
     "Gt": (GMU, "with_technical", ZERO_WIDTHS, "ew-gmu-tech", ALPHA_GMU),
-    "Gc": (
-        GMU,
-        "default",
-        {"MB": "0", "ymb": "0", "MTA": "0", "ymtau": "0"},
-        "ew-gmu-cms",
-        ALPHA_GMU,
-    ),
-    "Gca": (
-        GMU,
-        "a0",
-        {"MB": "0", "ymb": "0", "MTA": "0", "ymtau": "0"},
-        "ew-gmu-a0-cms",
-        ALPHA_GMU,
-    ),
-    "Lc": (LOOPSM, "default", {"WW": "0", "WZ": "0", "WH": "0"}, "qcd-cms", ALPHA_MZ),
+    # Under the complex-mass scheme the Yukawas follow the masses (no Yukawa
+    # input, ``cms-yukawa-input``); a row with an MS-REF run takes that run's
+    # fixed masses and widths (the card widths, zero for an external
+    # unstable multiplet), CM01 its blocks' widths at runtime.
+    "Gc": (GMU, "default", {"MB": "0", "MTA": "0"}, "ew-gmu-cms", ALPHA_GMU),
+    "Gca": (GMU, "a0", {"MB": "0", "MTA": "0"}, "ew-gmu-a0-cms", ALPHA_GMU),
+    # MS-REF's CM10 run: loop_sm-no_b_mass, WT = 1.4915, WZ = WW = WH = 0.
+    "Lc": (LOOPSM, "no_b_mass", {"WW": "0", "WZ": "0", "WH": "0"}, "qcd-cms", ALPHA_MZ),
     "Az": (QCDQED, "default", ZERO_WIDTHS, "ew-qcd-qed-sm", ALPHA_MZ),
     "L5": (LOOPSM, "default", G_MU_FIXED, "qcd", ALPHA_MZ),
 }
@@ -122,6 +116,9 @@ CONTROL_PARAMETERS = {
     "aS": "0.118",
 }
 CONTROL_POINTS = "tools/loop_reference/uudd_qcd.json"
+# CM01's card widths (``cms-source-gmu.json`` records none; its finite block
+# is the card's, as the ufo-standard fixture's).
+CM01_CARD_WIDTHS = {"WZ": "2.49877", "WW": "2.09291", "WT": "1.37758", "WH": "0.00407468"}
 ALPHA0_INVERSE = "137.035999"
 
 R = []
@@ -165,6 +162,11 @@ N = "N"  # a new MadLoop job (MS-REF)
 # ttx_zh_ew, udx_tbx_ew; MS-PHOTON, per-leg photon tagging
 # ``loop.external_photons``, integrated at 870e092f).
 LANDED = {"EWI-7", "MS-PHOTON"}
+# MS-CMS-N, integrated at a359965c, carries MS-CMS's transform and policy
+# (work/v2-ms-cms fc3ad912): the complex-mass rows run.
+LANDED |= {"MS-CMS", "MS-CMS-N"}
+# Model codes under the complex-mass scheme (m-sm/PLAN.md §4.1).
+CMS_CODES = {"Gc", "Gca", "Lc"}
 
 
 # ---- LL: lepton-only
@@ -893,10 +895,42 @@ row(
     [(0, 6)],
     [(0, 2)],
     "E cms-ufo-standard-gmu.json + cms-source-gmu.json + small-width control (MadLoop double)",
-    None,
+    {
+        "format": "cms-control",
+        "path": f"{FIX}/cms-ufo-standard-gmu.json",
+        "block": "finite",
+        "mu_r2": "1000000",
+        "parameters": {k: v for k, v in CONTROL_PARAMETERS.items() if k != "ymt"},
+    },
     ["ap", "sp"],
     ["2->2", "cms"],
     waits="MS-CMS",
+    notes="MadLoop CMS double-precision exports (cms-ufo-standard-gmu.json): the card widths' block (continuum and three Z-resonance points); variants: zero widths, the widths x 0.001 (S3), and the G_mu source's reglog override (cms-source-gmu.json, a compatibility view, [U3]); the widths are runtime parameters of one generation",
+    variants=[
+        {
+            "name": name,
+            "gating": True,
+            "tier": "nightly",
+            "reference": {
+                "format": "cms-control",
+                "path": f"{FIX}/{fixture}",
+                "block": block,
+                "mu_r2": "1000000",
+                "parameters": {k: v for k, v in CONTROL_PARAMETERS.items() if k != "ymt"},
+                **({"widths": CM01_CARD_WIDTHS} if fixture == "cms-source-gmu.json" else {}),
+            },
+            **({"reglog_convention": "source"} if fixture == "cms-source-gmu.json" else {}),
+            "points": {"nightly": list(range(count))},
+            "extras": [],
+            "extras_pending": {},
+            "notes": note,
+        }
+        for name, fixture, block, note, count in (
+            ("zero", "cms-ufo-standard-gmu.json", "zero", "every width zero at runtime (the real-mass values)", 3),
+            ("small", "cms-ufo-standard-gmu.json", "small", "S3: the widths x 0.001 at runtime", 3),
+            ("source", "cms-source-gmu.json", "finite", "the G_mu source's reglog override (reglog_convention source), the card widths", 4),
+        )
+    ],
 )
 row(
     "CM02",
@@ -1223,6 +1257,56 @@ def conversion_values(data, counterterm="eCoup_DGmua0_UV_EW"):
     return out
 
 
+def conversion_values_cms(data, counterterm="eCoup_DGmua0_UV_EW"):
+    """As ``conversion_values`` for a complex-mass reference: the real parts
+    of the transformed model's conversion parameter (MS-CMS's port of MG5's
+    transform at the fixture's fixed widths and masses), as MG5's
+    double-precision ``get_virtual_a0Gmu_conv`` keeps them; its finite part
+    must equal the MadLoop export's own value per MU_R (``export_
+    parameters``) to 1e-12."""
+
+    from pyamplicol.loops.model_cms import complex_mass_scheme
+    from pyamplicol.loops.model_restrictions import prepare_loop_restrictions
+    from pyamplicol.loops.scalar_bindings import (
+        NativeScalarBindings,
+        prepare_scalar_bindings,
+    )
+    from pyamplicol.models.loop_import import load_raw_loop_model
+
+    raw = load_raw_loop_model(str(GMU_UFO), restriction=data["restriction"] or "default")
+    names = {record["name"] for record in raw.collections["parameters"]}
+    fixed = {k: v for k, v in data["fixed_parameters"].items() if k in names}
+    scheme = complex_mass_scheme(raw, fixed_parameters=fixed)
+    derived = prepare_loop_restrictions(scheme.derived, simplify=False).derived
+    names = {record["name"] for record in derived.collections["parameters"]}
+    plan = prepare_scalar_bindings(
+        derived,
+        ((counterterm, -1), (counterterm, 0)),
+        fixed_parameters={k: v for k, v in fixed.items() if k in names},
+    )
+    exported = data["export_parameters"]
+    if exported["mu_r"] != data["mu_r"]:
+        raise SystemExit("the export's conversion values are not at the fixture's MU_R")
+    out = []
+    for index, mu in enumerate(data["mu_r"]):
+        parameters = {
+            k: v for k, v in data["parameters"].items() if k in plan.external_names
+        }
+        parameters["MU_R"] = mu
+        pole, finite = (
+            complex(*map(float, value))
+            for value in NativeScalarBindings(
+                plan, arithmetic="double", parameters=parameters
+            ).values.to_decimal()
+        )
+        key = "MDL_" + counterterm.upper() + "_FIN_"
+        theirs = complex(*exported["values"][key][index])
+        if abs(finite - theirs) > 1e-12 * abs(theirs):
+            raise SystemExit(f"conversion at MU_R {mu}: ours {finite}, the export's {theirs}")
+        out.append([repr(pole.real), repr(finite.real)])
+    return out
+
+
 def _fixture(path):
     return json.loads((WT / FIX / path).read_text())
 
@@ -1248,7 +1332,11 @@ def _photon_spec(data, sector=None, n=None):
     if not tagged:
         return None
     spec = photons(tagged, sector)
-    spec["values"] = conversion_values(data)
+    spec["values"] = (
+        conversion_values_cms(data)
+        if data.get("complex_mass_scheme")
+        else conversion_values(data)
+    )
     return spec
 
 
@@ -1551,6 +1639,19 @@ def sector_orders(sector):
     return {"QCD": sector[0], "QED": sector[1]}
 
 
+def ufo_parameters(model):
+    """name -> nature of a model's UFO parameters (its ``parameters.py``)."""
+
+    path = {
+        GMU: GMU_UFO,
+        QCDQED: WORKSPACE / "reference/models/loop_qcd_qed_sm",
+        LOOPSM: WORKSPACE / "reference/sources/MG5_aMC_v3_7_0/models/loop_sm",
+    }[model]
+    text = (path / "parameters.py").read_text()
+    pattern = r"Parameter\(\s*name\s*=\s*'([^']+)'\s*,\s*nature\s*=\s*'(\w+)'"
+    return {m.group(1): m.group(2) for m in re.finditer(pattern, text)}
+
+
 def point_count(reference):
     if reference is None:
         return 3
@@ -1571,6 +1672,8 @@ def point_count(reference):
         return len(data["processes"][reference["key"]]["points"])
     if fmt == "process-components":
         return len(data["rows"][reference["key"]])
+    if fmt == "cms-control":
+        return len(data[reference["block"]]["points"])
     return len(data["points"])
 
 
@@ -1633,6 +1736,9 @@ RULE1 = {
     # SC02 (massive muon, m^2/s = 1e-8) against MadLoop's CutTools
     # quadruple precision (MS-REF's re-run): finite parts to 4.9e-9 (c7).
     "SC02": 1e-8,
+    # CM01 against MadLoop CMS double-precision exports (cms-ufo-standard-
+    # gmu.json, cms-source-gmu.json; MS-CMS's test holds 1e-8).
+    "CM01": 1e-8,
 }
 # Relaxed rules per row (the user's ruling of ~10:20, at most 1e-5): SC05's
 # poles against Catani in double-double, 2.9e-14 and 4.2e-14 at point 0
@@ -1781,6 +1887,26 @@ for r in R:
             entry[key] = r["more"][key]
     if "veto" in r["more"]:
         entry["particle_veto"] = r["more"]["veto"]
+    if r["code"] in CMS_CODES:
+        entry["mass_scheme"] = "complex-mass"
+        if "ward" in r["extras"]:
+            # Under CMS the Ward identity is a gauge diagnostic, not an
+            # acceptance identity (m-sm/PLAN.md §1.4 Ward, §1.5).
+            entry["diagnostic_extras"] = ["ward"]
+        if reference and reference.get("format") == "required":
+            # The run's fixed masses and widths (its card widths, zero for
+            # an external unstable multiplet), those the model has; its
+            # runtime parameters the model's external ones.
+            data = json.loads((WT / reference["path"]).read_text())
+            names = ufo_parameters(model)
+            fixed = {k: v for k, v in data["fixed_parameters"].items() if k in names}
+            entry["fixed_parameters"] = fixed
+            ignored = sorted(set(data["fixed_parameters"]) - set(fixed))
+            internal = sorted(
+                k for k in data["parameters"] if names.get(k) != "external"
+            )
+            if internal:
+                entry["ignored_parameters"] = internal
     if ignored:
         entry["ignored_fixed_parameters"] = ignored
     if r["notes"]:
@@ -1895,6 +2021,11 @@ MEASURED_SECONDS: dict[str, tuple[int, int]] = {
 }  # fmt: skip
 DEFAULT_SECONDS = 600
 JOB_SECONDS = 1500
+# Ids without a measurement whose cost differs from one EW generation:
+# variants that share their base row's generation (runtime widths: an
+# evaluation of their points in both carriers), and the 2->4 CMS row CM08
+# (ms-cms-n's test: generation ~10 min, 25 GB).
+ESTIMATED_SECONDS = {"CM01@zero": 90, "CM01@small": 90, "CM08": 1200}
 
 
 def nightly_ids_of(entry):
@@ -1923,7 +2054,10 @@ for entry in sorted(rows, key=lambda e: e["id"]):
     ids = nightly_ids_of(entry)
     if not ids:
         continue
-    seconds = sum(MEASURED_SECONDS.get(i, (DEFAULT_SECONDS, 0))[0] for i in ids)
+    seconds = sum(
+        MEASURED_SECONDS.get(i, (ESTIMATED_SECONDS.get(i, DEFAULT_SECONDS), 0))[0]
+        for i in ids
+    )
     fits = [j for j in jobs if j["seconds"] + seconds <= JOB_SECONDS]
     if fits:
         job = min(fits, key=lambda j: (j["seconds"], j["job"]))

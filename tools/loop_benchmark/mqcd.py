@@ -306,6 +306,17 @@ class Row:
     # photons``: "final", "all", "none" or 1-based leg labels, MG5_aMC's
     # ``!a!`` tags); None: the engine's default ("final").
     external_photons: str | tuple[int, ...] | None = None
+    # The mass scheme (None: the model's real on-shell masses; "complex-
+    # mass": MS-CMS's port of MG5_aMC's transform, ``model_cms.complex_mass_
+    # model``, deciding the pole masses at the row's fixed parameters, else
+    # the restriction card) and the transform's reglog convention (None:
+    # "ufo-standard"; "source": the G_mu source's override, CM01's
+    # compatibility view).
+    mass_scheme: str | None = None
+    reglog_convention: str | None = None
+    # Extras run as diagnostics: recorded, not asserted (the ``ward`` extra
+    # under the complex-mass scheme, m-sm/PLAN.md §1.4 Ward and §1.5).
+    diagnostic_extras: tuple[str, ...] = ()
     # Why a row forms no rule 4 (``catani`` "none"), when not the public
     # route's reason.
     catani_reason: str = ""
@@ -387,6 +398,9 @@ class Row:
             external_photons=data.get("external_photons")
             if not isinstance(data.get("external_photons"), list)
             else tuple(int(x) for x in data["external_photons"]),
+            mass_scheme=data.get("mass_scheme"),
+            reglog_convention=data.get("reglog_convention"),
+            diagnostic_extras=tuple(data.get("diagnostic_extras", ())),
             catani_reason=data.get("catani_reason", ""),
         )
 
@@ -1025,6 +1039,43 @@ def _ew_control(row, spec, data) -> Reference:
     )
 
 
+def _cms_control(row, spec, data) -> Reference:
+    """A MadLoop complex-mass control (``cms-*-gmu.json``, CM01): block
+    ``spec['block']`` of the fixture (its points, Born, full virtual and
+    the instrumented bare / UV / R2 components, one squared-order sector);
+    the scale the manifest's ``mu_r2``; the parameters the manifest's plus
+    the block's widths (or the manifest's ``widths``), runtime parameters
+    of the row's one complex-mass generation."""
+
+    block = data[spec["block"]]
+
+    def laurent(values) -> tuple[float, float, float]:
+        # (finite, single pole, double pole), as LAURENT.
+        return tuple(float(x) for x in values)
+
+    widths = block.get("widths") or spec["widths"]
+    parameters = {**spec["parameters"], **widths}
+    count = len(block["points"])
+    names = ("bare", "uv", "r2")
+    components = [
+        {name: {TOTAL: laurent(block[name][k])} for name in names if name in block}
+        for k in range(count)
+    ]
+    return Reference(
+        "",
+        ("madloop",),
+        [_strings(p) for p in block["points"]],
+        [str(spec["mu_r2"])] * count,
+        parameters,
+        None,
+        [{"madloop": {TOTAL: float(block["born"][k])}} for k in range(count)],
+        [{"madloop": {TOTAL: laurent(block["full"][k])}} for k in range(count)],
+        [{"madloop": None} for _ in range(count)],
+        float(parameters["aS"]),
+        components=components,
+    )
+
+
 def _madloop_components(row, spec, data) -> Reference:
     """``goldstone-mixing.json`` style: ``processes[key]`` with MadLoop's
     Born, virtual (its accuracy) and its Born x CT interference ``ct`` and
@@ -1200,6 +1251,7 @@ def _strings_all(points) -> list:
 
 _LOADERS = {
     "ew-control": _ew_control,
+    "cms-control": _cms_control,
     "madloop-components": _madloop_components,
     "process-components": _process_components,
     "sectors": _sectors,
@@ -1350,6 +1402,25 @@ def slice_request(row: Row, **changes: Any) -> Any:
     )
 
 
+def row_request(row: Row, compiled: Any) -> Any:
+    """``row``'s request on its compiled model: under the complex-mass scheme
+    the fixed parameters the transformed model still has (the transform
+    fixed them all; the former Yukawa inputs and the masses a restriction
+    removed are not the model's parameters)."""
+
+    if row.mass_scheme is None:
+        return slice_request(row)
+    defaults = compiled.parameter_defaults
+    return slice_request(
+        replace(
+            row,
+            fixed_parameters={
+                k: v for k, v in row.fixed_parameters.items() if k in defaults
+            },
+        )
+    )
+
+
 def coloured_legs(row: Row) -> list[int]:
     """The one-based labels of a row's coloured external legs: the process's
     names other than loop_sm's colourless ones (``RowRun.tree_catani``
@@ -1497,7 +1568,7 @@ class RowRun:
         self.failures: dict[tuple[int, str], str] = {}
         if base is not None:
             # A variant: the base row's request, generation and executor.
-            if slice_request(row) != slice_request(base.row):
+            if row_request(row, compiled) != row_request(base.row, base.compiled):
                 raise ValueError(f"{row.id} changes its base row's request")
             self.slice, self.executor = base.slice, base.executor
             self.generate_seconds = self.export_seconds = 0.0
@@ -1505,7 +1576,7 @@ class RowRun:
             return
         start = time.perf_counter()
         LOG.info("%s: generating %s", row.id, row.process)
-        self.slice = LoopSlice.generate(compiled, slice_request(row), native)
+        self.slice = LoopSlice.generate(compiled, row_request(row, compiled), native)
         self.generate_seconds = time.perf_counter() - start
         LOG.info("%s: generated in %.1f s", row.id, self.generate_seconds)
         start = time.perf_counter()
@@ -3388,6 +3459,21 @@ def rule_ward(
     return checks
 
 
+def diagnostics(checks: Iterable[Check]) -> list[Check]:
+    """``checks`` recorded as diagnostics: not asserted, their outcome in
+    the note (a diagnostic extra, ``Row.diagnostic_extras``)."""
+
+    return [
+        replace(
+            check,
+            passed=True,
+            asserted=False,
+            note=f"diagnostic ({'holds' if check.passed else 'misses'}): {check.note}",
+        )
+        for check in checks
+    ]
+
+
 @dataclass
 class RowReport:
     row: str
@@ -3701,7 +3787,10 @@ def run_row(
         start = time.perf_counter()
         for index in extra_points:
             for carrier in ("double", "double-double"):
-                checks += rule_ward(row, index, carrier, run.ward(index, carrier))
+                found = rule_ward(row, index, carrier, run.ward(index, carrier))
+                if "ward" in row.diagnostic_extras:
+                    found = diagnostics(found)
+                checks += found
         timings["ward_s"] = round(time.perf_counter() - start, 2)
     if row.ckm_relation is not None and tier == "nightly":
         start = time.perf_counter()
@@ -3789,6 +3878,38 @@ class Campaign:
                 )
         return self._models[key]
 
+    def row_model(self, row: Row) -> Any:
+        """The compiled model of ``row``: its (model, restriction), under the
+        complex-mass scheme transformed at the row's fixed parameters that
+        are the model's (``model_cms.complex_mass_model``, one per fixed
+        set and reglog convention)."""
+
+        compiled = self.model(row.restriction, row.model)
+        if row.mass_scheme is None:
+            return compiled
+        if row.mass_scheme != "complex-mass":
+            raise ValueError(f"{row.id}: unknown mass scheme {row.mass_scheme!r}")
+        import hashlib
+
+        from pyamplicol.loops.model_cms import complex_mass_model
+
+        names = {
+            record["name"]
+            for record in compiled.raw_loop_model.collections["parameters"]
+        }
+        fixed = {k: v for k, v in sorted(row.fixed_parameters.items()) if k in names}
+        convention = row.reglog_convention or "ufo-standard"
+        key = (row.model, row.restriction, convention, json.dumps(fixed))
+        if key not in self._models:
+            tag = hashlib.sha256(json.dumps(key).encode()).hexdigest()[:12]
+            self._models[key], _scheme = complex_mass_model(
+                compiled,
+                fixed_parameters=fixed,
+                reglog_convention=convention,
+                cache_dir=self.work / f"model-cms-{tag}",
+            )
+        return self._models[key]
+
     def run(self, name: str) -> RowRun | PublicRun:
         if name not in self._runs:
             row = self.rows[name]
@@ -3813,19 +3934,22 @@ class Campaign:
             # A variant shares its base row's generation unless it is a
             # subprocess of it (M01), runs on another restriction (the
             # restricted-UFO variants of the 5F* rows) or tags other photons
-            # (PI01's "all" twin).
+            # (PI01's "all" twin) or another mass scheme or reglog convention
+            # (CM01's source view).
+            other = self.rows.get(row.base) if row.base is not None else None
             if (
-                row.base is not None
-                and self.rows[row.base].active
+                other is not None
+                and other.active
                 and not row.subprocess
-                and row.restriction == self.rows[row.base].restriction
-                and row.model == self.rows[row.base].model
-                and row.external_photons == self.rows[row.base].external_photons
+                and (row.restriction, row.model, row.external_photons)
+                == (other.restriction, other.model, other.external_photons)
+                and (row.mass_scheme, row.reglog_convention)
+                == (other.mass_scheme, other.reglog_convention)
             ):
                 base = self.run(row.base)
             self._runs[name] = RowRun(
                 row,
-                self.model(row.restriction, row.model),
+                self.row_model(row),
                 self.native,
                 base=base,
                 ufo=self.ufo,
