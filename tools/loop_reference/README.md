@@ -1017,7 +1017,8 @@ squared split order printed. What M-SM adds:
   fixtures merged before (`mqcd/udx_wpa_zero.json` has absolute rows) keep the old maximum over all rows (no test
   reads it; a re-merge would change only that field).
 * **ST04** commits ew-validate's workspace run `udx_tbx_ew_mb` as `required/udx_tbx_ew_mb.json`, re-merged with
-  Recola excluded (its massive-b setting differs by 3e-4..1e-3; §4.1).
+  Recola excluded (it differs by 9.48e-5 x Born: the G_mu UFO's CT couplings omit `dMB_eCoup_UV_EW`, the b-mass term
+  of the charge counterterm, a UFO defect found by MS-UFODB; MadLoop and pyAmpliCol read the UFO).
 
 ## NJet: the all-gluon ladder up to g g -> g g g g g (`njet/`)
 

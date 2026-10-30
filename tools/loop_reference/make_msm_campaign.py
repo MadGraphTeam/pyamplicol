@@ -215,8 +215,8 @@ row("ST02", "W-singletop", "u d~ > t b~ QCD=0", "G0", "E", fixtures=["required/u
 row("ST03", "W-singletop", "g b > t w-", "G0", "N", extras=["ward"], runs_=[run("gb_twm_ew", points=S())],
     sectors=["s^4e^2", "s^2e^4"])
 row("ST04", "W-singletop", "u d~ > t b~ QCD=0 (massive b)", "Gb", "R", fixtures=["required/udx_tbx_ew_mb.json"],
-    sectors=["e^6"], note=f"ew-validate's workspace run udx_tbx_ew_mb (MadLoop; Recola differs by 3e-4..1e-3 in its "
-                          f"massive-b setting, not a provider here) {EWI7}")
+    sectors=["e^6"], note=f"ew-validate's workspace run udx_tbx_ew_mb (MadLoop; Recola differs by 9.48e-5 x Born: "
+                          f"the G_mu UFO omits dMB_eCoup_UV_EW in its charge counterterm; not a provider here) {EWI7}")
 # JJ, PI
 row("JJ01", "W-jets", "u u~ > d d~", "G0", "N", extras=["so", "uv"], runs_=[run("uux_ddx_ew")],
     sectors=["s^6", "s^4e^2", "s^2e^4", "e^6"])
