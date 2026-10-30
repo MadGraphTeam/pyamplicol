@@ -479,7 +479,16 @@ def recola(
     run = work / "recola-run"
     run.mkdir(parents=True, exist_ok=True)
     root = trees.root
-    dirs = library_path(recola_tree / "librecola.so", root)
+    # The driver's own C library (its compiler's, through its interpreter)
+    # serves Recola as well: a C library directory of Recola's build on the
+    # search path would pair the driver's loader with another libc (a
+    # glibc 2.42 loader with glibc 2.40's libc.so.6: "undefined symbol
+    # __nptl_change_stack_perm", exit 127).
+    dirs = [
+        d
+        for d in library_path(recola_tree / "librecola.so", root)
+        if not (d / "libc.so.6").is_file()
+    ]
     binary = _recola_driver(run, recola_tree, dirs)
     search = os.pathsep.join(
         [*map(str, dirs), *filter(None, [os.environ.get("LD_LIBRARY_PATH")])]

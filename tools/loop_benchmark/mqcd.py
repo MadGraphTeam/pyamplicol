@@ -14,7 +14,9 @@ The rules (PLAN §1.4). The user's ruling of 2026-10-29 ~10:20 overrides
 their tolerances: a discrepancy below ~1e-5 relative is not a finding, a
 check failing at that level gets its row's tolerance relaxed (``relaxed``:
 rule -> tolerance, stated per row, at most ``ATTENTION``) and passing
-checks keep their tolerances; no exemption lists:
+checks keep their tolerances; no exemption lists. Rule 4 holds two carriers:
+its ``"4"`` relaxes the binary64 checks and ``"4dd"`` the double-double
+ones, each only the carrier that needed it:
 
 1. double-double against the row's primary provider, strictly relative,
    rel <= the row's ``reference_tolerance`` per sector and coefficient, Born
@@ -88,7 +90,7 @@ import math
 import os
 import time
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from decimal import Decimal, localcontext
 from fractions import Fraction
@@ -128,7 +130,9 @@ AP_CONVERGENCE = 1e-35  # rule 6
 CKM_RELATION = 1e-24  # PLAN §4.1: the H rows' CKM-factor relation in DD
 AP_DIGITS = (40, 60)
 
-TIERS = ("default", "nightly")
+# ``campaign``: rows run by the campaign CLI only (m-sm/PLAN.md §4.3: the
+# 2->5 target and CM07, jobs above the nightly budget).
+TIERS = ("default", "nightly", "campaign")
 # ``composite``: a row made of its gating variants, checks and delegated
 # columns, without an evaluation of its own (M01).
 STATUSES = ("active", "pending", "composite")
@@ -147,13 +151,13 @@ UNBLOCKERS = (
     "MQ-STAB",
     "MQ-VALIDATE",
 )
-EXTRAS = ("nc", "ap", "ward", "uv", "hel", "sp", "ff")
+EXTRAS = ("nc", "ap", "ward", "uv", "hel", "sp", "ff", "joint")
 # Extras this harness checks today (the others are listed as pending).
 # ``sp`` (PLAN §4.1 special points S1-S4) is checked by the row's gating
 # variants (``<id>@<name>``: the special-point references on the base row's
 # generation), so a row with ``sp`` and no gating variant is malformed.
 # ``ff`` is the analytic quark form factor (PLAN §4.2 D01, ``rule_ff``).
-IMPLEMENTED_EXTRAS = frozenset({"ap", "uv", "hel", "sp", "ward", "ff"})
+IMPLEMENTED_EXTRAS = frozenset({"ap", "uv", "hel", "sp", "ward", "ff", "joint"})
 # Extras another package's tests check, by the test ids the row lists
 # (``nc``: MQ-NC's rule 7 column, ``Row.nc_column``).
 DELEGATED_EXTRAS = frozenset({"nc"})
@@ -211,6 +215,10 @@ class Row:
     vanishing: tuple[Mapping[str, Any], ...] = ()
     # Reference fixed parameters the model does not have (MadLoop's WTau).
     ignored_fixed_parameters: tuple[str, ...] = ()
+    # Reference parameters the row's model does not take (a reference of
+    # another UFO: loop_sm's aEWM1 under the G_mu UFO, whose effect the row
+    # states through its own ``parameters``, e.g. the derived MW).
+    ignored_parameters: tuple[str, ...] = ()
     notes: str = ""
     # A variant ("<id>@<name>") shares its base row's request and generation
     # with another reference (a runtime parameter change, a diagnostic twin);
@@ -225,7 +233,9 @@ class Row:
     # 1e-12 of the neighbour's Born (its F for the Laurent coefficients).
     zero_points: Mapping[int, int] = field(default_factory=dict)
     # Rule 4's prediction: "python" (the Python-input path's Catani operator,
-    # every row on that route), "tree" (a row on the native-input route,
+    # every row on that route), "engine" (a native-input row: the engine's
+    # operators on the Python-input Born, ``RowRun.engine_catani``, the M-SM
+    # rows), "tree" (a row on the native-input route,
     # whose executor forms none, WP3.1 I5c: the harness's massless Catani
     # operator on the tree engine's colour-correlated Born, ``tree_catani``)
     # or "none" (recorded as not asserted: M01's public-route variants, whose
@@ -248,6 +258,13 @@ class Row:
     # The legs of the ``ward`` extra (None: every external massless vector
     # leg, ``ward.gauge_legs``).
     ward_legs: tuple[int, ...] | None = None
+    # Runtime parameters of the ``ward`` extra only (on the row's points):
+    # in the real-mass scheme the Ward identity holds only where no external
+    # coloured (gluon Ward) or charged (photon Ward) particle has an
+    # absorptive self-energy at its mass, which the scheme's real on-shell
+    # counterterms leave unrenormalised; e.g. a stable top (MW, MZ above MT)
+    # for the top-pair rows, whose W and Z are internal.
+    ward_parameters: Mapping[str, str] = field(default_factory=dict)
     # Rule -> tolerance of the checks the user's ruling of 2026-10-29 ~10:20
     # relaxes on this row ("2": rule 2's binary64 bound, at least this; "6":
     # rule 6's 40 against 60 digits), at most ``ATTENTION``.
@@ -259,6 +276,58 @@ class Row:
     # M01's ``bitwise``: MQ-MODEL's).
     delegated: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
     route: str = "tools"
+    # The row's model (a key of the campaign's ``ufos``: loop_sm, or an EW
+    # UFO of the M-SM manifest, m-sm/PLAN.md §4.1 model codes), its
+    # structural source-compatibility profile and scale parameter
+    # (``SliceRequest.compatibility`` / ``scale_parameter``).
+    model: str = "loop_sm"
+    compatibility: str | None = None
+    scale_parameter: str | None = None
+    # The loop coupling alpha of each correction other than the strong one
+    # (QED: the scheme's alpha_Gmu or alpha(M_Z)), for F_s (m-sm/PLAN.md
+    # §1.4: F_s = |B_s| alpha_c / 2 pi, the largest over the corrections
+    # reaching s); the strong one is the reference's aS.
+    alphas: Mapping[str, float] = field(default_factory=dict)
+    # Rule 4's typed reasons (sector text -> ``poles.UNPREDICTED_REASONS``
+    # entry) of the unpredicted sectors, asserted to be the slice's
+    # (``LoopSlice.unpredicted_sectors``); None: the sets only (M-QCD).
+    unpredicted_reasons: Mapping[str, str] | None = None
+    # The R2 rule (m-sm/PLAN.md §1.4 rule 1, Q7): the UFO R2 couplings the
+    # engine's counterterm program inserts and MadLoop's export does not
+    # call (its label matching), as the row's reference records them; the
+    # harness checks that the engine inserts them (``rule_r2``).
+    madloop_omitted_r2: tuple[str, ...] | None = None
+    # The UFO R2 couplings the MadLoop export of the row's reference calls
+    # (MS-REF's ``madloop_r2_couplings``), for the structural difference
+    # with the engine's (``rule_r2``); None where the reference lists none.
+    madloop_r2_called: tuple[str, ...] | None = None
+    # R2 couplings the engine inserts in the export's sectors whose
+    # contribution vanishes there (colour: a colour-octet tree against the
+    # singlet Born, which the colour-blind reachability keeps), so MadLoop
+    # calls none of them; listed with the reason, they are no omission
+    # (``rule_r2``).
+    r2_vanishing: tuple[str, ...] = ()
+    # [U2]: the request lowers a Levi-Civita cell its veto keeps from
+    # cancelling (``SliceRequest.allow_anomalous_veto``; SC05's d s b veto).
+    allow_anomalous_veto: bool = False
+    # The request's ``loop.external_photons`` (``SliceRequest.external_
+    # photons``: "final", "all", "none" or 1-based leg labels, MG5_aMC's
+    # ``!a!`` tags); None: the engine's default ("final").
+    external_photons: str | tuple[int, ...] | None = None
+    # The mass scheme (None: the model's real on-shell masses; "complex-
+    # mass": MS-CMS's port of MG5_aMC's transform, ``model_cms.complex_mass_
+    # model``, deciding the pole masses at the row's fixed parameters, else
+    # the restriction card) and the transform's reglog convention (None:
+    # "ufo-standard"; "source": the G_mu source's override, CM01's
+    # compatibility view).
+    mass_scheme: str | None = None
+    reglog_convention: str | None = None
+    # Extras run as diagnostics: recorded, not asserted (the ``ward`` extra
+    # under the complex-mass scheme, m-sm/PLAN.md §1.4 Ward and §1.5).
+    diagnostic_extras: tuple[str, ...] = ()
+    # Why a row forms no rule 4 (``catani`` "none"), when not the public
+    # route's reason.
+    catani_reason: str = ""
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Row:
@@ -297,6 +366,7 @@ class Row:
             reference_outliers=tuple(data.get("reference_outliers", ())),
             vanishing=tuple(data.get("vanishing", ())),
             ignored_fixed_parameters=tuple(data.get("ignored_fixed_parameters", ())),
+            ignored_parameters=tuple(data.get("ignored_parameters", ())),
             notes=data.get("notes", ""),
             base=data.get("base"),
             subprocess=bool(data.get("subprocess", False)),
@@ -312,12 +382,35 @@ class Row:
             ward_legs=None
             if data.get("ward_legs") is None
             else tuple(int(x) for x in data["ward_legs"]),
+            ward_parameters=dict(data.get("ward_parameters") or {}),
             relaxed={k: float(v) for k, v in (data.get("relaxed") or {}).items()},
             reference_tolerance=float(
                 data.get("reference_tolerance", REFERENCE_TOLERANCE)
             ),
             delegated={k: tuple(v) for k, v in (data.get("delegated") or {}).items()},
             route=data.get("route", "tools"),
+            model=data.get("model", "loop_sm"),
+            compatibility=data.get("compatibility"),
+            scale_parameter=data.get("scale_parameter"),
+            alphas={k: float(v) for k, v in (data.get("alphas") or {}).items()},
+            unpredicted_reasons=None
+            if data.get("unpredicted_reasons") is None
+            else dict(data["unpredicted_reasons"]),
+            madloop_omitted_r2=None
+            if data.get("madloop_omitted_r2") is None
+            else tuple(data["madloop_omitted_r2"]),
+            madloop_r2_called=None
+            if data.get("madloop_r2_called") is None
+            else tuple(data["madloop_r2_called"]),
+            r2_vanishing=tuple(data.get("r2_vanishing") or ()),
+            allow_anomalous_veto=bool(data.get("allow_anomalous_veto", False)),
+            external_photons=data.get("external_photons")
+            if not isinstance(data.get("external_photons"), list)
+            else tuple(int(x) for x in data["external_photons"]),
+            mass_scheme=data.get("mass_scheme"),
+            reglog_convention=data.get("reglog_convention"),
+            diagnostic_extras=tuple(data.get("diagnostic_extras", ())),
+            catani_reason=data.get("catani_reason", ""),
         )
 
     @property
@@ -372,6 +465,7 @@ def nightly_ids(manifest: Mapping[str, Any] | None = None) -> list[str]:
         for name, row in rows(manifest).items()
         if row.active
         and row.gating
+        and row.tier != "campaign"
         and (row.tier_points("nightly") or set(row.extras) & IMPLEMENTED_EXTRAS)
     )
 
@@ -424,6 +518,14 @@ class Reference:
     # the binding fixture and its row, whose primary values replaced the
     # existing reference's (its other providers stay the second providers).
     binding: dict[int, tuple[str, int]] = field(default_factory=dict)
+    # Per point, the primary provider's instrumented components (MadLoop's
+    # Born x CT interference split, ``madloop_ct_selection.py``) in the
+    # engine's names: ``bare``, ``r2``, ``uv`` (UV counterterms, field
+    # factors included) and ``ct`` (r2 + uv), each {sector or TOTAL:
+    # Laurent}; empty where the reference has none (rule 5's EW form).
+    components: list[dict[str, dict[Any, tuple[float, float, float]]]] = field(
+        default_factory=list
+    )
 
     @property
     def primary(self) -> str:
@@ -453,12 +555,13 @@ def load_reference(row: Row) -> Reference:
     spec = row.reference
     if spec is None:
         raise ValueError(f"{row.id} has no reference yet")
-    path = ROOT / spec["path"]
-    data = json.loads(path.read_text())
+    # A ``sectors`` reference names its parts' fixtures instead of one path.
+    source = spec.get("path") or spec["parts"][0]["path"]
+    data = json.loads((ROOT / source).read_text())
     kind = spec["format"]
     loader = _LOADERS[kind]
     reference = loader(row, spec, data)
-    reference.source = spec["path"]
+    reference.source = source
     if "providers" in spec:
         missing = set(spec["providers"]) - set(reference.providers)
         if missing:
@@ -466,7 +569,62 @@ def load_reference(row: Row) -> Reference:
         reference.providers = tuple(spec["providers"])
     for index, binding in sorted((spec.get("superseded") or {}).items()):
         _supersede(row, reference, int(index), binding["path"], int(binding["row"]))
+    if spec.get("photon_conversion"):
+        _photon_conversion(reference, spec["photon_conversion"], data)
     return reference
+
+
+def _photon_conversion(
+    reference: Reference, spec: Mapping[str, Any], data: Mapping[str, Any]
+) -> None:
+    """MG5_aMC's alpha(0) conversion of raw MadLoop G_mu values over the
+    tagged photon legs (m-sm/PLAN.md §4.1 photon rows;
+    ``export_fks.write_rescale_a0gmu_file``, as ``test_loop_v2_external_
+    photons``): with r = (alpha(0) / alpha)^n for n tagged photons, the Born
+    and the virtual times r and the virtual of the electromagnetic correction
+    minus 2 n DGmua0 Born, DGmua0 the UFO's conversion parameter
+    (``spec['counterterm']``) as MadLoop evaluates it at the card's MU_R
+    (``spec['parameters']``, ``madloop-ct-parameters.json``), applied to
+    every provider's values of the sector it corrects (``spec['sector']``,
+    or the single sector)."""
+
+    tagged = int(spec["tagged"])
+    if spec.get("values") is not None:
+        # The conversion parameter per point (its finite part depends on
+        # MU_R), from the UFO's own source at each point's scale
+        # (``msm_manifest.conversion_values``): [pole, finite] per point.
+        if len(spec["values"]) != len(reference.points):
+            raise ValueError(f"{reference.source}: one conversion value per point")
+        per_point = [(float(p), float(f)) for p, f in spec["values"]]
+    else:
+        values = json.loads((ROOT / spec["parameters"]).read_text())["models"][
+            spec["model"]
+        ]
+        card_scale = _scale(values["card"]["MU_R"])
+        if any(scale != card_scale for scale in reference.scales):
+            raise ValueError(
+                f"{reference.source}: the conversion needs MU_R = the card's"
+            )
+        delta = values["values"][spec["counterterm"]]
+        per_point = [tuple(float(delta[k]["double"][0]) for k in ("-1", "0"))] * len(
+            reference.points
+        )
+    alpha = float(Fraction(data["derived_parameters"]["alpha"]))
+    ratio = (1 / float(spec["alpha0_inverse"]) / alpha) ** tagged
+    corrected = sector_key(spec["sector"]) if spec.get("sector") else None
+    for index in range(len(reference.points)):
+        pole, finite = per_point[index]
+        for provider in reference.providers:
+            born = reference.born[index][provider]
+            total = sum(born.values())
+            for key in born:
+                born[key] *= ratio
+            virtual = reference.virtual[index][provider]
+            for key, (fin, single, double) in list(virtual.items()):
+                if corrected is None or key in (corrected, TOTAL):
+                    fin -= 2 * tagged * finite * total
+                    single -= 2 * tagged * pole * total
+                virtual[key] = (ratio * fin, ratio * single, ratio * double)
 
 
 def _supersede(
@@ -563,12 +721,30 @@ def _required(row, spec, data) -> Reference:
                 )
                 for s in sectors["loop"]
             }
+        if spec.get("sector"):
+            # One squared sector of a request with several (m-sm/PLAN.md
+            # §4.2 TV07): every provider's totals are that sector's values.
+            sector = sector_key(spec["sector"])
+            born_key = sector_key(spec["born_sector"])
+            text = sector_text(sector)
+            for name in providers:
+                if TOTAL in b[name]:
+                    b[name] = {born_key: b[name][TOTAL]}
+                if TOTAL in v[name]:
+                    v[name] = {sector: v[name][TOTAL]}
+                    if not isinstance(a.get(name), Mapping):
+                        a[name] = {text: a.get(name)}
         born.append(b)
         virtual.append(v)
         accuracy.append(a)
     # A runtime parameter change of the run (``parameter_overrides``, the
     # S4 rows: e.g. MB = 4.5 and aS = 0.13 on top of the card).
     parameters = {**data["parameters"], **data.get("parameter_overrides", {})}
+    components = (
+        _run_components(spec["components"], len(data["rows"]))
+        if spec.get("components")
+        else []
+    )
     return Reference(
         "",
         providers,
@@ -582,7 +758,50 @@ def _required(row, spec, data) -> Reference:
         float(parameters["aS"]),
         evidence,
         records,
+        components=components,
     )
+
+
+def _split_order_key(text: str) -> Sector:
+    """``"QCD^2=4,QED^2=2"`` (MS-REF's squared split order) -> sector key."""
+
+    return sector_key(
+        {
+            name.split("^")[0]: int(power)
+            for name, power in (item.split("=") for item in text.split(","))
+        }
+    )
+
+
+def _run_components(path: str, count: int) -> list[dict[str, dict]]:
+    """MS-REF's instrumented components of a run (``madloop_components.py``:
+    per loop squared split order and point MadLoop's Born x CT interference
+    split into ``r2``, ``uv``, ``rest`` and ``ct`` = their sum, and ``bare``
+    = the quadruple-precision sector value - ``ct``), in the engine's names
+    per sector: ``bare``, ``r2``, ``uv`` (+ ``rest``, CT amplitudes that pass
+    neither an R2 nor a UV coupling) and ``ct``."""
+
+    data = json.loads((ROOT / path).read_text())
+    out: list[dict[str, dict]] = [{} for _ in range(count)]
+    for text, entry in data["sectors"].items():
+        sector = _split_order_key(text)
+        if len(entry["rows"]) != count:
+            raise ValueError(f"{path}: {text} has {len(entry['rows'])} rows")
+        for index, values in enumerate(entry["rows"]):
+            uv = tuple(
+                a + b
+                for a, b in zip(
+                    _laurent(values["uv"]), _laurent(values["rest"]), strict=True
+                )
+            )
+            for name, laurent in (
+                ("bare", _laurent(values["bare"])),
+                ("r2", _laurent(values["r2"])),
+                ("uv", uv),
+                ("ct", _laurent(values["ct"])),
+            ):
+                out[index].setdefault(name, {})[sector] = laurent
+    return out
 
 
 def _providers(row, spec, data) -> Reference:
@@ -789,7 +1008,262 @@ def _process_control(row, spec, data) -> Reference:
     )
 
 
+def _ew_control(row, spec, data) -> Reference:
+    """A MadLoop electroweak control (``electroweak-*-control.json``): per
+    row the Born and the full virtual of its one squared-order sector ("1"),
+    MadLoop's accuracy and its instrumented components; the points the
+    control's ``exact_points`` or those of the manifest's ``points_path``
+    (the controls' phase-space fixture), cycled over the rows; the scales
+    the control's ``mu_r2``, each row's or the manifest's ``mu_r2``; the
+    parameters the manifest's (the control states them in words)."""
+
+    if data.get("exact_points"):
+        points = data["exact_points"]
+    else:
+        points = json.loads((ROOT / spec["points_path"]).read_text())["points"]
+    points = [_strings(p) for p in points]
+    entries = data["rows"]
+    scales = data.get("mu_r2") or [e.get("mu_r2") or spec["mu_r2"] for e in entries]
+    born = [{"madloop": {TOTAL: float(e["born"]["1"])}} for e in entries]
+    virtual = [{"madloop": {TOTAL: _laurent(e["full"]["1"])}} for e in entries]
+    accuracy = [{"madloop": e.get("accuracy")} for e in entries]
+    names = (("bare", "bare"), ("r2", "r2"), ("uv", "uv"), ("ct", "ct"))
+    components = [
+        {ours: {TOTAL: _laurent(e[key]["1"])} for ours, key in names if key in e}
+        for e in entries
+    ]
+    parameters = dict(spec["parameters"])
+    return Reference(
+        "",
+        ("madloop",),
+        [points[i % len(points)] for i in range(len(entries))],
+        [str(scale) for scale in scales],
+        parameters,
+        None,
+        born,
+        virtual,
+        accuracy,
+        float(parameters["aS"]),
+        components=components,
+    )
+
+
+def _cms_control(row, spec, data) -> Reference:
+    """A MadLoop complex-mass control (``cms-*-gmu.json``, CM01): block
+    ``spec['block']`` of the fixture (its points, Born, full virtual and
+    the instrumented bare / UV / R2 components, one squared-order sector);
+    the scale the manifest's ``mu_r2``; the parameters the manifest's plus
+    the block's widths (or the manifest's ``widths``), runtime parameters
+    of the row's one complex-mass generation."""
+
+    block = data[spec["block"]]
+
+    def laurent(values) -> tuple[float, float, float]:
+        # (finite, single pole, double pole), as LAURENT.
+        return tuple(float(x) for x in values)
+
+    widths = block.get("widths") or spec["widths"]
+    parameters = {**spec["parameters"], **widths}
+    count = len(block["points"])
+    names = ("bare", "uv", "r2")
+    components = [
+        {name: {TOTAL: laurent(block[name][k])} for name in names if name in block}
+        for k in range(count)
+    ]
+    return Reference(
+        "",
+        ("madloop",),
+        [_strings(p) for p in block["points"]],
+        [str(spec["mu_r2"])] * count,
+        parameters,
+        None,
+        [{"madloop": {TOTAL: float(block["born"][k])}} for k in range(count)],
+        [{"madloop": {TOTAL: laurent(block["full"][k])}} for k in range(count)],
+        [{"madloop": None} for _ in range(count)],
+        float(parameters["aS"]),
+        components=components,
+    )
+
+
+def _madloop_components(row, spec, data) -> Reference:
+    """``goldstone-mixing.json`` style: ``processes[key]`` with MadLoop's
+    Born, virtual (its accuracy) and its Born x CT interference ``ct`` and
+    ``r2`` per point. With ``spec['omitted_r2']`` the R2 rule's correction
+    (m-sm/PLAN.md §1.4 rule 1): MadLoop's export omits an R2 coupling whose
+    vertex term is proportional to one it calls (its label matching), so
+    ``ratio`` x that coupling's component (``component``) is added to the
+    virtual, the R2 and the counterterm components."""
+
+    entry = data["processes"][spec["key"]]
+    omitted = spec.get("omitted_r2")
+    born, virtual, accuracy, components = [], [], [], []
+    for e in entry["rows"]:
+        extra = (0.0, 0.0, 0.0)
+        if omitted:
+            ratio = float(Fraction(omitted["ratio"]))
+            extra = tuple(ratio * x for x in _laurent(e[omitted["component"]]))
+        full, ct, r2 = _laurent(e["virtual"]), _laurent(e["ct"]), _laurent(e["r2"])
+        born.append({"madloop": {TOTAL: float(e["born"])}})
+        virtual.append(
+            {"madloop": {TOTAL: tuple(a + b for a, b in zip(full, extra, strict=True))}}
+        )
+        accuracy.append({"madloop": e.get("virtual_accuracy")})
+        components.append(
+            {
+                "bare": {TOTAL: tuple(a - b for a, b in zip(full, ct, strict=True))},
+                "r2": {TOTAL: tuple(a + b for a, b in zip(r2, extra, strict=True))},
+                "uv": {TOTAL: tuple(a - b for a, b in zip(ct, r2, strict=True))},
+                "ct": {TOTAL: tuple(a + b for a, b in zip(ct, extra, strict=True))},
+            }
+        )
+    parameters = dict(entry["parameters"])
+    return Reference(
+        "",
+        ("madloop",),
+        [_strings(p) for p in entry["points"]],
+        [_scale(mu) for mu in entry["mu_r"]],
+        parameters,
+        dict(entry.get("fixed_parameters", {})),
+        born,
+        virtual,
+        accuracy,
+        float(parameters["aS"]),
+        components=components,
+    )
+
+
+def _process_components(row, spec, data) -> Reference:
+    """``epsilon-sign.json`` style: ``rows[key]`` with MadLoop's Born, status,
+    accuracy and its components (``full``, ``bare``, ``r2``, ``uv``) at the
+    fixture's points, scales and parameters."""
+
+    entries = data["rows"][spec["key"]]
+    born = [{"madloop": {TOTAL: float(e["born"])}} for e in entries]
+    virtual = [{"madloop": {TOTAL: _laurent(e["components"]["full"])}} for e in entries]
+    accuracy = [{"madloop": e.get("madloop_accuracy")} for e in entries]
+    components = []
+    for e in entries:
+        found = {
+            name: {TOTAL: _laurent(e["components"][name])}
+            for name in ("bare", "r2", "uv")
+            if name in e["components"]
+        }
+        if {"r2", "uv"} <= set(found):
+            found["ct"] = {
+                TOTAL: tuple(
+                    a + b
+                    for a, b in zip(found["r2"][TOTAL], found["uv"][TOTAL], strict=True)
+                )
+            }
+        components.append(found)
+    parameters = {k: v for k, v in data["parameters"].items() if k != "MU_R"}
+    return Reference(
+        "",
+        ("madloop",),
+        [_strings(p) for p in data["points"]],
+        [_scale(mu) for mu in data["mu_r"]],
+        parameters,
+        dict(data.get("fixed_parameters", {})),
+        born,
+        virtual,
+        accuracy,
+        float(parameters["aS"]),
+        components=components,
+    )
+
+
+def _sectors(row, spec, data) -> Reference:
+    """Per-sector references from several required fixtures of one request
+    (``spec['parts']``: each fixture's totals are the values of its squared
+    sector ``sector``, its Born that of ``born_sector``), at the same points
+    and scales: e.g. g g > t t~ joint, the QCD fixture's s^6 and the EW
+    fixture's s^4 e^2 (m-sm/PLAN.md §4.2 TT01). Providers: those of every
+    part, primary first (``spec['providers']``)."""
+
+    parts = [
+        (part, _part_rows(part, json.loads((ROOT / part["path"]).read_text())))
+        for part in spec["parts"]
+    ]
+    first = parts[0][1]
+    names = [set(d["rows"][0]["providers"]) for _part, d in parts]
+    providers = tuple(
+        p for p in (spec.get("providers") or first["rows"][0]["providers"])
+        if all(p in n for n in names)
+    )  # fmt: skip
+    # The model's inputs are those of part ``parameters_from`` (the parts may
+    # come from different UFOs: loop_sm's QCD fixture beside the G_mu EW
+    # one); the inputs the parts share must agree.
+    parameters = dict(parts[int(spec.get("parameters_from", 0))][1]["parameters"])
+    for _part, d in parts:
+        if _strings_all(d["points"]) != _strings_all(first["points"]) or list(
+            d["mu_r"]
+        ) != list(first["mu_r"]):
+            raise ValueError(f"{row.id}: the parts' points or scales differ")
+        for name, value in d["parameters"].items():
+            if name in parameters and Fraction(parameters[name]) != Fraction(value):
+                raise ValueError(f"{row.id}: the parts' {name} differ")
+    born, virtual, accuracy, evidence = [], [], [], []
+    for index in range(len(first["rows"])):
+        b: dict[str, dict] = {p: {} for p in providers}
+        v: dict[str, dict] = {p: {} for p in providers}
+        a: dict[str, dict] = {p: {} for p in providers}
+        for part, d in parts:
+            sector, born_key = (
+                sector_key(part["sector"]),
+                sector_key(part["born_sector"]),
+            )
+            for p in providers:
+                values = d["rows"][index]["providers"][p]
+                b[p].setdefault(born_key, float(values["born"]))
+                v[p][sector] = _laurent(values)
+                a[p][sector_text(sector)] = values.get(
+                    "accuracy", values.get("estimated_relative_accuracy")
+                )
+        born.append(b)
+        virtual.append(v)
+        accuracy.append(a)
+        evidence.append({})
+    return Reference(
+        "",
+        providers,
+        [_strings(p) for p in first["points"]],
+        [_scale(mu) for mu in first["mu_r"]],
+        parameters,
+        dict(first.get("fixed_parameters", {})),
+        born,
+        virtual,
+        accuracy,
+        float(parameters["aS"]),
+        evidence,
+    )
+
+
+def _part_rows(part: Mapping[str, Any], data: dict[str, Any]) -> dict[str, Any]:
+    """A ``sectors`` part restricted to its rows ``part['rows']`` (e.g. a
+    top-up run's rows at the existing fixture's points, without the top-up's
+    mu_R / 2 copy); the whole fixture without them."""
+
+    if part.get("rows") is None:
+        return data
+    keep = [int(i) for i in part["rows"]]
+    return {
+        **data,
+        "rows": [data["rows"][i] for i in keep],
+        "points": [data["points"][i] for i in keep],
+        "mu_r": [data["mu_r"][i] for i in keep],
+    }
+
+
+def _strings_all(points) -> list:
+    return [_strings(p) for p in points]
+
+
 _LOADERS = {
+    "ew-control": _ew_control,
+    "cms-control": _cms_control,
+    "madloop-components": _madloop_components,
+    "process-components": _process_components,
+    "sectors": _sectors,
     "required": _required,
     "providers": _providers,
     "component-control": _component_control,
@@ -923,7 +1397,36 @@ def slice_request(row: Row, **changes: Any) -> Any:
         corrections=tuple(row.corrections),
         fixed_parameters=dict(row.fixed_parameters),
         particle_veto=tuple(row.particle_veto),
+        **{
+            key: value
+            for key, value in (
+                ("compatibility", row.compatibility),
+                ("scale_parameter", row.scale_parameter),
+                ("allow_anomalous_veto", row.allow_anomalous_veto or None),
+                ("external_photons", row.external_photons),
+            )
+            if value is not None
+        },
         **changes,
+    )
+
+
+def row_request(row: Row, compiled: Any) -> Any:
+    """``row``'s request on its compiled model: under the complex-mass scheme
+    the fixed parameters the transformed model still has (the transform
+    fixed them all; the former Yukawa inputs and the masses a restriction
+    removed are not the model's parameters)."""
+
+    if row.mass_scheme is None:
+        return slice_request(row)
+    defaults = compiled.parameter_defaults
+    return slice_request(
+        replace(
+            row,
+            fixed_parameters={
+                k: v for k, v in row.fixed_parameters.items() if k in defaults
+            },
+        )
     )
 
 
@@ -1033,6 +1536,16 @@ def _correlations(entry: Mapping[str, Any]) -> tuple[Decimal, dict]:
     return Decimal(entry["born"]), correlated
 
 
+def _row_parameters(row: Row, reference: Reference) -> dict[str, str]:
+    """The runtime parameters of a row: its reference's (less those the
+    row's model does not take, ``ignored_parameters``) and its own."""
+
+    taken = {
+        k: v for k, v in reference.parameters.items() if k not in row.ignored_parameters
+    }
+    return {**taken, **dict(row.parameters)}
+
+
 class RowRun:
     """A row's generated slice and native executor (generated once, shared by
     every carrier, point and check of the row)."""
@@ -1064,15 +1577,15 @@ class RowRun:
         self.failures: dict[tuple[int, str], str] = {}
         if base is not None:
             # A variant: the base row's request, generation and executor.
-            if slice_request(row) != slice_request(base.row):
+            if row_request(row, compiled) != row_request(base.row, base.compiled):
                 raise ValueError(f"{row.id} changes its base row's request")
             self.slice, self.executor = base.slice, base.executor
             self.generate_seconds = self.export_seconds = 0.0
-            self.parameters = {**self.reference.parameters, **dict(row.parameters)}
+            self.parameters = _row_parameters(row, self.reference)
             return
         start = time.perf_counter()
         LOG.info("%s: generating %s", row.id, row.process)
-        self.slice = LoopSlice.generate(compiled, slice_request(row), native)
+        self.slice = LoopSlice.generate(compiled, row_request(row, compiled), native)
         self.generate_seconds = time.perf_counter() - start
         LOG.info("%s: generated in %.1f s", row.id, self.generate_seconds)
         start = time.perf_counter()
@@ -1085,7 +1598,7 @@ class RowRun:
                 exported=export_plan(self.slice, forward=False),
             )
         self.export_seconds = time.perf_counter() - start
-        self.parameters = {**self.reference.parameters, **dict(row.parameters)}
+        self.parameters = _row_parameters(row, self.reference)
 
     def evaluate(
         self,
@@ -1154,7 +1667,7 @@ class RowRun:
             self.reference.scales[index],
             carrier,
             legs=self.row.ward_legs,
-            parameters=self.parameters,
+            parameters={**self.parameters, **self.row.ward_parameters},
         )
 
     def twin(self) -> RowRun:
@@ -1258,6 +1771,37 @@ class RowRun:
             Decimal(str(self.parameters["aS"])),
         )
         return born, {sector: poles}
+
+    def engine_catani(self, index: int) -> dict[Sector, tuple[Decimal, Decimal]] | None:
+        """Rule 4's "engine" prediction of a native-input row (whose executor
+        forms none, WP3.1 I5c): the engine's own operators (QCD and QED per
+        correction, ``_PointEvaluation._ir_poles``) on the Python-input Born
+        of reference point ``index`` in double-double, without the loops."""
+
+        from pyamplicol.loops.v2.assemble import Precision, _fraction, _Numbers
+
+        reference = self.reference
+        point = tuple(
+            tuple(_fraction(x) for x in leg) for leg in reference.points[index]
+        )
+        precision = Precision.double_double()
+        with _Numbers(precision).scope():
+            evaluation = self.slice._point(
+                point,
+                _fraction(reference.scales[index]),
+                dict(self.parameters),
+                precision,
+                "all",
+            )
+            if not evaluation._stable_coloured_legs():
+                return None
+            found = evaluation._ir_poles()
+        if found is None:
+            return None
+        return {
+            sector: (_number(single), _number(double))
+            for sector, (single, double) in found.items()
+        }
 
     def light_flavours(self) -> int:
         """The n_f of Catani's gamma_g: the loop flavours (``loop_flavours``)
@@ -1510,13 +2054,41 @@ def _vanishing(row: Row, sector: str, coefficient: str) -> bool:
     return _listed(row.vanishing, sector=sector, coefficient=coefficient)
 
 
-def born_sector(sector: Sector) -> Sector:
-    """The Born sector of a QCD-corrected virtual sector (two QCD powers
-    fewer)."""
+def born_sector(sector: Sector, correction: str = "QCD") -> Sector:
+    """The Born sector of a virtual sector under ``correction`` (two powers
+    of its order fewer; QCD by default)."""
 
     orders = dict(sector)
-    orders["QCD"] = orders.get("QCD", 0) - 2
+    orders[correction] = orders.get(correction, 0) - 2
     return sector_key(orders)
+
+
+def alphas(row: Row, reference: Reference) -> dict[str, float]:
+    """The loop coupling per correction: aS (the reference's) for QCD, the
+    row's ``alphas`` for the others."""
+
+    return {"QCD": reference.alpha_s, **dict(row.alphas)}
+
+
+def sector_flux(
+    row: Row, point: Evaluated, sector: Any, couplings: Mapping[str, float]
+) -> float:
+    """F_s of a virtual sector (``TOTAL``: the summed Born times the largest
+    alpha): the largest |B_{s - 2c}| alpha_c / 2 pi over the row's
+    corrections c reaching s (m-sm/PLAN.md §1.4; a QCD row's |B_{s-2}|
+    alpha_s / 2 pi, m-qcd/PLAN.md §1.4)."""
+
+    if sector == TOTAL:
+        alpha = max(couplings[c] for c in row.corrections)
+        return _flux(born_scale(row, point, TOTAL), alpha)
+    reaching = [c for c in row.corrections if dict(sector).get(c, 0) >= 2]
+    return max(
+        (
+            _flux(born_scale(row, point, born_sector(sector, c)), couplings[c])
+            for c in reaching or ("QCD",)
+        ),
+        default=0.0,
+    )
 
 
 def _ours(
@@ -1575,13 +2147,20 @@ def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Che
         return None if sector not in found else found[sector][k]
 
     if TOTAL not in virtual_values:
-        # Per-sector references: our sectors are the provider's.
+        # Per-sector references: our sectors are the provider's (a reference
+        # of some of the request's sectors, ``sectors_subset``: among ours).
+        subset = bool((row.reference or {}).get("sectors_subset"))
+        same = (
+            set(virtual_values) <= set(dd.virtual)
+            if subset
+            else set(dd.virtual) == set(virtual_values)
+        )
         checks.append(Check(
             "1", index, "double-double", "", "sectors",
             ", ".join(sorted(map(sector_text, dd.virtual))),
-            ", ".join(sorted(map(sector_text, virtual_values))), 0.0, 0.0,
-            set(dd.virtual) == set(virtual_values),
-            note="virtual sectors against the provider's split orders"))  # fmt: skip
+            ", ".join(sorted(map(sector_text, virtual_values))), 0.0, 0.0, same,
+            note="virtual sectors against the provider's split orders"
+            + (" (the reference's among ours)" if subset else "")))  # fmt: skip
     for sector, value in born_values.items():
         mine = dd.total()[0] if sector == TOTAL else dd.born.get(sector, Decimal(0))
         text = sector_text(sector)
@@ -1620,10 +2199,7 @@ def rule1(row: Row, reference: Reference, index: int, dd: Evaluated) -> list[Che
                 )
             )
             continue
-        flux = _flux(
-            born_scale(row, dd, sector if sector == TOTAL else born_sector(sector)),
-            reference.alpha_s,
-        )
+        flux = sector_flux(row, dd, sector, alphas(row, reference))
         for k, name in enumerate(LAURENT):
             checks.append(
                 _reference_check(
@@ -1810,7 +2386,7 @@ def rule2_and_3(
         text = sector_text(sector)
         mine = b64.virtual.get(sector)
         estimate = None if b64.estimate is None else b64.estimate.get(sector)
-        flux = _flux(born_scale(row, dd, born_sector(sector)), reference.alpha_s)
+        flux = sector_flux(row, dd, sector, alphas(row, reference))
         for k, name in enumerate(LAURENT):
             truth = laurent[k]
             got = mine[k]
@@ -1833,7 +2409,9 @@ def rule2_and_3(
                 )
             )
             if _vanishing(row, text, name):
-                bound = REFERENCE_TOLERANCE * flux
+                # At least the row's relaxed rule-2 factor (a binary64
+                # rounding residue of a cancelling coefficient, ~10:20).
+                bound = max(REFERENCE_TOLERANCE, row.relaxed.get("2", 0.0)) * flux
                 checks.append(
                     Check(
                         "2",
@@ -1890,10 +2468,26 @@ def rule2_and_3(
     return checks
 
 
+def rule4_relaxed_key(carrier: str) -> str:
+    """The ``relaxed`` key of rule 4 on ``carrier``: ``"4"`` for binary64
+    (``"double"``), ``"4dd"`` for double-double."""
+
+    return "4" if carrier == "double" else "4dd"
+
+
 def rule4(
-    row: Row, index: int, point: Evaluated, alpha_s: float = 0.118
+    row: Row,
+    index: int,
+    point: Evaluated,
+    alpha_s: float = 0.118,
+    couplings: Mapping[str, float] | None = None,
 ) -> list[Check]:
-    """The virtual's poles against Catani's, and the sector sets."""
+    """The virtual's poles against Catani's (the engine's operators, QCD and
+    QED per correction, ``PointResult.ir_poles``), and the sector sets
+    (``couplings``: the loop coupling per correction for F_s, default the
+    strong one ``alpha_s``)."""
+
+    couplings = dict(couplings or {"QCD": alpha_s})
 
     checks = []
     predicted = set(point.catani or ())
@@ -1938,10 +2532,14 @@ def rule4(
         for k, name in ((1, "single_pole"), (2, "double_pole")):
             got, truth = laurent[k], poles[k - 1]
             if _vanishing(row, text, name):
-                # Absolutely, against F_s: 1e-12 in binary64, 1e-24 in DD.
-                born = born_scale(row, point, born_sector(sector))
-                strict = O1_STRICT if point.carrier == "double" else DD_FLOOR
-                bound = strict * _flux(born, alpha_s)
+                # Absolutely, against F_s: 1e-12 in binary64 (at least the
+                # row's relaxed rule-4 factor), 1e-24 in DD.
+                strict = (
+                    max(O1_STRICT, row.relaxed.get("4", 0.0))
+                    if point.carrier == "double"
+                    else DD_FLOOR
+                )
+                bound = strict * sector_flux(row, point, sector, couplings)
                 error = _absolute(got, truth)
                 checks.append(
                     Check(
@@ -1983,6 +2581,11 @@ def rule4(
                     continue
             else:
                 bound = max(DD_FLOOR, BRACKET * e_rel)
+            # The user's ruling of 2026-10-29 ~10:20: a row's relaxed rule 4,
+            # per carrier (``relaxed["4"]`` binary64, ``relaxed["4dd"]``
+            # double-double; at most ``ATTENTION``): a carrier that passes
+            # keeps its band.
+            bound = max(bound, row.relaxed.get(rule4_relaxed_key(point.carrier), 0.0))
             checks.append(
                 Check(
                     "4",
@@ -1999,6 +2602,28 @@ def rule4(
                 )
             )
     return checks
+
+
+def rule4_reasons(row: Row, found: Mapping[Sector, str]) -> list[Check]:
+    """Rule 4's typed reasons (m-sm/PLAN.md §1.4): the slice's unpredicted
+    sectors and their reasons (``LoopSlice.unpredicted_sectors``) are the
+    manifest's (``Row.unpredicted_reasons``), every one of them a listed
+    reason (``poles.UNPREDICTED_REASONS``)."""
+
+    from pyamplicol.loops.v2.poles import UNPREDICTED_REASONS
+
+    if row.unpredicted_reasons is None:
+        return []
+    ours = {sector_text(sector): reason for sector, reason in found.items()}
+    expected = dict(row.unpredicted_reasons)
+    text = ", ".join(f"{k}: {v}" for k, v in sorted(ours.items()))
+    want = ", ".join(f"{k}: {v}" for k, v in sorted(expected.items()))
+    listed = all(reason in UNPREDICTED_REASONS for reason in ours.values())
+    return [
+        Check("4", None, "", "", "unpredicted reasons", text or "none",
+              want or "none", 0.0, 0.0, ours == expected and listed,
+              note="the slice's typed reasons of its unpredicted sectors")
+    ]  # fmt: skip
 
 
 # Feynman-gauge Z^UV per leg (amplitude delta-Z / 2 enters the interference
@@ -2184,11 +2809,14 @@ def rule6(
     ap: Evaluated,
     ap60: Evaluated,
     alpha_s: float = 0.118,
+    couplings: Mapping[str, float] | None = None,
 ) -> list[Check]:
     """Arbitrary precision against double-double and against 60 digits
     (``AP_CONVERGENCE``, at least the row's ``relaxed["6"]``; a coefficient
-    that vanishes identically absolutely, against F_s)."""
+    that vanishes identically absolutely, against F_s; ``couplings`` the
+    loop coupling per correction, default the strong one ``alpha_s``)."""
 
+    couplings = dict(couplings or {"QCD": alpha_s})
     checks = []
     convergence = max(AP_CONVERGENCE, row.relaxed.get("6", 0.0))
     for sector, value in ap.born.items():
@@ -2233,7 +2861,7 @@ def rule6(
             e_rel = estimate[k] / abs(float(truth)) if float(truth) else math.inf
             bound = max(DD_FLOOR, BRACKET * e_rel)
             if _vanishing(row, text, name):
-                flux = _flux(born_scale(row, dd, born_sector(sector)), alpha_s)
+                flux = sector_flux(row, dd, sector, couplings)
                 for other, scale, note in (
                     (truth, DD_FLOOR, "double-double"),
                     (ap60.virtual[sector][k], convergence, "60 digits"),
@@ -2277,6 +2905,312 @@ def rule6(
                 )
             )
     return checks
+
+
+def rule5_components(
+    row: Row,
+    index: int,
+    dd: Evaluated,
+    reference: Reference,
+    couplings: Mapping[str, float],
+) -> list[Check]:
+    """Rule 5's EW form (m-sm/PLAN.md §1.4): the bare, R2 and UV-counterterm
+    components (and their CT sum) per sector equal the primary provider's
+    instrumented components (``Reference.components``; MadLoop's Born x CT
+    interference split, its omitted R2 component added where the row has
+    one), in double-double within the row's rule 1 tolerance, relative to
+    max(|a|, |r|, F_s) (a component may vanish identically: UV finite parts,
+    the R2 poles)."""
+
+    theirs = reference.components[index] if index < len(reference.components) else {}
+    checks = []
+    mine_parts = {
+        "bare": ("bare",),
+        "r2": ("r2",),
+        "uv": ("uv",),
+        "ct": ("r2", "uv"),
+    }
+    for name, values in sorted(theirs.items()):
+        for sector, laurent in values.items():
+            parts = [dd.components.get(part, {}) for part in mine_parts[name]]
+            if sector == TOTAL:
+                mine = [
+                    sum((v[k] for part in parts for v in part.values()), Decimal(0))
+                    for k in range(3)
+                ]
+            else:
+                mine = [
+                    sum(
+                        (part[sector][k] for part in parts if sector in part),
+                        Decimal(0),
+                    )
+                    for k in range(3)
+                ]
+            flux = sector_flux(row, dd, sector, couplings)
+            text = sector_text(sector)
+            for k, coefficient in enumerate(LAURENT):
+                error = _absolute(mine[k], laurent[k]) / max(
+                    abs(float(mine[k])), abs(laurent[k]), flux
+                )
+                bound = max(row.reference_tolerance, row.relaxed.get("5", 0.0))
+                checks.append(Check(
+                    "5", index, dd.carrier, text, f"{name} {coefficient}",
+                    str(mine[k]), repr(laurent[k]), error, bound, error <= bound,
+                    note=f"the {name} component against {reference.primary}'s, "
+                    "relative to max(|a|, |r|, F_s)"))  # fmt: skip
+    return checks
+
+
+def rule_joint(row: Row, run: RowRun, index: int, dd: Evaluated) -> list[Check]:
+    """The ``joint`` extra (m-sm/PLAN.md §1.2): a joint request equals the
+    separate requests per sector. Each loop amplitude order of the row's
+    request is generated as a request of its own (the same process, Born
+    orders, corrections and model) and evaluated in double-double at point
+    ``index``; its Born and each of its sectors' Laurent coefficients equal
+    the joint request's within max(1e-24, 10 E_DD), strictly relative (a
+    coefficient that vanishes in both passes)."""
+
+    loops = row.loop_orders
+    loops = (loops,) if isinstance(loops, Mapping) else tuple(loops)
+    if len(loops) < 2:
+        note = "one loop order: the joint request is the separate one"
+        return [Check("joint", index, "double-double", "", "requests", "1", "",
+                      0.0, 0.0, True, asserted=False, note=note)]  # fmt: skip
+    checks = []
+    for k, loop in enumerate(loops):
+        single = replace(
+            row,
+            id=f"{row.id}~loop{k}",
+            loop_orders=dict(loop),
+            variants=(),
+            madloop_omitted_r2=None,
+        )
+        separate = RowRun(single, run.compiled, run.native)
+        (theirs,) = separate.evaluate([index], "double-double")
+        if theirs is None:
+            note = separate.failures.get((index, "double-double"), "")
+            checks.append(Check("joint", index, "double-double", str(dict(loop)),
+                                "evaluation", "failed", "", math.inf, 0.0, False,
+                                note=note))  # fmt: skip
+            continue
+        pairs = [
+            (sector_text(s), "born", dd.born.get(s), v, None)
+            for s, v in theirs.born.items()
+        ]
+        for sector, laurent in theirs.virtual.items():
+            mine = dd.virtual.get(sector)
+            estimate = None if dd.estimate is None else dd.estimate.get(sector)
+            for j, name in enumerate(LAURENT):
+                pairs.append((
+                    sector_text(sector), name, None if mine is None else mine[j],
+                    laurent[j], None if estimate is None else estimate[j]))  # fmt: skip
+        for sector, name, mine, value, estimate in pairs:
+            if mine is None:
+                checks.append(Check("joint", index, "double-double", sector, name,
+                                    "absent", str(value), math.inf, 0.0, False,
+                                    note="the separate request's sector is absent "
+                                    "from the joint one"))  # fmt: skip
+                continue
+            error = relative(mine, value)
+            e_rel = estimate / abs(float(mine)) if estimate and float(mine) else 0.0
+            bound = max(DD_FLOOR, BRACKET * e_rel)
+            checks.append(Check(
+                "joint", index, "double-double", sector, name, str(mine), str(value),
+                error, bound, error <= bound,
+                note=f"the joint request against the separate request of loop "
+                f"order {dict(loop)}"))  # fmt: skip
+    return checks
+
+
+def r2_reachability(
+    slice_: Any, sectors: Iterable[Sector] | None = None
+) -> Callable[[Any], bool]:
+    """Whether a CT rule's vertex can enter a tree of the slice's request:
+    ``ct_closure.InsertionReachability.admits`` over the CT program's
+    lowered model, process, order limits and vetoed particles (the sweep
+    production runs for its inert rules: species and coupling orders, no
+    colour or flavour; a vertex it finds in no tree enters none). With
+    ``sectors`` (squared-order sector keys) the physical order limits are
+    those of the loop amplitude orders that reach them (``LoopSlice.
+    sectors``): a tree of the request's other sectors is not held."""
+
+    from pyamplicol.loops.v2.blocks import vetoed_particle_ids
+    from pyamplicol.loops.v2.ct_closure import InsertionReachability
+    from pyamplicol.models.loading import COUNTERTERM_INSERTION_ORDER
+    from pyamplicol.processes.model import build_model_process_ir
+
+    recursion = slice_.counterterm_program.recursion
+    lowered = recursion.model.lowered
+    ir = build_model_process_ir(
+        slice_.request.process, lowered.compiled.ir, color_accuracy="full"
+    )
+    limits = recursion.coupling_order_limits()
+    if sectors is not None:
+        wanted = set(sectors)
+        # ``LoopSlice.sectors``: per sector its (Born, loop) amplitude orders.
+        loops = [
+            dict(loop)
+            for sector, pairs in slice_.sectors
+            if sector_key(sector) in wanted
+            for _born, loop in pairs
+        ]
+        if loops:
+            insertion = COUNTERTERM_INSERTION_ORDER.upper()
+            limits = {
+                name: bound
+                if name.upper() == insertion
+                else max(loop.get(name, 0) for loop in loops)
+                for name, bound in limits.items()
+            }
+    return InsertionReachability.build(
+        lowered.tree_model(),
+        ir,
+        limits,
+        ignored_particle_ids=vetoed_particle_ids(recursion.model.veto),
+    ).admits
+
+
+def r2_export_sectors(reference: Reference) -> frozenset[Sector] | None:
+    """The sectors of the MadLoop export whose called R2 couplings the row
+    lists (``madloop_r2_called``): those MadLoop's values report at the
+    reference's points (the primary's without MadLoop values); None where a
+    provider reports only the total."""
+
+    found: set[Any] = set()
+    for values in reference.virtual:
+        name = "madloop" if "madloop" in values else reference.primary
+        found |= set(values.get(name, {}))
+    if not found or TOTAL in found:
+        return None
+    return frozenset(found)
+
+
+def engine_r2(
+    slice_: Any, reachable: Callable[[Any], bool] | None = None
+) -> dict[str, frozenset[str]]:
+    """CT vertex name -> the UFO R2 couplings the slice's counterterm program
+    inserts at it: its admitted R2 rules (one per loop-particle group,
+    ``CountertermRecursion.admission``), inert ones left out, whose vertex
+    can enter a tree of the request (``reachable``, default
+    ``r2_reachability``): the admission reads coupling orders only, so it
+    also admits vertices no tree of the process holds (R2_AAAA in
+    t t~ > t t~), which insert nothing."""
+
+    program = getattr(slice_, "counterterm_program", None)
+    if program is None:
+        return {}
+    recursion = program.recursion
+    if reachable is None:
+        reachable = r2_reachability(slice_)
+    found: dict[str, set[str]] = defaultdict(set)
+    for name, rule in recursion.rules.items():
+        if rule.kind != "R2" or not recursion.admission.get(name):
+            continue
+        if name in recursion.inert or not reachable(rule):
+            continue
+        for _alias, entry in rule.couplings:
+            found[entry.vertex_name].add(entry.coupling.name)
+    return {vertex: frozenset(names) for vertex, names in found.items()}
+
+
+def rule_r2(
+    row: Row,
+    slice_: Any,
+    reference: Reference,
+    classes: Mapping[str, Any] | None = None,
+    engine: Mapping[str, frozenset[str]] | None = None,
+) -> list[Check]:
+    """The R2 rule's structural checks (m-sm/PLAN.md §1.4 rule 1, Q7): every
+    R2 coupling the row lists as omitted by MadLoop's label matching
+    (``madloop_omitted_r2``) is inserted by the engine's counterterm program
+    (``engine``, default ``engine_r2``), so rule 1 holds the UFO-complete
+    insertion against Recola or MadLoop plus the omitted component; and,
+    where the reference lists the couplings its MadLoop export calls
+    (``madloop_r2_called``) and ``classes`` gives MG5_aMC's identical-coupling
+    classes (``r2_value_classes``), the omission found structurally, the
+    engine's inserted couplings that no called coupling's class holds,
+    equals the listed set (less the row's ``r2_vanishing``, couplings whose
+    insertion vanishes in its sectors, each of them in that difference): an
+    unlisted omission fails here, before rule 1 against MadLoop."""
+
+    if engine is None:
+        engine = engine_r2(slice_)
+    inserted = set().union(*engine.values()) if engine else set()
+    checks = []
+    listed = set(row.madloop_omitted_r2 or ())
+    if listed:
+        checks.append(Check(
+            "r2", None, "", "", "inserted", ", ".join(sorted(listed - inserted))
+            or "all", ", ".join(sorted(listed)), 0.0, 0.0, listed <= inserted,
+            note="MadLoop's omitted R2 couplings are in the engine's "
+            f"counterterm program (rule 1 against {reference.primary})"))  # fmt: skip
+    if row.madloop_r2_called is not None and classes is not None:
+        called = {classes.get(name) for name in row.madloop_r2_called} - {None}
+        omitted = {
+            name
+            for name in inserted
+            if classes.get(name) is not None and classes[name] not in called
+        }
+        vanishing = set(getattr(row, "r2_vanishing", ()) or ())
+        found = omitted - vanishing
+        checks.append(Check(
+            "r2", None, "", "", "omitted", ", ".join(sorted(found)) or "none",
+            ", ".join(sorted(listed)) or "none", 0.0, 0.0,
+            listed == found and vanishing <= omitted,
+            note="the engine's inserted R2 couplings (on vertices a tree of the "
+            "request can hold) whose MG5 identical-coupling class MadLoop's "
+            "export does not call = the row's madloop_omitted_r2"))  # fmt: skip
+    return checks
+
+
+def r2_value_classes(
+    ufo: Path, restriction: str, names: Iterable[str]
+) -> dict[str, Any]:
+    """MG5_aMC's identical-coupling classes of a UFO's couplings ``names``
+    (``import_ufo.detect_identical_couplings``, which the restricted export
+    merges under one name): each coupling's value at the restriction card
+    (``restrict_<restriction>.dat``) from the UFO's own source (a Laurent
+    coupling's finite part), rounded to ten significant digits per component
+    and taken up to sign; None for a vanishing coupling (MG5 removes it).
+    The UFO's evaluated parameters are cached per (UFO, restriction)."""
+
+    key = (str(Path(ufo).resolve()), restriction)
+    if key not in _R2_CLASSES:
+        from tools.loop_reference import ufo_source_oracle as oracle
+
+        modules = oracle.import_ufo(Path(ufo), f"_mqcd_r2_ufo_{len(_R2_CLASSES)}")
+        card = restriction_card(Path(ufo), restriction)
+        values, environment = oracle.ufo_source_values(
+            modules, card, exact=False, wrap=None
+        )
+        environment = {
+            **environment,
+            **{k: v for (k, power), v in values.items() if power == 0},
+        }
+        couplings = {c.name: c for c in modules[3].all_couplings}
+        _R2_CLASSES[key] = (oracle, environment, couplings, {})
+    oracle, environment, couplings, found = _R2_CLASSES[key]
+
+    def rounded(x: float) -> float:
+        # MG5's limit_to_6_digit: ten significant digits.
+        return x if x == 0 else round(x, int(abs(round(math.log10(abs(x)), 0))) + 10)
+
+    for name in set(names) - set(found):
+        source = couplings[name].value
+        if isinstance(source, dict):  # a Laurent coupling: its finite part
+            source = source.get(0, "0")
+        value = complex(eval(oracle.compiled(source, False), environment))
+        if abs(value) < 1e-13:
+            found[name] = None
+            continue
+        z = complex(rounded(value.real), rounded(value.imag))
+        if z.real < 0 or (z.real == 0 and z.imag < 0):
+            z = -z
+        found[name] = (z.real, z.imag)
+    return {name: found[name] for name in names}
+
+
+_R2_CLASSES: dict[tuple[str, str], tuple] = {}
 
 
 # ------------------------------------------------------ per-helicity rows
@@ -2605,6 +3539,21 @@ def rule_ward(
     return checks
 
 
+def diagnostics(checks: Iterable[Check]) -> list[Check]:
+    """``checks`` recorded as diagnostics: not asserted, their outcome in
+    the note (a diagnostic extra, ``Row.diagnostic_extras``)."""
+
+    return [
+        replace(
+            check,
+            passed=True,
+            asserted=False,
+            note=f"diagnostic ({'holds' if check.passed else 'misses'}): {check.note}",
+        )
+        for check in checks
+    ]
+
+
 @dataclass
 class RowReport:
     row: str
@@ -2752,11 +3701,20 @@ def run_row(
 
         nonlocal tree_seconds
         if row.catani == "none":
+            reason = row.catani_reason or (
+                "no Catani prediction on the public route (the tools-route "
+                "variant holds rule 4)"
+            )
             return [Check(
                 "4", index, "double-double", "", "poles", "", "", 0.0, 0.0, True,
-                asserted=False, note="no Catani prediction on the public route "
-                "(the tools-route variant holds rule 4)")]  # fmt: skip
+                asserted=False, note=reason)]  # fmt: skip
         found = []
+        if row.catani == "engine":
+            start = time.perf_counter()
+            prediction = run.engine_catani(index)
+            tree_seconds += time.perf_counter() - start
+            for point in points:
+                point.catani = prediction
         if row.catani == "tree":
             start = time.perf_counter()
             born, prediction = run.tree_catani(index)
@@ -2771,7 +3729,7 @@ def run_row(
             for point in points:
                 point.catani = prediction
         for point in points:
-            found += rule4(row, index, point, reference.alpha_s)
+            found += rule4(row, index, point, reference.alpha_s, alphas(row, reference))
         return found
 
     for index, d, b in zip(indices, dd, b64, strict=True):
@@ -2818,10 +3776,40 @@ def run_row(
         checks += rule2_and_3(row, reference, index, b, d)
         checks += poles(index, d, b)
     if tree_seconds:
-        timings["tree_catani_s"] = round(tree_seconds, 2)
-    extras = set(row.extras) & IMPLEMENTED_EXTRAS if tier == "nightly" else set()
+        timings[f"{row.catani}_catani_s"] = round(tree_seconds, 2)
+    if row.unpredicted_reasons is not None and row.catani != "none":
+        checks += rule4_reasons(row, run.slice.unpredicted_sectors())
+    # The extras the harness checks on the nightly tier (the campaign tier's
+    # rows too), less those the manifest lists as waiting for a package.
+    extras = (
+        (set(row.extras) & IMPLEMENTED_EXTRAS) - set(row.extras_pending)
+        if tier in ("nightly", "campaign")
+        else set()
+    )
     extra_points = indices[:1]
-    if "uv" in extras:
+    if (
+        row.madloop_omitted_r2 is not None or row.madloop_r2_called is not None
+    ) and hasattr(run, "slice"):
+        ufo = getattr(run, "model_ufo", None)
+        classes = None
+        # The R2 couplings of the sectors the MadLoop export covers.
+        engine = engine_r2(
+            run.slice, r2_reachability(run.slice, r2_export_sectors(reference))
+        )
+        if ufo is not None and row.madloop_r2_called is not None:
+            inserted = set().union(*engine.values()) if engine else set()
+            classes = r2_value_classes(
+                ufo, row.restriction, sorted(inserted | set(row.madloop_r2_called))
+            )
+        checks += rule_r2(row, run.slice, reference, classes, engine)
+    if "uv" in extras and reference.components:
+        # Rule 5's EW form: the components against the provider's.
+        for index, point in zip(indices, dd, strict=True):
+            if point is not None:
+                checks += rule5_components(
+                    row, index, point, reference, alphas(row, reference)
+                )
+    elif "uv" in extras:
         start = time.perf_counter()
         uv = run.evaluate(extra_points, "double-double", poles="uv")
         timings["uv_s"] = round(time.perf_counter() - start, 2)
@@ -2858,18 +3846,34 @@ def run_row(
         timings["ap_s"] = round(time.perf_counter() - start, 2)
         for k, index in enumerate(extra_points):
             checks += rule6(
-                row, index, dd[indices.index(index)], ap[k], ap60[k], reference.alpha_s
+                row,
+                index,
+                dd[indices.index(index)],
+                ap[k],
+                ap60[k],
+                reference.alpha_s,
+                alphas(row, reference),
             )
     if "ff" in extras:
         legs, alpha_s = run.legs(), Decimal(str(run.parameters["aS"]))
         for index, point in zip(indices, dd, strict=True):
             if point is not None:
                 checks += rule_ff(row, index, point, legs, reference, alpha_s)
+    if "joint" in extras:
+        start = time.perf_counter()
+        for index in extra_points:
+            point = dd[indices.index(index)]
+            if point is not None:
+                checks += rule_joint(row, run, index, point)
+        timings["joint_s"] = round(time.perf_counter() - start, 2)
     if "ward" in extras:
         start = time.perf_counter()
         for index in extra_points:
             for carrier in ("double", "double-double"):
-                checks += rule_ward(row, index, carrier, run.ward(index, carrier))
+                found = rule_ward(row, index, carrier, run.ward(index, carrier))
+                if "ward" in row.diagnostic_extras:
+                    found = diagnostics(found)
+                checks += found
         timings["ward_s"] = round(time.perf_counter() - start, 2)
     if row.ckm_relation is not None and tier == "nightly":
         start = time.perf_counter()
@@ -2885,23 +3889,109 @@ def run_row(
 
 
 class Campaign:
-    """Rows of one test module or CLI run: one compiled loop_sm per
-    restriction and one ``RowRun`` per row, built on first use."""
+    """Rows of one test module or CLI run: one compiled model per (model,
+    restriction) and one ``RowRun`` per row, built on first use. ``ufo`` is
+    loop_sm's; ``ufos`` the other models of the manifest (its ``models``
+    section: the M-SM EW UFOs) by name."""
 
-    def __init__(self, ufo: Path, native: Any, work: Path, manifest=None):
+    def __init__(
+        self,
+        ufo: Path,
+        native: Any,
+        work: Path,
+        manifest=None,
+        ufos: Mapping[str, Path] | None = None,
+    ):
         self.ufo, self.native, self.work = Path(ufo), native, Path(work)
-        self.rows = rows(manifest)
-        self._models: dict[str, Any] = {}
+        self.manifest = manifest or load_manifest()
+        self.rows = rows(self.manifest)
+        self.ufos = {
+            "loop_sm": self.ufo,
+            **{k: Path(v) for k, v in (ufos or {}).items()},
+        }
+        self._models: dict[tuple[str, str], Any] = {}
         self._runs: dict[str, RowRun | PublicRun] = {}
         # base row -> its public-route artifact and generation seconds
         self._public: dict[str, tuple[Path, float]] = {}
 
-    def model(self, restriction: str) -> Any:
-        if restriction not in self._models:
-            self._models[restriction] = compile_restriction(
-                self.ufo, restriction, self.work / f"model-{restriction}"
+    def ufo_path(self, name: str) -> Path:
+        """The UFO of model ``name``: a campaign input, or a copy of its
+        ``base`` with a reference's restriction card (manifest ``models``:
+        ``restriction_card_from``, e.g. the massive-muon G_mu copy MadLoop's
+        control was generated with)."""
+
+        if name in self.ufos:
+            return self.ufos[name]
+        spec = (self.manifest.get("models") or {}).get(name)
+        if spec is None or "restriction_card_from" not in spec:
+            raise KeyError(f"no UFO for model {name!r}")
+        import hashlib
+        import shutil
+
+        data = json.loads((ROOT / spec["restriction_card_from"]).read_text())
+        card = data["restriction_card_text"]
+        if hashlib.sha256(card.encode()).hexdigest() != data["restriction_card_sha256"]:
+            raise ValueError(f"{spec['restriction_card_from']}: card digest differs")
+        target = self.work / f"ufo-{name}"
+        if not target.is_dir():
+            shutil.copytree(
+                self.ufo_path(spec["base"]),
+                target,
+                ignore=shutil.ignore_patterns("__pycache__", "*.pkl"),
             )
-        return self._models[restriction]
+            (target / "restrict_default.dat").write_text(card)
+        self.ufos[name] = target
+        return target
+
+    def model(self, restriction: str, name: str = "loop_sm") -> Any:
+        key = (name, restriction)
+        if key not in self._models:
+            if name == "loop_sm":
+                self._models[key] = compile_restriction(
+                    self.ufo, restriction, self.work / f"model-{restriction}"
+                )
+            else:
+                from pyamplicol.models.loading import compile_model_source
+
+                self._models[key] = compile_model_source(
+                    self.ufo_path(name),
+                    restriction=restriction,
+                    require_supported=False,
+                    cache_dir=self.work / f"model-{name}-{restriction}",
+                )
+        return self._models[key]
+
+    def row_model(self, row: Row) -> Any:
+        """The compiled model of ``row``: its (model, restriction), under the
+        complex-mass scheme transformed at the row's fixed parameters that
+        are the model's (``model_cms.complex_mass_model``, one per fixed
+        set and reglog convention)."""
+
+        compiled = self.model(row.restriction, row.model)
+        if row.mass_scheme is None:
+            return compiled
+        if row.mass_scheme != "complex-mass":
+            raise ValueError(f"{row.id}: unknown mass scheme {row.mass_scheme!r}")
+        import hashlib
+
+        from pyamplicol.loops.model_cms import complex_mass_model
+
+        names = {
+            record["name"]
+            for record in compiled.raw_loop_model.collections["parameters"]
+        }
+        fixed = {k: v for k, v in sorted(row.fixed_parameters.items()) if k in names}
+        convention = row.reglog_convention or "ufo-standard"
+        key = (row.model, row.restriction, convention, json.dumps(fixed))
+        if key not in self._models:
+            tag = hashlib.sha256(json.dumps(key).encode()).hexdigest()[:12]
+            self._models[key], _scheme = complex_mass_model(
+                compiled,
+                fixed_parameters=fixed,
+                reglog_convention=convention,
+                cache_dir=self.work / f"model-cms-{tag}",
+            )
+        return self._models[key]
 
     def run(self, name: str) -> RowRun | PublicRun:
         if name not in self._runs:
@@ -2920,33 +4010,57 @@ class Campaign:
                     row,
                     artifact,
                     seconds if first else 0.0,
-                    self.model(row.restriction),
+                    self.model(row.restriction, row.model),
                 )
                 return self._runs[name]
             base = None
             # A variant shares its base row's generation unless it is a
-            # subprocess of it (M01) or runs on another restriction (the
-            # restricted-UFO variants of the 5F* rows).
+            # subprocess of it (M01), runs on another restriction (the
+            # restricted-UFO variants of the 5F* rows) or tags other photons
+            # (PI01's "all" twin) or another mass scheme or reglog convention
+            # (CM01's source view).
+            other = self.rows.get(row.base) if row.base is not None else None
             if (
-                row.base is not None
-                and self.rows[row.base].active
+                other is not None
+                and other.active
                 and not row.subprocess
-                and row.restriction == self.rows[row.base].restriction
+                and (row.restriction, row.model, row.external_photons)
+                == (other.restriction, other.model, other.external_photons)
+                and (row.mass_scheme, row.reglog_convention)
+                == (other.mass_scheme, other.reglog_convention)
             ):
                 base = self.run(row.base)
             self._runs[name] = RowRun(
                 row,
-                self.model(row.restriction),
+                self.row_model(row),
                 self.native,
                 base=base,
                 ufo=self.ufo,
                 work=self.work,
             )
+            # The row's model UFO (the R2 rule's coupling classes).
+            self._runs[name].model_ufo = self.ufo_path(row.model)
         return self._runs[name]
 
     def report(self, name: str, tier: str, points=None) -> RowReport:
         run = self.run(name)
         return run_row(run, tier, points=points)
+
+    def record(self, name: str, tier: str, points=None) -> RowReport:
+        """The row's report, or, when its generation or evaluation raises,
+        a failed report holding the error (one "eval" check), so that the
+        campaign records a crash as the row's failure, not as a missing
+        record (the tiers and the CLI write it)."""
+
+        try:
+            return self.report(name, tier, points=points)
+        except Exception as error:  # a crash is the row's record
+            LOG.exception("%s: raised", name)
+            row = self.rows[name]
+            return RowReport(name, tier, tuple(points or row.tier_points(tier)), [
+                Check("eval", None, "", "", "generation or evaluation", "raised",
+                      "", math.inf, 0.0, False,
+                      note=f"{type(error).__name__}: {error}")], {})  # fmt: skip
 
 
 def multiparticle_subprocesses(campaign: Campaign, name: str) -> list[Check]:
@@ -2963,10 +4077,15 @@ def multiparticle_subprocesses(campaign: Campaign, name: str) -> list[Check]:
     )
 
     row = campaign.rows[name]
-    data = next(r for r in load_manifest()["rows"] if r["id"] == name)
-    ir = campaign.model(row.restriction).ir
+    data = next(r for r in campaign.manifest["rows"] if r["id"] == name)
+    ir = campaign.model(row.restriction, row.model).ir
     catalog = ModelParticleCatalog(ir.name, ir.particles, ir.parameters)
-    ours = expand_model_processes(row.process, catalog, charges=conserved_charges(ir))
+    ours = expand_model_processes(
+        row.process,
+        catalog,
+        multiparticles=data.get("multiparticles"),
+        charges=conserved_charges(ir),
+    )
 
     def key(process: str) -> tuple:
         """Initial and final PDG multisets (the model's own spelling of a
@@ -2978,12 +4097,19 @@ def multiparticle_subprocesses(campaign: Campaign, name: str) -> list[Check]:
             for side in (initial, final)
         )
 
+    # Members without a Born (manifest ``skipped_members``, m-sm Q2 (a)) are
+    # skipped on our side; MadLoop exports the loop-squared ones as their
+    # own P directories (``madloop_loop_squared``) and none for a member
+    # with no amplitude at all: the members with a Born must agree.
+    skipped = {key(process) for process in data.get("skipped_members", ())}
+    loop_squared = set(data.get("madloop_loop_squared", ()))
     theirs = {
         key(process)
-        for processes in data["madloop_subprocesses"].values()
+        for directory, processes in data["madloop_subprocesses"].items()
+        if directory not in loop_squared
         for process in processes
     }
-    found = {key(process) for process in ours}
+    found = {key(process) for process in ours} - skipped
     return [
         Check("multi", None, "", "", "subprocesses", ", ".join(sorted(ours)),
               ", ".join(sorted(p for ps in data["madloop_subprocesses"].values()
@@ -2991,6 +4117,95 @@ def multiparticle_subprocesses(campaign: Campaign, name: str) -> list[Check]:
               0.0, 0.0, found == theirs,
               note=f"{len(found)} processes against MadLoop's "
               f"{len(data['madloop_subprocesses'])} P directories")
+    ]  # fmt: skip
+
+
+def public_card_text(
+    row: Row,
+    output: Path,
+    *,
+    multiparticles: Mapping[str, Sequence[str]] | None = None,
+) -> str:
+    """A public-route generation card of ``row`` on its shipped model (no
+    ``[loop.model]``, no compatibility profile): its restriction and fixed
+    parameters, corrections, the model's R2, the minimal Born orders and
+    the request's ``process.multiparticles``."""
+
+    fixed = ", ".join(f"{k} = {json.dumps(v)}" for k, v in row.fixed_parameters.items())
+    restriction = (
+        f"restriction = {json.dumps(row.restriction)}"
+        if row.restriction != "default"
+        else ""
+    )
+    aliases = "".join(
+        f"{key} = {json.dumps(list(values))}\n"
+        for key, values in (multiparticles or {}).items()
+    )
+    return f"""action = "generate"
+[model]
+source = {json.dumps(row.model)}
+{restriction}
+[process]
+entries = [{{expression = {json.dumps(row.process)}, name = {json.dumps(row.id)}}}]
+loop_coupling_orders = {json.dumps(list(row.corrections))}
+coupling_order_policy = "minimal"
+[process.multiparticles]
+{aliases}[loop]
+r2_strategy = "model"
+[loop.preparation]
+fixed_parameters = {{{fixed}}}
+[generation]
+output = {json.dumps(str(output))}
+emit_api_bundle = false
+[generation.validation]
+post_build_validation = false
+"""
+
+
+def multiparticle_members(campaign: Campaign, name: str) -> list[Check]:
+    """A multiparticle row's members on the public route's dry run (m-sm
+    PLAN Q2 (a)): the members without a Born (manifest ``skipped_members``)
+    are skipped with the typed ``loop-induced`` record, every other member of
+    the expansion is planned."""
+
+    from pyamplicol.api import Generator, ModelSource, ProcessRequest, ProcessSet
+    from pyamplicol.config import resolve_config
+
+    row = campaign.rows[name]
+    # The dry run reads the configured model cache (a compiled shipped model).
+    ModelSource.from_path(row.model, restriction=row.restriction).compile()
+    data = next(r for r in campaign.manifest["rows"] if r["id"] == name)
+    work = campaign.work / f"dry-run-{name}"
+    work.mkdir(parents=True, exist_ok=True)
+    card = work / "card.toml"
+    card.write_text(
+        public_card_text(row, work / "out", multiparticles=data.get("multiparticles"))
+    )
+    plan = Generator(resolve_config(card)).plan(
+        ProcessSet((ProcessRequest.parse(row.process, name=row.id),), ())
+    )
+    coverage = plan.estimated_coverage
+    skipped = coverage.get("skipped_members", ())
+    found = sorted(" ".join(r["process"].split()) for r in skipped)
+    typed = all(r.get("refusal") == "loop-induced" for r in skipped)
+    want = sorted(data.get("skipped_members", ()))
+    planned = sorted(" ".join(r["process"].split()) for r in coverage["processes"])
+    loop_squared = set(data.get("madloop_loop_squared", ()))
+    expansion = {
+        p for d, ps in data["madloop_subprocesses"].items()
+        if d not in loop_squared for p in ps
+    }  # fmt: skip
+    return [
+        Check("multi", None, "", "", "skipped members", ", ".join(found) or "none",
+              ", ".join(want) or "none", 0.0, 0.0,
+              [p.casefold() for p in found] == [p.casefold() for p in want] and typed,
+              note="members without a Born: the typed loop-induced record"),
+        Check("multi", None, "", "", "planned members", str(len(planned)),
+              str(len(expansion)), 0.0, 0.0,
+              len(planned) == len(expansion)
+              and not set(map(str.casefold, planned)) & set(map(str.casefold, found)),
+              note="every member with a Born planned, the skipped ones not; "
+              f"unsupported features: {list(plan.unsupported_features)}"),
     ]  # fmt: skip
 
 
@@ -3046,13 +4261,62 @@ def smoke(campaign: Campaign, restriction: str, spec: Mapping[str, Any]) -> list
     from pyamplicol.loops.v2.assemble import LoopSlice, Precision
 
     row = campaign.rows[spec["row"]]
+    if spec.get("executor") == "native":
+        # The M-SM smokes (m-sm/PLAN.md §3.2 MS-VALIDATE item 8): the row's
+        # own generation and native executor against the request generated
+        # on the restriction, both through the native executor (Python
+        # inputs) at the row's first reference point.
+        from tools.loop_v2_generate import _external_parameters
+
+        base = campaign.run(row.id).evaluate([0], "double", stability=False)[0]
+        model = campaign.model(restriction, row.model)
+        base_model = campaign.model(row.restriction, row.model)
+        externals = _external_parameters(model)
+        # The base restriction's values of the parameters it removes and the
+        # other keeps (``parameter_defaults`` None in the base, a value in the
+        # other: e.g. MB = 0 under with_b_mass, the Wolfenstein parameters 0
+        # under ckm), fixed as the base fixes them; and none the other
+        # restricts away (a width of no_widths).
+        kept = {
+            k
+            for k in externals
+            if model.parameter_defaults.get(k) is not None
+            and base_model.parameter_defaults.get(k) is None
+        }
+        card = restriction_card(campaign.ufo_path(row.model), row.restriction)
+        restricted = replace(
+            row,
+            id=f"{row.id}~{restriction}",
+            restriction=restriction,
+            fixed_parameters={
+                **{k: v for k, v in row.fixed_parameters.items() if k in externals},
+                **{k: card[k] for k in sorted(kept) if k in card},
+            },
+        )
+        run = RowRun(restricted, model, campaign.native)
+        run.parameters = {k: v for k, v in run.parameters.items() if k in externals}
+        # Every other runtime parameter the row leaves at its card's value
+        # takes the base card's (the restrictions' cards differ: e.g. the
+        # alpha(M_Z) UFO's MT, MH and aEWM1, with_technical's epsUV = 1 +
+        # 1e-8); the scale is the point's.
+        free = externals - set(run.parameters) - set(restricted.fixed_parameters)
+        for k in sorted(free):
+            if (
+                k != row.scale_parameter
+                and k in card
+                and model.parameter_defaults.get(k) is not None
+                and base_model.parameter_defaults.get(k) is not None
+            ):
+                run.parameters[k] = card[k]
+        other = run.evaluate([0], "double", stability=False)[0]
+        return _smoke_checks(base, other, restriction, row.restriction)
     source = campaign.rows[spec.get("points_from", row.id)]
     reference = load_reference(source)
     parameters = {**reference.parameters, **dict(source.parameters)}
     values = []
     for name in (row.restriction, restriction):
         slice_ = LoopSlice.generate(
-            campaign.model(name), slice_request(row), campaign.native
+            campaign.model(name, row.model), slice_request(row), campaign.native
         )
         values.append(
             evaluated(
@@ -3066,12 +4330,36 @@ def smoke(campaign: Campaign, restriction: str, spec: Mapping[str, Any]) -> list
             )
         )
     base, other = values
+    return _smoke_checks(base, other, restriction, row.restriction)
+
+
+def restriction_card(ufo: Path, restriction: str) -> dict[str, str]:
+    """Parameter name -> value of a UFO's ``restrict_<restriction>.dat``
+    (an MG5 param card: ``<codes> <value> # <name>`` lines)."""
+
+    import re
+
+    pattern = re.compile(r"^\s*\d+(?:\s+\d+)*\s+([-+0-9.eE]+)\s*#\s*(\S+)")
+    values = {}
+    for line in (Path(ufo) / f"restrict_{restriction}.dat").read_text().splitlines():
+        found = pattern.match(line)
+        if found:
+            values[found.group(2)] = format(Decimal(found.group(1)).normalize(), "f")
+    return values
+
+
+def _smoke_checks(
+    base: Evaluated, other: Evaluated, restriction: str, own: str
+) -> list[Check]:
+    """The smoke's checks: the same sectors, every coefficient within
+    ``SMOKE_TOLERANCE`` strictly relative."""
+
     same = set(other.virtual) == set(base.virtual) and set(other.born) == set(base.born)
     checks = [
         Check("smoke", 0, "double", "", "sectors",
               ", ".join(map(sector_text, sorted(other.virtual))),
               ", ".join(map(sector_text, sorted(base.virtual))), 0.0, 0.0,
-              same, note=f"{restriction} against {row.restriction}")
+              same, note=f"{restriction} against {own}")
     ]  # fmt: skip
     for sector, value in base.born.items():
         error = relative(other.born.get(sector, Decimal(0)), value)
@@ -3142,6 +4430,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     run.add_argument(
         "--manifest", type=Path, default=MANIFEST, help="another manifest file"
     )
+    run.add_argument(
+        "--model-ufo",
+        nargs="*",
+        default=[],
+        metavar="NAME=PATH",
+        help="the UFO of a manifest model other than loop_sm (its ``models``)",
+    )
     args = parser.parse_args(argv)
     if args.command == "delegated-ids":
         for node in delegated_ids():
@@ -3153,7 +4448,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     from pyamplicol.loops.native import load_loop_native
 
     campaign = Campaign(
-        args.ufo, load_loop_native(), args.work, manifest=load_manifest(args.manifest)
+        args.ufo,
+        load_loop_native(),
+        args.work,
+        manifest=load_manifest(args.manifest),
+        ufos=dict(item.split("=", 1) for item in args.model_ufo),
     )
     failed = 0
     for name in args.rows:
@@ -3161,7 +4460,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not row.active:
             print(f"{name}: pending ({row.pending})", flush=True)
             continue
-        report = campaign.report(name, args.tier, points=args.points)
+        report = campaign.record(name, args.tier, points=args.points)
         print(report.describe(), flush=True)
         print(json.dumps(report.summary(), default=str), flush=True)
         write_result(report, args.results)

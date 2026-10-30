@@ -223,6 +223,36 @@ def process_text(key: str, compiled: Any) -> str:
     return " ".join(legs[:2]) + " > " + " ".join(legs[2:])
 
 
+def electroweak(key: str) -> bool:
+    """Whether ``key`` takes the QCD and QED corrections on an EW UFO
+    (``correction`` "EW", e.g. the M-SM G1 row gg_ttxemepg_ew; m-sm/PLAN.md
+    §3.2 MS-VALIDATE item 5)."""
+
+    return streams.spec(key)["correction"] == "EW"
+
+
+def ew_model(key: str, scratch: Path) -> Any:
+    """The EW UFO of ``key``'s scheme (``madloop_model``: ``{reference}``
+    the reference root, ``$LOOP_REFERENCE_ROOT`` or the workspace's;
+    ``$PYAMPLICOL_EW_UFO_REFERENCE`` overrides), compiled."""
+
+    import os
+
+    from pyamplicol.models.loading import compile_model_source
+
+    ufo = os.environ.get("PYAMPLICOL_EW_UFO_REFERENCE")
+    if not ufo:
+        root = os.environ.get("LOOP_REFERENCE_ROOT") or str(
+            Path(os.environ.get("PYAMPLICOL_LOOP_WORKSPACE", ROOT.parent)) / "reference"
+        )
+        ufo = streams.spec(key)["scheme_data"]["madloop_model"].replace(
+            "{reference}", root
+        )
+    return compile_model_source(
+        Path(ufo), require_supported=False, cache_dir=scratch / "model-cache"
+    )
+
+
 def _request(key: str, accuracy: str, compiled: Any) -> Any:
     from pyamplicol.loops.v2.assemble import SliceRequest
     from pyamplicol.models.loop_color_declaration import (
@@ -231,6 +261,30 @@ def _request(key: str, accuracy: str, compiled: Any) -> Any:
 
     process = streams.spec(key)
     text = process_text(key, compiled)
+    if electroweak(key):
+        # QCD and QED corrections on the EW UFO, its compatibility profile
+        # and scale parameter, the fixed parameters the model has (as
+        # ``loop_v2_generate._fixture_request``; the providers' WTau is not
+        # a G_mu parameter).
+        from tools.loop_v2_generate import (
+            _EW_COMPATIBILITY,
+            _EW_SCALE_PARAMETER,
+            _external_parameters,
+        )
+
+        externals = _external_parameters(compiled)
+        fixed = process["scheme_data"]["fixed_parameters"]
+        return SliceRequest(
+            text,
+            dict(process["born_orders"]),
+            dict(process["loop_orders"]),
+            corrections=("QCD", "QED"),
+            fixed_parameters={k: v for k, v in fixed.items() if k in externals},
+            particle_veto=tuple(int(p) for p in process.get("particle_veto", ())),
+            accuracy=accuracy,
+            compatibility=_EW_COMPATIBILITY,
+            scale_parameter=_EW_SCALE_PARAMETER,
+        )
     declaration = None
     if accuracy != "full":
         # The model's declaration: for loop_sm the shipped one (MQ-NC), which
@@ -591,7 +645,11 @@ class Run:
         self.scratch = scratch
         _reset_peak()
         start = time.perf_counter()
-        compiled = compile_loop_sm(UFO, scratch)
+        compiled = (
+            ew_model(self.key, scratch)
+            if electroweak(self.key)
+            else compile_loop_sm(UFO, scratch)
+        )
         stages["model"] = {
             "seconds": time.perf_counter() - start,
             "peak_gib": _gib(_status("VmHWM")),
@@ -1352,7 +1410,11 @@ def ward(options: Any) -> int:
     rows = []
     try:
         native = load_loop_native()
-        compiled = compile_loop_sm(UFO, scratch)
+        compiled = (
+            ew_model(run.key, scratch)
+            if electroweak(run.key)
+            else compile_loop_sm(UFO, scratch)
+        )
         _reset_peak()
         start = time.perf_counter()
         request = _request(run.key, "full", compiled)

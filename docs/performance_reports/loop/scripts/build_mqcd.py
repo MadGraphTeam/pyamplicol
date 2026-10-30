@@ -3,7 +3,12 @@
 
 Usage: python scripts/build_mqcd.py RESULTS_DIR... [--output data/mqcd.json]
        [--findings data/mqcd-findings.json] [--markdown TABLE.md]
-       [--junit JUNIT.xml ...] [--meta key=value ...]
+       [--junit JUNIT.xml ...] [--meta key=value ...] [--manifest MANIFEST]
+
+The M-SM campaign (m-sm/PLAN.md §3.2 MS-VALIDATE item 9) is the same build
+on its manifest: ``--manifest tests/fixtures/loop/msm/manifest.json --output
+data/msm.json`` (records of tests/unit/test_loop_v2_msm_*.py and of the
+campaign CLI's ``--tier campaign`` rows).
 
 The campaign: PYAMPLICOL_MQCD_RESULTS=RESULTS_DIR pytest on
 tests/unit/test_loop_v2_mqcd_default.py (-m "not loop_nightly") and on each
@@ -141,7 +146,9 @@ def expected_tiers(entry: dict, base: dict | None = None) -> dict[str, list[int]
         return {}
     points = entry.get("points") or (base or {}).get("points") or {}
     tier = entry.get("tier") or (base or {}).get("tier")
-    tiers = ("default", "nightly") if tier == "default" else ("nightly",)
+    # A campaign-tier row (m-sm/PLAN.md §4.3: the 2->5 target, CM07) runs
+    # its own tier, by the campaign CLI.
+    tiers = ("default", "nightly") if tier == "default" else (tier or "nightly",)
     return {t: list(points[t]) for t in tiers if points.get(t)}
 
 
@@ -250,8 +257,15 @@ def column(ids, outcomes: dict[str, str]) -> dict:
     return {"status": status, "tests": tests}
 
 
-def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) -> dict:
-    manifest = json.loads(MANIFEST.read_text())
+def build(
+    results: list[Path],
+    meta: dict[str, str],
+    findings=None,
+    junit=(),
+    manifest_path: Path | None = None,
+) -> dict:
+    manifest_path = manifest_path or MANIFEST
+    manifest = json.loads(Path(manifest_path).read_text())
     outcomes = junit_outcomes(junit)
     records: dict[tuple[str, str], list[dict]] = defaultdict(list)
     for directory in results:
@@ -323,6 +337,10 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
                 "process": row["process"],
                 "restriction": row["restriction"],
                 "restriction_code": row["restriction_code"],
+                # The model and corrections (M-SM rows; M-QCD's are loop_sm
+                # and QCD).
+                "model": row.get("model", "loop_sm"),
+                "corrections": row.get("corrections", ["QCD"]),
                 "tier": row["tier"],
                 "reference": row["reference"],
                 "reference_legend": row.get("reference_legend"),
@@ -373,9 +391,10 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
             }
     # The nightly smokes, composite expansions and the "tree" Catani oracle
     # check (tests/unit/test_loop_v2_mqcd_nightly.py): absent records not-run.
-    declared = [
-        f"smoke:{r}" for r in manifest.get("smokes", {}).get("same_request", {})
-    ]
+    smokes = manifest.get("smokes", {})
+    declared = [f"smoke:{r}" for r in smokes.get("same_request", {})]
+    # The M-SM restriction smokes (tests/unit/test_loop_v2_msm_smokes*.py).
+    declared += [f"smoke:{e['id']}" for e in smokes.get("restrictions", ())]
     if any(r.get("catani") == "tree" for r in manifest["rows"]):
         declared.append("oracle:tree-catani")
     declared += [
@@ -390,11 +409,15 @@ def build(results: list[Path], meta: dict[str, str], findings=None, junit=()) ->
     smoke = manifest.get("smokes", {}).get("lc_every_restriction")
     if isinstance(smoke, dict):
         checks["lc:every_restriction"] = column([smoke["test"]], outcomes)
+    name = Path(manifest_path).resolve().parent.name
+    # The manifest's own plan ("workspace/reports/engine-v2/m-sm/PLAN.md
+    # §1.4, ..."): its directory names the campaign's PLAN.
+    plan = Path(manifest["plan"].split()[0]).parent.name
     data = {
-        "source": "tests/fixtures/loop/mqcd/manifest.json + campaign records "
-        "(tests/unit/test_loop_v2_mqcd_*.py, PYAMPLICOL_MQCD_RESULTS)"
+        "source": f"tests/fixtures/loop/{name}/manifest.json + campaign records "
+        f"(tests/unit/test_loop_v2_{name}_*.py, PYAMPLICOL_MQCD_RESULTS)"
         + (" + JUnit XML of the delegated columns" if junit else ""),
-        "rules": "m-qcd/PLAN.md §1.4 (tools/loop_benchmark/mqcd.py)",
+        "rules": f"{plan}/PLAN.md §1.4 (tools/loop_benchmark/mqcd.py)",
         **meta,
         "counts": {
             status: sum(r["status"] == status for r in rows) for status in STATUSES
@@ -460,7 +483,11 @@ def markdown(data: dict) -> str:
                 for check in tier["failed_checks"]:
                     label = name.split("@", 1)[1] + ": " if "@" in name else ""
                     carrier = CARRIERS.get(check["carrier"], check["carrier"])
-                    if check["rule"] == "eval":
+                    if check["rule"] == "eval" and check["point"] is None:
+                        # The row's generation or evaluation raised.
+                        error = (check["note"] or "").split(":", 1)[0]
+                        text = f"{label}raised {error}".rstrip()
+                    elif check["rule"] == "eval":
                         text = f"{label}p{check['point']} {carrier} evaluation failed"
                     else:
                         text = (
@@ -526,10 +553,17 @@ def main(argv=None) -> int:
     parser.add_argument("--markdown", type=Path)
     parser.add_argument("--junit", nargs="*", type=Path, default=[])
     parser.add_argument("--meta", nargs="*", default=[])
+    parser.add_argument(
+        "--manifest",
+        type=Path,
+        default=None,
+        help="the campaign manifest (default M-QCD's; M-SM: tests/fixtures/loop/"
+        "msm/manifest.json with --output data/msm.json)",
+    )
     args = parser.parse_args(argv)
     meta = dict(item.split("=", 1) for item in args.meta)
     findings = json.loads(args.findings.read_text()) if args.findings else None
-    data = build(args.results, meta, findings, args.junit)
+    data = build(args.results, meta, findings, args.junit, args.manifest)
     args.output.write_text(json.dumps(data, indent=1, default=str) + "\n")
     if args.markdown:
         args.markdown.write_text(markdown(data))
