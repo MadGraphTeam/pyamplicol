@@ -99,6 +99,19 @@
    "evidence": "probe-sc02 (double-double): ours = the massive QED Catani operator + 3 (alpha/2pi) Born exactly, = MadLoop's; MS-REF's scheme record ew-gmu-mm: +3/2 Q^2 per muon leg (massless muon counterterms in the copy)",
    "status": "accepted model property (the rows report partial: rule 4 not formed)",
    "routed": "none (a property of the copied UFO, not of the engine)"
+  },
+  {
+   "id": "F8",
+   "category": "engine: Python point inputs under the complex-mass scheme",
+   "title": "With a zero top width under CMS (the top on its line mass LMASS_MT := MT, model_cms step 4b) the Python-input path is not at the runtime MT: g g > t t~ Born 3.8e-4 off MadLoop CMS (native inputs exact)",
+   "rows": [
+    "CM04",
+    "CM07"
+   ],
+   "checks": "CM04 (Python inputs): rule 1 (Born and every sector ~4e-4), rule 4 (the virtual's poles against the engine's own operator 3e-5 to 2.6e-4: the Python path is not self-consistent), rule 5; CM07 (native inputs, the production route): rule 4's engine operator reads the Python-input Born",
+   "evidence": "probe-cm04 (point 0, binary64): Born Python inputs 1.0054755 at MT = 173, native inputs 1.00509349673877 = MadLoop CMS = the real-mass Born; at the default MT = 173.3 both paths give 1.0051884: a part of the Python path takes LMASS_MT at its default, not at the runtime MT. CM02, CM03, CM09 (nonzero widths, no zero-width Yukawa-tied mass) pass on Python inputs",
+   "status": "open",
+   "routed": "MS-CMS (the Python mass values of the complex-mass scheme: assemble._model_masses / _mass_values, artifact._real_parameters)"
   }
  ],
  "coverage_notes": [

@@ -1624,6 +1624,21 @@ def loop_orders(born, corrections, sectors):
     return orders[0] if len(orders) == 1 else orders
 
 
+# Rule 4's typed unpredicted sectors (m-sm/PLAN.md §1.4): legitimate for a
+# single-correction or amplitude-order-capped request, never for a joint
+# uncapped one. (QCD power, QED power) -> the slice's reason
+# (``poles.UNPREDICTED_REASONS``).
+UNPREDICTED = {
+    # u d~ > e+ ve b b~ QCD=0 [QCD]: the QCD correction of an electroweak
+    # Born; the operator would need the photon exchange of the QED^2-lower
+    # tree (QCD^2 QED^2 amplitude), which the request does not correct
+    # (MadLoop's [QCD] alike; rule 1 against it holds the sector).
+    "CM08": {(2, 8): "uncorrected-exchange"},
+    # u d~ > w+ b b~ QCD=0 [QCD] on loop_sm: likewise.
+    "CM10": {(2, 6): "uncorrected-exchange"},
+}
+
+
 def produced_sectors(born, loops):
     """The squared sectors a request forms: every Born amplitude order times
     every loop amplitude order (``loop_orders``), largest QCD power first."""
@@ -1802,7 +1817,7 @@ NO_REAL_SCHEME_WARD = {
 # engine's operators on the Python-input Born): the 2->5 target and EWI-7's
 # root-closure rows, checked with native inputs once EWI-7 lands (PLAN §3.2
 # MS-VALIDATE item 6; a failure goes to the owner of the failing site).
-NATIVE_ROWS = {"TV07", "TT04", "SC06", "SC07", "SC08", "SC09"}
+NATIVE_ROWS = {"TV07", "TT04", "SC06", "SC07", "SC08", "SC09", "CM07"}
 
 rows = []
 for r in R:
@@ -1887,6 +1902,11 @@ for r in R:
             entry[key] = r["more"][key]
     if "veto" in r["more"]:
         entry["particle_veto"] = r["more"]["veto"]
+    for (qcd, qed), reason in UNPREDICTED.get(r["id"], {}).items():
+        sector = sector_orders((qcd, qed))
+        entry["predicted_sectors"].remove(sector)
+        entry["unpredicted_sectors"].append(sector)
+        entry["unpredicted_reasons"][mqcd.sector_text(mqcd.sector_key(sector))] = reason
     if r["code"] in CMS_CODES:
         entry["mass_scheme"] = "complex-mass"
         if "ward" in r["extras"]:
