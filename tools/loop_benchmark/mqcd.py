@@ -213,6 +213,10 @@ class Row:
     vanishing: tuple[Mapping[str, Any], ...] = ()
     # Reference fixed parameters the model does not have (MadLoop's WTau).
     ignored_fixed_parameters: tuple[str, ...] = ()
+    # Reference parameters the row's model does not take (a reference of
+    # another UFO: loop_sm's aEWM1 under the G_mu UFO, whose effect the row
+    # states through its own ``parameters``, e.g. the derived MW).
+    ignored_parameters: tuple[str, ...] = ()
     notes: str = ""
     # A variant ("<id>@<name>") shares its base row's request and generation
     # with another reference (a runtime parameter change, a diagnostic twin);
@@ -332,6 +336,7 @@ class Row:
             reference_outliers=tuple(data.get("reference_outliers", ())),
             vanishing=tuple(data.get("vanishing", ())),
             ignored_fixed_parameters=tuple(data.get("ignored_fixed_parameters", ())),
+            ignored_parameters=tuple(data.get("ignored_parameters", ())),
             notes=data.get("notes", ""),
             base=data.get("base"),
             subprocess=bool(data.get("subprocess", False)),
@@ -1435,6 +1440,16 @@ def _correlations(entry: Mapping[str, Any]) -> tuple[Decimal, dict]:
     return Decimal(entry["born"]), correlated
 
 
+def _row_parameters(row: Row, reference: Reference) -> dict[str, str]:
+    """The runtime parameters of a row: its reference's (less those the
+    row's model does not take, ``ignored_parameters``) and its own."""
+
+    taken = {
+        k: v for k, v in reference.parameters.items() if k not in row.ignored_parameters
+    }
+    return {**taken, **dict(row.parameters)}
+
+
 class RowRun:
     """A row's generated slice and native executor (generated once, shared by
     every carrier, point and check of the row)."""
@@ -1470,7 +1485,7 @@ class RowRun:
                 raise ValueError(f"{row.id} changes its base row's request")
             self.slice, self.executor = base.slice, base.executor
             self.generate_seconds = self.export_seconds = 0.0
-            self.parameters = {**self.reference.parameters, **dict(row.parameters)}
+            self.parameters = _row_parameters(row, self.reference)
             return
         start = time.perf_counter()
         LOG.info("%s: generating %s", row.id, row.process)
@@ -1487,7 +1502,7 @@ class RowRun:
                 exported=export_plan(self.slice, forward=False),
             )
         self.export_seconds = time.perf_counter() - start
-        self.parameters = {**self.reference.parameters, **dict(row.parameters)}
+        self.parameters = _row_parameters(row, self.reference)
 
     def evaluate(
         self,
@@ -2928,9 +2943,14 @@ def rule_r2(
     Recola or MadLoop plus the omitted component; and, where the reference
     lists the couplings its MadLoop export calls (``madloop_r2_called``) and
     ``classes`` gives MG5_aMC's identical-coupling classes
-    (``r2_value_classes``), the engine's inserted couplings that no called
-    coupling's class holds are exactly the listed set (empty: rule 1 against
-    MadLoop alone)."""
+    (``r2_value_classes``), every listed coupling is among the engine's
+    inserted couplings that no called coupling's class holds (MadLoop
+    omits it). That difference over-approximates the omissions: the
+    engine's admitted rules include vertices no non-vanishing tree of the
+    process reaches (its reachability ignores colour and flavour,
+    ``ct_closure.InsertionReachability``), which MadLoop never calls; the
+    check records the whole difference, the candidates of a rule-1 miss
+    against MadLoop."""
 
     engine = engine_r2(slice_)
     inserted = set().union(*engine.values()) if engine else set()
@@ -2951,10 +2971,11 @@ def rule_r2(
         }
         checks.append(Check(
             "r2", None, "", "", "omitted", ", ".join(sorted(omitted)) or "none",
-            ", ".join(sorted(listed)) or "none", 0.0, 0.0, omitted == listed,
-            note="the engine's inserted R2 couplings whose MG5 identical-"
-            "coupling class MadLoop's export does not call = the row's "
-            "madloop_omitted_r2"))  # fmt: skip
+            ", ".join(sorted(listed)) or "none", 0.0, 0.0, listed <= omitted,
+            note="the row's madloop_omitted_r2 are among the engine's inserted "
+            "R2 couplings whose MG5 identical-coupling class MadLoop's export "
+            "does not call (value: that whole difference, which also holds "
+            "admitted vertices no tree reaches)"))  # fmt: skip
     return checks
 
 

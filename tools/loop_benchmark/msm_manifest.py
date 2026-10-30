@@ -716,6 +716,7 @@ row(
                 sectors_subset=True,
             ),
             "parameters": {"MW": "80.4190024457561601055171371731"},
+            "ignored_parameters": ["aEWM1"],
             "extras": [],
             "extras_pending": {},
         }
