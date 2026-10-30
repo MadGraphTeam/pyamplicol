@@ -100,10 +100,16 @@ def F(fixture, half=True):
 
 EWI7 = "[EWI-7]"
 TOPUP = "top-up: the missing correction sector at the existing fixture's points (+ the mu_R = mu_0/2 copy of point 1)"
-CKM_REMNANT = ("not UV finite in the model: the e^6 single pole exceeds the IR prediction by ~-2.1e-2 (alpha/2pi) "
-               "Born, ~lambda^4 (the UFO's O(lambda^3) Wolfenstein CKM is not unitary; scheme ew-gmu-ckm) -> "
-               "MS-VALIDATE rule 4")
-R2RULE = "Recola primary: MadLoop's export omits R2 couplings the UFO-complete insertion has (R2 rule, §1.4)"
+CKM_REMNANT = ("UFOmodeldb issue-1 patch: exactly unitary CKM, the O(lambda^3) remnant (-2.1e-2 (alpha/2pi) Born) is "
+               "gone; the EW counterterms omit the tau mass (MTA = 1.777 on restrict_ckm), a retained model "
+               "limitation: the e^6 single pole exceeds the IR prediction by MTA^2/(2 sw^2 (s - MW^2)) (alpha/2pi) "
+               "Born (scheme ew-gmu-ckm) -> MS-VALIDATE rule 4")
+# The model patch of UFOmodeldb issue 1 / mg5amcnlo#475 (user rule 2026-10-30 ~12:45): MadLoop exports of the
+# patched models insert R2_G0tt_b (split by loop content), and the G_mu charge counterterm has its b-mass term.
+UFOPATCH = ("MadLoop QP on the patched model (UFOmodeldb issue 1: R2_G0tt_{d,s,b} split by loop content, so MadLoop "
+            "inserts them; G_mu b-mass charge counterterm) [MS-UFO-PATCH]")
+UFOPATCH_RECOLA = ("independent check of the UFOmodeldb issue-1 patch: Recola's counterterms and R2 terms are its "
+                   "own (workspace/reports/engine-v2/upstream/ufo-patch-validation.md)")
 
 # LL: lepton-only
 CTL = "runs/msm/{}/madloop-export"  # --no-compile export of a control fixture's MadLoop command (R2 name list)
@@ -122,8 +128,9 @@ row("LL05", "W-lep", "e- e+ > w+ w-", "G0", "N", runs_=[run("emep_wpwm_ew")], se
 row("LL08", "W-lep", "e- e+ > mu- mu+ a", "Ga", "N", extras=["a0"], runs_=[run("emep_mummpa_ew_a0")], sectors=["e^8"],
     note="final photon tagged")
 row("LL09", "W-lep", "e- e+ > t t~", "G0", "N", runs_=[run("emep_ttx_ew")], sectors=["e^6", "s^2e^4"])
-row("LL10", "W-lep", "e- e+ > t t~ h", "G0", "E", fixtures=["required/emep_ttxh_ew.json"], sectors=["e^8"],
-    primary="recola", note=R2RULE)
+row("LL10", "W-lep", "e- e+ > t t~ h", "G0", "N", fixtures=["required/emep_ttxh_ew.json"], sectors=["e^8"],
+    runs_=[run("emep_ttxh_ew", points=F("required/emep_ttxh_ew.json"), second=["recola"], trigger=UFOPATCH_RECOLA)],
+    note=UFOPATCH)
 # DY: Drell-Yan and lepton-quark
 row("DY01", "W-DY", "u u~ > e- e+", "G0", "N", extras=["uv", "hel", "sp:S3"], sectors=["s^2e^4", "e^6"],
     runs_=[run("uux_emep_ew", helicities="all"),
@@ -194,14 +201,19 @@ row("TT01", "W-top", "g g > t t~", "G0", "E", extras=["joint", "ap", "uv"], sect
 row("TT02", "W-top", "u u~ > t t~", "G0", "N", extras=["so"], runs_=[run("uux_ttx_ew")],
     sectors=["s^6", "s^4e^2", "s^2e^4", "e^6"])
 row("TT03", "W-top", "g g > t t~ g", "G0", "N", extras=["ward"], runs_=[run("gg_ttxg_ew")], sectors=["s^8", "s^6e^2"])
-row("TT04", "W-top", "t t~ > t t~ QCD=0", "G0", "E", fixtures=["required/ttx_ttx_ew.json"], sectors=["e^6"],
-    primary="recola", note=f"{R2RULE} (7.7 %); root mixing; ew-validate's fixture {EWI7}")
-row("TT05", "W-top", "g t > t t t~", "G0", "E", fixtures=["goldstone-mixing.json"], sectors=["s^2e^6"],
+row("TT04", "W-top", "t t~ > t t~ QCD=0", "G0", "N", fixtures=["required/ttx_ttx_ew.json"], sectors=["e^6"],
+    runs_=[run("ttx_ttx_ew", points=F("required/ttx_ttx_ew.json"), second=["recola"], trigger=UFOPATCH_RECOLA)],
+    note=f"{UFOPATCH}; root mixing; ew-validate's fixture's points {EWI7}")
+row("TT05", "W-top", "g t > t t t~", "G0", "N", fixtures=["goldstone-mixing.json"], sectors=["s^2e^6"],
     r2_exports={"goldstone-mixing.json": ["runs/required/gt_tttx_ew/madloop-export"]},
-    note="gt_tttx_ew (MadLoop double) + its omitted R2_G0tt_b component (goldstone-mixing.json omitted_r2)")
-row("TT06", "W-top", "g b > t t~ b (massive b)", "Gb", "E", fixtures=["goldstone-mixing.json"], sectors=["s^2e^6"],
+    runs_=[run("gt_tttx_ew", points=S(), second=["recola"], trigger=UFOPATCH_RECOLA)],
+    note=f"{UFOPATCH}; goldstone-mixing.json gt_tttx_ew (MadLoop double on the unpatched model, R2_G0tt_b omitted) "
+         "stays the components control")
+row("TT06", "W-top", "g b > t t~ b (massive b)", "Gb", "N", fixtures=["goldstone-mixing.json"], sectors=["s^2e^6"],
     r2_exports={"goldstone-mixing.json": ["runs/required/gb_ttxb_ew_mb/madloop-export"]},
-    note=f"gb_ttxb_ew_mb (MadLoop double); binary64 point 0 outside the O1 scope (DD asserted) {EWI7}")
+    runs_=[run("gb_ttxb_ew_mb", points=S(), second=["recola"], trigger=UFOPATCH_RECOLA)],
+    note=f"{UFOPATCH}; goldstone-mixing.json gb_ttxb_ew_mb (MadLoop double on the unpatched model) stays the "
+         f"components control; binary64 point 0 outside the O1 scope (DD asserted) {EWI7}")
 row("TV01", "W-top", "g g > t t~ h", "G0", "N", runs_=[run("gg_ttxh_ew", points=S())], sectors=["s^6e^2", "s^4e^4"])
 row("TV02", "W-top", "g g > t t~ z", "G0", "N", runs_=[run("gg_ttxz_ew", points=S())], sectors=["s^6e^2", "s^4e^4"])
 row("TV03", "W-top", "u d~ > t t~ w+", "G0", "N", extras=["so"], runs_=[run("udx_ttxwp_ew", points=S())],
@@ -214,9 +226,12 @@ row("ST02", "W-singletop", "u d~ > t b~ QCD=0", "G0", "E", fixtures=["required/u
     note=f"ew-validate's fixture (MadLoop + Recola) {EWI7}")
 row("ST03", "W-singletop", "g b > t w-", "G0", "N", extras=["ward"], runs_=[run("gb_twm_ew", points=S())],
     sectors=["s^4e^2", "s^2e^4"])
-row("ST04", "W-singletop", "u d~ > t b~ QCD=0 (massive b)", "Gb", "R", fixtures=["required/udx_tbx_ew_mb.json"],
-    sectors=["e^6"], note=f"ew-validate's workspace run udx_tbx_ew_mb (MadLoop; Recola differs by 9.48e-5 x Born: "
-                          f"the G_mu UFO omits dMB_eCoup_UV_EW in its charge counterterm; not a provider here) {EWI7}")
+row("ST04", "W-singletop", "u d~ > t b~ QCD=0 (massive b)", "Gb", "N", fixtures=["required/udx_tbx_ew_mb.json"],
+    sectors=["e^6"],
+    runs_=[run("udx_tbx_ew_mb", points=F("required/udx_tbx_ew_mb.json"), second=["recola"],
+               trigger=UFOPATCH_RECOLA)],
+    note=f"{UFOPATCH}: the unpatched model omitted dMB_eCoup_UV_EW (Recola - MadLoop = 9.48e-5 x Born on "
+         f"required/udx_tbx_ew_mb.json, ew-validate's run, whose points this run re-evaluates) {EWI7}")
 # JJ, PI
 row("JJ01", "W-jets", "u u~ > d d~", "G0", "N", extras=["so", "uv"], runs_=[run("uux_ddx_ew")],
     sectors=["s^6", "s^4e^2", "s^2e^4", "e^6"])
@@ -297,7 +312,11 @@ row("SC02", "W-scheme", "u u~ > mu- mu+ (massive mu)", "Gm", "N", note=MM_CT,
     sectors=["s^2e^4", "e^6"])
 row("SC03", "W-scheme", "u d~ > e+ ve (CKM)", "Gk", "N",
     runs_=[run("udx_epve_ew_ckm", note=CKM_REMNANT)], sectors=["s^2e^4", "e^6"], note=f"{CKM_REMNANT} {EWI7}")
-row("SC04", "W-scheme", "b b~ > w+ w- (massive b)", "Gb", "N", runs_=[run("bbx_wpwm_ew_mb", points=S())],
+row("SC04", "W-scheme", "b b~ > w+ w- (massive b)", "Gb", "N",
+    runs_=[run("bbx_wpwm_ew_mb", points=S()),
+           run("bbx_wpwm_ew_mb_qed", points={"generator": "run", "run": "bbx_wpwm_ew_mb"}, binding=False,
+               second=["recola"], trigger=UFOPATCH_RECOLA,
+               note="control: the e^6 sector alone ([virt=QED]) at the joint run's points, MadLoop and Recola")],
     sectors=["s^2e^4", "e^6"], note="O1 scope per point (m_b^2/s cancellation)")
 row("SC05", "W-scheme", "u u~ > e- e+ g g / d s b (epsilon sign)", "L5", "E", fixtures=["epsilon-sign.json"],
     note="regression", r2_exports={"epsilon-sign.json": "QCD-only loop_sm reference: no EW R2"})
@@ -307,8 +326,9 @@ row("SC07", "W-scheme", "h h > h h", "G0", "N", runs_=[run("hh_hh_ew", points=S(
     note=f"scalar EW loops, root closure {EWI7}")
 row("SC08", "W-scheme", "t t~ > w+ w-", "G0", "N", runs_=[run("ttx_wpwm_ew", points=S())], sectors=["e^6"],
     note=f"root closure, R2 rule checked first {EWI7}")
-row("SC09", "W-scheme", "t t~ > z h QCD=0", "G0", "E", fixtures=["required/ttx_zh_ew.json"], sectors=["e^6"],
-    primary="recola", note=f"{R2RULE} (2.5 %); root mixing; ew-validate's fixture {EWI7}")
+row("SC09", "W-scheme", "t t~ > z h QCD=0", "G0", "N", fixtures=["required/ttx_zh_ew.json"], sectors=["e^6"],
+    runs_=[run("ttx_zh_ew", points=F("required/ttx_zh_ew.json"), second=["recola"], trigger=UFOPATCH_RECOLA)],
+    note=f"{UFOPATCH}; root mixing; ew-validate's fixture's points {EWI7}")
 row("SC10", "W-scheme", "z z > h h", "G0", "N", sectors=["e^6"],
     runs_=[run("zz_hh_ew", points=S(), second=["recola"],
                trigger="diagnostic: Recola's R2 terms are not the UFO's, so it decides UFOmodeldb's R2_ZZHH fix"),

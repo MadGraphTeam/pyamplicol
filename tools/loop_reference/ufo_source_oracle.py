@@ -206,8 +206,17 @@ def coupling_ratio(path, numerator: str, denominator: str, card) -> float:
     couplings = modules[3]
 
     def value(coupling: str) -> complex:
-        source = getattr(couplings, coupling).value
-        return complex(eval(compiled(source, False), environment))
+        # A coupling the UFOmodeldb issue-1 patch splits by loop content
+        # (R2_G0tt_b = R2_G0tt_b_WG + R2_G0tt_b_G) is the sum of its pieces.
+        parts = (
+            (coupling,)
+            if hasattr(couplings, coupling)
+            else (f"{coupling}_WG", f"{coupling}_G")
+        )
+        return sum(
+            complex(eval(compiled(getattr(couplings, part).value, False), environment))
+            for part in parts
+        )
 
     ratio = value(numerator) / value(denominator)
     if abs(ratio.imag) > 1e-15 * abs(ratio.real):
