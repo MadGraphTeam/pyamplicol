@@ -1582,6 +1582,9 @@ RULE1 = {
     # ew-validate's udx_tbx_ew_mb run: MadLoop in double precision (status
     # 216; m1: 3.7e-11).
     "ST04": 1e-10,
+    # SC03 (CKM, massive b and tau): 1.15e-12 (rule 1), 2.3e-12 (rule 5's
+    # CT components, MadLoop's double-precision CT runs) in m2.
+    "SC03": 1e-10,
 }
 # Relaxed rules per row (the user's ruling of ~10:20, at most 1e-5): SC05's
 # poles against Catani in double-double, 2.9e-14 and 4.2e-14 at point 0
@@ -1603,7 +1606,22 @@ RELAXED = {
 # single pole (ours = MadLoop's) exceeds the massive QED operator by exactly
 # 3 (alpha/2pi) Born (test_loop_v2_qed_catani's docstring; c1: 9.9e-5 =
 # 3 x 3.30e-5 at point 0): not a reference of the operator.
-NO_CATANI = {"LL02", "SC02"}
+NO_CATANI = {
+    "LL02": "the massive-muon UFO copy: the UFO writes the lepton field "
+    "renormalisation for massless leptons (single pole = the massive QED "
+    "operator + 3 alpha/2pi Born)",
+    "SC02": "the massive-muon UFO copy: the UFO writes the lepton field "
+    "renormalisation for massless leptons (single pole = the massive QED "
+    "operator + 3 alpha/2pi Born)",
+    # restrict_ckm: the UFO renormalises no CKM matrix, so with the complex
+    # CKM and the massive top the virtual (= MadLoop's) keeps a UV pole:
+    # QED^6 single pole = the QED operator - 0.0213 (alpha/2pi) Born at
+    # every point, independent of MB to 1e-6 (tmp/ms-validate/probe-sc03,
+    # MB = 4.7, 2.35, 0.47; finding F6).
+    "SC03": "restrict_ckm: no CKM counterterm in the UFO, so the complex CKM "
+    "leaves a UV pole in the QED correction (single pole = the QED operator "
+    "- 0.0213 alpha/2pi Born, as MadLoop's; finding F6)",
+}
 # The Ward extra in the real-mass scheme (m-sm/PLAN.md §1.4 Ward): the
 # identity holds only where no external coloured (gluon Ward) or charged
 # (photon Ward) particle has an absorptive self-energy at its mass, which
@@ -1732,11 +1750,7 @@ for r in R:
         entry["ward_parameters"] = WARD_PARAMETERS[r["id"]]
     if r["id"] in NO_CATANI:
         entry["catani"] = "none"
-        entry["catani_reason"] = (
-            "the massive-muon UFO copy: the UFO writes the lepton field "
-            "renormalisation for massless leptons (single pole = the massive "
-            "QED operator + 3 alpha/2pi Born)"
-        )
+        entry["catani_reason"] = NO_CATANI[r["id"]]
     if status == "pending":
         entry["pending"] = {
             "waits_for": waits[0] if len(waits) == 1 else list(waits),

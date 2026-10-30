@@ -74,6 +74,18 @@
    "evidence": "probe-sc02 (double-double, points 0 and 2): the QED-only and the joint request give the same QED^6 values; ours = the engine's massive QED Catani operator + 3 (alpha/2pi) Born to seven digits (the copy's massless lepton field renormalisation, as on LL02, where ours = MadLoop's control), while MadLoop's single pole is the operator - 42 (alpha/2pi) Born. Per PLAN \u00a74.1 Recola arbitrates a discrepancy above ~1e-5 (its own massive muon differs from the copy by the same field renormalisation)",
    "status": "open",
    "routed": "MS-REF (Recola on uux_mummp_ew_mm) / coordinator"
+  },
+  {
+   "id": "F6",
+   "category": "model: UV poles under restrict_ckm",
+   "title": "u d~ > e+ ve on the G_mu UFO's ckm restriction keeps a UV pole: its QED^6 single pole is the QED Catani operator - 0.0213 (alpha/2pi) Born, ours = MadLoop's",
+   "rows": [
+    "SC03"
+   ],
+   "checks": "rule 4, QED^6 single pole at every point (rule 1 = MadLoop QP; the QCD^2 QED^4 sector meets its operator exactly)",
+   "evidence": "probe-sc03 (double-double, points 0 and 1): the offset is -0.021297 / -0.021183 (alpha/2pi) Born and independent of MB to 1e-6 (MB = ymb = 4.7, 2.35, 0.47): not the b mass; the UFO has no CKM counterterm, so the complex CKM with the massive top is not UV finite (MadLoop alike). Rule 4 is not formed on SC03 (manifest catani none, its reason)",
+   "status": "open (model property; rule 4 not formed on the row)",
+   "routed": "coordinator (PLAN \u00a74.2 SC03: CKM rows need a CKM counterterm or a UV-pole exemption)"
   }
  ]
 }
