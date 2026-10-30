@@ -1789,6 +1789,10 @@ RELAXED = {
     "TT05": {"4": 1e-14},
     "TT06": {"4": 1e-13},
     "TT03": {"2": 1e-8, "4": 1e-8},
+    # h h > h h: the vanishing QED^6 single pole in binary64 is the rounding
+    # residue of the cancelling UV poles, -3.3e-15 = 1e-11 F_s at points 0
+    # and 3 (double-double 8e-33; tmp/ms-validate/f4).
+    "SC07": {"2": 1e-10, "4": 1e-10},
 }
 # Rule 4 not formed (status partial): the massive-muon copy of the G_mu UFO
 # (code Gm) changes only the muon mass in the restriction card, while the
