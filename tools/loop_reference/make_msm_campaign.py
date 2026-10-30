@@ -292,6 +292,9 @@ row("SC09", "W-scheme", "t t~ > z h QCD=0", "G0", "E", fixtures=["required/ttx_z
 for rid in ("uux_emep_ew", "udx_wpg_ew", "uux_ddx_ew", "emep_ttx_ew", "uux_ttx_ew", "gg_ttx_ew_tech", "ub_dt_ew",
             "ag_uux_ew", "gg_ttx_cms", "pp_emep_ew_P2_uux_emep", "udx_epve_ew_ckm"):
     runs[rid]["components"] = f"required/msm/components/{rid}.json"
+# CM09: the export's own photon conversion parameter per mu_R (m-sm/PLAN.md §1.5; MG5's
+# get_virtual_a0Gmu_conv takes its real part), madloop_parameters.py.
+runs["udx_epvea_cms"]["export_parameters"] = ["MDL_ECOUP_DGMUA0_UV_EW_FIN_"]
 # A row's components: those of its own runs; a uv row without a MadLoop run (LL01: an existing control
 # fixture) names its class's.
 for e in rows:

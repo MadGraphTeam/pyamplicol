@@ -407,6 +407,14 @@ def command_fixture(args, data, runs):
                                               {"mg5": root / "sources/MG5_aMC_v3_7_0", "reference": root})
             content["madloop_r2_couplings"] = references.madloop_r2_couplings(
                 root / run["export"], spec["madloop"]["model"], run.get("subprocess"))
+        if run.get("export_parameters"):
+            # Model parameters of the export at the run's card per mu_R (madloop_parameters.py).
+            record = json.loads((work_dir(root, run) / "export_parameters.json").read_text())
+            if set(record["values"]) != set(run["export_parameters"]) or record["mu_r"] != [
+                    str(m) for m in content["mu_r"]]:
+                raise SystemExit(f"{run['id']}: export_parameters.json does not hold {run['export_parameters']} "
+                                 "at the fixture's mu_r")
+            content["export_parameters"] = record
         content["mqcd_run"] = {k: run[k] for k in run if k != "points"}
         content["mqcd_run"]["points"] = run["points"]
         text = json.dumps(content, indent=1) + "\n"
@@ -616,7 +624,7 @@ def run_entry(root, run, fixture_path):
 
 
 RUN_RECORDS = ("corrections", "complex_mass_scheme", "scheme_conventions", "tagged_photon_legs",
-               "madloop_r2_couplings")
+               "madloop_r2_couplings", "export_parameters")
 
 
 def existing_entry(path, row, runs):
