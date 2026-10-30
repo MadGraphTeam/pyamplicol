@@ -86,6 +86,26 @@
    "evidence": "probe-sc03 (double-double, points 0 and 1): the offset is -0.021297 / -0.021183 (alpha/2pi) Born and independent of MB to 1e-6 (MB = ymb = 4.7, 2.35, 0.47); MS-REF's scheme record ew-gmu-ckm: the UFO's O(lambda^3) Wolfenstein CKM is not unitary, the remnant scales as lambda^4 (lamWS scan), MadLoop alike",
    "status": "open (model property; rule 4 not formed on the row)",
    "routed": "coordinator (PLAN \u00a74.2 SC03: CKM rows need a CKM counterterm or a UV-pole exemption)"
+  },
+  {
+   "id": "F7",
+   "category": "model: UV poles of the massive-muon copy",
+   "title": "e- e+ > mu- mu+ and u u~ > mu- mu+ on the massive-muon G_mu copy keep a UV pole: the copy writes the lepton field renormalisation of massless leptons",
+   "rows": [
+    "LL02",
+    "SC02"
+   ],
+   "checks": "rule 4 not formed on the rows (manifest catani none, its reason); rule 1 = MadLoop (LL02's control, SC02's CutTools re-run) at every point",
+   "evidence": "probe-sc02 (double-double): ours = the massive QED Catani operator + 3 (alpha/2pi) Born exactly, = MadLoop's; MS-REF's scheme record ew-gmu-mm: +3/2 Q^2 per muon leg (massless muon counterterms in the copy)",
+   "status": "accepted model property (the rows report partial: rule 4 not formed)",
+   "routed": "none (a property of the copied UFO, not of the engine)"
   }
+ ],
+ "coverage_notes": [
+  "rule 4 is not formed on LL02, SC02 (F7) and SC03 (F6): model properties, the rows report partial",
+  "the Ward extra is a diagnostic under the complex-mass scheme (CM05, CM07, CM09; PLAN 1.4/1.5) and not run on VV05 and ST03 in the real-mass scheme (F3)",
+  "rule 7 (nc) waits for Q4 (recommended (a): EW LC/NLC in M-FINAL, typed colour-declaration-coverage)",
+  "MP01, MP02 wait for MS-MODEL's multiparticle members (Q2)",
+  "rows failing on F1 (MS-MODEL's fix 4f99d7fe not integrated) and F2 record the raised error as their one failed check"
  ]
 }
