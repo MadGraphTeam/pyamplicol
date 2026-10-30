@@ -33,8 +33,8 @@
    ],
    "checks": "every check: native inputs fail in native_trees._parameter_program, Python inputs in scalar_bindings.ScalarBindingPlan (scalar_frontend.evaluator)",
    "evidence": "probe-f2 (SC08 on Python inputs, 2026-10-30): 2 of the 36 bound outputs fail alone, the t~ b W+ UV counterterm coupling c_UVtxbWp1EW at eps^-1 and eps^0. Its source holds the UFO's '0 if MB == 0 else <...>/MB...' counterterm parameters; scalar_frontend lowers an IfExp with both branches (symbolica::if(truth(if(equal(0,0),1,0)), 0, <else>)), so with MB fixed to 0 the untaken branch divides by zero (Symbolica: 'Created infinity by raising 0 to the power of -1') and the evaluator refuses the infinite coefficient. Rows without this coupling only log the warning. Candidate fix (owner's call): decide an IfExp whose lowered condition is a constant before lowering its branches (lower only the taken branch), in the scalar frontend that both input paths share; MP01@P4 (b b~ > e- e+) and MP02@P6 (b b~ > t t~) fail the same way (tmp/ms-validate/mp1)",
-   "status": "fixed on work/v2-ms-validate (19619e62: scalar_frontend decides a conditional whose test reads only exact numbers at lowering and lowers only its taken branch, as Python evaluates it; undecided tests stay native run-time conditionals; unit test test_fixed_condition_lowers_only_the_taken_branch): SC08 82/82, ST03 134/134, MP01@P4 and MP02@P6 pass (tmp/ms-validate/f4)",
-   "routed": "MS-VALIDATE (fixed in the package; reviewable as its own commit)"
+   "status": "fixed: a conditional whose test reads only exact numbers is decided at lowering and only its taken branch lowered, as Python evaluates it (this package's 19619e62; ms-ufo-patch landed the same fix, ScalarFunctionLibrary.decided_number with test_conditional_decided_by_its_bindings_forms_only_the_taken_branch, which the merge of slice 3eb4db9f keeps): SC08, ST03, MP01@P4 and MP02@P6 pass (f4, fs4)",
+   "routed": "closed (the slice's implementation kept)"
   },
   {
    "id": "F3",
@@ -87,8 +87,8 @@
    ],
    "checks": "rule 4, QED^6 single pole at every point (rule 1 = MadLoop QP; the QCD^2 QED^4 sector meets its operator exactly)",
    "evidence": "probe-sc03 (double-double, points 0 and 1): the offset is -0.021297 / -0.021183 (alpha/2pi) Born and independent of MB to 1e-6 (MB = ymb = 4.7, 2.35, 0.47); MS-REF's scheme record ew-gmu-ckm: the UFO's O(lambda^3) Wolfenstein CKM is not unitary, the remnant scales as lambda^4 (lamWS scan), MadLoop alike",
-   "status": "known model defect: UFOmodeldb issue #1 item 2 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1; DECISIONS 2026-10-30 ~11:45); rule 4 not formed on the row; the user's UFO patch (DECISIONS ~12:45, ms-ufo-patch) makes the CKM exactly unitary",
-   "routed": "upstream (UFOmodeldb #1 item 2); ms-ufo-patch"
+   "status": "resolved by the shipped models: UFOmodeldb issue #1 item 2 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1), the user's patch (DECISIONS 2026-10-30 ~12:45; MS-UFO-PATCH, slice 3eb4db9f) makes the CKM exactly unitary; SC03's rule 4 is formed again: its remaining 3.1e-7..1.1e-6 offset (= MadLoop's) is the EW counterterms' missing tau mass, the user's retained model limitation, relaxed to 1e-5 per the ~10:20 ruling (fs4)",
+   "routed": "closed (MS-UFO-PATCH)"
   },
   {
    "id": "F7",
@@ -139,14 +139,15 @@
    ],
    "checks": "none fail: ours = MadLoop (both read the UFO as shipped); a provider with its own renormalisation differs by the omitted term (ST04's MadLoop-Recola offset)",
    "evidence": "MS-UFODB (slice 0e5930c2): the omitted term explains ST04's MadLoop-Recola offset exactly",
-   "status": "known model defect: UFOmodeldb issue #1 item 3 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1; DECISIONS 2026-10-30 ~11:45); the user's UFO patch (DECISIONS ~12:45, ms-ufo-patch) restores the term",
-   "routed": "upstream (UFOmodeldb #1 item 3); ms-ufo-patch"
+   "status": "resolved by the shipped models: UFOmodeldb issue #1 item 3 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1), the user's patch (DECISIONS ~12:45; MS-UFO-PATCH, slice 3eb4db9f) restores dMB_eCoup_UV_EW; SC04, TT06 and ST04 are re-referenced with MadLoop QP + Recola on the patched model",
+   "routed": "closed (MS-UFO-PATCH)"
   }
  ],
  "coverage_notes": [
-  "rule 4 is not formed on LL02, SC02 (F7) and SC03 (F6): model properties, the rows report partial",
+  "rule 4 is not formed on LL02 and SC02 (F7): a model property, the rows report partial",
   "the Ward extra is a diagnostic under the complex-mass scheme (CM05, CM07, CM09; PLAN 1.4/1.5) and not run on VV05 and ST03 in the real-mass scheme (F3)",
   "rule 7 (nc) is not run: EW LC/NLC is never supported (USER Q4, 2026-10-30 ~08:10; typed colour-declaration-coverage)",
-  "a row whose evaluation raises records the error as its one failed check (the F1 and F2 rows did until the package's fixes 52eaff60 and 19619e62)"
+  "a row whose evaluation raises records the error as its one failed check (the F1 and F2 rows did until the fixes: 52eaff60, and 19619e62 / ms-ufo-patch's decided_number)",
+  "on the shipped patched models (MS-UFO-PATCH) MadLoop's exports call every R2 coupling the engine inserts (the R2 rule finds no omission; on the unpatched models R2_G0tt_b on LL10, TT04, SC09, TT05)"
  ]
 }
