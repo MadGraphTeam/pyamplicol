@@ -963,7 +963,7 @@ $C fixture uux_emep_ew && $C manifest
 
 | File | Role |
 |---|---|
-| `make_msm_campaign.py` -> `msm_campaign.json` | the 70 core rows of §4.2 (the decay rows wait for the user's Q3) with their model codes (`restriction_codes`: G0, Ga, Gb, Gm, Gk, Gt, Gc, Gca, Lc, Az, L5) and 69 MadLoop runs; `layout` puts work directories under `runs/msm/`, fixtures under `tests/fixtures/loop/required/msm/` and the manifest at `required/msm_references.json` (`msm-references/1`) |
+| `make_msm_campaign.py` -> `msm_campaign.json` | the 70 core rows of §4.2 (the decay rows wait for the user's Q3) and SC10 (z z > h h: the R2 vertices of the coupling R2_ZZHH, MS-UFODB) with their model codes (`restriction_codes`: G0, Ga, Gb, Gm, Gk, Gt, Gc, Gca, Lc, Az, L5) and 71 MadLoop runs; `layout` puts work directories under `runs/msm/`, fixtures under `tests/fixtures/loop/required/msm/` and the manifest at `required/msm_references.json` (`msm-references/1`) |
 | `required_processes.json` | new schemes `ew-gmu-a0`, `ew-gmu-cms`, `ew-gmu-a0-cms`, `qcd-cms`, `ew-gmu-ckm`, `ew-gmu-mm`, `ew-gmu-tech` and the `role: msm` processes (new keys only) |
 | `madloop_ct_couplings.py` | the UFO counterterm couplings behind an export's calls (`<export>.ct_couplings.json`; madloop_export.py writes it for new exports) |
 | `madloop_parameters.py` | model parameters of an export at a run's card per mu_R (`<work>/export_parameters.json`, copied into the fixture of a run listing `export_parameters`: CM09's complex photon conversion parameter) |
@@ -1017,7 +1017,8 @@ squared split order printed. What M-SM adds:
   fixtures merged before (`mqcd/udx_wpa_zero.json` has absolute rows) keep the old maximum over all rows (no test
   reads it; a re-merge would change only that field).
 * **ST04** commits ew-validate's workspace run `udx_tbx_ew_mb` as `required/udx_tbx_ew_mb.json`, re-merged with
-  Recola excluded (its massive-b setting differs by 3e-4..1e-3; §4.1).
+  Recola excluded (it differs by 9.48e-5 x Born: the G_mu UFO's CT couplings omit `dMB_eCoup_UV_EW`, the b-mass term
+  of the charge counterterm, a UFO defect found by MS-UFODB; MadLoop and pyAmpliCol read the UFO).
 
 ## NJet: the all-gluon ladder up to g g -> g g g g g (`njet/`)
 
