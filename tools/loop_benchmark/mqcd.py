@@ -302,6 +302,10 @@ class Row:
     # [U2]: the request lowers a Levi-Civita cell its veto keeps from
     # cancelling (``SliceRequest.allow_anomalous_veto``; SC05's d s b veto).
     allow_anomalous_veto: bool = False
+    # The request's ``loop.external_photons`` (``SliceRequest.external_
+    # photons``: "final", "all", "none" or 1-based leg labels, MG5_aMC's
+    # ``!a!`` tags); None: the engine's default ("final").
+    external_photons: str | tuple[int, ...] | None = None
     # Why a row forms no rule 4 (``catani`` "none"), when not the public
     # route's reason.
     catani_reason: str = ""
@@ -380,6 +384,9 @@ class Row:
             if data.get("madloop_r2_called") is None
             else tuple(data["madloop_r2_called"]),
             allow_anomalous_veto=bool(data.get("allow_anomalous_veto", False)),
+            external_photons=data.get("external_photons")
+            if not isinstance(data.get("external_photons"), list)
+            else tuple(int(x) for x in data["external_photons"]),
             catani_reason=data.get("catani_reason", ""),
         )
 
@@ -1335,6 +1342,7 @@ def slice_request(row: Row, **changes: Any) -> Any:
                 ("compatibility", row.compatibility),
                 ("scale_parameter", row.scale_parameter),
                 ("allow_anomalous_veto", row.allow_anomalous_veto or None),
+                ("external_photons", row.external_photons),
             )
             if value is not None
         },
@@ -3803,14 +3811,16 @@ class Campaign:
                 return self._runs[name]
             base = None
             # A variant shares its base row's generation unless it is a
-            # subprocess of it (M01) or runs on another restriction (the
-            # restricted-UFO variants of the 5F* rows).
+            # subprocess of it (M01), runs on another restriction (the
+            # restricted-UFO variants of the 5F* rows) or tags other photons
+            # (PI01's "all" twin).
             if (
                 row.base is not None
                 and self.rows[row.base].active
                 and not row.subprocess
                 and row.restriction == self.rows[row.base].restriction
                 and row.model == self.rows[row.base].model
+                and row.external_photons == self.rows[row.base].external_photons
             ):
                 base = self.run(row.base)
             self._runs[name] = RowRun(

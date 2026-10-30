@@ -162,8 +162,9 @@ def photons(tagged, sector=None):
 N = "N"  # a new MadLoop job (MS-REF)
 # Packages integrated on the slice: a row stops waiting for them (EWI-7,
 # ew-validate, integrated at 753120c3 with its fixtures ttx_ttx_ew,
-# ttx_zh_ew, udx_tbx_ew).
-LANDED = {"EWI-7"}
+# ttx_zh_ew, udx_tbx_ew; MS-PHOTON, per-leg photon tagging
+# ``loop.external_photons``, integrated at 870e092f).
+LANDED = {"EWI-7", "MS-PHOTON"}
 
 
 # ---- LL: lepton-only
@@ -841,6 +842,8 @@ row(
     ["a0"],
     ["2->2", "photon:initial"],
     waits=("MS-REF", "MS-PHOTON"),
+    notes="the default photon tags (\"final\"): both initial photons untagged, raw MadLoop and -gamma_gamma/eps each in rule 4; the twin @all tags both (Q1 (a), MG5_aMC's !a! on initial photons)",
+    photon_twin={"name": "all", "code": "Ga", "external_photons": "all", "tagged": 2},
 )
 row(
     "PI02",
@@ -1425,6 +1428,44 @@ def called_couplings(reference):
 
 for r in R:
     apply_msref(r)
+
+
+def add_photon_twin(r):
+    """A row's photon-tagging twin (PLAN §4.2 PI01: the same MadLoop run,
+    another ``loop.external_photons`` on the twin's model code): a variant
+    with its own request and generation (``mqcd.Campaign.run``), the run's
+    reference converted by MG5's alpha(0) formula over the twin's tagged
+    photons."""
+
+    twin = r["more"].pop("photon_twin", None)
+    if not twin or not r["ref"] or r["ref"].get("format") != "required":
+        return
+    _model, restriction, fixed, scheme, _alpha = CODES[twin["code"]]
+    data = _fixture(r["ref"]["path"].removeprefix(f"{FIX}/"))
+    reference = {k: v for k, v in r["ref"].items() if k != "photon_conversion"}
+    reference["photon_conversion"] = _photon_spec(data, _ew_sector(data), n=twin["tagged"])
+    r["more"].setdefault("variants", []).append({
+        "name": twin["name"],
+        "gating": True,
+        "tier": r["tier"] if r["tier"] != "default" else "nightly",
+        "restriction": restriction,
+        "restriction_code": twin["code"],
+        "fixed_parameters": dict(fixed),
+        "scheme": scheme,
+        "external_photons": twin["external_photons"],
+        "parameters": {"aEW0M1": ALPHA0_INVERSE},
+        "reference": reference,
+        "points": {"nightly": list(range(len(data["points"])))},
+        "extras": [],
+        "extras_pending": {},
+        "notes": f"loop.external_photons = {twin['external_photons']!r} on "
+        f"{twin['code']}: {twin['tagged']} tagged photons, raw MadLoop x MG5's "
+        "alpha(0) formula over them (one MadLoop job serves both twins)",
+    })  # fmt: skip
+
+
+for r in R:
+    add_photon_twin(r)
 
 # Extras the harness checks (``mqcd.IMPLEMENTED_EXTRAS``) and why the others
 # wait (m-sm/PLAN.md §4.1 extras).
