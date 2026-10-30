@@ -1810,13 +1810,24 @@ for r in R:
 # The nightly tier's file jobs (each within PLAN §3.2's 30 minutes): measured
 # seconds per id where a run measured them (mqcd_manifest's packing), else
 # DEFAULT_SECONDS per EW generation.
-# (seconds, points) per id, wall time of one process per row (the c2 run of
-# tmp/ms-validate, 2026-10-29 ~22:40 UTC, 4 cores each, host load ~80;
-# generation 40-250 s each, the extras included).
+# (seconds, points) per id: a row process's own seconds (generation,
+# export, its points in both carriers and its extras, + 60 s of imports and
+# model compilation) from the campaign records (tmp/ms-validate c2, c4, m1,
+# m2, 2026-10-29/30, 4 cores each, host load ~70-120); ids without a
+# record (F1/F2 rows) take DEFAULT_SECONDS.
 MEASURED_SECONDS: dict[str, tuple[int, int]] = {
-    "DY05": (652, 3), "LL01": (293, 3), "LL02": (306, 3), "LL03": (68, 3),
-    "LL10": (322, 3), "SC01": (330, 4), "SC05": (30, 3), "TT01": (472, 3),
-    "TT05": (453, 3), "TV06": (453, 3), "VJ03": (256, 3), "VV06": (247, 3),
+    "DY01": (411, 4), "DY01@mwmz": (88, 4), "DY02": (360, 4), "DY03": (130, 4),
+    "DY04": (370, 4), "DY05": (1115, 3), "DY07": (398, 4), "DY08": (405, 4),
+    "JJ01": (380, 4), "JJ02": (361, 4), "JJ03": (234, 4), "JJ04": (433, 4),
+    "LL01": (346, 3), "LL02": (359, 3), "LL03": (123, 3), "LL05": (389, 4),
+    "LL08": (360, 4), "LL09": (360, 4), "LL10": (376, 3), "SC01": (344, 4),
+    "SC02": (399, 4), "SC05": (86, 3), "SC09": (414, 3), "ST01": (365, 4),
+    "ST02": (348, 3), "ST04": (343, 3), "TT01": (524, 3), "TT02": (365, 4),
+    "TT03": (539, 4), "TT04": (420, 3), "TT05": (416, 3), "TT06": (431, 3),
+    "TV01": (323, 4), "TV02": (355, 4), "TV06": (416, 3), "VJ01": (451, 4),
+    "VJ02": (213, 4), "VJ03": (460, 3), "VV01": (389, 4), "VV01@4tev": (76, 2),
+    "VV03": (378, 4), "VV05": (372, 4), "VV05@zero": (79, 3), "VV06": (306, 3),
+    "VV07": (823, 4),
 }  # fmt: skip
 DEFAULT_SECONDS = 600
 JOB_SECONDS = 1500
@@ -1971,7 +1982,7 @@ manifest = {
     "smokes": {"restrictions": smokes, "jobs": smoke_jobs},
     "nightly_jobs": {
         "budget_seconds": JOB_SECONDS,
-        "measurement": "DEFAULT_SECONDS per id until a nightly run measures them",
+        "measurement": "MEASURED_SECONDS per id (the campaign records), DEFAULT_SECONDS without one",
         "jobs": jobs,
     },
     "rows": rows,
