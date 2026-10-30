@@ -1275,6 +1275,19 @@ def msref_reference(path, run):
     return spec
 
 
+def zero_points(path):
+    """Born-zero points of an MS-REF run (its per-point reference records
+    compare absolutely against a regular neighbour, PLAN §4.1 S1) -> that
+    neighbour's row (``mqcd.Row.zero_points``)."""
+
+    rows = _fixture(path)["rows"]
+    return {
+        str(i): row["reference"]["absolute_scale_row"]
+        for i, row in enumerate(rows)
+        if (row.get("reference") or {}).get("comparison") == "absolute"
+    }
+
+
 def _same_point(a, b):
     from fractions import Fraction
 
@@ -1311,6 +1324,8 @@ def apply_msref(r):
             r["extras"].append("uv")
         if known[main].get("point_labels"):
             r["more"]["special_points"] = known[main]["point_labels"]
+        if zero_points(main):
+            r["more"]["zero_points"] = zero_points(main)
         stem = Path(main).stem
         variants = list(r["more"].get("variants", ()))
         for other in binding[1:]:
@@ -1325,6 +1340,7 @@ def apply_msref(r):
                 "extras": [],
                 "extras_pending": {},
                 "notes": known[other].get("note") or "",
+                "zero_points": zero_points(other),
             })  # fmt: skip
         if variants:
             r["more"]["variants"] = variants
@@ -1517,6 +1533,13 @@ VANISHING = {
     # g b > t t~ b (massive b) with QED corrections: every charged leg
     # massive (ours exactly 0, MadLoop's 1e-17 of the Born; c3 2026-10-30).
     "TT06": [{"sector": "total", "coefficient": "double_pole"}],
+    # The QED corrections of top-pair processes whose other legs are neutral
+    # (g g > t t~ h / z / g): no massless charged leg, so no soft-collinear
+    # photon pole (MS-REF's runs, tmp/ms-validate/m1 2026-10-30: ours
+    # 1e-42 to 1e-38 of the Born, MadLoop's 1e-27 to 1e-20).
+    "TV01": [{"sector": "QCD^4 QED^4", "coefficient": "double_pole"}],
+    "TV02": [{"sector": "QCD^4 QED^4", "coefficient": "double_pole"}],
+    "TT03": [{"sector": "QCD^6 QED^2", "coefficient": "double_pole"}],
 }
 # Rule 1's tolerance per row (nominal 1e-12; 1e-10 from 2->4 up where the
 # providers' precision needs it, the user's ruling of 2026-10-29 ~01:12; and
@@ -1527,7 +1550,16 @@ VANISHING = {
 # MadLoop's quadruple precision at point 2; TT06 against MadLoop's double
 # precision counterterm parameters (goldstone-mixing.json; ew-validate held
 # its finite parts at 1e-8; c3 2026-10-30: 4e-11 to 1.1e-9).
-RULE1 = {"LL10": 1e-10, "TV06": 1e-10, "TV07": 1e-10, "TT06": 1e-8}
+# VV07 and TT03 (2->3) against MadLoop's quadruple precision (m1: up to
+# 5.3e-11 and 1.4e-11): 1e-10, as the 2->4 rows.
+RULE1 = {
+    "LL10": 1e-10,
+    "TV06": 1e-10,
+    "TV07": 1e-10,
+    "TT06": 1e-8,
+    "VV07": 1e-10,
+    "TT03": 1e-10,
+}
 # Relaxed rules per row (the user's ruling of ~10:20, at most 1e-5): SC05's
 # poles against Catani in double-double, 2.9e-14 and 4.2e-14 at point 0
 # (the fixture's binary64 points are on shell and conserve momentum to
@@ -1613,7 +1645,14 @@ for r in R:
     if model != LOOPSM:
         entry["compatibility"] = "gmu_particle_anti"
         entry["scale_parameter"] = "MU_R"
-    for key in ("parameters", "inputs", "variants", "catani", "allow_anomalous_veto"):
+    for key in (
+        "parameters",
+        "inputs",
+        "variants",
+        "catani",
+        "allow_anomalous_veto",
+        "zero_points",
+    ):
         if key in r["more"]:
             entry[key] = r["more"][key]
     if "veto" in r["more"]:
