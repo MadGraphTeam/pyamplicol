@@ -333,7 +333,7 @@ row(
     [(1, 2)],
     "E required/uux_emepg_ew.json (3 providers, s^2e^6) + N top-up s^4e^4 ~3 min",
     req("uux_emepg_ew"),
-    ["ward", "joint", "ap", "nc"],
+    ["ward", "joint", "ap"],
     ["2->3", "initial:qqbar"],
     notes="the s^2e^6 sector of the existing reference; the s^4e^4 top-up (MS-REF) extends the request to both sectors",
 )
@@ -360,7 +360,7 @@ row(
     [(2, 2)],
     "N ~8-15 min",
     None,
-    ["nc"],
+    [],
     ["2->4"],
     waits="MS-REF",
 )
@@ -1081,7 +1081,7 @@ row(
         "mu_r2": "1000000",
         "parameters": CONTROL_PARAMETERS,
     },
-    ["nc"],
+    [],
     ["2->2", "quark-final-state"],
 )
 row(
@@ -1560,8 +1560,10 @@ for r in R:
 
 # Extras the harness checks (``mqcd.IMPLEMENTED_EXTRAS``) and why the others
 # wait (m-sm/PLAN.md §4.1 extras).
+# PLAN §4.1's nc extra (rule 7, EW LC/NLC) is dropped: the user ruled Q4
+# (2026-10-30 ~08:10) that EW LC/NLC is never supported (the typed
+# colour-declaration-coverage refusal is permanent).
 PENDING_EXTRAS = {
-    "nc": "Q4 (a, recommended, pending with the user): EW LC/NLC is M-FINAL (typed colour-declaration-coverage refusal)",
     "hel": "MS-REF (per-helicity SLOOPMATRIXHEL references)",
     "sp": "MS-REF (special points S1-S4)",
 }

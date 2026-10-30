@@ -131,8 +131,7 @@
  "coverage_notes": [
   "rule 4 is not formed on LL02, SC02 (F7) and SC03 (F6): model properties, the rows report partial",
   "the Ward extra is a diagnostic under the complex-mass scheme (CM05, CM07, CM09; PLAN 1.4/1.5) and not run on VV05 and ST03 in the real-mass scheme (F3)",
-  "rule 7 (nc) waits for Q4 (recommended (a): EW LC/NLC in M-FINAL, typed colour-declaration-coverage)",
-  "MP01, MP02 wait for MS-MODEL's multiparticle members (Q2)",
-  "rows failing on F1 (MS-MODEL's fix 4f99d7fe not integrated) and F2 record the raised error as their one failed check"
+  "rows failing on F1 (MS-MODEL's fix 4f99d7fe not integrated) and F2 record the raised error as their one failed check",
+  "rule 7 (nc) is not run: EW LC/NLC is never supported (USER Q4, 2026-10-30 ~08:10; typed colour-declaration-coverage)"
  ]
 }
