@@ -5,7 +5,7 @@ risk 13): generate the row's slice under the complex-mass scheme, run
 carriers (binary64, double-double, AP(40) and AP(60)) at some of them, the
 check of the ``Float`` route's complex-mass boxes.
 
-    python -m tools.loop_benchmark.master_census_rows CM07 OUT [--carriers 0] [--no-ap60]
+    python -m tools.loop_benchmark.master_census_rows CM07 OUT --carriers 0 --no-ap60
 
 Writes ``OUT/census.json``. CM01 reads ``tests/fixtures/loop/
 cms-ufo-standard-gmu.json`` (its finite block), CM10 loop_sm, the other rows
@@ -122,7 +122,9 @@ def _row(row: str, cache: Path) -> tuple[Any, Any, list, list, dict, float]:
             compiled, fixed_parameters=ref["fixed_parameters"], cache_dir=cache
         )
         fixed = {
-            k: v for k, v in ref["fixed_parameters"].items() if k in model.parameter_defaults
+            k: v
+            for k, v in ref["fixed_parameters"].items()
+            if k in model.parameter_defaults
         }
         request = SliceRequest(
             process, ref["born_orders"], ref["loop_orders"], fixed_parameters=fixed
@@ -136,9 +138,13 @@ def _row(row: str, cache: Path) -> tuple[Any, Any, list, list, dict, float]:
             gauge="feynman",
         )
         widths = {k: v for k, v in ref["fixed_parameters"].items() if k.startswith("W")}
-        model, _ = complex_mass_model(compiled, fixed_parameters=widths, cache_dir=cache)
+        model, _ = complex_mass_model(
+            compiled, fixed_parameters=widths, cache_dir=cache
+        )
         fixed = {
-            k: v for k, v in ref["fixed_parameters"].items() if k in model.parameter_defaults
+            k: v
+            for k, v in ref["fixed_parameters"].items()
+            if k in model.parameter_defaults
         }
         madloop = ref["process"]
         corrections = tuple(sorted(madloop.split("[virt=")[1].split("]")[0].split()))
@@ -175,7 +181,9 @@ def _values(result) -> dict[str, list[Decimal]]:
 
     values = {"born": [sum(real(v) for v in result.born.values())]}
     for sector, laurent in result.components["virtual"].items():
-        values[str(sorted(dict(sector).items()))] = [real(x) for x in laurent.coefficients]
+        values[str(sorted(dict(sector).items()))] = [
+            real(x) for x in laurent.coefficients
+        ]
     return values
 
 
@@ -207,7 +215,9 @@ def main(argv: list[str] | None = None) -> None:
         "--carriers",
         help="comma-separated point indices at which to compare the carriers",
     )
-    parser.add_argument("--no-ap60", action="store_true", help="AP(40) is the reference")
+    parser.add_argument(
+        "--no-ap60", action="store_true", help="AP(40) is the reference"
+    )
     args = parser.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
     start = time.time()
@@ -219,7 +229,9 @@ def main(argv: list[str] | None = None) -> None:
         args.row, args.out / "cache"
     )
     slice_ = LoopSlice.generate(model, request, load_loop_native())
-    log("generated; maxrss GB", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6)
+    log(
+        "generated; maxrss GB", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6
+    )
     executor = NativeExecutor(slice_, inputs="native")
     found = slice_census(executor, points, scales, parameters)
     record: dict[str, Any] = {
