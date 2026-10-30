@@ -1556,6 +1556,10 @@ VANISHING = {
     # The QCD x EW Born interference of s-channel q q~ > t t~ (a colour
     # octet against singlets: Tr T^a = 0; ours 0, MadLoop's 1e-17).
     "TT02": [{"sector": "QCD^2 QED^2", "coefficient": "born"}],
+    # h h > h h: neutral scalars only, no IR pole and the UV poles cancel
+    # (ours 1e-33, MadLoop's 1e-17 of the Born; tmp/ms-validate/f1 with the
+    # plan-rank fix of finding F1).
+    "SC07": [{"sector": "total", "coefficient": "single_pole"}],
 }
 # Rule 1's tolerance per row (nominal 1e-12; 1e-10 from 2->4 up where the
 # providers' precision needs it, the user's ruling of 2026-10-29 ~01:12; and
