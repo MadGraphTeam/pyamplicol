@@ -2,30 +2,28 @@
  "source": "tests/fixtures/loop/msm/manifest.json + campaign records (tests/unit/test_loop_v2_msm_*.py, PYAMPLICOL_MQCD_RESULTS)",
  "rules": "m-sm/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
  "branch": "work/v2-ms-validate",
- "records": "fs (70b47429: every row but the complex-mass ones), cm1/cm2 (ecbf8f88), cm3 (bb9cc017), restriction smokes s3 (566e263f) and s4 (0c170bcf); non-CMS plans are byte-identical across ms-cms-n's merge",
- "native": "loop-native-v2-slice-54ec03c5 (fs), loop-native-ms-cms-n-0fa6d19c = loop-native-v2-slice-a359965c (cm1-cm3)",
+ "records": "fs (70b47429: the non-CMS rows), cm1/cm2 (ecbf8f88) and cm3 (bb9cc017): complex-mass rows, mp1 (9f679158: VV02 after MS-MODEL's split, the MP expansion), cm4 (f30a55b2: CM07 after MS-CMS's fix round 1), mp3 (19c5e23e..f9cc1625: the MP members, CM04), d2 (23c5254e: the default tier VJ02 + TT01, TT01 nightly), restriction smokes s3 (566e263f) and s4 (0c170bcf); later override earlier; non-CMS plans byte-identical across the CMS and MS-GEN merges",
+ "natives": "loop-native-v2-slice-54ec03c5 (fs), loop-native-v2-slice-a359965c (cm1-cm4, mp1, mp3), loop-native-v2-slice-b27a8e5c (d2)",
  "counts": {
-  "pass": 51,
+  "pass": 55,
   "partial": 3,
-  "fail": 13,
-  "pending": 2,
-  "not-run": 1
+  "fail": 12,
+  "pending": 0,
+  "not-run": 0
  },
  "classes": {
   "W-CMS": {
-   "pass": 7,
-   "rows": 9,
-   "fail": 1,
-   "not-run": 1
+   "pass": 9,
+   "rows": 9
   },
   "W-DY": {
    "pass": 7,
    "rows": 7
   },
   "W-V": {
-   "pass": 8,
+   "pass": 9,
    "rows": 13,
-   "fail": 5
+   "fail": 4
   },
   "W-jets": {
    "pass": 4,
@@ -37,13 +35,12 @@
    "partial": 1
   },
   "W-multi": {
-   "pending": 2,
+   "fail": 2,
    "rows": 2
   },
   "W-photon": {
-   "pass": 3,
-   "rows": 4,
-   "fail": 1
+   "pass": 4,
+   "rows": 4
   },
   "W-scheme": {
    "pass": 3,
@@ -63,6 +60,20 @@
   }
  },
  "smokes_and_expansions": {
+  "expansion:MP01": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 3,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "expansion:MP02": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 3,
+   "failed_checks": [],
+   "status": "pass"
+  },
   "smoke:loop_qcd_qed_sm:ckm": {
    "tier": "nightly",
    "passed": true,
@@ -1142,12 +1153,9 @@
    "extras": [
     "ward",
     "joint",
-    "ap",
-    "nc"
+    "ap"
    ],
-   "extras_pending": {
-    "nc": "Q4 (a, recommended, pending with the user): EW LC/NLC is M-FINAL (typed colour-declaration-coverage refusal)"
-   },
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -1299,12 +1307,8 @@
     ]
    },
    "reference_legend": "N ~8-15 min",
-   "extras": [
-    "nc"
-   ],
-   "extras_pending": {
-    "nc": "Q4 (a, recommended, pending with the user): EW LC/NLC is M-FINAL (typed colour-declaration-coverage refusal)"
-   },
+   "extras": [],
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-10,
@@ -1495,10 +1499,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 112.84,
-      "export_s": 7.55,
-      "double_double_s_per_point": 6.47,
-      "double_s_per_point": 0.55
+      "generate_s": 82.26,
+      "export_s": 7.07,
+      "double_double_s_per_point": 6.04,
+      "double_s_per_point": 0.48
      },
      "failed_checks": []
     },
@@ -1917,7 +1921,7 @@
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {},
-   "status": "fail",
+   "status": "pass",
    "tiers": {
     "nightly": {
      "points": [
@@ -1926,40 +1930,65 @@
       2,
       3
      ],
-     "passed": false,
-     "checks": 1,
-     "failures": 1,
-     "max_dd_vs_reference": null,
-     "max_binary64_vs_dd": null,
-     "max_catani_dd": null,
-     "max_catani_binary64": null,
+     "passed": true,
+     "checks": 261,
+     "failures": 0,
+     "max_dd_vs_reference": 2.0179343706395182e-14,
+     "max_binary64_vs_dd": 2.0270612717913676e-12,
+     "max_catani_dd": 5.784079311779261e-30,
+     "max_catani_binary64": 1.5220820371850955e-13,
      "catani_not_formed": false,
-     "binary64_vs_reference": {},
+     "binary64_vs_reference": {
+      "born": 1.146464162913645e-15,
+      "finite": 2.026418404471481e-12,
+      "single_pole": 1.4978628615628113e-13,
+      "double_pole": 1.2368183793475288e-15
+     },
      "ward": null,
-     "no_reference": [],
-     "binary64_out_of_scope": [],
-     "timings": {},
-     "failed_checks": [
+     "no_reference": [
       {
-       "rule": "eval",
-       "point": null,
-       "carrier": "",
-       "sector": "",
-       "coefficient": "generation or evaluation",
-       "error": Infinity,
-       "bound": 0.0,
-       "note": "ValueError: loop v2 plan: a trace step above the family rank"
+       "point": 0,
+       "reason": "MQ-REF: point-sensitive helicity: its printed binary64 Born misses the quadruple-precision one by 1.9e-13 > 1e-13, so its value depends on MadLoop's ~1e-16 repair of the binary64 rounding of the point; not asserted (a madloop_qp_point run is its reference)"
+      },
+      {
+       "point": 0,
+       "reason": "MQ-REF: point-sensitive helicity: its printed binary64 Born misses the quadruple-precision one by 3.2e-11 > 1e-13, so its value depends on MadLoop's ~1e-16 repair of the binary64 rounding of the point; not asserted (a madloop_qp_point run is its reference)"
+      },
+      {
+       "point": 0,
+       "reason": "MQ-REF: point-sensitive helicity: its printed binary64 Born misses the quadruple-precision one by 1.2e-13 > 1e-13, so its value depends on MadLoop's ~1e-16 repair of the binary64 rounding of the point; not asserted (a madloop_qp_point run is its reference)"
+      },
+      {
+       "point": 0,
+       "reason": "MQ-REF: point-sensitive helicity: its printed binary64 Born misses the quadruple-precision one by 2.2e-13 > 1e-13, so its value depends on MadLoop's ~1e-16 repair of the binary64 rounding of the point; not asserted (a madloop_qp_point run is its reference)"
+      },
+      {
+       "point": 0,
+       "reason": "MQ-REF: point-sensitive helicity: its printed binary64 Born misses the quadruple-precision one by 4.5e-11 > 1e-13, so its value depends on MadLoop's ~1e-16 repair of the binary64 rounding of the point; not asserted (a madloop_qp_point run is its reference)"
+      },
+      {
+       "point": 0,
+       "reason": "MQ-REF: point-sensitive helicity: its printed binary64 Born misses the quadruple-precision one by 2.2e-13 > 1e-13, so its value depends on MadLoop's ~1e-16 repair of the binary64 rounding of the point; not asserted (a madloop_qp_point run is its reference)"
       }
-     ]
+     ],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 265.9,
+      "export_s": 26.07,
+      "double_double_s_per_point": 6.77,
+      "double_s_per_point": 0.78,
+      "hel_s": 30.26
+     },
+     "failed_checks": []
     }
    },
    "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": null,
-   "max_binary64_vs_dd": null,
-   "max_catani_dd": null,
+   "max_dd_vs_reference": 2.0179343706395182e-14,
+   "max_binary64_vs_dd": 2.0270612717913676e-12,
+   "max_catani_dd": 5.784079311779261e-30,
    "max_ward_dd": null
   },
   {
@@ -2018,10 +2047,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 263.74,
-      "export_s": 24.5,
-      "double_double_s_per_point": 7.425,
-      "double_s_per_point": 1.2275
+      "generate_s": 270.85,
+      "export_s": 23.85,
+      "double_double_s_per_point": 7.4075,
+      "double_s_per_point": 0.965
      },
      "failed_checks": []
     }
@@ -2776,7 +2805,7 @@
     "QCD",
     "QED"
    ],
-   "tier": "nightly",
+   "tier": "default",
    "reference": {
     "format": "sectors",
     "parameters_from": 1,
@@ -2825,23 +2854,51 @@
    "relaxed": {},
    "status": "pass",
    "tiers": {
-    "nightly": {
+    "default": {
      "points": [
       0,
-      1,
+      1
+     ],
+     "passed": true,
+     "checks": 67,
+     "failures": 0,
+     "max_dd_vs_reference": 5.6664852389212615e-15,
+     "max_binary64_vs_dd": 6.818195345327896e-15,
+     "max_catani_dd": 6.6241702926717705e-31,
+     "max_catani_binary64": 7.0705740871690394e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 5.969593892974336e-16,
+      "finite": 5.489963240136491e-15,
+      "single_pole": 1.155848859698345e-14,
+      "double_pole": 8.829582071131196e-16
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 74.98,
+      "export_s": 15.76,
+      "double_double_s_per_point": 7.475,
+      "double_s_per_point": 0.745
+     },
+     "failed_checks": []
+    },
+    "nightly": {
+     "points": [
       2
      ],
      "passed": true,
-     "checks": 122,
+     "checks": 56,
      "failures": 0,
      "max_dd_vs_reference": 5.877075609107218e-15,
      "max_binary64_vs_dd": 8.165067612493781e-15,
-     "max_catani_dd": 6.6241702926717705e-31,
+     "max_catani_dd": 6.242611611791825e-31,
      "max_catani_binary64": 8.963070141447462e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.0925164364064087e-15,
-      "finite": 5.489963240136491e-15,
+      "finite": 3.838782642876709e-15,
       "single_pole": 1.4042143221600952e-14,
       "double_pole": 1.5865523623453646e-15
      },
@@ -2849,12 +2906,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 168.86,
-      "export_s": 16.18,
-      "double_double_s_per_point": 6.916666666666667,
-      "double_s_per_point": 0.7133333333333334,
-      "ap_s": 13.08,
-      "joint_s": 248.48
+      "generate_s": 59.38,
+      "export_s": 16.12,
+      "double_double_s_per_point": 9.14,
+      "double_s_per_point": 0.7,
+      "ap_s": 11.58,
+      "joint_s": 137.86
      },
      "failed_checks": []
     }
@@ -4731,7 +4788,7 @@
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {},
-   "status": "fail",
+   "status": "pass",
    "tiers": {
     "nightly": {
      "points": [
@@ -4740,109 +4797,39 @@
       2,
       3
      ],
-     "passed": false,
+     "passed": true,
      "checks": 82,
-     "failures": 4,
-     "max_dd_vs_reference": 0.9872012711864406,
+     "failures": 0,
+     "max_dd_vs_reference": 3.2108603520216424e-15,
      "max_binary64_vs_dd": 4.910075344536165e-14,
-     "max_catani_dd": 1.0,
+     "max_catani_dd": 3.869558283027002e-30,
      "max_catani_binary64": 5.012469275668022e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 4.1855185563526666e-15,
       "finite": 1.1545881270910024e-14,
       "single_pole": 4.7471032551914796e-14,
-      "double_pole": 1.0
+      "double_pole": 1.0125667776291103e-16
      },
      "ward": null,
      "no_reference": [],
-     "binary64_out_of_scope": [
-      {
-       "point": 0,
-       "sector": "QED^6",
-       "coefficient": "double_pole",
-       "E": 4.879206579867725,
-       "true_error": 1.0
-      },
-      {
-       "point": 1,
-       "sector": "QED^6",
-       "coefficient": "double_pole",
-       "E": 7.110897651961138,
-       "true_error": 1.0
-      },
-      {
-       "point": 2,
-       "sector": "QED^6",
-       "coefficient": "double_pole",
-       "E": 7.062974194769291,
-       "true_error": 1.0
-      },
-      {
-       "point": 3,
-       "sector": "QED^6",
-       "coefficient": "double_pole",
-       "E": 4.879206579867725,
-       "true_error": 1.0
-      }
-     ],
+     "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 268.82,
-      "export_s": 27.98,
-      "double_double_s_per_point": 9.2725,
-      "double_s_per_point": 1.3975
+      "generate_s": 250.94,
+      "export_s": 29.17,
+      "double_double_s_per_point": 9.2125,
+      "double_s_per_point": 1.4025
      },
-     "failed_checks": [
-      {
-       "rule": "1",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QED^6",
-       "coefficient": "double_pole",
-       "error": 0.9789905350778058,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 1.22e-31; Born from madloop; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QED^6",
-       "coefficient": "double_pole",
-       "error": 0.986749582376279,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.03e-32; Born from madloop; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QED^6",
-       "coefficient": "double_pole",
-       "error": 0.9872012711864406,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 2.43e-32; Born from madloop; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QED^6",
-       "coefficient": "double_pole",
-       "error": 0.9789905350778058,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 1.22e-31; Born from madloop; second providers none)"
-      }
-     ]
+     "failed_checks": []
     }
    },
    "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 0.9872012711864406,
+   "max_dd_vs_reference": 3.2108603520216424e-15,
    "max_binary64_vs_dd": 4.910075344536165e-14,
-   "max_catani_dd": 1.0,
+   "max_catani_dd": 3.869558283027002e-30,
    "max_ward_dd": null
   },
   {
@@ -5466,7 +5453,7 @@
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {},
-   "status": "fail",
+   "status": "pass",
    "tiers": {
     "nightly": {
      "points": [
@@ -5475,1189 +5462,39 @@
       2,
       3
      ],
-     "passed": false,
+     "passed": true,
      "checks": 230,
-     "failures": 112,
-     "max_dd_vs_reference": 1.0026873895979813,
-     "max_binary64_vs_dd": 2.085093378144092e-14,
-     "max_catani_dd": 1.0,
-     "max_catani_binary64": 0.00025720186623519136,
+     "failures": 0,
+     "max_dd_vs_reference": 1.2930786910050797e-15,
+     "max_binary64_vs_dd": 1.4914271549696805e-14,
+     "max_catani_dd": 9.149132929693928e-31,
+     "max_catani_binary64": 1.5933957435728557e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
-      "born": 0.0003799484662163831,
-      "finite": 0.000722652154185081,
-      "single_pole": 0.00057442039784262,
-      "double_pole": 1.0
+      "born": 1.0925164364064087e-15,
+      "finite": 6.705067317322693e-15,
+      "single_pole": 1.475204301055089e-14,
+      "double_pole": 1.0577015748969098e-15
      },
      "ward": null,
      "no_reference": [],
-     "binary64_out_of_scope": [
-      {
-       "point": 0,
-       "sector": "QCD^4 QED^2",
-       "coefficient": "double_pole",
-       "E": 38.303028537459824,
-       "true_error": 1.0000000000000004
-      },
-      {
-       "point": 1,
-       "sector": "QCD^4 QED^2",
-       "coefficient": "double_pole",
-       "E": Infinity,
-       "true_error": 1.0
-      },
-      {
-       "point": 2,
-       "sector": "QCD^4 QED^2",
-       "coefficient": "double_pole",
-       "E": 13.677332889973426,
-       "true_error": 1.0000000000000002
-      },
-      {
-       "point": 3,
-       "sector": "QCD^4 QED^2",
-       "coefficient": "double_pole",
-       "E": 38.303028537459824,
-       "true_error": 1.0000000000000004
-      }
-     ],
+     "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 104.01,
-      "export_s": 10.1,
-      "double_double_s_per_point": 28.3,
-      "double_s_per_point": 22.365
+      "generate_s": 98.87,
+      "export_s": 10.44,
+      "double_double_s_per_point": 28.4325,
+      "double_s_per_point": 22.3075
      },
-     "failed_checks": [
-      {
-       "rule": "1",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4",
-       "coefficient": "born",
-       "error": 0.00037994846621603644,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy None; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "finite",
-       "error": 0.000424835629465387,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "single_pole",
-       "error": 0.00037988667120028504,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "double_pole",
-       "error": 0.00040819599880746683,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "finite",
-       "error": 0.000722652154182576,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "single_pole",
-       "error": 0.00012277817876545208,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "double_pole",
-       "error": 0.9932648503512967,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "4",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "single_pole",
-       "error": 0.0002572018662277391,
-       "bound": 1e-24,
-       "note": "E = 2.42e-29"
-      },
-      {
-       "rule": "4",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "single_pole",
-       "error": 3.636115336990156e-05,
-       "bound": 1e-24,
-       "note": "E = 4.84e-30"
-      },
-      {
-       "rule": "4",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "double_pole",
-       "error": 2.825826927703234e-05,
-       "bound": 1e-24,
-       "note": "E = 1.36e-30"
-      },
-      {
-       "rule": "4",
-       "point": 0,
-       "carrier": "double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "single_pole",
-       "error": 0.00025720186623519136,
-       "bound": 1e-12,
-       "note": "E = 2.03e-13"
-      },
-      {
-       "rule": "4",
-       "point": 0,
-       "carrier": "double",
-       "sector": "QCD^6",
-       "coefficient": "single_pole",
-       "error": 3.6361153369079806e-05,
-       "bound": 1e-12,
-       "note": "E = 2.63e-14"
-      },
-      {
-       "rule": "4",
-       "point": 0,
-       "carrier": "double",
-       "sector": "QCD^6",
-       "coefficient": "double_pole",
-       "error": 2.825826927741794e-05,
-       "bound": 1e-12,
-       "note": "E = 5.2e-15"
-      },
-      {
-       "rule": "1",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4",
-       "coefficient": "born",
-       "error": 7.964402594258395e-05,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy None; status 328; its double pole off its Born x the universal factor by 4.92e-16; Born from madloop; Born / double-pole mismatch 4.43e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "finite",
-       "error": 8.773660981208797e-05,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.92e-16; Born from madloop; Born / double-pole mismatch 4.43e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "single_pole",
-       "error": 8.842383932083312e-05,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.92e-16; Born from madloop; Born / double-pole mismatch 4.43e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "double_pole",
-       "error": 8.385827718686157e-05,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.92e-16; Born from madloop; Born / double-pole mismatch 4.43e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "finite",
-       "error": 0.00010487938925224221,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.92e-16; Born from madloop; Born / double-pole mismatch 4.43e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "single_pole",
-       "error": 3.101814391794517e-05,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.92e-16; Born from madloop; Born / double-pole mismatch 4.43e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "double_pole",
-       "error": 0.9714110340575884,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.92e-16; Born from madloop; Born / double-pole mismatch 4.43e-16; second providers none)"
-      },
-      {
-       "rule": "4",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "single_pole",
-       "error": 4.862739035416314e-05,
-       "bound": 1e-24,
-       "note": "E = 1.64e-29"
-      },
-      {
-       "rule": "4",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "single_pole",
-       "error": 4.82897663146379e-06,
-       "bound": 1e-24,
-       "note": "E = 4.57e-30"
-      },
-      {
-       "rule": "4",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "double_pole",
-       "error": 4.214586911547522e-06,
-       "bound": 1e-24,
-       "note": "E = 1.34e-30"
-      },
-      {
-       "rule": "4",
-       "point": 1,
-       "carrier": "double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "single_pole",
-       "error": 4.8627390350407766e-05,
-       "bound": 1e-12,
-       "note": "E = 1.2e-13"
-      },
-      {
-       "rule": "4",
-       "point": 1,
-       "carrier": "double",
-       "sector": "QCD^6",
-       "coefficient": "single_pole",
-       "error": 4.828976631521774e-06,
-       "bound": 1e-12,
-       "note": "E = 2.35e-14"
-      },
-      {
-       "rule": "4",
-       "point": 1,
-       "carrier": "double",
-       "sector": "QCD^6",
-       "coefficient": "double_pole",
-       "error": 4.214586911198231e-06,
-       "bound": 1e-12,
-       "note": "E = 5.58e-15"
-      },
-      {
-       "rule": "1",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4",
-       "coefficient": "born",
-       "error": 0.0002770376361020109,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy None; status 328; its double pole off its Born x the universal factor by 6.12e-16; Born from madloop; Born / double-pole mismatch 6.62e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "finite",
-       "error": 0.00030658280361768153,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 6.12e-16; Born from madloop; Born / double-pole mismatch 6.62e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "single_pole",
-       "error": 0.00027609058757124464,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 6.12e-16; Born from madloop; Born / double-pole mismatch 6.62e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "double_pole",
-       "error": 0.0002954002971614518,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 6.12e-16; Born from madloop; Born / double-pole mismatch 6.62e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "finite",
-       "error": 0.0005020565201865712,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 6.12e-16; Born from madloop; Born / double-pole mismatch 6.62e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "single_pole",
-       "error": 9.518690209902564e-05,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 6.12e-16; Born from madloop; Born / double-pole mismatch 6.62e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "double_pole",
-       "error": 1.0026873895979813,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 6.12e-16; Born from madloop; Born / double-pole mismatch 6.62e-16; second providers none)"
-      },
-      {
-       "rule": "4",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "single_pole",
-       "error": 0.00018186804545827735,
-       "bound": 1e-24,
-       "note": "E = 2.07e-29"
-      },
-      {
-       "rule": "4",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "single_pole",
-       "error": 2.142395762600335e-05,
-       "bound": 1e-24,
-       "note": "E = 4.55e-30"
-      },
-      {
-       "rule": "4",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "double_pole",
-       "error": 1.836774961798693e-05,
-       "bound": 1e-24,
-       "note": "E = 1.25e-30"
-      },
-      {
-       "rule": "4",
-       "point": 2,
-       "carrier": "double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "single_pole",
-       "error": 0.0001818680454803858,
-       "bound": 1e-12,
-       "note": "E = 2.02e-13"
-      },
-      {
-       "rule": "4",
-       "point": 2,
-       "carrier": "double",
-       "sector": "QCD^6",
-       "coefficient": "single_pole",
-       "error": 2.1423957625515216e-05,
-       "bound": 1e-12,
-       "note": "E = 2.72e-14"
-      },
-      {
-       "rule": "4",
-       "point": 2,
-       "carrier": "double",
-       "sector": "QCD^6",
-       "coefficient": "double_pole",
-       "error": 1.8367749618369923e-05,
-       "bound": 1e-12,
-       "note": "E = 6.02e-15"
-      },
-      {
-       "rule": "1",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4",
-       "coefficient": "born",
-       "error": 0.00037994846621603644,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy None; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "finite",
-       "error": 0.0004311165059475712,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "single_pole",
-       "error": 0.0005744203978311206,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "double_pole",
-       "error": 0.00040819599880746683,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "finite",
-       "error": 0.0006549300101239478,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "single_pole",
-       "error": 0.00012277817876545208,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "1",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "double_pole",
-       "error": 0.9932648503512967,
-       "bound": 1e-12,
-       "note": "against madloop; not a listed outlier (own accuracy 0.0; status 328; its double pole off its Born x the universal factor by 4.9e-16; Born from madloop; Born / double-pole mismatch 4.42e-16; second providers none)"
-      },
-      {
-       "rule": "4",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "single_pole",
-       "error": 0.0002572018662277391,
-       "bound": 1e-24,
-       "note": "E = 2.46e-29"
-      },
-      {
-       "rule": "4",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "single_pole",
-       "error": 1.9319210881803166e-05,
-       "bound": 1e-24,
-       "note": "E = 3.42e-29"
-      },
-      {
-       "rule": "4",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "double_pole",
-       "error": 2.825826927703234e-05,
-       "bound": 1e-24,
-       "note": "E = 1.36e-30"
-      },
-      {
-       "rule": "4",
-       "point": 3,
-       "carrier": "double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "single_pole",
-       "error": 0.00025720186623519136,
-       "bound": 1e-12,
-       "note": "E = 2.08e-13"
-      },
-      {
-       "rule": "4",
-       "point": 3,
-       "carrier": "double",
-       "sector": "QCD^6",
-       "coefficient": "single_pole",
-       "error": 1.931921086977514e-05,
-       "bound": 1e-12,
-       "note": "E = 1.67e-13"
-      },
-      {
-       "rule": "4",
-       "point": 3,
-       "carrier": "double",
-       "sector": "QCD^6",
-       "coefficient": "double_pole",
-       "error": 2.825826927741794e-05,
-       "bound": 1e-12,
-       "note": "E = 5.2e-15"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "bare finite",
-       "error": 0.0003829246206678886,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "bare single_pole",
-       "error": 0.0003329122642389836,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "bare double_pole",
-       "error": 0.00040819599880746683,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "bare finite",
-       "error": 0.00024192029836671882,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "bare single_pole",
-       "error": 0.0003683054483837753,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "ct finite",
-       "error": 0.00033010768128025796,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "ct single_pole",
-       "error": 0.0003623605088736037,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "ct finite",
-       "error": 0.00041099665803682344,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "ct single_pole",
-       "error": 0.0004201298837594774,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "r2 finite",
-       "error": 0.00035076787327501386,
-       "bound": 1e-12,
-       "note": "the r2 component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "r2 finite",
-       "error": 0.0003896669692998726,
-       "bound": 1e-12,
-       "note": "the r2 component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "uv finite",
-       "error": 0.00032562832926712675,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "uv single_pole",
-       "error": 0.0003623605088736037,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "uv finite",
-       "error": 0.000419930327196624,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 0,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "uv single_pole",
-       "error": 0.0004201298837594774,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "bare finite",
-       "error": 8.419280176803958e-05,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "bare single_pole",
-       "error": 8.439026972620851e-05,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "bare double_pole",
-       "error": 8.385827718686158e-05,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "bare finite",
-       "error": 0.0006032127777657144,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "bare single_pole",
-       "error": 6.537001817766747e-05,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "ct finite",
-       "error": 8.06574849677127e-05,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "ct single_pole",
-       "error": 8.026418750822019e-05,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "ct finite",
-       "error": 7.945077973505616e-05,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "ct single_pole",
-       "error": 7.810372372867133e-05,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "r2 finite",
-       "error": 7.733668206795923e-05,
-       "bound": 1e-12,
-       "note": "the r2 component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "r2 finite",
-       "error": 8.204464226293656e-05,
-       "bound": 1e-12,
-       "note": "the r2 component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "uv finite",
-       "error": 8.146648760114517e-05,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "uv single_pole",
-       "error": 8.026418750822019e-05,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "uv finite",
-       "error": 7.81133199760384e-05,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 1,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "uv single_pole",
-       "error": 7.810372372867133e-05,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "bare finite",
-       "error": 0.00028415505430023897,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "bare single_pole",
-       "error": 0.00025470827924355127,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "bare double_pole",
-       "error": 0.00029540029716145183,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "bare finite",
-       "error": 0.00015951812323978937,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "bare single_pole",
-       "error": 0.00025500442125073473,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "ct finite",
-       "error": 0.0002555136402497488,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "ct single_pole",
-       "error": 0.0002696049684235467,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "ct finite",
-       "error": 0.00029186284882556457,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "ct single_pole",
-       "error": 0.0002946235340613207,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "r2 finite",
-       "error": 0.00026054766888503864,
-       "bound": 1e-12,
-       "note": "the r2 component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "r2 finite",
-       "error": 0.0002846486965371284,
-       "bound": 1e-12,
-       "note": "the r2 component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "uv finite",
-       "error": 0.00025457354186589153,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "uv single_pole",
-       "error": 0.0002696049684235467,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "uv finite",
-       "error": 0.0002945454448295948,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 2,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "uv single_pole",
-       "error": 0.0002946235340613207,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "bare finite",
-       "error": 0.00038688550036935837,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "bare single_pole",
-       "error": 0.00038281721082713394,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "bare double_pole",
-       "error": 0.00040819599880746683,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "bare finite",
-       "error": 0.00015901303616507406,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "bare single_pole",
-       "error": 0.0003683054483837753,
-       "bound": 1e-12,
-       "note": "the bare component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "ct finite",
-       "error": 0.00033148583212199535,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "ct single_pole",
-       "error": 0.0003623605088736037,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "ct finite",
-       "error": 0.0004085387459217247,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "ct single_pole",
-       "error": 0.0004201298837594774,
-       "bound": 1e-12,
-       "note": "the ct component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "r2 finite",
-       "error": 0.00035076787327501386,
-       "bound": 1e-12,
-       "note": "the r2 component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "r2 finite",
-       "error": 0.0003896669692998726,
-       "bound": 1e-12,
-       "note": "the r2 component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "uv finite",
-       "error": 0.0003256283292651988,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^6",
-       "coefficient": "uv single_pole",
-       "error": 0.0003623605088736037,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "uv finite",
-       "error": 0.00041984444989870043,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      },
-      {
-       "rule": "5",
-       "point": 3,
-       "carrier": "double-double",
-       "sector": "QCD^4 QED^2",
-       "coefficient": "uv single_pole",
-       "error": 0.0004201298837594774,
-       "bound": 1e-12,
-       "note": "the uv component against madloop's, relative to max(|a|, |r|, F_s)"
-      }
-     ]
+     "failed_checks": []
     }
    },
    "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 1.0026873895979813,
-   "max_binary64_vs_dd": 2.085093378144092e-14,
-   "max_catani_dd": 1.0,
+   "max_dd_vs_reference": 1.2930786910050797e-15,
+   "max_binary64_vs_dd": 1.4914271549696805e-14,
+   "max_catani_dd": 9.149132929693928e-31,
    "max_ward_dd": null
   },
   {
@@ -6773,18 +5610,71 @@
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {},
-   "status": "not-run",
-   "tiers": {},
-   "missing_records": [
-    "campaign"
-   ],
+   "status": "pass",
+   "tiers": {
+    "campaign": {
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "passed": true,
+     "checks": 86,
+     "failures": 0,
+     "max_dd_vs_reference": 6.901622507244509e-13,
+     "max_binary64_vs_dd": 5.652571468768054e-11,
+     "max_catani_dd": 7.192148840250022e-26,
+     "max_catani_binary64": 2.3041110255629127e-11,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.0239093497177615e-14,
+      "finite": 4.794801674984205e-09,
+      "single_pole": 3.3392055383587353e-10,
+      "double_pole": 2.0606244861794726e-11
+     },
+     "ward": {
+      "checks": 24,
+      "virtual_double": 47369350.106344186,
+      "born_double": 9.334650003353496e-17,
+      "virtual_double-double": 0.0012117900021096058,
+      "born_double-double": 4.3460267077498484e-33
+     },
+     "no_reference": [],
+     "binary64_out_of_scope": [
+      {
+       "point": 2,
+       "sector": "QCD^6 QED^6",
+       "coefficient": "finite",
+       "E": 1.8850234507047265e-08,
+       "true_error": 4.7947991760715845e-09
+      },
+      {
+       "point": 2,
+       "sector": "QCD^6 QED^6",
+       "coefficient": "single_pole",
+       "E": 7.978703914835246e-09,
+       "true_error": 3.3392130650955105e-10
+      }
+     ],
+     "timings": {
+      "generate_s": 171.41,
+      "export_s": 142.66,
+      "double_double_s_per_point": 275.09666666666664,
+      "double_s_per_point": 0.6533333333333333,
+      "engine_catani_s": 116.48,
+      "ward_s": 903.84
+     },
+     "failed_checks": []
+    }
+   },
+   "missing_records": [],
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": null,
-   "max_binary64_vs_dd": null,
-   "max_catani_dd": null,
-   "max_ward_dd": null
+   "max_dd_vs_reference": 6.901622507244509e-13,
+   "max_binary64_vs_dd": 5.652571468768054e-11,
+   "max_catani_dd": 7.192148840250022e-26,
+   "max_ward_dd": 0.0012117900021096058
   },
   {
    "id": "CM08",
@@ -7073,22 +5963,225 @@
    "reference_legend": "N multi-P ~3-5 min",
    "extras": [],
    "extras_pending": {},
-   "waits_for": "MS-MODEL",
-   "pending_reason": "the row's package: MS-MODEL",
+   "waits_for": null,
+   "pending_reason": null,
    "reference_tolerance": 1e-12,
    "catani": "python",
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {},
-   "status": "pending",
+   "status": "fail",
    "tiers": {},
    "missing_records": [],
-   "variants": [],
+   "variants": [
+    {
+     "id": "MP01@P2",
+     "gating": true,
+     "notes": "MadLoop SubProcesses/P2_uux_emep of p p > e- e+ (its single-process generation, tools route)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/msm/pp_emep_ew_P2_uux_emep.json",
+      "providers": [
+       "madloop"
+      ],
+      "components": "tests/fixtures/loop/required/msm/components/pp_emep_ew_P2_uux_emep.json"
+     },
+     "relaxed": {},
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 134,
+       "failures": 0,
+       "max_dd_vs_reference": 1.168520723990611e-15,
+       "max_binary64_vs_dd": 1.9288498937140046e-14,
+       "max_catani_dd": 1.9069005688564947e-31,
+       "max_catani_binary64": 1.880774380956097e-14,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 3.154227959076617e-16,
+        "finite": 1.834402254845955e-14,
+        "single_pole": 1.8119978213149456e-14,
+        "double_pole": 4.901330264508575e-15
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 269.61,
+        "export_s": 24.58,
+        "double_double_s_per_point": 6.14,
+        "double_s_per_point": 0.8825
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
+    },
+    {
+     "id": "MP01@P3",
+     "gating": true,
+     "notes": "MadLoop SubProcesses/P3_ddx_emep of p p > e- e+ (its single-process generation, tools route)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/msm/pp_emep_ew_P3_ddx_emep.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "relaxed": {},
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 134,
+       "failures": 0,
+       "max_dd_vs_reference": 4.216961743968777e-14,
+       "max_binary64_vs_dd": 5.702945315130921e-13,
+       "max_catani_dd": 1.2694074731750896e-30,
+       "max_catani_binary64": 5.705340691156636e-13,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 6.73678534505568e-16,
+        "finite": 3.819077666533481e-13,
+        "single_pole": 5.675361420666402e-13,
+        "double_pole": 2.0374804361362548e-15
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 283.88,
+        "export_s": 26.5,
+        "double_double_s_per_point": 6.0225,
+        "double_s_per_point": 0.8525
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
+    },
+    {
+     "id": "MP01@P4",
+     "gating": true,
+     "notes": "MadLoop SubProcesses/P4_bbx_emep of p p > e- e+ (its single-process generation, tools route)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/msm/pp_emep_ew_P4_bbx_emep.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "relaxed": {},
+     "status": "fail",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": false,
+       "checks": 1,
+       "failures": 1,
+       "max_dd_vs_reference": null,
+       "max_binary64_vs_dd": null,
+       "max_catani_dd": null,
+       "max_catani_binary64": null,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {},
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {},
+       "failed_checks": [
+        {
+         "rule": "eval",
+         "point": null,
+         "carrier": "",
+         "sector": "",
+         "coefficient": "generation or evaluation",
+         "error": Infinity,
+         "bound": 0.0,
+         "note": "ValueError: Could not create evaluator: infinity coefficients are not supported for evaluation"
+        }
+       ]
+      }
+     },
+     "missing_records": []
+    },
+    {
+     "id": "MP01@P5",
+     "gating": true,
+     "notes": "MadLoop SubProcesses/P5_aa_emep of p p > e- e+ (its single-process generation, tools route)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/msm/pp_emep_ew_P5_aa_emep.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "relaxed": {},
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 82,
+       "failures": 0,
+       "max_dd_vs_reference": 1.4238353158609533e-15,
+       "max_binary64_vs_dd": 1.655602745629344e-13,
+       "max_catani_dd": 1.9341799471487335e-31,
+       "max_catani_binary64": 5.061386974424958e-15,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 1.0411112320791682e-15,
+        "finite": 1.6437607076189192e-13,
+        "single_pole": 3.9827307339737375e-15,
+        "double_pole": 3.770552678621934e-15
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 235.33,
+        "export_s": 21.44,
+        "double_double_s_per_point": 6.0625,
+        "double_s_per_point": 0.79
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
+    }
+   ],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": null,
-   "max_binary64_vs_dd": null,
-   "max_catani_dd": null,
+   "max_dd_vs_reference": 4.216961743968777e-14,
+   "max_binary64_vs_dd": 5.702945315130921e-13,
+   "max_catani_dd": 1.2694074731750896e-30,
    "max_ward_dd": null
   },
   {
@@ -7107,22 +6200,353 @@
    "reference_legend": "N multi-P ~4-6 min",
    "extras": [],
    "extras_pending": {},
-   "waits_for": "MS-MODEL",
-   "pending_reason": "the row's package: MS-MODEL",
+   "waits_for": null,
+   "pending_reason": null,
    "reference_tolerance": 1e-12,
    "catani": "python",
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {},
-   "status": "pending",
+   "status": "fail",
    "tiers": {},
    "missing_records": [],
-   "variants": [],
+   "variants": [
+    {
+     "id": "MP02@P0",
+     "gating": true,
+     "notes": "MadLoop SubProcesses/P0_ga_ttx of p p > t t~ (its single-process generation, tools route)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/msm/pp_ttx_ew_P0_ga_ttx.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "relaxed": {},
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 134,
+       "failures": 0,
+       "max_dd_vs_reference": 1.829228582716185e-15,
+       "max_binary64_vs_dd": 4.3289122273132484e-14,
+       "max_catani_dd": 6.790622424421696e-31,
+       "max_catani_binary64": 4.963481310112798e-15,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 5.478382382718096e-16,
+        "finite": 4.286129311923521e-14,
+        "single_pole": 5.404679648789489e-15,
+        "double_pole": 2.5929711257405522e-16
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 189.39,
+        "export_s": 11.66,
+        "double_double_s_per_point": 6.96,
+        "double_s_per_point": 1.0375
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
+    },
+    {
+     "id": "MP02@P2",
+     "gating": true,
+     "notes": "MadLoop SubProcesses/P2_gg_ttx of p p > t t~ (its single-process generation, tools route)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/msm/pp_ttx_ew_P2_gg_ttx.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "relaxed": {},
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 134,
+       "failures": 0,
+       "max_dd_vs_reference": 8.776732187941585e-16,
+       "max_binary64_vs_dd": 1.4914271549696805e-14,
+       "max_catani_dd": 6.6241702926717705e-31,
+       "max_catani_binary64": 1.5933957435728557e-14,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 1.0925164364064087e-15,
+        "finite": 6.4881383747067615e-15,
+        "single_pole": 1.475204301055089e-14,
+        "double_pole": 1.0577015748969098e-15
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 177.25,
+        "export_s": 16.4,
+        "double_double_s_per_point": 6.7475,
+        "double_s_per_point": 0.75
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
+    },
+    {
+     "id": "MP02@P3",
+     "gating": true,
+     "notes": "MadLoop SubProcesses/P3_uux_ttx of p p > t t~ (its single-process generation, tools route)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/msm/pp_ttx_ew_P3_uux_ttx.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "relaxed": {},
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 254,
+       "failures": 0,
+       "max_dd_vs_reference": 2.6650789163564675e-14,
+       "max_binary64_vs_dd": 5.217119872146446e-14,
+       "max_catani_dd": 1.0452692992412556e-29,
+       "max_catani_binary64": 5.330490879920225e-14,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 8.767289976279811e-16,
+        "finite": 2.181529230238383e-14,
+        "single_pole": 7.882198788502775e-14,
+        "double_pole": 6.432549321562066e-15
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 254.4,
+        "export_s": 25.95,
+        "double_double_s_per_point": 7.3225,
+        "double_s_per_point": 1.4725
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
+    },
+    {
+     "id": "MP02@P4",
+     "gating": true,
+     "notes": "MadLoop SubProcesses/P4_ddx_ttx of p p > t t~ (its single-process generation, tools route)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/msm/pp_ttx_ew_P4_ddx_ttx.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "relaxed": {},
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 254,
+       "failures": 0,
+       "max_dd_vs_reference": 1.956120698420048e-15,
+       "max_binary64_vs_dd": 2.2047722937603678e-14,
+       "max_catani_dd": 3.820346177043573e-30,
+       "max_catani_binary64": 2.5310200223387224e-14,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 1.1010957311426085e-15,
+        "finite": 4.866550431288007e-15,
+        "single_pole": 2.0091602239183672e-14,
+        "double_pole": 1.784690279854634e-14
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 255.49,
+        "export_s": 25.54,
+        "double_double_s_per_point": 7.44,
+        "double_s_per_point": 1.5175
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
+    },
+    {
+     "id": "MP02@P5",
+     "gating": true,
+     "notes": "MadLoop SubProcesses/P5_aa_ttx of p p > t t~ (its single-process generation, tools route)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/msm/pp_ttx_ew_P5_aa_ttx.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "relaxed": {},
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": true,
+       "checks": 134,
+       "failures": 0,
+       "max_dd_vs_reference": 1.7226726273033697e-15,
+       "max_binary64_vs_dd": 1.623567518614161e-13,
+       "max_catani_dd": 2.8282727232567223e-31,
+       "max_catani_binary64": 1.8778683551585628e-15,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {
+        "born": 9.850787377580278e-16,
+        "finite": 1.6407917517654987e-13,
+        "single_pole": 1.951838415908747e-15,
+        "double_pole": 1.0465319143450736e-19
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [
+        {
+         "point": 0,
+         "sector": "QCD^2 QED^4",
+         "coefficient": "double_pole",
+         "E": Infinity,
+         "true_error": 0.0
+        },
+        {
+         "point": 1,
+         "sector": "QCD^2 QED^4",
+         "coefficient": "double_pole",
+         "E": Infinity,
+         "true_error": 0.0
+        },
+        {
+         "point": 2,
+         "sector": "QCD^2 QED^4",
+         "coefficient": "double_pole",
+         "E": Infinity,
+         "true_error": 0.0
+        },
+        {
+         "point": 3,
+         "sector": "QCD^2 QED^4",
+         "coefficient": "double_pole",
+         "E": Infinity,
+         "true_error": 0.0
+        }
+       ],
+       "timings": {
+        "generate_s": 222.4,
+        "export_s": 25.82,
+        "double_double_s_per_point": 7.22,
+        "double_s_per_point": 1.2825
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
+    },
+    {
+     "id": "MP02@P6",
+     "gating": true,
+     "notes": "MadLoop SubProcesses/P6_bbx_ttx of p p > t t~ (its single-process generation, tools route)",
+     "reference": {
+      "format": "required",
+      "path": "tests/fixtures/loop/required/msm/pp_ttx_ew_P6_bbx_ttx.json",
+      "providers": [
+       "madloop"
+      ]
+     },
+     "relaxed": {},
+     "status": "fail",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2,
+        3
+       ],
+       "passed": false,
+       "checks": 1,
+       "failures": 1,
+       "max_dd_vs_reference": null,
+       "max_binary64_vs_dd": null,
+       "max_catani_dd": null,
+       "max_catani_binary64": null,
+       "catani_not_formed": false,
+       "binary64_vs_reference": {},
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {},
+       "failed_checks": [
+        {
+         "rule": "eval",
+         "point": null,
+         "carrier": "",
+         "sector": "",
+         "coefficient": "generation or evaluation",
+         "error": Infinity,
+         "bound": 0.0,
+         "note": "ValueError: Could not create evaluator: infinity coefficients are not supported for evaluation"
+        }
+       ]
+      }
+     },
+     "missing_records": []
+    }
+   ],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": null,
-   "max_binary64_vs_dd": null,
-   "max_catani_dd": null,
+   "max_dd_vs_reference": 2.6650789163564675e-14,
+   "max_binary64_vs_dd": 1.623567518614161e-13,
+   "max_catani_dd": 1.0452692992412556e-29,
    "max_ward_dd": null
   },
   {
@@ -7152,12 +6576,8 @@
     }
    },
    "reference_legend": "E electroweak-eeuu-control.json",
-   "extras": [
-    "nc"
-   ],
-   "extras_pending": {
-    "nc": "Q4 (a, recommended, pending with the user): EW LC/NLC is M-FINAL (typed colour-declaration-coverage refusal)"
-   },
+   "extras": [],
+   "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-12,
@@ -7397,7 +6817,7 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-12,
+   "reference_tolerance": 1e-09,
    "catani": "python",
    "ward_legs": null,
    "listed_outliers": [],
@@ -7541,11 +6961,13 @@
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-12,
+   "reference_tolerance": 1e-09,
    "catani": "engine",
    "ward_legs": null,
    "listed_outliers": [],
-   "relaxed": {},
+   "relaxed": {
+    "2": 1e-09
+   },
    "status": "fail",
    "tiers": {
     "nightly": {
@@ -7859,19 +7281,21 @@
    ],
    "checks": "every check of the row: the executor is not formed (both input paths)",
    "evidence": "probe-rank (SC07, h h > h h QED): 12 of 87 families are written with rank 2 (schedules.build_trie: the largest summed segment q-degree of a ring) while plan_export._Exporter._step writes rank_in = the largest source storage and degree = the largest edge degree of a trie node (2 + 1 = 3), which rusticol's derive.rs / plan.rs refuse: a node joining rings of degree-0 and degree-1 vertices (W, Z, Goldstone and Higgs rings) over-runs every single ring. Candidate fix, tried in a scratch worktree (tmp/ms-validate/wt-fix, f1): the family's written rank bounds its steps, rank = max(trie.rank, max step rank_in + degree) in plan_export._Exporter.family (forward states and merged closures likewise): VH01 (Python inputs) 134/134 checks pass against MadLoop QP, SC07 (native inputs) every check but its vanishing single pole (ours 1e-33, MadLoop 1e-17; listed since)",
-   "status": "open: fixed on work/v2-ms-model 4f99d7fe (plan_export._trace_groups: a trace step whose source storage plus content degree exceeds the family rank splits by source storage), not yet integrated",
-   "routed": "MS-MODEL (4f99d7fe); the rows rerun when it integrates"
+   "status": "open: MS-MODEL's 4f99d7fe (integrated at 2ae8b88b) fixes VV02 only (f2; at the branch head 261/261); SC04, SC06, SC07, TV03, V301, VH01, VH02, VH03 still refused at the plan load. The candidate fix (the family's written rank bounds its steps, tmp/ms-validate/f1/plan_export_rank_2ae8b88b.patch, one expression in plan_export._Exporter.family) evaluates all of them (f3): VH01, VH02, VH03 pass; SC07 but its vanishing single pole (keyed by sector since); TV03 but its vanishing QCD x EW Born interference (listed since); SC04 and SC06 within 1e-9 of MadLoop QP (rule 1 relaxed per the ~10:20 ruling) and SC04's binary64 point 1 (F9)",
+   "routed": "coordinator (plan export; MS-MODEL integrated)"
   },
   {
    "id": "F2",
    "category": "engine: scalar bindings (crash)",
-   "title": "SC08 (t t~ > w+ w-) and ST03 (g b > t w-), G_mu with MB = ymb = 0 fixed, fail building the scalar evaluator: the untaken branch of a decided '0 if MB == 0 else ...' counterterm parameter keeps an infinite coefficient",
+   "title": "SC08 (t t~ > w+ w-), ST03 (g b > t w-) and the b b~ members of MP01, MP02, G_mu with MB = ymb = 0 fixed, fail building the scalar evaluator: the untaken branch of a decided '0 if MB == 0 else ...' counterterm parameter keeps an infinite coefficient",
    "rows": [
     "SC08",
-    "ST03"
+    "ST03",
+    "MP01@P4",
+    "MP02@P6"
    ],
    "checks": "every check: native inputs fail in native_trees._parameter_program, Python inputs in scalar_bindings.ScalarBindingPlan (scalar_frontend.evaluator)",
-   "evidence": "probe-f2 (SC08 on Python inputs, 2026-10-30): 2 of the 36 bound outputs fail alone, the t~ b W+ UV counterterm coupling c_UVtxbWp1EW at eps^-1 and eps^0. Its source holds the UFO's '0 if MB == 0 else <...>/MB...' counterterm parameters; scalar_frontend lowers an IfExp with both branches (symbolica::if(truth(if(equal(0,0),1,0)), 0, <else>)), so with MB fixed to 0 the untaken branch divides by zero (Symbolica: 'Created infinity by raising 0 to the power of -1') and the evaluator refuses the infinite coefficient. Rows without this coupling only log the warning. Candidate fix (owner's call): decide an IfExp whose lowered condition is a constant before lowering its branches (lower only the taken branch), in the scalar frontend that both input paths share",
+   "evidence": "probe-f2 (SC08 on Python inputs, 2026-10-30): 2 of the 36 bound outputs fail alone, the t~ b W+ UV counterterm coupling c_UVtxbWp1EW at eps^-1 and eps^0. Its source holds the UFO's '0 if MB == 0 else <...>/MB...' counterterm parameters; scalar_frontend lowers an IfExp with both branches (symbolica::if(truth(if(equal(0,0),1,0)), 0, <else>)), so with MB fixed to 0 the untaken branch divides by zero (Symbolica: 'Created infinity by raising 0 to the power of -1') and the evaluator refuses the infinite coefficient. Rows without this coupling only log the warning. Candidate fix (owner's call): decide an IfExp whose lowered condition is a constant before lowering its branches (lower only the taken branch), in the scalar frontend that both input paths share; MP01@P4 (b b~ > e- e+) and MP02@P6 (b b~ > t t~) fail the same way (tmp/ms-validate/mp1)",
    "status": "open",
    "routed": "coordinator (scalar bindings / native parameter program owner)"
   },
@@ -7880,13 +7304,14 @@
    "category": "plan: Ward identity in the real-mass scheme",
    "title": "The gluon (photon) Ward identity of the EW virtual fails where an external coloured (charged) particle has an absorptive self-energy at its mass",
    "rows": [
+    "CM07",
+    "ST03",
     "TT03",
     "TV07",
-    "VV05",
-    "ST03"
+    "VV05"
    ],
    "checks": "ward: TT03 and TV07 double-double 3e-4 / 6e-5 of the scale (c = 1 and i, every gluon), VV05 photon c = i 4e-4; rule 1 = MadLoop at the physical polarisations",
-   "evidence": "probe-ward (TT03, double-double, leg 1): residual 3.3e-4 (c = 1), 5.2e-5 (c = i) of the scale at the card (t -> b W open), 5e-30 and 4e-29 at MW = 180, MZ = 200 (stable top), the bare, R2 and UV parts 1e-2 each: the real on-shell counterterms (Re Sigma) leave the external top's absorptive part unrenormalised, the scheme's property, not an engine defect (the identity holds under CMS)",
+   "evidence": "probe-ward (TT03, double-double, leg 1): residual 3.3e-4 (c = 1), 5.2e-5 (c = i) of the scale at the card (t -> b W open), 5e-30 and 4e-29 at MW = 180, MZ = 200 (stable top), the bare, R2 and UV parts 1e-2 each: the real on-shell counterterms (Re Sigma) leave the external top's absorptive part unrenormalised, the scheme's property, not an engine defect (the identity holds under CMS); under CMS with Gamma_t = 0 (CM07, native inputs, tmp/ms-validate/cm4) the gluon Ward diagnostic misses by 1.2e-3 of the scale (the external top on its real line mass keeps t -> b W absorptive), while CM05 (no external top) holds at 4e-31: the same mechanism; CM07's acceptance checks all pass (86/86, rule 1 = MadLoop CMS 6.9e-13)",
    "status": "resolved in the manifest: TT03 and TV07 check Ward at a stable top (ward_parameters MW = 180, MZ = 200); VV05 (external W) and ST03 (external top and W) defer it to the CMS rows (CM05, CM07, CM09)",
    "routed": "coordinator (PLAN \u00a71.4 Ward text)"
   },
@@ -7949,17 +7374,28 @@
     "CM04",
     "CM07"
    ],
-   "checks": "CM04 (Python inputs): rule 1 (Born and every sector ~4e-4), rule 4 (the virtual's poles against the engine's own operator 3e-5 to 2.6e-4: the Python path is not self-consistent), rule 5; CM07 (native inputs, the production route): rule 4's engine operator reads the Python-input Born",
-   "evidence": "probe-cm04 (point 0, binary64): Born Python inputs 1.0054755 at MT = 173, native inputs 1.00509349673877 = MadLoop CMS = the real-mass Born; at the default MT = 173.3 both paths give 1.0051884: a part of the Python path takes LMASS_MT at its default, not at the runtime MT. CM02, CM03, CM09 (nonzero widths, no zero-width Yukawa-tied mass) pass on Python inputs",
-   "status": "open",
-   "routed": "MS-CMS (the Python mass values of the complex-mass scheme: assemble._model_masses / _mass_values, artifact._real_parameters)"
+   "checks": "CM04 (Python inputs): rule 1 (Born and every sector ~4e-4), rule 4 (the virtual's poles against the engine's own operator 3e-5 to 2.6e-4: the Python path is not self-consistent), rule 5; CM07 on Python inputs (cm2): Born 5e-4, the EW sector's finite part 3e-3 off MadLoop CMS; CM07 on native inputs (the production route, cm3): rule 4's engine operator reads the Python-input Born",
+   "evidence": "probe-cm04 (point 0, binary64): Born Python inputs 1.0054755 at MT = 173, native inputs 1.00509349673877 = MadLoop CMS = the real-mass Born; at the default MT = 173.3 both paths give 1.0051884: a part of the Python path takes LMASS_MT at its default, not at the runtime MT. CM02, CM03, CM09 (nonzero widths, no zero-width Yukawa-tied mass) pass on Python inputs; probe-cm04/probe3: the loop masses are right (assemble._model_masses: LMASS_MT = 173 at the runtime MT = 173, the transformed model's records LMASS_MT := MT, ymt := MT, internal), so the Python path's Born trees are the suspect (TreeRows takes an external record at its default where the runtime parameters do not name it); CM07 on native inputs (cm3): rule 1 = MadLoop CMS QP to 6.9e-13 ([U4] on the production route), rule 4 and the Ward diagnostic (1.2e-3 of the scale; CM05's holds at 4e-31) miss through the Python-input Born and Ward inputs",
+   "status": "resolved by MS-CMS's fix round 1 (integrated at ebbb6a98): CM04 = MadLoop CMS at f30a55b2 (its only miss the vanishing QCD x EW double pole, listed since); CM07 on native inputs 86/86 (rule 4's engine operator on the Python-input Born now agrees, 7.2e-26)",
+   "routed": "closed (MS-CMS)"
+  },
+  {
+   "id": "F9",
+   "category": "engine: binary64 evaluation with massive initial b quarks",
+   "title": "b b~ > w+ w- (with_b_mass, MB = 4.5) at point 1: the binary64 evaluation returns ~1e-49 for the Born and every Laurent coefficient (double-double = MadLoop QP)",
+   "rows": [
+    "SC04"
+   ],
+   "checks": "rule 2 at point 1: the binary64 Born 1.13e-49 against 0.0115 (asserted: the Born has no estimate); the virtual's coefficients ~1e-50, flagged outside the binary64 scope (E ~ 1e50, not asserted)",
+   "evidence": "tmp/ms-validate/f3 (SC04 runs only with the candidate F1 fix, which changes no Born tree): point 1 = incoming b and b~ at E = 400, |p_z| = 399.97 (m_b^2/s = 3.2e-5); points 0, 2, 3 agree in binary64",
+   "status": "open (seen with the candidate F1 fix; the branch's SC04 stops at F1)",
+   "routed": "coordinator (binary64 tree/point inputs with massive external fermions)"
   }
  ],
  "coverage_notes": [
   "rule 4 is not formed on LL02, SC02 (F7) and SC03 (F6): model properties, the rows report partial",
   "the Ward extra is a diagnostic under the complex-mass scheme (CM05, CM07, CM09; PLAN 1.4/1.5) and not run on VV05 and ST03 in the real-mass scheme (F3)",
-  "rule 7 (nc) waits for Q4 (recommended (a): EW LC/NLC in M-FINAL, typed colour-declaration-coverage)",
-  "MP01, MP02 wait for MS-MODEL's multiparticle members (Q2)",
-  "rows failing on F1 (MS-MODEL's fix 4f99d7fe not integrated) and F2 record the raised error as their one failed check"
+  "rows failing on F1 (MS-MODEL's fix 4f99d7fe not integrated) and F2 record the raised error as their one failed check",
+  "rule 7 (nc) is not run: EW LC/NLC is never supported (USER Q4, 2026-10-30 ~08:10; typed colour-declaration-coverage)"
  ]
 }
