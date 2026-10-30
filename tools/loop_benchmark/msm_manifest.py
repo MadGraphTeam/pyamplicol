@@ -1882,6 +1882,11 @@ MULTIPARTICLE_ROWS = {
         "vanishing": {
             "P3": [{"sector": "QCD^2 QED^2", "coefficient": "born"}],
             "P4": [{"sector": "QCD^2 QED^2", "coefficient": "born"}],
+            # The QED corrections of photon-initiated top pairs: no massless
+            # charged leg, no soft-collinear pole (ours 1e-35, MadLoop's
+            # 1e-37 of the Born; tmp/ms-validate/mp1).
+            "P0": [{"sector": "QCD^2 QED^4", "coefficient": "double_pole"}],
+            "P5": [{"sector": "QED^6", "coefficient": "double_pole"}],
         },
         "parts": {
             "required/msm/pp_ttx_ew_P0_ga_ttx.json": ("P0", "g a > t t~", [(1, 1)]),
@@ -2170,6 +2175,10 @@ MEASURED_SECONDS: dict[str, tuple[int, int]] = {
     "CM01@small": (750, 3), "CM01@source": (492, 4), "CM02": (508, 4),
     "CM03": (498, 4), "CM04": (376, 4), "CM08": (265, 4), "CM09": (870, 4),
     "CM10": (88, 4),
+    # tmp/ms-validate/mp1 (2026-10-30): the multiparticle members.
+    "MP01@P2": (382, 4), "MP01@P3": (397, 4), "MP01@P5": (344, 4),
+    "MP02@P0": (291, 4), "MP02@P2": (279, 4), "MP02@P3": (393, 4),
+    "MP02@P4": (414, 4), "MP02@P5": (365, 4),
 }  # fmt: skip
 DEFAULT_SECONDS = 600
 JOB_SECONDS = 1500

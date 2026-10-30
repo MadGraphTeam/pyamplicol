@@ -24,13 +24,15 @@
   {
    "id": "F2",
    "category": "engine: scalar bindings (crash)",
-   "title": "SC08 (t t~ > w+ w-) and ST03 (g b > t w-), G_mu with MB = ymb = 0 fixed, fail building the scalar evaluator: the untaken branch of a decided '0 if MB == 0 else ...' counterterm parameter keeps an infinite coefficient",
+   "title": "SC08 (t t~ > w+ w-), ST03 (g b > t w-) and the b b~ members of MP01, MP02, G_mu with MB = ymb = 0 fixed, fail building the scalar evaluator: the untaken branch of a decided '0 if MB == 0 else ...' counterterm parameter keeps an infinite coefficient",
    "rows": [
     "SC08",
-    "ST03"
+    "ST03",
+    "MP01@P4",
+    "MP02@P6"
    ],
    "checks": "every check: native inputs fail in native_trees._parameter_program, Python inputs in scalar_bindings.ScalarBindingPlan (scalar_frontend.evaluator)",
-   "evidence": "probe-f2 (SC08 on Python inputs, 2026-10-30): 2 of the 36 bound outputs fail alone, the t~ b W+ UV counterterm coupling c_UVtxbWp1EW at eps^-1 and eps^0. Its source holds the UFO's '0 if MB == 0 else <...>/MB...' counterterm parameters; scalar_frontend lowers an IfExp with both branches (symbolica::if(truth(if(equal(0,0),1,0)), 0, <else>)), so with MB fixed to 0 the untaken branch divides by zero (Symbolica: 'Created infinity by raising 0 to the power of -1') and the evaluator refuses the infinite coefficient. Rows without this coupling only log the warning. Candidate fix (owner's call): decide an IfExp whose lowered condition is a constant before lowering its branches (lower only the taken branch), in the scalar frontend that both input paths share",
+   "evidence": "probe-f2 (SC08 on Python inputs, 2026-10-30): 2 of the 36 bound outputs fail alone, the t~ b W+ UV counterterm coupling c_UVtxbWp1EW at eps^-1 and eps^0. Its source holds the UFO's '0 if MB == 0 else <...>/MB...' counterterm parameters; scalar_frontend lowers an IfExp with both branches (symbolica::if(truth(if(equal(0,0),1,0)), 0, <else>)), so with MB fixed to 0 the untaken branch divides by zero (Symbolica: 'Created infinity by raising 0 to the power of -1') and the evaluator refuses the infinite coefficient. Rows without this coupling only log the warning. Candidate fix (owner's call): decide an IfExp whose lowered condition is a constant before lowering its branches (lower only the taken branch), in the scalar frontend that both input paths share; MP01@P4 (b b~ > e- e+) and MP02@P6 (b b~ > t t~) fail the same way (tmp/ms-validate/mp1)",
    "status": "open",
    "routed": "coordinator (scalar bindings / native parameter program owner)"
   },
