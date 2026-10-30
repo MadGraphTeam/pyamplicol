@@ -137,7 +137,7 @@ def main():
     if args.spec is None or args.process is None:
         parser.error("--spec and --process are required to generate an export")
 
-    from required_spec import load_process
+    from required_spec import CORRECTION_STEP, load_process
 
     mg5 = args.mg5.resolve()
     roots = {"mg5": mg5, "reference": (args.reference_root or mg5.parent.parent).resolve()}
@@ -186,10 +186,12 @@ def main():
     if not command._curr_amps or (len(command._curr_amps) != 1 and not multiparticle):
         raise RuntimeError(f"expected exactly one MadLoop amplitude, got {len(command._curr_amps)} "
                            "(a multiparticle request sets \"multiparticle\": true)")
-    step = {k: spec["loop_orders"][k] - spec["born_orders"][k] for k in ("QCD", "QED")}
+    # One correction step per correction of the request (a joint [virt=QCD QED]
+    # request over several loop sectors lists both; spec["corrections"]).
+    steps = [CORRECTION_STEP[c] for c in spec["corrections"]]
     expected_born = {(o["QCD"], o["QED"]) for o in spec["born_orders_all"]}
     expected_loop = {(spec["loop_orders"]["QCD"], spec["loop_orders"]["QED"])}
-    allowed_loop = {(q + step["QCD"], e + step["QED"]) for q, e in expected_born}
+    allowed_loop = {(q + step["QCD"], e + step["QED"]) for q, e in expected_born for step in steps}
     subprocesses = []
     for amplitude in command._curr_amps:
         born = Counter(_orders(d) for d in amplitude["born_diagrams"])
@@ -224,21 +226,37 @@ def main():
             "attached_CT_vertices": sum(sp["attached_CT_vertices"] for sp in subprocesses),
         }
     )
-    if multiparticle:
-        report["subprocesses"] = [{k: v for k, v in sp.items() if not k.startswith("_")} for sp in subprocesses]
+    def public(items):
+        return [{k: v for k, v in sp.items() if not k.startswith("_")} for sp in items]
+
     # Loop records of other orders may remain in the export; the driver selects
     # the Born-virtual interference by its squared split orders. A mixed-order
     # request (born_orders_all) admits loop records of every Born order's
-    # correction step.
+    # correction step. A multiparticle request checks each subprocess against
+    # its own Born orders (its members differ, e.g. q q~, a a and g g initial
+    # states) and records a member without a Born (MG5's loop-squared
+    # [sqrvirt] subprocess, m-sm/PLAN.md Q2(a)) as skipped: it is not compared.
     for sp in subprocesses:
         born, loops = sp["_born"], sp["_loops"]
+        if multiparticle:
+            own = {(q + step["QCD"], e + step["QED"]) for q, e in born for step in steps}
+            if not born:
+                sp["skipped"] = "no Born: MG5's loop-squared member (sqrvirt), not a Born x virtual reference"
+            elif not set(loops) <= own or not set(loops):
+                report["status"] = "unexpected amplitude orders"
+                report["subprocesses"] = public(subprocesses)
+                write()
+                raise RuntimeError(f"{sp['process']}: loop orders {dict(loops)} outside {own}")
+            continue
         if set(born) != expected_born or not expected_loop <= set(loops) or (
-                len(expected_born) > 1 and not set(loops) <= allowed_loop):
+                (len(expected_born) > 1 or len(steps) > 1) and not set(loops) <= allowed_loop):
             report["status"] = "unexpected amplitude orders"
             write()
             raise RuntimeError(
                 f"{sp['process']}: Born/loop orders {dict(born)}/{dict(loops)} differ from "
                 f"{expected_born}/{expected_loop}")
+    if multiparticle:
+        report["subprocesses"] = public(subprocesses)
     report["status"] = "exporting"
     write()
     for amplitude in command._curr_amps:

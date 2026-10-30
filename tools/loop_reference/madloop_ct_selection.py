@@ -70,6 +70,22 @@ def classify(process: Path, groups: dict[str, re.Pattern[str]]) -> dict[int, str
             if len(names) > 1:
                 raise ValueError(f"amplitude {match[1]} matches groups {sorted(names)}")
             found.setdefault(int(match[1]), set()).add(names.pop() if names else "rest")
+    # UV counterterm diagrams (helas_calls_uvct_*.f): a tree call times a UV factor
+    # (``AMPL(k,n)=AMPL(k,n)*(...UVWFCT...)``); an amplitude belongs to the group
+    # its call or its factor names (several groups refused), else to 'rest'.
+    uvct: dict[int, set[str]] = {}
+    for path in sorted(process.glob("helas_calls_uvct_*.f")):
+        for statement in statements(path):
+            match = re.search(r"AMPL\([123],(\d+)\)", statement)
+            if not match:
+                continue
+            text = statement[statement.index("(") + 1 :] if statement.startswith("CALL ") else statement
+            uvct.setdefault(int(match[1]), set()).update(
+                name for name, pattern in groups.items() if pattern.search(text))
+    for index, names in uvct.items():
+        if index in found or len(names) > 1:
+            raise ValueError(f"UV counterterm amplitude {index} is ambiguous ({sorted(names)})")
+        found[index] = {names.pop() if names else "rest"}
     total = int(re.search(r"NCTAMPS=(\d+)", (process / "loop_matrix.f").read_text())[1])
     if set(found) != set(range(1, total + 1)):
         raise ValueError(f"classified {len(found)} of {total} CT amplitudes")
