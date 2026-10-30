@@ -5,7 +5,8 @@ risk 13): generate the row's slice under the complex-mass scheme, run
 carriers (binary64, double-double, AP(40) and AP(60)) at some of them, the
 check of the ``Float`` route's complex-mass boxes.
 
-    python -m tools.loop_benchmark.master_census_rows CM07 OUT --carriers 0 --no-ap60
+    python -m tools.loop_benchmark.master_census_rows ROW OUT [--carriers 0,1]
+        [--precisions double,dd,ap40,ap60]
 
 Writes ``OUT/census.json``. CM01 reads ``tests/fixtures/loop/
 cms-ufo-standard-gmu.json`` (its finite block), CM10 loop_sm, the other rows
@@ -216,7 +217,10 @@ def main(argv: list[str] | None = None) -> None:
         help="comma-separated point indices at which to compare the carriers",
     )
     parser.add_argument(
-        "--no-ap60", action="store_true", help="AP(40) is the reference"
+        "--precisions",
+        default="double,dd,ap40,ap60",
+        help="comma-separated carriers among double, dd, ap40, ap60; the last "
+        "is the reference",
     )
     args = parser.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
@@ -244,13 +248,13 @@ def main(argv: list[str] | None = None) -> None:
     if args.carriers:
         chosen = [int(k) for k in args.carriers.split(",")]
         at = [points[k] for k in chosen], [scales[k] for k in chosen]
-        carriers = [
-            ("double", Precision.double()),
-            ("dd", Precision.double_double()),
-            ("ap40", Precision.arbitrary(40)),
-        ]
-        if not args.no_ap60:
-            carriers.append(("ap60", Precision.arbitrary(60)))
+        known = {
+            "double": Precision.double(),
+            "dd": Precision.double_double(),
+            "ap40": Precision.arbitrary(40),
+            "ap60": Precision.arbitrary(60),
+        }
+        carriers = [(name, known[name]) for name in args.precisions.split(",")]
         runs = {}
         for name, precision in carriers:
             began = time.time()
