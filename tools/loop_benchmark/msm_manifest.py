@@ -64,7 +64,9 @@ CODES = {
         ALPHA_GMU,
     ),
     "Gm": (MASSIVE_MUON, "default", ZERO_WIDTHS, "ew-gmu-mm", ALPHA_GMU),
-    "Gk": (GMU, "ckm", G_MU_FIXED, "ew-gmu-ckm", ALPHA_GMU),
+    # restrict_ckm keeps MB, ymb, MTA, ymtau (4.7, 4.2, 1.777): MS-REF's run
+    # sets them (MB = ymb = 4.7) at runtime; only the widths are fixed.
+    "Gk": (GMU, "ckm", ZERO_WIDTHS, "ew-gmu-ckm", ALPHA_GMU),
     "Gt": (GMU, "with_technical", ZERO_WIDTHS, "ew-gmu-tech", ALPHA_GMU),
     "Gc": (
         GMU,
