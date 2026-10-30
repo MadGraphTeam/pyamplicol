@@ -18,8 +18,8 @@
    ],
    "checks": "every check of the row: the executor is not formed (both input paths)",
    "evidence": "probe-rank (SC07, h h > h h QED): 12 of 87 families are written with rank 2 (schedules.build_trie: the largest summed segment q-degree of a ring) while plan_export._Exporter._step writes rank_in = the largest source storage and degree = the largest edge degree of a trie node (2 + 1 = 3), which rusticol's derive.rs / plan.rs refuse: a node joining rings of degree-0 and degree-1 vertices (W, Z, Goldstone and Higgs rings) over-runs every single ring. Candidate fix, tried in a scratch worktree (tmp/ms-validate/wt-fix, f1): the family's written rank bounds its steps, rank = max(trie.rank, max step rank_in + degree) in plan_export._Exporter.family (forward states and merged closures likewise): VH01 (Python inputs) 134/134 checks pass against MadLoop QP, SC07 (native inputs) every check but its vanishing single pole (ours 1e-33, MadLoop 1e-17; listed since)",
-   "status": "open: MS-MODEL's 4f99d7fe (integrated at 2ae8b88b) fixes VV02 only (f2; at the branch head 261/261); SC04, SC06, SC07, TV03, V301, VH01, VH02, VH03 still refused at the plan load. The candidate fix (the family's written rank bounds its steps, tmp/ms-validate/f1/plan_export_rank_2ae8b88b.patch, one expression in plan_export._Exporter.family) evaluates all of them (f3): VH01, VH02, VH03 pass; SC07 but its vanishing single pole (keyed by sector since); TV03 but its vanishing QCD x EW Born interference (listed since); SC04 and SC06 within 1e-9 of MadLoop QP (rule 1 relaxed per the ~10:20 ruling) and SC04's binary64 point 1 (F9)",
-   "routed": "coordinator (plan export; MS-MODEL integrated)"
+   "status": "fixed on work/v2-ms-validate (52eaff60, the candidate of wip/v2-ms-validate-f1-rank: the family's written rank bounds its steps, one expression in plan_export._Exporter.family; no owner was routed and MS-MODEL, whose 4f99d7fe fixed VV02 only, is integrated): every F1 row passes its nightly tier at the branch's fixes (tmp/ms-validate/f4 at 5901ede1 and r5 at baab3247): SC04 134/134, SC06 82/82, SC07 82/82 (its binary64 vanishing single pole against 1e-10 F_s), TV03 254/254, V301 82/82, VH01 134/134, VH02 134/134, VH03 134/134; VV02 261/261 (mp1); a plan the loader admitted before is exported unchanged (a step within the trie rank leaves the family rank)",
+   "routed": "MS-VALIDATE (fixed in the package; reviewable as its own commit)"
   },
   {
    "id": "F2",
@@ -33,8 +33,8 @@
    ],
    "checks": "every check: native inputs fail in native_trees._parameter_program, Python inputs in scalar_bindings.ScalarBindingPlan (scalar_frontend.evaluator)",
    "evidence": "probe-f2 (SC08 on Python inputs, 2026-10-30): 2 of the 36 bound outputs fail alone, the t~ b W+ UV counterterm coupling c_UVtxbWp1EW at eps^-1 and eps^0. Its source holds the UFO's '0 if MB == 0 else <...>/MB...' counterterm parameters; scalar_frontend lowers an IfExp with both branches (symbolica::if(truth(if(equal(0,0),1,0)), 0, <else>)), so with MB fixed to 0 the untaken branch divides by zero (Symbolica: 'Created infinity by raising 0 to the power of -1') and the evaluator refuses the infinite coefficient. Rows without this coupling only log the warning. Candidate fix (owner's call): decide an IfExp whose lowered condition is a constant before lowering its branches (lower only the taken branch), in the scalar frontend that both input paths share; MP01@P4 (b b~ > e- e+) and MP02@P6 (b b~ > t t~) fail the same way (tmp/ms-validate/mp1)",
-   "status": "open",
-   "routed": "coordinator (scalar bindings / native parameter program owner)"
+   "status": "fixed on work/v2-ms-validate (19619e62: scalar_frontend decides a conditional whose test reads only exact numbers at lowering and lowers only its taken branch, as Python evaluates it; undecided tests stay native run-time conditionals; unit test test_fixed_condition_lowers_only_the_taken_branch): SC08 82/82, ST03 134/134, MP01@P4 and MP02@P6 pass (tmp/ms-validate/f4)",
+   "routed": "MS-VALIDATE (fixed in the package; reviewable as its own commit)"
   },
   {
    "id": "F3",
@@ -118,21 +118,21 @@
   },
   {
    "id": "F9",
-   "category": "engine: binary64 evaluation with massive initial b quarks",
+   "category": "engine: exact-runtime source of a massive fermion on the beam axis",
    "title": "b b~ > w+ w- (with_b_mass, MB = 4.5) at point 1: the binary64 evaluation returns ~1e-49 for the Born and every Laurent coefficient (double-double = MadLoop QP)",
    "rows": [
     "SC04"
    ],
    "checks": "rule 2 at point 1: the binary64 Born 1.13e-49 against 0.0115 (asserted: the Born has no estimate); the virtual's coefficients ~1e-50, flagged outside the binary64 scope (E ~ 1e50, not asserted)",
-   "evidence": "tmp/ms-validate/f3 (SC04 runs only with the candidate F1 fix, which changes no Born tree): point 1 = incoming b and b~ at E = 400, |p_z| = 399.97 (m_b^2/s = 3.2e-5); points 0, 2, 3 agree in binary64",
-   "status": "open (seen with the candidate F1 fix; the branch's SC04 stops at F1)",
-   "routed": "coordinator (binary64 tree/point inputs with massive external fermions)"
+   "evidence": "tmp/ms-validate/f3 (SC04 runs only with the candidate F1 fix, which changes no Born tree): point 1 = incoming b and b~ at E = 400, |p_z| = 399.97 (m_b^2/s = 3.2e-5); points 0, 2, 3 agree in binary64; probe-f9 (2026-10-30): native inputs are right in binary64 (0.011483087026326617), the Python-input Born is ~1e-49 in every helicity; probe-f9b: the b~ source (leg 2, along -z) is ~1e-24 in the binary64 carrier's Python inputs (sources at 40 + 10 digits) and right at 52 + 10: runtime/symbolica_exact._massive_dirac computes |p| = sqrt(pz^2), which at 50 digits exceeds |pz| = 399.974686699045993514867962107 by 1e-47, so pp3 = |p| + pz = 1e-47 instead of 0 and, with zero transverse momentum, chi = (sqrt(pp3/2|p|), 0) ~ (1e-25, 0) instead of (0, -nh): a vanishing spinor",
+   "status": "fixed on work/v2-ms-validate (baab3247: on the z axis |p| = |pz| exactly; unit test test_massive_dirac_sources_on_the_beam_axis_do_not_hang_on_rounding fails without it): SC04 134/134 incl. point 1 in binary64, TT06 59/59 (massive initial b) at baab3247 (tmp/ms-validate/r5)",
+   "routed": "MS-VALIDATE (fixed in the package; the shared exact runtime, also the tree engine's)"
   }
  ],
  "coverage_notes": [
   "rule 4 is not formed on LL02, SC02 (F7) and SC03 (F6): model properties, the rows report partial",
   "the Ward extra is a diagnostic under the complex-mass scheme (CM05, CM07, CM09; PLAN 1.4/1.5) and not run on VV05 and ST03 in the real-mass scheme (F3)",
-  "rows failing on F1 (MS-MODEL's fix 4f99d7fe not integrated) and F2 record the raised error as their one failed check",
-  "rule 7 (nc) is not run: EW LC/NLC is never supported (USER Q4, 2026-10-30 ~08:10; typed colour-declaration-coverage)"
+  "rule 7 (nc) is not run: EW LC/NLC is never supported (USER Q4, 2026-10-30 ~08:10; typed colour-declaration-coverage)",
+  "a row whose evaluation raises records the error as its one failed check (the F1 and F2 rows did until the package's fixes 52eaff60 and 19619e62)"
  ]
 }
