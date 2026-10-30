@@ -11,7 +11,8 @@ Writes ``OUT/census.json``. CM01 reads ``tests/fixtures/loop/
 cms-ufo-standard-gmu.json`` (its finite block), CM10 loop_sm, the other rows
 the G_mu UFO and ``tests/fixtures/loop/required/msm/``. Needs the native
 extension, the licence and env.sh's model locations. Generation takes 1-6
-minutes and up to 8 GB per row; AP(40) of CM07 about XX min per point.
+minutes and up to 8 GB per row (CM07: 5 min, 6 GB); CM07 takes 1.5 min in
+double-double and 5 min in AP(40) per point, 15 GB.
 """
 
 from __future__ import annotations
