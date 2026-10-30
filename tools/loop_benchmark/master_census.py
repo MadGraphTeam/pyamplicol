@@ -26,7 +26,9 @@ exactly and counts the defect signatures:
 * ``complex-box``: D0 with a complex mass (the interpreted ``Float`` route's
   boxes, checked at row level: AP(40) against AP(60) and double-double);
 * ``tiny-width``: 0 < |Im m^2| / Re m^2 < 1e-150 (oneloopmaster's SymJIT
-  masters; pyAmpliCol's reducers take the native and interpreted routes).
+  masters, on no reducer's route; the double-double C0 turned non-finite
+  there on CM01, so ``TreeProgram::bind`` refuses it in double-double:
+  ``complex-mass-master``).
 """
 
 from __future__ import annotations
@@ -38,7 +40,8 @@ from fractions import Fraction
 from itertools import combinations
 from typing import Any
 
-#: |Im m^2| / Re m^2 below which oneloopmaster's SymJIT masters fail.
+#: |Im m^2| / Re m^2 below which oneloopmaster's SymJIT masters and the
+#: double-double C0 fail.
 TINY_WIDTH = Fraction(1, 10**150)
 
 
