@@ -44,10 +44,13 @@ rows, runs = [], {}
 
 
 def run(rid, key=None, export=None, points=None, helicities=None, split_points=False, note=None, binding=True,
-        point_status=None, notes=None, madloop_params=None):
+        point_status=None, notes=None, madloop_params=None, second=(), trigger=None):
     key = key or rid
     r = {"id": rid, "process": key, "export": export or f"runs/msm/{key}/madloop-export",
          "points": points or {"generator": "exact"}}
+    if second:
+        r["second_providers"] = list(second)
+        r["second_provider_trigger"] = trigger
     if madloop_params:
         r["madloop_params"] = madloop_params  # over madloop_settings.evaluation's, this run only
     if helicities:
@@ -212,8 +215,8 @@ row("ST02", "W-singletop", "u d~ > t b~ QCD=0", "G0", "E", fixtures=["required/u
 row("ST03", "W-singletop", "g b > t w-", "G0", "N", extras=["ward"], runs_=[run("gb_twm_ew", points=S())],
     sectors=["s^4e^2", "s^2e^4"])
 row("ST04", "W-singletop", "u d~ > t b~ QCD=0 (massive b)", "Gb", "R", fixtures=["required/udx_tbx_ew_mb.json"],
-    sectors=["e^6"], note=f"ew-validate's workspace run udx_tbx_ew_mb (MadLoop; Recola differs by 3e-4..1e-3 in its "
-                          f"massive-b setting, not a provider here) {EWI7}")
+    sectors=["e^6"], note=f"ew-validate's workspace run udx_tbx_ew_mb (MadLoop; Recola differs by 9.48e-5 x Born: "
+                          f"the G_mu UFO omits dMB_eCoup_UV_EW in its charge counterterm; not a provider here) {EWI7}")
 # JJ, PI
 row("JJ01", "W-jets", "u u~ > d d~", "G0", "N", extras=["so", "uv"], runs_=[run("uux_ddx_ew")],
     sectors=["s^6", "s^4e^2", "s^2e^4", "e^6"])
@@ -306,6 +309,14 @@ row("SC08", "W-scheme", "t t~ > w+ w-", "G0", "N", runs_=[run("ttx_wpwm_ew", poi
     note=f"root closure, R2 rule checked first {EWI7}")
 row("SC09", "W-scheme", "t t~ > z h QCD=0", "G0", "E", fixtures=["required/ttx_zh_ew.json"], sectors=["e^6"],
     primary="recola", note=f"{R2RULE} (2.5 %); root mixing; ew-validate's fixture {EWI7}")
+row("SC10", "W-scheme", "z z > h h", "G0", "N", sectors=["e^6"],
+    runs_=[run("zz_hh_ew", points=S(), second=["recola"],
+               trigger="diagnostic: Recola's R2 terms are not the UFO's, so it decides UFOmodeldb's R2_ZZHH fix"),
+           run("zz_hh_ew_mg5", points={"generator": "run", "run": "zz_hh_ew"}, binding=False,
+               note="control: MadLoop on MG5_aMC's online-database G_mu model, whose R2_ZZHH predates UFOmodeldb's "
+                    "fix (the only difference)")],
+    note="the R2 vertices Z Z H H and Z Z G0 G0 (coupling R2_ZZHH, fixed in UFOmodeldb 6ca4b120; no other row "
+         "reaches them) on the UFOmodeldb model [MS-UFODB]")
 
 # Rule 5 (m-sm/PLAN.md §1.4): bare, R2 and UV-CT components per sector on one row per class
 # (madloop_components.py; the uv extras DY01, VJ02, JJ01, TT01 (its technical-card run) and one row of every
@@ -330,7 +341,8 @@ for e in rows:
 
 campaign = {
     "description": "M-SM validation campaign (workspace/reports/engine-v2/m-sm/PLAN.md §4): the 70 core rows of §4.2 "
-                   "(the decay rows XX01/XX02 wait for the user's Q3) and the MadLoop reference runs producing them. "
+                   "(the decay rows XX01/XX02 wait for the user's Q3), SC10 (the R2_ZZHH row of MS-UFODB) and the "
+                   "MadLoop reference runs producing them. "
                    "Runs live under $LOOP_REFERENCE_ROOT/runs/msm/<run>/ and their merged references are committed "
                    "as tests/fixtures/loop/required/msm/<run>.json; existing fixtures are paths below "
                    "tests/fixtures/loop/. Driven by mqcd_campaign.py --campaign msm_campaign.json.",
@@ -359,6 +371,6 @@ campaign = {
     "rows": rows,
     "runs": list(runs.values()),
 }
-assert len(rows) == 70, len(rows)
+assert len(rows) == 71, len(rows)
 Path(sys.argv[1]).write_text(json.dumps(campaign, indent=1) + "\n")
 print(len(rows), "rows,", len(runs), "runs")
