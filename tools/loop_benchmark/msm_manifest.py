@@ -1657,14 +1657,16 @@ NO_CATANI = {
     "SC02": "the massive-muon UFO copy: the UFO writes the lepton field "
     "renormalisation for massless leptons (single pole = the massive QED "
     "operator + 3 alpha/2pi Born)",
-    # restrict_ckm: the UFO renormalises no CKM matrix, so with the complex
-    # CKM and the massive top the virtual (= MadLoop's) keeps a UV pole:
-    # QED^6 single pole = the QED operator - 0.0213 (alpha/2pi) Born at
-    # every point, independent of MB to 1e-6 (tmp/ms-validate/probe-sc03,
-    # MB = 4.7, 2.35, 0.47; finding F6).
-    "SC03": "restrict_ckm: no CKM counterterm in the UFO, so the complex CKM "
-    "leaves a UV pole in the QED correction (single pole = the QED operator "
-    "- 0.0213 alpha/2pi Born, as MadLoop's; finding F6)",
+    # restrict_ckm: the UFO's O(lambda^3) Wolfenstein CKM is not unitary, so
+    # the virtual (= MadLoop's) keeps a UV pole in the QED correction: QED^6
+    # single pole = the QED operator - 0.0213 (alpha/2pi) Born at every
+    # point, independent of MB to 1e-6 (tmp/ms-validate/probe-sc03, MB =
+    # 4.7, 2.35, 0.47), ~lambda^4 (MS-REF's lamWS scan, scheme ew-gmu-ckm);
+    # finding F6.
+    "SC03": "restrict_ckm: the UFO's O(lambda^3) Wolfenstein CKM is not "
+    "unitary, so the QED correction keeps a UV pole ~lambda^4 (single pole = "
+    "the QED operator - 0.0213 alpha/2pi Born, as MadLoop's; MS-REF scheme "
+    "ew-gmu-ckm; finding F6)",
 }
 # The Ward extra in the real-mass scheme (m-sm/PLAN.md §1.4 Ward): the
 # identity holds only where no external coloured (gluon Ward) or charged
