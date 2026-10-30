@@ -32,6 +32,9 @@
 ! same arrays for that helicity configuration alone, in MadLoop's per-helicity
 ! normalisation (colour average and identical-particle factor, no helicity
 ! average: the sum over all tuples is HELAVGFACTOR times the summed value).
+! With MADLOOP_REUSE_INITIAL_CALL=1 in the environment and a single point, the
+! point's last initialization call (at its own scale) is its value: no second
+! evaluation (one-point jobs of large processes).
 program madloop_reference
   implicit none
   include 'nexternal.inc'
@@ -46,6 +49,9 @@ program madloop_reference
   integer, allocatable :: tuples(:,:), table(:,:), hel_index(:)
   integer :: row(nexternal)
   character(512) :: card_path, resource_path
+  character(8) :: reuse_text
+  logical :: reuse
+  real(dp) :: initial_seconds
   read(*, *) born_orders, loop_orders, alpha_s, target, force_check
   read(*, *) count
   allocate(p(0:3, nexternal, count), scales(count))
@@ -110,15 +116,22 @@ program madloop_reference
     if (mod(status / 10, 10) /= 3 .and. mod(status / 10, 10) /= 4) exit
   end do
   call system_clock(c1)
-  write(*, '(A,ES16.8,2I8)') 'INITIAL_CALL_SECONDS ', real(c1 - c0, dp) / rate, attempt, status
+  initial_seconds = real(c1 - c0, dp) / rate
+  write(*, '(A,ES16.8,2I8)') 'INITIAL_CALL_SECONDS ', initial_seconds, attempt, status
+  call get_environment_variable('MADLOOP_REUSE_INITIAL_CALL', reuse_text)
+  reuse = trim(reuse_text) == '1' .and. count == 1
   do k = 2, count + 1
     i = merge(1, k, k > count)
-    call update_as_param2(scales(i)**2, alpha_s)
-    call ML5_0_force_stability_check(force_check /= 0)
-    call system_clock(c0)
-    call ML5_0_sloopmatrix_thres(p(:, :, i), answer, target, accuracy, status)
-    call system_clock(c1)
-    seconds = real(c1 - c0, dp) / rate
+    if (reuse) then
+      seconds = initial_seconds
+    else
+      call update_as_param2(scales(i)**2, alpha_s)
+      call ML5_0_force_stability_check(force_check /= 0)
+      call system_clock(c0)
+      call ML5_0_sloopmatrix_thres(p(:, :, i), answer, target, accuracy, status)
+      call system_clock(c1)
+      seconds = real(c1 - c0, dp) / rate
+    end if
     write(*, '(A,I6,I6,ES16.8,5ES26.17E3,4ES26.17E3)') 'ROW ', i, status, seconds, &
       answer(0, born_index), answer(1:3, loop_index), accuracy(loop_index), answer(0:3, 0)
     write(*, '(A,I6,I6,*(ES26.17E3))') 'SECTORS ', i, status, answer, accuracy
