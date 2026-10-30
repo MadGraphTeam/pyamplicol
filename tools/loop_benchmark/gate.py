@@ -89,6 +89,9 @@ from typing import Any
 from . import providers as provider_module
 from . import streams
 
+# The verdict of a specification with role "indicative" (``processes.json``).
+INDICATIVE = "indicative: not gated (EW, m-sm/PLAN.md [U5]: the gate binds in M-FINAL)"
+
 GATE_FACTOR = 1.30
 # The user's rule of 2026-10-28 (slice-status DECISIONS ~08:20 item 2,
 # MASTER_PLAN §5.8 amendment): the speed gate is taken at B = 128 only; every
@@ -335,11 +338,20 @@ def _provider_values(key: str, record: dict[str, Any]) -> dict[str, dict[int, tu
     """(born, finite in MadLoop's convention) per provider and stream index."""
 
     spec = streams.spec(key)
-    factor = provider_module.universal_double_pole(spec)
+    # Recola's finite part takes pi^2/6 x the universal double pole, which
+    # ``universal_double_pole`` implements for QCD only; for an EW
+    # correction (the indicative EW row; QED has double poles where charged
+    # legs are massless) that conversion is not implemented, so its Recola
+    # values are not compared (MadLoop's and OpenLoops' are).
+    factor = (
+        provider_module.universal_double_pole(spec)
+        if spec["correction"] == "QCD"
+        else None
+    )
     out: dict[str, dict[int, tuple]] = {}
     for name, result in record["providers"].items():
         rows = result.get("rows")
-        if not rows:
+        if not rows or (name == "recola" and factor is None):
             continue
         values = {}
         for index, row in enumerate(rows):
@@ -726,6 +738,9 @@ def build(
         if entry is None:
             continue
         legs = multiplicity(key)
+        # A specification with role "indicative" (the M-SM EW row: timed and
+        # reported, its gate binds in M-FINAL, m-sm/PLAN.md [U5]) is not gated.
+        indicative = streams.spec(key).get("role") == "indicative"
         times = _times(entry["providers"], "median_seconds_per_point")
         means = _times(entry["providers"], "mean_seconds_per_point")
         missing = missing_providers(key, entry["providers"])
@@ -750,6 +765,8 @@ def build(
             ungated = None
             if legs < 3:
                 ungated = "no gate (2->2)"
+            elif indicative:
+                ungated = INDICATIVE
             elif record["accuracy"] != "full":
                 # Providers time full colour: LC/NLC carry no ratio.
                 ungated = "no gate (colour approximation)"
@@ -890,7 +907,7 @@ def build(
                 # From 2 -> 3 upward, wherever a provider timing exists: with
                 # none (g g > g g g g g, every provider beyond HANDOFF 0.1)
                 # the speed is reported without a gate (addenda F and H).
-                "gated": legs >= 3 and bool(times),
+                "gated": legs >= 3 and bool(times) and not indicative,
                 **({"gate_note": NO_PROVIDER_NOTE} if legs >= 3 and not times else {}),
                 "providers": provider_summary,
                 "provider_cpu": entry["providers"]["cpu"]

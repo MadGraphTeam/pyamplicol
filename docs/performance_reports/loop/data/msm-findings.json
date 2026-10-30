@@ -1,0 +1,153 @@
+{
+ "source": "triage of the failing checks of the M-SM campaign (tests/unit/test_loop_v2_msm_*.py, m-sm/PLAN.md \u00a71.4), curated by MS-VALIDATE from the campaign records (MS-REF's references in a scratch merge of work/v2-ms-ref, 2026-10-30) and the probes named per finding (workspace/tmp/ms-validate/probe-*); no tolerance widened beyond the user's ~10:20 ruling",
+ "findings": [
+  {
+   "id": "F1",
+   "category": "engine: plan export (crash)",
+   "title": "The native plan loader refuses EW plans: 'loop v2 plan: a (trace) step above the family rank'",
+   "rows": [
+    "SC04",
+    "SC06",
+    "SC07",
+    "TV03",
+    "V301",
+    "VH01",
+    "VH02",
+    "VH03",
+    "VV02"
+   ],
+   "checks": "every check of the row: the executor is not formed (both input paths)",
+   "evidence": "probe-rank (SC07, h h > h h QED): 12 of 87 families are written with rank 2 (schedules.build_trie: the largest summed segment q-degree of a ring) while plan_export._Exporter._step writes rank_in = the largest source storage and degree = the largest edge degree of a trie node (2 + 1 = 3), which rusticol's derive.rs / plan.rs refuse: a node joining rings of degree-0 and degree-1 vertices (W, Z, Goldstone and Higgs rings) over-runs every single ring. Candidate fix, tried in a scratch worktree (tmp/ms-validate/wt-fix, f1): the family's written rank bounds its steps, rank = max(trie.rank, max step rank_in + degree) in plan_export._Exporter.family (forward states and merged closures likewise): VH01 (Python inputs) 134/134 checks pass against MadLoop QP, SC07 (native inputs) every check but its vanishing single pole (ours 1e-33, MadLoop 1e-17; listed since)",
+   "status": "fixed on work/v2-ms-validate (52eaff60, the candidate of wip/v2-ms-validate-f1-rank: the family's written rank bounds its steps, one expression in plan_export._Exporter.family; no owner was routed and MS-MODEL, whose 4f99d7fe fixed VV02 only, is integrated): every F1 row passes its nightly tier at the branch's fixes (tmp/ms-validate/f4 at 5901ede1 and r5 at baab3247): SC04 134/134, SC06 82/82, SC07 82/82 (its binary64 vanishing single pole against 1e-10 F_s), TV03 254/254, V301 82/82, VH01 134/134, VH02 134/134, VH03 134/134; VV02 261/261 (mp1); a plan the loader admitted before is exported unchanged (a step within the trie rank leaves the family rank)",
+   "routed": "MS-VALIDATE (fixed in the package; reviewable as its own commit)"
+  },
+  {
+   "id": "F2",
+   "category": "engine: scalar bindings (crash)",
+   "title": "SC08 (t t~ > w+ w-), ST03 (g b > t w-) and the b b~ members of MP01, MP02, G_mu with MB = ymb = 0 fixed, fail building the scalar evaluator: the untaken branch of a decided '0 if MB == 0 else ...' counterterm parameter keeps an infinite coefficient",
+   "rows": [
+    "SC08",
+    "ST03",
+    "MP01@P4",
+    "MP02@P6"
+   ],
+   "checks": "every check: native inputs fail in native_trees._parameter_program, Python inputs in scalar_bindings.ScalarBindingPlan (scalar_frontend.evaluator)",
+   "evidence": "probe-f2 (SC08 on Python inputs, 2026-10-30): 2 of the 36 bound outputs fail alone, the t~ b W+ UV counterterm coupling c_UVtxbWp1EW at eps^-1 and eps^0. Its source holds the UFO's '0 if MB == 0 else <...>/MB...' counterterm parameters; scalar_frontend lowers an IfExp with both branches (symbolica::if(truth(if(equal(0,0),1,0)), 0, <else>)), so with MB fixed to 0 the untaken branch divides by zero (Symbolica: 'Created infinity by raising 0 to the power of -1') and the evaluator refuses the infinite coefficient. Rows without this coupling only log the warning. Candidate fix (owner's call): decide an IfExp whose lowered condition is a constant before lowering its branches (lower only the taken branch), in the scalar frontend that both input paths share; MP01@P4 (b b~ > e- e+) and MP02@P6 (b b~ > t t~) fail the same way (tmp/ms-validate/mp1)",
+   "status": "fixed: a conditional whose test reads only exact numbers is decided at lowering and only its taken branch lowered, as Python evaluates it (this package's 19619e62; ms-ufo-patch landed the same fix, ScalarFunctionLibrary.decided_number with test_conditional_decided_by_its_bindings_forms_only_the_taken_branch, which the merge of slice 3eb4db9f keeps): SC08, ST03, MP01@P4 and MP02@P6 pass (f4, fs4)",
+   "routed": "closed (the slice's implementation kept)"
+  },
+  {
+   "id": "F3",
+   "category": "plan: Ward identity in the real-mass scheme",
+   "title": "The gluon (photon) Ward identity of the EW virtual fails where an external coloured (charged) particle has an absorptive self-energy at its mass",
+   "rows": [
+    "CM07",
+    "ST03",
+    "TT03",
+    "TV07",
+    "VV05"
+   ],
+   "checks": "ward: TT03 and TV07 double-double 3e-4 / 6e-5 of the scale (c = 1 and i, every gluon), VV05 photon c = i 4e-4; rule 1 = MadLoop at the physical polarisations",
+   "evidence": "probe-ward (TT03, double-double, leg 1): residual 3.3e-4 (c = 1), 5.2e-5 (c = i) of the scale at the card (t -> b W open), 5e-30 and 4e-29 at MW = 180, MZ = 200 (stable top), the bare, R2 and UV parts 1e-2 each: the real on-shell counterterms (Re Sigma) leave the external top's absorptive part unrenormalised, the scheme's property, not an engine defect (the identity holds under CMS); under CMS with Gamma_t = 0 (CM07, native inputs, tmp/ms-validate/cm4) the gluon Ward diagnostic misses by 1.2e-3 of the scale (the external top on its real line mass keeps t -> b W absorptive), while CM05 (no external top) holds at 4e-31: the same mechanism; CM07's acceptance checks all pass (86/86, rule 1 = MadLoop CMS 6.9e-13)",
+   "status": "resolved in the manifest: TT03 and TV07 check Ward at a stable top (ward_parameters MW = 180, MZ = 200); VV05 (external W) and ST03 (external top and W) defer it to the CMS rows (CM05, CM07, CM09)",
+   "routed": "coordinator (PLAN \u00a71.4 Ward text)"
+  },
+  {
+   "id": "F4",
+   "category": "references: MS-REF bookkeeping",
+   "title": "MS-REF's manifest marks the existing references of DY05, VJ03 and VV06 as superseded by their top-up runs, which hold another squared sector",
+   "rows": [
+    "DY05",
+    "VJ03",
+    "VV06"
+   ],
+   "checks": "none (the harness keeps the existing fixture for its sector and the top-up for the new one)",
+   "evidence": "msm_references.json existing_references[].point_binding: binding false, superseded_by the top-up row, strict relative deviations ~1 (different sectors)",
+   "status": "open (minor)",
+   "routed": "MS-REF"
+  },
+  {
+   "id": "F5",
+   "category": "reference: MadLoop off the IR structure",
+   "title": "u u~ > mu- mu+ on the massive-muon G_mu copy: MadLoop's QED^6 single pole and finite part differ from ours by 0.05 and 2 Born",
+   "rows": [
+    "SC02"
+   ],
+   "checks": "rule 1, QED^6 finite and single pole at every point (double pole and the QCD^2 QED^4 sector agree)",
+   "evidence": "probe-sc02 (double-double, points 0 and 2): the QED-only and the joint request give the same QED^6 values; ours = the engine's massive QED Catani operator + 3 (alpha/2pi) Born to seven digits (the copy's massless lepton field renormalisation, as on LL02, where ours = MadLoop's control), while MadLoop's single pole is the operator - 42 (alpha/2pi) Born. Per PLAN \u00a74.1 Recola arbitrates a discrepancy above ~1e-5 (its own massive muon differs from the copy by the same field renormalisation)",
+   "status": "resolved by MS-REF's integrated re-run of uux_mummp_ew_mm (CutTools in the quadruple-precision stage, 047841b6): ours = MadLoop to 4.9e-9 in the QED^6 finite part (rule 1 at 1e-8 on SC02, the user's ~10:20 ruling), the poles to 1e-12 (c7)",
+   "routed": "closed"
+  },
+  {
+   "id": "F6",
+   "category": "model: UV poles under restrict_ckm",
+   "title": "u d~ > e+ ve on the G_mu UFO's ckm restriction keeps a UV pole: its QED^6 single pole is the QED Catani operator - 0.0213 (alpha/2pi) Born (non-unitary O(lambda^3) Wolfenstein CKM), ours = MadLoop's",
+   "rows": [
+    "SC03"
+   ],
+   "checks": "rule 4, QED^6 single pole at every point (rule 1 = MadLoop QP; the QCD^2 QED^4 sector meets its operator exactly)",
+   "evidence": "probe-sc03 (double-double, points 0 and 1): the offset is -0.021297 / -0.021183 (alpha/2pi) Born and independent of MB to 1e-6 (MB = ymb = 4.7, 2.35, 0.47); MS-REF's scheme record ew-gmu-ckm: the UFO's O(lambda^3) Wolfenstein CKM is not unitary, the remnant scales as lambda^4 (lamWS scan), MadLoop alike",
+   "status": "resolved by the shipped models: UFOmodeldb issue #1 item 2 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1), the user's patch (DECISIONS 2026-10-30 ~12:45; MS-UFO-PATCH, slice 3eb4db9f) makes the CKM exactly unitary; SC03's rule 4 is formed again: its remaining 3.1e-7..1.1e-6 offset (= MadLoop's) is the EW counterterms' missing tau mass, the user's retained model limitation, relaxed to 1e-5 per the ~10:20 ruling (fs4)",
+   "routed": "closed (MS-UFO-PATCH)"
+  },
+  {
+   "id": "F7",
+   "category": "model: UV poles of the massive-muon copy",
+   "title": "e- e+ > mu- mu+ and u u~ > mu- mu+ on the massive-muon G_mu copy keep a UV pole: the copy writes the lepton field renormalisation of massless leptons",
+   "rows": [
+    "LL02",
+    "SC02"
+   ],
+   "checks": "rule 4 not formed on the rows (manifest catani none, its reason); rule 1 = MadLoop (LL02's control, SC02's CutTools re-run) at every point",
+   "evidence": "probe-sc02 (double-double): ours = the massive QED Catani operator + 3 (alpha/2pi) Born exactly, = MadLoop's; MS-REF's scheme record ew-gmu-mm: +3/2 Q^2 per muon leg (massless muon counterterms in the copy)",
+   "status": "accepted model property (the rows report partial: rule 4 not formed)",
+   "routed": "none (a property of the copied UFO, not of the engine)"
+  },
+  {
+   "id": "F8",
+   "category": "engine: Python point inputs under the complex-mass scheme",
+   "title": "With a zero top width under CMS (the top on its line mass LMASS_MT := MT, model_cms step 4b) the Python-input path is not at the runtime MT: g g > t t~ Born 3.8e-4 off MadLoop CMS (native inputs exact)",
+   "rows": [
+    "CM04",
+    "CM07"
+   ],
+   "checks": "CM04 (Python inputs): rule 1 (Born and every sector ~4e-4), rule 4 (the virtual's poles against the engine's own operator 3e-5 to 2.6e-4: the Python path is not self-consistent), rule 5; CM07 on Python inputs (cm2): Born 5e-4, the EW sector's finite part 3e-3 off MadLoop CMS; CM07 on native inputs (the production route, cm3): rule 4's engine operator reads the Python-input Born",
+   "evidence": "probe-cm04 (point 0, binary64): Born Python inputs 1.0054755 at MT = 173, native inputs 1.00509349673877 = MadLoop CMS = the real-mass Born; at the default MT = 173.3 both paths give 1.0051884: a part of the Python path takes LMASS_MT at its default, not at the runtime MT. CM02, CM03, CM09 (nonzero widths, no zero-width Yukawa-tied mass) pass on Python inputs; probe-cm04/probe3: the loop masses are right (assemble._model_masses: LMASS_MT = 173 at the runtime MT = 173, the transformed model's records LMASS_MT := MT, ymt := MT, internal), so the Python path's Born trees are the suspect (TreeRows takes an external record at its default where the runtime parameters do not name it); CM07 on native inputs (cm3): rule 1 = MadLoop CMS QP to 6.9e-13 ([U4] on the production route), rule 4 and the Ward diagnostic (1.2e-3 of the scale; CM05's holds at 4e-31) miss through the Python-input Born and Ward inputs",
+   "status": "resolved by MS-CMS's fix round 1 (integrated at ebbb6a98): CM04 = MadLoop CMS at f30a55b2 (its only miss the vanishing QCD x EW double pole, listed since); CM07 on native inputs 86/86 (rule 4's engine operator on the Python-input Born now agrees, 7.2e-26)",
+   "routed": "closed (MS-CMS)"
+  },
+  {
+   "id": "F9",
+   "category": "engine: exact-runtime source of a massive fermion on the beam axis",
+   "title": "b b~ > w+ w- (with_b_mass, MB = 4.5) at point 1: the binary64 evaluation returns ~1e-49 for the Born and every Laurent coefficient (double-double = MadLoop QP)",
+   "rows": [
+    "SC04"
+   ],
+   "checks": "rule 2 at point 1: the binary64 Born 1.13e-49 against 0.0115 (asserted: the Born has no estimate); the virtual's coefficients ~1e-50, flagged outside the binary64 scope (E ~ 1e50, not asserted)",
+   "evidence": "tmp/ms-validate/f3 (SC04 runs only with the candidate F1 fix, which changes no Born tree): point 1 = incoming b and b~ at E = 400, |p_z| = 399.97 (m_b^2/s = 3.2e-5); points 0, 2, 3 agree in binary64; probe-f9 (2026-10-30): native inputs are right in binary64 (0.011483087026326617), the Python-input Born is ~1e-49 in every helicity; probe-f9b: the b~ source (leg 2, along -z) is ~1e-24 in the binary64 carrier's Python inputs (sources at 40 + 10 digits) and right at 52 + 10: runtime/symbolica_exact._massive_dirac computes |p| = sqrt(pz^2), which at 50 digits exceeds |pz| = 399.974686699045993514867962107 by 1e-47, so pp3 = |p| + pz = 1e-47 instead of 0 and, with zero transverse momentum, chi = (sqrt(pp3/2|p|), 0) ~ (1e-25, 0) instead of (0, -nh): a vanishing spinor",
+   "status": "fixed on work/v2-ms-validate (baab3247: on the z axis |p| = |pz| exactly; unit test test_massive_dirac_sources_on_the_beam_axis_do_not_hang_on_rounding fails without it): SC04 134/134 incl. point 1 in binary64, TT06 59/59 (massive initial b) at baab3247 (tmp/ms-validate/r5)",
+   "routed": "MS-VALIDATE (fixed in the package; the shared exact runtime, also the tree engine's)"
+  },
+  {
+   "id": "F10",
+   "category": "model: G_mu massive-b charge counterterm",
+   "title": "With a massive b (restrict_with_b_mass), the G_mu UFO's 186 CT couplings that use (eCoup_a0_UV_EW + eCoup_DGmua0_UV_EW) omit dMB_eCoup_UV_EW",
+   "rows": [
+    "SC04",
+    "TT06",
+    "ST04"
+   ],
+   "checks": "none fail: ours = MadLoop (both read the UFO as shipped); a provider with its own renormalisation differs by the omitted term (ST04's MadLoop-Recola offset)",
+   "evidence": "MS-UFODB (slice 0e5930c2): the omitted term explains ST04's MadLoop-Recola offset exactly",
+   "status": "resolved by the shipped models: UFOmodeldb issue #1 item 3 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1), the user's patch (DECISIONS ~12:45; MS-UFO-PATCH, slice 3eb4db9f) restores dMB_eCoup_UV_EW; SC04, TT06 and ST04 are re-referenced with MadLoop QP + Recola on the patched model",
+   "routed": "closed (MS-UFO-PATCH)"
+  }
+ ],
+ "coverage_notes": [
+  "rule 4 is not formed on LL02 and SC02 (F7): a model property, the rows report partial",
+  "the Ward extra is a diagnostic under the complex-mass scheme (CM05, CM07, CM09; PLAN 1.4/1.5) and not run on VV05 and ST03 in the real-mass scheme (F3)",
+  "rule 7 (nc) is not run: EW LC/NLC is never supported (USER Q4, 2026-10-30 ~08:10; typed colour-declaration-coverage)",
+  "a row whose evaluation raises records the error as its one failed check (the F1 and F2 rows did until the fixes: 52eaff60, and 19619e62 / ms-ufo-patch's decided_number)",
+  "on the shipped patched models (MS-UFO-PATCH) MadLoop's exports call every R2 coupling the engine inserts (the R2 rule finds no omission; on the unpatched models R2_G0tt_b on LL10, TT04, SC09, TT05)"
+ ]
+}
