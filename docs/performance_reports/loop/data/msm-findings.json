@@ -18,19 +18,19 @@
    ],
    "checks": "every check of the row: the executor is not formed (both input paths)",
    "evidence": "probe-rank (SC07, h h > h h QED): 12 of 87 families are written with rank 2 (schedules.build_trie: the largest summed segment q-degree of a ring) while plan_export._Exporter._step writes rank_in = the largest source storage and degree = the largest edge degree of a trie node (2 + 1 = 3), which rusticol's derive.rs / plan.rs refuse: a node joining rings of degree-0 and degree-1 vertices (W, Z, Goldstone and Higgs rings) over-runs every single ring. Candidate fix, tried in a scratch worktree (tmp/ms-validate/wt-fix, f1): the family's written rank bounds its steps, rank = max(trie.rank, max step rank_in + degree) in plan_export._Exporter.family (forward states and merged closures likewise): VH01 (Python inputs) 134/134 checks pass against MadLoop QP, SC07 (native inputs) every check but its vanishing single pole (ours 1e-33, MadLoop 1e-17; listed since)",
-   "status": "open",
-   "routed": "coordinator (plan export owner)"
+   "status": "open: fixed on work/v2-ms-model 4f99d7fe (plan_export._trace_groups: a trace step whose source storage plus content degree exceeds the family rank splits by source storage), not yet integrated",
+   "routed": "MS-MODEL (4f99d7fe); the rows rerun when it integrates"
   },
   {
    "id": "F2",
    "category": "engine: scalar bindings (crash)",
-   "title": "SC08 (t t~ > w+ w-) and ST03 (g b > t w-), G_mu with MB = ymb = 0 fixed, fail building the scalar evaluator: 'infinity coefficients are not supported for evaluation'",
+   "title": "SC08 (t t~ > w+ w-) and ST03 (g b > t w-), G_mu with MB = ymb = 0 fixed, fail building the scalar evaluator: the untaken branch of a decided '0 if MB == 0 else ...' counterterm parameter keeps an infinite coefficient",
    "rows": [
     "SC08",
     "ST03"
    ],
    "checks": "every check: native inputs fail in native_trees._parameter_program, Python inputs in scalar_bindings.ScalarBindingPlan (scalar_frontend.evaluator)",
-   "evidence": "probe-sc08: the same request on Python inputs fails at the same evaluator creation; the generation logs Symbolica's 'Created infinity by raising 0 to the power of -1' (also in passing rows). Likely an untaken branch of a decided conditional at the fixed MB = 0 (the UFO's '0 if MB == 0 else ...' b-mass counterterm parameters) kept in the bound expressions",
+   "evidence": "probe-f2 (SC08 on Python inputs, 2026-10-30): 2 of the 36 bound outputs fail alone, the t~ b W+ UV counterterm coupling c_UVtxbWp1EW at eps^-1 and eps^0. Its source holds the UFO's '0 if MB == 0 else <...>/MB...' counterterm parameters; scalar_frontend lowers an IfExp with both branches (symbolica::if(truth(if(equal(0,0),1,0)), 0, <else>)), so with MB fixed to 0 the untaken branch divides by zero (Symbolica: 'Created infinity by raising 0 to the power of -1') and the evaluator refuses the infinite coefficient. Rows without this coupling only log the warning. Candidate fix (owner's call): decide an IfExp whose lowered condition is a constant before lowering its branches (lower only the taken branch), in the scalar frontend that both input paths share",
    "status": "open",
    "routed": "coordinator (scalar bindings / native parameter program owner)"
   },
@@ -78,12 +78,12 @@
   {
    "id": "F6",
    "category": "model: UV poles under restrict_ckm",
-   "title": "u d~ > e+ ve on the G_mu UFO's ckm restriction keeps a UV pole: its QED^6 single pole is the QED Catani operator - 0.0213 (alpha/2pi) Born, ours = MadLoop's",
+   "title": "u d~ > e+ ve on the G_mu UFO's ckm restriction keeps a UV pole: its QED^6 single pole is the QED Catani operator - 0.0213 (alpha/2pi) Born (non-unitary O(lambda^3) Wolfenstein CKM), ours = MadLoop's",
    "rows": [
     "SC03"
    ],
    "checks": "rule 4, QED^6 single pole at every point (rule 1 = MadLoop QP; the QCD^2 QED^4 sector meets its operator exactly)",
-   "evidence": "probe-sc03 (double-double, points 0 and 1): the offset is -0.021297 / -0.021183 (alpha/2pi) Born and independent of MB to 1e-6 (MB = ymb = 4.7, 2.35, 0.47): not the b mass; the UFO has no CKM counterterm, so the complex CKM with the massive top is not UV finite (MadLoop alike). Rule 4 is not formed on SC03 (manifest catani none, its reason)",
+   "evidence": "probe-sc03 (double-double, points 0 and 1): the offset is -0.021297 / -0.021183 (alpha/2pi) Born and independent of MB to 1e-6 (MB = ymb = 4.7, 2.35, 0.47); MS-REF's scheme record ew-gmu-ckm: the UFO's O(lambda^3) Wolfenstein CKM is not unitary, the remnant scales as lambda^4 (lamWS scan), MadLoop alike",
    "status": "open (model property; rule 4 not formed on the row)",
    "routed": "coordinator (PLAN \u00a74.2 SC03: CKM rows need a CKM counterterm or a UV-pole exemption)"
   }
