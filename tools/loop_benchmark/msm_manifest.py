@@ -5,7 +5,8 @@
 
 Usage: python tools/loop_benchmark/msm_manifest.py
 
-The rows are m-sm/PLAN.md §4.2's 70 core rows (``row(...)`` below: process,
+The rows are m-sm/PLAN.md §4.2's 70 core rows and MS-UFODB's SC10
+(``row(...)`` below: process,
 corrections, model code, squared sectors, Born amplitude orders, reference
 legend, extras, the package a pending row waits for), written in the record
 type of the M-QCD manifest (``tools/loop_benchmark/mqcd.py`` ``Row``; the
@@ -37,11 +38,32 @@ from tools.loop_benchmark import mqcd  # noqa: E402
 REQ = "tests/fixtures/loop/required"
 FIX = "tests/fixtures/loop"
 OUT = WT / "tests/fixtures/loop/msm/manifest.json"
-WORKSPACE = Path(
-    os.environ.get(
-        "PYAMPLICOL_LOOP_WORKSPACE", "/shared/vhirschi/t3code/pyamplicol/workspace"
-    )
-)
+
+
+def _workspace() -> Path:
+    """The loop workspace (reference UFOs): ``PYAMPLICOL_LOOP_WORKSPACE``,
+    else the ``workspace`` directory beside the main checkout (the parent of
+    git's common directory, as ``tests/conftest.py`` finds it)."""
+
+    if configured := os.environ.get("PYAMPLICOL_LOOP_WORKSPACE"):
+        return Path(configured)
+    import subprocess
+
+    common = subprocess.run(
+        ["git", "rev-parse", "--path-format=absolute", "--git-common-dir"],
+        cwd=WT,
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    main = Path(common).resolve().parent if common else WT
+    return main.parent / "workspace"
+
+
+WORKSPACE = _workspace()
+# The QCD+QED loop UFOs as UFOmodeldb ships them (tests/conftest.py's
+# ``loop_gmu_ufo`` and ``loop_qcd_qed_sm_ufo``; MS-UFODB).
+UFODB = WORKSPACE / "reference/models/ufodb-6ca4b120"
 
 ZERO_WIDTHS = {"WT": "0", "WW": "0", "WZ": "0", "WH": "0"}
 G_MU_FIXED = {"MB": "0", "ymb": "0", "MTA": "0", "ymtau": "0", **ZERO_WIDTHS}
@@ -1224,8 +1246,24 @@ row(
     ["2->2", "root-mixing", "r2-rule"],
     waits="EWI-7",
 )
+# MS-UFODB's row (slice 0e5930c2): the R2 vertices Z Z H H and Z Z G0 G0
+# (coupling R2_ZZHH, fixed in UFOmodeldb 6ca4b120; no other row reaches
+# them), MadLoop QP on the UFOmodeldb model with Recola.
+row(
+    "SC10",
+    "z z > h h",
+    "QED",
+    "G0",
+    [(0, 6)],
+    [(0, 2)],
+    "N (MS-UFODB: R2_ZZHH on UFOmodeldb 6ca4b120; MadLoop QP + Recola)",
+    None,
+    [],
+    ["2->2", "r2-ufodb"],
+    waits="MS-REF",
+)
 
-assert len(R) == 70, len(R)
+assert len(R) == 71, len(R)
 
 # ---- MS-REF's references (m-sm/PLAN.md §3.2 MS-REF, §4.2 legends N, R):
 # its reference manifest (``required/msm_references.json``) lists per row the
@@ -1246,28 +1284,17 @@ MSREF = (
 if MSREF:
     LANDED.add("MS-REF")
 GMU_UFO = Path(
-    os.environ.get(
-        "PYAMPLICOL_EW_UFO_REFERENCE",
-        WORKSPACE / "reference/models/loop_qcd_qed_sm_Gmu_py3",
-    )
+    os.environ.get("PYAMPLICOL_EW_UFO_REFERENCE", UFODB / "loop_qcd_qed_sm_Gmu_py3")
 )
 
 
 def _ew_oracle():
-    """tests/unit/test_loop_v2_ew.py's UFO-source evaluator (the photon
-    conversion parameter per point, below)."""
+    """The UFO-source evaluator (the photon conversion parameter per point,
+    below): ``tools/loop_reference/ufo_source_oracle.py``."""
 
-    import importlib.util
+    from tools.loop_reference import ufo_source_oracle
 
-    name = "_msm_manifest_test_loop_v2_ew"
-    if name not in sys.modules:
-        spec = importlib.util.spec_from_file_location(
-            name, WT / "tests/unit/test_loop_v2_ew.py"
-        )
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[name] = module
-        spec.loader.exec_module(module)
-    return sys.modules[name]
+    return ufo_source_oracle
 
 
 def conversion_values(data, counterterm="eCoup_DGmua0_UV_EW"):
@@ -1280,12 +1307,12 @@ def conversion_values(data, counterterm="eCoup_DGmua0_UV_EW"):
     if not GMU_UFO.is_dir():
         raise SystemExit("the G_mu UFO is needed for the photon conversion values")
     oracle = _ew_oracle()
-    modules = oracle._import_ufo(GMU_UFO, "_msm_manifest_gmu_ufo")
+    modules = oracle.import_ufo(GMU_UFO, "_msm_manifest_gmu_ufo")
     base = {**data["parameters"], **data.get("fixed_parameters", {})}
     base.update(data.get("parameter_overrides", {}))
     out = []
     for mu in data["mu_r"]:
-        values, _env = oracle._ufo_source_values(
+        values, _env = oracle.ufo_source_values(
             modules, {**base, "MU_R": str(mu)}, exact=False, wrap=None
         )
         out.append(
@@ -1612,17 +1639,18 @@ PENDING_EXTRAS = {
 COMPONENT_FORMATS = {"ew-control", "madloop-components", "process-components"}
 
 # The R2 rule (m-sm/PLAN.md §1.4 rule 1, Q7): per row the R2 couplings the
-# engine inserts that MadLoop's label matching omits, as the rows'
-# references record them (``goldstone-mixing.json`` omitted_r2; the e+e- >
-# t t~ h fixture's Recola agreement), checked against the engine's
-# counterterm program by the harness (``mqcd.rule_r2``); rule 1 is then
-# against Recola (LL10) or MadLoop plus the omitted component (TT05).
-# Known (PLAN §1.4): LL10, TT04, SC09, TT05 (R2_G0tt_b of V_ttG02); TT04 and
-# SC09 join with EWI-7's fixtures. A comparison by coupling name with the
-# export's called couplings is not used: MG5_aMC's restricted model merges
-# couplings of equal value (LL03's export calls R2_AAU and R2_AAD where the
-# UFO's V_R2AA groups take R2_AAu3, R2_AAc3, ...), so names differ where the
-# insertion is the same (LL03 = MadLoop to 4e-15).
+# engine inserts that MadLoop's label matching omits. The manifest lists
+# them (they choose the reference: Recola, LL10, or MadLoop plus the omitted
+# component, TT05); the harness finds them structurally on every row with
+# MS-REF's called-coupling lists (``mqcd.rule_r2``): the R2 couplings of
+# the counterterm program's admitted rules whose vertex a tree of the
+# request can hold (``mqcd.r2_reachability``), less those whose MG5
+# identical-coupling class the MadLoop export calls (MG5's restricted model
+# merges couplings of equal value: LL03's export calls R2_AAU and R2_AAD
+# where the UFO's V_R2AA groups take R2_AAu3, R2_AAc3, ...), must equal the
+# listed set (tmp/ms-validate/probe-r2: {R2_G0tt_b} on LL10, TT04, SC09, the
+# empty set on DY01 and TT02). Known (PLAN §1.4): LL10, TT04, SC09, TT05
+# (R2_G0tt_b of V_ttG02).
 OMITTED = {
     "LL10": ["R2_G0tt_b"],
     "TT05": ["R2_G0tt_b"],
@@ -1631,24 +1659,19 @@ OMITTED = {
 }
 # TT05's omitted component (``goldstone-mixing.json`` omitted_r2): MadLoop's
 # Born x CT interference of the R2_G0tt amplitudes times R2_G0tt_b / R2_G0tt
-# at the card, the UFO's couplings (``test_loop_v2_ew_gauge.
-# _ufo_coupling_ratio``, binary64; 0.869 at lhv = 1), computed when this
+# at the card, the UFO's couplings (``tools/loop_reference/ufo_source_oracle.
+# coupling_ratio``, binary64; 0.869 at lhv = 1), computed when this
 # script runs with the G_mu UFO.
 OMITTED_COMPONENT = {"TT05": ("r2_g0tt", "R2_G0tt_b", "R2_G0tt")}
 
 
 def coupling_ratio(name, numerator, denominator, card) -> str | None:
-    ufo = Path(
-        os.environ.get(
-            "PYAMPLICOL_EW_UFO_REFERENCE",
-            WORKSPACE / "reference/models/loop_qcd_qed_sm_Gmu_py3",
-        )
-    )
+    ufo = GMU_UFO
     if not ufo.is_dir():
         return None
-    from tests.unit.test_loop_v2_ew_gauge import _ufo_coupling_ratio
+    from tools.loop_reference.ufo_source_oracle import coupling_ratio
 
-    return repr(_ufo_coupling_ratio(ufo, numerator, denominator, card))
+    return repr(coupling_ratio(ufo, numerator, denominator, card))
 
 
 def loop_orders(born, corrections, sectors):
@@ -1704,7 +1727,7 @@ def ufo_parameters(model):
 
     path = {
         GMU: GMU_UFO,
-        QCDQED: WORKSPACE / "reference/models/loop_qcd_qed_sm",
+        QCDQED: UFODB / "loop_qcd_qed_sm",
         LOOPSM: WORKSPACE / "reference/sources/MG5_aMC_v3_7_0/models/loop_sm",
     }[model]
     text = (path / "parameters.py").read_text()
@@ -1842,9 +1865,13 @@ RELAXED = {
     # binary64 Born 1.1e-10 off double-double (tmp/ms-validate/f3, with the
     # candidate F1 fix; the user's ruling of ~10:20).
     "SC06": {"2": 1e-9},
-    "SC05": {"4": 1e-12},
-    "TT05": {"4": 1e-14},
-    "TT06": {"4": 1e-13},
+    # Rule 4 per carrier (``mqcd.rule4_relaxed_key``): "4dd" relaxes only
+    # the double-double poles against Catani, "4" only the binary64 ones
+    # (reasons above; their binary64 poles pass in the bands of rule 2:
+    # tmp/ms-validate fs, r6, r5).
+    "SC05": {"4dd": 1e-12},
+    "TT05": {"4dd": 1e-14},
+    "TT06": {"4dd": 1e-13},
     "TT03": {"2": 1e-8, "4": 1e-8},
     # h h > h h: the vanishing QED^6 single pole in binary64 is the rounding
     # residue of the cancelling UV poles, -3.3e-15 = 1e-11 F_s at points 0

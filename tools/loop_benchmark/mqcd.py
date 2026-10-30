@@ -14,7 +14,9 @@ The rules (PLAN §1.4). The user's ruling of 2026-10-29 ~10:20 overrides
 their tolerances: a discrepancy below ~1e-5 relative is not a finding, a
 check failing at that level gets its row's tolerance relaxed (``relaxed``:
 rule -> tolerance, stated per row, at most ``ATTENTION``) and passing
-checks keep their tolerances; no exemption lists:
+checks keep their tolerances; no exemption lists. Rule 4 holds two carriers:
+its ``"4"`` relaxes the binary64 checks and ``"4dd"`` the double-double
+ones, each only the carrier that needed it:
 
 1. double-double against the row's primary provider, strictly relative,
    rel <= the row's ``reference_tolerance`` per sector and coefficient, Born
@@ -88,7 +90,7 @@ import math
 import os
 import time
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from decimal import Decimal, localcontext
 from fractions import Fraction
@@ -2459,6 +2461,13 @@ def rule2_and_3(
     return checks
 
 
+def rule4_relaxed_key(carrier: str) -> str:
+    """The ``relaxed`` key of rule 4 on ``carrier``: ``"4"`` for binary64
+    (``"double"``), ``"4dd"`` for double-double."""
+
+    return "4" if carrier == "double" else "4dd"
+
+
 def rule4(
     row: Row,
     index: int,
@@ -2565,9 +2574,11 @@ def rule4(
                     continue
             else:
                 bound = max(DD_FLOOR, BRACKET * e_rel)
-            # The user's ruling of 2026-10-29 ~10:20: a row's relaxed rule 4
-            # (``relaxed["4"]``, at most ``ATTENTION``).
-            bound = max(bound, row.relaxed.get("4", 0.0))
+            # The user's ruling of 2026-10-29 ~10:20: a row's relaxed rule 4,
+            # per carrier (``relaxed["4"]`` binary64, ``relaxed["4dd"]``
+            # double-double; at most ``ATTENTION``): a carrier that passes
+            # keeps its band.
+            bound = max(bound, row.relaxed.get(rule4_relaxed_key(point.carrier), 0.0))
             checks.append(
                 Check(
                     "4",
@@ -3004,20 +3015,52 @@ def rule_joint(row: Row, run: RowRun, index: int, dd: Evaluated) -> list[Check]:
     return checks
 
 
-def engine_r2(slice_: Any) -> dict[str, frozenset[str]]:
+def r2_reachability(slice_: Any) -> Callable[[Any], bool]:
+    """Whether a CT rule's vertex can enter a tree of the slice's request:
+    ``ct_closure.InsertionReachability.admits`` over the CT program's
+    lowered model, process, order limits and vetoed particles (the sweep
+    production runs for its inert rules: species and coupling orders, no
+    colour or flavour; a vertex it finds in no tree enters none)."""
+
+    from pyamplicol.loops.v2.blocks import vetoed_particle_ids
+    from pyamplicol.loops.v2.ct_closure import InsertionReachability
+    from pyamplicol.processes.model import build_model_process_ir
+
+    recursion = slice_.counterterm_program.recursion
+    lowered = recursion.model.lowered
+    ir = build_model_process_ir(
+        slice_.request.process, lowered.compiled.ir, color_accuracy="full"
+    )
+    return InsertionReachability.build(
+        lowered.tree_model(),
+        ir,
+        recursion.coupling_order_limits(),
+        ignored_particle_ids=vetoed_particle_ids(recursion.model.veto),
+    ).admits
+
+
+def engine_r2(
+    slice_: Any, reachable: Callable[[Any], bool] | None = None
+) -> dict[str, frozenset[str]]:
     """CT vertex name -> the UFO R2 couplings the slice's counterterm program
     inserts at it: its admitted R2 rules (one per loop-particle group,
-    ``CountertermRecursion.admission``), inert ones left out."""
+    ``CountertermRecursion.admission``), inert ones left out, whose vertex
+    can enter a tree of the request (``reachable``, default
+    ``r2_reachability``): the admission reads coupling orders only, so it
+    also admits vertices no tree of the process holds (R2_AAAA in
+    t t~ > t t~), which insert nothing."""
 
     program = getattr(slice_, "counterterm_program", None)
     if program is None:
         return {}
     recursion = program.recursion
+    if reachable is None:
+        reachable = r2_reachability(slice_)
     found: dict[str, set[str]] = defaultdict(set)
     for name, rule in recursion.rules.items():
         if rule.kind != "R2" or not recursion.admission.get(name):
             continue
-        if name in recursion.inert:
+        if name in recursion.inert or not reachable(rule):
             continue
         for _alias, entry in rule.couplings:
             found[entry.vertex_name].add(entry.coupling.name)
@@ -3029,24 +3072,22 @@ def rule_r2(
     slice_: Any,
     reference: Reference,
     classes: Mapping[str, Any] | None = None,
+    engine: Mapping[str, frozenset[str]] | None = None,
 ) -> list[Check]:
     """The R2 rule's structural checks (m-sm/PLAN.md §1.4 rule 1, Q7): every
     R2 coupling the row lists as omitted by MadLoop's label matching
     (``madloop_omitted_r2``) is inserted by the engine's counterterm program
-    (``engine_r2``), so rule 1 holds the UFO-complete insertion against
-    Recola or MadLoop plus the omitted component; and, where the reference
-    lists the couplings its MadLoop export calls (``madloop_r2_called``) and
-    ``classes`` gives MG5_aMC's identical-coupling classes
-    (``r2_value_classes``), every listed coupling is among the engine's
-    inserted couplings that no called coupling's class holds (MadLoop
-    omits it). That difference over-approximates the omissions: the
-    engine's admitted rules include vertices no non-vanishing tree of the
-    process reaches (its reachability ignores colour and flavour,
-    ``ct_closure.InsertionReachability``), which MadLoop never calls; the
-    check records the whole difference, the candidates of a rule-1 miss
+    (``engine``, default ``engine_r2``), so rule 1 holds the UFO-complete
+    insertion against Recola or MadLoop plus the omitted component; and,
+    where the reference lists the couplings its MadLoop export calls
+    (``madloop_r2_called``) and ``classes`` gives MG5_aMC's identical-coupling
+    classes (``r2_value_classes``), the omission found structurally, the
+    engine's inserted couplings that no called coupling's class holds,
+    equals the listed set: an unlisted omission fails here, before rule 1
     against MadLoop."""
 
-    engine = engine_r2(slice_)
+    if engine is None:
+        engine = engine_r2(slice_)
     inserted = set().union(*engine.values()) if engine else set()
     checks = []
     listed = set(row.madloop_omitted_r2 or ())
@@ -3065,11 +3106,10 @@ def rule_r2(
         }
         checks.append(Check(
             "r2", None, "", "", "omitted", ", ".join(sorted(omitted)) or "none",
-            ", ".join(sorted(listed)) or "none", 0.0, 0.0, listed <= omitted,
-            note="the row's madloop_omitted_r2 are among the engine's inserted "
-            "R2 couplings whose MG5 identical-coupling class MadLoop's export "
-            "does not call (value: that whole difference, which also holds "
-            "admitted vertices no tree reaches)"))  # fmt: skip
+            ", ".join(sorted(listed)) or "none", 0.0, 0.0, listed == omitted,
+            note="the engine's inserted R2 couplings (on vertices a tree of the "
+            "request can hold) whose MG5 identical-coupling class MadLoop's "
+            "export does not call = the row's madloop_omitted_r2"))  # fmt: skip
     return checks
 
 
@@ -3086,21 +3126,11 @@ def r2_value_classes(
 
     key = (str(Path(ufo).resolve()), restriction)
     if key not in _R2_CLASSES:
-        import importlib.util
-        import sys
+        from tools.loop_reference import ufo_source_oracle as oracle
 
-        name = "_mqcd_test_loop_v2_ew"
-        if name not in sys.modules:
-            spec = importlib.util.spec_from_file_location(
-                name, ROOT / "tests" / "unit" / "test_loop_v2_ew.py"
-            )
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[name] = module
-            spec.loader.exec_module(module)
-        oracle = sys.modules[name]
-        modules = oracle._import_ufo(Path(ufo), f"_mqcd_r2_ufo_{len(_R2_CLASSES)}")
+        modules = oracle.import_ufo(Path(ufo), f"_mqcd_r2_ufo_{len(_R2_CLASSES)}")
         card = restriction_card(Path(ufo), restriction)
-        values, environment = oracle._ufo_source_values(
+        values, environment = oracle.ufo_source_values(
             modules, card, exact=False, wrap=None
         )
         environment = {
@@ -3119,7 +3149,7 @@ def r2_value_classes(
         source = couplings[name].value
         if isinstance(source, dict):  # a Laurent coupling: its finite part
             source = source.get(0, "0")
-        value = complex(eval(oracle._compiled(source, False), environment))
+        value = complex(eval(oracle.compiled(source, False), environment))
         if abs(value) < 1e-13:
             found[name] = None
             continue
@@ -3712,13 +3742,13 @@ def run_row(
     ) and hasattr(run, "slice"):
         ufo = getattr(run, "model_ufo", None)
         classes = None
+        engine = engine_r2(run.slice)
         if ufo is not None and row.madloop_r2_called is not None:
-            engine = engine_r2(run.slice)
             inserted = set().union(*engine.values()) if engine else set()
             classes = r2_value_classes(
                 ufo, row.restriction, sorted(inserted | set(row.madloop_r2_called))
             )
-        checks += rule_r2(row, run.slice, reference, classes)
+        checks += rule_r2(row, run.slice, reference, classes, engine)
     if "uv" in extras and reference.components:
         # Rule 5's EW form: the components against the provider's.
         for index, point in zip(indices, dd, strict=True):
