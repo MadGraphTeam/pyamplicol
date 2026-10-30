@@ -2165,7 +2165,7 @@ for r in R:
 # export, its points in both carriers and its extras, + 60 s of imports and
 # model compilation) from the campaign records (tmp/ms-validate c2, c4, m1,
 # m2, 2026-10-29/30, 4 cores each, host load ~70-120); ids without a
-# record (F1/F2 rows) take DEFAULT_SECONDS.
+# record take DEFAULT_SECONDS.
 MEASURED_SECONDS: dict[str, tuple[int, int]] = {
     "DY01": (411, 4), "DY01@mwmz": (88, 4), "DY02": (360, 4), "DY03": (130, 4),
     "DY04": (370, 4), "DY05": (1115, 3), "DY07": (398, 4), "DY08": (405, 4),
@@ -2190,6 +2190,12 @@ MEASURED_SECONDS: dict[str, tuple[int, int]] = {
     "MP01@P2": (382, 4), "MP01@P3": (397, 4), "MP01@P5": (344, 4),
     "MP02@P0": (291, 4), "MP02@P2": (279, 4), "MP02@P3": (393, 4),
     "MP02@P4": (414, 4), "MP02@P5": (365, 4),
+    # The F1 and F2 rows once fixed (wall seconds of the CLI rows with MS-GEN,
+    # tmp/ms-validate f4 and r5, 2026-10-30) and VV02 (mp1's record).
+    "SC04": (206, 4), "SC06": (244, 4), "SC07": (130, 4), "SC08": (210, 4),
+    "ST03": (120, 4), "TV03": (257, 4), "V301": (279, 4), "VH01": (149, 4),
+    "VH02": (154, 4), "VH03": (201, 4), "MP01@P4": (145, 4),
+    "MP02@P6": (188, 4), "VV02": (412, 4),
 }  # fmt: skip
 DEFAULT_SECONDS = 600
 JOB_SECONDS = 1500
