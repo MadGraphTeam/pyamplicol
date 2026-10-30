@@ -2,11 +2,11 @@
  "source": "tests/fixtures/loop/msm/manifest.json + campaign records (tests/unit/test_loop_v2_msm_*.py, PYAMPLICOL_MQCD_RESULTS) + JUnit XML of the delegated columns",
  "rules": "m-sm/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
  "branch": "work/v2-ms-validate",
- "records": "fs2 (e0630abe: every nightly row and variant, the 11 restriction smokes, the MP expansions, the campaign tier's CM07, the default tier VJ02 + TT01 (3:43 wall)), fs3 (b396639c: the R2 rule within the export's sectors and r2_vanishing, SC10's listings: TV07 + TV07@qcd, SC10, CM08, LL10, TT04, SC09, TT05); later override earlier; delegated uv_eps_ir0 (DY01, TT01): MS-POLES's technical-card split tests, JUnit ps2 at b396639c; slice 0e5930c2 merged",
+ "records": "fs4 (a00b119d, slice 3eb4db9f merged: the shipped patched QCD+QED models; every nightly row and variant, the 11 restriction smokes, the MP expansions, the campaign tier TV07 + TV07@qcd and CM07, the default tier VJ02 + TT01 (3:50 wall)), fs5 (dc1f51cd: SC03, TT05, TT06 after their patched-model listings); later override earlier; delegated uv_eps_ir0 (DY01, TT01): MS-POLES's technical-card split tests, JUnit ps3 at a00b119d",
  "natives": "loop-native-v2-slice-42b2794f (digest a79be708, every record)",
  "counts": {
-  "pass": 68,
-  "partial": 3,
+  "pass": 69,
+  "partial": 2,
   "fail": 0,
   "pending": 0,
   "not-run": 0
@@ -42,9 +42,9 @@
    "rows": 4
   },
   "W-scheme": {
-   "pass": 8,
+   "pass": 9,
    "rows": 10,
-   "partial": 2
+   "partial": 1
   },
   "W-singletop": {
    "pass": 4,
@@ -214,11 +214,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 107.88,
-      "export_s": 20.77,
-      "double_double_s_per_point": 6.133333333333333,
-      "double_s_per_point": 0.77,
-      "ap_s": 11.08
+      "generate_s": 109.83,
+      "export_s": 21.25,
+      "double_double_s_per_point": 6.203333333333333,
+      "double_s_per_point": 0.7200000000000001,
+      "ap_s": 11.75
      },
      "failed_checks": []
     }
@@ -295,10 +295,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 113.4,
-      "export_s": 27.96,
-      "double_double_s_per_point": 6.94,
-      "double_s_per_point": 0.9833333333333334
+      "generate_s": 124.65,
+      "export_s": 27.94,
+      "double_double_s_per_point": 6.873333333333334,
+      "double_s_per_point": 1.02
      },
      "failed_checks": []
     }
@@ -366,10 +366,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 56.76,
-      "export_s": 3.27,
-      "double_double_s_per_point": 6.3933333333333335,
-      "double_s_per_point": 0.7533333333333333
+      "generate_s": 57.12,
+      "export_s": 3.36,
+      "double_double_s_per_point": 6.34,
+      "double_s_per_point": 0.65
      },
      "failed_checks": []
     }
@@ -453,10 +453,10 @@
       }
      ],
      "timings": {
-      "generate_s": 128.73,
-      "export_s": 29.31,
-      "double_double_s_per_point": 7.6875,
-      "double_s_per_point": 0.925
+      "generate_s": 129.11,
+      "export_s": 29.95,
+      "double_double_s_per_point": 8.19,
+      "double_s_per_point": 1.1025
      },
      "failed_checks": []
     }
@@ -556,10 +556,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 108.27,
-      "export_s": 27.46,
-      "double_double_s_per_point": 8.235,
-      "double_s_per_point": 1.3325
+      "generate_s": 106.04,
+      "export_s": 27.69,
+      "double_double_s_per_point": 8.6,
+      "double_s_per_point": 1.7575
      },
      "failed_checks": []
     }
@@ -661,10 +661,10 @@
       }
      ],
      "timings": {
-      "generate_s": 127.82,
-      "export_s": 24.69,
-      "double_double_s_per_point": 7.0825,
-      "double_s_per_point": 1.2775
+      "generate_s": 126.28,
+      "export_s": 25.62,
+      "double_double_s_per_point": 6.9275,
+      "double_s_per_point": 1.38
      },
      "failed_checks": []
     }
@@ -691,18 +691,18 @@
    "tier": "nightly",
    "reference": {
     "format": "required",
-    "path": "tests/fixtures/loop/required/emep_ttxh_ew.json",
+    "path": "tests/fixtures/loop/required/msm/emep_ttxh_ew.json",
     "providers": [
-     "recola",
-     "madloop"
+     "madloop",
+     "recola"
     ]
    },
-   "reference_legend": "E required/emep_ttxh_ew.json (Recola primary: R2 rule)",
+   "reference_legend": "E required/emep_ttxh_ew.json (Recola primary: R2 rule) (re-referenced: emep_ttxh_ew, MS-UFO-PATCH)",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-10,
+   "reference_tolerance": 1e-12,
    "catani": "python",
    "ward_legs": null,
    "listed_outliers": [],
@@ -713,30 +713,31 @@
      "points": [
       0,
       1,
-      2
+      2,
+      3
      ],
      "passed": true,
-     "checks": 60,
+     "checks": 82,
      "failures": 0,
-     "max_dd_vs_reference": 7.419514359839864e-12,
+     "max_dd_vs_reference": 1.950932655273343e-14,
      "max_binary64_vs_dd": 1.6767407264496752e-12,
      "max_catani_dd": 4.9096017097747054e-29,
      "max_catani_binary64": 1.2032078455771696e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
-      "born": 5.085662324724889e-15,
-      "finite": 5.742773633399818e-12,
-      "single_pole": 1.6638444533411182e-13,
-      "double_pole": 1.926475529048837e-14
+      "born": 9.72258973844468e-16,
+      "finite": 1.6868024467290367e-12,
+      "single_pole": 1.1965602884192855e-13,
+      "double_pole": 7.160693290036735e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 108.53,
-      "export_s": 31.93,
-      "double_double_s_per_point": 13.746666666666668,
-      "double_s_per_point": 1.9533333333333334
+      "generate_s": 98.45,
+      "export_s": 36.61,
+      "double_double_s_per_point": 14.25,
+      "double_s_per_point": 2.065
      },
      "failed_checks": []
     }
@@ -745,7 +746,7 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 7.419514359839864e-12,
+   "max_dd_vs_reference": 1.950932655273343e-14,
    "max_binary64_vs_dd": 1.6767407264496752e-12,
    "max_catani_dd": 4.9096017097747054e-29,
    "max_ward_dd": null
@@ -811,11 +812,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 114.67,
-      "export_s": 25.48,
-      "double_double_s_per_point": 6.36,
-      "double_s_per_point": 0.8675,
-      "hel_s": 31.59
+      "generate_s": 122.84,
+      "export_s": 26.46,
+      "double_double_s_per_point": 6.5,
+      "double_s_per_point": 0.9125,
+      "hel_s": 28.3
      },
      "failed_checks": []
     }
@@ -864,8 +865,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.67,
-        "double_s_per_point": 1.05
+        "double_double_s_per_point": 5.74,
+        "double_s_per_point": 1.105
        },
        "failed_checks": []
       }
@@ -943,10 +944,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 139.77,
-      "export_s": 11.94,
-      "double_double_s_per_point": 5.8725,
-      "double_s_per_point": 0.5125
+      "generate_s": 134.12,
+      "export_s": 11.23,
+      "double_double_s_per_point": 5.7075,
+      "double_s_per_point": 0.47
      },
      "failed_checks": []
     }
@@ -1015,10 +1016,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 58.6,
-      "export_s": 3.33,
-      "double_double_s_per_point": 6.0375,
-      "double_s_per_point": 0.675
+      "generate_s": 57.13,
+      "export_s": 3.0,
+      "double_double_s_per_point": 5.8925,
+      "double_s_per_point": 0.6475
      },
      "failed_checks": []
     }
@@ -1088,10 +1089,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 94.65,
-      "export_s": 24.42,
-      "double_double_s_per_point": 6.3625,
-      "double_s_per_point": 1.0925
+      "generate_s": 91.72,
+      "export_s": 23.87,
+      "double_double_s_per_point": 6.2425,
+      "double_s_per_point": 0.905
      },
      "failed_checks": []
     }
@@ -1192,19 +1193,19 @@
       "checks": 8,
       "virtual_double": 0.0025544405127022663,
       "born_double": 5.721939712951197e-17,
-      "virtual_double-double": 4.309621382874648e-31,
+      "virtual_double-double": 4.3143696743262596e-31,
       "born_double-double": 4.876127114959362e-33
      },
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 120.53,
-      "export_s": 30.86,
-      "double_double_s_per_point": 9.333333333333334,
-      "double_s_per_point": 1.6333333333333335,
-      "ap_s": 22.59,
-      "joint_s": 240.78,
-      "ward_s": 192.83
+      "generate_s": 119.84,
+      "export_s": 30.71,
+      "double_double_s_per_point": 8.450000000000001,
+      "double_s_per_point": 1.5933333333333335,
+      "ap_s": 19.55,
+      "joint_s": 224.75,
+      "ward_s": 185.06
      },
      "failed_checks": []
     }
@@ -1216,7 +1217,7 @@
    "max_dd_vs_reference": 9.13968948511922e-13,
    "max_binary64_vs_dd": 4.789930114573306e-13,
    "max_catani_dd": 5.7664915566397555e-30,
-   "max_ward_dd": 4.309621382874648e-31
+   "max_ward_dd": 4.3143696743262596e-31
   },
   {
    "id": "DY07",
@@ -1273,10 +1274,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 122.99,
-      "export_s": 32.72,
-      "double_double_s_per_point": 14.19,
-      "double_s_per_point": 2.4225
+      "generate_s": 115.44,
+      "export_s": 31.47,
+      "double_double_s_per_point": 14.04,
+      "double_s_per_point": 2.3225
      },
      "failed_checks": []
     }
@@ -1346,10 +1347,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 118.56,
-      "export_s": 30.0,
-      "double_double_s_per_point": 14.6275,
-      "double_s_per_point": 2.525
+      "generate_s": 132.07,
+      "export_s": 30.36,
+      "double_double_s_per_point": 14.385,
+      "double_s_per_point": 2.75
      },
      "failed_checks": []
     }
@@ -1427,11 +1428,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 82.86,
-      "export_s": 11.47,
-      "double_double_s_per_point": 6.105,
-      "double_s_per_point": 0.64,
-      "ward_s": 109.82
+      "generate_s": 88.47,
+      "export_s": 12.18,
+      "double_double_s_per_point": 6.12,
+      "double_s_per_point": 0.63,
+      "ward_s": 112.01
      },
      "failed_checks": []
     }
@@ -1502,10 +1503,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 82.54,
-      "export_s": 7.17,
-      "double_double_s_per_point": 6.195,
-      "double_s_per_point": 0.665
+      "generate_s": 85.1,
+      "export_s": 7.36,
+      "double_double_s_per_point": 6.385,
+      "double_s_per_point": 0.765
      },
      "failed_checks": []
     },
@@ -1532,10 +1533,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 68.52,
-      "export_s": 7.06,
-      "double_double_s_per_point": 6.76,
-      "double_s_per_point": 0.655
+      "generate_s": 70.46,
+      "export_s": 7.99,
+      "double_double_s_per_point": 6.19,
+      "double_s_per_point": 0.48
      },
      "failed_checks": []
     }
@@ -1666,11 +1667,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 78.77,
-      "export_s": 8.66,
-      "double_double_s_per_point": 5.656666666666666,
+      "generate_s": 81.8,
+      "export_s": 9.52,
+      "double_double_s_per_point": 5.716666666666666,
       "double_s_per_point": 0.43333333333333335,
-      "ward_s": 111.15
+      "ward_s": 116.1
      },
      "failed_checks": []
     }
@@ -1728,24 +1729,24 @@
      "checks": 134,
      "failures": 0,
      "max_dd_vs_reference": 1.559103864022585e-14,
-     "max_binary64_vs_dd": 1.4981286504980484e-12,
+     "max_binary64_vs_dd": 5.258328429605265e-13,
      "max_catani_dd": 4.24836786750569e-30,
-     "max_catani_binary64": 5.4079701178936586e-14,
+     "max_catani_binary64": 2.0197949000922035e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
-      "born": 1.8644550418353532e-14,
-      "finite": 1.4911016247635062e-12,
-      "single_pole": 4.6183139962498923e-14,
-      "double_pole": 1.1969821379350918e-14
+      "born": 1.5104445908539572e-14,
+      "finite": 5.229643662227962e-13,
+      "single_pole": 2.1508972059805133e-13,
+      "double_pole": 1.8278784467739322e-14
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 130.16,
-      "export_s": 29.7,
-      "double_double_s_per_point": 7.685,
-      "double_s_per_point": 1.2775
+      "generate_s": 135.08,
+      "export_s": 29.34,
+      "double_double_s_per_point": 8.08,
+      "double_s_per_point": 1.105
      },
      "failed_checks": []
     }
@@ -1776,15 +1777,15 @@
        "checks": 68,
        "failures": 0,
        "max_dd_vs_reference": 6.682996377198116e-13,
-       "max_binary64_vs_dd": 1.3494568153996996e-14,
+       "max_binary64_vs_dd": 1.3759909032174924e-14,
        "max_catani_dd": 6.28980780990532e-28,
        "max_catani_binary64": null,
        "catani_not_formed": false,
        "binary64_vs_reference": {
-        "born": 1.4598170647755896e-13,
-        "finite": 1.1217387655240353e-10,
-        "single_pole": 3.3583146624584054e-12,
-        "double_pole": 1.043757278740951e-12
+        "born": 1.4571636559938106e-13,
+        "finite": 1.8514214076286185e-11,
+        "single_pole": 1.2293114629875786e-11,
+        "double_pole": 4.2562691062051555e-13
        },
        "ward": null,
        "no_reference": [],
@@ -1793,92 +1794,92 @@
          "point": 0,
          "sector": "QCD^2 QED^4",
          "coefficient": "finite",
-         "E": 7.3514635794649035e-09,
-         "true_error": 7.356523924175432e-12
+         "E": 7.336523432141887e-09,
+         "true_error": 1.8545318566318403e-11
         },
         {
          "point": 0,
          "sector": "QCD^2 QED^4",
          "coefficient": "single_pole",
-         "E": 5.9450837027832335e-09,
-         "true_error": 3.32696029055228e-12
+         "E": 5.942337554316348e-09,
+         "true_error": 8.705513950870859e-13
         },
         {
          "point": 0,
          "sector": "QCD^2 QED^4",
          "coefficient": "double_pole",
-         "E": 1.86786823905447e-09,
-         "true_error": 1.1167958907166268e-12
+         "E": 1.8665979522716815e-09,
+         "true_error": 4.986655225962364e-13
         },
         {
          "point": 0,
          "sector": "QED^6",
          "coefficient": "finite",
-         "E": 2.269232955136012e-09,
-         "true_error": 1.3883550389997373e-12
+         "E": 2.2522168479777553e-09,
+         "true_error": 1.2868753401804998e-12
         },
         {
          "point": 0,
          "sector": "QED^6",
          "coefficient": "single_pole",
-         "E": 6.790952713732111e-09,
-         "true_error": 3.2535001685929113e-14
+         "E": 6.737666662076506e-09,
+         "true_error": 1.226609587257332e-11
         },
         {
          "point": 0,
          "sector": "QED^6",
          "coefficient": "double_pole",
-         "E": 4.677390137749106e-09,
-         "true_error": 8.037513538442478e-13
+         "E": 4.672131757187208e-09,
+         "true_error": 1.3456607463109674e-13
         },
         {
          "point": 1,
          "sector": "QCD^2 QED^4",
          "coefficient": "finite",
-         "E": 1.7980183288565798e-07,
-         "true_error": 1.1150557691475823e-10
+         "E": 1.7968842485104404e-07,
+         "true_error": 7.807716742228039e-12
         },
         {
          "point": 1,
          "sector": "QCD^2 QED^4",
          "coefficient": "single_pole",
-         "E": 8.563753605060678e-09,
-         "true_error": 3.1265573112035867e-12
+         "E": 8.569422489200197e-09,
+         "true_error": 2.7468767964607174e-13
         },
         {
          "point": 1,
          "sector": "QCD^2 QED^4",
          "coefficient": "double_pole",
-         "E": 3.906568255074094e-09,
-         "true_error": 1.1167958907166268e-12
+         "E": 3.9076182956088845e-09,
+         "true_error": 4.986655225962364e-13
         },
         {
          "point": 1,
          "sector": "QED^6",
          "coefficient": "finite",
-         "E": 4.0971358886012e-09,
-         "true_error": 5.839927234168017e-17
+         "E": 4.0991568608527705e-09,
+         "true_error": 3.506644060801079e-12
         },
         {
          "point": 1,
          "sector": "QED^6",
          "coefficient": "single_pole",
-         "E": 1.381792247451298e-08,
-         "true_error": 1.2625263380411231e-12
+         "E": 1.3746608141201864e-08,
+         "true_error": 1.1754440488865801e-11
         },
         {
          "point": 1,
          "sector": "QED^6",
          "coefficient": "double_pole",
-         "E": 9.793078448660245e-09,
-         "true_error": 8.037513538442478e-13
+         "E": 9.795538799008871e-09,
+         "true_error": 1.3456607463109674e-13
         }
        ],
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 7.435,
-        "double_s_per_point": 0.89
+        "double_double_s_per_point": 7.515,
+        "double_s_per_point": 0.925
        },
        "failed_checks": []
       }
@@ -1889,7 +1890,7 @@
    "nc": null,
    "delegated": {},
    "max_dd_vs_reference": 6.682996377198116e-13,
-   "max_binary64_vs_dd": 1.4981286504980484e-12,
+   "max_binary64_vs_dd": 5.258328429605265e-13,
    "max_catani_dd": 6.28980780990532e-28,
    "max_ward_dd": null
   },
@@ -1976,11 +1977,11 @@
      ],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 83.52,
-      "export_s": 27.31,
-      "double_double_s_per_point": 6.6675,
-      "double_s_per_point": 0.69,
-      "hel_s": 31.84
+      "generate_s": 88.45,
+      "export_s": 26.89,
+      "double_double_s_per_point": 6.595,
+      "double_s_per_point": 0.6925,
+      "hel_s": 31.76
      },
      "failed_checks": []
     }
@@ -2050,10 +2051,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 108.7,
-      "export_s": 24.74,
-      "double_double_s_per_point": 7.4025,
-      "double_s_per_point": 1.0675
+      "generate_s": 107.56,
+      "export_s": 25.62,
+      "double_double_s_per_point": 7.84,
+      "double_s_per_point": 1.155
      },
      "failed_checks": []
     }
@@ -2158,10 +2159,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 136.66,
-      "export_s": 18.93,
-      "double_double_s_per_point": 7.2225,
-      "double_s_per_point": 1.0
+      "generate_s": 131.1,
+      "export_s": 18.57,
+      "double_double_s_per_point": 6.8975,
+      "double_s_per_point": 0.8825
      },
      "failed_checks": []
     }
@@ -2234,8 +2235,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.733333333333333,
-        "double_s_per_point": 0.8566666666666666
+        "double_double_s_per_point": 5.633333333333333,
+        "double_s_per_point": 0.7333333333333334
        },
        "failed_checks": []
       }
@@ -2360,10 +2361,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 80.83,
-      "export_s": 23.36,
-      "double_double_s_per_point": 5.946666666666666,
-      "double_s_per_point": 0.4166666666666667
+      "generate_s": 81.08,
+      "export_s": 22.49,
+      "double_double_s_per_point": 6.140000000000001,
+      "double_s_per_point": 0.45333333333333337
      },
      "failed_checks": []
     }
@@ -2421,22 +2422,22 @@
      "checks": 142,
      "failures": 0,
      "max_dd_vs_reference": 5.3399288583976265e-11,
-     "max_binary64_vs_dd": 9.332974392915134e-11,
+     "max_binary64_vs_dd": 9.173673129956912e-11,
      "max_catani_dd": 1.123955339331372e-26,
-     "max_catani_binary64": 9.332788396467642e-11,
+     "max_catani_binary64": 9.173572822347696e-11,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.7994222100733023e-14,
-      "finite": 4.243850853747278e-09,
-      "single_pole": 1.1288756628875818e-10,
-      "double_pole": 2.722084373877438e-11
+      "finite": 4.2363579394069636e-09,
+      "single_pole": 1.1288885649929372e-10,
+      "double_pole": 2.693432102826645e-11
      },
      "ward": {
       "checks": 8,
-      "virtual_double": 0.4966218207825131,
-      "born_double": 3.3104407577370773e-16,
-      "virtual_double-double": 4.666306581275253e-28,
-      "born_double-double": 5.836325900333288e-33
+      "virtual_double": 0.3694846019855019,
+      "born_double": 2.588054878934662e-16,
+      "virtual_double-double": 4.739848864316166e-28,
+      "born_double-double": 1.5560489604129758e-33
      },
      "no_reference": [],
      "binary64_out_of_scope": [
@@ -2444,51 +2445,51 @@
        "point": 0,
        "sector": "QCD^2 QED^6",
        "coefficient": "single_pole",
-       "E": 1.0706006823066355e-09,
-       "true_error": 1.0714991311904302e-10
+       "E": 1.0614404743065647e-09,
+       "true_error": 1.0527174024005913e-10
       },
       {
        "point": 0,
        "sector": "QCD^4 QED^4",
        "coefficient": "finite",
-       "E": 1.4273557349239776e-08,
-       "true_error": 4.190451565387069e-09
+       "E": 1.4415218908240774e-08,
+       "true_error": 4.182958651046355e-09
       },
       {
        "point": 1,
        "sector": "QCD^4 QED^4",
        "coefficient": "finite",
-       "E": 4.1207834005422e-09,
-       "true_error": 2.0159759109969793e-10
+       "E": 4.089878077897608e-09,
+       "true_error": 2.283938345397053e-10
       },
       {
        "point": 2,
        "sector": "QCD^4 QED^4",
        "coefficient": "finite",
-       "E": 2.8504156991133083e-09,
+       "E": 2.889577221392223e-09,
        "true_error": 1.4939730881654142e-09
       },
       {
        "point": 2,
        "sector": "QCD^4 QED^4",
        "coefficient": "single_pole",
-       "E": 1.3239414205270236e-09,
-       "true_error": 1.119947329165455e-10
+       "E": 1.3558982306004806e-09,
+       "true_error": 1.1199602312708104e-10
       },
       {
        "point": 3,
        "sector": "QCD^4 QED^4",
        "coefficient": "finite",
-       "E": 4.107009412981546e-09,
-       "true_error": 1.268720452195032e-09
+       "E": 4.129419939774539e-09,
+       "true_error": 1.2668247304952623e-09
       }
      ],
      "timings": {
-      "generate_s": 142.77,
-      "export_s": 33.52,
-      "double_double_s_per_point": 14.94,
-      "double_s_per_point": 2.6825,
-      "ward_s": 231.02
+      "generate_s": 143.73,
+      "export_s": 31.53,
+      "double_double_s_per_point": 14.155,
+      "double_s_per_point": 2.645,
+      "ward_s": 204.44
      },
      "failed_checks": []
     }
@@ -2498,9 +2499,9 @@
    "nc": null,
    "delegated": {},
    "max_dd_vs_reference": 5.3399288583976265e-11,
-   "max_binary64_vs_dd": 9.332974392915134e-11,
+   "max_binary64_vs_dd": 9.173673129956912e-11,
    "max_catani_dd": 1.123955339331372e-26,
-   "max_ward_dd": 4.666306581275253e-28
+   "max_ward_dd": 4.739848864316166e-28
   },
   {
    "id": "V301",
@@ -2543,15 +2544,15 @@
      "checks": 82,
      "failures": 0,
      "max_dd_vs_reference": 5.941699879766728e-14,
-     "max_binary64_vs_dd": 4.6316372261207164e-14,
-     "max_catani_dd": 2.6079006515689605e-28,
+     "max_binary64_vs_dd": 4.836334515752906e-14,
+     "max_catani_dd": 2.5908568032683753e-28,
      "max_catani_binary64": null,
      "catani_not_formed": false,
      "binary64_vs_reference": {
-      "born": 2.957509813515492e-14,
-      "finite": 2.091846212760559e-11,
-      "single_pole": 2.5376076877669763e-11,
-      "double_pole": 4.07228129875103e-11
+      "born": 2.9470715435854375e-14,
+      "finite": 2.1194044657400058e-11,
+      "single_pole": 2.4975573827257276e-11,
+      "double_pole": 3.973640676260259e-11
      },
      "ward": null,
      "no_reference": [],
@@ -2560,92 +2561,92 @@
        "point": 0,
        "sector": "QED^8",
        "coefficient": "finite",
-       "E": 1.1449932529921707e-08,
-       "true_error": 2.0923139539336358e-11
+       "E": 1.421960206601133e-08,
+       "true_error": 2.1198722069130826e-11
       },
       {
        "point": 0,
        "sector": "QED^8",
        "coefficient": "single_pole",
-       "E": 4.228872550467576e-08,
-       "true_error": 1.2747502155043585e-12
+       "E": 5.740693207564038e-08,
+       "true_error": 6.3609296931494e-12
       },
       {
        "point": 0,
        "sector": "QED^8",
        "coefficient": "double_pole",
-       "E": 1.7066242288916926e-08,
-       "true_error": 1.8211603202285772e-13
+       "E": 2.3216353428190323e-08,
+       "true_error": 1.193373410390095e-13
       },
       {
        "point": 1,
        "sector": "QED^8",
        "coefficient": "finite",
-       "E": 4.49209517624998e-09,
-       "true_error": 7.412463659128682e-12
+       "E": 5.1274385457042734e-09,
+       "true_error": 7.318934890096977e-12
       },
       {
        "point": 1,
        "sector": "QED^8",
        "coefficient": "single_pole",
-       "E": 5.944400384345976e-09,
-       "true_error": 2.5371501076386972e-11
+       "E": 9.113660739720011e-09,
+       "true_error": 2.4970998025974482e-11
       },
       {
        "point": 1,
        "sector": "QED^8",
        "coefficient": "double_pole",
-       "E": 2.9033131941116294e-09,
-       "true_error": 4.0724550572879235e-11
+       "E": 4.633340605557681e-09,
+       "true_error": 3.973814434797153e-11
       },
       {
        "point": 2,
        "sector": "QED^8",
        "coefficient": "finite",
-       "E": 3.1503650321709613e-09,
-       "true_error": 1.2911574673167376e-12
+       "E": 3.2048156937087682e-09,
+       "true_error": 1.452099483108638e-12
       },
       {
        "point": 2,
        "sector": "QED^8",
        "coefficient": "single_pole",
-       "E": 1.928308064402496e-08,
-       "true_error": 2.7858621181332747e-13
+       "E": 1.960426077884938e-08,
+       "true_error": 3.5759891735266297e-12
       },
       {
        "point": 2,
        "sector": "QED^8",
        "coefficient": "double_pole",
-       "E": 5.919386735656395e-09,
-       "true_error": 7.208994068633222e-14
+       "E": 6.02050015363117e-09,
+       "true_error": 1.0166382783270522e-13
       },
       {
        "point": 3,
        "sector": "QED^8",
        "coefficient": "finite",
-       "E": 1.1158105830441524e-08,
-       "true_error": 2.0342901487644958e-11
+       "E": 1.3858626893824083e-08,
+       "true_error": 2.0505357779813243e-11
       },
       {
        "point": 3,
        "sector": "QED^8",
        "coefficient": "single_pole",
-       "E": 3.928684885148229e-08,
-       "true_error": 1.14101790729176e-12
+       "E": 5.333441405954001e-08,
+       "true_error": 5.741135761440877e-12
       },
       {
        "point": 3,
        "sector": "QED^8",
        "coefficient": "double_pole",
-       "E": 1.7066242288916926e-08,
-       "true_error": 1.8211603202285772e-13
+       "E": 2.3216353428190323e-08,
+       "true_error": 1.193373410390095e-13
       }
      ],
      "timings": {
-      "generate_s": 124.24,
-      "export_s": 39.81,
-      "double_double_s_per_point": 29.6,
-      "double_s_per_point": 4.55
+      "generate_s": 123.58,
+      "export_s": 41.19,
+      "double_double_s_per_point": 29.9825,
+      "double_s_per_point": 4.835
      },
      "failed_checks": []
     }
@@ -2655,8 +2656,8 @@
    "nc": null,
    "delegated": {},
    "max_dd_vs_reference": 5.941699879766728e-14,
-   "max_binary64_vs_dd": 4.6316372261207164e-14,
-   "max_catani_dd": 2.6079006515689605e-28,
+   "max_binary64_vs_dd": 4.836334515752906e-14,
+   "max_catani_dd": 2.5908568032683753e-28,
    "max_ward_dd": null
   },
   {
@@ -2715,10 +2716,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 121.18,
-      "export_s": 28.01,
-      "double_double_s_per_point": 6.95,
-      "double_s_per_point": 1.25
+      "generate_s": 90.34,
+      "export_s": 26.15,
+      "double_double_s_per_point": 6.745,
+      "double_s_per_point": 1.03
      },
      "failed_checks": []
     }
@@ -2788,10 +2789,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 126.05,
-      "export_s": 14.57,
-      "double_double_s_per_point": 6.8425,
-      "double_s_per_point": 0.9025
+      "generate_s": 107.85,
+      "export_s": 15.68,
+      "double_double_s_per_point": 6.5425,
+      "double_s_per_point": 0.8175
      },
      "failed_checks": []
     }
@@ -2946,10 +2947,10 @@
       }
      ],
      "timings": {
-      "generate_s": 112.37,
-      "export_s": 36.98,
-      "double_double_s_per_point": 11.815,
-      "double_s_per_point": 2.6025
+      "generate_s": 106.32,
+      "export_s": 38.83,
+      "double_double_s_per_point": 11.585,
+      "double_s_per_point": 2.5725
      },
      "failed_checks": []
     }
@@ -3046,10 +3047,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 76.2,
-      "export_s": 16.25,
-      "double_double_s_per_point": 7.6,
-      "double_s_per_point": 0.84
+      "generate_s": 78.63,
+      "export_s": 16.27,
+      "double_double_s_per_point": 7.955,
+      "double_s_per_point": 0.95
      },
      "failed_checks": []
     },
@@ -3075,12 +3076,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 79.74,
-      "export_s": 17.61,
-      "double_double_s_per_point": 9.03,
-      "double_s_per_point": 1.04,
-      "ap_s": 14.21,
-      "joint_s": 149.59
+      "generate_s": 83.82,
+      "export_s": 17.8,
+      "double_double_s_per_point": 9.17,
+      "double_s_per_point": 1.11,
+      "ap_s": 14.74,
+      "joint_s": 153.94
      },
      "failed_checks": []
     }
@@ -3161,10 +3162,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 121.13,
-      "export_s": 28.74,
-      "double_double_s_per_point": 7.9225,
-      "double_s_per_point": 1.665
+      "generate_s": 129.3,
+      "export_s": 29.98,
+      "double_double_s_per_point": 7.9125,
+      "double_s_per_point": 1.8225
      },
      "failed_checks": []
     }
@@ -3330,11 +3331,11 @@
       }
      ],
      "timings": {
-      "generate_s": 89.95,
-      "export_s": 18.39,
-      "double_double_s_per_point": 23.7875,
-      "double_s_per_point": 4.0225,
-      "ward_s": 125.69
+      "generate_s": 87.71,
+      "export_s": 17.97,
+      "double_double_s_per_point": 20.7325,
+      "double_s_per_point": 3.7425,
+      "ward_s": 122.94
      },
      "failed_checks": []
     }
@@ -3362,13 +3363,13 @@
    "tier": "nightly",
    "reference": {
     "format": "required",
-    "path": "tests/fixtures/loop/required/ttx_ttx_ew.json",
+    "path": "tests/fixtures/loop/required/msm/ttx_ttx_ew.json",
     "providers": [
-     "recola",
-     "madloop"
+     "madloop",
+     "recola"
     ]
    },
-   "reference_legend": "E required/ttx_ttx_ew (ew-validate; Recola primary: R2 rule, 7.7 %)",
+   "reference_legend": "E required/ttx_ttx_ew (ew-validate; Recola primary: R2 rule, 7.7 %) (re-referenced: ttx_ttx_ew, MS-UFO-PATCH)",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
@@ -3384,20 +3385,21 @@
      "points": [
       0,
       1,
-      2
+      2,
+      3
      ],
      "passed": true,
-     "checks": 60,
+     "checks": 82,
      "failures": 0,
-     "max_dd_vs_reference": 8.079629961285016e-15,
+     "max_dd_vs_reference": 1.442260520438237e-14,
      "max_binary64_vs_dd": 2.765526053535307e-12,
      "max_catani_dd": 1.764680238939438e-30,
      "max_catani_binary64": 2.765526053535307e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
-      "born": 1.6102801520269268e-15,
-      "finite": 1.6786384626729392e-13,
-      "single_pole": 2.7610267900776787e-12,
+      "born": 1.5098771731410186e-15,
+      "finite": 1.684847976098363e-13,
+      "single_pole": 2.7608503328149404e-12,
       "double_pole": 0.0
      },
      "ward": null,
@@ -3423,14 +3425,21 @@
        "coefficient": "double_pole",
        "E": Infinity,
        "true_error": 0.0
+      },
+      {
+       "point": 3,
+       "sector": "QED^6",
+       "coefficient": "double_pole",
+       "E": Infinity,
+       "true_error": 0.0
       }
      ],
      "timings": {
-      "generate_s": 84.14,
-      "export_s": 66.39,
-      "double_double_s_per_point": 6.44,
-      "double_s_per_point": 0.08,
-      "engine_catani_s": 7.8
+      "generate_s": 123.24,
+      "export_s": 66.86,
+      "double_double_s_per_point": 6.5,
+      "double_s_per_point": 0.07,
+      "engine_catani_s": 10.18
      },
      "failed_checks": []
     }
@@ -3439,7 +3448,7 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 8.079629961285016e-15,
+   "max_dd_vs_reference": 1.442260520438237e-14,
    "max_binary64_vs_dd": 2.765526053535307e-12,
    "max_catani_dd": 1.764680238939438e-30,
    "max_ward_dd": null
@@ -3457,24 +3466,23 @@
    ],
    "tier": "nightly",
    "reference": {
-    "format": "madloop-components",
-    "path": "tests/fixtures/loop/goldstone-mixing.json",
-    "key": "gt_tttx_ew",
-    "omitted_r2": {
-     "component": "r2_g0tt",
-     "coupling": "R2_G0tt_b",
-     "proportional_to": "R2_G0tt",
-     "ratio": "0.8688964002350662"
-    }
+    "format": "required",
+    "path": "tests/fixtures/loop/required/msm/gt_tttx_ew.json",
+    "providers": [
+     "madloop",
+     "recola"
+    ]
    },
-   "reference_legend": "E gt_tttx_ew (goldstone-mixing.json, MadLoop double) + its omitted R2_G0tt_b component",
+   "reference_legend": "E gt_tttx_ew (goldstone-mixing.json, MadLoop double) + its omitted R2_G0tt_b component (re-referenced: gt_tttx_ew, MS-UFO-PATCH)",
    "extras": [
     "uv"
    ],
-   "extras_pending": {},
+   "extras_pending": {
+    "uv": "rule 5's EW form runs on the class's component row (MS-REF's component runs, one row per class: m-sm/PLAN.md \u00a71.4 rule 5)"
+   },
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-12,
+   "reference_tolerance": 1e-10,
    "catani": "python",
    "ward_legs": null,
    "listed_outliers": [],
@@ -3487,21 +3495,22 @@
      "points": [
       0,
       1,
-      2
+      2,
+      3
      ],
      "passed": true,
-     "checks": 96,
+     "checks": 82,
      "failures": 0,
-     "max_dd_vs_reference": 5.69655087053586e-14,
-     "max_binary64_vs_dd": 3.039099896503577e-11,
-     "max_catani_dd": 2.702634540763362e-16,
-     "max_catani_binary64": 4.532330307528727e-12,
+     "max_dd_vs_reference": 3.934584850851696e-12,
+     "max_binary64_vs_dd": 1.0151312603550532e-11,
+     "max_catani_dd": 1.1324172933849883e-29,
+     "max_catani_binary64": 1.0151092450783467e-11,
      "catani_not_formed": false,
      "binary64_vs_reference": {
-      "born": 3.0024781933964873e-15,
-      "finite": 3.0439376672729244e-11,
-      "single_pole": 4.475866080792475e-12,
-      "double_pole": 8.464464253109147e-22
+      "born": 1.32254176117345e-15,
+      "finite": 7.796352169280897e-10,
+      "single_pole": 8.52394355579138e-10,
+      "double_pole": 0.0
      },
      "ward": null,
      "no_reference": [],
@@ -3509,9 +3518,37 @@
       {
        "point": 0,
        "sector": "QCD^2 QED^6",
+       "coefficient": "finite",
+       "E": 2.3411900775479986e-09,
+       "true_error": 4.4165702848865645e-11
+      },
+      {
+       "point": 0,
+       "sector": "QCD^2 QED^6",
+       "coefficient": "single_pole",
+       "E": 1.6100186712020287e-09,
+       "true_error": 2.3843942256941914e-11
+      },
+      {
+       "point": 0,
+       "sector": "QCD^2 QED^6",
        "coefficient": "double_pole",
        "E": Infinity,
        "true_error": 0.0
+      },
+      {
+       "point": 1,
+       "sector": "QCD^2 QED^6",
+       "coefficient": "finite",
+       "E": 3.5593012012839686e-08,
+       "true_error": 7.7570063208029e-10
+      },
+      {
+       "point": 1,
+       "sector": "QCD^2 QED^6",
+       "coefficient": "single_pole",
+       "E": 2.447983251235774e-08,
+       "true_error": 8.523974226785196e-10
       },
       {
        "point": 1,
@@ -3523,16 +3560,44 @@
       {
        "point": 2,
        "sector": "QCD^2 QED^6",
+       "coefficient": "finite",
+       "E": 1.3434199924714631e-09,
+       "true_error": 2.424647087897671e-11
+      },
+      {
+       "point": 2,
+       "sector": "QCD^2 QED^6",
+       "coefficient": "double_pole",
+       "E": Infinity,
+       "true_error": 0.0
+      },
+      {
+       "point": 3,
+       "sector": "QCD^2 QED^6",
+       "coefficient": "finite",
+       "E": 1.418394000678097e-09,
+       "true_error": 2.6542497098951597e-11
+      },
+      {
+       "point": 3,
+       "sector": "QCD^2 QED^6",
+       "coefficient": "single_pole",
+       "E": 1.6100186712020287e-09,
+       "true_error": 2.3843942256941914e-11
+      },
+      {
+       "point": 3,
+       "sector": "QCD^2 QED^6",
        "coefficient": "double_pole",
        "E": Infinity,
        "true_error": 0.0
       }
      ],
      "timings": {
-      "generate_s": 111.45,
-      "export_s": 26.17,
-      "double_double_s_per_point": 28.026666666666667,
-      "double_s_per_point": 1.6600000000000001
+      "generate_s": 115.15,
+      "export_s": 26.84,
+      "double_double_s_per_point": 28.0975,
+      "double_s_per_point": 1.795
      },
      "failed_checks": []
     }
@@ -3541,9 +3606,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 5.69655087053586e-14,
-   "max_binary64_vs_dd": 3.039099896503577e-11,
-   "max_catani_dd": 2.702634540763362e-16,
+   "max_dd_vs_reference": 3.934584850851696e-12,
+   "max_binary64_vs_dd": 1.0151312603550532e-11,
+   "max_catani_dd": 1.1324172933849883e-29,
    "max_ward_dd": null
   },
   {
@@ -3559,16 +3624,19 @@
    ],
    "tier": "nightly",
    "reference": {
-    "format": "madloop-components",
-    "path": "tests/fixtures/loop/goldstone-mixing.json",
-    "key": "gb_ttxb_ew_mb"
+    "format": "required",
+    "path": "tests/fixtures/loop/required/msm/gb_ttxb_ew_mb.json",
+    "providers": [
+     "madloop",
+     "recola"
+    ]
    },
-   "reference_legend": "E goldstone-mixing.json (gb_ttxb_ew_mb, MadLoop double)",
+   "reference_legend": "E goldstone-mixing.json (gb_ttxb_ew_mb, MadLoop double) (re-referenced: gb_ttxb_ew_mb, MS-UFO-PATCH)",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
    "pending_reason": null,
-   "reference_tolerance": 1e-08,
+   "reference_tolerance": 1e-10,
    "catani": "python",
    "ward_legs": null,
    "listed_outliers": [],
@@ -3581,21 +3649,22 @@
      "points": [
       0,
       1,
-      2
+      2,
+      3
      ],
      "passed": true,
-     "checks": 59,
+     "checks": 82,
      "failures": 0,
-     "max_dd_vs_reference": 1.0878867560197302e-09,
-     "max_binary64_vs_dd": 1.0339145260676186e-15,
-     "max_catani_dd": 1.484148603550661e-14,
+     "max_dd_vs_reference": 1.2219567842955483e-11,
+     "max_binary64_vs_dd": 4.240909242354527e-16,
+     "max_catani_dd": 4.150430539985789e-30,
      "max_catani_binary64": null,
      "catani_not_formed": false,
      "binary64_vs_reference": {
-      "born": 1.0410391223725745e-14,
-      "finite": 6.640408415132252e-05,
-      "single_pole": 2.0444744375358623e-05,
-      "double_pole": 1.8030688622020915e-22
+      "born": 4.077373621660486e-15,
+      "finite": 8.754457629844436e-05,
+      "single_pole": 9.575230475906624e-05,
+      "double_pole": 0.0
      },
      "ward": null,
      "no_reference": [],
@@ -3604,15 +3673,15 @@
        "point": 0,
        "sector": "QCD^2 QED^6",
        "coefficient": "finite",
-       "E": 0.00031228872625284587,
-       "true_error": 1.499381746408485e-06
+       "E": 4.982054945162411e-05,
+       "true_error": 9.576631366400129e-07
       },
       {
        "point": 0,
        "sector": "QCD^2 QED^6",
        "coefficient": "single_pole",
-       "E": 0.0005132493068384893,
-       "true_error": 2.0444744308699987e-05
+       "E": 7.892948606399608e-05,
+       "true_error": 4.836313039657502e-06
       },
       {
        "point": 0,
@@ -3625,15 +3694,15 @@
        "point": 1,
        "sector": "QCD^2 QED^6",
        "coefficient": "finite",
-       "E": 0.0010252972852508979,
-       "true_error": 9.527801585572218e-07
+       "E": 0.0008003595607621709,
+       "true_error": 7.573179212589686e-05
       },
       {
        "point": 1,
        "sector": "QCD^2 QED^6",
        "coefficient": "single_pole",
-       "E": 0.00037503078276341696,
-       "true_error": 2.8768410185187624e-06
+       "E": 0.0015861449534894602,
+       "true_error": 9.575230476513194e-05
       },
       {
        "point": 1,
@@ -3646,18 +3715,39 @@
        "point": 2,
        "sector": "QCD^2 QED^6",
        "coefficient": "finite",
-       "E": 0.0009232488087410229,
-       "true_error": 6.640517196583842e-05
+       "E": 0.0027893277106957846,
+       "true_error": 8.754456407994627e-05
       },
       {
        "point": 2,
        "sector": "QCD^2 QED^6",
        "coefficient": "single_pole",
-       "E": 0.00018944049007727992,
-       "true_error": 1.6234183658669204e-06
+       "E": 0.0012988225086783408,
+       "true_error": 3.682037669904504e-05
       },
       {
        "point": 2,
+       "sector": "QCD^2 QED^6",
+       "coefficient": "double_pole",
+       "E": Infinity,
+       "true_error": 0.0
+      },
+      {
+       "point": 3,
+       "sector": "QCD^2 QED^6",
+       "coefficient": "finite",
+       "E": 4.457446046966153e-05,
+       "true_error": 5.610457976611048e-07
+      },
+      {
+       "point": 3,
+       "sector": "QCD^2 QED^6",
+       "coefficient": "single_pole",
+       "E": 7.892948606399608e-05,
+       "true_error": 4.836313039657502e-06
+      },
+      {
+       "point": 3,
        "sector": "QCD^2 QED^6",
        "coefficient": "double_pole",
        "E": Infinity,
@@ -3665,10 +3755,10 @@
       }
      ],
      "timings": {
-      "generate_s": 126.81,
-      "export_s": 42.65,
-      "double_double_s_per_point": 20.78,
-      "double_s_per_point": 3.35
+      "generate_s": 122.35,
+      "export_s": 42.53,
+      "double_double_s_per_point": 19.3275,
+      "double_s_per_point": 3.365
      },
      "failed_checks": []
     }
@@ -3677,9 +3767,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 1.0878867560197302e-09,
-   "max_binary64_vs_dd": 1.0339145260676186e-15,
-   "max_catani_dd": 1.484148603550661e-14,
+   "max_dd_vs_reference": 1.2219567842955483e-11,
+   "max_binary64_vs_dd": 4.240909242354527e-16,
+   "max_catani_dd": 4.150430539985789e-30,
    "max_ward_dd": null
   },
   {
@@ -3738,10 +3828,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 90.61,
-      "export_s": 18.98,
-      "double_double_s_per_point": 18.2675,
-      "double_s_per_point": 2.1075
+      "generate_s": 95.93,
+      "export_s": 18.49,
+      "double_double_s_per_point": 18.68,
+      "double_s_per_point": 2.395
      },
      "failed_checks": []
     }
@@ -3798,7 +3888,7 @@
      "failures": 0,
      "max_dd_vs_reference": 2.1317405222846123e-13,
      "max_binary64_vs_dd": 3.165761084575795e-12,
-     "max_catani_dd": 6.566879761398667e-29,
+     "max_catani_dd": 6.558164890976411e-29,
      "max_catani_binary64": 3.1636882614479147e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3811,10 +3901,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 96.17,
-      "export_s": 20.89,
-      "double_double_s_per_point": 20.0275,
-      "double_s_per_point": 2.81
+      "generate_s": 76.88,
+      "export_s": 21.17,
+      "double_double_s_per_point": 19.55,
+      "double_s_per_point": 3.1175
      },
      "failed_checks": []
     }
@@ -3825,7 +3915,7 @@
    "delegated": {},
    "max_dd_vs_reference": 2.1317405222846123e-13,
    "max_binary64_vs_dd": 3.165761084575795e-12,
-   "max_catani_dd": 6.566879761398667e-29,
+   "max_catani_dd": 6.558164890976411e-29,
    "max_ward_dd": null
   },
   {
@@ -3873,7 +3963,7 @@
      "failures": 0,
      "max_dd_vs_reference": 3.8353029104837966e-14,
      "max_binary64_vs_dd": 1.535512358336619e-11,
-     "max_catani_dd": 8.691868057308022e-29,
+     "max_catani_dd": 8.700851199872383e-29,
      "max_catani_binary64": 1.5736755268175156e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3886,10 +3976,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 141.32,
-      "export_s": 49.2,
-      "double_double_s_per_point": 22.685,
-      "double_s_per_point": 5.0025
+      "generate_s": 140.75,
+      "export_s": 48.64,
+      "double_double_s_per_point": 23.54,
+      "double_s_per_point": 4.8725
      },
      "failed_checks": []
     }
@@ -3900,7 +3990,7 @@
    "delegated": {},
    "max_dd_vs_reference": 3.8353029104837966e-14,
    "max_binary64_vs_dd": 1.535512358336619e-11,
-   "max_catani_dd": 8.691868057308022e-29,
+   "max_catani_dd": 8.700851199872383e-29,
    "max_ward_dd": null
   },
   {
@@ -3947,7 +4037,7 @@
      "failures": 0,
      "max_dd_vs_reference": 1.1580300294453224e-12,
      "max_binary64_vs_dd": 1.872921367527061e-10,
-     "max_catani_dd": 1.8033388822594213e-28,
+     "max_catani_dd": 1.8033463575187485e-28,
      "max_catani_binary64": 3.002023152130738e-11,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3960,10 +4050,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 127.1,
-      "export_s": 32.34,
-      "double_double_s_per_point": 26.016666666666666,
-      "double_s_per_point": 3.26
+      "generate_s": 112.28,
+      "export_s": 32.13,
+      "double_double_s_per_point": 25.709999999999997,
+      "double_s_per_point": 3.3433333333333333
      },
      "failed_checks": []
     }
@@ -3974,7 +4064,7 @@
    "delegated": {},
    "max_dd_vs_reference": 1.1580300294453224e-12,
    "max_binary64_vs_dd": 1.872921367527061e-10,
-   "max_catani_dd": 1.8033388822594213e-28,
+   "max_catani_dd": 1.8033463575187485e-28,
    "max_ward_dd": null
   },
   {
@@ -4074,13 +4164,13 @@
       }
      ],
      "timings": {
-      "generate_s": 114.4,
-      "export_s": 81.84,
-      "double_double_s_per_point": 158.62,
-      "double_s_per_point": 1.3466666666666667,
-      "engine_catani_s": 156.56,
-      "joint_s": 401.66,
-      "ward_s": 516.15
+      "generate_s": 132.43,
+      "export_s": 90.35,
+      "double_double_s_per_point": 145.45333333333335,
+      "double_s_per_point": 1.5599999999999998,
+      "engine_catani_s": 160.23,
+      "joint_s": 438.55,
+      "ward_s": 531.49
      },
      "failed_checks": []
     }
@@ -4161,9 +4251,9 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 139.66,
-        "double_s_per_point": 1.3499999999999999,
-        "engine_catani_s": 77.96
+        "double_double_s_per_point": 140.10999999999999,
+        "double_s_per_point": 1.2666666666666666,
+        "engine_catani_s": 69.94
        },
        "failed_checks": []
       }
@@ -4237,10 +4327,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 149.56,
-      "export_s": 15.7,
-      "double_double_s_per_point": 6.1925,
-      "double_s_per_point": 0.835
+      "generate_s": 144.55,
+      "export_s": 16.42,
+      "double_double_s_per_point": 5.9675,
+      "double_s_per_point": 0.8975
      },
      "failed_checks": []
     }
@@ -4309,10 +4399,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 129.78,
-      "export_s": 14.38,
-      "double_double_s_per_point": 6.286666666666666,
-      "double_s_per_point": 0.7633333333333333
+      "generate_s": 115.63,
+      "export_s": 15.01,
+      "double_double_s_per_point": 6.27,
+      "double_s_per_point": 0.79
      },
      "failed_checks": []
     }
@@ -4386,10 +4476,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 88.01,
-      "export_s": 10.75,
-      "double_double_s_per_point": 6.3625,
-      "double_s_per_point": 0.74
+      "generate_s": 93.98,
+      "export_s": 11.97,
+      "double_double_s_per_point": 6.305,
+      "double_s_per_point": 0.8
      },
      "failed_checks": []
     }
@@ -4416,9 +4506,10 @@
    "tier": "nightly",
    "reference": {
     "format": "required",
-    "path": "tests/fixtures/loop/required/udx_tbx_ew_mb.json",
+    "path": "tests/fixtures/loop/required/msm/udx_tbx_ew_mb.json",
     "providers": [
-     "madloop"
+     "madloop",
+     "recola"
     ]
    },
    "reference_legend": "R commit ew-validate's workspace run udx_tbx_ew_mb (MadLoop)",
@@ -4437,21 +4528,22 @@
      "points": [
       0,
       1,
-      2
+      2,
+      3
      ],
      "passed": true,
-     "checks": 62,
+     "checks": 82,
      "failures": 0,
-     "max_dd_vs_reference": 3.7404290838691157e-11,
+     "max_dd_vs_reference": 3.0369439275334996e-12,
      "max_binary64_vs_dd": 2.3419085370926692e-11,
      "max_catani_dd": 4.757617829411751e-27,
      "max_catani_binary64": 2.341827677812894e-11,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.6701113483874157e-15,
-      "finite": 3.3133129352453668e-12,
-      "single_pole": 1.3985205468091984e-11,
-      "double_pole": 2.5734985897811652e-14
+      "finite": 3.038774469242823e-12,
+      "single_pole": 2.3466134895701025e-11,
+      "double_pole": 3.1020877222566537e-14
      },
      "ward": null,
      "no_reference": [],
@@ -4460,15 +4552,22 @@
        "point": 0,
        "sector": "QED^6",
        "coefficient": "finite",
-       "E": 2.8453058059419637e-09,
-       "true_error": 1.047960995951272e-12
+       "E": 2.8444096661753746e-09,
+       "true_error": 1.0477143921442426e-12
+      },
+      {
+       "point": 3,
+       "sector": "QED^6",
+       "coefficient": "finite",
+       "E": 2.800178440267788e-09,
+       "true_error": 1.0269925761280477e-12
       }
      ],
      "timings": {
-      "generate_s": 120.83,
-      "export_s": 15.96,
-      "double_double_s_per_point": 6.123333333333334,
-      "double_s_per_point": 0.66
+      "generate_s": 134.76,
+      "export_s": 16.65,
+      "double_double_s_per_point": 6.4025,
+      "double_s_per_point": 0.8025
      },
      "failed_checks": []
     }
@@ -4477,7 +4576,7 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 3.7404290838691157e-11,
+   "max_dd_vs_reference": 3.0369439275334996e-12,
    "max_binary64_vs_dd": 2.3419085370926692e-11,
    "max_catani_dd": 4.757617829411751e-27,
    "max_ward_dd": null
@@ -4542,10 +4641,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 110.45,
-      "export_s": 28.21,
-      "double_double_s_per_point": 6.8825,
-      "double_s_per_point": 1.225
+      "generate_s": 112.77,
+      "export_s": 30.03,
+      "double_double_s_per_point": 7.28,
+      "double_s_per_point": 1.4375
      },
      "failed_checks": []
     }
@@ -4615,10 +4714,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 91.39,
-      "export_s": 23.65,
-      "double_double_s_per_point": 7.2175,
-      "double_s_per_point": 1.1525
+      "generate_s": 98.41,
+      "export_s": 23.74,
+      "double_double_s_per_point": 7.2275,
+      "double_s_per_point": 1.3075
      },
      "failed_checks": []
     }
@@ -4688,10 +4787,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 74.44,
-      "export_s": 14.91,
-      "double_double_s_per_point": 5.83,
-      "double_s_per_point": 0.5475
+      "generate_s": 74.63,
+      "export_s": 15.18,
+      "double_double_s_per_point": 5.7425,
+      "double_s_per_point": 0.5775
      },
      "failed_checks": []
     }
@@ -4763,10 +4862,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 145.91,
-      "export_s": 29.98,
-      "double_double_s_per_point": 14.8025,
-      "double_s_per_point": 3.56
+      "generate_s": 137.59,
+      "export_s": 29.82,
+      "double_double_s_per_point": 14.3875,
+      "double_s_per_point": 3.3025
      },
      "failed_checks": []
     }
@@ -4837,10 +4936,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 118.13,
-      "export_s": 25.05,
-      "double_double_s_per_point": 6.71,
-      "double_s_per_point": 0.9175
+      "generate_s": 108.27,
+      "export_s": 22.7,
+      "double_double_s_per_point": 6.4925,
+      "double_s_per_point": 0.86
      },
      "failed_checks": []
     }
@@ -4916,10 +5015,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 96.15,
-        "export_s": 22.36,
-        "double_double_s_per_point": 6.435,
-        "double_s_per_point": 1.14
+        "generate_s": 96.66,
+        "export_s": 24.2,
+        "double_double_s_per_point": 6.27,
+        "double_s_per_point": 0.87
        },
        "failed_checks": []
       }
@@ -4989,10 +5088,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 104.93,
-      "export_s": 30.21,
-      "double_double_s_per_point": 9.5025,
-      "double_s_per_point": 1.5325
+      "generate_s": 101.14,
+      "export_s": 29.82,
+      "double_double_s_per_point": 9.28,
+      "double_s_per_point": 1.76
      },
      "failed_checks": []
     }
@@ -5065,10 +5164,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 92.98,
-      "export_s": 10.56,
-      "double_double_s_per_point": 6.52,
-      "double_s_per_point": 0.835
+      "generate_s": 91.22,
+      "export_s": 8.84,
+      "double_double_s_per_point": 6.485,
+      "double_s_per_point": 0.845
      },
      "failed_checks": []
     }
@@ -5169,10 +5268,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 118.69,
-      "export_s": 24.98,
-      "double_double_s_per_point": 7.1625,
-      "double_s_per_point": 1.0925
+      "generate_s": 108.06,
+      "export_s": 22.26,
+      "double_double_s_per_point": 6.67,
+      "double_s_per_point": 0.9625
      },
      "failed_checks": []
     }
@@ -5251,11 +5350,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 101.47,
-      "export_s": 11.01,
-      "double_double_s_per_point": 36.94,
-      "double_s_per_point": 32.06,
-      "ap_s": 42.16
+      "generate_s": 104.85,
+      "export_s": 12.25,
+      "double_double_s_per_point": 38.0325,
+      "double_s_per_point": 31.575,
+      "ap_s": 41.79
      },
      "failed_checks": []
     }
@@ -5310,8 +5409,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.336666666666667,
-        "double_s_per_point": 0.7266666666666667
+        "double_double_s_per_point": 5.126666666666667,
+        "double_s_per_point": 0.6966666666666667
        },
        "failed_checks": []
       }
@@ -5366,8 +5465,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 120.46333333333332,
-        "double_s_per_point": 117.02999999999999
+        "double_double_s_per_point": 117.52333333333333,
+        "double_s_per_point": 112.79666666666667
        },
        "failed_checks": []
       }
@@ -5427,10 +5526,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 93.06,
-        "export_s": 11.06,
-        "double_double_s_per_point": 37.135,
-        "double_s_per_point": 31.0375
+        "generate_s": 99.13,
+        "export_s": 11.37,
+        "double_double_s_per_point": 38.925,
+        "double_s_per_point": 33.4425
        },
        "failed_checks": []
       }
@@ -5503,10 +5602,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 103.06,
-      "export_s": 14.28,
-      "double_double_s_per_point": 37.335,
-      "double_s_per_point": 31.3175
+      "generate_s": 106.46,
+      "export_s": 13.94,
+      "double_double_s_per_point": 36.735,
+      "double_s_per_point": 31.4375
      },
      "failed_checks": []
     }
@@ -5578,10 +5677,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 96.77,
-      "export_s": 5.94,
-      "double_double_s_per_point": 37.6575,
-      "double_s_per_point": 31.7225
+      "generate_s": 99.69,
+      "export_s": 5.66,
+      "double_double_s_per_point": 36.5025,
+      "double_s_per_point": 30.63
      },
      "failed_checks": []
     }
@@ -5654,10 +5753,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 64.48,
-      "export_s": 10.27,
-      "double_double_s_per_point": 28.6125,
-      "double_s_per_point": 26.425
+      "generate_s": 78.41,
+      "export_s": 17.93,
+      "double_double_s_per_point": 32.485,
+      "double_s_per_point": 23.385
      },
      "failed_checks": []
     }
@@ -5727,19 +5826,19 @@
      },
      "ward": {
       "checks": 8,
-      "virtual_double": 0.003916775960196095,
+      "virtual_double": 0.0039117904500171104,
       "born_double": 3.281334219079903e-17,
-      "virtual_double-double": 4.112237136082081e-31,
+      "virtual_double-double": 4.112782281764676e-31,
       "born_double-double": 8.54545990025795e-33
      },
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 110.95,
-      "export_s": 16.37,
-      "double_double_s_per_point": 39.4975,
-      "double_s_per_point": 32.5925,
-      "ward_s": 203.07
+      "generate_s": 98.42,
+      "export_s": 15.83,
+      "double_double_s_per_point": 38.71,
+      "double_s_per_point": 31.975,
+      "ward_s": 194.6
      },
      "failed_checks": []
     }
@@ -5751,7 +5850,7 @@
    "max_dd_vs_reference": 1.122055701083372e-13,
    "max_binary64_vs_dd": 5.074358377620008e-13,
    "max_catani_dd": 8.700229851825225e-30,
-   "max_ward_dd": 4.112237136082081e-31
+   "max_ward_dd": 4.112782281764676e-31
   },
   {
    "id": "CM07",
@@ -5797,7 +5896,7 @@
      "failures": 0,
      "max_dd_vs_reference": 6.901622507244509e-13,
      "max_binary64_vs_dd": 5.651434691010589e-11,
-     "max_catani_dd": 7.192133344338422e-26,
+     "max_catani_dd": 7.192133362651351e-26,
      "max_catani_binary64": 2.3042393895638468e-11,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -5831,12 +5930,12 @@
       }
      ],
      "timings": {
-      "generate_s": 99.25,
-      "export_s": 114.6,
-      "double_double_s_per_point": 286.98,
-      "double_s_per_point": 0.6966666666666667,
-      "engine_catani_s": 114.47,
-      "ward_s": 843.49
+      "generate_s": 101.37,
+      "export_s": 110.96,
+      "double_double_s_per_point": 281.1033333333333,
+      "double_s_per_point": 0.6433333333333333,
+      "engine_catani_s": 113.8,
+      "ward_s": 792.77
      },
      "failed_checks": []
     }
@@ -5847,7 +5946,7 @@
    "delegated": {},
    "max_dd_vs_reference": 6.901622507244509e-13,
    "max_binary64_vs_dd": 5.651434691010589e-11,
-   "max_catani_dd": 7.192133344338422e-26,
+   "max_catani_dd": 7.192133362651351e-26,
    "max_ward_dd": 0.0012117900021096058
   },
   {
@@ -5890,25 +5989,25 @@
      "passed": true,
      "checks": 66,
      "failures": 0,
-     "max_dd_vs_reference": 1.2584431642918475e-14,
-     "max_binary64_vs_dd": 1.1473931972827967e-13,
+     "max_dd_vs_reference": 1.2584431642918477e-14,
+     "max_binary64_vs_dd": 1.82414077309605e-13,
      "max_catani_dd": null,
      "max_catani_binary64": null,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.7233149616596335e-15,
       "finite": 1.1083715993095241e-13,
-      "single_pole": 7.053770997267928e-14,
+      "single_pole": 1.6982964566668867e-13,
       "double_pole": 1.0295906557763178e-14
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 59.97,
-      "export_s": 4.06,
-      "double_double_s_per_point": 20.4425,
-      "double_s_per_point": 15.23
+      "generate_s": 65.19,
+      "export_s": 4.24,
+      "double_double_s_per_point": 20.5325,
+      "double_s_per_point": 15.4475
      },
      "failed_checks": []
     }
@@ -5917,8 +6016,8 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 1.2584431642918475e-14,
-   "max_binary64_vs_dd": 1.1473931972827967e-13,
+   "max_dd_vs_reference": 1.2584431642918477e-14,
+   "max_binary64_vs_dd": 1.82414077309605e-13,
    "max_catani_dd": null,
    "max_ward_dd": null
   },
@@ -6008,7 +6107,7 @@
      },
      "ward": {
       "checks": 8,
-      "virtual_double": 0.048265545436486756,
+      "virtual_double": 0.04826619678898015,
       "born_double": 1.0586268873911407e-16,
       "virtual_double-double": 2.947670857724914e-30,
       "born_double-double": 4.879123810948352e-32
@@ -6016,11 +6115,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 117.81,
-      "export_s": 11.61,
-      "double_double_s_per_point": 46.585,
-      "double_s_per_point": 39.3225,
-      "ward_s": 208.2
+      "generate_s": 127.62,
+      "export_s": 13.15,
+      "double_double_s_per_point": 48.815,
+      "double_s_per_point": 39.275,
+      "ward_s": 211.32
      },
      "failed_checks": []
     }
@@ -6104,10 +6203,10 @@
       }
      ],
      "timings": {
-      "generate_s": 6.49,
-      "export_s": 1.27,
-      "double_double_s_per_point": 4.97,
-      "double_s_per_point": 0.1
+      "generate_s": 6.82,
+      "export_s": 1.32,
+      "double_double_s_per_point": 5.145,
+      "double_s_per_point": 0.1075
      },
      "failed_checks": []
     }
@@ -6189,10 +6288,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 124.16,
-        "export_s": 25.17,
-        "double_double_s_per_point": 6.4425,
-        "double_s_per_point": 1.105
+        "generate_s": 113.94,
+        "export_s": 24.52,
+        "double_double_s_per_point": 6.1925,
+        "double_s_per_point": 0.815
        },
        "failed_checks": []
       }
@@ -6239,10 +6338,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 91.82,
-        "export_s": 27.58,
-        "double_double_s_per_point": 6.355,
-        "double_s_per_point": 1.1975
+        "generate_s": 87.42,
+        "export_s": 25.68,
+        "double_double_s_per_point": 6.2,
+        "double_s_per_point": 1.0825
        },
        "failed_checks": []
       }
@@ -6289,10 +6388,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 95.6,
-        "export_s": 27.96,
-        "double_double_s_per_point": 6.4175,
-        "double_s_per_point": 1.205
+        "generate_s": 91.53,
+        "export_s": 26.23,
+        "double_double_s_per_point": 6.155,
+        "double_s_per_point": 0.82
        },
        "failed_checks": []
       }
@@ -6339,10 +6438,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 122.2,
-        "export_s": 23.01,
-        "double_double_s_per_point": 6.9,
-        "double_s_per_point": 1.1225
+        "generate_s": 102.54,
+        "export_s": 22.48,
+        "double_double_s_per_point": 6.1575,
+        "double_s_per_point": 0.8225
        },
        "failed_checks": []
       }
@@ -6424,10 +6523,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 90.78,
-        "export_s": 12.75,
-        "double_double_s_per_point": 6.825,
-        "double_s_per_point": 1.185
+        "generate_s": 93.63,
+        "export_s": 11.68,
+        "double_double_s_per_point": 7.39,
+        "double_s_per_point": 1.225
        },
        "failed_checks": []
       }
@@ -6474,10 +6573,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 80.54,
-        "export_s": 17.18,
-        "double_double_s_per_point": 7.0525,
-        "double_s_per_point": 0.7375
+        "generate_s": 85.63,
+        "export_s": 17.22,
+        "double_double_s_per_point": 7.09,
+        "double_s_per_point": 0.9575
        },
        "failed_checks": []
       }
@@ -6524,10 +6623,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 112.63,
-        "export_s": 27.52,
-        "double_double_s_per_point": 7.48,
-        "double_s_per_point": 1.9075
+        "generate_s": 117.76,
+        "export_s": 27.95,
+        "double_double_s_per_point": 7.705,
+        "double_s_per_point": 1.5575
        },
        "failed_checks": []
       }
@@ -6574,10 +6673,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 95.81,
-        "export_s": 27.31,
-        "double_double_s_per_point": 7.73,
-        "double_s_per_point": 2.3725
+        "generate_s": 101.38,
+        "export_s": 27.87,
+        "double_double_s_per_point": 7.4725,
+        "double_s_per_point": 1.6475
        },
        "failed_checks": []
       }
@@ -6653,10 +6752,10 @@
         }
        ],
        "timings": {
-        "generate_s": 110.85,
-        "export_s": 27.74,
-        "double_double_s_per_point": 7.32,
-        "double_s_per_point": 1.3925
+        "generate_s": 110.84,
+        "export_s": 26.62,
+        "double_double_s_per_point": 7.4075,
+        "double_s_per_point": 1.57
        },
        "failed_checks": []
       }
@@ -6703,10 +6802,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 133.87,
-        "export_s": 33.78,
-        "double_double_s_per_point": 8.7325,
-        "double_s_per_point": 2.1925
+        "generate_s": 140.06,
+        "export_s": 34.6,
+        "double_double_s_per_point": 8.4675,
+        "double_s_per_point": 1.8125
        },
        "failed_checks": []
       }
@@ -6784,10 +6883,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 116.67,
-      "export_s": 25.16,
-      "double_double_s_per_point": 5.9525,
-      "double_s_per_point": 1.09
+      "generate_s": 111.26,
+      "export_s": 22.64,
+      "double_double_s_per_point": 5.8825,
+      "double_s_per_point": 0.8625
      },
      "failed_checks": []
     }
@@ -6872,10 +6971,10 @@
       }
      ],
      "timings": {
-      "generate_s": 134.99,
-      "export_s": 28.81,
-      "double_double_s_per_point": 6.935,
-      "double_s_per_point": 1.41
+      "generate_s": 129.85,
+      "export_s": 28.03,
+      "double_double_s_per_point": 6.8925,
+      "double_s_per_point": 1.415
      },
      "failed_checks": []
     }
@@ -6917,11 +7016,14 @@
    "waits_for": null,
    "pending_reason": null,
    "reference_tolerance": 1e-10,
-   "catani": "none",
+   "catani": "python",
    "ward_legs": null,
    "listed_outliers": [],
-   "relaxed": {},
-   "status": "partial",
+   "relaxed": {
+    "4": 1e-05,
+    "4dd": 1e-05
+   },
+   "status": "pass",
    "tiers": {
     "nightly": {
      "points": [
@@ -6931,27 +7033,27 @@
       3
      ],
      "passed": true,
-     "checks": 185,
+     "checks": 230,
      "failures": 0,
-     "max_dd_vs_reference": 3.002819380505796e-12,
-     "max_binary64_vs_dd": 4.3140565509399356e-12,
-     "max_catani_dd": null,
-     "max_catani_binary64": null,
-     "catani_not_formed": true,
+     "max_dd_vs_reference": 3.0000864692238717e-12,
+     "max_binary64_vs_dd": 5.433422363862214e-12,
+     "max_catani_dd": 1.1148665800811504e-06,
+     "max_catani_binary64": 1.1148670543428379e-06,
+     "catani_not_formed": false,
      "binary64_vs_reference": {
-      "born": 1.3438543365561346e-15,
-      "finite": 3.1384478982765145e-12,
-      "single_pole": 4.319532856294782e-12,
-      "double_pole": 9.410305029962269e-15
+      "born": 1.3447816183243546e-15,
+      "finite": 3.1946553391425846e-12,
+      "single_pole": 5.4328815412886074e-12,
+      "double_pole": 9.789843979126758e-15
      },
      "ward": null,
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 225.45,
-      "export_s": 21.14,
-      "double_double_s_per_point": 5.9525,
-      "double_s_per_point": 0.505
+      "generate_s": 384.26,
+      "export_s": 24.73,
+      "double_double_s_per_point": 8.0625,
+      "double_s_per_point": 2.525
      },
      "failed_checks": []
     }
@@ -6960,9 +7062,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 3.002819380505796e-12,
-   "max_binary64_vs_dd": 4.3140565509399356e-12,
-   "max_catani_dd": null,
+   "max_dd_vs_reference": 3.0000864692238717e-12,
+   "max_binary64_vs_dd": 5.433422363862214e-12,
+   "max_catani_dd": 1.1148665800811504e-06,
    "max_ward_dd": null
   },
   {
@@ -7006,15 +7108,15 @@
      "passed": true,
      "checks": 134,
      "failures": 0,
-     "max_dd_vs_reference": 2.2910888283132676e-10,
+     "max_dd_vs_reference": 2.2554833717102463e-10,
      "max_binary64_vs_dd": 3.054312418017165e-14,
      "max_catani_dd": 4.7868146411364657e-29,
      "max_catani_binary64": null,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.0798489963170065e-14,
-      "finite": 0.00034230856762927636,
-      "single_pole": 4.0687998233745466e-05,
+      "finite": 0.0003420370859493344,
+      "single_pole": 4.068799899324945e-05,
       "double_pole": 0.0
      },
      "ward": null,
@@ -7024,15 +7126,15 @@
        "point": 0,
        "sector": "QCD^2 QED^4",
        "coefficient": "finite",
-       "E": 2.034902354608394e-06,
-       "true_error": 8.203644316440183e-08
+       "E": 2.034902372056863e-06,
+       "true_error": 8.203642172186518e-08
       },
       {
        "point": 0,
        "sector": "QCD^2 QED^4",
        "coefficient": "single_pole",
-       "E": 1.2111783425789585e-07,
-       "true_error": 8.371484025350485e-09
+       "E": 1.211178292251281e-07,
+       "true_error": 8.371469926214848e-09
       },
       {
        "point": 0,
@@ -7045,15 +7147,15 @@
        "point": 0,
        "sector": "QED^6",
        "coefficient": "finite",
-       "E": 0.003236549853121518,
-       "true_error": 0.0003423085653627298
+       "E": 0.003233982963420272,
+       "true_error": 0.0003420370836849366
       },
       {
        "point": 0,
        "sector": "QED^6",
        "coefficient": "single_pole",
-       "E": 0.0016016891695489696,
-       "true_error": 4.068799822218492e-05
+       "E": 0.001601689166632128,
+       "true_error": 4.068799898168891e-05
       },
       {
        "point": 0,
@@ -7087,14 +7189,14 @@
        "point": 1,
        "sector": "QED^6",
        "coefficient": "finite",
-       "E": 0.00045991400865038414,
-       "true_error": 1.4907920287647067e-06
+       "E": 0.0004590408574616393,
+       "true_error": 1.4879617476868743e-06
       },
       {
        "point": 1,
        "sector": "QED^6",
        "coefficient": "single_pole",
-       "E": 0.0001992686535581969,
+       "E": 0.00019926865358351655,
        "true_error": 1.4324403722918003e-05
       },
       {
@@ -7108,14 +7210,14 @@
        "point": 2,
        "sector": "QCD^2 QED^4",
        "coefficient": "finite",
-       "E": 3.968364650649762e-08,
+       "E": 3.9683647056970566e-08,
        "true_error": 8.315474324406403e-10
       },
       {
        "point": 2,
        "sector": "QCD^2 QED^4",
        "coefficient": "single_pole",
-       "E": 1.1591635313880958e-08,
+       "E": 1.1591630588720539e-08,
        "true_error": 6.299945110482994e-10
       },
       {
@@ -7129,15 +7231,15 @@
        "point": 2,
        "sector": "QED^6",
        "coefficient": "finite",
-       "E": 0.03360848530756958,
-       "true_error": 0.00013510599945977373
+       "E": 0.03308541651245814,
+       "true_error": 0.0001330035447557744
       },
       {
        "point": 2,
        "sector": "QED^6",
        "coefficient": "single_pole",
-       "E": 0.0004892348418861533,
-       "true_error": 1.6049884972193862e-08
+       "E": 0.0004892348420618407,
+       "true_error": 1.6049864254169413e-08
       },
       {
        "point": 2,
@@ -7150,15 +7252,15 @@
        "point": 3,
        "sector": "QCD^2 QED^4",
        "coefficient": "finite",
-       "E": 2.858441778487041e-06,
-       "true_error": 1.1372695118982645e-07
+       "E": 2.8584417859600876e-06,
+       "true_error": 1.1372693730133461e-07
       },
       {
        "point": 3,
        "sector": "QCD^2 QED^4",
        "coefficient": "single_pole",
-       "E": 1.2111783425789585e-07,
-       "true_error": 8.371484025350485e-09
+       "E": 1.211178292251281e-07,
+       "true_error": 8.371469926214848e-09
       },
       {
        "point": 3,
@@ -7171,15 +7273,15 @@
        "point": 3,
        "sector": "QED^6",
        "coefficient": "finite",
-       "E": 0.002678198336232436,
-       "true_error": 0.0002804037956899839
+       "E": 0.002676417360954056,
+       "true_error": 0.0002802173308428877
       },
       {
        "point": 3,
        "sector": "QED^6",
        "coefficient": "single_pole",
-       "E": 0.0016016891695489696,
-       "true_error": 4.068799822218492e-05
+       "E": 0.001601689166632128,
+       "true_error": 4.068799898168891e-05
       },
       {
        "point": 3,
@@ -7190,10 +7292,10 @@
       }
      ],
      "timings": {
-      "generate_s": 134.51,
-      "export_s": 38.92,
-      "double_double_s_per_point": 9.57,
-      "double_s_per_point": 1.6075
+      "generate_s": 144.65,
+      "export_s": 41.14,
+      "double_double_s_per_point": 9.4825,
+      "double_s_per_point": 1.4875
      },
      "failed_checks": []
     }
@@ -7202,7 +7304,7 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 2.2910888283132676e-10,
+   "max_dd_vs_reference": 2.2554833717102463e-10,
    "max_binary64_vs_dd": 3.054312418017165e-14,
    "max_catani_dd": 4.7868146411364657e-29,
    "max_ward_dd": null
@@ -7261,10 +7363,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 6.11,
-      "export_s": 2.41,
-      "double_double_s_per_point": 6.77,
-      "double_s_per_point": 0.3333333333333333
+      "generate_s": 5.52,
+      "export_s": 2.07,
+      "double_double_s_per_point": 6.47,
+      "double_s_per_point": 0.33
      },
      "failed_checks": []
     }
@@ -7413,11 +7515,11 @@
       }
      ],
      "timings": {
-      "generate_s": 129.88,
-      "export_s": 71.55,
-      "double_double_s_per_point": 9.795,
-      "double_s_per_point": 0.0925,
-      "engine_catani_s": 23.37
+      "generate_s": 142.52,
+      "export_s": 77.85,
+      "double_double_s_per_point": 10.1275,
+      "double_s_per_point": 0.125,
+      "engine_catani_s": 24.9
      },
      "failed_checks": []
     }
@@ -7518,11 +7620,11 @@
       }
      ],
      "timings": {
-      "generate_s": 56.75,
-      "export_s": 42.51,
-      "double_double_s_per_point": 6.4725,
-      "double_s_per_point": 0.0725,
-      "engine_catani_s": 9.35
+      "generate_s": 59.21,
+      "export_s": 42.61,
+      "double_double_s_per_point": 6.1225,
+      "double_s_per_point": 0.05,
+      "engine_catani_s": 6.5
      },
      "failed_checks": []
     }
@@ -7662,11 +7764,11 @@
       }
      ],
      "timings": {
-      "generate_s": 104.38,
-      "export_s": 79.78,
-      "double_double_s_per_point": 6.185,
-      "double_s_per_point": 0.07,
-      "engine_catani_s": 9.85
+      "generate_s": 109.45,
+      "export_s": 89.24,
+      "double_double_s_per_point": 6.16,
+      "double_s_per_point": 0.075,
+      "engine_catani_s": 9.88
      },
      "failed_checks": []
     }
@@ -7694,13 +7796,13 @@
    "tier": "nightly",
    "reference": {
     "format": "required",
-    "path": "tests/fixtures/loop/required/ttx_zh_ew.json",
+    "path": "tests/fixtures/loop/required/msm/ttx_zh_ew.json",
     "providers": [
-     "recola",
-     "madloop"
+     "madloop",
+     "recola"
     ]
    },
-   "reference_legend": "E required/ttx_zh_ew (ew-validate; MadLoop + Recola; Recola primary: R2 rule, 2.5 %)",
+   "reference_legend": "E required/ttx_zh_ew (ew-validate; MadLoop + Recola; Recola primary: R2 rule, 2.5 %) (re-referenced: ttx_zh_ew, MS-UFO-PATCH)",
    "extras": [],
    "extras_pending": {},
    "waits_for": null,
@@ -7716,20 +7818,21 @@
      "points": [
       0,
       1,
-      2
+      2,
+      3
      ],
      "passed": true,
-     "checks": 60,
+     "checks": 82,
      "failures": 0,
-     "max_dd_vs_reference": 7.714891868180339e-14,
+     "max_dd_vs_reference": 2.993570819277171e-15,
      "max_binary64_vs_dd": 2.039849860390016e-11,
      "max_catani_dd": 1.2995992018675115e-30,
      "max_catani_binary64": 5.272172962714552e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
-      "born": 6.965223513848155e-15,
-      "finite": 2.04066312059194e-11,
-      "single_pole": 2.016541829474853e-10,
+      "born": 1.9078162497696504e-15,
+      "finite": 2.039989491493647e-11,
+      "single_pole": 2.0165094224368339e-10,
       "double_pole": 0.0
      },
      "ward": null,
@@ -7762,14 +7865,28 @@
        "coefficient": "double_pole",
        "E": Infinity,
        "true_error": 0.0
+      },
+      {
+       "point": 3,
+       "sector": "QED^6",
+       "coefficient": "single_pole",
+       "E": 2.4274339418075058e-09,
+       "true_error": 2.0165149931371483e-10
+      },
+      {
+       "point": 3,
+       "sector": "QED^6",
+       "coefficient": "double_pole",
+       "E": Infinity,
+       "true_error": 0.0
       }
      ],
      "timings": {
-      "generate_s": 83.38,
-      "export_s": 78.76,
-      "double_double_s_per_point": 15.003333333333332,
-      "double_s_per_point": 0.12333333333333334,
-      "engine_catani_s": 20.16
+      "generate_s": 131.98,
+      "export_s": 83.64,
+      "double_double_s_per_point": 5.8725,
+      "double_s_per_point": 0.065,
+      "engine_catani_s": 9.72
      },
      "failed_checks": []
     }
@@ -7778,7 +7895,7 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 7.714891868180339e-14,
+   "max_dd_vs_reference": 2.993570819277171e-15,
    "max_binary64_vs_dd": 2.039849860390016e-11,
    "max_catani_dd": 1.2995992018675115e-30,
    "max_ward_dd": null
@@ -7899,10 +8016,10 @@
       }
      ],
      "timings": {
-      "generate_s": 98.11,
-      "export_s": 13.72,
-      "double_double_s_per_point": 8.835,
-      "double_s_per_point": 0.865
+      "generate_s": 89.66,
+      "export_s": 15.2,
+      "double_double_s_per_point": 9.0175,
+      "double_s_per_point": 1.1
      },
      "failed_checks": []
     }
@@ -7950,8 +8067,8 @@
    ],
    "checks": "every check: native inputs fail in native_trees._parameter_program, Python inputs in scalar_bindings.ScalarBindingPlan (scalar_frontend.evaluator)",
    "evidence": "probe-f2 (SC08 on Python inputs, 2026-10-30): 2 of the 36 bound outputs fail alone, the t~ b W+ UV counterterm coupling c_UVtxbWp1EW at eps^-1 and eps^0. Its source holds the UFO's '0 if MB == 0 else <...>/MB...' counterterm parameters; scalar_frontend lowers an IfExp with both branches (symbolica::if(truth(if(equal(0,0),1,0)), 0, <else>)), so with MB fixed to 0 the untaken branch divides by zero (Symbolica: 'Created infinity by raising 0 to the power of -1') and the evaluator refuses the infinite coefficient. Rows without this coupling only log the warning. Candidate fix (owner's call): decide an IfExp whose lowered condition is a constant before lowering its branches (lower only the taken branch), in the scalar frontend that both input paths share; MP01@P4 (b b~ > e- e+) and MP02@P6 (b b~ > t t~) fail the same way (tmp/ms-validate/mp1)",
-   "status": "fixed on work/v2-ms-validate (19619e62: scalar_frontend decides a conditional whose test reads only exact numbers at lowering and lowers only its taken branch, as Python evaluates it; undecided tests stay native run-time conditionals; unit test test_fixed_condition_lowers_only_the_taken_branch): SC08 82/82, ST03 134/134, MP01@P4 and MP02@P6 pass (tmp/ms-validate/f4)",
-   "routed": "MS-VALIDATE (fixed in the package; reviewable as its own commit)"
+   "status": "fixed: a conditional whose test reads only exact numbers is decided at lowering and only its taken branch lowered, as Python evaluates it (this package's 19619e62; ms-ufo-patch landed the same fix, ScalarFunctionLibrary.decided_number with test_conditional_decided_by_its_bindings_forms_only_the_taken_branch, which the merge of slice 3eb4db9f keeps): SC08, ST03, MP01@P4 and MP02@P6 pass (f4, fs4)",
+   "routed": "closed (the slice's implementation kept)"
   },
   {
    "id": "F3",
@@ -8004,8 +8121,8 @@
    ],
    "checks": "rule 4, QED^6 single pole at every point (rule 1 = MadLoop QP; the QCD^2 QED^4 sector meets its operator exactly)",
    "evidence": "probe-sc03 (double-double, points 0 and 1): the offset is -0.021297 / -0.021183 (alpha/2pi) Born and independent of MB to 1e-6 (MB = ymb = 4.7, 2.35, 0.47); MS-REF's scheme record ew-gmu-ckm: the UFO's O(lambda^3) Wolfenstein CKM is not unitary, the remnant scales as lambda^4 (lamWS scan), MadLoop alike",
-   "status": "known model defect: UFOmodeldb issue #1 item 2 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1; DECISIONS 2026-10-30 ~11:45); rule 4 not formed on the row; the user's UFO patch (DECISIONS ~12:45, ms-ufo-patch) makes the CKM exactly unitary",
-   "routed": "upstream (UFOmodeldb #1 item 2); ms-ufo-patch"
+   "status": "resolved by the shipped models: UFOmodeldb issue #1 item 2 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1), the user's patch (DECISIONS 2026-10-30 ~12:45; MS-UFO-PATCH, slice 3eb4db9f) makes the CKM exactly unitary; SC03's rule 4 is formed again: its remaining 3.1e-7..1.1e-6 offset (= MadLoop's) is the EW counterterms' missing tau mass, the user's retained model limitation, relaxed to 1e-5 per the ~10:20 ruling (fs4)",
+   "routed": "closed (MS-UFO-PATCH)"
   },
   {
    "id": "F7",
@@ -8056,14 +8173,15 @@
    ],
    "checks": "none fail: ours = MadLoop (both read the UFO as shipped); a provider with its own renormalisation differs by the omitted term (ST04's MadLoop-Recola offset)",
    "evidence": "MS-UFODB (slice 0e5930c2): the omitted term explains ST04's MadLoop-Recola offset exactly",
-   "status": "known model defect: UFOmodeldb issue #1 item 3 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1; DECISIONS 2026-10-30 ~11:45); the user's UFO patch (DECISIONS ~12:45, ms-ufo-patch) restores the term",
-   "routed": "upstream (UFOmodeldb #1 item 3); ms-ufo-patch"
+   "status": "resolved by the shipped models: UFOmodeldb issue #1 item 3 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1), the user's patch (DECISIONS ~12:45; MS-UFO-PATCH, slice 3eb4db9f) restores dMB_eCoup_UV_EW; SC04, TT06 and ST04 are re-referenced with MadLoop QP + Recola on the patched model",
+   "routed": "closed (MS-UFO-PATCH)"
   }
  ],
  "coverage_notes": [
-  "rule 4 is not formed on LL02, SC02 (F7) and SC03 (F6): model properties, the rows report partial",
+  "rule 4 is not formed on LL02 and SC02 (F7): a model property, the rows report partial",
   "the Ward extra is a diagnostic under the complex-mass scheme (CM05, CM07, CM09; PLAN 1.4/1.5) and not run on VV05 and ST03 in the real-mass scheme (F3)",
   "rule 7 (nc) is not run: EW LC/NLC is never supported (USER Q4, 2026-10-30 ~08:10; typed colour-declaration-coverage)",
-  "a row whose evaluation raises records the error as its one failed check (the F1 and F2 rows did until the package's fixes 52eaff60 and 19619e62)"
+  "a row whose evaluation raises records the error as its one failed check (the F1 and F2 rows did until the fixes: 52eaff60, and 19619e62 / ms-ufo-patch's decided_number)",
+  "on the shipped patched models (MS-UFO-PATCH) MadLoop's exports call every R2 coupling the engine inserts (the R2 rule finds no omission; on the unpatched models R2_G0tt_b on LL10, TT04, SC09, TT05)"
  ]
 }
