@@ -3994,10 +3994,15 @@ def multiparticle_subprocesses(campaign: Campaign, name: str) -> list[Check]:
     )
 
     row = campaign.rows[name]
-    data = next(r for r in load_manifest()["rows"] if r["id"] == name)
+    data = next(r for r in campaign.manifest["rows"] if r["id"] == name)
     ir = campaign.model(row.restriction, row.model).ir
     catalog = ModelParticleCatalog(ir.name, ir.particles, ir.parameters)
-    ours = expand_model_processes(row.process, catalog, charges=conserved_charges(ir))
+    ours = expand_model_processes(
+        row.process,
+        catalog,
+        multiparticles=data.get("multiparticles"),
+        charges=conserved_charges(ir),
+    )
 
     def key(process: str) -> tuple:
         """Initial and final PDG multisets (the model's own spelling of a
@@ -4009,12 +4014,19 @@ def multiparticle_subprocesses(campaign: Campaign, name: str) -> list[Check]:
             for side in (initial, final)
         )
 
+    # Members without a Born (manifest ``skipped_members``, m-sm Q2 (a)) are
+    # skipped on our side; MadLoop exports the loop-squared ones as their
+    # own P directories (``madloop_loop_squared``) and none for a member
+    # with no amplitude at all: the members with a Born must agree.
+    skipped = {key(process) for process in data.get("skipped_members", ())}
+    loop_squared = set(data.get("madloop_loop_squared", ()))
     theirs = {
         key(process)
-        for processes in data["madloop_subprocesses"].values()
+        for directory, processes in data["madloop_subprocesses"].items()
+        if directory not in loop_squared
         for process in processes
     }
-    found = {key(process) for process in ours}
+    found = {key(process) for process in ours} - skipped
     return [
         Check("multi", None, "", "", "subprocesses", ", ".join(sorted(ours)),
               ", ".join(sorted(p for ps in data["madloop_subprocesses"].values()
@@ -4022,6 +4034,95 @@ def multiparticle_subprocesses(campaign: Campaign, name: str) -> list[Check]:
               0.0, 0.0, found == theirs,
               note=f"{len(found)} processes against MadLoop's "
               f"{len(data['madloop_subprocesses'])} P directories")
+    ]  # fmt: skip
+
+
+def public_card_text(
+    row: Row,
+    output: Path,
+    *,
+    multiparticles: Mapping[str, Sequence[str]] | None = None,
+) -> str:
+    """A public-route generation card of ``row`` on its shipped model (no
+    ``[loop.model]``, no compatibility profile): its restriction and fixed
+    parameters, corrections, the model's R2, the minimal Born orders and
+    the request's ``process.multiparticles``."""
+
+    fixed = ", ".join(f"{k} = {json.dumps(v)}" for k, v in row.fixed_parameters.items())
+    restriction = (
+        f"restriction = {json.dumps(row.restriction)}"
+        if row.restriction != "default"
+        else ""
+    )
+    aliases = "".join(
+        f"{key} = {json.dumps(list(values))}\n"
+        for key, values in (multiparticles or {}).items()
+    )
+    return f"""action = "generate"
+[model]
+source = {json.dumps(row.model)}
+{restriction}
+[process]
+entries = [{{expression = {json.dumps(row.process)}, name = {json.dumps(row.id)}}}]
+loop_coupling_orders = {json.dumps(list(row.corrections))}
+coupling_order_policy = "minimal"
+[process.multiparticles]
+{aliases}[loop]
+r2_strategy = "model"
+[loop.preparation]
+fixed_parameters = {{{fixed}}}
+[generation]
+output = {json.dumps(str(output))}
+emit_api_bundle = false
+[generation.validation]
+post_build_validation = false
+"""
+
+
+def multiparticle_members(campaign: Campaign, name: str) -> list[Check]:
+    """A multiparticle row's members on the public route's dry run (m-sm
+    PLAN Q2 (a)): the members without a Born (manifest ``skipped_members``)
+    are skipped with the typed ``loop-induced`` record, every other member of
+    the expansion is planned."""
+
+    from pyamplicol.api import Generator, ModelSource, ProcessRequest, ProcessSet
+    from pyamplicol.config import resolve_config
+
+    row = campaign.rows[name]
+    # The dry run reads the configured model cache (a compiled shipped model).
+    ModelSource.from_path(row.model, restriction=row.restriction).compile()
+    data = next(r for r in campaign.manifest["rows"] if r["id"] == name)
+    work = campaign.work / f"dry-run-{name}"
+    work.mkdir(parents=True, exist_ok=True)
+    card = work / "card.toml"
+    card.write_text(
+        public_card_text(row, work / "out", multiparticles=data.get("multiparticles"))
+    )
+    plan = Generator(resolve_config(card)).plan(
+        ProcessSet((ProcessRequest.parse(row.process, name=row.id),), ())
+    )
+    coverage = plan.estimated_coverage
+    skipped = coverage.get("skipped_members", ())
+    found = sorted(" ".join(r["process"].split()) for r in skipped)
+    typed = all(r.get("refusal") == "loop-induced" for r in skipped)
+    want = sorted(data.get("skipped_members", ()))
+    planned = sorted(" ".join(r["process"].split()) for r in coverage["processes"])
+    loop_squared = set(data.get("madloop_loop_squared", ()))
+    expansion = {
+        p for d, ps in data["madloop_subprocesses"].items()
+        if d not in loop_squared for p in ps
+    }  # fmt: skip
+    return [
+        Check("multi", None, "", "", "skipped members", ", ".join(found) or "none",
+              ", ".join(want) or "none", 0.0, 0.0,
+              [p.casefold() for p in found] == [p.casefold() for p in want] and typed,
+              note="members without a Born: the typed loop-induced record"),
+        Check("multi", None, "", "", "planned members", str(len(planned)),
+              str(len(expansion)), 0.0, 0.0,
+              len(planned) == len(expansion)
+              and not set(map(str.casefold, planned)) & set(map(str.casefold, found)),
+              note="every member with a Born planned, the skipped ones not; "
+              f"unsupported features: {list(plan.unsupported_features)}"),
     ]  # fmt: skip
 
 

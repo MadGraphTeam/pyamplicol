@@ -165,6 +165,9 @@ LANDED = {"EWI-7", "MS-PHOTON"}
 # MS-CMS-N, integrated at a359965c, carries MS-CMS's transform and policy
 # (work/v2-ms-cms fc3ad912): the complex-mass rows run.
 LANDED |= {"MS-CMS", "MS-CMS-N"}
+# MS-MODEL, integrated at 2ae8b88b: multiparticle members without a Born are
+# skipped typed (Q2 (a)); the public EW models.
+LANDED.add("MS-MODEL")
 # Model codes under the complex-mass scheme (m-sm/PLAN.md §4.1).
 CMS_CODES = {"Gc", "Gca", "Lc"}
 
@@ -1819,6 +1822,105 @@ NO_REAL_SCHEME_WARD = {
 # MS-VALIDATE item 6; a failure goes to the owner of the failing site).
 NATIVE_ROWS = {"TV07", "TT04", "SC06", "SC07", "SC08", "SC09", "CM07"}
 
+# The multiparticle rows (m-sm/PLAN.md §4.2 MP, Q2 (a)): composite rows of
+# their parts, as M-QCD's M01. MG5_aMC adds the photon to p on these
+# QED-perturbed models; the request states it through process.multiparticles
+# (``multiparticles``), so the expansion is MadLoop's SubProcesses/P*
+# (``madloop_subprocesses``: the "C Process:" lines of MS-REF's exports,
+# workspace/reference/runs/msm/<run>/madloop-export). The members without a
+# Born (MadLoop's loop-squared P0_gg_emep) are skipped with a typed
+# loop-induced record (``skipped_members``, the public route's dry run);
+# each P reference runs as its subprocess's own generation: (variant name,
+# process, Born amplitude orders).
+MP_PARTONS = ["g", "u", "c", "d", "s", "b", "u~", "c~", "d~", "s~", "b~", "a"]
+MULTIPARTICLE_ROWS = {
+    "MP01": {
+        "madloop_subprocesses": {
+            "P0_gg_emep": ["g g > e- e+"],
+            "P2_uux_emep": ["c c~ > e- e+", "u u~ > e- e+"],
+            "P3_ddx_emep": ["d d~ > e- e+", "s s~ > e- e+"],
+            "P4_bbx_emep": ["b b~ > e- e+"],
+            "P5_aa_emep": ["a a > e- e+"],
+        },
+        # g a > e- e+ has no amplitude at any order (MadLoop exports none).
+        "skipped_members": ["g a > e- e+", "g g > e- e+"],
+        "madloop_loop_squared": ["P0_gg_emep"],
+        "parts": {
+            "required/msm/pp_emep_ew_P2_uux_emep.json": ("P2", "u u~ > e- e+", [(0, 2)]),
+            "required/msm/pp_emep_ew_P3_ddx_emep.json": ("P3", "d d~ > e- e+", [(0, 2)]),
+            "required/msm/pp_emep_ew_P4_bbx_emep.json": ("P4", "b b~ > e- e+", [(0, 2)]),
+            "required/msm/pp_emep_ew_P5_aa_emep.json": ("P5", "a a > e- e+", [(0, 2)]),
+        },
+    },
+    "MP02": {
+        "madloop_subprocesses": {
+            "P0_ga_ttx": ["g a > t t~"],
+            "P2_gg_ttx": ["g g > t t~"],
+            "P3_uux_ttx": ["c c~ > t t~", "u u~ > t t~"],
+            "P4_ddx_ttx": ["d d~ > t t~", "s s~ > t t~"],
+            "P5_aa_ttx": ["a a > t t~"],
+            "P6_bbx_ttx": ["b b~ > t t~"],
+        },
+        "skipped_members": [],
+        "madloop_loop_squared": [],
+        "parts": {
+            "required/msm/pp_ttx_ew_P0_ga_ttx.json": ("P0", "g a > t t~", [(1, 1)]),
+            "required/msm/pp_ttx_ew_P2_gg_ttx.json": ("P2", "g g > t t~", [(2, 0)]),
+            "required/msm/pp_ttx_ew_P3_uux_ttx.json": ("P3", "u u~ > t t~", [(2, 0), (0, 2)]),
+            "required/msm/pp_ttx_ew_P4_ddx_ttx.json": ("P4", "d d~ > t t~", [(2, 0), (0, 2)]),
+            "required/msm/pp_ttx_ew_P5_aa_ttx.json": ("P5", "a a > t t~", [(0, 2)]),
+            "required/msm/pp_ttx_ew_P6_bbx_ttx.json": ("P6", "b b~ > t t~", [(2, 0), (0, 2)]),
+        },
+    },
+}
+
+
+def multiparticle_parts(r, entry):
+    """A multiparticle row as its parts (composite, as M-QCD's M01)."""
+
+    spec = MULTIPARTICLE_ROWS[r["id"]]
+    entry.update(
+        status="composite",
+        reference=None,
+        madloop_subprocesses=spec["madloop_subprocesses"],
+        multiparticles={"p": MP_PARTONS},
+        skipped_members=spec["skipped_members"],
+        madloop_loop_squared=spec["madloop_loop_squared"],
+        points={},
+    )
+    entry.pop("pending", None)
+    variants = []
+    for path, (name, process, born) in spec["parts"].items():
+        data = _fixture(path)
+        run = next(
+            x
+            for x in MSREF[r["id"]]["references"]
+            if x["fixture"] == path and x["status"] == "committed"
+        )
+        sectors = [s for s, _b, _c in _loop_sectors(data)]
+        loops = loop_orders(born, entry["corrections"], sectors)
+        reference = msref_reference(path, run)
+        variants.append({
+            "name": name,
+            "gating": True,
+            "tier": "nightly",
+            "subprocess": True,
+            "process": process,
+            "born_orders": {"QCD": max(b[0] for b in born), "QED": max(b[1] for b in born)},
+            "born_amplitude_orders": [{"QCD": q, "QED": e} for q, e in born],
+            "loop_orders": loops,
+            "sectors": [sector_orders(x) for x in sectors],
+            "predicted_sectors": produced_sectors(born, loops),
+            "reference": reference,
+            "madloop_r2_called": called_couplings(reference),
+            "points": {"nightly": list(range(len(data["points"])))},
+            "extras": [],
+            "extras_pending": {},
+            "notes": f"MadLoop SubProcesses/{data['mqcd_run']['subprocess']} of {r['process']} (its single-process generation, tools route)",
+        })  # fmt: skip
+    entry["variants"] = variants
+
+
 rows = []
 for r in R:
     model, restriction, fixed, scheme, alpha = CODES[r["code"]]
@@ -2015,6 +2117,8 @@ for r in R:
                 "ratio": ratio,
             },
         }
+    if r["id"] in MULTIPARTICLE_ROWS and not waits:
+        multiparticle_parts(r, entry)
     rows.append(entry)
 
 # The nightly tier's file jobs (each within PLAN §3.2's 30 minutes): measured
@@ -2067,16 +2171,22 @@ def nightly_ids_of(entry):
         if (
             v.get("gating", True)
             and v.get("tier", "nightly") == "nightly"
-            and entry["status"] == "active"
+            and entry["status"] in ("active", "composite")
         ):
             ids.append(f"{entry['id']}@{v['name']}")
     return ids
 
 
-# A variant with its own generation (another restriction, photon tags,
-# mass scheme or reglog convention: ``mqcd.Campaign.run``) is packed on its
-# own; the others share their base row's generation and stay in its job.
-OWN_GENERATION = ("restriction", "external_photons", "mass_scheme", "reglog_convention")
+# A variant with its own generation (another process, restriction, photon
+# tags, mass scheme or reglog convention: ``mqcd.Campaign.run``) is packed on
+# its own; the others share their base row's generation and stay in its job.
+OWN_GENERATION = (
+    "process",
+    "restriction",
+    "external_photons",
+    "mass_scheme",
+    "reglog_convention",
+)
 
 
 def packing_units(entry):
