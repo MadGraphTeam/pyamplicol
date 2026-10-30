@@ -63,7 +63,7 @@ def _workspace() -> Path:
 WORKSPACE = _workspace()
 # The QCD+QED loop UFOs as UFOmodeldb ships them (tests/conftest.py's
 # ``loop_gmu_ufo`` and ``loop_qcd_qed_sm_ufo``; MS-UFODB).
-UFODB = WORKSPACE / "reference/models/ufodb-6ca4b120"
+UFODB = WORKSPACE / "reference/models/ufodb-6ca4b120-patched"
 
 ZERO_WIDTHS = {"WT": "0", "WW": "0", "WZ": "0", "WH": "0"}
 G_MU_FIXED = {"MB": "0", "ymb": "0", "MTA": "0", "ymtau": "0", **ZERO_WIDTHS}
@@ -1476,6 +1476,20 @@ def apply_msref(r):
     binding = [
         b["fixture"] for b in entry["binding_references"] if b["fixture"] in known
     ]
+    own = [
+        f
+        for f in binding
+        if f in runs
+        and set(r["sectors"]) <= {s for s, _b, _c in _loop_sectors(_fixture(f))}
+    ]
+    if r["ref"] is not None and own and not r["ref"].get("path", "").endswith(own[0]):
+        # A committed run binding the row's own sectors replaces its existing
+        # reference (MS-UFO-PATCH re-referenced the rows the user's UFO patch
+        # changes, MadLoop QP + Recola on the patched models: LL10, TT04,
+        # TT05, TT06, SC09; a top-up run of another sector is joined below).
+        r["ref"] = None
+        r["legend"] += f" (re-referenced: {Path(own[0]).stem}, MS-UFO-PATCH)"
+        binding = [f for f in binding if f in runs]
     if r["ref"] is None and binding:
         main = binding[0]
         r["ref"] = msref_reference(main, known[main])
@@ -1653,18 +1667,19 @@ COMPONENT_FORMATS = {"ew-control", "madloop-components", "process-components"}
 # listed set (tmp/ms-validate/probe-r2: {R2_G0tt_b} on LL10, TT04, SC09, the
 # empty set on DY01 and TT02). Known (PLAN §1.4): LL10, TT04, SC09, TT05
 # (R2_G0tt_b of V_ttG02).
-OMITTED = {
-    "LL10": ["R2_G0tt_b"],
-    "TT05": ["R2_G0tt_b"],
-    "TT04": ["R2_G0tt_b"],
-    "SC09": ["R2_G0tt_b"],
-}
-# TT05's omitted component (``goldstone-mixing.json`` omitted_r2): MadLoop's
-# Born x CT interference of the R2_G0tt amplitudes times R2_G0tt_b / R2_G0tt
-# at the card, the UFO's couplings (``tools/loop_reference/ufo_source_oracle.
-# coupling_ratio``, binary64; 0.869 at lhv = 1), computed when this
-# script runs with the G_mu UFO.
-OMITTED_COMPONENT = {"TT05": ("r2_g0tt", "R2_G0tt_b", "R2_G0tt")}
+# On the shipped (patched) models MadLoop's label matching meets every R2
+# coupling of V_ttG02 (UFOmodeldb issue-1 patch: R2_G0tt_b split by loop
+# content into R2_G0tt_b_WG and R2_G0tt_b_G; DECISIONS 2026-10-30 ~12:45,
+# ~13:40), and the re-referenced rows (MS-UFO-PATCH) call them: no row
+# lists an omission; the harness still finds the set structurally on every
+# row with a call list. (On the unpatched models: R2_G0tt_b on LL10, TT04,
+# SC09, TT05, tmp/ms-validate/probe-r2 and fs3.)
+OMITTED: dict[str, list[str]] = {}
+# A row's omitted component (``goldstone-mixing.json`` omitted_r2: MadLoop's
+# Born x CT interference of the proportional coupling's amplitudes, scaled
+# by the UFO's coupling ratio, ``tools/loop_reference/ufo_source_oracle.
+# coupling_ratio``): TT05's until MS-UFO-PATCH re-referenced it; none now.
+OMITTED_COMPONENT: dict[str, tuple[str, str, str]] = {}
 # R2 couplings the engine inserts in the export's sectors whose insertion
 # vanishes there, so MadLoop calls none (``mqcd.Row.r2_vanishing``): u d~ >
 # e+ ve b b~ (QCD corrections, sector QCD^2 QED^8): the W self-energy R2
@@ -1814,19 +1829,15 @@ VANISHING = {
 # Rule 1's tolerance per row (nominal 1e-12; 1e-10 from 2->4 up where the
 # providers' precision needs it, the user's ruling of 2026-10-29 ~01:12; and
 # below ~1e-5 relative no finding, ~10:20), with the evidence of c1:
-# LL10 against Recola (the R2 rule's primary; MadLoop, which omits
-# R2_G0tt_b, is 5.6e-4 and 1.1e-2 off): 3.9e-12 and 7.4e-12 at points 1, 2,
-# Recola's double-precision finite part; TV06 (2->4) 1.16e-12 against
-# MadLoop's quadruple precision at point 2; TT06 against MadLoop's double
-# precision counterterm parameters (goldstone-mixing.json; ew-validate held
-# its finite parts at 1e-8; c3 2026-10-30: 4e-11 to 1.1e-9).
+# TV06 (2->4) 1.16e-12 against MadLoop's quadruple precision at point 2
+# (LL10's and TT06's relaxations were for their pre-patch references:
+# Recola's double-precision finite part, MadLoop's double-precision CT
+# parameters; MS-UFO-PATCH's MadLoop QP runs replace them).
 # VV07 and TT03 (2->3) against MadLoop's quadruple precision (m1: up to
 # 5.3e-11 and 1.4e-11): 1e-10, as the 2->4 rows.
 RULE1 = {
-    "LL10": 1e-10,
     "TV06": 1e-10,
     "TV07": 1e-10,
-    "TT06": 1e-8,
     "VV07": 1e-10,
     "TT03": 1e-10,
     # ew-validate's udx_tbx_ew_mb run: MadLoop in double precision (status
@@ -1908,16 +1919,9 @@ NO_CATANI = {
     "SC02": "the massive-muon UFO copy: the UFO writes the lepton field "
     "renormalisation for massless leptons (single pole = the massive QED "
     "operator + 3 alpha/2pi Born)",
-    # restrict_ckm: the UFO's O(lambda^3) Wolfenstein CKM is not unitary, so
-    # the virtual (= MadLoop's) keeps a UV pole in the QED correction: QED^6
-    # single pole = the QED operator - 0.0213 (alpha/2pi) Born at every
-    # point, independent of MB to 1e-6 (tmp/ms-validate/probe-sc03, MB =
-    # 4.7, 2.35, 0.47), ~lambda^4 (MS-REF's lamWS scan, scheme ew-gmu-ckm);
-    # finding F6.
-    "SC03": "restrict_ckm: the UFO's O(lambda^3) Wolfenstein CKM is not "
-    "unitary, so the QED correction keeps a UV pole ~lambda^4 (single pole = "
-    "the QED operator - 0.0213 alpha/2pi Born, as MadLoop's; MS-REF scheme "
-    "ew-gmu-ckm; finding F6)",
+    # (SC03, restrict_ckm: the O(lambda^3) Wolfenstein CKM kept a UV pole,
+    # finding F6; the patched model's CKM is exactly unitary, so rule 4 is
+    # formed again.)
 }
 # The Ward extra in the real-mass scheme (m-sm/PLAN.md §1.4 Ward): the
 # identity holds only where no external coloured (gluon Ward) or charged
