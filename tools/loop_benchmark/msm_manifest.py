@@ -1493,6 +1493,17 @@ def loop_orders(born, corrections, sectors):
     return orders[0] if len(orders) == 1 else orders
 
 
+def produced_sectors(born, loops):
+    """The squared sectors a request forms: every Born amplitude order times
+    every loop amplitude order (``loop_orders``), largest QCD power first."""
+
+    if not born or not loops:
+        return []
+    loops = [loops] if isinstance(loops, dict) else loops
+    found = {(b[0] + x["QCD"], b[1] + x["QED"]) for b in born for x in loops}
+    return [sector_orders(s) for s in sorted(found, reverse=True)]
+
+
 def sector_orders(sector):
     return {"QCD": sector[0], "QED": sector[1]}
 
@@ -1562,6 +1573,9 @@ RULE1 = {
     "TT06": 1e-8,
     "VV07": 1e-10,
     "TT03": 1e-10,
+    # ew-validate's udx_tbx_ew_mb run: MadLoop in double precision (status
+    # 216; m1: 3.7e-11).
+    "ST04": 1e-10,
 }
 # Relaxed rules per row (the user's ruling of ~10:20, at most 1e-5): SC05's
 # poles against Catani in double-double, 2.9e-14 and 4.2e-14 at point 0
@@ -1655,9 +1669,14 @@ for r in R:
         "extras": r["extras"],
         "features": r["features"],
         "sectors": [sector_orders(s) for s in sectors],
-        # Every sector predicted unless the row states otherwise (a joint
-        # QCD + QED request without caps must predict every one, PLAN §1.4).
-        "predicted_sectors": [sector_orders(s) for s in sectors],
+        # Every sector the request forms is predicted unless the row states
+        # otherwise (a joint QCD + QED request without caps must predict
+        # every one, PLAN §1.4): the Born amplitude orders times the loop
+        # orders, which may hold sectors beyond PLAN §4.2's list (JJ04's
+        # QCD^2 QED^6: the QED correction of the QED^4 Born).
+        "predicted_sectors": produced_sectors(
+            born, loop_orders(born, corrections, sectors) if sectors else []
+        ),
         "unpredicted_sectors": [],
         "unpredicted_reasons": {},
         "reference_outliers": [],
