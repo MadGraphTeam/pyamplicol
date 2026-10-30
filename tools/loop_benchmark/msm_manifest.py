@@ -1369,6 +1369,41 @@ def apply_msref(r):
         return
 
 
+# The R2 couplings MadLoop's export of a reference calls (MS-REF: each new
+# run's ``madloop_r2_couplings``; ``required/msm/existing_r2_couplings.json``
+# for the existing references' exports), the input of the R2 rule's
+# structural difference with the engine's counterterm program
+# (``mqcd.rule_r2``). None where a reference (or a part of it) lists none.
+EXISTING_R2_FILE = WT / REQ / "msm" / "existing_r2_couplings.json"
+EXISTING_R2 = (
+    json.loads(EXISTING_R2_FILE.read_text())["exports"]
+    if EXISTING_R2_FILE.is_file()
+    else {}
+)
+
+
+def called_couplings(reference):
+    if not reference:
+        return None
+    fmt = reference["format"]
+    if fmt == "madloop-components":
+        entry = EXISTING_R2.get(reference["key"])
+        return None if entry is None else sorted(entry["called"])
+    if fmt == "sectors":
+        lists = [called_couplings({"format": "required", **part})
+                 for part in reference["parts"]]  # fmt: skip
+        if any(found is None for found in lists):
+            return None
+        return sorted(set().union(*lists))
+    if fmt != "required":
+        return None
+    data = json.loads((WT / reference["path"]).read_text())
+    if data.get("madloop_r2_couplings"):
+        return sorted(data["madloop_r2_couplings"]["called"])
+    entry = EXISTING_R2.get(Path(reference["path"]).stem)
+    return None if entry is None else sorted(entry["called"])
+
+
 for r in R:
     apply_msref(r)
 
@@ -1641,6 +1676,11 @@ for r in R:
         entry["extras_pending"] = pend
     if r["id"] in OMITTED and status == "active":
         entry["madloop_omitted_r2"] = OMITTED[r["id"]]
+    called = called_couplings(reference)
+    if called is not None:
+        entry["madloop_r2_called"] = called
+        for variant in entry.get("variants", ()):
+            variant["madloop_r2_called"] = called_couplings(variant["reference"])
     if r["id"] in OMITTED_COMPONENT and status == "active":
         component, numerator, denominator = OMITTED_COMPONENT[r["id"]]
         data = json.loads((WT / reference["path"]).read_text())["processes"][

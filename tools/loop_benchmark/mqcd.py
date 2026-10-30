@@ -284,6 +284,10 @@ class Row:
     # call (its label matching), as the row's reference records them; the
     # harness checks that the engine inserts them (``rule_r2``).
     madloop_omitted_r2: tuple[str, ...] | None = None
+    # The UFO R2 couplings the MadLoop export of the row's reference calls
+    # (MS-REF's ``madloop_r2_couplings``), for the structural difference
+    # with the engine's (``rule_r2``); None where the reference lists none.
+    madloop_r2_called: tuple[str, ...] | None = None
     # [U2]: the request lowers a Levi-Civita cell its veto keeps from
     # cancelling (``SliceRequest.allow_anomalous_veto``; SC05's d s b veto).
     allow_anomalous_veto: bool = False
@@ -359,6 +363,9 @@ class Row:
             madloop_omitted_r2=None
             if data.get("madloop_omitted_r2") is None
             else tuple(data["madloop_omitted_r2"]),
+            madloop_r2_called=None
+            if data.get("madloop_r2_called") is None
+            else tuple(data["madloop_r2_called"]),
             allow_anomalous_veto=bool(data.get("allow_anomalous_veto", False)),
             catani_reason=data.get("catani_reason", ""),
         )
@@ -2908,24 +2915,107 @@ def engine_r2(slice_: Any) -> dict[str, frozenset[str]]:
     return {vertex: frozenset(names) for vertex, names in found.items()}
 
 
-def rule_r2(row: Row, slice_: Any, reference: Reference) -> list[Check]:
-    """The R2 rule's structural check (m-sm/PLAN.md §1.4 rule 1, Q7): every
+def rule_r2(
+    row: Row,
+    slice_: Any,
+    reference: Reference,
+    classes: Mapping[str, Any] | None = None,
+) -> list[Check]:
+    """The R2 rule's structural checks (m-sm/PLAN.md §1.4 rule 1, Q7): every
     R2 coupling the row lists as omitted by MadLoop's label matching
     (``madloop_omitted_r2``) is inserted by the engine's counterterm program
     (``engine_r2``), so rule 1 holds the UFO-complete insertion against
-    Recola or MadLoop plus the omitted component."""
+    Recola or MadLoop plus the omitted component; and, where the reference
+    lists the couplings its MadLoop export calls (``madloop_r2_called``) and
+    ``classes`` gives MG5_aMC's identical-coupling classes
+    (``r2_value_classes``), the engine's inserted couplings that no called
+    coupling's class holds are exactly the listed set (empty: rule 1 against
+    MadLoop alone)."""
 
-    if not row.madloop_omitted_r2:
-        return []
     engine = engine_r2(slice_)
     inserted = set().union(*engine.values()) if engine else set()
-    listed = set(row.madloop_omitted_r2)
-    return [
-        Check("r2", None, "", "", "inserted", ", ".join(sorted(listed - inserted))
-              or "all", ", ".join(sorted(listed)), 0.0, 0.0, listed <= inserted,
-              note="MadLoop's omitted R2 couplings are in the engine's "
-              f"counterterm program (rule 1 against {reference.primary})")
-    ]  # fmt: skip
+    checks = []
+    listed = set(row.madloop_omitted_r2 or ())
+    if listed:
+        checks.append(Check(
+            "r2", None, "", "", "inserted", ", ".join(sorted(listed - inserted))
+            or "all", ", ".join(sorted(listed)), 0.0, 0.0, listed <= inserted,
+            note="MadLoop's omitted R2 couplings are in the engine's "
+            f"counterterm program (rule 1 against {reference.primary})"))  # fmt: skip
+    if row.madloop_r2_called is not None and classes is not None:
+        called = {classes.get(name) for name in row.madloop_r2_called} - {None}
+        omitted = {
+            name
+            for name in inserted
+            if classes.get(name) is not None and classes[name] not in called
+        }
+        checks.append(Check(
+            "r2", None, "", "", "omitted", ", ".join(sorted(omitted)) or "none",
+            ", ".join(sorted(listed)) or "none", 0.0, 0.0, omitted == listed,
+            note="the engine's inserted R2 couplings whose MG5 identical-"
+            "coupling class MadLoop's export does not call = the row's "
+            "madloop_omitted_r2"))  # fmt: skip
+    return checks
+
+
+def r2_value_classes(
+    ufo: Path, restriction: str, names: Iterable[str]
+) -> dict[str, Any]:
+    """MG5_aMC's identical-coupling classes of a UFO's couplings ``names``
+    (``import_ufo.detect_identical_couplings``, which the restricted export
+    merges under one name): each coupling's value at the restriction card
+    (``restrict_<restriction>.dat``) from the UFO's own source (a Laurent
+    coupling's finite part), rounded to ten significant digits per component
+    and taken up to sign; None for a vanishing coupling (MG5 removes it).
+    The UFO's evaluated parameters are cached per (UFO, restriction)."""
+
+    key = (str(Path(ufo).resolve()), restriction)
+    if key not in _R2_CLASSES:
+        import importlib.util
+        import sys
+
+        name = "_mqcd_test_loop_v2_ew"
+        if name not in sys.modules:
+            spec = importlib.util.spec_from_file_location(
+                name, ROOT / "tests" / "unit" / "test_loop_v2_ew.py"
+            )
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[name] = module
+            spec.loader.exec_module(module)
+        oracle = sys.modules[name]
+        modules = oracle._import_ufo(Path(ufo), f"_mqcd_r2_ufo_{len(_R2_CLASSES)}")
+        card = restriction_card(Path(ufo), restriction)
+        values, environment = oracle._ufo_source_values(
+            modules, card, exact=False, wrap=None
+        )
+        environment = {
+            **environment,
+            **{k: v for (k, power), v in values.items() if power == 0},
+        }
+        couplings = {c.name: c for c in modules[3].all_couplings}
+        _R2_CLASSES[key] = (oracle, environment, couplings, {})
+    oracle, environment, couplings, found = _R2_CLASSES[key]
+
+    def rounded(x: float) -> float:
+        # MG5's limit_to_6_digit: ten significant digits.
+        return x if x == 0 else round(x, int(abs(round(math.log10(abs(x)), 0))) + 10)
+
+    for name in set(names) - set(found):
+        source = couplings[name].value
+        if isinstance(source, dict):  # a Laurent coupling: its finite part
+            source = source.get(0, "0")
+        value = complex(eval(oracle._compiled(source, False), environment))
+        if abs(value) < 1e-13:
+            found[name] = None
+            continue
+        z = complex(rounded(value.real), rounded(value.imag))
+        if z.real < 0 or (z.real == 0 and z.imag < 0):
+            z = -z
+        found[name] = (z.real, z.imag)
+    return {name: found[name] for name in names}
+
+
+_R2_CLASSES: dict[tuple[str, str], tuple] = {}
 
 
 # ------------------------------------------------------ per-helicity rows
@@ -3487,8 +3577,18 @@ def run_row(
         else set()
     )
     extra_points = indices[:1]
-    if row.madloop_omitted_r2 is not None and hasattr(run, "slice"):
-        checks += rule_r2(row, run.slice, reference)
+    if (
+        row.madloop_omitted_r2 is not None or row.madloop_r2_called is not None
+    ) and hasattr(run, "slice"):
+        ufo = getattr(run, "model_ufo", None)
+        classes = None
+        if ufo is not None and row.madloop_r2_called is not None:
+            engine = engine_r2(run.slice)
+            inserted = set().union(*engine.values()) if engine else set()
+            classes = r2_value_classes(
+                ufo, row.restriction, sorted(inserted | set(row.madloop_r2_called))
+            )
+        checks += rule_r2(row, run.slice, reference, classes)
     if "uv" in extras and reference.components:
         # Rule 5's EW form: the components against the provider's.
         for index, point in zip(indices, dd, strict=True):
@@ -3685,6 +3785,8 @@ class Campaign:
                 ufo=self.ufo,
                 work=self.work,
             )
+            # The row's model UFO (the R2 rule's coupling classes).
+            self._runs[name].model_ufo = self.ufo_path(row.model)
         return self._runs[name]
 
     def report(self, name: str, tier: str, points=None) -> RowReport:
