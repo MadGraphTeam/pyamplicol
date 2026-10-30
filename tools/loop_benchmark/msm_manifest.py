@@ -1732,6 +1732,8 @@ VANISHING = {
     # from a gluon, a colour octet, against one from a photon or Z; ours 0,
     # MadLoop's 1e-17; tmp/ms-validate/f3).
     "TV03": [{"sector": "QCD^2 QED^4", "coefficient": "born"}],
+    # g g > t t~ under CMS (Gamma_t = 0): as TT01 (tmp/ms-validate/cm4).
+    "CM04": [{"sector": "QCD^4 QED^2", "coefficient": "double_pole"}],
 }
 # Rule 1's tolerance per row (nominal 1e-12; 1e-10 from 2->4 up where the
 # providers' precision needs it, the user's ruling of 2026-10-29 ~01:12; and
