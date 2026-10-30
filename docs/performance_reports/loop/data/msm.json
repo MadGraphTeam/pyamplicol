@@ -2,10 +2,10 @@
  "source": "tests/fixtures/loop/msm/manifest.json + campaign records (tests/unit/test_loop_v2_msm_*.py, PYAMPLICOL_MQCD_RESULTS) + JUnit XML of the delegated columns",
  "rules": "m-sm/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
  "branch": "work/v2-ms-validate",
- "records": "fs (70b47429: the non-CMS rows), cm1/cm2 (ecbf8f88) and cm3 (bb9cc017): complex-mass rows, mp1 (9f679158: VV02 after MS-MODEL's split, the MP expansion), cm4 (f30a55b2: CM07 after MS-CMS's fix round 1), mp3 (19c5e23e..f9cc1625: the MP members, CM04), d2 (23c5254e: the default tier VJ02 + TT01, TT01 nightly), f4 (5901ede1 = d3a4f891 + the F1 and F2 fixes: the F1 and F2 rows), r5 (baab3247, + the F9 fix and SC07's binary64 tolerance: SC04, SC07, TT06), r6 (157b9258: SC08, TT05, DY01), d3 (157b9258: the default tier VJ02 + TT01) and r7 (bf5958c3: LL01, TT04, VJ01, SC09, TT02, PI03, JJ04), restriction smokes s3 (566e263f) and s4 (0c170bcf); later override earlier; non-CMS plans byte-identical across the CMS and MS-GEN merges; delegated uv_eps_ir0 (DY01, TT01): MS-POLES's technical-card split tests, JUnit ps1 at 54120d93 (slice 42b2794f merged)",
- "natives": "loop-native-v2-slice-54ec03c5 (fs), loop-native-v2-slice-a359965c (cm1-cm4, mp1, mp3), loop-native-v2-slice-b27a8e5c (d2, f4, r5, r6, d3, r7), loop-native-ms-poles-a7978803 (ps1; digest a79be708, = the merged tree's inputs)",
+ "records": "fs2 (e0630abe: every nightly row and variant, the 11 restriction smokes, the MP expansions, the campaign tier's CM07, the default tier VJ02 + TT01 (3:43 wall)), fs3 (b396639c: the R2 rule within the export's sectors and r2_vanishing, SC10's listings: TV07 + TV07@qcd, SC10, CM08, LL10, TT04, SC09, TT05); later override earlier; delegated uv_eps_ir0 (DY01, TT01): MS-POLES's technical-card split tests, JUnit ps2 at b396639c; slice 0e5930c2 merged",
+ "natives": "loop-native-v2-slice-42b2794f (digest a79be708, every record)",
  "counts": {
-  "pass": 67,
+  "pass": 68,
   "partial": 3,
   "fail": 0,
   "pending": 0,
@@ -42,8 +42,8 @@
    "rows": 4
   },
   "W-scheme": {
-   "pass": 7,
-   "rows": 9,
+   "pass": 8,
+   "rows": 10,
    "partial": 2
   },
   "W-singletop": {
@@ -201,7 +201,7 @@
      "failures": 0,
      "max_dd_vs_reference": 1.947046687445993e-14,
      "max_binary64_vs_dd": 5.0155353260713564e-14,
-     "max_catani_dd": 1.758884284039063e-30,
+     "max_catani_dd": 1.9674684346908993e-30,
      "max_catani_binary64": 5.023631841997353e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -214,11 +214,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 95.64,
-      "export_s": 21.28,
-      "double_double_s_per_point": 6.156666666666666,
+      "generate_s": 107.88,
+      "export_s": 20.77,
+      "double_double_s_per_point": 6.133333333333333,
       "double_s_per_point": 0.77,
-      "ap_s": 9.77
+      "ap_s": 11.08
      },
      "failed_checks": []
     }
@@ -229,7 +229,7 @@
    "delegated": {},
    "max_dd_vs_reference": 1.947046687445993e-14,
    "max_binary64_vs_dd": 5.0155353260713564e-14,
-   "max_catani_dd": 1.758884284039063e-30,
+   "max_catani_dd": 1.9674684346908993e-30,
    "max_ward_dd": null
   },
   {
@@ -295,10 +295,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 270.91,
-      "export_s": 30.17,
-      "double_double_s_per_point": 6.72,
-      "double_s_per_point": 0.9766666666666667
+      "generate_s": 113.4,
+      "export_s": 27.96,
+      "double_double_s_per_point": 6.94,
+      "double_s_per_point": 0.9833333333333334
      },
      "failed_checks": []
     }
@@ -366,10 +366,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 52.62,
-      "export_s": 2.11,
-      "double_double_s_per_point": 5.986666666666667,
-      "double_s_per_point": 0.6699999999999999
+      "generate_s": 56.76,
+      "export_s": 3.27,
+      "double_double_s_per_point": 6.3933333333333335,
+      "double_s_per_point": 0.7533333333333333
      },
      "failed_checks": []
     }
@@ -453,10 +453,10 @@
       }
      ],
      "timings": {
-      "generate_s": 267.3,
-      "export_s": 27.84,
-      "double_double_s_per_point": 7.5925,
-      "double_s_per_point": 1.0025
+      "generate_s": 128.73,
+      "export_s": 29.31,
+      "double_double_s_per_point": 7.6875,
+      "double_s_per_point": 0.925
      },
      "failed_checks": []
     }
@@ -556,10 +556,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 245.9,
-      "export_s": 26.37,
-      "double_double_s_per_point": 8.0575,
-      "double_s_per_point": 1.465
+      "generate_s": 108.27,
+      "export_s": 27.46,
+      "double_double_s_per_point": 8.235,
+      "double_s_per_point": 1.3325
      },
      "failed_checks": []
     }
@@ -661,10 +661,10 @@
       }
      ],
      "timings": {
-      "generate_s": 263.93,
-      "export_s": 25.82,
-      "double_double_s_per_point": 7.2025,
-      "double_s_per_point": 1.2925
+      "generate_s": 127.82,
+      "export_s": 24.69,
+      "double_double_s_per_point": 7.0825,
+      "double_s_per_point": 1.2775
      },
      "failed_checks": []
     }
@@ -733,10 +733,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 248.96,
-      "export_s": 34.62,
-      "double_double_s_per_point": 13.836666666666666,
-      "double_s_per_point": 1.9566666666666668
+      "generate_s": 108.53,
+      "export_s": 31.93,
+      "double_double_s_per_point": 13.746666666666668,
+      "double_s_per_point": 1.9533333333333334
      },
      "failed_checks": []
     }
@@ -798,7 +798,7 @@
      "failures": 0,
      "max_dd_vs_reference": 1.168520723990611e-15,
      "max_binary64_vs_dd": 1.9288498937140046e-14,
-     "max_catani_dd": 1.060289664193563e-31,
+     "max_catani_dd": 1.9069005688564947e-31,
      "max_catani_binary64": 1.880774380956097e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -811,11 +811,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 85.18,
-      "export_s": 24.54,
-      "double_double_s_per_point": 6.165,
-      "double_s_per_point": 0.855,
-      "hel_s": 26.81
+      "generate_s": 114.67,
+      "export_s": 25.48,
+      "double_double_s_per_point": 6.36,
+      "double_s_per_point": 0.8675,
+      "hel_s": 31.59
      },
      "failed_checks": []
     }
@@ -864,8 +864,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.4525,
-        "double_s_per_point": 0.86
+        "double_double_s_per_point": 5.67,
+        "double_s_per_point": 1.05
        },
        "failed_checks": []
       }
@@ -943,10 +943,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 264.3,
-      "export_s": 11.09,
-      "double_double_s_per_point": 5.45,
-      "double_s_per_point": 0.43
+      "generate_s": 139.77,
+      "export_s": 11.94,
+      "double_double_s_per_point": 5.8725,
+      "double_s_per_point": 0.5125
      },
      "failed_checks": []
     }
@@ -1015,10 +1015,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 52.19,
-      "export_s": 3.36,
-      "double_double_s_per_point": 5.62,
-      "double_s_per_point": 0.6875
+      "generate_s": 58.6,
+      "export_s": 3.33,
+      "double_double_s_per_point": 6.0375,
+      "double_s_per_point": 0.675
      },
      "failed_checks": []
     }
@@ -1088,10 +1088,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 245.97,
-      "export_s": 24.71,
-      "double_double_s_per_point": 6.24,
-      "double_s_per_point": 0.89
+      "generate_s": 94.65,
+      "export_s": 24.42,
+      "double_double_s_per_point": 6.3625,
+      "double_s_per_point": 1.0925
      },
      "failed_checks": []
     }
@@ -1192,19 +1192,19 @@
       "checks": 8,
       "virtual_double": 0.0025544405127022663,
       "born_double": 5.721939712951197e-17,
-      "virtual_double-double": 4.105938319501039e-31,
+      "virtual_double-double": 4.309621382874648e-31,
       "born_double-double": 4.876127114959362e-33
      },
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 261.83,
-      "export_s": 29.78,
-      "double_double_s_per_point": 8.186666666666666,
-      "double_s_per_point": 1.4100000000000001,
-      "ap_s": 18.92,
-      "joint_s": 384.75,
-      "ward_s": 370.31
+      "generate_s": 120.53,
+      "export_s": 30.86,
+      "double_double_s_per_point": 9.333333333333334,
+      "double_s_per_point": 1.6333333333333335,
+      "ap_s": 22.59,
+      "joint_s": 240.78,
+      "ward_s": 192.83
      },
      "failed_checks": []
     }
@@ -1216,7 +1216,7 @@
    "max_dd_vs_reference": 9.13968948511922e-13,
    "max_binary64_vs_dd": 4.789930114573306e-13,
    "max_catani_dd": 5.7664915566397555e-30,
-   "max_ward_dd": 4.105938319501039e-31
+   "max_ward_dd": 4.309621382874648e-31
   },
   {
    "id": "DY07",
@@ -1273,10 +1273,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 255.65,
-      "export_s": 30.06,
-      "double_double_s_per_point": 14.0225,
-      "double_s_per_point": 2.255
+      "generate_s": 122.99,
+      "export_s": 32.72,
+      "double_double_s_per_point": 14.19,
+      "double_s_per_point": 2.4225
      },
      "failed_checks": []
     }
@@ -1346,10 +1346,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 263.87,
-      "export_s": 29.55,
-      "double_double_s_per_point": 13.4975,
-      "double_s_per_point": 2.4975
+      "generate_s": 118.56,
+      "export_s": 30.0,
+      "double_double_s_per_point": 14.6275,
+      "double_s_per_point": 2.525
      },
      "failed_checks": []
     }
@@ -1406,9 +1406,9 @@
      "passed": true,
      "checks": 142,
      "failures": 0,
-     "max_dd_vs_reference": 3.610631376471339e-15,
-     "max_binary64_vs_dd": 1.2156795256159096e-13,
-     "max_catani_dd": 5.6583191989522605e-30,
+     "max_dd_vs_reference": 3.610631376471368e-15,
+     "max_binary64_vs_dd": 1.2156795256159093e-13,
+     "max_catani_dd": 3.279873968398597e-29,
      "max_catani_binary64": 1.0928473222396133e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -1421,17 +1421,17 @@
       "checks": 8,
       "virtual_double": 0.0008172735281977198,
       "born_double": 1.52793181288289e-16,
-      "virtual_double-double": 1.2472036049710844e-31,
+      "virtual_double-double": 9.908981072756328e-32,
       "born_double-double": 1.9204219800545187e-32
      },
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 63.2,
-      "export_s": 11.72,
-      "double_double_s_per_point": 5.9775,
-      "double_s_per_point": 0.5175,
-      "ward_s": 107.87
+      "generate_s": 82.86,
+      "export_s": 11.47,
+      "double_double_s_per_point": 6.105,
+      "double_s_per_point": 0.64,
+      "ward_s": 109.82
      },
      "failed_checks": []
     }
@@ -1440,10 +1440,10 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 3.610631376471339e-15,
-   "max_binary64_vs_dd": 1.2156795256159096e-13,
-   "max_catani_dd": 5.6583191989522605e-30,
-   "max_ward_dd": 1.2472036049710844e-31
+   "max_dd_vs_reference": 3.610631376471368e-15,
+   "max_binary64_vs_dd": 1.2156795256159093e-13,
+   "max_catani_dd": 3.279873968398597e-29,
+   "max_ward_dd": 9.908981072756328e-32
   },
   {
    "id": "VJ02",
@@ -1502,10 +1502,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 88.38,
-      "export_s": 6.89,
-      "double_double_s_per_point": 6.205,
-      "double_s_per_point": 0.66
+      "generate_s": 82.54,
+      "export_s": 7.17,
+      "double_double_s_per_point": 6.195,
+      "double_s_per_point": 0.665
      },
      "failed_checks": []
     },
@@ -1532,10 +1532,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 114.31,
-      "export_s": 8.01,
-      "double_double_s_per_point": 6.06,
-      "double_s_per_point": 0.44
+      "generate_s": 68.52,
+      "export_s": 7.06,
+      "double_double_s_per_point": 6.76,
+      "double_s_per_point": 0.655
      },
      "failed_checks": []
     }
@@ -1666,11 +1666,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 160.9,
-      "export_s": 9.01,
-      "double_double_s_per_point": 6.02,
-      "double_s_per_point": 0.45333333333333337,
-      "ward_s": 205.48
+      "generate_s": 78.77,
+      "export_s": 8.66,
+      "double_double_s_per_point": 5.656666666666666,
+      "double_s_per_point": 0.43333333333333335,
+      "ward_s": 111.15
      },
      "failed_checks": []
     }
@@ -1742,10 +1742,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 277.9,
-      "export_s": 30.32,
-      "double_double_s_per_point": 7.51,
-      "double_s_per_point": 1.0575
+      "generate_s": 130.16,
+      "export_s": 29.7,
+      "double_double_s_per_point": 7.685,
+      "double_s_per_point": 1.2775
      },
      "failed_checks": []
     }
@@ -1877,8 +1877,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 7.39,
-        "double_s_per_point": 0.865
+        "double_double_s_per_point": 7.435,
+        "double_s_per_point": 0.89
        },
        "failed_checks": []
       }
@@ -1976,11 +1976,11 @@
      ],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 265.9,
-      "export_s": 26.07,
-      "double_double_s_per_point": 6.77,
-      "double_s_per_point": 0.78,
-      "hel_s": 30.26
+      "generate_s": 83.52,
+      "export_s": 27.31,
+      "double_double_s_per_point": 6.6675,
+      "double_s_per_point": 0.69,
+      "hel_s": 31.84
      },
      "failed_checks": []
     }
@@ -2050,10 +2050,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 270.85,
-      "export_s": 23.85,
-      "double_double_s_per_point": 7.4075,
-      "double_s_per_point": 0.965
+      "generate_s": 108.7,
+      "export_s": 24.74,
+      "double_double_s_per_point": 7.4025,
+      "double_s_per_point": 1.0675
      },
      "failed_checks": []
     }
@@ -2158,10 +2158,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 275.57,
-      "export_s": 19.16,
-      "double_double_s_per_point": 6.5875,
-      "double_s_per_point": 0.92
+      "generate_s": 136.66,
+      "export_s": 18.93,
+      "double_double_s_per_point": 7.2225,
+      "double_s_per_point": 1.0
      },
      "failed_checks": []
     }
@@ -2234,8 +2234,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.73,
-        "double_s_per_point": 0.7433333333333333
+        "double_double_s_per_point": 5.733333333333333,
+        "double_s_per_point": 0.8566666666666666
        },
        "failed_checks": []
       }
@@ -2360,10 +2360,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 217.38,
-      "export_s": 22.37,
-      "double_double_s_per_point": 5.75,
-      "double_s_per_point": 0.35000000000000003
+      "generate_s": 80.83,
+      "export_s": 23.36,
+      "double_double_s_per_point": 5.946666666666666,
+      "double_s_per_point": 0.4166666666666667
      },
      "failed_checks": []
     }
@@ -2433,7 +2433,7 @@
      },
      "ward": {
       "checks": 8,
-      "virtual_double": 0.4966277866243522,
+      "virtual_double": 0.4966218207825131,
       "born_double": 3.3104407577370773e-16,
       "virtual_double-double": 4.666306581275253e-28,
       "born_double-double": 5.836325900333288e-33
@@ -2484,11 +2484,11 @@
       }
      ],
      "timings": {
-      "generate_s": 280.14,
-      "export_s": 31.14,
-      "double_double_s_per_point": 13.355,
-      "double_s_per_point": 2.2225,
-      "ward_s": 372.96
+      "generate_s": 142.77,
+      "export_s": 33.52,
+      "double_double_s_per_point": 14.94,
+      "double_s_per_point": 2.6825,
+      "ward_s": 231.02
      },
      "failed_checks": []
     }
@@ -2544,7 +2544,7 @@
      "failures": 0,
      "max_dd_vs_reference": 5.941699879766728e-14,
      "max_binary64_vs_dd": 4.6316372261207164e-14,
-     "max_catani_dd": 2.259324772415478e-28,
+     "max_catani_dd": 2.6079006515689605e-28,
      "max_catani_binary64": null,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -2568,7 +2568,7 @@
        "sector": "QED^8",
        "coefficient": "single_pole",
        "E": 4.228872550467576e-08,
-       "true_error": 1.2747502155043589e-12
+       "true_error": 1.2747502155043585e-12
       },
       {
        "point": 0,
@@ -2610,7 +2610,7 @@
        "sector": "QED^8",
        "coefficient": "single_pole",
        "E": 1.928308064402496e-08,
-       "true_error": 2.7858621181332767e-13
+       "true_error": 2.7858621181332747e-13
       },
       {
        "point": 2,
@@ -2631,7 +2631,7 @@
        "sector": "QED^8",
        "coefficient": "single_pole",
        "E": 3.928684885148229e-08,
-       "true_error": 1.1410179072917602e-12
+       "true_error": 1.14101790729176e-12
       },
       {
        "point": 3,
@@ -2642,10 +2642,10 @@
       }
      ],
      "timings": {
-      "generate_s": 96.12,
-      "export_s": 39.22,
-      "double_double_s_per_point": 29.32,
-      "double_s_per_point": 4.3425
+      "generate_s": 124.24,
+      "export_s": 39.81,
+      "double_double_s_per_point": 29.6,
+      "double_s_per_point": 4.55
      },
      "failed_checks": []
     }
@@ -2656,7 +2656,7 @@
    "delegated": {},
    "max_dd_vs_reference": 5.941699879766728e-14,
    "max_binary64_vs_dd": 4.6316372261207164e-14,
-   "max_catani_dd": 2.259324772415478e-28,
+   "max_catani_dd": 2.6079006515689605e-28,
    "max_ward_dd": null
   },
   {
@@ -2700,9 +2700,9 @@
      "passed": true,
      "checks": 134,
      "failures": 0,
-     "max_dd_vs_reference": 9.717123057030918e-15,
+     "max_dd_vs_reference": 9.717123057030914e-15,
      "max_binary64_vs_dd": 2.0410535084800368e-13,
-     "max_catani_dd": 3.962268426849921e-30,
+     "max_catani_dd": 1.605930371660942e-30,
      "max_catani_binary64": 2.0403134739653357e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -2715,10 +2715,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 84.91,
-      "export_s": 25.01,
-      "double_double_s_per_point": 6.7575,
-      "double_s_per_point": 0.935
+      "generate_s": 121.18,
+      "export_s": 28.01,
+      "double_double_s_per_point": 6.95,
+      "double_s_per_point": 1.25
      },
      "failed_checks": []
     }
@@ -2727,9 +2727,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 9.717123057030918e-15,
+   "max_dd_vs_reference": 9.717123057030914e-15,
    "max_binary64_vs_dd": 2.0410535084800368e-13,
-   "max_catani_dd": 3.962268426849921e-30,
+   "max_catani_dd": 1.605930371660942e-30,
    "max_ward_dd": null
   },
   {
@@ -2773,9 +2773,9 @@
      "passed": true,
      "checks": 134,
      "failures": 0,
-     "max_dd_vs_reference": 1.7255689221378516e-14,
-     "max_binary64_vs_dd": 1.751801337508528e-12,
-     "max_catani_dd": 5.833649260074168e-29,
+     "max_dd_vs_reference": 1.7255689221378472e-14,
+     "max_binary64_vs_dd": 1.7518013375085277e-12,
+     "max_catani_dd": 5.839387416711297e-29,
      "max_catani_binary64": 1.751918045921432e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -2788,10 +2788,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 101.77,
-      "export_s": 14.6,
-      "double_double_s_per_point": 6.715,
-      "double_s_per_point": 0.7325
+      "generate_s": 126.05,
+      "export_s": 14.57,
+      "double_double_s_per_point": 6.8425,
+      "double_s_per_point": 0.9025
      },
      "failed_checks": []
     }
@@ -2800,9 +2800,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 1.7255689221378516e-14,
-   "max_binary64_vs_dd": 1.751801337508528e-12,
-   "max_catani_dd": 5.833649260074168e-29,
+   "max_dd_vs_reference": 1.7255689221378472e-14,
+   "max_binary64_vs_dd": 1.7518013375085277e-12,
+   "max_catani_dd": 5.839387416711297e-29,
    "max_ward_dd": null
   },
   {
@@ -2848,7 +2848,7 @@
      "failures": 0,
      "max_dd_vs_reference": 4.698790104711005e-13,
      "max_binary64_vs_dd": 8.359310354875365e-12,
-     "max_catani_dd": 6.395541725945897e-28,
+     "max_catani_dd": 2.312595097355497e-28,
      "max_catani_binary64": 8.359555525021307e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -2946,10 +2946,10 @@
       }
      ],
      "timings": {
-      "generate_s": 102.46,
-      "export_s": 34.69,
-      "double_double_s_per_point": 11.545,
-      "double_s_per_point": 2.2225
+      "generate_s": 112.37,
+      "export_s": 36.98,
+      "double_double_s_per_point": 11.815,
+      "double_s_per_point": 2.6025
      },
      "failed_checks": []
     }
@@ -2960,7 +2960,7 @@
    "delegated": {},
    "max_dd_vs_reference": 4.698790104711005e-13,
    "max_binary64_vs_dd": 8.359310354875365e-12,
-   "max_catani_dd": 6.395541725945897e-28,
+   "max_catani_dd": 2.312595097355497e-28,
    "max_ward_dd": null
   },
   {
@@ -3046,10 +3046,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 83.19,
-      "export_s": 18.35,
-      "double_double_s_per_point": 8.245,
-      "double_s_per_point": 0.825
+      "generate_s": 76.2,
+      "export_s": 16.25,
+      "double_double_s_per_point": 7.6,
+      "double_s_per_point": 0.84
      },
      "failed_checks": []
     },
@@ -3062,7 +3062,7 @@
      "failures": 0,
      "max_dd_vs_reference": 5.877075609107218e-15,
      "max_binary64_vs_dd": 8.165067612493781e-15,
-     "max_catani_dd": 6.242611611791825e-31,
+     "max_catani_dd": 6.2490941619299175e-31,
      "max_catani_binary64": 8.963070141447462e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3075,12 +3075,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 59.38,
-      "export_s": 16.12,
-      "double_double_s_per_point": 9.14,
-      "double_s_per_point": 0.7,
-      "ap_s": 11.58,
-      "joint_s": 137.86
+      "generate_s": 79.74,
+      "export_s": 17.61,
+      "double_double_s_per_point": 9.03,
+      "double_s_per_point": 1.04,
+      "ap_s": 14.21,
+      "joint_s": 149.59
      },
      "failed_checks": []
     }
@@ -3148,7 +3148,7 @@
      "failures": 0,
      "max_dd_vs_reference": 2.6650789163564675e-14,
      "max_binary64_vs_dd": 5.217119872146446e-14,
-     "max_catani_dd": 1.0452692992412556e-29,
+     "max_catani_dd": 9.99620612272059e-30,
      "max_catani_binary64": 5.330490879920225e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3161,10 +3161,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 86.27,
-      "export_s": 26.35,
-      "double_double_s_per_point": 7.3375,
-      "double_s_per_point": 1.36
+      "generate_s": 121.13,
+      "export_s": 28.74,
+      "double_double_s_per_point": 7.9225,
+      "double_s_per_point": 1.665
      },
      "failed_checks": []
     }
@@ -3175,7 +3175,7 @@
    "delegated": {},
    "max_dd_vs_reference": 2.6650789163564675e-14,
    "max_binary64_vs_dd": 5.217119872146446e-14,
-   "max_catani_dd": 1.0452692992412556e-29,
+   "max_catani_dd": 9.99620612272059e-30,
    "max_ward_dd": null
   },
   {
@@ -3237,9 +3237,9 @@
      },
      "ward": {
       "checks": 24,
-      "virtual_double": 0.5220741972420503,
+      "virtual_double": 0.5220741971657173,
       "born_double": 1.2668950394112198e-16,
-      "virtual_double-double": 2.2144045202313807e-26,
+      "virtual_double-double": 2.216080693964647e-26,
       "born_double-double": 6.212684401137827e-33
      },
      "no_reference": [],
@@ -3330,11 +3330,11 @@
       }
      ],
      "timings": {
-      "generate_s": 160.26,
-      "export_s": 17.1,
-      "double_double_s_per_point": 19.4925,
-      "double_s_per_point": 3.6875,
-      "ward_s": 213.93
+      "generate_s": 89.95,
+      "export_s": 18.39,
+      "double_double_s_per_point": 23.7875,
+      "double_s_per_point": 4.0225,
+      "ward_s": 125.69
      },
      "failed_checks": []
     }
@@ -3346,7 +3346,7 @@
    "max_dd_vs_reference": 1.3625474284706895e-11,
    "max_binary64_vs_dd": 3.380195841333876e-11,
    "max_catani_dd": 2.1256090276402947e-26,
-   "max_ward_dd": 2.2144045202313807e-26
+   "max_ward_dd": 2.216080693964647e-26
   },
   {
    "id": "TT04",
@@ -3391,7 +3391,7 @@
      "failures": 0,
      "max_dd_vs_reference": 8.079629961285016e-15,
      "max_binary64_vs_dd": 2.765526053535307e-12,
-     "max_catani_dd": 1.5178771552127965e-30,
+     "max_catani_dd": 1.764680238939438e-30,
      "max_catani_binary64": 2.765526053535307e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3426,11 +3426,11 @@
       }
      ],
      "timings": {
-      "generate_s": 88.94,
-      "export_s": 67.29,
-      "double_double_s_per_point": 6.453333333333333,
-      "double_s_per_point": 0.08333333333333333,
-      "engine_catani_s": 6.82
+      "generate_s": 84.14,
+      "export_s": 66.39,
+      "double_double_s_per_point": 6.44,
+      "double_s_per_point": 0.08,
+      "engine_catani_s": 7.8
      },
      "failed_checks": []
     }
@@ -3441,7 +3441,7 @@
    "delegated": {},
    "max_dd_vs_reference": 8.079629961285016e-15,
    "max_binary64_vs_dd": 2.765526053535307e-12,
-   "max_catani_dd": 1.5178771552127965e-30,
+   "max_catani_dd": 1.764680238939438e-30,
    "max_ward_dd": null
   },
   {
@@ -3479,7 +3479,7 @@
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {
-    "4": 1e-14
+    "4dd": 1e-14
    },
    "status": "pass",
    "tiers": {
@@ -3529,10 +3529,10 @@
       }
      ],
      "timings": {
-      "generate_s": 107.38,
-      "export_s": 25.57,
-      "double_double_s_per_point": 27.84,
-      "double_s_per_point": 1.5133333333333334
+      "generate_s": 111.45,
+      "export_s": 26.17,
+      "double_double_s_per_point": 28.026666666666667,
+      "double_s_per_point": 1.6600000000000001
      },
      "failed_checks": []
     }
@@ -3573,7 +3573,7 @@
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {
-    "4": 1e-13
+    "4dd": 1e-13
    },
    "status": "pass",
    "tiers": {
@@ -3665,10 +3665,10 @@
       }
      ],
      "timings": {
-      "generate_s": 125.19,
-      "export_s": 42.28,
-      "double_double_s_per_point": 20.59,
-      "double_s_per_point": 3.1466666666666665
+      "generate_s": 126.81,
+      "export_s": 42.65,
+      "double_double_s_per_point": 20.78,
+      "double_s_per_point": 3.35
      },
      "failed_checks": []
     }
@@ -3738,10 +3738,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 179.72,
-      "export_s": 17.22,
-      "double_double_s_per_point": 18.315,
-      "double_s_per_point": 1.95
+      "generate_s": 90.61,
+      "export_s": 18.98,
+      "double_double_s_per_point": 18.2675,
+      "double_s_per_point": 2.1075
      },
      "failed_checks": []
     }
@@ -3798,7 +3798,7 @@
      "failures": 0,
      "max_dd_vs_reference": 2.1317405222846123e-13,
      "max_binary64_vs_dd": 3.165761084575795e-12,
-     "max_catani_dd": 6.558164890976411e-29,
+     "max_catani_dd": 6.566879761398667e-29,
      "max_catani_binary64": 3.1636882614479147e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3811,10 +3811,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 173.93,
-      "export_s": 21.81,
-      "double_double_s_per_point": 19.0975,
-      "double_s_per_point": 2.385
+      "generate_s": 96.17,
+      "export_s": 20.89,
+      "double_double_s_per_point": 20.0275,
+      "double_s_per_point": 2.81
      },
      "failed_checks": []
     }
@@ -3825,7 +3825,7 @@
    "delegated": {},
    "max_dd_vs_reference": 2.1317405222846123e-13,
    "max_binary64_vs_dd": 3.165761084575795e-12,
-   "max_catani_dd": 6.558164890976411e-29,
+   "max_catani_dd": 6.566879761398667e-29,
    "max_ward_dd": null
   },
   {
@@ -3871,9 +3871,9 @@
      "passed": true,
      "checks": 254,
      "failures": 0,
-     "max_dd_vs_reference": 3.835302910483796e-14,
+     "max_dd_vs_reference": 3.8353029104837966e-14,
      "max_binary64_vs_dd": 1.535512358336619e-11,
-     "max_catani_dd": 7.744369819800643e-29,
+     "max_catani_dd": 8.691868057308022e-29,
      "max_catani_binary64": 1.5736755268175156e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3886,10 +3886,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 105.35,
-      "export_s": 44.86,
-      "double_double_s_per_point": 20.6725,
-      "double_s_per_point": 3.9125
+      "generate_s": 141.32,
+      "export_s": 49.2,
+      "double_double_s_per_point": 22.685,
+      "double_s_per_point": 5.0025
      },
      "failed_checks": []
     }
@@ -3898,9 +3898,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 3.835302910483796e-14,
+   "max_dd_vs_reference": 3.8353029104837966e-14,
    "max_binary64_vs_dd": 1.535512358336619e-11,
-   "max_catani_dd": 7.744369819800643e-29,
+   "max_catani_dd": 8.691868057308022e-29,
    "max_ward_dd": null
   },
   {
@@ -3960,10 +3960,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 259.28,
-      "export_s": 31.68,
-      "double_double_s_per_point": 25.436666666666667,
-      "double_s_per_point": 3.2100000000000004
+      "generate_s": 127.1,
+      "export_s": 32.34,
+      "double_double_s_per_point": 26.016666666666666,
+      "double_s_per_point": 3.26
      },
      "failed_checks": []
     }
@@ -4031,14 +4031,14 @@
      "passed": true,
      "checks": 124,
      "failures": 0,
-     "max_dd_vs_reference": 7.361933330381428e-13,
+     "max_dd_vs_reference": 7.361933330381429e-13,
      "max_binary64_vs_dd": 5.1056873674935165e-11,
-     "max_catani_dd": 4.38487438516609e-26,
+     "max_catani_dd": 6.43095114240402e-26,
      "max_catani_binary64": 2.0857906140643845e-11,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.4178300666766018e-14,
-      "finite": 4.788052321692905e-10,
+      "finite": 4.788042641941358e-10,
       "single_pole": 7.860820829127028e-11,
       "double_pole": 2.0858727292425693e-11
      },
@@ -4046,7 +4046,7 @@
       "checks": 24,
       "virtual_double": 0.26885623845342305,
       "born_double": 1.0111665562325652e-16,
-      "virtual_double-double": 3.2225268366500554e-28,
+      "virtual_double-double": 3.2171256303191666e-28,
       "born_double-double": 8.346208418132707e-33
      },
      "no_reference": [],
@@ -4055,15 +4055,15 @@
        "point": 2,
        "sector": "QCD^6 QED^6",
        "coefficient": "finite",
-       "E": 8.556355160835966e-09,
-       "true_error": 4.788056628437517e-10
+       "E": 8.556355797167437e-09,
+       "true_error": 4.788046948685972e-10
       },
       {
        "point": 2,
        "sector": "QCD^6 QED^6",
        "coefficient": "single_pole",
-       "E": 8.506957240694066e-09,
-       "true_error": 7.861190457974745e-11
+       "E": 8.506957936147215e-09,
+       "true_error": 7.861190457974746e-11
       },
       {
        "point": 2,
@@ -4074,13 +4074,13 @@
       }
      ],
      "timings": {
-      "generate_s": 246.41,
-      "export_s": 104.71,
-      "double_double_s_per_point": 140.28,
-      "double_s_per_point": 1.3066666666666666,
-      "engine_catani_s": 153.55,
-      "joint_s": 564.12,
-      "ward_s": 723.31
+      "generate_s": 114.4,
+      "export_s": 81.84,
+      "double_double_s_per_point": 158.62,
+      "double_s_per_point": 1.3466666666666667,
+      "engine_catani_s": 156.56,
+      "joint_s": 401.66,
+      "ward_s": 516.15
      },
      "failed_checks": []
     }
@@ -4123,8 +4123,8 @@
        "checks": 91,
        "failures": 0,
        "max_dd_vs_reference": 1.3823324890360811e-12,
-       "max_binary64_vs_dd": 5.1195553144425257e-11,
-       "max_catani_dd": 4.4416303358674035e-26,
+       "max_binary64_vs_dd": 5.121147644518646e-11,
+       "max_catani_dd": 6.092211391875417e-26,
        "max_catani_binary64": 2.172306958792952e-11,
        "catani_not_formed": false,
        "binary64_vs_reference": {
@@ -4140,15 +4140,15 @@
          "point": 2,
          "sector": "QCD^6 QED^6",
          "coefficient": "finite",
-         "E": 8.691993045360754e-09,
-         "true_error": 4.857595978439017e-10
+         "E": 8.691991772697384e-09,
+         "true_error": 4.857637924042438e-10
         },
         {
          "point": 2,
          "sector": "QCD^6 QED^6",
          "coefficient": "single_pole",
          "E": 8.096944298564162e-09,
-         "true_error": 9.556563592340532e-11
+         "true_error": 9.556563592340534e-11
         },
         {
          "point": 2,
@@ -4161,9 +4161,9 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 139.49666666666667,
-        "double_s_per_point": 1.1633333333333333,
-        "engine_catani_s": 68.12
+        "double_double_s_per_point": 139.66,
+        "double_s_per_point": 1.3499999999999999,
+        "engine_catani_s": 77.96
        },
        "failed_checks": []
       }
@@ -4174,9 +4174,9 @@
    "nc": null,
    "delegated": {},
    "max_dd_vs_reference": 1.3823324890360811e-12,
-   "max_binary64_vs_dd": 5.1195553144425257e-11,
-   "max_catani_dd": 4.4416303358674035e-26,
-   "max_ward_dd": 3.2225268366500554e-28
+   "max_binary64_vs_dd": 5.121147644518646e-11,
+   "max_catani_dd": 6.43095114240402e-26,
+   "max_ward_dd": 3.2171256303191666e-28
   },
   {
    "id": "ST01",
@@ -4237,10 +4237,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 284.88,
-      "export_s": 15.15,
-      "double_double_s_per_point": 5.895,
-      "double_s_per_point": 0.65
+      "generate_s": 149.56,
+      "export_s": 15.7,
+      "double_double_s_per_point": 6.1925,
+      "double_s_per_point": 0.835
      },
      "failed_checks": []
     }
@@ -4309,10 +4309,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 277.19,
-      "export_s": 14.83,
-      "double_double_s_per_point": 6.263333333333333,
-      "double_s_per_point": 0.63
+      "generate_s": 129.78,
+      "export_s": 14.38,
+      "double_double_s_per_point": 6.286666666666666,
+      "double_s_per_point": 0.7633333333333333
      },
      "failed_checks": []
     }
@@ -4371,9 +4371,9 @@
      "passed": true,
      "checks": 134,
      "failures": 0,
-     "max_dd_vs_reference": 1.7271446475253844e-15,
+     "max_dd_vs_reference": 1.7271446475253846e-15,
      "max_binary64_vs_dd": 1.962621192310407e-14,
-     "max_catani_dd": 1.5071021050238643e-29,
+     "max_catani_dd": 1.5156942560726248e-29,
      "max_catani_binary64": 1.3194277111757328e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -4386,10 +4386,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 71.4,
-      "export_s": 11.34,
-      "double_double_s_per_point": 6.4875,
-      "double_s_per_point": 0.7525
+      "generate_s": 88.01,
+      "export_s": 10.75,
+      "double_double_s_per_point": 6.3625,
+      "double_s_per_point": 0.74
      },
      "failed_checks": []
     }
@@ -4398,9 +4398,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 1.7271446475253844e-15,
+   "max_dd_vs_reference": 1.7271446475253846e-15,
    "max_binary64_vs_dd": 1.962621192310407e-14,
-   "max_catani_dd": 1.5071021050238643e-29,
+   "max_catani_dd": 1.5156942560726248e-29,
    "max_ward_dd": null
   },
   {
@@ -4465,10 +4465,10 @@
       }
      ],
      "timings": {
-      "generate_s": 265.54,
-      "export_s": 15.53,
-      "double_double_s_per_point": 5.866666666666667,
-      "double_s_per_point": 0.59
+      "generate_s": 120.83,
+      "export_s": 15.96,
+      "double_double_s_per_point": 6.123333333333334,
+      "double_s_per_point": 0.66
      },
      "failed_checks": []
     }
@@ -4542,10 +4542,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 263.98,
-      "export_s": 27.31,
-      "double_double_s_per_point": 6.79,
-      "double_s_per_point": 1.3025
+      "generate_s": 110.45,
+      "export_s": 28.21,
+      "double_double_s_per_point": 6.8825,
+      "double_s_per_point": 1.225
      },
      "failed_checks": []
     }
@@ -4615,10 +4615,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 272.59,
-      "export_s": 25.31,
-      "double_double_s_per_point": 7.14,
-      "double_s_per_point": 1.275
+      "generate_s": 91.39,
+      "export_s": 23.65,
+      "double_double_s_per_point": 7.2175,
+      "double_s_per_point": 1.1525
      },
      "failed_checks": []
     }
@@ -4688,10 +4688,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 148.21,
-      "export_s": 13.84,
-      "double_double_s_per_point": 5.67,
-      "double_s_per_point": 0.45
+      "generate_s": 74.44,
+      "export_s": 14.91,
+      "double_double_s_per_point": 5.83,
+      "double_s_per_point": 0.5475
      },
      "failed_checks": []
     }
@@ -4748,9 +4748,9 @@
      "passed": true,
      "checks": 254,
      "failures": 0,
-     "max_dd_vs_reference": 6.90772590193922e-13,
+     "max_dd_vs_reference": 6.907725901939221e-13,
      "max_binary64_vs_dd": 7.600716787010507e-12,
-     "max_catani_dd": 2.444300709944409e-28,
+     "max_catani_dd": 2.0115651466022365e-28,
      "max_catani_binary64": 6.848742622778526e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -4763,10 +4763,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 106.41,
-      "export_s": 29.63,
-      "double_double_s_per_point": 14.18,
-      "double_s_per_point": 3.32
+      "generate_s": 145.91,
+      "export_s": 29.98,
+      "double_double_s_per_point": 14.8025,
+      "double_s_per_point": 3.56
      },
      "failed_checks": []
     }
@@ -4775,9 +4775,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 6.90772590193922e-13,
+   "max_dd_vs_reference": 6.907725901939221e-13,
    "max_binary64_vs_dd": 7.600716787010507e-12,
-   "max_catani_dd": 2.444300709944409e-28,
+   "max_catani_dd": 2.0115651466022365e-28,
    "max_ward_dd": null
   },
   {
@@ -4837,10 +4837,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 228.71,
-      "export_s": 22.18,
-      "double_double_s_per_point": 6.26,
-      "double_s_per_point": 0.815
+      "generate_s": 118.13,
+      "export_s": 25.05,
+      "double_double_s_per_point": 6.71,
+      "double_s_per_point": 0.9175
      },
      "failed_checks": []
     }
@@ -4916,10 +4916,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 220.75,
-        "export_s": 22.64,
-        "double_double_s_per_point": 5.8775,
-        "double_s_per_point": 0.74
+        "generate_s": 96.15,
+        "export_s": 22.36,
+        "double_double_s_per_point": 6.435,
+        "double_s_per_point": 1.14
        },
        "failed_checks": []
       }
@@ -4976,7 +4976,7 @@
      "failures": 0,
      "max_dd_vs_reference": 3.2108603520216424e-15,
      "max_binary64_vs_dd": 4.910075344536165e-14,
-     "max_catani_dd": 3.869558283027002e-30,
+     "max_catani_dd": 3.306117419106807e-30,
      "max_catani_binary64": 5.012469275668022e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -4989,10 +4989,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 250.94,
-      "export_s": 29.17,
-      "double_double_s_per_point": 9.2125,
-      "double_s_per_point": 1.4025
+      "generate_s": 104.93,
+      "export_s": 30.21,
+      "double_double_s_per_point": 9.5025,
+      "double_s_per_point": 1.5325
      },
      "failed_checks": []
     }
@@ -5003,7 +5003,7 @@
    "delegated": {},
    "max_dd_vs_reference": 3.2108603520216424e-15,
    "max_binary64_vs_dd": 4.910075344536165e-14,
-   "max_catani_dd": 3.869558283027002e-30,
+   "max_catani_dd": 3.306117419106807e-30,
    "max_ward_dd": null
   },
   {
@@ -5050,9 +5050,9 @@
      "passed": true,
      "checks": 230,
      "failures": 0,
-     "max_dd_vs_reference": 1.908339242006584e-15,
+     "max_dd_vs_reference": 1.9083392420065844e-15,
      "max_binary64_vs_dd": 2.9161434917646016e-13,
-     "max_catani_dd": 2.2318590542346137e-31,
+     "max_catani_dd": 1.7013345631704883e-31,
      "max_catani_binary64": 2.9295113545101297e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -5065,10 +5065,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 62.93,
-      "export_s": 8.93,
-      "double_double_s_per_point": 6.2225,
-      "double_s_per_point": 0.79
+      "generate_s": 92.98,
+      "export_s": 10.56,
+      "double_double_s_per_point": 6.52,
+      "double_s_per_point": 0.835
      },
      "failed_checks": []
     }
@@ -5077,9 +5077,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 1.908339242006584e-15,
+   "max_dd_vs_reference": 1.9083392420065844e-15,
    "max_binary64_vs_dd": 2.9161434917646016e-13,
-   "max_catani_dd": 2.2318590542346137e-31,
+   "max_catani_dd": 1.7013345631704883e-31,
    "max_ward_dd": null
   },
   {
@@ -5169,10 +5169,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 224.07,
-      "export_s": 22.35,
-      "double_double_s_per_point": 6.4925,
-      "double_s_per_point": 0.92
+      "generate_s": 118.69,
+      "export_s": 24.98,
+      "double_double_s_per_point": 7.1625,
+      "double_s_per_point": 1.0925
      },
      "failed_checks": []
     }
@@ -5251,11 +5251,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 162.85,
-      "export_s": 10.55,
-      "double_double_s_per_point": 35.9975,
-      "double_s_per_point": 30.6475,
-      "ap_s": 41.34
+      "generate_s": 101.47,
+      "export_s": 11.01,
+      "double_double_s_per_point": 36.94,
+      "double_s_per_point": 32.06,
+      "ap_s": 42.16
      },
      "failed_checks": []
     }
@@ -5310,8 +5310,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 5.1866666666666665,
-        "double_s_per_point": 0.68
+        "double_double_s_per_point": 5.336666666666667,
+        "double_s_per_point": 0.7266666666666667
        },
        "failed_checks": []
       }
@@ -5366,8 +5366,8 @@
        "timings": {
         "generate_s": 0.0,
         "export_s": 0.0,
-        "double_double_s_per_point": 117.27333333333333,
-        "double_s_per_point": 112.88333333333333
+        "double_double_s_per_point": 120.46333333333332,
+        "double_s_per_point": 117.02999999999999
        },
        "failed_checks": []
       }
@@ -5427,10 +5427,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 156.0,
-        "export_s": 10.41,
-        "double_double_s_per_point": 35.855,
-        "double_s_per_point": 30.6525
+        "generate_s": 93.06,
+        "export_s": 11.06,
+        "double_double_s_per_point": 37.135,
+        "double_s_per_point": 31.0375
        },
        "failed_checks": []
       }
@@ -5503,10 +5503,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 164.33,
-      "export_s": 13.02,
-      "double_double_s_per_point": 36.6775,
-      "double_s_per_point": 31.1725
+      "generate_s": 103.06,
+      "export_s": 14.28,
+      "double_double_s_per_point": 37.335,
+      "double_s_per_point": 31.3175
      },
      "failed_checks": []
     }
@@ -5563,9 +5563,9 @@
      "passed": true,
      "checks": 134,
      "failures": 0,
-     "max_dd_vs_reference": 2.1876269367926888e-14,
+     "max_dd_vs_reference": 2.187626936792688e-14,
      "max_binary64_vs_dd": 3.932023870608511e-12,
-     "max_catani_dd": 8.347732534388768e-30,
+     "max_catani_dd": 3.1317008741201326e-30,
      "max_catani_binary64": 3.931519254259428e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -5578,10 +5578,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 164.04,
-      "export_s": 5.8,
-      "double_double_s_per_point": 36.255,
-      "double_s_per_point": 30.86
+      "generate_s": 96.77,
+      "export_s": 5.94,
+      "double_double_s_per_point": 37.6575,
+      "double_s_per_point": 31.7225
      },
      "failed_checks": []
     }
@@ -5590,9 +5590,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 2.1876269367926888e-14,
+   "max_dd_vs_reference": 2.187626936792688e-14,
    "max_binary64_vs_dd": 3.932023870608511e-12,
-   "max_catani_dd": 8.347732534388768e-30,
+   "max_catani_dd": 3.1317008741201326e-30,
    "max_ward_dd": null
   },
   {
@@ -5639,9 +5639,9 @@
      "passed": true,
      "checks": 230,
      "failures": 0,
-     "max_dd_vs_reference": 1.2930786910050797e-15,
+     "max_dd_vs_reference": 1.29307869100508e-15,
      "max_binary64_vs_dd": 1.4914271549696805e-14,
-     "max_catani_dd": 9.149132929693928e-31,
+     "max_catani_dd": 1.4179118371572593e-30,
      "max_catani_binary64": 1.5933957435728557e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -5654,10 +5654,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 98.87,
-      "export_s": 10.44,
-      "double_double_s_per_point": 28.4325,
-      "double_s_per_point": 22.3075
+      "generate_s": 64.48,
+      "export_s": 10.27,
+      "double_double_s_per_point": 28.6125,
+      "double_s_per_point": 26.425
      },
      "failed_checks": []
     }
@@ -5666,9 +5666,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 1.2930786910050797e-15,
+   "max_dd_vs_reference": 1.29307869100508e-15,
    "max_binary64_vs_dd": 1.4914271549696805e-14,
-   "max_catani_dd": 9.149132929693928e-31,
+   "max_catani_dd": 1.4179118371572593e-30,
    "max_ward_dd": null
   },
   {
@@ -5727,19 +5727,19 @@
      },
      "ward": {
       "checks": 8,
-      "virtual_double": 0.0040359667100052145,
+      "virtual_double": 0.003916775960196095,
       "born_double": 3.281334219079903e-17,
-      "virtual_double-double": 4.0441853623304186e-31,
+      "virtual_double-double": 4.112237136082081e-31,
       "born_double-double": 8.54545990025795e-33
      },
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 163.66,
-      "export_s": 15.73,
-      "double_double_s_per_point": 38.05,
-      "double_s_per_point": 31.4425,
-      "ward_s": 296.7
+      "generate_s": 110.95,
+      "export_s": 16.37,
+      "double_double_s_per_point": 39.4975,
+      "double_s_per_point": 32.5925,
+      "ward_s": 203.07
      },
      "failed_checks": []
     }
@@ -5751,7 +5751,7 @@
    "max_dd_vs_reference": 1.122055701083372e-13,
    "max_binary64_vs_dd": 5.074358377620008e-13,
    "max_catani_dd": 8.700229851825225e-30,
-   "max_ward_dd": 4.0441853623304186e-31
+   "max_ward_dd": 4.112237136082081e-31
   },
   {
    "id": "CM07",
@@ -5796,19 +5796,19 @@
      "checks": 86,
      "failures": 0,
      "max_dd_vs_reference": 6.901622507244509e-13,
-     "max_binary64_vs_dd": 5.652571468768054e-11,
-     "max_catani_dd": 7.192148840250022e-26,
-     "max_catani_binary64": 2.3041110255629127e-11,
+     "max_binary64_vs_dd": 5.651434691010589e-11,
+     "max_catani_dd": 7.192133344338422e-26,
+     "max_catani_binary64": 2.3042393895638468e-11,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.0239093497177615e-14,
-      "finite": 4.794801674984205e-09,
-      "single_pole": 3.3392055383587353e-10,
+      "finite": 4.794795493316216e-09,
+      "single_pole": 3.3391914511663716e-10,
       "double_pole": 2.0606244861794726e-11
      },
      "ward": {
       "checks": 24,
-      "virtual_double": 47369350.106344186,
+      "virtual_double": 47369350.1063425,
       "born_double": 9.334650003353496e-17,
       "virtual_double-double": 0.0012117900021096058,
       "born_double-double": 4.3460267077498484e-33
@@ -5819,24 +5819,24 @@
        "point": 2,
        "sector": "QCD^6 QED^6",
        "coefficient": "finite",
-       "E": 1.8850234507047265e-08,
-       "true_error": 4.7947991760715845e-09
+       "E": 1.8850233855112055e-08,
+       "true_error": 4.794792994403596e-09
       },
       {
        "point": 2,
        "sector": "QCD^6 QED^6",
        "coefficient": "single_pole",
-       "E": 7.978703914835246e-09,
-       "true_error": 3.3392130650955105e-10
+       "E": 7.978703220283027e-09,
+       "true_error": 3.339198977903147e-10
       }
      ],
      "timings": {
-      "generate_s": 171.41,
-      "export_s": 142.66,
-      "double_double_s_per_point": 275.09666666666664,
-      "double_s_per_point": 0.6533333333333333,
-      "engine_catani_s": 116.48,
-      "ward_s": 903.84
+      "generate_s": 99.25,
+      "export_s": 114.6,
+      "double_double_s_per_point": 286.98,
+      "double_s_per_point": 0.6966666666666667,
+      "engine_catani_s": 114.47,
+      "ward_s": 843.49
      },
      "failed_checks": []
     }
@@ -5846,8 +5846,8 @@
    "nc": null,
    "delegated": {},
    "max_dd_vs_reference": 6.901622507244509e-13,
-   "max_binary64_vs_dd": 5.652571468768054e-11,
-   "max_catani_dd": 7.192148840250022e-26,
+   "max_binary64_vs_dd": 5.651434691010589e-11,
+   "max_catani_dd": 7.192133344338422e-26,
    "max_ward_dd": 0.0012117900021096058
   },
   {
@@ -5905,10 +5905,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 56.65,
-      "export_s": 4.5,
-      "double_double_s_per_point": 21.15,
-      "double_s_per_point": 15.8475
+      "generate_s": 59.97,
+      "export_s": 4.06,
+      "double_double_s_per_point": 20.4425,
+      "double_s_per_point": 15.23
      },
      "failed_checks": []
     }
@@ -5997,7 +5997,7 @@
      "failures": 0,
      "max_dd_vs_reference": 2.6746130609318037e-14,
      "max_binary64_vs_dd": 1.6152116204464467e-12,
-     "max_catani_dd": 2.1686517893146637e-29,
+     "max_catani_dd": 2.402579392257738e-29,
      "max_catani_binary64": 1.6140993997580133e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -6008,19 +6008,19 @@
      },
      "ward": {
       "checks": 8,
-      "virtual_double": 0.0482557751490859,
+      "virtual_double": 0.048265545436486756,
       "born_double": 1.0586268873911407e-16,
-      "virtual_double-double": 2.2474888771286064e-30,
+      "virtual_double-double": 2.947670857724914e-30,
       "born_double-double": 4.879123810948352e-32
      },
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 163.6,
-      "export_s": 10.9,
-      "double_double_s_per_point": 45.515,
-      "double_s_per_point": 38.3825,
-      "ward_s": 300.57
+      "generate_s": 117.81,
+      "export_s": 11.61,
+      "double_double_s_per_point": 46.585,
+      "double_s_per_point": 39.3225,
+      "ward_s": 208.2
      },
      "failed_checks": []
     }
@@ -6031,8 +6031,8 @@
    "delegated": {},
    "max_dd_vs_reference": 2.6746130609318037e-14,
    "max_binary64_vs_dd": 1.6152116204464467e-12,
-   "max_catani_dd": 2.1686517893146637e-29,
-   "max_ward_dd": 2.2474888771286064e-30
+   "max_catani_dd": 2.402579392257738e-29,
+   "max_ward_dd": 2.947670857724914e-30
   },
   {
    "id": "CM10",
@@ -6074,8 +6074,8 @@
      "passed": true,
      "checks": 66,
      "failures": 0,
-     "max_dd_vs_reference": 1.616695788562537e-13,
-     "max_binary64_vs_dd": 1.8158506441735918e-10,
+     "max_dd_vs_reference": 1.616890269645241e-13,
+     "max_binary64_vs_dd": 1.815850666547863e-10,
      "max_catani_dd": null,
      "max_catani_binary64": null,
      "catani_not_formed": false,
@@ -6093,20 +6093,20 @@
        "sector": "QCD^2 QED^6",
        "coefficient": "finite",
        "E": 5.3126785305410065e-09,
-       "true_error": 3.711380612879408e-10
+       "true_error": 3.711380494345975e-10
       },
       {
        "point": 3,
        "sector": "QCD^2 QED^6",
        "coefficient": "finite",
        "E": 4.624555644288812e-09,
-       "true_error": 7.482386059001615e-10
+       "true_error": 7.482385864520532e-10
       }
      ],
      "timings": {
-      "generate_s": 5.13,
-      "export_s": 1.5,
-      "double_double_s_per_point": 5.035,
+      "generate_s": 6.49,
+      "export_s": 1.27,
+      "double_double_s_per_point": 4.97,
       "double_s_per_point": 0.1
      },
      "failed_checks": []
@@ -6116,8 +6116,8 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 1.616695788562537e-13,
-   "max_binary64_vs_dd": 1.8158506441735918e-10,
+   "max_dd_vs_reference": 1.616890269645241e-13,
+   "max_binary64_vs_dd": 1.815850666547863e-10,
    "max_catani_dd": null,
    "max_ward_dd": null
   },
@@ -6189,10 +6189,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 269.61,
-        "export_s": 24.58,
-        "double_double_s_per_point": 6.14,
-        "double_s_per_point": 0.8825
+        "generate_s": 124.16,
+        "export_s": 25.17,
+        "double_double_s_per_point": 6.4425,
+        "double_s_per_point": 1.105
        },
        "failed_checks": []
       }
@@ -6239,10 +6239,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 283.88,
-        "export_s": 26.5,
-        "double_double_s_per_point": 6.0225,
-        "double_s_per_point": 0.8525
+        "generate_s": 91.82,
+        "export_s": 27.58,
+        "double_double_s_per_point": 6.355,
+        "double_s_per_point": 1.1975
        },
        "failed_checks": []
       }
@@ -6274,9 +6274,9 @@
        "passed": true,
        "checks": 134,
        "failures": 0,
-       "max_dd_vs_reference": 1.0089869335082731e-14,
+       "max_dd_vs_reference": 1.008986933508273e-14,
        "max_binary64_vs_dd": 1.5295152624653725e-12,
-       "max_catani_dd": 3.4935351029030954e-30,
+       "max_catani_dd": 2.936155673233345e-30,
        "max_catani_binary64": 5.608978750295115e-13,
        "catani_not_formed": false,
        "binary64_vs_reference": {
@@ -6289,10 +6289,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 84.77,
-        "export_s": 24.05,
-        "double_double_s_per_point": 6.14,
-        "double_s_per_point": 0.7775
+        "generate_s": 95.6,
+        "export_s": 27.96,
+        "double_double_s_per_point": 6.4175,
+        "double_s_per_point": 1.205
        },
        "failed_checks": []
       }
@@ -6339,10 +6339,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 235.33,
-        "export_s": 21.44,
-        "double_double_s_per_point": 6.0625,
-        "double_s_per_point": 0.79
+        "generate_s": 122.2,
+        "export_s": 23.01,
+        "double_double_s_per_point": 6.9,
+        "double_s_per_point": 1.1225
        },
        "failed_checks": []
       }
@@ -6354,7 +6354,7 @@
    "delegated": {},
    "max_dd_vs_reference": 4.216961743968777e-14,
    "max_binary64_vs_dd": 1.5295152624653725e-12,
-   "max_catani_dd": 3.4935351029030954e-30,
+   "max_catani_dd": 2.936155673233345e-30,
    "max_ward_dd": null
   },
   {
@@ -6424,10 +6424,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 189.39,
-        "export_s": 11.66,
-        "double_double_s_per_point": 6.96,
-        "double_s_per_point": 1.0375
+        "generate_s": 90.78,
+        "export_s": 12.75,
+        "double_double_s_per_point": 6.825,
+        "double_s_per_point": 1.185
        },
        "failed_checks": []
       }
@@ -6474,10 +6474,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 177.25,
-        "export_s": 16.4,
-        "double_double_s_per_point": 6.7475,
-        "double_s_per_point": 0.75
+        "generate_s": 80.54,
+        "export_s": 17.18,
+        "double_double_s_per_point": 7.0525,
+        "double_s_per_point": 0.7375
        },
        "failed_checks": []
       }
@@ -6511,7 +6511,7 @@
        "failures": 0,
        "max_dd_vs_reference": 2.6650789163564675e-14,
        "max_binary64_vs_dd": 5.217119872146446e-14,
-       "max_catani_dd": 1.0452692992412556e-29,
+       "max_catani_dd": 9.99620612272059e-30,
        "max_catani_binary64": 5.330490879920225e-14,
        "catani_not_formed": false,
        "binary64_vs_reference": {
@@ -6524,10 +6524,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 254.4,
-        "export_s": 25.95,
-        "double_double_s_per_point": 7.3225,
-        "double_s_per_point": 1.4725
+        "generate_s": 112.63,
+        "export_s": 27.52,
+        "double_double_s_per_point": 7.48,
+        "double_s_per_point": 1.9075
        },
        "failed_checks": []
       }
@@ -6559,9 +6559,9 @@
        "passed": true,
        "checks": 254,
        "failures": 0,
-       "max_dd_vs_reference": 1.956120698420048e-15,
+       "max_dd_vs_reference": 1.9561206984200467e-15,
        "max_binary64_vs_dd": 2.2047722937603678e-14,
-       "max_catani_dd": 3.820346177043573e-30,
+       "max_catani_dd": 4.715373367313031e-30,
        "max_catani_binary64": 2.5310200223387224e-14,
        "catani_not_formed": false,
        "binary64_vs_reference": {
@@ -6574,10 +6574,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 255.49,
-        "export_s": 25.54,
-        "double_double_s_per_point": 7.44,
-        "double_s_per_point": 1.5175
+        "generate_s": 95.81,
+        "export_s": 27.31,
+        "double_double_s_per_point": 7.73,
+        "double_s_per_point": 2.3725
        },
        "failed_checks": []
       }
@@ -6609,9 +6609,9 @@
        "passed": true,
        "checks": 134,
        "failures": 0,
-       "max_dd_vs_reference": 1.7226726273033697e-15,
+       "max_dd_vs_reference": 1.7226726273033707e-15,
        "max_binary64_vs_dd": 1.623567518614161e-13,
-       "max_catani_dd": 2.8282727232567223e-31,
+       "max_catani_dd": 2.809005006154999e-31,
        "max_catani_binary64": 1.8778683551585628e-15,
        "catani_not_formed": false,
        "binary64_vs_reference": {
@@ -6653,10 +6653,10 @@
         }
        ],
        "timings": {
-        "generate_s": 222.4,
-        "export_s": 25.82,
-        "double_double_s_per_point": 7.22,
-        "double_s_per_point": 1.2825
+        "generate_s": 110.85,
+        "export_s": 27.74,
+        "double_double_s_per_point": 7.32,
+        "double_s_per_point": 1.3925
        },
        "failed_checks": []
       }
@@ -6688,9 +6688,9 @@
        "passed": true,
        "checks": 254,
        "failures": 0,
-       "max_dd_vs_reference": 5.358690087435286e-15,
+       "max_dd_vs_reference": 5.358690087435285e-15,
        "max_binary64_vs_dd": 4.2945449880383167e-14,
-       "max_catani_dd": 3.820346177043573e-30,
+       "max_catani_dd": 4.715373367313031e-30,
        "max_catani_binary64": 2.5310200223387224e-14,
        "catani_not_formed": false,
        "binary64_vs_reference": {
@@ -6703,10 +6703,10 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 105.05,
-        "export_s": 34.59,
-        "double_double_s_per_point": 8.3,
-        "double_s_per_point": 1.7275
+        "generate_s": 133.87,
+        "export_s": 33.78,
+        "double_double_s_per_point": 8.7325,
+        "double_s_per_point": 2.1925
        },
        "failed_checks": []
       }
@@ -6718,7 +6718,7 @@
    "delegated": {},
    "max_dd_vs_reference": 2.6650789163564675e-14,
    "max_binary64_vs_dd": 1.623567518614161e-13,
-   "max_catani_dd": 1.0452692992412556e-29,
+   "max_catani_dd": 9.99620612272059e-30,
    "max_ward_dd": null
   },
   {
@@ -6784,10 +6784,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 255.97,
-      "export_s": 23.26,
-      "double_double_s_per_point": 5.6975,
-      "double_s_per_point": 0.65
+      "generate_s": 116.67,
+      "export_s": 25.16,
+      "double_double_s_per_point": 5.9525,
+      "double_s_per_point": 1.09
      },
      "failed_checks": []
     }
@@ -6872,10 +6872,10 @@
       }
      ],
      "timings": {
-      "generate_s": 276.04,
-      "export_s": 29.31,
-      "double_double_s_per_point": 6.6275,
-      "double_s_per_point": 1.26
+      "generate_s": 134.99,
+      "export_s": 28.81,
+      "double_double_s_per_point": 6.935,
+      "double_s_per_point": 1.41
      },
      "failed_checks": []
     }
@@ -6948,10 +6948,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 399.74,
-      "export_s": 21.59,
-      "double_double_s_per_point": 5.97,
-      "double_s_per_point": 0.615
+      "generate_s": 225.45,
+      "export_s": 21.14,
+      "double_double_s_per_point": 5.9525,
+      "double_s_per_point": 0.505
      },
      "failed_checks": []
     }
@@ -7008,7 +7008,7 @@
      "failures": 0,
      "max_dd_vs_reference": 2.2910888283132676e-10,
      "max_binary64_vs_dd": 3.054312418017165e-14,
-     "max_catani_dd": 5.740022971596634e-29,
+     "max_catani_dd": 4.7868146411364657e-29,
      "max_catani_binary64": null,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -7190,10 +7190,10 @@
       }
      ],
      "timings": {
-      "generate_s": 116.0,
-      "export_s": 38.86,
-      "double_double_s_per_point": 9.1,
-      "double_s_per_point": 1.2675
+      "generate_s": 134.51,
+      "export_s": 38.92,
+      "double_double_s_per_point": 9.57,
+      "double_s_per_point": 1.6075
      },
      "failed_checks": []
     }
@@ -7204,7 +7204,7 @@
    "delegated": {},
    "max_dd_vs_reference": 2.2910888283132676e-10,
    "max_binary64_vs_dd": 3.054312418017165e-14,
-   "max_catani_dd": 5.740022971596634e-29,
+   "max_catani_dd": 4.7868146411364657e-29,
    "max_ward_dd": null
   },
   {
@@ -7233,7 +7233,7 @@
    "ward_legs": null,
    "listed_outliers": [],
    "relaxed": {
-    "4": 1e-12
+    "4dd": 1e-12
    },
    "status": "pass",
    "tiers": {
@@ -7248,7 +7248,7 @@
      "failures": 0,
      "max_dd_vs_reference": 7.979350106950089e-13,
      "max_binary64_vs_dd": 2.7678586501890955e-12,
-     "max_catani_dd": 4.146473467042036e-14,
+     "max_catani_dd": 4.146473467042035e-14,
      "max_catani_binary64": 2.8711325201397956e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -7261,10 +7261,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.66,
-      "export_s": 1.28,
-      "double_double_s_per_point": 6.390000000000001,
-      "double_s_per_point": 0.3066666666666667
+      "generate_s": 6.11,
+      "export_s": 2.41,
+      "double_double_s_per_point": 6.77,
+      "double_s_per_point": 0.3333333333333333
      },
      "failed_checks": []
     }
@@ -7275,7 +7275,7 @@
    "delegated": {},
    "max_dd_vs_reference": 7.979350106950089e-13,
    "max_binary64_vs_dd": 2.7678586501890955e-12,
-   "max_catani_dd": 4.146473467042036e-14,
+   "max_catani_dd": 4.146473467042035e-14,
    "max_ward_dd": null
   },
   {
@@ -7322,7 +7322,7 @@
      "failures": 0,
      "max_dd_vs_reference": 6.263082958030724e-10,
      "max_binary64_vs_dd": 1.0757241593304889e-10,
-     "max_catani_dd": 2.3778106098877506e-26,
+     "max_catani_dd": 1.115617270505624e-26,
      "max_catani_binary64": null,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -7413,11 +7413,11 @@
       }
      ],
      "timings": {
-      "generate_s": 100.11,
-      "export_s": 68.92,
-      "double_double_s_per_point": 9.6575,
-      "double_s_per_point": 0.0975,
-      "engine_catani_s": 26.75
+      "generate_s": 129.88,
+      "export_s": 71.55,
+      "double_double_s_per_point": 9.795,
+      "double_s_per_point": 0.0925,
+      "engine_catani_s": 23.37
      },
      "failed_checks": []
     }
@@ -7428,7 +7428,7 @@
    "delegated": {},
    "max_dd_vs_reference": 6.263082958030724e-10,
    "max_binary64_vs_dd": 1.0757241593304889e-10,
-   "max_catani_dd": 2.3778106098877506e-26,
+   "max_catani_dd": 1.115617270505624e-26,
    "max_ward_dd": null
   },
   {
@@ -7474,9 +7474,9 @@
      "passed": true,
      "checks": 82,
      "failures": 0,
-     "max_dd_vs_reference": 8.204241448279402e-16,
+     "max_dd_vs_reference": 8.204241448279409e-16,
      "max_binary64_vs_dd": 2.613087160445428e-12,
-     "max_catani_dd": 8.202450472903726e-33,
+     "max_catani_dd": 1.619407017665743e-32,
      "max_catani_binary64": 3.344546861683284e-15,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -7518,11 +7518,11 @@
       }
      ],
      "timings": {
-      "generate_s": 52.52,
-      "export_s": 38.39,
-      "double_double_s_per_point": 6.1875,
-      "double_s_per_point": 0.0475,
-      "engine_catani_s": 6.08
+      "generate_s": 56.75,
+      "export_s": 42.51,
+      "double_double_s_per_point": 6.4725,
+      "double_s_per_point": 0.0725,
+      "engine_catani_s": 9.35
      },
      "failed_checks": []
     }
@@ -7531,9 +7531,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 8.204241448279402e-16,
+   "max_dd_vs_reference": 8.204241448279409e-16,
    "max_binary64_vs_dd": 2.613087160445428e-12,
-   "max_catani_dd": 8.202450472903726e-33,
+   "max_catani_dd": 1.619407017665743e-32,
    "max_ward_dd": null
   },
   {
@@ -7576,9 +7576,9 @@
      "passed": true,
      "checks": 82,
      "failures": 0,
-     "max_dd_vs_reference": 6.257934376463841e-13,
+     "max_dd_vs_reference": 6.257934376463842e-13,
      "max_binary64_vs_dd": 1.1604909961681872e-12,
-     "max_catani_dd": 3.594044212683452e-29,
+     "max_catani_dd": 5.036841012165192e-29,
      "max_catani_binary64": 6.430874012033749e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -7662,11 +7662,11 @@
       }
      ],
      "timings": {
-      "generate_s": 104.27,
-      "export_s": 76.89,
-      "double_double_s_per_point": 6.08,
-      "double_s_per_point": 0.155,
-      "engine_catani_s": 9.13
+      "generate_s": 104.38,
+      "export_s": 79.78,
+      "double_double_s_per_point": 6.185,
+      "double_s_per_point": 0.07,
+      "engine_catani_s": 9.85
      },
      "failed_checks": []
     }
@@ -7675,9 +7675,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 6.257934376463841e-13,
+   "max_dd_vs_reference": 6.257934376463842e-13,
    "max_binary64_vs_dd": 1.1604909961681872e-12,
-   "max_catani_dd": 3.594044212683452e-29,
+   "max_catani_dd": 5.036841012165192e-29,
    "max_ward_dd": null
   },
   {
@@ -7723,7 +7723,7 @@
      "failures": 0,
      "max_dd_vs_reference": 7.714891868180339e-14,
      "max_binary64_vs_dd": 2.039849860390016e-11,
-     "max_catani_dd": 8.240612916534825e-31,
+     "max_catani_dd": 1.2995992018675115e-30,
      "max_catani_binary64": 5.272172962714552e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -7765,11 +7765,11 @@
       }
      ],
      "timings": {
-      "generate_s": 81.82,
-      "export_s": 65.21,
-      "double_double_s_per_point": 5.88,
-      "double_s_per_point": 0.07666666666666667,
-      "engine_catani_s": 7.19
+      "generate_s": 83.38,
+      "export_s": 78.76,
+      "double_double_s_per_point": 15.003333333333332,
+      "double_s_per_point": 0.12333333333333334,
+      "engine_catani_s": 20.16
      },
      "failed_checks": []
     }
@@ -7780,7 +7780,140 @@
    "delegated": {},
    "max_dd_vs_reference": 7.714891868180339e-14,
    "max_binary64_vs_dd": 2.039849860390016e-11,
-   "max_catani_dd": 8.240612916534825e-31,
+   "max_catani_dd": 1.2995992018675115e-30,
+   "max_ward_dd": null
+  },
+  {
+   "id": "SC10",
+   "class": "W-scheme",
+   "process": "z z > h h",
+   "restriction": "default",
+   "restriction_code": "G0",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "corrections": [
+    "QED"
+   ],
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/msm/zz_hh_ew.json",
+    "providers": [
+     "madloop",
+     "recola"
+    ]
+   },
+   "reference_legend": "N (MS-UFODB: R2_ZZHH on UFOmodeldb 6ca4b120; MadLoop QP + Recola)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
+   "listed_outliers": [],
+   "relaxed": {
+    "2": 1e-08,
+    "4": 1e-08
+   },
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 82,
+     "failures": 0,
+     "max_dd_vs_reference": 4.3453871198072283e-13,
+     "max_binary64_vs_dd": 7.002037838432784e-13,
+     "max_catani_dd": 3.6527338585227165e-32,
+     "max_catani_binary64": 7.002037838432784e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.8585695227443523e-14,
+      "finite": 1.6795532560453183e-09,
+      "single_pole": 7.003024703343562e-13,
+      "double_pole": 0.0
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [
+      {
+       "point": 0,
+       "sector": "QED^6",
+       "coefficient": "finite",
+       "E": 1.020191200036211e-07,
+       "true_error": 1.6799613549435472e-09
+      },
+      {
+       "point": 0,
+       "sector": "QED^6",
+       "coefficient": "double_pole",
+       "E": Infinity,
+       "true_error": 0.0
+      },
+      {
+       "point": 1,
+       "sector": "QED^6",
+       "coefficient": "finite",
+       "E": 3.286383211376398e-09,
+       "true_error": 5.728815977197783e-11
+      },
+      {
+       "point": 1,
+       "sector": "QED^6",
+       "coefficient": "double_pole",
+       "E": Infinity,
+       "true_error": 0.0
+      },
+      {
+       "point": 2,
+       "sector": "QED^6",
+       "coefficient": "finite",
+       "E": 2.1177266849203544e-09,
+       "true_error": 3.853986788777051e-11
+      },
+      {
+       "point": 2,
+       "sector": "QED^6",
+       "coefficient": "double_pole",
+       "E": Infinity,
+       "true_error": 0.0
+      },
+      {
+       "point": 3,
+       "sector": "QED^6",
+       "coefficient": "finite",
+       "E": 9.2874795723398e-08,
+       "true_error": 1.6639699743326032e-09
+      },
+      {
+       "point": 3,
+       "sector": "QED^6",
+       "coefficient": "double_pole",
+       "E": Infinity,
+       "true_error": 0.0
+      }
+     ],
+     "timings": {
+      "generate_s": 98.11,
+      "export_s": 13.72,
+      "double_double_s_per_point": 8.835,
+      "double_s_per_point": 0.865
+     },
+     "failed_checks": []
+    }
+   },
+   "missing_records": [],
+   "variants": [],
+   "nc": null,
+   "delegated": {},
+   "max_dd_vs_reference": 4.3453871198072283e-13,
+   "max_binary64_vs_dd": 7.002037838432784e-13,
+   "max_catani_dd": 3.6527338585227165e-32,
    "max_ward_dd": null
   }
  ],
@@ -7871,8 +8004,8 @@
    ],
    "checks": "rule 4, QED^6 single pole at every point (rule 1 = MadLoop QP; the QCD^2 QED^4 sector meets its operator exactly)",
    "evidence": "probe-sc03 (double-double, points 0 and 1): the offset is -0.021297 / -0.021183 (alpha/2pi) Born and independent of MB to 1e-6 (MB = ymb = 4.7, 2.35, 0.47); MS-REF's scheme record ew-gmu-ckm: the UFO's O(lambda^3) Wolfenstein CKM is not unitary, the remnant scales as lambda^4 (lamWS scan), MadLoop alike",
-   "status": "open (model property; rule 4 not formed on the row)",
-   "routed": "coordinator (PLAN \u00a74.2 SC03: CKM rows need a CKM counterterm or a UV-pole exemption)"
+   "status": "known model defect: UFOmodeldb issue #1 item 2 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1; DECISIONS 2026-10-30 ~11:45); rule 4 not formed on the row; the user's UFO patch (DECISIONS ~12:45, ms-ufo-patch) makes the CKM exactly unitary",
+   "routed": "upstream (UFOmodeldb #1 item 2); ms-ufo-patch"
   },
   {
    "id": "F7",
@@ -7911,6 +8044,20 @@
    "evidence": "tmp/ms-validate/f3 (SC04 runs only with the candidate F1 fix, which changes no Born tree): point 1 = incoming b and b~ at E = 400, |p_z| = 399.97 (m_b^2/s = 3.2e-5); points 0, 2, 3 agree in binary64; probe-f9 (2026-10-30): native inputs are right in binary64 (0.011483087026326617), the Python-input Born is ~1e-49 in every helicity; probe-f9b: the b~ source (leg 2, along -z) is ~1e-24 in the binary64 carrier's Python inputs (sources at 40 + 10 digits) and right at 52 + 10: runtime/symbolica_exact._massive_dirac computes |p| = sqrt(pz^2), which at 50 digits exceeds |pz| = 399.974686699045993514867962107 by 1e-47, so pp3 = |p| + pz = 1e-47 instead of 0 and, with zero transverse momentum, chi = (sqrt(pp3/2|p|), 0) ~ (1e-25, 0) instead of (0, -nh): a vanishing spinor",
    "status": "fixed on work/v2-ms-validate (baab3247: on the z axis |p| = |pz| exactly; unit test test_massive_dirac_sources_on_the_beam_axis_do_not_hang_on_rounding fails without it): SC04 134/134 incl. point 1 in binary64, TT06 59/59 (massive initial b) at baab3247 (tmp/ms-validate/r5)",
    "routed": "MS-VALIDATE (fixed in the package; the shared exact runtime, also the tree engine's)"
+  },
+  {
+   "id": "F10",
+   "category": "model: G_mu massive-b charge counterterm",
+   "title": "With a massive b (restrict_with_b_mass), the G_mu UFO's 186 CT couplings that use (eCoup_a0_UV_EW + eCoup_DGmua0_UV_EW) omit dMB_eCoup_UV_EW",
+   "rows": [
+    "SC04",
+    "TT06",
+    "ST04"
+   ],
+   "checks": "none fail: ours = MadLoop (both read the UFO as shipped); a provider with its own renormalisation differs by the omitted term (ST04's MadLoop-Recola offset)",
+   "evidence": "MS-UFODB (slice 0e5930c2): the omitted term explains ST04's MadLoop-Recola offset exactly",
+   "status": "known model defect: UFOmodeldb issue #1 item 3 (https://github.com/mg5amcnlo/UFOmodeldb/issues/1; DECISIONS 2026-10-30 ~11:45); the user's UFO patch (DECISIONS ~12:45, ms-ufo-patch) restores the term",
+   "routed": "upstream (UFOmodeldb #1 item 3); ms-ufo-patch"
   }
  ],
  "coverage_notes": [
