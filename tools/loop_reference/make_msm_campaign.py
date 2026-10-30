@@ -44,10 +44,13 @@ rows, runs = [], {}
 
 
 def run(rid, key=None, export=None, points=None, helicities=None, split_points=False, note=None, binding=True,
-        point_status=None, notes=None, madloop_params=None):
+        point_status=None, notes=None, madloop_params=None, second=(), trigger=None):
     key = key or rid
     r = {"id": rid, "process": key, "export": export or f"runs/msm/{key}/madloop-export",
          "points": points or {"generator": "exact"}}
+    if second:
+        r["second_providers"] = list(second)
+        r["second_provider_trigger"] = trigger
     if madloop_params:
         r["madloop_params"] = madloop_params  # over madloop_settings.evaluation's, this run only
     if helicities:
@@ -307,7 +310,8 @@ row("SC08", "W-scheme", "t t~ > w+ w-", "G0", "N", runs_=[run("ttx_wpwm_ew", poi
 row("SC09", "W-scheme", "t t~ > z h QCD=0", "G0", "E", fixtures=["required/ttx_zh_ew.json"], sectors=["e^6"],
     primary="recola", note=f"{R2RULE} (2.5 %); root mixing; ew-validate's fixture {EWI7}")
 row("SC10", "W-scheme", "z z > h h", "G0", "N", sectors=["e^6"],
-    runs_=[run("zz_hh_ew", points=S()),
+    runs_=[run("zz_hh_ew", points=S(), second=["recola"],
+               trigger="diagnostic: Recola's R2 terms are not the UFO's, so it decides UFOmodeldb's R2_ZZHH fix"),
            run("zz_hh_ew_mg5", points={"generator": "run", "run": "zz_hh_ew"}, binding=False,
                note="control: MadLoop on MG5_aMC's online-database G_mu model, whose R2_ZZHH predates UFOmodeldb's "
                     "fix (the only difference)")],
