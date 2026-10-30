@@ -3900,14 +3900,19 @@ def smoke(campaign: Campaign, restriction: str, spec: Mapping[str, Any]) -> list
 
         base = campaign.run(row.id).evaluate([0], "double", stability=False)[0]
         model = campaign.model(restriction, row.model)
+        base_model = campaign.model(row.restriction, row.model)
         externals = _external_parameters(model)
         # The base restriction's values of the parameters it removes and the
-        # other keeps (its card: e.g. MB = 0 under with_b_mass, epsUV = 1
-        # under with_technical, the Wolfenstein parameters 0 under ckm), and
-        # none the other restricts away (a width of no_widths).
-        kept = externals - _external_parameters(
-            campaign.model(row.restriction, row.model)
-        )
+        # other keeps (``parameter_defaults`` None in the base, a value in the
+        # other: e.g. MB = 0 under with_b_mass, the Wolfenstein parameters 0
+        # under ckm), fixed as the base fixes them; and none the other
+        # restricts away (a width of no_widths).
+        kept = {
+            k
+            for k in externals
+            if model.parameter_defaults.get(k) is not None
+            and base_model.parameter_defaults.get(k) is None
+        }
         card = restriction_card(campaign.ufo_path(row.model), row.restriction)
         restricted = replace(
             row,
@@ -3920,6 +3925,19 @@ def smoke(campaign: Campaign, restriction: str, spec: Mapping[str, Any]) -> list
         )
         run = RowRun(restricted, model, campaign.native)
         run.parameters = {k: v for k, v in run.parameters.items() if k in externals}
+        # Every other runtime parameter the row leaves at its card's value
+        # takes the base card's (the restrictions' cards differ: e.g. the
+        # alpha(M_Z) UFO's MT, MH and aEWM1, with_technical's epsUV = 1 +
+        # 1e-8); the scale is the point's.
+        free = externals - set(run.parameters) - set(restricted.fixed_parameters)
+        for k in sorted(free):
+            if (
+                k != row.scale_parameter
+                and k in card
+                and model.parameter_defaults.get(k) is not None
+                and base_model.parameter_defaults.get(k) is not None
+            ):
+                run.parameters[k] = card[k]
         other = run.evaluate([0], "double", stability=False)[0]
         return _smoke_checks(base, other, restriction, row.restriction)
     source = campaign.rows[spec.get("points_from", row.id)]
