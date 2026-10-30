@@ -41,13 +41,14 @@
    "category": "plan: Ward identity in the real-mass scheme",
    "title": "The gluon (photon) Ward identity of the EW virtual fails where an external coloured (charged) particle has an absorptive self-energy at its mass",
    "rows": [
+    "CM07",
+    "ST03",
     "TT03",
     "TV07",
-    "VV05",
-    "ST03"
+    "VV05"
    ],
    "checks": "ward: TT03 and TV07 double-double 3e-4 / 6e-5 of the scale (c = 1 and i, every gluon), VV05 photon c = i 4e-4; rule 1 = MadLoop at the physical polarisations",
-   "evidence": "probe-ward (TT03, double-double, leg 1): residual 3.3e-4 (c = 1), 5.2e-5 (c = i) of the scale at the card (t -> b W open), 5e-30 and 4e-29 at MW = 180, MZ = 200 (stable top), the bare, R2 and UV parts 1e-2 each: the real on-shell counterterms (Re Sigma) leave the external top's absorptive part unrenormalised, the scheme's property, not an engine defect (the identity holds under CMS)",
+   "evidence": "probe-ward (TT03, double-double, leg 1): residual 3.3e-4 (c = 1), 5.2e-5 (c = i) of the scale at the card (t -> b W open), 5e-30 and 4e-29 at MW = 180, MZ = 200 (stable top), the bare, R2 and UV parts 1e-2 each: the real on-shell counterterms (Re Sigma) leave the external top's absorptive part unrenormalised, the scheme's property, not an engine defect (the identity holds under CMS); under CMS with Gamma_t = 0 (CM07, native inputs, tmp/ms-validate/cm4) the gluon Ward diagnostic misses by 1.2e-3 of the scale (the external top on its real line mass keeps t -> b W absorptive), while CM05 (no external top) holds at 4e-31: the same mechanism; CM07's acceptance checks all pass (86/86, rule 1 = MadLoop CMS 6.9e-13)",
    "status": "resolved in the manifest: TT03 and TV07 check Ward at a stable top (ward_parameters MW = 180, MZ = 200); VV05 (external W) and ST03 (external top and W) defer it to the CMS rows (CM05, CM07, CM09)",
    "routed": "coordinator (PLAN \u00a71.4 Ward text)"
   },
@@ -112,7 +113,7 @@
    ],
    "checks": "CM04 (Python inputs): rule 1 (Born and every sector ~4e-4), rule 4 (the virtual's poles against the engine's own operator 3e-5 to 2.6e-4: the Python path is not self-consistent), rule 5; CM07 on Python inputs (cm2): Born 5e-4, the EW sector's finite part 3e-3 off MadLoop CMS; CM07 on native inputs (the production route, cm3): rule 4's engine operator reads the Python-input Born",
    "evidence": "probe-cm04 (point 0, binary64): Born Python inputs 1.0054755 at MT = 173, native inputs 1.00509349673877 = MadLoop CMS = the real-mass Born; at the default MT = 173.3 both paths give 1.0051884: a part of the Python path takes LMASS_MT at its default, not at the runtime MT. CM02, CM03, CM09 (nonzero widths, no zero-width Yukawa-tied mass) pass on Python inputs; probe-cm04/probe3: the loop masses are right (assemble._model_masses: LMASS_MT = 173 at the runtime MT = 173, the transformed model's records LMASS_MT := MT, ymt := MT, internal), so the Python path's Born trees are the suspect (TreeRows takes an external record at its default where the runtime parameters do not name it); CM07 on native inputs (cm3): rule 1 = MadLoop CMS QP to 6.9e-13 ([U4] on the production route), rule 4 and the Ward diagnostic (1.2e-3 of the scale; CM05's holds at 4e-31) miss through the Python-input Born and Ward inputs",
-   "status": "resolved by MS-CMS's fix round 1 (integrated at ebbb6a98: a derived external mass, the line mass, read at the point's parameters): CM04 at f30a55b2 = MadLoop CMS (its only miss the vanishing QCD x EW double pole, listed since)",
+   "status": "resolved by MS-CMS's fix round 1 (integrated at ebbb6a98): CM04 = MadLoop CMS at f30a55b2 (its only miss the vanishing QCD x EW double pole, listed since); CM07 on native inputs 86/86 (rule 4's engine operator on the Python-input Born now agrees, 7.2e-26)",
    "routed": "closed (MS-CMS)"
   },
   {
