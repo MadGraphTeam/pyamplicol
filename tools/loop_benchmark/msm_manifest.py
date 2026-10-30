@@ -1150,6 +1150,228 @@ row(
 
 assert len(R) == 70, len(R)
 
+# ---- MS-REF's references (m-sm/PLAN.md §3.2 MS-REF, §4.2 legends N, R):
+# its reference manifest (``required/msm_references.json``) lists per row the
+# committed MadLoop runs and the binding references of rule 1. Once it is on
+# the branch, a row whose reference is a new run takes its first binding run
+# (with the run's components for rule 5 and MG5's alpha(0) conversion over
+# the run's tagged photons), its further binding runs become variants (the
+# special points S1, S3, S4: ``<row>@<suffix>``), and an existing reference
+# with a top-up run of another squared sector becomes a ``sectors`` reference
+# of both at the existing fixture's points. Multiparticle members (MP rows)
+# wait for MS-MODEL (Q2) and are not wired here.
+MSREF_FILE = WT / REQ / "msm_references.json"
+MSREF = (
+    {e["row"]: e for e in json.loads(MSREF_FILE.read_text())["rows"]}
+    if MSREF_FILE.is_file()
+    else {}
+)
+if MSREF:
+    LANDED.add("MS-REF")
+GMU_UFO = Path(
+    os.environ.get(
+        "PYAMPLICOL_EW_UFO_REFERENCE",
+        WORKSPACE / "reference/models/loop_qcd_qed_sm_Gmu_py3",
+    )
+)
+
+
+def _ew_oracle():
+    """tests/unit/test_loop_v2_ew.py's UFO-source evaluator (the photon
+    conversion parameter per point, below)."""
+
+    import importlib.util
+
+    name = "_msm_manifest_test_loop_v2_ew"
+    if name not in sys.modules:
+        spec = importlib.util.spec_from_file_location(
+            name, WT / "tests/unit/test_loop_v2_ew.py"
+        )
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+    return sys.modules[name]
+
+
+def conversion_values(data, counterterm="eCoup_DGmua0_UV_EW"):
+    """MG5_aMC's alpha(0) conversion parameter (its real part, as MG5's
+    double-precision ``get_virtual_a0Gmu_conv`` keeps it) per point of a
+    fixture: [pole, finite] at the point's MU_R and the fixture's
+    parameters, from the G_mu UFO's own source (its finite part depends on
+    MU_R; at the card's MU_R it equals ``madloop-ct-parameters.json``'s)."""
+
+    if not GMU_UFO.is_dir():
+        raise SystemExit("the G_mu UFO is needed for the photon conversion values")
+    oracle = _ew_oracle()
+    modules = oracle._import_ufo(GMU_UFO, "_msm_manifest_gmu_ufo")
+    base = {**data["parameters"], **data.get("fixed_parameters", {})}
+    base.update(data.get("parameter_overrides", {}))
+    out = []
+    for mu in data["mu_r"]:
+        values, _env = oracle._ufo_source_values(
+            modules, {**base, "MU_R": str(mu)}, exact=False, wrap=None
+        )
+        out.append(
+            [repr(complex(values[counterterm, power]).real) for power in (-1, 0)]
+        )
+    return out
+
+
+def _fixture(path):
+    return json.loads((WT / FIX / path).read_text())
+
+
+def _loop_sectors(data):
+    """(loop sector, its Born sector, the correction reaching it) of a
+    fixture's squared split orders (MS-REF's per-sector rows)."""
+
+    found = []
+    for s in data["rows"][0].get("sectors", {}).get("loop", ()):
+        by = s.get("born_sectors") or {}
+        correction = next((c for c, b in by.items() if b), data.get("correction"))
+        found.append(((s["QCD"], s["QED"]), (s["born_sector"]["QCD"],
+                      s["born_sector"]["QED"]), correction))  # fmt: skip
+    return found
+
+
+def _photon_spec(data, sector=None, n=None):
+    """MG5's alpha(0) conversion over the fixture's tagged photon legs (or
+    ``n``), with the conversion parameter per point."""
+
+    tagged = len(data.get("tagged_photon_legs") or ()) if n is None else n
+    if not tagged:
+        return None
+    spec = photons(tagged, sector)
+    spec["values"] = conversion_values(data)
+    return spec
+
+
+def _ew_sector(data):
+    """The loop sector the electroweak correction reaches (its conversion
+    term's sector), if one."""
+
+    sectors = [s for s, _b, c in _loop_sectors(data) if c in ("EW", "QED")]
+    return sectors[0] if len(sectors) == 1 else None
+
+
+def msref_reference(path, run):
+    """A required-format reference of an MS-REF run (``path`` below
+    tests/fixtures/loop)."""
+
+    data = _fixture(path)
+    spec = {
+        "format": "required",
+        "path": f"{FIX}/{path}",
+        "providers": [data.get("primary_provider", "madloop")]
+        + [p for p in data["validated_providers"]
+           if p != data.get("primary_provider", "madloop")],
+    }  # fmt: skip
+    if run.get("components"):
+        spec["components"] = f"{FIX}/{run['components']}"
+    photon = _photon_spec(data, _ew_sector(data))
+    if photon:
+        spec["photon_conversion"] = photon
+    return spec
+
+
+def _same_point(a, b):
+    from fractions import Fraction
+
+    return all(
+        Fraction(str(x)) == Fraction(str(y))
+        for leg_a, leg_b in zip(a, b, strict=True)
+        for x, y in zip(leg_a, leg_b, strict=True)
+    )
+
+
+def apply_msref(r):
+    """Wire a row to MS-REF's committed runs (see above)."""
+
+    entry = MSREF.get(r["id"])
+    if not entry or r["id"].startswith("MP"):
+        return
+    runs = {x["fixture"]: x for x in entry["references"] if x["status"] == "committed"}
+    # A committed run of another package that MS-REF lists as the row's
+    # binding reference (ST04: ew-validate's udx_tbx_ew_mb).
+    known = {
+        **{x["fixture"]: x for x in entry["existing_references"]
+           if x["status"] == "committed" and x["fixture"].startswith("required/")},
+        **runs,
+    }  # fmt: skip
+    binding = [
+        b["fixture"] for b in entry["binding_references"] if b["fixture"] in known
+    ]
+    if r["ref"] is None and binding:
+        main = binding[0]
+        r["ref"] = msref_reference(main, known[main])
+        if r["ref"].get("components") and "uv" not in r["extras"]:
+            # Rule 5's EW form on the class's component row (m-sm/PLAN.md
+            # §1.4 rule 5: one row per class, MS-REF's component runs).
+            r["extras"].append("uv")
+        if known[main].get("point_labels"):
+            r["more"]["special_points"] = known[main]["point_labels"]
+        stem = Path(main).stem
+        variants = list(r["more"].get("variants", ()))
+        for other in binding[1:]:
+            name = Path(other).stem.removeprefix(stem).strip("_") or Path(other).stem
+            data = _fixture(other)
+            variants.append({
+                "name": name,
+                "gating": True,
+                "tier": r["tier"] if r["tier"] != "default" else "nightly",
+                "reference": msref_reference(other, known[other]),
+                "points": {"nightly": list(range(len(data["points"])))},
+                "extras": [],
+                "extras_pending": {},
+                "notes": known[other].get("note") or "",
+            })  # fmt: skip
+        if variants:
+            r["more"]["variants"] = variants
+        return
+    old = r["ref"]
+    if not old or old.get("format") != "required":
+        return
+    existing = _fixture(old["path"].removeprefix(f"{FIX}/"))
+    for path in runs:
+        data = _fixture(path)
+        new = [x for x in _loop_sectors(data) if x[0] not in r["sectors"]]
+        if not new or len(new) != len(_loop_sectors(data)):
+            continue
+        # A top-up: the run's rows at the existing fixture's points and scales.
+        rows = []
+        for point, mu in zip(existing["points"], existing["mu_r"], strict=True):
+            match = [i for i, (q, m) in enumerate(zip(data["points"], data["mu_r"],
+                     strict=True)) if m == mu and _same_point(q, point)]  # fmt: skip
+            rows.append(match[0] if match else None)
+        if None in rows:
+            continue
+        (old_sector,) = r["sectors"]
+        (old_born,) = r["born"]
+        born_sector = (2 * old_born[0], 2 * old_born[1])
+        parts = [
+            {"path": old["path"], "sector": {"QCD": old_sector[0], "QED": old_sector[1]},
+             "born_sector": {"QCD": born_sector[0], "QED": born_sector[1]}},
+        ] + [
+            {"path": f"{FIX}/{path}", "sector": {"QCD": s[0], "QED": s[1]},
+             "born_sector": {"QCD": b[0], "QED": b[1]}, "rows": rows}
+            for s, b, _c in new
+        ]  # fmt: skip
+        spec = {"format": "sectors", "parts": parts, "providers": ["madloop"]}
+        if old.get("photon_conversion"):
+            # The conversion term on the electromagnetic correction's sector
+            # (the existing fixture's), every sector scaled.
+            spec["photon_conversion"] = _photon_spec(
+                existing, old_sector, n=old["photon_conversion"]["tagged"]
+            )
+        r["ref"] = spec
+        r["sectors"] = sorted({*r["sectors"], *(s for s, _b, _c in new)}, reverse=True)
+        r["legend"] += f" (top-up {Path(path).stem}: MS-REF)"
+        return
+
+
+for r in R:
+    apply_msref(r)
+
 # Extras the harness checks (``mqcd.IMPLEMENTED_EXTRAS``) and why the others
 # wait (m-sm/PLAN.md §4.1 extras).
 PENDING_EXTRAS = {
@@ -1256,6 +1478,9 @@ VANISHING = {
     # g t > t t t~ with QED corrections: massive tops, a neutral gluon (ours
     # exactly 0, MadLoop's 1e-17 of the Born).
     "TT05": [{"sector": "total", "coefficient": "double_pole"}],
+    # g b > t t~ b (massive b) with QED corrections: every charged leg
+    # massive (ours exactly 0, MadLoop's 1e-17 of the Born; c3 2026-10-30).
+    "TT06": [{"sector": "total", "coefficient": "double_pole"}],
 }
 # Rule 1's tolerance per row (nominal 1e-12; 1e-10 from 2->4 up where the
 # providers' precision needs it, the user's ruling of 2026-10-29 ~01:12; and
@@ -1263,13 +1488,16 @@ VANISHING = {
 # LL10 against Recola (the R2 rule's primary; MadLoop, which omits
 # R2_G0tt_b, is 5.6e-4 and 1.1e-2 off): 3.9e-12 and 7.4e-12 at points 1, 2,
 # Recola's double-precision finite part; TV06 (2->4) 1.16e-12 against
-# MadLoop's quadruple precision at point 2.
-RULE1 = {"LL10": 1e-10, "TV06": 1e-10, "TV07": 1e-10}
+# MadLoop's quadruple precision at point 2; TT06 against MadLoop's double
+# precision counterterm parameters (goldstone-mixing.json; ew-validate held
+# its finite parts at 1e-8; c3 2026-10-30: 4e-11 to 1.1e-9).
+RULE1 = {"LL10": 1e-10, "TV06": 1e-10, "TV07": 1e-10, "TT06": 1e-8}
 # Relaxed rules per row (the user's ruling of ~10:20, at most 1e-5): SC05's
 # poles against Catani in double-double, 2.9e-14 and 4.2e-14 at point 0
 # (the fixture's binary64 points are on shell and conserve momentum to
-# rounding only); TT05's, 1.2e-16 to 2.7e-16 (the massive QED operator).
-RELAXED = {"SC05": {"4": 1e-12}, "TT05": {"4": 1e-14}}
+# rounding only); TT05's, 1.2e-16 to 2.7e-16, and TT06's, 9.5e-16 to
+# 1.5e-14 (the massive QED operator's double-double prediction).
+RELAXED = {"SC05": {"4": 1e-12}, "TT05": {"4": 1e-14}, "TT06": {"4": 1e-13}}
 # Rule 4 not formed (status partial): the massive-muon copy of the G_mu UFO
 # (code Gm) changes only the muon mass in the restriction card, while the
 # UFO writes the lepton field renormalisation for massless leptons, so its
@@ -1297,7 +1525,9 @@ for r in R:
         points = {"default": [0, 1], "nightly": list(range(2, count))}
     else:
         points = {tier: list(range(count))}
-    process = r["process"]
+    # The amplitude-order caps of PLAN §4.2's processes (``QCD=0``) are the
+    # request's Born orders (``born_orders``), not particles.
+    process = " ".join(t for t in r["process"].split() if "=" not in t)
     sectors = r["sectors"]
     corrections = list(r["corr"])
     ignored = []
@@ -1360,6 +1590,9 @@ for r in R:
         entry["vanishing"] = VANISHING[r["id"]]
     if r["id"] in RULE1:
         entry["reference_tolerance"] = RULE1[r["id"]]
+    elif {"2->4", "2->5"} & set(r["features"]):
+        # The user's ruling of 2026-10-29 ~01:12: 1e-10 from 2->4 up.
+        entry["reference_tolerance"] = mqcd.REFERENCE_TOLERANCE_HIGH
     if r["id"] in RELAXED:
         entry["relaxed"] = RELAXED[r["id"]]
     if r["id"] in NATIVE_ROWS:
@@ -1382,11 +1615,27 @@ for r in R:
         }
     pend = {}
     for extra in r["extras"]:
+        if extra == "hel" and reference and "MS-REF" in LANDED:
+            data = json.loads((WT / reference["path"]).read_text())
+            if data.get("per_helicity"):
+                continue
+        if extra == "sp" and (
+            r["more"].get("variants") or r["more"].get("special_points")
+        ):
+            # The special points are variants (S1, S3, S4) or the run's own
+            # labelled points (S2).
+            continue
         if extra in PENDING_EXTRAS:
             pend[extra] = PENDING_EXTRAS[extra]
+        elif extra == "uv" and (reference or {}).get("components"):
+            continue
         elif extra == "uv" and (reference or {}).get("format") not in COMPONENT_FORMATS:
             pend[extra] = (
-                "MS-REF (component runs: bare / R2 / UV-CT, madloop_ct_selection.py)"
+                "rule 5's EW form runs on the class's component row (MS-REF's "
+                "component runs, one row per class: m-sm/PLAN.md §1.4 rule 5)"
+                if "MS-REF" in LANDED
+                else "MS-REF (component runs: bare / R2 / UV-CT, "
+                "madloop_ct_selection.py)"
             )
     if pend:
         entry["extras_pending"] = pend
@@ -1475,6 +1724,34 @@ for job in jobs:
         + ("" if job["job"] == 1 else f"_{job['job']}")
         + ".py"
     )
+
+# The thin entry point of each file job after the first (written when
+# missing; a stub of a job that no longer exists is reported, and
+# test_loop_v2_msm_manifest fails until it is removed).
+STUB = '''# SPDX-License-Identifier: 0BSD
+"""M-SM campaign, nightly tier, file job {job} (manifest ``nightly_jobs``;
+m-sm/PLAN.md §3.2 and §4.3): the job's rows at their nightly points under
+PLAN §1.4 (``tests/unit/test_loop_v2_msm_nightly.py`` describes the tier)."""
+
+from __future__ import annotations
+
+from tests.unit.loop_mqcd_tiers import nightly_module
+from tools.loop_benchmark import mqcd
+
+MANIFEST = mqcd.ROOT / "tests" / "fixtures" / "loop" / "msm" / "manifest.json"
+campaign, test_row_meets_the_acceptance_rules = nightly_module({job}, MANIFEST)
+'''
+for job in jobs[1:]:
+    stub = WT / job["file"]
+    if not stub.is_file():
+        stub.write_text(STUB.format(job=job["job"]))
+stale = sorted(
+    str(path.relative_to(WT))
+    for path in (WT / "tests/unit").glob("test_loop_v2_msm_nightly_*.py")
+    if str(path.relative_to(WT)) not in {job["file"] for job in jobs}
+)
+if stale:
+    print("stale nightly stubs (remove them):", " ".join(stale))
 
 # PLAN §3.2 MS-VALIDATE item 8: each shipped restriction of both UFOs
 # generates the request of a base row on its model, compared with the base

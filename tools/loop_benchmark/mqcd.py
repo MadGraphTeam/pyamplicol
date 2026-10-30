@@ -539,18 +539,31 @@ def _photon_conversion(
     or the single sector)."""
 
     tagged = int(spec["tagged"])
-    values = json.loads((ROOT / spec["parameters"]).read_text())["models"][
-        spec["model"]
-    ]
-    card_scale = _scale(values["card"]["MU_R"])
-    if any(scale != card_scale for scale in reference.scales):
-        raise ValueError(f"{reference.source}: the conversion needs MU_R = the card's")
-    delta = values["values"][spec["counterterm"]]
-    pole, finite = (float(delta[k]["double"][0]) for k in ("-1", "0"))
+    if spec.get("values") is not None:
+        # The conversion parameter per point (its finite part depends on
+        # MU_R), from the UFO's own source at each point's scale
+        # (``msm_manifest.conversion_values``): [pole, finite] per point.
+        if len(spec["values"]) != len(reference.points):
+            raise ValueError(f"{reference.source}: one conversion value per point")
+        per_point = [(float(p), float(f)) for p, f in spec["values"]]
+    else:
+        values = json.loads((ROOT / spec["parameters"]).read_text())["models"][
+            spec["model"]
+        ]
+        card_scale = _scale(values["card"]["MU_R"])
+        if any(scale != card_scale for scale in reference.scales):
+            raise ValueError(
+                f"{reference.source}: the conversion needs MU_R = the card's"
+            )
+        delta = values["values"][spec["counterterm"]]
+        per_point = [tuple(float(delta[k]["double"][0]) for k in ("-1", "0"))] * len(
+            reference.points
+        )
     alpha = float(Fraction(data["derived_parameters"]["alpha"]))
     ratio = (1 / float(spec["alpha0_inverse"]) / alpha) ** tagged
     corrected = sector_key(spec["sector"]) if spec.get("sector") else None
     for index in range(len(reference.points)):
+        pole, finite = per_point[index]
         for provider in reference.providers:
             born = reference.born[index][provider]
             total = sum(born.values())
@@ -677,6 +690,11 @@ def _required(row, spec, data) -> Reference:
     # A runtime parameter change of the run (``parameter_overrides``, the
     # S4 rows: e.g. MB = 4.5 and aS = 0.13 on top of the card).
     parameters = {**data["parameters"], **data.get("parameter_overrides", {})}
+    components = (
+        _run_components(spec["components"], len(data["rows"]))
+        if spec.get("components")
+        else []
+    )
     return Reference(
         "",
         providers,
@@ -690,7 +708,50 @@ def _required(row, spec, data) -> Reference:
         float(parameters["aS"]),
         evidence,
         records,
+        components=components,
     )
+
+
+def _split_order_key(text: str) -> Sector:
+    """``"QCD^2=4,QED^2=2"`` (MS-REF's squared split order) -> sector key."""
+
+    return sector_key(
+        {
+            name.split("^")[0]: int(power)
+            for name, power in (item.split("=") for item in text.split(","))
+        }
+    )
+
+
+def _run_components(path: str, count: int) -> list[dict[str, dict]]:
+    """MS-REF's instrumented components of a run (``madloop_components.py``:
+    per loop squared split order and point MadLoop's Born x CT interference
+    split into ``r2``, ``uv``, ``rest`` and ``ct`` = their sum, and ``bare``
+    = the quadruple-precision sector value - ``ct``), in the engine's names
+    per sector: ``bare``, ``r2``, ``uv`` (+ ``rest``, CT amplitudes that pass
+    neither an R2 nor a UV coupling) and ``ct``."""
+
+    data = json.loads((ROOT / path).read_text())
+    out: list[dict[str, dict]] = [{} for _ in range(count)]
+    for text, entry in data["sectors"].items():
+        sector = _split_order_key(text)
+        if len(entry["rows"]) != count:
+            raise ValueError(f"{path}: {text} has {len(entry['rows'])} rows")
+        for index, values in enumerate(entry["rows"]):
+            uv = tuple(
+                a + b
+                for a, b in zip(
+                    _laurent(values["uv"]), _laurent(values["rest"]), strict=True
+                )
+            )
+            for name, laurent in (
+                ("bare", _laurent(values["bare"])),
+                ("r2", _laurent(values["r2"])),
+                ("uv", uv),
+                ("ct", _laurent(values["ct"])),
+            ):
+                out[index].setdefault(name, {})[sector] = laurent
+    return out
 
 
 def _providers(row, spec, data) -> Reference:
@@ -1033,7 +1094,8 @@ def _sectors(row, spec, data) -> Reference:
     part, primary first (``spec['providers']``)."""
 
     parts = [
-        (part, json.loads((ROOT / part["path"]).read_text())) for part in spec["parts"]
+        (part, _part_rows(part, json.loads((ROOT / part["path"]).read_text())))
+        for part in spec["parts"]
     ]
     first = parts[0][1]
     names = [set(d["rows"][0]["providers"]) for _part, d in parts]
@@ -1087,6 +1149,22 @@ def _sectors(row, spec, data) -> Reference:
         float(parameters["aS"]),
         evidence,
     )
+
+
+def _part_rows(part: Mapping[str, Any], data: dict[str, Any]) -> dict[str, Any]:
+    """A ``sectors`` part restricted to its rows ``part['rows']`` (e.g. a
+    top-up run's rows at the existing fixture's points, without the top-up's
+    mu_R / 2 copy); the whole fixture without them."""
+
+    if part.get("rows") is None:
+        return data
+    keep = [int(i) for i in part["rows"]]
+    return {
+        **data,
+        "rows": [data["rows"][i] for i in keep],
+        "points": [data["points"][i] for i in keep],
+        "mu_r": [data["mu_r"][i] for i in keep],
+    }
 
 
 def _strings_all(points) -> list:
