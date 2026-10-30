@@ -1726,6 +1726,10 @@ VANISHING = {
     # charged final W's, so no soft-collinear photon pole (ours 7e-33,
     # MadLoop's 1.5e-34 of the Born; tmp/ms-validate/fs 2026-10-30).
     "PI02": [{"sector": "QED^6", "coefficient": "double_pole"}],
+    # u d~ > t t~ w+: the QCD x EW Born interference vanishes (the top pair
+    # from a gluon, a colour octet, against one from a photon or Z; ours 0,
+    # MadLoop's 1e-17; tmp/ms-validate/f3).
+    "TV03": [{"sector": "QCD^2 QED^4", "coefficient": "born"}],
 }
 # Rule 1's tolerance per row (nominal 1e-12; 1e-10 from 2->4 up where the
 # providers' precision needs it, the user's ruling of 2026-10-29 ~01:12; and
@@ -1754,6 +1758,11 @@ RULE1 = {
     # SC02 (massive muon, m^2/s = 1e-8) against MadLoop's CutTools
     # quadruple precision (MS-REF's re-run): finite parts to 4.9e-9 (c7).
     "SC02": 1e-8,
+    # SC04 (b b~ > w+ w-, massive b) and SC06 (w+ w- > w+ w-) against
+    # MadLoop QP with status 329 at some points: 2.3e-10 and 6.3e-10
+    # (tmp/ms-validate/f3, with the candidate F1 fix).
+    "SC04": 1e-9,
+    "SC06": 1e-9,
     # CM01 against MadLoop CMS double-precision exports (cms-ufo-standard-
     # gmu.json, cms-source-gmu.json; MS-CMS's test holds 1e-8).
     "CM01": 1e-8,
@@ -1767,6 +1776,10 @@ RULE1 = {
 # rounding residue of the cancelling soft-photon terms between massive
 # tops; double-double 1e-30): rules 2 and 4 against 1e-8 F_s there.
 RELAXED = {
+    # w+ w- > w+ w- (the gauge cancellations of longitudinal W scattering):
+    # binary64 Born 1.1e-10 off double-double (tmp/ms-validate/f3, with the
+    # candidate F1 fix; the user's ruling of ~10:20).
+    "SC06": {"2": 1e-9},
     "SC05": {"4": 1e-12},
     "TT05": {"4": 1e-14},
     "TT06": {"4": 1e-13},
@@ -1863,6 +1876,13 @@ MULTIPARTICLE_ROWS = {
         },
         "skipped_members": [],
         "madloop_loop_squared": [],
+        # The QCD x EW Born interference of s-channel q q~ > t t~ vanishes
+        # (a colour octet against singlets, as TT02); b b~ > t t~ has the
+        # t-channel W.
+        "vanishing": {
+            "P3": [{"sector": "QCD^2 QED^2", "coefficient": "born"}],
+            "P4": [{"sector": "QCD^2 QED^2", "coefficient": "born"}],
+        },
         "parts": {
             "required/msm/pp_ttx_ew_P0_ga_ttx.json": ("P0", "g a > t t~", [(1, 1)]),
             "required/msm/pp_ttx_ew_P2_gg_ttx.json": ("P2", "g g > t t~", [(2, 0)]),
@@ -1914,6 +1934,7 @@ def multiparticle_parts(r, entry):
             "reference": reference,
             "madloop_r2_called": called_couplings(reference),
             "points": {"nightly": list(range(len(data["points"])))},
+            "vanishing": spec.get("vanishing", {}).get(name, []),
             "extras": [],
             "extras_pending": {},
             "notes": f"MadLoop SubProcesses/{data['mqcd_run']['subprocess']} of {r['process']} (its single-process generation, tools route)",
