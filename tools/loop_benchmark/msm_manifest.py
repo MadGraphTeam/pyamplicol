@@ -1819,6 +1819,24 @@ RULE1 = {
 # TT03's vanishing QCD^6 QED^2 double pole in binary64 (m2: 7e-10 F_s, the
 # rounding residue of the cancelling soft-photon terms between massive
 # tops; double-double 1e-30): rules 2 and 4 against 1e-8 F_s there.
+# Rule 5 after MS-POLES (m-sm/PLAN.md §1.4): the counterterms' UV part at
+# the TECHNICAL epsIR = 0 equals MadLoop's at epsIR = 0 on
+# restrict_with_technical (MS-REF's uux_emep_ew_tech, gg_ttx_ew_tech; the
+# "all" totals at epsIR = 1 and 0, the "uv"/"ir" parts and their identities):
+# MS-POLES's tests, delegated (``build_mqcd.py --junit``), not repeated here.
+POLE_SPLIT = "tests/unit/test_loop_v2_ew_pole_split.py::"
+DELEGATED = {
+    "DY01": {
+        "uv_eps_ir0": [
+            POLE_SPLIT + "test_dy01_technical_card_pole_split_equals_madloop"
+        ]
+    },
+    "TT01": {
+        "uv_eps_ir0": [
+            POLE_SPLIT + "test_tt01_technical_card_pole_split_equals_madloop"
+        ]
+    },
+}
 RELAXED = {
     # w+ w- > w+ w- (the gauge cancellations of longitudinal W scattering):
     # binary64 Born 1.1e-10 off double-double (tmp/ms-validate/f3, with the
@@ -2142,6 +2160,8 @@ for r in R:
         entry["reference_tolerance"] = mqcd.REFERENCE_TOLERANCE_HIGH
     if r["id"] in RELAXED:
         entry["relaxed"] = RELAXED[r["id"]]
+    if r["id"] in DELEGATED:
+        entry["delegated"] = DELEGATED[r["id"]]
     if r["id"] in NATIVE_ROWS:
         entry["inputs"], entry["catani"] = "native", "engine"
     if r["id"] in WARD_PARAMETERS:
