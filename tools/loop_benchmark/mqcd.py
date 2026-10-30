@@ -4126,7 +4126,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         if not row.active:
             print(f"{name}: pending ({row.pending})", flush=True)
             continue
-        report = campaign.report(name, args.tier, points=args.points)
+        try:
+            report = campaign.report(name, args.tier, points=args.points)
+        except Exception as error:  # noqa: BLE001 - a crash is the row's record
+            # The campaign records a row whose generation or evaluation
+            # raises as failed (one "eval" check holding the error), so the
+            # report data shows it as a failure, not a missing record.
+            points = tuple(args.points or row.tier_points(args.tier))
+            report = RowReport(name, args.tier, points, [Check(
+                "eval", None, "", "", "generation or evaluation", "raised", "",
+                math.inf, 0.0, False, note=f"{type(error).__name__}: {error}")],
+                {})  # fmt: skip
         print(report.describe(), flush=True)
         print(json.dumps(report.summary(), default=str), flush=True)
         write_result(report, args.results)
