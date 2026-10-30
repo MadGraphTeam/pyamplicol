@@ -968,7 +968,7 @@ $C fixture uux_emep_ew && $C manifest
 | `madloop_ct_couplings.py` | the UFO counterterm couplings behind an export's calls (`<export>.ct_couplings.json`; madloop_export.py writes it for new exports) |
 | `madloop_parameters.py` | model parameters of an export at a run's card per mu_R (`<work>/export_parameters.json`, copied into the fixture of a run listing `export_parameters`: CM09's complex photon conversion parameter) |
 | `madloop_components.py` | rule-5 components per loop sector (bare / R2 / UV-CT, via `madloop_ct_selection.py`, classified by the UFO couplings of the calls) on one row per class: `required/msm/components/<run>.json` |
-| `required/msm/existing_r2_couplings.json` | the UFO R2 couplings the exports of the existing EW references insert |
+| `required/msm/existing_r2_couplings.json` | the UFO R2 couplings the exports of the existing EW references insert, written by `$C existing-r2` (`runs/required/<name>/madloop-export` of `required/<name>.json`, else the row's `existing_r2_exports`: the LL01/LL02/SC01/CM01 controls have `--no-compile` exports of their MadLoop commands, `runs/msm/*_ctl/`, whose attached CT vertices, UV CT and loop counts equal the legacy generation's); `without_r2_list` names the QCD-only fixtures; the manifest links each existing reference to its entries |
 
 Evaluation as M-QCD: every point in MadLoop's quadruple-precision stage, `HelicityFilterLevel = 0`, every
 squared split order printed. What M-SM adds:
@@ -1001,10 +1001,21 @@ squared split order printed. What M-SM adds:
   at M_Z and M_W, VV01 at 4 TeV). The VV05 radiation-zero run evaluates one point per job: after MadLoop's
   initialisation at a Born-zero point, the regular neighbour's QCD double pole missed the universal one by 2.9e-5 in
   a three-point job (alone: 1e-15).
-* **Long one-point jobs.** A run with `split_points` may set `reuse_initial_call` (`--madloop-reuse-initial-call`:
-  the point's last initialization call is its value instead of a second evaluation). No committed run uses it: the
-  CM07 fixture (g g > t t~ e- e+ g under CMS) comes from the normal point jobs (~27 min each); reuse jobs on the
-  same points gave bitwise the same values (~13 min each).
+* **Long one-point jobs.** CM07 (g g > t t~ e- e+ g under CMS) runs one job per point (`split_points`, ~27 min
+  each).
+* **IR single pole.** `test_loop_reference_msm.py` checks the single pole of every EW sector photon exchange alone
+  reaches (lowest QCD order of the Borns) against the QED IR anomalous dimension with massive legs (2e-8 (alpha/2pi)
+  Born). It caught SC02: MadLoop's quadruple-precision Ninja stage had the e^6 sector of u u~ > mu- mu+ (massive
+  muon, m^2/s ~ 1e-9) wrong at 3 of 4 points with its own test passed; the run uses CutTools
+  (`madloop_params: MLReductionLib = 1`, a run's own parameters over the campaign's). Model properties the check
+  records (the engine on the same UFO reproduces them; MS-VALIDATE's rule 4 sees them): `ew-gmu-mm` keeps the
+  massless muon's counterterms (`massless_field_counterterms`: +3/2 Q^2 (alpha/2pi) Born per muon leg, up to
+  O(m_mu^2/M_W^2)); `ew-gmu-ckm` is not UV finite (`ir_single_pole_remnant`: the UFO's O(lambda^3) Wolfenstein
+  CKM is not unitary; -2.1e-2, -8.1e-4, -5.0e-5 (alpha/2pi) Born at lamWS = 0.2253, 0.1, 0.05).
+* **Double-pole summary.** The merge now leaves absolutely compared rows out of
+  `maximum_universal_double_pole_relative_error` and lists them in `universal_double_pole_absolute_rows`; M-QCD
+  fixtures merged before (`mqcd/udx_wpa_zero.json` has absolute rows) keep the old maximum over all rows (no test
+  reads it; a re-merge would change only that field).
 * **ST04** commits ew-validate's workspace run `udx_tbx_ew_mb` as `required/udx_tbx_ew_mb.json`, re-merged with
   Recola excluded (its massive-b setting differs by 3e-4..1e-3; §4.1).
 

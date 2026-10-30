@@ -251,8 +251,6 @@ def provider_run(args, data, root, run, work, points, extra, log, cpu):
     command += extra
     if run.get("subprocess"):
         command += ["--subprocess", run["subprocess"]]
-    if run.get("reuse_initial_call") and run.get("split_points") and "--helicities" not in extra:
-        command.append("--madloop-reuse-initial-call")
     if run.get("pdgs"):
         command += ["--pdgs", ",".join(map(str, run["pdgs"]))]
     if cpu is not None:

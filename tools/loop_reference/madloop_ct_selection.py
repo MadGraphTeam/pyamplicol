@@ -103,13 +103,20 @@ def classify(
             match = re.search(r"AMPL\([123],(\d+)\)", statement)
             if not match:
                 continue
-            text = statement[statement.index("(") + 1 :] if statement.startswith("CALL ") else statement
+            text = (
+                statement[statement.index("(") + 1 :]
+                if statement.startswith("CALL ")
+                else statement
+            )
             text = ufo_names(text, uvct_tokens)
             uvct.setdefault(int(match[1]), set()).update(
-                name for name, pattern in groups.items() if pattern.search(text))
+                name for name, pattern in groups.items() if pattern.search(text)
+            )
     for index, names in uvct.items():
         if index in found or len(names) > 1:
-            raise ValueError(f"UV counterterm amplitude {index} is ambiguous ({sorted(names)})")
+            raise ValueError(
+                f"UV counterterm amplitude {index} is ambiguous ({sorted(names)})"
+            )
         found[index] = {names.pop() if names else "rest"}
     total = int(re.search(r"NCTAMPS=(\d+)", (process / "loop_matrix.f").read_text())[1])
     if set(found) != set(range(1, total + 1)):
@@ -131,9 +138,13 @@ def main() -> int:
     )
     parser.add_argument("--alpha-s", required=True)
     parser.add_argument("--group", action="append", default=[], metavar="NAME=REGEX")
-    parser.add_argument("--ct-couplings", type=Path, help="the export's ct_couplings.json")
+    parser.add_argument(
+        "--ct-couplings", type=Path, help="the export's ct_couplings.json"
+    )
     parser.add_argument("--export", type=Path, help="default: WORK/madloop-export")
-    parser.add_argument("--subprocess", help="subprocess directory (default: the export's only one)")
+    parser.add_argument(
+        "--subprocess", help="subprocess directory (default: the export's only one)"
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     groups = {}
@@ -146,7 +157,9 @@ def main() -> int:
     if args.subprocess:
         process = export / "SubProcesses" / args.subprocess
     else:
-        (process,) = sorted(p for p in (export / "SubProcesses").glob("P*_*") if p.is_dir())
+        (process,) = sorted(
+            p for p in (export / "SubProcesses").glob("P*_*") if p.is_dir()
+        )
     tokens = None
     if args.ct_couplings:
         record = json.loads(args.ct_couplings.read_text())
@@ -175,7 +188,9 @@ def main() -> int:
         "orders": args.orders,
         "alpha_s": args.alpha_s,
         "groups": {name: pattern.pattern for name, pattern in groups.items()},
-        "classified_by": "UFO couplings (ct_couplings.json)" if tokens else "call names",
+        "classified_by": "UFO couplings (ct_couplings.json)"
+        if tokens
+        else "call names",
         "ct_amplitude_counts": {
             name: sum(1 for kind in kinds.values() if kind == name)
             for name in ("rest", *groups)

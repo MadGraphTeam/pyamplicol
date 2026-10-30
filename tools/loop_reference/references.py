@@ -997,11 +997,6 @@ def command_run(args):
                       f"{value(spec['scheme_data'], 'aS')} {args.madloop_accuracy} "
                       f"{0 if production or ctmode is not None else 1}\n{count}\n")
             stdin = header + "\n".join(point_lines(points)) + "\n"
-            if args.madloop_reuse_initial_call:
-                if count != 1:
-                    raise SystemExit("--madloop-reuse-initial-call needs a one-point job")
-                result["settings"]["initial_call_reused"] = (
-                    "one-point job: the point's last initialization call is its value (MADLOOP_REUSE_INITIAL_CALL)")
             if args.helicities:
                 tuples = (madloop_helicities(export, args.subprocess) if args.helicities == "all"
                           else [list(map(int, t.split(","))) for t in args.helicities.split(";")])
@@ -1014,9 +1009,7 @@ def command_run(args):
                     "value); helicity labels in MadLoop's HelConfigs.dat convention")
             if args.subprocess:
                 result["settings"]["subprocess_directory"] = args.subprocess
-            stdout, wall = run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu,
-                                      env={"MADLOOP_REUSE_INITIAL_CALL": "1"} if args.madloop_reuse_initial_call
-                                      else None)
+            stdout, wall = run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu)
         elif provider == "recola":
             root = args.recola.resolve()
             binary = run_dir / "recola-driver"
@@ -1738,9 +1731,6 @@ def main():
     run.add_argument("--madloop-quadruple", action="store_true",
                      help="send every point to MadLoop's quadruple-precision stage (its own library choice and "
                      "test at --madloop-accuracy); implies --madloop-require-quadruple")
-    run.add_argument("--madloop-reuse-initial-call", action="store_true",
-                     help="one-point MadLoop job: the point's last initialization call is its value (no second "
-                     "evaluation; recorded)")
     run.add_argument("--madloop-require-quadruple", action="store_true",
                      help="refuse a MadLoop run that returns double-precision values at any point")
     run.add_argument("--madloop-param", action="append", default=[], metavar="KEY=VALUE",
