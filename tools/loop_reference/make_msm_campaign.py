@@ -67,9 +67,13 @@ def run(rid, key=None, export=None, points=None, helicities=None, split_points=F
 
 
 def row(rid, cls, process, code, ref, tier="n", extras=(), runs_=(), fixtures=(), note=None, primary=None,
-        helicity_reference=None, sectors=None):
+        helicity_reference=None, sectors=None, r2_exports=None):
     e = {"row": rid, "class": cls, "process": process, "restriction_code": code, "reference_kind": ref,
          "tier": tier, "extras": list(extras), "runs": list(runs_), "existing_fixtures": list(fixtures)}
+    if r2_exports:
+        # Existing fixture -> the MadLoop exports giving its R2 name list, or why it has none
+        # (default: runs/required/<name>/madloop-export of required/<name>.json; mqcd_campaign.py existing-r2).
+        e["existing_r2_exports"] = r2_exports
     if sectors:
         e["sectors"] = sectors
     if note:
@@ -93,13 +97,22 @@ def F(fixture, half=True):
 
 EWI7 = "[EWI-7]"
 TOPUP = "top-up: the missing correction sector at the existing fixture's points (+ the mu_R = mu_0/2 copy of point 1)"
+CKM_REMNANT = ("not UV finite in the model: the e^6 single pole exceeds the IR prediction by ~-2.1e-2 (alpha/2pi) "
+               "Born, ~lambda^4 (the UFO's O(lambda^3) Wolfenstein CKM is not unitary; scheme ew-gmu-ckm) -> "
+               "MS-VALIDATE rule 4")
 R2RULE = "Recola primary: MadLoop's export omits R2 couplings the UFO-complete insertion has (R2 rule, §1.4)"
 
 # LL: lepton-only
+CTL = "runs/msm/{}/madloop-export"  # --no-compile export of a control fixture's MadLoop command (R2 name list)
+MM_CT = ("the model's muon counterterms are the massless muon's: single pole +3/2 Q^2 (alpha/2pi) Born per muon "
+         "leg (scheme ew-gmu-mm)")
 row("LL01", "W-lep", "e- e+ > mu- mu+", "G0", "E", extras=["ap", "uv"],
-    fixtures=["electroweak-mumu-control.json", "electroweak-mumu-scale-control.json"], sectors=["e^6"])
+    fixtures=["electroweak-mumu-control.json", "electroweak-mumu-scale-control.json"], sectors=["e^6"],
+    r2_exports={f: [CTL.format("emep_mummp_ew_ctl")] for f in ("electroweak-mumu-control.json",
+                                                                "electroweak-mumu-scale-control.json")})
 row("LL02", "W-lep", "e- e+ > mu- mu+ (massive mu)", "Gm", "E", fixtures=["electroweak-massive-mumu-control.json"],
-    sectors=["e^6"])
+    sectors=["e^6"], note=MM_CT,
+    r2_exports={"electroweak-massive-mumu-control.json": [CTL.format("emep_mummp_ew_mm_ctl")]})
 row("LL03", "W-lep", "e- e+ > e- e+", "Az", "E", fixtures=["required/emep_emep_ew.json"], sectors=["e^6"],
     note="lepton line through the loop")
 row("LL05", "W-lep", "e- e+ > w+ w-", "G0", "N", runs_=[run("emep_wpwm_ew")], sectors=["e^6"], note=EWI7)
@@ -181,8 +194,10 @@ row("TT03", "W-top", "g g > t t~ g", "G0", "N", extras=["ward"], runs_=[run("gg_
 row("TT04", "W-top", "t t~ > t t~ QCD=0", "G0", "E", fixtures=["required/ttx_ttx_ew.json"], sectors=["e^6"],
     primary="recola", note=f"{R2RULE} (7.7 %); root mixing; ew-validate's fixture {EWI7}")
 row("TT05", "W-top", "g t > t t t~", "G0", "E", fixtures=["goldstone-mixing.json"], sectors=["s^2e^6"],
+    r2_exports={"goldstone-mixing.json": ["runs/required/gt_tttx_ew/madloop-export"]},
     note="gt_tttx_ew (MadLoop double) + its omitted R2_G0tt_b component (goldstone-mixing.json omitted_r2)")
 row("TT06", "W-top", "g b > t t~ b (massive b)", "Gb", "E", fixtures=["goldstone-mixing.json"], sectors=["s^2e^6"],
+    r2_exports={"goldstone-mixing.json": ["runs/required/gb_ttxb_ew_mb/madloop-export"]},
     note=f"gb_ttxb_ew_mb (MadLoop double); binary64 point 0 outside the O1 scope (DD asserted) {EWI7}")
 row("TV01", "W-top", "g g > t t~ h", "G0", "N", runs_=[run("gg_ttxh_ew", points=S())], sectors=["s^6e^2", "s^4e^4"])
 row("TV02", "W-top", "g g > t t~ z", "G0", "N", runs_=[run("gg_ttxz_ew", points=S())], sectors=["s^6e^2", "s^4e^4"])
@@ -218,6 +233,7 @@ row("PI04", "W-photon", "a u > a u", "Ga", "N", extras=["a0"], runs_=[run("au_au
 # CM
 row("CM01", "W-CMS", "e- e+ > mu- mu+ CMS", "Gc", "E", extras=["ap", "sp:S3"], sectors=["e^6"],
     fixtures=["cms-ufo-standard-gmu.json", "cms-source-gmu.json"],
+    r2_exports={f: [CTL.format("emep_mummp_ew_cms_ctl")] for f in ("cms-ufo-standard-gmu.json", "cms-source-gmu.json")},
     note="MadLoop double references kept (§1.3); S3 widths x 0.001: the fixture's small-width control")
 row("CM02", "W-CMS", "u u~ > e- e+ CMS", "Gc", "N", extras=["sp:S2"], sectors=["s^2e^4", "e^6"],
     runs_=[run("uux_emep_cms", points=S(sqrt_s=["91.188", "100", "1000"]),
@@ -270,18 +286,18 @@ row("MP02", "W-multi", "p p > t t~", "G0", "N", sectors=["per Born subprocess"],
     note=MP_NOTE)
 # SC
 row("SC01", "W-scheme", "e- e+ > u u~", "G0", "E", extras=["nc"], fixtures=["electroweak-eeuu-control.json"],
-    sectors=["e^6"])
-row("SC02", "W-scheme", "u u~ > mu- mu+ (massive mu)", "Gm", "N",
+    sectors=["e^6"], r2_exports={"electroweak-eeuu-control.json": [CTL.format("emep_uux_ew_ctl")]})
+row("SC02", "W-scheme", "u u~ > mu- mu+ (massive mu)", "Gm", "N", note=MM_CT,
     runs_=[run("uux_mummp_ew_mm", points=S(), madloop_params={"MLReductionLib": "1"},
                note="CutTools only: MadLoop's quadruple-precision Ninja stage mis-evaluates the e^6 sector at "
                     "m_mu^2/s ~ 1e-9 (3 of 4 points, wrong single pole, undetected by its own test)")],
     sectors=["s^2e^4", "e^6"])
-row("SC03", "W-scheme", "u d~ > e+ ve (CKM)", "Gk", "N", runs_=[run("udx_epve_ew_ckm")], sectors=["s^2e^4", "e^6"],
-    note=EWI7)
+row("SC03", "W-scheme", "u d~ > e+ ve (CKM)", "Gk", "N",
+    runs_=[run("udx_epve_ew_ckm", note=CKM_REMNANT)], sectors=["s^2e^4", "e^6"], note=f"{CKM_REMNANT} {EWI7}")
 row("SC04", "W-scheme", "b b~ > w+ w- (massive b)", "Gb", "N", runs_=[run("bbx_wpwm_ew_mb", points=S())],
     sectors=["s^2e^4", "e^6"], note="O1 scope per point (m_b^2/s cancellation)")
 row("SC05", "W-scheme", "u u~ > e- e+ g g / d s b (epsilon sign)", "L5", "E", fixtures=["epsilon-sign.json"],
-    note="regression")
+    note="regression", r2_exports={"epsilon-sign.json": "QCD-only loop_sm reference: no EW R2"})
 row("SC06", "W-scheme", "w+ w- > w+ w-", "G0", "N", runs_=[run("wpwm_wpwm_ew", points=S())], sectors=["e^6"],
     note=f"massive initial states, root closure {EWI7}")
 row("SC07", "W-scheme", "h h > h h", "G0", "N", runs_=[run("hh_hh_ew", points=S())], sectors=["e^6"],

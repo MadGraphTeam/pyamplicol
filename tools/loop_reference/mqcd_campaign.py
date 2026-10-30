@@ -629,8 +629,70 @@ RUN_RECORDS = ("corrections", "complex_mass_scheme", "scheme_conventions", "tagg
                "madloop_r2_couplings", "export_parameters")
 
 
+EXISTING_R2 = "existing_r2_couplings.json"
+QCD_ONLY_R2 = "QCD-only reference: MadLoop inserts the complete QCD R2 set (M-QCD)"
+
+
+def existing_r2_targets(row, path):
+    """The MadLoop exports (paths below the reference root) giving an existing
+    fixture's R2 name list, or the reason it has none: the row's
+    existing_r2_exports, else runs/required/<name>/madloop-export of
+    required/<name>.json for an EW process (no list for a QCD-only one)."""
+    explicit = row.get("existing_r2_exports", {})
+    if path in explicit:
+        return explicit[path]
+    name = Path(path).stem
+    if not path.startswith("required/"):
+        raise SystemExit(f"{row['row']}: no R2 export known for {path} (set existing_r2_exports)")
+    spec = required_spec.load_process(required_spec.DEFAULT_SPEC, name)
+    if "EW" not in spec["corrections"]:
+        return QCD_ONLY_R2
+    return [f"runs/required/{name}/madloop-export"]
+
+
+def command_existing_r2(args, data, runs):
+    """Write the R2 name lists of the MadLoop exports behind the rows' existing
+    fixtures (references.madloop_r2_couplings, from each export's
+    ct_couplings.json) to <fixtures>/existing_r2_couplings.json."""
+    import references
+
+    root = reference_root(args)
+    exports, without = {}, {}
+    for row in data["rows"]:
+        for path in row["existing_fixtures"]:
+            targets = existing_r2_targets(row, path)
+            if isinstance(targets, str):
+                without[path] = targets
+                continue
+            for export in targets:
+                key = Path(export).parent.name
+                if key in exports:
+                    if path not in exports[key]["fixtures"]:
+                        exports[key]["fixtures"].append(path)
+                    continue
+                model = required_spec.load_process(required_spec.DEFAULT_SPEC, key, {
+                    "mg5": root / "sources/MG5_aMC_v3_7_0", "reference": root})["madloop"]["model"]
+                exports[key] = {"fixture": path, "fixtures": [path], "export": f"${{LOOP_REFERENCE_ROOT}}/{export}",
+                                "madloop_model": Path(model).name,
+                                **references.madloop_r2_couplings(root / export, model)}
+    content = {"description": "The UFO R2 couplings the MadLoop exports of the existing M-SM references insert "
+                              "(written by mqcd_campaign.py --campaign msm_campaign.json existing-r2: "
+                              "references.madloop_r2_couplings on each export's ct_couplings.json; called_as = the "
+                              "merged name MG5's call passes; the input of the rule-1 R2 correction, m-sm/PLAN.md "
+                              "§1.4). Keyed by process; fixture paths below tests/fixtures/loop; without_r2_list: "
+                              "the existing fixtures with no list and why.",
+               "exports": exports, "without_r2_list": without}
+    target = FIXTURES / LAYOUT["fixtures"] / EXISTING_R2
+    target.write_text(json.dumps(content, indent=1) + "\n")
+    print(f"{target.relative_to(REPOSITORY)}: {len(exports)} exports, {len(without)} fixtures without a list")
+
+
 def existing_entry(path, row, runs):
     item = {"fixture": path, "status": "committed" if (FIXTURES / path).exists() else "pending"}
+    if LAYOUT.get("r2_couplings"):
+        targets = existing_r2_targets(row, path)
+        item["r2_couplings"] = targets if isinstance(targets, str) else [
+            f"{LAYOUT['fixtures']}/{EXISTING_R2}#{Path(t).parent.name}" for t in targets]
     if item["status"] == "pending":
         return item
     fixture = json.loads((FIXTURES / path).read_text())
@@ -820,6 +882,7 @@ def main():
         p.add_argument("runs", nargs="+", help="run ids ('all': every run); for relocate: fixture paths below "
                                                "tests/fixtures/loop")
     sub.add_parser("manifest")
+    sub.add_parser("existing-r2", help="R2 name lists of the existing fixtures' exports (r2_couplings layouts)")
     sub.choices["export"].add_argument("--compile-jobs", type=int, default=4)
     sub.choices["points"].add_argument("--force", action="store_true")
     run = sub.choices["run"]
@@ -831,11 +894,12 @@ def main():
     run.add_argument("--skip-second", action="store_true")
     args = parser.parse_args()
     data, runs = load(args.campaign)
-    if args.command == "manifest":
+    if args.command in ("manifest", "existing-r2"):
         args.runs = []
     {"export": command_export, "points": command_points, "run": command_run, "combine": command_combine,
      "merge": command_merge, "fixture": command_fixture, "manifest": command_manifest,
-     "status": command_status, "relocate": command_relocate}[args.command](args, data, runs)
+     "status": command_status, "relocate": command_relocate,
+     "existing-r2": command_existing_r2}[args.command](args, data, runs)
 
 
 if __name__ == "__main__":
