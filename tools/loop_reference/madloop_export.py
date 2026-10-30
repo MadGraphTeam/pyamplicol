@@ -8,7 +8,8 @@ Ninja/Collier reducers and records split orders ``QCD, QED`` so the driver can
 select the Born-virtual interference by squared coupling order. Graph counts,
 the observed Born/loop amplitude orders, the compilation flags and the
 generation, export and compilation wall times are written to
-``generation.json`` next to the export.
+``generation.json`` next to the export, the UFO counterterm couplings behind
+its calls to ``ct_couplings.json`` (``madloop_ct_couplings.py``).
 
 The export is compiled with MG5_aMC's production flags (``production_make_opts``),
 not with the unset ``GLOBAL_FLAG`` (gfortran ``-O0``) of a bare standalone output.
@@ -114,6 +115,38 @@ def recompile(args):
     print("MADLOOP_EXPORT_DONE", output, flush=True)
 
 
+def complex_mass_scheme(spec):
+    return bool(spec["scheme_data"].get("complex_mass_scheme", False))
+
+
+def mg5_session(spec, mg5, recorder=None):
+    """An MG5_aMC command interface with the export settings and the process's
+    model imported (``recorder``: a ``madloop_ct_couplings.Recorder`` installed
+    before the import); no model pickle is written."""
+    _import_mg5(mg5)
+    logging.basicConfig(level=logging.INFO)
+    from models import import_ufo
+    from madgraph.interface.master_interface import MasterCmd
+
+    import_ufo.ReadWrite = False
+    if recorder is not None:
+        recorder.install()
+    command = MasterCmd()
+    for setting in (
+        "automatic_html_opening False",
+        "auto_update 0",
+        f"ninja {mg5}/HEPTools/ninja/lib",
+        f"collier {mg5}/HEPTools/collier",
+        "output_dependencies external",
+        "loop_optimized_output True",
+        f"complex_mass_scheme {complex_mass_scheme(spec)}",
+    ):
+        command.exec_cmd("set " + setting)
+    command.exec_cmd(f"import model {spec['madloop']['model']}")
+    command.exec_cmd(f"set gauge {spec['madloop'].get('gauge', 'Feynman')}")
+    return command
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--spec", type=Path, help="process specification JSON")
@@ -161,26 +194,11 @@ def main():
         status_path.write_text(json.dumps(report, indent=2) + "\n")
 
     write()
-    _import_mg5(mg5)
-    logging.basicConfig(level=logging.INFO)
-    from models import import_ufo
-    from madgraph.interface.master_interface import MasterCmd
+    import madloop_ct_couplings
 
-    import_ufo.ReadWrite = False
-    command = MasterCmd()
-    for setting in (
-        "automatic_html_opening False",
-        "auto_update 0",
-        f"ninja {mg5}/HEPTools/ninja/lib",
-        f"collier {mg5}/HEPTools/collier",
-        "output_dependencies external",
-        "loop_optimized_output True",
-        f"complex_mass_scheme {bool(spec['scheme_data'].get('complex_mass_scheme', False))}",
-    ):
-        command.exec_cmd("set " + setting)
     start = time.perf_counter()
-    command.exec_cmd(f"import model {madloop['model']}")
-    command.exec_cmd(f"set gauge {madloop.get('gauge', 'Feynman')}")
+    recorder = madloop_ct_couplings.Recorder()
+    command = mg5_session(spec, mg5, recorder)
     command.exec_cmd("generate " + madloop["process"])
     multiparticle = bool(spec.get("multiparticle"))
     if not command._curr_amps or (len(command._curr_amps) != 1 and not multiparticle):
@@ -261,7 +279,15 @@ def main():
     write()
     for amplitude in command._curr_amps:
         amplitude["process"].set("split_orders", ["QCD", "QED"])
+    # The UFO counterterm couplings behind the export's calls (MG5's coupling
+    # renamings), recorded before the output (which empties the loop diagrams'
+    # CT vertices) and checked against its sources after it.
+    record = madloop_ct_couplings.write_record(output, madloop["process"], madloop["model"],
+                                               complex_mass_scheme(spec), command._curr_amps, recorder)
+    if record["attached_CT_vertices"] != report["attached_CT_vertices"]:
+        raise RuntimeError(f"ct_couplings record: {record['attached_CT_vertices']} attached CT vertices")
     command.exec_cmd(f"output standalone {output}")
+    madloop_ct_couplings.check_export(output, record)
     report["source_export_s"] = time.perf_counter() - start - report["graph_generation_s"]
     report["subprocess_directories"] = sorted(p.name for p in (output / "SubProcesses").glob("P*") if p.is_dir())
     report["status"] = "exported"
