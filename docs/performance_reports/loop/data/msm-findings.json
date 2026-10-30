@@ -18,7 +18,7 @@
    ],
    "checks": "every check of the row: the executor is not formed (both input paths)",
    "evidence": "probe-rank (SC07, h h > h h QED): 12 of 87 families are written with rank 2 (schedules.build_trie: the largest summed segment q-degree of a ring) while plan_export._Exporter._step writes rank_in = the largest source storage and degree = the largest edge degree of a trie node (2 + 1 = 3), which rusticol's derive.rs / plan.rs refuse: a node joining rings of degree-0 and degree-1 vertices (W, Z, Goldstone and Higgs rings) over-runs every single ring. Candidate fix, tried in a scratch worktree (tmp/ms-validate/wt-fix, f1): the family's written rank bounds its steps, rank = max(trie.rank, max step rank_in + degree) in plan_export._Exporter.family (forward states and merged closures likewise): VH01 (Python inputs) 134/134 checks pass against MadLoop QP, SC07 (native inputs) every check but its vanishing single pole (ours 1e-33, MadLoop 1e-17; listed since)",
-   "status": "open: MS-MODEL's 4f99d7fe (integrated at 2ae8b88b: a trace step whose source storage plus content degree exceeds the family rank splits by source storage) fixes VV02 only (tmp/ms-validate/f2, 261/261 checks); SC07, VH01, VH02, VH03, TV03, V301 still fail ('a trace step above the family rank') and SC06 ('a step above the family rank'): one source's storage plus an edge's degree exceeds the trie rank in a single storage group. The candidate fix (the family's written rank bounds its steps, tmp/ms-validate/f1/plan_export_rank_2ae8b88b.patch) is being run on the nine rows (tmp/ms-validate/f3)",
+   "status": "open: MS-MODEL's 4f99d7fe (integrated at 2ae8b88b) fixes VV02 only (f2; at the branch head 261/261); SC04, SC06, SC07, TV03, V301, VH01, VH02, VH03 still refused at the plan load. The candidate fix (the family's written rank bounds its steps, tmp/ms-validate/f1/plan_export_rank_2ae8b88b.patch, one expression in plan_export._Exporter.family) evaluates all of them (f3): VH01, VH02, VH03 pass; SC07 but its vanishing single pole (keyed by sector since); TV03 but its vanishing QCD x EW Born interference (listed since); SC04 and SC06 within 1e-9 of MadLoop QP (rule 1 relaxed per the ~10:20 ruling) and SC04's binary64 point 1 (F9)",
    "routed": "coordinator (plan export; MS-MODEL integrated)"
   },
   {
@@ -109,9 +109,21 @@
     "CM07"
    ],
    "checks": "CM04 (Python inputs): rule 1 (Born and every sector ~4e-4), rule 4 (the virtual's poles against the engine's own operator 3e-5 to 2.6e-4: the Python path is not self-consistent), rule 5; CM07 on Python inputs (cm2): Born 5e-4, the EW sector's finite part 3e-3 off MadLoop CMS; CM07 on native inputs (the production route, cm3): rule 4's engine operator reads the Python-input Born",
-   "evidence": "probe-cm04 (point 0, binary64): Born Python inputs 1.0054755 at MT = 173, native inputs 1.00509349673877 = MadLoop CMS = the real-mass Born; at the default MT = 173.3 both paths give 1.0051884: a part of the Python path takes LMASS_MT at its default, not at the runtime MT. CM02, CM03, CM09 (nonzero widths, no zero-width Yukawa-tied mass) pass on Python inputs; probe-cm04/probe3: the loop masses are right (assemble._model_masses: LMASS_MT = 173 at the runtime MT = 173, the transformed model's records LMASS_MT := MT, ymt := MT, internal), so the Python path's Born trees are the suspect (TreeRows takes an external record at its default where the runtime parameters do not name it)",
+   "evidence": "probe-cm04 (point 0, binary64): Born Python inputs 1.0054755 at MT = 173, native inputs 1.00509349673877 = MadLoop CMS = the real-mass Born; at the default MT = 173.3 both paths give 1.0051884: a part of the Python path takes LMASS_MT at its default, not at the runtime MT. CM02, CM03, CM09 (nonzero widths, no zero-width Yukawa-tied mass) pass on Python inputs; probe-cm04/probe3: the loop masses are right (assemble._model_masses: LMASS_MT = 173 at the runtime MT = 173, the transformed model's records LMASS_MT := MT, ymt := MT, internal), so the Python path's Born trees are the suspect (TreeRows takes an external record at its default where the runtime parameters do not name it); CM07 on native inputs (cm3): rule 1 = MadLoop CMS QP to 6.9e-13 ([U4] on the production route), rule 4 and the Ward diagnostic (1.2e-3 of the scale; CM05's holds at 4e-31) miss through the Python-input Born and Ward inputs",
    "status": "open",
    "routed": "MS-CMS (the Python mass values of the complex-mass scheme: assemble._model_masses / _mass_values, artifact._real_parameters)"
+  },
+  {
+   "id": "F9",
+   "category": "engine: binary64 evaluation with massive initial b quarks",
+   "title": "b b~ > w+ w- (with_b_mass, MB = 4.5) at point 1: the binary64 evaluation returns ~1e-49 for the Born and every Laurent coefficient (double-double = MadLoop QP)",
+   "rows": [
+    "SC04"
+   ],
+   "checks": "rule 2 at point 1: the binary64 Born 1.13e-49 against 0.0115 (asserted: the Born has no estimate); the virtual's coefficients ~1e-50, flagged outside the binary64 scope (E ~ 1e50, not asserted)",
+   "evidence": "tmp/ms-validate/f3 (SC04 runs only with the candidate F1 fix, which changes no Born tree): point 1 = incoming b and b~ at E = 400, |p_z| = 399.97 (m_b^2/s = 3.2e-5); points 0, 2, 3 agree in binary64",
+   "status": "open (seen with the candidate F1 fix; the branch's SC04 stops at F1)",
+   "routed": "coordinator (binary64 tree/point inputs with massive external fermions)"
   }
  ],
  "coverage_notes": [
