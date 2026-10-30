@@ -279,11 +279,15 @@ def main():
     write()
     for amplitude in command._curr_amps:
         amplitude["process"].set("split_orders", ["QCD", "QED"])
+    # The UFO counterterm couplings behind the export's calls (MG5's coupling
+    # renamings), recorded before the output (which empties the loop diagrams'
+    # CT vertices) and checked against its sources after it.
+    record = madloop_ct_couplings.write_record(output, madloop["process"], madloop["model"],
+                                               complex_mass_scheme(spec), command._curr_amps, recorder)
+    if record["attached_CT_vertices"] != report["attached_CT_vertices"]:
+        raise RuntimeError(f"ct_couplings record: {record['attached_CT_vertices']} attached CT vertices")
     command.exec_cmd(f"output standalone {output}")
-    # The UFO counterterm couplings behind the export's calls (MG5's coupling renamings).
-    madloop_ct_couplings.write_record(output, madloop["process"], madloop["model"], complex_mass_scheme(spec),
-                                      command._curr_amps, recorder)
-    madloop_ct_couplings.check_export(output, json.loads(madloop_ct_couplings.record_path(output).read_text()))
+    madloop_ct_couplings.check_export(output, record)
     report["source_export_s"] = time.perf_counter() - start - report["graph_generation_s"]
     report["subprocess_directories"] = sorted(p.name for p in (output / "SubProcesses").glob("P*") if p.is_dir())
     report["status"] = "exported"
