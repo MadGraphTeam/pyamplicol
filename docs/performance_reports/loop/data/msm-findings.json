@@ -1,0 +1,45 @@
+{
+ "source": "triage of the failing checks of the M-SM campaign (tests/unit/test_loop_v2_msm_*.py, m-sm/PLAN.md §1.4), curated by MS-VALIDATE from the campaign records (MS-REF's references in a scratch merge of work/v2-ms-ref, 2026-10-30) and the probes named per finding (workspace/tmp/ms-validate/probe-*); no tolerance widened beyond the user's ~10:20 ruling",
+ "findings": [
+  {
+   "id": "F1",
+   "category": "engine: plan export (crash)",
+   "title": "The native plan loader refuses EW plans: 'loop v2 plan: a (trace) step above the family rank'",
+   "rows": ["SC06", "SC07", "TV03", "V301", "VH01", "VV02"],
+   "checks": "every check of the row: the executor is not formed (both input paths)",
+   "evidence": "probe-rank (SC07, h h > h h QED): 12 of 87 families are written with rank 2 (schedules.build_trie: the largest summed segment q-degree of a ring) while plan_export._Exporter._step writes rank_in = the largest source storage and degree = the largest edge degree of a trie node (2 + 1 = 3), which rusticol's derive.rs / plan.rs refuse; a node joining rings of degree-0 and degree-1 vertices (W, Z, Goldstone and Higgs rings) over-runs every single ring. Candidate fix: the family's written rank bounds its steps (max(trie.rank, max step rank_in + degree)); forward states and merged closures likewise",
+   "status": "open",
+   "routed": "coordinator (plan export owner)"
+  },
+  {
+   "id": "F2",
+   "category": "engine: scalar bindings (crash)",
+   "title": "t t~ > w+ w- (QED, G_mu with MB = ymb = 0 fixed) fails building the scalar evaluator: 'infinity coefficients are not supported for evaluation'",
+   "rows": ["SC08"],
+   "checks": "every check: native inputs fail in native_trees._parameter_program, Python inputs in scalar_bindings.ScalarBindingPlan (scalar_frontend.evaluator)",
+   "evidence": "probe-sc08: the same request on Python inputs fails at the same evaluator creation; the generation logs Symbolica's 'Created infinity by raising 0 to the power of -1' (also in passing rows). Likely an untaken branch of a decided conditional at the fixed MB = 0 (the UFO's '0 if MB == 0 else ...' b-mass counterterm parameters) kept in the bound expressions",
+   "status": "open",
+   "routed": "coordinator (scalar bindings / native parameter program owner)"
+  },
+  {
+   "id": "F3",
+   "category": "plan: Ward identity in the real-mass scheme",
+   "title": "The gluon (photon) Ward identity of the EW virtual fails where an external coloured (charged) particle has an absorptive self-energy at its mass",
+   "rows": ["TT03", "TV07", "VV05", "ST03"],
+   "checks": "ward: TT03 and TV07 double-double 3e-4 / 6e-5 of the scale (c = 1 and i, every gluon), VV05 photon c = i 4e-4; rule 1 = MadLoop at the physical polarisations",
+   "evidence": "probe-ward (TT03, double-double, leg 1): residual 3.3e-4 (c = 1), 5.2e-5 (c = i) of the scale at the card (t -> b W open), 5e-30 and 4e-29 at MW = 180, MZ = 200 (stable top), the bare, R2 and UV parts 1e-2 each: the real on-shell counterterms (Re Sigma) leave the external top's absorptive part unrenormalised, the scheme's property, not an engine defect (the identity holds under CMS)",
+   "status": "resolved in the manifest: TT03 and TV07 check Ward at a stable top (ward_parameters MW = 180, MZ = 200); VV05 (external W) and ST03 (external top and W) defer it to the CMS rows (CM05, CM07, CM09)",
+   "routed": "coordinator (PLAN §1.4 Ward text)"
+  },
+  {
+   "id": "F4",
+   "category": "references: MS-REF bookkeeping",
+   "title": "MS-REF's manifest marks the existing references of DY05, VJ03 and VV06 as superseded by their top-up runs, which hold another squared sector",
+   "rows": ["DY05", "VJ03", "VV06"],
+   "checks": "none (the harness keeps the existing fixture for its sector and the top-up for the new one)",
+   "evidence": "msm_references.json existing_references[].point_binding: binding false, superseded_by the top-up row, strict relative deviations ~1 (different sectors)",
+   "status": "open (minor)",
+   "routed": "MS-REF"
+  }
+ ]
+}
