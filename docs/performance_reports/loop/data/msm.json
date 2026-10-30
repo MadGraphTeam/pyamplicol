@@ -2,8 +2,8 @@
  "source": "tests/fixtures/loop/msm/manifest.json + campaign records (tests/unit/test_loop_v2_msm_*.py, PYAMPLICOL_MQCD_RESULTS)",
  "rules": "m-sm/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
  "branch": "work/v2-ms-validate",
- "records": "fs (70b47429: the non-CMS rows), cm1/cm2 (ecbf8f88) and cm3 (bb9cc017): complex-mass rows, mp1 (9f679158: VV02 after MS-MODEL's split, the MP expansion), cm4 (f30a55b2: CM07 after MS-CMS's fix round 1), mp3 (19c5e23e..f9cc1625: the MP members, CM04), d2 (23c5254e: the default tier VJ02 + TT01, TT01 nightly), f4 (5901ede1 = d3a4f891 + the F1 and F2 fixes: the F1 and F2 rows), r5 (baab3247, + the F9 fix and SC07's binary64 tolerance: SC04, SC07, TT06), r6 (157b9258: SC08, TT05, DY01) and d3 (157b9258: the default tier VJ02 + TT01), restriction smokes s3 (566e263f) and s4 (0c170bcf); later override earlier; non-CMS plans byte-identical across the CMS and MS-GEN merges",
- "natives": "loop-native-v2-slice-54ec03c5 (fs), loop-native-v2-slice-a359965c (cm1-cm4, mp1, mp3), loop-native-v2-slice-b27a8e5c (d2, f4, r5, r6, d3)",
+ "records": "fs (70b47429: the non-CMS rows), cm1/cm2 (ecbf8f88) and cm3 (bb9cc017): complex-mass rows, mp1 (9f679158: VV02 after MS-MODEL's split, the MP expansion), cm4 (f30a55b2: CM07 after MS-CMS's fix round 1), mp3 (19c5e23e..f9cc1625: the MP members, CM04), d2 (23c5254e: the default tier VJ02 + TT01, TT01 nightly), f4 (5901ede1 = d3a4f891 + the F1 and F2 fixes: the F1 and F2 rows), r5 (baab3247, + the F9 fix and SC07's binary64 tolerance: SC04, SC07, TT06), r6 (157b9258: SC08, TT05, DY01), d3 (157b9258: the default tier VJ02 + TT01) and r7 (bf5958c3: LL01, TT04, VJ01, SC09, TT02, PI03, JJ04), restriction smokes s3 (566e263f) and s4 (0c170bcf); later override earlier; non-CMS plans byte-identical across the CMS and MS-GEN merges",
+ "natives": "loop-native-v2-slice-54ec03c5 (fs), loop-native-v2-slice-a359965c (cm1-cm4, mp1, mp3), loop-native-v2-slice-b27a8e5c (d2, f4, r5, r6, d3, r7)",
  "counts": {
   "pass": 67,
   "partial": 3,
@@ -201,7 +201,7 @@
      "failures": 0,
      "max_dd_vs_reference": 1.947046687445993e-14,
      "max_binary64_vs_dd": 5.0155353260713564e-14,
-     "max_catani_dd": 1.9674684346908993e-30,
+     "max_catani_dd": 1.758884284039063e-30,
      "max_catani_binary64": 5.023631841997353e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -214,11 +214,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 254.04,
-      "export_s": 20.98,
-      "double_double_s_per_point": 5.826666666666667,
-      "double_s_per_point": 0.7200000000000001,
-      "ap_s": 10.52
+      "generate_s": 95.64,
+      "export_s": 21.28,
+      "double_double_s_per_point": 6.156666666666666,
+      "double_s_per_point": 0.77,
+      "ap_s": 9.77
      },
      "failed_checks": []
     }
@@ -229,7 +229,7 @@
    "delegated": {},
    "max_dd_vs_reference": 1.947046687445993e-14,
    "max_binary64_vs_dd": 5.0155353260713564e-14,
-   "max_catani_dd": 1.9674684346908993e-30,
+   "max_catani_dd": 1.758884284039063e-30,
    "max_ward_dd": null
   },
   {
@@ -1399,9 +1399,9 @@
      "passed": true,
      "checks": 142,
      "failures": 0,
-     "max_dd_vs_reference": 3.610631376471368e-15,
-     "max_binary64_vs_dd": 1.2156795256159093e-13,
-     "max_catani_dd": 3.279873968398597e-29,
+     "max_dd_vs_reference": 3.610631376471339e-15,
+     "max_binary64_vs_dd": 1.2156795256159096e-13,
+     "max_catani_dd": 5.6583191989522605e-30,
      "max_catani_binary64": 1.0928473222396133e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -1414,17 +1414,17 @@
       "checks": 8,
       "virtual_double": 0.0008172735281977198,
       "born_double": 1.52793181288289e-16,
-      "virtual_double-double": 9.908981072756328e-32,
+      "virtual_double-double": 1.2472036049710844e-31,
       "born_double-double": 1.9204219800545187e-32
      },
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 157.83,
-      "export_s": 11.98,
-      "double_double_s_per_point": 5.585,
-      "double_s_per_point": 0.48,
-      "ward_s": 209.2
+      "generate_s": 63.2,
+      "export_s": 11.72,
+      "double_double_s_per_point": 5.9775,
+      "double_s_per_point": 0.5175,
+      "ward_s": 107.87
      },
      "failed_checks": []
     }
@@ -1433,10 +1433,10 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 3.610631376471368e-15,
-   "max_binary64_vs_dd": 1.2156795256159093e-13,
-   "max_catani_dd": 3.279873968398597e-29,
-   "max_ward_dd": 9.908981072756328e-32
+   "max_dd_vs_reference": 3.610631376471339e-15,
+   "max_binary64_vs_dd": 1.2156795256159096e-13,
+   "max_catani_dd": 5.6583191989522605e-30,
+   "max_ward_dd": 1.2472036049710844e-31
   },
   {
    "id": "VJ02",
@@ -3134,7 +3134,7 @@
      "failures": 0,
      "max_dd_vs_reference": 2.6650789163564675e-14,
      "max_binary64_vs_dd": 5.217119872146446e-14,
-     "max_catani_dd": 9.99620612272059e-30,
+     "max_catani_dd": 1.0452692992412556e-29,
      "max_catani_binary64": 5.330490879920225e-14,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -3147,10 +3147,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 263.73,
-      "export_s": 26.82,
-      "double_double_s_per_point": 7.375,
-      "double_s_per_point": 1.4
+      "generate_s": 86.27,
+      "export_s": 26.35,
+      "double_double_s_per_point": 7.3375,
+      "double_s_per_point": 1.36
      },
      "failed_checks": []
     }
@@ -3161,7 +3161,7 @@
    "delegated": {},
    "max_dd_vs_reference": 2.6650789163564675e-14,
    "max_binary64_vs_dd": 5.217119872146446e-14,
-   "max_catani_dd": 9.99620612272059e-30,
+   "max_catani_dd": 1.0452692992412556e-29,
    "max_ward_dd": null
   },
   {
@@ -3376,14 +3376,14 @@
      "checks": 60,
      "failures": 0,
      "max_dd_vs_reference": 8.079629961285016e-15,
-     "max_binary64_vs_dd": 2.7668494830058496e-12,
-     "max_catani_dd": 2.1749433748076923e-30,
-     "max_catani_binary64": 2.7668494830058496e-12,
+     "max_binary64_vs_dd": 2.765526053535307e-12,
+     "max_catani_dd": 1.5178771552127965e-30,
+     "max_catani_binary64": 2.765526053535307e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 1.6102801520269268e-15,
-      "finite": 1.6820881923537296e-13,
-      "single_pole": 2.7623502195482214e-12,
+      "finite": 1.6786384626729392e-13,
+      "single_pole": 2.7610267900776787e-12,
       "double_pole": 0.0
      },
      "ward": null,
@@ -3412,11 +3412,11 @@
       }
      ],
      "timings": {
-      "generate_s": 266.32,
-      "export_s": 91.62,
-      "double_double_s_per_point": 6.4433333333333325,
-      "double_s_per_point": 0.09666666666666666,
-      "engine_catani_s": 6.95
+      "generate_s": 88.94,
+      "export_s": 67.29,
+      "double_double_s_per_point": 6.453333333333333,
+      "double_s_per_point": 0.08333333333333333,
+      "engine_catani_s": 6.82
      },
      "failed_checks": []
     }
@@ -3426,8 +3426,8 @@
    "nc": null,
    "delegated": {},
    "max_dd_vs_reference": 8.079629961285016e-15,
-   "max_binary64_vs_dd": 2.7668494830058496e-12,
-   "max_catani_dd": 2.1749433748076923e-30,
+   "max_binary64_vs_dd": 2.765526053535307e-12,
+   "max_catani_dd": 1.5178771552127965e-30,
    "max_ward_dd": null
   },
   {
@@ -4734,9 +4734,9 @@
      "passed": true,
      "checks": 254,
      "failures": 0,
-     "max_dd_vs_reference": 6.907725901939221e-13,
+     "max_dd_vs_reference": 6.90772590193922e-13,
      "max_binary64_vs_dd": 7.600716787010507e-12,
-     "max_catani_dd": 2.0115651466022365e-28,
+     "max_catani_dd": 2.444300709944409e-28,
      "max_catani_binary64": 6.848742622778526e-12,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -4749,10 +4749,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 281.9,
-      "export_s": 29.21,
-      "double_double_s_per_point": 14.0625,
-      "double_s_per_point": 3.38
+      "generate_s": 106.41,
+      "export_s": 29.63,
+      "double_double_s_per_point": 14.18,
+      "double_s_per_point": 3.32
      },
      "failed_checks": []
     }
@@ -4761,9 +4761,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 6.907725901939221e-13,
+   "max_dd_vs_reference": 6.90772590193922e-13,
    "max_binary64_vs_dd": 7.600716787010507e-12,
-   "max_catani_dd": 2.0115651466022365e-28,
+   "max_catani_dd": 2.444300709944409e-28,
    "max_ward_dd": null
   },
   {
@@ -5036,9 +5036,9 @@
      "passed": true,
      "checks": 230,
      "failures": 0,
-     "max_dd_vs_reference": 1.9083392420065844e-15,
+     "max_dd_vs_reference": 1.908339242006584e-15,
      "max_binary64_vs_dd": 2.9161434917646016e-13,
-     "max_catani_dd": 1.7013345631704883e-31,
+     "max_catani_dd": 2.2318590542346137e-31,
      "max_catani_binary64": 2.9295113545101297e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -5051,10 +5051,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 159.92,
-      "export_s": 9.72,
-      "double_double_s_per_point": 6.04,
-      "double_s_per_point": 0.765
+      "generate_s": 62.93,
+      "export_s": 8.93,
+      "double_double_s_per_point": 6.2225,
+      "double_s_per_point": 0.79
      },
      "failed_checks": []
     }
@@ -5063,9 +5063,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 1.9083392420065844e-15,
+   "max_dd_vs_reference": 1.908339242006584e-15,
    "max_binary64_vs_dd": 2.9161434917646016e-13,
-   "max_catani_dd": 1.7013345631704883e-31,
+   "max_catani_dd": 2.2318590542346137e-31,
    "max_ward_dd": null
   },
   {
@@ -7709,13 +7709,13 @@
      "failures": 0,
      "max_dd_vs_reference": 7.714891868180339e-14,
      "max_binary64_vs_dd": 2.039849860390016e-11,
-     "max_catani_dd": 1.5165427295663099e-30,
-     "max_catani_binary64": 5.295577658648838e-13,
+     "max_catani_dd": 8.240612916534825e-31,
+     "max_catani_binary64": 5.272172962714552e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
       "born": 6.965223513848155e-15,
       "finite": 2.04066312059194e-11,
-      "single_pole": 2.0165492367978272e-10,
+      "single_pole": 2.016541829474853e-10,
       "double_pole": 0.0
      },
      "ward": null,
@@ -7725,8 +7725,8 @@
        "point": 0,
        "sector": "QED^6",
        "coefficient": "single_pole",
-       "E": 2.4274335402557206e-09,
-       "true_error": 2.0165224004601225e-10
+       "E": 2.4274339418075058e-09,
+       "true_error": 2.0165149931371483e-10
       },
       {
        "point": 0,
@@ -7751,11 +7751,11 @@
       }
      ],
      "timings": {
-      "generate_s": 260.32,
-      "export_s": 92.87,
-      "double_double_s_per_point": 5.973333333333334,
-      "double_s_per_point": 0.08666666666666667,
-      "engine_catani_s": 7.1
+      "generate_s": 81.82,
+      "export_s": 65.21,
+      "double_double_s_per_point": 5.88,
+      "double_s_per_point": 0.07666666666666667,
+      "engine_catani_s": 7.19
      },
      "failed_checks": []
     }
@@ -7766,7 +7766,7 @@
    "delegated": {},
    "max_dd_vs_reference": 7.714891868180339e-14,
    "max_binary64_vs_dd": 2.039849860390016e-11,
-   "max_catani_dd": 1.5165427295663099e-30,
+   "max_catani_dd": 8.240612916534825e-31,
    "max_ward_dd": null
   }
  ],
