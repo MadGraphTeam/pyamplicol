@@ -287,10 +287,22 @@ row("SC09", "W-scheme", "t t~ > z h QCD=0", "G0", "E", fixtures=["required/ttx_z
     primary="recola", note=f"{R2RULE} (2.5 %); root mixing; ew-validate's fixture {EWI7}")
 
 # Rule 5 (m-sm/PLAN.md §1.4): bare, R2 and UV-CT components per sector on one row per class
-# (madloop_components.py; the uv extras DY01, VJ02, JJ01 and one row of every other class).
-for rid in ("uux_emep_ew", "udx_wpg_ew", "uux_ddx_ew", "emep_ttx_ew", "uux_ttx_ew", "ub_dt_ew", "ag_uux_ew",
-            "gg_ttx_cms", "udx_epve_ew_ckm"):
+# (madloop_components.py; the uv extras DY01, VJ02, JJ01, TT01 (its technical-card run) and one row of every
+# other class).
+for rid in ("uux_emep_ew", "udx_wpg_ew", "uux_ddx_ew", "emep_ttx_ew", "uux_ttx_ew", "gg_ttx_ew_tech", "ub_dt_ew",
+            "ag_uux_ew", "gg_ttx_cms", "pp_emep_ew_P2_uux_emep", "udx_epve_ew_ckm"):
     runs[rid]["components"] = f"required/msm/components/{rid}.json"
+# A row's components: those of its own runs; a uv row without a MadLoop run (LL01: an existing control
+# fixture) names its class's.
+for e in rows:
+    own = [runs[r]["components"] for r in e["runs"] if runs[r].get("components")]
+    if not own and "uv" in e["extras"]:
+        own = [runs[r]["components"] for c in rows if c["class"] == e["class"] for r in c["runs"]
+               if runs[r].get("components")][:1]
+        if not own:
+            raise ValueError(f"{e['row']}: no component run in class {e['class']}")
+    if own:
+        e["components"] = own
 
 campaign = {
     "description": "M-SM validation campaign (workspace/reports/engine-v2/m-sm/PLAN.md §4): the 70 core rows of §4.2 "

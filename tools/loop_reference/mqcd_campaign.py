@@ -669,6 +669,8 @@ def command_manifest(args, data, runs):
             entry["helicity_reference"] = f"{LAYOUT['fixtures']}/{row['helicity_reference']}.json"
         if row.get("primary_provider"):
             entry["primary_provider"] = row["primary_provider"]
+        if row.get("components"):
+            entry["components"] = row["components"]  # the row's rule 5 components (madloop_components.py)
         rows.append(entry)
     manifest = {
         "schema": LAYOUT["schema"],
