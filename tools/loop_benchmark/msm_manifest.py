@@ -158,18 +158,10 @@ def photons(tagged, sector=None):
 
 
 N = "N"  # a new MadLoop job (MS-REF)
-# EWI-7 (ew-validate) brings its fixtures (ttx_ttx_ew, ttx_zh_ew, udx_tbx_ew);
-# its rows activate when they are on the branch (re-run this script after
-# merging the slice that integrates it).
-EWI7 = (WT / REQ / "ttx_ttx_ew.json").is_file()
-
-
-def ewi7(name, providers=None):
-    """(reference, waits) of a row on an EWI-7 fixture."""
-
-    if EWI7:
-        return req(name, providers), None
-    return None, "EWI-7"
+# Packages integrated on the slice: a row stops waiting for them (EWI-7,
+# ew-validate, integrated at 753120c3 with its fixtures ttx_ttx_ew,
+# ttx_zh_ew, udx_tbx_ew).
+LANDED = {"EWI-7"}
 
 
 # ---- LL: lepton-only
@@ -602,10 +594,10 @@ row(
     [(0, 6)],
     [(0, 2)],
     "E required/ttx_ttx_ew (ew-validate; Recola primary: R2 rule, 7.7 %)",
-    ewi7("ttx_ttx_ew", ["recola", "madloop"])[0],
+    req("ttx_ttx_ew", ["recola", "madloop"]),
     [],
     ["2->2", "root-mixing", "r2-rule"],
-    waits=ewi7("ttx_ttx_ew")[1],
+    waits="EWI-7",
 )
 row(
     "TT05",
@@ -631,7 +623,11 @@ row(
     [(2, 6)],
     [(1, 2)],
     "E goldstone-mixing.json (gb_ttxb_ew_mb, MadLoop double)",
-    None,
+    {
+        "format": "madloop-components",
+        "path": f"{FIX}/goldstone-mixing.json",
+        "key": "gb_ttxb_ew_mb",
+    },
     [],
     ["2->3", "massive:b"],
     waits="EWI-7",
@@ -746,10 +742,10 @@ row(
     [(0, 6)],
     [(0, 2)],
     "E required/udx_tbx_ew (ew-validate; MadLoop + Recola)",
-    ewi7("udx_tbx_ew")[0],
+    req("udx_tbx_ew"),
     [],
     ["2->2", "single-top"],
-    waits=ewi7("udx_tbx_ew")[1],
+    waits="EWI-7",
 )
 row(
     "ST03",
@@ -1146,10 +1142,10 @@ row(
     [(0, 6)],
     [(0, 2)],
     "E required/ttx_zh_ew (ew-validate; MadLoop + Recola; Recola primary: R2 rule, 2.5 %)",
-    ewi7("ttx_zh_ew", ["recola", "madloop"])[0],
+    req("ttx_zh_ew", ["recola", "madloop"]),
     [],
     ["2->2", "root-mixing", "r2-rule"],
-    waits=ewi7("ttx_zh_ew")[1],
+    waits="EWI-7",
 )
 
 assert len(R) == 70, len(R)
@@ -1293,6 +1289,7 @@ for r in R:
     reference = r["ref"]
     waits = r["waits"]
     waits = tuple(waits) if isinstance(waits, tuple) else ((waits,) if waits else ())
+    waits = tuple(w for w in waits if w not in LANDED)
     status = "active" if reference and not waits else "pending"
     tier = r["tier"]
     count = point_count(reference)
