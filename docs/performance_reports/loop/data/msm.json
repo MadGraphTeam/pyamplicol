@@ -1,9 +1,9 @@
 {
- "source": "tests/fixtures/loop/msm/manifest.json + campaign records (tests/unit/test_loop_v2_msm_*.py, PYAMPLICOL_MQCD_RESULTS)",
+ "source": "tests/fixtures/loop/msm/manifest.json + campaign records (tests/unit/test_loop_v2_msm_*.py, PYAMPLICOL_MQCD_RESULTS) + JUnit XML of the delegated columns",
  "rules": "m-sm/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
  "branch": "work/v2-ms-validate",
- "records": "fs (70b47429: the non-CMS rows), cm1/cm2 (ecbf8f88) and cm3 (bb9cc017): complex-mass rows, mp1 (9f679158: VV02 after MS-MODEL's split, the MP expansion), cm4 (f30a55b2: CM07 after MS-CMS's fix round 1), mp3 (19c5e23e..f9cc1625: the MP members, CM04), d2 (23c5254e: the default tier VJ02 + TT01, TT01 nightly), f4 (5901ede1 = d3a4f891 + the F1 and F2 fixes: the F1 and F2 rows), r5 (baab3247, + the F9 fix and SC07's binary64 tolerance: SC04, SC07, TT06), r6 (157b9258: SC08, TT05, DY01), d3 (157b9258: the default tier VJ02 + TT01) and r7 (bf5958c3: LL01, TT04, VJ01, SC09, TT02, PI03, JJ04), restriction smokes s3 (566e263f) and s4 (0c170bcf); later override earlier; non-CMS plans byte-identical across the CMS and MS-GEN merges",
- "natives": "loop-native-v2-slice-54ec03c5 (fs), loop-native-v2-slice-a359965c (cm1-cm4, mp1, mp3), loop-native-v2-slice-b27a8e5c (d2, f4, r5, r6, d3, r7)",
+ "records": "fs (70b47429: the non-CMS rows), cm1/cm2 (ecbf8f88) and cm3 (bb9cc017): complex-mass rows, mp1 (9f679158: VV02 after MS-MODEL's split, the MP expansion), cm4 (f30a55b2: CM07 after MS-CMS's fix round 1), mp3 (19c5e23e..f9cc1625: the MP members, CM04), d2 (23c5254e: the default tier VJ02 + TT01, TT01 nightly), f4 (5901ede1 = d3a4f891 + the F1 and F2 fixes: the F1 and F2 rows), r5 (baab3247, + the F9 fix and SC07's binary64 tolerance: SC04, SC07, TT06), r6 (157b9258: SC08, TT05, DY01), d3 (157b9258: the default tier VJ02 + TT01) and r7 (bf5958c3: LL01, TT04, VJ01, SC09, TT02, PI03, JJ04), restriction smokes s3 (566e263f) and s4 (0c170bcf); later override earlier; non-CMS plans byte-identical across the CMS and MS-GEN merges; delegated uv_eps_ir0 (DY01, TT01): MS-POLES's technical-card split tests, JUnit ps1 at 54120d93 (slice 42b2794f merged)",
+ "natives": "loop-native-v2-slice-54ec03c5 (fs), loop-native-v2-slice-a359965c (cm1-cm4, mp1, mp3), loop-native-v2-slice-b27a8e5c (d2, f4, r5, r6, d3, r7), loop-native-ms-poles-a7978803 (ps1; digest a79be708, = the merged tree's inputs)",
  "counts": {
   "pass": 67,
   "partial": 3,
@@ -874,7 +874,14 @@
     }
    ],
    "nc": null,
-   "delegated": {},
+   "delegated": {
+    "uv_eps_ir0": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_ew_pole_split.py::test_dy01_technical_card_pole_split_equals_madloop": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 1.168520723990611e-15,
    "max_binary64_vs_dd": 1.9288498937140046e-14,
    "max_catani_dd": 2.714286187796471e-31,
@@ -3081,7 +3088,14 @@
    "missing_records": [],
    "variants": [],
    "nc": null,
-   "delegated": {},
+   "delegated": {
+    "uv_eps_ir0": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_ew_pole_split.py::test_tt01_technical_card_pole_split_equals_madloop": "passed"
+     }
+    }
+   },
    "max_dd_vs_reference": 5.877075609107218e-15,
    "max_binary64_vs_dd": 8.165067612493781e-15,
    "max_catani_dd": 6.6241702926717705e-31,
