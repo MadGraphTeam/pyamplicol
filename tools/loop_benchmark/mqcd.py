@@ -3971,7 +3971,7 @@ class Campaign:
 
         try:
             return self.report(name, tier, points=points)
-        except Exception as error:  # noqa: BLE001 - a crash is the row's record
+        except Exception as error:  # a crash is the row's record
             LOG.exception("%s: raised", name)
             row = self.rows[name]
             return RowReport(name, tier, tuple(points or row.tier_points(tier)), [

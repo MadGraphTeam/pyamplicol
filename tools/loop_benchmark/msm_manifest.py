@@ -118,7 +118,12 @@ CONTROL_PARAMETERS = {
 CONTROL_POINTS = "tools/loop_reference/uudd_qcd.json"
 # CM01's card widths (``cms-source-gmu.json`` records none; its finite block
 # is the card's, as the ufo-standard fixture's).
-CM01_CARD_WIDTHS = {"WZ": "2.49877", "WW": "2.09291", "WT": "1.37758", "WH": "0.00407468"}
+CM01_CARD_WIDTHS = {
+    "WZ": "2.49877",
+    "WW": "2.09291",
+    "WT": "1.37758",
+    "WH": "0.00407468",
+}
 ALPHA0_INVERSE = "137.035999"
 
 R = []
@@ -848,7 +853,7 @@ row(
     ["a0"],
     ["2->2", "photon:initial"],
     waits=("MS-REF", "MS-PHOTON"),
-    notes="the default photon tags (\"final\"): both initial photons untagged, raw MadLoop and -gamma_gamma/eps each in rule 4; the twin @all tags both (Q1 (a), MG5_aMC's !a! on initial photons)",
+    notes='the default photon tags ("final"): both initial photons untagged, raw MadLoop and -gamma_gamma/eps each in rule 4; the twin @all tags both (Q1 (a), MG5_aMC\'s !a! on initial photons)',
     photon_twin={"name": "all", "code": "Ga", "external_photons": "all", "tagged": 2},
 )
 row(
@@ -920,19 +925,47 @@ row(
                 "path": f"{FIX}/{fixture}",
                 "block": block,
                 "mu_r2": "1000000",
-                "parameters": {k: v for k, v in CONTROL_PARAMETERS.items() if k != "ymt"},
-                **({"widths": CM01_CARD_WIDTHS} if fixture == "cms-source-gmu.json" else {}),
+                "parameters": {
+                    k: v for k, v in CONTROL_PARAMETERS.items() if k != "ymt"
+                },
+                **(
+                    {"widths": CM01_CARD_WIDTHS}
+                    if fixture == "cms-source-gmu.json"
+                    else {}
+                ),
             },
-            **({"reglog_convention": "source"} if fixture == "cms-source-gmu.json" else {}),
+            **(
+                {"reglog_convention": "source"}
+                if fixture == "cms-source-gmu.json"
+                else {}
+            ),
             "points": {"nightly": list(range(count))},
             "extras": [],
             "extras_pending": {},
             "notes": note,
         }
         for name, fixture, block, note, count in (
-            ("zero", "cms-ufo-standard-gmu.json", "zero", "every width zero at runtime (the real-mass values)", 3),
-            ("small", "cms-ufo-standard-gmu.json", "small", "S3: the widths x 0.001 at runtime", 3),
-            ("source", "cms-source-gmu.json", "finite", "the G_mu source's reglog override (reglog_convention source), the card widths", 4),
+            (
+                "zero",
+                "cms-ufo-standard-gmu.json",
+                "zero",
+                "every width zero at runtime (the real-mass values)",
+                3,
+            ),
+            (
+                "small",
+                "cms-ufo-standard-gmu.json",
+                "small",
+                "S3: the widths x 0.001 at runtime",
+                3,
+            ),
+            (
+                "source",
+                "cms-source-gmu.json",
+                "finite",
+                "the G_mu source's reglog override (reglog_convention source), the card widths",
+                4,
+            ),
         )
     ],
 )
@@ -1277,7 +1310,9 @@ def conversion_values_cms(data, counterterm="eCoup_DGmua0_UV_EW"):
     )
     from pyamplicol.models.loop_import import load_raw_loop_model
 
-    raw = load_raw_loop_model(str(GMU_UFO), restriction=data["restriction"] or "default")
+    raw = load_raw_loop_model(
+        str(GMU_UFO), restriction=data["restriction"] or "default"
+    )
     names = {record["name"] for record in raw.collections["parameters"]}
     fixed = {k: v for k, v in data["fixed_parameters"].items() if k in names}
     scheme = complex_mass_scheme(raw, fixed_parameters=fixed)
@@ -1306,7 +1341,9 @@ def conversion_values_cms(data, counterterm="eCoup_DGmua0_UV_EW"):
         key = "MDL_" + counterterm.upper() + "_FIN_"
         theirs = complex(*exported["values"][key][index])
         if abs(finite - theirs) > 1e-12 * abs(theirs):
-            raise SystemExit(f"conversion at MU_R {mu}: ours {finite}, the export's {theirs}")
+            raise SystemExit(
+                f"conversion at MU_R {mu}: ours {finite}, the export's {theirs}"
+            )
         out.append([repr(pole.real), repr(finite.real)])
     return out
 
@@ -1535,7 +1572,9 @@ def add_photon_twin(r):
     _model, restriction, fixed, scheme, _alpha = CODES[twin["code"]]
     data = _fixture(r["ref"]["path"].removeprefix(f"{FIX}/"))
     reference = {k: v for k, v in r["ref"].items() if k != "photon_conversion"}
-    reference["photon_conversion"] = _photon_spec(data, _ew_sector(data), n=twin["tagged"])
+    reference["photon_conversion"] = _photon_spec(
+        data, _ew_sector(data), n=twin["tagged"]
+    )
     r["more"].setdefault("variants", []).append({
         "name": twin["name"],
         "gating": True,
@@ -1868,9 +1907,21 @@ MULTIPARTICLE_ROWS = {
         "skipped_members": ["g a > e- e+", "g g > e- e+"],
         "madloop_loop_squared": ["P0_gg_emep"],
         "parts": {
-            "required/msm/pp_emep_ew_P2_uux_emep.json": ("P2", "u u~ > e- e+", [(0, 2)]),
-            "required/msm/pp_emep_ew_P3_ddx_emep.json": ("P3", "d d~ > e- e+", [(0, 2)]),
-            "required/msm/pp_emep_ew_P4_bbx_emep.json": ("P4", "b b~ > e- e+", [(0, 2)]),
+            "required/msm/pp_emep_ew_P2_uux_emep.json": (
+                "P2",
+                "u u~ > e- e+",
+                [(0, 2)],
+            ),
+            "required/msm/pp_emep_ew_P3_ddx_emep.json": (
+                "P3",
+                "d d~ > e- e+",
+                [(0, 2)],
+            ),
+            "required/msm/pp_emep_ew_P4_bbx_emep.json": (
+                "P4",
+                "b b~ > e- e+",
+                [(0, 2)],
+            ),
             "required/msm/pp_emep_ew_P5_aa_emep.json": ("P5", "a a > e- e+", [(0, 2)]),
         },
     },
@@ -1902,10 +1953,22 @@ MULTIPARTICLE_ROWS = {
         "parts": {
             "required/msm/pp_ttx_ew_P0_ga_ttx.json": ("P0", "g a > t t~", [(1, 1)]),
             "required/msm/pp_ttx_ew_P2_gg_ttx.json": ("P2", "g g > t t~", [(2, 0)]),
-            "required/msm/pp_ttx_ew_P3_uux_ttx.json": ("P3", "u u~ > t t~", [(2, 0), (0, 2)]),
-            "required/msm/pp_ttx_ew_P4_ddx_ttx.json": ("P4", "d d~ > t t~", [(2, 0), (0, 2)]),
+            "required/msm/pp_ttx_ew_P3_uux_ttx.json": (
+                "P3",
+                "u u~ > t t~",
+                [(2, 0), (0, 2)],
+            ),
+            "required/msm/pp_ttx_ew_P4_ddx_ttx.json": (
+                "P4",
+                "d d~ > t t~",
+                [(2, 0), (0, 2)],
+            ),
             "required/msm/pp_ttx_ew_P5_aa_ttx.json": ("P5", "a a > t t~", [(0, 2)]),
-            "required/msm/pp_ttx_ew_P6_bbx_ttx.json": ("P6", "b b~ > t t~", [(2, 0), (0, 2)]),
+            "required/msm/pp_ttx_ew_P6_bbx_ttx.json": (
+                "P6",
+                "b b~ > t t~",
+                [(2, 0), (0, 2)],
+            ),
         },
     },
 }
@@ -2247,7 +2310,11 @@ def packing_units(entry):
     return ([shared] if shared else []) + [[i] for i in ids if i in own]
 
 
-units = [unit for entry in sorted(rows, key=lambda e: e["id"]) for unit in packing_units(entry)]
+units = [
+    unit
+    for entry in sorted(rows, key=lambda e: e["id"])
+    for unit in packing_units(entry)
+]
 jobs = []
 for ids in units:
     seconds = sum(
