@@ -3058,7 +3058,13 @@
          "revision": "71e2041e",
          "status": "measured"
         }
-       ]
+       ],
+       "note": {
+        "kind": "run conditions",
+        "label": "model: the workspace's py3 G_mu copy",
+        "reason": "timed on reference/models/loop_qcd_qed_sm_Gmu_py3 (the harness's processes.json default, as MS-VALIDATE's earlier run), not on the shipped patched UFO (UFOmodeldb 6ca4b120 + the user's issue-1 patch) that the M-SM campaign validated; an indicative timing, no verdict",
+        "source": "milestone.json cell_notes (G1 campaign m1031-msm (msm-g1.json ew_model, STATE.md))"
+       }
       },
       "providers": {
        "madloop": {
@@ -3119,13 +3125,13 @@
         ]
        }
       },
-      "gate_rule_reason": "m-sm/PLAN.md [U5] and the milestone plan: the EW row is timed and reported at M-SM; its speed gate binds in M-FINAL",
+      "gate_rule_reason": "the EW speed gate binds in M-FINAL (m-sm/PLAN.md [U5] and the milestone plan)",
       "gate_rule_source": "milestone.json status_notes.notes[gg_ttxemepg_ew]"
      },
      "leading_colour": {
       "main": {
        "status": "not supported",
-       "reason": "not supported by design: EW LC/NLC (user 2026-10-30 Q4; typed colour-declaration-coverage)",
+       "reason": "refused by design: EW LC/NLC is never supported (user 2026-10-30, Q4; typed colour-declaration-coverage)",
        "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]"
       }
      },

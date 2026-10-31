@@ -379,6 +379,53 @@ def build() -> dict:
                 "status": r["status"],
             }
         )
+
+    # Rule 4 in double-double (the Catani column) at its standard tolerance,
+    # and the rows where the user's ruling of 2026-10-29 ~10:20 relaxes it
+    # (manifest "relaxed" rule "4dd"), named apart with their tolerance.
+    relaxed_rows = [
+        {"row": r["id"], "value": r["max_catani_dd"], "tolerance": r["relaxed"]["4dd"]}
+        for r in rows
+        if r["max_catani_dd"] is not None and "4dd" in r.get("relaxed", {})
+    ]
+    standard = _largest(
+        [
+            (r["max_catani_dd"], r["id"])
+            for r in rows
+            if r["id"] not in {x["row"] for x in relaxed_rows}
+        ]
+    )
+    named = {}
+    for f in findings:
+        for x in f["rows"]:
+            named.setdefault(x.split("@")[0], []).append(f["id"])
+    appendix = [
+        {
+            "row": r["id"],
+            "class": r["class"],
+            "process": r["process"],
+            "model": r["model"],
+            "restriction": r["restriction"],
+            "corrections": r["corrections"],
+            "points": {t: len(x["points"]) for t, x in r["tiers"].items()},
+            "inputs": manifest[r["id"]].get("inputs", "python"),
+            "reference": reference_name(r),
+            "dd_vs_reference": r["max_dd_vs_reference"],
+            "binary64_vs_dd": r["max_binary64_vs_dd"],
+            "catani_dd": r["max_catani_dd"],
+            "catani": r.get("catani"),
+            "relaxed": r.get("relaxed", {}),
+            "extras": r["extras"],
+            "variants": [
+                {"id": v["id"], "status": v["status"]}
+                for v in r["variants"]
+                if v.get("gating")
+            ],
+            "findings": sorted(set(named.get(r["id"], [])), key=lambda x: int(x[1:])),
+            "status": r["status"],
+        }
+        for r in rows
+    ]
     return {
         "source": "scripts/build_msm_matrix.py from data/msm.json, msm-findings.json,"
         " msm-public.json, msm-selftest.json and tests/fixtures/loop/msm/manifest.json",
@@ -410,7 +457,12 @@ def build() -> dict:
             ],
         },
         "classes": classes,
+        "catani": {
+            "standard": {"value": standard[0], "row": standard[1]},
+            "relaxed": relaxed_rows,
+        },
         "cms": cms_rows,
+        "rows": appendix,
     }
 
 
@@ -490,7 +542,9 @@ def main(argv=None) -> int:
         out = {"source": args.source, "pypi": pypi, "community": community}
         (DATA / "msm-selftest.json").write_text(json.dumps(out, indent=1) + "\n")
         return 0
-    args.output.write_text(json.dumps(build(), indent=1) + "\n")
+    # allow_nan=False: the report's JSON reader takes no Infinity (msm.json's
+    # out-of-scope estimates may be infinite; none is copied here).
+    args.output.write_text(json.dumps(build(), indent=1, allow_nan=False) + "\n")
     return 0
 
 

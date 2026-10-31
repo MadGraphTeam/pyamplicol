@@ -468,7 +468,7 @@
    {
     "label": "g g -> t overline(t) e^- e^+ g",
     "corr": "EW",
-    "validation": "M-SM campaign row TV07 (loop_qcd_qed_sm_Gmu, native inputs, 3 points, 124 checks): double-double = MadLoop QP, Recola and OpenLoops to 7.4\u00d710\u207b\u00b9\u00b3, binary64 from double-double 5.1\u00d710\u207b\u00b9\u00b9, poles = Catani to 6.4\u00d710\u207b\u00b2\u2076 (DD), gluon Ward identity at a stable top 3.2\u00d710\u207b\u00b2\u2078 (DD); its QCD twin TV07@qcd 1.4\u00d710\u207b\u00b9\u00b2 (91 checks)",
+    "validation": "TV07 (loop_qcd_qed_sm_Gmu, native inputs, 3 points, 124 checks): double-double = MadLoop QP, Recola and OpenLoops to 7.4\u00d710\u207b\u00b9\u00b3, binary64 from double-double 5.1\u00d710\u207b\u00b9\u00b9, poles = Catani to 6.4\u00d710\u207b\u00b2\u2076 (DD), gluon Ward identity at a stable top 3.2\u00d710\u207b\u00b2\u2078 (DD); its QCD twin TV07@qcd 1.4\u00d710\u207b\u00b9\u00b2 (91 checks)",
     "refs": "ML, Recola, OL"
    },
    {
@@ -591,8 +591,8 @@
   "notes": {
    "gg_ttxemepg_ew": {
     "gate": "EW: indicative, not gated",
-    "gate_reason": "m-sm/PLAN.md [U5] and the milestone plan: the EW row is timed and reported at M-SM; its speed gate binds in M-FINAL",
-    "leading_colour": "not supported by design: EW LC/NLC (user 2026-10-30 Q4; typed colour-declaration-coverage)",
+    "gate_reason": "the EW speed gate binds in M-FINAL (m-sm/PLAN.md [U5] and the milestone plan)",
+    "leading_colour": "refused by design: EW LC/NLC is never supported (user 2026-10-30, Q4; typed colour-declaration-coverage)",
     "ew_model": "loop_qcd_qed_sm_Gmu (reference/models/loop_qcd_qed_sm_Gmu_py3, msm-g1.json ew_model)"
    },
    "uux_gggg": {
@@ -664,9 +664,20 @@
   ]
  },
  "cell_notes": {
-  "source": "data/g1.json host and repeats (milestone M-SM's G1 campaign, workspace/reports/engine-v2/measure-g1/records/m1031-msm); M-QCD's note on u u~ > d d~ g (e18a024b) is gone with its measurement",
+  "source": "data/g1.json host and repeats and data/msm-g1.json ew_model (milestone M-SM's G1 campaign, workspace/reports/engine-v2/measure-g1/records/m1031-msm); M-QCD's note on u u~ > d d~ g (e18a024b) is gone with its measurement",
   "what": "notes on single measured cells of Table 1: each names its process, cell (generation, full_colour, leading_colour), G1 configuration and revision; scripts/build_summary.py attaches it to that main cell (summary.json <cell>.main.note) and stops the build when the cell's main value is not that configuration at that revision; the value stays as measured",
-  "notes": []
+  "notes": [
+   {
+    "process": "gg_ttxemepg_ew",
+    "cell": "full_colour",
+    "configuration": "native/full",
+    "revision": "71e2041e",
+    "kind": "run conditions",
+    "label": "model: the workspace's py3 G_mu copy",
+    "reason": "timed on reference/models/loop_qcd_qed_sm_Gmu_py3 (the harness's processes.json default, as MS-VALIDATE's earlier run), not on the shipped patched UFO (UFOmodeldb 6ca4b120 + the user's issue-1 patch) that the M-SM campaign validated; an indicative timing, no verdict",
+    "source": "G1 campaign m1031-msm (msm-g1.json ew_model, STATE.md)"
+   }
+  ]
  },
  "milestone": "M-SM (m1031-msm)"
 }

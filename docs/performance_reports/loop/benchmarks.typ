@@ -12,6 +12,8 @@
 #let mx = json("data/mqcd-matrix.json")
 #let mq = json("data/mqcd.json")
 #let st = json("data/mqcd-selftest.json")
+#let sx = json("data/msm-matrix.json")
+#let eg = json("data/msm-g1.json")
 #let sg = meas.seven_gluon
 
 // ------------------------------------------------------------------ style --
@@ -131,6 +133,15 @@
 #let gproc(key) = g.processes.find(p => p.key == key)
 // The generated process text ("u u~ > e- e+ g g") as math.
 #let tok(t) = if t == ">" { "->" } else if t.ends-with("~") { "overline(" + t.slice(0, -1) + ")" } else if t.ends-with("-") { t.slice(0, -1) + "^(-)" } else if t.ends-with("+") { t.slice(0, -1) + "^(+)" } else { t }
+// MG5 particle names in math mode: multi-letter names quoted (ve, ta-).
+#let ap-tok(t) = {
+  if t == ">" { return "->" }
+  let (b, suf) = if t.ends-with("~") { (t.slice(0, -1), "bar") } else if t.ends-with("-") or t.ends-with("+") { (t.slice(0, -1), t.slice(-1)) } else { (t, none) }
+  let core = if b.len() == 1 { b } else { "\"" + b + "\"" }
+  if suf == "bar" { "overline(" + core + ")" } else if suf != none { core + "^(" + suf + ")" } else { core }
+}
+// An MG5 process string as math text (math-label renders it).
+#let ap-math(p) = p.split(" ").map(ap-tok).join(" ")
 #let gname(key) = text(8.6pt, font: "Libertinus Serif", math-label(gproc(key).label.split(" ").map(tok).join(" ")))
 #let cfg(p, name) = p.pyamplicol.at(name, default: none)
 #let refused(c) = c != none and c.at("generation_error", default: none) != none
@@ -266,7 +277,7 @@
 // The B = 1 ratios of the configuration on loop (reported, no verdict: user
 // 2026-10-28), and of the development campaign's one-lane runs (history).
 // B = 1: this campaign's run, else the newest earlier run that timed it
-// (not re-timed at M-QCD: g1.json timing_protocol), over the B = 128 limit.
+// (not re-timed since M-QCD: g1.json timing_protocol), over the B = 128 limit.
 #let one-of(c) = { let x = bat(c, "1"); if x != none { (rev: none, x: x) } else { earlier-bat(c, "1") } }
 #let one-ratio(c) = { let o = one-of(c); let l = bat(c, big); if o == none or l == none or "binding_limit" not in l.gate { none } else { o.x.median_seconds_per_point / l.gate.binding_limit } }
 #let one-lim = gated.map(p => one-ratio(nat-c(p))).filter(r => r != none)
@@ -489,6 +500,7 @@
   else if s == "not timed" [not timed]
   else if s == "not batched" [no batched run]
   else if s == "no gate batch" [no $B = 128$ run]
+  else if s == "not supported" [not supported]
   else [not measured]
 }
 // A note on a measured cell (milestone.json cell_notes, through
@@ -624,7 +636,7 @@
   } else if m.status == "not timed" {
     absent(status-title(m), [G1 timed full colour only])
   } else {
-    absent(status-title(m))
+    absent(status-title(m), m.at("reason", default: none))
   }
 }
 
@@ -684,6 +696,8 @@
 
 // Compact visual legend of Table 1 (its text: "Reading the summary").
 #let thr-rows = all-rows.filter(r => { let x = decided-gate(r); x != none and x.status == thr-rule.verdict })
+// EW G1 rows (data/msm-g1.json through summary.json): indicative, no gate.
+#let ew-rows = all-rows.filter(r => r.full_colour.at("gate_rule_reason", default: none) != none)
 #let m-rows = all-rows.filter(r => "adopted_schedule" in r.leading_colour.main)
 #let key-swatch(fill) = box(baseline: 0.5pt, rect(width: 5pt, height: 5pt, fill: fill, stroke: 0.3pt + luma(200)))
 #block(breakable: false, width: 100%, above: 1.0em, below: 0.9em, {
@@ -790,8 +804,8 @@
     grid(columns: (3.2cm, fig-w, 1fr), column-gutter: 6pt, row-gutter: 3pt, align: (right + horizon, left + horizon, left + horizon),
       ..fig-rows.map(r => {
         let m = r.full_colour.main
-        let chip = if m.status != "measured" { plain-chip[#status-title(m)] } else if "gate" in m { gate-chip(m.gate) } else { plain-chip[no gate] }
-        (text(8.6pt, font: "Libertinus Serif", math-label(r.math)), fig-row(r), chip)
+        let chip = if m.status != "measured" { plain-chip[#status-title(m)] } else if "gate" in m { gate-chip(m.gate) } else { plain-chip[#r.full_colour.gate_rule.replace("->", "→")] }
+        (box[#text(8.6pt, font: "Libertinus Serif", math-label(r.math))#if r.corrections != "QCD" [ #text(6.6pt, fill: ink2)[(#r.corrections)]]], fig-row(r), chip)
       }).flatten(),
       [], box(width: fig-w, height: 9pt, for (t, l) in fig-ticks { place(dx: xpos(t) - 1cm, box(width: 2cm, align(center, text(fill: ink2, l)))) }), [],
     )
@@ -832,7 +846,7 @@ ancestry of the revisions; a newer check that only repeats part of an older comp
 *Gate chips* (Table 1 and Figure 1): the time over the binding limit (MadLoop's time, or 1.30 × the faster of Recola and
 OpenLoops), *pass* or *fail* when the whole uncertainty band is below or above 1, else *open*. The user's gate rule of 2026-10-24:
 a process whose time per point at $B = 128$ is below 5 ms has no blocking gate, its verdict is "#thr-rule.label" and its chip
-("#thr-rule.short") keeps the measured ratio#if thr-rows.len() > 0 [ (#thr-rows.map(r => { let x = decided-gate(r); [#box(math-label(r.math)) #dur(r.full_colour.main.seconds_per_point), #fixed(x.ratio_to_limit, 2) of its limit] }).join([, ], last: [ and ]))]. #box(math-label("g g -> g g")) ($2 -> 2$) has no gate#for r in decided-rows.filter(r => decided-gate(r).status != thr-rule.verdict) { let x = decided-gate(r); [; ‡ #math-label(r.math): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }. The gate is taken at $B = 128$ only (user 2026-10-28,
+("#thr-rule.short") keeps the measured ratio#if thr-rows.len() > 0 [ (#thr-rows.map(r => { let x = decided-gate(r); [#box(math-label(r.math)) #dur(r.full_colour.main.seconds_per_point), #fixed(x.ratio_to_limit, 2) of its limit] }).join([, ], last: [ and ]))]. #box(math-label("g g -> g g")) ($2 -> 2$) has no gate#for r in ew-rows [; #box(math-label(r.math)) (#r.corrections, `data/msm-g1.json`) is timed and reported *indicatively*, chip "#r.full_colour.gate_rule": #r.full_colour.gate_rule_reason\; its leading colour is #r.leading_colour.main.reason]#for r in decided-rows.filter(r => decided-gate(r).status != thr-rule.verdict) { let x = decided-gate(r); [; ‡ #math-label(r.math): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }. The gate is taken at $B = 128$ only (user 2026-10-28,
 `gate_decisions.gate_batch`): $B = 1$ and the $2 -> 5$ rows' $B = 16$ are measured and *reported* with their ratios
 (@tab:g1, @tab:g1batch), without a verdict or a verdict colour.
 
@@ -900,7 +914,7 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
 // The status page starts on its own page so that its two box rows are not
 // split across pages.
 #pagebreak(weak: true)
-= Status at this milestone: M-QCD <status>
+= Status at this milestone: M-SM <status>
 
 // The gate box reads Table 1's values (data/summary.json): the gated G1
 // rows' full-colour main cells, their configuration and verdicts, and for
@@ -949,6 +963,21 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
 #let fft-seed = mx.fft.rows.filter(r => r.algorithm != "direct").map(r => r.seed_ratio)
 #let fft-total = mx.fft.rows.filter(r => r.algorithm != "direct").map(r => r.total_ratio)
 #let open-f = mx-all.map(c => c.findings).flatten().map(f => f.id).dedup()
+// M-SM at a glance (data/msm-matrix.json, scripts/build_msm_matrix.py).
+#let sxc = sx.campaign.counts
+#let sx-pin = sx.campaign.branch.split(" ").at(1).slice(0, 8)
+#let sx-rows = sx.classes.map(c => c.rows).sum()
+#let sx-max(f) = { let xs = sx.classes.map(f).filter(v => v.value != none); xs.sorted(key: v => v.value).last() }
+#let sx-dd = sx-max(c => c.dd_vs_reference)
+#let sx-b64 = sx-max(c => c.binary64_vs_dd)
+// Rule 4 in DD at its standard tolerance; the rows where the user's ruling
+// of 2026-10-29 ~10:20 relaxes it, named apart (msm-matrix.json catani).
+#let sx-cat = sx.catani.standard
+#let sx-relaxed = sx.catani.relaxed
+#let sx-partial = sx.rows.filter(r => r.status != "pass").map(r => r.row)
+#let sx-cm07 = sx.cms.find(r => "U4" in r.features)
+#let sx-ew-st = sx.selftest.virtuals.find(v => v.name == "physics-virtual-prepared").detail.split("MadLoop to ").last().split(" ").first()
+#let ew-status = all-rows.filter(r => r.full_colour.at("gate_rule_reason", default: none) != none and r.full_colour.main.status == "measured")
 #box-note[
   #set par(justify: false)
   *On `loop`* (engine #ms.engine_revision\; merges since #ms.previous_loop, engine #ms.previous_engine)
@@ -967,12 +996,12 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
     set text(8.2pt)
     set par(justify: false)
-    [*M-QCD* (full QCD one-loop support on the stock `loop_sm`, reproducing MadLoop; user plan 2026-10-28; `m-qcd/PLAN.md` §5)]
+    [*M-SM* (QCD + QED/EW one loop on the shipped `loop_qcd_qed_sm(_Gmu)`, reproducing MadLoop; `m-sm/PLAN.md` §5)]
     [
-      - *Validation campaign* at #raw(mx.campaign.campaign_head.split(" ").first()) (@mqcd, @tab:mqcdrows): #mx-all.map(c => c.rows).sum() rows in #mx-all.len() classes, #mxc.pass pass, #mxc.partial partial, #mxc.fail fail#if open-f.len() > 0 [ (#open-f.join(", "), accepted limitations: Missing box)]; no discrepancy above $10^(-5)$, no wrong pole or sector. Largest deviations: DD from the reference #sci(mx-dd.value) (#mx-dd.row), binary64 from DD #sci(mx-b64.value) (#mx-b64.row), poles from Catani in DD #sci(mx-cat.value) (#mx-cat.row).
-      - *Public route* on the shipped `loop_sm` (`Generator`, `Runtime.load`, `evaluate`): one row per class passes, DD from MadLoop ≤ #sci(mx-pub-dd). Wheel self-test in two fresh venvs (PyPI, Community Symbolica): #if st-ok [all checks pass] else [*failed*]; its virtual: #st-virtual.detail.split(":").first(): #st-virtual.detail.split(": ").at(1).split(";").first().
-      - *Colour:* full colour is the loop default; LC and NLC (shipped $N_c$ declaration) pass rule 7 on #mx-all.map(c => c.nc.rows.len()).sum() rows and the smoke on every shipped restriction; LC helicity and colour-flow selection. *FFT* seed contraction = direct to rounding; its cost: ×#fixed(calc.min(..fft-seed), 2)–#fixed(calc.max(..fft-seed), 1) of direct, the whole evaluation ×#fixed(calc.min(..fft-total), 2)–#fixed(calc.max(..fft-total), 2) (@tab:fft).
-      - *Ward* (one gluon's $epsilon -> p$, native inputs): passes up to seven gluons (#ms.status_notes.notes.gg_ggggg.ward_status). *R3 for QCD* recorded (DECISIONS 2026-10-29 \~18:25; deferred: provider protocol-mode columns, M-FINAL).
+      - *Validation campaign* at #raw(sx-pin) (@msm, @tab:msmrows): #sx-rows rows in #sx.classes.len() classes, #sxc.pass pass, #sxc.partial partial, #sxc.fail fail (#sx-partial.join(", "): F7, accepted); no deviation above $10^(-5)$, no wrong pole or sector. Largest: DD from the reference #sci(sx-dd.value) (#sx-dd.row), binary64 from DD #sci(sx-b64.value) (#sx-b64.row), Catani DD #sci(sx-cat.value) (#sx-cat.row) at rule 4's standard tolerance (relaxed by the user's ruling: #sx-relaxed.map(r => [#r.row #sci(r.value) ≤ #sci(r.tolerance, d: 0)]).join(", ")).
+      - *CMS* (@tab:cms): #sx.cms.len() rows = MadLoop CMS; the acceptance row #sx-cm07.row (#box(math-label(ap-math(sx-cm07.process)))) DD #sci(sx-cm07.dd_vs_reference), binary64 from DD #sci(sx-cm07.binary64_vs_dd), native inputs.
+      - *Public route* on both shipped EW UFOs: `test_loop_v2_ew_public_models.py` #sx.public_route.tests.passed/#sx.public_route.tests.total at the pin; wheel self-test #if sx.selftest.passed [#sx.selftest.checks/#sx.selftest.checks] else [*failed*] in two fresh venvs, its EW virtual from the shipped prepared artifact = MadLoop to #sx-ew-st.
+      - *EW products:* per-leg photon tagging (`loop.external_photons`, default `"final"`), poles `uv | ir | split` by the model's regulators, native complex pole masses, EW generation stages in Rust, binary64 of a stored artifact without Symbolica (@tab:caps).
     ]
   }),
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
@@ -995,6 +1024,30 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
 #if s-pending.len() > 0 [
       - *#row-span(s-pending.map(r => r.key)):* not timed yet (#s-pending.map(r => r.full_colour.main.package).dedup().map(raw).join(", "))#if s-no-gate.len() > 0 [\; #row-names(s-no-gate.map(r => r.key)) #if s-no-gate.len() == 1 [has] else [have] no matched provider].
 ]
+    #if ew-status.len() > 0 [
+      - *EW row* #flag[indicative] (`data/msm-g1.json`, not gated: [U5], binding in M-FINAL): #ew-status.map(r => { let m = s-main(r); [#box(math-label(r.math)) (#r.corrections) #dur(m.seconds_per_point) per point at $B = 128$, #ratio-mult(m) of #r.full_colour.fastest.name's time] }).join([; ]) (@msm).
+]
+    ]
+  }),
+)
+
+#grid(columns: (1fr, 1fr), gutter: 8pt,
+  block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
+    set text(8.2pt)
+    set par(justify: false)
+    [*M-QCD, kept* (QCD on the stock `loop_sm`; `m-qcd/PLAN.md` §5; re-run at this pin)]
+    [
+      - *Campaign re-run* at #raw(mx.campaign.campaign_head.split(" ").first()) (#mx.campaign.date, @mqcd, @tab:mqcdrows): #mx-all.map(c => c.rows).sum() rows, #mxc.pass pass, #mxc.partial partial, #mxc.fail fail#if open-f.len() > 0 [ (#open-f.join(", "), accepted)], the statuses and check counts of M-QCD's campaign (`e18a024b`); 84 of its 1212 deviation values moved at rounding level, all on electroweak-Born rows. Largest: DD from the reference #sci(mx-dd.value) (#mx-dd.row), binary64 from DD #sci(mx-b64.value) (#mx-b64.row), Catani DD #sci(mx-cat.value) (#mx-cat.row).
+      - *At `e18a024b`* (not repeated: no status changed): public route on the shipped `loop_sm`, one row per class, DD from MadLoop ≤ #sci(mx-pub-dd)\; FFT seed contraction = direct to rounding, ×#fixed(calc.min(..fft-seed), 2)–#fixed(calc.max(..fft-seed), 1) of direct (@tab:fft). *Colour:* full colour by default; LC and NLC pass rule 7 on #mx-all.map(c => c.nc.rows.len()).sum() rows. *Ward* up to seven gluons (#ms.status_notes.notes.gg_ggggg.ward_status).
+    ]
+  }),
+  block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
+    set text(8.2pt)
+    set par(justify: false)
+    [*Next: M-FINAL* (to be discussed with the user before it starts)]
+    [
+      - After this push the coordinator presents the M-FINAL plan and waits. The user's preferred order (2026-10-30 \~08:50): (1) the eight-gluon one-loop matrix element, $g g -> 6 g$ ($2 -> 6$); (2) direct rational $R_2$; (3) decays ($1 -> n$); (4) the rest: optimisation rounds, the *binding EW speed gate*, G1's provider protocol-mode columns, the deferrals of the box below.
+      - Rust phase 1 (HANDOFF §0.4) continues: D3 (plan lowering in Rust, binary plan member), A5's tree program, C's seven-leg dipole metric tables. Prepared artifacts: the parameter program's SymJIT bytes still differ per compilation (values unaffected; upstream fix filed).
     ]
   }),
 )
@@ -1004,39 +1057,35 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
     *Missing or incomplete* (typed refusal keys, listed and shown by the dry run)
     #set text(7.9pt)
     #grid(columns: (1fr, 1fr), column-gutter: 12pt)[
-    - *Refused, out of M-QCD:* $1 -> n$ decays (`decay-process`), MG5 decay chains and `$` (`madloop-syntax`); loop-induced
-      requests (`loop-induced`, after M-SM); a coloured particle with a width in a tree current (`coloured-width`; recipes
-      `loop_sm-no_widths` or `fixed_parameters = {WT = "0"}`); Majorana fermions (`majorana-fermion`) and multi-fermion
-      contact vertices (`multi-fermion-contact`); Dirac–Weyl currents the tree lanes cannot close (`dirac-weyl-closure`);
-      LC/NLC beyond the shipped $N_c$ declaration (`colour-declaration-coverage`).
-    - *M-SM:* electroweak and mixed `[virt=QCD QED]` corrections (WP3.2, paused: EW native inputs EWI-N, the EW ladder and
-      target EWI-7, EWI-9; photon-only QED on `loop_qcd_qed_sm` refused, `veto-unlabelled-counterterms`), the complex-mass
-      scheme (EWI-10).
-    - *M-FINAL:* automatic rescue (none: no escalation by default; the rescue options left with the legacy engine), helicity
-      and colour-flow selection at NLC and full colour (refused there; LC has it), SDK v4 extras,
-      permutation aliases and process-group mappings, correlations composed with mappings, G1's provider protocol-mode
-      columns, independent oracles of correlated Borns and virtuals (MQ-CORR).
+    - *Refused (typed):* loop-induced requests, including the loop-squared members of multiparticle requests (`loop-induced`;
+      a multiparticle request generates its members with a Born and records the others as skipped); Majorana fermions
+      (`majorana-fermion`) and multi-fermion contact vertices (`multi-fermion-contact`); photon-only and partial EW vetoes
+      on the NLOCT UFOs (`veto-unlabelled-counterterms`: their counterterm couplings are not split by loop content); the
+      complex-mass scheme for a width whose mass is an internal parameter (`cms-internal-mass`: `loop_sm`'s $W$), an
+      external unstable species under CMS (`cms-external-width`), a Yukawa input under CMS (`cms-yukawa-input`); a width
+      outside CMS (`electroweak-width`, `coloured-width`); tagged photons without an $alpha(0)$ input
+      (`external-photon-scheme`); MG5 decay chains and `$` (`madloop-syntax`); Dirac–Weyl currents the tree lanes cannot
+      close (`dirac-weyl-closure`).
+    - *M-FINAL:* $1 -> n$ decays (typed `decay-process` until then); direct rational $R_2$, EW included (`direct-r2`; the
+      model's $R_2$ is the production path); the *binding EW speed gate* (the EW row is indicative here); helicity and
+      colour-flow selection at NLC and full colour (LC has it); SDK v4 extras, permutation aliases and process-group
+      mappings, correlations composed with mappings; G1's provider protocol-mode columns; independent oracles of
+      correlated Borns and virtuals (MQ-CORR); automatic rescue (none: no escalation by default).
+    - *Not supported, by design:* EW LC/NLC (`colour-declaration-coverage`, permanent: user 2026-10-30).
     ][
-    - *Accepted at the pin* (coordinator 2026-10-29 \~11:25): A09\@collinear (F7) — at the collinear points
-      $theta = 10^(-3)$–$10^(-5)$ binary64 returns a typed `Unstable` and DD a typed `CutFailed{DegenerateGram}`, never a
-      value (arbitrary precision is the user's route); A24 (F11) — rule 4 not formed at seven gluons (correlated trees
-      beyond addendum H's memory), its poles equal NJet's DD.
-    - *Fast binary64 lanes:* NinjaRS light-like spinors near the $-z$ axis (\~$10^(-5)$) and model units \~$10^4$ from GeV
-      (silent percent-level errors with checks off; NinjaRS spinor package paused): the recommended checks flag them.
-      Light masses at the fast thresholds now go to the generic engine (`onshell-threshold`).
-    - *No longer missing:* LC helicity and colour-flow selection (MQ-SELECT), the seven-gluon Ward check (MQ-WARD), a typed
-      glibc error (`glibc-floor`, glibc $>=$ 2.38). *Removed:* the legacy per-diagram engine (MQ-LEGACY-REMOVE;
-      `loop.engine`, `--loop-engine` refused with the removal reason).
+    - *Accepted at the pin:* F7 — LL02 and SC02 partial (rule 4 not formed: the massive-muon $G_mu$ copy writes the
+      field renormalisation of massless leptons; rule 1 = MadLoop); SC03's τ-mass relaxation of rule 4 to $10^(-5)$
+      (the EW counterterms omit the τ mass, the user's retained model limitation; MadLoop has the same offset). M-QCD's
+      A09\@collinear (F7: typed `Unstable` / `CutFailed{DegenerateGram}`, never a value) and A24 (F11: rule 4 not
+      formed at seven gluons, poles = NJet).
+    - *Compatibility notes:* the shipped EW UFOs are UFOmodeldb `6ca4b120` plus the user's issue-1 patch (PROVENANCE
+      records the local delta); MadLoop never inserts R2_G0tt_b on the unpatched models (mg5amcnlo\#475): pyAmpliCol
+      keeps the UFO-complete $R_2$ insertion (user Q7).
+    - *Fast binary64 lanes:* NinjaRS light-like spinors near the $-z$ axis (\~$10^(-5)$) and model units \~$10^4$ from
+      GeV (silent percent-level errors with checks off; NinjaRS spinor package paused): the recommended checks flag them.
+    - *No longer missing:* EW and mixed `[virt=QCD QED]` corrections on the shipped EW UFOs (EW native inputs EWI-N, the
+      EW ladder EWI-7, the target EWI-9), the complex-mass scheme (EWI-10), external-photon artifacts.
   ]
-]
-
-#box-note(fill: white, stroke: 0.6pt + luma(205), breakable: false)[
-  #set par(justify: false)
-  #set text(7.9pt)
-  *In development* (HANDOFF §6): next milestone *M-SM* (electroweak and mixed corrections, complex-mass scheme; the paused
-  `ew-native`, `ew-validate` and NinjaRS spinor packages resume there), then *M-FINAL* (the deferrals above, optimisation).
-  Rust phase 1 (HANDOFF §0.4): D3 (plan lowering in Rust, binary plan member), A5's tree program, C's seven-leg dipole metric tables.
-  Prepared artifacts: the parameter program's SymJIT bytes still differ per compilation (values unaffected; upstream fix filed).
 ]
 
 #block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, breakable: false, {
@@ -1049,8 +1098,9 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
       $B = 16$ are measured and reported with their ratios, without a verdict; a configuration without a $B = 128$
       timing has none); $2 -> 2$ is reported without a gate. A process whose time per point at $B = 128$ is below 5 ms
       has no blocking gate: its ratio is shown, its verdict is "#thr-rule.label" (user decision; `data/milestone.json`
-      `gate_decisions.threshold_rule`); optimisation effort goes to higher multiplicities. Aspiration: fastest of all tools
-      from $2 -> 3$.
+      `gate_decisions.threshold_rule`); optimisation effort goes to higher multiplicities. The electroweak row is timed
+      and reported indicatively at M-SM, without a verdict ([U5]; `data/msm-g1.json`): its gate binds in M-FINAL.
+      Aspiration: fastest of all tools from $2 -> 3$.
     - *Protocol.* Providers in production mode with poles off where they allow it (OpenLoops `truepoles 0`, Recola without IR
       poles, MadLoop production build); pyAmpliCol finite-only (`poles = "none"`) with stability checks off, one pinned
       thread, binary64, 16 lanes, the same frozen points (pyAmpliCol receives their exact rationals, the providers their
@@ -1070,7 +1120,7 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
       (main-configuration rule of `scripts/build_summary.py`; `data/summary.json` names the configuration and source of every
       value); the column header of @tab:summary states it once, with branch and commit, and "Reading the summary" says
       when it is a development measurement not yet on `loop`. The detailed G1 tables (@g1) show the configuration on `loop` and, labelled,
-      its history: the runs of milestones m1028a (`28a16255`), m1026a (`11542fd5`) and m1025a (`1d27426b`) and of G-int (`4e9b5a9e`), the
+      its history: the runs of milestones M-QCD (`e18a024b`), m1028a (`28a16255`), m1026a (`11542fd5`) and m1025a (`1d27426b`) and of G-int (`4e9b5a9e`), the
       Python per-point inputs before G-int and the development runs of
       #rev-list(l1-revs).
       Missing values are marked, never estimated or extrapolated; test durations are never used as event timings. The legacy per-diagram engine's timings of 18 October are history (data kept in
@@ -1078,14 +1128,16 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
   ]
 })
 
-// ================================================================ M-QCD ==
-// The QCD capability matrix (m-qcd/PLAN.md §5.2): data/mqcd-matrix.json,
-// written by scripts/build_mqcd_matrix.py from data/mqcd.json and the
-// campaign's public-route, FFT and self-test data; the per-row data are in
-// the appendix (@tab:mqcdrows).
+// ================================================================= M-SM ==
+// The M-SM capability matrix and CMS table (m-sm/PLAN.md §5.2):
+// data/msm-matrix.json, written by scripts/build_msm_matrix.py from
+// data/msm.json, the campaign's public-route and self-test data and the
+// manifest; the per-row data are in the appendix (@tab:msmrows). The G1 EW
+// row: data/msm-g1.json (indicative, not gated).
 #pagebreak(weak: true)
-= QCD capability matrix (M-QCD) <mqcd>
+= Electroweak capability matrix (M-SM) <msm>
 
+// Matrix cells, chips and counts (also the QCD matrix and both appendices).
 #let mq-chip(s) = {
   let (f, t) = (pass: (rgb("#e1f2ea"), pass-ink), accepted: (rgb("#eaf1e0"), rgb("#4d6b1f")), partial: (rgb("#fdf0dc"), amber), fail: (rgb("#f9e0da"), fail-ink)).at(s, default: (luma(240), luma(90)))
   box(fill: f, inset: (x: 2.2pt, y: 0.9pt), radius: 1.5pt, baseline: 0.9pt, text(6pt, weight: "bold", fill: t, s))
@@ -1096,6 +1148,139 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
 #let mq-range(xs) = if xs.len() == 1 { fixed(xs.first(), 2) } else [#fixed(calc.min(..xs), 2)–#fixed(calc.max(..xs), 2)]
 #let mq-cell(body) = table.cell(breakable: false, { set par(leading: 0.36em, justify: false); body })
 #let mq-sub(body) = { v(1.6pt); block(spacing: 0pt, text(6pt, fill: ink2, body)) }
+#let sm-model = (loop_qcd_qed_sm_Gmu: [$G_mu$], loop_qcd_qed_sm: [`qcd_qed_sm`], loop_qcd_qed_sm_Gmu_massive_muon: [$G_mu$, $m_mu$], loop_sm: [`loop_sm`])
+#let sm-mod(m) = sm-model.at(m, default: raw(m))
+#let ok-mark(b) = if b { text(fill: pass-ink, weight: "bold")[✓] } else { text(fill: fail-ink, weight: "bold")[✗] }
+#let sm-rowlist(xs) = xs.map(x => [#x.row#if x.status != "pass" [ #mq-chip(x.status)]]).join(", ")
+#let sm-case(c) = if c.case == "self-test" [self-test (#c.row)] else [#c.row]
+#figure(kind: table,
+  caption: [*Electroweak capability matrix* at #raw(sx-pin), per class of `m-sm/PLAN.md` §1.1 (campaign of 2026-10-31 on
+    the shipped patched EW UFOs, `data/msm.json`; legend below the table, rows: @tab:msmrows).],
+  {
+    set text(7pt, font: sans, stretch: 87.5%)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold", size: 7.2pt)
+    show raw: set text(6.2pt)
+    table(
+      columns: (2.75cm, 1.55cm, 2.0cm, 1.6cm, 1.75cm, 2.05cm, 1.55cm, 1.6cm, 1fr),
+      align: left + std.top, inset: (x: 3.5pt, y: 3.2pt),
+      stroke: (x, y) => (top: if y <= 1 { none } else { 0.4pt + luma(215) }),
+      fill: (x, y) => if y == 0 { navy } else if calc.even(y) { luma(248) } else { none },
+      table.header[Class][Rows][Public route][DD vs ref.][binary64][Catani (DD)][Native inputs][CMS][Status],
+      ..sx.classes.map(c => {
+        let cat = c.catani_dd
+        let out = c.binary64_vs_reference.rows_out_of_scope
+        let fixtures = c.public.filter(x => x.madloop_fixture != none).len()
+        (
+          mq-cell[#text(8pt, weight: "bold", font: "Libertinus Serif", c.class) #mq-sub[#c.content#if c.max_outgoing != none [ · up to $2 -> #c.max_outgoing$] · #c.models.map(sm-mod).join(", ")]],
+          mq-cell[#text(weight: "bold")[#c.rows] #mq-sub(mq-counts(c))],
+          if c.public.len() == 0 { mq-cell[— #mq-sub[no public case]] } else {
+            mq-cell[#c.public.map(sm-case).join(", ") #ok-mark(c.public.all(x => x.passed)) #mq-sub[bitwise the tools view#if fixtures > 0 [; #fixtures against MadLoop QP]]]
+          },
+          mq-cell[#text(weight: "bold", esci(c.dd_vs_reference.value)) #mq-sub[#c.dd_vs_reference.row#if c.dd_vs_reference.reference != "MadLoop" [ · #c.dd_vs_reference.reference]]],
+          mq-cell[#text(weight: "bold", esci(c.binary64_vs_dd.value)) #mq-sub[#c.binary64_vs_dd.row · ref. #esci(c.binary64_vs_reference.value)#if out.len() > 0 [†]]],
+          mq-cell[#if cat.value == none [—] else { text(weight: "bold", esci(cat.value)) } #mq-sub[#if cat.row != none [#cat.row]#for x in cat.not_formed [ · #x not formed]#for x in cat.no_predicted_sector [ · #x.row no sector (#x.reasons.join(", "))]#for x in cat.relaxed.filter(x => x.rule == "4dd") [ · #x.row ≤ #sci(x.tolerance, d: 0)]]],
+          mq-cell[#if c.native_inputs.len() == 0 [—] else [#sm-rowlist(c.native_inputs) #ok-mark(c.native_inputs.all(x => x.status == "pass"))] #mq-sub[#if c.public.len() > 0 [public route: native] else [campaign rows]]],
+          mq-cell[#if c.class == "W-CMS" [#c.cms.len() rows #ok-mark(c.cms.all(x => x.status == "pass")) #mq-sub[against MadLoop CMS (@tab:cms)]] else if c.cms.len() == 0 [—] else [#sm-rowlist(c.cms) #ok-mark(c.cms.all(x => x.status == "pass")) #mq-sub[same processes]]],
+          mq-cell[#mq-chip(c.status) #if c.findings.len() > 0 { mq-sub[#c.counts.at("pass", default: 0) of #c.rows pass\; #c.findings.map(f => [#f.id #f.rows.join(", ") (#f.kind)]).join([; ])] }],
+        )
+      }).flatten(),
+    )
+  },
+) <tab:msm>
+#v(-0.3em)
+#block(width: 100%, {
+  set text(7.2pt, font: sans, stretch: 87.5%, fill: ink2)
+  set par(justify: false, leading: 0.45em)
+  [*Rows*: campaign rows and their status (passing every rule of their tier; partial: a rule not formed); class status
+  *accepted*: every other row is a finding the coordinator accepted. Models: $G_mu$ = `loop_qcd_qed_sm_Gmu`,
+  `qcd_qed_sm` = `loop_qcd_qed_sm` (both shipped: UFOmodeldb `6ca4b120` + the user's issue-1 patch), $G_mu$, $m_mu$ its
+  massive-muon copy. *Public route*: the campaign's cases of `test_loop_v2_ew_public_models.py` (`Generator` on the
+  shipped UFO with its shipped profile, `Runtime.load`, `evaluate`; Born and virtual bitwise the tools view at two
+  points, and = MadLoop's quadruple precision where the case names a fixture) at the row of their process, and the wheel
+  self-test's EW virtual from the shipped prepared artifact. *DD vs ref.*: largest relative deviation of the double-double
+  Laurent coefficients (Born, finite, poles, every sector) from the row's reference (rule 1; MadLoop in quadruple
+  precision, "double": its double-precision control exports). *binary64*: from DD where binary64 is asserted (rule 2,
+  estimate $E <= 10^(-9)$); "ref." from the reference at every point (information; † the class has points with
+  $E > 10^(-9)$, where DD is asserted). *Catani*: DD poles against the Catani operator (rule 4, every point and predicted
+  sector; "≤" a tolerance relaxed by the user's ruling of 2026-10-29 \~10:20; "no sector": no predicted sector, typed
+  reason in @tab:cms). *Native inputs*: the rows the campaign ran on the native per-point inputs (production route); the
+  public route is native. *CMS*: the complex-mass rows of the class's processes.]
+})
+
+#[
+#set text(9pt)
+*Reading the matrix.* The campaign ran every row of its tier at the pin #raw(sx-pin) (native #raw(sx.campaign.natives.split(" ").first())) as whole test files, one process each: 23 nightly file jobs, four restriction-smoke files, the default tier and the campaign tier (TV07, its QCD twin and CM07 through the harness CLI), the manifest's points in binary64 and double-double (rules 1–4; rule 5 and the extras on the rows that name them; `m-sm/PLAN.md` §1.4 under the user's ruling of 2026-10-29 \~10:20: a deviation below \~$10^(-5)$ is not a finding). Its counts: #sxc.pass pass, #sxc.partial partial, #sxc.fail fail, #sxc.pending pending, #sxc.at("not-run") not run; the #sx.smokes_and_expansions.len() smokes and multiparticle expansions #if sx.smokes_and_expansions.values().all(x => x.status == "pass") [all pass] else [*do not all pass*]. The two partial rows are the accepted F7: rule 4 is not formed on the massive-muon $G_mu$ copy, which writes the field renormalisation of massless leptons (rule 1 = MadLoop). Notes of the campaign (`data/msm.json` `coverage_notes`): #sx.coverage_notes.join("; ").
+]
+
+// The CMS table (m-sm/PLAN.md §1.5, §5.2): every complex-mass row.
+#let cms-w(w) = if w == none [card widths] else { w.pairs().map(((k, v)) => box[#k~#v]).join(h(3pt)) }
+#figure(kind: table,
+  caption: [*Complex-mass scheme against MadLoop CMS* (`data/msm-matrix.json` `cms`, from `data/msm.json` and the
+    manifest): CM01–CM05 and CM07–CM10 at #raw(sx-pin) (CM06 was cut: its policy is an MS-CMS refusal test). Widths fixed
+    at generation (GeV; "card widths": the restriction's), the per-point inputs, the points and checks (variants
+    included), the largest deviation of double-double from MadLoop CMS (rule 1; quadruple precision, CM01 against its
+    double-precision exports), binary64 from DD (rule 2), the poles against Catani in DD (rule 4) and the Ward identity
+    in DD, a diagnostic only under CMS (`m-sm/PLAN.md` §1.4, §1.5). CM07 is the acceptance row ([U4]).],
+  {
+    set text(6.8pt, font: sans, stretch: 87.5%)
+    set par(justify: false, leading: 0.35em)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold")
+    table(
+      columns: (0.85cm, 2.45cm, 1.3cm, 3.5cm, 0.95cm, 1.1cm, 1.1cm, 1.1cm, 1.1cm, 1.1cm, 1fr),
+      align: (x, y) => if x in (5, 6, 7, 8) { right + horizon } else { left + horizon },
+      inset: (x: 2.8pt, y: 2.2pt),
+      stroke: (x, y) => (top: if y <= 1 { none } else { 0.3pt + luma(225) }),
+      fill: (x, y) => if y == 0 { navy } else { none },
+      table.header[Row][Process][Model][Widths][Inputs][Pts · checks][DD][b64/DD][Catani][Ward (DD)][Variants · notes · status],
+      ..sx.cms.map(r => (
+        [#text(weight: "bold", r.row)#if "U4" in r.features [ #flag[U4]]],
+        text(8pt, font: "Libertinus Serif", math-label(ap-math(r.process))),
+        [#sm-mod(r.model)#if r.restriction != "default" [ #r.restriction]],
+        tiny(cms-w(r.widths)),
+        r.inputs,
+        [#r.points · #r.checks],
+        esci(r.dd_vs_reference), esci(r.binary64_vs_dd),
+        if r.catani_dd == none [—] else { esci(r.catani_dd) },
+        if r.ward_dd == none [—] else { esci(r.ward_dd.virtual) },
+        [#r.variants.map(v => [#v.id.split("@").last()#if v.status != "pass" [ #mq-chip(v.status)]]).join(", ")#for u in r.unpredicted [#u.sector.replace("^", "") unpredicted (#u.reason) ]#mq-chip(r.status)],
+      )).flatten(),
+    )
+  },
+) <tab:cms>
+
+// The G1 electroweak row (data/msm-g1.json): indicative, not gated.
+#let ew-p = eg.processes.first()
+#let ew-c = ew-p.pyamplicol.at("native/full")
+#let ew-b = ew-c.batches.at("128")
+#let ew-t = ew-b.median_seconds_per_point
+#let ew-prov(n) = ew-p.providers.at(n).median_seconds_per_point
+#let ew-rc = ew-prov("recola")
+#let ew-early = ew-c.at("earlier_runs", default: ()).filter(e => e.at("batches", default: (:)).len() > 0)
+#let ew-acc = ew-c.accuracy_check
+#let ew-gen = ew-c.generation
+#let ew-row = all-rows.find(r => r.key == ew-p.key)
+#[
+#set text(9pt)
+*G1, electroweak row* #flag[indicative] (`data/msm-g1.json`, the gate tool on the EW records; [U5]: its speed gate binds in
+M-FINAL, so no verdict here). #box(math-label(ap-math(ew-p.label))) (EW) on #raw(eg.ew_model.split("/").last()) (the workspace's
+Python-3 reference copy of `loop_qcd_qed_sm_Gmu`, the harness default; not the shipped patched UFO, which the campaign
+used), native per-point inputs, full colour, binary64 finite part, checks off, one pinned core (#ew-c.host_cpus.map(str).join(", ")), at
+$B = 128$: *#ms2(ew-t * 1000) ms per point* (±#fixed(100 * ew-b.uncertainty, 1) %) against Recola #dur(ew-rc), OpenLoops
+#dur(ew-prov("openloops")) and MadLoop #dur(ew-prov("madloop")) (provider records reused, not re-run): ×#fixed(ew-t / ew-rc, 3) of Recola's
+time, #fixed(ew-t / (eg.gate_factor * ew-rc), 3) of 1.30 × Recola (Table 1 row, Figure 1). Generation #dur(ew-gen.generate.seconds) + #dur(ew-gen.export.seconds), peak
+#gib(calc.max(ew-gen.generate.peak_gib, ew-gen.export.peak_gib)). Accuracy: against its fixture (#ew-acc.points points) #sci(ew-acc.max_error)
+(DD asserted at point #ew-acc.double_double_points.map(str).join(", "), where $E > 10^(-9)$; binary64 #sci(ew-acc.max_error_binary64)); against the providers at #ew-row.validation.points stream points in binary64:
+#ew-row.validation.references.map(x => [#x.short #sci(x.max_finite)]).join(", "). #if ew-early.len() > 0 [Earlier run (MS-VALIDATE, #raw(ew-early.last().revision.slice(0, 8))): #ew-early.last().batches.pairs().map(((b, x)) => [$B = #b$ #dur(x.median_seconds_per_point)]).join(", ").]
+]
+
+// ================================================================ M-QCD ==
+// The QCD capability matrix (m-qcd/PLAN.md §5.2): data/mqcd-matrix.json,
+// written by scripts/build_mqcd_matrix.py from data/mqcd.json and the
+// campaign's public-route, FFT and self-test data; the per-row data are in
+// the appendix (@tab:mqcdrows).
+#pagebreak(weak: true)
+= QCD capability matrix (M-QCD) <mqcd>
+
 #figure(kind: table,
   caption: [*QCD capability matrix* at #raw(mx.campaign.campaign_head.split(" ").first()), per class of `m-qcd/PLAN.md`
     §1.1 (campaign of #mx.campaign.date, `data/mqcd.json`; legend below the table, rows: @tab:mqcdrows).],
@@ -1133,7 +1318,7 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
   set par(justify: false, leading: 0.45em)
   [*Rows*: campaign rows and their status (passing every rule of their tier; partial: a rule not formed); class
   status *accepted*: every other row is an open finding the coordinator accepted for the gate. *Public
-  route*: the class representative generated by `Generator` on the shipped `loop_sm`, `Runtime.load` and `evaluate`,
+  route* (at `e18a024b`): the class representative generated by `Generator` on the shipped `loop_sm`, `Runtime.load` and `evaluate`,
   against MadLoop (rules 1–3; Q-top and Q-multi by the campaign's public variants of $p p -> t overline(t)$). *DD vs
   ref.*: largest relative deviation of the double-double Laurent coefficients (Born, finite, poles, every sector) from
   the binding reference (rule 1; MadLoop in quadruple precision unless named). *binary64*: from DD where binary64 is
@@ -1157,8 +1342,9 @@ seven-gluon colour-correlated trees exceed addendum H's memory budget, and its p
 failures and no value (binary64 `Unstable` at $theta = 10^(-3)$–$10^(-5)$, DD `CutFailed{DegenerateGram}` at
 $10^(-4)$, $10^(-5)$); A09 itself and its soft variant pass. D19 and C07 have no predicted pole sector (MQ-EWJOIN's
 `separated-exchange` rule: their QCD loop selection omits IR-divergent loops, as MadLoop's does) and are checked against
-MadLoop per split order. The public-route representatives ran on a scratch copy of the manifest (G02 with explicit
-Born limits, H01 without the tools route's CKM twin relation); MQ-MODEL's public-equals-tools-view tests passed at the pin.
+MadLoop per split order. *Re-run at #raw(mx.campaign.campaign_head.split(" ").first())* (#mx.campaign.date): no status
+or check count changed; 84 of 1212 deviation values moved at rounding level, all on electroweak-Born rows (@status);
+the public-route and FFT columns are M-QCD's runs at `e18a024b` (public route on a scratch manifest copy).
 ]
 
 // FFT cost (data/mqcd-fft-cost.json through mqcd-matrix.json fft).
@@ -1175,11 +1361,11 @@ Born limits, H01 without the tools route's CKM twin relation); MQ-MODEL's public
     binary64-unstable: $E$ up to $O(10^2)$) FFT − direct stays within #fixed(100 * fw.double.ratio_to_envelope, 1) % of
     the acceptance envelope $10 (E_"FFT" + E_"direct") + 16 u S$ in binary64 and within
     #fixed(100 * fw.at("double-double").ratio_to_envelope, 1) % in DD (relative ≤ #sci(fw.at("double-double").relative));
-    `test_loop_v2_seed_fft.py` (default, nightly, seven legs) passes at the pin.],
+    `test_loop_v2_seed_fft.py` (default, nightly, seven legs) passed at `e18a024b`.],
   tstyle(table(
     columns: (3.0cm, 2.6cm, 1.1cm, 1.0cm, 2.9cm, 1.3cm, 2.9cm, 1.3cm),
     align: (x, y) => if x <= 1 { left + horizon } else { right + horizon },
-    inset: (x: 4pt, y: 2.6pt), stroke: tstroke, fill: thead-fill,
+    inset: (x: 4pt, y: 1.9pt), stroke: tstroke, fill: thead-fill,
     table.header[Process][Class][group][pairs][evaluation, s][ratio][seed contraction, ms][ratio],
     ..mx.fft.rows.map(r => (
       text(8.4pt, font: "Libertinus Serif", math-label(r.process.split(" ").map(tok).join(" "))),
@@ -1206,37 +1392,42 @@ stream's exact rational points, the providers their binary64 decimal text.
 #let py-lc-revs = revs-of(p => cfg(p, "python/lc"))
 The configurations:
 
-- *native inputs, on `loop`* — the engine at #raw(g.slice_revision) (milestone M-QCD: the engine of m1028a,
-  `28a16255`, with the #ms.integrated.len() packages of @status\; build #raw(g.slice_build), digest
+- *native inputs, on `loop`* — the engine at #raw(g.slice_revision) (milestone M-SM: the engine of M-QCD,
+  `e18a024b`, with the #ms.integrated.len() packages of @status\; build #raw(g.slice_build), digest
   #raw(g.slice_native_digest.slice(0, 8))): the executor forms the trees, the Born and the counterterm inputs per
   point (binary64 SymJIT plane applications, tree closures in lanes of points), skips the counterterm interactions
   that only feed poles in finite-only mode, then runs the loop stage. #gname("gg_ggggg") is timed from its stored
   process. The public path (#gname("uux_ddxg")): the public generator's artifact has the harness's plan digest,
   `Runtime.load` in a fresh interpreter makes no generation call, and the loaded executor returns the timed run's
-  binary64 values bitwise at all 128 stream points (`public_path_check` in `data/g1.json`). *Values against
-  m1028a* (`values_note`): bitwise in 19 of 30 configurations (every leading-colour one and the quark-only full-colour
-  ones); the full colour of the rows with gluons moved at rounding level at stable points (Borns bitwise); every change
-  above $10^(-5)$ lies at a binary64-unstable point, at most 0.11 of its estimate $E$ (stability rows added there). At 6
-  of #gname("gg_ggggg")'s 128 stream points (17, 89, 93, 95, 109, 112) binary64 is wrong by $O(1)$ or more in both
-  engines; the recommended checks flag every one ($E$ = 8 to $5 times 10^3$), the timing runs evaluate them with
-  checks off. Earlier campaigns (m1028a `28a16255`, m1026a `11542fd5`, m1025a `1d27426b`, G-int `4e9b5a9e`, the
-  development campaign of #rev-list(l1-revs)) are `earlier_runs`, history;
+  binary64 values bitwise at all 128 stream points (`public_path_check` in `data/g1.json`; its plan digest is also
+  M-QCD's). *Values against M-QCD* (`e18a024b`, `values_note`): bitwise in 22 of 30 configurations; the other 8 are the
+  full- and leading-colour configurations of the four rows with an $e^- e^+$ pair (electroweak couplings), changed at
+  rounding level (largest $1.2 times 10^(-9)$, #gname("uux_emepddxg") full colour). The binary64-unstable stream points
+  of M-QCD's analysis (at 6 of #gname("gg_ggggg")'s 128 points, 17, 89, 93, 95, 109 and 112, binary64 is wrong by $O(1)$
+  or more; the recommended checks flag every one, $E$ = 8 to $5 times 10^3$) lie in configurations whose values are
+  bitwise M-QCD's, whose stability rows stay inputs; of the 65 stability rows re-run here, 60 are bitwise M-QCD's and
+  the others within $5.8 times 10^(-12)$. The timing runs evaluate every point with checks off. Earlier campaigns
+  (M-QCD `e18a024b`, m1028a `28a16255`, m1026a `11542fd5`, m1025a `1d27426b`, G-int `4e9b5a9e`, the development
+  campaign of #rev-list(l1-revs)) are `earlier_runs`, history;
 - *Python inputs* #flag[history] — the engine on `loop` before G-int, G1 at
   #rev-list(py-revs)#if py-lc-revs.len() > 0 [ (LC at #rev-list(py-lc-revs))]: trees, Born amplitudes and
   counterterm scalars formed per point in Python, then the loop stage natively.
 
 *Timing protocol at #raw(g.slice_revision)* (`timing_protocol` in `data/g1.json`): the committed harness, binary64,
 finite part only, no stability check, one thread on one pinned core, setup heap frozen out of Python's cyclic collector
-before the warm-up, the frozen streams. The native digest changed (f813c625 → #raw(g.slice_native_digest.slice(0, 8))),
+before the warm-up, the frozen streams. The native digest changed (`1be09f92` → #raw(g.slice_native_digest.slice(0, 8))),
 so every configuration was re-timed at $B = 128$ (three blocks; at $2 -> 5$ after a 16-point warm-up), full and leading
 colour, in one round (timings indicative, user 2026-10-28: no repeat for host contention; no verdict was open, so no
 verdict repeat). $B = 1$ and the $2 -> 5$ rows' $B = 16$ were *not re-timed*: the tables show m1028a's runs (`28a16255`,
 each configuration's last earlier run) marked °. Host: #g.host.
 
 *Generation* (`generation_protocol`): every row generated cold in its own process with fresh caches, as in m1026a;
-against m1028a, model + generate + export changed by −6 % to +19 % (median −3 %), plan sizes equal everywhere, and the
-seven-gluon plans are byte-identical (#gname("gg_ggggg"): full colour 170 + 214 s, 9.5 GiB; LC 173 + 207 s, 10.0 GiB).
-The provider records are reused unchanged (`provider_records`).
+against M-QCD, model + generate + export changed by −19 % to +5 % (median −3 %), plan sizes and structure equal
+everywhere, and the seven-gluon plans are M-QCD's (#gname("gg_ggggg"): full colour 171 + 213 s, 9.5 GiB; LC 178 + 213 s,
+10.0 GiB). The provider records are reused unchanged (`provider_records`). With #gname("uux_emepgg") at
+#dur(bat(nat-c(gproc("uux_emepgg")), big).median_seconds_per_point) per point (M-QCD: 4.93 ms) one more process is above the
+5 ms floor and gated. The electroweak row is timed by the same protocol in `data/msm-g1.json`, indicative and not gated
+(@msm); the tables of this section are `data/g1.json`'s.
 
 #let g7f-note = all-rows.find(r => r.key == "gg_ggggg").full_colour.main.at("note", default: none)
 #if g7f-note != none [*Seven gluons, full colour* #flag[contention]: #gname("gg_ggggg")'s full-colour runtime was #g7f-note.reason (`seven_leg_rows`, `host` in `data/g1.json`; @tab:summary marks the cell). It has no gate.]
@@ -1637,10 +1828,10 @@ it; measured #udx.gate.at("measured_status", default: udx.gate.status), band #fi
 protocol) or as the binary64 text the providers read is moot under this
 rule, and the protocol stays. For information only (not G1
 configurations, no verdict formed from them): on #raw(g.slice_revision) the public
-`Runtime.evaluate` of the loaded artifact (poles off, core 139) takes 11.19 ms per point at $B = 1$ and 1.91 ms at
-$B = 128$ for #gname("uux_ddxg"), against the campaign's 2.20 ms of the harness's executor at $B = 128$ (core 174) and
-1.88 ms in its smoke run, on other cores and at other times (`public_path_check` in `data/g1.json`, the campaign's
-`STATE.md`): the 1.12 of the limit is host noise more likely than a change (1.83 ms at m1028a); at G-int
+`Runtime.evaluate` of the loaded artifact (poles off, core 221) takes 11.71 ms per point at $B = 1$ and 2.01 ms at
+$B = 128$ for #gname("uux_ddxg"), against the campaign's #dur(bat(nat-c(gproc("uux_ddxg")), big).median_seconds_per_point) of the harness's executor at $B = 128$ (core 147) and
+1.98 ms in its smoke run, on other cores and at other times (`public_path_check` in `data/g1.json`, the campaign's
+`STATE.md`; M-QCD's run, 2.20 ms on a busy host, was 1.83 ms at m1028a); at G-int
 (`4e9b5a9e`, committed protocol) a paired run (one core, ten alternating rounds) gave 1.68 ms on the binary64 text
 against 2.29 ms on the exact points (×0.73; #gname("uux_uuxg"): 2.94 against 3.39 ms, ×0.87).
 
@@ -2073,11 +2264,9 @@ lower multiplicities and existing references.
 #let ttq-errs = ttq.max_error_per_point.sorted()
 The $g g -> t overline(t) e^- e^+ g$ (QCD) finite part deviates by #sci(ttq-errs.last()) at one of its three points and by at
 most #sci(ttq-errs.at(-2)) at the others: the point's known binary64 conditioning (earlier record, DESIGN WP3.1 fourth
-increment: #ttq-old.validation). The electroweak target waits for M-SM (WP3.2, paused: EW guards, the QED Catani operator,
-EW fermion lines, Feynman-gauge trees, loops and counterterms (EWI-4a, EWI-4b), on-shell external photons at $alpha(0)$
-(EWI-6b), the UFO's EW counterterms lowered at scale (EWI-0, EWI-3, EWI-3R), Levi-Civita cells (EWI-7b) and lepton
-lines through the loop (EWI-5) are on `loop`; EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9)
-are not; the QCD classes are M-QCD's, @mqcd). The $u overline(u) -> g g g g g$ row comes
+increment: #ttq-old.validation). The electroweak target is validated by the M-SM campaign (@msm, @tab:msmrows), row #ms.required.rows.find(r => r.label.starts-with("g g -> t overline(t) e^- e^+ g") and r.at("corr", default: none) == "EW").validation; G1 times it indicatively (`data/msm-g1.json`, @msm; Table 1), and its
+generation and validation are the integrated configuration's, not a development record (so it is not in the table
+above). The QCD classes are M-QCD's (@mqcd). The $u overline(u) -> g g g g g$ row comes
 from #rn.processes.uux_ggggg.record.split(",").first(), the newest record of that process: the later re-runs on the merged
 heads (eighth and ninth increments) do not include it. It uses the same production counterterm route; its check is in @tab:sevencheck.
 
@@ -2250,22 +2439,22 @@ and so is the check of the timed configuration against NJet's ten points (@tab:s
 #let caps = (
   ([Recursive engine], "supported", [Trees, families and loop numerators from recursions; no loop diagram is enumerated (FeynKit graphs are test oracles only). Any number of coloured fermion lines, identical or distinct flavours, QCD and EW (fermion-lines, `db1ed5cb`: the fold of mixed colour-connection parities before the evaluation reuse, Python and Rust lanes; $u overline(u) -> d overline(d) s overline(s)$, $u overline(u) -> u overline(u) d overline(d)$, $u overline(u) -> u overline(u) u overline(u)$ and $u overline(u) -> u overline(u) e^+ e^-$ equal MadLoop in quadruple precision and Recola). Since ew-leptons (EWI-5, `b82d8280`) any number of lepton and colour-singlet fermion lines, through the loop too, with one reading-sign rule and one fermion classifier taken from the tree engine (Bhabha against MadLoop; genericity audit 2 G2-M5, G2-M6); since ew-epsilon (`6da37352`) one root-closure reading sign on every fermionless vertex (G2-M7). Listed, typed refusals replace every silent-wrong-value path of the second genericity audit (fail-closed, `fb54246c`; visible in the dry run). Counterterms: see below.]),
   ([Default engine], "supported", [v2 is the only one-loop engine (MQ-LEGACY-REMOVE, `539dffdd`; user 2026-10-28 \~16:10 Q3): the per-diagram legacy engine, its plan v3 artifacts and the precision-rescue options are removed; `loop.engine`, `--loop-engine` and a non-default `[evaluation.stability]` are refused with the removal reason; tests that used the legacy engine as an oracle keep an independent one (frozen captures or providers).]),
-  ([Stock `loop_sm`, public route], "supported", [The wheel ships MG5 3.7.0's `loop_sm` and its restrictions with a `[loop.model]` profile (MQ-MODEL, `321efdb4`): every QCD class generates through `Generator` / TOML / CLI without a `tools/` helper or hand-written declaration, a multiparticle label one entry per subprocess, bitwise the tools route (@mqcd); MadLoop syntax mapped (`[virt=QCD]` → `loop_coupling_orders`, `QED=n` → `max_coupling_orders`, `/ x` → `particle_veto`), decays, decay chains and `$` refused typed; `pyamplicol self-test` evaluates a `loop_sm` virtual against MadLoop.]),
-  ([Full, NLC and LC colour], "supported", [*Full colour is the default* of loop requests (user 2026-10-28 Q1); LC and NLC are opt-in through the shipped `loop_sm` $N_c$ declaration (MQ-NC, `d8d9349f`: every counterterm vertex, resolved by structural digest; formal-$N_c$ projections equal to $N_c$ scans and checked against independent oracles, rule 7; an uncovered vertex refused, `colour-declaration-coverage`). *LC helicity and colour-flow selection* (MQ-SELECT, `e4964fc3`): `helicities=` / `color_flows=` at generation (recursion pruned to the selection) and at evaluation, tree-engine IDs; a complete set of selections sums to the inclusive LC value; NLC and full colour keep their API (selectors refused there). Exact seed tables in $N_c$, built in Rust since native-seeds (`7e3841f3`), with native colour cells, seed records and dipole orbits since native-cells (`5ebcebea`; the Python stages are the oracles); LC/NLC by generated classes and truncated cells. #if lc-slower.len() == 0 [LC is faster than full colour end to end on every G1 row at $B = 128$, the $2 -> 5$ rows included (LC/FC #fixed(lc-now.first().r, 2)–#fixed(lc-now.last().r, 2), @tab:g1lc); the top-free seven-gluon LC plan keeps every full-colour family by construction (@lc).] else [LC is cheaper in the loop stage but not yet end to end at large batches (@tab:g1lc), nor to generate at seven legs.] Since identical-flavour-lc (`5cb5ea83`) LC and NLC of identical-flavour quark lines (from $u overline(u) -> u overline(u) g$ up, any number of lines) are exact formal-$N_c$ projections: blocks and counterterm program split by U(1)-subtraction $N_c$ grade in both lanes, order-free grades (G2-M1; the limitation of m1026a is removed, @lc); a block that still mixes grades is refused (`colour-accuracy-nc-exact`, fail-closed).]),
+  ([Shipped models, public route], "supported", [The wheel ships MG5 3.7.0's `loop_sm` and its restrictions with a `[loop.model]` profile (MQ-MODEL, `321efdb4`): every QCD class generates through `Generator` / TOML / CLI without a `tools/` helper or hand-written declaration, a multiparticle label one entry per subprocess, bitwise the tools route (@mqcd); MadLoop syntax mapped (`[virt=QCD]` → `loop_coupling_orders`, `QED=n` → `max_coupling_orders`, `/ x` → `particle_veto`), decays, decay chains and `$` refused typed; `pyamplicol self-test` evaluates a `loop_sm` virtual against MadLoop. *Since M-SM* the wheel also ships `loop_qcd_qed_sm` and `loop_qcd_qed_sm_Gmu`, UFOmodeldb `6ca4b120` plus the user's issue-1 patch ($R_2$ of `R2_G0tt` split by loop origin, exactly unitary CKM, the $G_mu$ bottom-mass charge counterterm; PROVENANCE and `MANIFEST.sha256` record the local delta; MS-MODEL `2ae8b88b`, MS-UFODB `0e5930c2`, MS-UFO-PATCH `3eb4db9f`), with digest-keyed profiles and the structural Goldstone-flag repair: every EW class generates through the public route, bitwise the tools view (@msm); a multiparticle request generates its members with a Born and records the loop-induced members as skipped (`loop-induced`, Q2); the self-test also evaluates an EW virtual from the shipped prepared artifact (= MadLoop to #sx-ew-st).]),
+  ([Full, NLC and LC colour], "supported", [*Full colour is the default* of loop requests (user 2026-10-28 Q1); LC and NLC are opt-in through the shipped `loop_sm` $N_c$ declaration (MQ-NC, `d8d9349f`: every counterterm vertex, resolved by structural digest; formal-$N_c$ projections equal to $N_c$ scans and checked against independent oracles, rule 7; an uncovered vertex refused, `colour-declaration-coverage`). *LC helicity and colour-flow selection* (MQ-SELECT, `e4964fc3`): `helicities=` / `color_flows=` at generation (recursion pruned to the selection) and at evaluation, tree-engine IDs; a complete set of selections sums to the inclusive LC value; NLC and full colour keep their API (selectors refused there). Exact seed tables in $N_c$, built in Rust since native-seeds (`7e3841f3`), with native colour cells, seed records and dipole orbits since native-cells (`5ebcebea`; the Python stages are the oracles); LC/NLC by generated classes and truncated cells. #if lc-slower.len() == 0 [LC is faster than full colour end to end on every G1 row at $B = 128$, the $2 -> 5$ rows included (LC/FC #fixed(lc-now.first().r, 2)–#fixed(lc-now.last().r, 2), @tab:g1lc); the top-free seven-gluon LC plan keeps every full-colour family by construction (@lc).] else [LC is cheaper in the loop stage but not yet end to end at large batches (@tab:g1lc), nor to generate at seven legs.] Since identical-flavour-lc (`5cb5ea83`) LC and NLC of identical-flavour quark lines (from $u overline(u) -> u overline(u) g$ up, any number of lines) are exact formal-$N_c$ projections: blocks and counterterm program split by U(1)-subtraction $N_c$ grade in both lanes, order-free grades (G2-M1; the limitation of m1026a is removed, @lc); a block that still mixes grades is refused (`colour-accuracy-nc-exact`, fail-closed). *EW LC/NLC is not supported, by design* (user 2026-10-30 Q4: the typed `colour-declaration-coverage` refusal is permanent); electroweak requests run at full colour.]),
   ([FFT colour contraction], "supported", [Certified symmetric-group FFT of the seed contraction in the native executor at full colour and NLC, binary64, double-double and MPFR (MQ-FFT, `da6980b0`): generic over the plan's certified pairs, policy `auto | direct | fft` (the algorithm run is reported; a forced FFT without a certified pair is refused, `forced-seed-fft-unserved`), public `color.contraction` route; FFT = direct to rounding up to $g g -> g g g g g$; the seed stage ×0.46–0.70 of direct at $S_5$, $S_6$, slower below, the whole evaluation unchanged within noise (@tab:fft).]),
   ([Colour and spin correlations], "supported", [Directed colour histories at LC/NLC/FC, spin sources, resolved helicities, flavour aliases, Ward sources (WP2.5). Since generation-scale-2 the directed metrics are native and stored with the process (correlated and resolved calls of a stored process regenerate nothing; one seed column per self-adjoint dipole): declaring the NLO dipoles costs +10 % of the six-gluon generation (38.5 against 35.0 s); at seven gluons 784 against 419 s, whose metric tables go to `native-cells`' next run. LC/NLC correlations of identical-flavour quark lines use the graded blocks of the colour row. Correlations keep their internal validation; independent provider oracles (MQ-CORR) are M-FINAL's (user 2026-10-28 Q2); correlations with an LC selection are refused (`selected-correlators`).]),
   ([Per-order partials], "supported", [Every squared coupling order at tree level and at one loop, mixed Born orders, per-correction loop orders.]),
-  ([Poles at runtime], "supported", [`poles = "all" | "none" | "uv" | "ir" | "split"` (WP2.10, on `loop` since 24 October): finite-only mode with the finite part bitwise unchanged and the pole work skipped (natively per counterterm interaction since generation-scale-2's I5 record); `"uv"` and `"ir"` with the user's semantics of 23 October, from a lean stored companion of the certified-scaleless families (bitwise at $g g -> g g g$ and $u overline(u) -> g g g g$, equal to rounding at six and seven gluons) and in the SDK v4 too; the IR poles sum one Catani operator per correction, QED included (ew-poles, `8b52179b`; a correction without a prediction gives none); since `e6e7543a` a mixed QCD×EW sector is predicted only where the requested corrections complete its loops, and joint requests predict it exactly; since MQ-EWJOIN a sector whose QCD loop selection omits IR-divergent loops (gluon exchange between quark lines joined by a $W$/$Z$ in the loop, `separated-exchange`) is not predicted and checked against MadLoop per split order. Photon-only QED corrections on `loop_qcd_qed_sm` are refused (`veto-unlabelled-counterterms`: the veto reaches counterterms with empty or nominal loop labels; full EW on that model matches Catani; EWI-7). The UV residue comes from an interim local module until the NinjaRS re-pin; a `"uv"` estimate needs a rotation check.]),
+  ([Poles at runtime], "supported", [`poles = "all" | "none" | "uv" | "ir" | "split"` (WP2.10, on `loop` since 24 October): finite-only mode with the finite part bitwise unchanged and the pole work skipped (natively per counterterm interaction since generation-scale-2's I5 record); `"uv"` and `"ir"` with the user's semantics of 23 October, from a lean stored companion of the certified-scaleless families (bitwise at $g g -> g g g$ and $u overline(u) -> g g g g$, equal to rounding at six and seven gluons) and in the SDK v4 too; the IR poles sum one Catani operator per correction, QED included (ew-poles, `8b52179b`; a correction without a prediction gives none); since `e6e7543a` a mixed QCD×EW sector is predicted only where the requested corrections complete its loops, and joint requests predict it exactly; since MQ-EWJOIN a sector whose QCD loop selection omits IR-divergent loops (gluon exchange between quark lines joined by a $W$/$Z$ in the loop, `separated-exchange`) is not predicted and checked against MadLoop per split order. Photon-only QED corrections on `loop_qcd_qed_sm` are refused (`veto-unlabelled-counterterms`: the veto reaches counterterms with empty or nominal loop labels; full EW on that model matches Catani; EWI-7). The UV residue comes from an interim local module until the NinjaRS re-pin; a `"uv"` estimate needs a rotation check. *EW pole split* (MS-POLES, `42b2794f`): on EW requests `"uv"` and `"split"` come from the model's pole regulators (`epsUV`, `epsIR`) under both mass schemes, at the cost of one more regulated pass of the tree program; the conventions record the regulators (= MadLoop on DY01 and TT01).]),
   ([Stability estimates], "supported", [*Recommended checks* (MQ-STAB, `a2aa0d84`): `loops.v2.stability.RECOMMENDED_CHECKS`, one generic exact rotation and the rescaled reduction check, the O1 estimate of the campaign and G1 (calibration: binary64 misses 0 % / 0.05–0.10 % of points, DD none; true error ≤ 10 $E$ at every campaign point; R3, DECISIONS 2026-10-29 \~18:25). Rotation checks (any number, 0 = estimate absent), reduction direction, exact rescaling, in any combination; no automatic escalation and no rescue (removed with the legacy engine). Generation's post-build validation re-checks a binary64 miss alone against a 32-digit reference: double-double must agree at the same tolerance, binary64 Borns at the tolerance and binary64 virtuals within the larger of the tolerance and their own estimate (one exact rotation and the reduction direction; an estimate above $10^(-9)$ or absent refuses), else generation refuses; an accepted point is logged (onshell-consistency, `4fc72e39`). The rotation and reduction-direction checks flag the fast binary64 lanes' known misses (precision row): use them for such kinematics or model units.]),
-  ([Precision carriers], "partial", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; since G-int the native per-point inputs run in binary64, DoubleFloat and arbitrary precision (DESIGN §5.5). Since `7db32901` binary64 runs SymJIT plane applications and needs no Symbolica licence; DoubleFloat and arbitrary precision run under pyAmpliCol's library key. Since precision-ap (`a8409830`) a master-integral invariant of one external leg is that leg's squared mass at the point's parameters: DoubleFloat and arbitrary-precision virtuals were O(1) wrong at binary64-rounded massive momenta and now agree with a MadLoop quadruple-precision run within $10^(-15)$ (and DoubleFloat massive spinors along $-z$ are fixed); since generation-scale-2 derived masses (e.g. $M_W$ of `loop_sm`) are parameter-program outputs, bound exactly (genericity M2). Since `onshell-threshold` (`6e123fdb`, G2-M3) binary64 lanes at the fast engine's absolute thresholds (light masses, invariants near a mass shell) go to the generic binary64 engine. *Known limitations of the fast binary64 lanes* (NinjaRS spinor package paused): Ninja's light-like spinors are off by up to \~$10^(-5)$ for legs near the $-z$ axis, and models whose units are \~$10^4$ or more away from GeV can give silent percent-level errors with stability checks off; double-double is exact there and the recommended checks flag them.]),
+  ([Precision carriers], "partial", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; since G-int the native per-point inputs run in binary64, DoubleFloat and arbitrary precision (DESIGN §5.5). Since `7db32901` binary64 runs SymJIT plane applications and needs no Symbolica licence; DoubleFloat and arbitrary precision run under pyAmpliCol's library key. Since precision-ap (`a8409830`) a master-integral invariant of one external leg is that leg's squared mass at the point's parameters: DoubleFloat and arbitrary-precision virtuals were O(1) wrong at binary64-rounded massive momenta and now agree with a MadLoop quadruple-precision run within $10^(-15)$ (and DoubleFloat massive spinors along $-z$ are fixed); since generation-scale-2 derived masses (e.g. $M_W$ of `loop_sm`) are parameter-program outputs, bound exactly (genericity M2). Since `onshell-threshold` (`6e123fdb`, G2-M3) binary64 lanes at the fast engine's absolute thresholds (light masses, invariants near a mass shell) go to the generic binary64 engine. *Known limitations of the fast binary64 lanes* (NinjaRS spinor package paused): Ninja's light-like spinors are off by up to \~$10^(-5)$ for legs near the $-z$ axis, and models whose units are \~$10^4$ or more away from GeV can give silent percent-level errors with stability checks off; double-double is exact there and the recommended checks flag them. *Binary64 evaluation of a stored artifact never calls Symbolica* (user 2026-10-30), complex-mass artifacts included: a cut-function argument that becomes real when complex-mass widths are exactly zero takes its real part at run time (MS-MASTERS, `71e2041e`; binary64 = DD = AP(32) on the CM01 zero-width fuzz, = MadLoop where its double and quadruple precision agree).]),
   ([Native executor, schedules], "supported", [Rust, 16 lanes (also for a one-point call, a G1 lever), threads; native tree closures in lanes of points with runtime AVX-512/AVX2 widths (lc-perf); in finite-only mode the counterterm interactions that only feed poles are skipped natively (generation-scale-2); G1 decision on the schedule-dependent stages (@tab:g1bm, provisional until compiled trees): M for pure-gluon LC from $n = 6$, B for every other class at $n <= 6$; F as oracle. The NinjaRS reduction runs serially. Development report: stage times, modelled kernel work, master-integral time.]),
-  ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; the artifact stores the native process (`point_inputs = "native-v2"`). Since `7db32901` (addendum G) its SymJIT -O2 applications are stored as IR and recompiled at load for the loading CPU (AVX and FMA3 required), no host string is embedded, and binary64 values are bitwise equal after relocation to another machine, user and path; the parameter program's SymJIT bytes differ per compilation (values unaffected; upstream fix filed). Since model-determinism (`4e9262b5`) the compiled model and the artifact's digest no longer depend on the process history; since native-lowering (`79f2a5bd`) the plan JSON is written by the Rust plan model (Python writer as oracle). Since generation-scale-2 (`11542fd5`) no call of a stored process regenerates (every pole selection with the stored companion, correlated, resolved, flavour and catalogue calls), a process the native export cannot store fails its generation with a typed refusal (genericity M1; the plan-only, regenerated-at-load artifacts are gone), and the Rust/C/C++/Fortran SDK v4 evaluates these artifacts with the `"uv"`/`"ir"` selections, bitwise the Python API. Since sdk-parity (`f6619f34`) one parameter rule holds in the Python API, `V2Runtime`, the Rust SDK and the C/C++/Fortran clients: ASCII decimal values checked before names, unknown, generation-fixed (naming who fixed them) and scale parameters refused with typed errors (G2-M2). The release natives need glibc $>=$ 2.38, a lower glibc giving the typed `NativePlatformError` at load (glibc-floor, `5301e24a`). Open: external-photon artifacts wait for EW native inputs (EWI-N); the plane check's outcome depends on the parameter order (G2-M4: a listed `plane-mismatch` refusal, never a wrong value).]),
-  ([Counterterms (model UV, $R_2$)], "supported", [Plain tree vertices of the recursion inserted exactly once (WP2.2, a18b7599; addendum J, b4d76cc3), admitted by coupling orders and the public `particle_veto`; no witness table or loop matching in production. *Stock `loop_sm` compatibility rule* (MQ-MODEL): its four-$G^0$ vertex `V_1001` names the three-slot constant `SSS1` where the four-slot `SSSS1` (same exact value) is meant; model preparation moves such references by structure, only on vertices a request reaches, and records each repair (`pyamplicol_source_repairs`, `source_compatibility_diagnostics` in the dry run); any other slot mismatch is refused (`lorentz-slot-arity`). Vertices whose couplings vanish at the restriction leave the loop catalogue (fail-closed-2, `loop-vertex-outside-tree-model` otherwise). An unlowerable counterterm vertex that no tree of the request reaches is inert and recorded in the artifact; a reachable one is refused. Site closure is the test oracle. Per point they are formed natively (G-int), the Python stages kept as oracle; generation of the counterterm route has output-identical savings (ct-perf, `201bece5`: compile memos, a content-addressed lowered-model cache), and since A4 (`1b13005a`) the native DAG builder is the production route for the loop blocks and the counterterm program (its counterterm emission byte-identical to the Python oracle; 11 listed features keep a recorded per-request Python fallback, any other native failure fails closed), at parity with the site oracle. In EW requests ('t Hooft–Feynman gauge, EWI-4b, `8b19dae8`) the Goldstone–vector mixing counterterms are lowered as vertex insertions. The UFO's EW counterterms (ew-ct, `392d3f4a`) are lowered through the model's own helper bodies with MadLoop's branch side for exactly real arguments: every Laurent piece of MadLoop's model library equals pyAmpliCol's to $3.7 times 10^(-15)$ in binary64 and $6.0 times 10^(-31)$ in double-double (against MadLoop's quadruple precision). Since EWI-3R (`59d47cb3`) the lowering runs at scale: native, parallel kernel-equivalence proofs (Python the oracle), one reference pair per Laurent coefficient, shared Horner schemes; about 26 s cold at the target instead of 259 s, 8.4 % of the $G_mu$ $g g -> t overline(t)$ (EW) generation (criterion < 20 %, user 2026-10-28); a non-polynomial coupling term or one below $epsilon^(-2)$ is refused when reachable. Lorentz `Epsilon` is lowered (EWI-7b, `6da37352`; sign = MadLoop to $10^(-12)$), and the Goldstone–vector mixing sign, from the tree engine's momenta, matches MadLoop's counterterm selection.]),
-  ([Direct $R_2$], "deferred", [A bonus by the user's rule; bounded controls only.]),
-  ([Electroweak, complex mass], "deferred", [WP3.2. On `loop`: typed refusals of EW requests with a non-zero width (until the complex-mass scheme); the QED Catani operator (`8b52179b`); EW fermion lines (`1d27426b`): Dirac–Weyl EW vertices, $W$ vertices along the fermion flow, conjugate readings, lepton- and colour-singlet-rooted processes, mixed-order Born with $W$ exchange; 't Hooft–Feynman gauge for trees (EWI-4a, `6c87e276`; Feynman = unitary and Slavnov–Taylor identities to $10^(-13)$; two model-compiler defects fixed, also on `main`: the chirality of a lone projector, `3ae34543`, and the Goldstone flag of $G^-$) and for loops and counterterms (EWI-4b, `8b19dae8`: $W$, $Z$, Goldstone and ghost loop lines, Goldstone–vector mixing counterterms; QCD-only requests keep the compiled gauge, plans byte-identical; $g g -> t overline(t)$ (EW) = MadLoop within $10^(-12)$); on-shell external photons at $alpha(0)$ with MG5_aMC's conversion (EWI-6b, `e6e7543a`); the UFO's EW counterterms (EWI-0, EWI-3) lowered at scale (EWI-3R, `59d47cb3`, above); Lorentz `Epsilon` and one reading sign per vertex (EWI-7b, `6da37352`; [U2] anomalous vetoes, which break a doublet, refused by default with a recorded override); lepton and colour-singlet fermion lines through the loop (EWI-5, `b82d8280`: Bhabha against MadLoop, $g g -> t overline(t) e^- e^+$ (EW) against three providers, $e^- e^+ -> t overline(t) h$ against Recola; MadLoop's export omits the $R_2$ term R2_G0tt_b, shown from its own output and with Recola). Refused (typed): photon-only QED on `loop_qcd_qed_sm`, charged Goldstone mixing reached only by $g b -> t overline(t) b$, ghost vertices not closed under conjugation, $u overline(d) -> t overline(b)$ (EW), Goldstone mixing at a massive leg (EWI-7) and the complex-mass scheme (EWI-10). Paused until M-SM: EW native inputs (EWI-N), the EW ladder and the target (EWI-7, EWI-9); CMS (EWI-10).]),
-  ([Required set], "partial", [Seven of eight generate and agree with their references in all coefficients with native inputs (@tab:validation, validated on the WP3.1 branch before its integration), $g g -> g g g g g$ against NJet's double-double values (its binary64 points 4 and 8 at $O(10^(-8))$ accepted by the user, within the estimate); the generator is on `loop` since G-int, and G1 times all seven in batches at full and leading colour (@g1; the $2 -> 5$ rows since `measure-g1-7leg`; all re-timed at #raw(g.slice_revision)). The seven-gluon Ward check (addendum H): #ms.status_notes.notes.gg_ggggg.ward_status. The G1 accuracy check asserts binary64 where $E <= 10^(-9)$ and DD elsewhere (user E1 ruling, g1-accuracy); R3 for QCD is recorded (DECISIONS 2026-10-29 \~18:25: two providers per process within their agreement, $g g -> g g g g g$ against NJet alone, addendum F). The EW target waits for M-SM (WP3.2). The provider reference trees no longer read the old working root (reference-relocate, `48aeb123`; provider values bitwise, and the toolkit refuses provider files outside the configured reference root).]),
-  ([Performance gates], "partial", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) without a matched provider: no gate]\; the gate is taken at $B = 128$ only (user 2026-10-28): $B = 1$ and the $2 -> 5$ rows' $B = 16$ are reported without a verdict (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history). Missing: provider protocol-mode columns.]),
-  ([$g g -> 6g$], "deferred", [No $2 -> 6$ work until the $2 -> 5$ plan is complete (user, 23 October).]),
+  ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; the artifact stores the native process (`point_inputs = "native-v2"`). Since `7db32901` (addendum G) its SymJIT -O2 applications are stored as IR and recompiled at load for the loading CPU (AVX and FMA3 required), no host string is embedded, and binary64 values are bitwise equal after relocation to another machine, user and path; the parameter program's SymJIT bytes differ per compilation (values unaffected; upstream fix filed). Since model-determinism (`4e9262b5`) the compiled model and the artifact's digest no longer depend on the process history; since native-lowering (`79f2a5bd`) the plan JSON is written by the Rust plan model (Python writer as oracle). Since generation-scale-2 (`11542fd5`) no call of a stored process regenerates (every pole selection with the stored companion, correlated, resolved, flavour and catalogue calls), a process the native export cannot store fails its generation with a typed refusal (genericity M1; the plan-only, regenerated-at-load artifacts are gone), and the Rust/C/C++/Fortran SDK v4 evaluates these artifacts with the `"uv"`/`"ir"` selections, bitwise the Python API. Since sdk-parity (`f6619f34`) one parameter rule holds in the Python API, `V2Runtime`, the Rust SDK and the C/C++/Fortran clients: ASCII decimal values checked before names, unknown, generation-fixed (naming who fixed them) and scale parameters refused with typed errors (G2-M2). The release natives need glibc $>=$ 2.38, a lower glibc giving the typed `NativePlatformError` at load (glibc-floor, `5301e24a`). Since M-SM external-photon and complex-mass artifacts are `native-v2` too (ew-native, MS-CMS-N: complex pole masses through the native trees and executor, bitwise after relocation). Open: the plane check's outcome depends on the parameter order (G2-M4: a listed `plane-mismatch` refusal, never a wrong value).]),
+  ([Counterterms (model UV, $R_2$)], "supported", [Plain tree vertices of the recursion inserted exactly once (WP2.2, a18b7599; addendum J, b4d76cc3), admitted by coupling orders and the public `particle_veto`; no witness table or loop matching in production. *Stock `loop_sm` compatibility rule* (MQ-MODEL): its four-$G^0$ vertex `V_1001` names the three-slot constant `SSS1` where the four-slot `SSSS1` (same exact value) is meant; model preparation moves such references by structure, only on vertices a request reaches, and records each repair (`pyamplicol_source_repairs`, `source_compatibility_diagnostics` in the dry run); any other slot mismatch is refused (`lorentz-slot-arity`). Vertices whose couplings vanish at the restriction leave the loop catalogue (fail-closed-2, `loop-vertex-outside-tree-model` otherwise). An unlowerable counterterm vertex that no tree of the request reaches is inert and recorded in the artifact; a reachable one is refused. Site closure is the test oracle. Per point they are formed natively (G-int), the Python stages kept as oracle; generation of the counterterm route has output-identical savings (ct-perf, `201bece5`: compile memos, a content-addressed lowered-model cache), and since A4 (`1b13005a`) the native DAG builder is the production route for the loop blocks and the counterterm program (its counterterm emission byte-identical to the Python oracle; 11 listed features keep a recorded per-request Python fallback, any other native failure fails closed), at parity with the site oracle. In EW requests ('t Hooft–Feynman gauge, EWI-4b, `8b19dae8`) the Goldstone–vector mixing counterterms are lowered as vertex insertions. The UFO's EW counterterms (ew-ct, `392d3f4a`) are lowered through the model's own helper bodies with MadLoop's branch side for exactly real arguments: every Laurent piece of MadLoop's model library equals pyAmpliCol's to $3.7 times 10^(-15)$ in binary64 and $6.0 times 10^(-31)$ in double-double (against MadLoop's quadruple precision). Since EWI-3R (`59d47cb3`) the lowering runs at scale: native, parallel kernel-equivalence proofs (Python the oracle), one reference pair per Laurent coefficient, shared Horner schemes; about 26 s cold at the target instead of 259 s, 8.4 % of the $G_mu$ $g g -> t overline(t)$ (EW) generation (criterion < 20 %, user 2026-10-28); a non-polynomial coupling term or one below $epsilon^(-2)$ is refused when reachable. Lorentz `Epsilon` is lowered (EWI-7b, `6da37352`; sign = MadLoop to $10^(-12)$), and the Goldstone–vector mixing sign, from the tree engine's momenta, matches MadLoop's counterterm selection. *UFO-complete $R_2$ insertion* on the EW UFOs (user Q7): every $R_2$ vertex a tree of the request reaches is inserted. Compatibility note: MadLoop never inserts R2_G0tt_b on the unpatched models (its label `[W+, b]` equals no loop's propagator set; mg5amcnlo\#475, up to 8.4 % on $t overline(t) -> z h$); on the shipped patched models MadLoop's exports call every $R_2$ coupling pyAmpliCol inserts (MS-VALIDATE).]),
+  ([Direct $R_2$], "deferred", [M-FINAL, item 2 of the user's preferred order (2026-10-30), EW included; the model's $R_2$ stays the production path (direct $R_2$ is a bonus by the user's rule, never scaled); `loop.r2_strategy = "direct"` is refused until then (`direct-r2`); bounded controls only.]),
+  ([Electroweak, complex mass], "supported", [*M-SM* (@msm, @tab:cms): QCD, QED and joint `[virt=QCD QED]` corrections on the shipped `loop_qcd_qed_sm` and `loop_qcd_qed_sm_Gmu` reproduce MadLoop in every class of `m-sm/PLAN.md` §1.1 (#sxc.pass of #sx-rows rows pass, #sx-partial.join(" and ") partial: F7, accepted). EW native inputs (ew-native, EWI-N), the EW ladder (ew-validate, EWI-7: ghosts of vetoed vector bosons, Goldstone-side root mixing), *per-leg photon tagging* (MS-PHOTON: `loop.external_photons` = `"final"` by default, `"all"`, `"none"` or a leg list, as MG5's `!a!`; $alpha(0)$ and the conversion counterterm on the tagged legs only), the *complex-mass scheme* (MS-CMS: MG5's transform per (mass, width) pair, coloured widths included; MS-CMS-N: native complex pole masses; = MadLoop CMS on CM01–CM05 and CM07–CM10), the EW pole split (MS-POLES), the EW generation stages in Rust (MS-GEN: catalogue segment polynomials and the parameter program's renaming behind PyO3, the Python stages the oracles, outputs byte-identical, EW generation 2.6–3.2× faster) and Symbolica-free binary64 (MS-MASTERS). Before M-SM on `loop`: the QED Catani operator, EW fermion lines, 't Hooft–Feynman gauge for trees, loops and counterterms, on-shell photons at $alpha(0)$, the UFO's EW counterterms lowered at scale, Lorentz `Epsilon`, lepton lines through the loop (EWI-0 to EWI-7b). Refused, typed: the Missing box of @status; EW LC/NLC never.]),
+  ([Required set], "supported", [All eight generate and agree with their references in all coefficients with native inputs: seven in @tab:validation (validated on the WP3.1 branch before its integration), the EW target in the M-SM campaign (TV07 against MadLoop, Recola and OpenLoops, @msm); $g g -> g g g g g$ against NJet's double-double values (its binary64 points 4 and 8 at $O(10^(-8))$ accepted by the user, within the estimate); the generator is on `loop` since G-int, and G1 times all seven in batches at full and leading colour (@g1; the $2 -> 5$ rows since `measure-g1-7leg`; all re-timed at #raw(g.slice_revision)). The seven-gluon Ward check (addendum H): #ms.status_notes.notes.gg_ggggg.ward_status. The G1 accuracy check asserts binary64 where $E <= 10^(-9)$ and DD elsewhere (user E1 ruling, g1-accuracy); R3 for QCD is recorded (DECISIONS 2026-10-29 \~18:25: two providers per process within their agreement, $g g -> g g g g g$ against NJet alone, addendum F). G1 times the EW target indicatively (@msm). The provider reference trees no longer read the old working root (reference-relocate, `48aeb123`; provider values bitwise, and the toolkit refuses provider files outside the configured reference root).]),
+  ([Performance gates], "partial", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) without a matched provider: no gate]\; the gate is taken at $B = 128$ only (user 2026-10-28): $B = 1$ and the $2 -> 5$ rows' $B = 16$ are reported without a verdict (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history).#for r in ew-status [ The EW row #box(math-label(r.math)) (EW) is timed indicatively: #ratio-mult(r.full_colour.main) of #r.full_colour.fastest.name's time at $B = 128$, no verdict ([U5]).] Missing: the binding EW speed gate and the provider protocol-mode columns (M-FINAL).]),
+  ([$g g -> 6g$], "deferred", [M-FINAL, item 1 of the user's preferred order (2026-10-30): the eight-gluon one-loop matrix element ($2 -> 6$); not started (no $2 -> 6$ work before the $2 -> 5$ plan was complete, user, 23 October).]),
 )
 #figure(kind: table,
   caption: [*Capability matrix* of the v2 engine on `loop` at #ms.engine_revision, with branch work marked.],
@@ -2500,10 +2689,16 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     counterterm-lowering share below 20 % (\~08:20 item 1) and the glibc floor (\~07:40; 2.38 since glibc-floor); the
     known limitations from the coordinator's milestone brief and
     `known_limitations` in `data/g1.json`; the identical-flavour LC limitation of m1026a, DECISIONS 2026-10-26 \~21:10
-    item 1, is removed by identical-flavour-lc) and milestone M-QCD (DECISIONS 2026-10-29 \~17:20: pin
-    #raw(ms.engine_revision), native #raw(ms.native_build.name); the user's milestone plan of 2026-10-28 \~12:50 and its
+    item 1, is removed by identical-flavour-lc), milestone M-QCD (DECISIONS 2026-10-29 \~17:20: pin
+    `e18a024b`, native `loop-native-v2-slice-d0fef168`; the user's milestone plan of 2026-10-28 \~12:50 and its
     rulings \~15:25, \~15:35/40 and \~16:10, the user's rulings of 2026-10-29 \~03:45 (E1) and \~10:20 (precision),
-    the coordinator's \~11:25 (F7, F11) and R3 for QCD \~18:25; `workspace/reports/engine-v2/m-qcd/PLAN.md` §1, §5); the user's gate decision of 2026-10-24, 16:05 UTC, is
+    the coordinator's \~11:25 (F7, F11) and R3 for QCD \~18:25; `workspace/reports/engine-v2/m-qcd/PLAN.md` §1, §5) and
+    milestone M-SM (DECISIONS 2026-10-31 \~07:45: pin #raw(ms.engine_revision), native #raw(ms.native_build.name)\; the
+    plan `workspace/reports/engine-v2/m-sm/PLAN.md` §1, §5 and its §6a user answers of 2026-10-30 \~08:10 (Q1 per-leg
+    photons, Q2 multiparticle members, Q3 decays in M-FINAL, Q4 EW LC/NLC never, Q5 both EW UFOs, Q7 the UFO-complete
+    $R_2$); the user's rules of 2026-10-30 \~08:40 (UFOmodeldb as ground truth), \~08:50 (M-FINAL order), \~12:45 (the
+    issue-1 patch, with the coordinator's \~13:40) and \~17:35 (binary64 without Symbolica); the accepted F7 and the SC03
+    τ-mass relaxation; mg5amcnlo\#475 and UFOmodeldb issue 1); the user's gate decision of 2026-10-24, 16:05 UTC, is
     recorded in `data/milestone.json` `gate_decisions` and no longer applies after the
     re-measure; the user's rules of 2026-10-24, 22:35 UTC — uncoloured generation,
     green-to-red run times, summary pages with only Table 1, Figure 1 and legends,
@@ -2529,6 +2724,15 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     generation refusals, `docs/user/configuration.md` and `docs/user/ufo-model-coverage.md`; the packages of M-QCD: their
     integration blocks in slice-status.md (@status), `docs/user/loop-sm-and-madloop.md` (the `loop_sm` repair rule) and
     the listed refusals of `src/pyamplicol/loops/v2/refusals.py` and `processes/refusals.py`.
+  - *@status (M-SM), @msm, @tab:msm, @tab:cms, @tab:msmrows:* `data/msm.json` (`scripts/build_mqcd.py` with `--manifest tests/fixtures/loop/msm/manifest.json`, from the
+    campaign's records, rebuilt byte-identically), `data/msm-findings.json`
+    (MS-VALIDATE's triage, unchanged at the pin), `data/msm-public.json` (the public-route test file's JUnit outcomes and
+    cases), `data/msm-selftest.json` (wheel self-test), combined with the manifest by `scripts/build_msm_matrix.py` into
+    `data/msm-matrix.json`; the G1 EW row `data/msm-g1.json` and `data/msm-g1-values.json` (`python -m tools.loop_benchmark
+    gate` over the EW records; Table 1 through `data/summary.json`); the campaign's records, logs and scripts in
+    `workspace/reports/engine-v2/m-sm/records/m1031-msm/` (a copy of `workspace/tmp/campaign-m1031-msm`: `results/`, the
+    JUnit and logs of the 32 jobs, `wheel/`, `STATE.md`). The M-QCD re-run at the pin: `data/mqcd.json`, records in
+    `workspace/reports/engine-v2/m-qcd/records/m1031-msm-mqcd/` (`c1/`, `compare.json` against M-QCD's file).
   - *@status (M-QCD), @mqcd, @tab:fft, @tab:mqcdrows:* `data/mqcd.json` (`scripts/build_mqcd.py` from the campaign's
     records), `data/mqcd-findings.json` (MQ-VALIDATE's triage, re-checked at the pin), `data/mqcd-public.json` (the
     public-route representatives), `data/mqcd-fft-cost.json` and `data/mqcd-fft-worst.json` (FFT cost and worst points),
@@ -2537,7 +2741,7 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     `workspace/tmp/campaign-m1029-mqcd`: `c1/` results, JUnit and logs, `x/` the FFT and stock-`loop_sm` test logs,
     `public/`, `fft/`, `wheel/`, `STATE.md`).
   - *@tab:summary, @fig:gate:* `data/summary.json`, written by
-    `scripts/build_summary.py` from `data/g1.json`, `data/measured.json`,
+    `scripts/build_summary.py` from `data/g1.json`, the EW row of `data/msm-g1.json`, `data/measured.json`,
     `data/milestone.json` and `tools/loop_benchmark/processes.json` by its
     main-configuration rule (the most recent measured configuration of each
     cell; a newer check that only repeats part of an older comparison does not
@@ -2569,10 +2773,12 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     of the $2 -> 2$ to $2 -> 4$ rows (`m1028a-r2-*`, deciding) and the seven-gluon stores' records, `logs/` with
     `/usr/bin/time -v` and host-load samples (`hostload.txt`, `hostload-r2.txt`), the public-path confirmation
     `confirm/`, the same-core old/new A/B and bisect runs `ab/` with `logs/ab-summary.txt`, the gate inputs
-    `out/inputs-final.txt` and labels `out/meta-final.json`, the campaign's scripts `scripts/`) and milestone M-QCD's at
-    #raw(g.slice_revision) `m1029-mqcd/` (a copy of `workspace/tmp/g1-m1029-mqcd`: `runs/`, `logs/`, `bin/`, the gate
+    `out/inputs-final.txt` and labels `out/meta-final.json`, the campaign's scripts `scripts/`), milestone M-QCD's at
+    `e18a024b` `m1029-mqcd/` (a copy of `workspace/tmp/g1-m1029-mqcd`: `runs/`, `logs/`, `bin/`, the gate
     inputs `inputs-final.txt`, labels `meta-final.json`, `compare.json`, `gate.log`, `STATE.md`; the seven-gluon stores
-    are not copied); provider records reused from the first campaign and the fix round, not re-run); the
+    are not copied) and milestone M-SM's at #raw(g.slice_revision) `m1031-msm/` (a copy of `workspace/tmp/g1-m1031-msm`:
+    the same files, the EW gate's `msm-g1.json`, `msm-g1-values.json`, `msm-gate.log` and the public-path check
+    `confirm/`); provider records reused from the first campaign and the fix round, not re-run); the
     earlier $2 -> 5$ records and the provider runs of those rows in
     `workspace/reports/engine-v2/measure-g1-7leg/records/` (`runs-f2/`, `runs-f4/`), MadLoop exports of the G1-only processes in
     `workspace/reference/runs/g1/`; recalibration
@@ -2582,7 +2788,7 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     scratch commit #raw(g.native_commit), kept as tag #raw("g1-native-inputs-" + g.native_commit))] else [; history:
     #builds-of(l1-c).map(raw).join([, ]) (`work/v2-generation-scale` #rev-list(ms.development.revisions.keys().filter(r => r not in l1-revs)) plus the timers of
     scratch commit #rev-list(l1-revs), tag #l1-revs.map(r => raw("g1-native-inputs-" + r)).join([, ]): earlier runs, one lane, schedule M, stability) and
-    #builds-of(py-c).map(raw).join([, ]) (Python inputs); the earlier runs of m1028a: `loop-native-v2-slice-5cb5ea83`, of m1026a: `loop-native-v2-slice-11542fd5`,
+    #builds-of(py-c).map(raw).join([, ]) (Python inputs); the earlier runs of M-QCD: `loop-native-v2-slice-d0fef168`, of m1028a: `loop-native-v2-slice-5cb5ea83`, of m1026a: `loop-native-v2-slice-11542fd5`,
     of m1025a: `loop-native-v2-slice-7db32901`, of G-int: `loop-native-v2-slice-4e9b5a9e`],
     release with one codegen unit and thin LTO; the harness is the committed `tools/loop_benchmark` of
     #raw(g.slice_tool_revisions) for every row (the heap freeze in the harness; m1025a's launcher and
@@ -2605,6 +2811,49 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
 ]
 
 // ============================================================= APPENDIX ==
+// Per-row data of the M-SM campaign (data/msm-matrix.json rows, from
+// data/msm.json; user rule: per-row data in data/ and an appendix).
+#pagebreak(weak: true)
+#heading(numbering: none)[Appendix: the M-SM campaign rows] <msmrows>
+
+#let sm-pts(r) = if r.points.len() == 0 [variants] else { r.points.pairs().map(((t, n)) => [#t.first() #n]).join([ · ]) }
+#figure(kind: table,
+  caption: [*Rows of the M-SM validation campaign* (`data/msm.json`, written by `scripts/build_mqcd.py` with its M-SM
+    manifest from the campaign's records at #raw(sx-pin), native
+    #raw(sx.campaign.natives.split(" ").first()); through `data/msm-matrix.json` `rows`). Per row: class, process, model
+    and restriction, tiers (d default, n nightly, c campaign) with their points, per-point inputs (n native), the
+    reference (ML MadLoop in quadruple precision, "ML d" its double-precision controls, Rc Recola, OL OpenLoops), the
+    largest deviations over the row and its gating variants (DD from the reference, rule 1; binary64 from DD, rule 2;
+    poles from Catani in DD, rule 4, "≤" a relaxed tolerance; — not formed or no predicted sector), the extras and gating
+    variants, the findings that name the row (`data/msm-findings.json`) and the status.],
+  {
+    set text(6.3pt, font: sans, stretch: 87.5%)
+    set par(justify: false, leading: 0.35em)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold")
+    show raw: set text(5.8pt)
+    table(
+      columns: (0.72cm, 1.4cm, 2.9cm, 1.65cm, 1.1cm, 1.3cm, 1.1cm, 1.1cm, 1.35cm, 1fr, 1.15cm, 1.0cm),
+      align: (x, y) => if x in (6, 7, 8) { right + horizon } else { left + horizon },
+      inset: (x: 2.4pt, y: 1.8pt),
+      stroke: (x, y) => (top: if y <= 1 { none } else { 0.3pt + luma(225) }),
+      fill: (x, y) => if y == 0 { navy } else { none },
+      table.header[Row][Class][Process][Model][Points][Reference][DD][b64/DD][Catani][Extras · variants][Findings][Status],
+      ..sx.rows.map(r => (
+        text(weight: "bold", r.row), r.class,
+        text(7.8pt, font: "Libertinus Serif", math-label(ap-math(r.process))),
+        [#sm-mod(r.model)#if r.restriction != "default" [ #r.restriction]],
+        [#sm-pts(r)#if r.inputs == "native" [ · n]],
+        r.reference.replace("MadLoop (double)", "ML d").replace("MadLoop", "ML").replace("Recola", "Rc").replace("Openloops", "OL").replace(" + ", ", "),
+        esci(r.dd_vs_reference), esci(r.binary64_vs_dd),
+        if r.catani_dd == none [—] else [#esci(r.catani_dd)#if "4dd" in r.relaxed [ ≤ #sci(r.relaxed.at("4dd"), d: 0)]],
+        [#r.extras.join(", ")#if r.extras.len() > 0 and r.variants.len() > 0 [ · ]#r.variants.map(v => [#v.id.split("@").last()#if v.status != "pass" [ #mq-chip(v.status)]]).join(", ")],
+        r.findings.join(", "),
+        mq-chip(r.status),
+      )).flatten(),
+    )
+  },
+) <tab:msmrows>
+
 // Per-row data of the M-QCD campaign (data/mqcd.json; user rule: per-row
 // data in data/ and an appendix, not in the main text).
 #pagebreak(weak: true)
@@ -2615,13 +2864,6 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
   let refs = (r.reference,) + r.variants.filter(v => v.gating).map(v => v.reference)
   let ps = refs.filter(x => x != none).map(x => x.providers).flatten().map(ap-ref-name).dedup()
   if ps.len() == 0 [—] else [#ps.join(", ")]
-}
-// MG5 particle names in math mode: multi-letter names quoted (ve, ta-).
-#let ap-tok(t) = {
-  if t == ">" { return "->" }
-  let (b, suf) = if t.ends-with("~") { (t.slice(0, -1), "bar") } else if t.ends-with("-") or t.ends-with("+") { (t.slice(0, -1), t.slice(-1)) } else { (t, none) }
-  let core = if b.len() == 1 { b } else { "\"" + b + "\"" }
-  if suf == "bar" { "overline(" + core + ")" } else if suf != none { core + "^(" + suf + ")" } else { core }
 }
 #let ap-pts(r) = r.tiers.pairs().map(((t, x)) => [#t.first() #x.points.len()]).join([ · ])
 #let ap-var(r) = { let v = r.variants.filter(v => v.gating); if v.len() == 0 [] else [#v.map(v => [#v.id.split("@").last()#if v.status != "pass" [ #mq-chip(v.status)]]).join(", ")] }

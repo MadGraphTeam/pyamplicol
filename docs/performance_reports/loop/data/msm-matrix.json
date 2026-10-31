@@ -854,6 +854,34 @@
    "status": "accepted"
   }
  ],
+ "catani": {
+  "standard": {
+   "value": 7.192133362651351e-26,
+   "row": "CM07"
+  },
+  "relaxed": [
+   {
+    "row": "TT05",
+    "value": 1.1324172933849883e-29,
+    "tolerance": 1e-14
+   },
+   {
+    "row": "TT06",
+    "value": 4.150430539985789e-30,
+    "tolerance": 1e-13
+   },
+   {
+    "row": "SC03",
+    "value": 1.1148665800811504e-06,
+    "tolerance": 1e-05
+   },
+   {
+    "row": "SC05",
+    "value": 4.146473467042035e-14,
+    "tolerance": 1e-12
+   }
+  ]
+ },
  "cms": [
   {
    "row": "CM01",
@@ -1188,6 +1216,1999 @@
     "coloured-width",
     "loop_sm"
    ],
+   "status": "pass"
+  }
+ ],
+ "rows": [
+  {
+   "row": "LL01",
+   "class": "W-lep",
+   "process": "e- e+ > m- m+",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 3
+   },
+   "inputs": "python",
+   "reference": "MadLoop (double)",
+   "dd_vs_reference": 1.947046687445993e-14,
+   "binary64_vs_dd": 5.0155353260713564e-14,
+   "catani_dd": 1.9674684346908993e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "ap",
+    "uv"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "LL02",
+   "class": "W-lep",
+   "process": "e- e+ > m- m+",
+   "model": "loop_qcd_qed_sm_Gmu_massive_muon",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 3
+   },
+   "inputs": "python",
+   "reference": "MadLoop (double)",
+   "dd_vs_reference": 1.1019316325937822e-14,
+   "binary64_vs_dd": 6.069637236993311e-15,
+   "catani_dd": null,
+   "catani": "none",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [
+    "F7"
+   ],
+   "status": "partial"
+  },
+  {
+   "row": "LL03",
+   "class": "W-lep",
+   "process": "e- e+ > e- e+",
+   "model": "loop_qcd_qed_sm",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 3
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 4.023759685976938e-15,
+   "binary64_vs_dd": 6.931061272970556e-15,
+   "catani_dd": 4.524422468673721e-31,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "LL05",
+   "class": "W-lep",
+   "process": "e- e+ > w+ w-",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.639801993192382e-13,
+   "binary64_vs_dd": 3.6689490038330135e-13,
+   "catani_dd": 5.662117410661333e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "LL08",
+   "class": "W-lep",
+   "process": "e- e+ > m- m+ a",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "a0",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 4.59437500929689e-13,
+   "binary64_vs_dd": 2.335069922955581e-12,
+   "catani_dd": 3.4960615792465775e-28,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "a0"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "LL09",
+   "class": "W-lep",
+   "process": "e- e+ > t t~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.83686344096602e-15,
+   "binary64_vs_dd": 7.892053139337606e-15,
+   "catani_dd": 5.131144605983137e-31,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "uv"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "LL10",
+   "class": "W-lep",
+   "process": "e- e+ > t t~ h",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop + Recola",
+   "dd_vs_reference": 1.950932655273343e-14,
+   "binary64_vs_dd": 1.6767407264496752e-12,
+   "catani_dd": 4.9096017097747054e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "DY01",
+   "class": "W-DY",
+   "process": "u u~ > e- e+",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.168520723990611e-15,
+   "binary64_vs_dd": 1.9288498937140046e-14,
+   "catani_dd": 2.714286187796471e-31,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "uv",
+    "hel",
+    "sp"
+   ],
+   "variants": [
+    {
+     "id": "DY01@mwmz",
+     "status": "pass"
+    }
+   ],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "DY02",
+   "class": "W-DY",
+   "process": "u d~ > e+ ve",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 6.924999373996398e-15,
+   "binary64_vs_dd": 4.732276187733842e-12,
+   "catani_dd": 1.7904899894747513e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "DY03",
+   "class": "W-DY",
+   "process": "u u~ > e- e+",
+   "model": "loop_qcd_qed_sm",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.927313298720918e-15,
+   "binary64_vs_dd": 3.143929606593765e-14,
+   "catani_dd": 5.0495957438316315e-31,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "DY04",
+   "class": "W-DY",
+   "process": "e- u > e- u",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.2862026586550713e-15,
+   "binary64_vs_dd": 2.1959426410585852e-14,
+   "catani_dd": 8.002275065176728e-31,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "DY05",
+   "class": "W-DY",
+   "process": "u u~ > e- e+ g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 3
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 9.13968948511922e-13,
+   "binary64_vs_dd": 4.789930114573306e-13,
+   "catani_dd": 5.7664915566397555e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "ward",
+    "joint",
+    "ap"
+   ],
+   "variants": [],
+   "findings": [
+    "F4"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "DY07",
+   "class": "W-DY",
+   "process": "u u~ > e- e+ m- m+",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 8.082314283055219e-15,
+   "binary64_vs_dd": 4.246131670212001e-12,
+   "catani_dd": 1.1372397543046438e-28,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "DY08",
+   "class": "W-DY",
+   "process": "u u~ > e- e+ g g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.4577964121779113e-14,
+   "binary64_vs_dd": 1.536887399595272e-12,
+   "catani_dd": 1.7984768537345126e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "VJ01",
+   "class": "W-V",
+   "process": "u u~ > z g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 3.610631376471368e-15,
+   "binary64_vs_dd": 1.2156795256159093e-13,
+   "catani_dd": 3.279873968398597e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "ward"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "VJ02",
+   "class": "W-V",
+   "process": "u d~ > w+ g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "default": 2,
+    "nightly": 2
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 3.981667301696647e-15,
+   "binary64_vs_dd": 7.813987095254357e-15,
+   "catani_dd": 2.0727094774499616e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "uv"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "VJ03",
+   "class": "W-V",
+   "process": "u u~ > a g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "a0",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 3
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.8256034565033865e-14,
+   "binary64_vs_dd": 9.485326432969556e-13,
+   "catani_dd": 3.313047156383011e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "a0",
+    "ward"
+   ],
+   "variants": [],
+   "findings": [
+    "F4"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "VV01",
+   "class": "W-V",
+   "process": "u u~ > w+ w-",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 6.682996377198116e-13,
+   "binary64_vs_dd": 5.258328429605265e-13,
+   "catani_dd": 6.28980780990532e-28,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "sp"
+   ],
+   "variants": [
+    {
+     "id": "VV01@4tev",
+     "status": "pass"
+    }
+   ],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "VV02",
+   "class": "W-V",
+   "process": "u u~ > z z",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.0179343706395182e-14,
+   "binary64_vs_dd": 2.0270612717913676e-12,
+   "catani_dd": 5.784079311779261e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "hel"
+   ],
+   "variants": [],
+   "findings": [
+    "F1"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "VV03",
+   "class": "W-V",
+   "process": "u d~ > w+ z",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.385326676503188e-13,
+   "binary64_vs_dd": 5.8805153991239384e-12,
+   "catani_dd": 4.4737533415797e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "VV05",
+   "class": "W-V",
+   "process": "u d~ > w+ a",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "a0",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.9461394923954864e-13,
+   "binary64_vs_dd": 2.4726286546557593e-11,
+   "catani_dd": 2.2961708157873137e-28,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "a0",
+    "ward",
+    "sp"
+   ],
+   "variants": [
+    {
+     "id": "VV05@zero",
+     "status": "pass"
+    }
+   ],
+   "findings": [
+    "F3"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "VV06",
+   "class": "W-V",
+   "process": "u u~ > a a",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "a0",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 3
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 8.780892477877154e-13,
+   "binary64_vs_dd": 1.3116694284043188e-12,
+   "catani_dd": 2.910439744869112e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "a0"
+   ],
+   "variants": [],
+   "findings": [
+    "F4"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "VV07",
+   "class": "W-V",
+   "process": "u u~ > w+ w- g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 5.3399288583976265e-11,
+   "binary64_vs_dd": 9.173673129956912e-11,
+   "catani_dd": 1.123955339331372e-26,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "ward"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "V301",
+   "class": "W-V",
+   "process": "u u~ > w+ w- z",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 5.941699879766728e-14,
+   "binary64_vs_dd": 4.836334515752906e-14,
+   "catani_dd": 2.5908568032683753e-28,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [
+    "F1"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "VH01",
+   "class": "W-V",
+   "process": "u u~ > z h",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 9.717123057030914e-15,
+   "binary64_vs_dd": 2.0410535084800368e-13,
+   "catani_dd": 1.605930371660942e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [
+    "F1"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "VH02",
+   "class": "W-V",
+   "process": "u d~ > w+ h",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.7255689221378472e-14,
+   "binary64_vs_dd": 1.7518013375085277e-12,
+   "catani_dd": 5.839387416711297e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [
+    "F1"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "VH03",
+   "class": "W-V",
+   "process": "u d > u d h",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 4.698790104711005e-13,
+   "binary64_vs_dd": 8.359310354875365e-12,
+   "catani_dd": 2.312595097355497e-28,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [
+    "F1"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "TT01",
+   "class": "W-top",
+   "process": "g g > t t~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "default": 2,
+    "nightly": 1
+   },
+   "inputs": "python",
+   "reference": "MadLoop + Recola, Openloops",
+   "dd_vs_reference": 5.877075609107218e-15,
+   "binary64_vs_dd": 8.165067612493781e-15,
+   "catani_dd": 6.6241702926717705e-31,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "joint",
+    "ap",
+    "uv"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "TT02",
+   "class": "W-top",
+   "process": "u u~ > t t~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.6650789163564675e-14,
+   "binary64_vs_dd": 5.217119872146446e-14,
+   "catani_dd": 9.99620612272059e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "so",
+    "uv"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "TT03",
+   "class": "W-top",
+   "process": "g g > t t~ g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.3625474284706895e-11,
+   "binary64_vs_dd": 3.380195841333876e-11,
+   "catani_dd": 2.1256090276402947e-26,
+   "catani": "python",
+   "relaxed": {
+    "2": 1e-08,
+    "4": 1e-08
+   },
+   "extras": [
+    "ward"
+   ],
+   "variants": [],
+   "findings": [
+    "F3"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "TT04",
+   "class": "W-top",
+   "process": "t t~ > t t~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "native",
+   "reference": "MadLoop + Recola",
+   "dd_vs_reference": 1.442260520438237e-14,
+   "binary64_vs_dd": 2.765526053535307e-12,
+   "catani_dd": 1.764680238939438e-30,
+   "catani": "engine",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "TT05",
+   "class": "W-top",
+   "process": "g t > t t t~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop + Recola",
+   "dd_vs_reference": 3.934584850851696e-12,
+   "binary64_vs_dd": 1.0151312603550532e-11,
+   "catani_dd": 1.1324172933849883e-29,
+   "catani": "python",
+   "relaxed": {
+    "4dd": 1e-14
+   },
+   "extras": [
+    "uv"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "TT06",
+   "class": "W-top",
+   "process": "g b > t t~ b",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "with_b_mass",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop + Recola",
+   "dd_vs_reference": 1.2219567842955483e-11,
+   "binary64_vs_dd": 4.240909242354527e-16,
+   "catani_dd": 4.150430539985789e-30,
+   "catani": "python",
+   "relaxed": {
+    "4dd": 1e-13
+   },
+   "extras": [],
+   "variants": [],
+   "findings": [
+    "F10"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "TV01",
+   "class": "W-top",
+   "process": "g g > t t~ h",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 3.5863545688653515e-13,
+   "binary64_vs_dd": 7.325238064248158e-12,
+   "catani_dd": 7.403099542711482e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "TV02",
+   "class": "W-top",
+   "process": "g g > t t~ z",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.1317405222846123e-13,
+   "binary64_vs_dd": 3.165761084575795e-12,
+   "catani_dd": 6.558164890976411e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "TV03",
+   "class": "W-top",
+   "process": "u d~ > t t~ w+",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 3.8353029104837966e-14,
+   "binary64_vs_dd": 1.535512358336619e-11,
+   "catani_dd": 8.700851199872383e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "so"
+   ],
+   "variants": [],
+   "findings": [
+    "F1"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "TV06",
+   "class": "W-top",
+   "process": "g g > t t~ e- e+",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 3
+   },
+   "inputs": "python",
+   "reference": "MadLoop + Recola, Openloops",
+   "dd_vs_reference": 1.1580300294453224e-12,
+   "binary64_vs_dd": 1.872921367527061e-10,
+   "catani_dd": 1.8033463575187485e-28,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "TV07",
+   "class": "W-top",
+   "process": "g g > t t~ e- e+ g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "campaign": 3
+   },
+   "inputs": "native",
+   "reference": "MadLoop + Recola, Openloops",
+   "dd_vs_reference": 1.3823324890360811e-12,
+   "binary64_vs_dd": 5.121147644518646e-11,
+   "catani_dd": 6.43095114240402e-26,
+   "catani": "engine",
+   "relaxed": {},
+   "extras": [
+    "ward",
+    "joint"
+   ],
+   "variants": [
+    {
+     "id": "TV07@qcd",
+     "status": "pass"
+    }
+   ],
+   "findings": [
+    "F3"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "ST01",
+   "class": "W-singletop",
+   "process": "u b > d t",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 3.435600230373142e-14,
+   "binary64_vs_dd": 1.9133234119249097e-14,
+   "catani_dd": 7.445418977707729e-31,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "uv"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "ST02",
+   "class": "W-singletop",
+   "process": "u d~ > t b~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 3
+   },
+   "inputs": "python",
+   "reference": "MadLoop + Recola",
+   "dd_vs_reference": 4.171375290372764e-13,
+   "binary64_vs_dd": 4.7166327912161645e-14,
+   "catani_dd": 1.894813760908407e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "ST03",
+   "class": "W-singletop",
+   "process": "g b > t w-",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.7271446475253846e-15,
+   "binary64_vs_dd": 1.962621192310407e-14,
+   "catani_dd": 1.5156942560726248e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "ward"
+   ],
+   "variants": [],
+   "findings": [
+    "F2",
+    "F3"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "ST04",
+   "class": "W-singletop",
+   "process": "u d~ > t b~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "with_b_mass",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop + Recola",
+   "dd_vs_reference": 3.0369439275334996e-12,
+   "binary64_vs_dd": 2.3419085370926692e-11,
+   "catani_dd": 4.757617829411751e-27,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [
+    "F10"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "JJ01",
+   "class": "W-jets",
+   "process": "u u~ > d d~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 6.651349126373969e-15,
+   "binary64_vs_dd": 8.443814086273818e-14,
+   "catani_dd": 9.609389303623414e-31,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "so",
+    "uv"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "JJ02",
+   "class": "W-jets",
+   "process": "u u~ > u u~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.7693210368913336e-14,
+   "binary64_vs_dd": 6.388808062000329e-13,
+   "catani_dd": 7.776140625168684e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "JJ03",
+   "class": "W-jets",
+   "process": "u u~ > g g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 6.673062423346946e-15,
+   "binary64_vs_dd": 6.504385283304683e-13,
+   "catani_dd": 1.8312126543111364e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "JJ04",
+   "class": "W-jets",
+   "process": "u u~ > d d~ g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 6.907725901939221e-13,
+   "binary64_vs_dd": 7.600716787010507e-12,
+   "catani_dd": 2.0115651466022365e-28,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "so"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "PI01",
+   "class": "W-photon",
+   "process": "a a > e- e+",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 9.266652064426016e-15,
+   "binary64_vs_dd": 1.655602745629344e-13,
+   "catani_dd": 1.9427837468300668e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "a0"
+   ],
+   "variants": [
+    {
+     "id": "PI01@all",
+     "status": "pass"
+    }
+   ],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "PI02",
+   "class": "W-photon",
+   "process": "a a > w+ w-",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 3.2108603520216424e-15,
+   "binary64_vs_dd": 4.910075344536165e-14,
+   "catani_dd": 3.306117419106807e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "PI03",
+   "class": "W-photon",
+   "process": "a g > u u~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.9083392420065844e-15,
+   "binary64_vs_dd": 2.9161434917646016e-13,
+   "catani_dd": 1.7013345631704883e-31,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "uv"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "PI04",
+   "class": "W-photon",
+   "process": "a u > a u",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "a0",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 9.674530326113333e-15,
+   "binary64_vs_dd": 2.6588215119777596e-13,
+   "catani_dd": 1.0080558842376709e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "a0"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "CM01",
+   "class": "W-CMS",
+   "process": "e- e+ > m- m+",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop (double)",
+   "dd_vs_reference": 1.1947703527309973e-13,
+   "binary64_vs_dd": 1.0273773616626048e-13,
+   "catani_dd": 1.9938642285414502e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "ap",
+    "sp"
+   ],
+   "variants": [
+    {
+     "id": "CM01@zero",
+     "status": "pass"
+    },
+    {
+     "id": "CM01@small",
+     "status": "pass"
+    },
+    {
+     "id": "CM01@source",
+     "status": "pass"
+    }
+   ],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "CM02",
+   "class": "W-CMS",
+   "process": "u u~ > e- e+",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 8.810537152748087e-15,
+   "binary64_vs_dd": 1.459802849677742e-13,
+   "catani_dd": 2.2200786341627704e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "sp"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "CM03",
+   "class": "W-CMS",
+   "process": "u d~ > e+ ve",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.187626936792688e-14,
+   "binary64_vs_dd": 3.932023870608511e-12,
+   "catani_dd": 3.1317008741201326e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "sp"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "CM04",
+   "class": "W-CMS",
+   "process": "g g > t t~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.29307869100508e-15,
+   "binary64_vs_dd": 1.4914271549696805e-14,
+   "catani_dd": 1.4179118371572593e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "uv"
+   ],
+   "variants": [],
+   "findings": [
+    "F8"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "CM05",
+   "class": "W-CMS",
+   "process": "u u~ > e- e+ g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.122055701083372e-13,
+   "binary64_vs_dd": 5.074358377620008e-13,
+   "catani_dd": 8.700229851825225e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "ward"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "CM07",
+   "class": "W-CMS",
+   "process": "g g > t t~ e- e+ g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "campaign": 3
+   },
+   "inputs": "native",
+   "reference": "MadLoop",
+   "dd_vs_reference": 6.901622507244509e-13,
+   "binary64_vs_dd": 5.628148398811093e-11,
+   "catani_dd": 7.192133362651351e-26,
+   "catani": "engine",
+   "relaxed": {},
+   "extras": [
+    "ward"
+   ],
+   "variants": [],
+   "findings": [
+    "F3",
+    "F8"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "CM08",
+   "class": "W-CMS",
+   "process": "u d~ > e+ ve b b~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.2584431642918477e-14,
+   "binary64_vs_dd": 1.82414077309605e-13,
+   "catani_dd": null,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "CM09",
+   "class": "W-CMS",
+   "process": "u d~ > e+ ve a",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "a0",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.6746130609318037e-14,
+   "binary64_vs_dd": 1.6152116204464467e-12,
+   "catani_dd": 2.402579392257738e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [
+    "a0",
+    "ward"
+   ],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "CM10",
+   "class": "W-CMS",
+   "process": "u d~ > w+ b b~",
+   "model": "loop_sm",
+   "restriction": "no_b_mass",
+   "corrections": [
+    "QCD"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.616890269645241e-13,
+   "binary64_vs_dd": 1.815850666547863e-10,
+   "catani_dd": null,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "MP01",
+   "class": "W-multi",
+   "process": "p p > e- e+",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {},
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 4.216961743968777e-14,
+   "binary64_vs_dd": 1.5295152624653725e-12,
+   "catani_dd": 2.936155673233345e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [
+    {
+     "id": "MP01@P2",
+     "status": "pass"
+    },
+    {
+     "id": "MP01@P3",
+     "status": "pass"
+    },
+    {
+     "id": "MP01@P4",
+     "status": "pass"
+    },
+    {
+     "id": "MP01@P5",
+     "status": "pass"
+    }
+   ],
+   "findings": [
+    "F2"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "MP02",
+   "class": "W-multi",
+   "process": "p p > t t~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {},
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.6650789163564675e-14,
+   "binary64_vs_dd": 1.623567518614161e-13,
+   "catani_dd": 9.99620612272059e-30,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [
+    {
+     "id": "MP02@P0",
+     "status": "pass"
+    },
+    {
+     "id": "MP02@P2",
+     "status": "pass"
+    },
+    {
+     "id": "MP02@P3",
+     "status": "pass"
+    },
+    {
+     "id": "MP02@P4",
+     "status": "pass"
+    },
+    {
+     "id": "MP02@P5",
+     "status": "pass"
+    },
+    {
+     "id": "MP02@P6",
+     "status": "pass"
+    }
+   ],
+   "findings": [
+    "F2"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "SC01",
+   "class": "W-scheme",
+   "process": "e- e+ > u u~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop (double)",
+   "dd_vs_reference": 6.783426267564749e-15,
+   "binary64_vs_dd": 7.93428215765389e-15,
+   "catani_dd": 1.9044634977384895e-31,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "SC02",
+   "class": "W-scheme",
+   "process": "u u~ > m- m+",
+   "model": "loop_qcd_qed_sm_Gmu_massive_muon",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 4.857360437056846e-09,
+   "binary64_vs_dd": 1.551211293107229e-14,
+   "catani_dd": null,
+   "catani": "none",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [
+    "F5",
+    "F7"
+   ],
+   "status": "partial"
+  },
+  {
+   "row": "SC03",
+   "class": "W-scheme",
+   "process": "u d~ > e+ ve",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "ckm",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 3.0000864692238717e-12,
+   "binary64_vs_dd": 5.433422363862214e-12,
+   "catani_dd": 1.1148665800811504e-06,
+   "catani": "python",
+   "relaxed": {
+    "4": 1e-05,
+    "4dd": 1e-05
+   },
+   "extras": [
+    "uv"
+   ],
+   "variants": [],
+   "findings": [
+    "F6"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "SC04",
+   "class": "W-scheme",
+   "process": "b b~ > w+ w-",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "with_b_mass",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.2554833717102463e-10,
+   "binary64_vs_dd": 3.054312418017165e-14,
+   "catani_dd": 4.7868146411364657e-29,
+   "catani": "python",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [
+    "F1",
+    "F9",
+    "F10"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "SC05",
+   "class": "W-scheme",
+   "process": "u u~ > e- e+ g g",
+   "model": "loop_sm",
+   "restriction": "default",
+   "corrections": [
+    "QCD"
+   ],
+   "points": {
+    "nightly": 3
+   },
+   "inputs": "python",
+   "reference": "fixture",
+   "dd_vs_reference": 7.979350106950089e-13,
+   "binary64_vs_dd": 2.7678586501890955e-12,
+   "catani_dd": 4.146473467042035e-14,
+   "catani": "python",
+   "relaxed": {
+    "4dd": 1e-12
+   },
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "SC06",
+   "class": "W-scheme",
+   "process": "w+ w- > w+ w-",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "native",
+   "reference": "MadLoop",
+   "dd_vs_reference": 6.263082958030724e-10,
+   "binary64_vs_dd": 1.0757241593304889e-10,
+   "catani_dd": 1.115617270505624e-26,
+   "catani": "engine",
+   "relaxed": {
+    "2": 1e-09
+   },
+   "extras": [],
+   "variants": [],
+   "findings": [
+    "F1"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "SC07",
+   "class": "W-scheme",
+   "process": "h h > h h",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "native",
+   "reference": "MadLoop",
+   "dd_vs_reference": 8.204241448279409e-16,
+   "binary64_vs_dd": 2.613087160445428e-12,
+   "catani_dd": 1.619407017665743e-32,
+   "catani": "engine",
+   "relaxed": {
+    "2": 1e-10,
+    "4": 1e-10
+   },
+   "extras": [],
+   "variants": [],
+   "findings": [
+    "F1"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "SC08",
+   "class": "W-scheme",
+   "process": "t t~ > w+ w-",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "native",
+   "reference": "MadLoop",
+   "dd_vs_reference": 6.257934376463842e-13,
+   "binary64_vs_dd": 1.1604909961681872e-12,
+   "catani_dd": 5.036841012165192e-29,
+   "catani": "engine",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [
+    "F2"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "SC09",
+   "class": "W-scheme",
+   "process": "t t~ > z h",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "native",
+   "reference": "MadLoop + Recola",
+   "dd_vs_reference": 2.993570819277171e-15,
+   "binary64_vs_dd": 2.039849860390016e-11,
+   "catani_dd": 1.2995992018675115e-30,
+   "catani": "engine",
+   "relaxed": {},
+   "extras": [],
+   "variants": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "row": "SC10",
+   "class": "W-scheme",
+   "process": "z z > h h",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "points": {
+    "nightly": 4
+   },
+   "inputs": "python",
+   "reference": "MadLoop + Recola",
+   "dd_vs_reference": 4.3453871198072283e-13,
+   "binary64_vs_dd": 7.002037838432784e-13,
+   "catani_dd": 3.6527338585227165e-32,
+   "catani": "python",
+   "relaxed": {
+    "2": 1e-08,
+    "4": 1e-08
+   },
+   "extras": [],
+   "variants": [],
+   "findings": [],
    "status": "pass"
   }
  ]
