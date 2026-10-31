@@ -8,6 +8,12 @@ shares, validation figures) is assembled here from the report's data files,
 and every entry names its source:
 
 - data/g1.json            gate-G1 campaign (python -m tools.loop_benchmark gate)
+- data/msm-g1.json        the electroweak G1 rows (the same gate tool on the EW
+                          records), part of g1.json's integrated configuration
+                          when both timed the same engine; indicative at M-SM
+                          (no gate: m-sm/PLAN.md [U5]), their gate rule and
+                          leading-colour status from milestone.json
+                          status_notes (_with_ew_rows, _ew_cells)
 - data/measured.json      development run records (scripts/collect_milestone.py):
                           the WP3.1 native validations of the required set and
                           the provider reference runs' records (generation,
@@ -380,7 +386,9 @@ def _gate_batch(cfg: dict | None) -> str | None:
 def _no_gate_batch(cfg: dict) -> str:
     """The status of a configuration without a B = 128 timing: no batched
     run at all, or batches other than the gate batch only."""
-    return "not batched" if all(int(b) <= 1 for b in cfg["batches"]) else "no gate batch"
+    return (
+        "not batched" if all(int(b) <= 1 for b in cfg["batches"]) else "no gate batch"
+    )
 
 
 def _provider_runtime(proc: dict) -> dict:
@@ -2060,9 +2068,68 @@ def _configurations(
     return out
 
 
+EW_G1 = "msm-g1.json"
+
+
+def _with_ew_rows(g1: dict) -> tuple[dict, set[str]]:
+    """g1.json with the electroweak G1 rows of data/msm-g1.json (the same gate
+    tool on the EW records; m-sm/PLAN.md §5.1 item 6). They join the
+    campaign's integrated configuration only when both campaigns timed the
+    same engine (slice_revision): another engine would be a configuration of
+    its own and stops the build. At M-SM the EW rows are indicative (no gate,
+    [U5]: the EW speed gate binds in M-FINAL): a gated EW row stops it too."""
+    path = DATA / EW_G1
+    if not path.exists():
+        return g1, set()
+    ew = _load(path)
+    if ew["slice_revision"][:8] != g1["slice_revision"][:8]:
+        raise ValueError(
+            f"{EW_G1} slice_revision {ew['slice_revision']} is not g1.json's"
+            f" ({g1['slice_revision']}): the EW rows would be another configuration"
+        )
+    known = {p["key"] for p in g1["processes"]}
+    procs = []
+    for proc in ew["processes"]:
+        if proc["key"] in known or proc["gated"]:
+            raise ValueError(f"{EW_G1} processes[{proc['key']}]: in g1.json or gated")
+        procs.append(proc)
+    return dict(g1, processes=g1["processes"] + procs), {p["key"] for p in procs}
+
+
+def _ew_cells(rows: list[dict], keys: set[str], notes: dict) -> None:
+    """The EW rows' registry attributions (milestone.json status_notes): the
+    full-colour cell's gate rule (indicative, not gated) and the leading
+    colour, which EW requests never support (typed refusal, by design); every
+    source names msm-g1.json."""
+    for i, r in enumerate(rows):
+        if r["key"] not in keys:
+            continue
+        note = notes.get(r["key"], {})
+        src = f"milestone.json status_notes.notes[{r['key']}]"
+        if "gate" not in note or "leading_colour" not in note:
+            raise ValueError(f"{src}: an EW G1 row needs 'gate' and 'leading_colour'")
+        r["full_colour"].update(
+            gate_rule=note["gate"],
+            gate_rule_reason=note.get("gate_reason"),
+            gate_rule_source=src,
+        )
+        if r["leading_colour"]["main"].get("status") == "not timed":
+            r["leading_colour"]["main"] = {
+                "status": "not supported",
+                "reason": note["leading_colour"],
+                "source": src,
+            }
+        text = re.sub(
+            rf"(?<!msm-)g1\.json processes\[{re.escape(r['key'])}\]",
+            f"{EW_G1} processes[{r['key']}]",
+            json.dumps(r),
+        )
+        rows[i] = json.loads(text)
+
+
 def build() -> tuple[dict, Recency]:
     """summary.json, and the recency order it used (for the build log)."""
-    g1 = _load(DATA / "g1.json")
+    g1, ew_keys = _with_ew_rows(_load(DATA / "g1.json"))
     ms = _load(DATA / "milestone.json")
     meas = _load(DATA / "measured.json")
     specs = {
@@ -2082,6 +2149,7 @@ def build() -> tuple[dict, Recency]:
         ms, meas, {r["key"] for r in rows}, g1["gate_factor"], records, recency
     )
     notes = ms.get("status_notes", {}).get("notes", {})
+    _ew_cells(rows, ew_keys, notes)
     for r in rows:
         note = notes.get(r["key"], {})
         r.setdefault("row_status", None)
@@ -2118,6 +2186,11 @@ def build() -> tuple[dict, Recency]:
         if not groups or groups[-1]["name"] != name:
             groups.append({"name": name, "rows": []})
         groups[-1]["rows"].append(r)
+    configurations = _configurations(g1, ms, meas, rows, recency)
+    if ew_keys:
+        configurations["integrated"]["source"] += (
+            f"; the EW rows of {EW_G1} ({', '.join(sorted(ew_keys))}, same engine)"
+        )
     summary = {
         "what": (
             "Table 1 of docs/performance_reports/loop/benchmarks.typ, written by"
@@ -2141,7 +2214,7 @@ def build() -> tuple[dict, Recency]:
                 " VALIDATION_RULE, GENERATION_RULE, Recency; ancestry:"
                 " milestone.json ancestry",
             },
-            "configurations": _configurations(g1, ms, meas, rows, recency),
+            "configurations": configurations,
             "gate_decisions": decisions,
             "validation_decisions": ms.get("validation_decisions"),
         },
