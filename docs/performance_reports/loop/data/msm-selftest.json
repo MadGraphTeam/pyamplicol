@@ -1,0 +1,83 @@
+{
+ "source": "campaign-m1031-msm wheel self-test at the pin 71e2041e: release host wheel built from a clone of the pin (sha256 7576f6f8...), installed in two fresh venvs (PyPI dependencies; Community Symbolica), env -i pyamplicol self-test --json (records workspace/reports/engine-v2/m-sm/records/m1031-msm/wheel)",
+ "pypi": {
+  "checks": [
+   {
+    "detail": "3.11.15",
+    "name": "python",
+    "status": "pass"
+   },
+   {
+    "detail": "135 verified files",
+    "name": "model-assets",
+    "status": "pass"
+   },
+   {
+    "detail": "package 1.0.1, C ABI 1",
+    "name": "rusticol-python",
+    "status": "pass"
+   },
+   {
+    "detail": "x86_64-unknown-linux-gnu; ABI 1; librusticol_capi.a",
+    "name": "native-sdk",
+    "status": "pass"
+   },
+   {
+    "detail": "d_dbar_to_z; shape (1, 12, 1); direct SymJIT on x86_64-unknown-linux-gnu",
+    "name": "physics-f64",
+    "status": "pass"
+   },
+   {
+    "detail": "u u~ > e- e+ / Z [virt=QCD] on the shipped loop_sm-no_b_mass (full colour): Born and Laurent coefficients = MadLoop to 2.8e-13 at 3 points; generated in 8 s; Symbolica licensed",
+    "name": "physics-virtual",
+    "status": "pass"
+   },
+   {
+    "detail": "e- e+ > e- e+ [virt=QED] on the shipped loop_qcd_qed_sm from its prepared artifact: Born and Laurent coefficients = MadLoop to 5.4e-15 at 3 points",
+    "name": "physics-virtual-prepared",
+    "status": "pass"
+   }
+  ],
+  "package_version": "1.0.1"
+ },
+ "community": {
+  "checks": [
+   {
+    "detail": "3.11.15",
+    "name": "python",
+    "status": "pass"
+   },
+   {
+    "detail": "135 verified files",
+    "name": "model-assets",
+    "status": "pass"
+   },
+   {
+    "detail": "package 1.0.1, C ABI 1",
+    "name": "rusticol-python",
+    "status": "pass"
+   },
+   {
+    "detail": "x86_64-unknown-linux-gnu; ABI 1; librusticol_capi.a",
+    "name": "native-sdk",
+    "status": "pass"
+   },
+   {
+    "detail": "d_dbar_to_z; shape (1, 12, 1); direct SymJIT on x86_64-unknown-linux-gnu",
+    "name": "physics-f64",
+    "status": "pass"
+   },
+   {
+    "detail": "u u~ > e- e+ / Z [virt=QCD] on the shipped loop_sm-no_b_mass (full colour): Born and Laurent coefficients = MadLoop to 2.8e-13 at 3 points; generated in 8 s; Symbolica licensed",
+    "name": "physics-virtual",
+    "status": "pass"
+   },
+   {
+    "detail": "e- e+ > e- e+ [virt=QED] on the shipped loop_qcd_qed_sm from its prepared artifact: Born and Laurent coefficients = MadLoop to 5.4e-15 at 3 points",
+    "name": "physics-virtual-prepared",
+    "status": "pass"
+   }
+  ],
+  "package_version": "1.0.1"
+ }
+}

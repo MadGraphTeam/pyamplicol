@@ -1,0 +1,188 @@
+{
+ "source": "JUnit of tests/unit/test_loop_v2_ew_public_models.py (every tier, one whole-file job) in the M-SM campaign (public.xml); cases: its PUBLIC_ROUTE (public route = tools view bitwise; = MadLoop QP where a fixture is named); campaign m1031-msm at 71e2041e, 25/25 passed in 48:41 (records workspace/reports/engine-v2/m-sm/records/m1031-msm)",
+ "cases": {
+  "ee_mumu": {
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": null,
+   "process": "e- e+ > m- m+",
+   "madloop_fixture": null,
+   "outcome": "passed",
+   "seconds": 395.011
+  },
+  "uu_ee": {
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": null,
+   "process": "u u~ > e- e+",
+   "madloop_fixture": "msm/uux_emep_ew",
+   "outcome": "passed",
+   "seconds": 416.438
+  },
+  "uu_dd": {
+   "model": "loop_qcd_qed_sm",
+   "restriction": null,
+   "process": "u u~ > d d~",
+   "madloop_fixture": null,
+   "outcome": "passed",
+   "seconds": 138.907
+  },
+  "gg_tt": {
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": null,
+   "process": "g g > t t~",
+   "madloop_fixture": "gg_ttx_ew",
+   "outcome": "passed",
+   "seconds": 228.873
+  },
+  "ud_wg": {
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": null,
+   "process": "u d~ > w+ g",
+   "madloop_fixture": "msm/udx_wpg_ew",
+   "outcome": "passed",
+   "seconds": 297.036
+  },
+  "uu_zz": {
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": null,
+   "process": "u u~ > z z",
+   "madloop_fixture": "msm/uux_zz_ew",
+   "outcome": "passed",
+   "seconds": 366.227
+  },
+  "uu_ag": {
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "a0",
+   "process": "u u~ > a g",
+   "madloop_fixture": null,
+   "outcome": "passed",
+   "seconds": 276.318
+  }
+ },
+ "tests": [
+  {
+   "name": "test_goldstone_flag_repair_is_structural_recorded_and_idempotent[loop_qcd_qed_sm]",
+   "outcome": "passed",
+   "seconds": 40.461
+  },
+  {
+   "name": "test_goldstone_flag_repair_is_structural_recorded_and_idempotent[loop_qcd_qed_sm_Gmu]",
+   "outcome": "passed",
+   "seconds": 49.637
+  },
+  {
+   "name": "test_loop_sm_has_no_goldstone_flag_defect",
+   "outcome": "passed",
+   "seconds": 0.354
+  },
+  {
+   "name": "test_shipped_qcd_qed_model_is_the_reference_and_selected_by_name[loop_qcd_qed_sm]",
+   "outcome": "passed",
+   "seconds": 0.144
+  },
+  {
+   "name": "test_shipped_qcd_qed_model_is_the_reference_and_selected_by_name[loop_qcd_qed_sm_Gmu]",
+   "outcome": "passed",
+   "seconds": 0.032
+  },
+  {
+   "name": "test_shipped_profile_declares_the_qcd_qed_model_by_its_declarations[loop_qcd_qed_sm]",
+   "outcome": "passed",
+   "seconds": 12.656
+  },
+  {
+   "name": "test_shipped_profile_declares_the_qcd_qed_model_by_its_declarations[loop_qcd_qed_sm_Gmu]",
+   "outcome": "passed",
+   "seconds": 18.887
+  },
+  {
+   "name": "test_python2_ufo_is_the_listed_refusal[_print_statement-write_param_card.py is not Python 3 source]",
+   "outcome": "passed",
+   "seconds": 3.383
+  },
+  {
+   "name": "test_python2_ufo_is_the_listed_refusal[_iteritems-Python-2 name 'iteritems']",
+   "outcome": "passed",
+   "seconds": 3.416
+  },
+  {
+   "name": "test_python2_ufo_refuses_in_the_dry_run",
+   "outcome": "passed",
+   "seconds": 2.474
+  },
+  {
+   "name": "test_qcd_qed_tree_models_are_supported[loop_qcd_qed_sm]",
+   "outcome": "passed",
+   "seconds": 5.713
+  },
+  {
+   "name": "test_qcd_qed_tree_models_are_supported[loop_qcd_qed_sm_Gmu]",
+   "outcome": "passed",
+   "seconds": 4.822
+  },
+  {
+   "name": "test_tree_matrix_elements_on_the_qcd_qed_models_equal_madloops_borns",
+   "outcome": "passed",
+   "seconds": 450.689
+  },
+  {
+   "name": "test_public_route_dry_run_takes_the_shipped_profile[loop_qcd_qed_sm-None-u u~ > d d~]",
+   "outcome": "passed",
+   "seconds": 36.368
+  },
+  {
+   "name": "test_public_route_dry_run_takes_the_shipped_profile[loop_qcd_qed_sm_Gmu-a0-u u~ > a g]",
+   "outcome": "passed",
+   "seconds": 52.406
+  },
+  {
+   "name": "test_public_route_on_the_shipped_qcd_qed_models_equals_the_tools_view[ee_mumu]",
+   "outcome": "passed",
+   "seconds": 395.011
+  },
+  {
+   "name": "test_public_route_on_the_shipped_qcd_qed_models_equals_the_tools_view[gg_tt]",
+   "outcome": "passed",
+   "seconds": 228.873
+  },
+  {
+   "name": "test_public_route_on_the_shipped_qcd_qed_models_equals_the_tools_view[ud_wg]",
+   "outcome": "passed",
+   "seconds": 297.036
+  },
+  {
+   "name": "test_public_route_on_the_shipped_qcd_qed_models_equals_the_tools_view[uu_ag]",
+   "outcome": "passed",
+   "seconds": 276.318
+  },
+  {
+   "name": "test_public_route_on_the_shipped_qcd_qed_models_equals_the_tools_view[uu_dd]",
+   "outcome": "passed",
+   "seconds": 138.907
+  },
+  {
+   "name": "test_public_route_on_the_shipped_qcd_qed_models_equals_the_tools_view[uu_ee]",
+   "outcome": "passed",
+   "seconds": 416.438
+  },
+  {
+   "name": "test_public_route_on_the_shipped_qcd_qed_models_equals_the_tools_view[uu_zz]",
+   "outcome": "passed",
+   "seconds": 366.227
+  },
+  {
+   "name": "test_self_test_evaluates_the_prepared_ew_virtual",
+   "outcome": "passed",
+   "seconds": 12.25
+  },
+  {
+   "name": "test_prepared_self_test_is_a_named_warning_without_symbolica",
+   "outcome": "passed",
+   "seconds": 0.0
+  },
+  {
+   "name": "test_prepared_ew_self_test_artifact_is_the_public_route_output",
+   "outcome": "passed",
+   "seconds": 109.12
+  }
+ ]
+}

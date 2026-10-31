@@ -1,0 +1,1194 @@
+{
+ "source": "scripts/build_msm_matrix.py from data/msm.json, msm-findings.json, msm-public.json, msm-selftest.json and tests/fixtures/loop/msm/manifest.json",
+ "campaign": {
+  "branch": "work/v2-slice 71e2041effa7e11c4cb903094f994a784695e527 (campaign m1031-msm, detached worktree campaign-m1031-msm)",
+  "records": "tmp/campaign-m1031-msm/results at 71e2041e: the 23 nightly file jobs, the 4 restriction-smoke files (11 smokes) and the MP expansions, the default tier (VJ02 + TT01, 4:15 wall), the campaign tier TV07 + TV07@qcd and CM07 (harness CLI); delegated uv_eps_ir0 (DY01, TT01): test_loop_v2_ew_pole_split technical-card split tests, JUnit ps-dy01.xml / ps-tt01.xml at 71e2041e",
+  "natives": "loop-native-v2-slice-71e2041e (digest f8d77c97, every record)",
+  "counts": {
+   "pass": 69,
+   "partial": 2,
+   "fail": 0,
+   "pending": 0,
+   "not-run": 0
+  },
+  "rules": "m-sm/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)"
+ },
+ "smokes_and_expansions": {
+  "expansion:MP01": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 3,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "expansion:MP02": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 3,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "smoke:loop_qcd_qed_sm:ckm": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "smoke:loop_qcd_qed_sm:no_widths": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "smoke:loop_qcd_qed_sm:with_b_mass": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "smoke:loop_qcd_qed_sm:with_b_mass_no_widths": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "smoke:loop_qcd_qed_sm:with_technical": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "smoke:loop_qcd_qed_sm_Gmu:a0": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "smoke:loop_qcd_qed_sm_Gmu:ckm": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "smoke:loop_qcd_qed_sm_Gmu:no_widths": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "smoke:loop_qcd_qed_sm_Gmu:with_b_mass": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "smoke:loop_qcd_qed_sm_Gmu:with_b_mass_no_width": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": [],
+   "status": "pass"
+  },
+  "smoke:loop_qcd_qed_sm_Gmu:with_technical": {
+   "tier": "nightly",
+   "passed": true,
+   "checks": 5,
+   "failed_checks": [],
+   "status": "pass"
+  }
+ },
+ "coverage_notes": [
+  "rule 4 is not formed on LL02 and SC02 (F7): a model property, the rows report partial",
+  "the Ward extra is a diagnostic under the complex-mass scheme (CM05, CM07, CM09; PLAN 1.4/1.5) and not run on VV05 and ST03 in the real-mass scheme (F3)",
+  "rule 7 (nc) is not run: EW LC/NLC is never supported (USER Q4, 2026-10-30 ~08:10; typed colour-declaration-coverage)",
+  "a row whose evaluation raises records the error as its one failed check (the F1 and F2 rows did until the fixes: 52eaff60, and 19619e62 / ms-ufo-patch's decided_number)",
+  "on the shipped patched models (MS-UFO-PATCH) MadLoop's exports call every R2 coupling the engine inserts (the R2 rule finds no omission; on the unpatched models R2_G0tt_b on LL10, TT04, SC09, TT05)"
+ ],
+ "public_route": {
+  "source": "JUnit of tests/unit/test_loop_v2_ew_public_models.py (every tier, one whole-file job) in the M-SM campaign (public.xml); cases: its PUBLIC_ROUTE (public route = tools view bitwise; = MadLoop QP where a fixture is named); campaign m1031-msm at 71e2041e, 25/25 passed in 48:41 (records workspace/reports/engine-v2/m-sm/records/m1031-msm)",
+  "tests": {
+   "total": 25,
+   "passed": 25
+  },
+  "dry_runs": [
+   "test_python2_ufo_refuses_in_the_dry_run",
+   "test_public_route_dry_run_takes_the_shipped_profile[loop_qcd_qed_sm-None-u u~ > d d~]",
+   "test_public_route_dry_run_takes_the_shipped_profile[loop_qcd_qed_sm_Gmu-a0-u u~ > a g]"
+  ]
+ },
+ "selftest": {
+  "source": "campaign-m1031-msm wheel self-test at the pin 71e2041e: release host wheel built from a clone of the pin (sha256 7576f6f8...), installed in two fresh venvs (PyPI dependencies; Community Symbolica), env -i pyamplicol self-test --json (records workspace/reports/engine-v2/m-sm/records/m1031-msm/wheel)",
+  "passed": true,
+  "checks": 7,
+  "virtuals": [
+   {
+    "name": "physics-virtual",
+    "detail": "u u~ > e- e+ / Z [virt=QCD] on the shipped loop_sm-no_b_mass (full colour): Born and Laurent coefficients = MadLoop to 2.8e-13 at 3 points; generated in 8 s; Symbolica licensed"
+   },
+   {
+    "name": "physics-virtual-prepared",
+    "detail": "e- e+ > e- e+ [virt=QED] on the shipped loop_qcd_qed_sm from its prepared artifact: Born and Laurent coefficients = MadLoop to 5.4e-15 at 3 points"
+   }
+  ]
+ },
+ "classes": [
+  {
+   "class": "W-lep",
+   "content": "lepton-only [virt=QED], lines through the loop, Bhabha, W pairs, tops",
+   "rows": 7,
+   "counts": {
+    "pass": 6,
+    "partial": 1
+   },
+   "max_outgoing": 3,
+   "models": [
+    "loop_qcd_qed_sm",
+    "loop_qcd_qed_sm_Gmu",
+    "loop_qcd_qed_sm_Gmu_massive_muon"
+   ],
+   "public": [
+    {
+     "case": "ee_mumu",
+     "row": "LL01",
+     "process": "e- e+ > m- m+",
+     "model": "loop_qcd_qed_sm_Gmu",
+     "restriction": null,
+     "passed": true,
+     "madloop_fixture": null
+    },
+    {
+     "case": "self-test",
+     "row": "LL03",
+     "process": "e- e+ > e- e+",
+     "model": "loop_qcd_qed_sm",
+     "restriction": null,
+     "passed": true,
+     "madloop_fixture": true,
+     "dd_vs_madloop": null,
+     "binary64_vs_madloop": 5.4e-15
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 4.59437500929689e-13,
+    "row": "LL08",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 2.335069922955581e-12,
+    "row": "LL08"
+   },
+   "binary64_vs_reference": {
+    "value": 2.3461394518360017e-12,
+    "row": "LL08",
+    "rows_out_of_scope": [
+     "LL05",
+     "LL09"
+    ]
+   },
+   "catani_dd": {
+    "value": 3.4960615792465775e-28,
+    "row": "LL08",
+    "not_formed": [
+     "LL02"
+    ],
+    "no_predicted_sector": [],
+    "relaxed": []
+   },
+   "native_inputs": [],
+   "cms": [
+    {
+     "row": "CM01",
+     "status": "pass"
+    }
+   ],
+   "findings": [
+    {
+     "id": "F7",
+     "rows": [
+      "LL02",
+      "SC02"
+     ],
+     "kind": "accepted",
+     "status": "accepted model property (the rows report partial: rule 4 not formed)"
+    }
+   ],
+   "status": "accepted"
+  },
+  {
+   "class": "W-DY",
+   "content": "neutral and charged Drell-Yan, lepton-hadron, + jets, alpha(MZ) twin",
+   "rows": 7,
+   "counts": {
+    "pass": 7
+   },
+   "max_outgoing": 4,
+   "models": [
+    "loop_qcd_qed_sm",
+    "loop_qcd_qed_sm_Gmu"
+   ],
+   "public": [
+    {
+     "case": "uu_ee",
+     "row": "DY01",
+     "process": "u u~ > e- e+",
+     "model": "loop_qcd_qed_sm_Gmu",
+     "restriction": null,
+     "passed": true,
+     "madloop_fixture": "msm/uux_emep_ew"
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 9.13968948511922e-13,
+    "row": "DY05",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 4.732276187733842e-12,
+    "row": "DY02"
+   },
+   "binary64_vs_reference": {
+    "value": 4.725351188359878e-12,
+    "row": "DY02",
+    "rows_out_of_scope": []
+   },
+   "catani_dd": {
+    "value": 1.1372397543046438e-28,
+    "row": "DY07",
+    "not_formed": [],
+    "no_predicted_sector": [],
+    "relaxed": []
+   },
+   "native_inputs": [],
+   "cms": [
+    {
+     "row": "CM02",
+     "status": "pass"
+    },
+    {
+     "row": "CM03",
+     "status": "pass"
+    },
+    {
+     "row": "CM05",
+     "status": "pass"
+    }
+   ],
+   "findings": [
+    {
+     "id": "F4",
+     "rows": [
+      "DY05",
+      "VJ03",
+      "VV06"
+     ],
+     "kind": "open",
+     "status": "open (minor)"
+    }
+   ],
+   "status": "pass"
+  },
+  {
+   "class": "W-V",
+   "content": "V/photon + jet, VV, VVV, VH, VBF H",
+   "rows": 13,
+   "counts": {
+    "pass": 13
+   },
+   "max_outgoing": 3,
+   "models": [
+    "loop_qcd_qed_sm_Gmu"
+   ],
+   "public": [
+    {
+     "case": "ud_wg",
+     "row": "VJ02",
+     "process": "u d~ > w+ g",
+     "model": "loop_qcd_qed_sm_Gmu",
+     "restriction": null,
+     "passed": true,
+     "madloop_fixture": "msm/udx_wpg_ew"
+    },
+    {
+     "case": "uu_zz",
+     "row": "VV02",
+     "process": "u u~ > z z",
+     "model": "loop_qcd_qed_sm_Gmu",
+     "restriction": null,
+     "passed": true,
+     "madloop_fixture": "msm/uux_zz_ew"
+    },
+    {
+     "case": "uu_ag",
+     "row": "VJ03",
+     "process": "u u~ > a g",
+     "model": "loop_qcd_qed_sm_Gmu",
+     "restriction": "a0",
+     "passed": true,
+     "madloop_fixture": null
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 5.3399288583976265e-11,
+    "row": "VV07",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 9.173673129956912e-11,
+    "row": "VV07"
+   },
+   "binary64_vs_reference": {
+    "value": 4.2363579394069636e-09,
+    "row": "VV07",
+    "rows_out_of_scope": [
+     "VV01",
+     "VV07",
+     "V301",
+     "VH03"
+    ]
+   },
+   "catani_dd": {
+    "value": 1.123955339331372e-26,
+    "row": "VV07",
+    "not_formed": [],
+    "no_predicted_sector": [],
+    "relaxed": []
+   },
+   "native_inputs": [],
+   "cms": [],
+   "findings": [
+    {
+     "id": "F4",
+     "rows": [
+      "DY05",
+      "VJ03",
+      "VV06"
+     ],
+     "kind": "open",
+     "status": "open (minor)"
+    }
+   ],
+   "status": "pass"
+  },
+  {
+   "class": "W-top",
+   "content": "t t~ (joint QCD+QED), + jet, four tops, massive b, t t~ V/H/ll(+g)",
+   "rows": 11,
+   "counts": {
+    "pass": 11
+   },
+   "max_outgoing": 5,
+   "models": [
+    "loop_qcd_qed_sm_Gmu"
+   ],
+   "public": [
+    {
+     "case": "gg_tt",
+     "row": "TT01",
+     "process": "g g > t t~",
+     "model": "loop_qcd_qed_sm_Gmu",
+     "restriction": null,
+     "passed": true,
+     "madloop_fixture": "gg_ttx_ew"
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 1.3625474284706895e-11,
+    "row": "TT03",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 1.872921367527061e-10,
+    "row": "TV06"
+   },
+   "binary64_vs_reference": {
+    "value": 9.575230475906624e-05,
+    "row": "TT06",
+    "rows_out_of_scope": [
+     "TT03",
+     "TT04",
+     "TT05",
+     "TT06",
+     "TV07"
+    ]
+   },
+   "catani_dd": {
+    "value": 6.43095114240402e-26,
+    "row": "TV07",
+    "not_formed": [],
+    "no_predicted_sector": [],
+    "relaxed": [
+     {
+      "row": "TT03",
+      "rule": "4",
+      "tolerance": 1e-08
+     },
+     {
+      "row": "TT05",
+      "rule": "4dd",
+      "tolerance": 1e-14
+     },
+     {
+      "row": "TT06",
+      "rule": "4dd",
+      "tolerance": 1e-13
+     }
+    ]
+   },
+   "native_inputs": [
+    {
+     "row": "TT04",
+     "status": "pass"
+    },
+    {
+     "row": "TV07",
+     "status": "pass"
+    }
+   ],
+   "cms": [
+    {
+     "row": "CM04",
+     "status": "pass"
+    },
+    {
+     "row": "CM07",
+     "status": "pass"
+    }
+   ],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "W-singletop",
+   "content": "s- and t-channel, tW; massless and massive b",
+   "rows": 4,
+   "counts": {
+    "pass": 4
+   },
+   "max_outgoing": 2,
+   "models": [
+    "loop_qcd_qed_sm_Gmu"
+   ],
+   "public": [],
+   "dd_vs_reference": {
+    "value": 3.0369439275334996e-12,
+    "row": "ST04",
+    "reference": "MadLoop + Recola"
+   },
+   "binary64_vs_dd": {
+    "value": 2.3419085370926692e-11,
+    "row": "ST04"
+   },
+   "binary64_vs_reference": {
+    "value": 2.3466134895701025e-11,
+    "row": "ST04",
+    "rows_out_of_scope": [
+     "ST04"
+    ]
+   },
+   "catani_dd": {
+    "value": 4.757617829411751e-27,
+    "row": "ST04",
+    "not_formed": [],
+    "no_predicted_sector": [],
+    "relaxed": []
+   },
+   "native_inputs": [],
+   "cms": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "W-jets",
+   "content": "QCD processes with EW orders, every split order",
+   "rows": 4,
+   "counts": {
+    "pass": 4
+   },
+   "max_outgoing": 3,
+   "models": [
+    "loop_qcd_qed_sm_Gmu"
+   ],
+   "public": [
+    {
+     "case": "uu_dd",
+     "row": "JJ01",
+     "process": "u u~ > d d~",
+     "model": "loop_qcd_qed_sm",
+     "restriction": null,
+     "passed": true,
+     "madloop_fixture": null
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 6.907725901939221e-13,
+    "row": "JJ04",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 7.600716787010507e-12,
+    "row": "JJ04"
+   },
+   "binary64_vs_reference": {
+    "value": 8.291489377199178e-12,
+    "row": "JJ04",
+    "rows_out_of_scope": []
+   },
+   "catani_dd": {
+    "value": 2.0115651466022365e-28,
+    "row": "JJ04",
+    "not_formed": [],
+    "no_predicted_sector": [],
+    "relaxed": []
+   },
+   "native_inputs": [],
+   "cms": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "W-photon",
+   "content": "final and initial photons, tagged per leg",
+   "rows": 4,
+   "counts": {
+    "pass": 4
+   },
+   "max_outgoing": 2,
+   "models": [
+    "loop_qcd_qed_sm_Gmu"
+   ],
+   "public": [
+    {
+     "case": "uu_ag",
+     "row": "VJ03",
+     "process": "u u~ > a g",
+     "model": "loop_qcd_qed_sm_Gmu",
+     "restriction": "a0",
+     "passed": true,
+     "madloop_fixture": null
+    }
+   ],
+   "dd_vs_reference": {
+    "value": 9.674530326113333e-15,
+    "row": "PI04",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 2.9161434917646016e-13,
+    "row": "PI03"
+   },
+   "binary64_vs_reference": {
+    "value": 2.919758138741485e-13,
+    "row": "PI03",
+    "rows_out_of_scope": []
+   },
+   "catani_dd": {
+    "value": 1.0080558842376709e-29,
+    "row": "PI04",
+    "not_formed": [],
+    "no_predicted_sector": [],
+    "relaxed": []
+   },
+   "native_inputs": [],
+   "cms": [
+    {
+     "row": "CM09",
+     "status": "pass"
+    }
+   ],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "W-CMS",
+   "content": "internal widths > 0, coloured too; tagged photons; loop_sm",
+   "rows": 9,
+   "counts": {
+    "pass": 9
+   },
+   "max_outgoing": 5,
+   "models": [
+    "loop_qcd_qed_sm_Gmu",
+    "loop_sm"
+   ],
+   "public": [],
+   "dd_vs_reference": {
+    "value": 6.901622507244509e-13,
+    "row": "CM07",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 1.815850666547863e-10,
+    "row": "CM10"
+   },
+   "binary64_vs_reference": {
+    "value": 4.7952851673692775e-09,
+    "row": "CM07",
+    "rows_out_of_scope": [
+     "CM07",
+     "CM10"
+    ]
+   },
+   "catani_dd": {
+    "value": 7.192133362651351e-26,
+    "row": "CM07",
+    "not_formed": [],
+    "no_predicted_sector": [
+     {
+      "row": "CM08",
+      "reasons": [
+       "uncorrected-exchange"
+      ]
+     },
+     {
+      "row": "CM10",
+      "reasons": [
+       "uncorrected-exchange"
+      ]
+     }
+    ],
+    "relaxed": []
+   },
+   "native_inputs": [
+    {
+     "row": "CM07",
+     "status": "pass"
+    }
+   ],
+   "cms": [
+    {
+     "row": "CM01",
+     "status": "pass"
+    },
+    {
+     "row": "CM02",
+     "status": "pass"
+    },
+    {
+     "row": "CM03",
+     "status": "pass"
+    },
+    {
+     "row": "CM04",
+     "status": "pass"
+    },
+    {
+     "row": "CM05",
+     "status": "pass"
+    },
+    {
+     "row": "CM07",
+     "status": "pass"
+    },
+    {
+     "row": "CM08",
+     "status": "pass"
+    },
+    {
+     "row": "CM09",
+     "status": "pass"
+    },
+    {
+     "row": "CM10",
+     "status": "pass"
+    }
+   ],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "W-multi",
+   "content": "multiparticle labels, no-Born members skipped (Q2)",
+   "rows": 2,
+   "counts": {
+    "pass": 2
+   },
+   "max_outgoing": 2,
+   "models": [
+    "loop_qcd_qed_sm_Gmu"
+   ],
+   "public": [],
+   "dd_vs_reference": {
+    "value": 4.216961743968777e-14,
+    "row": "MP01",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 1.5295152624653725e-12,
+    "row": "MP01"
+   },
+   "binary64_vs_reference": {
+    "value": 1.5368052181458363e-12,
+    "row": "MP01",
+    "rows_out_of_scope": [
+     "MP02"
+    ]
+   },
+   "catani_dd": {
+    "value": 9.99620612272059e-30,
+    "row": "MP02",
+    "not_formed": [],
+    "no_predicted_sector": [],
+    "relaxed": []
+   },
+   "native_inputs": [],
+   "cms": [],
+   "findings": [],
+   "status": "pass"
+  },
+  {
+   "class": "W-scheme",
+   "content": "alpha(MZ), massive mu, CKM, massive b, massive initial states, eps sign",
+   "rows": 10,
+   "counts": {
+    "pass": 9,
+    "partial": 1
+   },
+   "max_outgoing": 4,
+   "models": [
+    "loop_qcd_qed_sm_Gmu",
+    "loop_qcd_qed_sm_Gmu_massive_muon",
+    "loop_sm"
+   ],
+   "public": [],
+   "dd_vs_reference": {
+    "value": 4.857360437056846e-09,
+    "row": "SC02",
+    "reference": "MadLoop"
+   },
+   "binary64_vs_dd": {
+    "value": 1.0757241593304889e-10,
+    "row": "SC06"
+   },
+   "binary64_vs_reference": {
+    "value": 0.0003420370859493344,
+    "row": "SC04",
+    "rows_out_of_scope": [
+     "SC02",
+     "SC04",
+     "SC06",
+     "SC07",
+     "SC08",
+     "SC09",
+     "SC10"
+    ]
+   },
+   "catani_dd": {
+    "value": 1.1148665800811504e-06,
+    "row": "SC03",
+    "not_formed": [
+     "SC02"
+    ],
+    "no_predicted_sector": [],
+    "relaxed": [
+     {
+      "row": "SC03",
+      "rule": "4",
+      "tolerance": 1e-05
+     },
+     {
+      "row": "SC03",
+      "rule": "4dd",
+      "tolerance": 1e-05
+     },
+     {
+      "row": "SC05",
+      "rule": "4dd",
+      "tolerance": 1e-12
+     },
+     {
+      "row": "SC07",
+      "rule": "4",
+      "tolerance": 1e-10
+     },
+     {
+      "row": "SC10",
+      "rule": "4",
+      "tolerance": 1e-08
+     }
+    ]
+   },
+   "native_inputs": [
+    {
+     "row": "SC06",
+     "status": "pass"
+    },
+    {
+     "row": "SC07",
+     "status": "pass"
+    },
+    {
+     "row": "SC08",
+     "status": "pass"
+    },
+    {
+     "row": "SC09",
+     "status": "pass"
+    }
+   ],
+   "cms": [
+    {
+     "row": "CM03",
+     "status": "pass"
+    }
+   ],
+   "findings": [
+    {
+     "id": "F7",
+     "rows": [
+      "LL02",
+      "SC02"
+     ],
+     "kind": "accepted",
+     "status": "accepted model property (the rows report partial: rule 4 not formed)"
+    }
+   ],
+   "status": "accepted"
+  }
+ ],
+ "cms": [
+  {
+   "row": "CM01",
+   "process": "e- e+ > m- m+",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QED"
+   ],
+   "tier": "nightly",
+   "inputs": "python",
+   "widths": null,
+   "points": 4,
+   "checks": 278,
+   "variants": [
+    {
+     "id": "CM01@zero",
+     "status": "pass",
+     "notes": "every width zero at runtime (the real-mass values)",
+     "dd_vs_reference": 1.947046687445993e-14
+    },
+    {
+     "id": "CM01@small",
+     "status": "pass",
+     "notes": "S3: the widths x 0.001 at runtime",
+     "dd_vs_reference": 1.2869741604620442e-14
+    },
+    {
+     "id": "CM01@source",
+     "status": "pass",
+     "notes": "the G_mu source's reglog override (reglog_convention source), the card widths",
+     "dd_vs_reference": 1.1947703527309973e-13
+    }
+   ],
+   "reference": "MadLoop (double)",
+   "dd_vs_reference": 1.1947703527309973e-13,
+   "binary64_vs_dd": 1.0273773616626048e-13,
+   "catani_dd": 1.9938642285414502e-30,
+   "catani_binary64": 1.0208164834182811e-13,
+   "unpredicted": [],
+   "ward_dd": null,
+   "features": [
+    "2->2",
+    "cms"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "CM02",
+   "process": "u u~ > e- e+",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "tier": "nightly",
+   "inputs": "python",
+   "widths": {
+    "WT": "1.37758",
+    "WZ": "2.49877",
+    "WW": "2.09291",
+    "WH": "0.00407468"
+   },
+   "points": 4,
+   "checks": 134,
+   "variants": [],
+   "reference": "MadLoop",
+   "dd_vs_reference": 8.810537152748087e-15,
+   "binary64_vs_dd": 1.459802849677742e-13,
+   "catani_dd": 2.2200786341627704e-29,
+   "catani_binary64": 1.4562695124864631e-13,
+   "unpredicted": [],
+   "ward_dd": null,
+   "features": [
+    "2->2",
+    "cms"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "CM03",
+   "process": "u d~ > e+ ve",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "tier": "nightly",
+   "inputs": "python",
+   "widths": {
+    "WT": "1.37758",
+    "WZ": "2.49877",
+    "WW": "2.09291",
+    "WH": "0.00407468"
+   },
+   "points": 4,
+   "checks": 134,
+   "variants": [],
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.187626936792688e-14,
+   "binary64_vs_dd": 3.932023870608511e-12,
+   "catani_dd": 3.1317008741201326e-30,
+   "catani_binary64": 3.931519254259428e-12,
+   "unpredicted": [],
+   "ward_dd": null,
+   "features": [
+    "2->2",
+    "cms"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "CM04",
+   "process": "g g > t t~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "tier": "nightly",
+   "inputs": "python",
+   "widths": {
+    "WT": "0",
+    "WZ": "2.49877",
+    "WW": "2.09291",
+    "WH": "0.00407468"
+   },
+   "points": 4,
+   "checks": 230,
+   "variants": [],
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.29307869100508e-15,
+   "binary64_vs_dd": 1.4914271549696805e-14,
+   "catani_dd": 1.4179118371572593e-30,
+   "catani_binary64": 1.5933957435728557e-14,
+   "unpredicted": [],
+   "ward_dd": null,
+   "features": [
+    "2->2",
+    "cms"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "CM05",
+   "process": "u u~ > e- e+ g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "tier": "nightly",
+   "inputs": "python",
+   "widths": {
+    "WT": "1.37758",
+    "WZ": "2.49877",
+    "WW": "2.09291",
+    "WH": "0.00407468"
+   },
+   "points": 4,
+   "checks": 142,
+   "variants": [],
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.122055701083372e-13,
+   "binary64_vs_dd": 5.074358377620008e-13,
+   "catani_dd": 8.700229851825225e-30,
+   "catani_binary64": 4.869205066974534e-13,
+   "unpredicted": [],
+   "ward_dd": {
+    "virtual": 4.112782281764676e-31,
+    "born": 8.54545990025795e-33,
+    "role": "diagnostic under CMS (m-sm/PLAN.md \u00a71.4, \u00a71.5)"
+   },
+   "features": [
+    "2->3",
+    "cms"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "CM07",
+   "process": "g g > t t~ e- e+ g",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "tier": "campaign",
+   "inputs": "native",
+   "widths": {
+    "WT": "0",
+    "WZ": "2.49877",
+    "WW": "2.09291",
+    "WH": "0.00407468"
+   },
+   "points": 3,
+   "checks": 86,
+   "variants": [],
+   "reference": "MadLoop",
+   "dd_vs_reference": 6.901622507244509e-13,
+   "binary64_vs_dd": 5.628148398811093e-11,
+   "catani_dd": 7.192133362651351e-26,
+   "catani_binary64": 2.3036938425598767e-11,
+   "unpredicted": [],
+   "ward_dd": {
+    "virtual": 0.0012117900021096058,
+    "born": 4.3460267077498484e-33,
+    "role": "diagnostic under CMS (m-sm/PLAN.md \u00a71.4, \u00a71.5)"
+   },
+   "features": [
+    "2->5",
+    "cms",
+    "U4"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "CM08",
+   "process": "u d~ > e+ ve b b~",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "corrections": [
+    "QCD"
+   ],
+   "tier": "nightly",
+   "inputs": "python",
+   "widths": {
+    "WT": "1.37758",
+    "WZ": "2.49877",
+    "WW": "2.09291",
+    "WH": "0.00407468"
+   },
+   "points": 4,
+   "checks": 66,
+   "variants": [],
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.2584431642918477e-14,
+   "binary64_vs_dd": 1.82414077309605e-13,
+   "catani_dd": null,
+   "catani_binary64": null,
+   "unpredicted": [
+    {
+     "sector": "QCD^2 QED^8",
+     "reason": "uncorrected-exchange"
+    }
+   ],
+   "ward_dd": null,
+   "features": [
+    "2->4",
+    "cms",
+    "coloured-width"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "CM09",
+   "process": "u d~ > e+ ve a",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "a0",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "tier": "nightly",
+   "inputs": "python",
+   "widths": {
+    "WT": "1.37758",
+    "WZ": "2.49877",
+    "WW": "2.09291",
+    "WH": "0.00407468"
+   },
+   "points": 4,
+   "checks": 142,
+   "variants": [],
+   "reference": "MadLoop",
+   "dd_vs_reference": 2.6746130609318037e-14,
+   "binary64_vs_dd": 1.6152116204464467e-12,
+   "catani_dd": 2.402579392257738e-29,
+   "catani_binary64": 1.6140993997580133e-12,
+   "unpredicted": [],
+   "ward_dd": {
+    "virtual": 2.947670857724914e-30,
+    "born": 4.879123810948352e-32,
+    "role": "diagnostic under CMS (m-sm/PLAN.md \u00a71.4, \u00a71.5)"
+   },
+   "features": [
+    "2->3",
+    "cms",
+    "photon:final"
+   ],
+   "status": "pass"
+  },
+  {
+   "row": "CM10",
+   "process": "u d~ > w+ b b~",
+   "model": "loop_sm",
+   "restriction": "no_b_mass",
+   "corrections": [
+    "QCD"
+   ],
+   "tier": "nightly",
+   "inputs": "python",
+   "widths": {
+    "WT": "1.4915",
+    "WZ": "0",
+    "WW": "0",
+    "WH": "0"
+   },
+   "points": 4,
+   "checks": 66,
+   "variants": [],
+   "reference": "MadLoop",
+   "dd_vs_reference": 1.616890269645241e-13,
+   "binary64_vs_dd": 1.815850666547863e-10,
+   "catani_dd": null,
+   "catani_binary64": null,
+   "unpredicted": [
+    {
+     "sector": "QCD^2 QED^6",
+     "reason": "uncorrected-exchange"
+    }
+   ],
+   "ward_dd": null,
+   "features": [
+    "2->3",
+    "cms",
+    "coloured-width",
+    "loop_sm"
+   ],
+   "status": "pass"
+  }
+ ]
+}

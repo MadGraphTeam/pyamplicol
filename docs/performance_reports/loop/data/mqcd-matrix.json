@@ -1,9 +1,9 @@
 {
  "source": "scripts/build_mqcd_matrix.py from data/mqcd.json, mqcd-findings.json, mqcd-public.json, mqcd-fft-cost.json and mqcd-fft-worst.json",
  "campaign": {
-  "campaign_head": "e18a024b (M-QCD pin; campaign-m1029-mqcd: default, manifest and nightly jobs n1-n7 as whole files, one pytest process per job; delegated ids with --junitxml)",
-  "native": "loop-native-v2-slice-d0fef168 (_rusticol.so df718cf3)",
-  "date": "2026-10-29",
+  "campaign_head": "71e2041e (M-SM pin; campaign-m1031-msm-mqcd: default, manifest and nightly jobs n1-n7 as whole files, one pytest process per job; delegated ids with --junitxml)",
+  "native": "loop-native-v2-slice-71e2041e (native_digest f8d77c97)",
+  "date": "2026-10-31",
   "counts": {
    "pass": 76,
    "partial": 1,
@@ -209,7 +209,7 @@
     "rows_out_of_scope": []
    },
    "catani_dd": {
-    "value": 1.148427460178407e-28,
+    "value": 1.1484113874330504e-28,
     "row": "C09",
     "no_predicted_sector": [],
     "not_formed": []
@@ -246,12 +246,12 @@
     }
    ],
    "dd_vs_reference": {
-    "value": 1.832094398384809e-12,
+    "value": 1.8320944940288218e-12,
     "row": "D28",
     "reference": "MadLoop"
    },
    "binary64_vs_dd": {
-    "value": 1.444503607334337e-11,
+    "value": 1.4445036168987381e-11,
     "row": "D28"
    },
    "binary64_vs_reference": {
@@ -264,7 +264,7 @@
     ]
    },
    "catani_dd": {
-    "value": 4.4601102384269375e-28,
+    "value": 7.329866813959725e-28,
     "row": "D29",
     "no_predicted_sector": [
      "D19"
@@ -372,7 +372,7 @@
     "rows_out_of_scope": []
    },
    "catani_dd": {
-    "value": 3.3988633003743326e-30,
+    "value": 3.643048774332925e-30,
     "row": "F04",
     "no_predicted_sector": [
      "C07"
@@ -459,12 +459,12 @@
     }
    ],
    "dd_vs_reference": {
-    "value": 1.3812052775155262e-15,
+    "value": 1.3812058713718115e-15,
     "row": "H01",
     "reference": "MadLoop"
    },
    "binary64_vs_dd": {
-    "value": 7.185208034654318e-14,
+    "value": 7.18520797526869e-14,
     "row": "H01"
    },
    "binary64_vs_reference": {
@@ -474,7 +474,7 @@
     "rows_out_of_scope": []
    },
    "catani_dd": {
-    "value": 4.63644103869966e-29,
+    "value": 4.7041311771697176e-29,
     "row": "H01",
     "no_predicted_sector": [],
     "not_formed": []
