@@ -1099,7 +1099,8 @@ def point_construction(points):
     """The points file's construction record; ``scale_variation`` also names
     its rows 0-based (``point`` and ``copy_of_point`` are 1-based)."""
     out = {k: points[k] for k in ("construction", "cuts", "sqrt_s", "family", "family_values", "rotation",
-                                  "madloop_qp_point", "point_labels", "precision", "scale_variation")
+                                  "madloop_qp_point", "point_labels", "precision", "scale_variation",
+                                  "exact_points")
            if k in points}
     if "scale_variation" in out:
         variation = out["scale_variation"]

@@ -11,7 +11,7 @@ directories are ``$LOOP_REFERENCE_ROOT/runs/mqcd/<run>/``.
 Subcommands (each takes run ids; ``all`` selects every run):
 
 ``export``    MadLoop export of a run's own process (``madloop_export.py``).
-``points``    the run's points.json (exact, supplied, copied from a run or a fixture).
+``points``    the run's points.json (exact, supplied, decay, copied from a run or a fixture).
 ``run``       MadLoop accurate run (and the per-helicity run, the second provider);
               ``--cpu`` pins it; ``split_points`` runs evaluate one point per job.
 ``merge``     ``references.py merge`` into reference.json.
@@ -205,6 +205,12 @@ def command_points(args, data, runs):
                                 "half_scale_point", True) else [])], check=True, stdout=subprocess.DEVNULL)
         elif spec["generator"] == "supplied":
             subprocess.run(supplied_command(run, target), check=True, stdout=subprocess.DEVNULL)
+        elif spec["generator"] == "decay":
+            # Exact rest-frame points of a 1 -> n decay (decay_points.py).
+            subprocess.run([python(), str(HERE / "decay_points.py"), "--process", run["process"], "--output",
+                            str(target), "--count", str(spec.get("count", 3)),
+                            *(["--half-scale-point"] if spec.get("half_scale_point", True) else [])],
+                           check=True, stdout=subprocess.DEVNULL)
         else:
             raise SystemExit(f"unknown points generator {spec['generator']!r}")
         if pdgs:
