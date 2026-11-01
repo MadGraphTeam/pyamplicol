@@ -45,6 +45,10 @@ ROWS = {
     "t_bwpg": {"process": "t > b w+ g", "pdgs": [6, 5, 24, 21], "scheme": "qcd"},
     "wp_udxg": {"process": "w+ > u d~ g", "pdgs": [24, 2, -1, 21], "scheme": "qcd"},
     "z_uuxg": {"process": "z > u u~ g", "pdgs": [23, 2, -2, 21], "scheme": "qcd"},
+    # identical final particles (the symmetry factor 2! 2!), the QCD orders
+    # only (MG5's default here also takes the QED^3 amplitudes)
+    "z_uuxuux": {"process": "z > u u~ u u~", "pdgs": [23, 2, -2, 2, -2], "scheme": "qcd",
+                 "orders": {"QCD": 2, "QED": 1}},
 }
 RESTRICTIONS = {"qcd": "no_b_mass", "qcd-4fs": "default"}
 POINTS = 3
@@ -106,7 +110,8 @@ def run_row(row, mg5, work):
     entry = ROWS[row]
     model = spec["scheme_data"]["madloop_model"].replace("{mg5}", str(mg5))
     runner = StandaloneMadGraphRunner()
-    process = runner.generate(installation=mg5, artifact=work / row, process=entry["process"], model_import=model)
+    process = runner.generate(installation=mg5, artifact=work / row, process=entry["process"], model_import=model,
+                              coupling_orders=entry.get("orders"))
     values = {**spec["scheme_data"]["parameters"], **spec["scheme_data"]["fixed_parameters"]}
     card = set_card(process.standalone / "Cards/param_card.dat", values)
     masses, exact, points = row_points(row)
@@ -118,6 +123,7 @@ def run_row(row, mg5, work):
         "row": row,
         "process": entry["process"],
         "pdgs": entry["pdgs"],
+        **({"coupling_orders": entry["orders"]} if "orders" in entry else {}),
         "scheme": entry["scheme"],
         "pyamplicol_model": {"source": "loop_sm", "restriction": RESTRICTIONS[entry["scheme"]]},
         "mg5_model": Path(model).name,
