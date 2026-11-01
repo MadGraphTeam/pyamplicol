@@ -62,8 +62,11 @@ def test_tree_and_virtual_colour_metadata_keep_distinct_semantics():
     tree = _physics()
     assert tree.contribution_kind == "tree"
     assert tree.color_ids == tree.color_flow_ids == ("flow0",)
+    # Born anchors belong to the formal leading colour of a virtual, whose
+    # seeds are diagonal in the flows.
     virtual = replace(
         tree,
+        color_accuracy="strict-lc",
         contribution_kind="virtual",
         color_kind="born-anchored-interference",
         color_flows=(),
@@ -86,6 +89,8 @@ def test_tree_and_virtual_colour_metadata_keep_distinct_semantics():
         )
         assert contracted.color_ids == (accuracy,)
         assert not contracted.color_flows
+    with pytest.raises(ValueError, match=r"formal LC \(strict-lc\)"):
+        replace(virtual, color_accuracy="lc")
     with pytest.raises(ValueError, match="Born anchors apply only"):
         replace(virtual, contribution_kind="tree")
     with pytest.raises(ValueError, match="signed Born anchors"):

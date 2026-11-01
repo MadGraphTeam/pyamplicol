@@ -247,10 +247,11 @@ def test_inherited_lc_keeps_the_counterterms(built):
 
 
 @pytest.mark.loop_fast
-def test_a_degree_off_the_reference_is_refused(monkeypatch):
+def test_a_degree_above_the_reference_is_refused():
     """``LoopSlice.require_reference_degrees`` refuses a sector whose
-    leading exact degree differs from the reference degree, naming the
-    listed rule, instead of truncating at the sector's own leading term."""
+    structural leading degree exceeds the reference degree, naming the listed
+    rule; a sector below the reference (a mixed-order Born) is admitted and
+    projected at the reference degree."""
 
     from pyamplicol.loops.v2.assemble import LoopSlice
     from pyamplicol.loops.v2.refusals import (
@@ -262,16 +263,21 @@ def test_a_degree_off_the_reference_is_refused(monkeypatch):
         request = type("R", (), {"process": "u u~ > d d~"})()
         require_reference_degrees = LoopSlice.require_reference_degrees
 
-        def degrees(self):
-            return {"born": {"b": 2}, "virtual": {"s": 2}}
+        def __init__(self, virtual):
+            self.virtual = virtual
+
+        def structural_degrees(self):
+            return {"born": {"b": 1}, "virtual": {"s": self.virtual}}
 
         def reference_degrees(self):
             return {"born": {"b": 2}, "virtual": {"s": 3}}
 
     with pytest.raises(LoopRequestUnsupported) as refused:
-        Stub().require_reference_degrees()
+        Stub(virtual=4).require_reference_degrees()
     assert refused.value.key == "colour-reference-degree"
     assert "colour-reference-degree" in {rule.key for rule in LOOP_ADMISSION_REFUSALS}
+    Stub(virtual=2).require_reference_degrees()
+    Stub(virtual=3).require_reference_degrees()
 
 
 def test_whole_born_entries_follow_the_tree_rule():

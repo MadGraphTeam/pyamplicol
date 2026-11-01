@@ -1845,7 +1845,10 @@ def observables_artifact(
     def build(name: str) -> Path:
         if name not in built:
             record = _observables_record(name)
+            # The legacy engine recorded its formal projections as "lc"/"nlc".
             accuracy = record.get("accuracy", "full")
+            if accuracy != "full":
+                accuracy = f"strict-{accuracy}"
             entries = tuple(
                 (key, expression) for key, expression in record["processes"]
             )

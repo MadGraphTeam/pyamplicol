@@ -475,18 +475,18 @@ def test_a_flow_below_the_leading_colour_is_zero_and_refused_at_generation(
 
 
 @pytest.mark.loop_physics
-def test_a_flow_interfering_between_born_orders_is_refused_at_generation(
+def test_a_flow_selection_between_born_orders_is_exact_at_generation(
     loop_sm_compiled_model, loop_native
 ):
-    """u u~ > d d~ with QCD and photon Born amplitudes: at QCD^2 QED^2 the
-    QCD flow (2,4,3,1) interferes at the leading power with the photon
-    Born's (2,1,3,4). Its evaluation-time selection keeps that term (the
-    flows sum to the inclusive value in double-double); a generation-time
-    selection would drop it, so it is refused (listed
-    ``interfering-colour-flows``, naming the unselected flow and the order),
+    """u u~ > d d~ with QCD and photon Born amplitudes: every squared Born
+    order is truncated at the common reference degree (as at tree level), so
+    QCD^2 QED^2, where the QCD flow (2,4,3,1) and the photon Born's (2,1,3,4)
+    interfere one power below it, has no leading-colour part (zero for each
+    flow; the flows sum to the inclusive value in double-double). The
+    generation-time selection of (2,4,3,1) is its evaluation-time selection,
     (2,1,3,4) alone is below the leading colour at QCD^4
-    (``subleading-colour-flows``), and both flows together are the
-    inclusive value."""
+    (``subleading-colour-flows``), and both flows together are the inclusive
+    value."""
 
     from pyamplicol.loops.v2.assemble import LoopSlice, SliceRequest
     from pyamplicol.loops.v2.observables import ObservableSlice
@@ -533,14 +533,14 @@ def test_a_flow_interfering_between_born_orders_is_refused_at_generation(
     ]
     born = max(abs(x) for x in expected[:3])
     _close(list(map(sum, zip(*parts, strict=True))), expected, DOUBLE_DOUBLE, born)
-    # The cross order's (QCD^2 QED^2, entry 0) Born of the QCD flow alone
-    # is nonzero (the inclusive one vanishes at the leading power).
-    cross = parts[flows.index("flow:2,4,3,1")][0]
-    assert abs(cross) > Decimal("1e-4")
-    with pytest.raises(LoopRequestUnsupported) as refused:
-        generate(lc.Selection((), ((2, 4, 3, 1),)))
-    assert refused.value.key == "interfering-colour-flows"
-    assert "flows [2, 1, 3, 4] at {'QCD': 2, 'QED': 2}" in str(refused.value)
+    # The cross order's (QCD^2 QED^2, entry 0) Born is zero for each flow.
+    assert [part[0] for part in parts] == [0, 0]
+    qcd = parts[flows.index("flow:2,4,3,1")]
+    selected = generate(lc.Selection((), ((2, 4, 3, 1),)))
+    value = coefficients(
+        _runtime(selected).evaluate(pts, mu_r2=scales, arithmetic="double-double")
+    )
+    _close(value, qcd, DOUBLE_DOUBLE, born)
     with pytest.raises(LoopRequestUnsupported) as refused:
         generate(lc.Selection((), ((2, 1, 3, 4),)))
     assert refused.value.key == "subleading-colour-flows"

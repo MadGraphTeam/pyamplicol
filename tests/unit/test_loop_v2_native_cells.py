@@ -401,7 +401,7 @@ def _switched_equal(native: Generated, oracle: Generated) -> None:
         assert snapshot.digest(snapshot.seeds_records(a.scaleless)) == (
             snapshot.digest(snapshot.seeds_records(b.scaleless))
         )
-    assert a.degrees() == python(b.degrees)
+    assert a.structural_degrees() == python(b.structural_degrees)
     _decodes(native)
     assert oracle.decoded == 0
     if a.request.accuracy == "full":
@@ -595,15 +595,15 @@ def _degrees_equal(native: Generated, oracle: Generated | None = None) -> None:
 
     slice_ = native.slice
     expected = (
-        python(oracle.slice.degrees)
+        python(oracle.slice.structural_degrees)
         if oracle is not None
-        else uncached(slice_, "degrees", slice_.degrees)
+        else uncached(slice_, "degrees", slice_.structural_degrees)
     )
     assert native_cells.degrees(slice_) == expected
     # Rule 5: one thread or several.
     assert native_cells.degrees(slice_, threads=1) == expected
     assert native_cells.degrees(slice_, threads=3) == expected
-    assert slice_.degrees() == expected
+    assert slice_.structural_degrees() == expected
     table = slice_.table
     for pairs in (pairs for _sector, pairs in slice_.sectors):
         assert native_cells.table_degree(
