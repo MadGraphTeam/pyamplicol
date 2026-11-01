@@ -63,11 +63,11 @@ PROCESSES = {
         "required/uux_ddxg.json",
     ),
     "gg_gg": ("g g > g g", {"QCD": 2, "QED": 0}, "full", "legacy/gg_gg.json"),
-    "gg_gg_lc": ("g g > g g", {"QCD": 2, "QED": 0}, "lc", "legacy/gg_gg.json"),
+    "gg_gg_lc": ("g g > g g", {"QCD": 2, "QED": 0}, "strict-lc", "legacy/gg_gg.json"),
     "uux_ddxg_nlc": (
         "u u~ > d d~ g",
         {"QCD": 3, "QED": 0},
-        "nlc",
+        "strict-nlc",
         "required/uux_ddxg.json",
     ),
     "gg_ttx": ("g g > t t~", {"QCD": 2, "QED": 0}, "full", "required/gg_ttx.json"),

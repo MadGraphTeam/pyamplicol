@@ -290,15 +290,15 @@ RESOLVED_CONTROLS = {
         "full",
         "legacy/uux_ggg.json",
     ),
-    "gg_gg_lc": ("g g > g g", QCD2, QCD4, "lc", "legacy/gg_gg.json"),
-    "gg_gg_nlc": ("g g > g g", QCD2, QCD4, "nlc", "legacy/gg_gg.json"),
+    "gg_gg_lc": ("g g > g g", QCD2, QCD4, "strict-lc", "legacy/gg_gg.json"),
+    "gg_gg_nlc": ("g g > g g", QCD2, QCD4, "strict-nlc", "legacy/gg_gg.json"),
     # Identical-flavour lines: blocks of one word and two N_c grades
     # (``generation.dag_grades``).
     "uux_uuxg_nlc": (
         "u u~ > u u~ g",
         {"QCD": 3, "QED": 0},
         {"QCD": 5, "QED": 0},
-        "nlc",
+        "strict-nlc",
         "legacy/uux_uuxg.json",
     ),
 }
@@ -880,8 +880,9 @@ def _legacy_runners(generate, record):
     if record.get("accuracy", "full") != "full":
         from pyamplicol.models.loop_color_declaration import LoopColorDeclaration
 
+        # The legacy engine recorded its formal projections as "lc"/"nlc".
         options = {
-            "accuracy": record["accuracy"],
+            "accuracy": f"strict-{record['accuracy']}",
             "colour_declaration": LoopColorDeclaration.from_dict(
                 json.loads((ROOT / record["colour_declaration"]).read_text())
             ),
@@ -1126,7 +1127,7 @@ def test_inclusively_pruned_slice_refuses_directed_histories(
             QCD2,
             QCD4,
             fixed_parameters=legacy_capture.FIXED_PARAMETERS,
-            accuracy="lc",
+            accuracy="strict-lc",
             colour_declaration=declaration,
         ),
         loop_native,

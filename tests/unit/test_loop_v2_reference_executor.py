@@ -513,7 +513,7 @@ def test_colour_word_schedules_agree_exactly(
     _assert_nonzero(b)
     _assert_equal(b, executor.run_f(skeletons, rx.trie_targets(case.plan)))
     _assert_equal(b, executor.run_m(skeletons, rx.trie_targets(case.plan)))
-    accuracy = "lc" if lc else "full"
+    accuracy = "strict-lc" if lc else "full"
     if not lc:  # no FC certificate exists yet (WP2.4): M falls back to B
         gated = executor.run(case.plan, "M", accuracy)
         assert "certificates" in gated.fallback

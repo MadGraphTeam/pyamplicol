@@ -528,7 +528,7 @@ def test_slice_request_records_round_trip():
         fixed_parameters={"MB": "0"},
         particle_veto=(23,),
         allow_anomalous_veto=True,
-        accuracy="lc",
+        accuracy="strict-lc",
         colour_declaration=declaration,
         scale_parameter="MU_R",
         alpha_s_parameter="aS",
@@ -1706,10 +1706,10 @@ def test_cli_generates_and_evaluates_through_v2(
 @pytest.mark.parametrize(
     "name,expression,accuracy",
     [
-        ("gg_gg", "g g > g g", "lc"),
-        ("tt", "u u~ > t t~", "lc"),
-        ("uux_ddxg", "u u~ > d d~ g", "nlc"),
-        ("uux_uuxg", "u u~ > u u~ g", "nlc"),
+        ("gg_gg", "g g > g g", "strict-lc"),
+        ("tt", "u u~ > t t~", "strict-lc"),
+        ("uux_ddxg", "u u~ > d d~ g", "strict-nlc"),
+        ("uux_uuxg", "u u~ > u u~ g", "strict-nlc"),
     ],
 )
 def test_projected_colour_through_v2_equals_legacy_o1(
@@ -1734,7 +1734,8 @@ def test_projected_colour_through_v2_equals_legacy_o1(
         entries,
     )
     fixture = _fixture(name)
-    reference = fixture["colour_projections"][accuracy]
+    # The legacy engine captured its formal projections as "lc" and "nlc".
+    reference = fixture["colour_projections"][accuracy.removeprefix("strict-")]
     results = reference["results"]["arbitrary-200"]
     runtime = Runtime.load(output, process=name, model_parameters=_parameters(fixture))
     info = runtime.inspect()

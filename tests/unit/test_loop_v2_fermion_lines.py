@@ -216,7 +216,11 @@ def test_recommended_estimate_brackets_the_uux_uuxepem_double_pole(
             ):
                 error = abs(complex(value) - complex(exact))
                 assert 0 < error <= ESTIMATE_MARGIN * bound, (
-                    index, sector, key, error, bound
+                    index,
+                    sector,
+                    key,
+                    error,
+                    bound,
                 )
 
 
@@ -332,9 +336,9 @@ class _PowerParts:
         self.compiled, self.native, self.name = compiled, loop_native, name
         self.monkeypatch, self.carrier = monkeypatch, carrier
         _request0, self.point, self.scale, self.parameters = _projection_request(
-            compiled, name, "lc", carrier
+            compiled, name, "strict-lc", carrier
         )
-        self.unpruned = self.build("lc", prune=False)
+        self.unpruned = self.build("strict-lc", prune=False)
         self.degrees = self.unpruned.degrees()
         self.top = max(
             value
@@ -466,7 +470,7 @@ def test_colour_projections_are_formal_nc_projections(
             ), order
             total = total_born[order]
             assert abs(total - number(value)) <= tolerance * abs(total), order
-        for accuracy, depth in (("lc", 0), ("nlc", 2)):
+        for accuracy, depth in (("strict-lc", 0), ("strict-nlc", 2)):
             mine = evaluate(build(accuracy))
             for order, value in mine.born.items():
                 degree = degrees["born"][order]
@@ -648,7 +652,7 @@ def test_colour_projections_are_coefficients_of_an_nc_scan_of_full_colour(
     tolerance = Fraction(PROJECTION_CARRIERS[carrier])
     accuracies = {
         accuracy: _entries(projection.evaluate(projection.build(accuracy)))
-        for accuracy in ("lc", "nlc")
+        for accuracy in ("strict-lc", "strict-nlc")
     }
     degrees = {("born", repr(k)): v for k, v in projection.degrees["born"].items()}
     degrees.update(
@@ -669,7 +673,7 @@ def test_colour_projections_are_coefficients_of_an_nc_scan_of_full_colour(
         for p, c in zip(powers, fitted, strict=True):
             assert abs(c - parts[p].get(key, 0)) <= tolerance * scale, (key, p)
         degree = degrees[sector(key)]
-        for accuracy, depth in (("lc", 0), ("nlc", 2)):
+        for accuracy, depth in (("strict-lc", 0), ("strict-nlc", 2)):
             kept = sum(
                 c
                 for p, c in zip(powers, fitted, strict=True)
@@ -935,7 +939,8 @@ def test_graded_blocks_scale_as_their_u1_pieces(
 # an hour, so only these are captured). u u~ > u u~ g's projections are in
 # its full legacy capture (``test_loop_v2_slice.py``, ``test_loop_v2_artifact.py``).
 LEGACY = Path(__file__).resolve().parents[1] / "fixtures" / "loop" / "legacy"
-LEGACY_PROJECTIONS = (("uux_uuxuux", "lc"),)
+# The legacy engine captured its formal projections as "lc" and "nlc".
+LEGACY_PROJECTIONS = (("uux_uuxuux", "strict-lc"),)
 
 
 @pytest.mark.loop_nightly
@@ -958,8 +963,9 @@ def test_identical_flavour_projections_equal_legacy(
     from pyamplicol.models.loop_color_declaration import LoopColorDeclaration
     from tools.loop_reference import legacy_capture
 
-    fixture = json.loads((LEGACY / f"{name}.{accuracy}.json").read_text())
-    projection = fixture["colour_projections"][accuracy]
+    legacy = accuracy.removeprefix("strict-")
+    fixture = json.loads((LEGACY / f"{name}.{legacy}.json").read_text())
+    projection = fixture["colour_projections"][legacy]
     assert projection["colour_declaration"] == str(
         legacy_capture.COLOUR_DECLARATION.relative_to(legacy_capture.ROOT)
     )

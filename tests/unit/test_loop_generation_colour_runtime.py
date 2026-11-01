@@ -40,9 +40,11 @@ samples = 2
 @pytest.mark.parametrize(
     "process,name,accuracy,components",
     [
-        ("g g > g g", "gg", "lc", 6),
-        ("u u~ > e- e+", "dy", "lc", 1),
-        ("g g > g g", "gg_nlc", "nlc", 1),
+        ("g g > g g", "gg", "strict-lc", 6),
+        ("u u~ > e- e+", "dy", "strict-lc", 1),
+        ("g g > g g", "gg_nlc", "strict-nlc", 1),
+        # The inherited LC is one contraction, not diagonal in the flows.
+        ("g g > g g", "gg_lc", "lc", 1),
     ],
 )
 def test_real_declared_colour_generation_and_saved_components(
@@ -68,7 +70,7 @@ def test_real_declared_colour_generation_and_saved_components(
     assert coverage["source_colour_declared"] is True
     assert coverage["formal_colour_process_coverage_checked"] is False
     assert coverage["canonical_born_components_checked"] is (
-        False if accuracy == "lc" else None
+        False if accuracy == "strict-lc" else None
     )
     assert not output.exists()
 
@@ -91,10 +93,11 @@ def test_real_declared_colour_generation_and_saved_components(
     assert resolved.born_shape == (1, 1, 16, components)
     assert resolved.born_color_ids == resolved.virtual_color_ids
     assert runtime.physics.color_flows == ()
-    # LC resolves per seed-basis column, each leading-colour flow anchored to
-    # its Born basis element (the flows ``evaluate(color_flows=...)``
-    # selects); NLC is one contraction.
-    if accuracy == "lc":
+    # Formal LC resolves per seed-basis column, each leading-colour flow
+    # anchored to its Born basis element (the flows
+    # ``evaluate(color_flows=...)`` selects); the inherited LC and NLC are one
+    # contraction.
+    if accuracy == "strict-lc":
         assert all(value.startswith("basis-") for value in resolved.born_color_ids)
         assert runtime.physics.reduction.kind == "born-anchored-interference"
         anchored = {
@@ -104,7 +107,7 @@ def test_real_declared_colour_generation_and_saved_components(
         }
         assert anchored == set(range(components))
     else:
-        assert resolved.born_color_ids == ("nlc",)
+        assert resolved.born_color_ids == (accuracy,)
         assert runtime.physics.reduction.kind == "contracted-color"
         assert runtime.physics.born_anchored_color_components == ()
     total = resolved.total()

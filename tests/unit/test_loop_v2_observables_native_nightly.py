@@ -96,7 +96,7 @@ def test_resolved_entries_sum_to_the_inclusive_result(generate, control, carrier
     assert_resolved_entries_sum(generate, control, carrier)
 
 
-@pytest.mark.parametrize("accuracy", ("lc", "nlc"))
+@pytest.mark.parametrize("accuracy", ("strict-lc", "strict-nlc"))
 def test_spin_sources_are_bilinear_at_lc_and_nlc(generate, accuracy):
     assert_spin_sources_bilinear(generate, accuracy)
 

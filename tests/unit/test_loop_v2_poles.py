@@ -321,7 +321,7 @@ def test_uv_and_ir_parts_add_up_to_the_combined_poles(modes, name):
 
 
 @pytest.mark.loop_physics
-@pytest.mark.parametrize("accuracy", ("lc", "nlc"))
+@pytest.mark.parametrize("accuracy", ("strict-lc", "strict-nlc"))
 def test_leading_colour_selections_split_the_projected_poles(
     loop_sm_compiled_model, loop_native, accuracy
 ):
@@ -512,7 +512,7 @@ def test_leading_colour_directed_history_splits_its_poles(
 
     from pyamplicol.loops.v2.observables import INCLUSIVE, NativeObservables
 
-    observables = _observables(loop_sm_compiled_model, loop_native, "lc")
+    observables = _observables(loop_sm_compiled_model, loop_native, "strict-lc")
     companion = observables.scaleless()
     assert companion is not None and companion.slice is not observables.slice.scaleless
     point, scale = PROCESSES["gg_gg"][2]()

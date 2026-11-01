@@ -48,7 +48,7 @@ CONTROLS = (
     "uux_ggg",
     "gg_ggg",
 )
-ACCURACIES = ("full", "nlc", "lc")
+ACCURACIES = ("full", "strict-nlc", "strict-lc")
 # Controls whose every family is certified, and the one with none.
 EVERYWHERE = {"gg_gg", "gg_ggg"}
 NOWHERE = {"uux_uux"}

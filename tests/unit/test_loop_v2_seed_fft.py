@@ -240,7 +240,7 @@ def test_native_seed_fft_at_nlc_equals_direct(compiled, loop_native):
         "g g > g g",
         {"QCD": 2},
         {"QCD": 4},
-        accuracy="nlc",
+        accuracy="strict-nlc",
         colour_declaration=declaration,
     )
     points = _points([0] * 4, 2)

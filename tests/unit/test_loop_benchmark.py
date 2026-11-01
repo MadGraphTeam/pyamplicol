@@ -881,13 +881,15 @@ def test_universal_double_pole_at_full_and_leading_colour():
     from tools.loop_benchmark import pyamplicol_v2
 
     alpha = 0.118 / (2 * math.pi)
-    # u u~ > d d~ g: four quarks and a gluon; leading colour C_F -> N_c/2.
+    # u u~ > d d~ g: four quarks and a gluon; formal leading colour
+    # C_F -> N_c/2; no prediction at the inherited accuracies.
     assert pyamplicol_v2.universal_double_pole("uux_ddxg", "full") == (
         pytest.approx(-alpha * (4 * 4 / 3 + 3))
     )
-    assert pyamplicol_v2.universal_double_pole("uux_ddxg", "lc") == pytest.approx(
-        -alpha * (4 * 3 / 2 + 3)
-    )
+    assert pyamplicol_v2.universal_double_pole(
+        "uux_ddxg", "strict-lc"
+    ) == pytest.approx(-alpha * (4 * 3 / 2 + 3))
+    assert pyamplicol_v2.universal_double_pole("uux_ddxg", "lc") is None
     # Massive tops add no double pole; the leptons none.
     assert pyamplicol_v2.universal_double_pole("gg_ttxemepg_qcd", "full") == (
         pytest.approx(-alpha * 9)
@@ -900,7 +902,7 @@ def test_universal_double_pole_at_full_and_leading_colour():
         assert pyamplicol_v2.universal_double_pole(key, "full") == (
             providers.universal_double_pole(streams.spec(key))
         )
-    assert pyamplicol_v2.universal_double_pole("gg_ggggg", "lc") == (
+    assert pyamplicol_v2.universal_double_pole("gg_ggggg", "strict-lc") == (
         pyamplicol_v2.universal_double_pole("gg_ggggg", "full")
     )
 

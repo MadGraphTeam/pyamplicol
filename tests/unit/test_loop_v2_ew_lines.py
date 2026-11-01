@@ -964,7 +964,7 @@ def test_lepton_initiated_three_partons_poles_and_sites(
 
 
 @pytest.mark.loop_nightly
-@pytest.mark.parametrize("accuracy", ["lc", "nlc"])
+@pytest.mark.parametrize("accuracy", ["strict-lc", "strict-nlc"])
 def test_dilepton_two_gluon_colour_projections_are_formal_nc_projections(
     loop_sm_compiled_model, loop_native, monkeypatch, accuracy
 ):
@@ -1000,7 +1000,11 @@ def test_dilepton_two_gluon_colour_projections_are_formal_nc_projections(
         )
         return LoopSlice.generate(compiled, request, loop_native, prune=prune)
 
-    projected, unpruned, full = build(accuracy), build("lc", prune=False), build("full")
+    projected, unpruned, full = (
+        build(accuracy),
+        build("strict-lc", prune=False),
+        build("full"),
+    )
     parameters = {k: v for k, v in fixture["parameters"].items() if k != "MU_R"}
     point, scale = fixture["points"][0], str(int(fixture["mu_r"][0]) ** 2)
     degrees = unpruned.degrees()
@@ -1021,7 +1025,7 @@ def test_dilepton_two_gluon_colour_projections_are_formal_nc_projections(
         if value is not None
     )
     parts = {power: at(power) for power in range(top - 8, top + 1)}
-    depth = {"lc": 0, "nlc": 2}[accuracy]
+    depth = {"strict-lc": 0, "strict-nlc": 2}[accuracy]
     mine = projected.evaluate(point, scale, parameters=parameters)
     reference = full.evaluate(point, scale, parameters=parameters)
     for order, value in mine.born.items():

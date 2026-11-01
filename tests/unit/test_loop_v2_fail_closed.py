@@ -6,7 +6,7 @@ An unsupported structure is refused with a typed error naming a listed rule,
 never served as a silently wrong value, and the rule is structural:
 
 * G2-M1 (``refusals.LOOP_ADMISSION_REFUSALS`` key
-  ``colour-accuracy-nc-exact``): LC and NLC over tree blocks that are not exact
+  ``colour-accuracy-nc-exact``): strict LC and NLC over tree blocks that are not exact
   in N_c (blocks mixing U(1)-subtraction grades: identical-flavour quark lines
   compiled without the grade split of ``generation.dag_grades``, which every
   LC and NLC request runs; ``_without_grade_split``) are refused at
@@ -135,6 +135,8 @@ def test_refusals_are_listed_typed_and_name_their_rule():
 
     assert [refusal.key for refusal in LOOP_ADMISSION_REFUSALS] == [
         NC_EXACT_REFUSAL,
+        # The projections' reference degree (``test_loop_v2_inherited_colour.py``).
+        "colour-reference-degree",
         LINE_REFUSAL,
         # WP3.2 EWI-5's interim veto guard (``test_loop_v2_ew_leptons.py``).
         "veto-unlabelled-counterterms",
@@ -179,7 +181,8 @@ def test_refusals_are_listed_typed_and_name_their_rule():
     assert isinstance(error, GenerationError) and error.key == NC_EXACT_REFUSAL
     message = str(error)
     assert message.startswith(
-        f"{NC_EXACT_REFUSAL}: 'u u~ > u u~ g': detail. Rule: LC and NLC project"
+        f"{NC_EXACT_REFUSAL}: 'u u~ > u u~ g': detail. Rule: strict-lc and strict-nlc "
+        "project"
     )
     assert 'Instead: full colour (color.accuracy = "full")' in message
     keys = {refusal.key for refusal in NATIVE_EXPORT_REFUSALS}
@@ -272,11 +275,11 @@ def test_plane_mismatch_is_a_listed_refusal_naming_the_output(loop_native):
 @pytest.mark.parametrize(
     ("name", "accuracy"),
     [
-        ("uux_uuxg", "lc"),
-        ("uux_uuxg", "nlc"),
-        ("gg_uuxuux", "lc"),
-        ("gg_uuxuux", "nlc"),
-        ("ddx_gddx", "lc"),
+        ("uux_uuxg", "strict-lc"),
+        ("uux_uuxg", "strict-nlc"),
+        ("gg_uuxuux", "strict-lc"),
+        ("gg_uuxuux", "strict-nlc"),
+        ("ddx_gddx", "strict-lc"),
     ],
 )
 def test_projections_over_blocks_not_exact_in_nc_are_refused_before_the_families(
@@ -317,10 +320,12 @@ def test_identical_flavours_with_nc_exact_blocks_and_full_colour_generate(
     from pyamplicol.loops.v2.assemble import LoopSlice
 
     lc = LoopSlice.generate(
-        loop_sm, _request("u u~ > u u~", {"QCD": 2, "QED": 0}, "lc"), loop_native
+        loop_sm, _request("u u~ > u u~", {"QCD": 2, "QED": 0}, "strict-lc"), loop_native
     )
     assert lc.colour.formal_nc and lc.table.formal_nc
-    split = LoopSlice.generate(loop_sm, _request(*MIXED["uux_uuxg"], "lc"), loop_native)
+    split = LoopSlice.generate(
+        loop_sm, _request(*MIXED["uux_uuxg"], "strict-lc"), loop_native
+    )
     assert split.blocks.graded and split.colour.formal_nc and split.table.formal_nc
     full = LoopSlice.generate(
         loop_sm, _request(*MIXED["uux_uuxg"], "full"), loop_native
@@ -346,7 +351,7 @@ def test_exports_refuse_projections_over_blocks_not_exact_in_nc(
         _without_grade_split(patch)
         patch.setattr(assemble, "require_nc_exact", lambda *args: None)
         slice_ = LoopSlice.generate(
-            loop_sm, _request(*MIXED["uux_uuxg"], "lc"), loop_native
+            loop_sm, _request(*MIXED["uux_uuxg"], "strict-lc"), loop_native
         )
     assert not slice_.colour.formal_nc
 
@@ -358,7 +363,7 @@ def test_exports_refuse_projections_over_blocks_not_exact_in_nc(
         assert error.value.key == NC_EXACT_REFUSAL
         return str(error.value)
 
-    assert "'u u~ > u u~ g': LC needs N_c-exact" in refused()
+    assert "'u u~ > u u~ g': STRICT-LC needs N_c-exact" in refused()
     original = refusals.require_nc_exact
     calls = []
 
@@ -369,13 +374,13 @@ def test_exports_refuse_projections_over_blocks_not_exact_in_nc(
 
     # ``export_plan``'s own check off: its seed records refuse.
     monkeypatch.setattr(refusals, "require_nc_exact", off_at_first_call)
-    assert "the seed records of an LC request" in refused()
+    assert "the seed records of a STRICT-LC request" in refused()
     # The seed-table check off too: the native trees refuse over their
     # counterterm program's blocks (the second call; the slice's own blocks
     # are ``export_plan``'s first).
     calls.clear()
     monkeypatch.setattr(plan_export, "require_formal_nc_tables", lambda *a: None)
-    assert "'u u~ > u u~ g': LC needs N_c-exact" in refused()
+    assert "'u u~ > u u~ g': STRICT-LC needs N_c-exact" in refused()
     assert len(calls) == 2
     # The native seed records of a column set check their tables.
     with pytest.raises(LoopRequestUnsupported, match="native seed records"):
@@ -411,10 +416,10 @@ def test_exports_refuse_projections_over_blocks_not_exact_in_nc(
 # companion digests are unchanged (the plan v4 bytes do not depend on the
 # seed contraction).
 CONTROLS = {
-    "uux_ddxg_lc": ("u u~ > d d~ g", {"QCD": 3, "QED": 0}, "lc"),
-    "uux_ddxg_nlc": ("u u~ > d d~ g", {"QCD": 3, "QED": 0}, "nlc"),
-    "uux_ddxssx_lc": ("u u~ > d d~ s s~", {"QCD": 4, "QED": 0}, "lc"),
-    "uux_ddxssx_nlc": ("u u~ > d d~ s s~", {"QCD": 4, "QED": 0}, "nlc"),
+    "uux_ddxg_lc": ("u u~ > d d~ g", {"QCD": 3, "QED": 0}, "strict-lc"),
+    "uux_ddxg_nlc": ("u u~ > d d~ g", {"QCD": 3, "QED": 0}, "strict-nlc"),
+    "uux_ddxssx_lc": ("u u~ > d d~ s s~", {"QCD": 4, "QED": 0}, "strict-lc"),
+    "uux_ddxssx_nlc": ("u u~ > d d~ s s~", {"QCD": 4, "QED": 0}, "strict-nlc"),
     "uux_uuxg_full": (*MIXED["uux_uuxg"], "full"),
     "gg_uuxuux_full": (*MIXED["gg_uuxuux"], "full"),
 }
@@ -583,7 +588,7 @@ def test_public_generation_and_cli_refuse_lc_and_nlc_over_blocks_not_exact_in_nc
     _without_grade_split(monkeypatch)
     expression = MIXED[name][0]
     processes = ProcessSet((ProcessRequest.parse(expression, name=name),))
-    for accuracy in ("lc", "nlc"):
+    for accuracy in ("strict-lc", "strict-nlc"):
         output = tmp_path / f"api-{accuracy}"
         card = tmp_path / f"api-{accuracy}.toml"
         card.write_text(_card(loop_sm_colour_model, output, name, expression, accuracy))

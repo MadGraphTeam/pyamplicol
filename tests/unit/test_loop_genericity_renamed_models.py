@@ -538,7 +538,7 @@ def _mixed_grade_words(slice_) -> int:
     return sum(len(found) > 1 for found in grades.values())
 
 
-@pytest.mark.parametrize("accuracy", ["lc", "nlc"])
+@pytest.mark.parametrize("accuracy", ["strict-lc", "strict-nlc"])
 def test_renamed_quarks_and_permuted_legs_give_the_same_projections(
     models, loop_native, accuracy
 ):

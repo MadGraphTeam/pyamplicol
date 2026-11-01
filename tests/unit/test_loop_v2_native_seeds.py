@@ -586,7 +586,7 @@ def test_lazy_seed_fourier_keeps_points_and_the_reported_contraction(
 
         def _plan_contraction(self) -> None:
             if self.request.colour_contraction == "auto" and (
-                self.request.accuracy != "lc"
+                self.request.accuracy not in ("lc", "strict-lc")
             ):
                 self._lazy = native_seeds.LazyFourier(lambda: self.table)
                 return
@@ -624,8 +624,8 @@ def _slice_request(process: str, born: dict, loop: dict, **options):
 
 SLICE_CASES = [
     ("g g > g g g", {"QCD": 3, "QED": 0}, {"QCD": 5, "QED": 0}, "full"),
-    ("g g > g g g", {"QCD": 3, "QED": 0}, {"QCD": 5, "QED": 0}, "lc"),
-    ("u u~ > g g g", {"QCD": 3, "QED": 0}, {"QCD": 5, "QED": 0}, "nlc"),
+    ("g g > g g g", {"QCD": 3, "QED": 0}, {"QCD": 5, "QED": 0}, "strict-lc"),
+    ("u u~ > g g g", {"QCD": 3, "QED": 0}, {"QCD": 5, "QED": 0}, "strict-nlc"),
 ]
 
 
@@ -733,7 +733,7 @@ def test_native_seeds_in_the_slice(
     oracle = _oracle_keep(unpruned, assemble.LoopSlice._prune_colour)
     assert keep == [oracle(s) for s in stage._skeletons]
     # LC prunes skeletons of g g > g g g; NLC keeps every u u~ > g g g one.
-    assert any(keep) and all(keep) == (accuracy == "nlc")
+    assert any(keep) and all(keep) == (accuracy == "strict-nlc")
     frames = {
         key: schedule.trie.frame for key, schedule in unpruned.plan.schedules.items()
     }
@@ -842,7 +842,7 @@ def test_native_prune_liveness_with_directed_colour_tables(
         "g g > g g g",
         {"QCD": 3, "QED": 0},
         {"QCD": 5, "QED": 0},
-        accuracy="lc",
+        accuracy="strict-lc",
         colour_declaration=LoopColorDeclaration.from_dict(
             json.loads(legacy_capture.COLOUR_DECLARATION.read_text())
         ),

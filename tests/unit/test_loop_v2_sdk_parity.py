@@ -635,7 +635,9 @@ def scheme_constant(loop_sm_ufo, loop_native, tmp_path_factory):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     model = module.prepare(ufo, root / "loop-sm-lhv.json")
-    return _generate(model, root, "g g > g g", "gg", accuracy="lc", scheme=""), model
+    return _generate(
+        model, root, "g g > g g", "gg", accuracy="strict-lc", scheme=""
+    ), model
 
 
 LHV_FIXED = (
@@ -727,7 +729,7 @@ def test_the_slice_fixes_the_scheme_constant_its_preparation_fixes(
             {"QCD": 2, "QED": 0},
             {"QCD": 4, "QED": 0},
             fixed_parameters={"MB": "0", "WT": "0"},
-            accuracy="lc",
+            accuracy="strict-lc",
             colour_declaration=resolve_loop_color_declaration(compiled.raw_loop_model),
         ),
         loop_native,

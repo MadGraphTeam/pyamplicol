@@ -634,7 +634,7 @@ def _dipoles(legs) -> list[dict]:
 
 @pytest.mark.loop_physics
 @pytest.mark.parametrize(
-    "accuracy", ["full", pytest.param("nlc", marks=pytest.mark.loop_nightly)]
+    "accuracy", ["full", pytest.param("strict-nlc", marks=pytest.mark.loop_nightly)]
 )
 def test_self_adjoint_dipoles_take_one_column(
     loop_sm_compiled_model,

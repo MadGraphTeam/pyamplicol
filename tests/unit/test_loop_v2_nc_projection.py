@@ -9,8 +9,8 @@ projection ids and the row's oracle ids in ``test_loop_v2_nc_oracles``
 (NJet's NJetNc, Catani and Ward at N_c != 3) and ``test_loop_v2_colour`` /
 ``test_loop_v2_observables_nightly`` (BDK O14).
 
-The formal projection is the engine's LC and NLC: ``accuracy="lc"`` and
-``"nlc"`` with the shipped loop_sm colour declaration (resolved from the
+The formal projection is the engine's strict LC and NLC: ``accuracy="strict-lc"``
+and ``"strict-nlc"`` with the shipped loop_sm colour declaration (resolved from the
 model, ``resolve_loop_color_declaration``, and handed to the request; the
 path where a request names no declaration is
 ``test_loop_v2_nc_declaration``'s), on the production native path (native
@@ -374,7 +374,7 @@ def native_projections(compiled, native, spec) -> dict:
     points = [point for point, _scale in spec["points"]]
     scales = [scale for _point, scale in spec["points"]]
     out = {}
-    for accuracy in ("lc", "nlc", "full"):
+    for accuracy in ("strict-lc", "strict-nlc", "full"):
         slice_ = LoopSlice.generate(
             compiled, slice_request(spec, declaration, accuracy, "auto"), native
         )
@@ -465,11 +465,11 @@ def expected_projections(coefficients: dict, degrees: dict) -> dict:
     """accuracy -> key -> the scan's LC, NLC and FC(3)."""
 
     three = Fraction(3)
-    out = {"lc": {}, "nlc": {}, "full": {}}
+    out = {"strict-lc": {}, "strict-nlc": {}, "full": {}}
     for key, row in coefficients.items():
         degree = degrees[sector_of(key)]
         out["full"][key] = sum(c * three**p for p, c in row.items())
-        for accuracy, depth in (("lc", 0), ("nlc", 2)):
+        for accuracy, depth in (("strict-lc", 0), ("strict-nlc", 2)):
             out[accuracy][key] = sum(
                 c * three**p
                 for p, c in row.items()
@@ -590,9 +590,9 @@ def rule_seven(model, compiled, native, row: str, indices, cache):
     spec = row_spec(row, indices)
     alpha_s = _exact(spec["parameters"]["aS"])
     found = native_projections(compiled, native, spec)
-    lc = found["lc"][0]
+    lc = found["strict-lc"][0]
     degrees = sector_degrees(lc)
-    assert degrees == sector_degrees(found["nlc"][0])
+    assert degrees == sector_degrees(found["strict-nlc"][0])
     top = max(v for v in degrees.values() if v is not None)
     span = 2 * sum(1 for leg in lc.basis.legs if leg.representation != 1)
     values = (*FIT_NODES[: span + 1], *CHECK_NODES)

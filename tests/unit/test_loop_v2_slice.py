@@ -264,7 +264,7 @@ def _assert_legacy(results, index, result, tolerance):
 
 @pytest.mark.loop_physics
 @pytest.mark.parametrize("carrier", tuple(CARRIERS))
-@pytest.mark.parametrize("accuracy", ("lc", "nlc"))
+@pytest.mark.parametrize("accuracy", ("strict-lc", "strict-nlc"))
 @pytest.mark.parametrize("name", PROJECTED)
 def test_colour_projections_equal_legacy(declared, name, accuracy, carrier):
     """LC and NLC: leading degrees and every component against the legacy
@@ -273,7 +273,8 @@ def test_colour_projections_equal_legacy(declared, name, accuracy, carrier):
 
     slice_ = declared(name, accuracy)
     fixture = _fixture(name)
-    reference = fixture["colour_projections"][accuracy]
+    # The legacy engine captured its formal projections as "lc" and "nlc".
+    reference = fixture["colour_projections"][accuracy.removeprefix("strict-")]
     born, virtual = _only(slice_.degrees()["born"]), _only(slice_.degrees()["virtual"])
     assert (born, virtual) == (reference["born_degree"], reference["virtual_degree"])
     results = reference["results"]["arbitrary-200"]
@@ -288,7 +289,7 @@ def test_colour_projections_equal_legacy(declared, name, accuracy, carrier):
 
 
 @pytest.mark.loop_physics
-@pytest.mark.parametrize("accuracy", ("lc", "nlc"))
+@pytest.mark.parametrize("accuracy", ("strict-lc", "strict-nlc"))
 def test_uux_emepgg_colour_projections_are_generable(
     loop_sm_compiled_model, loop_native, accuracy
 ):
@@ -343,7 +344,7 @@ def test_production_pruning_keeps_the_appendix_b_leading_families(declared, name
         for entry in appendix["configurations"]["loop_sm"]
         if entry["process"] == APPENDIX_B_ROWS[name]
     )
-    schedules = declared(name, "lc").plan.schedules.values()
+    schedules = declared(name, "strict-lc").plan.schedules.values()
     assert len(schedules) == expected["families"]
     histogram = collections.Counter(
         f"{size}:{rank}" for size, rank in (s.bucket for s in schedules)
@@ -431,7 +432,7 @@ def test_seed_fft_equals_direct_on_the_slice(
     with pytest.raises(ValueError, match="binary64 sector seeds only"):
         required.family_numerators(point, scale, parameters=PARAMETERS, exact=True)
     assert NativeExecutor(required).exported.fourier is not None
-    leading = declared("gg_gg", "lc")
+    leading = declared("gg_gg", "strict-lc")
     assert leading.fourier is None
     forced = dataclasses.replace(
         leading,

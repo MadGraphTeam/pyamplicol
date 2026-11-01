@@ -635,7 +635,7 @@ def test_seed_fft_equals_direct_contraction(v2_slice, loop_native, name, orbits)
             for b in fourier.born_orbits[a]
             for c, _sign in fourier.loop_orbits[j]
         )
-    for accuracy in ("full", "nlc"):
+    for accuracy in ("full", "strict-nlc"):
         _assert_fft_equals_direct(
             table, fourier, _born_rows(table, 3, (0, -1)), accuracy, loop_native
         )
@@ -856,7 +856,7 @@ def test_leading_colour_degrees_equal_frozen_legacy_degrees(
     projection = prepare_color_projection(nc, rows)
     assert projection.leading_degree == degree
     cells = [cell for row in table.cells for cell in row]
-    for accuracy in ("lc", "nlc", "full"):
+    for accuracy in ("strict-lc", "strict-nlc", "full"):
         for value, cell in zip(projection.project(accuracy), cells, strict=True):
             assert _exact_number(value.replace(nc, E("3"))) == project(
                 cell, degree, accuracy
@@ -876,10 +876,10 @@ def test_leading_colour_degrees_equal_frozen_legacy_degrees(
 
 
 @pytest.mark.loop_physics
-def test_lc_needs_nc_exact_tree_currents(v2_slice):
+def test_strict_lc_needs_nc_exact_tree_currents(v2_slice):
     """U(1)-subtraction pieces enter the blocks with their N_c grade (design
     §3.2 item 4), so uu~ -> dd~g is formal in N_c; a table whose blocks mix
-    grades only allows full colour."""
+    grades allows full colour and the inherited accuracies only."""
 
     v2 = v2_slice("uux_ddxg")
     grades = {
@@ -888,11 +888,12 @@ def test_lc_needs_nc_exact_tree_currents(v2_slice):
         if block.key.auxiliary_kind is None
     }
     assert grades == {0, -1} and v2.table.formal_nc
-    assert v2.table.seeds(v2.pairs, {}, "lc") == {}
+    assert v2.table.seeds(v2.pairs, {}, "strict-lc") == {}
     mixed = dataclasses.replace(v2.table, formal_nc=False)
     with pytest.raises(ValueError, match="N_c-exact"):
-        mixed.seeds(v2.pairs, {}, "lc")
+        mixed.seeds(v2.pairs, {}, "strict-lc")
     assert mixed.seeds(v2.pairs, {}, "full") == {}
+    assert mixed.seeds(v2.pairs, {}, "lc") == {}
 
 
 @pytest.mark.loop_physics

@@ -925,9 +925,9 @@ def test_six_gluon_generation_completes_without_a_personal_key(
 @pytest.mark.parametrize(
     ("process", "accuracy"),
     (
-        ("u u~ > d d~ g g", "lc"),
-        ("u u~ > d d~ g g", "nlc"),
-        pytest.param("u u~ > g g g g", "nlc", marks=pytest.mark.loop_nightly),
+        ("u u~ > d d~ g g", "strict-lc"),
+        ("u u~ > d d~ g g", "strict-nlc"),
+        pytest.param("u u~ > g g g g", "strict-nlc", marks=pytest.mark.loop_nightly),
     ),
 )
 def test_colour_projected_counterterms_from_recursion_equal_sites(

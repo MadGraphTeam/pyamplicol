@@ -163,8 +163,8 @@ SLICE_CASES = [
     ("gg_gg", "full"),
     ("uux_ddxg", "full"),
     ("uux_uuxg", "full"),
-    ("gg_gg", "lc"),
-    ("gg_gg", "nlc"),
+    ("gg_gg", "strict-lc"),
+    ("gg_gg", "strict-nlc"),
 ]
 
 
@@ -253,7 +253,7 @@ COMPANION_CASES = [
     ("g g > g g g", 3, "full"),
     ("u u~ > g g g", 3, "full"),
     # The companion's LC prune (``_prune_colour`` with each family's frame).
-    ("u u~ > g g g", 3, "lc"),
+    ("u u~ > g g g", 3, "strict-lc"),
     pytest.param("g g > g g g g", 4, "full", marks=pytest.mark.loop_nightly),
 ]
 
@@ -468,9 +468,9 @@ def test_validate_agrees_with_the_providers(
     ("process", "born", "accuracy"),
     [
         ("g g > g g g", "QCD=3", "fc"),
-        ("g g > g g g", "QCD=3", "lc"),
-        ("g g > g g g", "QCD=3", "nlc"),
-        ("u u~ > g g g", "QCD=3", "lc"),
+        ("g g > g g g", "QCD=3", "strict-lc"),
+        ("g g > g g g", "QCD=3", "strict-nlc"),
+        ("u u~ > g g g", "QCD=3", "strict-lc"),
     ],
 )
 def test_poles_double_pole_is_universal(
