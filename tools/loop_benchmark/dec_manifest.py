@@ -64,6 +64,12 @@ ROWS = (
     ("XX08", "z_uuxg_ew", "Az", "nightly", (), ("1->3", "external:Z", "joint")),
 )  # fmt: skip
 CLASS = {"5F": "D-QCD", "4F": "D-QCD", "G0": "D-EW", "Az": "D-EW"}
+# The public route (``Generator`` on the shipped loop_sm, a stored artifact
+# evaluated through ``Runtime.evaluate`` with the O1 checks: one exact
+# rotation and the reduction direction) of the loop_sm rows, at the base
+# row's reference points (no Catani prediction on that route: the base row
+# holds rule 4).
+PUBLIC = ("XX01", "XX07")
 
 # The nightly file jobs (each within the campaigns' 30-minute budget):
 # measured wall seconds per row (generation, export, its points in both
@@ -156,6 +162,22 @@ def build_row(id_, name, code, tier, extras, features) -> dict:
     if ignored:
         # The providers' WTau: the G_mu and alpha(M_Z) UFOs have none.
         entry["ignored_fixed_parameters"] = ignored
+    if id_ in PUBLIC:
+        entry["variants"] = [{
+            "name": "public",
+            "gating": True,
+            "tier": "nightly",
+            "notes": "the public route: Generator on the shipped loop_sm, "
+            "Runtime.evaluate of the stored artifact with the O1 checks",
+            # The reference points at mu_R = M (the public route takes
+            # decimal mu_R^2; the M/2 copy's is a fraction).
+            "points": {"nightly": [
+                k for k, mu in enumerate(data["mu_r"]) if "." not in str(mu)
+            ]},
+            "extras": [],
+            "route": "public",
+            "catani": "none",
+        }]  # fmt: skip
     called = (data.get("madloop_r2_couplings") or {}).get("called")
     if called is not None:
         entry["madloop_r2_called"] = sorted(called)
