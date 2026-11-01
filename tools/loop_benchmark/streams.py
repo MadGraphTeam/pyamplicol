@@ -203,9 +203,7 @@ def make_decay_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
     process = required_spec.load_process(DECAY_SPEC, key)
     masses = [Fraction(m) for m in required_spec.masses(process)]
     resonances = _resonances(process)
-    points = decay_points.generate(
-        masses, count, CUT, resonances, pdgs=process["pdgs"]
-    )
+    points = decay_points.generate(masses, count, CUT, resonances, pdgs=process["pdgs"])
     return {
         "process_name": key,
         "pdgs": process["pdgs"],
