@@ -518,10 +518,14 @@ def export_trees(
     # closure's index space (``loop_v2::trees``).
     ct_program = slice_.counterterm_program if with_counterterms else None
     if ct_program is not None:
-        # Its LC/NLC counterterm projections need N_c-exact blocks too (the
+        # Its strict counterterm projections need N_c-exact blocks too (the
         # slice's own are asserted by ``export_plan``, the only caller).
+        from .colour import formal_label
+
         require_nc_exact(
-            ct_program.blocks.blocks, slice_.request.accuracy, slice_.request.process
+            ct_program.blocks.blocks,
+            formal_label(slice_.request.accuracy),
+            slice_.request.process,
         )
     ct = None if ct_program is None else _CountertermTrees.of(ct_program, state_size)
 

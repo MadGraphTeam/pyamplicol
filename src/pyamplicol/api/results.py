@@ -371,8 +371,11 @@ class WarmUpResult:
 class ProcessPhysics:
     """Physical axes, reduction metadata, and selectors for one process.
 
-    Tree LC processes expose physical colour flows. Virtual LC instead exposes
-    signed Born-anchored components; NLC/full expose one contracted component.
+    Tree LC processes expose physical colour flows. Virtual formal LC
+    (``strict-lc``) instead exposes signed Born-anchored components; every
+    other virtual exposes one contracted component (the strict accuracies of
+    a virtual report their kept degrees summed); strict and graded trees
+    expose one contracted component per N_c degree.
     ``selector_capabilities`` states which axes can actually be restricted.
     """
 
@@ -449,7 +452,8 @@ class ProcessPhysics:
             raise ValueError("model parameter names must be unique")
         if self.contribution_kind not in ("tree", "virtual"):
             raise ValueError("contribution kind must be tree or virtual")
-        virtual_lc = self.contribution_kind == "virtual" and self.color_accuracy == "lc"
+        virtual = self.contribution_kind == "virtual"
+        virtual_lc = virtual and self.color_accuracy in ("lc", "strict-lc")
         if virtual_lc:
             if self.color_kind == "contracted-color":
                 if len(contracted) != 1 or anchors or color_flows:
@@ -469,12 +473,23 @@ class ProcessPhysics:
             raise ValueError("Born anchors apply only to virtual LC metadata")
         elif self.color_accuracy == "lc" and not color_flows:
             raise ValueError("LC physics metadata requires physical color flows")
+        if anchors and self.color_accuracy != "strict-lc":
+            raise ValueError(
+                "Born anchors apply only to virtual formal LC (strict-lc) metadata"
+            )
         graded = bool(contracted) and all(
             component.nc_degree is not None for component in contracted
         )
-        if self.color_accuracy != "lc" and len(contracted) != 1 and not graded:
+        if (
+            self.color_accuracy != "lc"
+            and not anchors
+            and len(contracted) != 1
+            and not graded
+        ):
             raise ValueError("NLC/full physics metadata requires one color component")
-        if self.color_accuracy in ("strict-lc", "strict-nlc") and not graded:
+        if self.color_accuracy in ("strict-lc", "strict-nlc") and not (
+            graded or virtual
+        ):
             raise ValueError(
                 "strict colour metadata reports one component per N_c degree"
             )

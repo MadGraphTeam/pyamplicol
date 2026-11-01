@@ -400,15 +400,16 @@ def slice_flows(slice_: Any) -> tuple[Flow, ...]:
 
 
 def request_flows(compiled: Any, request: Any, basis: Any) -> tuple[Flow, ...]:
-    """The leading-colour flows an LC request's artifact computes, in the tree
-    runtime's order, which numbers them: ``plan_flows`` of the tree engine's
-    plan of the process built with the selection's ``color_order`` and
-    ``max_sectors`` (``reference_color_order``, ``max_color_sectors``), the
-    selected flows only under a colour-flow selection (the tree runtime of
-    ``selected_color_sector_ids`` lists and numbers the flows it computes).
-    NLC and full colour have none."""
+    """The leading-colour flows a formal LC (``strict-lc``) request's artifact
+    computes, in the tree runtime's order, which numbers them: ``plan_flows``
+    of the tree engine's plan of the process built with the selection's
+    ``color_order`` and ``max_sectors`` (``reference_color_order``,
+    ``max_color_sectors``), the selected flows only under a colour-flow
+    selection (the tree runtime of ``selected_color_sector_ids`` lists and
+    numbers the flows it computes). The inherited LC, NLC and full colour
+    have none: only the formal leading colour is diagonal in the flows."""
 
-    if request.accuracy != "lc":
+    if request.accuracy != "strict-lc":
         return ()
     selection = request.selection
     plan = leading_colour_plan(
@@ -498,7 +499,12 @@ class Catalogue:
         return self.flows[ordinal - 1]
 
 
-_ACCURACY_NAMES = {"nlc": "next-to-leading", "full": "full"}
+_ACCURACY_NAMES = {
+    "lc": "inherited leading",
+    "nlc": "inherited next-to-leading",
+    "strict-nlc": "strict next-to-leading",
+    "full": "full",
+}
 
 
 def require_leading_colour(
@@ -508,11 +514,12 @@ def require_leading_colour(
     *,
     resolved: bool = False,
 ) -> None:
-    """Helicity and colour-flow selection exists at leading colour only: NLC
-    and full colour keep their API (every helicity and colour contracted;
-    ``evaluate_resolved`` without selectors per helicity)."""
+    """Helicity and colour-flow selection exists at formal leading colour
+    (``strict-lc``) only: the inherited LC, NLC and full colour keep their API
+    (every helicity and colour contracted; ``evaluate_resolved`` without
+    selectors per helicity)."""
 
-    if (helicities or color_flows) and accuracy != "lc":
+    if (helicities or color_flows) and accuracy != "strict-lc":
         instead = (
             "evaluate_resolved without selectors returns every helicity row"
             if resolved
@@ -521,8 +528,8 @@ def require_leading_colour(
         raise CompatibilityError(
             "v2 virtual runtimes evaluate every helicity and colour at "
             f"{_ACCURACY_NAMES.get(accuracy, accuracy)} colour; helicity and "
-            "colour-flow selection is available at leading colour "
-            f"(color.accuracy='lc'); {instead}"
+            "colour-flow selection is available at formal leading colour "
+            f"(color.accuracy='strict-lc'); {instead}"
         )
 
 

@@ -1975,7 +1975,7 @@ pub struct LivenessTable {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct LivenessSpec {
-    /// "lc" or "nlc".
+    /// "lc", "nlc", "strict-lc" or "strict-nlc".
     pub accuracy: String,
     pub tables: Vec<LivenessTable>,
     /// Per sector its (Born order, loop order) pairs.
@@ -2000,8 +2000,8 @@ impl SeedBuilder {
         spec: &LivenessSpec,
     ) -> RusticolResult<(Vec<Vec<bool>>, Vec<bool>)> {
         let depth = match spec.accuracy.as_str() {
-            "lc" => 0,
-            "nlc" => 2,
+            "lc" | "strict-lc" => 0,
+            "nlc" | "strict-nlc" => 2,
             other => return Err(invalid(format!("no prune at accuracy {other:?}"))),
         };
         let mut intern = |o: &Vec<(u16, i64)>| self.orders.intern(o.clone());

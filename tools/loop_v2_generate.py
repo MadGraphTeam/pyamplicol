@@ -41,13 +41,15 @@ evaluation carrier.
 (MASTER_PLAN §0.1): native inputs at ``--points`` exact points
 (``tools/loop_reference/exact_points``), the double pole of the bare virtual
 over the Born against the universal -(alpha_s/2pi) sum_i C_i of its massless
-coloured legs (at ``--accuracy lc`` the Casimirs' leading-colour parts; NLC
-only with adjoint legs), and with ``--rotation`` the stability estimate of
-one rotation check.
+coloured legs (at ``--accuracy strict-lc`` the Casimirs' leading-colour
+parts; strict NLC only with adjoint legs; the inherited ``lc``/``nlc`` keep
+U(1)-subtraction pieces at N_c = 3 and have no such prediction), and with
+``--rotation`` the stability estimate of one rotation check.
 
 Usage:
     python tools/loop_v2_generate.py measure "g g > g g g g" --born QCD=4
-        [--accuracy fc|lc|nlc] [--veto 23] [--engine native|python]
+        [--accuracy fc|lc|nlc|strict-lc|strict-nlc] [--veto 23]
+        [--engine native|python]
         [--digests] [--export] [--json OUT.json] [--model COMPILED.json]
     python tools/loop_v2_generate.py diff A.json B.json
     python tools/loop_v2_generate.py validate gg_gggg [--points 0 1 2]
@@ -56,7 +58,8 @@ Usage:
     python tools/loop_v2_generate.py validate gg_ttx_ew [--ufo G_MU_UFO]
         [--inputs native] [--stages]
     python tools/loop_v2_generate.py poles "g g > g g g g g" --born QCD=5
-        [--accuracy fc|lc|nlc] [--points 3] [--rotation] [--tolerance 1e-8]
+        [--accuracy fc|strict-lc|strict-nlc] [--points 3] [--rotation]
+        [--tolerance 1e-8]
         [--json OUT.json]
 """
 
@@ -618,7 +621,12 @@ def poles(args) -> dict[str, Any]:
     record["parameters"] = parameters
     values = _kernel_parameters(compiled, {**parameters, **request.fixed_parameters})
     masses, casimirs = [], Fraction(0)
-    table = _LEADING_CASIMIRS if args.accuracy == "lc" else _CASIMIRS
+    if args.accuracy in ("lc", "nlc"):
+        raise SystemExit(
+            "the universal double pole is predicted at full colour and the strict "
+            "accuracies; the inherited lc/nlc keep U(1)-subtraction pieces at N_c = 3"
+        )
+    table = _LEADING_CASIMIRS if args.accuracy == "strict-lc" else _CASIMIRS
     for leg in sorted(slice_.blocks.process.legs, key=lambda leg: leg.label):
         particle = by_pdg[int(leg.pdg)]
         mass = particle.get("mass")
@@ -627,7 +635,7 @@ def poles(args) -> dict[str, Any]:
         colour = abs(int(particle["color"]))
         if colour not in table:
             raise SystemExit(f"no Casimir for colour representation {colour}")
-        if args.accuracy == "nlc" and mass == 0 and colour not in (1, 8):
+        if args.accuracy == "strict-nlc" and mass == 0 and colour not in (1, 8):
             raise SystemExit(
                 "the universal double pole holds at NLC only with massless adjoint legs"
             )
@@ -689,7 +697,11 @@ def main(argv: list[str] | None = None) -> int:
     run = commands.add_parser("measure")
     run.add_argument("process")
     run.add_argument("--born", required=True, help="e.g. QCD=3 or QCD=2,QED=2")
-    run.add_argument("--accuracy", choices=("fc", "lc", "nlc"), default="fc")
+    run.add_argument(
+        "--accuracy",
+        choices=("fc", "lc", "nlc", "strict-lc", "strict-nlc"),
+        default="fc",
+    )
     run.add_argument("--veto", default="", help="vetoed particles (|PDG|), e.g. 23")
     run.add_argument("--engine", choices=("native", "python"), default="native")
     run.add_argument("--digests", action="store_true")
@@ -724,7 +736,9 @@ def main(argv: list[str] | None = None) -> int:
     pole = commands.add_parser("poles")
     pole.add_argument("process")
     pole.add_argument("--born", required=True, help="e.g. QCD=5")
-    pole.add_argument("--accuracy", choices=("fc", "lc", "nlc"), default="fc")
+    pole.add_argument(
+        "--accuracy", choices=("fc", "strict-lc", "strict-nlc"), default="fc"
+    )
     pole.add_argument("--veto", default="", help="vetoed particles (|PDG|), e.g. 23")
     pole.add_argument("--points", type=int, default=3)
     pole.add_argument("--rotation", action="store_true")

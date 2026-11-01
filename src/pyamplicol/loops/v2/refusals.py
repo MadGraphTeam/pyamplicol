@@ -11,21 +11,28 @@ is decided by a structural criterion of the request's model and trees, never
 by process strings, particle or parameter names, PDG codes or leg and line
 counts (second genericity audit, ``genericity-audit-2/REPORT.md``):
 
-* ``colour-accuracy-nc-exact`` (G2-M1): leading and next-to-leading colour
-  project the exact colour cells at formal N_c, which needs every loop-side
-  tree block to have one N_c grade (``BlockColourFlow.nc_grade``, design
-  §3.2 item 4 and §3.3). LC and NLC requests compile their loop-request
-  DAGs with the N_c grade split (``generation.dag_grades`` and the native
-  ``loop_v2::dag::grades``), which copies every current whose derivations
-  mix U(1)-subtraction grades into one current per grade, so every block of
-  such a request has one grade and the guard passes (identical-flavour quark
-  lines included). The rule is a guard only: a block whose trees still mix
-  grades (its ``nc_grade`` is ``None``, i.e. a DAG compiled without the
-  split) is not exact in N_c, so such a request is refused at LC and NLC
-  (``require_nc_exact``, right after the trees are built) and every export
-  asserts it again (``require_formal_nc_tables``): the native runtime and the
-  SDKs can never serve a grade-0 projection of such blocks. Full colour keeps
-  every power at N_c = 3, is exact without grades and never splits.
+* ``colour-accuracy-nc-exact`` (G2-M1): the strict accuracies
+  (``strict-lc``/``strict-nlc``) project the exact colour cells at formal N_c, which needs every loop-side tree block to have one
+  N_c grade (``BlockColourFlow.nc_grade``, design §3.2 item 4 and §3.3).
+  They compile their loop-request DAGs with the N_c grade split
+  (``generation.dag_grades`` and the native ``loop_v2::dag::grades``), which
+  copies every current whose derivations mix U(1)-subtraction grades into
+  one current per grade, so every block of such a request has one grade and
+  the guard passes (identical-flavour quark lines included). The rule is a
+  guard only: a block whose trees still mix grades (its ``nc_grade`` is
+  ``None``, i.e. a DAG compiled without the split) is not exact in N_c, so
+  such a request is refused (``require_nc_exact``, right after the trees are
+  built) and every export asserts it again (``require_formal_nc_tables``):
+  the native runtime and the SDKs can never serve a grade-0 projection of
+  such blocks. Full colour keeps every power at N_c = 3, is exact without
+  grades and never splits; the inherited ``lc``/``nlc`` keep the
+  U(1)-subtraction pieces at N_c = 3 by definition, as the tree engine.
+* ``colour-reference-degree``: a projected request truncates at the
+  reference degree of the tree engine's convention (n_g + n_qqbar, plus one
+  for the strong correction; ``LoopSlice.reference_degrees``). A Born order
+  or virtual sector whose largest exact N_c degree differs from it is
+  refused (``LoopSlice.require_reference_degrees``) instead of being
+  truncated at its own leading term.
 * ``fermion-line-representation`` (G2-m1): the loop-request blocks sign
   coloured fermion lines by their colour flow and colour-singlet ones by the
   Wick order of their external fermions (``generation.fermion_ordering``,
@@ -187,17 +194,29 @@ class LoopAdmissionRefusal:
 LOOP_ADMISSION_REFUSALS = (
     LoopAdmissionRefusal(
         "colour-accuracy-nc-exact",
-        "a leading- or next-to-leading-colour request whose loop-side tree "
-        "currents are not exact in N_c (blocks whose trees still mix "
-        "U(1)-subtraction grades: a loop-request DAG compiled without the "
-        "N_c grade split)",
-        "LC and NLC project the colour cells at formal N_c, which needs every "
-        "tree block to have one N_c grade (design §3.2 item 4, §3.3)",
+        "a strict-colour request whose loop-side tree currents are not exact "
+        "in N_c (blocks whose trees still mix U(1)-subtraction grades: a "
+        "loop-request DAG compiled without the N_c grade split)",
+        "strict-lc and strict-nlc project the colour cells at formal N_c, which "
+        "needs every tree block to have one N_c grade (design §3.2 item 4, "
+        "§3.3)",
         'full colour (color.accuracy = "full") is exact without grades',
-        "none: a guard only (LC and NLC compile with the N_c grade split, "
+        "none: a guard only (strict requests compile with the N_c grade split, "
         "generation.dag_grades and loop_v2::dag::grades, so every block of "
         "their requests has one grade)",
         "none (kept as the guard of the grade split)",
+    ),
+    LoopAdmissionRefusal(
+        "colour-reference-degree",
+        "a projected request (lc, nlc, strict-lc, strict-nlc) with a Born order "
+        "or virtual sector whose largest exact N_c degree differs from the "
+        "reference degree n_g + n_qqbar (plus one for the strong correction)",
+        "the colour projection truncates at the tree engine's reference "
+        "degree; it is never reset to a sector's own leading term "
+        "(docs/correlator-conventions.md, Colour accuracy)",
+        'full colour (color.accuracy = "full"), which keeps every degree',
+        "loop colour (strict one-loop colour)",
+        "project at the reference degree where it vanishes identically",
     ),
     LoopAdmissionRefusal(
         "fermion-line-representation",
@@ -935,35 +954,41 @@ def _block_currents(blocks: Iterable[Any], limit: int = 4) -> str:
     )
 
 
-def require_nc_exact(blocks: Any, accuracy: str, process: str) -> None:
-    """Refuse (``colour-accuracy-nc-exact``) an LC or NLC request for
-    ``process`` (its expression) whose loop-side tree blocks are not exact in
-    N_c (``mixed_grade_blocks``); full colour needs no grade."""
+def require_nc_exact(blocks: Any, accuracy: str | None, process: str) -> None:
+    """Refuse (``colour-accuracy-nc-exact``) a request of the formal N_c
+    expansion (``accuracy`` its label, a strict accuracy;
+    ``colour.formal_label``) for ``process`` (its expression)
+    whose loop-side tree blocks are not exact in N_c (``mixed_grade_blocks``).
+    Full colour and the inherited LC/NLC (None) keep the U(1)-subtraction
+    pieces at N_c = 3 and need no grade."""
 
-    if accuracy == "full":
+    if accuracy is None:
         return
     mixed = mixed_grade_blocks(blocks)
     if mixed:
         raise LoopRequestUnsupported(
             "colour-accuracy-nc-exact",
-            f"{process!r}: {accuracy.upper()} needs N_c-exact tree currents, and "
+            f"{process!r}: {accuracy} needs N_c-exact tree currents, and "
             f"{len(mixed)} loop-side tree block(s) mix U(1)-subtraction grades "
             f"({_block_currents(mixed)})",
         )
 
 
-def require_formal_nc_tables(accuracy: str, tables: Iterable[Any], what: str) -> None:
-    """The export's assertion of ``require_nc_exact``: refuse an LC or NLC
-    export from any seed table over blocks that are not exact in N_c
+def require_formal_nc_tables(
+    accuracy: str | None, tables: Iterable[Any], what: str
+) -> None:
+    """The export's assertion of ``require_nc_exact``: refuse an export of
+    the formal N_c expansion (``accuracy`` its label, None otherwise) from
+    any seed table over blocks that are not exact in N_c
     (``SeedTable.formal_nc`` false), so no stored plan carries such a
     projection."""
 
-    if accuracy == "full":
+    if accuracy is None:
         return
     if any(not table.formal_nc for table in tables):
         raise LoopRequestUnsupported(
             "colour-accuracy-nc-exact",
-            f"the {what} of an {accuracy.upper()} request reads seed tables over "
+            f"the {what} of a {accuracy} request reads seed tables over "
             "tree blocks that mix U(1)-subtraction grades",
         )
 

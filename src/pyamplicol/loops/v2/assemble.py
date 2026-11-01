@@ -99,6 +99,7 @@ from .blocks import (
 )
 from .catalogue import build_loop_kernel_catalogue
 from .colour import (
+    INHERITED_ACCURACIES,
     SYMMETRIC_GROUP_FFT,
     BornBasis,
     ColourAccuracy,
@@ -110,11 +111,17 @@ from .colour import (
     _adjoint_rename,
     _colour_key,
     _relabelled_colour,
+    born_reference_degree,
     build_seed_table,
+    colour_graded_couplings,
     contract_colour,
     extend_seed_table,
+    formal_label,
+    formal_leading_colour,
     kept,
     seed_fourier,
+    u1_graded,
+    whole_entry,
 )
 from .conventions import (
     LOOP_FACTOR_DENOMINATOR,
@@ -1480,8 +1487,9 @@ class SliceRequest:
     # the artifact records it).
     allow_anomalous_veto: bool = False
     accuracy: ColourAccuracy = "full"
-    # A source-owned formal-N_c continuation (``LoopColorDeclaration``); LC
-    # needs it for the counterterm and field colour grades (design §6.7).
+    # A source-owned formal-N_c continuation (``LoopColorDeclaration``); every
+    # projected accuracy needs it for the counterterm and
+    # field colour grades (design §6.7).
     colour_declaration: Any = None
     # External model parameters of the renormalisation scale and of alpha_s
     # (IR-pole check). By default the UFO/SLHA codes identify them: (LOOP, 1)
@@ -1530,10 +1538,12 @@ class SliceRequest:
     alpha0_inverse: str | None = None
 
     def __post_init__(self) -> None:
-        if self.selection is not None and self.accuracy != "lc":
+        if self.accuracy not in ("full", "lc", "nlc", "strict-lc", "strict-nlc"):
+            raise ValueError(f"unknown colour accuracy {self.accuracy!r}")
+        if self.selection is not None and not formal_leading_colour(self.accuracy):
             raise ValueError(
-                "helicity and colour-flow selection is a leading-colour option "
-                "(accuracy='lc')"
+                "helicity and colour-flow selection is a formal leading-colour "
+                "option (accuracy='strict-lc')"
             )
         object.__setattr__(
             self,
@@ -1572,6 +1582,21 @@ class SliceRequest:
         return bounds
 
 
+def _accuracy_label(request: SliceRequest) -> str:
+    """The request's colour treatment in refusals and messages."""
+
+    return request.accuracy.upper()
+
+
+def formal_projection_label(request: SliceRequest) -> str | None:
+    """The label of a request of the formal N_c expansion (a strict
+    accuracy), whose tree blocks carry their U(1) grades and whose seed
+    tables must be exact in N_c (``refusals.require_nc_exact``); None for
+    full colour and the inherited LC/NLC (``colour.formal_label``)."""
+
+    return formal_label(request.accuracy)
+
+
 def resolve_request(compiled: Any, request: SliceRequest) -> SliceRequest:
     """``request`` with its correction orders resolved
     (``ew_policy.request_corrections``) and, for LC and NLC, its colour
@@ -1593,7 +1618,7 @@ def resolve_request(compiled: Any, request: SliceRequest) -> SliceRequest:
             request = replace(request, particle_veto=veto)
     raw = getattr(compiled, "raw_loop_model", None)
     if (
-        request.accuracy != "full"
+        colour_graded_couplings(request.accuracy)
         and request.colour_declaration is None
         and raw is not None
     ):
@@ -1708,9 +1733,9 @@ def prepare_request_model(compiled: Any, request: SliceRequest) -> RequestModel:
         fixed = source_color_fixed_parameters(
             compiled.raw_loop_model, declaration, fixed_parameters=fixed
         )
-    elif request.accuracy != "full":
+    elif colour_graded_couplings(request.accuracy):
         raise ValueError(
-            f"{request.accuracy.upper()} needs a source-owned formal-N_c "
+            f"{_accuracy_label(request)} needs a source-owned formal-N_c "
             "continuation of the counterterms (design §6.7)"
         )
     scale_parameter = _external_parameter(
@@ -1992,8 +2017,6 @@ class LoopSlice:
         from pyamplicol.models.external import CompiledUFOModel
         from pyamplicol.processes.model import build_model_process_ir
 
-        if request.accuracy not in ("full", "lc", "nlc"):
-            raise ValueError(f"unknown colour accuracy {request.accuracy!r}")
         if request.counterterms not in ("recursion", "sites"):
             raise ValueError(f"unknown counterterm form {request.counterterms!r}")
         request = resolve_request(compiled, request)
@@ -2088,8 +2111,12 @@ class LoopSlice:
                         reachable.block_requests() | born_requests, data
                     )
                 ),
-                # LC and NLC project formal N_c: every block of one grade.
-                u1_grades=request.accuracy != "full",
+                # The strict accuracies project formal N_c: every block of one
+                # grade. The inherited LC/NLC keep the U(1)-subtraction pieces
+                # at N_c = 3, as the tree engine's currents (full colour keeps
+                # every power at N_c = 3 anyway).
+                u1_grades=u1_graded(request.accuracy),
+                frozen_u1=request.accuracy in INHERITED_ACCURACIES,
             )
             if electroweak:
                 # Widths in the Born or the loop-side trees, before their
@@ -2103,10 +2130,10 @@ class LoopSlice:
             # model-supplied propagator) take the full tree kernels: the
             # transverse Yang-Mills ones are then not the Feynman rules
             # (design §3.2 item 2, §6.1). Everything below uses that model.
-            # LC and NLC need N_c-exact tree blocks: refused before any family
-            # or export (``refusals``, listed; every block set the slice uses
-            # passes here).
-            require_nc_exact(blocks, request.accuracy, request.process)
+            # The strict accuracies need N_c-exact tree blocks: refused before
+            # any family or export (``refusals``, listed; every block set the
+            # slice uses passes here).
+            require_nc_exact(blocks, formal_projection_label(request), request.process)
             blocks, kernels = with_ward_kernels(blocks, model, fixed)
             if request.selection is not None and request.selection.helicities:
                 # A helicity selection keeps the selected rows of every block
@@ -2203,10 +2230,13 @@ class LoopSlice:
                     tuple(sorted(request.loop_order_bounds.items())),
                     request.compatibility,
                 ),
-                u1_grades=request.accuracy != "full",
+                u1_grades=u1_graded(request.accuracy),
+                frozen_u1=request.accuracy in INHERITED_ACCURACIES,
             )
             # Its root terms close on its blocks with their N_c grades too.
-            require_nc_exact(program.blocks.blocks, request.accuracy, request.process)
+            require_nc_exact(
+                program.blocks.blocks, formal_projection_label(request), request.process
+            )
         sites = (
             # The O6 oracle: every rule closed at sites, witness admission.
             generate_counterterm_sites(
@@ -2248,13 +2278,14 @@ class LoopSlice:
                 for insertion in insertions
                 if id(insertion.rule) not in ours or insertion.leg + 1 in tagged
             )
-        # LC and NLC: every source field factor an external leg takes and
-        # every counterterm rule a site closes needs declared N_c data (the
-        # recursion's rules are checked in ``counterterm_program_blocks``;
-        # ``refusals``, listed; MQ-NC). The alpha(0) photon terms are the
-        # engine's own, not source factors. Full colour (with or without a
-        # declaration) reads the source couplings at N_c = 3: no check.
-        projected = continuation if request.accuracy != "full" else None
+        # Projected requests: every source field factor an external
+        # leg takes and every counterterm rule a site closes needs declared
+        # N_c data (the recursion's rules are checked in
+        # ``counterterm_program_blocks``; ``refusals``, listed; MQ-NC). The
+        # alpha(0) photon terms are the engine's own, not source factors.
+        # Full colour (with or without a declaration) reads the source
+        # couplings at N_c = 3: no check.
+        projected = continuation if colour_graded_couplings(request.accuracy) else None
         require_declared_colour_fields(
             projected,
             (i for i in insertions if i.rule in source_field_rules),
@@ -2307,7 +2338,13 @@ class LoopSlice:
             loop_species=_family_loop_species(families, data),
             counterterm_entries=list({id(e): e for e in entries}.values()),
         )
-        closure = SiteClosure(blocks, data, catalogue, conjugates)
+        closure = SiteClosure(
+            blocks,
+            data,
+            catalogue,
+            conjugates,
+            frozen_u1=request.accuracy in INHERITED_ACCURACIES,
+        )
         # Oracle sites: cells without a site kernel that cancel between the
         # rules closed on the same blocks (the Levi-Civita R2 of a Z with
         # gluons over complete quark doublets) are left out; any other such
@@ -2418,11 +2455,69 @@ class LoopSlice:
         )
         if born_terms is not inclusive_born:
             slice_._refuse_inexact_flows(inclusive_born)
+        if request.accuracy != "full":
+            slice_.require_reference_degrees()
+            slice_._whole_born_entries()
         if request.accuracy != "full" and prune:
             slice_._prune_colour()
         slice_._plan_contraction()
         slice_.scaleless = slice_._scaleless_companion()
         return slice_
+
+    def reference_degrees(self) -> dict[str, dict[Orders, int]]:
+        """The reference N_c degrees P of the projection (design §7.4;
+        ``docs/correlator-conventions.md``, "Colour accuracy"), per squared
+        Born order (``"born"``) and virtual sector (``"virtual"``), as the
+        tree engine's: P = n_g + n_qqbar over the Born's coloured legs, plus
+        one for the virtual when the request takes the model's strong
+        correction (one more power of alpha_s brings at most one more power
+        of N_c; ``ew_policy.correction_orders``, read from the gluon's
+        vertices). The same P for every order of a request, so the
+        truncation is never reset to an order's own leading term."""
+
+        found = self._cache.get("reference-degrees")
+        if found is not None:
+            return found
+        born = born_reference_degree(self.basis.legs)
+        strong = ew_policy.correction_orders(
+            self.compiled, self.request.fixed_parameters
+        ).strong
+        virtual = born + (1 if strong in (self.request.corrections or ()) else 0)
+        squared = {add_orders(a, b) for a in self.born_terms for b in self.born_terms}
+        found = self._cache["reference-degrees"] = {
+            "born": {order: born for order in squared},
+            "virtual": {sector: virtual for sector, _pairs in self.sectors},
+        }
+        return found
+
+    def require_reference_degrees(self) -> None:
+        """Refuse (``colour-reference-degree``) a projected request whose
+        structural leading degree (``degrees``: the largest N_c degree of a
+        nonzero exact cell) differs from its reference degree
+        (``reference_degrees``) in a Born order or virtual sector.
+
+        The projection truncates at ``degrees``; at the reference degree it
+        is the tree engine's convention. A higher structural degree would be
+        a power no expansion of the process has; a lower one (the reference
+        degree vanishes identically in that sector) would make the
+        projection keep the sector's own leading term, which the tree engine
+        does not do. Projecting at the reference degree there removes the
+        restriction."""
+
+        from .refusals import LoopRequestUnsupported
+
+        structural = self.degrees()
+        reference = self.reference_degrees()
+        for part in ("born", "virtual"):
+            for key, degree in structural[part].items():
+                expected = reference[part].get(key)
+                if degree is not None and degree != expected:
+                    raise LoopRequestUnsupported(
+                        "colour-reference-degree",
+                        f"{self.request.process!r}: the {part} part {key} has "
+                        f"leading N_c degree {degree}, but the reference degree "
+                        f"of its colour projection is {expected}",
+                    )
 
     def _scaleless_companion(self, prune: bool | None = None) -> LoopSlice | None:
         """The certified-scaleless families (``FamilySet.scaleless_families``)
@@ -2544,7 +2639,9 @@ class LoopSlice:
             return
         from .refusals import LoopRequestUnsupported
 
-        if self.request.accuracy == "lc":
+        if self.request.accuracy in ("lc", "strict-lc"):
+            # Leading-colour seeds (formal or inherited) are contracted
+            # directly.
             if policy == "fft":
                 raise LoopRequestUnsupported(
                     "forced-seed-fft-unserved",
@@ -2931,17 +3028,62 @@ class LoopSlice:
     # -- colour degrees -------------------------------------------------------
 
     def overlaps(self, left: Any, right: Any) -> Mapping[int, ExactColorCoefficient]:
-        """<left|right> of two literal colour tensors, exact in N_c."""
+        """<left|right> of two literal colour tensors, exact in N_c; two Born
+        basis tensors under the inherited NLC with open quark lines as one
+        whole entry of the tree engine's rule (``born_metric_reference``)."""
 
         cache = self._cache.setdefault("overlaps", {})
         found = cache.get((left, right))
         if found is None:
             legs = self.basis.legs
-            cells = contract_colour(_single(left, legs), _single(right, legs))
-            found = cache[(left, right)] = {
-                power: value for power, value in cells.items() if value
-            }
+            bra, ket = _single(left, legs), _single(right, legs)
+            cells = contract_colour(bra, ket)
+            found = {power: value for power, value in cells.items() if value}
+            reference = self.born_metric_reference()
+            if reference is not None:
+                tensors = self._cache.get("born-tensors")
+                if tensors is None:
+                    tensors = self._cache["born-tensors"] = frozenset(
+                        self.basis.tensors
+                    )
+                if bra in tensors and ket in tensors:
+                    found = whole_entry(found, reference)
+            cache[(left, right)] = found
         return found
+
+    def born_metric_reference(self) -> int | None:
+        """The reference degree P of the Born colour metric when its entries
+        are kept or dropped whole (``colour.whole_entry``): the inherited NLC
+        of a process with open quark lines, as the tree engine's ``nlc``
+        (``docs/correlator-conventions.md``, "Colour accuracy"), so the
+        Born of an inherited-NLC loop artifact is the tree engine's. Every
+        overlap of two Born basis tensors takes it: the Born, the
+        external-field terms and the counterterms of Born colour, which the
+        same metric entries multiply. Seed cells and the other overlaps
+        truncate per power. None otherwise (pure gluons truncate per power
+        at every accuracy)."""
+
+        legs = self.basis.legs
+        if self.request.accuracy != "nlc" or not any(
+            leg.representation in (3, -3) for leg in legs
+        ):
+            return None
+        return born_reference_degree(legs)
+
+    def _whole_born_entries(self) -> None:
+        """Apply ``born_metric_reference`` to the stored Born metric
+        (``BornBasis.gram``), which the native exports read."""
+
+        reference = self.born_metric_reference()
+        if reference is None:
+            return
+        gram = tuple(
+            tuple(whole_entry(cell, reference) for cell in row)
+            for row in self.basis.gram
+        )
+        # ``BornBasis.gram`` is a cached property of the frozen basis.
+        self.basis.__dict__["gram"] = gram
+        self._cache.pop("overlaps", None)
 
     def _born_grades(self) -> dict[tuple[int, Orders], set[int]]:
         """N_c grades of the Born amplitude per (basis element, Born order):

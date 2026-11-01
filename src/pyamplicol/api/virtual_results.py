@@ -665,7 +665,7 @@ def _common(
     born_dimensions: tuple[int, ...],
     virtual_dimensions: tuple[int, ...],
 ) -> None:
-    if result.color_accuracy not in {"lc", "nlc", "full"}:
+    if result.color_accuracy not in {"lc", "nlc", "strict-lc", "strict-nlc", "full"}:
         raise ValueError("unknown colour accuracy")
     if not isinstance(result.correlated, bool):
         raise TypeError("correlated must be a boolean")
@@ -777,7 +777,7 @@ class VirtualEvaluation:
     diagnostics: tuple[VirtualLaneDiagnostic, ...]
     r2: R2Selection
     correlated: bool = False
-    color_accuracy: Literal["lc", "nlc", "full"] = "full"
+    color_accuracy: Literal["lc", "nlc", "strict-lc", "strict-nlc", "full"] = "full"
     poles: PoleSelection = PoleSelection.ALL
     stability: tuple[VirtualStabilityEstimate | None, ...] | None = None
     pole_parts: tuple[VirtualPoleParts | None, ...] | None = None
@@ -917,7 +917,7 @@ class ResolvedVirtualEvaluation:
     helicity_ids: tuple[str, ...]
     born_color_ids: tuple[str, ...]
     virtual_color_ids: tuple[str, ...]
-    color_accuracy: Literal["lc", "nlc", "full"]
+    color_accuracy: Literal["lc", "nlc", "strict-lc", "strict-nlc", "full"]
     correlated: bool = False
     poles: PoleSelection = PoleSelection.ALL
     stability: (
@@ -926,7 +926,7 @@ class ResolvedVirtualEvaluation:
     pole_parts: tuple[VirtualPoleParts | None, ...] | None = None
 
     def __post_init__(self) -> None:
-        if self.color_accuracy not in {"lc", "nlc", "full"}:
+        if self.color_accuracy not in {"lc", "nlc", "strict-lc", "strict-nlc", "full"}:
             raise ValueError("unknown colour accuracy")
         for name in ("helicity_ids", "born_color_ids", "virtual_color_ids"):
             ids = tuple(getattr(self, name))

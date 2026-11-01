@@ -1068,6 +1068,7 @@ def counterterm_program_blocks(
     scope: Any = None,
     stage: Callable[[str, Callable[[], Any]], Any] | None = None,
     u1_grades: bool = False,
+    frozen_u1: bool = False,
     allow_anomalous_veto: bool = False,
 ) -> CountertermBlocks:
     """The CT program (``CountertermBlocks``) of a request (design §6.1).
@@ -1082,9 +1083,11 @@ def counterterm_program_blocks(
     same scope; without it every rule of the model is lowered. ``stage``
     (``name, work -> work()``) runs the lowering, the recursion and the
     program's DAG, e.g. to time them (``tools/loop_v2_dag.py``).
-    ``u1_grades`` (leading and next-to-leading colour) makes every block of
-    the program exact in N_c (``generation.dag_grades``) and refuses a
-    reachable counterterm vertex the ``continuation`` does not cover
+    ``u1_grades`` (the strict accuracies) makes every block of the program
+    exact in N_c (``generation.dag_grades``); ``frozen_u1`` (the inherited
+    ``lc``/``nlc``) keeps their U(1)-subtraction pieces at N_c = 3
+    (``blocks.freeze_u1_grades``). With a ``continuation`` a reachable
+    counterterm vertex it does not cover is refused
     (``refusals.require_declared_colour_rules``).
 
     A rule the lowering cannot lower is inert when its vertex enters no tree
@@ -1159,12 +1162,12 @@ def counterterm_program_blocks(
                 for name, reason in sorted(recursion.residual.items())
             )
         )
-    if continuation is not None and u1_grades:
-        # LC and NLC (the grade split) grade the CT couplings by the
-        # declaration's N_c continuation: a vertex it does not cover is
-        # refused when a tree of the request can hold it (``refusals``,
-        # listed; MQ-NC). Full colour reads the source couplings at N_c = 3
-        # and needs no coverage.
+    if continuation is not None and (u1_grades or frozen_u1):
+        # Every projected accuracy (strict: the grade split; inherited: the
+        # frozen U(1) pieces) grades the CT couplings by the declaration's
+        # N_c continuation: a vertex it does not cover is refused when a tree
+        # of the request can hold it (``refusals``, listed; MQ-NC). Full
+        # colour reads the source couplings at N_c = 3 and needs no coverage.
         from .refusals import require_declared_colour_rules
 
         def reachability() -> Callable[[Any], bool]:
@@ -1201,6 +1204,15 @@ def counterterm_program_blocks(
             + " would take the U(1) part of a fermion line's gluon: the "
             "model's tree vertices couple to it, so its counterterm "
             "vertices are not projected onto SU(N) (design §6.1)"
+        )
+    if frozen_u1:
+        from .blocks import freeze_u1_grades
+
+        program = replace(
+            program,
+            blocks=replace(
+                program.blocks, blocks=freeze_u1_grades(program.blocks.blocks)
+            ),
         )
     return cast(CountertermBlocks, program)
 

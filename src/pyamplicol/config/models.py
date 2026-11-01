@@ -64,15 +64,18 @@ class ProcessGroupAnalysis(StrEnum):
 
 class ColorAccuracy(StrEnum):
     # The inherited (non-strict) colour approximation: the colour matrix (or,
-    # at one loop, the colour seed table) is truncated in N_c while amplitude
-    # coefficients, including the 1/3 of U(1)-subtraction pieces, stay at
-    # N_c = 3 (``docs/correlator-conventions.md``, "Colour accuracy").
+    # at one loop, the exact colour cells) is truncated in N_c while the tree
+    # currents' coefficients, including the 1/3 of U(1)-subtraction pieces,
+    # stay at N_c = 3 (``docs/correlator-conventions.md``, "Colour
+    # accuracy"); one-loop counterterm couplings are graded by the model's
+    # colour declaration.
     LC = "lc"
     NLC = "nlc"
     FULL = "full"
-    # The formal 1/N_c expansion of the squared amplitude: every
-    # U(1)-subtraction piece is graded (degree -1); LC keeps the leading
-    # degree P, NLC the degrees P, P-1 and P-2 (``color.nc_expansion``).
+    # The formal 1/N_c expansion of the squared amplitude (and of the one-loop
+    # interference): every U(1)-subtraction piece is graded (degree -1); LC
+    # keeps the reference degree P, NLC the degrees P, P-1 and P-2
+    # (``color.nc_expansion``; ``loops.v2.colour``, "Projection").
     STRICT_LC = "strict-lc"
     STRICT_NLC = "strict-nlc"
 
@@ -609,11 +612,6 @@ class ColorConfig:
                 "color.graded requires color.accuracy='strict-lc', 'strict-nlc' "
                 f"or 'full': the inherited {str(self.accuracy)!r} approximation "
                 "is not an expansion in N_c"
-            )
-        if self.nc_graded and self.contraction is ColorContraction.SYMMETRIC_GROUP_FFT:
-            raise ConfigurationError(
-                "strict and graded colour use the direct colour contraction; "
-                "color.contraction='symmetric-group-fft' is not supported"
             )
         if (
             self.lc_flow_layout is LCFlowLayout.ALL_FLOW_UNION
@@ -1715,11 +1713,21 @@ class RunConfig:
         complete full-colour basis, implemented in the compiled lane."""
 
         if virtual:
+            # One-loop requests project in the loop engine (``loops.v2.
+            # colour``), not in the compiled tree lane.
+            if self.color.graded:
+                raise ConfigurationError(
+                    "graded colour output (color.graded) is implemented for tree "
+                    "requests; one-loop requests take color.accuracy='strict-lc' "
+                    "or 'strict-nlc' (the formal N_c projection, reported as "
+                    "one contracted value), 'lc', 'nlc' (the inherited "
+                    "approximation) or 'full'"
+                )
+            return
+        if self.color.contraction is ColorContraction.SYMMETRIC_GROUP_FFT:
             raise ConfigurationError(
-                "strict and graded colour (color.accuracy='strict-lc' or "
-                "'strict-nlc', color.graded) are implemented for tree requests; "
-                "one-loop requests take color.accuracy='lc', 'nlc' (the loop "
-                "engine's formal-N_c projection) or 'full'"
+                "strict and graded tree colour use the direct colour contraction; "
+                "color.contraction='symmetric-group-fft' is not supported"
             )
         mode = self.evaluator.execution_mode
         if mode not in {

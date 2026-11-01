@@ -552,18 +552,20 @@ def universal_double_pole(key: str, accuracy: str) -> float | None:
     """D / Born = -(alpha_s/2pi) sum_i C_i over the massless coloured legs of
     ``key`` at colour ``accuracy``. Full colour: the providers' conversion
     (``providers.universal_double_pole``, the toolkit's
-    ``required_spec.double_pole_factor``); leading colour: the leading parts
-    of the Casimirs (C_F -> N_c/2) of ``tools/loop_v2_generate.py``'s table,
-    the one the generator's ``poles`` check uses; None at NLC, where it holds
-    only with adjoint legs. A non-QCD correction raises at every accuracy,
-    like the providers' conversion."""
+    ``required_spec.double_pole_factor``); formal leading colour
+    (``strict-lc``): the leading parts of the Casimirs (C_F -> N_c/2) of
+    ``tools/loop_v2_generate.py``'s table, the one the generator's ``poles``
+    check uses; None at strict NLC, where it holds only with adjoint legs, and
+    at the inherited ``lc``/``nlc``, whose U(1)-subtraction pieces stay at
+    N_c = 3. A non-QCD correction raises at every accuracy, like the
+    providers' conversion."""
 
     process = streams.spec(key)
     if process["correction"] != "QCD":
         raise ValueError("the G1 value comparison converts QCD corrections only")
     if accuracy == "full":
         return providers.universal_double_pole(process)
-    if accuracy != "lc":
+    if accuracy != "strict-lc":
         return None
     _, required_spec = streams._toolkit()
     total = sum(

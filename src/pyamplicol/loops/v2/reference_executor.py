@@ -1620,10 +1620,12 @@ class ReferenceExecutor:
         of the family's first skeleton (``forward_targets``). To compare F
         with B family by family, run F with ``trie_targets``.
 
-        M is admissible at leading colour and, at ``accuracy`` NLC or full,
-        only where every skeleton's colour class carries a loop-level
-        certificate (``certified``, WP2.4; design §2.2). It falls back to B
-        otherwise and where its structural checks fail (``run_m``);
+        M is admissible at formal leading colour (``strict-lc``: the face
+        rule, design §7.5) and, at any other ``accuracy`` (the inherited
+        ``lc``, NLC or full), only where every skeleton's colour class
+        carries a loop-level certificate (``certified``, WP2.4; design §2.2).
+        It falls back to B otherwise and where its structural checks fail
+        (``run_m``);
         ``Execution.fallback`` says why.
         """
 
@@ -1638,7 +1640,7 @@ class ReferenceExecutor:
         if schedule != "M":
             raise ValueError(f"unknown schedule {schedule!r}")
         try:
-            if accuracy != "lc" and not (
+            if accuracy != "strict-lc" and not (
                 certified is not None and all(map(certified, skeletons))
             ):
                 raise MScheduleUnavailable(

@@ -36,7 +36,13 @@ class StructuralColorProjection:
         from symbolica import E
 
         accuracy = ColorAccuracy(accuracy)
-        depth = {ColorAccuracy.LC: 0, ColorAccuracy.NLC: 2}.get(accuracy)
+        # The inherited and strict accuracies truncate the exact rows alike.
+        depth = {
+            ColorAccuracy.LC: 0,
+            ColorAccuracy.NLC: 2,
+            ColorAccuracy.STRICT_LC: 0,
+            ColorAccuracy.STRICT_NLC: 2,
+        }.get(accuracy)
         return tuple(
             sum(
                 (

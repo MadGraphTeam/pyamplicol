@@ -79,7 +79,7 @@ class LoopV2ExecutionMetadata:
     sectors: tuple[VirtualOrderSector, ...]
     families: int
     buckets: tuple[tuple[int, int, int], ...]
-    color_accuracy: Literal["lc", "nlc", "full"]
+    color_accuracy: Literal["lc", "nlc", "strict-lc", "strict-nlc", "full"]
     color_degrees: dict[str, int | None] | None
     color_contraction: Literal["auto", "direct", "fft"]
     engine: Literal["v2"] = "v2"
@@ -106,10 +106,17 @@ class LoopV2ExecutionMetadata:
             raise TypeError("loop metadata requires a typed scheme declaration")
         if not self.born_orders or not self.sectors or self.families < 1:
             raise ValueError("a v2 virtual needs Born orders, sectors and families")
-        if self.color_accuracy not in ("lc", "nlc", "full") or (
-            (self.color_degrees is None) != (self.color_accuracy == "full")
-        ):
-            raise ValueError("colour degrees exist exactly at LC and NLC")
+        if self.color_accuracy not in (
+            "lc",
+            "nlc",
+            "strict-lc",
+            "strict-nlc",
+            "full",
+        ) or ((self.color_degrees is None) != (self.color_accuracy == "full")):
+            raise ValueError(
+                "colour degrees exist exactly at the projected accuracies "
+                "(lc, nlc, strict-lc, strict-nlc)"
+            )
         if sum(count for _n, _r, count in self.buckets) != self.families:
             raise ValueError("reduction buckets must cover every family once")
         if self.color_contraction not in ("auto", "direct", "fft"):

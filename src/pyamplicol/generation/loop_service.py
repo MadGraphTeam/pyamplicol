@@ -95,13 +95,13 @@ def _feature_blockers(backend, processes):
     if not _leading_colour(run) and any(
         getattr(selection, name) is not None for name in _SELECTORS
     ):
-        # Leading-colour requests take them (``_v2_selection``).
+        # Formal leading-colour requests take them (``_v2_selection``).
         reasons.append(
             ListedBlocker(
                 "colour-selectors",
                 "public loop generation requires inclusive helicity and colour "
-                "selectors at next-to-leading and full colour; leading colour "
-                "(color.accuracy='lc') selects them",
+                "selectors below formal leading colour; formal leading colour "
+                "(color.accuracy='strict-lc') selects them",
             )
         )
     if processes.aliases:
@@ -275,7 +275,9 @@ def _prepare(
         cache_dir=run.model.cache_dir,
     )
     color_data = None
-    projected = run.color.accuracy in ("lc", "nlc")
+    # Every projected accuracy (inherited or strict) grades the counterterm
+    # and field couplings by a colour declaration.
+    projected = run.color.accuracy != "full"
     if projected or run.resolved_color.contraction != "direct":
         # LC and NLC take the shipped declaration of a model that carries
         # none (MQ-NC, ``models.loop_color_declarations``); a full-colour
@@ -398,7 +400,7 @@ def _plan_result(backend, processes, blockers, *, context=None, coverage=()):
             "source_colour_declared": bool(context and context.color_declaration),
             "formal_colour_process_coverage_checked": False,
             "canonical_born_components_checked": False
-            if backend._run_config.color.accuracy == "lc"
+            if backend._run_config.color.accuracy == "strict-lc"
             else None,
             "correlations": False,
             "resolved": True,
@@ -532,7 +534,10 @@ def _v2_blockers(backend) -> tuple[str, ...]:
 
 
 def _leading_colour(run) -> bool:
-    return run.color.accuracy == "lc"
+    """Formal leading colour, whose seeds are diagonal in the colour flows:
+    helicity and colour-flow selection apply to it only."""
+
+    return run.color.accuracy == "strict-lc"
 
 
 def _v2_selection(backend, compiled, process: str, label: str):

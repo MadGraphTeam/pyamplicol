@@ -31,7 +31,11 @@ def main(argv: list[str] | None = None) -> int:
 
     v2 = commands.add_parser("pyamplicol", help="time pyAmpliCol v2")
     v2.add_argument("process")
-    v2.add_argument("--accuracy", choices=("full", "nlc", "lc"), default="full")
+    v2.add_argument(
+        "--accuracy",
+        choices=("full", "nlc", "lc", "strict-nlc", "strict-lc"),
+        default="full",
+    )
     v2.add_argument("--inputs", choices=("python", "native"), default="python")
     v2.add_argument("--schedule", choices=("B", "M"), default="B")
     v2.add_argument("--lanes", type=int, default=16)
@@ -125,7 +129,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     stable.add_argument("process")
     stable.add_argument("--points", type=int, nargs="+", required=True)
-    stable.add_argument("--accuracy", choices=("full", "nlc", "lc"), default="full")
+    stable.add_argument(
+        "--accuracy",
+        choices=("full", "nlc", "lc", "strict-nlc", "strict-lc"),
+        default="full",
+    )
     stable.add_argument("--inputs", choices=("python", "native"), default="python")
     stable.add_argument(
         "--arithmetic",

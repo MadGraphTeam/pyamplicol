@@ -999,9 +999,14 @@ class SiteClosure:
         native_model: Any,
         catalogue: LoopKernelCatalogue,
         conjugates: ConjugateVertices | None = None,
+        *,
+        frozen_u1: bool = False,
     ):
         data = model_data(native_model)
         self.tree = blocks
+        # The inherited accuracies keep the U(1)-subtraction pieces of the
+        # tree-level closures at N_c = 3 (``colour.reduce_network``).
+        self.frozen_u1 = frozen_u1
         self.catalogue = catalogue
         self._fields = _NativeFields.of(data)
         self._by_name = {entry["name"]: entry for entry in data["particles"]}
@@ -1059,6 +1064,7 @@ class SiteClosure:
         ):
             raise ValueError("closures of different processes or models")
         self._colours = other._colours
+        self.frozen_u1 = other.frozen_u1
         if self._conjugates is None:
             self._conjugates = other._conjugates
 
@@ -1368,7 +1374,9 @@ class SiteClosure:
                 )
             )
         external = {label: label for label in self._representations}
-        tensor = reduce_network(multiply(*factors), self.legs, external)
+        tensor = reduce_network(
+            multiply(*factors), self.legs, external, frozen_u1=self.frozen_u1
+        )
         self._colours[key] = tensor
         return tensor
 

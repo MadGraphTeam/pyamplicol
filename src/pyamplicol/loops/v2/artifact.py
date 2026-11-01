@@ -1295,7 +1295,10 @@ class V2VirtualRuntime:
 
     @property
     def physics(self) -> ProcessPhysics:
-        accuracy = cast(Literal["lc", "nlc", "full"], self._metadata["color_accuracy"])
+        accuracy = cast(
+            Literal["lc", "nlc", "strict-lc", "strict-nlc", "full"],
+            self._metadata["color_accuracy"],
+        )
         member = self._group_member
         anchors = (
             tuple(
@@ -1309,7 +1312,7 @@ class V2VirtualRuntime:
                 for index, flow in enumerate(self._flows())
                 if flow.basis is not None
             )
-            if accuracy == "lc" and member is None
+            if accuracy == "strict-lc" and member is None
             else ()
         )
         kind = "born-anchored-interference" if anchors else "contracted-color"
@@ -1357,7 +1360,7 @@ class V2VirtualRuntime:
                     accuracy, 0, f"{accuracy} colour interference"
                 ),
             ),
-            # Leading colour: the flows ``evaluate(color_flows=...)`` selects
+            # Formal leading colour: the flows ``evaluate(color_flows=...)`` selects
             # (``selection``: tree-engine IDs and order), each anchored to
             # its Born basis element (``evaluate_resolved``'s ``basis-<i>``).
             born_anchored_color_components=anchors,
@@ -1676,7 +1679,8 @@ class V2VirtualRuntime:
             tuple(diagnostics),
             R2Selection(r2, R2Strategy.MODEL, "v2 artifacts carry model R2 rules"),
             color_accuracy=cast(
-                Literal["lc", "nlc", "full"], self._metadata["color_accuracy"]
+                Literal["lc", "nlc", "strict-lc", "strict-nlc", "full"],
+                self._metadata["color_accuracy"],
             ),
             poles=poles,
             stability=tuple(estimates) if checks.enabled else None,

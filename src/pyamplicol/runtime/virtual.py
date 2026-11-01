@@ -244,7 +244,8 @@ def v2_options(
         raise CompatibilityError(
             "v2 correlated virtual evaluations take no helicity or colour-flow "
             "selection, as in the tree engine; select with evaluate or "
-            "evaluate_resolved at leading colour (color.accuracy='lc')"
+            "evaluate_resolved at formal leading colour "
+            "(color.accuracy='strict-lc')"
         )
     v2_r2_strategy(r2_strategy)
     if stability is not None:
@@ -931,9 +932,11 @@ class V2ObservablesRuntime:
             # The member's rows in its own catalogue order.
             rows = tuple(sorted(self._member.row(row) for row in rows))
         accuracy = observables.slice.request.accuracy
-        resolution = "helicity-colour" if accuracy == "lc" else "helicity"
+        # Formal leading colour resolves per Born basis element (its seeds are
+        # diagonal in the flows); every other accuracy is one contraction.
+        resolution = "helicity-colour" if accuracy == "strict-lc" else "helicity"
         components: tuple[Any, ...] = (
-            observables.components if accuracy == "lc" else (None,)
+            observables.components if accuracy == "strict-lc" else (None,)
         )
         helicity_ids = tuple(f"h{i}" for i in range(len(rows)))
         if helicities or color_flows:
@@ -1070,7 +1073,7 @@ class V2ObservablesRuntime:
                 )
         ids = (
             tuple(f"basis-{b}" for b in components)
-            if accuracy == "lc"
+            if accuracy == "strict-lc"
             else (str(accuracy),)
         )
         return ResolvedVirtualEvaluation(

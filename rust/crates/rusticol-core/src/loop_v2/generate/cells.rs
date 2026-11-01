@@ -1750,7 +1750,10 @@ pub fn gram(basis: &[Tensor]) -> RusticolResult<Vec<Vec<Arc<Laurent>>>> {
 
 // --------------------------------------------------------------- projection
 
-/// A colour accuracy (`ColourAccuracy`).
+/// The truncation depth of a colour accuracy (`ColourAccuracy`): the
+/// inherited `lc`/`nlc` and the strict `strict-lc`/`strict-nlc` truncate the
+/// exact cells alike (they differ in the grades of the tree currents, fixed
+/// before the cells are formed).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Accuracy {
     Lc,
@@ -1761,8 +1764,8 @@ pub enum Accuracy {
 impl Accuracy {
     pub fn parse(name: &str) -> RusticolResult<Self> {
         match name {
-            "lc" => Ok(Self::Lc),
-            "nlc" => Ok(Self::Nlc),
+            "lc" | "strict-lc" => Ok(Self::Lc),
+            "nlc" | "strict-nlc" => Ok(Self::Nlc),
             "full" => Ok(Self::Full),
             other => Err(invalid(format!("unknown colour accuracy {other:?}"))),
         }

@@ -608,14 +608,17 @@ fn validate_v2_metadata(metadata: &LoopV2ExecutionMetadata) -> RusticolResult<()
         "plan v4 artifacts carry source-owned model R2 and UV",
     )?;
     require(
-        matches!(metadata.color_accuracy.as_str(), "full" | "nlc" | "lc")
+        matches!(
+            metadata.color_accuracy.as_str(),
+            "full" | "nlc" | "lc" | "strict-nlc" | "strict-lc"
+        )
             && metadata.color_degrees.as_ref().map_or(
                 metadata.color_accuracy == "full",
                 |degrees| {
                     metadata.color_accuracy != "full" && degrees.len() == metadata.sectors.len()
                 },
             ),
-        "colour degrees are declared exactly per sector at LC and NLC",
+        "colour degrees are declared exactly per sector at every projected accuracy",
     )?;
     require(
         !metadata.born_orders.is_empty()

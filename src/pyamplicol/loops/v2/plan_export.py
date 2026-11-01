@@ -57,7 +57,7 @@ from pyamplicol.color.connections import ExactColorCoefficient
 from pyamplicol.config import PoleSelection
 
 from . import reference_executor as rx
-from .colour import SYMMETRIC_GROUP_FFT, project
+from .colour import SYMMETRIC_GROUP_FFT, formal_label, project
 from .families import FamilyKey, Orders
 from .merged import MergedGraph, merged_graph
 from .poly_affine import size
@@ -437,7 +437,7 @@ class _Exporter:
         accuracy = slice_.request.accuracy
         # Projected at formal N_c only over N_c-exact blocks (``refusals``).
         require_formal_nc_tables(
-            accuracy, (column.table for column in columns), "seed records"
+            formal_label(accuracy), (column.table for column in columns), "seed records"
         )
         born_grades = slice_._born_grades()
         admitted: set[tuple[int, Orders]] = set()
@@ -1104,10 +1104,12 @@ def export_plan(
     from .assemble import _BlockRows
     from .refusals import require_nc_exact
 
-    # LC/NLC seed records, Born components and counterterm projections need
+    # Strict seed records, Born components and counterterm projections need
     # N_c-exact tree blocks: the generation refuses others
     # (``LoopSlice.generate``), and no export serves one (``refusals``).
-    require_nc_exact(slice_.blocks, slice_.request.accuracy, slice_.request.process)
+    require_nc_exact(
+        slice_.blocks, formal_label(slice_.request.accuracy), slice_.request.process
+    )
     kinematics = rx.CatalogueKinematics(
         slice_.catalogue,
         slice_.compiled.ir.vertex_terms,

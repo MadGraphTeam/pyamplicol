@@ -60,10 +60,15 @@ Conventions a consumer relies on:
 * **Signs.** kappa uses the plain colour-flow strings of the blocks.
   ``Block.wick_sign``, the skeleton's fermion sign epsilon_s, its automorphism
   weight and its i-factors belong to the leaf weight (design §3.3), never to K.
-* **Projection** (design §7.4). P is the largest N_c degree of a nonzero cell
-  of a squared-order sector (Born grades included). LC keeps degree P, NLC
-  keeps P, P-1 and P-2 and FC keeps every power (``kept``); N_c = 3 is
-  substituted after projection and the external average after that.
+* **Projection** (design §7.4). P is the reference degree of a squared-order
+  sector (``assemble.LoopSlice.reference_degrees``: n_g + n_qqbar, plus one
+  for the strong correction), the largest N_c degree of a nonzero cell
+  (Born grades included). LC keeps degree P, NLC keeps P, P-1 and P-2 and FC
+  keeps every power (``kept``); N_c = 3 is substituted after projection and
+  the external average after that. ``strict-lc``/``strict-nlc`` project
+  the formal expansion (graded blocks); the inherited ``lc``/``nlc`` project
+  the same cells over blocks whose U(1)-subtraction pieces stay at N_c = 3,
+  as the tree engine's ``lc``/``nlc`` (``INHERITED_ACCURACIES``).
 * **Leading colour** (design §7.5). The face degree of a class is the U(N_c)
   index-loop count of its colour flow glued to the Born basis (integer cycle
   counting, no numerics); ``certify_leading_colour`` proves for a sector that
@@ -114,7 +119,18 @@ from .skeletons import Content, Skeleton
 
 Label = Hashable
 Laurent = Mapping[int, ExactColorCoefficient]
-ColourAccuracy = Literal["lc", "nlc", "full"]
+# The colour accuracy of a loop request (design §7.4-§7.6), with one meaning
+# for trees and loops (``docs/correlator-conventions.md``, "Colour
+# accuracy"): ``strict-lc``/``strict-nlc`` are the formal 1/N_c expansion
+# (every U(1)-subtraction piece of the tree currents graded, the counterterm
+# and field couplings graded by the colour declaration); ``lc``/``nlc`` are
+# the inherited approximation (the tree currents' U(1)-subtraction pieces at
+# N_c = 3 as in the tree engine, every other N_c graded); both truncate the
+# exact colour cells at the reference degree P
+# (``assemble.LoopSlice.reference_degrees``).
+ColourAccuracy = Literal["lc", "nlc", "strict-lc", "strict-nlc", "full"]
+STRICT_ACCURACIES = ("strict-lc", "strict-nlc")
+INHERITED_ACCURACIES = ("lc", "nlc")
 # (Born amplitude orders, loop amplitude orders): one pair of a squared-order sector.
 SectorPair = tuple[Orders, Orders]
 
@@ -386,14 +402,42 @@ def _join_strings(
 
 @lru_cache(maxsize=1 << 16)
 def _fierz(
-    traces: tuple[tuple[int, ...], ...], sentinels: frozenset[int]
+    traces: tuple[tuple[int, ...], ...],
+    sentinels: frozenset[int],
+    frozen_u1: bool = False,
 ) -> tuple[tuple[Fraction, int, tuple[tuple[int, ...], ...]], ...]:
     """Remove every repeated adjoint label with SU(N_c) Fierz identities.
 
     Open strings ride along as traces closed by one matrix-unit ``sentinel``
     each, so the tree engine's trace rules apply unchanged; a trace of one
     sentinel is a Kronecker delta, not a vanishing tr(tau).
+
+    ``frozen_u1`` keeps the U(1)-subtraction term of every identity, the
+    -1/N_c of t^a_ij t^a_kl = delta_il delta_kj - delta_ij delta_kl / N_c, at
+    N_c = 3 (coefficient -1/3, no power of N_c), as the tree engine's
+    numeric U(1)-subtraction auxiliaries: the inherited accuracies' tree-level
+    closures (``ct_sites.SiteClosure``). Index loops keep their power.
     """
+
+    def frozen(rule):
+        # Each rule rewrites one term at a time into its U(N) term and, second,
+        # its U(1)-subtraction term (-coeff at power - 1).
+        def apply(terms):
+            out, changed = [], False
+            for term in terms:
+                image, replaced = rule([term])
+                if replaced:
+                    (u_n, (coefficient, power, rows)) = image
+                    image = [u_n, (coefficient / NC, power + 1, rows)]
+                    changed = True
+                out.extend(image)
+            return out, changed
+
+        return apply
+
+    pair, duplicate = trace_pair_simplify_nc_power, trace_duplicate_simplify_nc_power
+    if frozen_u1:
+        pair, duplicate = frozen(pair), frozen(duplicate)
 
     def trivial(terms):
         out = []
@@ -411,9 +455,9 @@ def _fierz(
 
     terms = trivial([(Fraction(1), 0, traces)])
     while True:
-        terms, paired = trace_pair_simplify_nc_power(terms)
+        terms, paired = pair(terms)
         terms = trivial(terms)
-        terms, duplicated = trace_duplicate_simplify_nc_power(terms)
+        terms, duplicated = duplicate(terms)
         terms = trivial(terms)
         if not paired and not duplicated:
             return tuple(terms)
@@ -435,13 +479,18 @@ class _Numbering(dict):
 
 
 def reduce_network(
-    network: ColourNetwork, legs: Sequence[ColorLeg], external: Mapping[Label, int]
+    network: ColourNetwork,
+    legs: Sequence[ColorLeg],
+    external: Mapping[Label, int],
+    *,
+    frozen_u1: bool = False,
 ) -> ConnectedColorTensor:
     """Contract every internal index of a colour network.
 
     ``external`` maps the network's external labels to process leg labels;
     every other label must be contracted. The result is in the tree engine's
-    literal colour structures (module docstring).
+    literal colour structures (module docstring). ``frozen_u1`` keeps the
+    U(1)-subtraction terms at N_c = 3 (``_fierz``).
     """
 
     def internal(label: Label) -> bool:
@@ -462,7 +511,9 @@ def reduce_network(
             sentinel = number.fresh()
             sentinels[sentinel] = (external[string.row], external[string.col])
             traces.append((*(number[label] for label in string.word), sentinel))
-        for coefficient, power, rows in _fierz(tuple(traces), frozenset(sentinels)):
+        for coefficient, power, rows in _fierz(
+            tuple(traces), frozenset(sentinels), frozen_u1
+        ):
             tensor = _decode(rows, sentinels, set(external.values()))
             reduced.append(
                 (
@@ -1918,13 +1969,86 @@ def _max_degree(cells: Iterable[Laurent]) -> int | None:
     )
 
 
-# Powers below the leading degree P that each accuracy keeps (design §7.4).
-_DEPTH = {"lc": 0, "nlc": 2}
+# Powers below the reference degree P that each accuracy keeps (design §7.4).
+_DEPTH = {"lc": 0, "nlc": 2, "strict-lc": 0, "strict-nlc": 2}
+
+
+def strict_colour(accuracy: str) -> bool:
+    """Whether ``accuracy`` is the formal 1/N_c expansion (``strict-*``)."""
+
+    return accuracy in STRICT_ACCURACIES
+
+
+def formal_leading_colour(accuracy: str) -> bool:
+    """Whether ``accuracy`` is the formal leading colour (``strict-lc``),
+    whose seeds are diagonal in the colour orderings (design §7.5): the
+    leading-colour selections, Born-anchored flows and the face rule apply
+    to it only, not to the inherited ``lc``."""
+
+    return accuracy == "strict-lc"
+
+
+def u1_graded(accuracy: str) -> bool:
+    """Whether the tree currents of a request carry the N_c grades of their
+    U(1)-subtraction pieces (``generation.dag_grades``): the strict
+    accuracies. Full colour and the inherited ``lc``/``nlc`` keep them at
+    N_c = 3, as the tree engine does."""
+
+    return strict_colour(accuracy)
+
+
+def formal_label(accuracy: str) -> str | None:
+    """The label of a formal-N_c projection (a strict accuracy) in the
+    N_c-exactness refusals (``refusals.require_nc_exact``,
+    ``require_formal_nc_tables``); None for full colour and the inherited
+    accuracies, whose tree currents keep the U(1)-subtraction pieces at
+    N_c = 3."""
+
+    return accuracy.upper() if u1_graded(accuracy) else None
+
+
+def colour_graded_couplings(accuracy: str) -> bool:
+    """Whether the counterterm and field couplings take their N_c grades
+    from a colour declaration (design §6.7): every projected accuracy,
+    inherited ones included (a coupling at N_c = 3 would sit one power below
+    the loops it renormalises, so a projection would drop it). Full colour
+    reads the source couplings at N_c = 3."""
+
+    return accuracy != "full"
+
+
+def born_reference_degree(legs: Iterable[ColorLeg]) -> int:
+    """The tree engine's reference degree P = n_g + n_qqbar of a Born colour
+    basis over ``legs`` (``color.nc_expansion.reference_degree``)."""
+
+    representations = [leg.representation for leg in legs]
+    return sum(1 for r in representations if r == 8) + (
+        sum(1 for r in representations if r in (3, -3)) // 2
+    )
+
+
+def whole_entry(cell: Laurent, reference: int) -> Laurent:
+    """One entry of the Born colour metric under the inherited NLC with open
+    quark lines (the tree engine's rule, ``docs/correlator-conventions.md``,
+    "Colour accuracy"): an entry whose highest nonzero power is at least
+    P - 2 keeps its exact value at N_c = 3, carried at that power (so the
+    projection keeps or drops it whole); any other entry is left as it is
+    (the projection drops it). Pure-gluon processes truncate per power and
+    take no such rule."""
+
+    powers = [power for power, value in cell.items() if value]
+    if not powers or max(powers) < reference - 2:
+        return cell
+    top = max(powers)
+    total = ExactColorCoefficient()
+    for power, value in cell.items():
+        total = total + value.scaled(Fraction(NC) ** (power - top))
+    return {top: total} if total else {}
 
 
 def kept(power: int, degree: int | None, accuracy: ColourAccuracy) -> bool:
     """Whether a colour cell of N_c power ``power`` survives the projection
-    of a sector of leading degree ``degree`` (P): LC keeps P, NLC keeps P,
+    of a sector of reference degree ``degree`` (P): LC keeps P, NLC keeps P,
     P-1 and P-2 (odd powers included), FC keeps every power."""
 
     if accuracy == "full":
@@ -2065,7 +2189,9 @@ class SeedTable:
 
         pairs = frozenset(pairs)
         if accuracy != "full":
-            if not self.formal_nc:
+            # The inherited accuracies keep the tree currents' U(1) pieces at
+            # N_c = 3 (blocks of mixed grade); the strict ones grade them.
+            if not self.formal_nc and accuracy not in INHERITED_ACCURACIES:
                 raise ValueError(
                     f"{accuracy.upper()} seeds need N_c-exact tree currents; these "
                     "blocks mix U(1)-subtraction grades (a DAG compiled without "
@@ -3195,6 +3321,8 @@ def certify_leading_colour(
 
 __all__ = [
     "COMPRESSION_THEOREMS",
+    "INHERITED_ACCURACIES",
+    "STRICT_ACCURACIES",
     "SYMMETRIC_GROUP_FFT",
     "BlockName",
     "BornBasis",
@@ -3216,14 +3344,18 @@ __all__ = [
     "block_colour_network",
     "block_name",
     "born_basis",
+    "born_reference_degree",
     "build_seed_table",
     "canonical_primitive",
     "canonical_seed",
     "certify_leading_colour",
+    "colour_graded_couplings",
     "decompose_vertex",
     "extend_seed_table",
     "face_count",
     "face_degree",
+    "formal_label",
+    "formal_leading_colour",
     "kept",
     "literal_network",
     "multiply",
@@ -3233,4 +3365,7 @@ __all__ = [
     "seed_cells",
     "seed_fourier",
     "spenso_colour_network",
+    "strict_colour",
+    "u1_graded",
+    "whole_entry",
 ]

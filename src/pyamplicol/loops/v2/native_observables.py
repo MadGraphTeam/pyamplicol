@@ -485,10 +485,12 @@ def _plan_of(base_json: str, overlay_json: str) -> str:
 def resolution_of(observables: Any) -> str:
     """The resolution of the stored resolved columns (the public
     ``evaluate_resolved``'s): per helicity row, and per Born basis element at
-    leading colour."""
+    formal leading colour (``strict-lc``, diagonal in the flows)."""
 
     return (
-        "helicity-colour" if observables.slice.request.accuracy == "lc" else "helicity"
+        "helicity-colour"
+        if observables.slice.request.accuracy == "strict-lc"
+        else "helicity"
     )
 
 
@@ -535,13 +537,14 @@ def _overlay_of(seeds: Mapping[str, Any]) -> dict[str, Any] | None:
 
 
 def _flows_record(slice_: Any) -> dict[str, Any]:
-    """The leading-colour flows of an LC process (``selection.slice_flows``),
-    which its runtime selects (``helicities``/``color_flows``); NLC and full
-    colour store none (their record is unchanged)."""
+    """The leading-colour flows of a formal LC process (``strict-lc``;
+    ``selection.slice_flows``), which its runtime selects (``helicities``/
+    ``color_flows``); the inherited LC, NLC and full colour store none (their
+    record is unchanged)."""
 
     from . import selection
 
-    if slice_.request.accuracy != "lc":
+    if slice_.request.accuracy != "strict-lc":
         return {}
     return {"color_flows": [flow.record() for flow in selection.slice_flows(slice_)]}
 

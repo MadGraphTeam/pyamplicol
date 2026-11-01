@@ -603,6 +603,7 @@ def build_tree_blocks(
     ignored_vertex_kinds: Iterable[int] = (),
     progress_callback: DAGProgressCallback | None = None,
     u1_grades: bool = False,
+    frozen_u1: bool = False,
 ) -> TreeBlocks:
     """Compile the blocks and the Born of one loop request.
 
@@ -616,8 +617,10 @@ def build_tree_blocks(
     exact colour-flow currents, so they are compiled at full colour whatever
     the requested accuracy; ``block_coupling_orders`` bounds the orders a
     block may carry (the loop-amplitude orders bound it without loss).
-    ``u1_grades`` (leading and next-to-leading colour) makes every block
-    exact in N_c (``generation.dag_grades``).
+    ``u1_grades`` (the strict accuracies) makes every block exact in N_c
+    (``generation.dag_grades``); ``frozen_u1`` (the inherited ``lc``/``nlc``)
+    keeps every block's U(1)-subtraction pieces at N_c = 3
+    (``freeze_u1_grades``).
     """
 
     ignored_particles = tuple(ignored_particle_ids)
@@ -649,11 +652,26 @@ def build_tree_blocks(
         process=process,
         blocks_dag=blocks_dag,
         born_dag=born_dag,
-        blocks=blocks,
+        blocks=freeze_u1_grades(blocks) if frozen_u1 else blocks,
         born_roots=_born_roots(born_dag, model),
         kernel_variant=kernel_variant,
         dag_fallback=fallback,
         graded=u1_grades,
+    )
+
+
+def freeze_u1_grades(blocks: Iterable[Block]) -> tuple[Block, ...]:
+    """``blocks`` with the N_c grade of every block set to 0: the numeric
+    1/3 of their U(1)-subtraction pieces stays at N_c = 3 under a projection,
+    as the tree engine's inherited ``lc``/``nlc`` keep it (a block of grade g
+    otherwise contributes N_c^g 3^(-g), ``colour.block_colour_network``). A
+    block whose trees mix grades takes 0 too: at N_c = 3 its rows are exact."""
+
+    return tuple(
+        block
+        if block.colour_flow.nc_grade == 0
+        else replace(block, colour_flow=replace(block.colour_flow, nc_grade=0))
+        for block in blocks
     )
 
 
@@ -974,6 +992,7 @@ __all__ = [
     "TreeBlocks",
     "block_colour_flow",
     "build_tree_blocks",
+    "freeze_u1_grades",
     "identity_pairing_sign",
     "propagated_species",
     "requested_loop_blocks",

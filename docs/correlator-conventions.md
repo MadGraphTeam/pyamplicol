@@ -141,6 +141,44 @@ complete trace/open-line basis and the direct contraction; it is implemented
 for tree requests in the compiled lane (the default execution mode for them),
 and generated without colour topology replay.
 
+### One loop: the same keywords
+
+A one-loop request (`process.loop_coupling_orders`) takes the same four
+truncated accuracies with the same meaning; the loop engine projects the exact
+colour cells of the virtual (`loops/v2/colour.py`, "Projection"):
+
+* the reference degree is the tree's `P = n_g + n_qbarq` for the Born and
+  `P + 1` for the virtual of the strong correction (one more power of
+  `alpha_s` brings at most one more power of `N_c`); it is common to every
+  squared-order sector and never reset to a sector's own leading term (a
+  sector whose largest exact degree differs is refused,
+  `colour-reference-degree`);
+* `strict-lc`/`strict-nlc` are the formal expansion: the U(1)-subtraction
+  pieces of the tree currents are graded and the counterterm and
+  external-field couplings carry the N_c grades of the model's colour
+  declaration (`C_A = N_c`, `C_F = N_c/2 - 1/(2 N_c)`, `T_F = 1/2`, `n_f` of
+  degree zero). This is the projection the loop engine calls `lc`/`nlc`
+  before this convention;
+* `lc`/`nlc` are the inherited approximation: the tree currents keep their
+  U(1)-subtraction pieces at `N_c = 3`, as the tree engine's, while the
+  counterterm and external-field couplings are graded as in the strict
+  accuracies (at `N_c = 3` they would sit one power below the loops they
+  renormalise, so the projection would drop them). With open quark lines,
+  inherited `nlc` keeps or drops each entry of the Born colour metric whole
+  by its highest power, as the tree engine does; this applies wherever the
+  Born metric enters (the Born, the external-field terms and the counterterms
+  of Born colour), while the loop and other counterterm cells are truncated
+  per power. The Born of an inherited loop artifact is therefore the tree
+  engine's at the same accuracy. Inherited `lc`/`nlc` are no expansion in
+  N_c: Catani's poles and the subtraction identities do not hold for them.
+
+Both need a colour declaration of the model's counterterms (shipped for
+`loop_sm`). The leading-colour selections, the Born-anchored resolution per
+leading-colour flow and the face-rule shortcuts belong to `strict-lc`, the
+only accuracy whose seeds are diagonal in the colour flows. A one-loop
+artifact reports one contracted value; `color.graded` is not implemented for
+one-loop requests.
+
 ## Colour charges, indices, and crossing
 
 We use Hermitian physical generators with
