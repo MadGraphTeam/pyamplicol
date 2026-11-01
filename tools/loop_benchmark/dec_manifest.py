@@ -13,7 +13,12 @@ reference (process, Born and loop orders, sectors, parameters, the scheme's
 loop alpha, the R2 couplings MadLoop's export calls); this file adds the
 model code, the tier and the extras. The tests are
 ``tests/unit/test_loop_v2_dec_default.py`` (default tier) and
-``tests/unit/test_loop_v2_dec_nightly*.py`` (nightly jobs).
+``tests/unit/test_loop_v2_dec_nightly*.py`` (nightly jobs); with
+``PYAMPLICOL_MQCD_RESULTS`` set they write the records of
+``docs/performance_reports/loop/data/dec.json`` (``scripts/build_mqcd.py
+RESULTS --manifest tests/fixtures/loop/dec/manifest.json --output
+data/dec.json --junit`` the JUnit XML of
+``tests/unit/test_loop_v2_dec_checks.py``, the delegated columns).
 """
 
 from __future__ import annotations

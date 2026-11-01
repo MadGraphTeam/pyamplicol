@@ -1,0 +1,804 @@
+{
+ "source": "tests/fixtures/loop/dec/manifest.json + campaign records (tests/unit/test_loop_v2_dec_*.py, PYAMPLICOL_MQCD_RESULTS) + JUnit XML of the delegated columns",
+ "rules": "m-final/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
+ "slice": "7cdd32e9",
+ "branch": "work/v2-mf-dec-2",
+ "native": "loop-native-v2-slice-eddb4b49",
+ "date": "2026-11-01",
+ "counts": {
+  "pass": 8,
+  "partial": 0,
+  "fail": 0,
+  "pending": 0,
+  "not-run": 0
+ },
+ "classes": {
+  "D-EW": {
+   "pass": 5,
+   "rows": 5
+  },
+  "D-QCD": {
+   "pass": 3,
+   "rows": 3
+  }
+ },
+ "smokes_and_expansions": {},
+ "rows": [
+  {
+   "id": "XX01",
+   "class": "D-QCD",
+   "process": "t > b w+",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "model": "loop_sm",
+   "corrections": [
+    "QCD"
+   ],
+   "tier": "default",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/dec/t_bwp_qcd.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E tests/fixtures/loop/required/dec/t_bwp_qcd.json (MF-DEC-1, MadLoop QP)",
+   "extras": [
+    "uv",
+    "ap"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
+   "listed_outliers": [],
+   "relaxed": {},
+   "status": "pass",
+   "tiers": {
+    "default": {
+     "points": [
+      0,
+      1
+     ],
+     "passed": true,
+     "checks": 42,
+     "failures": 0,
+     "max_dd_vs_reference": 3.8991031446083596e-16,
+     "max_binary64_vs_dd": 2.518409152224465e-15,
+     "max_catani_dd": 1.0704895661152943e-31,
+     "max_catani_binary64": 3.062766009060527e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 7.233933086756976e-16,
+      "finite": 7.129348570234877e-16,
+      "single_pole": 2.579171376050971e-15,
+      "double_pole": 5.77781467167352e-16
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 4.98,
+      "export_s": 0.13,
+      "double_double_s_per_point": 0.305,
+      "double_s_per_point": 0.02
+     },
+     "failed_checks": []
+    },
+    "nightly": {
+     "points": [
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 52,
+     "failures": 0,
+     "max_dd_vs_reference": 3.899103144608358e-16,
+     "max_binary64_vs_dd": 1.1828231627058923e-14,
+     "max_catani_dd": 1.1736347051544665e-31,
+     "max_catani_binary64": 1.1767469403232417e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 7.233933086756976e-16,
+      "finite": 4.020952593612455e-15,
+      "single_pole": 1.1767469403232417e-14,
+      "double_pole": 5.77781467167352e-16
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.01,
+      "export_s": 0.14,
+      "double_double_s_per_point": 0.33,
+      "double_s_per_point": 0.035,
+      "uv_s": 0.21,
+      "ap_s": 1.66
+     },
+     "failed_checks": []
+    }
+   },
+   "missing_records": [],
+   "variants": [
+    {
+     "id": "XX01@public",
+     "gating": true,
+     "notes": "the public route: Generator on the shipped loop_sm, Runtime.evaluate of the stored artifact with the O1 checks",
+     "reference": null,
+     "relaxed": {},
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2
+       ],
+       "passed": true,
+       "checks": 39,
+       "failures": 0,
+       "max_dd_vs_reference": 3.8991031446083606e-16,
+       "max_binary64_vs_dd": 1.360141194809392e-14,
+       "max_catani_dd": null,
+       "max_catani_binary64": null,
+       "catani_not_formed": true,
+       "binary64_vs_reference": {
+        "born": 7.233933086756976e-16,
+        "finite": 4.534265690669361e-15,
+        "single_pole": 1.3540649724267415e-14,
+        "double_pole": 5.77781467167352e-16
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 7.99,
+        "export_s": 0.0,
+        "double_double_s_per_point": 0.06666666666666667,
+        "double_s_per_point": 0.0033333333333333335
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
+    }
+   ],
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_dec_checks.py::test_decay_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[XX01]": "passed",
+     "tests/unit/test_loop_v2_dec_checks.py::test_decay_lc_and_nlc_at_the_nightly_points[XX01]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_dec_checks.py::test_decay_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[XX01]": "passed",
+      "tests/unit/test_loop_v2_dec_checks.py::test_decay_lc_and_nlc_at_the_nightly_points[XX01]": "passed"
+     }
+    }
+   },
+   "max_dd_vs_reference": 3.8991031446083606e-16,
+   "max_binary64_vs_dd": 1.360141194809392e-14,
+   "max_catani_dd": 1.1736347051544665e-31,
+   "max_ward_dd": null
+  },
+  {
+   "id": "XX02",
+   "class": "D-EW",
+   "process": "t > b w+",
+   "restriction": "default",
+   "restriction_code": "G0",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/dec/t_bwp_ew.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E tests/fixtures/loop/required/dec/t_bwp_ew.json (MF-DEC-1, MadLoop QP)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
+   "listed_outliers": [],
+   "relaxed": {},
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 134,
+     "failures": 0,
+     "max_dd_vs_reference": 2.8606313540363905e-15,
+     "max_binary64_vs_dd": 2.2044499449765715e-13,
+     "max_catani_dd": 1.843278737616816e-30,
+     "max_catani_binary64": 2.2073755278910157e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 9.042416372807035e-16,
+      "finite": 5.877019899169267e-15,
+      "single_pole": 2.2330562585169291e-13,
+      "double_pole": 3.3877834228190613e-15
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 84.63,
+      "export_s": 6.85,
+      "double_double_s_per_point": 0.5975,
+      "double_s_per_point": 0.2325
+     },
+     "failed_checks": []
+    }
+   },
+   "missing_records": [],
+   "variants": [],
+   "nc": null,
+   "delegated": {},
+   "max_dd_vs_reference": 2.8606313540363905e-15,
+   "max_binary64_vs_dd": 2.2044499449765715e-13,
+   "max_catani_dd": 1.843278737616816e-30,
+   "max_ward_dd": null
+  },
+  {
+   "id": "XX03",
+   "class": "D-EW",
+   "process": "z > e- e+",
+   "restriction": "default",
+   "restriction_code": "Az",
+   "model": "loop_qcd_qed_sm",
+   "corrections": [
+    "QED"
+   ],
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/dec/z_emep_ew.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E tests/fixtures/loop/required/dec/z_emep_ew.json (MF-DEC-1, MadLoop QP)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
+   "listed_outliers": [],
+   "relaxed": {},
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 82,
+     "failures": 0,
+     "max_dd_vs_reference": 2.8706765184715415e-15,
+     "max_binary64_vs_dd": 2.027701818844345e-15,
+     "max_catani_dd": 9.263191077121832e-31,
+     "max_catani_binary64": 1.9797846901136803e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.011270546773841e-15,
+      "finite": 3.5718500761932285e-15,
+      "single_pole": 2.252858440474188e-15,
+      "double_pole": 6.144159383111432e-16
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 48.51,
+      "export_s": 0.82,
+      "double_double_s_per_point": 0.4175,
+      "double_s_per_point": 0.1925
+     },
+     "failed_checks": []
+    }
+   },
+   "missing_records": [],
+   "variants": [],
+   "nc": null,
+   "delegated": {},
+   "max_dd_vs_reference": 2.8706765184715415e-15,
+   "max_binary64_vs_dd": 2.027701818844345e-15,
+   "max_catani_dd": 9.263191077121832e-31,
+   "max_ward_dd": null
+  },
+  {
+   "id": "XX04",
+   "class": "D-EW",
+   "process": "z > u u~",
+   "restriction": "default",
+   "restriction_code": "Az",
+   "model": "loop_qcd_qed_sm",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/dec/z_uux_ew.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E tests/fixtures/loop/required/dec/z_uux_ew.json (MF-DEC-1, MadLoop QP)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
+   "listed_outliers": [],
+   "relaxed": {},
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 134,
+     "failures": 0,
+     "max_dd_vs_reference": 6.075702384921704e-15,
+     "max_binary64_vs_dd": 3.7940439437412215e-13,
+     "max_catani_dd": 1.9471838699119233e-30,
+     "max_catani_binary64": 3.7914632976528275e-13,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.097552277659757e-15,
+      "finite": 7.580277377253289e-15,
+      "single_pole": 3.8548009675904153e-13,
+      "double_pole": 1.3149389640610049e-15
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 51.15,
+      "export_s": 0.99,
+      "double_double_s_per_point": 0.395,
+      "double_s_per_point": 0.1625
+     },
+     "failed_checks": []
+    }
+   },
+   "missing_records": [],
+   "variants": [],
+   "nc": null,
+   "delegated": {
+    "ff": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_dec_checks.py::test_z_to_u_ubar_qcd_is_the_massless_quark_form_factor": "passed"
+     }
+    }
+   },
+   "max_dd_vs_reference": 6.075702384921704e-15,
+   "max_binary64_vs_dd": 3.7940439437412215e-13,
+   "max_catani_dd": 1.9471838699119233e-30,
+   "max_ward_dd": null
+  },
+  {
+   "id": "XX05",
+   "class": "D-EW",
+   "process": "w+ > e+ ve",
+   "restriction": "default",
+   "restriction_code": "Az",
+   "model": "loop_qcd_qed_sm",
+   "corrections": [
+    "QED"
+   ],
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/dec/wp_epve_ew.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E tests/fixtures/loop/required/dec/wp_epve_ew.json (MF-DEC-1, MadLoop QP)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
+   "listed_outliers": [],
+   "relaxed": {},
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 82,
+     "failures": 0,
+     "max_dd_vs_reference": 1.834698339126487e-15,
+     "max_binary64_vs_dd": 5.438402646111003e-14,
+     "max_catani_dd": 7.476791744988292e-31,
+     "max_catani_binary64": 5.470361975802385e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.2692999927594082e-15,
+      "finite": 1.9378115391860836e-15,
+      "single_pole": 5.254932812198364e-14,
+      "double_pole": 1.2853107550984073e-15
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 46.87,
+      "export_s": 0.59,
+      "double_double_s_per_point": 0.5125,
+      "double_s_per_point": 0.2125
+     },
+     "failed_checks": []
+    }
+   },
+   "missing_records": [],
+   "variants": [],
+   "nc": null,
+   "delegated": {},
+   "max_dd_vs_reference": 1.834698339126487e-15,
+   "max_binary64_vs_dd": 5.438402646111003e-14,
+   "max_catani_dd": 7.476791744988292e-31,
+   "max_ward_dd": null
+  },
+  {
+   "id": "XX06",
+   "class": "D-QCD",
+   "process": "h > b b~",
+   "restriction": "default",
+   "restriction_code": "4F",
+   "model": "loop_sm",
+   "corrections": [
+    "QCD"
+   ],
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/dec/h_bbx_4fs.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E tests/fixtures/loop/required/dec/h_bbx_4fs.json (MF-DEC-1, MadLoop QP)",
+   "extras": [
+    "uv"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
+   "listed_outliers": [],
+   "relaxed": {},
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 84,
+     "failures": 0,
+     "max_dd_vs_reference": 4.082523592299602e-16,
+     "max_binary64_vs_dd": 2.9515781643100856e-15,
+     "max_catani_dd": 1.8853290198666244e-32,
+     "max_catani_binary64": 1.5862975935260519e-15,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 7.654388365144852e-16,
+      "finite": 2.853134707371274e-15,
+      "single_pole": 1.1632849019191047e-15,
+      "double_pole": 0.0
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [
+      {
+       "point": 0,
+       "sector": "QCD^2 QED^2",
+       "coefficient": "double_pole",
+       "E": Infinity,
+       "true_error": 0.0
+      },
+      {
+       "point": 1,
+       "sector": "QCD^2 QED^2",
+       "coefficient": "double_pole",
+       "E": Infinity,
+       "true_error": 0.0
+      },
+      {
+       "point": 2,
+       "sector": "QCD^2 QED^2",
+       "coefficient": "double_pole",
+       "E": Infinity,
+       "true_error": 0.0
+      },
+      {
+       "point": 3,
+       "sector": "QCD^2 QED^2",
+       "coefficient": "double_pole",
+       "E": Infinity,
+       "true_error": 0.0
+      }
+     ],
+     "timings": {
+      "generate_s": 4.32,
+      "export_s": 0.93,
+      "double_double_s_per_point": 0.1,
+      "double_s_per_point": 0.02,
+      "uv_s": 0.21
+     },
+     "failed_checks": []
+    }
+   },
+   "missing_records": [],
+   "variants": [],
+   "nc": null,
+   "delegated": {},
+   "max_dd_vs_reference": 4.082523592299602e-16,
+   "max_binary64_vs_dd": 2.9515781643100856e-15,
+   "max_catani_dd": 1.8853290198666244e-32,
+   "max_ward_dd": null
+  },
+  {
+   "id": "XX07",
+   "class": "D-QCD",
+   "process": "t > b w+ g",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "model": "loop_sm",
+   "corrections": [
+    "QCD"
+   ],
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/dec/t_bwpg_qcd.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E tests/fixtures/loop/required/dec/t_bwpg_qcd.json (MF-DEC-1, MadLoop QP)",
+   "extras": [
+    "uv",
+    "ward"
+   ],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
+   "listed_outliers": [],
+   "relaxed": {},
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 92,
+     "failures": 0,
+     "max_dd_vs_reference": 5.5704979047462145e-15,
+     "max_binary64_vs_dd": 1.4436926819375888e-13,
+     "max_catani_dd": 4.538543686319062e-31,
+     "max_catani_binary64": 6.254811458261946e-14,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 6.471586985433724e-15,
+      "finite": 1.4399416280089334e-13,
+      "single_pole": 6.178929863447681e-14,
+      "double_pole": 3.642723972736652e-15
+     },
+     "ward": {
+      "checks": 8,
+      "virtual_double": 0.007329652972313043,
+      "born_double": 5.787800336929949e-17,
+      "virtual_double-double": 4.995341579708897e-31,
+      "born_double-double": 1.3068967766062042e-31
+     },
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 5.11,
+      "export_s": 0.57,
+      "double_double_s_per_point": 0.3175,
+      "double_s_per_point": 0.0575,
+      "uv_s": 0.75,
+      "ward_s": 5.71
+     },
+     "failed_checks": []
+    }
+   },
+   "missing_records": [],
+   "variants": [
+    {
+     "id": "XX07@public",
+     "gating": true,
+     "notes": "the public route: Generator on the shipped loop_sm, Runtime.evaluate of the stored artifact with the O1 checks",
+     "reference": null,
+     "relaxed": {},
+     "status": "pass",
+     "waits_for": null,
+     "tiers": {
+      "nightly": {
+       "points": [
+        0,
+        1,
+        2
+       ],
+       "passed": true,
+       "checks": 39,
+       "failures": 0,
+       "max_dd_vs_reference": 5.5704979047462145e-15,
+       "max_binary64_vs_dd": 4.27007261383689e-14,
+       "max_catani_dd": null,
+       "max_catani_binary64": null,
+       "catani_not_formed": true,
+       "binary64_vs_reference": {
+        "born": 9.136358097082904e-16,
+        "finite": 4.2252572665424224e-14,
+        "single_pole": 3.9009019988370754e-14,
+        "double_pole": 5.949782488803183e-15
+       },
+       "ward": null,
+       "no_reference": [],
+       "binary64_out_of_scope": [],
+       "timings": {
+        "generate_s": 5.82,
+        "export_s": 0.0,
+        "double_double_s_per_point": 0.24,
+        "double_s_per_point": 0.006666666666666667
+       },
+       "failed_checks": []
+      }
+     },
+     "missing_records": []
+    }
+   ],
+   "nc": {
+    "status": "pass",
+    "tests": {
+     "tests/unit/test_loop_v2_dec_checks.py::test_decay_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[XX07]": "passed"
+    }
+   },
+   "delegated": {
+    "nc": {
+     "status": "pass",
+     "tests": {
+      "tests/unit/test_loop_v2_dec_checks.py::test_decay_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[XX07]": "passed"
+     }
+    }
+   },
+   "max_dd_vs_reference": 5.5704979047462145e-15,
+   "max_binary64_vs_dd": 1.4436926819375888e-13,
+   "max_catani_dd": 4.538543686319062e-31,
+   "max_ward_dd": 4.995341579708897e-31
+  },
+  {
+   "id": "XX08",
+   "class": "D-EW",
+   "process": "z > u u~ g",
+   "restriction": "default",
+   "restriction_code": "Az",
+   "model": "loop_qcd_qed_sm",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "tier": "nightly",
+   "reference": {
+    "format": "required",
+    "path": "tests/fixtures/loop/required/dec/z_uuxg_ew.json",
+    "providers": [
+     "madloop"
+    ]
+   },
+   "reference_legend": "E tests/fixtures/loop/required/dec/z_uuxg_ew.json (MF-DEC-1, MadLoop QP)",
+   "extras": [],
+   "extras_pending": {},
+   "waits_for": null,
+   "pending_reason": null,
+   "reference_tolerance": 1e-12,
+   "catani": "python",
+   "ward_legs": null,
+   "listed_outliers": [],
+   "relaxed": {},
+   "status": "pass",
+   "tiers": {
+    "nightly": {
+     "points": [
+      0,
+      1,
+      2,
+      3
+     ],
+     "passed": true,
+     "checks": 134,
+     "failures": 0,
+     "max_dd_vs_reference": 9.55176422191494e-14,
+     "max_binary64_vs_dd": 5.203975088145776e-11,
+     "max_catani_dd": 5.692312894771949e-27,
+     "max_catani_binary64": 5.206163019120706e-11,
+     "catani_not_formed": false,
+     "binary64_vs_reference": {
+      "born": 1.1746388685195754e-13,
+      "finite": 3.56549156000924e-12,
+      "single_pole": 5.2038188529420003e-11,
+      "double_pole": 4.852377868533005e-14
+     },
+     "ward": null,
+     "no_reference": [],
+     "binary64_out_of_scope": [],
+     "timings": {
+      "generate_s": 52.64,
+      "export_s": 3.15,
+      "double_double_s_per_point": 1.5975,
+      "double_s_per_point": 0.6925
+     },
+     "failed_checks": []
+    }
+   },
+   "missing_records": [],
+   "variants": [],
+   "nc": null,
+   "delegated": {},
+   "max_dd_vs_reference": 9.55176422191494e-14,
+   "max_binary64_vs_dd": 5.203975088145776e-11,
+   "max_catani_dd": 5.692312894771949e-27,
+   "max_ward_dd": null
+  }
+ ]
+}
