@@ -2492,31 +2492,26 @@ class LoopSlice:
 
     def require_reference_degrees(self) -> None:
         """Refuse (``colour-reference-degree``) a projected request whose
-        structural leading degree (``degrees``: the largest N_c degree of a
-        nonzero exact cell) differs from its reference degree
-        (``reference_degrees``) in a Born order or virtual sector.
-
-        The projection truncates at ``degrees``; at the reference degree it
-        is the tree engine's convention. A higher structural degree would be
-        a power no expansion of the process has; a lower one (the reference
-        degree vanishes identically in that sector) would make the
-        projection keep the sector's own leading term, which the tree engine
-        does not do. Projecting at the reference degree there removes the
-        restriction."""
+        structural leading degree (``structural_degrees``: the largest N_c
+        degree of a nonzero exact cell) exceeds its reference degree
+        (``reference_degrees``) in a Born order or virtual sector: a power the
+        reference counting says no term of the process has, so the counting
+        does not describe the process. A lower structural degree is projected
+        at the reference degree (``degrees``)."""
 
         from .refusals import LoopRequestUnsupported
 
-        structural = self.degrees()
+        structural = self.structural_degrees()
         reference = self.reference_degrees()
         for part in ("born", "virtual"):
             for key, degree in structural[part].items():
                 expected = reference[part].get(key)
-                if degree is not None and degree != expected:
+                if degree is not None and (expected is None or degree > expected):
                     raise LoopRequestUnsupported(
                         "colour-reference-degree",
                         f"{self.request.process!r}: the {part} part {key} has "
-                        f"leading N_c degree {degree}, but the reference degree "
-                        f"of its colour projection is {expected}",
+                        f"leading N_c degree {degree}, above the reference degree "
+                        f"{expected} of its colour projection",
                     )
 
     def _scaleless_companion(self, prune: bool | None = None) -> LoopSlice | None:
@@ -3169,7 +3164,11 @@ class LoopSlice:
     ) -> None:
         """A colour-flow selection (``selection.restrict_born_terms``) is the
         evaluation-time selection of its flows only if, at every squared Born
-        order of the unrestricted Born ``inclusive`` (``_flow_degrees``):
+        order of the unrestricted Born ``inclusive`` (``_flow_degrees``) that
+        reaches its reference degree (``reference_degrees``, where the
+        projection truncates; an order below it, a QCD x EW interference whose
+        terms stay below the reference degree, has no leading-colour part and
+        every selection is exactly zero there):
 
         * no selected flow's term with an unselected flow reaches the leading
           degree there (the restricted Born drops it; possible between two
@@ -3195,10 +3194,16 @@ class LoopSlice:
             for item in term.colour.terms
         }
         top: dict[Orders, int] = {}
+        for (_x, _y, squared), degree in degrees.items():
+            top[squared] = max(top.get(squared, degree), degree)
+        # The reference degree is common to every order (``reference_degrees``).
+        reference = born_reference_degree(self.basis.legs)
+        top = {
+            squared: degree for squared, degree in top.items() if degree >= reference
+        }
         reached: dict[Orders, int] = {}
         for (x, y, squared), degree in degrees.items():
-            top[squared] = max(top.get(squared, degree), degree)
-            if x in kept and y in kept:
+            if squared in top and x in kept and y in kept:
                 reached[squared] = max(reached.get(squared, degree), degree)
         selected = [list(w) for w in self.request.selection.flows]
         below = [s for s, degree in sorted(reached.items()) if degree < top[s]]
@@ -3214,7 +3219,7 @@ class LoopSlice:
         crossing = {
             (squared, y if x in kept else x)
             for (x, y, squared), degree in degrees.items()
-            if (x in kept) != (y in kept) and degree >= top[squared]
+            if (x in kept) != (y in kept) and squared in top and degree >= top[squared]
         }
         if crossing:
             # The unselected flows by their tree words (a piece of no planar
@@ -3241,7 +3246,43 @@ class LoopSlice:
         overlaps: Callable[[Any, Any], Mapping[int, Any]] | None = None,
         table: SeedTable | None = None,
     ) -> dict[str, dict[Orders, int | None]]:
-        """Leading N_c degrees P per squared-order sector (design §7.4).
+        """The N_c degrees P at which the colour projection truncates (design
+        §7.4), per squared Born order (``"born"``) and virtual sector
+        (``"virtual"``).
+
+        For the inclusive slice of a projected request they are the reference
+        degrees (``reference_degrees``) of the orders and sectors with a nonzero
+        exact cell (None for the others), as the tree engine never resets the
+        truncation to an order's own leading term: a QCD x EW interference
+        whose cells reach one power below the reference (u u~ > d d~) has no LC
+        part. A structural degree above the reference is refused
+        (``require_reference_degrees``). Otherwise (full colour, or the
+        ``overlaps`` and ``table`` of a directed colour history) they are the
+        structural degrees (``structural_degrees``).
+        """
+
+        structural = self.structural_degrees(overlaps, table)
+        if overlaps is not None or table is not None or self.request.accuracy == "full":
+            return structural
+        found = self._cache.get("projection-degrees")
+        if found is None:
+            self.require_reference_degrees()
+            reference = self.reference_degrees()
+            found = self._cache["projection-degrees"] = {
+                part: {
+                    key: None if degree is None else reference[part][key]
+                    for key, degree in structural[part].items()
+                }
+                for part in structural
+            }
+        return found
+
+    def structural_degrees(
+        self,
+        overlaps: Callable[[Any, Any], Mapping[int, Any]] | None = None,
+        table: SeedTable | None = None,
+    ) -> dict[str, dict[Orders, int | None]]:
+        """Leading N_c degrees per squared-order sector (design §7.4).
 
         ``"born"`` per squared Born order; ``"virtual"`` per virtual sector, the
         largest degree of a nonzero exact cell among the seed, counterterm and

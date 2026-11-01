@@ -27,12 +27,14 @@ own antiquark) has a vanishing leading-colour Born and virtual: its
 selection is zero at evaluation; at generation it contributes exact zeros
 next to a leading flow, and a selection without one is refused
 (``subleading-colour-flows``). Between two Born orders (QCD and electroweak
-Born amplitudes) a flow can interfere with another at the leading power
-(u u~ > d d~: the QCD flow (2,4,3,1) with the photon's (2,1,3,4) at
-QCD^2 QED^2): the evaluation-time selection keeps that term (its bra is the
-flow, its ket the whole Born); a generation-time selection restricts the
-Born itself, so one that would drop it is refused
-(``interfering-colour-flows``). The selected
+Born amplitudes) two distinct flows interfere, but below the reference
+degree, which the projection keeps for every order (u u~ > d d~: the QCD
+flow (2,4,3,1) and the photon's (2,1,3,4) at QCD^2 QED^2, one power below:
+that order has no leading-colour part). A term between a selected and an
+unselected flow at the reference degree would be kept by the evaluation-time
+selection (its bra is the flow, its ket the whole Born) and dropped by a
+generation-time selection, which restricts the Born itself: such a
+selection is refused (``interfering-colour-flows``). The selected
 output is the observable column of those rows and basis elements
 (``observables.Column``): its seeds and its Born, counterterm and field bras
 keep them only, so a complete set of selections sums to the inclusive value.

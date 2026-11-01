@@ -150,9 +150,10 @@ colour cells of the virtual (`loops/v2/colour.py`, "Projection"):
 * the reference degree is the tree's `P = n_g + n_qbarq` for the Born and
   `P + 1` for the virtual of the strong correction (one more power of
   `alpha_s` brings at most one more power of `N_c`); it is common to every
-  squared-order sector and never reset to a sector's own leading term (a
-  sector whose largest exact degree differs is refused,
-  `colour-reference-degree`);
+  squared-order sector and never reset to a sector's own leading term (the
+  QCD x EW interference of `u u~ > d d~`, whose cells reach one power below
+  it, has no LC part; a sector whose largest exact degree exceeds it is
+  refused, `colour-reference-degree`);
 * `strict-lc`/`strict-nlc` are the formal expansion: the U(1)-subtraction
   pieces of the tree currents are graded and the counterterm and
   external-field couplings carry the N_c grades of the model's colour

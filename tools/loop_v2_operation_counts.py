@@ -205,7 +205,8 @@ def count_process(prepared: Mapping[str, Any], entry: Mapping[str, Any]) -> dict
             "skeletons": len(rx.plan_skeletons(plan)),
             "trie_nodes": sum(len(s.trie.nodes) for s in plan.schedules.values()),
         }
-        colour_accuracy = "lc" if accuracy == "LC" else "full"
+        # LC is the formal leading colour (the face rule admits schedule M).
+        colour_accuracy = "strict-lc" if accuracy == "LC" else "full"
         for schedule in SCHEDULES:
             record[schedule] = _counts(executor.run(plan, schedule, colour_accuracy))
         if accuracy == "FC" and quark_lines <= 1:

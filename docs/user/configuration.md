@@ -749,17 +749,17 @@ selection is zero at evaluation. At generation it contributes exact zeros
 next to a leading flow (`max_color_sectors = 3` on u u~ > d d~ g keeps two
 such flows and a leading one), and a selection without a leading flow is
 refused (`subleading-colour-flows`). With several Born orders (QCD and
-electroweak Born amplitudes, e.g. u u~ > d d~ with photon exchange) a flow
-can interfere at the leading power with another flow between the two orders
-(there QCD^2 QED^2): its evaluation-time selection keeps that term, and a
-generation-time selection that would drop it is refused
-(`interfering-colour-flows`); select the interfering flows together, or
-select at evaluation. At such a cross order a flow's value is the selected
-flow interfering with the whole Born of the other order (bra the flow, ket
-every flow), not the tree engine's per-flow `evaluate_orders` value: it can
-be nonzero where the inclusive leading-colour value vanishes (u u~ > d d~
-at QCD^2 QED^2: the two flows give +-8.5e-3 and sum to 0), and complete
-sets of flows sum to the inclusive value. Identical-flavour quark lines (u u~ >
+electroweak Born amplitudes, e.g. u u~ > d d~ with photon exchange) every
+order is truncated at the same reference degree as at tree level, so a
+cross order whose terms stay below it has no leading-colour part (u u~ >
+d d~ at QCD^2 QED^2: zero for every flow). At a cross order a flow's value
+is the selected flow interfering with the whole Born of the other order
+(bra the flow, ket every flow), not the tree engine's per-flow
+`evaluate_orders` value (u u~ > u u~ at QCD^2 QED^2: each flow gives half),
+and complete sets of flows sum to the inclusive value. A generation-time
+selection that would drop a term between a selected and an unselected flow
+at the reference degree is refused (`interfering-colour-flows`, a guard);
+select those flows together, or select at evaluation. Identical-flavour quark lines (u u~ >
 u u~ g) take every selection. A member of an exact flavour group
 (`process.flavor_blind`) lists no flows and takes no evaluation-time
 selection (`CompatibilityError`): select on its representative process,

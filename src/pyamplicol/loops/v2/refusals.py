@@ -12,8 +12,9 @@ by process strings, particle or parameter names, PDG codes or leg and line
 counts (second genericity audit, ``genericity-audit-2/REPORT.md``):
 
 * ``colour-accuracy-nc-exact`` (G2-M1): the strict accuracies
-  (``strict-lc``/``strict-nlc``) project the exact colour cells at formal N_c, which needs every loop-side tree block to have one
-  N_c grade (``BlockColourFlow.nc_grade``, design §3.2 item 4 and §3.3).
+  (``strict-lc``/``strict-nlc``) project the exact colour cells at formal
+  N_c, which needs every loop-side tree block to have one N_c grade
+  (``BlockColourFlow.nc_grade``, design §3.2 item 4 and §3.3).
   They compile their loop-request DAGs with the N_c grade split
   (``generation.dag_grades`` and the native ``loop_v2::dag::grades``), which
   copies every current whose derivations mix U(1)-subtraction grades into
@@ -29,10 +30,11 @@ counts (second genericity audit, ``genericity-audit-2/REPORT.md``):
   U(1)-subtraction pieces at N_c = 3 by definition, as the tree engine.
 * ``colour-reference-degree``: a projected request truncates at the
   reference degree of the tree engine's convention (n_g + n_qqbar, plus one
-  for the strong correction; ``LoopSlice.reference_degrees``). A Born order
-  or virtual sector whose largest exact N_c degree differs from it is
-  refused (``LoopSlice.require_reference_degrees``) instead of being
-  truncated at its own leading term.
+  for the strong correction; ``LoopSlice.reference_degrees``), never at a
+  sector's own leading term. A Born order or virtual sector whose largest
+  exact N_c degree exceeds it is refused
+  (``LoopSlice.require_reference_degrees``): the counting does not describe
+  the process.
 * ``fermion-line-representation`` (G2-m1): the loop-request blocks sign
   coloured fermion lines by their colour flow and colour-singlet ones by the
   Wick order of their external fermions (``generation.fermion_ordering``,
@@ -131,11 +133,12 @@ counts (second genericity audit, ``genericity-audit-2/REPORT.md``):
   restricted Born alone would set a lower degree. Next to a leading flow
   such a flow contributes exact zeros and is kept.
 * ``interfering-colour-flows`` (MQ-SELECT): a generation-time colour-flow
-  selection one of whose flows has a leading-power term with an unselected
-  flow in a squared Born order (``LoopSlice._refuse_inexact_flows``;
-  possible between two Born orders only, e.g. QCD and photon Born
-  amplitudes): the restricted Born would drop that term, while the
-  evaluation-time selection keeps it.
+  selection one of whose flows has a term at the reference degree with an
+  unselected flow in a squared Born order (``LoopSlice._refuse_inexact_flows``):
+  the restricted Born would drop that term, while the evaluation-time
+  selection keeps it. A guard: distinct flows overlap below the reference
+  degree in the processes tested (u u~ > d d~ and u u~ > u u~ with QCD and
+  photon Born amplitudes).
 * ``colour-declaration-coverage`` (MQ-NC): LC and NLC grade the counterterm
   and external-field couplings by the formal-N_c continuation of the
   request's colour declaration (design §6.7). A declaration covers the
@@ -209,14 +212,14 @@ LOOP_ADMISSION_REFUSALS = (
     LoopAdmissionRefusal(
         "colour-reference-degree",
         "a projected request (lc, nlc, strict-lc, strict-nlc) with a Born order "
-        "or virtual sector whose largest exact N_c degree differs from the "
+        "or virtual sector whose largest exact N_c degree exceeds the "
         "reference degree n_g + n_qqbar (plus one for the strong correction)",
         "the colour projection truncates at the tree engine's reference "
-        "degree; it is never reset to a sector's own leading term "
+        "degree, which bounds every degree of the process "
         "(docs/correlator-conventions.md, Colour accuracy)",
         'full colour (color.accuracy = "full"), which keeps every degree',
         "loop colour (strict one-loop colour)",
-        "project at the reference degree where it vanishes identically",
+        "a reference counting for the structure that exceeds it",
     ),
     LoopAdmissionRefusal(
         "fermion-line-representation",
@@ -467,10 +470,8 @@ LOOP_ADMISSION_REFUSALS = (
         "interfering-colour-flows",
         "a leading-colour colour-flow selection at generation (the public "
         "route's selected_color_sector_ids or a truncating max_color_sectors; "
-        "SliceRequest.selection) one of whose flows interferes at the leading "
-        "N_c power of a squared Born order with an unselected flow (several "
-        "Born orders, e.g. u u~ > d d~'s QCD flow (2,4,3,1) with the photon "
-        "Born's (2,1,3,4) at QCD^2 QED^2)",
+        "SliceRequest.selection) one of whose flows interferes at the "
+        "reference N_c degree of a squared Born order with an unselected flow",
         "a generation-time selection restricts the Born itself, so it would "
         "drop that leading term of the squared Born, which the "
         "evaluation-time selection of the flow keeps",

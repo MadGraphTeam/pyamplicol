@@ -736,7 +736,7 @@ class _DegreeKeys:
 def degrees(
     slice_: Any, table_handle: Any = None, threads: int | None = None
 ) -> dict[str, dict[Orders, int | None]]:
-    """``LoopSlice.degrees()`` (the inclusive metric), with every overlap
+    """``LoopSlice.structural_degrees()`` (the inclusive metric), with every overlap
     degree and the seed-table degrees evaluated natively in one batch.
     ``table_handle`` is the slice table's ``NativeCellTable`` (default: its
     cells built natively from its classes).
@@ -1177,8 +1177,9 @@ def switched_seed_cells(
 
 
 def slice_degrees(slice_: Any) -> dict[str, dict[Orders, int | None]] | None:
-    """``LoopSlice.degrees()`` (inclusive) under the "degrees" stage, or None
-    when it is off (the switch in ``LoopSlice.degrees`` caches it)."""
+    """``LoopSlice.structural_degrees()`` (inclusive) under the "degrees"
+    stage, or None when it is off (the switch in
+    ``LoopSlice.structural_degrees`` caches it)."""
 
     if "degrees" not in NATIVE_STAGES:
         return None
