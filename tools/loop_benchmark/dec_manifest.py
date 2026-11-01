@@ -75,8 +75,25 @@ PUBLIC = ("XX01", "XX07")
 # measured wall seconds per row (generation, export, its points in both
 # carriers and its extras, plus imports and model compilation;
 # workspace/tmp/mf-dec-2, 2026-11-01).
-MEASURED_SECONDS = {}
+MEASURED_SECONDS = {
+    "XX01": 70, "XX02": 150, "XX03": 110, "XX04": 110, "XX05": 120,
+    "XX06": 70, "XX07": 80, "XX08": 130, "XX01@public": 70, "XX07@public": 75,
+}  # fmt: skip
 DEFAULT_SECONDS = 300
+# Delegated columns (``build_mqcd.py --junit``): the checks of
+# tests/unit/test_loop_v2_dec_checks.py (LC/NLC of the loop_sm QCD decays
+# against the N_c scan; the analytic form factor of z > u u~ [QCD]).
+_CHECKS = "tests/unit/test_loop_v2_dec_checks.py::"
+DELEGATED = {
+    "XX01": {"nc": [
+        f"{_CHECKS}test_decay_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[XX01]",
+        f"{_CHECKS}test_decay_lc_and_nlc_at_the_nightly_points[XX01]",
+    ]},
+    "XX04": {"ff": [f"{_CHECKS}test_z_to_u_ubar_qcd_is_the_massless_quark_form_factor"]},
+    "XX07": {"nc": [
+        f"{_CHECKS}test_decay_lc_and_nlc_are_the_kept_powers_of_the_nc_scan[XX07]",
+    ]},
+}  # fmt: skip
 JOB_SECONDS = 1500
 
 
@@ -162,6 +179,8 @@ def build_row(id_, name, code, tier, extras, features) -> dict:
     if ignored:
         # The providers' WTau: the G_mu and alpha(M_Z) UFOs have none.
         entry["ignored_fixed_parameters"] = ignored
+    if id_ in DELEGATED:
+        entry["delegated"] = DELEGATED[id_]
     if id_ in PUBLIC:
         entry["variants"] = [{
             "name": "public",
