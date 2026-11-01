@@ -75,13 +75,17 @@ CLASS = {"5F": "D-QCD", "4F": "D-QCD", "G0": "D-EW", "Az": "D-EW"}
 # row's reference points (no Catani prediction on that route: the base row
 # holds rule 4).
 PUBLIC = ("XX01", "XX07")
+# Rows on the production native-input route (the plan's tree program, as a
+# stored artifact runs it; rule 4 from the engine's operators on the
+# Python-input Born, ``RowRun.engine_catani``): one electroweak decay.
+NATIVE_INPUTS = ("XX02",)
 
 # The nightly file jobs (each within the campaigns' 30-minute budget):
 # measured wall seconds per row (generation, export, its points in both
 # carriers and its extras, plus imports and model compilation;
 # workspace/tmp/mf-dec-2, 2026-11-01).
 MEASURED_SECONDS = {
-    "XX01": 70, "XX02": 150, "XX03": 110, "XX04": 110, "XX05": 120,
+    "XX01": 70, "XX02": 190, "XX03": 110, "XX04": 110, "XX05": 120,
     "XX06": 70, "XX07": 80, "XX08": 130, "XX01@public": 70, "XX07@public": 75,
 }  # fmt: skip
 DEFAULT_SECONDS = 300
@@ -184,6 +188,8 @@ def build_row(id_, name, code, tier, extras, features) -> dict:
     if ignored:
         # The providers' WTau: the G_mu and alpha(M_Z) UFOs have none.
         entry["ignored_fixed_parameters"] = ignored
+    if id_ in NATIVE_INPUTS:
+        entry["inputs"], entry["catani"] = "native", "engine"
     if id_ in DELEGATED:
         entry["delegated"] = DELEGATED[id_]
     if id_ in PUBLIC:
