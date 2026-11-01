@@ -1523,6 +1523,13 @@ def apply_msref(r):
     old = r["ref"]
     if not old or old.get("format") != "required":
         return
+    # msm F4 (bookkeeping only): msm_references.json marks the existing
+    # references of DY05, VJ03 and VV06 'binding: false, superseded_by' their
+    # top-up runs, but a top-up holds another squared sector (its deviations
+    # from the existing fixture, ~1, compare different sectors). That label is
+    # not read: the existing fixture stays the binding reference of its own
+    # sector and the top-up binds only the new one, joined below at the
+    # existing fixture's points.
     existing = _fixture(old["path"].removeprefix(f"{FIX}/"))
     for path in runs:
         data = _fixture(path)
