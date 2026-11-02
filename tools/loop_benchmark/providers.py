@@ -13,16 +13,33 @@ from that campaign, as the addendum asks:
   mode without poles. Its finite part equals the ``truepoles 1`` campaign's
   (DESIGN Appendix C).
 - **Recola**: ``compute_ir_poles 0`` (one ``compute_amplitude`` per point
-  instead of three) with the Collier global cache on below seven legs, as in
-  production. The toolkit driver gets an ``irpoles`` command for this (the
-  copy patched here; ``tools/loop_reference/recola_driver.f90`` is not
-  changed). Without poles Recola's finite part stays in its own convention;
-  ``gate.py`` adds ``pi^2/6 D`` with the universal double pole of the
-  massless coloured legs for the value comparison.
+  instead of three) with the Collier global cache as in production
+  (``collier_cache``). The toolkit driver gets an ``irpoles`` command for
+  this (the copy patched here; ``tools/loop_reference/recola_driver.f90`` is
+  not changed). Without poles Recola's finite part stays in its own
+  convention; ``gate.py`` adds ``pi^2/6 D`` with the universal double pole
+  of the massless coloured legs for the value comparison.
 - **MadLoop**: its production setting (``MLStabThres`` and the default
   stability test, ``--madloop-accuracy`` <= 0 in the toolkit), on an export
-  built with MG5's production Fortran flags; MadLoop always returns its
-  poles.
+  built with MG5's production Fortran flags, with ``COLLIERGlobalCache`` as
+  in production (``collier_cache``); MadLoop always returns its poles.
+
+Caches are those of production (REQUIREMENTS_ADDENDUM D). The one exception
+is the documented COLLIER global-cache defect at N = 7 of the releases
+``COLLIER_CACHE_DEFECT`` (the toolkit's ``UNCACHED_LEG_THRESHOLD``): the
+cache is switched off at seven legs or more only when the provider links
+such a release (MG5_aMC 3.7.0's HEPTools COLLIER 1.2.9 for MadLoop), never
+for another one (Recola's COLLIER 1.2.8). The decision and the linked
+release are part of every record (``collier_cache``).
+
+A provider tree built before its reference root moved still names files of
+the old root (a MadLoop export's static reducers, the RUNPATH of Recola's
+shared libraries, OpenLoops' compiled-in installation path). Such files are
+never opened: each is taken from the same place under the current root
+(``relocated``; Recola through ``LD_LIBRARY_PATH``, OpenLoops through
+``OpenLoopsPath``, MadLoop by linking the relocated archives), and a Recola
+run whose resolved libraries lie outside the root is refused. TRANSITIONAL:
+retired once the reference trees name the current root (README).
 
 Every driver evaluates point 1 once untimed (initialisation), then times
 points 2..n and 1 one by one. Per point the driver's own timer is recorded;
@@ -49,6 +66,7 @@ Usage:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import platform
@@ -89,6 +107,208 @@ class Trees:
             return Path(override)
         relative = spec.get("madloop", {}).get("export")
         return self.root / relative if relative else None
+
+
+# COLLIER releases with the global-cache defect at N = 7 (NinjaRS owners;
+# DESIGN "Provider production columns"; the toolkit's UNCACHED_LEG_THRESHOLD
+# names them). Every other release keeps the production cache.
+COLLIER_CACHE_DEFECT = frozenset({"1.2.9", "1.2.10"})
+
+
+def collier_cache(legs: int, version: str | None) -> dict[str, Any]:
+    """The protocol's Collier global cache for a ``legs``-leg process of a
+    provider linking COLLIER ``version`` (module docstring): ``on`` True as
+    in production, False only for a release of ``COLLIER_CACHE_DEFECT`` at
+    seven legs or more, None when the release is unknown there (no decision:
+    a timing run refuses it)."""
+
+    threshold = _references().UNCACHED_LEG_THRESHOLD
+    if legs < threshold:
+        on, reason = True, f"below {threshold} legs"
+    elif version is None:
+        on, reason = None, f"unknown COLLIER release at {threshold} legs or more"
+    elif version in COLLIER_CACHE_DEFECT:
+        on, reason = False, f"COLLIER {version} global cache defect at N = 7"
+    else:
+        on, reason = True, f"COLLIER {version} has no N = 7 cache defect"
+    return {"on": on, "collier": version, "reason": reason}
+
+
+def _collier_version(text: str | None) -> str | None:
+    """The COLLIER release named in a provider's version text
+    (``... / libcollier.so 1.2.8``, ``... / Collier 1.2.8``)."""
+
+    match = re.search(r"collier\S*\s+(\d+(?:\.\d+)+)", text or "", re.IGNORECASE)
+    return match.group(1) if match else None
+
+
+def _inside(path: str, directory: Path) -> bool:
+    return path == str(directory) or path.startswith(str(directory) + os.sep)
+
+
+def relocated(path: str | Path, root: Path) -> Path:
+    """``path`` when it lies under the reference root ``root`` or in the Nix
+    store; otherwise the file or directory at its longest tail that exists
+    under ``root`` and starts with one of the root's entries (a tree built
+    before the root moved names files of the old root, module docstring).
+    Only paths under ``root`` are looked at: the original is never opened or
+    stat'ed."""
+
+    text = os.path.normpath(str(path))
+    if _inside(text, root) or _inside(text, Path("/nix/store")):
+        return Path(text)
+    parts = Path(text).parts[1:]
+    top = {entry.name for entry in root.iterdir()}
+    for start in range(len(parts)):
+        if parts[start] not in top:
+            continue
+        candidate = root.joinpath(*parts[start:])
+        if candidate.exists():
+            return candidate
+    raise RuntimeError(f"{text} lies outside the reference root {root}")
+
+
+def _elf_dynamic(library: Path) -> dict[str, list[str]]:
+    """``NEEDED`` and ``RUNPATH``/``RPATH`` entries of an ELF object, read
+    from its dynamic section (nothing is loaded)."""
+
+    text = subprocess.run(
+        ["readelf", "-d", str(library)], capture_output=True, text=True, check=True
+    ).stdout
+    needed = re.findall(r"\(NEEDED\)\s+Shared library: \[([^\]]+)\]", text)
+    paths = re.findall(
+        r"\((?:RUNPATH|RPATH)\)\s+Library r(?:un)?path: \[([^\]]*)\]", text
+    )
+    return {
+        "needed": needed,
+        "runpath": [entry for item in paths for entry in item.split(":") if entry],
+    }
+
+
+def library_path(library: Path, root: Path) -> list[Path]:
+    """The directories a program linking ``library`` (a provider's shared
+    library under ``root``) searches first, at link time (``-rpath-link``)
+    and at run time (``LD_LIBRARY_PATH`` of that program only): the RUNPATH
+    entries of the library and of every dependency found through them, in
+    order, each ``relocated`` under ``root``. With them the linker and the
+    loader resolve every dependency before they would search a RUNPATH entry
+    of the old root."""
+
+    dirs: list[Path] = []
+    pending, seen = [library], set()
+    while pending:
+        current = pending.pop(0)
+        if current in seen:
+            continue
+        seen.add(current)
+        dynamic = _elf_dynamic(current)
+        for entry in dynamic["runpath"]:
+            directory = relocated(entry, root)
+            if directory not in dirs:
+                dirs.append(directory)
+        for name in dynamic["needed"]:
+            for directory in dirs:
+                if _inside(str(directory), root) and (directory / name).is_file():
+                    pending.append(directory / name)
+                    break
+    return dirs
+
+
+def loaded_libraries(binary: Path, pattern: str) -> dict[str, dict[str, Any]]:
+    """The shared libraries the loader resolves for ``binary`` in the
+    current environment (its own loader in trace mode,
+    ``LD_TRACE_LOADED_OBJECTS``: unlike ``ldd`` it shares the program's C
+    library with ``LD_LIBRARY_PATH``), with ``references.library_version``,
+    for the sonames matching ``pattern``."""
+
+    references = _references()
+    text = subprocess.run(
+        [str(binary)],
+        env={**os.environ, "LD_TRACE_LOADED_OBJECTS": "1"},
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    found = {}
+    for line in text.splitlines():
+        match = re.match(r"\s*(\S+) => (\S+)", line)
+        if match and re.search(pattern, match.group(1)):
+            path = Path(match.group(2))
+            found[match.group(1)] = {
+                "path": str(path),
+                "version": references.library_version(path),
+            }
+    return found
+
+
+@contextlib.contextmanager
+def _environment(**values: str):
+    """``os.environ`` with ``values`` set (the toolkit's ``run_native`` and
+    ``ldd`` inherit it), restored afterwards."""
+
+    saved = {key: os.environ.get(key) for key in values}
+    os.environ.update(values)
+    try:
+        yield
+    finally:
+        for key, value in saved.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+def _madloop_libraries(export: Path, root: Path) -> list[Path]:
+    """The toolkit's ``build.madloop_libraries`` (the export's static
+    reducers, ``LOOP_LIBS`` of ``MadLoop_makefile_definitions``) with every
+    archive ``relocated`` under ``root``: an export built before the root
+    moved names the old root's HEPTools archives, which the toolkit's helper
+    would stat and link."""
+
+    import shlex
+
+    definitions = export / "SubProcesses/MadLoop_makefile_definitions"
+    rows = [
+        line.split("=", 1)[1].strip()
+        for line in definitions.read_text().splitlines()
+        if line.startswith("LOOP_LIBS =")
+    ]
+    if len(rows) != 1:
+        raise ValueError("MadLoop export has no unique LOOP_LIBS definition")
+    value = rows[0].replace("$(LIBDIR)", str(export / "lib") + "/")
+    value = value.replace("$(libext)", "a")
+    if "$" in value or value.endswith("\\"):
+        raise ValueError("unsupported MadLoop static-library definition")
+    libraries = [relocated(item, root) for item in shlex.split(value)]
+    if not libraries or any(not item.is_file() for item in libraries):
+        raise ValueError("MadLoop static reducer libraries are missing")
+    return libraries
+
+
+@contextlib.contextmanager
+def _relocated_madloop_build(root: Path):
+    """The toolkit's ``build_madloop`` linking ``_madloop_libraries`` (its
+    helper is looked up in module ``build`` at each call)."""
+
+    _references()
+    import build
+
+    original = build.madloop_libraries
+    build.madloop_libraries = lambda export: _madloop_libraries(Path(export), root)
+    try:
+        yield
+    finally:
+        build.madloop_libraries = original
+
+
+def _madloop_collier(export: Path, root: Path) -> str | None:
+    """The COLLIER release of an export's static reducers (MG5_aMC's HEPTools
+    install: a ``COLLIER-<release>`` directory beside ``libcollier.a``)."""
+
+    for library in _madloop_libraries(export, root):
+        if library.name.startswith("libcollier"):
+            return _references().library_version(library)
+    return None
 
 
 def unavailable(spec: dict, provider: str) -> str | None:
@@ -167,9 +387,13 @@ def openloops(
     count = len(points["points"])
     lines = [*commands, f"points {count}", *references.point_lines(points)]
     stdin = "\n".join(lines) + "\n"
-    stdout, wall = references.run_native(
-        [str(binary)], stdin, run, run / "output.log", cpu
-    )
+    # OpenLoops finds its process libraries under its compiled-in install
+    # path unless OpenLoopsPath names another (ol_interface.F90); after a
+    # move of the root the compiled-in one is the old root's.
+    with _environment(OpenLoopsPath=str(openloops_tree)):
+        stdout, wall = references.run_native(
+            [str(binary)], stdin, run, run / "output.log", cpu
+        )
     rows, extra = references.parse_rows(stdout, "openloops", count)
     library = spec["openloops"]["library"]
     return {
@@ -182,12 +406,15 @@ def openloops(
             **references.openloops_library_version(openloops_tree, library),
         },
         "commands": commands,
+        "install_path": "OpenLoopsPath = the OpenLoops tree",
         **_summary(rows, extra, wall),
     }
 
 
-def _recola_driver(run: Path, recola_tree: Path) -> Path:
-    """The toolkit's Recola driver with an ``irpoles <0|1>`` command."""
+def _recola_driver(run: Path, recola_tree: Path, link: list[Path]) -> Path:
+    """The toolkit's Recola driver with an ``irpoles <0|1>`` command, linked
+    with ``link`` (``library_path``) as the linker's search path for the
+    libraries Recola's own need (before their RUNPATH)."""
 
     source = (streams.REFERENCE / "recola_driver.f90").read_text()
     patches = (
@@ -233,6 +460,7 @@ def _recola_driver(run: Path, recola_tree: Path) -> Path:
             "-L",
             str(recola_tree),
             f"-Wl,-rpath,{recola_tree}",
+            *(f"-Wl,-rpath-link,{directory}" for directory in link),
             "-lrecola",
             "-o",
             str(binary),
@@ -250,30 +478,87 @@ def recola(
     recola_tree = trees.recola
     run = work / "recola-run"
     run.mkdir(parents=True, exist_ok=True)
-    binary = _recola_driver(run, recola_tree)
-    uncached = len(spec["pdgs"]) >= references.UNCACHED_LEG_THRESHOLD
-    commands = references.recola_commands(spec, points, uncached)
-    commands.insert(commands.index("generate"), "irpoles 0")
-    count = len(points["points"])
-    lines = [*commands, f"points {count}", *references.point_lines(points)]
-    stdin = "\n".join(lines) + "\n"
-    stdout, wall = references.run_native(
-        [str(binary)], stdin, run, run / "output.log", cpu
+    root = trees.root
+    # The driver's own C library (its compiler's, through its interpreter)
+    # serves Recola as well: a C library directory of Recola's build on the
+    # search path would pair the driver's loader with another libc (a
+    # glibc 2.42 loader with glibc 2.40's libc.so.6: "undefined symbol
+    # __nptl_change_stack_perm", exit 127).
+    dirs = [
+        d
+        for d in library_path(recola_tree / "librecola.so", root)
+        if not (d / "libc.so.6").is_file()
+    ]
+    binary = _recola_driver(run, recola_tree, dirs)
+    search = os.pathsep.join(
+        [*map(str, dirs), *filter(None, [os.environ.get("LD_LIBRARY_PATH")])]
     )
+    with _environment(LD_LIBRARY_PATH=search):
+        linked = loaded_libraries(binary, r"recola|collier|modelfile")
+        outside = [v["path"] for v in linked.values() if not _inside(v["path"], root)]
+        collier = [v["version"] for k, v in linked.items() if "collier" in k]
+        if outside or len(collier) != 1:
+            raise RuntimeError(
+                f"Recola's libraries do not resolve under {root}: {sorted(linked)}"
+            )
+        cache = collier_cache(len(spec["pdgs"]), collier[0])
+        if cache["on"] is None:
+            raise RuntimeError(f"no Collier cache decision: {cache['reason']}")
+        commands = references.recola_commands(spec, points, not cache["on"])
+        commands.insert(commands.index("generate"), "irpoles 0")
+        count = len(points["points"])
+        lines = [*commands, f"points {count}", *references.point_lines(points)]
+        stdin = "\n".join(lines) + "\n"
+        stdout, wall = references.run_native(
+            [str(binary)], stdin, run, run / "output.log", cpu
+        )
     rows, extra = references.parse_rows(stdout, "recola", count)
-    linked = references.linked_libraries(binary, r"recola|collier|modelfile")
     return {
         "provider": "recola",
         "mode": "production: compute_ir_poles 0, Collier global cache "
-        + ("off (seven legs, COLLIER cache defect)" if uncached else "on"),
+        + ("on" if cache["on"] else "off")
+        + f" ({cache['reason']})",
         "version": "Recola2 (tree "
         + recola_tree.name
         + ") / "
         + " / ".join(f"{k} {v['version']}" for k, v in sorted(linked.items())),
+        "collier_cache": cache,
+        "libraries": {
+            k: str(Path(v["path"]).relative_to(root)) for k, v in sorted(linked.items())
+        },
         "commands": commands,
         "finite_convention": "Recola (Gamma(1+eps)); MadLoop's adds pi^2/6 D",
         **_summary(rows, extra, wall),
     }
+
+
+def _prepare_madloop(
+    spec: dict, export: Path, run: Path, trees: Trees
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """The toolkit's ``prepare_madloop_run`` (it sets ``COLLIERGlobalCache``
+    to 0 at seven legs or more) with the export's own production value
+    restored unless the export's COLLIER release has the cache defect
+    (``collier_cache``)."""
+
+    references = _references()
+    legs = len(spec["pdgs"])
+    settings = references.prepare_madloop_run(spec, export, run, trees.mg5, legs)
+    cache = collier_cache(legs, _madloop_collier(export, trees.root))
+    if cache["on"] is None:
+        raise RuntimeError(f"no Collier cache decision: {cache['reason']}")
+    params = run / "SubProcesses/MadLoop5_resources/MadLoopParams.dat"
+    pattern = r"(#COLLIERGlobalCache\s*\n)\s*(-?\d+)"
+    production = re.search(
+        pattern,
+        (export / "SubProcesses/MadLoop5_resources/MadLoopParams.dat").read_text(),
+    )
+    if cache["on"] and production is not None:
+        text, n = re.subn(pattern, rf"\g<1>{production.group(2)}", params.read_text())
+        if n != 1:
+            raise RuntimeError("cannot restore MadLoop's COLLIERGlobalCache")
+        params.write_text(text)
+        settings["MadLoopParams"]["COLLIERGlobalCache"] = production.group(2)
+    return settings, cache
 
 
 def madloop(
@@ -286,10 +571,11 @@ def madloop(
     flags = references.madloop_build_flags(export, mg5)
     if not flags["production_build"]:
         raise RuntimeError(f"{export} is not built with MG5's production flags")
-    binary, repairs = references.build_madloop(
-        export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
-    )
-    settings = references.prepare_madloop_run(spec, export, run, mg5, len(spec["pdgs"]))
+    with _relocated_madloop_build(trees.root):
+        binary, repairs = references.build_madloop(
+            export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
+        )
+    settings, cache = _prepare_madloop(spec, export, run, trees)
     born, loop = spec["born_orders"], spec["loop_orders"]
     count = len(points["points"])
     alpha_s = references.value(spec["scheme_data"], "aS")
@@ -305,9 +591,12 @@ def madloop(
     return {
         "provider": "madloop",
         "mode": "production: MLStabThres and the default stability test, MG5 "
-        "production Fortran flags",
+        "production Fortran flags, COLLIERGlobalCache "
+        + ("as in production" if cache["on"] else "0")
+        + f" ({cache['reason']})",
         "version": "MadLoop/MG5_aMC 3.7.0",
         "export": str(export),
+        "collier_cache": cache,
         "madloop_params": settings["MadLoopParams"],
         "fortran_flags": flags["export_make_opts"],
         "qp_model_repairs": repairs,
@@ -360,7 +649,9 @@ __attribute__((destructor)) static void report(void) {
 """
 
 
-def _instrumented_madloop(export: Path, run: Path, global_flag: str) -> Path:
+def _instrumented_madloop(
+    export: Path, run: Path, global_flag: str, reference_root: Path
+) -> Path:
     """MadLoop's driver linked with copies of ``loop_matrix.f`` and
     ``mp_compute_loop_coefs.f`` whose stage calls are bracketed by wall-clock
     timers (``STAGE_CALL``); the export itself is never modified. The timers
@@ -369,8 +660,6 @@ def _instrumented_madloop(export: Path, run: Path, global_flag: str) -> Path:
     import shlex
 
     references = _references()
-    from build import madloop_libraries
-
     process = references.madloop_process_dir(export)
     objects = []
     for name in ("loop_matrix.f", "mp_compute_loop_coefs.f"):
@@ -449,7 +738,7 @@ def _instrumented_madloop(export: Path, run: Path, global_flag: str) -> Path:
             "-L" + str(export / "lib"),
             "-ldhelas",
             "-lmodel",
-            *map(str, madloop_libraries(export)),
+            *map(str, _madloop_libraries(export, reference_root)),
             "-lstdc++",
             "-Wl,--no-relax",
             "-o",
@@ -480,9 +769,9 @@ def madloop_stages(
     run.mkdir(parents=True, exist_ok=True)
     flags = references.madloop_build_flags(export, mg5)
     binary = _instrumented_madloop(
-        export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
+        export, run, flags["export_make_opts"]["GLOBAL_FLAG"], trees.root
     )
-    references.prepare_madloop_run(spec, export, run, mg5, len(spec["pdgs"]))
+    _prepare_madloop(spec, export, run, trees)
     born, loop = spec["born_orders"], spec["loop_orders"]
     alpha_s = references.value(spec["scheme_data"], "aS")
     totals = {}
@@ -531,6 +820,107 @@ def madloop_stages(
     }
 
 
+def imported(spec: dict, provider: str, trees: Trees) -> dict[str, Any]:
+    """An existing timing of the reference campaign (``timing`` of the
+    provider's specification, relative to the reference root), for a process
+    whose provider generation HANDOFF §0.1 forbids repeating. Its rows are the
+    campaign's points, which are the stream's first points (``streams.py``);
+    the record keeps the run's own core, settings and timing scope.
+    ``protocol_mode`` says whether its settings are the gate protocol's
+    (MadLoop: the production stability setting on a production build, poles
+    included as always; Recola: no IR-pole evaluation and the protocol's
+    Collier cache, ``collier_cache`` of the release its version names); a
+    run outside the protocol is reported beside the gate, never in it
+    (``gate.py``). A Recola run that also evaluates the IR poles (three
+    ``compute_amplitude`` calls per point instead of one) with the
+    protocol's Collier cache, or without the cache (which only saves
+    repeated tensor-integral work), does the production work and more: its
+    time bounds the production time from above (``production_upper_bound``,
+    the reason), which the report uses as a bound only, never as a limit or
+    an extrapolated time."""
+
+    relative = spec[provider]["timing"]
+    path = trees.root / relative
+    data = json.loads(path.read_text())
+    if data.get("provider") != provider or data.get("process_name") != spec["name"]:
+        raise RuntimeError(f"{relative} is not a {provider} result of {spec['name']}")
+    stream = streams.load(spec["name"])
+    reference = json.loads((path.parent / "points.json").read_text())
+    count = len(data["rows"])
+    if (
+        reference["points"][:count] != stream["points"][:count]
+        or reference["mu_r"][:count] != stream["mu_r"][:count]
+    ):
+        raise RuntimeError(f"{relative}: its points are not the stream's first points")
+    settings = data.get("settings", {})
+    bound = None
+    if provider == "madloop":
+        flags = settings.get("fortran_flags", {})
+        protocol = bool(flags.get("production_build")) and "production" in str(
+            settings.get("requested_relative_accuracy", "")
+        )
+        mode = (
+            f"reference campaign: {settings.get('requested_relative_accuracy')}, "
+            f"{settings.get('stability_check')}, production build "
+            f"{flags.get('production_build')}"
+        )
+    elif provider == "recola":
+        poles = settings.get("compute_ir_poles")
+        cache = settings.get("collier_cache")
+        version = _collier_version(data.get("version"))
+        decision = collier_cache(len(spec["pdgs"]), version)
+        wanted = {True: "on", False: "off"}.get(decision["on"])
+        protocol = poles == 0 and cache == wanted
+        mode = (
+            f"reference campaign: compute_ir_poles {poles}, Collier cache {cache}"
+            f" (the protocol's: {wanted or 'undecided'}, {decision['reason']})"
+        )
+        if poles == 1 and cache in (wanted, "off"):
+            how = (
+                f"with the protocol's Collier cache ({cache})"
+                if cache == wanted
+                else "without the Collier cache, which production keeps on and"
+                " which only saves repeated tensor-integral work"
+            )
+            bound = (
+                "the run evaluates the IR poles (compute_ir_poles 1: three"
+                f" compute_amplitude calls per point instead of one) {how}, so"
+                " the production-mode time is at most this time"
+            )
+    else:
+        raise RuntimeError(f"no import of {provider} timings")
+    rows = [
+        {key: row[key] for key in ("born", "finite", "seconds", "raw") if key in row}
+        for row in data["rows"]
+    ]
+    out = {
+        "provider": provider,
+        "mode": mode,
+        "protocol_mode": protocol,
+        "version": data.get("version"),
+        "imported_from": relative,
+        "measured": _modified(path),
+        "timing_scope": data.get("timing_scope"),
+        "cpu": data.get("cpu"),
+        **_summary(rows, {}, data.get("process_wall_seconds", 0.0)),
+    }
+    out["setup"] = {
+        key: data[key]
+        for key in ("initial_call_seconds", "generation_seconds")
+        if key in data
+    }
+    if bound is not None and not protocol:
+        out["production_upper_bound"] = bound
+    return out
+
+
+def _modified(path: Path) -> str:
+    import datetime
+
+    stamp = datetime.datetime.fromtimestamp(path.stat().st_mtime, datetime.UTC)
+    return stamp.strftime("%Y-%m-%d %H:%M UTC")
+
+
 def main(options: Any) -> int:
     key = options.process
     spec = streams.spec(key)
@@ -556,7 +946,11 @@ def main(options: Any) -> int:
         start = time.perf_counter()
         reason = unavailable(spec, provider)
         try:
-            if reason is not None:
+            if "timing" in spec.get(provider, {}):
+                result = imported(spec, provider, trees)
+                if reason is not None:
+                    result["unavailable"] = reason
+            elif reason is not None:
                 result = {"provider": provider, "unavailable": reason}
             elif provider == "openloops":
                 result = openloops(spec, points, work, options.cpu, trees)
@@ -589,14 +983,19 @@ def main(options: Any) -> int:
     return 0
 
 
+def alpha_s(spec: dict) -> float:
+    """The specification's alpha_s as the providers receive it (the
+    toolkit's ``references.value``: a fixed parameter overrides)."""
+
+    return float(_references().value(spec["scheme_data"], "aS"))
+
+
 def universal_double_pole(spec: dict) -> float:
     """D / Born of the declared correction: -(alpha_s/2pi) sum_i C_i over the
     massless coloured legs for QCD (the toolkit's ``double_pole_factor``,
     from its particle metadata)."""
 
-    references = _references()
     _, required_spec = streams._toolkit()
     if spec["correction"] != "QCD":
         raise ValueError("the G1 value comparison converts QCD corrections only")
-    alpha_s = float(references.value(spec["scheme_data"], "aS"))
-    return required_spec.double_pole_factor(spec, alpha_s)
+    return required_spec.double_pole_factor(spec, alpha_s(spec))

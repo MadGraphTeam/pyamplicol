@@ -8,7 +8,8 @@ Ninja/Collier reducers and records split orders ``QCD, QED`` so the driver can
 select the Born-virtual interference by squared coupling order. Graph counts,
 the observed Born/loop amplitude orders, the compilation flags and the
 generation, export and compilation wall times are written to
-``generation.json`` next to the export.
+``generation.json`` next to the export, the UFO counterterm couplings behind
+its calls to ``ct_couplings.json`` (``madloop_ct_couplings.py``).
 
 The export is compiled with MG5_aMC's production flags (``production_make_opts``),
 not with the unset ``GLOBAL_FLAG`` (gfortran ``-O0``) of a bare standalone output.
@@ -114,6 +115,38 @@ def recompile(args):
     print("MADLOOP_EXPORT_DONE", output, flush=True)
 
 
+def complex_mass_scheme(spec):
+    return bool(spec["scheme_data"].get("complex_mass_scheme", False))
+
+
+def mg5_session(spec, mg5, recorder=None):
+    """An MG5_aMC command interface with the export settings and the process's
+    model imported (``recorder``: a ``madloop_ct_couplings.Recorder`` installed
+    before the import); no model pickle is written."""
+    _import_mg5(mg5)
+    logging.basicConfig(level=logging.INFO)
+    from models import import_ufo
+    from madgraph.interface.master_interface import MasterCmd
+
+    import_ufo.ReadWrite = False
+    if recorder is not None:
+        recorder.install()
+    command = MasterCmd()
+    for setting in (
+        "automatic_html_opening False",
+        "auto_update 0",
+        f"ninja {mg5}/HEPTools/ninja/lib",
+        f"collier {mg5}/HEPTools/collier",
+        "output_dependencies external",
+        "loop_optimized_output True",
+        f"complex_mass_scheme {complex_mass_scheme(spec)}",
+    ):
+        command.exec_cmd("set " + setting)
+    command.exec_cmd(f"import model {spec['madloop']['model']}")
+    command.exec_cmd(f"set gauge {spec['madloop'].get('gauge', 'Feynman')}")
+    return command
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--spec", type=Path, help="process specification JSON")
@@ -137,7 +170,7 @@ def main():
     if args.spec is None or args.process is None:
         parser.error("--spec and --process are required to generate an export")
 
-    from required_spec import load_process
+    from required_spec import CORRECTION_STEP, load_process
 
     mg5 = args.mg5.resolve()
     roots = {"mg5": mg5, "reference": (args.reference_root or mg5.parent.parent).resolve()}
@@ -161,63 +194,102 @@ def main():
         status_path.write_text(json.dumps(report, indent=2) + "\n")
 
     write()
-    _import_mg5(mg5)
-    logging.basicConfig(level=logging.INFO)
-    from models import import_ufo
-    from madgraph.interface.master_interface import MasterCmd
+    import madloop_ct_couplings
 
-    import_ufo.ReadWrite = False
-    command = MasterCmd()
-    for setting in (
-        "automatic_html_opening False",
-        "auto_update 0",
-        f"ninja {mg5}/HEPTools/ninja/lib",
-        f"collier {mg5}/HEPTools/collier",
-        "output_dependencies external",
-        "loop_optimized_output True",
-        f"complex_mass_scheme {bool(spec['scheme_data'].get('complex_mass_scheme', False))}",
-    ):
-        command.exec_cmd("set " + setting)
     start = time.perf_counter()
-    command.exec_cmd(f"import model {madloop['model']}")
-    command.exec_cmd(f"set gauge {madloop.get('gauge', 'Feynman')}")
+    recorder = madloop_ct_couplings.Recorder()
+    command = mg5_session(spec, mg5, recorder)
     command.exec_cmd("generate " + madloop["process"])
-    if len(command._curr_amps) != 1:
-        raise RuntimeError("expected exactly one MadLoop amplitude")
-    amplitude = command._curr_amps[0]
-    born = Counter(_orders(d) for d in amplitude["born_diagrams"])
-    loops = Counter()
-    for diagram in amplitude["loop_diagrams"]:
-        loops[_orders(diagram)] += diagram["multiplier"]
-    expected_born = {(spec["born_orders"]["QCD"], spec["born_orders"]["QED"])}
+    multiparticle = bool(spec.get("multiparticle"))
+    if not command._curr_amps or (len(command._curr_amps) != 1 and not multiparticle):
+        raise RuntimeError(f"expected exactly one MadLoop amplitude, got {len(command._curr_amps)} "
+                           "(a multiparticle request sets \"multiparticle\": true)")
+    # One correction step per correction of the request (a joint [virt=QCD QED]
+    # request over several loop sectors lists both; spec["corrections"]).
+    steps = [CORRECTION_STEP[c] for c in spec["corrections"]]
+    expected_born = {(o["QCD"], o["QED"]) for o in spec["born_orders_all"]}
     expected_loop = {(spec["loop_orders"]["QCD"], spec["loop_orders"]["QED"])}
-    report.update(
-        {
-            "graph_generation_s": time.perf_counter() - start,
+    allowed_loop = {(q + step["QCD"], e + step["QED"]) for q, e in expected_born for step in steps}
+    subprocesses = []
+    for amplitude in command._curr_amps:
+        born = Counter(_orders(d) for d in amplitude["born_diagrams"])
+        loops = Counter()
+        for diagram in amplitude["loop_diagrams"]:
+            loops[_orders(diagram)] += diagram["multiplier"]
+        legs = amplitude["process"]["legs"]
+        subprocesses.append({
             "process": amplitude["process"].nice_string(),
+            "pdgs": [leg["id"] for leg in legs],
             "born": len(amplitude["born_diagrams"]),
             "loops": sum(loops.values()),
             "identified_loop_records": len(amplitude["loop_diagrams"]),
-            "count_convention": "loops: sum of native diagram.multiplier",
             "born_orders": [{"QCD": q, "QED": e, "count": n} for (q, e), n in sorted(born.items())],
             "loop_orders": [{"QCD": q, "QED": e, "count": n} for (q, e), n in sorted(loops.items())],
             "UVCT_diagrams": len(amplitude["loop_UVCT_diagrams"]),
             "attached_CT_vertices": sum(len(d["CT_vertices"]) for d in amplitude["loop_diagrams"]),
+            "_born": born, "_loops": loops,
+        })
+    first = subprocesses[0]
+    report.update(
+        {
+            "graph_generation_s": time.perf_counter() - start,
+            "process": first["process"],
+            "born": sum(sp["born"] for sp in subprocesses),
+            "loops": sum(sp["loops"] for sp in subprocesses),
+            "identified_loop_records": sum(sp["identified_loop_records"] for sp in subprocesses),
+            "count_convention": "loops: sum of native diagram.multiplier",
+            "born_orders": first["born_orders"],
+            "loop_orders": first["loop_orders"],
+            "UVCT_diagrams": sum(sp["UVCT_diagrams"] for sp in subprocesses),
+            "attached_CT_vertices": sum(sp["attached_CT_vertices"] for sp in subprocesses),
         }
     )
+    def public(items):
+        return [{k: v for k, v in sp.items() if not k.startswith("_")} for sp in items]
+
     # Loop records of other orders may remain in the export; the driver selects
-    # the Born-virtual interference by its squared split orders.
-    if set(born) != expected_born or not expected_loop <= set(loops):
-        report["status"] = "unexpected amplitude orders"
-        write()
-        raise RuntimeError(
-            f"Born/loop orders {dict(born)}/{dict(loops)} differ from {expected_born}/{expected_loop}"
-        )
+    # the Born-virtual interference by its squared split orders. A mixed-order
+    # request (born_orders_all) admits loop records of every Born order's
+    # correction step. A multiparticle request checks each subprocess against
+    # its own Born orders (its members differ, e.g. q q~, a a and g g initial
+    # states) and records a member without a Born (MG5's loop-squared
+    # [sqrvirt] subprocess, m-sm/PLAN.md Q2(a)) as skipped: it is not compared.
+    for sp in subprocesses:
+        born, loops = sp["_born"], sp["_loops"]
+        if multiparticle:
+            own = {(q + step["QCD"], e + step["QED"]) for q, e in born for step in steps}
+            if not born:
+                sp["skipped"] = "no Born: MG5's loop-squared member (sqrvirt), not a Born x virtual reference"
+            elif not set(loops) <= own or not set(loops):
+                report["status"] = "unexpected amplitude orders"
+                report["subprocesses"] = public(subprocesses)
+                write()
+                raise RuntimeError(f"{sp['process']}: loop orders {dict(loops)} outside {own}")
+            continue
+        if set(born) != expected_born or not expected_loop <= set(loops) or (
+                (len(expected_born) > 1 or len(steps) > 1) and not set(loops) <= allowed_loop):
+            report["status"] = "unexpected amplitude orders"
+            write()
+            raise RuntimeError(
+                f"{sp['process']}: Born/loop orders {dict(born)}/{dict(loops)} differ from "
+                f"{expected_born}/{expected_loop}")
+    if multiparticle:
+        report["subprocesses"] = public(subprocesses)
     report["status"] = "exporting"
     write()
-    amplitude["process"].set("split_orders", ["QCD", "QED"])
+    for amplitude in command._curr_amps:
+        amplitude["process"].set("split_orders", ["QCD", "QED"])
+    # The UFO counterterm couplings behind the export's calls (MG5's coupling
+    # renamings), recorded before the output (which empties the loop diagrams'
+    # CT vertices) and checked against its sources after it.
+    record = madloop_ct_couplings.write_record(output, madloop["process"], madloop["model"],
+                                               complex_mass_scheme(spec), command._curr_amps, recorder)
+    if record["attached_CT_vertices"] != report["attached_CT_vertices"]:
+        raise RuntimeError(f"ct_couplings record: {record['attached_CT_vertices']} attached CT vertices")
     command.exec_cmd(f"output standalone {output}")
+    madloop_ct_couplings.check_export(output, record)
     report["source_export_s"] = time.perf_counter() - start - report["graph_generation_s"]
+    report["subprocess_directories"] = sorted(p.name for p in (output / "SubProcesses").glob("P*") if p.is_dir())
     report["status"] = "exported"
     write()
     if not args.no_compile:

@@ -1,0 +1,413 @@
+{
+ "source": "tests/unit/test_loop_v2_corr_recola.py whole-file job (every tier, JUnit) + corr_rows.py re-evaluation of its artifacts",
+ "reference": "tests/fixtures/loop/required/corr/<process>.json (Recola2 2.2.5, binary64)",
+ "commit": "617b59cdb106e398b4a84b403e60920fbcd3a501",
+ "native": "loop-native-v2-slice-b36af289 (digest 58b40383)",
+ "date": "2026-11-01 23:42 UTC",
+ "precision": "binary64 one-loop runtime; tree engine correlated Born at precision=20 (rounded to binary64); Laurent deviations relative to the row's largest |Recola coefficient| (the test's measure)",
+ "junit": {
+  "test_recola_references_conserve_colour[uux_gg]": "passed",
+  "test_recola_references_conserve_colour[gg_ttx]": "passed",
+  "test_recola_references_conserve_colour[uux_ddxg]": "passed",
+  "test_recola_references_conserve_colour[gg_ggg]": "passed",
+  "test_correlated_virtual_matches_recola[uux_gg]": "passed",
+  "test_correlated_virtual_matches_recola[gg_ttx]": "passed",
+  "test_correlated_virtual_matches_recola[uux_ddxg]": "passed",
+  "test_correlated_virtual_matches_recola[gg_ggg]": "passed",
+  "test_correlated_tree_born_matches_recola[uux_gg]": "passed",
+  "test_correlated_tree_born_matches_recola[gg_ttx]": "passed",
+  "test_correlated_tree_born_matches_recola[uux_ddxg]": "passed",
+  "test_correlated_tree_born_matches_recola[gg_ggg]": "passed"
+ },
+ "counts": {
+  "pass": 16,
+  "fail": 0
+ },
+ "all_pass": true,
+ "rows": [
+  {
+   "process": "uux_gg",
+   "recola_process": "u u~ -> g g",
+   "kind": "plain Born",
+   "entries": 2,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 1.6567378594093936e-15,
+    "virtual_born": 9.204099218941076e-16,
+    "finite": 9.351836743104973e-14,
+    "single_pole": 2.6542817059984255e-14,
+    "double_pole": 1.2723587405584996e-15
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "uux_gg",
+   "recola_process": "u u~ -> g g",
+   "kind": "colour",
+   "entries": 24,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 1.410523936680927e-15,
+    "virtual_born": 7.693766927350512e-16,
+    "finite": 1.690349456909441e-13,
+    "single_pole": 8.141043373393142e-14,
+    "double_pole": 2.6060563773184845e-14
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "uux_gg",
+   "recola_process": "u u~ -> g g",
+   "kind": "spin",
+   "entries": 4,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 1.8012119655394077e-15,
+    "virtual_born": 7.204847862157631e-16,
+    "finite": 1.0096636717667388e-13,
+    "single_pole": 2.5146912155030554e-14,
+    "double_pole": 2.120823916689328e-15
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "uux_gg",
+   "recola_process": "u u~ -> g g",
+   "kind": "spin-colour",
+   "entries": 12,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 1.532443011194106e-15,
+    "virtual_born": 6.871790745280648e-16,
+    "finite": 2.46499813340461e-13,
+    "single_pole": 6.831382368965405e-14,
+    "double_pole": 4.127533672124211e-15
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "gg_ttx",
+   "recola_process": "g g -> t t~",
+   "kind": "plain Born",
+   "entries": 2,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 1.1087341561194853e-15,
+    "virtual_born": 6.652404936716912e-16,
+    "finite": 1.1657625273057745e-15,
+    "single_pole": 1.4572031591322182e-16,
+    "double_pole": 2.6973638312501235e-17
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "gg_ttx",
+   "recola_process": "g g -> t t~",
+   "kind": "colour",
+   "entries": 24,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 1.951748534896252e-15,
+    "virtual_born": 9.638453790846152e-16,
+    "finite": 2.8228193445515296e-14,
+    "single_pole": 2.6269664192556395e-15,
+    "double_pole": 6.463138350767735e-15
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "gg_ttx",
+   "recola_process": "g g -> t t~",
+   "kind": "spin",
+   "entries": 4,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 2.0458978836884327e-15,
+    "virtual_born": 1.1508175595747433e-15,
+    "finite": 2.1412532383542847e-15,
+    "single_pole": 1.0885643192802819e-15,
+    "double_pole": 1.6823266752513448e-15
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "gg_ttx",
+   "recola_process": "g g -> t t~",
+   "kind": "spin-colour",
+   "entries": 12,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 1.7209011734329649e-15,
+    "virtual_born": 6.262407946987861e-16,
+    "finite": 1.2825114032096079e-14,
+    "single_pole": 2.43612910840836e-15,
+    "double_pole": 1.3744566489134302e-15
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "uux_ddxg",
+   "recola_process": "u u~ -> d d~ g",
+   "kind": "plain Born",
+   "entries": 2,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 4.789856073855057e-15,
+    "virtual_born": 2.0161644028983135e-14,
+    "finite": 1.2146166693016752e-10,
+    "single_pole": 4.6542150916844886e-11,
+    "double_pole": 7.449112156223791e-12
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "uux_ddxg",
+   "recola_process": "u u~ -> d d~ g",
+   "kind": "colour",
+   "entries": 40,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 1.3032051703060358e-14,
+    "virtual_born": 6.46411533976317e-14,
+    "finite": 4.070127379557948e-10,
+    "single_pole": 1.8268881138817025e-10,
+    "double_pole": 3.4047108966134896e-11
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "uux_ddxg",
+   "recola_process": "u u~ -> d d~ g",
+   "kind": "spin",
+   "entries": 2,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 5.0670337510420465e-15,
+    "virtual_born": 1.8801362076234963e-14,
+    "finite": 9.6761672785475e-11,
+    "single_pole": 3.901666105271163e-11,
+    "double_pole": 6.546632303538303e-12
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "uux_ddxg",
+   "recola_process": "u u~ -> d d~ g",
+   "kind": "spin-colour",
+   "entries": 8,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 1.1954580628824854e-14,
+    "virtual_born": 2.819248240060992e-14,
+    "finite": 3.4890187416310656e-10,
+    "single_pole": 1.692224670337675e-10,
+    "double_pole": 3.422149827563572e-11
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "gg_ggg",
+   "recola_process": "g g -> g g g",
+   "kind": "plain Born",
+   "entries": 2,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 4.960752839680688e-15,
+    "virtual_born": 1.7362634938882408e-14,
+    "finite": 1.9450241677150774e-12,
+    "single_pole": 7.673268583255344e-13,
+    "double_pole": 3.963698536796574e-13
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "gg_ggg",
+   "recola_process": "g g -> g g g",
+   "kind": "colour",
+   "entries": 40,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 9.50428526534429e-15,
+    "virtual_born": 2.749947462586782e-14,
+    "finite": 1.0403052637894273e-10,
+    "single_pole": 3.995404775778864e-11,
+    "double_pole": 6.081189380167018e-12
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "gg_ggg",
+   "recola_process": "g g -> g g g",
+   "kind": "spin",
+   "entries": 10,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 7.351573505606912e-15,
+    "virtual_born": 2.264710788247807e-14,
+    "finite": 3.1206166386285605e-12,
+    "single_pole": 1.5199892839265568e-12,
+    "double_pole": 5.175198839970346e-13
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  },
+  {
+   "process": "gg_ggg",
+   "recola_process": "g g -> g g g",
+   "kind": "spin-colour",
+   "entries": 40,
+   "points": 2,
+   "max_relative_deviation": {
+    "tree_born": 1.2518342719200827e-14,
+    "virtual_born": 2.59968340399811e-14,
+    "finite": 1.1373217817060796e-10,
+    "single_pole": 3.89078118472378e-11,
+    "double_pole": 7.045562892470091e-12
+   },
+   "acceptance": {
+    "born": 1e-11,
+    "laurent_vs_row_scale": 1e-08
+   },
+   "tests": {
+    "test_recola_references_conserve_colour": "passed",
+    "test_correlated_virtual_matches_recola": "passed",
+    "test_correlated_tree_born_matches_recola": "passed"
+   },
+   "status": "pass"
+  }
+ ]
+}

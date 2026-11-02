@@ -1,0 +1,365 @@
+{
+ "protocol": "B = 128 G1-stream points (gg_uuxddx: the gg_gggg six-leg stream), binary64, poles none, no checks, timed evaluations pinned to one core (THREADS=1), generation/export on 8 cores; one paired round per class (REPS 2: best of 2, 2->5: 1); indicative, shared host; pin e18a024b, native loop-native-v2-slice-d0fef168",
+ "rows": [
+  {
+   "name": "gg_gg",
+   "process": "g g > g g",
+   "gluons": 4,
+   "batch": 128,
+   "points": "G1 stream",
+   "carrier": "double",
+   "poles": "none",
+   "group_order": 6,
+   "pairs": 2,
+   "jobs": 1,
+   "covered_weights": 54,
+   "plan_seed_weights": 54,
+   "algorithm": "symmetric-group-fft",
+   "fft_jobs_reported": 8,
+   "seconds": {
+    "fft": 0.26566892489790916,
+    "direct": 0.20548231899738312
+   },
+   "seeds_seconds": {
+    "fft": 0.002637018,
+    "direct": 0.0008070330000000001
+   },
+   "seed_contraction_seconds": {
+    "fft": 0.002003837,
+    "direct": 0.00033871099999999995
+   },
+   "dressing_seconds": {
+    "fft": 0.10140011199999999,
+    "direct": 0.089028584
+   },
+   "threads": 1,
+   "max_relative_difference": 2.8880509274956953e-12,
+   "generation_seconds": 6.083535117097199,
+   "export_seconds": 1.7042886989656836
+  },
+  {
+   "name": "gg_ggg",
+   "process": "g g > g g g",
+   "gluons": 5,
+   "batch": 128,
+   "points": "G1 stream",
+   "carrier": "double",
+   "poles": "none",
+   "group_order": 24,
+   "pairs": 2,
+   "jobs": 1,
+   "covered_weights": 864,
+   "plan_seed_weights": 864,
+   "algorithm": "symmetric-group-fft",
+   "fft_jobs_reported": 8,
+   "seconds": {
+    "fft": 2.581857476150617,
+    "direct": 2.7644563862122595
+   },
+   "seeds_seconds": {
+    "fft": 0.014018198,
+    "direct": 0.009416058000000001
+   },
+   "seed_contraction_seconds": {
+    "fft": 0.010531433,
+    "direct": 0.0070331890000000005
+   },
+   "dressing_seconds": {
+    "fft": 1.3997493679999997,
+    "direct": 1.3900002250000003
+   },
+   "threads": 1,
+   "max_relative_difference": 0.0008525571382109175,
+   "generation_seconds": 7.675249085994437,
+   "export_seconds": 2.832163641927764
+  },
+  {
+   "name": "gg_gggg",
+   "process": "g g > g g g g",
+   "gluons": 6,
+   "batch": 128,
+   "points": "G1 stream",
+   "carrier": "double",
+   "poles": "none",
+   "group_order": 120,
+   "pairs": 2,
+   "jobs": 1,
+   "covered_weights": 21600,
+   "plan_seed_weights": 21600,
+   "algorithm": "symmetric-group-fft",
+   "fft_jobs_reported": 8,
+   "seconds": {
+    "fft": 49.26975866407156,
+    "direct": 52.13701956602745
+   },
+   "seeds_seconds": {
+    "fft": 0.20180719800000002,
+    "direct": 0.288019673
+   },
+   "seed_contraction_seconds": {
+    "fft": 0.17963194000000002,
+    "direct": 0.25522848
+   },
+   "dressing_seconds": {
+    "fft": 26.911396554,
+    "direct": 27.717008002
+   },
+   "threads": 1,
+   "max_relative_difference": 0.001431623614614737,
+   "generation_seconds": 19.577377722831443,
+   "export_seconds": 13.927071548998356
+  },
+  {
+   "name": "gg_ggggg",
+   "process": "g g > g g g g g",
+   "gluons": 7,
+   "batch": 128,
+   "points": "G1 stream",
+   "carrier": "double",
+   "poles": "none",
+   "group_order": 720,
+   "pairs": 2,
+   "jobs": 1,
+   "covered_weights": 777600,
+   "plan_seed_weights": 777600,
+   "algorithm": "symmetric-group-fft",
+   "fft_jobs_reported": 8,
+   "seconds": {
+    "fft": 1275.4125764179043,
+    "direct": 1246.3164977408014
+   },
+   "seeds_seconds": {
+    "fft": 8.72406049,
+    "direct": 18.279138423000003
+   },
+   "seed_contraction_seconds": {
+    "fft": 8.161139055,
+    "direct": 17.714436399999997
+   },
+   "dressing_seconds": {
+    "fft": 629.263528496,
+    "direct": 614.635088284
+   },
+   "threads": 1,
+   "max_relative_difference": 15.515947651347076,
+   "generation_seconds": 173.6331324048806,
+   "export_seconds": 230.71913446998224
+  },
+  {
+   "name": "uux_ggg",
+   "process": "u u~ > g g g",
+   "gluons": 3,
+   "batch": 128,
+   "points": "G1 stream",
+   "carrier": "double",
+   "poles": "none",
+   "group_order": 6,
+   "pairs": 19,
+   "jobs": 1,
+   "covered_weights": 540,
+   "plan_seed_weights": 972,
+   "algorithm": "symmetric-group-fft",
+   "fft_jobs_reported": 8,
+   "seconds": {
+    "fft": 0.8004037081263959,
+    "direct": 0.8254411108791828
+   },
+   "seeds_seconds": {
+    "fft": 0.012499102,
+    "direct": 0.008711892
+   },
+   "seed_contraction_seconds": {
+    "fft": 0.011381996,
+    "direct": 0.006734609
+   },
+   "dressing_seconds": {
+    "fft": 0.34105521899999997,
+    "direct": 0.34826593100000003
+   },
+   "threads": 1,
+   "max_relative_difference": 2.9024182331733963e-09,
+   "generation_seconds": 6.272987429983914,
+   "export_seconds": 2.1005366928875446
+  },
+  {
+   "name": "uux_gggg",
+   "process": "u u~ > g g g g",
+   "gluons": 4,
+   "batch": 128,
+   "points": "G1 stream",
+   "carrier": "double",
+   "poles": "none",
+   "group_order": 24,
+   "pairs": 40,
+   "jobs": 1,
+   "covered_weights": 18408,
+   "plan_seed_weights": 37344,
+   "algorithm": "symmetric-group-fft",
+   "fft_jobs_reported": 8,
+   "seconds": {
+    "fft": 10.618156041018665,
+    "direct": 10.196069560013711
+   },
+   "seeds_seconds": {
+    "fft": 0.364002078,
+    "direct": 0.31816255200000004
+   },
+   "seed_contraction_seconds": {
+    "fft": 0.357415483,
+    "direct": 0.311652388
+   },
+   "dressing_seconds": {
+    "fft": 6.063019954000002,
+    "direct": 6.002965992999999
+   },
+   "threads": 1,
+   "max_relative_difference": 2.9074847568583297e-09,
+   "generation_seconds": 9.278038169955835,
+   "export_seconds": 5.558932277839631
+  },
+  {
+   "name": "uux_ggggg",
+   "process": "u u~ > g g g g g",
+   "gluons": 5,
+   "batch": 128,
+   "points": "G1 stream",
+   "carrier": "double",
+   "poles": "none",
+   "group_order": 120,
+   "pairs": 74,
+   "jobs": 1,
+   "covered_weights": 862680,
+   "plan_seed_weights": 1918320,
+   "algorithm": "symmetric-group-fft",
+   "fft_jobs_reported": 8,
+   "seconds": {
+    "fft": 239.6514497420285,
+    "direct": 247.3109935701359
+   },
+   "seeds_seconds": {
+    "fft": 24.479447982,
+    "direct": 34.755049776999996
+   },
+   "seed_contraction_seconds": {
+    "fft": 24.345490983,
+    "direct": 34.652401578
+   },
+   "dressing_seconds": {
+    "fft": 132.60166610899995,
+    "direct": 128.911298576
+   },
+   "threads": 1,
+   "max_relative_difference": 0.002754800120470397,
+   "generation_seconds": 45.51420285901986,
+   "export_seconds": 83.52038818504661
+  },
+  {
+   "name": "gg_ttxgg",
+   "process": "g g > t t~ g g",
+   "gluons": 4,
+   "batch": 128,
+   "points": "G1 stream",
+   "carrier": "double",
+   "poles": "none",
+   "group_order": 24,
+   "pairs": 40,
+   "jobs": 1,
+   "covered_weights": 18408,
+   "plan_seed_weights": 18408,
+   "algorithm": "symmetric-group-fft",
+   "fft_jobs_reported": 8,
+   "seconds": {
+    "fft": 13.166252525988966,
+    "direct": 13.715680161956698
+   },
+   "seeds_seconds": {
+    "fft": 0.231796161,
+    "direct": 0.206204809
+   },
+   "seed_contraction_seconds": {
+    "fft": 0.22421692000000001,
+    "direct": 0.19759664
+   },
+   "dressing_seconds": {
+    "fft": 6.008051258000001,
+    "direct": 6.003491219999998
+   },
+   "threads": 1,
+   "max_relative_difference": 7.484587373839311e-09,
+   "generation_seconds": 9.503545155981556,
+   "export_seconds": 5.025068860966712
+  },
+  {
+   "name": "gg_uuxddx",
+   "process": "g g > u u~ d d~",
+   "gluons": 2,
+   "batch": 128,
+   "points": "G1 stream",
+   "carrier": "double",
+   "poles": "none",
+   "group_order": 2,
+   "pairs": 2340,
+   "jobs": 3,
+   "covered_weights": 8520,
+   "plan_seed_weights": 8552,
+   "algorithm": "symmetric-group-fft",
+   "fft_jobs_reported": 24,
+   "seconds": {
+    "fft": 4.951963651925325,
+    "direct": 4.5493256989866495
+   },
+   "seeds_seconds": {
+    "fft": 0.263087323,
+    "direct": 0.092086488
+   },
+   "seed_contraction_seconds": {
+    "fft": 0.260031691,
+    "direct": 0.08982414899999999
+   },
+   "dressing_seconds": {
+    "fft": 2.1688767249999996,
+    "direct": 2.0769645430000008
+   },
+   "threads": 1,
+   "max_relative_difference": 9.779212768954869e-09,
+   "generation_seconds": 9.986469147028401,
+   "export_seconds": 4.648271339945495
+  },
+  {
+   "name": "uux_ddxg",
+   "process": "u u~ > d d~ g",
+   "gluons": 1,
+   "batch": 128,
+   "points": "G1 stream",
+   "carrier": "double",
+   "poles": "none",
+   "group_order": null,
+   "pairs": null,
+   "jobs": null,
+   "covered_weights": null,
+   "plan_seed_weights": 324,
+   "algorithm": "direct",
+   "fft_jobs_reported": 0,
+   "seconds": {
+    "fft": 0.5191776528954506,
+    "direct": 0.4196913428604603
+   },
+   "seeds_seconds": {
+    "fft": 0.0036929149999999997,
+    "direct": 0.003728274
+   },
+   "seed_contraction_seconds": {
+    "fft": 0.0028848099999999994,
+    "direct": 0.00287807
+   },
+   "dressing_seconds": {
+    "fft": 0.12981485999999998,
+    "direct": 0.13130015999999992
+   },
+   "threads": 1,
+   "max_relative_difference": 0.0,
+   "generation_seconds": 6.853816108079627,
+   "export_seconds": 2.5802631999831647
+  }
+ ]
+}

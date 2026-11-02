@@ -1,0 +1,215 @@
+{
+ "what": "FFT vs direct at the cost run worst binary64 points (G1 streams) against the acceptance envelope 10(E_fft+E_direct)+16uS (reduction-direction estimates); ratio <= 1 passes; gg_ggggg double-double not run (killed, not needed)",
+ "rows": [
+  {
+   "name": "uux_ggggg",
+   "point": 109,
+   "carrier": "double",
+   "fft_vs_direct_rel": 0.00120772091614181,
+   "ratio_to_envelope": 0.0022544807574762776,
+   "max_relative_estimate_direct": 0.06070187964460038,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "uux_ggggg",
+   "point": 93,
+   "carrier": "double",
+   "fft_vs_direct_rel": 1.5360757638837107e-05,
+   "ratio_to_envelope": 0.0016160049607839297,
+   "max_relative_estimate_direct": 0.0011175517963311875,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "uux_ggggg",
+   "point": 95,
+   "carrier": "double",
+   "fft_vs_direct_rel": 3.4692580842897876e-07,
+   "ratio_to_envelope": 0.01079111984673982,
+   "max_relative_estimate_direct": 1.5756857748185522e-06,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "uux_ggggg",
+   "point": 109,
+   "carrier": "double-double",
+   "fft_vs_direct_rel": 1.0910986083634515e-19,
+   "ratio_to_envelope": 0.0010344962952893355,
+   "max_relative_estimate_direct": 1.1658726124057886e-17,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "uux_ggggg",
+   "point": 93,
+   "carrier": "double-double",
+   "fft_vs_direct_rel": 2.5992520414643037e-21,
+   "ratio_to_envelope": 0.0004419399581752654,
+   "max_relative_estimate_direct": 5.225484118435214e-19,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "uux_ggggg",
+   "point": 95,
+   "carrier": "double-double",
+   "fft_vs_direct_rel": 2.5380033174457557e-23,
+   "ratio_to_envelope": 0.005024157933856053,
+   "max_relative_estimate_direct": 2.646615801535852e-22,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_ggggg",
+   "point": 89,
+   "carrier": "double",
+   "fft_vs_direct_rel": 15.515947651347076,
+   "ratio_to_envelope": 0.006038086298513698,
+   "max_relative_estimate_direct": 142.7646103867179,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_ggggg",
+   "point": 93,
+   "carrier": "double",
+   "fft_vs_direct_rel": 0.6476536624994884,
+   "ratio_to_envelope": 0.010770739718373225,
+   "max_relative_estimate_direct": 3.656937642110989,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_ggggg",
+   "point": 95,
+   "carrier": "double",
+   "fft_vs_direct_rel": 0.5793790487836769,
+   "ratio_to_envelope": 0.007432560427545912,
+   "max_relative_estimate_direct": 5.342057087333082,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_gggg",
+   "point": 50,
+   "carrier": "double",
+   "fft_vs_direct_rel": 0.00113261665601295,
+   "ratio_to_envelope": 0.011742854623152667,
+   "max_relative_estimate_direct": 0.007279512840257559,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_gggg",
+   "point": 107,
+   "carrier": "double",
+   "fft_vs_direct_rel": 0.000859052149663147,
+   "ratio_to_envelope": 0.028144672425398056,
+   "max_relative_estimate_direct": 0.0017297261677070373,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_gggg",
+   "point": 104,
+   "carrier": "double",
+   "fft_vs_direct_rel": 0.00023606163662870416,
+   "ratio_to_envelope": 0.004309268060752785,
+   "max_relative_estimate_direct": 0.0030967907322168304,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_gggg",
+   "point": 50,
+   "carrier": "double-double",
+   "fft_vs_direct_rel": 8.221449070349674e-20,
+   "ratio_to_envelope": 0.004144420910875757,
+   "max_relative_estimate_direct": 1.09857428011125e-18,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_gggg",
+   "point": 107,
+   "carrier": "double-double",
+   "fft_vs_direct_rel": 4.8206833984121084e-20,
+   "ratio_to_envelope": 0.0043101058890271755,
+   "max_relative_estimate_direct": 7.922477540379569e-19,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_gggg",
+   "point": 104,
+   "carrier": "double-double",
+   "fft_vs_direct_rel": 2.519812981886977e-20,
+   "ratio_to_envelope": 0.004529153994070223,
+   "max_relative_estimate_direct": 4.458173095135059e-19,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_ggg",
+   "point": 66,
+   "carrier": "double",
+   "fft_vs_direct_rel": 0.00021666883925589592,
+   "ratio_to_envelope": 0.009871703116679256,
+   "max_relative_estimate_direct": 0.004053078434461458,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_ggg",
+   "point": 83,
+   "carrier": "double",
+   "fft_vs_direct_rel": 1.060229338134648e-06,
+   "ratio_to_envelope": 0.005993750308957605,
+   "max_relative_estimate_direct": 0.0001052537334911672,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_ggg",
+   "point": 94,
+   "carrier": "double",
+   "fft_vs_direct_rel": 1.1321286838650643e-07,
+   "ratio_to_envelope": 0.007453843635400017,
+   "max_relative_estimate_direct": 2.109148581926972e-06,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_ggg",
+   "point": 66,
+   "carrier": "double-double",
+   "fft_vs_direct_rel": 4.0823295294062996e-20,
+   "ratio_to_envelope": 0.012309877643154757,
+   "max_relative_estimate_direct": 7.409225133355932e-19,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_ggg",
+   "point": 83,
+   "carrier": "double-double",
+   "fft_vs_direct_rel": 2.2405437344138273e-22,
+   "ratio_to_envelope": 0.006864646900196442,
+   "max_relative_estimate_direct": 1.4620735203099346e-20,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  },
+  {
+   "name": "gg_ggg",
+   "point": 94,
+   "carrier": "double-double",
+   "fft_vs_direct_rel": 7.416015039407931e-23,
+   "ratio_to_envelope": 0.01668982222429429,
+   "max_relative_estimate_direct": 6.457707279090448e-22,
+   "fft": "symmetric-group-fft",
+   "direct": "direct"
+  }
+ ]
+}

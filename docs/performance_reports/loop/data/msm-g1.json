@@ -1,0 +1,546 @@
+{
+ "gate_factor": 1.3,
+ "host_provider_spread": 0.0,
+ "processes": [
+  {
+   "key": "gg_ttxemepg_ew",
+   "label": "g g > t t~ e- e+ g",
+   "process_text": "G G > t t~ e- e+ G",
+   "outgoing": 5,
+   "gated": false,
+   "providers": {
+    "openloops": {
+     "provider": "openloops",
+     "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+     "version": "OpenLoops 2.1.5",
+     "library": {
+      "name": "ppllttj_ew",
+      "loops": "lt",
+      "git_revision": "f0b309b",
+      "process_api_version": "2",
+      "date": "2019-10-22-17-56-29",
+      "hash": "0f2cc769cbe6ba88cc2251396aa4be24"
+     },
+     "commands": [
+      "int truepoles 0",
+      "int polenorm 0",
+      "int ct_on 1",
+      "int r2_on 1",
+      "int iop_on 0",
+      "int nf 6",
+      "int nq_nondecoupled 5",
+      "int coupling_qcd_0 3",
+      "int coupling_qcd_1 0",
+      "int coupling_ew_0 2",
+      "int coupling_ew_1 1",
+      "int ew_scheme 1",
+      "int ew_renorm_scheme 1",
+      "int complex_mass_scheme 0",
+      "double gmu 0.0000116639",
+      "double mass(23) 91.188",
+      "double width(23) 0",
+      "double mass(24) 80.419",
+      "double width(24) 0",
+      "double mass(25) 125",
+      "double width(25) 0",
+      "double mass(6) 173",
+      "double width(6) 0",
+      "double mass(5) 0",
+      "double width(5) 0",
+      "double mass(4) 0",
+      "double mass(15) 0",
+      "double mass(13) 0",
+      "double mass(11) 0",
+      "double alpha_s 0.118",
+      "int ew_renorm 1",
+      "register 11 21 21 -> 6 -6 11 -11 21"
+     ],
+     "install_path": "OpenLoopsPath = the OpenLoops tree",
+     "points": 16,
+     "mean_seconds_per_point": 1.431294071875,
+     "median_seconds_per_point": 1.40479684,
+     "min_seconds_per_point": 1.28410283,
+     "max_seconds_per_point": 1.67741488,
+     "setup": {
+      "start_seconds": 0.004768919,
+      "initial_call_seconds": 4.18682914
+     },
+     "process_wall_seconds": 27.388138480950147,
+     "harness_wall_seconds": 28.34966255701147,
+     "cpu": 121
+    },
+    "recola": {
+     "provider": "recola",
+     "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
+     "version": "Recola2 (tree recola2-2.3.0) / libcollier.so 1.2.8 / libmodelfile.so 2.2.3 / librecola.so 2.2.5",
+     "collier_cache": {
+      "on": true,
+      "collier": "1.2.8",
+      "reason": "COLLIER 1.2.8 has no N = 7 cache defect"
+     },
+     "libraries": {
+      "libcollier.so": "sources/COLLIER-1.2.8/libcollier.so",
+      "libmodelfile.so": "models/SM_2.2.3/libmodelfile.so",
+      "librecola.so": "sources/recola2-2.3.0/librecola.so"
+     },
+     "commands": [
+      "mass W 80.419 0",
+      "mass Z 91.188 0",
+      "mass H 125 0",
+      "mass top 173 0",
+      "mass bottom 0 0",
+      "mass charm 0 0",
+      "mass strange 0 0",
+      "mass up 0 0",
+      "mass down 0 0",
+      "mass tau 0 0",
+      "mass muon 0 0",
+      "mass electron 0 0",
+      "gfermi 0.0000116639",
+      "onshell",
+      "alphas 0.118 1000 5",
+      "legs 7",
+      "born_gs 3",
+      "loop_gs 3",
+      "pow_lo 3",
+      "pow_nlo 3",
+      "process g g -> t t~ e- e+ g",
+      "irpoles 0",
+      "generate"
+     ],
+     "finite_convention": "Recola (Gamma(1+eps)); MadLoop's adds pi^2/6 D",
+     "points": 16,
+     "mean_seconds_per_point": 1.07359147,
+     "median_seconds_per_point": 0.986733744,
+     "min_seconds_per_point": 0.957680389,
+     "max_seconds_per_point": 2.34992101,
+     "setup": {
+      "generation_seconds": 23.5111924,
+      "initial_call_seconds": 1.82314708
+     },
+     "process_wall_seconds": 42.549813074059784,
+     "harness_wall_seconds": 42.85673176613636,
+     "cpu": 121
+    },
+    "madloop": {
+     "provider": "madloop",
+     "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
+     "version": "MadLoop/MG5_aMC 3.7.0",
+     "export": "runs/required/gg_ttxemepg_ew/madloop-export-production-flags",
+     "collier_cache": {
+      "on": false,
+      "collier": "1.2.9",
+      "reason": "COLLIER 1.2.9 global cache defect at N = 7"
+     },
+     "madloop_params": {
+      "MLReductionLib": "6|7|1",
+      "COLLIERGlobalCache": "0",
+      "MLStabThres": "1.000000d-03",
+      "ImprovePSPoint": "2"
+     },
+     "fortran_flags": {
+      "GLOBAL_FLAG": "-O",
+      "ALOHA_FLAG": "",
+      "MATRIX_FLAG": ""
+     },
+     "qp_model_repairs": [
+      "added KIND=16 to 19 CMPLX calls in MP_ functions",
+      "replaced 6 TWOPII pi literals 3.14169258478796109557151794433593750E0_16 by 3.14159265358979323846264338327950288E0_16"
+     ],
+     "points": 16,
+     "mean_seconds_per_point": 7.426690798125,
+     "median_seconds_per_point": 7.070939095,
+     "min_seconds_per_point": 6.97283802,
+     "max_seconds_per_point": 10.7073313,
+     "setup": {
+      "split_order_indices": [
+       1,
+       1,
+       1,
+       1
+      ],
+      "initial_call_seconds": 109.903474,
+      "initialization_calls": 5
+     },
+     "process_wall_seconds": 228.85579918394797,
+     "harness_wall_seconds": 230.08855842007324,
+     "cpu": 121,
+     "generation": {
+      "graph_generation_s": 405.2487154210103,
+      "source_export_s": 236.73276926897233,
+      "compile_s": 74.24591242498718,
+      "total_s": 716.2273971149698,
+      "loops": 17848
+     }
+    }
+   },
+   "provider_cpu": 121,
+   "provider_repeats": {
+    "openloops": [
+     {
+      "cpu": 121,
+      "median_seconds_per_point": 1.40479684,
+      "mean_seconds_per_point": 1.431294071875,
+      "points": 16
+     }
+    ],
+    "recola": [
+     {
+      "cpu": 121,
+      "median_seconds_per_point": 0.986733744,
+      "mean_seconds_per_point": 1.07359147,
+      "points": 16
+     }
+    ],
+    "madloop": [
+     {
+      "cpu": 121,
+      "median_seconds_per_point": 7.070939095,
+      "mean_seconds_per_point": 7.426690798125,
+      "points": 16
+     }
+    ]
+   },
+   "provider_uncertainty": {
+    "openloops": {
+     "relative": 0.0,
+     "assumed": true
+    },
+    "recola": {
+     "relative": 0.0,
+     "assumed": true
+    },
+    "madloop": {
+     "relative": 0.0,
+     "assumed": true
+    }
+   },
+   "stability": [],
+   "ward": [],
+   "ward_runs": [],
+   "schedules": [],
+   "pyamplicol": {
+    "native/full": {
+     "revision": "71e2041effa7e11c4cb903094f994a784695e527",
+     "branch": "HEAD",
+     "dirty": false,
+     "host_cpus": [
+      159
+     ],
+     "native": {
+      "directory": "loop-native-v2-slice-71e2041e",
+      "digest": "f8d77c97ebc8c6b845f043c2da3e3cf446a7558e7f85c80c35d267a15fbe5425",
+      "source_revision": "71e2041effa7e11c4cb903094f994a784695e527",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
+      }
+     },
+     "inputs": "native",
+     "accuracy": "full",
+     "schedule": "B",
+     "lanes": 16,
+     "generation": {
+      "model": {
+       "seconds": 6.7275361539795995,
+       "peak_gib": 0.359
+      },
+      "generate": {
+       "seconds": 233.61281360592693,
+       "peak_gib": 8.572
+      },
+      "export": {
+       "seconds": 84.10448341001756,
+       "peak_gib": 8.926,
+       "plan_mb": 4.473
+      }
+     },
+     "structure": {
+      "families": 1599,
+      "b_trie_nodes": 11433
+     },
+     "accuracy_check": {
+      "fixture": "gg_ttxemepg_ew",
+      "points": 3,
+      "points_are_stream_points": [
+       0,
+       1,
+       2
+      ],
+      "metric": "|a-b|/max(|a|,|b|,|Born|*coupling/(2pi)) for Laurent coefficients, |a-b|/max(|a|,|b|) for Born; strict relative errors also listed per row",
+      "tolerance": 2e-08,
+      "tolerance_source": "fixture",
+      "checks": "the recommended checks (loops.v2.stability.RECOMMENDED_CHECKS): one generic exact rotation and the rescaled reduction check",
+      "estimate_cap": 1e-09,
+      "double_double_points": [
+       2
+      ],
+      "max_error": 2.017054612122476e-10,
+      "max_error_binary64": 6.802792195720346e-10,
+      "passed": true,
+      "rows": [
+       {
+        "index": 0,
+        "mu_r": "1000",
+        "born": 6.601782858330776e-17,
+        "finite": -1.3062613751661202e-18,
+        "errors": {
+         "madloop": {
+          "born": 1.8670640808072347e-15,
+          "finite": 6.75811594373222e-11
+         },
+         "recola": {
+          "born": 1.8670640808072344e-16,
+          "finite": 7.247286831739257e-11
+         },
+         "openloops": {
+          "born": 1.6803576727265113e-15,
+          "finite": 6.781779795539289e-11
+         }
+        },
+        "estimate": {
+         "finite": 6.989856366723341e-10
+        },
+        "asserted": {
+         "born": "double",
+         "finite": "double"
+        },
+        "max_error": 7.247286831739257e-11
+       },
+       {
+        "index": 1,
+        "mu_r": "700",
+        "born": 2.1370685184454344e-16,
+        "finite": -4.270651364550107e-18,
+        "errors": {
+         "madloop": {
+          "born": 1.4188520762305364e-14,
+          "finite": 2.539386513651695e-11
+         },
+         "recola": {
+          "born": 1.5226705208327694e-14,
+          "finite": 1.4537606271165395e-11
+         },
+         "openloops": {
+          "born": 1.568812051767095e-14,
+          "finite": 2.5819399168774633e-11
+         }
+        },
+        "estimate": {
+         "finite": 1.8909972772822487e-10
+        },
+        "asserted": {
+         "born": "double",
+         "finite": "double"
+        },
+        "max_error": 2.5819399168774633e-11
+       },
+       {
+        "index": 2,
+        "mu_r": "1400",
+        "born": 5.70526052021384e-15,
+        "finite": 3.099253099796916e-16,
+        "errors": {
+         "madloop": {
+          "born": 9.678832924425517e-16,
+          "finite": 4.785732812077197e-10
+         },
+         "recola": {
+          "born": 1.7974975431075946e-15,
+          "finite": 6.802792195720346e-10
+         },
+         "openloops": {
+          "born": 2.3505737102176222e-15,
+          "finite": 4.784274022195422e-10
+         }
+        },
+        "estimate": {
+         "finite": 8.546028055089843e-09
+        },
+        "asserted": {
+         "born": "double",
+         "finite": "double-double"
+        },
+        "double_double": {
+         "born": 5.705260520213849e-15,
+         "finite": 3.099253098313695e-16,
+         "errors": {
+          "madloop": {
+           "born": 5.530761671100293e-16,
+           "finite": 4.772485984104309e-16
+          },
+          "recola": {
+           "born": 2.7653808355501454e-16,
+           "finite": 2.017054612122476e-10
+          },
+          "openloops": {
+           "born": 8.296142506650432e-16,
+           "finite": 1.4635623684584414e-13
+          }
+         }
+        },
+        "max_error": 2.017054612122476e-10
+       }
+      ]
+     },
+     "physical": [],
+     "skipped_batches": {},
+     "max_rss_gib": 10.169,
+     "generation_error": null,
+     "failed_points": 0,
+     "rescue": "off (no stability check, no escalation)",
+     "earlier_runs": [
+      {
+       "revision": "cb012428c69fa6d6830af4d4509986d33decca90",
+       "host_cpus": [
+        120
+       ],
+       "batches": {
+        "1": {
+         "median_seconds_per_point": 1.3458697189344093,
+         "min_seconds_per_point": 1.3302194150164723,
+         "max_seconds_per_point": 1.4723976370878518,
+         "samples_seconds_per_point": [
+          1.348228408023715,
+          1.3451279459986836,
+          1.3360257588792592,
+          1.3406545580364764,
+          1.3587838120292872,
+          1.3318490020465106,
+          1.3328332451637834,
+          1.3302194150164723,
+          1.346611491870135,
+          1.3349635538179427,
+          1.3448554549831897,
+          1.3504869970493019,
+          1.3393129219766706,
+          1.3431152182165533,
+          1.3420560341328382,
+          1.3449150749947876,
+          1.3592143631540239,
+          1.372049585916102,
+          1.364091644063592,
+          1.3612119620665908,
+          1.3638942528050393,
+          1.3739788040984422,
+          1.3636771419551224,
+          1.4723976370878518
+         ]
+        },
+        "128": {
+         "median_seconds_per_point": 0.15018230976602354,
+         "min_seconds_per_point": 0.14973477628882392,
+         "max_seconds_per_point": 0.1547784278754989,
+         "samples_seconds_per_point": [
+          0.15018230976602354,
+          0.14973477628882392,
+          0.1547784278754989
+         ]
+        }
+       }
+      }
+     ],
+     "gate": {
+      "status": "indicative: not gated (EW, m-sm/PLAN.md [U5]: the gate binds in M-FINAL)"
+     },
+     "batches": {
+      "128": {
+       "blocks": 3,
+       "points_per_block": 128,
+       "median_seconds_per_point": 0.15284918623547128,
+       "min_seconds_per_point": 0.15172337551484816,
+       "max_seconds_per_point": 0.15382748245247058,
+       "samples_seconds_per_point": [
+        0.15382748245247058,
+        0.15284918623547128,
+        0.15172337551484816
+       ],
+       "stages_per_point": {
+        "assembly": 0.002282605149957817,
+        "dressing": 0.07798368589843747,
+        "factors": 0.0016869167031249989,
+        "input conversion": 4.004149195679929e-05,
+        "native trees": 0.006658540296875,
+        "other": 0.013547704689848616,
+        "python point parameters": 4.575433558784425e-05,
+        "reduction": 0.04899582446875,
+        "reduction: masters": 0.015747516031250006,
+        "reduction: masters (oneloopmaster)": 0.004863478890624999,
+        "scatter": 0.0019058889140624996,
+        "seeds": 9.42281953125e-05
+       },
+       "counts_per_block": {
+        "binary64 lanes on the exact engine": 0,
+        "dressing work (modelled complex MAC per lane)": 782067344,
+        "factors": 16408,
+        "families": 12792,
+        "master evaluations": 210100,
+        "master requests": 5153152,
+        "points": 128,
+        "reduction lanes": 204672,
+        "split steps": 47824,
+        "steps": 93408,
+        "symmetric-group-fft seed jobs": 8,
+        "vertex tensors": 17088
+       },
+       "reals_per_lane": {
+        "chunk inputs (factors, vertex tensors, currents)": 136760,
+        "family numerators (one bucket chunk)": 44520,
+        "open objects (one family walk)": 131840
+       },
+       "throughput": {
+        "work_per_lane_per_chunk": 97758418.0,
+        "useful_cmac_per_point": 97758418.0,
+        "kernel_cmac_per_second": 1253575242.9978273,
+        "useful_cmac_per_second": 1253575242.9978273
+       },
+       "uncertainty": 0.006882951062562231,
+       "gate": {
+        "status": "indicative: not gated (EW, m-sm/PLAN.md [U5]: the gate binds in M-FINAL)"
+       }
+      }
+     },
+     "values_vs_providers": {
+      "openloops": {
+       "points": 16,
+       "max_born_deviation": 1.568812051767095e-14,
+       "max_finite_deviation": 1.7848332341339946e-09,
+       "median_finite_deviation": 6.153914661063093e-11,
+       "worst_point": 3
+      },
+      "madloop": {
+       "points": 16,
+       "max_born_deviation": 1.6605058890112753e-14,
+       "max_finite_deviation": 2.5964228698210107e-09,
+       "median_finite_deviation": 6.849002681664112e-10,
+       "worst_point": 5
+      }
+     }
+    }
+   }
+  }
+ ],
+ "recalibration": [
+  {
+   "process": "gg_ttxemepg_ew",
+   "configuration": "native/full",
+   "batch": 128,
+   "total": 0.15284918623547128,
+   "dressing": 0.07967060260156247,
+   "reduction": 0.04899582446875,
+   "masters": 0.015747516031250006,
+   "native_loop_rest": 0.0020001171093750117,
+   "outside_native_loop": 0.022182642055783797,
+   "outer_factor": 1.1879492554179936,
+   "kernel_cmac_per_second": 1253575242.9978273
+  }
+ ],
+ "estimates": [],
+ "date": "2026-10-31",
+ "slice_revision": "71e2041e",
+ "measured_revision": "71e2041e",
+ "native_build": "loop-native-v2-slice-71e2041e",
+ "slice_native_digest": "f8d77c97ebc8c6b845f043c2da3e3cf446a7558e7f85c80c35d267a15fbe5425",
+ "ew_model": "reference/models/loop_qcd_qed_sm_Gmu_py3"
+}

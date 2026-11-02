@@ -20,7 +20,8 @@ if [ ! -f "$work/points.json" ]; then
   "$python" "$here/exact_points.py" --process "$process" --output "$work/points.json"
 fi
 "$python" "$here/references.py" run --process "$process" --points "$work/points.json" \
-  --work-dir "$work" --provider "$provider" --mg5 "$root/sources/MG5_aMC_v3_7_0" \
+  --work-dir "$work" --provider "$provider" --reference-root "$root" \
+  --mg5 "$root/sources/MG5_aMC_v3_7_0" \
   --madloop-export "$work/madloop-export" \
   --recola "${LOOP_REFERENCE_RECOLA:-$root/sources/recola2-2.3.0}" \
   --openloops "${LOOP_REFERENCE_OPENLOOPS:-$root/sources/OpenLoops-2.1.5}" ${cpu:+--cpu "$cpu"}

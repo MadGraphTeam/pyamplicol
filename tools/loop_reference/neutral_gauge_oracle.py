@@ -18,11 +18,11 @@ from pathlib import Path
 
 from ct_tensor_oracle import aloha_vector_contraction, native_vector_contraction
 from four_gluon_oracle import color_oracle
+from model_compatibility import prepare_loop_sm_scalar_declarations
 from symbolica import E
 
 from pyamplicol.loops.compiler import prepare_loop_request_model
 from pyamplicol.loops.model import CovariantKernelCatalogue
-from pyamplicol.loops.model_compatibility import prepare_loop_sm_scalar_declarations
 from pyamplicol.models.loop_import import load_raw_loop_model
 
 

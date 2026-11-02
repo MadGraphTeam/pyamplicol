@@ -21,6 +21,13 @@ pyAmpliCol reads the exact rationals (``points``); the Fortran and C++
 provider drivers read decimal text, ``binary64`` (the shortest text of the
 correctly rounded double), as every binary64 caller does. ``write`` freezes
 the streams as ``streams/<key>.json``.
+
+Decays (1 -> n, the processes of ``tools/loop_reference/required_processes.json``
+with ``"initial": 1``, ``decay_keys``) take ``STREAM_LENGTH`` exact points in
+the decaying particle's rest frame (``tools/loop_reference/decay_points.py``,
+same cuts; mu_R = the decaying mass); the first ``CAMPAIGN_PREFIX`` printed to
+32 digits are the decay reference campaign's points
+(``tests/fixtures/loop/required/dec/<key>.json``).
 """
 
 from __future__ import annotations
@@ -37,6 +44,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 REFERENCE = ROOT / "tools" / "loop_reference"
 SPEC = HERE / "processes.json"
+DECAY_SPEC = REFERENCE / "required_processes.json"
 STREAMS = HERE / "streams"
 FIXTURES = ROOT / "tests" / "fixtures" / "loop" / "required"
 STREAM_LENGTH = 128
@@ -164,9 +172,78 @@ def _text(x: Fraction) -> str:
     return f"{x.numerator}/{x.denominator}"
 
 
+def decay_keys() -> list[str]:
+    """The decay processes (``"initial": 1``) of the reference specification."""
+
+    return [
+        p["name"]
+        for p in json.loads(DECAY_SPEC.read_text())["processes"]
+        if p.get("initial") == 1
+    ]
+
+
+def _resonances(process: dict[str, Any]) -> list[str]:
+    values = {
+        **process["scheme_data"]["parameters"],
+        **process["scheme_data"]["fixed_parameters"],
+    }
+    return [
+        values[name]
+        for name in ("MZ", "MW", "MH", "MT")
+        if name in values and Fraction(values[name])
+    ]
+
+
+def make_decay_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
+    """The frozen rest-frame stream of the decay ``key`` (module docstring)."""
+
+    _, required_spec = _toolkit()
+    import decay_points
+
+    process = required_spec.load_process(DECAY_SPEC, key)
+    masses = [Fraction(m) for m in required_spec.masses(process)]
+    resonances = _resonances(process)
+    points = decay_points.generate(masses, count, CUT, resonances, pdgs=process["pdgs"])
+    return {
+        "process_name": key,
+        "pdgs": process["pdgs"],
+        "initial": 1,
+        "masses": [_text(m) for m in masses],
+        "construction": "decay_points rest-frame construction (seed "
+        f"{decay_points.SEED}): exact rationals, the decaying particle at rest",
+        "cuts": {
+            "min_2pipj_over_M2": str(CUT),
+            "resonance_exclusion": "|s_ij-M^2| >= M^2/10 for final "
+            "particle-antiparticle pairs (1 -> 3 and beyond)",
+            "resonances": resonances,
+        },
+        "campaign_prefix": CAMPAIGN_PREFIX,
+        "points": [[[_text(x) for x in leg] for leg in point] for point in points],
+        "mu_r": [_text(masses[0])] * count,
+    }
+
+
+def decay_campaign_agreement(key: str, stream: dict[str, Any]) -> bool | None:
+    """Whether the decay campaign's points (``required/dec/<key>.json``) are
+    the stream's first points printed to 32 digits (None without a fixture)."""
+
+    fixture = FIXTURES / "dec" / f"{key}.json"
+    if not fixture.exists():
+        return None
+    _toolkit()
+    import decay_points
+
+    data = json.loads(fixture.read_text())
+    count = min(len(data["points"]), CAMPAIGN_PREFIX)
+    printed = [decay_points.decimal_point(exact(stream, i)) for i in range(count)]
+    return printed == data["points"][:count]
+
+
 def make_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
     """The frozen stream of ``key`` (module docstring)."""
 
+    if key in decay_keys():
+        return make_decay_stream(key, count)
     exact_points, required_spec = _toolkit()
     process = spec(key)
     masses = [Fraction(m) for m in required_spec.masses(process)]
@@ -233,6 +310,14 @@ def binary64(stream: dict[str, Any], count: int) -> list[list[list[str]]]:
     ]
 
 
+def fixture_name(key: str) -> str:
+    """The reference fixture of ``key`` (``tests/fixtures/loop/required``):
+    the specification's ``reference_fixture`` (e.g. NJet's
+    ``gg_ggggg_njet``), else the required fixture of the same name."""
+
+    return spec(key).get("reference_fixture", key)
+
+
 def campaign_agreement(key: str, stream: dict[str, Any]) -> bool | None:
     """Whether the stream starts with the committed fixture's points (None
     without a fixture)."""
@@ -252,7 +337,11 @@ def write(keys: list[str], count: int = STREAM_LENGTH) -> None:
     STREAMS.mkdir(exist_ok=True)
     for key in keys:
         stream = make_stream(key, count)
-        agreement = campaign_agreement(key, stream)
+        agreement = (
+            decay_campaign_agreement(key, stream)
+            if stream.get("initial") == 1
+            else campaign_agreement(key, stream)
+        )
         if agreement is False:
             raise AssertionError(f"{key}: the stream does not start with the campaign")
         path(key).write_text(json.dumps(stream, separators=(",", ":")) + "\n")

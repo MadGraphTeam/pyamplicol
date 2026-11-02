@@ -28,15 +28,8 @@ Its 102 real/complex off-shell polarization checks validate only the local
 Lorentz structures. Scalar CT normalization and physical process assembly need
 separate controls. The independent ALOHA comparison uses binary64.
 
-For an isolated top-pair external-field component report containing the
-reference `born` and `wf` Laurent columns, run:
-
-```bash
-python3 tools/loop_reference/wavefunction_oracle.py \
-  --ufo "$LOOP_REFERENCE_ROOT/sources/MG5_aMC_v3_7_0/models/loop_sm" \
-  --reference "$LOOP_REFERENCE_ROOT/runs/top-pair-component-control.json" \
-  --output "$LOOP_REFERENCE_ROOT/runs/top-pair-field-factor-oracle.json"
-```
+(The external-field component oracle `wavefunction_oracle.py` ran the legacy
+engine and was removed with it, MQ-LEGACY-REMOVE.)
 
 This derives the model's external-field factors, retains the two physical top
 legs, and evaluates their interference factors in one native batch. The Born
@@ -401,16 +394,10 @@ The remaining pure-gluon local source tensors can be checked with
 `gluon_vertex_oracle.py --ufo MODEL --madloop-build EXPORT --mg5-source MG5
 --build-dir WORKSPACE_BUILD --output REPORT`. This covers the off-shell derivative
 three-gluon tensor and ordinary/UV quartic bases with 1,672 ALOHA component
-comparisons and 34 exact MadGraph colour overlaps. The model preparation helper
-`loops.model_gluons.prepare_gluon_counterterm_basis` exposes exact ordinary basis
-representatives and the separately checked two-/four-point R2 primitives.
+comparisons and 34 exact MadGraph colour overlaps.
 
-`wavefunction_oracle.py` also accepts the gluon-scattering component fixture. It
-first proves that all four Born graphs receive identical source external-field
-factors, then compares their interference using reference Born values. The three
-heavy-quark groups and four external legs retain their source multiplicity;
-mass-zero branches are evaluated by the native conditional evaluator. This is
-an independent field-factor control, not a full amplitude calculation.
+The removed `wavefunction_oracle.py` (legacy engine) also accepted the
+gluon-scattering component fixture.
 
 ## Flavour-changing FFV and full-source mixed-order control
 
@@ -474,6 +461,7 @@ process listed in `required_processes.json`; nothing in it is process-specific.
 | `required_spec.py` | Loader (derives loop orders), external masses, averaging/symmetry metadata, universal double-pole factor. |
 | `exact_points.py` | Deterministic exact on-shell 2->n points with terminating decimals (massive pairs included); see its docstring for the construction and its representability limit. |
 | `madloop_export.py` | MG5_aMC standalone export (optimized output, external Ninja/Collier, split orders `QCD,QED`), built with MG5's production Fortran flags (Source libraries and `make OLP_static`; `--recompile` rebuilds an existing export); writes `<export>.generation.json` with graph counts, observed orders, `fortran_flags` and generation/export/compile times. |
+| `madloop_ct_parameters.py` | MadLoop's own counterterm-parameter values of a loop UFO at one card: MG5_aMC's Fortran model library as a MadLoop standalone output writes it (`UFO_model_to_mg4`, export format `madloop`, quadruple precision), for every coupling, compiled with the production flags and the quadruple-precision repairs of `references.py`; its own `setpara` reads the card, a driver prints every Laurent piece (`_2EPS_`, `_1EPS_`, `_FIN_`) bit-exactly in double and quadruple precision (JSON). Source of `tests/fixtures/loop/madloop-ct-parameters.json` (below). |
 | `madloop_driver.f90`, `recola_driver.f90`, `openloops_driver.cpp` | Generic native drivers (no Python per point): Born and Laurent coefficients selected by squared split order (MadLoop) or coupling power (Recola/OpenLoops). |
 | `references.py` | `run` one provider (builds its driver, sets matched parameters, pins one CPU, records times and the provider versions read from the trees/libraries actually used), `merge` the available providers into one JSON with all-pairs cross-checks, `summary` (Markdown table) and `watch` (periodic re-merge of long runs that exits once every expected run has finished, failed or died). |
 | `run_required.sh` | Convenience wrapper: points (if absent) + `run` + `merge` under `$LOOP_REFERENCE_ROOT/runs/required/<process>/`. |
@@ -502,6 +490,26 @@ for a long export with `--wait-for-export`; they fail as soon as no live
 `madloop_export.py` process for that export remains. A failed or interrupted provider is resumed by rerunning the same
 `run_required.sh` line; a MadLoop export is resumed by deleting the incomplete
 export directory and rerunning `madloop_export.py` (it refuses to overwrite).
+
+### Provider files come from the reference root
+
+Provider trees name absolute paths of the place they were built in: the
+RUNPATH of Recola's, COLLIER's and the Recola model's shared libraries, the
+HEPTools archives in a MadLoop export's `MadLoop_makefile_definitions`
+(`LOOP_LIBS`), OpenLoops' compiled-in `install_path` (where it loads
+`proclib/` from), NJet's `pkg-config` files and RUNPATHs. After the working
+root moved on 2026-10-24 every run read the old tree until the trees were
+relocated (package reference-relocate,
+`workspace/reports/engine-v2/reference-relocate/`: inventory, scripts, evidence).
+`references.py run` therefore refuses, before linking or loading anything, a
+MadLoop export, `LOOP_LIBS` archive, provider tree or (recursive) library
+RUNPATH entry outside `--reference-root` (default `$LOOP_REFERENCE_ROOT`;
+`run_required.sh` passes it) or the system prefixes (`provider_paths.py`; a
+path outside is judged by its text and never opened, symbolic links are
+followed one component at a time). Without a configured root it warns and
+does not check. OpenLoops runs with `OpenLoopsPath` set to the given tree, so
+its process libraries never come from a compiled-in path. The NJet runner
+checks its build the same way (the build directory and the reference root).
 
 ### Matched settings
 
@@ -692,6 +700,39 @@ the tree path.
   `exclusions.json` remains available for documented exclusions but none is
   in use.
 
+### MadLoop's counterterm-parameter values (`madloop_ct_parameters.py`)
+
+`tests/fixtures/loop/madloop-ct-parameters.json` holds every Laurent piece of
+every CT parameter MadLoop's model library writes for `loop_qcd_qed_sm_Gmu_py3`
+(143) and `loop_qcd_qed_sm` (139) at the oracle card of
+`tests/unit/test_loop_v2_ew.py` (the `gg_ttx_ew` card, the restricted models'
+other values), in double and quadruple precision; the v2 engine's CT values
+must equal them (`test_counterterm_scalars_equal_madloop`). Produced with
+
+```bash
+python tools/loop_reference/madloop_ct_parameters.py --mg5 <MG5_aMC_v3_7_0> \
+    --ufo <reference>/models/loop_qcd_qed_sm_Gmu_py3 --card card.json \
+    --output <new work directory> --json ml_gmu.json
+```
+
+(`card.json`: {UFO external parameter name: decimal string}; about 2 min,
+mostly compiling the couplings). The UFO is copied into the work directory and
+imported from there with MG5's default restriction, real-mass scheme and
+Feynman gauge, as `madloop_export.py` does; MG5's import writes `py.py` and
+`additional_command` into the current directory. Findings:
+
+* MG5's Fortran `REGLOG`, `REGLOGP`, `REGLOGM`, `REGSQRT` and `GRREGLOG` replace
+  a vanishing imaginary part of either sign by +0 before taking a branch: an
+  argument exactly on the negative real axis takes the side of a positive
+  imaginary part. At real masses that side changes HWcft_UV_EW by 80 % and
+  HMass2_UV_EW by 1.7 % against the -0 side.
+* The quadruple-precision lane reads the card through a binary64 buffer
+  (`MP_LHA_GET_REAL` in `lha_read.f`): its inputs are the card's decimals
+  rounded to binary64, so an exact-decimal comparison differs at 1e-15.
+* Cross-check: the 12 CT pieces of the `g g > t t~ [QCD QED]` G_mu standalone
+  export behind `required/gg_ttx_ew.json`, dumped from that export's own
+  `lib/libmodel.a` at its own param_card, are bit-identical in both precisions.
+
 ### Seven-leg QCD references
 
 `tests/fixtures/loop/required/uux_ggggg.json` is the merged reference of
@@ -705,6 +746,290 @@ MadLoop, Recola or OpenLoops `g g -> g g g g g` reference exists: its MadLoop
 (colour factors ~89 days by MG5's estimate) and Recola (> 57 h) runs were
 stopped and are not restarted (REQUIREMENTS_ADDENDUM F); NJet is its
 independent reference (below).
+
+## M-QCD reference campaign (`mqcd_campaign.py`)
+
+The MadLoop references of the M-QCD milestone
+(`workspace/reports/engine-v2/m-qcd/PLAN.md` §4, package MQ-REF). Nothing in
+the runner is process-specific: rows, runs, schemes and point families are
+data.
+
+| File | Role |
+|---|---|
+| `mqcd_campaign.json` (written by `make_mqcd_campaign.py`) | The 76 rows of §4.2 (class, process, restriction code and its pyAmpliCol route, reference kind E/N/R, tier, extras) and the 78 reference runs producing them (process key of `required_processes.json`, export, points family, per-helicity, second providers with their §4.1 trigger or 'diagnostic', MadLoop accuracy target, provider exclusions, per-point reference notes and `point_status`, including declared rule 1 outliers); per row the `helicity_reference` run. |
+| `mqcd_campaign.py` | `export`, `points`, `run` (MadLoop's quadruple-precision evaluation under `timeout 2700`, pinned; `split_points` runs one job per point, then `combine`), `merge` (passes the run's `point_status`), `fixture` (absolute paths rewritten to `${LOOP_REFERENCE_ROOT}` / `${REPOSITORY}`; refuses any `/shared`, `/home`, `/tmp` or non-compiler `/nix/store` path left), `relocate` (the same rewrite, by text, of committed fixtures outside the campaign; every value unchanged, checked leaf by leaf), `manifest`, `status`. Work directories `$LOOP_REFERENCE_ROOT/runs/mqcd/<run>/`. |
+| `supplied_points.py` | Points for every mass pattern `exact_points.py` cannot build (several massive subsystems, massive beams, irrational MW, light massive pairs above 800 GeV): 60-digit construction printed exactly on a 30-digit quantum (no 28-digit context rounding at print time), momentum conservation exact in the printed decimals and the recorded defects those of the printed values; configurations it cannot reach are refused before the search, and the search is bounded; families `regular`, `threshold`, `soft`, `collinear`, `radiation-zero`, `rest` (2->1); `--rotate x`, `--half-scale-point`, `--madloop-qp-point`. |
+| `tests/fixtures/loop/required/mqcd/<run>.json` | One merged reference per run (the `references.py merge` format plus `sectors`, `madloop_accuracy`, `per_helicity`, `restriction`, `parameter_overrides`, a per-row `reference` record, `tolerance_scope`, `mqcd_run`). |
+| `tests/fixtures/loop/required/mqcd_references.json` | The manifest MQ-VALIDATE consumes: per row the pyAmpliCol route (restriction, fixed parameters), each reference run (fixture, process, orders, points, MadLoop return code, evaluation precision and accuracy per point and loop squared split order, `binding_rows`, rule 1 `outliers`, notes, exclusions, second-provider trigger and outcome), the existing references (return codes, evaluation precision, `point_binding`: binding, or superseded by the run row that re-evaluates the same point in quadruple precision, with the deviation), `binding_references` (the one binding reference of every point) and `helicity_reference`; parameters, per-point `reference` records and per-helicity rows stay in the fixtures; `conventions` documents indexing, the records and that fixture tolerances are not M-QCD acceptance values. |
+
+Typical use:
+
+```bash
+source workspace/reference/env.sh
+export LOOP_REFERENCE_ROOT=workspace/reference LOOP_REFERENCE_PYTHON=python
+python tools/loop_reference/mqcd_campaign.py export uux_gg      # own exports only
+python tools/loop_reference/mqcd_campaign.py points uux_gg
+python tools/loop_reference/mqcd_campaign.py run uux_gg --cpu <cpu>
+python tools/loop_reference/mqcd_campaign.py merge uux_gg && \
+python tools/loop_reference/mqcd_campaign.py fixture uux_gg && \
+python tools/loop_reference/mqcd_campaign.py manifest
+```
+
+MadLoop evaluates every point in quadruple precision (fix round 2;
+`madloop_settings.evaluation` of `mqcd_campaign.json`): `references.py run
+--madloop-quadruple` compiles a copy of the export's `loop_matrix.f` whose
+double-precision acceptance test is bypassed (`force_quadruple_stage`), so
+every point goes on to MadLoop's own quadruple-precision stage, where its
+stability test (forced on every call, two propagator directions,
+`MLStabThres` 1e-13) accepts Ninja or else CutTools, exactly as for a point
+whose double-precision estimate failed; `--madloop-param
+HelicityFilterLevel=0` computes every helicity configuration; a run returning
+a double-precision point is refused (`--madloop-require-quadruple`), and every
+run starts without the helicity and loop filters an earlier run left in its
+directory. Why (§1.4 rule 1 compares double-double values with the reference
+at 1e-12 per coefficient):
+
+* MadLoop's accuracy (`ML5_0_COMPUTE_ACCURACY`) is ONE number per squared split
+  order, `sum_k |v_k(mode 1) - v_k(mode 2)| / (|sum_k v_k| / 3)` over the three
+  Laurent coefficients: not a per-coefficient accuracy. The batch-2 evaluation
+  (`MLStabThres` 1e-13, rescue only where that estimate failed) kept 209 of 303
+  points in binary64 with cancelling coefficients up to 4.3e-12 off (C02 point
+  0 finite 2.0e-12, D11 point 1 single pole 4.3e-12, A06 point 1 single pole
+  1.2e-12, at estimates of ~1e-14 or exactly 0, where no threshold forces the
+  quadruple-precision stage).
+* MadLoop's numerical helicity filter (`HelicityFilterLevel` 2, `ZeroThres`
+  1e-9) zeroes helicity configurations below 1e-9 of the average and folds
+  numerically equal ones: for the massive-b rows it dropped and folded
+  mass-suppressed configurations (C01 point 1: finite 3.2e-11, poles 4.8e-13
+  off, in both precisions; with `HelicityFilterLevel = 0` MadLoop = Recola to
+  1e-15).
+* A fixed `CTModeRun = 4` (Ninja in quadruple precision without fallback;
+  `--madloop-ctmode`, a diagnostic the merge refuses as a reference) is worse
+  where MadLoop's test rejects Ninja (g g > t t~ g points 0, 3: double pole
+  3.1e-11 off the universal relation, CutTools 1e-14; g g > u u~ u u~ points
+  0, 2, 3: 5.5e-12, CutTools 3.5e-13 .. 1.1e-12) although its `CTModeRun = 5`
+  twin agrees with it to 1e-13; `MLStabThres` 1e-20 rejects Ninja on a
+  one-ulp difference of its two directions. MadLoop's own selection at 1e-13
+  is kept.
+
+Three runs keep their batch-2 evaluation (`madloop_evaluation`, reason
+recorded): B05 and E06 (quadruple precision at every point already, 2.0-2.4
+CPU-hours each; their helicity filters contain no folded and no
+mass-suppressed entry) and the collinear limit points (a fixed quadruple
+precision returns NaN at the unstable theta = 1e-4, 1e-5 points). The
+re-evaluated runs keep the batch-2 values as the secondary run `mlstabthres`
+(`relative_deviation_from_reference_run` in the fixture). The E rows get
+`<key>_sectors` runs on their existing exports at the committed points plus a
+mu_R = mu_0/2 copy of point 1 (every squared split order, MadLoop's accuracy
+per sector), and every new row has three points plus that copy. Where such a
+run re-evaluates an existing reference's point (same exact point and mu_R) in
+MadLoop's quadruple-precision stage with an ok record, the run's row is the
+binding reference and the existing point is superseded (manifest
+`point_binding`, with its strict relative deviation; required/uux_uux.json
+point 1, a double-precision MadLoop value of batch 1 with accuracy 0.0, is
+1.2e-12 off in the single pole); the existing fixture's other providers stay
+the rule 1 (ii) values there.
+
+Reference outliers (rule 1 names them): declared per point in the run's
+`point_status` as `outlier` (rule, ruling, the state of conditions (i) and
+(ii), provider evidence), recorded as `reference.outlier` in the fixture and
+listed in the manifest's `outliers`. g g > u u~ u u~ (A18) points 0, 2, 3:
+MadLoop's quadruple-precision stage takes CutTools (return code 329, accuracy
+0.0) and misses the universal double pole by 3.5e-13 .. 1.1e-12; mq-validate's
+double-double differs from it by 3.5e-12 or more. Rule 1 (i) fails at all
+three points (an accuracy of 0.0 covers no nonzero difference, so every rule 1
+failure at a quadruple-precision point with accuracy 0.0 needs a ruling); (ii)
+holds at point 0 only (OpenLoops `ppjjjj` = DD to 5.5e-13; 1.2e-12 and 2.6e-12
+at points 2, 3). Recola, run as a third value, differs from both MadLoop and
+OpenLoops by 1.7e-12 .. 5.6e-11 at every point, point 1 included, where MadLoop
+(Ninja) and OpenLoops agree to 1e-12: its binary64 COLLIER values decide no
+point. The ruling on points 0, 2, 3 is the user's (via the coordinator). A
+point whose quadruple-precision stability test failed (return code 4xx) is
+refused by the merge unless declared (status `none` or an outlier). The
+integrity tests recompute `max_sector_double_pole_relative_error` from every
+sector's printed values and refuse an ok regular point (not a declared
+outlier) above max(10 x MadLoop's largest sector accuracy, 2e-13); at regular
+points the printed Born and the Born the double pole implies agree to
+<= 1.1e-13 over the campaign (u u~ > w+ w-, binary64 W momenta).
+
+Schemes added for the campaign (`required_processes.json`; every scheme names
+its MG5 `restriction`): `qcd-4fs` (loop_sm default restriction: MB = ymb = 4.7,
+MTA = 1.777, widths 0 = no_widths, four active flavours), `qcd-cmass`
+(`c_mass`: MC = 1.55, three active flavours), `qcd-ckm` (`zeromass_ckm`,
+Wolfenstein card values), `qcd-ckm4` (`ckm`, massive b), `qcd-lmass`
+(`lepton_masses`), `qcd-widths` (`no_b_mass` with WZ, WW, WH at the card
+values, WT = 0). External masses come from the scheme for c, b, t, e, mu, tau,
+Z, H and W (MW derived at tree level to 30 digits in `required_spec.derived_mw`,
+the value Recola, OpenLoops and the point construction share); Recola's charm,
+muon and electron masses and OpenLoops' `mass(4)`, `mass(11)`, `mass(13)` are
+the scheme's (C08/C09: MadLoop = Recola to 2.6e-13 / 2.6e-14 with MC = 1.55).
+
+MadLoop driver output (`madloop_driver.f90`): besides the requested sector
+(`ROW`), every point prints the complete `ANS(0:3,0:nanswer)` and MadLoop's
+accuracy `ACC(0:nloop)` of every loop squared split order (`SECTORS`; index
+table `LOOP_SO`). The Born split orders are read from the export's
+`born_matrix.f` DATA statement: MG5 3.7.0's
+`GET_SQUARED_ORDERS_FOR_SOINDEX` reads the common block `/SQPLITORDERS/`,
+which is never initialised (its DATA fills a local array `SQSPLITORDERS`), and
+returns zeros. Per-helicity mode (`references.py run --tag hel --helicities
+all|h1,h2,...;...`): one `HEL_ROW` per HelConfigs.dat tuple from
+`SLOOPMATRIXHEL_THRES`, in MadLoop's per-helicity normalisation (colour
+average and identical-particle factor, no helicity average; the sum over all
+configurations is HELAVGFACTOR (4 for two fermion or massless vector beams) times the summed value, checked by
+`tests/unit/test_loop_reference_mqcd.py`). Multiparticle requests
+(`"multiparticle": true`) export every subprocess; `--subprocess P*` and
+`--pdgs` run one `SubProcesses/P*` directory (M01: `P0_uux_ttx`, which MadLoop
+uses for u, c, d, s, b, and `P2_gg_ttx`).
+
+Limit points. MadLoop reads binary64 momenta: in double precision it evaluates
+the rounded point as it is, in quadruple precision the point its
+`ImprovePSPoint = 2` (ORIG) method projects on shell; its Born (`ANS(0)`) is
+always the double-precision value at the rounded point. At ill-conditioned
+points this input rounding, not MadLoop's reduction, limits the reference
+(collinear theta = 1e-3: MadLoop's double-precision Born differs from its
+quadruple-precision one by 1.6e-9). The limit-point runs (S1 threshold, S2
+soft/collinear, S3 radiation zero) therefore publish MadLoop's own
+quadruple-precision point (`supplied_points.py --madloop-qp-point`, the ORIG
+formulas replicated at 60 digits), evaluated like every run (quadruple
+precision; the collinear run of batch 2 requested 1e-20). At those (`madloop_qp_point`) points the
+merge makes the Born at the published point, MadLoop's quadruple-precision
+double pole over the universal factor, the reference `born` of the row and of
+its sectors (`reference.born_source`), keeping MadLoop's printed value as
+`born_madloop_binary64_input` / `born_binary64_input`. Findings: soft E/sqrt(s) = 1e-3, 1e-5: MadLoop =
+OpenLoops to 1.5e-14, 2.5e-13 (Recola's double-precision COLLIER is off by
+4.6e-9 and 6e-3 and is excluded); collinear theta = 1e-4 and 1e-5: MadLoop's
+quadruple-precision evaluation is unstable (return code 420, own accuracy
+1.3e-6 and 28; OneLOop "input does not seem to represent hard kinematics") and
+no provider agrees with another, so these points carry no provider reference
+(`point_status` / `reference.status` = `none`). The S3 Born-zero points compare
+absolutely (`reference.comparison` = `absolute`, scale = the Born at the
+regular neighbour row). Per-point reference record (`rows[i].reference`): `status` (`ok` / `none`),
+`outlier` (None or the declared rule 1 outlier), `comparison` (`relative` /
+`absolute` with `absolute_scale_row` and `absolute_scale`), `born_source`,
+`madloop_point` (published point, its binary64 rounding, or MadLoop's
+quadruple-precision repair of that rounding, ~1e-16 away),
+`born_double_pole_relative_mismatch` (MadLoop's printed Born against the Born
+its quadruple-precision double pole implies: at a regular point the printed
+Born's binary64 rounding, <= 1.1e-13; above that a loop defect of the
+reference, e.g. C01 point 1 of batch 2 at 4.8e-13 or the A18 outliers; at
+limit points the binary64 condition of the point, bounded per family by the
+integrity tests) and `max_sector_double_pole_relative_error`. Per-helicity
+runs (`per_helicity.rows[point][configuration].reference`; the manifest's
+`helicity_reference` names the row's run): at quadruple-precision entries the
+Born is the entry's double pole over the universal factor (the IR double pole
+is helicity-diagonal; the printed value is kept as `born_binary64_input`).
+Only a vanishing configuration (Born <= 1e-12 of the point's summed |Born|)
+compares absolutely against that sum (§1.4: absolute only for what vanishes
+identically); every other one is strictly relative. An entry whose
+quadruple-precision test failed (4xx) is no reference (status `none`), and so
+is, at points that are not MadLoop's own quadruple-precision points, one whose
+printed binary64 Born misses its quadruple-precision Born by more than 1e-13:
+its value then depends on MadLoop's ~1e-16 repair of the binary64 rounding of
+the point (g g > g g g's configurations suppressed to 1e-11 .. 1e-4 of the
+sum at the exact points of `gg_ggg`). The A08 per-helicity reference is
+therefore `gg_ggg_hel` at MadLoop's own quadruple-precision points
+(`--madloop-qp-point`), where every non-vanishing configuration, down to
+2.7e-9 of the sum, is a relative reference. The merge refuses a point whose
+MadLoop squared split orders violate the universal double pole beyond its
+tolerance unless `--point-status` declares it, and the MadLoop run refuses
+non-finite values anywhere in its output (sectors and helicities included).
+
+MG5_aMC 3.7.0 Born defect. `born_matrix.f`'s `JAMP(colour, amplitude split
+order)` is a local array that is never zeroed; a colour flow without an
+amplitude of some split order (u u~ > t t~ QCD<=2 QED<=2: the colour-singlet
+flow has no QED amplitude) keeps uninitialised stack memory, which entered
+MadLoop's Born sectors (G02 point 2: QED^4 Born 3.6e9 instead of 9.6e-3, Inf in
+other runs). `build_madloop` compiles a copy with `JAMP(:,:) = 0` into the run
+directory (`references.fix_unassigned_jamps`; only incomplete subroutines are
+touched, recorded as `mg5_born_matrix_repairs`); of the 93 Born matrix elements
+under `runs/` only that export needs it, and its loop sectors are unchanged.
+
+Light massive pairs (b, c, mu) cannot reach sqrt(s) >=
+800 GeV with terminating parameters: `exact_points.py` now refuses them
+instead of searching forever, and those rows use `supplied_points.py`.
+
+## M-SM reference campaign (`msm_campaign.json`)
+
+The MadLoop references of the M-SM milestone (`workspace/reports/engine-v2/m-sm/PLAN.md` §4, package MS-REF),
+driven by the M-QCD runner with the campaign's layout:
+
+```bash
+source workspace/reference/env.sh
+export LOOP_REFERENCE_ROOT=workspace/reference LOOP_REFERENCE_PYTHON=python
+C="python tools/loop_reference/mqcd_campaign.py --campaign tools/loop_reference/msm_campaign.json"
+$C export uux_emep_ew && $C points uux_emep_ew && $C run uux_emep_ew && $C merge uux_emep_ew && \
+$C fixture uux_emep_ew && $C manifest
+```
+
+| File | Role |
+|---|---|
+| `make_msm_campaign.py` -> `msm_campaign.json` | the 70 core rows of §4.2 (the decay rows wait for the user's Q3) and SC10 (z z > h h: the R2 vertices of the coupling R2_ZZHH, MS-UFODB) with their model codes (`restriction_codes`: G0, Ga, Gb, Gm, Gk, Gt, Gc, Gca, Lc, Az, L5) and 71 MadLoop runs; `layout` puts work directories under `runs/msm/`, fixtures under `tests/fixtures/loop/required/msm/` and the manifest at `required/msm_references.json` (`msm-references/1`) |
+| `required_processes.json` | new schemes `ew-gmu-a0`, `ew-gmu-cms`, `ew-gmu-a0-cms`, `qcd-cms`, `ew-gmu-ckm`, `ew-gmu-mm`, `ew-gmu-tech` and the `role: msm` processes (new keys only) |
+| `madloop_ct_couplings.py` | the UFO counterterm couplings behind an export's calls (`<export>.ct_couplings.json`; madloop_export.py writes it for new exports) |
+| `madloop_parameters.py` | model parameters of an export at a run's card per mu_R (`<work>/export_parameters.json`, copied into the fixture of a run listing `export_parameters`: CM09's complex photon conversion parameter) |
+| `madloop_components.py` | rule-5 components per loop sector (bare / R2 / UV-CT, via `madloop_ct_selection.py`, classified by the UFO couplings of the calls) on one row per class: `required/msm/components/<run>.json` |
+| `required/msm/existing_r2_couplings.json` | the UFO R2 couplings the exports of the existing EW references insert, written by `$C existing-r2` (`runs/required/<name>/madloop-export` of `required/<name>.json`, else the row's `existing_r2_exports`: the LL01/LL02/SC01/CM01 controls have `--no-compile` exports of their MadLoop commands, `runs/msm/*_ctl/`, whose attached CT vertices, UV CT and loop counts equal the legacy generation's); `without_r2_list` names the QCD-only fixtures; the manifest links each existing reference to its entries |
+
+Evaluation as M-QCD: every point in MadLoop's quadruple-precision stage, `HelicityFilterLevel = 0`, every
+squared split order printed. What M-SM adds:
+
+* **Joint requests.** A `[virt=QCD QED]` request over several loop sectors lists `corrections` (primary first);
+  `correction` stays the ROW sector. Each loop sector names its Born sector per correction (`born_sectors`), and
+  its universal double pole is the sum over corrections of factor x Born (`universal_double_pole_factors`; a mixed
+  sector of a mixed Born gets both). Explicit squared orders on every job (`QCD^2<=99 QED^2<=99`): without them
+  MG5 drops the highest-alpha sector of mixed-Born requests (u u~ > t t~, u u~ > d d~ g).
+* **CMS.** `complex_mass_scheme True` exports with the card widths of the default restriction; an external unstable
+  multiplet has width 0 per process (`parameter_overrides`); the merge's loop alpha is the complex-mass G_mu one
+  (`sqrt(2) Gf |mu_W^2 (1 - mu_W^2/mu_Z^2)| / pi`, GfRedefinitionChoice = 1); fixtures record `complex_mass_scheme`
+  and `scheme_conventions` (CMSParam, LogSwitch, GfRedefinitionChoice). MG5 3.7.0 refuses loop_sm under CMS
+  unless its electroweak inputs switch (`sminputs (2,) not define` whenever no W width is set at import, also on
+  the stock `no_widths` restriction), so `qcd-cms` uses `loop_sm-no_b_mass` with MG5's switch to (aEWM1, MZ, MW)
+  and MW = the tree-level value of the alpha_fixed scheme (identical couplings), WW = WZ = WH = 0 at run time.
+* **R2 name lists.** Every fixture records the UFO R2 couplings its export inserts (`madloop_r2_couplings.called`,
+  per subprocess directory), the input of the rule-1 R2 correction (MadLoop inserts an R2 coupling only for loops
+  whose propagators match its label: `R2_G0tt_b` is absent from every massless-b export of the unpatched models; the
+  patched ones split it by loop content and their exports call `R2_G0tt_b_WG`). The export's call names
+  do not give them: MG5 renames couplings with identical expressions at the UFO conversion and merges couplings of
+  equal value at the restriction point, up to a sign (`R2_uuA2Cp` is called as `R2_ccA2Cp`, `R2_GTT2Cpb` as
+  `R2_GCC2Cps`, the UV coupling `c_UVvexveA1EW_1eps` as `R2_AWWcs`). `madloop_ct_couplings.py` regenerates the
+  export's amplitudes with its own MG5 settings, records both renamings and the R2 vertices attached to the loops
+  (`<export>.ct_couplings.json`, checked against the export's sources); `called_as` lists the merged call names.
+* **Photons.** Processes with tagged photons record `tagged_photon_legs` (0-based legs of MG5's alpha(0) formula,
+  Q1 (a): final-state photons); MadLoop standalone converts none, so the values are raw.
+* **Multiparticle.** `p p > e- e+` / `p p > t t~` exports include MG5's photon-initiated members and a loop-squared
+  `g g > e- e+ [sqrvirt]` member, recorded as skipped (Q2 (a)); one run per Born subprocess directory.
+* **Special points.** `supplied_points.py --sqrt-s` (one point per listed sqrt(s), no resonance exclusion: CM02/CM03
+  at M_Z and M_W, VV01 at 4 TeV). The VV05 radiation-zero run evaluates one point per job: after MadLoop's
+  initialisation at a Born-zero point, the regular neighbour's QCD double pole missed the universal one by 2.9e-5 in
+  a three-point job (alone: 1e-15).
+* **Long one-point jobs.** CM07 (g g > t t~ e- e+ g under CMS) runs one job per point (`split_points`, ~27 min
+  each).
+* **IR single pole.** `test_loop_reference_msm.py` checks the single pole of every EW sector photon exchange alone
+  reaches (lowest QCD order of the Borns) against the QED IR anomalous dimension with massive legs (2e-8 (alpha/2pi)
+  Born). It caught SC02: MadLoop's quadruple-precision Ninja stage had the e^6 sector of u u~ > mu- mu+ (massive
+  muon, m^2/s ~ 1e-9) wrong at 3 of 4 points with its own test passed; the run uses CutTools
+  (`madloop_params: MLReductionLib = 1`, a run's own parameters over the campaign's). Model properties the check
+  records (the engine on the same UFO reproduces them; MS-VALIDATE's rule 4 sees them): `ew-gmu-mm` keeps the
+  massless muon's counterterms (`massless_field_counterterms`: +3/2 Q^2 (alpha/2pi) Born per muon leg, up to
+  O(m_mu^2/M_W^2)); `ew-gmu-ckm` keeps the tau-mass residual of the patched models (their EW counterterms omit
+  MTA; `ir_single_pole_remnant`); before the UFOmodeldb issue-1 patch its O(lambda^3) Wolfenstein CKM was not
+  unitary and the EW single pole missed by -2.1e-2, -8.1e-4, -5.0e-5 (alpha/2pi) Born at lamWS = 0.2253, 0.1, 0.05.
+* **Double-pole summary.** The merge now leaves absolutely compared rows out of
+  `maximum_universal_double_pole_relative_error` and lists them in `universal_double_pole_absolute_rows`; M-QCD
+  fixtures merged before (`mqcd/udx_wpa_zero.json` has absolute rows) keep the old maximum over all rows (no test
+  reads it; a re-merge would change only that field).
+* **ST04** commits ew-validate's workspace run `udx_tbx_ew_mb` as `required/udx_tbx_ew_mb.json`, re-merged with
+  Recola excluded (it differs by 9.48e-5 x Born: the G_mu UFO's CT couplings omit `dMB_eCoup_UV_EW`, the b-mass term
+  of the charge counterterm, a UFO defect found by MS-UFODB; MadLoop and pyAmpliCol read the UFO).
+* **Patched models (MS-UFO-PATCH).** Every EW scheme but the `ew-gmu-mg5` control reads
+  `models/ufodb-6ca4b120-patched/` (UFOmodeldb with the issue-1 model patch, README.txt there). The rows the patch
+  changes have new runs on it with Recola as second provider: LL10 `emep_ttxh_ew`, TT04 `ttx_ttx_ew`, SC09
+  `ttx_zh_ew`, ST04 `udx_tbx_ew_mb` (at the existing fixtures' points, which they supersede), TT05 `gt_tttx_ew`, TT06
+  `gb_ttxb_ew_mb`, SC04 `bbx_wpwm_ew_mb` (+ its e^6 control `bbx_wpwm_ew_mb_qed`, MadLoop and Recola) and SC03
+  `udx_epve_ew_ckm` (Recola's SM model has no CKM); MadLoop = Recola to <= 5.3e-11 on all of them. The runs of the
+  unpatched model that were regenerated in place are under `runs/msm-ufodb-6ca4b120/`. `ew-gmu-ckm`'s single-pole
+  remnant is now the tau-mass residual MTA^2/(2 sw^2 (s - MW^2)) (alpha/2pi) Born (`tau_mass_counterterms_omitted`,
+  checked exactly by `test_loop_reference_msm.py`).
 
 ## NJet: the all-gluon ladder up to g g -> g g g g g (`njet/`)
 
@@ -720,6 +1045,7 @@ compiled into the library.
 | `njet/build_njet.sh` | Release build of QD and NJet out of tree into a new build directory, with `--enable-5jet` (the 2->5 channels) and double-double (`--enable-f128`, NJet 3; NJet 2 always builds it with its bundled QD). It writes `build-info.txt` with the compiler, configure lines and the flags actually used. |
 | `njet/njet_driver.cpp` | Driver. `blha` mode goes through NJet's BLHA2 interface (`OLP_Start`/`OLP_EvalSubProcess2`, contract signed by the build's own `njet.py`). `direct` mode uses `NJetAccuracy` with the standard (`Amp0q<n-2>g`) or de-symmetrised (`..._ds<n-2>`) sum, with (`virt`, two evaluations) or without (`virt_single`, one evaluation) the scaling test, in `double` or `dd` (`dd_real`). It applies the BLHA normalisation of `njet_olp.cpp` verbatim and the same leg order and axis handling. |
 | `njet/run_njet.py` | `points` (exact points: `exact_points.generate` in pyAmpliCol's order, or a fixture's points); `run` (pinned CPU, result JSON with provenance); `openloops` (the matching OpenLoops 2 values with `nf` 6 (top loops, as the fixtures), 5 or 0); `compare`; `calibration`; `timing` (Markdown table). |
+| `njet/run_njet.py run --nc N` / `nc-entry` | MQ-NC's N_c oracle (`tests/fixtures/loop/nc/njet_nc_scan.json`): NJet at N_c = N (`NJetNc`). Direct mode (all-gluon channels) keeps the N_c = 3 colour average of its normalisation; `--mode blha --process '2 -2 -> 21 21 21'` (any massless QCD channel NJet's `njet.py` maps, legs in the points' order) writes `Extra NJetNc N` into the order file, so NJet divides by its colour average at N_c (N_c per quark, N_c^2-1 per gluon), and the result multiplies born and Laurent coefficients by avg(N_c)/avg(3) (`colour_average`, raw values under `njet`). `--multiprec 1 --precision 1e-30` re-evaluates every point in double-double. On g g > g g and g g > g g g the corrected BLHA values equal the direct double-double ones within 3.2e-15. `nc-entry` writes one fixture entry from runs at several N_c. |
 | `njet/njet_fixture.py` | `build` writes `tests/fixtures/loop/required/gg_ggggg_njet.json`; `compare` compares a pyAmpliCol record (`campaign.py` `virtual` or `loop_v2_generate.py poles` `bare`) with it. |
 
 Versions. NJet 3.1.2 (latest release, `njet-3.1.2.tar.gz`, sha256 `b1d49355...`)
@@ -798,8 +1124,10 @@ report is `workspace/reports/engine-v2/njet-benchmark.md`.
 
 ## Legacy-engine oracles for the v2 engine (WP0.1)
 
-`legacy_capture.py` freezes the legacy per-diagram engine before the v2 engine
-replaces it (oracles O1 and O2 of `docs/development/loop_v2/DESIGN.md` section
+The legacy per-diagram engine was removed (user ruling 2026-10-28, M-QCD Q3);
+its outputs are frozen. `legacy_capture.py` captured them before the v2 engine
+replaced it (its capture code is in the git history; the module keeps the
+control set and conventions the fixtures are read with) (oracles O1 and O2 of `docs/development/loop_v2/DESIGN.md` section
 14) for the control set gg->gg, uu~->dd~g, uu~->ggg, Drell-Yan (photon only),
 uu~->dd~, uu~->tt~, uu~->uu~ and uu~->uu~g, in binary64 and in 200-bit
 arbitrary precision:
@@ -811,16 +1139,25 @@ arbitrary precision:
 * `tests/fixtures/loop/legacy/<name>.families.json.gz` (O2): per denominator
   family (shifts as external-momentum combinations, squared masses, monomial
   powers) the Born-weighted numerator coefficients the legacy engine reduces,
-  at the first point.
+  at the first point;
+* `tests/fixtures/loop/legacy/<name>.<accuracy>.json` (projection only,
+  `--projection lc|nlc`, `PROJECTION_CONTROLS`): one colour projection of a
+  control whose full capture is out of reach, at its first point, with its
+  colour degrees. uu~->uu~uu~ (three identical-flavour lines) takes about
+  75 min and 22.5 GB per accuracy on one thread (program 3987 s, 200-bit
+  evaluation 543 s; 2026-10-27).
 
 It uses the generic source compiler on MG5_aMC `loop_sm` with `MB=0` (the
 providers' `loop_sm-no_b_mass` scheme), the points of the committed provider
 references, and stores the engine's own decimal strings, so a rerun reproduces
 the files byte for byte:
 
-```bash
-python tools/loop_reference/legacy_capture.py --ufo <MG5>/models/loop_sm [--process ...] [--check]
-```
+(The capture command, `legacy_capture.py --ufo <MG5>/models/loop_sm
+[--process ...] [--check]`, no longer exists: the engine it ran was removed.
+The last captures, for the former live comparisons of the v2 tests, are
+`tests/fixtures/loop/legacy/reduction/`, `ew_families_*.json.gz`,
+`gg_gg_non_default_parameters.json`, `gg_ttx_model_defaults.json` and
+`gg_gg_qcd_qed_sm.json`, each with a one-line provenance.)
 
 The fixtures were last regenerated for the coordinated re-pin (b5c5e83b; native
 b71edd24: NinjaRS aa6a6307, oneloopmaster 8ec256fc, Symbolica 9cdc2949).

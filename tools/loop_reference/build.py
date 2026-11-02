@@ -9,8 +9,8 @@ import subprocess
 from pathlib import Path
 
 
-def madloop_libraries(root):
-    """Use the export's actual static reducers, including optional Ninja/Collier."""
+def madloop_library_paths(root):
+    """The export's static reducer archives as named by ``LOOP_LIBS`` (not opened)."""
     definitions = root / "SubProcesses/MadLoop_makefile_definitions"
     rows = [
         line.split("=", 1)[1].strip()
@@ -23,7 +23,12 @@ def madloop_libraries(root):
     value = value.replace("$(libext)", "a")
     if "$" in value or value.endswith("\\"):
         raise ValueError("unsupported MadLoop static-library definition")
-    libraries = [Path(x) for x in shlex.split(value)]
+    return [Path(x) for x in shlex.split(value)]
+
+
+def madloop_libraries(root):
+    """Use the export's actual static reducers, including optional Ninja/Collier."""
+    libraries = madloop_library_paths(root)
     if not libraries or any(not x.is_file() for x in libraries):
         raise ValueError("MadLoop static reducer libraries are missing")
     return libraries
