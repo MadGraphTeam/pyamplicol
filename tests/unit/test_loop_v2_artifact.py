@@ -529,6 +529,7 @@ def test_slice_request_records_round_trip():
         particle_veto=(23,),
         allow_anomalous_veto=True,
         accuracy="strict-lc",
+        graded=True,
         colour_declaration=declaration,
         scale_parameter="MU_R",
         alpha_s_parameter="aS",
