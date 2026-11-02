@@ -829,8 +829,11 @@ class Run:
         wrap = self.timers.wrap
         slice_ = self.slice
         if slice_ is not None:
-            # A loaded process has no slice: its inputs are all native.
-            wrap(type(slice_.tree_rows), "evaluate", "python trees")
+            # A loaded process has no slice: its inputs are all native. The
+            # class, not ``slice_.tree_rows``, which would build the Python
+            # tree runtime from the blocks DAG (0.5 GiB at g g > 5g LC, held
+            # through the store; M-FINAL mf-8g-1).
+            wrap(assemble.TreeRows, "evaluate", "python trees")
             wrap(assemble.LoopSlice, "scalars", "python scalars")
             if slice_.counterterm_program is not None:
                 wrap(
