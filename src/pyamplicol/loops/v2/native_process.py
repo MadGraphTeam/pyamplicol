@@ -230,6 +230,9 @@ class NativeProcess:
             ],
             "average": int(slice_.normalisation.average),
             "accuracy": request.accuracy,
+            # Graded colour (recorded only when set: other records keep
+            # their bytes).
+            **({"graded": True} if request.graded else {}),
             "colour_contraction": request.colour_contraction,
             # Every parameter fixed at generation (the request's and those
             # the model preparation fixes): refused at another value and
@@ -406,8 +409,15 @@ class _ProcessView:
         )
         # The last caller mapping checked and its values (one per batch).
         self._checked: tuple[Any, dict[str, str]] | None = None
+        from .colour import FORMAL_FULL
+
+        graded = bool(record.get("graded", False))
         self.request = SimpleNamespace(
             accuracy=record["accuracy"],
+            graded=graded,
+            projection=FORMAL_FULL
+            if graded and record["accuracy"] == "full"
+            else record["accuracy"],
             colour_contraction=record["colour_contraction"],
             fixed_parameters=dict(record["fixed_parameters"]),
         )

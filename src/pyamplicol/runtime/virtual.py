@@ -23,6 +23,7 @@ from pyamplicol.api.protocols import ModelParameters, Momenta, ScalarInput
 from pyamplicol.api.virtual_results import (
     POLE_COMPONENTS,
     POLE_ORIGINS,
+    GradedVirtualEvaluation,
     LaurentCoefficients,
     ResolvedVirtualEvaluation,
     VirtualEvaluation,
@@ -436,9 +437,11 @@ class V2ObservablesRuntime:
 
     def _native_columns(self, key: tuple[Any, ...]) -> Any:
         """The native executor of one output column set (built once):
-        ``("correlated", histories)``, ``("resolved", resolution)`` or
-        ``("selection", column)`` (a leading-colour selection, kept while it
-        is among the most recently used, ``selection.SelectionCache``)."""
+        ``("correlated", histories)``, ``("resolved", resolution)``,
+        ``("graded", histories)``, ``("graded-resolved", None)`` (graded
+        colour, per N_c degree) or ``("selection", column)`` (a
+        leading-colour selection, kept while it is among the most recently
+        used, ``selection.SelectionCache``)."""
 
         from pyamplicol.loops.v2 import selection as lc
         from pyamplicol.loops.v2.observables import NativeObservables
@@ -459,6 +462,10 @@ class V2ObservablesRuntime:
                     return found
                 if kind == "correlated":
                     found = NativeObservables.correlated(
+                        self._observables, value, **options
+                    )
+                elif kind in ("graded", "graded-resolved"):
+                    found = NativeObservables.graded(
                         self._observables, value, **options
                     )
                 else:
@@ -1021,6 +1028,90 @@ class V2ObservablesRuntime:
                 )
         return {label: out[label] for label in requests}
 
+    def evaluate_graded(
+        self,
+        momenta: Momenta,
+        *,
+        color_correlation: str = "born",
+        mu_r2: ScalarInput | Sequence[ScalarInput] | None = None,
+        precision: int | None = None,
+        arithmetic: str | None = None,
+        on_failure: Literal["raise", "return"] = "raise",
+        **options: Any,
+    ) -> GradedVirtualEvaluation:
+        """Graded colour: the evaluation of ``color_correlation`` (the Born
+        colour metric ``"born"``, i.e. the ordinary virtual, by default)
+        split by power of N_c, one ``VirtualEvaluation`` per degree
+        (``ObservableSlice.graded_columns``; one dressing and reduction per
+        degree). For artifacts generated with ``color.graded``."""
+
+        from pyamplicol.loops.v2.observables import graded_key
+
+        selection, checks = v2_options(on_failure=on_failure, **options)
+        observables = self._observables
+        if not getattr(observables.slice.request, "graded", False):
+            raise CompatibilityError(
+                "graded output needs an artifact generated with color.graded "
+                "(at color.accuracy='strict-lc', 'strict-nlc' or 'full')"
+            )
+        known = {item.id for item in self.available_color_correlations()}
+        if color_correlation != "born" and color_correlation not in known:
+            raise CompatibilityError(
+                f"undeclared virtual colour correlation {color_correlation!r}"
+            )
+        arithmetic, carrier = self._precision(arithmetic, precision)
+        points, scales = _inputs(momenta, mu_r2, self.external_count)
+        with self._lock:
+            parameters = dict(self._parameters)
+        settings = {
+            "parameters": parameters,
+            "precision": carrier,
+            "poles": selection.value,
+            "stability": checks.to_checks() if checks.enabled else None,
+        }
+        history = observables.history(color_correlation)
+        degrees = observables.graded_degrees(
+            None if color_correlation == "born" else history
+        )
+        runner: Any = self._runner() if self._executor != "native" else None
+
+        def python(point: Any, scale: Any, _spin: Any) -> Any:
+            found = runner.evaluate_graded(
+                point, scale, correlations=(color_correlation,), **settings
+            )
+            return {graded_key(*key): value for key, value in found.items()}
+
+        per_point, failures = self._run(
+            ("graded", (color_correlation,)),
+            python,
+            points,
+            scales,
+            [None] * len(points),
+            settings,
+        )
+        self._failed(failures, on_failure)
+        correlated = color_correlation != "born"
+        return GradedVirtualEvaluation(
+            degrees=degrees,
+            by_degree=tuple(
+                self._evaluation(
+                    [
+                        None
+                        if results is None
+                        else results[graded_key(color_correlation, degree)]
+                        for results in per_point
+                    ],
+                    failures,
+                    arithmetic,
+                    carrier,
+                    correlated,
+                    selection,
+                    checks,
+                )
+                for degree in degrees
+            ),
+        )
+
     def evaluate_resolved(
         self,
         momenta: Momenta,
@@ -1051,13 +1142,23 @@ class V2ObservablesRuntime:
             # The member's rows in its own catalogue order.
             rows = tuple(sorted(self._member.row(row) for row in rows))
         accuracy = observables.slice.request.accuracy
+        graded = bool(getattr(observables.slice.request, "graded", False))
         # Formal leading colour resolves per Born basis element (its seeds are
         # diagonal in the flows); every other accuracy is one contraction.
+        # Graded colour resolves per N_c degree (its colour axis, as for
+        # graded trees).
         resolution = "helicity-colour" if accuracy == "strict-lc" else "helicity"
         components: tuple[Any, ...] = (
             observables.components if accuracy == "strict-lc" else (None,)
         )
+        if graded:
+            components = observables.degree_axis()
         helicity_ids = tuple(f"h{i}" for i in range(len(rows)))
+        if graded and (helicities or color_flows):
+            raise CompatibilityError(
+                "helicity and colour-flow selections are not combined with "
+                "graded colour output"
+            )
         if helicities or color_flows:
             lc.require_leading_colour(accuracy, helicities, color_flows, resolved=True)
             self._refuse_member_selection()
@@ -1079,18 +1180,33 @@ class V2ObservablesRuntime:
         runner: Any = self._runner() if self._executor != "native" else None
 
         def python(point: Any, scale: Any, _spin: Any) -> Any:
+            if graded:
+                return runner.evaluate_resolved_graded(point, scale, **settings).entries
             return runner.evaluate_resolved(
                 point, scale, resolution=resolution, **settings
             ).entries
 
         entries, failures = self._run(
-            ("resolved", resolution),
+            ("graded-resolved", None) if graded else ("resolved", resolution),
             python,
             points,
             scales,
             [None] * len(points),
             settings,
         )
+        if graded:
+            # Native results are keyed by their columns (``graded_key``).
+            from pyamplicol.loops.v2.observables import is_graded_key
+
+            entries = [
+                None
+                if result is None
+                else {
+                    ((key[1][0], key[2]) if is_graded_key(key) else key): value
+                    for key, value in result.items()
+                }
+                for result in entries
+            ]
         self._failed(failures, on_failure)
         born_orders = self._default_born_orders()
 
@@ -1190,11 +1306,14 @@ class V2ObservablesRuntime:
                         )
                     )
                 )
-        ids = (
-            tuple(f"basis-{b}" for b in components)
-            if accuracy == "strict-lc"
-            else (str(accuracy),)
-        )
+        if graded:
+            from pyamplicol.color.nc_expansion import nc_degree_color_id
+
+            ids = tuple(nc_degree_color_id(degree) for degree in components)
+        elif accuracy == "strict-lc":
+            ids = tuple(f"basis-{b}" for b in components)
+        else:
+            ids = (str(accuracy),)
         return ResolvedVirtualEvaluation(
             born_values=tuple(born_values),
             values=tuple(values),

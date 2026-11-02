@@ -1127,6 +1127,52 @@ class VirtualEvaluation:
 
 
 @dataclass(frozen=True, slots=True)
+class GradedVirtualEvaluation:
+    """A one-loop evaluation split by power of N_c (graded colour).
+
+    For an artifact generated with ``color.graded`` at ``strict-lc``,
+    ``strict-nlc`` or full colour, ``by_degree[k]`` is the
+    :class:`VirtualEvaluation` of the N_c^``degrees[k]`` term of the formal
+    1/N_c expansion at N_c = 3: its Born per squared Born order and its
+    virtual (bare loop, UV, R2 and field terms) per squared-order sector.
+    ``degrees`` decrease; they are those the projection keeps (P, and P-1,
+    P-2 at NLC, per output; every degree at full colour) and occur in some
+    output. The degrees of a point sum to the ungraded evaluation of the same
+    artifact (``evaluate``) up to rounding. ``color_ids`` name them as the
+    resolved colour axis does (``color:nc-degree:<d>``).
+    """
+
+    degrees: tuple[int, ...]
+    by_degree: tuple[VirtualEvaluation, ...]
+
+    def __post_init__(self) -> None:
+        degrees = tuple(int(degree) for degree in self.degrees)
+        if not degrees or list(degrees) != sorted(set(degrees), reverse=True):
+            raise ValueError("N_c degrees must be unique and decreasing")
+        by_degree = tuple(self.by_degree)
+        if len(by_degree) != len(degrees) or not all(
+            isinstance(item, VirtualEvaluation) for item in by_degree
+        ):
+            raise ValueError("one VirtualEvaluation per N_c degree")
+        object.__setattr__(self, "degrees", degrees)
+        object.__setattr__(self, "by_degree", by_degree)
+
+    @property
+    def color_ids(self) -> tuple[str, ...]:
+        from pyamplicol.color.nc_expansion import nc_degree_color_id
+
+        return tuple(nc_degree_color_id(degree) for degree in self.degrees)
+
+    def for_degree(self, degree: int) -> VirtualEvaluation:
+        """The evaluation of one N_c degree."""
+
+        try:
+            return self.by_degree[self.degrees.index(int(degree))]
+        except ValueError:
+            raise ValueError(f"N_c degree {degree} is not reported") from None
+
+
+@dataclass(frozen=True, slots=True)
 class ResolvedVirtualEvaluation:
     """Interference [point, order, helicity, virtual colour component, epsilon].
 

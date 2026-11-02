@@ -176,9 +176,25 @@ colour cells of the virtual (`loops/v2/colour.py`, "Projection"):
 Both need a colour declaration of the model's counterterms (shipped for
 `loop_sm`). The leading-colour selections, the Born-anchored resolution per
 leading-colour flow and the face-rule shortcuts belong to `strict-lc`, the
-only accuracy whose seeds are diagonal in the colour flows. A one-loop
-artifact reports one contracted value; `color.graded` is not implemented for
-one-loop requests.
+only accuracy whose seeds are diagonal in the colour flows.
+
+A one-loop artifact reports one contracted value unless it is generated with
+`color.graded = true` (at `strict-lc`, `strict-nlc` or `full`; the inherited
+`lc`/`nlc` have no degrees). Graded colour then also reports every output
+split by power of N_c, as graded trees do: the Born per squared Born order
+and the virtual (bare loop, UV, R2 and external-field terms) per
+squared-order sector, one value per N_c degree `d`, each the `c_d 3^d` term of
+the formal expansion. The degrees are those the accuracy keeps (`P`; `P`,
+`P-1` and `P-2`; every degree of graded full colour, which is the formal
+expansion with nothing truncated) that occur in some output, and the degrees
+of an output sum to its contracted value. Declared colour correlations are
+split the same way, at the degrees of their own complete family. Each degree
+is one more seed column, so it costs one dressing and reduction of the
+virtual: graded output is opt-in for one-loop requests (strict trees are
+always graded). Public calls: `Runtime.evaluate_graded` (one
+`VirtualEvaluation` per degree, of the virtual or of a declared colour
+correlation) and `evaluate_resolved`, whose colour axis is then the degrees
+(`color:nc-degree:<d>`).
 
 ## Colour charges, indices, and crossing
 

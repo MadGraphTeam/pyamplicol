@@ -988,6 +988,9 @@ struct CellsFile {
 /// One interference program of the columns: its entries (kind, bra Born
 /// order, vector or Born order, coupling slot, N_c grade, output, degree),
 /// the epsilon power of each output and the number of Born outputs.
+/// `exact`: the program of an output of graded colour, whose entries each
+/// keep the one N_c power of their degree (projection depth 0); otherwise
+/// the counterterm layout's depth applies.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ColumnProgramFile {
@@ -995,6 +998,8 @@ struct ColumnProgramFile {
     entries: Vec<(String, usize, usize, Option<usize>, i32, usize, Option<i32>)>,
     outputs: Vec<i32>,
     born_outputs: usize,
+    #[serde(default)]
+    exact: bool,
 }
 
 /// One column: its program, its direct and (directed histories) swapped
@@ -2733,7 +2738,7 @@ impl TreeProgram {
                 load_entries(&record.entries)?,
                 record.outputs.clone(),
                 ct.couplings,
-                layout.depth,
+                if record.exact { Some(0) } else { layout.depth },
             )?);
             index.insert((program, cells), programs.len() - 1);
             Ok(programs.len() - 1)

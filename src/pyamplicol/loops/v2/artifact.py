@@ -1464,6 +1464,9 @@ class V2VirtualRuntime:
             self._metadata["color_accuracy"],
         )
         member = self._group_member
+        # Graded colour: one contracted component per N_c degree (the
+        # resolved axis, ``V2ObservablesRuntime.evaluate_resolved``).
+        graded = bool(self._native_process.record.get("graded"))
         # A mapped process's resolved components are the stored basis
         # elements; it is anchored to the stored flows read on its own legs.
         anchors = (
@@ -1478,7 +1481,7 @@ class V2VirtualRuntime:
                 for index, flow in enumerate(self._public_flows())
                 if flow.basis is not None
             )
-            if accuracy == "strict-lc"
+            if accuracy == "strict-lc" and not graded
             else ()
         )
         kind = "born-anchored-interference" if anchors else "contracted-color"
@@ -1519,7 +1522,9 @@ class V2VirtualRuntime:
                 for i, h in enumerate(self._helicity_rows())
             ),
             color_flows=(),
-            contracted_color_components=()
+            contracted_color_components=self._graded_components()
+            if graded
+            else ()
             if anchors
             else (
                 ContractedColorComponent(
@@ -1538,6 +1543,26 @@ class V2VirtualRuntime:
             selector_capabilities=("helicity", "color_flow")
             if anchors and member is None
             else (),
+        )
+
+    def _graded_components(self) -> tuple[ContractedColorComponent, ...]:
+        """One contracted component per N_c degree of a graded process
+        (``native_observables.stored_degrees``)."""
+
+        from pyamplicol.color.nc_expansion import nc_degree_color_id
+
+        from .native_observables import stored_degrees
+
+        return tuple(
+            ContractedColorComponent(
+                nc_degree_color_id(degree),
+                index,
+                f"N_c^{degree} term of the formal 1/N_c expansion at N_c = 3",
+                nc_degree=degree,
+            )
+            for index, degree in enumerate(
+                stored_degrees(self._native_process.observables)
+            )
         )
 
     def _helicity_rows(self) -> list[tuple[int, ...]]:
@@ -2050,6 +2075,22 @@ class V2VirtualRuntime:
         NLC and full colour (design §8.5)."""
 
         return self._observable_runtime().evaluate_resolved(
+            momenta, **self._observable_options(precision, arithmetic, options)
+        )
+
+    def evaluate_graded(
+        self,
+        momenta: Momenta,
+        *,
+        precision: int | None = None,
+        arithmetic: str | None = None,
+        **options: Any,
+    ) -> Any:
+        """Graded colour: the virtual (or ``color_correlation``) split by
+        power of N_c (``GradedVirtualEvaluation``), for artifacts generated
+        with ``color.graded``."""
+
+        return self._observable_runtime().evaluate_graded(
             momenta, **self._observable_options(precision, arithmetic, options)
         )
 

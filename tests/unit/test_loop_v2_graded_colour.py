@@ -79,13 +79,13 @@ def _point(name: str):
 
 def _flat(result) -> dict:
     """Born per squared order and every component's Laurent coefficients per
-    sector, as complex numbers."""
+    sector, in the evaluation's carrier."""
 
-    out = {("born", order): complex(value) for order, value in result.born.items()}
+    out = {("born", order): value for order, value in result.born.items()}
     for name, sectors in result.components.items():
         for sector, laurent in sectors.items():
             for power, value in enumerate(laurent.coefficients):
-                out[name, sector, power] = complex(value)
+                out[name, sector, power] = value
     return out
 
 
@@ -129,3 +129,163 @@ def test_degrees_sum_to_the_contracted_value(built, process, qcd, fixture, accur
     print(f"{process} {accuracy}: degrees {degrees}, worst {worst:.2e}")
     assert not extra
     assert worst <= TOLERANCE
+
+
+@pytest.mark.parametrize(
+    ("process", "qcd", "fixture", "accuracy"),
+    [
+        ("g g > g g", 2, "gg_gg", "strict-nlc"),
+        ("u u~ > d d~ g", 3, "uux_ddxg", "full"),
+    ],
+)
+def test_native_degrees_equal_the_reference(built, process, qcd, fixture, accuracy):
+    """The native executor's graded columns (seed records projected
+    natively per degree) equal the Python reference path's, in binary64 and
+    at 40 digits."""
+
+    from pyamplicol.loops.v2.assemble import Precision
+    from pyamplicol.loops.v2.observables import NativeObservables
+
+    point, scale = _point(fixture)
+    observables = built(process, qcd, accuracy, True)
+    columns = observables.graded_columns()
+    native = NativeObservables(observables, columns)
+    for precision, tolerance in (
+        (Precision.double(), 1e-11),
+        (Precision.arbitrary(40), 1e-30),
+    ):
+        reference = observables.evaluate_graded(
+            point, scale, parameters=PARAMETERS, precision=precision
+        )
+        (found,) = native.evaluate(
+            [point], [scale], parameters=PARAMETERS, precision=precision
+        )
+        assert len(found) == len(reference)
+        worst = 0.0
+        for column in columns:
+            mine = _flat(found[column.key])
+            theirs = _flat(reference[column.key[1], column.key[2]])
+            size = max(abs(value) for value in theirs.values()) or 1.0
+            for key, value in theirs.items():
+                worst = max(worst, abs(mine.get(key, 0) - value) / size)
+        print(f"{process} {accuracy} {precision}: worst {worst:.2e}")
+        assert worst <= tolerance
+
+
+SCHEME = """
+[loop.model]
+loop_coupling_orders = ["QCD"]
+uv_complete = true
+model_r2_complete = true
+[loop.model.scheme]
+dimensional_regularization = "HV"
+external_states = "physical-four-dimensional"
+gamma5 = "source-UFO-four-dimensional-prescription"
+renormalization = "source-UFO mass-dependent decoupling"
+mass_scheme = "real-on-shell"
+finite_restoration = "source-UFO-local-rules"
+model_convention = "loop_sm lhv=1 supplied QCD rules"
+"""
+
+
+def _card(model, output, expression: str, accuracy: str, graded: bool) -> str:
+    return f"""
+action = "generate"
+[model]
+source = {json.dumps(str(model))}
+[process]
+entries = [{{expression={json.dumps(expression)}, name="p"}}]
+loop_coupling_orders = ["QCD"]
+coupling_order_policy = "minimal"
+[color]
+accuracy = {json.dumps(accuracy)}
+contraction = "direct"
+graded = {"true" if graded else "false"}
+[loop]
+r2_strategy = "model"
+[loop.preparation]
+fixed_parameters = {{MB = "0"}}
+{SCHEME}
+[generation]
+output = {json.dumps(str(output))}
+emit_api_bundle = false
+[generation.validation]
+post_build_validation = false
+samples = 1
+"""
+
+
+@pytest.fixture(scope="module")
+def artifact(loop_sm_compiled_model, loop_native, tmp_path_factory):
+    """``(expression, accuracy, graded) -> Runtime`` of an artifact generated
+    through the public API."""
+
+    from pyamplicol.api import Generator, ProcessRequest, ProcessSet, Runtime
+    from pyamplicol.config import resolve_config
+
+    cache = {}
+
+    def get(expression: str, accuracy: str, graded: bool):
+        key = (expression, accuracy, graded)
+        if key not in cache:
+            root = tmp_path_factory.mktemp("graded-artifact")
+            output = root / "artifact"
+            card = root / "card.toml"
+            card.write_text(
+                _card(loop_sm_compiled_model, output, expression, accuracy, graded)
+            )
+            Generator(resolve_config(card)).generate(
+                ProcessSet((ProcessRequest.parse(expression, name="p"),)), output
+            )
+            cache[key] = Runtime.load(output)
+        return cache[key]
+
+    return get
+
+
+def _real(value) -> float:
+    """The real part of a public virtual scalar (float, complex or Decimal)."""
+
+    return float(value.real) if isinstance(value, complex) else float(value)
+
+
+@pytest.mark.parametrize("accuracy", ["strict-nlc", "full"])
+def test_public_graded_virtual_sums_to_the_evaluation(artifact, accuracy):
+    """``Runtime.evaluate_graded`` of a graded one-loop artifact: one
+    evaluation per N_c degree (the physics metadata's contracted components),
+    summing to ``evaluate`` of the same artifact; ``evaluate_resolved`` has the
+    degrees as its colour axis and the same per-degree values summed over
+    helicities."""
+
+    from pyamplicol.api.virtual_results import GradedVirtualEvaluation
+
+    point, scale = _point("gg_gg")
+    momenta = (tuple(tuple(float(x) for x in p) for p in point),)
+    runtime = artifact("g g > g g", accuracy, True)
+    physics = runtime.physics
+    degrees = tuple(item.nc_degree for item in physics.contracted_color_components)
+    assert degrees and all(degree is not None for degree in degrees)
+    graded = runtime.evaluate_graded(momenta, mu_r2=float(scale))
+    assert isinstance(graded, GradedVirtualEvaluation)
+    assert graded.degrees == degrees
+    assert graded.color_ids == tuple(
+        item.id for item in physics.contracted_color_components
+    )
+    total = runtime.evaluate(momenta, mu_r2=float(scale))
+    resolved = runtime.evaluate_resolved(momenta, mu_r2=float(scale))
+    assert resolved.virtual_color_ids == graded.color_ids
+    (sector,) = range(len(total.sectors))
+    for epsilon in range(3):
+        expected = _real(total.values[0][sector][epsilon])
+        summed = sum(
+            _real(item.values[0][sector][epsilon]) for item in graded.by_degree
+        )
+        assert abs(summed - expected) <= 1e-11 * max(abs(expected), 1.0)
+        for k, item in enumerate(graded.by_degree):
+            per_helicity = sum(
+                _real(row[k][epsilon]) for row in resolved.values[0][sector]
+            )
+            value = _real(item.values[0][sector][epsilon])
+            assert abs(per_helicity - value) <= 1e-11 * max(abs(expected), 1.0)
+    born = sum(_real(item.born_values[0][0]) for item in graded.by_degree)
+    assert abs(born - _real(total.born_values[0][0])) <= 1e-12 * abs(born)

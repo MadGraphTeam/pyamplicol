@@ -209,7 +209,7 @@ accuracy = "lc"                 # lc, nlc, full, strict-lc or strict-nlc;
 contraction = "auto"            # auto, direct, or symmetric-group-fft
 fft_basis = "adjoint"           # trace or adjoint; used by FFT contraction
 lc_flow_layout = "topology-replay"
-graded = false                  # split trees by power of N_c
+graded = false                  # split by power of N_c (trees and one loop)
 ```
 
 | Accuracy | Resolved color output |
@@ -236,7 +236,11 @@ Strict tree artifacts report their value split by N_c degree (graded output:
 `Runtime.evaluate_graded`, the contracted colour axis of `evaluate_resolved`,
 and `NativeRuntime::evaluate_graded_f64` and
 `evaluate_graded_with_precision` in Rust). `graded = true` gives the same
-split of full colour, every degree. Graded tree output is implemented in the
+split of full colour, every degree. One-loop artifacts are split only with
+`graded = true` (at `strict-lc`, `strict-nlc` or `full`; each degree costs one
+more dressing and reduction): `Runtime.evaluate_graded` returns one virtual
+evaluation per N_c degree, and `evaluate_resolved` reports the degrees as its
+colour axis. Graded tree output is implemented in the
 compiled lane (strict and graded requests select `execution_mode = "compiled"`
 under `auto`; other explicit modes are refused) with the direct contraction
 and the complete colour basis (no `process.max_color_sectors`,

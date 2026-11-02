@@ -78,6 +78,7 @@ if TYPE_CHECKING:
         load,
     )
     from .virtual_results import (
+        GradedVirtualEvaluation,
         LaurentCoefficients,
         ResolvedVirtualEvaluation,
         VirtualArithmeticSpec,
@@ -126,6 +127,7 @@ __all__ = [
     "Generator",
     "GeneratorBackend",
     "GeneratorFactory",
+    "GradedVirtualEvaluation",
     "HelicityConfiguration",
     "LaurentCoefficients",
     "ModelCompilationIssue",
@@ -244,6 +246,7 @@ _SERVICE_EXPORTS = (
     "load",
 )
 _VIRTUAL_RESULT_EXPORTS = (
+    "GradedVirtualEvaluation",
     "LaurentCoefficients",
     "ResolvedVirtualEvaluation",
     "VirtualEvaluation",

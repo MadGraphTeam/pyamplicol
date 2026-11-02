@@ -524,7 +524,7 @@ def export_trees(
 
         require_nc_exact(
             ct_program.blocks.blocks,
-            formal_label(slice_.request.accuracy),
+            formal_label(slice_.request.projection),
             slice_.request.process,
         )
     ct = None if ct_program is None else _CountertermTrees.of(ct_program, state_size)

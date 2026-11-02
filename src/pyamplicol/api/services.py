@@ -55,6 +55,7 @@ from .results import (
     _sum_entries,
 )
 from .virtual_results import (
+    GradedVirtualEvaluation,
     ResolvedVirtualEvaluation,
     VirtualEvaluation,
     VirtualRescuePolicy,
@@ -1037,21 +1038,80 @@ class Runtime:
         *,
         helicities: Sequence[str | HelicityConfiguration] | None = None,
         precision: int | None = None,
-    ) -> TreeGradedEvaluation:
-        """Return tree values split by power of N_c: ``values[point][degree]``.
+        color_correlation: str | None = None,
+        arithmetic: Literal["double", "double-double", "arbitrary"] | None = None,
+        mu_r2: ScalarInput | Sequence[ScalarInput] | None = None,
+        on_failure: Literal["raise", "return"] = "raise",
+        poles: PoleSelection | str | None = None,
+        stability_checks: VirtualStabilityChecks | None = None,
+    ) -> TreeGradedEvaluation | GradedVirtualEvaluation:
+        """Return values split by power of N_c.
 
-        Available for artifacts graded by power of N_c: tree artifacts of
-        ``color.accuracy = "strict-lc"`` or ``"strict-nlc"`` (the formal 1/N_c
-        expansion truncated at the leading degree P, or at P, P-1 and P-2),
-        or of full colour with ``color.graded`` (every degree). Each degree's
-        term is evaluated at N_c = 3 and summed over the selected helicities;
-        the degrees of a point sum to :meth:`evaluate` up to rounding. The
-        same split per helicity is the contracted colour axis of
-        :meth:`evaluate_resolved`. Precision follows :meth:`evaluate`.
+        Tree artifacts: ``values[point][degree]``, for artifacts graded by
+        power of N_c: ``color.accuracy = "strict-lc"`` or ``"strict-nlc"``
+        (the formal 1/N_c expansion truncated at the leading degree P, or at
+        P, P-1 and P-2), or full colour with ``color.graded`` (every degree).
+        Each degree's term is evaluated at N_c = 3 and summed over the
+        selected helicities; the degrees of a point sum to :meth:`evaluate`
+        up to rounding. The same split per helicity is the contracted colour
+        axis of :meth:`evaluate_resolved`. Precision follows :meth:`evaluate`.
+
+        One-loop artifacts generated with ``color.graded`` (at
+        ``strict-lc``, ``strict-nlc`` or ``full``): a
+        :class:`GradedVirtualEvaluation`, one :class:`VirtualEvaluation` per
+        N_c degree of the virtual, or of the declared ``color_correlation``
+        (default: the virtual). ``arithmetic``, ``mu_r2``, ``on_failure``,
+        ``poles`` and ``stability_checks`` follow :meth:`evaluate`; the
+        resolved virtual reports the same degrees as its colour axis.
         """
 
+        if self.contribution_kind == "virtual":
+            if helicities is not None:
+                raise CompatibilityError(
+                    "graded one-loop output is summed over helicities; "
+                    "evaluate_resolved reports it per helicity"
+                )
+            precision = _validate_precision(
+                getattr(self._backend, "default_precision", 16)
+                if precision is None
+                else precision
+            )
+            options = self._evaluation_options(
+                arithmetic, mu_r2, None, None, on_failure
+            )
+            options.update(self._v2_options(poles, stability_checks))
+            if color_correlation is not None:
+                options["color_correlation"] = color_correlation
+            result = self._virtual_correlation_operation("evaluate_graded")(
+                momenta, precision=precision, **options
+            )
+            if not isinstance(result, GradedVirtualEvaluation):
+                raise EvaluationError(
+                    "virtual runtime backend returned an invalid "
+                    "GradedVirtualEvaluation"
+                )
+            return result
+        if (
+            any(
+                value is not None
+                for value in (
+                    color_correlation,
+                    arithmetic,
+                    mu_r2,
+                    poles,
+                    stability_checks,
+                )
+            )
+            or on_failure != "raise"
+        ):
+            raise CompatibilityError(
+                "color_correlation, arithmetic, mu_r2, on_failure, poles and "
+                "stability_checks are one-loop options of evaluate_graded"
+            )
         if self.contribution_kind != "tree":
-            raise CompatibilityError("graded output is implemented for tree artifacts")
+            raise CompatibilityError(
+                "graded output is implemented for tree and one-loop artifacts"
+            )
         physics = self.physics
         components = tuple(physics.contracted_color_components)
         if not components or any(item.nc_degree is None for item in components):

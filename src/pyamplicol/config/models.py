@@ -563,9 +563,12 @@ class ColorConfig:
         metadata=_setting("str", choices=tuple(ColorFFTBasis)),
     )
     # Report the squared tree split by power of N_c (one contracted colour
-    # component per N_c degree of the formal expansion). Always on for
+    # component per N_c degree of the formal expansion). Always on for tree
     # ``strict-lc``/``strict-nlc``; ``true`` with ``full`` gives every degree
-    # (the graded full colour). The inherited ``lc``/``nlc`` have no degrees.
+    # (the graded full colour). One-loop requests split their outputs only
+    # when ``true`` (each degree costs its own dressing and reduction), at
+    # ``strict-lc``, ``strict-nlc`` or ``full``. The inherited ``lc``/``nlc``
+    # have no degrees.
     graded: bool = field(default=False, metadata=_setting("bool"))
 
     @property
@@ -1713,16 +1716,9 @@ class RunConfig:
         complete full-colour basis, implemented in the compiled lane."""
 
         if virtual:
-            # One-loop requests project in the loop engine (``loops.v2.
-            # colour``), not in the compiled tree lane.
-            if self.color.graded:
-                raise ConfigurationError(
-                    "graded colour output (color.graded) is implemented for tree "
-                    "requests; one-loop requests take color.accuracy='strict-lc' "
-                    "or 'strict-nlc' (the formal N_c projection, reported as "
-                    "one contracted value), 'lc', 'nlc' (the inherited "
-                    "approximation) or 'full'"
-                )
+            # One-loop requests project and split by degree in the loop
+            # engine (``loops.v2.colour``; ``SliceRequest.graded``), not in
+            # the compiled tree lane.
             return
         if self.color.contraction is ColorContraction.SYMMETRIC_GROUP_FFT:
             raise ConfigurationError(

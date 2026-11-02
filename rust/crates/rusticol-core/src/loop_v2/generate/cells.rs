@@ -1662,7 +1662,8 @@ pub fn gram(basis: &[Tensor]) -> RusticolResult<Vec<Vec<Arc<Laurent>>>> {
 /// The truncation depth of a colour accuracy (`ColourAccuracy`): the
 /// inherited `lc`/`nlc` and the strict `strict-lc`/`strict-nlc` truncate the
 /// exact cells alike (they differ in the grades of the tree currents, fixed
-/// before the cells are formed).
+/// before the cells are formed); full colour and graded full colour
+/// (`colour.FORMAL_FULL`, "formal-full") keep every power.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Accuracy {
     Lc,
@@ -1675,7 +1676,7 @@ impl Accuracy {
         match name {
             "lc" | "strict-lc" => Ok(Self::Lc),
             "nlc" | "strict-nlc" => Ok(Self::Nlc),
-            "full" => Ok(Self::Full),
+            "full" | "formal-full" => Ok(Self::Full),
             other => Err(invalid(format!("unknown colour accuracy {other:?}"))),
         }
     }
@@ -1683,6 +1684,15 @@ impl Accuracy {
 
 /// `colour.kept`: LC keeps P, NLC keeps P, P-1 and P-2, FC every power.
 pub fn kept(power: i32, degree: Option<i32>, accuracy: Accuracy) -> bool {
+    kept_exact(power, degree, accuracy, None)
+}
+
+/// `colour.kept` with its `exact` degree (an output of graded colour): only
+/// the power `exact` of what the projection keeps.
+pub fn kept_exact(power: i32, degree: Option<i32>, accuracy: Accuracy, exact: Option<i32>) -> bool {
+    if exact.is_some_and(|exact| exact != power) {
+        return false;
+    }
     let depth = match accuracy {
         Accuracy::Full => return true,
         Accuracy::Lc => 0,
@@ -1694,9 +1704,20 @@ pub fn kept(power: i32, degree: Option<i32>, accuracy: Accuracy) -> bool {
 /// `colour.project`: N_c^shift times one cell at N_c = 3 after LC/NLC/FC
 /// truncation at leading degree P.
 pub fn project(cell: &Laurent, degree: Option<i32>, accuracy: Accuracy, shift: i32) -> Exact {
+    project_exact(cell, degree, accuracy, shift, None)
+}
+
+/// `colour.project` with its `exact` degree (`kept_exact`).
+pub fn project_exact(
+    cell: &Laurent,
+    degree: Option<i32>,
+    accuracy: Accuracy,
+    shift: i32,
+    exact: Option<i32>,
+) -> Exact {
     let mut out = Exact::zero();
     for (&power, value) in cell {
-        if kept(power + shift, degree, accuracy) {
+        if kept_exact(power + shift, degree, accuracy, exact) {
             out.add_assign(&value.scale(&nc_power(power + shift)));
         }
     }
@@ -1768,12 +1789,14 @@ impl OrderedTable<'_> {
     }
 }
 
-/// One observable column of a plan (`plan_export.SeedColumn`).
+/// One observable column of a plan (`plan_export.SeedColumn`; `exact`: the
+/// one N_c degree of an output of graded colour).
 pub struct RecordColumn {
     pub table: usize,
     pub pairs: FastSet<(u32, u32)>,
     pub degree: Option<i32>,
     pub basis: Option<FastSet<usize>>,
+    pub exact: Option<i32>,
 }
 
 /// Records of `_Exporter.seed_records`, as plan JSON.
@@ -1805,7 +1828,8 @@ pub fn project_records(
         .collect();
     let mut admitted: FastSet<(usize, u32)> = FastSet::default();
     type Entries = FastMap<(usize, u32), Vec<(usize, u32)>>;
-    let mut indexed: Vec<(usize, Option<i32>, Entries)> = Vec::with_capacity(columns.len());
+    let mut indexed: Vec<(usize, Option<i32>, Option<i32>, Entries)> =
+        Vec::with_capacity(columns.len());
     for column in columns {
         let table = tables
             .get(column.table)
@@ -1826,9 +1850,10 @@ pub fn project_records(
             }
             entries.entry((c, order)).or_default().push((b, a));
         }
-        indexed.push((column.table, degree, entries));
+        indexed.push((column.table, degree, column.exact, entries));
     }
-    let mut projected: FastMap<(usize, usize, usize, Option<i32>, i32), Exact> = FastMap::default();
+    type Projection = (usize, usize, usize, Option<i32>, i32, Option<i32>);
+    let mut projected: FastMap<Projection, Exact> = FastMap::default();
     let mut classes: FastMap<(usize, u32), usize> = FastMap::default();
     let mut class_records = String::from("[");
     let mut class_count = 0usize;
@@ -1858,7 +1883,7 @@ pub fn project_records(
                         class_records.push(',');
                     }
                     class_records.push_str("{\"columns\":[");
-                    for (k, (t, degree, entries)) in indexed.iter().enumerate() {
+                    for (k, (t, degree, exact, entries)) in indexed.iter().enumerate() {
                         if k > 0 {
                             class_records.push(',');
                         }
@@ -1871,9 +1896,15 @@ pub fn project_records(
                             grades.dedup();
                             for grade in grades {
                                 let weight = projected
-                                    .entry((*t, *c, b, *degree, grade))
+                                    .entry((*t, *c, b, *degree, grade, *exact))
                                     .or_insert_with(|| {
-                                        project(&tables[*t].cells[*c][b], *degree, accuracy, grade)
+                                        project_exact(
+                                            &tables[*t].cells[*c][b],
+                                            *degree,
+                                            accuracy,
+                                            grade,
+                                            *exact,
+                                        )
                                     })
                                     .clone();
                                 if weight.is_zero() {

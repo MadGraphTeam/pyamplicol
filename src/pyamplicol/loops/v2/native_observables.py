@@ -60,7 +60,9 @@ from .families import Orders
 # 2: a directed metric is stored as its distinct cells and per (ket tensor,
 # basis element) the index of its cell (``_table``).
 SCHEMA = 2
-KINDS = ("correlated", "resolved")
+# ``graded`` and ``graded-resolved``: the same split by power of N_c, stored
+# for a request of graded colour only (``column_plans``).
+KINDS = ("correlated", "resolved", "graded", "graded-resolved")
 
 
 def _orders(orders: Orders) -> list[list[Any]]:
@@ -81,8 +83,14 @@ def _text(value: Fraction) -> str:
 
 
 def _key_record(key: Hashable) -> Any:
-    """A column key as JSON: a history id, or (row, basis element)."""
+    """A column key as JSON: a history id, (row, basis element), or the key
+    of an output of graded colour (``observables.graded_key``) as
+    ``{"degree": d, "of": the record of the key it splits}``."""
 
+    from .observables import is_graded_key
+
+    if is_graded_key(key):
+        return {"degree": key[2], "of": _key_record(key[1])}
     if isinstance(key, tuple):
         row, b = key
         return [None if row is None else [list(x) for x in row], b]
@@ -90,6 +98,10 @@ def _key_record(key: Hashable) -> Any:
 
 
 def _key_of(record: Any) -> Hashable:
+    from .observables import graded_key
+
+    if isinstance(record, dict):
+        return graded_key(_key_of(record["of"]), int(record["degree"]))
     if isinstance(record, list):
         row, b = record
         return (None if row is None else _row(row), b)
@@ -330,15 +342,31 @@ class _Programs:
         order (``observables._Assembly._local``'s ``born``), then the
         counterterm and field outputs of the inclusive record
         (``native_trees._counterterm_program``: its ``entries`` and
-        ``outputs``) with the column's degrees."""
+        ``outputs``) with the column's degrees. A column of graded colour
+        (``Column.exact``) keeps its one degree where the projection keeps it
+        (each entry's degree is then that degree, at depth 0: ``exact``), no
+        power elsewhere."""
+
+        from .colour import kept
 
         observables = self.observables
-        accuracy = observables.slice.request.accuracy
-        degrees = observables.degrees(column.history) if accuracy != "full" else None
+        accuracy = observables.slice.request.projection
+        degrees = (
+            observables.degrees(column.history)
+            if observables.slice.request.accuracy != "full"
+            else None
+        )
+
+        def window(kind: str, key: Orders) -> int | None:
+            degree = None if degrees is None else degrees[kind][key]
+            if column.exact is None:
+                return degree
+            return column.exact if kept(column.exact, degree, accuracy) else None
+
         born_index = {order: o for o, order in enumerate(self.born_orders)}
         entries: list[list[Any]] = []
         for s, squared in enumerate(self.squared_orders):
-            degree = None if degrees is None else degrees["born"][squared]
+            degree = window("born", squared)
             for left in self.born_orders:
                 for right in self.born_orders:
                     if _add(left, right) == squared:
@@ -356,13 +384,15 @@ class _Programs:
         shift = len(self.squared_orders)
         for kind, bra, ket, coupling, grade, output, _degree in self.record["entries"]:
             sector = self.outputs[output][1]
-            degree = None if degrees is None else degrees["virtual"][sector]
+            degree = window("virtual", sector)
             entries.append([kind, bra, ket, coupling, grade, output + shift, degree])
         program = {
             "entries": entries,
             "outputs": [0] * shift + [power for _c, _s, power in self.outputs],
             "born_outputs": shift,
         }
+        if column.exact is not None:
+            program["exact"] = True
         key = json.dumps(program, separators=(",", ":"))
         found = self._programs.get(key)
         if found is None:
@@ -497,22 +527,29 @@ def resolution_of(observables: Any) -> str:
 def column_plans(observables: Any) -> dict[str, Any]:
     """The stored column sets of a process (``observables.ColumnPlan``):
     ``correlated`` (the Born metric and every declared history) and
-    ``resolved`` (``resolution_of``)."""
+    ``resolved`` (``resolution_of``); for a request of graded colour also
+    ``graded`` (every output of ``correlated`` per N_c degree,
+    ``ObservableSlice.graded_columns``) and ``graded-resolved`` (per Born
+    helicity row and N_c degree, ``graded_resolved_columns``)."""
 
     from .observables import INCLUSIVE, Column, ColumnPlan
 
-    return {
+    names = (INCLUSIVE, *(h.id for h in observables.histories))
+    plans = {
         "correlated": ColumnPlan(
             observables,
-            [
-                Column(name, observables.history(name))
-                for name in (INCLUSIVE, *(h.id for h in observables.histories))
-            ],
+            [Column(name, observables.history(name)) for name in names],
         ),
         "resolved": ColumnPlan(
             observables, observables.resolved_columns(resolution_of(observables))
         ),
     }
+    if observables.slice.request.graded:
+        plans["graded"] = ColumnPlan(observables, observables.graded_columns(names))
+        plans["graded-resolved"] = ColumnPlan(
+            observables, observables.graded_resolved_columns()
+        )
+    return plans
 
 
 def _overlay_of(seeds: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -693,6 +730,7 @@ class StoredObservables:
                         if column.rows is None
                         else [[list(x) for x in row] for row in sorted(column.rows)],
                         "basis": None if column.basis is None else sorted(column.basis),
+                        **({} if column.exact is None else {"exact": column.exact}),
                     }
                     for column in plan.columns
                 ],
@@ -767,6 +805,23 @@ class StoredObservables:
 # --------------------------------------------------------------------- runtime
 
 
+def stored_degrees(
+    stored: StoredObservables, kind: str = "graded-resolved", keep: Any = None
+) -> tuple[int, ...]:
+    """The N_c degrees of a stored graded set's columns (those whose split
+    output's key passes ``keep``; every one by default), decreasing."""
+
+    found = stored.record["sets"].get(kind)
+    if found is None:
+        raise ValueError("graded outputs need a request with graded colour")
+    degrees = set()
+    for item in found["columns"]:
+        key = _key_of(item["key"])
+        if keep is None or keep(key[1]):
+            degrees.add(key[2])
+    return tuple(sorted(degrees, reverse=True))
+
+
 class StoredObservableSlice:
     """The observables of a loaded process (the subset of
     ``observables.ObservableSlice`` that ``runtime.virtual.
@@ -805,6 +860,25 @@ class StoredObservableSlice:
         # some of its columns.
         self._sets: dict[tuple[Any, ...], StoredColumns] = {}
 
+    def graded_degrees(self, history: Any) -> tuple[int, ...]:
+        """Graded colour: the N_c degrees one output reports, decreasing
+        (``ObservableSlice.graded_degrees``), read from the stored ``graded``
+        set's column keys."""
+
+        from .observables import INCLUSIVE
+
+        identifier = INCLUSIVE if history is None else history.id
+        return self._degrees("graded", lambda inner: inner == identifier)
+
+    def degree_axis(self) -> tuple[int, ...]:
+        """Graded colour: the degrees of the helicity-resolved virtual
+        (``LoopSlice.degree_axis``), from the stored ``graded-resolved`` set."""
+
+        return self._degrees("graded-resolved", lambda _inner: True)
+
+    def _degrees(self, kind: str, keep: Any) -> tuple[int, ...]:
+        return stored_degrees(self.stored, kind, keep)
+
     def history(self, identifier: str) -> Any:
         from pyamplicol.color.correlator_matrices import ColorCorrelator
 
@@ -820,7 +894,9 @@ class StoredObservableSlice:
     def native_columns(self, kind: str, value: Any, *, member=None, **options):
         """The native column runner of one call kind (``correlated``: the
         requested histories, served by the stored correlated set;
-        ``resolved``: its resolution, which must be the stored one)."""
+        ``resolved``: its resolution, which must be the stored one;
+        ``graded``: the requested histories per N_c degree;
+        ``graded-resolved``: every helicity row per N_c degree)."""
 
         from .selection import SELECTION
 
@@ -846,8 +922,20 @@ class StoredObservableSlice:
         if kind == "resolved":
             found.check_resolution(value)
             return _Selection(found, None)
+        if kind == "graded-resolved":
+            return _Selection(found, None)
         known = set(found.plan.index)
         wanted = tuple(dict.fromkeys(value))
+        if kind == "graded":
+            # Every degree of each requested history (``graded_key``).
+            histories = {key[1] for key in known}
+            missing = [name for name in wanted if name not in histories]
+            if missing:
+                raise KeyError(f"undeclared colour correlations {missing!r}")
+            return _Selection(
+                found,
+                tuple(key for key in found.plan.index if key[1] in set(wanted)),
+            )
         missing = [name for name in wanted if name not in known]
         if missing:
             raise KeyError(f"undeclared colour correlations {missing!r}")
@@ -906,6 +994,7 @@ class _ColumnPlanView:
                 if item["rows"] is None
                 else frozenset(_row(row) for row in item["rows"]),
                 None if item["basis"] is None else frozenset(item["basis"]),
+                item.get("exact"),
             )
             for item in meta["columns"]
         ]

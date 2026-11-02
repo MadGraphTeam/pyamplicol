@@ -270,9 +270,9 @@ def _prepare(
         cache_dir=run.model.cache_dir,
     )
     color_data = None
-    # Every projected accuracy (inherited or strict) grades the counterterm
-    # and field couplings by a colour declaration.
-    projected = run.color.accuracy != "full"
+    # Every projected accuracy (inherited or strict) and graded full colour
+    # grade the counterterm and field couplings by a colour declaration.
+    projected = run.color.accuracy != "full" or run.color.graded
     if projected or run.resolved_color.contraction != "direct":
         # LC and NLC take the shipped declaration of a model that carries
         # none (MQ-NC, ``models.loop_color_declarations``); a full-colour
@@ -291,9 +291,14 @@ def _prepare(
             # resolves none).
             from pyamplicol.loops.v2.refusals import LoopRequestUnsupported
 
+            label = (
+                "graded full colour"
+                if run.color.accuracy == "full"
+                else run.color.accuracy.upper()
+            )
             raise LoopRequestUnsupported(
                 "colour-declaration-coverage",
-                f"{run.color.accuracy.upper()} loop generation requires "
+                f"{label} loop generation requires "
                 "explicit source colour data in the prepared model and no "
                 "shipped colour declaration covers this model and scheme; "
                 "attach a LoopColorDeclaration with "
@@ -790,7 +795,10 @@ def _v2_request(backend, context, index, born_dags=None):
         particle_veto=veto,
         allow_anomalous_veto=run.generation.allow_anomalous_veto,
         accuracy=accuracy,
-        colour_declaration=context.color_declaration if accuracy != "full" else None,
+        graded=run.color.graded,
+        colour_declaration=context.color_declaration
+        if accuracy != "full" or run.color.graded
+        else None,
         scale_parameter=_v2_scale_parameter(compiled, fixed),
         alpha_s_parameter=run.loop.alpha_s_parameter,
         colour_contraction=_V2_CONTRACTION[run.color.contraction],

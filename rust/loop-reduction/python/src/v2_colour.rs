@@ -357,7 +357,8 @@ fn face_counts(pairs: Vec<(RawStructure, RawStructure)>) -> PyResult<Vec<i32>> {
 ///
 /// `tables[t]` = (cells, loop-order ranks per class, Born-order ranks per
 /// basis element); `columns` = (table, (Born rank, loop rank) pairs,
-/// degree, basis subset); `seeds` = (combination of (class, re, im), loop
+/// degree, basis subset, exact N_c degree of graded colour); `seeds` =
+/// (combination of (class, re, im), loop
 /// rank) in plan order; `components` the Born components seen so far;
 /// `threads` a private pool (None: the global one).
 #[pyfunction]
@@ -366,7 +367,7 @@ fn face_counts(pairs: Vec<(RawStructure, RawStructure)>) -> PyResult<Vec<i32>> {
 fn project_records(
     py: Python<'_>,
     tables: Vec<(PyRef<'_, NativeCellTable>, Vec<Vec<u32>>, Vec<Vec<u32>>)>,
-    columns: Vec<(usize, Vec<(u32, u32)>, Option<i32>, Option<Vec<usize>>)>,
+    columns: Vec<(usize, Vec<(u32, u32)>, Option<i32>, Option<Vec<usize>>, Option<i32>)>,
     born_grades: Vec<((usize, u32), Vec<i32>)>,
     accuracy: &str,
     components: Vec<(usize, u32, i32)>,
@@ -384,11 +385,12 @@ fn project_records(
         .collect();
     let columns: Vec<RecordColumn> = columns
         .into_iter()
-        .map(|(table, pairs, degree, basis)| RecordColumn {
+        .map(|(table, pairs, degree, basis, exact)| RecordColumn {
             table,
             pairs: pairs.into_iter().collect(),
             degree,
             basis: basis.map(|b| b.into_iter().collect()),
+            exact,
         })
         .collect();
     let grades: FastMap<(usize, u32), Vec<i32>> = born_grades.into_iter().collect();

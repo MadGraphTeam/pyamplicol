@@ -454,11 +454,16 @@ class ProcessPhysics:
             raise ValueError("contribution kind must be tree or virtual")
         virtual = self.contribution_kind == "virtual"
         virtual_lc = virtual and self.color_accuracy in ("lc", "strict-lc")
+        graded = bool(contracted) and all(
+            component.nc_degree is not None for component in contracted
+        )
         if virtual_lc:
             if self.color_kind == "contracted-color":
-                if len(contracted) != 1 or anchors or color_flows:
+                # One inclusive component, or one per N_c degree (graded).
+                if (len(contracted) != 1 and not graded) or anchors or color_flows:
                     raise ValueError(
-                        "contracted virtual LC requires one inclusive color component"
+                        "contracted virtual LC requires one inclusive color "
+                        "component (one per N_c degree when graded)"
                     )
             else:
                 if not anchors or color_flows or contracted:
@@ -477,9 +482,6 @@ class ProcessPhysics:
             raise ValueError(
                 "Born anchors apply only to virtual formal LC (strict-lc) metadata"
             )
-        graded = bool(contracted) and all(
-            component.nc_degree is not None for component in contracted
-        )
         if (
             self.color_accuracy != "lc"
             and not anchors

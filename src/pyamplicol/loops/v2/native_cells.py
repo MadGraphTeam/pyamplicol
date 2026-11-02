@@ -442,7 +442,7 @@ def project_records(
     from .refusals import require_formal_nc_tables
 
     seeds = list(seeds)
-    accuracy = slice_.request.accuracy
+    accuracy = slice_.request.projection
     born_grades = slice_._born_grades()
     distinct: dict[int, Any] = {}
     for column in columns:
@@ -470,6 +470,7 @@ def project_records(
             [(ranks[a], ranks[b]) for a, b in column.pairs],
             column.degree,
             None if column.basis is None else sorted(column.basis),
+            column.exact,
         )
         for column in columns
     ]
