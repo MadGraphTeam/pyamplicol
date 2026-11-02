@@ -722,10 +722,10 @@ class Run:
         # and tree program), as the artifact writer stores it.
         companion = native.scaleless
         write_plan(
-            native.plan_json,
+            native.plan,
             directory / STORED_RUNTIME,
             native,
-            None if companion is None else companion.plan_json,
+            None if companion is None else companion.plan,
         )
         written = {
             "seconds": time.perf_counter() - start,
@@ -735,7 +735,7 @@ class Run:
         meta = {
             "kind": "stored-process",
             **self._configuration(),
-            "plan_sha256": plan_digest(native.plan_json),
+            "plan_sha256": plan_digest(native.plan),
             "point_inputs": LOOP_V2_NATIVE_POINT_INPUTS,
             "store": written,
             **{
@@ -787,10 +787,10 @@ class Run:
         _reset_peak()
         start = time.perf_counter()
         runtime = directory / STORED_RUNTIME
-        plan_json = read_plan(runtime)
-        if plan_json is None or plan_digest(plan_json) != meta["plan_sha256"]:
+        plan = read_plan(runtime)
+        if plan is None or plan_digest(plan) != meta["plan_sha256"]:
             raise SystemExit("the stored plan does not have its recorded digest")
-        process = read_native_process(runtime, plan_json)
+        process = read_native_process(runtime, plan)
         self.executor = process.executor(native, lanes=self.options.lanes, threads=1)
         loaded = {
             "seconds": time.perf_counter() - start,
@@ -829,8 +829,11 @@ class Run:
         wrap = self.timers.wrap
         slice_ = self.slice
         if slice_ is not None:
-            # A loaded process has no slice: its inputs are all native.
-            wrap(type(slice_.tree_rows), "evaluate", "python trees")
+            # A loaded process has no slice: its inputs are all native. The
+            # class, not ``slice_.tree_rows``, which would build the Python
+            # tree runtime from the blocks DAG (0.5 GiB at g g > 5g LC, held
+            # through the store; M-FINAL mf-8g-1).
+            wrap(assemble.TreeRows, "evaluate", "python trees")
             wrap(assemble.LoopSlice, "scalars", "python scalars")
             if slice_.counterterm_program is not None:
                 wrap(
