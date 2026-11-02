@@ -243,16 +243,11 @@ def test_configuration_of_strict_and_graded_colour() -> None:
             process=ProcessConfig(max_color_sectors=2),
         )
     # One-loop requests take the strict accuracies (the loop engine's formal
-    # projection); graded output stays tree-only.
-    for accuracy in ("strict-lc", "strict-nlc"):
-        RunConfig(
-            action="generate",
-            color=ColorConfig(accuracy=accuracy),
-            process=ProcessConfig(loop_coupling_orders=("QCD",)),
-        )
-    with pytest.raises(ConfigurationError, match="tree requests"):
-        RunConfig(
-            action="generate",
-            color=ColorConfig(accuracy="full", graded=True),
-            process=ProcessConfig(loop_coupling_orders=("QCD",)),
-        )
+    # projection) and full colour, each with or without graded output.
+    for accuracy in ("strict-lc", "strict-nlc", "full"):
+        for graded in (False, True):
+            RunConfig(
+                action="generate",
+                color=ColorConfig(accuracy=accuracy, graded=graded),
+                process=ProcessConfig(loop_coupling_orders=("QCD",)),
+            )
