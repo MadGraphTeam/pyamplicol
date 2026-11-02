@@ -29,6 +29,11 @@ and every entry names its source:
                           known limitation of a value, or its run
                           conditions)
 - tools/loop_benchmark/processes.json  the G1 process specifications
+- data/2to6.json          the PRELIMINARY 2 -> 6 rows (scripts/build_2to6.py,
+                          harvested from existing records): summary.json
+                          "preliminary", outside the main-configuration rule
+                          (another engine, pyAmpliCol only: no provider, no
+                          gate, uncoloured) (_preliminary)
 
 Main-configuration rule (MAIN_RULE below): every cell of Table 1 and Figure
 1 shows the most recent configuration that measured it, recency by git
@@ -2127,6 +2132,175 @@ def _ew_cells(rows: list[dict], keys: set[str], notes: dict) -> None:
         rows[i] = json.loads(text)
 
 
+SIX = "2to6.json"
+# The PRELIMINARY 2 -> 6 rows of Table 1 (M-FINAL item 1; data/2to6.json,
+# harvested from existing records after the user's stop of 2026-11-01): one
+# row per process, its full-colour and leading-colour records (None: no
+# record). pyAmpliCol only (no provider exists at 2 -> 6): no ratio, no gate,
+# every cell uncoloured; their engine is not loop's (stated once in the table).
+SIX_ROWS = (
+    ("g g > g g g g g g", "gg_gggggg-full", "gg_gggggg-lc"),
+    ("u u~ > g g g g g g", None, "uux_gggggg-lc"),
+    ("u u~ > u u~ g g g g", None, "uux_uuxgggg-lc"),
+)
+# Why a 2 -> 6 row has no full-colour record (the 2to6.json entry quoted).
+SIX_NO_FC = {
+    "uux_gggggg-lc": (
+        "not generated before the user's stop (its dry run passes)",
+        "dry_runs.rows[uux_gggggg-full]",
+    ),
+    "uux_uuxgggg-lc": (
+        "its store was killed by the host-memory floor 15 s after its start;"
+        " not re-run before the user's stop",
+        "rows[uux_uuxgggg-lc].checks.catani_single_pole.fc_check_pending",
+    ),
+}
+
+
+def _six_generation(r: dict, src: str) -> dict:
+    """generate + plan export (Table 1's generation definition), then store,
+    artifact and load of one 2 -> 6 record."""
+    g, st = r["generation"], r["generation"]["stages"]
+    return {
+        "accuracy": r["accuracy"],
+        "seconds": st["generate"]["s"] + st["export"]["s"],
+        "peak_gib": max(st["generate"]["peak_gib"], st["export"]["peak_gib"]),
+        "plan_mb": st["export"].get("plan_mb"),
+        "store_s": st["store"]["s"],
+        "store_peak_gib": st["store"]["peak_gib"],
+        "artifact_gb": r["artifact"]["gb"],
+        "load_s": r["load"]["s"],
+        "load_peak_gib": r["load"]["peak_gib"],
+        "families": r["structure"]["families"],
+        "revision": g["revision"][:8],
+        "source": f"{src} rows[{r['key']}].generation.stages, .artifact, .load",
+    }
+
+
+def _six_timing(r: dict, src: str) -> dict:
+    e = r["evaluation"]
+    rot = "copies" in e["timed"]
+    return {
+        "status": "measured",
+        "accuracy": r["accuracy"],
+        "seconds_per_point": e["s_per_point"],
+        "batch": e["B"],
+        "blocks": e["timed"]["blocks"],
+        "points": e["timed"]["points"],
+        "protocol": (
+            f"one rotation block: {len(e['timed']['stream_indices'])} points x"
+            f" {len(e['timed']['copies'])} copies"
+            if rot
+            else f"{e['timed']['blocks']} blocks of {e['timed']['points_per_block']}"
+        ),
+        "colour_contraction": (e.get("colour_contraction") or {}).get("evaluated"),
+        "peak_gib": r["table1"]["eval_peak_gib"],
+        "stages": _split(e["stages_s_per_point"]),
+        "revision": e["revision"][:8],
+        "source": f"{src} rows[{r['key']}].evaluation",
+    }
+
+
+def _six_checks(r: dict) -> list[dict]:
+    """The internal checks of one 2 -> 6 record: status pass / open / rescue
+    case / not obtained, the largest value where one exists."""
+    out = []
+    acc = r["accuracy"].upper().replace("FULL", "FC")
+    for name, c in r["checks"].items():
+        x = {"check": name, "accuracy": acc, "status": c["status"], "value": None}
+        if name == "double_pole" and c["status"] == "done":
+            x.update(status=c["verdict"], value=c["max_deviation"], points=len(c["points"]))
+        elif name == "stability":
+            x.update(
+                status="rescue case" if c["points_above_1e-5"] else "pass",
+                value=c["max_estimate"],
+                points=len(c["points"]),
+                above=c["points_above_1e-5"],
+            )
+        elif name == "rotation_spread":
+            stable = [p["relative_spread"] for p in c["points"] if not p["above_1e-5"]]
+            x.update(
+                status="rescue case" if c["unstable_points"] else "pass",
+                value=c["max_relative_spread"],
+                unstable=c["unstable_points"],
+                stable_max=max(stable) if stable else None,
+                points=len(c["points"]),
+            )
+        elif name == "ward" and c["status"] == "done":
+            x.update(status="pass" if c["passed"] else "fail",
+                     value=max(c["max_virtual_ratio_finite_single_double"]))
+        elif name == "double_double" and c["status"] == "done":
+            x.update(status="pass", value=c["binary64_true_error_finite_relative"],
+                     estimate=c["binary64"]["estimate_finite_relative"])
+        elif name == "catani_single_pole" and c["status"] != "not obtained":
+            x.update(status="open", value=c["max_single_deviation"],
+                     double=c["max_double_deviation"])
+        elif c["status"] == "not obtained":
+            x["why"] = c.get("why")
+        out.append(x)
+    return out
+
+
+def _preliminary() -> dict | None:
+    path = DATA / SIX
+    if not path.exists():
+        return None
+    d = _load(path)
+    src = f"data/{SIX}"
+    recs = {r["key"]: r for r in d["rows"]}
+    rows = []
+    for label, fc_key, lc_key in SIX_ROWS:
+        fc, lc = recs.get(fc_key), recs[lc_key]
+        lead = fc or lc
+        legs = len(label.replace(">", "").split())
+        row = {
+            "key": _key(label),
+            "label": label,
+            "math": _math(label),
+            "legs": legs,
+            "outgoing": legs - 2,
+            "corrections": lead["correction"],
+            "particle_veto": lead["particle_veto"],
+            "particle_veto_note": lead["particle_veto_note"],
+            "families": {
+                "fc": fc["structure"]["families"] if fc else None,
+                "lc": lc["structure"]["families"],
+            },
+            "generation": {
+                "main": _six_generation(lead, src),
+                "lc": _six_generation(lc, src) if fc else None,
+            },
+            "full_colour": _six_timing(fc, src) if fc else {
+                "status": "not run",
+                "reason": SIX_NO_FC[lc_key][0],
+                "source": f"{src} {SIX_NO_FC[lc_key][1]}",
+            },
+            "leading_colour": _six_timing(lc, src),
+            "checks": (_six_checks(fc) if fc else []) + _six_checks(lc),
+            "caveats": (d["row_caveats"].get(fc_key, []) if fc else [])
+            + d["row_caveats"].get(lc_key, []),
+            "gate": lead["table1"]["gate"],
+        }
+        rows.append(row)
+    return {
+        "name": "2->6",
+        "status": d["status"],
+        "engine": {
+            "branch": d["engine"]["branch"],
+            "base": d["engine"]["base"],
+            "harness_commits": sorted(d["engine"]["harness_commits"]),
+            "engine_source_change_vs_base": d["engine"]["engine_source_change_vs_base"],
+            "native": d["engine"]["native"]["directory"],
+            "native_digest": d["engine"]["native_digest_short"],
+            "protocol": d["engine"]["protocol"],
+        },
+        "stop": d["stop"]["text"],
+        "global_caveats": d["global_caveats"],
+        "source": f"{src} (scripts/build_2to6.py)",
+        "rows": rows,
+    }
+
+
 def build() -> tuple[dict, Recency]:
     """summary.json, and the recency order it used (for the build log)."""
     g1, ew_keys = _with_ew_rows(_load(DATA / "g1.json"))
@@ -2220,6 +2394,9 @@ def build() -> tuple[dict, Recency]:
         },
         "groups": groups,
     }
+    six = _preliminary()
+    if six is not None:
+        summary["preliminary"] = six
     return summary, recency
 
 

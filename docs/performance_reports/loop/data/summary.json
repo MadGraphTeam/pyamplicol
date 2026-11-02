@@ -4,8 +4,8 @@
   "date": "2026-10-31",
   "host": "AMD EPYC 9754, shared host, cores 128-223 without SMT siblings: milestone m1031-msm's G1 on 2026-10-31 (07:31-09:19 UTC), at most one job per CCX of 8 cores, each on the least busy core of a CCX whose least busy core was below 50 % busy (g g > g g g g g FC on the reserved CCX 216-223; cores per record: host_cpus); host load average 186-344 (other users' processes and the milestone's whole-suite gate and campaign ran at the same time); timings indicative (user 2026-10-28), one round, no repeats for contention",
   "gate_factor": 1.3,
-  "engine_on_loop": "71e2041e",
-  "native_build_on_loop": "loop-native-v2-slice-71e2041e",
+  "engine_on_loop": "f3d9e361",
+  "native_build_on_loop": "loop-native-v2-slice-b36af289",
   "main_rule": {
    "rule": "every cell shows the most recent configuration that measured it; A is newer than B if B's revision is an ancestor of A's (git merge-base --is-ancestor, recorded in milestone.json ancestry) or if A is the development side and B the integrated side of one G1 campaign, transitively; equal revisions keep the order development, integrated, development_records; the registry (no run) comes last; without a measurement, the status of the newest configuration with a record of the row",
    "validation_rule": "a newer comparison with fewer points or fewer references than an older one and no larger deviation repeats part of it: the older, more complete comparison stays in the cell and the repeat is listed in partial_repeats; a newer comparison with a larger deviation, or at least as many points and every reference, replaces it",
@@ -3660,5 +3660,420 @@
     }
    ]
   }
- ]
+ ],
+ "preliminary": {
+  "name": "2->6",
+  "status": "PRELIMINARY: harvested from existing records only (no new 8-leg run: STOP-8LEG); pre-optimisation engine; checks incomplete; runs stopped by the USER",
+  "engine": {
+   "branch": "work/v2-bench-2to6",
+   "base": "15d4ef5a (milestone M-SM report head; engine pin 71e2041e)",
+   "harness_commits": [
+    "8a062a52",
+    "d5ed94c2"
+   ],
+   "engine_source_change_vs_base": "none (15d4ef5a..8a062a52 touches tools/loop_benchmark and its unit test only)",
+   "native": "loop-native-v2-slice-71e2041e",
+   "native_digest": "f8d77c97",
+   "protocol": "binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up excluded, paired blocks, setup heap frozen out of the cyclic collector"
+  },
+  "stop": "8-leg (2->6) runs stopped by the USER (2026-11-01 ~23:00 UTC); coordinator lifts it by removing this file and writing a COORDINATOR line in slice-status DECISIONS. See DECISIONS ~23:15.",
+  "global_caveats": [
+   "PRE-OPTIMISATION engine (15d4ef5a, native 71e2041e): the M-FINAL optimisation rounds (mf-8g-1, mf-8g-1b, mf-8g-2) target exactly these generation, load and evaluation peaks; the numbers are a baseline, not the M-FINAL result",
+   "runs stopped by the USER on 2026-11-01 ~23:00 UTC for optimisation rounds (workspace/tmp/STOP-8LEG); checks are incomplete (see each row's 'not obtained' entries)",
+   "one pinned thread on a shared, loaded host; several steps were killed by host-memory floors set below other projects' usage (a 'host memory' end is not a defect); timings indicative",
+   "no external reference exists at 2->6 (no provider entry): acceptance is internal (double pole, Catani, Ward, double-double, rotations); speed is reported without a gate",
+   "stability estimates and check budgets are relative to the finite part (loops.v2.stability)",
+   "the stored artifacts are kept in workspace/artifacts/2to6/<row>/ (loop-runtime.pacbin + generation.json)"
+  ],
+  "source": "data/2to6.json (scripts/build_2to6.py)",
+  "rows": [
+   {
+    "key": "gg_gggggg",
+    "label": "g g > g g g g g g",
+    "math": "g g -> g g g g g g",
+    "legs": 8,
+    "outgoing": 6,
+    "corrections": "QCD",
+    "particle_veto": [
+     6
+    ],
+    "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+    "families": {
+     "fc": 47348,
+     "lc": 47348
+    },
+    "generation": {
+     "main": {
+      "accuracy": "full",
+      "seconds": 13331.878228469985,
+      "peak_gib": 235.153,
+      "plan_mb": 3057.034,
+      "store_s": 3827.419515135931,
+      "store_peak_gib": 246.518,
+      "artifact_gb": 2.565,
+      "load_s": 1164.6646069120616,
+      "load_peak_gib": 159.948,
+      "families": 47348,
+      "revision": "d5ed94c2",
+      "source": "data/2to6.json rows[gg_gggggg-full].generation.stages, .artifact, .load"
+     },
+     "lc": {
+      "accuracy": "lc",
+      "seconds": 13692.593748504063,
+      "peak_gib": 217.2,
+      "plan_mb": 1869.625,
+      "store_s": 2857.895605367841,
+      "store_peak_gib": 228.558,
+      "artifact_gb": 2.14,
+      "load_s": 854.2267109509557,
+      "load_peak_gib": 139.648,
+      "families": 47348,
+      "revision": "d5ed94c2",
+      "source": "data/2to6.json rows[gg_gggggg-lc].generation.stages, .artifact, .load"
+     }
+    },
+    "full_colour": {
+     "status": "measured",
+     "accuracy": "full",
+     "seconds_per_point": 478.3518096214975,
+     "batch": 16,
+     "blocks": 1,
+     "points": 16,
+     "protocol": "one rotation block: 4 points x 4 copies",
+     "colour_contraction": [
+      "symmetric-group-fft"
+     ],
+     "peak_gib": 239.189,
+     "stages": {
+      "inputs": 265.7935939621875,
+      "numerator": 194.51809729400009,
+      "scatter": 0.18545455575,
+      "ninjars": 15.964738933499998,
+      "masters": 0.8865357554374999,
+      "glue": 1.003389120622387,
+      "untimed": 0.0
+     },
+     "revision": "8a062a52",
+     "source": "data/2to6.json rows[gg_gggggg-full].evaluation"
+    },
+    "leading_colour": {
+     "status": "measured",
+     "accuracy": "lc",
+     "seconds_per_point": 119.17577555963362,
+     "batch": 16,
+     "blocks": 2,
+     "points": 32,
+     "protocol": "2 blocks of 16",
+     "colour_contraction": null,
+     "peak_gib": 327.059,
+     "stages": {
+      "inputs": 20.0265673975,
+      "numerator": 87.29748032634375,
+      "scatter": 0.12490553628124998,
+      "ninjars": 10.49951831996875,
+      "masters": 0.75424018371875,
+      "glue": 0.47306379582114744,
+      "untimed": 0.0
+     },
+     "revision": "d5ed94c2",
+     "source": "data/2to6.json rows[gg_gggggg-lc].evaluation"
+    },
+    "checks": [
+     {
+      "check": "rotation_spread",
+      "accuracy": "FC",
+      "status": "rescue case",
+      "value": 2.1017314282033674,
+      "unstable": [
+       16
+      ],
+      "stable_max": 2.821314906125663e-07,
+      "points": 4
+     },
+     {
+      "check": "double_pole",
+      "accuracy": "FC",
+      "status": "not obtained",
+      "value": null,
+      "why": "the FC physical-points job (phys-gg_gggggg-full: load, 1-point warm-up, points 0-2 with every pole) was killed by the host-memory floor on all 3 attempts before its warm-up finished (no warm-up line in its logs), then held at its 480 GB start gate until the USER stop"
+     },
+     {
+      "check": "catani_single_pole",
+      "accuracy": "FC",
+      "status": "not obtained",
+      "value": null,
+      "why": "catani-gg_gggggg-full needs the FC physical rows: never started"
+     },
+     {
+      "check": "ward",
+      "accuracy": "FC",
+      "status": "not obtained",
+      "value": null,
+      "why": "no FC Ward run was started"
+     },
+     {
+      "check": "double_double",
+      "accuracy": "FC",
+      "status": "not obtained",
+      "value": null,
+      "why": "no double-double run at 2->6 g g > 6g (the chain skips DD when 100 x s/pt > 1 h)"
+     },
+     {
+      "check": "double_pole",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 9.98180670997894e-12,
+      "points": 3
+     },
+     {
+      "check": "catani_single_pole",
+      "accuracy": "LC",
+      "status": "not obtained",
+      "value": null,
+      "why": "tree-engine Catani route (8-leg LC tree + 28 dipole correlators) produced 0 points: still in the tree generation after 41393.1 s, killed at 2026-11-01T11:05:36Z by the host-memory floor (MemAvailable 117 GB < 120 GB; job peak 151 GiB) per logs/guard-catani-gg-lc.log; the status label 'time bound' (rc 124) is wrong (its stopped watchdog held the old 7200 s bound); a re-run alone was planned, then the USER stop"
+     },
+     {
+      "check": "ward",
+      "accuracy": "LC",
+      "status": "not obtained",
+      "value": null,
+      "why": "deferred (logs/ward-gg_gggggg-lc.status.json): coordinator 2026-11-01 ~01:35 UTC: deferred so the 8-gluon FC store (own track, USER priority) does not share the host with a second ~230 GB job; it never ran before the USER stop"
+     },
+     {
+      "check": "double_double",
+      "accuracy": "LC",
+      "status": "not obtained",
+      "value": null,
+      "why": "skipped by the chain rule (logs/dd-gg_gggggg-lc.skip): skipped: estimated 100 x 119.17577555963362 s/pt > 1 h (or no timing)"
+     },
+     {
+      "check": "stability",
+      "accuracy": "LC",
+      "status": "rescue case",
+      "value": 0.001679210969010091,
+      "points": 3,
+      "above": [
+       0,
+       1
+      ]
+     }
+    ],
+    "caveats": [
+     "the rotated FC run ran partly in zram swap, so its 'native trees' time (265.8 s/pt vs 20.0 s/pt at LC) is likely inflated [inf, 8g0-report \u00a70 item 4]",
+     "s/pt is ONE block of 16 = stream points [16, 17, 18, 19] x 4 copies (identity + 3 exact rotations) with FFT colour contraction, not the paired 2-block protocol of the LC rows",
+     "stream point(s) [16] binary64-unstable (rotation spread 2.1): a rescue case (the Python-API rescue stack, mf-rescue 2234ee33, is the remedy; not applied in this run)",
+     "the block VmHWM (239.2 GiB) understates the footprint under swap; the step peak 380.7 GB came from the warm-up",
+     "no FC poles, Catani, Ward or double-double: the physical-points job never got past its warm-up",
+     "the watchdog's step peak (153.93 GB) under-reports: the watchdog was SIGSTOPped from 2026-10-31T17:20:28Z to 2026-10-31T19:44:56Z (logs/guard-store-gg-lc.log); the guard's 5-min samples peak at 225 GiB and the harness store-stage VmHWM is 228.558 GiB",
+     "Catani step status says 'time bound' but the cause was the host-memory floor (guard log)",
+     "points [0, 1] have binary64 stability estimates above 1e-5 (1.7e-03, 8.9e-05): rescue candidates; no double-double cross-check at 2->6 g g > 6g"
+    ],
+    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured"
+   },
+   {
+    "key": "uux_gggggg",
+    "label": "u u~ > g g g g g g",
+    "math": "u overline(u) -> g g g g g g",
+    "legs": 8,
+    "outgoing": 6,
+    "corrections": "QCD",
+    "particle_veto": [
+     6
+    ],
+    "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+    "families": {
+     "fc": null,
+     "lc": 23437
+    },
+    "generation": {
+     "main": {
+      "accuracy": "lc",
+      "seconds": 3367.871721867239,
+      "peak_gib": 41.781,
+      "plan_mb": 209.061,
+      "store_s": 579.9580826249439,
+      "store_peak_gib": 31.626,
+      "artifact_gb": 0.178,
+      "load_s": 74.87945208698511,
+      "load_peak_gib": 12.594,
+      "families": 23437,
+      "revision": "8a062a52",
+      "source": "data/2to6.json rows[uux_gggggg-lc].generation.stages, .artifact, .load"
+     },
+     "lc": null
+    },
+    "full_colour": {
+     "status": "not run",
+     "reason": "not generated before the user's stop (its dry run passes)",
+     "source": "data/2to6.json dry_runs.rows[uux_gggggg-full]"
+    },
+    "leading_colour": {
+     "status": "measured",
+     "accuracy": "lc",
+     "seconds_per_point": 19.935267116179602,
+     "batch": 128,
+     "blocks": 2,
+     "points": 256,
+     "protocol": "2 blocks of 128",
+     "colour_contraction": null,
+     "peak_gib": 90.946,
+     "stages": {
+      "inputs": 3.592311317667969,
+      "numerator": 12.594337636484372,
+      "scatter": 0.05770338733203126,
+      "ninjars": 3.0493114222421878,
+      "masters": 0.3935943507343751,
+      "glue": 0.2480090017186658,
+      "untimed": 0.0
+     },
+     "revision": "8a062a52",
+     "source": "data/2to6.json rows[uux_gggggg-lc].evaluation"
+    },
+    "checks": [
+     {
+      "check": "double_pole",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 4.569839649913085e-12,
+      "points": 3
+     },
+     {
+      "check": "catani_single_pole",
+      "accuracy": "LC",
+      "status": "not obtained",
+      "value": null,
+      "why": "tree-engine Catani route: 6 chain attempts all killed by the 120 GB host-memory floor while in the tree generation (longest 4856.0 s), 0 points; the own-track re-run started 2026-11-01T22:51:18Z (record: 0 points; its status still says running, last update at 842 s) was ended by the USER stop"
+     },
+     {
+      "check": "ward",
+      "accuracy": "LC",
+      "status": "not obtained",
+      "value": null,
+      "why": "ward-uux_gggggg-lc killed by the host-memory floor 90.6 s after its start (2026-11-01T16:00:40Z); not re-run before the USER stop"
+     },
+     {
+      "check": "double_double",
+      "accuracy": "LC",
+      "status": "not obtained",
+      "value": null,
+      "why": "dd-uux_gggggg-lc (point 0) killed by the host-memory floor on attempt 1 (161.2 s), then waiting at its start gate when the USER stop ended it"
+     },
+     {
+      "check": "stability",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 8.283730613945452e-07,
+      "points": 3,
+      "above": []
+     }
+    ],
+    "caveats": [
+     "Catani, Ward and double-double not obtained (host-memory kills, then the USER stop)",
+     "first timing attempt killed by the host-memory floor; the recorded timing is attempt 1 of the relaunched chain"
+    ],
+    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured"
+   },
+   {
+    "key": "uux_uuxgggg",
+    "label": "u u~ > u u~ g g g g",
+    "math": "u overline(u) -> u overline(u) g g g g",
+    "legs": 8,
+    "outgoing": 6,
+    "corrections": "QCD",
+    "particle_veto": [
+     6
+    ],
+    "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+    "families": {
+     "fc": null,
+     "lc": 13318
+    },
+    "generation": {
+     "main": {
+      "accuracy": "lc",
+      "seconds": 1417.9710351019166,
+      "peak_gib": 17.304,
+      "plan_mb": 53.683,
+      "store_s": 45.345222579082474,
+      "store_peak_gib": 15.672,
+      "artifact_gb": 0.023,
+      "load_s": 13.090995524078608,
+      "load_peak_gib": 1.553,
+      "families": 13318,
+      "revision": "8a062a52",
+      "source": "data/2to6.json rows[uux_uuxgggg-lc].generation.stages, .artifact, .load"
+     },
+     "lc": null
+    },
+    "full_colour": {
+     "status": "not run",
+     "reason": "its store was killed by the host-memory floor 15 s after its start; not re-run before the user's stop",
+     "source": "data/2to6.json rows[uux_uuxgggg-lc].checks.catani_single_pole.fc_check_pending"
+    },
+    "leading_colour": {
+     "status": "measured",
+     "accuracy": "lc",
+     "seconds_per_point": 4.720926953577873,
+     "batch": 128,
+     "blocks": 2,
+     "points": 256,
+     "protocol": "2 blocks of 128",
+     "colour_contraction": null,
+     "peak_gib": 23.342,
+     "stages": {
+      "inputs": 0.47319294121093747,
+      "numerator": 2.948092926136718,
+      "scatter": 0.031239898230468764,
+      "ninjars": 0.9362742326210945,
+      "masters": 0.20575592592187497,
+      "glue": 0.12637102945677903,
+      "untimed": 0.0
+     },
+     "revision": "8a062a52",
+     "source": "data/2to6.json rows[uux_uuxgggg-lc].evaluation"
+    },
+    "checks": [
+     {
+      "check": "double_pole",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 6.749124071005404e-14,
+      "points": 3
+     },
+     {
+      "check": "catani_single_pole",
+      "accuracy": "LC",
+      "status": "open",
+      "value": 0.09832117368696008,
+      "double": 6.749124071005404e-14
+     },
+     {
+      "check": "ward",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 2.4747692024330705e-12
+     },
+     {
+      "check": "double_double",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 2.256e-11,
+      "estimate": 3.336065682685094e-10
+     },
+     {
+      "check": "stability",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 2.624280371426821e-06,
+      "points": 3,
+      "above": []
+     }
+    ],
+    "caveats": [
+     "LC Catani single pole 6.9-9.8 % off: differing LC definitions (tree vs loop engine) for quark lines; the decisive FC check is pending"
+    ],
+    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured"
+   }
+  ]
+ }
 }
