@@ -836,7 +836,7 @@ class SeedColumn:
     """One observable column of a plan: its seed table, sector pairs and
     degree P, the Born helicity rows and basis elements its seeds keep
     (``None``: all) and, for an output of graded colour, the one N_c degree
-    it keeps (``exact``, ``colour.kept``). The sector columns of the
+    it keeps (``exact``, ``colour.project``). The sector columns of the
     inclusive virtual are ``sector_columns``; ``observables.ColumnPlan``
     builds the others."""
 

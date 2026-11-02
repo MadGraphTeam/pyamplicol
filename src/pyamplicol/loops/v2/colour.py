@@ -134,7 +134,7 @@ INHERITED_ACCURACIES = ("lc", "nlc")
 # The projection of graded full colour (``assemble.SliceRequest.projection``):
 # the formal 1/N_c expansion (U(1)-graded tree currents, counterterm and field
 # couplings graded by the colour declaration) with every N_c degree kept, so
-# that the output can be split by degree (``exact`` in ``kept``). An
+# that the output can be split by degree (``exact`` in ``project``). An
 # engine-internal name: the request and its artifact say ``full`` with
 # ``graded``.
 FORMAL_FULL = "formal-full"
@@ -2063,17 +2063,13 @@ def whole_entry(cell: Laurent, reference: int) -> Laurent:
     return {top: total} if total else {}
 
 
-def kept(
-    power: int, degree: int | None, accuracy: str, exact: int | None = None
-) -> bool:
+def kept(power: int, degree: int | None, accuracy: str) -> bool:
     """Whether a colour cell of N_c power ``power`` survives the projection
     of a sector of reference degree ``degree`` (P): LC keeps P, NLC keeps P,
     P-1 and P-2 (odd powers included), FC (graded or not) keeps every power.
-    ``exact`` (an output of graded colour, one N_c degree) keeps only the
-    power ``exact`` of what the projection keeps."""
+    An output of graded colour (one N_c degree ``exact``) keeps only the
+    power ``exact`` of what the projection keeps (``project``)."""
 
-    if exact is not None and power != exact:
-        return False
     if keeps_every_degree(accuracy):
         return True
     if accuracy not in _DEPTH:
@@ -2090,11 +2086,13 @@ def project(
 ) -> ExactColorCoefficient:
     """N_c^shift times one cell at N_c = 3 after LC/NLC/FC truncation at
     leading degree P (``shift`` is the N_c grade of the Born amplitude the
-    cell multiplies), restricted to the power ``exact`` when given (``kept``)."""
+    cell multiplies), restricted to the power ``exact`` when given (graded colour)."""
 
     real = imag = Fraction(0)
     for power, value in cell.items():
-        if kept(power + shift, degree, accuracy, exact):
+        if (exact is None or power + shift == exact) and kept(
+            power + shift, degree, accuracy
+        ):
             factor = _nc_power(power + shift)
             real += value.real * factor
             imag += value.imag * factor

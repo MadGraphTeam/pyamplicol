@@ -470,10 +470,10 @@ def project_records(
             [(ranks[a], ranks[b]) for a, b in column.pairs],
             column.degree,
             None if column.basis is None else sorted(column.basis),
-            column.exact,
         )
         for column in columns
     ]
+    exact = [column.exact for column in columns]
     try:
         class_json, records_json, components = _native().project_records(
             raw_tables,
@@ -486,6 +486,7 @@ def project_records(
                 for combination, order in seeds
             ],
             threads,
+            exact if any(d is not None for d in exact) else None,
         )
     except ValueError as error:
         text = str(error)

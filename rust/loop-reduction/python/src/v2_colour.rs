@@ -357,28 +357,23 @@ fn face_counts(pairs: Vec<(RawStructure, RawStructure)>) -> PyResult<Vec<i32>> {
 ///
 /// `tables[t]` = (cells, loop-order ranks per class, Born-order ranks per
 /// basis element); `columns` = (table, (Born rank, loop rank) pairs,
-/// degree, basis subset, exact N_c degree of graded colour); `seeds` =
-/// (combination of (class, re, im), loop
+/// degree, basis subset); `seeds` = (combination of (class, re, im), loop
 /// rank) in plan order; `components` the Born components seen so far;
-/// `threads` a private pool (None: the global one).
+/// `threads` a private pool (None: the global one); `exact` the N_c degree
+/// each column keeps (graded colour; None: every column keeps its window).
 #[pyfunction]
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
-#[pyo3(signature = (tables, columns, born_grades, accuracy, components, seeds, threads=None))]
+#[pyo3(signature = (tables, columns, born_grades, accuracy, components, seeds, threads=None, exact=None))]
 fn project_records(
     py: Python<'_>,
     tables: Vec<(PyRef<'_, NativeCellTable>, Vec<Vec<u32>>, Vec<Vec<u32>>)>,
-    columns: Vec<(
-        usize,
-        Vec<(u32, u32)>,
-        Option<i32>,
-        Option<Vec<usize>>,
-        Option<i32>,
-    )>,
+    columns: Vec<(usize, Vec<(u32, u32)>, Option<i32>, Option<Vec<usize>>)>,
     born_grades: Vec<((usize, u32), Vec<i32>)>,
     accuracy: &str,
     components: Vec<(usize, u32, i32)>,
     seeds: Vec<(Vec<(usize, String, String)>, u32)>,
     threads: Option<usize>,
+    exact: Option<Vec<Option<i32>>>,
 ) -> PyResult<(Vec<u8>, Vec<u8>, Vec<(usize, u32, i32)>)> {
     let accuracy = self::accuracy(accuracy)?;
     let ordered: Vec<OrderedTable<'_>> = tables
@@ -389,9 +384,18 @@ fn project_records(
             basis_orders,
         })
         .collect();
+    let exact = exact.unwrap_or_else(|| vec![None; columns.len()]);
+    if exact.len() != columns.len() {
+        return Err(error(format!(
+            "{} exact degrees for {} columns",
+            exact.len(),
+            columns.len()
+        )));
+    }
     let columns: Vec<RecordColumn> = columns
         .into_iter()
-        .map(|(table, pairs, degree, basis, exact)| RecordColumn {
+        .zip(exact)
+        .map(|((table, pairs, degree, basis), exact)| RecordColumn {
             table,
             pairs: pairs.into_iter().collect(),
             degree,

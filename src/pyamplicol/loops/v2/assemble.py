@@ -5117,7 +5117,9 @@ def _interfere(
         for (right, q), b in ket.items():
             for power, cell in overlaps(left, right).items():
                 exponent = power + p + q + grade
-                if not kept(exponent, degree, accuracy, exact):
+                if exact is not None and exponent != exact:
+                    continue
+                if not kept(exponent, degree, accuracy):
                     continue
                 key = (left, right, power, exponent)
                 weight = weights.get(key)
