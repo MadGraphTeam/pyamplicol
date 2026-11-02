@@ -27,7 +27,9 @@ Stages, each recorded in ``--json`` as it ends (``OUT.DONE`` at the end):
   reduction check) and ``--ward-dd-points``, epsilon_j -> p_j / p_j^0 on
   ``--ward-legs`` (default: three gluon legs, first, middle and last); a
   binary64 point whose estimate leaves the binary64 scope (O1: E > 1e-9) is
-  recorded, not asserted (``asserted``), and at least one row must be;
+  recorded, not asserted (``asserted``), in both carriers (its conditioning
+  carries into double-double, whose Ward bound is fixed), and at least one
+  row must be asserted;
 * ``rescue`` (vii, ``--rescue-points``): the default rescue policy's level 0
   (binary64 with ``RESCUE_ROTATION`` and the rescaled reduction check,
   ``stability.DEFAULT_RESCUE``) and the count of points it sends up (E >
@@ -303,6 +305,7 @@ def check_process(
         gluons = [label for label, _initial, pdg in process.record["legs"] if pdg == 21]
         legs = ward_legs or sorted({gluons[0], gluons[len(gluons) // 2], gluons[-1]})
         rows = []
+        in_scope: dict[int, bool] = {}
         begin = time.perf_counter()
         for carrier, indices in (
             ("double", ward_points),
@@ -321,11 +324,18 @@ def check_process(
                 )
                 # O1 (as ``ward.ward_row``): binary64 is asserted only where
                 # every row's estimate is within its scope (E <= 1e-9 of the
-                # physical scale); a point beyond it is recorded, the
-                # double-double rows assert it.
-                asserted = carrier != "double" or all(
+                # physical scale). A point beyond it is recorded, not
+                # asserted, in both carriers: its conditioning (binary64 E
+                # over the unit roundoff) carries into double-double, whose
+                # Ward bound is a fixed 1e-25 of the scale (g g > 4g stream
+                # point 1: binary64 E 2.4e-6, double-double residual 1.4e-24
+                # = the binary64 one times the carriers' roundoff ratio).
+                scope = [
                     r.get("in_scope", True) for r in found["rows"]
-                )
+                ] if carrier == "double" else None
+                if scope is not None:
+                    in_scope[index] = all(scope)
+                asserted = in_scope.get(index, True)
                 rows.append(
                     {
                         "index": index,
