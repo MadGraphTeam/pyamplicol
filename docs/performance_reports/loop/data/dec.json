@@ -1,9 +1,9 @@
 {
  "source": "tests/fixtures/loop/dec/manifest.json + campaign records (tests/unit/test_loop_v2_dec_*.py, PYAMPLICOL_MQCD_RESULTS) + JUnit XML of the delegated columns",
  "rules": "m-final/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)",
- "slice": "7cdd32e9",
- "branch": "work/v2-mf-dec-2",
- "native": "loop-native-v2-slice-eddb4b49",
+ "slice": "617b59cd",
+ "branch": "campaign-m1101-mfb-new",
+ "native": "loop-native-v2-slice-b36af289",
  "date": "2026-11-01",
  "counts": {
   "pass": 8,
@@ -80,9 +80,9 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 4.98,
-      "export_s": 0.13,
-      "double_double_s_per_point": 0.305,
+      "generate_s": 3.84,
+      "export_s": 0.27,
+      "double_double_s_per_point": 0.34,
       "double_s_per_point": 0.02
      },
      "failed_checks": []
@@ -110,12 +110,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.01,
-      "export_s": 0.14,
-      "double_double_s_per_point": 0.33,
-      "double_s_per_point": 0.035,
-      "uv_s": 0.21,
-      "ap_s": 1.66
+      "generate_s": 5.24,
+      "export_s": 0.22,
+      "double_double_s_per_point": 0.295,
+      "double_s_per_point": 0.025,
+      "uv_s": 0.22,
+      "ap_s": 1.19
      },
      "failed_checks": []
     }
@@ -155,9 +155,9 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 7.99,
+        "generate_s": 5.43,
         "export_s": 0.0,
-        "double_double_s_per_point": 0.06666666666666667,
+        "double_double_s_per_point": 0.06333333333333334,
         "double_s_per_point": 0.0033333333333333335
        },
        "failed_checks": []
@@ -228,9 +228,9 @@
      "passed": true,
      "checks": 134,
      "failures": 0,
-     "max_dd_vs_reference": 2.860631354036387e-15,
+     "max_dd_vs_reference": 2.8606313540363877e-15,
      "max_binary64_vs_dd": 2.0060079355945528e-13,
-     "max_catani_dd": 2.0794912052036723e-30,
+     "max_catani_dd": 2.2902428603038168e-30,
      "max_catani_binary64": 2.0060079355945528e-13,
      "catani_not_formed": false,
      "binary64_vs_reference": {
@@ -243,11 +243,11 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 84.35,
-      "export_s": 32.44,
-      "double_double_s_per_point": 0.1575,
+      "generate_s": 86.19,
+      "export_s": 25.9,
+      "double_double_s_per_point": 0.1225,
       "double_s_per_point": 0.04,
-      "engine_catani_s": 0.92
+      "engine_catani_s": 1.05
      },
      "failed_checks": []
     }
@@ -256,9 +256,9 @@
    "variants": [],
    "nc": null,
    "delegated": {},
-   "max_dd_vs_reference": 2.860631354036387e-15,
+   "max_dd_vs_reference": 2.8606313540363877e-15,
    "max_binary64_vs_dd": 2.0060079355945528e-13,
-   "max_catani_dd": 2.0794912052036723e-30,
+   "max_catani_dd": 2.2902428603038168e-30,
    "max_ward_dd": null
   },
   {
@@ -316,10 +316,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 48.51,
-      "export_s": 0.82,
-      "double_double_s_per_point": 0.4175,
-      "double_s_per_point": 0.1925
+      "generate_s": 48.61,
+      "export_s": 0.91,
+      "double_double_s_per_point": 0.4625,
+      "double_s_per_point": 0.275
      },
      "failed_checks": []
     }
@@ -389,10 +389,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 51.15,
-      "export_s": 0.99,
-      "double_double_s_per_point": 0.395,
-      "double_s_per_point": 0.1625
+      "generate_s": 52.45,
+      "export_s": 0.45,
+      "double_double_s_per_point": 0.405,
+      "double_s_per_point": 0.17
      },
      "failed_checks": []
     }
@@ -468,10 +468,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 46.87,
-      "export_s": 0.59,
-      "double_double_s_per_point": 0.5125,
-      "double_s_per_point": 0.2125
+      "generate_s": 47.69,
+      "export_s": 0.33,
+      "double_double_s_per_point": 0.4075,
+      "double_s_per_point": 0.1575
      },
      "failed_checks": []
     }
@@ -571,11 +571,11 @@
       }
      ],
      "timings": {
-      "generate_s": 4.32,
-      "export_s": 0.93,
-      "double_double_s_per_point": 0.1,
+      "generate_s": 3.97,
+      "export_s": 0.04,
+      "double_double_s_per_point": 0.085,
       "double_s_per_point": 0.02,
-      "uv_s": 0.21
+      "uv_s": 1000.89
      },
      "failed_checks": []
     }
@@ -653,12 +653,12 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 5.11,
-      "export_s": 0.57,
-      "double_double_s_per_point": 0.3175,
-      "double_s_per_point": 0.0575,
-      "uv_s": 0.75,
-      "ward_s": 5.71
+      "generate_s": 6.25,
+      "export_s": 0.14,
+      "double_double_s_per_point": 0.315,
+      "double_s_per_point": 0.055,
+      "uv_s": 0.76,
+      "ward_s": 6.99
      },
      "failed_checks": []
     }
@@ -698,9 +698,9 @@
        "no_reference": [],
        "binary64_out_of_scope": [],
        "timings": {
-        "generate_s": 5.82,
+        "generate_s": 7.47,
         "export_s": 0.0,
-        "double_double_s_per_point": 0.24,
+        "double_double_s_per_point": 0.23666666666666666,
         "double_s_per_point": 0.006666666666666667
        },
        "failed_checks": []
@@ -784,10 +784,10 @@
      "no_reference": [],
      "binary64_out_of_scope": [],
      "timings": {
-      "generate_s": 52.64,
-      "export_s": 3.15,
-      "double_double_s_per_point": 1.5975,
-      "double_s_per_point": 0.6925
+      "generate_s": 52.84,
+      "export_s": 1.62,
+      "double_double_s_per_point": 1.675,
+      "double_s_per_point": 0.825
      },
      "failed_checks": []
     }
