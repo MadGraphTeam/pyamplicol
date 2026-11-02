@@ -143,7 +143,14 @@ def command_run(args) -> int:
     start = time.perf_counter()
     jobs = [
         subprocess.Popen(
-            [str(binary), f"points={path}", f"first={j}", f"stride={args.jobs}", f"prec={args.prec}"],
+            [
+                str(binary),
+                f"points={path}",
+                f"first={j}",
+                f"stride={args.jobs}",
+                f"prec={args.prec}",
+                f"reflect={int(args.reflect)}",
+            ],
             stdout=subprocess.PIPE,
             text=True,
         )
@@ -180,6 +187,7 @@ def command_run(args) -> int:
         "alpha_s": alpha_s,
         "precision": args.prec,
         "jobs": args.jobs,
+        "reflect": args.reflect,
         "wall_seconds": round(time.perf_counter() - start, 2),
         "convention": "pyAmpliCol leading colour (n_f degree 0), MS-bar, CDR; "
         "V/B = (alpha_s/4pi)[N_c S1/S0 + c0 + c1/eps]",
@@ -243,6 +251,11 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--points", type=int, nargs="+", default=[0])
     r.add_argument("--jobs", type=int, default=1)
     r.add_argument("--prec", choices=("double", "dd"), default="double")
+    r.add_argument(
+        "--reflect",
+        action="store_true",
+        help="one ordering per reflection pair, weight 2 (half the cost)",
+    )
     r.add_argument("--njet-build", type=Path, required=True)
     r.add_argument("--scratch", type=Path, required=True)
     r.add_argument("--json", type=Path, required=True)

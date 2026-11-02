@@ -10,11 +10,14 @@
 // Born (pyAmpliCol's LC: the leading N_c degree, n_f of degree 0), renormalised and converted to CDR as NJet's
 // chsums/NJetRenorm.cpp does.
 //
-// Usage: ngluon_lc points=FILE [first=0 stride=1] [prec=double|dd]
+// Usage: ngluon_lc points=FILE [first=0 stride=1] [prec=double|dd] [reflect=0|1]
 //   points file: "npoints nlegs", then per point a line "mu" and nlegs lines "E px py pz" (decimal text; legs 1
 //   and 2 incoming with physical momenta; they are negated to NGluon's all-outgoing convention). first/stride
 //   split the orderings across processes (ordering k is evaluated when k % stride == first). One JSON line per
 //   point on stdout: index, orderings, helicities, S0, S1 = [finite, single, double], seconds.
+//   reflect=1 evaluates one ordering of each reflection pair (1, s_2, ..., s_n) ~ (1, s_n, ..., s_2), weight 2:
+//   the tree and the leading primitive both pick up (-1)^n under the reflection, so |A0|^2 and Re(conj(A0) A1)
+//   are reflection invariant (validated against reflect=0 at six and seven gluons).
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -53,7 +56,7 @@ template <> dd_real parse<dd_real>(const std::string &text) { return dd_real(tex
 double as_double(double x) { return x; }
 double as_double(const dd_real &x) { return x.x[0]; }
 
-template <typename T> int run(const std::string &file, int first, int stride) {
+template <typename T> int run(const std::string &file, int first, int stride, bool reflect) {
   std::ifstream in(file);
   int npoints = 0, n = 0;
   in >> npoints >> n;
@@ -83,6 +86,8 @@ template <typename T> int run(const std::string &file, int first, int stride) {
     std::vector<int> order(n);
     long k = 0;
     do {
+      // One ordering per reflection pair: the one whose second entry is below its last.
+      if (reflect && rest.front() > rest.back()) continue;
       const bool mine = (k++ % stride) == first;
       if (!mine) continue;
       ++orderings;
@@ -96,18 +101,19 @@ template <typename T> int run(const std::string &file, int first, int stride) {
         amp.setHelicity(hel);
         const std::complex<T> a0 = amp.evalTree(order.data());
         const Eps3<T> a1 = amp.eval(0, order.data());  // PRIMTYPE MIXED: the gluon loop
-        s0 += std::norm(a0);
+        const T weight(reflect ? 2. : 1.);
+        s0 += weight * std::norm(a0);
         const std::complex<T> c0 = std::conj(a0);
-        s1[0] += T(2.) * std::real(c0 * a1.get0());
-        s1[1] += T(2.) * std::real(c0 * a1.get1());
-        s1[2] += T(2.) * std::real(c0 * a1.get2());
+        s1[0] += T(2.) * weight * std::real(c0 * a1.get0());
+        s1[1] += T(2.) * weight * std::real(c0 * a1.get1());
+        s1[2] += T(2.) * weight * std::real(c0 * a1.get2());
         ++helicities;
       }
     } while (std::next_permutation(rest.begin(), rest.end()));
     const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
-    std::printf("{\"index\": %d, \"first\": %d, \"stride\": %d, \"orderings\": %ld, \"evaluations\": %ld, "
+    std::printf("{\"index\": %d, \"first\": %d, \"stride\": %d, \"reflect\": %d, \"orderings\": %ld, \"evaluations\": %ld, "
                 "\"S0\": %.17e, \"S1\": [%.17e, %.17e, %.17e], \"seconds\": %.3f}\n",
-                p, first, stride, orderings, helicities, as_double(s0), as_double(s1[0]), as_double(s1[1]),
+                p, first, stride, int(reflect), orderings, helicities, as_double(s0), as_double(s1[0]), as_double(s1[1]),
                 as_double(s1[2]), seconds);
     std::fflush(stdout);
   }
@@ -125,6 +131,7 @@ int main(int argc, char **argv) {
   const int first = std::atoi(arg(argc, argv, "first", "0").c_str());
   const int stride = std::atoi(arg(argc, argv, "stride", "1").c_str());
   const std::string prec = arg(argc, argv, "prec", "double");
-  if (prec == "dd") return run<dd_real>(file, first, stride);
-  return run<double>(file, first, stride);
+  const bool reflect = arg(argc, argv, "reflect", "0") == "1";
+  if (prec == "dd") return run<dd_real>(file, first, stride, reflect);
+  return run<double>(file, first, stride, reflect);
 }
