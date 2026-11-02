@@ -1,0 +1,240 @@
+{
+ "source": "tests/unit/test_loop_v2_hc.py whole-file job (every tier, JUnit) + hc_rows.py re-evaluation of its artifacts",
+ "commit": "617b59cdb106e398b4a84b403e60920fbcd3a501",
+ "native": "loop-native-v2-slice-b36af289 (digest 58b40383)",
+ "date": "2026-11-01 23:42 UTC",
+ "precision": "binary64 (HC02 also double-double); deviation |ours - MadLoop| / max(|ours|, |MadLoop|, |Born| alpha_s/(2 pi))",
+ "junit": {
+  "test_ufo_head_is_matched_at_a_symbol_head_boundary": "passed",
+  "test_compiled_model_refuses_a_ufo_head_typed_and_admits_a_ufo_named_namespace": "passed",
+  "test_a_model_directory_named_ufo_compiles": "passed",
+  "test_massive_vector_loop_species_are_the_unvetoed_massive_vectors": "passed",
+  "test_loop_gauge_is_refused_only_where_massive_vectors_run_in_the_loops": "passed",
+  "test_counterterm_keys_with_extra_zero_positions_are_read_positionally": "passed",
+  "test_other_counterterm_key_lengths_are_the_listed_source_refusal[key0]": "passed",
+  "test_other_counterterm_key_lengths_are_the_listed_source_refusal[key1]": "passed",
+  "test_other_counterterm_key_lengths_are_the_listed_source_refusal[key2]": "passed",
+  "test_generator_contact_with_a_singlet_leg_splits_through_an_adjoint_auxiliary": "passed",
+  "test_hc_rows_equal_madloop[HC01]": "passed",
+  "test_hc_rows_equal_madloop[HC02]": "passed",
+  "test_hc_rows_equal_madloop[HC03]": "passed",
+  "test_hc_rows_equal_madloop[HC04]": "passed",
+  "test_hc_rows_equal_madloop[HC06]": "passed"
+ },
+ "counts": {
+  "pass": 5,
+  "fail": 0,
+  "blocked": 1
+ },
+ "all_required_pass": true,
+ "rows": [
+  {
+   "id": "HC01",
+   "process": "g g > x0",
+   "particle_veto": [
+    "t"
+   ],
+   "madloop_process": "g g > x0 / t [virt=QCD]",
+   "model": "HC_NLO_X0_UFO (v1.3, tools/loop_reference/hc_nlo_x0.json)",
+   "restriction": "heft",
+   "parameter_cards": [
+    "1",
+    "0",
+    "0.7071067811865476"
+   ],
+   "points": 1,
+   "values": 6,
+   "mu_r": [
+    "125",
+    "91.188"
+   ],
+   "reference": "tests/fixtures/loop/required/hc/hc01.json (MadLoop 3.7.0)",
+   "max_relative_deviation": {
+    "born": 3.517382740755553e-16,
+    "finite": 1.2557835777475077e-15,
+    "single_pole": 2.0411896682963074e-15,
+    "double_pole": 8.404094572745356e-16
+   },
+   "acceptance": 1e-05,
+   "catani_max_relative": {
+    "single_pole": 1.8556269711784615e-15,
+    "double_pole": 7.203509633781736e-16
+   },
+   "catani_tolerance": 1e-08,
+   "rotation_estimate_max": 1.8544507690203813e-14,
+   "rotation_bound": 1e-06,
+   "double_double": null,
+   "test": "passed",
+   "status": "pass"
+  },
+  {
+   "id": "HC02",
+   "process": "g g > x0 g",
+   "particle_veto": [
+    "t"
+   ],
+   "madloop_process": "g g > x0 g / t [virt=QCD]",
+   "model": "HC_NLO_X0_UFO (v1.3, tools/loop_reference/hc_nlo_x0.json)",
+   "restriction": "heft",
+   "parameter_cards": [
+    "1",
+    "0",
+    "0.7071067811865476"
+   ],
+   "points": 2,
+   "values": 12,
+   "mu_r": [
+    "125",
+    "91.188"
+   ],
+   "reference": "tests/fixtures/loop/required/hc/hc02.json (MadLoop 3.7.0)",
+   "max_relative_deviation": {
+    "born": 1.7436935918489977e-15,
+    "finite": 1.803007972568555e-14,
+    "single_pole": 3.1317871426603203e-15,
+    "double_pole": 2.044161146112948e-15
+   },
+   "acceptance": 1e-05,
+   "catani_max_relative": {
+    "single_pole": 5.219645237767173e-15,
+    "double_pole": 1.7034676217607907e-15
+   },
+   "catani_tolerance": 1e-08,
+   "rotation_estimate_max": 1.436249450921451e-13,
+   "rotation_bound": 1e-06,
+   "double_double": {
+    "vs_madloop": 1.4624397999722774e-14,
+    "vs_binary64": 7.388673640458408e-15
+   },
+   "test": "passed",
+   "status": "pass"
+  },
+  {
+   "id": "HC03",
+   "process": "u u~ > x0 g",
+   "particle_veto": [
+    "t"
+   ],
+   "madloop_process": "u u~ > x0 g / t [virt=QCD]",
+   "model": "HC_NLO_X0_UFO (v1.3, tools/loop_reference/hc_nlo_x0.json)",
+   "restriction": "heft",
+   "parameter_cards": [
+    "1",
+    "0.7071067811865476"
+   ],
+   "points": 2,
+   "values": 8,
+   "mu_r": [
+    "125",
+    "91.188"
+   ],
+   "reference": "tests/fixtures/loop/required/hc/hc03.json (MadLoop 3.7.0)",
+   "max_relative_deviation": {
+    "born": 1.4214144898431584e-15,
+    "finite": 2.3949208635291795e-13,
+    "single_pole": 1.3680243461053991e-14,
+    "double_pole": 2.6381729576351862e-15
+   },
+   "acceptance": 1e-05,
+   "catani_max_relative": {
+    "single_pole": 3.406735952801447e-14,
+    "double_pole": 2.4732871477829878e-15
+   },
+   "catani_tolerance": 1e-08,
+   "rotation_estimate_max": 6.528141889314914e-13,
+   "rotation_bound": 1e-06,
+   "double_double": null,
+   "test": "passed",
+   "status": "pass"
+  },
+  {
+   "id": "HC04",
+   "process": "u u~ > x0 z",
+   "particle_veto": [],
+   "madloop_process": "u u~ > x0 z [virt=QCD]",
+   "model": "HC_NLO_X0_UFO (v1.3, tools/loop_reference/hc_nlo_x0.json)",
+   "restriction": "no_b_mass",
+   "parameter_cards": [
+    "1",
+    "0.7071067811865476"
+   ],
+   "points": 2,
+   "values": 8,
+   "mu_r": [
+    "125",
+    "91.188"
+   ],
+   "reference": "tests/fixtures/loop/required/hc/hc04.json (MadLoop 3.7.0)",
+   "max_relative_deviation": {
+    "born": 1.5298712426709603e-14,
+    "finite": 8.444294317603688e-14,
+    "single_pole": 8.153272963409848e-15,
+    "double_pole": 8.077618994364284e-15
+   },
+   "acceptance": 1e-05,
+   "catani_max_relative": {
+    "single_pole": 2.4235495285703385e-14,
+    "double_pole": 6.241796495645179e-15
+   },
+   "catani_tolerance": 1e-08,
+   "rotation_estimate_max": 1.168135569110073e-13,
+   "rotation_bound": 1e-06,
+   "double_double": null,
+   "test": "passed",
+   "status": "pass"
+  },
+  {
+   "id": "HC06",
+   "process": "g g > x0 t t~",
+   "particle_veto": [],
+   "madloop_process": "g g > x0 t t~ [virt=QCD]",
+   "model": "HC_NLO_X0_UFO (v1.3, tools/loop_reference/hc_nlo_x0.json)",
+   "restriction": "no_b_mass",
+   "parameter_cards": [
+    "1",
+    "0.7071067811865476"
+   ],
+   "points": 2,
+   "values": 8,
+   "mu_r": [
+    "125",
+    "91.188"
+   ],
+   "reference": "tests/fixtures/loop/required/hc/hc06.json (MadLoop 3.7.0)",
+   "max_relative_deviation": {
+    "born": 2.1520086039776314e-15,
+    "finite": 2.947181662897322e-14,
+    "single_pole": 2.171462743604232e-14,
+    "double_pole": 1.6013969025767256e-14
+   },
+   "acceptance": 1e-05,
+   "catani_max_relative": {
+    "single_pole": null,
+    "double_pole": 9.566786690718102e-15
+   },
+   "catani_tolerance": 1e-08,
+   "rotation_estimate_max": 6.169888452388264e-13,
+   "rotation_bound": 1e-06,
+   "double_double": null,
+   "test": "passed",
+   "status": "pass"
+  },
+  {
+   "id": "HC05",
+   "process": "g g > x0 g g",
+   "particle_veto": [
+    "t"
+   ],
+   "model": "HC_NLO_X0_UFO (v1.3)",
+   "restriction": "heft",
+   "status": "blocked",
+   "reason": "five-point f*f*f*f R2 contact (G G G G X0) needs the multi-trace colour state (DESIGN \u00a76.1); recorded limitation (optional row)",
+   "refusal": {
+    "key": "unlowered-counterterm",
+    "message": "unlowered-counterterm: counterterm rules the tree recursion cannot lower, whose vertices can enter a tree of the request: PYAMPLICOL_CT_V76 [G G G G X0] (counterterm colour 'f(1,-1,-2)*f(2,-2,-3)*f(3,-3,-4)*f(4,-4,-1)' is a product the tree colour flow carries only as the multi-trace colour state of design \u00a76.1 (it does not cancel between the rules of its vertex)). Rule: a reachable counterterm vertex is inserted exactly once or refused (REQUIREMENTS_ADDENDUM J); an unreachable one is inert. Instead: report the request; bound its coupling orders",
+    "type": "LoopEngineRefusal",
+    "seconds": 6.7
+   }
+  }
+ ]
+}
