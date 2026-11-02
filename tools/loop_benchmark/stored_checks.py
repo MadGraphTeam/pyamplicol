@@ -25,7 +25,9 @@ Stages, each recorded in ``--json`` as it ends (``OUT.DONE`` at the end):
 * ``ward`` (ii, a store generated on the full tree kernels, ``--kernels
   full``): ``ward.ward_check`` at ``--ward-points`` (binary64 with its
   reduction check) and ``--ward-dd-points``, epsilon_j -> p_j / p_j^0 on
-  ``--ward-legs`` (default: three gluon legs, first, middle and last);
+  ``--ward-legs`` (default: three gluon legs, first, middle and last); a
+  binary64 point whose estimate leaves the binary64 scope (O1: E > 1e-9) is
+  recorded, not asserted (``asserted``), and at least one row must be;
 * ``rescue`` (vii, ``--rescue-points``): the default rescue policy's level 0
   (binary64 with ``RESCUE_ROTATION`` and the rescaled reduction check,
   ``stability.DEFAULT_RESCUE``) and the count of points it sends up (E >
@@ -192,10 +194,14 @@ def check_process(
     threads: int | None = None,
     record: dict[str, Any] | None = None,
     write: Any = None,
+    require_catani: bool | None = None,
 ) -> dict[str, Any]:
     """Every stage (module docstring) on a native process (``NativeProcess``)
     of the G1-harness process ``key`` at colour ``accuracy``; returns the
-    record (``write()`` after each stage when given)."""
+    record (``write()`` after each stage when given). ``require_catani``
+    (default: at full colour) fails the run when the store holds no Catani
+    record (``dipoles.catani_record``; a store written before M-FINAL
+    MF-8G-3, or a process the stored route does not predict)."""
 
     from pyamplicol.loops.v2.assemble import Precision
     from pyamplicol.loops.v2.stability import (
@@ -229,7 +235,17 @@ def check_process(
     begin = time.perf_counter()
     executor = process.executor(native, lanes=lanes, threads=threads, catani=True)
     record["catani_record"] = process.record.get("catani") is not None
-    stage("executor", begin)
+    if require_catani is None:
+        require_catani = accuracy == "full"
+    stage(
+        "executor",
+        begin,
+        **(
+            {"passed": record["catani_record"], "note": "Catani record required"}
+            if require_catani
+            else {}
+        ),
+    )
 
     stream = streams.load(key)
     parameters = pyamplicol_v2._parameters(key)
@@ -303,24 +319,40 @@ def check_process(
                     factors=[(1, 0)],
                     parameters=parameters,
                 )
+                # O1 (as ``ward.ward_row``): binary64 is asserted only where
+                # every row's estimate is within its scope (E <= 1e-9 of the
+                # physical scale); a point beyond it is recorded, the
+                # double-double rows assert it.
+                asserted = carrier != "double" or all(
+                    r.get("in_scope", True) for r in found["rows"]
+                )
                 rows.append(
                     {
                         "index": index,
                         "carrier": carrier,
                         "legs": list(legs),
-                        "passed": found["passed"],
+                        "asserted": asserted,
+                        "passed": found["passed"] if asserted else None,
                         "rows": [
                             {
                                 k: v
                                 for k, v in r.items()
-                                if k in ("leg", "born", "parts", "passed")
+                                if k
+                                in ("leg", "born", "parts", "estimate", "in_scope", "passed")
                             }
                             for r in found["rows"]
                         ],
                     }
                 )
         record["ward"] = rows
-        stage("ward", begin, rows=len(rows), passed=all(r["passed"] for r in rows))
+        verdicts = [r["passed"] for r in rows if r["asserted"]]
+        stage(
+            "ward",
+            begin,
+            rows=len(rows),
+            asserted=len(verdicts),
+            passed=bool(verdicts) and all(verdicts),
+        )
 
     if rescue_points:
         begin = time.perf_counter()
@@ -402,6 +434,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--rescue-dd", type=int, default=2)
     parser.add_argument("--lanes", type=int, default=16)
     parser.add_argument("--threads", type=int)
+    parser.add_argument(
+        "--no-catani",
+        action="store_true",
+        help="do not require a stored Catani record at full colour",
+    )
     parser.add_argument("--json", type=Path, required=True)
     options = parser.parse_args(argv)
 
@@ -451,6 +488,7 @@ def main(argv: list[str] | None = None) -> int:
         threads=options.threads,
         record=record,
         write=write,
+        require_catani=False if options.no_catani else None,
     )
     status = "passed" if record["passed"] in (True, None) else "FAILED"
     Path(f"{options.json}.DONE").write_text(f"{status}\n")
