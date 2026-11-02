@@ -240,7 +240,9 @@ class Row:
     # operator on the tree engine's colour-correlated Born, ``tree_catani``)
     # or "none" (recorded as not asserted: M01's public-route variants, whose
     # tools-route twins hold rule 4, and a native-input row without the tree
-    # engine's committed correlations, reported "partial").
+    # engine's committed correlations, reported "partial"), or "native" (a
+    # native-input row whose executor forms the prediction from the stored
+    # dipole orbits, ``NativeExecutor(catani=True)``, M-FINAL MF-8G-3).
     catani: str = "python"
     # The committed tree-engine colour correlations of a "tree" row
     # (``tools/loop_benchmark/mqcd_tree_correlations.py``), or None (the
@@ -1590,7 +1592,15 @@ class RowRun:
         LOG.info("%s: generated in %.1f s", row.id, self.generate_seconds)
         start = time.perf_counter()
         if row.inputs == "native":
-            self.executor = NativeExecutor(self.slice, forward=False, inputs="native")
+            # catani "native": the executor forms Catani's prediction from
+            # the Born vectors' colour correlations over the dipole orbits
+            # (M-FINAL MF-8G-3).
+            self.executor = NativeExecutor(
+                self.slice,
+                forward=False,
+                inputs="native",
+                catani=row.catani == "native",
+            )
         else:
             self.executor = NativeExecutor(
                 self.slice,
