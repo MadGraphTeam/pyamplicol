@@ -1,0 +1,1587 @@
+{
+ "schema": "pyamplicol-2to6-harvest/1",
+ "status": "PRELIMINARY: harvested from existing records only (no new 8-leg run: STOP-8LEG); pre-optimisation engine; checks incomplete; runs stopped by the USER",
+ "engine": {
+  "branch": "work/v2-bench-2to6",
+  "base": "15d4ef5a (milestone M-SM report head; engine pin 71e2041e)",
+  "harness_commits": {
+   "d5ed94c2": "processes.json rows gg_gggggg / uux_gggggg / uux_uuxgggg (particle_veto [6]) + frozen streams; at 2->6 the stream is RAMBO from its first point (no campaign point passes the 1/1000 cut)",
+   "8a062a52": "--rotation-samples/--rotations rotation timing block and --colour-contraction"
+  },
+  "engine_source_change_vs_base": "none (15d4ef5a..8a062a52 touches tools/loop_benchmark and its unit test only)",
+  "revisions_in_records": [
+   "8a062a5222d91ab0b12f130f8de3709361b6d554",
+   "d5ed94c26e87a82a6b2a6e20497f5977f6343327"
+  ],
+  "native": {
+   "digest": "f8d77c97ebc8c6b845f043c2da3e3cf446a7558e7f85c80c35d267a15fbe5425",
+   "directory": "loop-native-v2-slice-71e2041e",
+   "profile": {
+    "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+    "CARGO_PROFILE_RELEASE_LTO": "thin",
+    "name": "release"
+   },
+   "source_revision": "71e2041effa7e11c4cb903094f994a784695e527"
+  },
+  "native_digest_short": "f8d77c97",
+  "protocol": "binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up excluded, paired blocks, setup heap frozen out of the cyclic collector"
+ },
+ "stop": {
+  "text": "8-leg (2->6) runs stopped by the USER (2026-11-01 ~23:00 UTC); coordinator lifts it by removing this file and writing a COORDINATOR line in slice-status DECISIONS. See DECISIONS ~23:15.",
+  "source": "workspace/tmp/STOP-8LEG"
+ },
+ "units": {
+  "s": "seconds wall",
+  "gib": "2^30 bytes (harness VmHWM / ru_maxrss)",
+  "gb": "1e9 bytes (watchdog process-group VmRSS samples)",
+  "s_per_point": "seconds per phase-space point, one thread"
+ },
+ "lax_precision_threshold": 1e-05,
+ "rows": [
+  {
+   "key": "gg_gggggg-lc",
+   "process": "g g > g g g g g g",
+   "label": "g g > 6g (LC, N_f = 5, no top)",
+   "accuracy": "lc",
+   "particle_veto": [
+    6
+   ],
+   "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "born_orders": {
+    "QCD": 6,
+    "QED": 0
+   },
+   "correction": "QCD",
+   "revisions": {
+    "generation": "d5ed94c26e87a82a6b2a6e20497f5977f6343327",
+    "timing": "d5ed94c26e87a82a6b2a6e20497f5977f6343327"
+   },
+   "lanes": 16,
+   "structure": {
+    "families": 47348,
+    "b_trie_nodes": 1381065
+   },
+   "evaluation_B_reason": "projected evaluation peak > 150 GB at any B (the peak does not depend on B): B = 16 (smallest; bounds the time); likely to hit the RSS cap (a result)",
+   "generation": {
+    "stages": {
+     "model": {
+      "s": 4.321934676961973,
+      "peak_gib": 0.368
+     },
+     "generate": {
+      "s": 4629.892367278924,
+      "peak_gib": 91.782
+     },
+     "export": {
+      "s": 9062.701381225139,
+      "peak_gib": 217.2,
+      "plan_mb": 1869.625
+     },
+     "store": {
+      "s": 2857.895605367841,
+      "peak_gib": 228.558
+     }
+    },
+    "stage_sum_s": 16554.8,
+    "step_wall_s": 16961.5,
+    "step_wall_h": 4.71,
+    "peak_gib": 228.558,
+    "peak_note": "max of the per-stage VmHWM peaks (harness resets the high-water mark per stage)",
+    "step": {
+     "start": "2026-10-31T15:02:10Z",
+     "end": "2026-10-31T19:44:51Z",
+     "elapsed_s": 16961.5,
+     "peak_rss_gb": 153.93,
+     "rc": 0,
+     "reason": "ok",
+     "core": 1,
+     "peak_rss_gib": 143.36,
+     "running": false,
+     "source": "workspace/tmp/bench-2to6/logs/store-gg_gggggg-lc.status.json"
+    },
+    "revision": "d5ed94c26e87a82a6b2a6e20497f5977f6343327",
+    "dirty": false,
+    "lanes": 16,
+    "structure": {
+     "families": 47348,
+     "b_trie_nodes": 1381065
+    },
+    "step_peak_caveat": "the watchdog's step peak (153.93 GB) under-reports: the watchdog was SIGSTOPped from 2026-10-31T17:20:28Z to 2026-10-31T19:44:56Z (logs/guard-store-gg-lc.log); the guard's 5-min samples peak at 225 GiB and the harness store-stage VmHWM is 228.558 GiB",
+    "guard_true_peak_gib": 225
+   },
+   "artifact": {
+    "path": "workspace/artifacts/2to6/gg_gggggg-lc/loop-runtime.pacbin",
+    "bytes": 2140235608,
+    "gb": 2.14,
+    "plan_sha256": "c82863f57774a0be343b24b3499081502860229a7631d65cefd6e6360e109026",
+    "point_inputs": "native-v2",
+    "source": "workspace/artifacts/2to6/gg_gggggg-lc/generation.json (store.bytes; artifact not opened)"
+   },
+   "load": {
+    "s": 854.2267109509557,
+    "peak_gib": 139.648
+   },
+   "evaluation": {
+    "mode": "normal timing: warm-up, then paired timed blocks of B stream points (finite part, poles off, checks off)",
+    "B": 16,
+    "lanes": 16,
+    "threads": 1,
+    "threads_source": "record protocol: binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up excluded, paired blocks, setup heap frozen out of the cyclic collector",
+    "host_core": [
+     5
+    ],
+    "warm_up": {
+     "points": 16,
+     "B": 16,
+     "s": 3015.3695997430477,
+     "s_per_point": 188.5,
+     "note": "includes lazy compilation"
+    },
+    "timed": {
+     "blocks": 2,
+     "points_per_block": 16,
+     "points": 32,
+     "samples_s_per_point": [
+      122.67574024676287,
+      115.67581087250437
+     ]
+    },
+    "s_per_point": 119.17577555963362,
+    "stages_s_per_point": {
+     "assembly": 0.05340140491898637,
+     "dressing": 81.59602397496874,
+     "factors": 2.6580480598437495,
+     "input conversion": 0.0001020644122036174,
+     "native trees": 20.0265673975,
+     "other": 0.41947152870962157,
+     "python point parameters": 8.879778033588082e-05,
+     "reduction": 11.2537585036875,
+     "reduction: masters": 0.75424018371875,
+     "reduction: masters (oneloopmaster)": 0.006859616000000001,
+     "scatter": 0.12490553628124998,
+     "seeds": 3.04340829153125
+    },
+    "peak_gib_harness": 327.059,
+    "peak_note": "harness ru_maxrss of the timing process; step = watchdog process-group VmRSS samples (GB = 1e9 B)",
+    "step": {
+     "start": "2026-10-31T19:44:54Z",
+     "end": "2026-10-31T23:37:04Z",
+     "elapsed_s": 13929.3,
+     "peak_rss_gb": 350.95,
+     "rc": 0,
+     "reason": "ok",
+     "core": 5,
+     "peak_rss_gib": 326.85,
+     "running": false,
+     "source": "workspace/tmp/bench-2to6/logs/time-gg_gggggg-lc.status.json"
+    },
+    "revision": "d5ed94c26e87a82a6b2a6e20497f5977f6343327",
+    "colour_contraction": null
+   },
+   "checks": {
+    "double_pole": {
+     "status": "done",
+     "what": "double pole / Born of the renormalised virtual against the universal value (every pole, binary64)",
+     "points": [
+      {
+       "index": 0,
+       "born": 3.2346550332508265e-09,
+       "finite": -1.2211755617991756e-08,
+       "single_pole_over_born_abs": 2.486130220151431,
+       "double_pole_over_born": -0.45072679883174854,
+       "universal_double_pole": -0.4507267988362476,
+       "double_pole_deviation": 9.98180670997894e-12,
+       "seconds_per_point_all_poles": 524.2713909460387
+      },
+      {
+       "index": 1,
+       "born": 1.258606908065893e-11,
+       "finite": -1.414109311945734e-11,
+       "single_pole_over_born_abs": 1.7726506645594222,
+       "double_pole_over_born": -0.4507267988362421,
+       "universal_double_pole": -0.4507267988362476,
+       "double_pole_deviation": 1.219276063922509e-14,
+       "seconds_per_point_all_poles": 524.2713909460387
+      },
+      {
+       "index": 2,
+       "born": 7.143730330018408e-10,
+       "finite": -3.232189009576889e-09,
+       "single_pole_over_born_abs": 2.6118177310504964,
+       "double_pole_over_born": -0.45072679883630323,
+       "universal_double_pole": -0.4507267988362476,
+       "double_pole_deviation": 1.2340551677276302e-13,
+       "seconds_per_point_all_poles": 524.2713909460387
+      }
+     ],
+     "max_deviation": 9.98180670997894e-12,
+     "verdict": "pass"
+    },
+    "catani_single_pole": {
+     "status": "not obtained",
+     "why": "tree-engine Catani route (8-leg LC tree + 28 dipole correlators) produced 0 points: still in the tree generation after 41393.1 s, killed at 2026-11-01T11:05:36Z by the host-memory floor (MemAvailable 117 GB < 120 GB; job peak 151 GiB) per logs/guard-catani-gg-lc.log; the status label 'time bound' (rc 124) is wrong (its stopped watchdog held the old 7200 s bound); a re-run alone was planned, then the USER stop",
+     "points": 0,
+     "step": {
+      "start": "2026-10-31T23:37:07Z",
+      "end": "2026-11-01T11:07:00Z",
+      "elapsed_s": 41393.1,
+      "peak_rss_gb": 103.37,
+      "rc": 124,
+      "reason": "time bound",
+      "core": 96,
+      "peak_rss_gib": 96.27,
+      "running": false,
+      "source": "workspace/tmp/bench-2to6/logs/catani-gg_gggggg-lc.status.json"
+     }
+    },
+    "ward": {
+     "status": "not obtained",
+     "why": "deferred (logs/ward-gg_gggggg-lc.status.json): coordinator 2026-11-01 ~01:35 UTC: deferred so the 8-gluon FC store (own track, USER priority) does not share the host with a second ~230 GB job; it never ran before the USER stop"
+    },
+    "double_double": {
+     "status": "not obtained",
+     "why": "skipped by the chain rule (logs/dd-gg_gggggg-lc.skip): skipped: estimated 100 x 119.17577555963362 s/pt > 1 h (or no timing)"
+    },
+    "stability": {
+     "status": "done",
+     "what": "recommended stability estimate (loops.v2.stability.RECOMMENDED_CHECKS: one generic exact rotation default_rotation(0) + the rescaled reduction check), binary64, stream points 0-2; estimate = 2 x (rotation budget + reduction budget) + 16 u S, relative to the finite part; the check budgets are each check's own relative budget (sum over reduction lanes of |Omega - Omega'| plus local parts), not a spread of two totals",
+     "points": [
+      {
+       "index": 0,
+       "arithmetic": "double",
+       "finite": -1.2211755617991756e-08,
+       "estimate_finite_relative": 0.001679210969010091,
+       "rotation-0_budget_relative": 0.00040389018421413663,
+       "reduction-rescaled_budget_relative": 0.0004357153002806153,
+       "seconds_per_point_with_checks": 1282.3723151683032,
+       "above_1e-5": true
+      },
+      {
+       "index": 1,
+       "arithmetic": "double",
+       "finite": -1.414109311945734e-11,
+       "estimate_finite_relative": 8.912402504724668e-05,
+       "rotation-0_budget_relative": 2.0516768191648986e-05,
+       "reduction-rescaled_budget_relative": 2.4045244322559764e-05,
+       "seconds_per_point_with_checks": 1282.3723151683032,
+       "above_1e-5": true
+      },
+      {
+       "index": 2,
+       "arithmetic": "double",
+       "finite": -3.232189009576889e-09,
+       "estimate_finite_relative": 4.820717227681012e-07,
+       "rotation-0_budget_relative": 1.0394036838016996e-07,
+       "reduction-rescaled_budget_relative": 1.3709548921108852e-07,
+       "seconds_per_point_with_checks": 1282.3723151683032,
+       "above_1e-5": false
+      }
+     ],
+     "max_estimate": 0.001679210969010091,
+     "points_above_1e-5": [
+      0,
+      1
+     ],
+     "source": "workspace/tmp/bench-2to6/runs/stability-time-gg_gggggg-lc.json"
+    }
+   },
+   "table1": {
+    "label": "g g > 6g (LC, N_f = 5, no top)",
+    "generation_h": 4.71,
+    "generation_peak_gib": 228.558,
+    "artifact_gb": 2.14,
+    "load_s": 854.2267109509557,
+    "load_peak_gib": 139.648,
+    "s_per_point": 119.17577555963362,
+    "B": 16,
+    "eval_peak_gib": 327.059,
+    "eval_step_peak_gib": 326.85,
+    "fastest_olp_s_per_point": null,
+    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured",
+    "preliminary": true
+   }
+  },
+  {
+   "key": "gg_gggggg-full",
+   "process": "g g > g g g g g g",
+   "label": "g g > 6g (FC, N_f = 5, no top)",
+   "accuracy": "full",
+   "particle_veto": [
+    6
+   ],
+   "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "born_orders": {
+    "QCD": 6,
+    "QED": 0
+   },
+   "correction": "QCD",
+   "revisions": {
+    "generation": "d5ed94c26e87a82a6b2a6e20497f5977f6343327",
+    "timing": "8a062a5222d91ab0b12f130f8de3709361b6d554"
+   },
+   "lanes": 16,
+   "structure": {
+    "families": 47348,
+    "b_trie_nodes": 1999165
+   },
+   "generation": {
+    "stages": {
+     "model": {
+      "s": 3.042250509141013,
+      "peak_gib": 0.362
+     },
+     "generate": {
+      "s": 2778.8347896069754,
+      "peak_gib": 62.569
+     },
+     "export": {
+      "s": 10553.04343886301,
+      "peak_gib": 235.153,
+      "plan_mb": 3057.034
+     },
+     "store": {
+      "s": 3827.419515135931,
+      "peak_gib": 246.518
+     }
+    },
+    "stage_sum_s": 17162.3,
+    "step_wall_s": 17488.6,
+    "step_wall_h": 4.86,
+    "peak_gib": 246.518,
+    "peak_note": "max of the per-stage VmHWM peaks (harness resets the high-water mark per stage)",
+    "step": {
+     "start": "2026-11-01T01:34:41Z",
+     "end": "2026-11-01T06:26:10Z",
+     "elapsed_s": 17488.6,
+     "peak_rss_gb": 260.16,
+     "rc": 0,
+     "reason": "ok",
+     "core": 8,
+     "peak_rss_gib": 242.29,
+     "running": false,
+     "source": "workspace/tmp/bench-2to6/logs/store-gg_gggggg-full.status.json"
+    },
+    "revision": "d5ed94c26e87a82a6b2a6e20497f5977f6343327",
+    "dirty": false,
+    "lanes": 16,
+    "structure": {
+     "families": 47348,
+     "b_trie_nodes": 1999165
+    }
+   },
+   "artifact": {
+    "path": "workspace/artifacts/2to6/gg_gggggg-full/loop-runtime.pacbin",
+    "bytes": 2565435176,
+    "gb": 2.565,
+    "plan_sha256": "820a0171bc48ccfc73913b95d592e3172e62d1ae8a5bdbad71d56d597bb303c8",
+    "point_inputs": "native-v2",
+    "source": "workspace/artifacts/2to6/gg_gggggg-full/generation.json (store.bytes; artifact not opened)"
+   },
+   "load": {
+    "s": 1164.6646069120616,
+    "peak_gib": 159.948,
+    "all_loads_of_this_artifact": [
+     {
+      "s": 1164.6646069120616,
+      "peak_gib": 159.948
+     },
+     {
+      "s": 1030.4368666398805,
+      "peak_gib": 159.951
+     },
+     {
+      "s": 1104.6582662209403,
+      "peak_gib": 148.833
+     },
+     {
+      "s": 923.00252559199,
+      "peak_gib": 159.953
+     },
+     {
+      "s": 1066.1161839149427,
+      "peak_gib": 159.512
+     }
+    ],
+    "range_s": [
+     923.00252559199,
+     1164.6646069120616
+    ]
+   },
+   "evaluation": {
+    "mode": "rotation block (USER 2026-11-01 ~09:50): warm-up 16 stream points, then ONE timed batch of 16 = 4 stream points x 4 copies (identity + default_rotation(0..2)), finite part, poles off, checks off; not the paired 2-block protocol",
+    "B": 16,
+    "lanes": 16,
+    "threads": 1,
+    "host_core": [
+     99
+    ],
+    "warm_up": {
+     "points": 16,
+     "B": 16,
+     "s": 9832.101815809961,
+     "s_per_point": 614.5,
+     "note": "includes lazy compilation"
+    },
+    "timed": {
+     "blocks": 1,
+     "points_per_block": 16,
+     "points": 16,
+     "stream_indices": [
+      16,
+      17,
+      18,
+      19
+     ],
+     "copies": [
+      "identity",
+      "default_rotation(0)",
+      "default_rotation(1)",
+      "default_rotation(2)"
+     ],
+     "wall_s": 7653.62895394396,
+     "samples_s_per_point": [
+      478.3518096214975
+     ]
+    },
+    "s_per_point": 478.3518096214975,
+    "stages_s_per_point": {
+     "python point parameters": 0.00011017857468686998,
+     "input conversion": 0.00018684956012293696,
+     "assembly": 0.09348236567166168,
+     "seeds": 7.879704547875,
+     "factors": 5.749176323500003,
+     "dressing": 180.88921642262508,
+     "scatter": 0.18545455575,
+     "reduction": 16.851274688937497,
+     "reduction: masters": 0.8865357554374999,
+     "reduction: masters (oneloopmaster)": 0.0038969726875000004,
+     "native trees": 265.7935939621875,
+     "other": 0.9096097268159156
+    },
+    "colour_contraction": {
+     "policy": "fft",
+     "certified_fourier_record": true,
+     "evaluated": [
+      "symmetric-group-fft"
+     ],
+     "fft_seed_jobs": 1
+    },
+    "peak_gib_harness": 239.189,
+    "peak_note": "harness VmHWM of the timed block (reset before it); the step peak (watchdog, GB = 1e9 B) includes the warm-up",
+    "step": {
+     "start": "2026-11-01T09:57:40Z",
+     "end": "2026-11-01T15:29:27Z",
+     "elapsed_s": 19906.7,
+     "peak_rss_gb": 380.66,
+     "rc": 0,
+     "reason": "ok",
+     "core": 99,
+     "peak_rss_gib": 354.52,
+     "running": false,
+     "source": "workspace/tmp/bench-2to6/logs/time-rot-gg_gggggg-full.status.json"
+    },
+    "revision": "8a062a5222d91ab0b12f130f8de3709361b6d554",
+    "fc_over_lc_s_per_point": 4.01,
+    "earlier_normal_timing_stopped_after_warm_up": {
+     "load": {
+      "s": 1030.4368666398805,
+      "peak_gib": 159.951
+     },
+     "warm_up": {
+      "B": 16,
+      "points": 16,
+      "s": 9586.832
+     },
+     "step": {
+      "start": "2026-11-01T06:49:41Z",
+      "end": "2026-11-01T09:57:27Z",
+      "elapsed_s": 11266.6,
+      "peak_rss_gb": 336.42,
+      "rc": -15,
+      "reason": "error",
+      "core": 1,
+      "peak_rss_gib": 313.32,
+      "running": false,
+      "source": "workspace/tmp/bench-2to6/logs/time-gg_gggggg-full.status.json"
+     },
+     "prose_only": {
+      "why_stopped": "stopped by the coordinator at 09:56 to switch to the rotation layout (STATE.md COORDINATOR 2026-11-01 ~10:00); the status only says rc -15"
+     }
+    }
+   },
+   "checks": {
+    "rotation_spread": {
+     "status": "done",
+     "what": "finite-part relative spread max_r |f_r - f_0| / |f_0| over the 4 copies of each sample (binary64, from the timed block itself)",
+     "points": [
+      {
+       "stream_index": 16,
+       "finite": [
+        1.0941469202395159e-10,
+        3.3937498895788295e-10,
+        1.2240186815033633e-10,
+        2.41285629926831e-10
+       ],
+       "relative_spread": 2.1017314282033674,
+       "born_relative_spread": 4.677757838640472e-15,
+       "above_1e-5": true
+      },
+      {
+       "stream_index": 17,
+       "finite": [
+        -2.3896456052263496e-10,
+        -2.3896456053557067e-10,
+        -2.3896456059690947e-10,
+        -2.3896456048011663e-10
+       ],
+       "relative_spread": 3.1081810454507047e-10,
+       "born_relative_spread": 8.480407794128953e-15,
+       "above_1e-5": false
+      },
+      {
+       "stream_index": 18,
+       "finite": [
+        -1.1568978905756341e-10,
+        -1.1568979052633967e-10,
+        -1.1568979045868762e-10,
+        -1.1568978888555066e-10
+       ],
+       "relative_spread": 1.2695815891650159e-08,
+       "born_relative_spread": 2.5940979259252953e-15,
+       "above_1e-5": false
+      },
+      {
+       "stream_index": 19,
+       "finite": [
+        -4.07544491076979e-11,
+        -4.075445323678101e-11,
+        -4.075445811262911e-11,
+        -4.0754460605811375e-11
+       ],
+       "relative_spread": 2.821314906125663e-07,
+       "born_relative_spread": 8.086996952319462e-15,
+       "above_1e-5": false
+      }
+     ],
+     "max_relative_spread": 2.1017314282033674,
+     "unstable_points": [
+      16
+     ],
+     "verdict": "stream point(s) [16] binary64-unstable (spread 2.1: no correct digit): a rescue case; points [17, 18, 19] below 1e-5"
+    },
+    "double_pole": {
+     "status": "not obtained",
+     "why": "the FC physical-points job (phys-gg_gggggg-full: load, 1-point warm-up, points 0-2 with every pole) was killed by the host-memory floor on all 3 attempts before its warm-up finished (no warm-up line in its logs), then held at its 480 GB start gate until the USER stop",
+     "attempts": [
+      {
+       "start": "2026-11-01T15:30:50Z",
+       "elapsed_s": 2137.9,
+       "peak_rss_gb": 179.7,
+       "reason": "host memory",
+       "load": {
+        "s": 1104.6582662209403,
+        "peak_gib": 148.833
+       }
+      },
+      {
+       "start": "2026-11-01T18:31:00Z",
+       "elapsed_s": 3444.2,
+       "peak_rss_gb": 385.3,
+       "reason": "host memory",
+       "load": {
+        "s": 923.00252559199,
+        "peak_gib": 159.953
+       }
+      },
+      {
+       "start": "2026-11-01T19:33:27Z",
+       "elapsed_s": 2937.9,
+       "peak_rss_gb": 315.33,
+       "reason": "host memory",
+       "load": {
+        "s": 1066.1161839149427,
+        "peak_gib": 159.512
+       }
+      }
+     ]
+    },
+    "catani_single_pole": {
+     "status": "not obtained",
+     "why": "catani-gg_gggggg-full needs the FC physical rows: never started"
+    },
+    "ward": {
+     "status": "not obtained",
+     "why": "no FC Ward run was started",
+     "prose_only": {
+      "plan": "planned only if >= 500 GiB were free (STATE.md 2026-11-01 16:15)"
+     }
+    },
+    "double_double": {
+     "status": "not obtained",
+     "why": "no double-double run at 2->6 g g > 6g (the chain skips DD when 100 x s/pt > 1 h)"
+    }
+   },
+   "table1": {
+    "label": "g g > 6g (FC, N_f = 5, no top)",
+    "generation_h": 4.86,
+    "generation_peak_gib": 246.518,
+    "artifact_gb": 2.565,
+    "load_s": 1164.6646069120616,
+    "load_peak_gib": 159.948,
+    "s_per_point": 478.3518096214975,
+    "B": 16,
+    "eval_peak_gib": 239.189,
+    "eval_step_peak_gib": 354.52,
+    "fastest_olp_s_per_point": null,
+    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured",
+    "preliminary": true
+   }
+  },
+  {
+   "key": "uux_gggggg-lc",
+   "process": "u u~ > g g g g g g",
+   "label": "u u~ > 6g (LC, N_f = 5, no top)",
+   "accuracy": "lc",
+   "particle_veto": [
+    6
+   ],
+   "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "born_orders": {
+    "QCD": 6,
+    "QED": 0
+   },
+   "correction": "QCD",
+   "revisions": {
+    "generation": "8a062a5222d91ab0b12f130f8de3709361b6d554",
+    "timing": "8a062a5222d91ab0b12f130f8de3709361b6d554"
+   },
+   "lanes": 16,
+   "structure": {
+    "families": 23437,
+    "b_trie_nodes": 245170
+   },
+   "generation": {
+    "stages": {
+     "model": {
+      "s": 5.433447347953916,
+      "peak_gib": 0.362
+     },
+     "generate": {
+      "s": 1655.2204901741352,
+      "peak_gib": 15.352
+     },
+     "export": {
+      "s": 1712.651231693104,
+      "peak_gib": 41.781,
+      "plan_mb": 209.061
+     },
+     "store": {
+      "s": 579.9580826249439,
+      "peak_gib": 31.626
+     }
+    },
+    "stage_sum_s": 3953.3,
+    "step_wall_s": 4038.9,
+    "step_wall_h": 1.12,
+    "peak_gib": 41.781,
+    "peak_note": "max of the per-stage VmHWM peaks (harness resets the high-water mark per stage)",
+    "step": {
+     "start": "2026-11-01T14:08:02Z",
+     "end": "2026-11-01T15:15:21Z",
+     "elapsed_s": 4038.9,
+     "peak_rss_gb": 44.22,
+     "rc": 0,
+     "reason": "ok",
+     "core": 1,
+     "peak_rss_gib": 41.18,
+     "running": false,
+     "source": "workspace/tmp/bench-2to6/logs/store-uux_gggggg-lc.status.json"
+    },
+    "revision": "8a062a5222d91ab0b12f130f8de3709361b6d554",
+    "dirty": false,
+    "lanes": 16,
+    "structure": {
+     "families": 23437,
+     "b_trie_nodes": 245170
+    }
+   },
+   "artifact": {
+    "path": "workspace/artifacts/2to6/uux_gggggg-lc/loop-runtime.pacbin",
+    "bytes": 177661176,
+    "gb": 0.178,
+    "plan_sha256": "363db994e83e4976f3e20873875457ab8ddc43e1eaeb64e84ab0c51402ed9094",
+    "point_inputs": "native-v2",
+    "source": "workspace/artifacts/2to6/uux_gggggg-lc/generation.json (store.bytes; artifact not opened)"
+   },
+   "load": {
+    "s": 74.87945208698511,
+    "peak_gib": 12.594
+   },
+   "evaluation": {
+    "mode": "normal timing: warm-up, then paired timed blocks of B stream points (finite part, poles off, checks off)",
+    "B": 128,
+    "lanes": 16,
+    "threads": 1,
+    "threads_source": "record protocol: binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up excluded, paired blocks, setup heap frozen out of the cyclic collector",
+    "host_core": [
+     4
+    ],
+    "warm_up": {
+     "points": 16,
+     "B": 128,
+     "s": 434.5452992049977,
+     "s_per_point": 27.2,
+     "note": "includes lazy compilation"
+    },
+    "timed": {
+     "blocks": 2,
+     "points_per_block": 128,
+     "points": 256,
+     "samples_s_per_point": [
+      19.98328792106986,
+      19.887246311289346
+     ]
+    },
+    "s_per_point": 19.935267116179602,
+    "stages_s_per_point": {
+     "assembly": 0.04213071888261766,
+     "dressing": 11.398749783273434,
+     "factors": 0.14772680407031247,
+     "input conversion": 0.00010382137861597585,
+     "native trees": 3.592311317667969,
+     "other": 0.20570081914847016,
+     "python point parameters": 7.364230896200752e-05,
+     "reduction": 3.442905772976563,
+     "reduction: masters": 0.3935943507343751,
+     "reduction: masters (oneloopmaster)": 0.007951460402343753,
+     "scatter": 0.05770338733203126,
+     "seeds": 1.047861049140625
+    },
+    "peak_gib_harness": 90.946,
+    "peak_note": "harness ru_maxrss of the timing process; step = watchdog process-group VmRSS samples (GB = 1e9 B)",
+    "step": {
+     "start": "2026-11-01T16:17:37Z",
+     "end": "2026-11-01T18:03:47Z",
+     "elapsed_s": 6369.9,
+     "peak_rss_gb": 97.65,
+     "rc": 0,
+     "reason": "ok",
+     "core": 4,
+     "peak_rss_gib": 90.94,
+     "attempt": 1,
+     "previous_attempts": [],
+     "running": false,
+     "waiting_for_memory": false,
+     "gate_wait_s": 450,
+     "source": "workspace/tmp/bench-2to6/logs/time-uux_gggggg-lc.status.json"
+    },
+    "revision": "8a062a5222d91ab0b12f130f8de3709361b6d554",
+    "colour_contraction": null,
+    "earlier_attempt_killed": {
+     "start": "2026-11-01T15:15:24Z",
+     "elapsed_s": 2712.7,
+     "peak_rss_gb": 86.75,
+     "reason": "host memory",
+     "load": {
+      "s": 74.16820335807279,
+      "peak_gib": 12.601
+     },
+     "warm_up": {
+      "B": 128,
+      "points": 16,
+      "s": 459.779
+     }
+    }
+   },
+   "checks": {
+    "double_pole": {
+     "status": "done",
+     "what": "double pole / Born of the renormalised virtual against the universal value (every pole, binary64)",
+     "points": [
+      {
+       "index": 0,
+       "born": 1.2738580311807341e-11,
+       "finite": -4.703724171921071e-11,
+       "single_pole_over_born_abs": 2.3021036123374765,
+       "double_pole_over_born": -0.3943859489835189,
+       "universal_double_pole": -0.39438594898171664,
+       "double_pole_deviation": 4.569839649913085e-12,
+       "seconds_per_point_all_poles": 79.34102144037995
+      },
+      {
+       "index": 1,
+       "born": 1.7909657935486554e-13,
+       "finite": -2.2147613167877069e-13,
+       "single_pole_over_born_abs": 1.6640218153630686,
+       "double_pole_over_born": -0.39438594898243257,
+       "universal_double_pole": -0.39438594898171664,
+       "double_pole_deviation": 1.815296207377616e-12,
+       "seconds_per_point_all_poles": 79.34102144037995
+      },
+      {
+       "index": 2,
+       "born": 5.505623585219442e-12,
+       "finite": -2.315528280627664e-11,
+       "single_pole_over_born_abs": 2.3809285002190212,
+       "double_pole_over_born": -0.3943859489817248,
+       "universal_double_pole": -0.39438594898171664,
+       "double_pole_deviation": 2.069074532716985e-14,
+       "seconds_per_point_all_poles": 79.34102144037995
+      }
+     ],
+     "max_deviation": 4.569839649913085e-12,
+     "verdict": "pass"
+    },
+    "catani_single_pole": {
+     "status": "not obtained",
+     "why": "tree-engine Catani route: 6 chain attempts all killed by the 120 GB host-memory floor while in the tree generation (longest 4856.0 s), 0 points; the own-track re-run started 2026-11-01T22:51:18Z (record: 0 points; its status still says running, last update at 842 s) was ended by the USER stop",
+     "attempts": [
+      {
+       "attempt": 1,
+       "start": "2026-11-01T18:03:50Z",
+       "elapsed_s": 3733.2,
+       "peak_rss_gb": 13.93,
+       "reason": "host memory"
+      },
+      {
+       "attempt": 2,
+       "start": "2026-11-01T19:09:36Z",
+       "elapsed_s": 136.1,
+       "peak_rss_gb": 1.68,
+       "reason": "host memory"
+      },
+      {
+       "attempt": 3,
+       "start": "2026-11-01T19:12:25Z",
+       "elapsed_s": 549.6,
+       "peak_rss_gb": 3.84,
+       "reason": "host memory"
+      },
+      {
+       "attempt": 4,
+       "start": "2026-11-01T19:39:14Z",
+       "elapsed_s": 2406.6,
+       "peak_rss_gb": 10.51,
+       "reason": "host memory"
+      },
+      {
+       "attempt": 5,
+       "start": "2026-11-01T20:30:51Z",
+       "elapsed_s": 4856.0,
+       "peak_rss_gb": 15.23,
+       "reason": "host memory"
+      },
+      {
+       "attempt": 6,
+       "start": "2026-11-01T22:33:11Z",
+       "elapsed_s": 726.6,
+       "peak_rss_gb": 9.22,
+       "reason": "host memory"
+      }
+     ]
+    },
+    "ward": {
+     "status": "not obtained",
+     "why": "ward-uux_gggggg-lc killed by the host-memory floor 90.6 s after its start (2026-11-01T16:00:40Z); not re-run before the USER stop"
+    },
+    "double_double": {
+     "status": "not obtained",
+     "why": "dd-uux_gggggg-lc (point 0) killed by the host-memory floor on attempt 1 (161.2 s), then waiting at its start gate when the USER stop ended it"
+    },
+    "stability": {
+     "status": "done",
+     "what": "recommended stability estimate (loops.v2.stability.RECOMMENDED_CHECKS: one generic exact rotation default_rotation(0) + the rescaled reduction check), binary64, stream points 0-2; estimate = 2 x (rotation budget + reduction budget) + 16 u S, relative to the finite part; the check budgets are each check's own relative budget (sum over reduction lanes of |Omega - Omega'| plus local parts), not a spread of two totals",
+     "points": [
+      {
+       "index": 0,
+       "arithmetic": "double",
+       "finite": -4.703724171921071e-11,
+       "estimate_finite_relative": 7.711756541786481e-10,
+       "rotation-0_budget_relative": 1.6506724444661835e-10,
+       "reduction-rescaled_budget_relative": 2.205136967581115e-10,
+       "seconds_per_point_with_checks": 148.4209262423683,
+       "above_1e-5": false
+      },
+      {
+       "index": 1,
+       "arithmetic": "double",
+       "finite": -2.2147613167877069e-13,
+       "estimate_finite_relative": 8.283730613945452e-07,
+       "rotation-0_budget_relative": 1.9091448367355085e-07,
+       "reduction-rescaled_budget_relative": 2.2327203815902945e-07,
+       "seconds_per_point_with_checks": 148.4209262423683,
+       "above_1e-5": false
+      },
+      {
+       "index": 2,
+       "arithmetic": "double",
+       "finite": -2.315528280627664e-11,
+       "estimate_finite_relative": 5.186488111217212e-11,
+       "rotation-0_budget_relative": 1.416884492754139e-11,
+       "reduction-rescaled_budget_relative": 1.175955860803082e-11,
+       "seconds_per_point_with_checks": 148.4209262423683,
+       "above_1e-5": false
+      }
+     ],
+     "max_estimate": 8.283730613945452e-07,
+     "points_above_1e-5": [],
+     "source": "workspace/tmp/bench-2to6/runs/stability-time-uux_gggggg-lc.json"
+    }
+   },
+   "table1": {
+    "label": "u u~ > 6g (LC, N_f = 5, no top)",
+    "generation_h": 1.12,
+    "generation_peak_gib": 41.781,
+    "artifact_gb": 0.178,
+    "load_s": 74.87945208698511,
+    "load_peak_gib": 12.594,
+    "s_per_point": 19.935267116179602,
+    "B": 128,
+    "eval_peak_gib": 90.946,
+    "eval_step_peak_gib": 90.94,
+    "fastest_olp_s_per_point": null,
+    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured",
+    "preliminary": true
+   }
+  },
+  {
+   "key": "uux_uuxgggg-lc",
+   "process": "u u~ > u u~ g g g g",
+   "label": "u u~ > u u~ 4g (LC, N_f = 5, no top)",
+   "accuracy": "lc",
+   "particle_veto": [
+    6
+   ],
+   "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "born_orders": {
+    "QCD": 6,
+    "QED": 0
+   },
+   "correction": "QCD",
+   "revisions": {
+    "generation": "8a062a5222d91ab0b12f130f8de3709361b6d554",
+    "timing": "8a062a5222d91ab0b12f130f8de3709361b6d554"
+   },
+   "lanes": 16,
+   "structure": {
+    "families": 13318,
+    "b_trie_nodes": 90998
+   },
+   "generation": {
+    "stages": {
+     "model": {
+      "s": 4.544907022034749,
+      "peak_gib": 0.362
+     },
+     "generate": {
+      "s": 933.2743865689263,
+      "peak_gib": 8.56
+     },
+     "export": {
+      "s": 484.69664853299037,
+      "peak_gib": 17.304,
+      "plan_mb": 53.683
+     },
+     "store": {
+      "s": 45.345222579082474,
+      "peak_gib": 15.672
+     }
+    },
+    "stage_sum_s": 1467.9,
+    "step_wall_s": 1502.3,
+    "step_wall_h": 0.42,
+    "peak_gib": 17.304,
+    "peak_note": "max of the per-stage VmHWM peaks (harness resets the high-water mark per stage)",
+    "step": {
+     "start": "2026-11-01T11:07:03Z",
+     "end": "2026-11-01T11:32:05Z",
+     "elapsed_s": 1502.3,
+     "peak_rss_gb": 18.48,
+     "rc": 0,
+     "reason": "ok",
+     "core": 5,
+     "peak_rss_gib": 17.21,
+     "running": false,
+     "source": "workspace/tmp/bench-2to6/logs/store-uux_uuxgggg-lc.status.json"
+    },
+    "revision": "8a062a5222d91ab0b12f130f8de3709361b6d554",
+    "dirty": false,
+    "lanes": 16,
+    "structure": {
+     "families": 13318,
+     "b_trie_nodes": 90998
+    }
+   },
+   "artifact": {
+    "path": "workspace/artifacts/2to6/uux_uuxgggg-lc/loop-runtime.pacbin",
+    "bytes": 22541800,
+    "gb": 0.023,
+    "plan_sha256": "90140bfb0c4ed698b3d78208a6a4c6b60a625920391792bd4ac73ff59d703aef",
+    "point_inputs": "native-v2",
+    "source": "workspace/artifacts/2to6/uux_uuxgggg-lc/generation.json (store.bytes; artifact not opened)"
+   },
+   "load": {
+    "s": 13.090995524078608,
+    "peak_gib": 1.553
+   },
+   "evaluation": {
+    "mode": "normal timing: warm-up, then paired timed blocks of B stream points (finite part, poles off, checks off)",
+    "B": 128,
+    "lanes": 16,
+    "threads": 1,
+    "threads_source": "record protocol: binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up excluded, paired blocks, setup heap frozen out of the cyclic collector",
+    "host_core": [
+     4
+    ],
+    "warm_up": {
+     "points": 16,
+     "B": 128,
+     "s": 98.05876071401872,
+     "s_per_point": 6.1,
+     "note": "includes lazy compilation"
+    },
+    "timed": {
+     "blocks": 2,
+     "points_per_block": 128,
+     "points": 256,
+     "samples_s_per_point": [
+      4.82692174685144,
+      4.614932160304306
+     ]
+    },
+    "s_per_point": 4.720926953577873,
+    "stages_s_per_point": {
+     "assembly": 0.02127395349634753,
+     "dressing": 2.5816970009257805,
+     "factors": 0.02831073555859377,
+     "input conversion": 0.00010074026977235917,
+     "native trees": 0.47319294121093747,
+     "other": 0.10492129987028598,
+     "python point parameters": 7.503582037315937e-05,
+     "reduction": 1.1420301585429695,
+     "reduction: masters": 0.20575592592187497,
+     "reduction: masters (oneloopmaster)": 0.006506882550781251,
+     "scatter": 0.031239898230468764,
+     "seeds": 0.3380851896523438
+    },
+    "peak_gib_harness": 23.342,
+    "peak_note": "harness ru_maxrss of the timing process; step = watchdog process-group VmRSS samples (GB = 1e9 B)",
+    "step": {
+     "start": "2026-11-01T11:32:08Z",
+     "end": "2026-11-01T11:56:53Z",
+     "elapsed_s": 1484.7,
+     "peak_rss_gb": 25.01,
+     "rc": 0,
+     "reason": "ok",
+     "core": 4,
+     "peak_rss_gib": 23.29,
+     "running": false,
+     "source": "workspace/tmp/bench-2to6/logs/time-uux_uuxgggg-lc.status.json"
+    },
+    "revision": "8a062a5222d91ab0b12f130f8de3709361b6d554",
+    "colour_contraction": null
+   },
+   "checks": {
+    "double_pole": {
+     "status": "done",
+     "what": "double pole / Born of the renormalised virtual against the universal value (every pole, binary64)",
+     "points": [
+      {
+       "index": 0,
+       "born": 1.0988979081067035e-09,
+       "finite": -2.2104575726292332e-09,
+       "single_pole_over_born_abs": 1.9208848644107683,
+       "double_pole_over_born": -0.3380450991271705,
+       "universal_double_pole": -0.33804509912718567,
+       "double_pole_deviation": 4.4829948208868014e-14,
+       "seconds_per_point_all_poles": 17.913132960675284
+      },
+      {
+       "index": 1,
+       "born": 4.2332482451315975e-13,
+       "finite": -1.8945003786984686e-13,
+       "single_pole_over_born_abs": 1.4215785710629016,
+       "double_pole_over_born": -0.3380450991272085,
+       "universal_double_pole": -0.33804509912718567,
+       "double_pole_deviation": 6.749124071005404e-14,
+       "seconds_per_point_all_poles": 17.913132960675284
+      },
+      {
+       "index": 2,
+       "born": 4.314431323873399e-13,
+       "finite": -7.925255845596801e-13,
+       "single_pole_over_born_abs": 1.8579874482061036,
+       "double_pole_over_born": -0.33804509912719316,
+       "universal_double_pole": -0.33804509912718567,
+       "double_pole_deviation": 2.2168655707681985e-14,
+       "seconds_per_point_all_poles": 17.913132960675284
+      }
+     ],
+     "max_deviation": 6.749124071005404e-14,
+     "verdict": "pass"
+    },
+    "catani_single_pole": {
+     "status": "done (LC); decisive FC check pending",
+     "what": "tree engine's colour-correlated Born + massless Catani (mqcd 'tree' route, n_f = 5) at tree accuracy 'lc' against the loop's poles; single pole compared in magnitude, both normalised to their own Born; single_deviation = loop/Catani - 1; born_ratio = loop LC Born / tree LC Born",
+     "points": [
+      {
+       "index": 0,
+       "mu_r": "1000",
+       "tree_born": 1.095708839931299e-09,
+       "loop_born": 1.0988979081067035e-09,
+       "born_ratio": 1.0029105069332145,
+       "catani_single_over_born": -1.7970136615198715,
+       "loop_single_over_born_abs": 1.9208848644107683,
+       "single_deviation": 0.06893169792940221,
+       "catani_double_over_born": -0.33804509912718567,
+       "loop_double_over_born": -0.3380450991271705,
+       "double_deviation": 4.4829948208868014e-14,
+       "passed_1e-5": false,
+       "seconds": 122.0064628769178
+      },
+      {
+       "index": 1,
+       "mu_r": "700",
+       "tree_born": 4.78042956401094e-13,
+       "loop_born": 4.2332482451315975e-13,
+       "born_ratio": 0.8855372071583795,
+       "catani_single_over_born": -1.2943195534424572,
+       "loop_single_over_born_abs": 1.4215785710629016,
+       "single_deviation": 0.09832117368696008,
+       "catani_double_over_born": -0.33804509912718567,
+       "loop_double_over_born": -0.3380450991272085,
+       "double_deviation": 6.749124071005404e-14,
+       "passed_1e-5": false,
+       "seconds": 59.398579705972224
+      },
+      {
+       "index": 2,
+       "mu_r": "1400",
+       "tree_born": 4.901901388383471e-13,
+       "loop_born": 4.314431323873399e-13,
+       "born_ratio": 0.8801546547014881,
+       "catani_single_over_born": -1.7308820880406484,
+       "loop_single_over_born_abs": 1.8579874482061036,
+       "single_deviation": 0.07343386418039488,
+       "catani_double_over_born": -0.33804509912718567,
+       "loop_double_over_born": -0.33804509912719316,
+       "double_deviation": 2.2168655707681985e-14,
+       "passed_1e-5": false,
+       "seconds": 68.29554432700388
+      }
+     ],
+     "max_single_deviation": 0.09832117368696008,
+     "max_double_deviation": 6.749124071005404e-14,
+     "tree_generation_s": 5124.744937343989,
+     "tree_peak_gib": 16.304279327392578,
+     "step": {
+      "start": "2026-11-01T11:56:56Z",
+      "end": "2026-11-01T13:26:51Z",
+      "elapsed_s": 5395.0,
+      "peak_rss_gb": 16.97,
+      "rc": 0,
+      "reason": "ok",
+      "core": 6,
+      "peak_rss_gib": 15.8,
+      "running": false,
+      "source": "workspace/tmp/bench-2to6/logs/catani-uux_uuxgggg-lc.status.json"
+     },
+     "verdict": "double pole passes (<= 6.7e-14); single pole off by 6.9 / 9.8 / 7.3 % (not passed at 1e-5) while the two engines' LC Borns differ too (born_ratio 1.003 / 0.886 / 0.880): the tree engine's LC (colour-flow truncation and its LC colour correlations) is not the loop engine's formal-N_c LC for quark lines, so this LC comparison is not like for like; to be decided by the FC check (exact colour on both sides), which is pending",
+     "route_validation": {
+      "process": "g g > g g g",
+      "tree_accuracy": "full",
+      "max_single_deviation": 2.7521782615273113e-13,
+      "max_double_deviation": 4.76675361394513e-13,
+      "source": "workspace/tmp/bench-2to6/smoke/catani-gg_ggg-2.json",
+      "note": "the route agrees at full colour on g g > g g g; it was never run at LC on a gluon row"
+     },
+     "fc_check_pending": {
+      "why": "store-uux_uuxgggg-full (the FC phase's first step) was killed by the host-memory floor 15.0 s after its start (2026-11-01T16:02:14Z); the FC phase never re-ran before the USER stop"
+     },
+     "prose_only": {
+      "explanation_source": "STATE.md COORDINATOR 2026-11-01 ~13:50 (LC-definition reading; not investigated further by ruling)"
+     }
+    },
+    "ward": {
+     "status": "done",
+     "what": "tools/loop_v2_ward.py on a regenerated LC process: point 0, leg 8 polarisation replaced by c p_j / p_j^0 with factors 1 and i, binary64, every pole; ratios to the scale of each Laurent coefficient",
+     "passed": true,
+     "max_born_ratio": 4.056793395106989e-17,
+     "max_virtual_ratio_finite_single_double": [
+      2.4747692024330705e-12,
+      3.81539239500166e-13,
+      4.7838806661583e-16
+     ],
+     "rows": [
+      {
+       "point": 0,
+       "carrier": "double",
+       "leg": 8,
+       "factor": "1",
+       "born": 5.477922900991818e-19,
+       "virtual_finite_single_double": [
+        2.4072848846149953e-14,
+        7.480256299185132e-15,
+        3.5503018462795987e-16
+       ],
+       "in_scope": true,
+       "passed": true
+      },
+      {
+       "point": 0,
+       "carrier": "double",
+       "leg": 8,
+       "factor": "i",
+       "born": 4.056793395106989e-17,
+       "virtual_finite_single_double": [
+        2.4747692024330705e-12,
+        3.81539239500166e-13,
+        4.7838806661583e-16
+       ],
+       "in_scope": true,
+       "passed": true
+      }
+     ],
+     "criterion": {
+      "born": {
+       "double": 1e-12,
+       "double-double": 1e-24
+      },
+      "virtual": {
+       "double-double": 1e-25
+      },
+      "estimate_factor": 10,
+      "binary64_scope": 1e-09,
+      "binary64_floor": 1e-12,
+      "vector": "c p_j / p_j^0",
+      "checks": {
+       "double": "reduction-direction"
+      }
+     },
+     "regeneration": {
+      "model": 4.396786272991449,
+      "generate": 979.0715134190395,
+      "generate_peak_gib": 8.456977844238281,
+      "export": 513.3551941309124,
+      "export_peak_gib": 16.511878967285156
+     },
+     "max_rss_gib": 23.606258392333984,
+     "step": {
+      "start": "2026-11-01T13:40:52Z",
+      "end": "2026-11-01T14:07:59Z",
+      "elapsed_s": 1626.6,
+      "peak_rss_gb": 24.89,
+      "rc": 0,
+      "reason": "ok",
+      "core": 1,
+      "peak_rss_gib": 23.18,
+      "running": false,
+      "source": "workspace/tmp/bench-2to6/logs/ward-uux_uuxgggg-lc.status.json"
+     },
+     "verdict": "pass"
+    },
+    "double_double": {
+     "status": "done",
+     "what": "stream point 0 in binary64 and double-double, recommended checks on both",
+     "binary64": {
+      "born": 1.0988979081067035e-09,
+      "finite": -2.2104575726292332e-09,
+      "estimate_finite_relative": 3.336065682685094e-10,
+      "seconds_per_point_with_checks": 123.57440985692665
+     },
+     "double_double": {
+      "born": 1.0988979081067269e-09,
+      "finite": -2.210457572579359e-09,
+      "estimate_finite_relative": 2.767914552798443e-26,
+      "seconds_per_point_with_checks": 694.3699882188812
+     },
+     "binary64_true_error_finite_relative": 2.256e-11,
+     "binary64_born_difference_relative": 2.13e-14,
+     "estimate_over_true_error": 14.8,
+     "step": {
+      "start": "2026-11-01T13:26:55Z",
+      "end": "2026-11-01T13:40:49Z",
+      "elapsed_s": 834.5,
+      "peak_rss_gb": 16.05,
+      "rc": 0,
+      "reason": "ok",
+      "core": 2,
+      "peak_rss_gib": 14.95,
+      "running": false,
+      "source": "workspace/tmp/bench-2to6/logs/dd-uux_uuxgggg-lc.status.json"
+     },
+     "verdict": "pass: binary64 agrees with double-double to 2.3e-11 relative; the binary64 estimate (3.3e-10) covers it"
+    },
+    "stability": {
+     "status": "done",
+     "what": "recommended stability estimate (loops.v2.stability.RECOMMENDED_CHECKS: one generic exact rotation default_rotation(0) + the rescaled reduction check), binary64, stream points 0-2; estimate = 2 x (rotation budget + reduction budget) + 16 u S, relative to the finite part; the check budgets are each check's own relative budget (sum over reduction lanes of |Omega - Omega'| plus local parts), not a spread of two totals",
+     "points": [
+      {
+       "index": 0,
+       "arithmetic": "double",
+       "finite": -2.2104575726292332e-09,
+       "estimate_finite_relative": 3.336065682685094e-10,
+       "rotation-0_budget_relative": 9.571300191914965e-11,
+       "reduction-rescaled_budget_relative": 7.107727429872879e-11,
+       "seconds_per_point_with_checks": 34.85476255766116,
+       "above_1e-5": false
+      },
+      {
+       "index": 1,
+       "arithmetic": "double",
+       "finite": -1.8945003786984686e-13,
+       "estimate_finite_relative": 2.624280371426821e-06,
+       "rotation-0_budget_relative": 5.804384129157617e-07,
+       "reduction-rescaled_budget_relative": 7.317017467741085e-07,
+       "seconds_per_point_with_checks": 34.85476255766116,
+       "above_1e-5": false
+      },
+      {
+       "index": 2,
+       "arithmetic": "double",
+       "finite": -7.925255845596801e-13,
+       "estimate_finite_relative": 7.042370132661528e-10,
+       "rotation-0_budget_relative": 1.3530555395645406e-10,
+       "reduction-rescaled_budget_relative": 2.1680435550577222e-10,
+       "seconds_per_point_with_checks": 34.85476255766116,
+       "above_1e-5": false
+      }
+     ],
+     "max_estimate": 2.624280371426821e-06,
+     "points_above_1e-5": [],
+     "source": "workspace/tmp/bench-2to6/runs/stability-time-uux_uuxgggg-lc.json"
+    }
+   },
+   "table1": {
+    "label": "u u~ > u u~ 4g (LC, N_f = 5, no top)",
+    "generation_h": 0.42,
+    "generation_peak_gib": 17.304,
+    "artifact_gb": 0.023,
+    "load_s": 13.090995524078608,
+    "load_peak_gib": 1.553,
+    "s_per_point": 4.720926953577873,
+    "B": 128,
+    "eval_peak_gib": 23.342,
+    "eval_step_peak_gib": 23.29,
+    "fastest_olp_s_per_point": null,
+    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured",
+    "preliminary": true
+   }
+  }
+ ],
+ "dry_runs": {
+  "what": "Generator.plan dry runs (no structure counts); all configurations, including top-included g g > 6g FC (Q-A)",
+  "rows": {
+   "gg_gggggg-lc": {
+    "expression": "g g > g g g g g g",
+    "accuracy": "lc",
+    "particle_veto": "t",
+    "passed": true,
+    "blockers": [],
+    "plan_s": 841.5688374938909,
+    "peak_gib": 24.3428955078125
+   },
+   "gg_gggggg-full": {
+    "expression": "g g > g g g g g g",
+    "accuracy": "full",
+    "particle_veto": "t",
+    "passed": true,
+    "blockers": [],
+    "plan_s": 976.8625764609315,
+    "peak_gib": 24.284046173095703
+   },
+   "gg_gggggg_top-full": {
+    "expression": "g g > g g g g g g",
+    "accuracy": "full",
+    "particle_veto": "-",
+    "passed": true,
+    "blockers": [],
+    "plan_s": 838.8042212808505,
+    "peak_gib": 24.31829071044922
+   },
+   "uux_gggggg-lc": {
+    "expression": "u u~ > g g g g g g",
+    "accuracy": "lc",
+    "particle_veto": "t",
+    "passed": true,
+    "blockers": [],
+    "plan_s": 116.8342883689329,
+    "peak_gib": 2.3534889221191406
+   },
+   "uux_gggggg-full": {
+    "expression": "u u~ > g g g g g g",
+    "accuracy": "full",
+    "particle_veto": "t",
+    "passed": true,
+    "blockers": [],
+    "plan_s": 115.9886069309432,
+    "peak_gib": 2.358287811279297
+   },
+   "uux_uuxgggg-lc": {
+    "expression": "u u~ > u u~ g g g g",
+    "accuracy": "lc",
+    "particle_veto": "t",
+    "passed": true,
+    "blockers": [],
+    "plan_s": 145.91650635795668,
+    "peak_gib": 1.7235107421875
+   },
+   "uux_uuxgggg-full": {
+    "expression": "u u~ > u u~ g g g g",
+    "accuracy": "full",
+    "particle_veto": "t",
+    "passed": true,
+    "blockers": [],
+    "plan_s": 137.49915088503622,
+    "peak_gib": 1.7213897705078125
+   }
+  }
+ },
+ "estimates_after_mf_8g_1_2": {
+  "label": "ESTIMATES [inf] +-50 %, not measured (8g0-report §5 'now -> after MF-8G-1/-2')",
+  "heading": "5. Revised estimates at 2->6 (now → after MF-8G-1/-2, [inf] ±50 %)",
+  "rows": [
+   {
+    "stage": "generate",
+    "lc_now": "4630 s / 92 GiB",
+    "fc_now": "2779 s / 63 GiB",
+    "after": "1500-2500 s / ≤ 60 GiB"
+   },
+   {
+    "stage": "export; store",
+    "lc_now": "9063 s / 217; 2858 s / 229 GiB",
+    "fc_now": "10553 s / 235; 3827 s / 247 GiB",
+    "after": "900-1800 s / ≤ 75 GiB; 200-400 s, no new peak"
+   },
+   {
+    "stage": "load",
+    "lc_now": "854 s / 140 GiB",
+    "fc_now": "≈ 1100 s / 160 GiB",
+    "after": "1-3 min / ≤ 20 GiB"
+   },
+   {
+    "stage": "eval peak B = 128",
+    "lc_now": "≈ 450-490 GiB (base 225-250 + state 213 + rows 15-25)",
+    "fc_now": "≈ 410-445 GiB",
+    "after": "≤ 64 GB (§7)"
+   },
+   {
+    "stage": "eval time",
+    "lc_now": "119 s/pt",
+    "fc_now": "478 s/pt (swap)",
+    "after": "dressing first, then trees"
+   }
+  ]
+ },
+ "stored_program_scans": {
+  "label": "mf-8g-0 scans of the stored plans/tree programs (8g0-report §4; not re-derived here)",
+  "rows": {
+   "JSON GB: plan / trees / companion": {
+    "g g > 6g LC": "1.87 / 13.1 / 3.34",
+    "g g > 6g FC": "3.06 / 15.0 / 3.57",
+    "u u~ > u u~ 4g LC": "0.054 / 0.169 / 0.029",
+    "u u~ > 6g LC": "0.209 / 1.33 / 0.225"
+   },
+   "tree + CT state, complex/pt (GiB/pt)": {
+    "g g > 6g LC": "7.61 M + 103.9 M (1.66)",
+    "g g > 6g FC": "7.61 M + 67.4 M (1.12)",
+    "u u~ > u u~ 4g LC": "0.32 + 4.64 M (0.074)",
+    "u u~ > 6g LC": "1.04 + 20.1 M (0.32)"
+   }
+  }
+ },
+ "global_caveats": [
+  "PRE-OPTIMISATION engine (15d4ef5a, native 71e2041e): the M-FINAL optimisation rounds (mf-8g-1, mf-8g-1b, mf-8g-2) target exactly these generation, load and evaluation peaks; the numbers are a baseline, not the M-FINAL result",
+  "runs stopped by the USER on 2026-11-01 ~23:00 UTC for optimisation rounds (workspace/tmp/STOP-8LEG); checks are incomplete (see each row's 'not obtained' entries)",
+  "one pinned thread on a shared, loaded host; several steps were killed by host-memory floors set below other projects' usage (a 'host memory' end is not a defect); timings indicative",
+  "no external reference exists at 2->6 (no provider entry): acceptance is internal (double pole, Catani, Ward, double-double, rotations); speed is reported without a gate",
+  "stability estimates and check budgets are relative to the finite part (loops.v2.stability)",
+  "the stored artifacts are kept in workspace/artifacts/2to6/<row>/ (loop-runtime.pacbin + generation.json)"
+ ],
+ "row_caveats": {
+  "gg_gggggg-lc": [
+   "the watchdog's step peak (153.93 GB) under-reports: the watchdog was SIGSTOPped from 2026-10-31T17:20:28Z to 2026-10-31T19:44:56Z (logs/guard-store-gg-lc.log); the guard's 5-min samples peak at 225 GiB and the harness store-stage VmHWM is 228.558 GiB",
+   "Catani step status says 'time bound' but the cause was the host-memory floor (guard log)",
+   "points [0, 1] have binary64 stability estimates above 1e-5 (1.7e-03, 8.9e-05): rescue candidates; no double-double cross-check at 2->6 g g > 6g"
+  ],
+  "gg_gggggg-full": [
+   "the rotated FC run ran partly in zram swap, so its 'native trees' time (265.8 s/pt vs 20.0 s/pt at LC) is likely inflated [inf, 8g0-report §0 item 4]",
+   "s/pt is ONE block of 16 = stream points [16, 17, 18, 19] x 4 copies (identity + 3 exact rotations) with FFT colour contraction, not the paired 2-block protocol of the LC rows",
+   "stream point(s) [16] binary64-unstable (rotation spread 2.1): a rescue case (the Python-API rescue stack, mf-rescue 2234ee33, is the remedy; not applied in this run)",
+   "the block VmHWM (239.2 GiB) understates the footprint under swap; the step peak 380.7 GB came from the warm-up",
+   "no FC poles, Catani, Ward or double-double: the physical-points job never got past its warm-up"
+  ],
+  "uux_gggggg-lc": [
+   "Catani, Ward and double-double not obtained (host-memory kills, then the USER stop)",
+   "first timing attempt killed by the host-memory floor; the recorded timing is attempt 1 of the relaunched chain"
+  ],
+  "uux_uuxgggg-lc": [
+   "LC Catani single pole 6.9-9.8 % off: differing LC definitions (tree vs loop engine) for quark lines; the decisive FC check is pending"
+  ]
+ },
+ "prose_only": {
+  "gg_gggggg-full_swap": "VmSwap ~143 GB at the end of the rotated run, host zram swap ~246 GB used, process system time 2674 s of 19100 s CPU (STATE.md waiter 2, 2026-11-01 15:25)",
+  "host_memory_other_projects": "other projects held ~600-950 GB of host memory during the runs (STATE.md 16:03-22:12 lines; slice-status DECISIONS ~23:20)",
+  "stop_ruling": "USER 2026-11-01 ~23:00: 'stop your 8-point runs now and do a couple round of optimizations first' (STATE.md COORDINATOR ~23:05; slice-status DECISIONS ~23:15)"
+ },
+ "sources": [
+  "tools/loop_benchmark/processes.json (work/v2-bench-2to6)",
+  "workspace/artifacts/2to6/gg_gggggg-full/generation.json",
+  "workspace/artifacts/2to6/gg_gggggg-lc/generation.json",
+  "workspace/artifacts/2to6/uux_gggggg-lc/generation.json",
+  "workspace/artifacts/2to6/uux_uuxgggg-lc/generation.json",
+  "workspace/reports/engine-v2/m-final/8g0-report.md",
+  "workspace/tmp/STOP-8LEG",
+  "workspace/tmp/bench-2to6/dryrun/gg_gggggg-full.json",
+  "workspace/tmp/bench-2to6/dryrun/gg_gggggg-lc.json",
+  "workspace/tmp/bench-2to6/dryrun/gg_gggggg_top-full.json",
+  "workspace/tmp/bench-2to6/dryrun/uux_gggggg-full.json",
+  "workspace/tmp/bench-2to6/dryrun/uux_gggggg-lc.json",
+  "workspace/tmp/bench-2to6/dryrun/uux_uuxgggg-full.json",
+  "workspace/tmp/bench-2to6/dryrun/uux_uuxgggg-lc.json",
+  "workspace/tmp/bench-2to6/estimates.json",
+  "workspace/tmp/bench-2to6/logs/catani-gg_gggggg-lc.status.json",
+  "workspace/tmp/bench-2to6/logs/catani-uux_gggggg-lc.killed-2245.status.json",
+  "workspace/tmp/bench-2to6/logs/catani-uux_gggggg-lc.status.json",
+  "workspace/tmp/bench-2to6/logs/catani-uux_uuxgggg-lc.status.json",
+  "workspace/tmp/bench-2to6/logs/dd-gg_gggggg-lc.skip",
+  "workspace/tmp/bench-2to6/logs/dd-uux_gggggg-lc.status.json",
+  "workspace/tmp/bench-2to6/logs/dd-uux_uuxgggg-lc.status.json",
+  "workspace/tmp/bench-2to6/logs/guard-catani-gg-lc.log",
+  "workspace/tmp/bench-2to6/logs/guard-store-gg-lc.log",
+  "workspace/tmp/bench-2to6/logs/phys-gg_gggggg-full.killed-1606.log",
+  "workspace/tmp/bench-2to6/logs/phys-gg_gggggg-full.killed-1606.status.json",
+  "workspace/tmp/bench-2to6/logs/phys-gg_gggggg-full.log",
+  "workspace/tmp/bench-2to6/logs/phys-gg_gggggg-full.status.json",
+  "workspace/tmp/bench-2to6/logs/store-gg_gggggg-full.status.json",
+  "workspace/tmp/bench-2to6/logs/store-gg_gggggg-lc.status.json",
+  "workspace/tmp/bench-2to6/logs/store-uux_gggggg-lc.status.json",
+  "workspace/tmp/bench-2to6/logs/store-uux_uuxgggg-full.killed-1602.status.json",
+  "workspace/tmp/bench-2to6/logs/store-uux_uuxgggg-lc.status.json",
+  "workspace/tmp/bench-2to6/logs/time-gg_gggggg-full.log",
+  "workspace/tmp/bench-2to6/logs/time-gg_gggggg-full.status.json",
+  "workspace/tmp/bench-2to6/logs/time-gg_gggggg-lc.status.json",
+  "workspace/tmp/bench-2to6/logs/time-rot-gg_gggggg-full.status.json",
+  "workspace/tmp/bench-2to6/logs/time-uux_gggggg-lc.killed-1600.log",
+  "workspace/tmp/bench-2to6/logs/time-uux_gggggg-lc.killed-1600.status.json",
+  "workspace/tmp/bench-2to6/logs/time-uux_gggggg-lc.status.json",
+  "workspace/tmp/bench-2to6/logs/time-uux_uuxgggg-lc.status.json",
+  "workspace/tmp/bench-2to6/logs/ward-gg_gggggg-lc.status.json",
+  "workspace/tmp/bench-2to6/logs/ward-uux_gggggg-lc.killed-1602.status.json",
+  "workspace/tmp/bench-2to6/logs/ward-uux_uuxgggg-lc.status.json",
+  "workspace/tmp/bench-2to6/runs/catani-gg_gggggg-lc.json",
+  "workspace/tmp/bench-2to6/runs/catani-uux_gggggg-lc.json",
+  "workspace/tmp/bench-2to6/runs/catani-uux_gggggg-lc.killed-2245.json",
+  "workspace/tmp/bench-2to6/runs/catani-uux_uuxgggg-lc.json",
+  "workspace/tmp/bench-2to6/runs/dd-uux_uuxgggg-lc.json",
+  "workspace/tmp/bench-2to6/runs/stability-time-gg_gggggg-lc.json",
+  "workspace/tmp/bench-2to6/runs/stability-time-uux_gggggg-lc.json",
+  "workspace/tmp/bench-2to6/runs/stability-time-uux_uuxgggg-lc.json",
+  "workspace/tmp/bench-2to6/runs/time-gg_gggggg-lc.json",
+  "workspace/tmp/bench-2to6/runs/time-rot-gg_gggggg-full.json",
+  "workspace/tmp/bench-2to6/runs/time-uux_gggggg-lc.json",
+  "workspace/tmp/bench-2to6/runs/time-uux_uuxgggg-lc.json",
+  "workspace/tmp/bench-2to6/runs/ward-uux_uuxgggg-lc.json",
+  "workspace/tmp/bench-2to6/smoke/catani-gg_ggg-2.json"
+ ]
+}

@@ -1,9 +1,9 @@
 {
  "source": "scripts/build_msm_matrix.py from data/msm.json, msm-findings.json, msm-public.json, msm-selftest.json and tests/fixtures/loop/msm/manifest.json",
  "campaign": {
-  "branch": "work/v2-slice 71e2041effa7e11c4cb903094f994a784695e527 (campaign m1031-msm, detached worktree campaign-m1031-msm)",
-  "records": "tmp/campaign-m1031-msm/results at 71e2041e: the 23 nightly file jobs, the 4 restriction-smoke files (11 smokes) and the MP expansions, the default tier (VJ02 + TT01, 4:15 wall), the campaign tier TV07 + TV07@qcd and CM07 (harness CLI); delegated uv_eps_ir0 (DY01, TT01): test_loop_v2_ew_pole_split technical-card split tests, JUnit ps-dy01.xml / ps-tt01.xml at 71e2041e",
-  "natives": "loop-native-v2-slice-71e2041e (digest f8d77c97, every record)",
+  "branch": "work/v2-slice 617b59cdb106e398b4a84b403e60920fbcd3a501 (campaign m1101-mfb, detached worktree campaign-m1101-mfb)",
+  "records": "tmp/campaign-m1101-mfb/results at 617b59cd: the 23 nightly file jobs, the 4 restriction-smoke files (11 smokes) and the MP expansions, the default tier (VJ02 + TT01), the campaign tier TV07 + TV07@qcd and CM07 (harness CLI); delegated uv_eps_ir0 (DY01, TT01): test_loop_v2_ew_pole_split technical-card split tests, JUnit ps-dy01.xml / ps-tt01.xml at 617b59cd",
+  "natives": "loop-native-v2-slice-b36af289 (digest 58b40383, every record)",
   "counts": {
    "pass": 69,
    "partial": 2,
@@ -114,7 +114,7 @@
   "on the shipped patched models (MS-UFO-PATCH) MadLoop's exports call every R2 coupling the engine inserts (the R2 rule finds no omission; on the unpatched models R2_G0tt_b on LL10, TT04, SC09, TT05)"
  ],
  "public_route": {
-  "source": "JUnit of tests/unit/test_loop_v2_ew_public_models.py (every tier, one whole-file job) in the M-SM campaign (public.xml); cases: its PUBLIC_ROUTE (public route = tools view bitwise; = MadLoop QP where a fixture is named); campaign m1031-msm at 71e2041e, 25/25 passed in 48:41 (records workspace/reports/engine-v2/m-sm/records/m1031-msm)",
+  "source": "JUnit of tests/unit/test_loop_v2_ew_public_models.py (every tier, one whole-file job) in the M-SM campaign (public.xml); cases: its PUBLIC_ROUTE (public route = tools view bitwise; = MadLoop QP where a fixture is named); JUnit of tests/unit/test_loop_v2_ew_public_models.py (every tier, one whole-file job) in the M-FINAL-b campaign (public.xml); cases: its PUBLIC_ROUTE (public route = tools view bitwise; = MadLoop QP where a fixture is named); campaign m1101-mfb at 617b59cd, 25/25 passed (records workspace/reports/engine-v2/m-sm/records/m1101-mfb)",
   "tests": {
    "total": 25,
    "passed": 25
@@ -126,13 +126,13 @@
   ]
  },
  "selftest": {
-  "source": "campaign-m1031-msm wheel self-test at the pin 71e2041e: release host wheel built from a clone of the pin (sha256 7576f6f8...), installed in two fresh venvs (PyPI dependencies; Community Symbolica), env -i pyamplicol self-test --json (records workspace/reports/engine-v2/m-sm/records/m1031-msm/wheel)",
+  "source": "campaign-m1101-mfb wheel self-test at the pin 617b59cd: release host wheel built from a clone of the pin (sha256 d5fdce7e...), installed in two fresh venvs (PyPI dependencies; Community Symbolica), env -i pyamplicol self-test --json (records workspace/reports/engine-v2/m-sm/records/m1101-mfb/wheel)",
   "passed": true,
   "checks": 7,
   "virtuals": [
    {
     "name": "physics-virtual",
-    "detail": "u u~ > e- e+ / Z [virt=QCD] on the shipped loop_sm-no_b_mass (full colour): Born and Laurent coefficients = MadLoop to 2.8e-13 at 3 points; generated in 8 s; Symbolica licensed"
+    "detail": "u u~ > e- e+ / Z [virt=QCD] on the shipped loop_sm-no_b_mass (full colour): Born and Laurent coefficients = MadLoop to 2.8e-13 at 3 points; generated in 9 s; Symbolica licensed"
    },
    {
     "name": "physics-virtual-prepared",
@@ -630,7 +630,7 @@
     "row": "CM10"
    },
    "binary64_vs_reference": {
-    "value": 4.7952851673692775e-09,
+    "value": 4.796323952047827e-09,
     "row": "CM07",
     "rows_out_of_scope": [
      "CM07",
@@ -638,7 +638,7 @@
     ]
    },
    "catani_dd": {
-    "value": 7.192133362651351e-26,
+    "value": 7.192133344338422e-26,
     "row": "CM07",
     "not_formed": [],
     "no_predicted_sector": [
@@ -856,7 +856,7 @@
  ],
  "catani": {
   "standard": {
-   "value": 7.192133362651351e-26,
+   "value": 7.192133344338422e-26,
    "row": "CM07"
   },
   "relaxed": [
@@ -1016,9 +1016,9 @@
    "checks": 230,
    "variants": [],
    "reference": "MadLoop",
-   "dd_vs_reference": 1.29307869100508e-15,
+   "dd_vs_reference": 1.2930786910050797e-15,
    "binary64_vs_dd": 1.4914271549696805e-14,
-   "catani_dd": 1.4179118371572593e-30,
+   "catani_dd": 9.149132929693928e-31,
    "catani_binary64": 1.5933957435728557e-14,
    "unpredicted": [],
    "ward_dd": null,
@@ -1051,11 +1051,11 @@
    "reference": "MadLoop",
    "dd_vs_reference": 1.122055701083372e-13,
    "binary64_vs_dd": 5.074358377620008e-13,
-   "catani_dd": 8.700229851825225e-30,
+   "catani_dd": 4.838016829630226e-30,
    "catani_binary64": 4.869205066974534e-13,
    "unpredicted": [],
    "ward_dd": {
-    "virtual": 4.112782281764676e-31,
+    "virtual": 3.681790222765331e-31,
     "born": 8.54545990025795e-33,
     "role": "diagnostic under CMS (m-sm/PLAN.md \u00a71.4, \u00a71.5)"
    },
@@ -1087,9 +1087,9 @@
    "variants": [],
    "reference": "MadLoop",
    "dd_vs_reference": 6.901622507244509e-13,
-   "binary64_vs_dd": 5.628148398811093e-11,
-   "catani_dd": 7.192133362651351e-26,
-   "catani_binary64": 2.3036938425598767e-11,
+   "binary64_vs_dd": 5.6206993271705626e-11,
+   "catani_dd": 7.192133344338422e-26,
+   "catani_binary64": 2.287680433443343e-11,
    "unpredicted": [],
    "ward_dd": {
     "virtual": 0.0012117900021096058,
@@ -1123,7 +1123,7 @@
    "checks": 66,
    "variants": [],
    "reference": "MadLoop",
-   "dd_vs_reference": 1.2584431642918477e-14,
+   "dd_vs_reference": 1.2584431642918475e-14,
    "binary64_vs_dd": 1.82414077309605e-13,
    "catani_dd": null,
    "catani_binary64": null,
@@ -2249,7 +2249,7 @@
    "inputs": "native",
    "reference": "MadLoop + Recola, Openloops",
    "dd_vs_reference": 1.3823324890360811e-12,
-   "binary64_vs_dd": 5.121147644518646e-11,
+   "binary64_vs_dd": 5.1414957855875416e-11,
    "catani_dd": 6.43095114240402e-26,
    "catani": "engine",
    "relaxed": {},
@@ -2698,9 +2698,9 @@
    },
    "inputs": "python",
    "reference": "MadLoop",
-   "dd_vs_reference": 1.29307869100508e-15,
+   "dd_vs_reference": 1.2930786910050797e-15,
    "binary64_vs_dd": 1.4914271549696805e-14,
-   "catani_dd": 1.4179118371572593e-30,
+   "catani_dd": 9.149132929693928e-31,
    "catani": "python",
    "relaxed": {},
    "extras": [
@@ -2729,7 +2729,7 @@
    "reference": "MadLoop",
    "dd_vs_reference": 1.122055701083372e-13,
    "binary64_vs_dd": 5.074358377620008e-13,
-   "catani_dd": 8.700229851825225e-30,
+   "catani_dd": 4.838016829630226e-30,
    "catani": "python",
    "relaxed": {},
    "extras": [
@@ -2755,8 +2755,8 @@
    "inputs": "native",
    "reference": "MadLoop",
    "dd_vs_reference": 6.901622507244509e-13,
-   "binary64_vs_dd": 5.628148398811093e-11,
-   "catani_dd": 7.192133362651351e-26,
+   "binary64_vs_dd": 5.6206993271705626e-11,
+   "catani_dd": 7.192133344338422e-26,
    "catani": "engine",
    "relaxed": {},
    "extras": [
@@ -2783,7 +2783,7 @@
    },
    "inputs": "python",
    "reference": "MadLoop",
-   "dd_vs_reference": 1.2584431642918477e-14,
+   "dd_vs_reference": 1.2584431642918475e-14,
    "binary64_vs_dd": 1.82414077309605e-13,
    "catani_dd": null,
    "catani": "python",
@@ -3148,7 +3148,7 @@
    "inputs": "native",
    "reference": "MadLoop",
    "dd_vs_reference": 6.257934376463842e-13,
-   "binary64_vs_dd": 1.1604909961681872e-12,
+   "binary64_vs_dd": 1.2142072574776416e-12,
    "catani_dd": 5.036841012165192e-29,
    "catani": "engine",
    "relaxed": {},
@@ -3175,7 +3175,7 @@
    "inputs": "native",
    "reference": "MadLoop + Recola",
    "dd_vs_reference": 2.993570819277171e-15,
-   "binary64_vs_dd": 2.039849860390016e-11,
+   "binary64_vs_dd": 2.0398338216019612e-11,
    "catani_dd": 1.2995992018675115e-30,
    "catani": "engine",
    "relaxed": {},

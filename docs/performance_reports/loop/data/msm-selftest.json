@@ -1,5 +1,5 @@
 {
- "source": "campaign-m1031-msm wheel self-test at the pin 71e2041e: release host wheel built from a clone of the pin (sha256 7576f6f8...), installed in two fresh venvs (PyPI dependencies; Community Symbolica), env -i pyamplicol self-test --json (records workspace/reports/engine-v2/m-sm/records/m1031-msm/wheel)",
+ "source": "campaign-m1101-mfb wheel self-test at the pin 617b59cd: release host wheel built from a clone of the pin (sha256 d5fdce7e...), installed in two fresh venvs (PyPI dependencies; Community Symbolica), env -i pyamplicol self-test --json (records workspace/reports/engine-v2/m-sm/records/m1101-mfb/wheel)",
  "pypi": {
   "checks": [
    {
@@ -28,7 +28,7 @@
     "status": "pass"
    },
    {
-    "detail": "u u~ > e- e+ / Z [virt=QCD] on the shipped loop_sm-no_b_mass (full colour): Born and Laurent coefficients = MadLoop to 2.8e-13 at 3 points; generated in 8 s; Symbolica licensed",
+    "detail": "u u~ > e- e+ / Z [virt=QCD] on the shipped loop_sm-no_b_mass (full colour): Born and Laurent coefficients = MadLoop to 2.8e-13 at 3 points; generated in 9 s; Symbolica licensed",
     "name": "physics-virtual",
     "status": "pass"
    },
@@ -68,7 +68,7 @@
     "status": "pass"
    },
    {
-    "detail": "u u~ > e- e+ / Z [virt=QCD] on the shipped loop_sm-no_b_mass (full colour): Born and Laurent coefficients = MadLoop to 2.8e-13 at 3 points; generated in 8 s; Symbolica licensed",
+    "detail": "u u~ > e- e+ / Z [virt=QCD] on the shipped loop_sm-no_b_mass (full colour): Born and Laurent coefficients = MadLoop to 2.8e-13 at 3 points; generated in 9 s; Symbolica licensed",
     "name": "physics-virtual",
     "status": "pass"
    },
