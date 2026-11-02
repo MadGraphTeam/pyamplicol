@@ -1,0 +1,626 @@
+{
+ "what": "the decay capability matrix of docs/performance_reports/loop/benchmarks.typ, written by scripts/build_dec_matrix.py; do not edit by hand",
+ "source": "data/dec.json (scripts/build_mqcd.py on tests/fixtures/loop/dec/manifest.json); tests/fixtures/loop/dec/manifest.json",
+ "campaign": {
+  "slice": "617b59cd",
+  "branch": "campaign-m1101-mfb-new",
+  "native": "loop-native-v2-slice-b36af289",
+  "date": "2026-11-01",
+  "counts": {
+   "pass": 8,
+   "partial": 0,
+   "fail": 0,
+   "pending": 0,
+   "not-run": 0
+  },
+  "rules": "m-final/PLAN.md \u00a71.4 (tools/loop_benchmark/mqcd.py)"
+ },
+ "largest": {
+  "dd_vs_reference": {
+   "value": 9.55176422191494e-14,
+   "row": "XX08"
+  },
+  "binary64_vs_dd": {
+   "value": 5.203975088145776e-11,
+   "row": "XX08"
+  },
+  "catani_dd": {
+   "value": 5.692312894771949e-27,
+   "row": "XX08"
+  }
+ },
+ "rows": [
+  {
+   "row": "XX01",
+   "class": "D-QCD",
+   "process": "t > b w+",
+   "multiplicity": "1->2",
+   "model": "loop_sm",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "scheme": "qcd",
+   "gauge": "unitary",
+   "corrections": [
+    "QCD"
+   ],
+   "sectors": [
+    "QCD^2 QED^2"
+   ],
+   "features": [
+    "1->2",
+    "massive:top",
+    "external:W"
+   ],
+   "inputs": "tools",
+   "catani_route": "python",
+   "reference": "E tests/fixtures/loop/required/dec/t_bwp_qcd.json (MF-DEC-1, MadLoop QP)",
+   "tiers": [
+    {
+     "tier": "default",
+     "points": 2,
+     "checks": 42,
+     "failures": 0,
+     "binary64_vs_reference": {
+      "born": 7.233933086756976e-16,
+      "finite": 7.129348570234877e-16,
+      "single_pole": 2.579171376050971e-15,
+      "double_pole": 5.77781467167352e-16
+     }
+    },
+    {
+     "tier": "nightly",
+     "points": 2,
+     "checks": 52,
+     "failures": 0,
+     "binary64_vs_reference": {
+      "born": 7.233933086756976e-16,
+      "finite": 4.020952593612455e-15,
+      "single_pole": 1.1767469403232417e-14,
+      "double_pole": 5.77781467167352e-16
+     }
+    }
+   ],
+   "points": 4,
+   "checks": 133,
+   "dd_vs_reference": 3.8991031446083606e-16,
+   "binary64_vs_dd": 1.360141194809392e-14,
+   "binary64_vs_reference": {
+    "born": 7.233933086756976e-16,
+    "finite": 4.534265690669361e-15,
+    "single_pole": 1.3540649724267415e-14,
+    "double_pole": 5.77781467167352e-16
+   },
+   "binary64_out_of_scope": [],
+   "poles": "Catani",
+   "catani_dd": 1.1736347051544665e-31,
+   "ward": null,
+   "nc": {
+    "status": "pass",
+    "tests": 2
+   },
+   "ff": null,
+   "public": [
+    {
+     "id": "XX01@public",
+     "status": "pass",
+     "points": 3,
+     "dd_vs_reference": 3.8991031446083606e-16
+    }
+   ],
+   "extras": [
+    "uv",
+    "ap"
+   ],
+   "status": "pass",
+   "source": "data/dec.json rows[XX01]; tests/fixtures/loop/dec/manifest.json rows[XX01]"
+  },
+  {
+   "row": "XX02",
+   "class": "D-EW",
+   "process": "t > b w+",
+   "multiplicity": "1->2",
+   "model": "loop_qcd_qed_sm_Gmu",
+   "restriction": "default",
+   "restriction_code": "G0",
+   "scheme": "ew-gmu",
+   "gauge": "feynman",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "sectors": [
+    "QCD^2 QED^2",
+    "QCD^0 QED^4"
+   ],
+   "features": [
+    "1->2",
+    "massive:top",
+    "external:W",
+    "joint"
+   ],
+   "inputs": "native",
+   "catani_route": "engine",
+   "reference": "E tests/fixtures/loop/required/dec/t_bwp_ew.json (MF-DEC-1, MadLoop QP)",
+   "tiers": [
+    {
+     "tier": "nightly",
+     "points": 4,
+     "checks": 134,
+     "failures": 0,
+     "binary64_vs_reference": {
+      "born": 9.042416372807035e-16,
+      "finite": 5.056615326467779e-15,
+      "single_pole": 2.034614249134911e-13,
+      "double_pole": 2.2133518362417866e-15
+     }
+    }
+   ],
+   "points": 4,
+   "checks": 134,
+   "dd_vs_reference": 2.8606313540363877e-15,
+   "binary64_vs_dd": 2.0060079355945528e-13,
+   "binary64_vs_reference": {
+    "born": 9.042416372807035e-16,
+    "finite": 5.056615326467779e-15,
+    "single_pole": 2.034614249134911e-13,
+    "double_pole": 2.2133518362417866e-15
+   },
+   "binary64_out_of_scope": [],
+   "poles": "Catani + QED",
+   "catani_dd": 2.2902428603038168e-30,
+   "ward": null,
+   "nc": null,
+   "ff": null,
+   "public": [],
+   "extras": [],
+   "status": "pass",
+   "source": "data/dec.json rows[XX02]; tests/fixtures/loop/dec/manifest.json rows[XX02]"
+  },
+  {
+   "row": "XX03",
+   "class": "D-EW",
+   "process": "z > e- e+",
+   "multiplicity": "1->2",
+   "model": "loop_qcd_qed_sm",
+   "restriction": "default",
+   "restriction_code": "Az",
+   "scheme": "ew-qcd-qed-sm",
+   "gauge": "feynman",
+   "corrections": [
+    "QED"
+   ],
+   "sectors": [
+    "QCD^0 QED^4"
+   ],
+   "features": [
+    "1->2",
+    "external:Z",
+    "leptons-only"
+   ],
+   "inputs": "tools",
+   "catani_route": "python",
+   "reference": "E tests/fixtures/loop/required/dec/z_emep_ew.json (MF-DEC-1, MadLoop QP)",
+   "tiers": [
+    {
+     "tier": "nightly",
+     "points": 4,
+     "checks": 82,
+     "failures": 0,
+     "binary64_vs_reference": {
+      "born": 1.011270546773841e-15,
+      "finite": 3.5718500761932285e-15,
+      "single_pole": 2.252858440474188e-15,
+      "double_pole": 6.144159383111432e-16
+     }
+    }
+   ],
+   "points": 4,
+   "checks": 82,
+   "dd_vs_reference": 2.8706765184715415e-15,
+   "binary64_vs_dd": 2.027701818844345e-15,
+   "binary64_vs_reference": {
+    "born": 1.011270546773841e-15,
+    "finite": 3.5718500761932285e-15,
+    "single_pole": 2.252858440474188e-15,
+    "double_pole": 6.144159383111432e-16
+   },
+   "binary64_out_of_scope": [],
+   "poles": "Catani + QED",
+   "catani_dd": 9.263191077121832e-31,
+   "ward": null,
+   "nc": null,
+   "ff": null,
+   "public": [],
+   "extras": [],
+   "status": "pass",
+   "source": "data/dec.json rows[XX03]; tests/fixtures/loop/dec/manifest.json rows[XX03]"
+  },
+  {
+   "row": "XX04",
+   "class": "D-EW",
+   "process": "z > u u~",
+   "multiplicity": "1->2",
+   "model": "loop_qcd_qed_sm",
+   "restriction": "default",
+   "restriction_code": "Az",
+   "scheme": "ew-qcd-qed-sm",
+   "gauge": "feynman",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "sectors": [
+    "QCD^2 QED^2",
+    "QCD^0 QED^4"
+   ],
+   "features": [
+    "1->2",
+    "external:Z",
+    "joint"
+   ],
+   "inputs": "tools",
+   "catani_route": "python",
+   "reference": "E tests/fixtures/loop/required/dec/z_uux_ew.json (MF-DEC-1, MadLoop QP)",
+   "tiers": [
+    {
+     "tier": "nightly",
+     "points": 4,
+     "checks": 134,
+     "failures": 0,
+     "binary64_vs_reference": {
+      "born": 1.097552277659757e-15,
+      "finite": 7.580277377253289e-15,
+      "single_pole": 3.8548009675904153e-13,
+      "double_pole": 1.3149389640610049e-15
+     }
+    }
+   ],
+   "points": 4,
+   "checks": 134,
+   "dd_vs_reference": 6.075702384921704e-15,
+   "binary64_vs_dd": 3.7940439437412215e-13,
+   "binary64_vs_reference": {
+    "born": 1.097552277659757e-15,
+    "finite": 7.580277377253289e-15,
+    "single_pole": 3.8548009675904153e-13,
+    "double_pole": 1.3149389640610049e-15
+   },
+   "binary64_out_of_scope": [],
+   "poles": "Catani + QED",
+   "catani_dd": 1.9471838699119233e-30,
+   "ward": null,
+   "nc": null,
+   "ff": {
+    "status": "pass",
+    "tests": 1
+   },
+   "public": [],
+   "extras": [],
+   "status": "pass",
+   "source": "data/dec.json rows[XX04]; tests/fixtures/loop/dec/manifest.json rows[XX04]"
+  },
+  {
+   "row": "XX05",
+   "class": "D-EW",
+   "process": "w+ > e+ ve",
+   "multiplicity": "1->2",
+   "model": "loop_qcd_qed_sm",
+   "restriction": "default",
+   "restriction_code": "Az",
+   "scheme": "ew-qcd-qed-sm",
+   "gauge": "feynman",
+   "corrections": [
+    "QED"
+   ],
+   "sectors": [
+    "QCD^0 QED^4"
+   ],
+   "features": [
+    "1->2",
+    "external:W",
+    "charged-initial"
+   ],
+   "inputs": "tools",
+   "catani_route": "python",
+   "reference": "E tests/fixtures/loop/required/dec/wp_epve_ew.json (MF-DEC-1, MadLoop QP)",
+   "tiers": [
+    {
+     "tier": "nightly",
+     "points": 4,
+     "checks": 82,
+     "failures": 0,
+     "binary64_vs_reference": {
+      "born": 1.2692999927594082e-15,
+      "finite": 1.9378115391860836e-15,
+      "single_pole": 5.254932812198364e-14,
+      "double_pole": 1.2853107550984073e-15
+     }
+    }
+   ],
+   "points": 4,
+   "checks": 82,
+   "dd_vs_reference": 1.834698339126487e-15,
+   "binary64_vs_dd": 5.438402646111003e-14,
+   "binary64_vs_reference": {
+    "born": 1.2692999927594082e-15,
+    "finite": 1.9378115391860836e-15,
+    "single_pole": 5.254932812198364e-14,
+    "double_pole": 1.2853107550984073e-15
+   },
+   "binary64_out_of_scope": [],
+   "poles": "Catani + QED",
+   "catani_dd": 7.476791744988292e-31,
+   "ward": null,
+   "nc": null,
+   "ff": null,
+   "public": [],
+   "extras": [],
+   "status": "pass",
+   "source": "data/dec.json rows[XX05]; tests/fixtures/loop/dec/manifest.json rows[XX05]"
+  },
+  {
+   "row": "XX06",
+   "class": "D-QCD",
+   "process": "h > b b~",
+   "multiplicity": "1->2",
+   "model": "loop_sm",
+   "restriction": "default",
+   "restriction_code": "4F",
+   "scheme": "qcd-4fs",
+   "gauge": "unitary",
+   "corrections": [
+    "QCD"
+   ],
+   "sectors": [
+    "QCD^2 QED^2"
+   ],
+   "features": [
+    "1->2",
+    "higgs",
+    "massive:b"
+   ],
+   "inputs": "tools",
+   "catani_route": "python",
+   "reference": "E tests/fixtures/loop/required/dec/h_bbx_4fs.json (MF-DEC-1, MadLoop QP)",
+   "tiers": [
+    {
+     "tier": "nightly",
+     "points": 4,
+     "checks": 84,
+     "failures": 0,
+     "binary64_vs_reference": {
+      "born": 7.654388365144852e-16,
+      "finite": 2.853134707371274e-15,
+      "single_pole": 1.1632849019191047e-15,
+      "double_pole": 0.0
+     }
+    }
+   ],
+   "points": 4,
+   "checks": 84,
+   "dd_vs_reference": 4.082523592299602e-16,
+   "binary64_vs_dd": 2.9515781643100856e-15,
+   "binary64_vs_reference": {
+    "born": 7.654388365144852e-16,
+    "finite": 2.853134707371274e-15,
+    "single_pole": 1.1632849019191047e-15,
+    "double_pole": 0.0
+   },
+   "binary64_out_of_scope": [
+    {
+     "tier": "nightly",
+     "point": 0,
+     "sector": "QCD^2 QED^2",
+     "coefficient": "double_pole"
+    },
+    {
+     "tier": "nightly",
+     "point": 1,
+     "sector": "QCD^2 QED^2",
+     "coefficient": "double_pole"
+    },
+    {
+     "tier": "nightly",
+     "point": 2,
+     "sector": "QCD^2 QED^2",
+     "coefficient": "double_pole"
+    },
+    {
+     "tier": "nightly",
+     "point": 3,
+     "sector": "QCD^2 QED^2",
+     "coefficient": "double_pole"
+    }
+   ],
+   "poles": "Catani",
+   "catani_dd": 1.8853290198666244e-32,
+   "ward": null,
+   "nc": null,
+   "ff": null,
+   "public": [],
+   "extras": [
+    "uv"
+   ],
+   "status": "pass",
+   "source": "data/dec.json rows[XX06]; tests/fixtures/loop/dec/manifest.json rows[XX06]"
+  },
+  {
+   "row": "XX07",
+   "class": "D-QCD",
+   "process": "t > b w+ g",
+   "multiplicity": "1->3",
+   "model": "loop_sm",
+   "restriction": "no_b_mass",
+   "restriction_code": "5F",
+   "scheme": "qcd",
+   "gauge": "unitary",
+   "corrections": [
+    "QCD"
+   ],
+   "sectors": [
+    "QCD^4 QED^2"
+   ],
+   "features": [
+    "1->3",
+    "massive:top",
+    "external:W"
+   ],
+   "inputs": "tools",
+   "catani_route": "python",
+   "reference": "E tests/fixtures/loop/required/dec/t_bwpg_qcd.json (MF-DEC-1, MadLoop QP)",
+   "tiers": [
+    {
+     "tier": "nightly",
+     "points": 4,
+     "checks": 92,
+     "failures": 0,
+     "binary64_vs_reference": {
+      "born": 6.471586985433724e-15,
+      "finite": 1.4399416280089334e-13,
+      "single_pole": 6.178929863447681e-14,
+      "double_pole": 3.642723972736652e-15
+     }
+    }
+   ],
+   "points": 4,
+   "checks": 131,
+   "dd_vs_reference": 5.5704979047462145e-15,
+   "binary64_vs_dd": 1.4436926819375888e-13,
+   "binary64_vs_reference": {
+    "born": 6.471586985433724e-15,
+    "finite": 1.4399416280089334e-13,
+    "single_pole": 6.178929863447681e-14,
+    "double_pole": 5.949782488803183e-15
+   },
+   "binary64_out_of_scope": [],
+   "poles": "Catani",
+   "catani_dd": 4.538543686319062e-31,
+   "ward": {
+    "checks": 8,
+    "virtual_dd": 4.995341579708897e-31,
+    "born_dd": 1.3068967766062042e-31,
+    "virtual_binary64": 0.007329652972313043,
+    "born_binary64": 5.787800336929949e-17
+   },
+   "nc": {
+    "status": "pass",
+    "tests": 1
+   },
+   "ff": null,
+   "public": [
+    {
+     "id": "XX07@public",
+     "status": "pass",
+     "points": 3,
+     "dd_vs_reference": 5.5704979047462145e-15
+    }
+   ],
+   "extras": [
+    "uv",
+    "ward"
+   ],
+   "status": "pass",
+   "source": "data/dec.json rows[XX07]; tests/fixtures/loop/dec/manifest.json rows[XX07]"
+  },
+  {
+   "row": "XX08",
+   "class": "D-EW",
+   "process": "z > u u~ g",
+   "multiplicity": "1->3",
+   "model": "loop_qcd_qed_sm",
+   "restriction": "default",
+   "restriction_code": "Az",
+   "scheme": "ew-qcd-qed-sm",
+   "gauge": "feynman",
+   "corrections": [
+    "QCD",
+    "QED"
+   ],
+   "sectors": [
+    "QCD^4 QED^2",
+    "QCD^2 QED^4"
+   ],
+   "features": [
+    "1->3",
+    "external:Z",
+    "joint"
+   ],
+   "inputs": "tools",
+   "catani_route": "python",
+   "reference": "E tests/fixtures/loop/required/dec/z_uuxg_ew.json (MF-DEC-1, MadLoop QP)",
+   "tiers": [
+    {
+     "tier": "nightly",
+     "points": 4,
+     "checks": 134,
+     "failures": 0,
+     "binary64_vs_reference": {
+      "born": 1.1746388685195754e-13,
+      "finite": 3.56549156000924e-12,
+      "single_pole": 5.2038188529420003e-11,
+      "double_pole": 4.852377868533005e-14
+     }
+    }
+   ],
+   "points": 4,
+   "checks": 134,
+   "dd_vs_reference": 9.55176422191494e-14,
+   "binary64_vs_dd": 5.203975088145776e-11,
+   "binary64_vs_reference": {
+    "born": 1.1746388685195754e-13,
+    "finite": 3.56549156000924e-12,
+    "single_pole": 5.2038188529420003e-11,
+    "double_pole": 4.852377868533005e-14
+   },
+   "binary64_out_of_scope": [],
+   "poles": "Catani + QED",
+   "catani_dd": 5.692312894771949e-27,
+   "ward": null,
+   "nc": null,
+   "ff": null,
+   "public": [],
+   "extras": [],
+   "status": "pass",
+   "source": "data/dec.json rows[XX08]; tests/fixtures/loop/dec/manifest.json rows[XX08]"
+  }
+ ],
+ "further": {
+  "ff": [
+   {
+    "row": "XX04",
+    "process": "z > u u~",
+    "status": "pass",
+    "tests": 1,
+    "check": "z > u u~ [QCD] = the massless vector form factor (analytic)"
+   }
+  ],
+  "ward": [
+   {
+    "row": "XX07",
+    "process": "t > b w+ g",
+    "checks": 8,
+    "virtual_dd": 4.995341579708897e-31,
+    "born_dd": 1.3068967766062042e-31,
+    "virtual_binary64": 0.007329652972313043,
+    "born_binary64": 5.787800336929949e-17,
+    "check": "external gluon polarisation replaced by its momentum"
+   }
+  ],
+  "nc": [
+   {
+    "row": "XX01",
+    "process": "t > b w+",
+    "status": "pass",
+    "tests": 2,
+    "check": "LC and NLC = the kept powers of the N_c scan"
+   },
+   {
+    "row": "XX07",
+    "process": "t > b w+ g",
+    "status": "pass",
+    "tests": 1,
+    "check": "LC and NLC = the kept powers of the N_c scan"
+   }
+  ]
+ }
+}

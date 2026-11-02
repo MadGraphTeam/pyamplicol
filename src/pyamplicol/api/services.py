@@ -57,8 +57,8 @@ from .results import (
 from .virtual_results import (
     ResolvedVirtualEvaluation,
     VirtualEvaluation,
+    VirtualRescuePolicy,
     VirtualStabilityChecks,
-    VirtualStabilityPolicy,
     pole_selection,
 )
 
@@ -410,7 +410,7 @@ class Runtime:
         arithmetic: str | None = None,
         precision: int | None = None,
         r2_strategy: R2Strategy | str | None = None,
-        stability: VirtualStabilityPolicy | None = None,
+        stability: VirtualRescuePolicy | None = None,
     ) -> Runtime:
         """Load one process by stable ID, alias ID, or exact expression.
 
@@ -422,9 +422,11 @@ class Runtime:
         ``r2_strategy`` defaults, selected before exact model parameters are
         evaluated. Omitted evaluation options retain these defaults; tree
         runtimes select precision at evaluation time instead. ``stability`` (a
-        ``VirtualStabilityPolicy`` rescue) is refused by v2 loop runtimes, the
-        only ones since the legacy engine was removed: they return estimates
-        (``stability_checks``) and leave escalation to the caller.
+        ``VirtualRescuePolicy``, Python API only) is the default built-in
+        stability rescue of a virtual runtime's ``evaluate``: it applies to
+        every call that names neither its own policy nor an arithmetic,
+        precision or stability checks, and is refused together with a
+        load-time arithmetic or precision (the levels own the carriers).
         """
 
         path = Path(os.fspath(artifact)).expanduser().resolve(strict=False)
@@ -437,8 +439,8 @@ class Runtime:
         if r2_strategy is not None:
             options["r2_strategy"] = r2_strategy
         if stability is not None:
-            if not isinstance(stability, VirtualStabilityPolicy):
-                raise TypeError("stability requires a VirtualStabilityPolicy")
+            if not isinstance(stability, VirtualRescuePolicy):
+                raise TypeError("stability requires a VirtualRescuePolicy")
             options["stability"] = stability
         loader = _get_runtime_loader()
         if options and not _accepts_keyword_arguments(loader, *options):
@@ -596,7 +598,7 @@ class Runtime:
         arithmetic: Literal["double", "double-double", "arbitrary"] | None = None,
         mu_r2: ScalarInput | Sequence[ScalarInput] | None = None,
         r2_strategy: R2Strategy | str | None = None,
-        stability: VirtualStabilityPolicy | None = None,
+        stability: VirtualRescuePolicy | None = None,
         on_failure: Literal["raise", "return"] = "raise",
         poles: PoleSelection | str | None = None,
         stability_checks: VirtualStabilityChecks | None = None,
@@ -613,9 +615,11 @@ class Runtime:
         evaluator state. Explicit ``arithmetic`` selects double, DoubleFloat or
         arbitrary precision. Virtual runtimes retain their loaded arithmetic
         and R2 defaults when omitted, and accept scalar or per-point positive
-        ``mu_r2``; exact inputs are forwarded unchanged. An explicit ``stability``
-        policy replaces the load-time verification/subset-rescue policy for this
-        call. With neither policy there are no hidden precision retries.
+        ``mu_r2``; exact inputs are forwarded unchanged. ``stability`` (a
+        ``VirtualRescuePolicy``) runs the built-in stability rescue of a v2
+        virtual runtime for this call, replacing a load-time default policy;
+        with neither policy there are no hidden precision retries
+        (docs/user/python-api.md, "Stability rescue").
         ``on_failure="return"`` retains numerical failures as ``None`` at their
         original point positions, with typed diagnostics; the default raises.
         Invalid inputs and unsupported capabilities still raise.
@@ -714,7 +718,7 @@ class Runtime:
         arithmetic: str | None,
         mu_r2: ScalarInput | Sequence[ScalarInput] | None,
         r2_strategy: R2Strategy | str | None,
-        stability: VirtualStabilityPolicy | None = None,
+        stability: VirtualRescuePolicy | None = None,
         on_failure: Literal["raise", "return"] = "raise",
     ) -> dict[str, object]:
         """Forward explicit options without changing old backend call signatures."""
@@ -736,8 +740,8 @@ class Runtime:
         if r2_strategy is not None:
             options["r2_strategy"] = R2Strategy(r2_strategy).value
         if stability is not None:
-            if not isinstance(stability, VirtualStabilityPolicy):
-                raise TypeError("stability requires a VirtualStabilityPolicy")
+            if not isinstance(stability, VirtualRescuePolicy):
+                raise TypeError("stability requires a VirtualRescuePolicy")
             options["stability"] = stability
         if self.contribution_kind != "virtual" and (
             mu_r2 is not None or r2_strategy is not None or stability is not None
@@ -856,7 +860,7 @@ class Runtime:
         arithmetic: Literal["double", "double-double", "arbitrary"] | None = None,
         mu_r2: ScalarInput | Sequence[ScalarInput] | None = None,
         r2_strategy: R2Strategy | str | None = None,
-        stability: VirtualStabilityPolicy | None = None,
+        stability: VirtualRescuePolicy | None = None,
         on_failure: Literal["raise", "return"] = "raise",
         poles: PoleSelection | str | None = None,
         stability_checks: VirtualStabilityChecks | None = None,
@@ -885,7 +889,7 @@ class Runtime:
         arithmetic: Literal["double", "double-double", "arbitrary"] | None = None,
         mu_r2: ScalarInput | Sequence[ScalarInput] | None = None,
         r2_strategy: R2Strategy | str | None = None,
-        stability: VirtualStabilityPolicy | None = None,
+        stability: VirtualRescuePolicy | None = None,
         on_failure: Literal["raise", "return"] = "raise",
         poles: PoleSelection | str | None = None,
         stability_checks: VirtualStabilityChecks | None = None,
@@ -954,7 +958,7 @@ class Runtime:
         arithmetic: Literal["double", "double-double", "arbitrary"] | None = None,
         mu_r2: ScalarInput | Sequence[ScalarInput] | None = None,
         r2_strategy: R2Strategy | str | None = None,
-        stability: VirtualStabilityPolicy | None = None,
+        stability: VirtualRescuePolicy | None = None,
         on_failure: Literal["raise", "return"] = "raise",
         poles: PoleSelection | str | None = None,
         stability_checks: VirtualStabilityChecks | None = None,
@@ -1202,7 +1206,7 @@ class Runtime:
         arithmetic: str | None = None,
         mu_r2: ScalarInput | Sequence[ScalarInput] | None = None,
         r2_strategy: R2Strategy | str | None = None,
-        stability: VirtualStabilityPolicy | None = None,
+        stability: VirtualRescuePolicy | None = None,
         on_failure: Literal["raise", "return"] = "raise",
         poles: PoleSelection | str | None = None,
         stability_checks: VirtualStabilityChecks | None = None,
@@ -1296,7 +1300,7 @@ class Runtime:
         arithmetic: str | None = None,
         mu_r2: ScalarInput | Sequence[ScalarInput] | None = None,
         r2_strategy: R2Strategy | str | None = None,
-        stability: VirtualStabilityPolicy | None = None,
+        stability: VirtualRescuePolicy | None = None,
         on_failure: Literal["raise", "return"] = "raise",
         poles: PoleSelection | str | None = None,
         stability_checks: VirtualStabilityChecks | None = None,

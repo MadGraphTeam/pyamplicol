@@ -116,8 +116,12 @@ def masses(process):
     return out
 
 
-def normalization(process, n_initial=2):
-    """Initial spin/colour average and final identical-particle factor."""
+def normalization(process, n_initial=None):
+    """Initial spin/colour average and final identical-particle factor; the
+    initial particles are the first ``process["initial"]`` (default 2; 1 for
+    a decay)."""
+    if n_initial is None:
+        n_initial = process.get("initial", 2)
     masses_ = masses(process)
     denominator = 1
     for pdg, mass in zip(process["pdgs"][:n_initial], masses_[:n_initial]):
