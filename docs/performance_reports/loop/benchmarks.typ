@@ -1276,7 +1276,7 @@ rotations) and the speed is reported without a gate (cells uncoloured).
       (the EW counterterms omit the τ mass, the user's retained model limitation; MadLoop has the same offset). M-QCD's
       A09\@collinear (F7: typed `Unstable` / `CutFailed{DegenerateGram}`, never a value) and A24 (F11: rule 4 not
       formed at seven gluons, poles = NJet).
-    - *Recorded test outcomes* (not gate failures): #text(6.4pt)[`test_loop_v2_companion.py` `::test_companion_seeds_on_the_slice_certificates_ggg`]
+    - *Recorded test outcomes* (not gate failures): #[#show raw: set text(6pt); `test_loop_v2_companion.py` `::test_companion_seeds_on_the_slice_certificates_ggg`]
       misses a bitwise claim by \~$10^(-16)$ relative since SymJIT 2.28.3 (below the lax-precision line; routed to
       mf-8g-1b); the five NinjaRS light-like spinor xfails stay (NinjaRS \#10 open).
     - *Compatibility notes:* the shipped EW UFOs are UFOmodeldb `6ca4b120` plus the user's issue-1 patch (PROVENANCE
@@ -1683,7 +1683,7 @@ failures and no value (binary64 `Unstable` at $theta = 10^(-3)$–$10^(-5)$, DD 
 $10^(-4)$, $10^(-5)$); A09 itself and its soft variant pass. D19 and C07 have no predicted pole sector (MQ-EWJOIN's
 `separated-exchange` rule: their QCD loop selection omits IR-divergent loops, as MadLoop's does) and are checked against
 MadLoop per split order. *Re-run at #raw(mx.campaign.campaign_head.split(" ").first())* (#mx.campaign.date): no status
-or check count changed; 84 of 1212 deviation values moved at rounding level, all on electroweak-Born rows (@status);
+or check count changed; against M-SM's re-run 42 of 1212 values moved, all binary64 (QCD-only rows too; likely the summation order of SymJIT 2.28.3, not proven; every double-double value bitwise; @status);
 the public-route and FFT columns are M-QCD's runs at `e18a024b` (public route on a scratch manifest copy).
 ]
 
@@ -1733,7 +1733,7 @@ stream's exact rational points, the providers their binary64 decimal text.
 The configurations:
 
 - *native inputs, on `loop`* — the engine at #raw(g.slice_revision) (milestone M-SM: the engine of M-QCD,
-  `e18a024b`, with the #ms.integrated.len() packages of @status\; build #raw(g.slice_build), digest
+  `e18a024b`, with M-SM's 14 packages, ew-native to MS-MASTERS; not re-timed at M-FINAL-b, whose engine #raw(ms.engine_revision) adds the packages of @status\; build #raw(g.slice_build), digest
   #raw(g.slice_native_digest.slice(0, 8))): the executor forms the trees, the Born and the counterterm inputs per
   point (binary64 SymJIT plane applications, tree closures in lanes of points), skips the counterterm interactions
   that only feed poles in finite-only mode, then runs the loop stage. #gname("gg_ggggg") is timed from its stored
