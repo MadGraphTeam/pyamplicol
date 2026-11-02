@@ -14,6 +14,9 @@
 #let st = json("data/mqcd-selftest.json")
 #let sx = json("data/msm-matrix.json")
 #let eg = json("data/msm-g1.json")
+#let dm = json("data/dec-matrix.json")
+#let hcj = json("data/hc.json")
+#let crj = json("data/corr.json")
 #let sg = meas.seven_gluon
 
 // ------------------------------------------------------------------ style --
@@ -319,6 +322,9 @@
 // maps a ratio to a colour.
 #let S = json("data/summary.json")
 #let sm = S.meta
+// The PRELIMINARY 2 -> 6 rows (summary.json "preliminary", from data/2to6.json):
+// pyAmpliCol only, no provider, no gate, uncoloured; another engine than loop.
+#let six = S.at("preliminary", default: none)
 #let neutral = luma(243)
 #let dur(s) = if s == none [—] else if s < 1 [#sig(s * 1000)~ms] else if s < 600 [#sig(s)~s] else if s < 10800 [#fixed(s / 60, 1)~min] else [#fixed(s / 3600, 1)~h]
 // Peak memory: two decimals below 10 GiB, one above; never broken.
@@ -640,7 +646,54 @@
   }
 }
 
-#let group-title = ("2->2": [$2 -> 2$], "2->3": [$2 -> 3$], "2->4": [$2 -> 4$], "2->5": [$2 -> 5$])
+#let group-title = ("2->2": [$2 -> 2$], "2->3": [$2 -> 3$], "2->4": [$2 -> 4$], "2->5": [$2 -> 5$], "2->6": [$2 -> 6$])
+
+// The PRELIMINARY 2 -> 6 rows (summary.json "preliminary", data/2to6.json):
+// pyAmpliCol only (no provider exists at 2 -> 6), so every cell is
+// uncoloured, without ratio or gate; internal checks instead of references.
+#let six-check(c) = {
+  let n = c.check
+  if n == "double_pole" [$epsilon^(-2)$ ≤ #esci(c.value)]
+  else if n == "stability" [$E$ ≤ #esci(c.value)#if c.above.len() > 0 [ (#c.above.len() pts: rescue)]]
+  else if n == "rotation_spread" [rotations: pt #c.unstable.map(str).join(", ") unstable (rescue)]
+  else if n == "ward" [Ward ≤ #esci(c.value)]
+  else if n == "double_double" [binary64 = DD to #esci(c.value)]
+  else if n == "catani_single_pole" [#text(fill: amber)[Catani $epsilon^(-1)$ #fixed(100 * c.value, 1)~%: LC definitions differ]]
+}
+#let six-name = (double_pole: "poles", catani_single_pole: "Catani", ward: "Ward", double_double: "DD", stability: "E", rotation_spread: "rotations")
+#let six-checks(r) = ("LC", "FC").map(a => {
+  let cs = r.checks.filter(c => c.accuracy == a and c.status != "not obtained")
+  if cs.len() == 0 { none } else [*#a* #cs.map(six-check).join([ · ])]
+}).filter(x => x != none)
+#let six-pending(r) = {
+  let by = ("LC", "FC").map(a => (a, r.checks.filter(c => c.accuracy == a and c.status == "not obtained").map(c => six-name.at(c.check)))).filter(((a, xs)) => xs.len() > 0)
+  if by.len() == 0 { none } else [pending: #by.map(((a, xs)) => [#xs.join(", ") (#a)]).join([; ])]
+}
+#let t6-process(r) = table.cell(breakable: false, {
+  set par(leading: 0.34em, justify: false)
+  block(spacing: 0pt, text(10pt, font: "Libertinus Serif", math-label(r.math)))
+  v(3.6pt)
+  block(spacing: 0pt, text(6.4pt, fill: ink2)[#r.legs legs · #r.corrections · #box[#group(if r.families.fc != none { r.families.fc } else { r.families.lc }) families] · $N_f = 5$, no top])
+  v(3.4pt)
+  block(spacing: 0pt, text(6.2pt, six-checks(r).join([ · ])))
+  let pend = six-pending(r)
+  if pend != none { v(2.2pt); block(spacing: 0pt, text(6.2pt, fill: ink2, pend)) }
+})
+#let t6-generation(r) = {
+  let (m, l) = (r.generation.main, r.generation.lc)
+  valued(fill: none, dur(m.seconds), mult: if l != none { text(6.8pt)[FC] },
+    [#gib(m.peak_gib) peak · plan #box[#sig(m.plan_mb)~MB] · store #dur(m.store_s)],
+    [artifact #box[#m.artifact_gb~GB] · load #dur(m.load_s) (#gib(m.load_peak_gib))],
+    if l != none [*LC* #dur(l.seconds) · #gib(l.peak_gib) · artifact #box[#l.artifact_gb~GB]])
+}
+#let t6-timing(m, gate: true) = if m.status == "measured" {
+  valued(fill: none, dur(m.seconds_per_point),
+    [#m.protocol#if m.colour_contraction != none [ · FFT] #h(1fr) $B = #m.batch$],
+    [#if gate [#plain-chip[no provider: no gate] #h(4pt)]#stage-bar(m.stages, width: if gate { 2.0cm } else { 1.5cm })],
+    [peak #gib(m.peak_gib)#if "note" in m [ · #text(fill: amber, weight: "bold", m.note)]])
+} else {
+  absent([not run], m.reason)
+}
 // The DESIGN records of the development validations shown in Table 1,
 // newest first, each with its rows.
 #let records-text = C.development_records.records.map(x => [#x.record.split(",").first() for #x.rows.map(r => box(math-label(r))).join([, ])]).join([\; ])
@@ -689,7 +742,7 @@
   // slice_build; data/milestone.json engine_revision).
   #if g.slice_revision.slice(0, 8) != sm.engine_on_loop.slice(0, 8) {
     v(-0.45em)
-    text(8.6pt, fill: amber)[pyAmpliCol timed by G1 on #sm.date: engine #raw(g.slice_revision), native #raw(g.slice_build) (not re-measured on #raw(sm.engine_on_loop))]
+    text(8.6pt, fill: amber)[pyAmpliCol timed by G1 on #sm.date: engine #raw(g.slice_revision), native #raw(g.slice_build) (not re-measured on #raw(sm.engine_on_loop): one final retime at the M-FINAL pin, user Q11)]
   }
 ]
 
@@ -753,6 +806,15 @@
           rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", group-title.at(gr.name)))),
         ..gr.rows.map(r => (t1-process(r), t1-generation(r), t1-fc(r), t1-lc(r))).flatten(),
       )).flatten(),
+      // The PRELIMINARY 2 -> 6 rows: their engine and status, stated once.
+      ..if six != none {
+        (
+          table.cell(colspan: 5, fill: warm, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber)[*PRELIMINARY $2 -> 6$* (M-FINAL item 1, #link(<sixlegs>)[below Figure 1]): pyAmpliCol only, no provider exists at $2 -> 6$, so no ratio, no gate and no colour · engine #raw(six.engine.native.split("-").last()) (#raw(six.engine.branch): #raw(six.engine.base.split(" ").first()) + harness-only #six.engine.harness_commits.map(raw).join(", ")), native #raw(six.engine.native) · pre-optimisation; runs stopped by the user on 2026-11-01, checks incomplete]}),
+          table.cell(rowspan: six.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon, breakable: false,
+            rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", group-title.at(six.name)))),
+          ..six.rows.map(r => (t6-process(r), t6-generation(r), t6-timing(r.full_colour), t6-timing(r.leading_colour, gate: false))).flatten(),
+        )
+      } else { () },
     )
   },
 ) <tab:summary>
@@ -762,7 +824,7 @@
 #let fig-lo = calc.log(0.0005, base: 10)
 #let fig-hi = calc.log(1000.0, base: 10)
 #let fig-w = 11.2cm
-#let fig-h = 11pt
+#let fig-h = 8pt
 #let xpos(t) = fig-w * (calc.log(t, base: 10) - fig-lo) / (fig-hi - fig-lo)
 #let fig-ticks = ((0.001, [1 ms]), (0.01, [10 ms]), (0.1, [100 ms]), (1.0, [1 s]), (10.0, [10 s]), (100.0, [100 s]))
 #let fig-rows = all-rows.filter(r => r.full_colour.at("fastest", default: none) != none)
@@ -801,11 +863,11 @@
   caption: [*Batched full colour against the gate* (finite part, $B = 128$; the rows of @tab:summary with a matched provider).],
   {
     set text(7pt, font: sans, stretch: 87.5%)
-    grid(columns: (3.2cm, fig-w, 1fr), column-gutter: 6pt, row-gutter: 3pt, align: (right + horizon, left + horizon, left + horizon),
+    grid(columns: (3.2cm, fig-w, 1fr), column-gutter: 6pt, row-gutter: 1.6pt, align: (right + horizon, left + horizon, left + horizon),
       ..fig-rows.map(r => {
         let m = r.full_colour.main
         let chip = if m.status != "measured" { plain-chip[#status-title(m)] } else if "gate" in m { gate-chip(m.gate) } else { plain-chip[#r.full_colour.gate_rule.replace("->", "→")] }
-        (box[#text(8.6pt, font: "Libertinus Serif", math-label(r.math))#if r.corrections != "QCD" [ #text(6.6pt, fill: ink2)[(#r.corrections)]]], fig-row(r), chip)
+        (box[#text(7.8pt, font: "Libertinus Serif", math-label(r.math))#if r.corrections != "QCD" [ #text(6.6pt, fill: ink2)[(#r.corrections)]]], fig-row(r), chip)
       }).flatten(),
       [], box(width: fig-w, height: 9pt, for (t, l) in fig-ticks { place(dx: xpos(t) - 1cm, box(width: 2cm, align(center, text(fill: ink2, l)))) }), [],
     )
@@ -903,18 +965,110 @@ unbatched development timings (e.g. a seven-gluon point with its rotation check)
 amber a known limitation of the value, in grey its run conditions: #note-cells.map(x => [#box(math-label(x.r.math)), #cell-word.at(x.k) ("#x.r.at(x.k).main.note.label"): #x.r.at(x.k).main.note.reason]).join([\; ]).]
 
 
-*Figure 1* places each row's batched full-colour value of Table 1 (dots; the most recent measured configuration:
+#if six != none [*The $2 -> 6$ rows* (M-FINAL item 1; `data/2to6.json` through `summary.json` `preliminary`; #link(<sixlegs>)[their records and caveats below]) are *preliminary* and outside the main-configuration rule: pyAmpliCol only (no provider exists at $2 -> 6$), so no multiplier, no gate and no colour in any cell; engine #raw(six.engine.native.split("-").last()) (#raw(six.engine.branch), harness-only commits on #raw(six.engine.base.split(" ").first())), not this milestone's pin; generation = generate + plan export (store, artifact and load beside it; "FC" marks the full-colour generation where both were stored); the timed evaluation is binary64, finite part, checks off, one pinned thread. The process cell lists the internal checks done ($epsilon^(-2)$: double pole against the universal value; $E$: the recommended stability estimate; rotations; Ward; binary64 against double-double; Catani) and those pending.
+
+]*Figure 1* places each row's batched full-colour value of Table 1 (dots; the most recent measured configuration:
 #measured-ids.filter(id => C.at(id).main_cells.full_colour.len() > 0 and C.at(id).kind == "g1").map(cfg-short).join([\; ])#if C.at("development", default: none) != none and C.development.main_cells.full_colour.len() > 0 [\; development, not yet on `loop`]) against the providers (diamonds, the darkest
 the fastest) and the gate limit (red bar, the shaded side fails; grey bar: the limit of a process below 5 ms, not gated;
 dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The ratios and bands at every batch size: @tab:g1batch.
 ]
 
 
+// =============================================================== 2 -> 6 ==
+// The PRELIMINARY 2 -> 6 rows of Table 1: data/2to6.json (scripts/build_2to6.py,
+// harvested from the existing records of the 2 -> 6 benchmark; no new 8-leg
+// run: the user's stop of 2026-11-01). Numbers from the data only; the
+// 8g0-report figures only as the labelled estimates the data carries.
+#let sxj = json("data/2to6.json")
+#let six-rec(k) = sxj.rows.find(r => r.key == k)
+#let six-acc-word(r) = if r.accuracy == "lc" [LC] else [FC]
+#let six-stage(st) = [#dur(st.s) · #gib(st.peak_gib)]
+#heading(numbering: none)[$2 -> 6$: preliminary records (M-FINAL item 1)] <sixlegs>
+#[
+#set text(9.4pt)
+#set par(justify: true)
+The $2 -> 6$ rows of @tab:summary come from `data/2to6.json`, which `scripts/build_2to6.py` derives byte for byte from the
+existing records of the $2 -> 6$ benchmark (harness runs, watchdog and guard logs, dry runs and the stored artifacts'
+`generation.json`; #sxj.sources.len() sources): #sxj.status.replace("USER", "user").replace("PRELIMINARY: h", "h"). Engine:
+#raw(sxj.engine.branch) = #raw(sxj.engine.base.split(" ").first()) plus the harness-only commits
+#sxj.engine.harness_commits.keys().map(raw).join(" and ") (no engine source change), native #raw(sxj.engine.native.directory)
+(digest #raw(sxj.engine.native_digest_short)…), i.e. the engine of M-SM (`71e2041e`), not this milestone's pin. Protocol:
+#sxj.engine.protocol; particle veto $[6]$ (top-free massless five-flavour QCD, user Q-A), 16 lanes. No external reference
+exists at $2 -> 6$: acceptance is internal (double pole against the universal value, Catani, Ward, double-double,
+rotations) and the speed is reported without a gate (cells uncoloured).
+]
+
+#figure(kind: table,
+  caption: [*The $2 -> 6$ records* (`data/2to6.json` `rows`): generation stages (wall time · peak), the stored artifact and
+    its load, the timed evaluation (finite part, poles and checks off; warm-up excluded, including lazy compilation) and
+    the checks done or not obtained. Peaks are the harness's per-stage high-water marks (GiB = 2#super[30] bytes).],
+  {
+    set text(6.6pt, font: sans, stretch: 87.5%)
+    set par(justify: false, leading: 0.36em)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold")
+    table(
+      columns: (2.4cm, 1.45cm, 1.6cm, 1.45cm, 1.75cm, 2.3cm, 1fr),
+      align: left + horizon, inset: (x: 2.6pt, y: 2.2pt),
+      stroke: (x, y) => (top: if y <= 1 { none } else { 0.3pt + luma(225) }),
+      fill: (x, y) => if y == 0 { navy } else { none },
+      table.header[Record][Generate][Export · plan][Store][Artifact · load][Evaluation][Checks],
+      ..sxj.rows.map(r => {
+        let st = r.generation.stages
+        let e = r.evaluation
+        (
+          [#text(7.6pt, font: "Libertinus Serif", math-label(ap-math(r.process))) #six-acc-word(r) · #group(r.structure.families) families],
+          six-stage(st.generate),
+          [#six-stage(st.export) · #box[#sig(st.export.plan_mb)~MB]],
+          six-stage(st.store),
+          [#box[#r.artifact.gb~GB] · #dur(r.load.s), #gib(r.load.peak_gib)],
+          [*#dur(e.s_per_point)/pt* at $B = #e.B$ (#e.timed.points pts#if "copies" in e.timed [, #e.timed.stream_indices.len() × #e.timed.copies.len() rotations]); warm-up #dur(e.warm_up.s); peak #gib(e.peak_gib_harness)],
+          {
+            let done = r.checks.pairs().filter(((k, c)) => c.status != "not obtained").map(((k, c)) => k.replace("_", " "))
+            let miss = r.checks.pairs().filter(((k, c)) => c.status == "not obtained").map(((k, c)) => k.replace("_", " "))
+            [#done.join(", ")#if miss.len() > 0 [; #dim[not obtained: #miss.join(", ")]]]
+          },
+        )
+      }).flatten(),
+    )
+  },
+) <tab:sixrecs>
+
+#[
+#set text(9pt)
+#let lc8 = six-rec("gg_gggggg-lc")
+#let fc8 = six-rec("gg_gggggg-full")
+#let uq = six-rec("uux_uuxgggg-lc")
+#let uqc = uq.checks.catani_single_pole
+*Caveats* (`data/2to6.json` `global_caveats`, `row_caveats`):
+- *Pre-optimisation engine.* The optimisation rounds the user asked for on 2026-11-01 (\~23:00: "stop your 8-point runs now and do a couple round of optimizations first", RAM first) target exactly these generation, load and evaluation peaks; they run on the slice after this milestone's pin (round 1, mf-8g-2: bounded evaluation memory, integrated at `e071d022`; round 2 in progress) and are not part of this push. No 8-leg run of any kind is made until the coordinator lifts the stop: the numbers are a baseline, not the M-FINAL result.
+- *Host.* One pinned thread on a shared, loaded host (other projects held \~600–950 GB); several steps were killed by host-memory floors (a "host memory" end is not a defect); timings indicative. $g g -> 6g$ full colour ran partly in zram swap: its trees time (#fixed(fc8.evaluation.stages_s_per_point.at("native trees"), 1) s/pt against #fixed(lc8.evaluation.stages_s_per_point.at("native trees"), 1) at LC) is likely inflated, its block high-water mark understates the footprint, and its time is one rotation block of #fc8.evaluation.timed.points evaluations (#fc8.evaluation.timed.stream_indices.len() stream points × #fc8.evaluation.timed.copies.len() copies, FFT colour contraction), not the paired two-block protocol of the LC rows.
+- *Stability.* The full-colour rotation block finds stream point #fc8.checks.rotation_spread.unstable_points.map(str).join(", ") binary64-unstable (spread #fixed(fc8.checks.rotation_spread.max_relative_spread, 1): no correct digit), the other points below $10^(-5)$: a *rescue case* for the stability stack (@capabilities, Python API; not applied in this run). At LC the recommended estimate exceeds $10^(-5)$ at points #lc8.checks.stability.at("points_above_1e-5").map(str).join(", ") (rescue candidates); no double-double cross-check exists at $g g -> 6g$.
+- *Checks done and pending.* Double pole = universal value on every LC row (≤ #esci(calc.max(..sxj.rows.filter(r => r.checks.double_pole.status == "done").map(r => r.checks.double_pole.max_deviation)))); on $u overline(u) -> u overline(u) g g g g$ Ward (≤ #esci(calc.max(..uq.checks.ward.max_virtual_ratio_finite_single_double))) and double-double (binary64 error #esci(uq.checks.double_double.binary64_true_error_finite_relative) within its estimate #esci(uq.checks.double_double.binary64.estimate_finite_relative)) pass. Not obtained: Catani at $g g -> 6g$ and $u overline(u) -> 6g$, Ward and double-double at both, every full-colour pole check (host-memory kills, then the user's stop).
+- *Catani LC-definition offset.* On $u overline(u) -> u overline(u) g g g g$ at LC the double pole passes (≤ #esci(uqc.max_double_deviation)) but the single pole is #fixed(100 * uqc.max_single_deviation, 1)~% off, while the two engines' LC Borns differ too: the tree engine's LC (colour-flow truncation) is not the loop engine's formal-$N_c$ LC for quark lines, so the comparison is not like for like. The same route agrees at full colour on $g g -> g g g$ (#esci(uqc.route_validation.max_single_deviation)); the decisive full-colour check is pending (its store was killed by host memory 15 s after its start).
+- *Dry runs.* All #sxj.dry_runs.rows.len() `Generator.plan` dry runs pass, the top-included $g g -> 6g$ full colour among them.
+]
+
+#figure(kind: table,
+  caption: [*#sxj.estimates_after_mf_8g_1_2.label.replace("+-", "±")*: the mf-8g-0 study's expected $2 -> 6$ costs after the
+    optimisation packages, for orientation only; never a measurement or a Table 1 value.],
+  {
+    set text(6.8pt, font: sans, stretch: 87.5%)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold")
+    table(
+      columns: (2.3cm, 1fr, 1fr, 1fr), align: left + horizon, inset: (x: 3pt, y: 2pt),
+      stroke: (x, y) => (top: if y <= 1 { none } else { 0.3pt + luma(225) }),
+      fill: (x, y) => if y == 0 { navy } else { none },
+      table.header[Stage][$g g -> 6g$ LC, now (8g0-report)][FC, now][*estimate* after MF-8G-1/-2],
+      ..sxj.estimates_after_mf_8g_1_2.rows.map(x => (x.stage, x.lc_now, x.fc_now, text(fill: amber, x.after))).flatten(),
+    )
+  },
+) <tab:sixest>
+
 // =============================================================== STATUS ==
 // The status page starts on its own page so that its two box rows are not
 // split across pages.
 #pagebreak(weak: true)
-= Status at this milestone: M-SM <status>
+= Status at this milestone: M-FINAL-b <status>
 
 // The gate box reads Table 1's values (data/summary.json): the gated G1
 // rows' full-colour main cells, their configuration and verdicts, and for
@@ -978,6 +1132,17 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
 #let sx-cm07 = sx.cms.find(r => "U4" in r.features)
 #let sx-ew-st = sx.selftest.virtuals.find(v => v.name == "physics-virtual-prepared").detail.split("MadLoop to ").last().split(" ").first()
 #let ew-status = all-rows.filter(r => r.full_colour.at("gate_rule_reason", default: none) != none and r.full_colour.main.status == "measured")
+// M-FINAL-b at a glance: decays (data/dec-matrix.json), HC_NLO_X0
+// (data/hc.json), Recola correlations (data/corr.json), 2 -> 6 (summary.json
+// preliminary).
+#let dmc = dm.campaign.counts
+#let dml = dm.largest
+#let hc-ok = hcj.rows.filter(r => r.status == "pass")
+#let hc-blocked = hcj.rows.filter(r => r.status == "blocked")
+#let hc-max = calc.max(..hc-ok.map(r => calc.max(..r.max_relative_deviation.values())))
+#let cr-born = calc.max(..crj.rows.map(r => calc.max(r.max_relative_deviation.tree_born, r.max_relative_deviation.virtual_born)))
+#let cr-laurent = calc.max(..crj.rows.map(r => calc.max(r.max_relative_deviation.finite, r.max_relative_deviation.single_pole, r.max_relative_deviation.double_pole)))
+#let cr-procs = crj.rows.map(r => r.process).dedup()
 #box-note[
   #set par(justify: false)
   *On `loop`* (engine #ms.engine_revision\; merges since #ms.previous_loop, engine #ms.previous_engine)
@@ -996,12 +1161,12 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
     set text(8.2pt)
     set par(justify: false)
-    [*M-SM* (QCD + QED/EW one loop on the shipped `loop_qcd_qed_sm(_Gmu)`, reproducing MadLoop; `m-sm/PLAN.md` §5)]
+    [*M-FINAL-b* (item 2 complete and the item-4 packages, `m-final/PLAN.md` §3.1 wave 5; campaigns at #raw(dm.campaign.slice), the pin adds a test-only commit)]
     [
-      - *Validation campaign* at #raw(sx-pin) (@msm, @tab:msmrows): #sx-rows rows in #sx.classes.len() classes, #sxc.pass pass, #sxc.partial partial, #sxc.fail fail (#sx-partial.join(", "): F7, accepted); no deviation above $10^(-5)$, no wrong pole or sector. Largest: DD from the reference #sci(sx-dd.value) (#sx-dd.row), binary64 from DD #sci(sx-b64.value) (#sx-b64.row), Catani DD #sci(sx-cat.value) (#sx-cat.row) at rule 4's standard tolerance (relaxed by the user's ruling: #sx-relaxed.map(r => [#r.row #sci(r.value) ≤ #sci(r.tolerance, d: 0)]).join(", ")).
-      - *CMS* (@tab:cms): #sx.cms.len() rows = MadLoop CMS; the acceptance row #sx-cm07.row (#box(math-label(ap-math(sx-cm07.process)))) DD #sci(sx-cm07.dd_vs_reference), binary64 from DD #sci(sx-cm07.binary64_vs_dd), native inputs.
-      - *Public route* on both shipped EW UFOs: `test_loop_v2_ew_public_models.py` #sx.public_route.tests.passed/#sx.public_route.tests.total at the pin; wheel self-test #if sx.selftest.passed [#sx.selftest.checks/#sx.selftest.checks] else [*failed*] in two fresh venvs, its EW virtual from the shipped prepared artifact = MadLoop to #sx-ew-st.
-      - *EW products:* per-leg photon tagging (`loop.external_photons`, default `"final"`), poles `uv | ir | split` by the model's regulators, native complex pole masses, EW generation stages in Rust, binary64 of a stored artifact without Symbolica (@tab:caps).
+      - *Decays $1 -> n$* (@dec, @tab:decrows): #dm.rows.len() rows XX01–XX08 ($1 -> 2$ and $1 -> 3$, QCD and EW, `loop_sm` and both shipped EW UFOs), #dmc.pass pass, #dmc.fail fail. Largest: DD from MadLoop's quadruple precision #sci(dml.dd_vs_reference.value) (#dml.dd_vs_reference.row), binary64 from DD #sci(dml.binary64_vs_dd.value) (#dml.binary64_vs_dd.row), Catani and QED poles in DD #sci(dml.catani_dd.value) (#dml.catani_dd.row); $Z -> u overline(u)$ = the massless vector form factor, Ward on XX07, LC/NLC = the $N_c$ scan; public route and native inputs. The decaying particle at its real mass with zero own width.
+      - *HC_NLO_X0 genericity* (@tab:hc): #hc-ok.map(r => r.id).join(", ") = MadLoop 3.7.0 to ≤ #sci(hc-max)#for r in hc-blocked [; #r.id (#box(math-label(ap-math(r.process)))) blocked, typed #raw(r.refusal.key) (five-point $f f f f$ $R_2$ contact)].
+      - *Correlations against Recola* (@tab:corr): #crj.rows.len() rows on #cr-procs.len() processes pass, correlated Borns ≤ #sci(cr-born), one-loop Laurent coefficients ≤ #sci(cr-laurent) of the row's scale.
+      - *Product* (@tab:caps): the stability rescue stack (Python native evaluate API only; `test_loop_v2_rescue.py` 16/16); permutation aliases and permuted group members served from the stored target (`test_loop_v2_mapping.py` 17/17 at `f3d9e361`); SymJIT 2.28.3; virtual C ABI version 2 (legacy agreement check removed); EW export parses in Rust.
     ]
   }),
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
@@ -1009,6 +1174,7 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
     set par(justify: false)
     [*Gate G1* (@g1; finite part, $2 -> 3$ and beyond)]
     [
+      - *Not re-timed here* (user Q11: one final retime at the M-FINAL pin): Table 1 and Figure 1 keep M-SM's G1 at #raw(g.slice_revision) (#raw(g.slice_build)). Regression spot check of the pin's engine against #raw(g.slice_revision) (same core, paired; the four largest gated rows, the smallest and the EW row): plans identical, time per point ×0.96–1.08: no regression.
       - *Most recent configuration* (Table 1 and Figure 1): #s-ids.map(s-config).join([; ]) at $B = 128$:
         #s-with("pass").len() of #s-blocking.len() gated #if s-blocking.len() == 1 [process passes] else [processes pass]#if s-decided.len() > 0 [ (#s-decided.map(r => { let x = s-gate(r); [#math-label(r.math) by #x.decision (#fixed(x.ratio_to_limit, 2) of its limit, band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2))] }).join([, ]))]#if s-with("open").len() > 0 [, #row-names(s-with("open").map(r => r.key)) open]#if s-with("fail").len() > 0 [, #row-names(s-with("fail").map(r => r.key)) #if s-with("fail").len() == 1 [fails] else [fail]
         (#s-with("fail").map(r => [×#fixed(s-gate(r).ratio_to_limit, 2)]).join([, ]) of the limit)]#if s-thr.len() > 0 [; #row-names(s-thr.map(r => r.key)) #if s-thr.len() == 1 [runs] else [run] below 5 ms per point: *not gated* (user 2026-10-24\; #s-thr.map(r => fixed(s-gate(r).ratio_to_limit, 2)).join([, ]) of the limit)].
@@ -1035,19 +1201,46 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
     set text(8.2pt)
     set par(justify: false)
-    [*M-QCD, kept* (QCD on the stock `loop_sm`; `m-qcd/PLAN.md` §5; re-run at this pin)]
+    [*M-SM, kept* (QCD + QED/EW on the shipped `loop_qcd_qed_sm(_Gmu)`; `m-sm/PLAN.md` §5; re-run at this pin)]
     [
-      - *Campaign re-run* at #raw(mx.campaign.campaign_head.split(" ").first()) (#mx.campaign.date, @mqcd, @tab:mqcdrows): #mx-all.map(c => c.rows).sum() rows, #mxc.pass pass, #mxc.partial partial, #mxc.fail fail#if open-f.len() > 0 [ (#open-f.join(", "), accepted)], the statuses and check counts of M-QCD's campaign (`e18a024b`); 84 of its 1212 deviation values moved at rounding level, all on electroweak-Born rows. Largest: DD from the reference #sci(mx-dd.value) (#mx-dd.row), binary64 from DD #sci(mx-b64.value) (#mx-b64.row), Catani DD #sci(mx-cat.value) (#mx-cat.row).
-      - *At `e18a024b`* (not repeated: no status changed): public route on the shipped `loop_sm`, one row per class, DD from MadLoop ≤ #sci(mx-pub-dd)\; FFT seed contraction = direct to rounding, ×#fixed(calc.min(..fft-seed), 2)–#fixed(calc.max(..fft-seed), 1) of direct (@tab:fft). *Colour:* full colour by default; LC and NLC pass rule 7 on #mx-all.map(c => c.nc.rows.len()).sum() rows. *Ward* up to seven gluons (#ms.status_notes.notes.gg_ggggg.ward_status).
+      - *Validation campaign* at #raw(sx-pin) (@msm, @tab:msmrows): #sx-rows rows in #sx.classes.len() classes, #sxc.pass pass, #sxc.partial partial, #sxc.fail fail (#sx-partial.join(", "): F7, accepted); no deviation above $10^(-5)$, no wrong pole or sector; against M-SM's campaign no status change and no deviation change above $10^(-5)$ (40 values in 8 rows moved by ≤ $7.4 times 10^(-11)$). Largest: DD from the reference #sci(sx-dd.value) (#sx-dd.row), binary64 from DD #sci(sx-b64.value) (#sx-b64.row), Catani DD #sci(sx-cat.value) (#sx-cat.row) at rule 4's standard tolerance (relaxed by the user's ruling: #sx-relaxed.map(r => [#r.row #sci(r.value) ≤ #sci(r.tolerance, d: 0)]).join(", ")).
+      - *CMS* (@tab:cms): #sx.cms.len() rows = MadLoop CMS; the acceptance row #sx-cm07.row (#box(math-label(ap-math(sx-cm07.process)))) DD #sci(sx-cm07.dd_vs_reference), binary64 from DD #sci(sx-cm07.binary64_vs_dd), native inputs.
+      - *Public route* on both shipped EW UFOs: `test_loop_v2_ew_public_models.py` #sx.public_route.tests.passed/#sx.public_route.tests.total at the pin; wheel self-test #if sx.selftest.passed [#sx.selftest.checks/#sx.selftest.checks] else [*failed*] in two fresh venvs, its EW virtual from the shipped prepared artifact = MadLoop to #sx-ew-st.
+      - *EW products:* per-leg photon tagging (`loop.external_photons`, default `"final"`), poles `uv | ir | split` by the model's regulators, native complex pole masses, EW generation stages in Rust, binary64 of a stored artifact without Symbolica (@tab:caps).
     ]
   }),
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
     set text(8.2pt)
     set par(justify: false)
-    [*Next: M-FINAL* (to be discussed with the user before it starts)]
+    [*M-QCD, kept* (QCD on the stock `loop_sm`; `m-qcd/PLAN.md` §5; re-run at this pin)]
     [
-      - After this push the coordinator presents the M-FINAL plan and waits. The user's preferred order (2026-10-30 \~08:50): (1) the eight-gluon one-loop matrix element, $g g -> 6 g$ ($2 -> 6$); (2) direct rational $R_2$; (3) decays ($1 -> n$); (4) the rest: optimisation rounds, the *binding EW speed gate*, G1's provider protocol-mode columns, the deferrals of the box below.
-      - Rust phase 1 (HANDOFF §0.4) continues: D3 (plan lowering in Rust, binary plan member), A5's tree program, C's seven-leg dipole metric tables. Prepared artifacts: the parameter program's SymJIT bytes still differ per compilation (values unaffected; upstream fix filed).
+      - *Campaign re-run* at #raw(mx.campaign.campaign_head.split(" ").first()) (#mx.campaign.date, @mqcd, @tab:mqcdrows): #mx-all.map(c => c.rows).sum() rows, #mxc.pass pass, #mxc.partial partial, #mxc.fail fail#if open-f.len() > 0 [ (#open-f.join(", "), accepted)], the statuses and check counts of M-QCD's campaign (`e18a024b`); against M-SM's re-run 42 of its 1212 values moved, all binary64 (QCD-only rows too; the largest, information only: A14's finite part against the providers $1.5 times 10^(-8) -> 5.6 times 10^(-8)$), every double-double value bitwise. Largest: DD from the reference #sci(mx-dd.value) (#mx-dd.row), binary64 from DD #sci(mx-b64.value) (#mx-b64.row), Catani DD #sci(mx-cat.value) (#mx-cat.row).
+      - *At `e18a024b`* (not repeated: no status changed): public route on the shipped `loop_sm`, one row per class, DD from MadLoop ≤ #sci(mx-pub-dd)\; FFT seed contraction = direct to rounding, ×#fixed(calc.min(..fft-seed), 2)–#fixed(calc.max(..fft-seed), 1) of direct (@tab:fft). *Colour:* full colour by default; LC and NLC pass rule 7 on #mx-all.map(c => c.nc.rows.len()).sum() rows. *Ward* up to seven gluons (#ms.status_notes.notes.gg_ggggg.ward_status).
+    ]
+  }),
+)
+
+#grid(columns: (1fr, 1fr), gutter: 8pt,
+  block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
+    set text(8.2pt)
+    set par(justify: false)
+    let sx6 = six.rows
+    let lc-of(k) = sx6.find(r => r.key == k).leading_colour
+    let g8 = sx6.find(r => r.key == "gg_gggggg")
+    [*$2 -> 6$* (M-FINAL item 1, #flag[preliminary]; @tab:summary, #link(<sixlegs>)[records and caveats])]
+    [
+      - *From existing records only* (`data/2to6.json`; engine #raw(six.engine.native.split("-").last()), pre-optimisation): $g g -> 6g$ #dur(g8.leading_colour.seconds_per_point) per point at LC and #dur(g8.full_colour.seconds_per_point) at full colour (one rotation block, partly in swap), $u overline(u) -> 6g$ #dur(lc-of("uux_gggggg").seconds_per_point) and $u overline(u) -> u overline(u) g g g g$ #dur(lc-of("uux_uuxgggg").seconds_per_point) at LC; generation up to #dur(calc.max(..sx6.map(r => r.generation.main.seconds))) and #gib(calc.max(..sx6.map(r => r.generation.main.peak_gib))) (generate + plan export).
+      - *Internal checks* (no reference exists): double pole = universal value on every LC row; Ward and double-double pass on $u overline(u) -> u overline(u) g g g g$, whose LC Catani differs by the LC definitions (full colour pending); the full-colour point 16 of $g g -> 6g$ is binary64-unstable, a rescue case; the rest is pending.
+      - *User stop* (2026-11-01 \~23:00): no 8-leg run until the coordinator lifts it; optimisation rounds first (RAM, generation and runtime).
+    ]
+  }),
+  block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
+    set text(8.2pt)
+    set par(justify: false)
+    [*Next: M-FINAL-a* (`m-final/PLAN.md` §3.1)]
+    [
+      - The optimisation rounds on the slice after this pin (round 1, bounded evaluation memory: mf-8g-2, integrated; round 2: load-time and evaluation memory, evaluation runtime), then the $2 -> 6$ runs again: storage below 150 GB, the pending checks, full colour.
+      - The SDK v4 extras (resolved, colour/spin-correlated, double-double and arbitrary precision in every SDK language and UMAMI; integrated after this pin, mf-sdk), the final G1 retime with the new processes and the *binding EW speed gate*, then the M-FINAL gate and push.
     ]
   }),
 )
@@ -1057,34 +1250,44 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
     *Missing or incomplete* (typed refusal keys, listed and shown by the dry run)
     #set text(7.9pt)
     #grid(columns: (1fr, 1fr), column-gutter: 12pt)[
-    - *Refused (typed):* loop-induced requests, including the loop-squared members of multiparticle requests (`loop-induced`;
-      a multiparticle request generates its members with a Born and records the others as skipped); Majorana fermions
-      (`majorana-fermion`) and multi-fermion contact vertices (`multi-fermion-contact`); photon-only and partial EW vetoes
-      on the NLOCT UFOs (`veto-unlabelled-counterterms`: their counterterm couplings are not split by loop content); the
+    - *Refused (typed):* loop-induced processes, including loop-induced decays ($h -> g g$) and the loop-squared members
+      of multiparticle requests (`loop-induced`; a multiparticle request generates its members with a Born and records
+      the others as skipped); decay chains and `$` (`madloop-syntax`); Majorana fermions (`majorana-fermion`) and
+      multi-fermion contact vertices (`multi-fermion-contact`); the five-point $f f f f$ $R_2$ contact of HC05
+      (`unlowered-counterterm`: its colour is a multi-trace state); numerical process-group analysis
+      (`process-group-analysis`; exact aliases and members are served); photon-only and partial EW vetoes on the NLOCT
+      UFOs (`veto-unlabelled-counterterms`: their counterterm couplings are not split by loop content); the
       complex-mass scheme for a width whose mass is an internal parameter (`cms-internal-mass`: `loop_sm`'s $W$), an
       external unstable species under CMS (`cms-external-width`), a Yukawa input under CMS (`cms-yukawa-input`); a width
-      outside CMS (`electroweak-width`, `coloured-width`); tagged photons without an $alpha(0)$ input
-      (`external-photon-scheme`); MG5 decay chains and `$` (`madloop-syntax`); Dirac–Weyl currents the tree lanes cannot
-      close (`dirac-weyl-closure`).
-    - *M-FINAL:* $1 -> n$ decays (typed `decay-process` until then); direct rational $R_2$, EW included (`direct-r2`; the
-      model's $R_2$ is the production path); the *binding EW speed gate* (the EW row is indicative here); helicity and
-      colour-flow selection at NLC and full colour (LC has it); SDK v4 extras, permutation aliases and process-group
-      mappings, correlations composed with mappings; G1's provider protocol-mode columns; independent oracles of
-      correlated Borns and virtuals (MQ-CORR); automatic rescue (none: no escalation by default).
-    - *Not supported, by design:* EW LC/NLC (`colour-declaration-coverage`, permanent: user 2026-10-30).
+      outside CMS (`electroweak-width`, `coloured-width`; a decaying particle has zero own width); tagged photons
+      without an $alpha(0)$ input (`external-photon-scheme`); Dirac–Weyl currents the tree lanes cannot close
+      (`dirac-weyl-closure`); a spin-correlated leg without a vector source (refused at generation).
+    - *M-FINAL-a, in progress:* the $2 -> 6$ validation (Catani, Ward, double-double, full-colour poles; after the
+      optimisation rounds, #link(<sixlegs>)[records]); the *binding EW speed gate* with the final G1 retime (the EW row is indicative
+      here); the SDK v4 extras (after this pin).
+    - *Not in M-FINAL* (rulings): loop-induced processes (user Q8); helicity and colour-flow selection at NLC and full
+      colour (LC has it; refused for mapped processes); the publication-grade timing campaign and the provider
+      protocol-mode columns (user Q11).
+    - *Not supported, by design:* EW LC/NLC (`colour-declaration-coverage`, permanent: user 2026-10-30; no plan to
+      lift it).
     ][
     - *Accepted at the pin:* F7 — LL02 and SC02 partial (rule 4 not formed: the massive-muon $G_mu$ copy writes the
       field renormalisation of massless leptons; rule 1 = MadLoop); SC03's τ-mass relaxation of rule 4 to $10^(-5)$
       (the EW counterterms omit the τ mass, the user's retained model limitation; MadLoop has the same offset). M-QCD's
       A09\@collinear (F7: typed `Unstable` / `CutFailed{DegenerateGram}`, never a value) and A24 (F11: rule 4 not
       formed at seven gluons, poles = NJet).
+    - *Recorded test outcomes* (not gate failures): `test_loop_v2_companion.py::test_companion_seeds_on_the_slice_certificates_ggg`
+      misses a bitwise claim by \~$10^(-16)$ relative since SymJIT 2.28.3 (below the lax-precision line; routed to
+      mf-8g-1b); the five NinjaRS light-like spinor xfails stay (NinjaRS \#10 open).
     - *Compatibility notes:* the shipped EW UFOs are UFOmodeldb `6ca4b120` plus the user's issue-1 patch (PROVENANCE
       records the local delta); MadLoop never inserts R2_G0tt_b on the unpatched models (mg5amcnlo\#475): pyAmpliCol
       keeps the UFO-complete $R_2$ insertion (user Q7).
     - *Fast binary64 lanes:* NinjaRS light-like spinors near the $-z$ axis (\~$10^(-5)$) and model units \~$10^4$ from
-      GeV (silent percent-level errors with checks off; NinjaRS spinor package paused): the recommended checks flag them.
-    - *No longer missing:* EW and mixed `[virt=QCD QED]` corrections on the shipped EW UFOs (EW native inputs EWI-N, the
-      EW ladder EWI-7, the target EWI-9), the complex-mass scheme (EWI-10), external-photon artifacts.
+      GeV (silent percent-level errors with checks off): the recommended checks flag them, and the rescue stack
+      escalates such points in the Python API.
+    - *No longer missing:* $1 -> n$ decays at tree level and one loop, QCD and EW (M-FINAL-b); permutation aliases,
+      process-group members and correlations composed with them; independent Recola oracles of correlated Borns and
+      virtuals; the stability rescue stack (Python API); the EW corrections, CMS and external-photon artifacts of M-SM.
   ]
 ]
 
@@ -1128,15 +1331,13 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
   ]
 })
 
-// ================================================================= M-SM ==
-// The M-SM capability matrix and CMS table (m-sm/PLAN.md §5.2):
-// data/msm-matrix.json, written by scripts/build_msm_matrix.py from
-// data/msm.json, the campaign's public-route and self-test data and the
-// manifest; the per-row data are in the appendix (@tab:msmrows). The G1 EW
-// row: data/msm-g1.json (indicative, not gated).
+// ============================================================ M-FINAL-b ==
+// The decay capability matrix (m-final/PLAN.md §2.2, MF-DEC-2):
+// data/dec-matrix.json, written by scripts/build_dec_matrix.py from
+// data/dec.json and the decay manifest; per-row data in the appendix
+// (@tab:decrows). Then the HC_NLO_X0 rows (data/hc.json, scripts/build_hc.py)
+// and the Recola correlation rows (data/corr.json, scripts/build_corr.py).
 #pagebreak(weak: true)
-= Electroweak capability matrix (M-SM) <msm>
-
 // Matrix cells, chips and counts (also the QCD matrix and both appendices).
 #let mq-chip(s) = {
   let (f, t) = (pass: (rgb("#e1f2ea"), pass-ink), accepted: (rgb("#eaf1e0"), rgb("#4d6b1f")), partial: (rgb("#fdf0dc"), amber), fail: (rgb("#f9e0da"), fail-ink)).at(s, default: (luma(240), luma(90)))
@@ -1153,6 +1354,145 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
 #let ok-mark(b) = if b { text(fill: pass-ink, weight: "bold")[✓] } else { text(fill: fail-ink, weight: "bold")[✗] }
 #let sm-rowlist(xs) = xs.map(x => [#x.row#if x.status != "pass" [ #mq-chip(x.status)]]).join(", ")
 #let sm-case(c) = if c.case == "self-test" [self-test (#c.row)] else [#c.row]
+#let dec-scheme = (qcd: [QCD, 5F], "qcd-4fs": [QCD, 4F], "ew-gmu": [$G_mu$], "ew-qcd-qed-sm": [$alpha(m_Z)$])
+#let dec-chk(x) = if x == none [—] else [#x.status #ok-mark(x.status == "pass")]
+= Decays $1 -> n$ (M-FINAL item 2) <dec>
+
+#figure(kind: table,
+  caption: [*Decay capability matrix* at #raw(dm.campaign.slice) (native #raw(dm.campaign.native.split(" ").first()), campaign of
+    #dm.campaign.date; `data/dec-matrix.json` from `data/dec.json`; per-row data: @tab:decrows): every row against MadLoop's
+    quadruple-precision reference of the same decay (MF-DEC-1 fixtures; the decaying particle at its real mass with zero own
+    width, its absorptive self-energy dropped, as MadLoop does).],
+  {
+    set text(6.9pt, font: sans, stretch: 87.5%)
+    set par(justify: false, leading: 0.35em)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold")
+    show raw: set text(6.1pt)
+    table(
+      columns: (0.85cm, 1.95cm, 1.15cm, 2.05cm, 2.15cm, 1.15cm, 1.15cm, 1.75cm, 1.2cm, 1.9cm, 1fr),
+      align: (x, y) => if x in (5, 6) { right + horizon } else { left + horizon },
+      inset: (x: 2.6pt, y: 2.4pt),
+      stroke: (x, y) => (top: if y <= 1 { none } else { 0.3pt + luma(225) }),
+      fill: (x, y) => if y == 0 { navy } else if calc.even(y) { luma(248) } else { none },
+      table.header[Row][Process][Corr.][Model · scheme][Sectors][DD vs ML][b64/DD][Poles (DD)][LC/NLC][Public · inputs][Status],
+      ..dm.rows.map(r => (
+        [#text(weight: "bold", r.row) #tiny(r.multiplicity.replace("->", "→"))],
+        text(8pt, font: "Libertinus Serif", math-label(ap-math(r.process))),
+        r.corrections.join("+"),
+        [#sm-mod(r.model)#if r.restriction != "default" [ #r.restriction] · #dec-scheme.at(r.scheme, default: r.scheme)],
+        tiny(r.sectors.map(x => x.replace("^", "").replace("QCD0 ", "")).join(", ")),
+        esci(r.dd_vs_reference), esci(r.binary64_vs_dd),
+        [#esci(r.catani_dd) #tiny(r.poles)],
+        if r.nc == none [—] else [$N_c$ scan #ok-mark(r.nc.status == "pass")],
+        [#if r.public.len() > 0 [public #ok-mark(r.public.all(x => x.status == "pass"))]#if r.inputs == "native" [native inputs #ok-mark(true)]#if r.public.len() == 0 and r.inputs != "native" [—]],
+        [#mq-chip(r.status)#if r.ward != none [ #tiny[Ward]]#if r.ff != none [ #tiny[form factor]]],
+      )).flatten(),
+    )
+  },
+) <tab:dec>
+
+#[
+#set text(9pt)
+#let dff = dm.further.ff
+#let dw = dm.further.ward
+#let dnc = dm.further.nc
+*Reading the matrix.* The decay campaign re-ran every row at the pin's Python tree (#raw(dm.campaign.slice), the native
+#raw(dm.campaign.native)): #dmc.pass pass, #dmc.partial partial, #dmc.fail fail, as at its integration (no status change; the
+largest metric change $7.9 times 10^(-31)$). Rows XX01–XX08 cover $1 -> 2$ and $1 -> 3$, QCD (`loop_sm`, five and four
+flavours) and EW (QED and joint QCD+QED corrections on both shipped EW UFOs, $G_mu$ and $alpha(m_Z)$); the deviations are
+the largest over every Laurent coefficient, sector, point and gating variant: DD from MadLoop's quadruple precision (rule 1),
+binary64 from DD where binary64 is asserted (rule 2), the poles against Catani, plus the QED operator for EW corrections, in
+DD (rule 4). XX02 runs on the native per-point inputs; XX01\@public and XX07\@public generate through `Generator` on the
+shipped `loop_sm` and evaluate the stored artifact with the recommended checks. *Further checks:*
+#dff.map(x => [#x.row: $Z -> u overline(u)$ (QCD) equals the analytic massless vector form factor (#x.tests test, #x.status)]).join([; ]);
+#dw.map(x => [#x.row: the Ward identity on the external gluon of #box(math-label(ap-math(x.process))) (#x.checks checks; virtual #sci(x.virtual_dd) and Born #sci(x.born_dd) of the physical scale in DD, binary64 within its estimate)]).join([; ]);
+#dnc.map(x => [#x.row]).join(" and "): LC and NLC are the kept powers of the $N_c$ scan (#dnc.map(x => x.tests).sum() tests, pass). Loop-induced decays are refused typed (`loop-induced`, e.g. $h -> g g$), chains and `$` too (`madloop-syntax`).
+]
+
+// HC_NLO_X0 rows (m-final/PLAN.md §2.4 MF-GM-HC): data/hc.json, written by
+// scripts/build_hc.py from the campaign's test artifacts.
+= Model genericity and correlation oracles (M-FINAL item 4) <genericity>
+
+#let hc-dev(r, k) = esci(r.max_relative_deviation.at(k))
+#figure(kind: table,
+  caption: [*HC_NLO_X0 rows against MadLoop 3.7.0* (`data/hc.json` at #raw(hcj.commit.slice(0, 8)), #hcj.native.split(" ").first(); `tests/unit/test_loop_v2_hc.py`
+    #hcj.junit.values().filter(x => x == "passed").len()/#hcj.junit.len() passed): the Higgs characterisation UFO at NLO (v1.3) with its
+    restriction and parameter cards ($kappa$ settings), the largest relative deviation #hcj.precision.split("; ").last() per
+    Laurent coefficient (acceptance $10^(-5)$), the poles against Catani, the rotation estimate and double-double where run.],
+  {
+    set text(6.8pt, font: sans, stretch: 87.5%)
+    set par(justify: false, leading: 0.35em)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold")
+    table(
+      columns: (0.85cm, 2.2cm, 1.6cm, 1.2cm, 1.1cm, 1.1cm, 1.1cm, 1.1cm, 1.6cm, 1.15cm, 1fr),
+      align: (x, y) => if x in (4, 5, 6, 7) { right + horizon } else { left + horizon },
+      inset: (x: 2.6pt, y: 2.2pt),
+      stroke: (x, y) => (top: if y <= 1 { none } else { 0.3pt + luma(225) }),
+      fill: (x, y) => if y == 0 { navy } else { none },
+      table.header[Row][Process][Restriction · veto][Pts · values][Born][Finite][$epsilon^(-1)$][$epsilon^(-2)$][Catani][Rotation][Status · DD],
+      ..hcj.rows.map(r => if r.status == "blocked" {
+        (text(weight: "bold", r.id), text(8pt, font: "Libertinus Serif", math-label(ap-math(r.process))), [#r.restriction#if r.particle_veto.len() > 0 [ · / #r.particle_veto.join(" ")]],
+          table.cell(colspan: 8)[#mq-chip("blocked") typed #raw(r.refusal.key): #r.reason])
+      } else {
+        (text(weight: "bold", r.id), text(8pt, font: "Libertinus Serif", math-label(ap-math(r.process))), [#r.restriction#if r.particle_veto.len() > 0 [ · / #r.particle_veto.join(" ")]],
+          [#r.points · #r.values], hc-dev(r, "born"), hc-dev(r, "finite"), hc-dev(r, "single_pole"), hc-dev(r, "double_pole"),
+          { let c = r.catani_max_relative; let v = c.values().filter(x => x != none); [#esci(calc.max(..v))#if c.single_pole == none [ #tiny[($epsilon^(-2)$ only)]]] },
+          esci(r.rotation_estimate_max),
+          [#mq-chip(r.status)#if r.double_double != none [ DD #esci(r.double_double.vs_madloop)]])
+      }).flatten(),
+    )
+  },
+) <tab:hc>
+
+#[
+#set text(9pt)
+The HC rows ran through the generic fixes of MF-GM-HC (`e2f0c78e`): the UFO namespace head, the Feynman-gauge refusal only
+where massive vectors run in the loops (`ew_policy.require_loop_gauge`), positional UFO counterterm keys with zero extra
+positions (other key lengths are the listed source refusal `ufo-counterterm-keys`) and a four-point contact with a colour-singlet
+leg split through an adjoint auxiliary. #hc-blocked.map(r => [#r.id (#box(math-label(ap-math(r.process)))) stays refused at
+generation: the five-point $R_2$ contact `[G G G G X0]` carries the colour $f f f f$ that the tree colour flow holds only as the
+multi-trace colour state of DESIGN §6.1, so the reachable vertex is refused, never dropped (addendum J); a recorded limitation
+(optional row)]).join([; ]).
+]
+
+// Recola correlation rows (m-final/PLAN.md §2.4 MF-CORR): data/corr.json,
+// written by scripts/build_corr.py from the campaign's test artifacts.
+#let cr-dev(r, k) = esci(r.max_relative_deviation.at(k))
+#figure(kind: table,
+  caption: [*Colour, spin and spin-colour correlations against Recola* (`data/corr.json` at #raw(crj.commit.slice(0, 8)),
+    `tests/unit/test_loop_v2_corr_recola.py` #crj.junit.values().filter(x => x == "passed").len()/#crj.junit.len() passed;
+    references #crj.reference): per process and kind the entries and points, the correlated Born of the tree engine and of the
+    one-loop runtime relative to Recola's (acceptance $10^(-11)$), and the one-loop Laurent coefficients relative to the
+    row's largest Recola coefficient (acceptance $10^(-8)$).],
+  {
+    set text(6.8pt, font: sans, stretch: 87.5%)
+    set par(justify: false, leading: 0.35em)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold")
+    table(
+      columns: (2.3cm, 1.7cm, 1.5cm, 1.4cm, 1.4cm, 1.4cm, 1.4cm, 1.4cm, 1fr),
+      align: (x, y) => if x in (3, 4, 5, 6, 7) { right + horizon } else { left + horizon },
+      inset: (x: 2.6pt, y: 1.9pt),
+      stroke: (x, y) => (top: if y <= 1 { none } else if crj.rows.at(y - 1).process != crj.rows.at(y - 2, default: (process: none)).process { 0.5pt + luma(190) } else { 0.3pt + luma(232) }),
+      fill: (x, y) => if y == 0 { navy } else { none },
+      table.header[Process][Kind][Entries · pts][Tree Born][Loop Born][Finite][$epsilon^(-1)$][$epsilon^(-2)$][Status],
+      ..crj.rows.map(r => (
+        text(8pt, font: "Libertinus Serif", math-label(ap-math(r.recola_process.replace("->", ">")))), r.kind, [#r.entries · #r.points],
+        cr-dev(r, "tree_born"), cr-dev(r, "virtual_born"), cr-dev(r, "finite"), cr-dev(r, "single_pole"), cr-dev(r, "double_pole"),
+        mq-chip(r.status),
+      )).flatten(),
+    )
+  },
+) <tab:corr>
+
+// ================================================================= M-SM ==
+// The M-SM capability matrix and CMS table (m-sm/PLAN.md §5.2):
+// data/msm-matrix.json, written by scripts/build_msm_matrix.py from
+// data/msm.json, the campaign's public-route and self-test data and the
+// manifest; the per-row data are in the appendix (@tab:msmrows). The G1 EW
+// row: data/msm-g1.json (indicative, not gated).
+#pagebreak(weak: true)
+= Electroweak capability matrix (M-SM) <msm>
+
 #figure(kind: table,
   caption: [*Electroweak capability matrix* at #raw(sx-pin), per class of `m-sm/PLAN.md` §1.1 (campaign of 2026-10-31 on
     the shipped patched EW UFOs, `data/msm.json`; legend below the table, rows: @tab:msmrows).],
@@ -2811,6 +3151,46 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
 ]
 
 // ============================================================= APPENDIX ==
+// Per-row data of the decay campaign (data/dec-matrix.json rows, from
+// data/dec.json; user rule: per-row data in data/ and an appendix).
+#pagebreak(weak: true)
+#heading(numbering: none)[Appendix: the decay campaign rows] <decrows-sec>
+
+#let dec-b64(r) = { let b = r.binary64_vs_reference; ("born", "finite", "single_pole", "double_pole").map(k => esci(b.at(k, default: none))) }
+#figure(kind: table,
+  caption: [*Rows of the decay campaign* (`data/dec.json`, written by `scripts/build_mqcd.py` with the decay manifest
+    `tests/fixtures/loop/dec/manifest.json` from the campaign's records at #raw(dm.campaign.slice), native
+    #raw(dm.campaign.native); through `data/dec-matrix.json` `rows`). Per row: gauge and the Catani route (python: the
+    tools' operator; engine: the runtime's `poles = "ir"`), tiers (d default, n nightly) with points · checks · failures,
+    binary64 against the MadLoop reference per coefficient (Born, finite, $epsilon^(-1)$, $epsilon^(-2)$; information:
+    rule 2 asserts binary64 against DD), the coefficients whose binary64 estimate is out of scope (DD asserted there), the
+    extras and the reference fixture.],
+  {
+    set text(6.3pt, font: sans, stretch: 87.5%)
+    set par(justify: false, leading: 0.35em)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold")
+    show raw: set text(5.8pt)
+    table(
+      columns: (0.75cm, 1.9cm, 1.55cm, 2.1cm, 1.05cm, 1.05cm, 1.05cm, 1.05cm, 1.75cm, 0.9cm, 1fr),
+      align: (x, y) => if x in (4, 5, 6, 7) { right + horizon } else { left + horizon },
+      inset: (x: 2.4pt, y: 1.9pt),
+      stroke: (x, y) => (top: if y <= 1 { none } else { 0.3pt + luma(225) }),
+      fill: (x, y) => if y == 0 { navy } else { none },
+      table.header[Row][Process][Gauge · Catani][Tiers][Born][Finite][$epsilon^(-1)$][$epsilon^(-2)$][Out of scope][Extras][Reference],
+      ..dm.rows.map(r => (
+        text(weight: "bold", r.row),
+        text(7.6pt, font: "Libertinus Serif", math-label(ap-math(r.process))),
+        [#r.gauge · #r.catani_route],
+        r.tiers.map(t => [#t.tier.first() #t.points · #t.checks · #t.failures]).join([; ]),
+        ..dec-b64(r),
+        if r.binary64_out_of_scope.len() == 0 [—] else [#r.binary64_out_of_scope.len() × #r.binary64_out_of_scope.first().coefficient.replace("_", " ") (#r.binary64_out_of_scope.first().sector.replace("^", ""))],
+        r.extras.join(", "),
+        raw(r.reference.split(" ").at(1).split("/").last()),
+      )).flatten(),
+    )
+  },
+) <tab:decrows>
+
 // Per-row data of the M-SM campaign (data/msm-matrix.json rows, from
 // data/msm.json; user rule: per-row data in data/ and an appendix).
 #pagebreak(weak: true)

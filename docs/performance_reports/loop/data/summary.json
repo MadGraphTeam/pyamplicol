@@ -3754,7 +3754,8 @@
       "untimed": 0.0
      },
      "revision": "8a062a52",
-     "source": "data/2to6.json rows[gg_gggggg-full].evaluation"
+     "note": "ran partly in swap: time likely inflated",
+     "source": "data/2to6.json rows[gg_gggggg-full].evaluation; row_caveats[gg_gggggg-full]"
     },
     "leading_colour": {
      "status": "measured",
@@ -3776,7 +3777,7 @@
       "untimed": 0.0
      },
      "revision": "d5ed94c2",
-     "source": "data/2to6.json rows[gg_gggggg-lc].evaluation"
+     "source": "data/2to6.json rows[gg_gggggg-lc].evaluation; row_caveats[gg_gggggg-lc]"
     },
     "checks": [
      {
@@ -3927,7 +3928,7 @@
       "untimed": 0.0
      },
      "revision": "8a062a52",
-     "source": "data/2to6.json rows[uux_gggggg-lc].evaluation"
+     "source": "data/2to6.json rows[uux_gggggg-lc].evaluation; row_caveats[uux_gggggg-lc]"
     },
     "checks": [
      {
@@ -4030,7 +4031,7 @@
       "untimed": 0.0
      },
      "revision": "8a062a52",
-     "source": "data/2to6.json rows[uux_uuxgggg-lc].evaluation"
+     "source": "data/2to6.json rows[uux_uuxgggg-lc].evaluation; row_caveats[uux_uuxgggg-lc]"
     },
     "checks": [
      {

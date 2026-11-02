@@ -2177,9 +2177,11 @@ def _six_generation(r: dict, src: str) -> dict:
     }
 
 
-def _six_timing(r: dict, src: str) -> dict:
+def _six_timing(r: dict, src: str, caveats: list[str]) -> dict:
     e = r["evaluation"]
     rot = "copies" in e["timed"]
+    # A run in swap (2to6.json row_caveats): its time is likely inflated.
+    swap = any("swap" in c for c in caveats)
     return {
         "status": "measured",
         "accuracy": r["accuracy"],
@@ -2197,7 +2199,8 @@ def _six_timing(r: dict, src: str) -> dict:
         "peak_gib": r["table1"]["eval_peak_gib"],
         "stages": _split(e["stages_s_per_point"]),
         "revision": e["revision"][:8],
-        "source": f"{src} rows[{r['key']}].evaluation",
+        **({"note": "ran partly in swap: time likely inflated"} if swap else {}),
+        "source": f"{src} rows[{r['key']}].evaluation; row_caveats[{r['key']}]",
     }
 
 
@@ -2270,12 +2273,12 @@ def _preliminary() -> dict | None:
                 "main": _six_generation(lead, src),
                 "lc": _six_generation(lc, src) if fc else None,
             },
-            "full_colour": _six_timing(fc, src) if fc else {
+            "full_colour": _six_timing(fc, src, d["row_caveats"].get(fc_key, [])) if fc else {
                 "status": "not run",
                 "reason": SIX_NO_FC[lc_key][0],
                 "source": f"{src} {SIX_NO_FC[lc_key][1]}",
             },
-            "leading_colour": _six_timing(lc, src),
+            "leading_colour": _six_timing(lc, src, d["row_caveats"].get(lc_key, [])),
             "checks": (_six_checks(fc) if fc else []) + _six_checks(lc),
             "caveats": (d["row_caveats"].get(fc_key, []) if fc else [])
             + d["row_caveats"].get(lc_key, []),
