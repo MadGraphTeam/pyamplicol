@@ -1,9 +1,9 @@
 {
  "source": "scripts/build_mqcd_matrix.py from data/mqcd.json, mqcd-findings.json, mqcd-public.json, mqcd-fft-cost.json and mqcd-fft-worst.json",
  "campaign": {
-  "campaign_head": "71e2041e (M-SM pin; campaign-m1031-msm-mqcd: default, manifest and nightly jobs n1-n7 as whole files, one pytest process per job; delegated ids with --junitxml)",
-  "native": "loop-native-v2-slice-71e2041e (native_digest f8d77c97)",
-  "date": "2026-10-31",
+  "campaign_head": "617b59cd (M-FINAL-b pin; campaign-m1101-mfb-mqcd: default, manifest and nightly jobs n1-n7 as whole files, one pytest process per job; delegated ids with --junitxml; n2 and A15 rerun after memguard kills)",
+  "native": "loop-native-v2-slice-b36af289 (native_digest 58b40383)",
+  "date": "2026-11-02",
   "counts": {
    "pass": 76,
    "partial": 1,
