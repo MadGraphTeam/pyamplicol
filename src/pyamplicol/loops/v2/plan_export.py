@@ -434,7 +434,7 @@ class _Exporter:
         """
 
         slice_ = self.slice_
-        accuracy = slice_.request.accuracy
+        accuracy = slice_.request.projection
         # Projected at formal N_c only over N_c-exact blocks (``refusals``).
         require_formal_nc_tables(
             formal_label(accuracy), (column.table for column in columns), "seed records"
@@ -459,20 +459,22 @@ class _Exporter:
                 if column.basis is not None and b not in column.basis:
                     continue
                 entries.setdefault((c, order), []).append((b, born_order))
-            indexed.append((table, degree, entries))
+            indexed.append((table, degree, column.exact, entries))
         classes: dict[tuple[int, Orders], int] = {}
         self.class_records = classes
         class_records: list[dict] = []
-        # Projected cells by (table, class, basis element, degree, grade):
-        # columns and loop orders of one class share them.
-        projected: dict[tuple[int, int, int, int | None, int], Any] = {}
+        # Projected cells by (table, class, basis element, degree, grade,
+        # exact degree): columns and loop orders of one class share them.
+        projected: dict[tuple[int, int, int, int | None, int, int | None], Any] = {}
 
-        def weight_of(table, c: int, b: int, degree: int | None, grade: int):
-            key = (id(table), c, b, degree, grade)
+        def weight_of(
+            table, c: int, b: int, degree: int | None, grade: int, exact: int | None
+        ):
+            key = (id(table), c, b, degree, grade, exact)
             found = projected.get(key)
             if found is None:
                 found = projected[key] = project(
-                    table.cells[c][b], degree, accuracy, grade
+                    table.cells[c][b], degree, accuracy, grade, exact
                 )
             return found
 
@@ -481,11 +483,11 @@ class _Exporter:
             if found is not None:
                 return found
             weights_of = []
-            for table, degree, entries in indexed:
+            for table, degree, exact, entries in indexed:
                 weights: dict[int, ExactColorCoefficient] = {}
                 for b, born_order in entries.get((c, order), ()):
                     for grade in sorted(born_grades.get((b, born_order), ())):
-                        weight = weight_of(table, c, b, degree, grade)
+                        weight = weight_of(table, c, b, degree, grade, exact)
                         if not weight:
                             continue
                         j = self.born_components.setdefault(
@@ -832,29 +834,39 @@ class _Exporter:
 @dataclass(frozen=True)
 class SeedColumn:
     """One observable column of a plan: its seed table, sector pairs and
-    degree P, and the Born helicity rows and basis elements its seeds keep
-    (``None``: all). The sector columns of the inclusive virtual are
-    ``sector_columns``; ``observables.ColumnPlan`` builds the others."""
+    degree P, the Born helicity rows and basis elements its seeds keep
+    (``None``: all) and, for an output of graded colour, the one N_c degree
+    it keeps (``exact``, ``colour.kept``). The sector columns of the
+    inclusive virtual are ``sector_columns``; ``observables.ColumnPlan``
+    builds the others."""
 
     table: Any
     pairs: frozenset
     degree: int | None
     rows: frozenset | None = None
     basis: frozenset | None = None
+    exact: int | None = None
 
 
 def weight_columns(
     columns: Sequence[SeedColumn],
 ) -> tuple[list[tuple[Any, ...]], list[int]]:
     """The distinct seed-weight columns of ``columns`` (keys: table identity,
-    degree, sector pairs, basis elements; a column's helicity rows do not
-    change its weights) in first-use order, and per column its weight
-    column (``_Exporter.seed_records``, the plan's ``column_weights``)."""
+    degree, sector pairs, basis elements, exact N_c degree; a column's
+    helicity rows do not change its weights) in first-use order, and per
+    column its weight column (``_Exporter.seed_records``, the plan's
+    ``column_weights``)."""
 
     keys: dict[tuple[Any, ...], int] = {}
     of_column = []
     for column in columns:
-        key = (id(column.table), column.degree, column.pairs, column.basis)
+        key = (
+            id(column.table),
+            column.degree,
+            column.pairs,
+            column.basis,
+            column.exact,
+        )
         of_column.append(keys.setdefault(key, len(keys)))
     return list(keys), of_column
 
@@ -980,7 +992,7 @@ def fourier_record(
     if fourier is None:
         return None
     table = slice_.table
-    accuracy = slice_.request.accuracy
+    accuracy = slice_.request.projection
     born_grades = slice_._born_grades()
     keys, weight_of_column = weight_columns(columns)
     first: dict[int, int] = {}
@@ -1001,7 +1013,10 @@ def fourier_record(
     jobs = []
     for w in range(len(keys)):
         column = columns[first[w]]
+        # Graded columns (one exact N_c degree) are contracted directly.
         if column.table is not table or column.basis is not None:
+            continue
+        if column.exact is not None:
             continue
         degree = column.degree
         if accuracy != "full" and degree is None:
@@ -1108,7 +1123,7 @@ def export_plan(
     # N_c-exact tree blocks: the generation refuses others
     # (``LoopSlice.generate``), and no export serves one (``refusals``).
     require_nc_exact(
-        slice_.blocks, formal_label(slice_.request.accuracy), slice_.request.process
+        slice_.blocks, formal_label(slice_.request.projection), slice_.request.process
     )
     kinematics = rx.CatalogueKinematics(
         slice_.catalogue,

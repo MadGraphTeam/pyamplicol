@@ -99,6 +99,7 @@ from .blocks import (
 )
 from .catalogue import build_loop_kernel_catalogue
 from .colour import (
+    FORMAL_FULL,
     INHERITED_ACCURACIES,
     SYMMETRIC_GROUP_FFT,
     BornBasis,
@@ -1504,6 +1505,11 @@ class SliceRequest:
     # the artifact records it).
     allow_anomalous_veto: bool = False
     accuracy: ColourAccuracy = "full"
+    # Graded colour (``color.graded``): the outputs are also split by power of
+    # N_c, one component per kept degree (``LoopSlice.graded_degrees``,
+    # ``observables.Column.exact``), at ``strict-lc``, ``strict-nlc`` or
+    # ``full`` (``projection``). Recorded only when set.
+    graded: bool = False
     # A source-owned formal-N_c continuation (``LoopColorDeclaration``); every
     # projected accuracy needs it for the counterterm and
     # field colour grades (design §6.7).
@@ -1557,6 +1563,14 @@ class SliceRequest:
     def __post_init__(self) -> None:
         if self.accuracy not in ("full", "lc", "nlc", "strict-lc", "strict-nlc"):
             raise ValueError(f"unknown colour accuracy {self.accuracy!r}")
+        if not isinstance(self.graded, bool):
+            raise ValueError("graded must be a boolean")
+        if self.graded and self.accuracy in INHERITED_ACCURACIES:
+            raise ValueError(
+                f"graded colour needs accuracy 'strict-lc', 'strict-nlc' or 'full': "
+                f"the inherited {self.accuracy!r} approximation is not an expansion "
+                "in N_c"
+            )
         if self.selection is not None and not formal_leading_colour(self.accuracy):
             raise ValueError(
                 "helicity and colour-flow selection is a formal leading-colour "
@@ -1579,6 +1593,14 @@ class SliceRequest:
         object.__setattr__(self, "particle_veto", veto)
         if not isinstance(self.allow_anomalous_veto, bool):
             raise ValueError("allow_anomalous_veto must be a boolean")
+
+    @property
+    def projection(self) -> str:
+        """The colour projection the engine runs (design §7.4): the accuracy,
+        or ``colour.FORMAL_FULL`` for graded full colour (the formal
+        expansion with every N_c degree kept)."""
+
+        return FORMAL_FULL if self.graded and self.accuracy == "full" else self.accuracy
 
     @property
     def exact_loop_orders(self) -> tuple[Mapping[str, int], ...]:
@@ -1611,7 +1633,7 @@ def formal_projection_label(request: SliceRequest) -> str | None:
     tables must be exact in N_c (``refusals.require_nc_exact``); None for
     full colour and the inherited LC/NLC (``colour.formal_label``)."""
 
-    return formal_label(request.accuracy)
+    return formal_label(request.projection)
 
 
 def resolve_request(compiled: Any, request: SliceRequest) -> SliceRequest:
@@ -1635,7 +1657,7 @@ def resolve_request(compiled: Any, request: SliceRequest) -> SliceRequest:
             request = replace(request, particle_veto=veto)
     raw = getattr(compiled, "raw_loop_model", None)
     if (
-        colour_graded_couplings(request.accuracy)
+        colour_graded_couplings(request.projection)
         and request.colour_declaration is None
         and raw is not None
     ):
@@ -1750,7 +1772,7 @@ def prepare_request_model(compiled: Any, request: SliceRequest) -> RequestModel:
         fixed = source_color_fixed_parameters(
             compiled.raw_loop_model, declaration, fixed_parameters=fixed
         )
-    elif colour_graded_couplings(request.accuracy):
+    elif colour_graded_couplings(request.projection):
         raise ValueError(
             f"{_accuracy_label(request)} needs a source-owned formal-N_c "
             "continuation of the counterterms (design §6.7)"
@@ -2132,7 +2154,7 @@ class LoopSlice:
                 # grade. The inherited LC/NLC keep the U(1)-subtraction pieces
                 # at N_c = 3, as the tree engine's currents (full colour keeps
                 # every power at N_c = 3 anyway).
-                u1_grades=u1_graded(request.accuracy),
+                u1_grades=u1_graded(request.projection),
                 frozen_u1=request.accuracy in INHERITED_ACCURACIES,
             )
             if electroweak:
@@ -2247,7 +2269,7 @@ class LoopSlice:
                     tuple(sorted(request.loop_order_bounds.items())),
                     request.compatibility,
                 ),
-                u1_grades=u1_graded(request.accuracy),
+                u1_grades=u1_graded(request.projection),
                 frozen_u1=request.accuracy in INHERITED_ACCURACIES,
             )
             # Its root terms close on its blocks with their N_c grades too.
@@ -2302,7 +2324,9 @@ class LoopSlice:
         # alpha(0) photon terms are the engine's own, not source factors.
         # Full colour (with or without a declaration) reads the source
         # couplings at N_c = 3: no check.
-        projected = continuation if colour_graded_couplings(request.accuracy) else None
+        projected = (
+            continuation if colour_graded_couplings(request.projection) else None
+        )
         require_declared_colour_fields(
             projected,
             (i for i in insertions if i.rule in source_field_rules),
@@ -3294,6 +3318,65 @@ class LoopSlice:
             }
         return found
 
+    def graded_degrees(
+        self,
+        overlaps: Callable[[Any, Any], Mapping[int, Any]] | None = None,
+        table: SeedTable | None = None,
+        degrees: Mapping[str, Mapping[Orders, int | None]] | None = None,
+    ) -> dict[str, dict[Orders, tuple[int, ...]]]:
+        """Graded colour (``SliceRequest.graded``): the N_c degrees each
+        output reports, per squared Born order (``"born"``) and virtual sector
+        (``"virtual"``), decreasing. They are the structural powers
+        (``structural_powers``) that the request's projection keeps at its
+        degrees P (``degrees``; by default ``degrees()``): P (and P-1, P-2 at
+        NLC) where present, every power for graded full colour. ``overlaps``,
+        ``table`` and ``degrees`` are those of a directed colour history
+        (observables, at its complete family's degrees)."""
+
+        if not self.request.graded:
+            raise ValueError("graded degrees of a request without graded colour")
+        powers = self.structural_powers(overlaps, table)
+        accuracy = self.request.projection
+        if degrees is None and self.request.accuracy != "full":
+            degrees = self.degrees(overlaps, table)
+        return {
+            kind: {
+                key: tuple(
+                    sorted(
+                        (
+                            d
+                            for d in values
+                            if kept(
+                                d,
+                                None if degrees is None else degrees[kind].get(key),
+                                accuracy,
+                            )
+                        ),
+                        reverse=True,
+                    )
+                )
+                for key, values in part.items()
+            }
+            for kind, part in powers.items()
+        }
+
+    def degree_axis(self) -> tuple[int, ...]:
+        """Graded colour: every N_c degree any inclusive output reports
+        (``graded_degrees``), decreasing: the degree axis of the graded
+        virtual."""
+
+        return tuple(
+            sorted(
+                {
+                    d
+                    for part in self.graded_degrees().values()
+                    for values in part.values()
+                    for d in values
+                },
+                reverse=True,
+            )
+        )
+
     def structural_degrees(
         self,
         overlaps: Callable[[Any, Any], Mapping[int, Any]] | None = None,
@@ -3316,6 +3399,32 @@ class LoopSlice:
 
         if inclusive and (found := native_cells.slice_degrees(self)) is not None:
             self._cache["degrees"] = found
+            return found
+        powers = self.structural_powers(overlaps, table)
+        out = {
+            kind: {key: max(values, default=None) for key, values in part.items()}
+            for kind, part in powers.items()
+        }
+        if inclusive:
+            self._cache["degrees"] = out
+        return out
+
+    def structural_powers(
+        self,
+        overlaps: Callable[[Any, Any], Mapping[int, Any]] | None = None,
+        table: SeedTable | None = None,
+    ) -> dict[str, dict[Orders, frozenset[int]]]:
+        """Every N_c degree of a nonzero exact cell per squared Born order
+        (``"born"``) and virtual sector (``"virtual"``), among the seed,
+        counterterm and field cells (coupling grades included); the largest
+        is the structural degree (``structural_degrees``). Graded colour
+        reports one output per degree (``graded_degrees``). Structural: no
+        numerics. ``overlaps`` and ``table`` replace the Born colour metric
+        and the seed table, e.g. by those of a directed colour history."""
+
+        inclusive = overlaps is None and table is None
+        found = self._cache.get("powers") if inclusive else None
+        if found is not None:
             return found
         overlaps = overlaps or self.overlaps
         table = table or self.table
@@ -3344,36 +3453,32 @@ class LoopSlice:
             if inclusive
             else None
         )
-        leading: dict[tuple[frozenset, Hashable], int | None] = {}
+        reached: dict[tuple[frozenset, Hashable], frozenset[int]] = {}
 
-        def overlap_degree(bra: frozenset, right: Any) -> int | None:
-            return max(
-                (
-                    power + p
-                    for left, p in bra
-                    for power, value in overlaps(left, right).items()
-                    if value
-                ),
-                default=None,
+        def overlap_powers(bra: frozenset, right: Any) -> frozenset[int]:
+            return frozenset(
+                power + p
+                for left, p in bra
+                for power, value in overlaps(left, right).items()
+                if value
             )
 
-        def degree(bra: frozenset, ket: set, offset: int = 0) -> int | None:
-            # max over the bra of a ket tensor's overlap degrees is constant
-            # on the ket tensor's orbit (the bra is invariant): one
-            # representative per orbit is contracted.
-            out = None
+        def powers(bra: frozenset, ket: set, offset: int = 0) -> set[int]:
+            # The bra's overlap powers with a ket tensor are constant on the
+            # ket tensor's orbit (the bra is invariant): one representative
+            # per orbit is contracted.
+            out: set[int] = set()
             for right, q in ket:
                 if orbits is None:
-                    found = overlap_degree(bra, right)
+                    found = overlap_powers(bra, right)
                 else:
                     rename = orbits.rename(right)
                     key = (bra, _colour_key(right, rename))
-                    if key not in leading:
+                    if key not in reached:
                         image = _relabelled_colour(right, rename)
-                        leading[key] = overlap_degree(bra, image)
-                    found = leading[key]
-                if found is not None:
-                    out = _max(out, found + q + offset)
+                        reached[key] = overlap_powers(bra, image)
+                    found = reached[key]
+                out |= {power + q + offset for power in found}
             return out
 
         # Sites in one orbit of the relabellings have relabelled terms, so
@@ -3410,29 +3515,30 @@ class LoopSlice:
                     for part in term.colour.terms
                     for grade in found
                 }
-        out = {"born": {}, "virtual": {}}
+        out: dict[str, dict[Orders, set[int]]] = {"born": {}, "virtual": {}}
         for a, b in product(born, repeat=2):
             squared = add_orders(a, b)
-            value = degree(born[a], born[b])
-            out["born"][squared] = _max(out["born"].get(squared), value)
+            out["born"].setdefault(squared, set()).update(powers(born[a], born[b]))
         born_grades = self._born_grades()
         for sector, pairs in self.sectors:
-            value = table.degree(pairs, born_grades)
+            value = set(table.powers(pairs, born_grades))
             for a, b in pairs:
-                value = _max(value, degree(born[a], counterterms.get(b, set())))
+                value |= powers(born[a], counterterms.get(b, set()))
             for insertion in self.fields:
                 if (
                     a := next((a for a, b in pairs if b == insertion.orders), None)
                 ) is None or insertion.born_order not in born:
                     continue
                 for grade in grades(self.field_names[insertion.identity]):
-                    value = _max(
-                        value, degree(born[a], born[insertion.born_order], grade)
-                    )
+                    value |= powers(born[a], born[insertion.born_order], grade)
             out["virtual"][sector] = value
+        frozen = {
+            kind: {key: frozenset(values) for key, values in part.items()}
+            for kind, part in out.items()
+        }
         if inclusive:
-            self._cache["degrees"] = out
-        return out
+            self._cache["powers"] = frozen
+        return frozen
 
     # -- colour correlations (IR-pole check) ------------------------------------
 
@@ -3743,7 +3849,7 @@ class _PointEvaluation:
         degrees = slice_.degrees() if slice_.request.accuracy != "full" else None
         overlap = slice_.overlaps
 
-        accuracy = slice_.request.accuracy
+        accuracy = slice_.request.projection
 
         weights: dict = {}
         # Per helicity: each bra's projection onto the ket keys, z[r] =
@@ -4037,7 +4143,7 @@ class _PointEvaluation:
                 self.amplitudes,
                 [pairs for _sector, pairs in slice_.sectors],
                 numbers,
-                slice_.request.accuracy,
+                slice_.request.projection,
                 [degrees.get(sector) for sector, _pairs in slice_.sectors],
                 fourier=None if exact else slice_.fourier,
                 native=slice_.native,
@@ -4996,11 +5102,13 @@ def _interfere(
     numbers,
     grade: int = 0,
     weights: dict | None = None,
+    exact: int | None = None,
 ) -> Any:
     """N_c^grade sum conj(bra) ket <t|t'> at N_c = 3, keeping the N_c powers
     that ``accuracy`` keeps below the leading degree ``degree``
-    (``colour.kept``). ``weights`` caches the carrier colour weights of one
-    point (they do not depend on the helicities)."""
+    (``colour.kept``; only the power ``exact`` when given, graded colour).
+    ``weights`` caches the carrier colour weights of one point (they do not
+    depend on the helicities)."""
 
     weights = {} if weights is None else weights
     total = numbers.zero
@@ -5009,7 +5117,7 @@ def _interfere(
         for (right, q), b in ket.items():
             for power, cell in overlaps(left, right).items():
                 exponent = power + p + q + grade
-                if not kept(exponent, degree, accuracy):
+                if not kept(exponent, degree, accuracy, exact):
                     continue
                 key = (left, right, power, exponent)
                 weight = weights.get(key)

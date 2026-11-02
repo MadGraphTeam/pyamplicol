@@ -198,11 +198,13 @@ def _decode_field(name: str, value: Any) -> Any:
 # bytes.
 OPTIONAL_REQUEST_FIELD = "selection"
 # The request fields recorded only when they differ from their default
-# (``request_record``), with that default: the selection and the external
-# photons' tags (MS-PHOTON), so records of requests that keep them keep their
-# bytes, and records written before a field existed keep their meaning.
+# (``request_record``), with that default: the selection, graded colour and
+# the external photons' tags (MS-PHOTON), so records of requests that keep
+# them keep their bytes, and records written before a field existed keep
+# their meaning.
 OPTIONAL_REQUEST_DEFAULTS: dict[str, object] = {
     OPTIONAL_REQUEST_FIELD: None,
+    "graded": False,
     "external_photons": "final",
     "alpha0_conversion": "eCoup_DGmua0_UV_EW",
     "alpha0_inverse": None,

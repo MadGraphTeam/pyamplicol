@@ -131,6 +131,13 @@ Laurent = Mapping[int, ExactColorCoefficient]
 ColourAccuracy = Literal["lc", "nlc", "strict-lc", "strict-nlc", "full"]
 STRICT_ACCURACIES = ("strict-lc", "strict-nlc")
 INHERITED_ACCURACIES = ("lc", "nlc")
+# The projection of graded full colour (``assemble.SliceRequest.projection``):
+# the formal 1/N_c expansion (U(1)-graded tree currents, counterterm and field
+# couplings graded by the colour declaration) with every N_c degree kept, so
+# that the output can be split by degree (``exact`` in ``kept``). An
+# engine-internal name: the request and its artifact say ``full`` with
+# ``graded``.
+FORMAL_FULL = "formal-full"
 # (Born amplitude orders, loop amplitude orders): one pair of a squared-order sector.
 SectorPair = tuple[Orders, Orders]
 
@@ -1973,6 +1980,13 @@ def _max_degree(cells: Iterable[Laurent]) -> int | None:
 _DEPTH = {"lc": 0, "nlc": 2, "strict-lc": 0, "strict-nlc": 2}
 
 
+def keeps_every_degree(accuracy: str) -> bool:
+    """Whether a projection keeps every N_c power (full colour, graded or
+    not), so that no reference degree truncates it."""
+
+    return accuracy in ("full", FORMAL_FULL)
+
+
 def strict_colour(accuracy: str) -> bool:
     """Whether ``accuracy`` is the formal 1/N_c expansion (``strict-*``)."""
 
@@ -1991,10 +2005,10 @@ def formal_leading_colour(accuracy: str) -> bool:
 def u1_graded(accuracy: str) -> bool:
     """Whether the tree currents of a request carry the N_c grades of their
     U(1)-subtraction pieces (``generation.dag_grades``): the strict
-    accuracies. Full colour and the inherited ``lc``/``nlc`` keep them at
-    N_c = 3, as the tree engine does."""
+    accuracies and graded full colour (``FORMAL_FULL``). Full colour and the
+    inherited ``lc``/``nlc`` keep them at N_c = 3, as the tree engine does."""
 
-    return strict_colour(accuracy)
+    return strict_colour(accuracy) or accuracy == FORMAL_FULL
 
 
 def formal_label(accuracy: str) -> str | None:
@@ -2004,6 +2018,8 @@ def formal_label(accuracy: str) -> str | None:
     accuracies, whose tree currents keep the U(1)-subtraction pieces at
     N_c = 3."""
 
+    if accuracy == FORMAL_FULL:
+        return "graded full colour"
     return accuracy.upper() if u1_graded(accuracy) else None
 
 
@@ -2012,7 +2028,8 @@ def colour_graded_couplings(accuracy: str) -> bool:
     from a colour declaration (design §6.7): every projected accuracy,
     inherited ones included (a coupling at N_c = 3 would sit one power below
     the loops it renormalises, so a projection would drop it). Full colour
-    reads the source couplings at N_c = 3."""
+    reads the source couplings at N_c = 3; graded full colour
+    (``FORMAL_FULL``) grades them, as the strict accuracies do."""
 
     return accuracy != "full"
 
@@ -2046,12 +2063,18 @@ def whole_entry(cell: Laurent, reference: int) -> Laurent:
     return {top: total} if total else {}
 
 
-def kept(power: int, degree: int | None, accuracy: ColourAccuracy) -> bool:
+def kept(
+    power: int, degree: int | None, accuracy: str, exact: int | None = None
+) -> bool:
     """Whether a colour cell of N_c power ``power`` survives the projection
     of a sector of reference degree ``degree`` (P): LC keeps P, NLC keeps P,
-    P-1 and P-2 (odd powers included), FC keeps every power."""
+    P-1 and P-2 (odd powers included), FC (graded or not) keeps every power.
+    ``exact`` (an output of graded colour, one N_c degree) keeps only the
+    power ``exact`` of what the projection keeps."""
 
-    if accuracy == "full":
+    if exact is not None and power != exact:
+        return False
+    if keeps_every_degree(accuracy):
         return True
     if accuracy not in _DEPTH:
         raise ValueError(f"unknown colour accuracy {accuracy!r}")
@@ -2059,15 +2082,19 @@ def kept(power: int, degree: int | None, accuracy: ColourAccuracy) -> bool:
 
 
 def project(
-    cell: Laurent, degree: int | None, accuracy: ColourAccuracy, shift: int = 0
+    cell: Laurent,
+    degree: int | None,
+    accuracy: str,
+    shift: int = 0,
+    exact: int | None = None,
 ) -> ExactColorCoefficient:
     """N_c^shift times one cell at N_c = 3 after LC/NLC/FC truncation at
     leading degree P (``shift`` is the N_c grade of the Born amplitude the
-    cell multiplies)."""
+    cell multiplies), restricted to the power ``exact`` when given (``kept``)."""
 
     real = imag = Fraction(0)
     for power, value in cell.items():
-        if kept(power + shift, degree, accuracy):
+        if kept(power + shift, degree, accuracy, exact):
             factor = _nc_power(power + shift)
             real += value.real * factor
             imag += value.imag * factor
@@ -2131,17 +2158,22 @@ class SeedTable:
         (basis element, Born order); by default every amplitude has grade 0.
         """
 
-        return max(
-            (
-                power + grade
-                for c, _o, b, a in self.admitted(pairs)
-                for power, value in self.cells[c][b].items()
-                if value
-                for grade in (
-                    (0,) if born_grades is None else born_grades.get((b, a), ())
-                )
-            ),
-            default=None,
+        return max(self.powers(pairs, born_grades), default=None)
+
+    def powers(
+        self,
+        pairs: Iterable[SectorPair],
+        born_grades: Mapping[tuple[int, Orders], Iterable[int]] | None = None,
+    ) -> frozenset[int]:
+        """Every N_c degree of the sector's nonzero cells times the Born
+        grades (``degree`` is the largest; graded colour reports each)."""
+
+        return frozenset(
+            power + grade
+            for c, _o, b, a in self.admitted(pairs)
+            for power, value in self.cells[c][b].items()
+            if value
+            for grade in ((0,) if born_grades is None else born_grades.get((b, a), ()))
         )
 
     def class_degree(self, c: int) -> int | None:
@@ -2167,12 +2199,13 @@ class SeedTable:
         self,
         pairs: Iterable[SectorPair],
         born: Mapping[tuple[int, Orders], Mapping[int, Any]],
-        accuracy: ColourAccuracy = "full",
+        accuracy: str = "full",
         *,
         cast: Callable[[ExactColorCoefficient], Any] = complex,
         conjugate: Callable[[Any], Any] = lambda value: value.conjugate(),
         degree: int | None = None,
         skip: Callable[[int, int], bool] | None = None,
+        exact: int | None = None,
     ) -> dict[tuple[int, Orders], Any]:
         """U0[c, loop order] = sum_b K[c, b] conj(A0[b, Born order]) (§7.3).
 
@@ -2184,7 +2217,8 @@ class SeedTable:
         average is applied. ``degree`` overrides P, e.g. when the sector's
         counterterm and field cells raise it; by default it is the degree of
         the seed cells with the grades of ``born``. ``skip(c, b)`` leaves
-        out the cells another contraction covers (``SeedFourier``).
+        out the cells another contraction covers (``SeedFourier``). ``exact``
+        keeps one N_c degree of the projection (graded colour, ``kept``).
         """
 
         pairs = frozenset(pairs)
@@ -2209,7 +2243,7 @@ class SeedTable:
             if skip is not None and skip(c, b):
                 continue
             for grade, amplitude in born.get((b, born_order), {}).items():
-                weight = project(self.cells[c][b], degree, accuracy, grade)
+                weight = project(self.cells[c][b], degree, accuracy, grade, exact)
                 if not weight:
                     continue
                 term = cast(weight) * conjugate(amplitude)
@@ -3321,6 +3355,7 @@ def certify_leading_colour(
 
 __all__ = [
     "COMPRESSION_THEOREMS",
+    "FORMAL_FULL",
     "INHERITED_ACCURACIES",
     "STRICT_ACCURACIES",
     "SYMMETRIC_GROUP_FFT",
@@ -3356,6 +3391,7 @@ __all__ = [
     "face_degree",
     "formal_label",
     "formal_leading_colour",
+    "keeps_every_degree",
     "kept",
     "literal_network",
     "multiply",
