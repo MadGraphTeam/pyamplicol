@@ -680,7 +680,14 @@ class Run:
         start = time.perf_counter()
         request = _request(self.key, self.options.accuracy, compiled)
         self.record["process_text"] = request.process
-        slice_ = LoopSlice.generate(compiled, request, native)
+        if getattr(self.options, "kernels", None) == "full":
+            # The full tree kernels (``ward.ward_slice``): a store that
+            # serves the Ward mode (``tools/loop_benchmark/stored_checks.py``).
+            from pyamplicol.loops.v2.ward import ward_slice
+
+            slice_ = ward_slice(compiled, request, native)
+        else:
+            slice_ = LoopSlice.generate(compiled, request, native)
         stages["generate"] = {
             "seconds": time.perf_counter() - start,
             "peak_gib": _gib(_status("VmHWM")),
@@ -718,13 +725,16 @@ class Run:
     # -- stored processes ---------------------------------------------------
 
     def _configuration(self) -> dict[str, Any]:
-        return {
+        out = {
             "process": self.key,
             "accuracy": self.options.accuracy,
             "inputs": self.options.inputs,
             "lanes": self.options.lanes,
             "schedule": self.options.schedule,
         }
+        if getattr(self.options, "kernels", None) == "full":
+            out["kernels"] = "full"
+        return out
 
     def _contraction(self) -> dict[str, Any]:
         """The executor's seed-contraction option (``--colour-contraction``;

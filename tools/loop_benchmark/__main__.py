@@ -120,6 +120,13 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         help="copies per --rotation-samples point (>= 2)",
     )
+    v2.add_argument(
+        "--kernels",
+        choices=("production", "full"),
+        default="production",
+        help="'full': generate on the full tree kernels (ward.ward_slice), a "
+        "--store that serves the Ward mode of stored_checks.py",
+    )
 
     wardp = commands.add_parser(
         "ward", help="the Ward identity at chosen stream points"
