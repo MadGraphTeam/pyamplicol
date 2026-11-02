@@ -31,9 +31,9 @@ Stages, each recorded in ``--json`` as it ends (``OUT.DONE`` at the end):
 * ``rescue`` (vii, ``--rescue-points``): the default rescue policy's level 0
   (binary64 with ``RESCUE_ROTATION`` and the rescaled reduction check,
   ``stability.DEFAULT_RESCUE``) and the count of points it sends up (E >
-  ``RESCUE_TARGET``); the double-double level then runs on at most
-  ``--rescue-dd`` of them (the ``dd`` stage's points count; never the
-  arbitrary level).
+  ``RESCUE_TARGET``); the double-double level then runs on escalated points
+  until ``--rescue-dd`` double-double evaluations are reached (the ``dd``
+  stage's points count; default 2, never the arbitrary level).
 
 Usage:
     python tools/loop_benchmark/stored_checks.py STORE [--key KEY] \\
@@ -383,7 +383,9 @@ def check_process(
         }
         record["rescue"] = rescue
         stage("rescue level 0", begin, sent_up=len(up), of=len(estimates))
-        budget = max(0, rescue_dd - len([i for i in dd_points if i in up]))
+        # At most ``rescue_dd`` double-double evaluations in all: the dd
+        # stage's points count (PLAN MF-8G-3 (vii)).
+        budget = max(0, rescue_dd - len(dd_points))
         chosen = [i for i in up if i not in dd_points][:budget]
         if chosen:
             begin = time.perf_counter()
