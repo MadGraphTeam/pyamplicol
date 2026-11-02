@@ -722,10 +722,10 @@ class Run:
         # and tree program), as the artifact writer stores it.
         companion = native.scaleless
         write_plan(
-            native.plan_json,
+            native.plan,
             directory / STORED_RUNTIME,
             native,
-            None if companion is None else companion.plan_json,
+            None if companion is None else companion.plan,
         )
         written = {
             "seconds": time.perf_counter() - start,
@@ -735,7 +735,7 @@ class Run:
         meta = {
             "kind": "stored-process",
             **self._configuration(),
-            "plan_sha256": plan_digest(native.plan_json),
+            "plan_sha256": plan_digest(native.plan),
             "point_inputs": LOOP_V2_NATIVE_POINT_INPUTS,
             "store": written,
             **{
@@ -787,10 +787,10 @@ class Run:
         _reset_peak()
         start = time.perf_counter()
         runtime = directory / STORED_RUNTIME
-        plan_json = read_plan(runtime)
-        if plan_json is None or plan_digest(plan_json) != meta["plan_sha256"]:
+        plan = read_plan(runtime)
+        if plan is None or plan_digest(plan) != meta["plan_sha256"]:
             raise SystemExit("the stored plan does not have its recorded digest")
-        del plan_json
+        del plan
         # File-backed, as the public runtime loads it (the executor reads the
         # plan and binary tree program from the PACBIN).
         process = load_native_process(runtime)
