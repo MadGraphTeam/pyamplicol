@@ -367,7 +367,13 @@ fn face_counts(pairs: Vec<(RawStructure, RawStructure)>) -> PyResult<Vec<i32>> {
 fn project_records(
     py: Python<'_>,
     tables: Vec<(PyRef<'_, NativeCellTable>, Vec<Vec<u32>>, Vec<Vec<u32>>)>,
-    columns: Vec<(usize, Vec<(u32, u32)>, Option<i32>, Option<Vec<usize>>, Option<i32>)>,
+    columns: Vec<(
+        usize,
+        Vec<(u32, u32)>,
+        Option<i32>,
+        Option<Vec<usize>>,
+        Option<i32>,
+    )>,
     born_grades: Vec<((usize, u32), Vec<i32>)>,
     accuracy: &str,
     components: Vec<(usize, u32, i32)>,
