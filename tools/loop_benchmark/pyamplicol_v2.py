@@ -58,8 +58,8 @@ artifact's own loop runtime member (``artifact.write_plan`` with the native
 point inputs, ``point_inputs`` = ``LOOP_V2_NATIVE_POINT_INPUTS``: the plan v4
 and the native process, ``loop-runtime.pacbin``) beside a ``generation.json``
 with the run's generation stages; ``--generate-only`` stops there. A later run
-with ``--load`` reads it as ``V2VirtualRuntime`` does (``artifact.read_plan``,
-``artifact.read_native_process``, ``NativeProcess.executor``: nothing is
+with ``--load`` reads it as ``V2VirtualRuntime`` does (``artifact.load_native_process``,
+file-backed, ``NativeProcess.executor``: nothing is
 regenerated) and times that executor, the integrated configuration of a loaded
 artifact, whose values equal the slice's native executor's bitwise
 (``tests/unit/test_loop_v2_native_process.py``). Its record keeps the stored
@@ -644,17 +644,19 @@ def check_store_native(
 
 def read_store_process(directory: Path, meta: dict[str, Any]) -> Any:
     """The ``NativeProcess`` of a ``--store`` directory as the public runtime
-    loads it, nothing regenerated: the one loader of the stored process for
-    ``Run.load`` and ``stored_checks.py`` (its plan checked against the
-    recorded digest)."""
+    loads it, file-backed (``artifact.load_native_process``: the executor
+    reads the plan and binary tree program from the PACBIN), nothing
+    regenerated: the one loader of the stored process for ``Run.load`` and
+    ``stored_checks.py`` (its plan checked against the recorded digest)."""
 
-    from pyamplicol.loops.v2.artifact import plan_digest, read_native_process, read_plan
+    from pyamplicol.loops.v2.artifact import load_native_process, plan_digest, read_plan
 
     runtime = directory / STORED_RUNTIME
     plan = read_plan(runtime)
     if plan is None or plan_digest(plan) != meta["plan_sha256"]:
         raise SystemExit("the stored plan does not have its recorded digest")
-    return read_native_process(runtime, plan)
+    del plan
+    return load_native_process(runtime)
 
 
 class Run:
