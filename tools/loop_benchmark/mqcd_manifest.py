@@ -1067,8 +1067,9 @@ FIXTURE_ROOT = INDEX.parent.parent  # .../tests/fixtures/loop
 
 # Rows whose Python per-point inputs exceed the nightly job budget (one
 # g g > g g g g point took > 22 min, u u~ > g g g g g > 22 min at 17 GB):
-# the native-input route, whose executor forms no Catani prediction (WP3.1
-# I5c): rule 4 takes the harness's massless Catani operator on the tree
+# the native-input route, whose executor forms Catani's prediction only
+# with ``catani=True`` (NATIVE_CATANI below; WP3.1 I5c until M-FINAL
+# MF-8G-3): rule 4 of the other rows takes the harness's massless Catani operator on the tree
 # engine's colour-correlated Born (catani "tree"), committed per row by
 # tools/loop_benchmark/mqcd_tree_correlations.py (TREE_FIXTURE: the tree
 # artifact of g g > g g g g takes 968 s and 11 GB, too much for the nightly

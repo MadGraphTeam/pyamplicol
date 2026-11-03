@@ -235,8 +235,8 @@ class Row:
     # Rule 4's prediction: "python" (the Python-input path's Catani operator,
     # every row on that route), "engine" (a native-input row: the engine's
     # operators on the Python-input Born, ``RowRun.engine_catani``, the M-SM
-    # rows), "tree" (a row on the native-input route,
-    # whose executor forms none, WP3.1 I5c: the harness's massless Catani
+    # rows), "tree" (a row on the native-input route whose
+    # executor is not asked for it: the harness's massless Catani
     # operator on the tree engine's colour-correlated Born, ``tree_catani``)
     # or "none" (recorded as not asserted: M01's public-route variants, whose
     # tools-route twins hold rule 4, and a native-input row without the tree
@@ -1783,8 +1783,9 @@ class RowRun:
         return born, {sector: poles}
 
     def engine_catani(self, index: int) -> dict[Sector, tuple[Decimal, Decimal]] | None:
-        """Rule 4's "engine" prediction of a native-input row (whose executor
-        forms none, WP3.1 I5c): the engine's own operators (QCD and QED per
+        """Rule 4's "engine" prediction of a native-input row (whose native
+        executor forms only the QCD prediction, and only with ``catani=True``):
+        the engine's own operators (QCD and QED per
         correction, ``_PointEvaluation._ir_poles``) on the Python-input Born
         of reference point ``index`` in double-double, without the loops."""
 
