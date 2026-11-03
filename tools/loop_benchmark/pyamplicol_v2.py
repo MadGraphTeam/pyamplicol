@@ -624,6 +624,39 @@ def _native_build(directory: Path | None) -> dict[str, Any] | None:
     }
 
 
+def check_store_native(
+    meta: dict[str, Any], native_build: Path | None
+) -> dict[str, Any]:
+    """The ``--native-build`` record of a run reading the stored process of
+    ``meta`` (its ``generation.json``); refused unless the store was
+    generated with the same native build (its inputs' digest)."""
+
+    build = _native_build(native_build)
+    if build is None or meta.get("native") is None:
+        raise SystemExit("a stored process needs --native-build on both sides")
+    if build["digest"] != meta["native"]["digest"]:
+        raise SystemExit(
+            "the stored process was generated with another native build "
+            f"({meta['native']['digest'][:12]}...)"
+        )
+    return build
+
+
+def read_store_process(directory: Path, meta: dict[str, Any]) -> Any:
+    """The ``NativeProcess`` of a ``--store`` directory as the public runtime
+    loads it, nothing regenerated: the one loader of the stored process for
+    ``Run.load`` and ``stored_checks.py`` (its plan checked against the
+    recorded digest)."""
+
+    from pyamplicol.loops.v2.artifact import plan_digest, read_native_process, read_plan
+
+    runtime = directory / STORED_RUNTIME
+    plan = read_plan(runtime)
+    if plan is None or plan_digest(plan) != meta["plan_sha256"]:
+        raise SystemExit("the stored plan does not have its recorded digest")
+    return read_native_process(runtime, plan)
+
+
 class Run:
     """One process, accuracy and checkout (module docstring)."""
 
@@ -804,11 +837,6 @@ class Run:
 
         from pyamplicol.generation.loop_artifact import LOOP_V2_NATIVE_POINT_INPUTS
         from pyamplicol.loops.native import load_loop_native
-        from pyamplicol.loops.v2.artifact import (
-            plan_digest,
-            read_native_process,
-            read_plan,
-        )
 
         meta = json.loads((directory / STORED_META).read_text())
         if meta.get("kind") != "stored-process":
@@ -817,23 +845,12 @@ class Run:
         stored = {k: meta.get(k) for k in wanted}
         if stored != wanted:
             raise SystemExit(f"stored process {stored} is not this run's {wanted}")
-        build = _native_build(self.options.native_build)
-        if build is None or meta["native"] is None:
-            raise SystemExit("a stored process needs --native-build on both sides")
-        if build["digest"] != meta["native"]["digest"]:
-            raise SystemExit(
-                "the stored process was generated with another native build "
-                f"({meta['native']['digest'][:12]}...)"
-            )
+        build = check_store_native(meta, self.options.native_build)
         native = load_loop_native()
         self.record["native"] = build
         _reset_peak()
         start = time.perf_counter()
-        runtime = directory / STORED_RUNTIME
-        plan = read_plan(runtime)
-        if plan is None or plan_digest(plan) != meta["plan_sha256"]:
-            raise SystemExit("the stored plan does not have its recorded digest")
-        process = read_native_process(runtime, plan)
+        process = read_store_process(directory, meta)
         self.executor = process.executor(
             native, lanes=self.options.lanes, threads=1, **self._contraction()
         )

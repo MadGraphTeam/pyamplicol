@@ -6,7 +6,9 @@ and (vii)): one scripted harness, so that a 2->6 row is a pure compute step.
 The process is a G1-harness store (``python -m tools.loop_benchmark
 pyamplicol KEY --inputs native --store DIR``: the artifact's loop runtime
 member with native point inputs and ``generation.json``), loaded as the public
-runtime loads it (``artifact.read_native_process``, nothing regenerated) and
+runtime loads it (``pyamplicol_v2.read_store_process``, the G1 harness's
+``--load`` loader, nothing regenerated; refused unless generated with the
+``--native-build`` given) and
 evaluated by its native executor with Catani's prediction formed natively
 (``NativeExecutor(catani=True)``: the stored dipole orbits, M-FINAL MF-8G-3).
 Stages, each recorded in ``--json`` as it ends (``OUT.DONE`` at the end):
@@ -15,7 +17,8 @@ Stages, each recorded in ``--json`` as it ends (``OUT.DONE`` at the end):
   ``stability.RECOMMENDED_CHECKS``): per point the finite part, the poles,
   the estimate E, (iii) the rotation estimate; (i) the poles against Catani's
   prediction (full colour, a stored Catani record), each deviation <= 10 E
-  plus 1e-12 of the prediction; (iv) the universal double pole
+  plus 1e-12 of the prediction (a point without the prediction fails where
+  it is required: at full colour by default); (iv) the universal double pole
   -(alpha_s/2pi) sum_i C_i Born (``pyamplicol_v2.universal_double_pole``:
   the leading Casimirs at leading colour), <= 10 E plus 1e-10;
 * ``dd`` (v, double-double at ``--dd-points``, every pole, no checks): each
@@ -25,21 +28,23 @@ Stages, each recorded in ``--json`` as it ends (``OUT.DONE`` at the end):
 * ``ward`` (ii, a store generated on the full tree kernels, ``--kernels
   full``): ``ward.ward_check`` at ``--ward-points`` (binary64 with its
   reduction check) and ``--ward-dd-points``, epsilon_j -> p_j / p_j^0 on
-  ``--ward-legs`` (default: three gluon legs, first, middle and last); a
+  ``--ward-legs`` (default: three of the stored process's massless vector
+  legs, ``ward.gauge_legs``: first, middle and last); a
   binary64 point whose estimate leaves the binary64 scope (O1: E > 1e-9) is
   recorded, not asserted (``asserted``), in both carriers (its conditioning
   carries into double-double, whose Ward bound is fixed), and at least one
   row must be asserted;
 * ``rescue`` (vii, ``--rescue-points``): the default rescue policy's level 0
-  (binary64 with ``RESCUE_ROTATION`` and the rescaled reduction check,
-  ``stability.DEFAULT_RESCUE``) and the count of points it sends up (E >
-  ``RESCUE_TARGET``); the double-double level then runs on escalated points
+  (``VirtualRescuePolicy().levels[0]``: binary64 with its rotation and the
+  rescaled reduction check) and the count of points it sends up (E above
+  its target); the policy's double-double level then runs on escalated points
   until ``--rescue-dd`` double-double evaluations are reached (the ``dd``
   stage's points count; default 2, never the arbitrary level).
 
 Usage:
-    python tools/loop_benchmark/stored_checks.py STORE [--key KEY] \\
-        [--points 0 1 2] [--dd-points 0] [--ward-points 0] [--ward-dd-points] \\
+    python tools/loop_benchmark/stored_checks.py STORE --native-build BUILD \\
+        [--key KEY] [--points 0 1 2] [--dd-points 0] [--ward-points 0] \\
+        [--ward-dd-points] \\
         [--rescue-points 0 ... 15] [--rescue-dd 2] [--threads 16] --json OUT
 """
 
@@ -78,11 +83,14 @@ def _sector(sector: Any) -> str:
     return " ".join(f"{name}^{power}" for name, power in sector)
 
 
-def point_row(result: Any, expected_double: float | None) -> dict[str, Any]:
+def point_row(
+    result: Any, expected_double: float | None, require_catani: bool = False
+) -> dict[str, Any]:
     """One evaluated point (``PointResult``): Born, the virtual per sector and
     Laurent coefficient, E per coefficient (absolute and relative), Catani's
     poles and the deviations, and the double pole over the Born against the
-    universal value."""
+    universal value. With ``require_catani`` a point without Catani's
+    prediction fails."""
 
     born = sum(_c(v).real for v in result.born.values())
     virtual = result.components["virtual"]
@@ -125,6 +133,8 @@ def point_row(result: Any, expected_double: float | None) -> dict[str, Any]:
         else float(estimate.relative),
         "catani_formed": result.ir_poles is not None,
     }
+    if require_catani and result.ir_poles is None:
+        passed = False
     if double is not None and born and expected_double is not None:
         ratio = double / born
         bound = DOUBLE_POLE_FLOOR * abs(expected_double)
@@ -143,12 +153,20 @@ def point_row(result: Any, expected_double: float | None) -> dict[str, Any]:
     return row
 
 
-def compare_carriers(binary64: Any, dd: Any) -> dict[str, Any]:
+def compare_carriers(
+    binary64: Any, dd: Any, require_catani: bool = False
+) -> dict[str, Any]:
     """Binary64 against double-double per sector and Laurent coefficient,
     within 10 E of the binary64 point (plus ``DD_FLOOR`` of the value), and
-    the double-double poles against its Catani prediction."""
+    the double-double poles against its Catani prediction (required with
+    ``require_catani``)."""
 
-    out: dict[str, Any] = {"sectors": {}, "passed": True}
+    out: dict[str, Any] = {
+        "born": sum(_c(v).real for v in dd.born.values()),
+        "sectors": {},
+        "passed": not (require_catani and dd.ir_poles is None),
+        "catani_formed": dd.ir_poles is not None,
+    }
     for sector, laurent in dd.components["virtual"].items():
         exact = [_c(x).real for x in laurent.coefficients]
         b64 = [_c(x).real for x in binary64.components["virtual"][sector].coefficients]
@@ -205,14 +223,14 @@ def check_process(
     record (``dipoles.catani_record``; a store written before M-FINAL
     MF-8G-3, or a process the stored route does not predict)."""
 
+    from pyamplicol.api.virtual_results import VirtualRescuePolicy
     from pyamplicol.loops.v2.assemble import Precision
-    from pyamplicol.loops.v2.stability import (
-        RECOMMENDED_CHECKS,
-        RESCUE_TARGET,
-        Rotation,
-        StabilityChecks,
-    )
+    from pyamplicol.loops.v2.stability import RECOMMENDED_CHECKS
     from tools.loop_benchmark import pyamplicol_v2, streams
+
+    # The default rescue policy's binary64 and double-double levels (vii).
+    policy = VirtualRescuePolicy()
+    level0, level1 = policy.levels[0], policy.levels[1]
 
     record = {} if record is None else record
     record.setdefault("stages", {})
@@ -221,7 +239,7 @@ def check_process(
         "catani_floor": CATANI_FLOOR,
         "double_pole_floor": DOUBLE_POLE_FLOOR,
         "dd_floor": DD_FLOOR,
-        "rescue_target": RESCUE_TARGET,
+        "rescue_target": level0.target,
     }
 
     def stage(name: str, begin: float, **extra: Any) -> None:
@@ -272,7 +290,9 @@ def check_process(
         rows = []
         for index, result in zip(points, results, strict=True):
             checked[index] = result
-            rows.append({"index": index, **point_row(result, expected)})
+            rows.append(
+                {"index": index, **point_row(result, expected, require_catani)}
+            )
         record["checked"] = rows
         stage("checked", begin, points=len(rows), passed=all(r["passed"] for r in rows))
 
@@ -289,7 +309,9 @@ def check_process(
         for index, result in zip(dd_points, results, strict=True):
             row: dict[str, Any] = {"index": index}
             if index in checked:
-                row.update(compare_carriers(checked[index], result))
+                row.update(compare_carriers(checked[index], result, require_catani))
+            elif require_catani and result.ir_poles is None:
+                row.update(passed=False, catani_formed=False)
             rows.append(row)
         record["dd"] = rows
         stage(
@@ -302,8 +324,14 @@ def check_process(
     if ward_points or ward_dd_points:
         from pyamplicol.loops.v2 import ward
 
-        gluons = [label for label, _initial, pdg in process.record["legs"] if pdg == 21]
-        legs = ward_legs or sorted({gluons[0], gluons[len(gluons) // 2], gluons[-1]})
+        legs = ward_legs
+        if not legs:
+            # The stored process's massless vector legs (a Ward store records
+            # them; an older one needs --ward-legs).
+            gauge = ward.gauge_legs(executor.slice)
+            if not gauge:
+                raise SystemExit("the stored process has no massless vector leg")
+            legs = sorted({gauge[0], gauge[len(gauge) // 2], gauge[-1]})
         rows = []
         in_scope: dict[int, bool] = {}
         begin = time.perf_counter()
@@ -366,11 +394,6 @@ def check_process(
 
     if rescue_points:
         begin = time.perf_counter()
-        level0 = StabilityChecks(
-            (Rotation.from_euler(0.1, 0.2, 0.3),),
-            reduction_direction=True,
-            rescaled=True,
-        )
         found, scales = batch(rescue_points)
         results = executor.evaluate(
             found,
@@ -378,13 +401,13 @@ def check_process(
             parameters=parameters,
             precision=Precision.double(),
             poles="none",
-            stability=level0,
+            stability=level0.checks.to_checks(),
         )
         estimates = {
             index: float(result.stability.relative)
             for index, result in zip(rescue_points, results, strict=True)
         }
-        up = [i for i, e in estimates.items() if not e <= RESCUE_TARGET]
+        up = [i for i, e in estimates.items() if not e <= level0.target]
         rescue: dict[str, Any] = {
             "level0_estimates": estimates,
             "sent_up": up,
@@ -406,12 +429,12 @@ def check_process(
                 parameters=parameters,
                 precision=Precision.double_double(),
                 poles="none",
-                stability=level0,
+                stability=level1.checks.to_checks(),
             )
             rescue["double_double"] = {
                 index: {
                     "estimate": float(result.stability.relative),
-                    "met": float(result.stability.relative) <= RESCUE_TARGET,
+                    "met": float(result.stability.relative) <= level1.target,
                     "finite": [
                         _c(v.coefficients[0]).real
                         for v in result.components["virtual"].values()
@@ -447,6 +470,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--lanes", type=int, default=16)
     parser.add_argument("--threads", type=int)
     parser.add_argument(
+        "--native-build",
+        type=Path,
+        required=True,
+        help="the staged native build (a store generated with another is refused)",
+    )
+    parser.add_argument(
         "--no-catani",
         action="store_true",
         help="do not require a stored Catani record at full colour",
@@ -455,10 +484,10 @@ def main(argv: list[str] | None = None) -> int:
     options = parser.parse_args(argv)
 
     from pyamplicol.loops.native import load_loop_native
-    from pyamplicol.loops.v2.artifact import read_native_process, read_plan
     from tools.loop_benchmark import pyamplicol_v2
 
     meta = json.loads((options.store / pyamplicol_v2.STORED_META).read_text())
+    pyamplicol_v2.check_store_native(meta, options.native_build)
     key = options.key or meta["process"]
     record: dict[str, Any] = {
         "kind": "stored-checks",
@@ -476,8 +505,7 @@ def main(argv: list[str] | None = None) -> int:
 
     begin = time.perf_counter()
     native = load_loop_native()
-    runtime = options.store / pyamplicol_v2.STORED_RUNTIME
-    process = read_native_process(runtime, read_plan(runtime))
+    process = pyamplicol_v2.read_store_process(options.store, meta)
     record["stages"]["load"] = {
         "seconds": round(time.perf_counter() - begin, 2),
         "peak_gib": round(_peak_gib(), 2),
