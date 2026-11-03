@@ -330,7 +330,10 @@ def check_process(
             # them; an older one needs --ward-legs).
             gauge = ward.gauge_legs(executor.slice)
             if not gauge:
-                raise SystemExit("the stored process has no massless vector leg")
+                raise SystemExit(
+                    "the stored process records no massless vector leg (a Ward "
+                    "store of an older tree: pass --ward-legs)"
+                )
             legs = sorted({gauge[0], gauge[len(gauge) // 2], gauge[-1]})
         rows = []
         in_scope: dict[int, bool] = {}
