@@ -17,7 +17,12 @@
 //   point on stdout: index, orderings, helicities, S0, S1 = [finite, single, double], seconds.
 //   reflect=1 evaluates one ordering of each reflection pair (1, s_2, ..., s_n) ~ (1, s_n, ..., s_2), weight 2:
 //   the tree and the leading primitive both pick up (-1)^n under the reflection, so |A0|^2 and Re(conj(A0) A1)
-//   are reflection invariant (validated against reflect=0 at six and seven gluons).
+//   are reflection invariant. Equal to reflect=0 at six gluons (1.4e-11); at seven gluons NGluon's primitives
+//   are not: its deviation from pyAmpliCol sits in the evaluated orderings of each pair (reflect=1 doubles it,
+//   binary64 1.4e-6 -> 2.8e-6 at stream point 0), so the full enumeration is the reference.
+//   prec=dd: equal to pyAmpliCol's double-double at six gluons (2e-14); at seven gluons NGluon's double-double
+//   one-loop primitives differ from its own binary64 ones by 2.6e-3 (the tree and the double pole agree): not used
+//   there (M-FINAL MF-8G-3, 8g3-report.md).
 #include <algorithm>
 #include <chrono>
 #include <cmath>

@@ -23,6 +23,14 @@ S0 times the leading colour factor only when ``--born`` is given (the
 relative factor between NGluon's trace normalisation and pyAmpliCol's is
 recorded, not assumed).
 
+Validated (M-FINAL MF-8G-3, 8g3-report.md) against pyAmpliCol's leading colour
+at G1-stream points: 4-6 gluons to <= 2.7e-12 in binary64 (2e-14 in
+double-double at six); at seven gluons binary64 to <= 5.9e-6 (pyAmpliCol's own
+double-double agrees with its binary64 to 6e-9 there, so the deviation is
+NGluon's), with ``--reflect`` doubling it and NGluon's double-double off by
+2.6e-3: at seven gluons and above use the binary64 full enumeration and a
+relative ``--tolerance`` of 1e-5.
+
 Commands:
   build    compile ngluon_lc.cpp against an NJet 3 build (``build_njet.sh``)
   run      the values at stream points of a G1-harness key
