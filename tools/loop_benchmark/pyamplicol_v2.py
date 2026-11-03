@@ -58,8 +58,8 @@ artifact's own loop runtime member (``artifact.write_plan`` with the native
 point inputs, ``point_inputs`` = ``LOOP_V2_NATIVE_POINT_INPUTS``: the plan v4
 and the native process, ``loop-runtime.pacbin``) beside a ``generation.json``
 with the run's generation stages; ``--generate-only`` stops there. A later run
-with ``--load`` reads it as ``V2VirtualRuntime`` does (``artifact.read_plan``,
-``artifact.read_native_process``, ``NativeProcess.executor``: nothing is
+with ``--load`` reads it as ``V2VirtualRuntime`` does (``artifact.load_native_process``,
+file-backed, ``NativeProcess.executor``: nothing is
 regenerated) and times that executor, the integrated configuration of a loaded
 artifact, whose values equal the slice's native executor's bitwise
 (``tests/unit/test_loop_v2_native_process.py``). Its record keeps the stored
@@ -762,8 +762,8 @@ class Run:
         from pyamplicol.generation.loop_artifact import LOOP_V2_NATIVE_POINT_INPUTS
         from pyamplicol.loops.native import load_loop_native
         from pyamplicol.loops.v2.artifact import (
+            load_native_process,
             plan_digest,
-            read_native_process,
             read_plan,
         )
 
@@ -790,7 +790,10 @@ class Run:
         plan = read_plan(runtime)
         if plan is None or plan_digest(plan) != meta["plan_sha256"]:
             raise SystemExit("the stored plan does not have its recorded digest")
-        process = read_native_process(runtime, plan)
+        del plan
+        # File-backed, as the public runtime loads it (the executor reads the
+        # plan and binary tree program from the PACBIN).
+        process = load_native_process(runtime)
         self.executor = process.executor(native, lanes=self.options.lanes, threads=1)
         loaded = {
             "seconds": time.perf_counter() - start,
