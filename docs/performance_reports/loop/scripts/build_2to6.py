@@ -12,7 +12,7 @@ files. Stores are never opened beyond generation.json.
 
 Usage:
   python3 -I build_2to6.py json RUNS ART PROCESSES_JSON --out data/2to6.json
-  python3 -I build_2to6.py md RUNS ART PROCESSES_JSON      (markdown tables)
+  python3 -I build_2to6.py md RUNS ART PROCESSES_JSON [--notes FINDINGS.md] --out REPORT.md
 """
 
 from __future__ import annotations
@@ -238,8 +238,10 @@ def _checks(run: Path, t: str, acc: str, gluon_row: bool) -> dict:
                 .get("seconds"),
             }
         out["stored_checks"] = {
-            "status": "done",
-            "passed": c["passed"],
+            # stored_checks.py rewrites its record after every stage: no verdict yet = still running
+            "status": "done" if "passed" in c else "in progress",
+            "why": None if "passed" in c else f"stages so far: {list(c['stages'])}",
+            "passed": c.get("passed"),
             "stages": {
                 k: {kk: v.get(kk) for kk in ("seconds", "peak_gib")}
                 for k, v in c["stages"].items()
@@ -612,7 +614,7 @@ def summary(d: dict) -> list[str]:
     return out
 
 
-def markdown(d: dict) -> str:
+def markdown(d: dict, notes: str = "") -> str:
     e = d["engine"]
     nat = e["native"] or {}
     prof = nat.get("profile", {})
@@ -626,6 +628,7 @@ def markdown(d: dict) -> str:
         "## Summary\n",
         *summary(d),
         "",
+        *([notes.rstrip() + "\n"] if notes else []),
         "## Tables per process\n",
     ]
     for r in d["rows"]:
@@ -744,6 +747,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("processes", type=Path)
     parser.add_argument("--out", type=Path)
     parser.add_argument(
+        "--notes",
+        type=Path,
+        help="md mode: a markdown file inserted after the summary (findings)",
+    )
+    parser.add_argument(
         "--keys",
         nargs="+",
         default=list(KEYS),
@@ -755,7 +763,7 @@ def main(argv: list[str] | None = None) -> int:
     text = (
         json.dumps(d, indent=1, sort_keys=False) + "\n"
         if o.mode == "json"
-        else markdown(d)
+        else markdown(d, o.notes.read_text() if o.notes else "")
     )
     if o.out:
         o.out.write_text(text)
