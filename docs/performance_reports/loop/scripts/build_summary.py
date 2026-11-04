@@ -29,11 +29,11 @@ and every entry names its source:
                           known limitation of a value, or its run
                           conditions)
 - tools/loop_benchmark/processes.json  the G1 process specifications
-- data/2to6.json          the PRELIMINARY 2 -> 6 rows (scripts/build_2to6.py,
-                          harvested from existing records): summary.json
-                          "preliminary", outside the main-configuration rule
-                          (another engine, pyAmpliCol only: no provider, no
-                          gate, uncoloured) (_preliminary)
+- data/2to6.json          the 2 -> 6 rows (scripts/build_2to6.py, from the
+                          mf-2to6 run records): summary.json "preliminary",
+                          outside the main-configuration rule (their own
+                          engine, pyAmpliCol only: no provider, no gate,
+                          uncoloured) (_preliminary)
 
 Main-configuration rule (MAIN_RULE below): every cell of Table 1 and Figure
 1 shows the most recent configuration that measured it, recency by git
@@ -2133,28 +2133,13 @@ def _ew_cells(rows: list[dict], keys: set[str], notes: dict) -> None:
 
 
 SIX = "2to6.json"
-# The PRELIMINARY 2 -> 6 rows of Table 1 (M-FINAL item 1; data/2to6.json,
-# harvested from existing records after the user's stop of 2026-11-01): one
-# row per process, its full-colour and leading-colour records (None: no
-# record). pyAmpliCol only (no provider exists at 2 -> 6): no ratio, no gate,
-# every cell uncoloured; their engine is not loop's (stated once in the table).
-SIX_ROWS = (
-    ("g g > g g g g g g", "gg_gggggg-full", "gg_gggggg-lc"),
-    ("u u~ > g g g g g g", None, "uux_gggggg-lc"),
-    ("u u~ > u u~ g g g g", None, "uux_uuxgggg-lc"),
-)
-# Why a 2 -> 6 row has no full-colour record (the 2to6.json entry quoted).
-SIX_NO_FC = {
-    "uux_gggggg-lc": (
-        "not generated before the user's stop (its dry run passes)",
-        "dry_runs.rows[uux_gggggg-full]",
-    ),
-    "uux_uuxgggg-lc": (
-        "its store was killed by the host-memory floor 15 s after its start;"
-        " not re-run before the user's stop",
-        "rows[uux_uuxgggg-lc].checks.catani_single_pole.fc_check_pending",
-    ),
-}
+# The 2 -> 6 rows of Table 1 (M-FINAL item 1; data/2to6.json, from the
+# mf-2to6 run records): one row per process with its full-colour and
+# leading-colour records, in the data's order (a missing record stays
+# absent). pyAmpliCol only (no provider exists at 2 -> 6): no ratio, no
+# gate, every cell uncoloured; their engine is not loop's (stated once in
+# the table).
+SIX_NOT_DONE = ("not obtained", "not run", "not asserted", "in progress")
 
 
 def _six_generation(r: dict, src: str) -> dict:
@@ -2172,47 +2157,81 @@ def _six_generation(r: dict, src: str) -> dict:
         "load_s": r["load"]["s"],
         "load_peak_gib": r["load"]["peak_gib"],
         "families": r["structure"]["families"],
+        "threads": g.get("threads"),
         "revision": g["revision"][:8],
         "source": f"{src} rows[{r['key']}].generation.stages, .artifact, .load",
     }
 
 
 def _six_timing(r: dict, src: str, caveats: list[str]) -> dict:
+    """The largest measured batch of one 2 -> 6 record (the other batches
+    beside it); a record without a measured batch is 'not run' with the
+    data's reason."""
     e = r["evaluation"]
+    evals = r.get("evaluations", {})
+    if e is None:
+        why = "; ".join(
+            f"B = {b}: {x.get('why') or x.get('status')}" for b, x in evals.items()
+        )
+        return {
+            "status": "not run",
+            "reason": why or "no timing record",
+            "source": f"{src} rows[{r['key']}].evaluations",
+        }
     rot = "copies" in e["timed"]
     # A run in swap (2to6.json row_caveats): its time is likely inflated.
     swap = any("swap" in c for c in caveats)
+    blocks = e["timed"]["blocks"]
+    other = {
+        b: (
+            {"seconds_per_point": x["s_per_point"], "peak_gib": x["peak_gib"]}
+            if x.get("status") == "measured"
+            else {"status": x.get("status"), "reason": x.get("why")}
+        )
+        for b, x in evals.items()
+        if int(b) != e["B"]
+    }
     return {
         "status": "measured",
         "accuracy": r["accuracy"],
         "seconds_per_point": e["s_per_point"],
         "batch": e["B"],
-        "blocks": e["timed"]["blocks"],
+        "blocks": blocks,
         "points": e["timed"]["points"],
         "protocol": (
             f"one rotation block: {len(e['timed']['stream_indices'])} points x"
             f" {len(e['timed']['copies'])} copies"
             if rot
-            else f"{e['timed']['blocks']} blocks of {e['timed']['points_per_block']}"
+            else f"{blocks} block{'s' if blocks != 1 else ''} of {e['timed']['points_per_block']}"
         ),
         "colour_contraction": (e.get("colour_contraction") or {}).get("evaluated"),
         "peak_gib": r["table1"]["eval_peak_gib"],
         "stages": _split(e["stages_s_per_point"]),
+        "other_batches": other,
         "revision": e["revision"][:8],
         **({"note": "ran partly in swap: time likely inflated"} if swap else {}),
-        "source": f"{src} rows[{r['key']}].evaluation; row_caveats[{r['key']}]",
+        "source": f"{src} rows[{r['key']}].evaluation, .evaluations; row_caveats[{r['key']}]",
     }
 
 
 def _six_checks(r: dict) -> list[dict]:
-    """The internal checks of one 2 -> 6 record: status pass / open / rescue
-    case / not obtained, the largest value where one exists."""
+    """The internal checks of one 2 -> 6 record: status pass / fail / rescue
+    case, or one of SIX_NOT_DONE with its reason; the largest value where
+    one exists. The stored-checks run itself is not a check (its parts are)."""
     out = []
     acc = r["accuracy"].upper().replace("FULL", "FC")
     for name, c in r["checks"].items():
+        if name == "stored_checks" and c["status"] == "done":
+            continue
         x = {"check": name, "accuracy": acc, "status": c["status"], "value": None}
-        if name == "double_pole" and c["status"] == "done":
-            x.update(status=c["verdict"], value=c["max_deviation"], points=len(c["points"]))
+        if c["status"] in SIX_NOT_DONE:
+            x["why"] = c.get("why")
+            if name == "ward" and c.get("max_virtual_ratio_finite_single_double"):
+                x["value"] = max(c["max_virtual_ratio_finite_single_double"])
+        elif name == "double_pole":
+            x.update(
+                status=c["verdict"], value=c["max_deviation"], points=len(c["points"])
+            )
         elif name == "stability":
             x.update(
                 status="rescue case" if c["points_above_1e-5"] else "pass",
@@ -2220,26 +2239,35 @@ def _six_checks(r: dict) -> list[dict]:
                 points=len(c["points"]),
                 above=c["points_above_1e-5"],
             )
-        elif name == "rotation_spread":
-            stable = [p["relative_spread"] for p in c["points"] if not p["above_1e-5"]]
+        elif name == "ward":
             x.update(
-                status="rescue case" if c["unstable_points"] else "pass",
-                value=c["max_relative_spread"],
-                unstable=c["unstable_points"],
-                stable_max=max(stable) if stable else None,
-                points=len(c["points"]),
+                status="pass" if c["passed"] else "fail",
+                value=max(c["max_virtual_ratio_finite_single_double"]),
+                double_double=c.get("double_double_virtual_ratio"),
             )
-        elif name == "ward" and c["status"] == "done":
-            x.update(status="pass" if c["passed"] else "fail",
-                     value=max(c["max_virtual_ratio_finite_single_double"]))
-        elif name == "double_double" and c["status"] == "done":
-            x.update(status="pass", value=c["binary64_true_error_finite_relative"],
-                     estimate=c["binary64"]["estimate_finite_relative"])
-        elif name == "catani_single_pole" and c["status"] != "not obtained":
-            x.update(status="open", value=c["max_single_deviation"],
-                     double=c["max_double_deviation"])
-        elif c["status"] == "not obtained":
-            x["why"] = c.get("why")
+        elif name == "double_double":
+            x.update(
+                status="pass" if c["passed"] else "fail",
+                value=c["binary64_true_error_finite_relative"],
+                estimate=c["binary64"]["estimate_finite_relative"],
+            )
+        elif name == "catani":
+            x.update(
+                status="pass" if c["passed"] else "fail",
+                value=c["max_single_deviation"],
+                double=c["max_double_deviation"],
+                double_double=c["max_double_double_deviation"],
+            )
+        elif name == "ngluon":
+            dd = c.get("ngluon-dd")
+            b64 = c.get("ngluon")
+            x.update(
+                status="pass" if c["passed"] else "fail",
+                value=dd["max_relative"][0] if dd else b64["max_relative"][0],
+                carrier="double-double" if dd else "binary64",
+            )
+        elif name == "rescue":
+            x.update(status="done", value=c["count"], of=c["of"])
         out.append(x)
     return out
 
@@ -2250,10 +2278,13 @@ def _preliminary() -> dict | None:
         return None
     d = _load(path)
     src = f"data/{SIX}"
-    recs = {r["key"]: r for r in d["rows"]}
+    by_process: dict = {}
+    for r in d["rows"]:
+        if r["generation"] is not None:
+            by_process.setdefault(r["process"], {})[r["accuracy"]] = r
     rows = []
-    for label, fc_key, lc_key in SIX_ROWS:
-        fc, lc = recs.get(fc_key), recs[lc_key]
+    for label, recs in by_process.items():
+        fc, lc = recs.get("full"), recs.get("lc")
         lead = fc or lc
         legs = len(label.replace(">", "").split())
         row = {
@@ -2267,38 +2298,50 @@ def _preliminary() -> dict | None:
             "particle_veto_note": lead["particle_veto_note"],
             "families": {
                 "fc": fc["structure"]["families"] if fc else None,
-                "lc": lc["structure"]["families"],
+                "lc": lc["structure"]["families"] if lc else None,
             },
             "generation": {
                 "main": _six_generation(lead, src),
-                "lc": _six_generation(lc, src) if fc else None,
+                "lc": _six_generation(lc, src) if fc and lc else None,
             },
-            "full_colour": _six_timing(fc, src, d["row_caveats"].get(fc_key, [])) if fc else {
+            "full_colour": _six_timing(fc, src, d["row_caveats"].get(fc["key"], []))
+            if fc
+            else {
                 "status": "not run",
-                "reason": SIX_NO_FC[lc_key][0],
-                "source": f"{src} {SIX_NO_FC[lc_key][1]}",
+                "reason": "no full-colour record",
+                "source": src,
             },
-            "leading_colour": _six_timing(lc, src, d["row_caveats"].get(lc_key, [])),
-            "checks": (_six_checks(fc) if fc else []) + _six_checks(lc),
-            "caveats": (d["row_caveats"].get(fc_key, []) if fc else [])
-            + d["row_caveats"].get(lc_key, []),
+            "leading_colour": _six_timing(lc, src, d["row_caveats"].get(lc["key"], []))
+            if lc
+            else {
+                "status": "not run",
+                "reason": "no leading-colour record",
+                "source": src,
+            },
+            "checks": (_six_checks(fc) if fc else []) + (_six_checks(lc) if lc else []),
+            "caveats": [
+                c for x in (fc, lc) if x for c in d["row_caveats"].get(x["key"], [])
+            ],
             "gate": lead["table1"]["gate"],
         }
         rows.append(row)
+    e = d["engine"]
     return {
         "name": "2->6",
         "status": d["status"],
         "engine": {
-            "branch": d["engine"]["branch"],
-            "base": d["engine"]["base"],
-            "harness_commits": sorted(d["engine"]["harness_commits"]),
-            "engine_source_change_vs_base": d["engine"]["engine_source_change_vs_base"],
-            "native": d["engine"]["native"]["directory"],
-            "native_digest": d["engine"]["native_digest_short"],
-            "protocol": d["engine"]["protocol"],
+            "branch": e["branch"],
+            "base": e["base"],
+            "revision": e["revision"][:8],
+            "one_engine": e["one_engine"],
+            "engine_source_change_vs_base": e["engine_source_change_vs_base"],
+            "native": e["native"]["directory"],
+            "native_digest": e["native_digest_short"],
+            "protocol": e["protocol"],
         },
         "stop": d["stop"]["text"],
         "global_caveats": d["global_caveats"],
+        "not_obtained": d["not_obtained"],
         "source": f"{src} (scripts/build_2to6.py)",
         "rows": rows,
     }

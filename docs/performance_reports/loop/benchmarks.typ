@@ -653,21 +653,25 @@
 // uncoloured, without ratio or gate; internal checks instead of references.
 #let six-check(c) = {
   let n = c.check
-  if n == "double_pole" [$epsilon^(-2)$ ≤ #esci(c.value)]
-  else if n == "stability" [$E$ ≤ #esci(c.value)#if c.above.len() > 0 [ (#c.above.len() pts: rescue)]]
-  else if n == "rotation_spread" [rotations: pt #c.unstable.map(str).join(", ") unstable (rescue)]
-  else if n == "ward" [Ward ≤ #esci(c.value)]
+  let body = if n == "double_pole" [$epsilon^(-2)$ ≤ #esci(c.value)]
+  else if n == "stability" [$E$ ≤ #esci(c.value)#if c.above.len() > 0 [ (#c.above.len() pts above $10^(-5)$)]]
+  else if n == "rescue" [rescue #c.value/#c.of]
+  else if n == "ward" [Ward ≤ #esci(c.value)#if c.at("double_double", default: none) != none [ (DD #esci(calc.max(..c.double_double)))]]
   else if n == "double_double" [binary64 = DD to #esci(c.value)]
-  else if n == "catani_single_pole" [#text(fill: amber)[Catani $epsilon^(-1)$ #fixed(100 * c.value, 1)~%: LC definitions differ]]
+  else if n == "catani" [Catani $epsilon^(-1)$ ≤ #esci(c.value)]
+  else if n == "ngluon" [NGluon#if c.carrier == "double-double" [ DD] to #esci(c.value)]
+  else [#n.replace("_", " ")]
+  if c.status == "fail" { text(fill: fail-ink, weight: "bold")[#body FAIL] } else { body }
 }
-#let six-name = (double_pole: "poles", catani_single_pole: "Catani", ward: "Ward", double_double: "DD", stability: "E", rotation_spread: "rotations")
+#let six-name = (double_pole: "poles", catani: "Catani", ward: "Ward", double_double: "DD", stability: "E", rescue: "rescue", ngluon: "NGluon", stored_checks: "checks")
+#let six-not-done = ("not obtained", "not run", "not asserted", "in progress")
 #let six-checks(r) = ("LC", "FC").map(a => {
-  let cs = r.checks.filter(c => c.accuracy == a and c.status != "not obtained")
+  let cs = r.checks.filter(c => c.accuracy == a and c.status not in six-not-done)
   if cs.len() == 0 { none } else [*#a* #cs.map(six-check).join([ · ])]
 }).filter(x => x != none)
 #let six-pending(r) = {
-  let by = ("LC", "FC").map(a => (a, r.checks.filter(c => c.accuracy == a and c.status == "not obtained").map(c => six-name.at(c.check)))).filter(((a, xs)) => xs.len() > 0)
-  if by.len() == 0 { none } else [pending: #by.map(((a, xs)) => [#xs.join(", ") (#a)]).join([; ])]
+  let xs = r.checks.filter(c => c.status in six-not-done).map(c => [#six-name.at(c.check, default: c.check) #c.accuracy #c.status])
+  if xs.len() == 0 { none } else [#xs.join(", ")]
 }
 #let t6-process(r) = table.cell(breakable: false, {
   set par(leading: 0.34em, justify: false)
@@ -809,7 +813,7 @@
       // The PRELIMINARY 2 -> 6 rows: their engine and status, stated once.
       ..if six != none {
         (
-          table.cell(colspan: 5, fill: warm, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber)[*PRELIMINARY $2 -> 6$* (M-FINAL item 1, #link(<sixlegs>)[below Figure 1]): pyAmpliCol only, no provider exists at $2 -> 6$, so no ratio, no gate and no colour · engine #raw(six.engine.native.split("-").last()) (#raw(six.engine.branch): #raw(six.engine.base.split(" ").first()) + harness-only #six.engine.harness_commits.map(raw).join(", ")), native #raw(six.engine.native) · pre-optimisation; runs stopped by the user on 2026-11-01, checks incomplete]}),
+          table.cell(colspan: 5, fill: warm, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber)[*$2 -> 6$* (M-FINAL item 1, #link(<sixlegs>)[below Figure 1]): pyAmpliCol only, no provider exists at $2 -> 6$, so no ratio, no gate and no colour · engine #raw(six.engine.revision) (#raw(six.engine.branch)), native #raw(six.engine.native) (#raw(six.engine.native_digest)…), not this milestone's pin · internal checks only]}),
           table.cell(rowspan: six.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon, breakable: false,
             rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", group-title.at(six.name)))),
           ..six.rows.map(r => (t6-process(r), t6-generation(r), t6-timing(r.full_colour), t6-timing(r.leading_colour, gate: false))).flatten(),
@@ -965,7 +969,7 @@ unbatched development timings (e.g. a seven-gluon point with its rotation check)
 amber a known limitation of the value, in grey its run conditions: #note-cells.map(x => [#box(math-label(x.r.math)), #cell-word.at(x.k) ("#x.r.at(x.k).main.note.label"): #x.r.at(x.k).main.note.reason]).join([\; ]).]
 
 
-#if six != none [*The $2 -> 6$ rows* (M-FINAL item 1; `data/2to6.json` through `summary.json` `preliminary`; #link(<sixlegs>)[their records and caveats below]) are *preliminary* and outside the main-configuration rule: pyAmpliCol only (no provider exists at $2 -> 6$), so no multiplier, no gate and no colour in any cell; engine #raw(six.engine.native.split("-").last()) (#raw(six.engine.branch), harness-only commits on #raw(six.engine.base.split(" ").first())), not this milestone's pin; generation = generate + plan export (store, artifact and load beside it; "FC" marks the full-colour generation where both were stored); the timed evaluation is binary64, finite part, checks off, one pinned thread. The process cell lists the internal checks done ($epsilon^(-2)$: double pole against the universal value; $E$: the recommended stability estimate; rotations; Ward; binary64 against double-double; Catani) and those pending.
+#if six != none [*The $2 -> 6$ rows* (M-FINAL item 1; `data/2to6.json` through `summary.json` `preliminary`; #link(<sixlegs>)[their records and checks below]) are outside the main-configuration rule: pyAmpliCol only (no provider exists at $2 -> 6$), so no multiplier, no gate and no colour in any cell; engine #raw(six.engine.revision) (#raw(six.engine.branch)) for every record, not this milestone's pin (loop stores made before model compiler 17 do not load on the pin, so the rows keep their engine); generation = generate + plan export (store, artifact and load beside it; "FC" marks the full-colour generation, LC below it); the timed evaluation is binary64, finite part, checks off, one pinned thread, at the largest batch measured. The process cell lists the internal checks ($epsilon^(-2)$: double pole against the universal value; $E$: the recommended stability estimate, with the points above $10^(-5)$; rescue: the stream points of 16 the default rescue policy's binary64 level sends up; Ward on the external gluons; binary64 against double-double; Catani at full colour; NGluon at leading colour on the all-gluon row) and, in grey, those not run or not asserted.
 
 ]*Figure 1* places each row's batched full-colour value of Table 1 (dots; the most recent measured configuration:
 #measured-ids.filter(id => C.at(id).main_cells.full_colour.len() > 0 and C.at(id).kind == "g1").map(cfg-short).join([\; ])#if C.at("development", default: none) != none and C.development.main_cells.full_colour.len() > 0 [\; development, not yet on `loop`]) against the providers (diamonds, the darkest
@@ -975,33 +979,32 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
 
 
 // =============================================================== 2 -> 6 ==
-// The PRELIMINARY 2 -> 6 rows of Table 1: data/2to6.json (scripts/build_2to6.py,
-// harvested from the existing records of the 2 -> 6 benchmark; no new 8-leg
-// run: the user's stop of 2026-11-01). Numbers from the data only; the
-// 8g0-report figures only as the labelled estimates the data carries.
+// The 2 -> 6 rows of Table 1: data/2to6.json (scripts/build_2to6.py, from
+// the mf-2to6 run records on one engine). Numbers from the data only.
 #let sxj = json("data/2to6.json")
 #let six-rec(k) = sxj.rows.find(r => r.key == k)
 #let six-acc-word(r) = if r.accuracy == "lc" [LC] else [FC]
 #let six-stage(st) = [#dur(st.s) · #gib(st.peak_gib)]
-#heading(numbering: none)[$2 -> 6$: preliminary records (M-FINAL item 1)] <sixlegs>
+#let six-ok(k, c) = if k == "double_pole" { c.verdict == "pass" } else { c.at("passed", default: true) != false }
+#heading(numbering: none)[$2 -> 6$: records and checks (M-FINAL item 1)] <sixlegs>
 #[
 #set text(9.4pt)
 #set par(justify: true)
 The $2 -> 6$ rows of @tab:summary come from `data/2to6.json`, which `scripts/build_2to6.py` derives byte for byte from the
-existing records of the $2 -> 6$ benchmark (harness runs, watchdog and guard logs, dry runs and the stored artifacts'
-`generation.json`; #sxj.sources.len() sources): #sxj.status.replace("USER", "user").replace("PRELIMINARY: h", "h"). Engine:
-#raw(sxj.engine.branch) = #raw(sxj.engine.base.split(" ").first()) plus the harness-only commits
-#sxj.engine.harness_commits.keys().map(raw).join(" and ") (no engine source change), native #raw(sxj.engine.native.directory)
-(digest #raw(sxj.engine.native_digest_short)…), i.e. the engine of M-SM (`71e2041e`), not this milestone's pin. Protocol:
-#sxj.engine.protocol; particle veto $[6]$ (top-free massless five-flavour QCD, user Q-A), 16 lanes. No external reference
-exists at $2 -> 6$: acceptance is internal (double pole against the universal value, Catani, Ward, double-double,
-rotations) and the speed is reported without a gate (cells uncoloured).
+mf-2to6 run records (harness store records, stored-checks, Ward, NGluon and timing records, watchdog status files and the
+stores' `generation.json`; #sxj.sources.len() sources). Engine (every record#if not sxj.engine.one_engine [, #text(fill: fail-ink)[*not* one engine]]):
+#raw(sxj.engine.branch) at #raw(sxj.engine.revision.slice(0, 8)) (#sxj.engine.base), native #raw(sxj.engine.native.directory)
+(digest #raw(sxj.engine.native_digest_short)…), not this milestone's pin. Protocol: #sxj.engine.protocol\; particle veto
+PDG #sxj.rows.first().particle_veto.map(str).join(", ") (top-free, $N_f = 5$, user Q-A), #sxj.rows.first().lanes lanes. No external reference exists at $2 -> 6$: acceptance is internal (double pole against the
+universal value, Catani at full colour, NGluon at leading colour, Ward, double-double, the stability estimate) and the speed
+is reported without a gate (cells uncoloured).
 ]
 
 #figure(kind: table,
   caption: [*The $2 -> 6$ records* (`data/2to6.json` `rows`): generation stages (wall time · peak), the stored artifact and
-    its load, the timed evaluation (finite part, poles and checks off; warm-up excluded, including lazy compilation) and
-    the checks done or not obtained. Peaks are the harness's per-stage high-water marks (GiB = 2#super[30] bytes).],
+    its load, the timed evaluations (finite part, poles and checks off; warm-up excluded, including lazy compilation) and
+    the checks (grey: not run or not asserted, with the reason in the data). Peaks are the harness's per-stage high-water
+    marks and the timing process's maximum resident set (GiB = 2#super[30] bytes).],
   {
     set text(6.6pt, font: sans, stretch: 87.5%)
     set par(justify: false, leading: 0.36em)
@@ -1012,7 +1015,7 @@ rotations) and the speed is reported without a gate (cells uncoloured).
       stroke: (x, y) => (top: if y <= 1 { none } else { 0.3pt + luma(225) }),
       fill: (x, y) => if y == 0 { navy } else { none },
       table.header[Record][Generate][Export · plan][Store][Artifact · load][Evaluation][Checks],
-      ..sxj.rows.map(r => {
+      ..sxj.rows.filter(r => r.generation != none).map(r => {
         let st = r.generation.stages
         let e = r.evaluation
         (
@@ -1021,11 +1024,11 @@ rotations) and the speed is reported without a gate (cells uncoloured).
           [#six-stage(st.export) · #box[#sig(st.export.plan_mb)~MB]],
           six-stage(st.store),
           [#box[#r.artifact.gb~GB] · #dur(r.load.s), #gib(r.load.peak_gib)],
-          [*#dur(e.s_per_point)/pt* at $B = #e.B$ (#e.timed.points pts#if "copies" in e.timed [, #e.timed.stream_indices.len() × #e.timed.copies.len() rotations]); warm-up #dur(e.warm_up.s); peak #gib(e.peak_gib_harness)],
+          [#r.evaluations.pairs().map(((b, x)) => if x.status == "measured" [*#dur(x.s_per_point)/pt* at $B = #b$ (#gib(x.peak_gib))] else [#dim[$B = #b$ #x.status]]).join([; ])#if e != none [; warm-up #dur(e.warm_up.s)]],
           {
-            let done = r.checks.pairs().filter(((k, c)) => c.status != "not obtained").map(((k, c)) => k.replace("_", " "))
-            let miss = r.checks.pairs().filter(((k, c)) => c.status == "not obtained").map(((k, c)) => k.replace("_", " "))
-            [#done.join(", ")#if miss.len() > 0 [; #dim[not obtained: #miss.join(", ")]]]
+            let done = r.checks.pairs().filter(((k, c)) => c.status == "done" and k != "stored_checks").map(((k, c)) => if six-ok(k, c) [#k.replace("_", " ")] else [#text(fill: fail-ink, weight: "bold")[#k.replace("_", " ") FAIL]])
+            let miss = r.checks.pairs().filter(((k, c)) => c.status != "done").map(((k, c)) => [#k.replace("_", " ") #c.status])
+            [#done.join(", ")#if miss.len() > 0 [; #dim[#miss.join(", ")]]]
           },
         )
       }).flatten(),
@@ -1037,32 +1040,20 @@ rotations) and the speed is reported without a gate (cells uncoloured).
 #set text(9pt)
 #let lc8 = six-rec("gg_gggggg-lc")
 #let fc8 = six-rec("gg_gggggg-full")
-#let uq = six-rec("uux_uuxgggg-lc")
-#let uqc = uq.checks.catani_single_pole
-*Caveats* (`data/2to6.json` `global_caveats`, `row_caveats`):
-- *Pre-optimisation engine.* The optimisation rounds the user asked for on 2026-11-01 (\~23:00: "stop your 8-point runs now and do a couple round of optimizations first", RAM first) target exactly these generation, load and evaluation peaks; they run on the slice after this milestone's pin (round 1, mf-8g-2: bounded evaluation memory, integrated at `e071d022`; round 2 in progress) and are not part of this push. No 8-leg run of any kind is made until the coordinator lifts the stop: the numbers are a baseline, not the M-FINAL result.
-- *Host.* One pinned thread on a shared, loaded host (other projects held \~600–950 GB); several steps were killed by host-memory floors (a "host memory" end is not a defect); timings indicative. $g g -> 6g$ full colour ran partly in zram swap: its trees time (#fixed(fc8.evaluation.stages_s_per_point.at("native trees"), 1) s/pt against #fixed(lc8.evaluation.stages_s_per_point.at("native trees"), 1) at LC) is likely inflated, its block high-water mark understates the footprint, and its time is one rotation block of #fc8.evaluation.timed.points evaluations (#fc8.evaluation.timed.stream_indices.len() stream points × #fc8.evaluation.timed.copies.len() copies, FFT colour contraction), not the paired two-block protocol of the LC rows.
-- *Stability.* The full-colour rotation block finds stream point #fc8.checks.rotation_spread.unstable_points.map(str).join(", ") binary64-unstable (spread #fixed(fc8.checks.rotation_spread.max_relative_spread, 1): no correct digit), the other points below $10^(-5)$: a *rescue case* for the stability stack (@capabilities, Python API; not applied in this run). At LC the recommended estimate exceeds $10^(-5)$ at points #lc8.checks.stability.at("points_above_1e-5").map(str).join(", ") (rescue candidates); no double-double cross-check exists at $g g -> 6g$.
-- *Checks done and pending.* Double pole = universal value on every LC row (≤ #esci(calc.max(..sxj.rows.filter(r => r.checks.double_pole.status == "done").map(r => r.checks.double_pole.max_deviation)))); on $u overline(u) -> u overline(u) g g g g$ Ward (≤ #esci(calc.max(..uq.checks.ward.max_virtual_ratio_finite_single_double))) and double-double (binary64 error #esci(uq.checks.double_double.binary64_true_error_finite_relative) within its estimate #esci(uq.checks.double_double.binary64.estimate_finite_relative)) pass. Not obtained: Catani at $g g -> 6g$ and $u overline(u) -> 6g$, Ward and double-double at both, every full-colour pole check (host-memory kills, then the user's stop).
-- *Catani LC-definition offset.* On $u overline(u) -> u overline(u) g g g g$ at LC the double pole passes (≤ #esci(uqc.max_double_deviation)) but the single pole is #fixed(100 * uqc.max_single_deviation, 1)~% off, while the two engines' LC Borns differ too: the tree engine's LC (colour-flow truncation) is not the loop engine's formal-$N_c$ LC for quark lines, so the comparison is not like for like. The same route agrees at full colour on $g g -> g g g$ (#esci(uqc.route_validation.max_single_deviation)); the decisive full-colour check is pending (its store was killed by host memory 15 s after its start).
-- *Dry runs.* All #sxj.dry_runs.rows.len() `Generator.plan` dry runs pass, the top-included $g g -> 6g$ full colour among them.
+#let done(r, k) = r.checks.at(k, default: (status: none)).status == "done"
+#let fcs = sxj.rows.filter(r => done(r, "catani"))
+#let wards = sxj.rows.filter(r => done(r, "ward"))
+#let dds = sxj.rows.filter(r => done(r, "double_double"))
+#let quarks = sxj.rows.filter(r => not r.all_gluon and done(r, "rescue"))
+*Checks* (`data/2to6.json` `rows[].checks`):
+- *Poles.* The double pole equals the universal value at points 0–2 on all #sxj.rows.filter(r => done(r, "double_pole")).len() records (≤ #esci(calc.max(..sxj.rows.filter(r => done(r, "double_pole")).map(r => r.checks.double_pole.max_deviation)))). Catani's poles (native, from the stored dipole orbits) agree on the #fcs.len() full-colour records within 10~$E$ (largest single-pole deviation #esci(calc.max(..fcs.map(r => r.checks.catani.max_single_deviation)))), in double-double at point 0 to binary64 resolution. At leading colour on $g g -> 6g$, NGluon (NJet) on exactly rotated points agrees in double-double to #esci(lc8.checks.ngluon.at("ngluon-dd").max_relative.first()) (finite part) and in binary64 within 10~$E$; the leading-colour single pole of the quark rows is not checked (the native Catani operator is full colour only, NGluon serves all-gluon rows only).
+- *Double-double.* At point 0 the binary64 error against double-double is below its estimate $E$ on all #dds.len() records (largest #esci(calc.max(..dds.map(r => r.checks.double_double.binary64_true_error_finite_relative)))).
+- *Ward* (external gluons, $epsilon_j -> p_j \/ p_j^0$, the real part of the interference). It passes on the #wards.len() quark records in binary64 (virtual/scale ≤ #esci(calc.max(..wards.map(r => calc.max(..r.checks.ward.max_virtual_ratio_finite_single_double))))), on $u overline(u) -> u overline(u) g g g g$ FC also in double-double. On $g g -> 6g$ LC every Ward point lies beyond the binary64 scope: recorded, not asserted (inconclusive; each ratio below its $E$); the full-colour and double-double Wards of $g g -> 6g$ were not run (user, 2026-11-04 \~17:35: enough evidence).
+- *Stability.* The recommended estimate exceeds $10^(-5)$ at points #lc8.checks.stability.at("points_above_1e-5").map(str).join(", ") of $g g -> 6g$ (LC) and #fc8.checks.stability.at("points_above_1e-5").map(str).join(", ") (FC); the default rescue policy's binary64 level sends #lc8.checks.rescue.count (LC) and #fc8.checks.rescue.count (FC) of #lc8.checks.rescue.of stream points up at 8 gluons, #quarks.map(r => str(r.checks.rescue.count)).join(", ", last: " and ") on the quark records: rescue cases, not failures.
+- *Caveats* (`global_caveats`): #sxj.global_caveats.map(x => x.replace("2->6", "2 → 6")).join("; ").
+- *Not run or open* (`not_obtained`, as the data words it):
+  #list(..sxj.not_obtained.map(x => text(8pt, x)))
 ]
-
-#figure(kind: table,
-  caption: [*#sxj.estimates_after_mf_8g_1_2.label.replace("+-", "±")*: the mf-8g-0 study's expected $2 -> 6$ costs after the
-    optimisation packages, for orientation only; never a measurement or a Table 1 value.],
-  {
-    set text(6.8pt, font: sans, stretch: 87.5%)
-    show table.cell.where(y: 0): set text(fill: white, weight: "bold")
-    table(
-      columns: (2.3cm, 1fr, 1fr, 1fr), align: left + horizon, inset: (x: 3pt, y: 2pt),
-      stroke: (x, y) => (top: if y <= 1 { none } else { 0.3pt + luma(225) }),
-      fill: (x, y) => if y == 0 { navy } else { none },
-      table.header[Stage][$g g -> 6g$ LC, now (8g0-report)][FC, now][*estimate* after MF-8G-1/-2],
-      ..sxj.estimates_after_mf_8g_1_2.rows.map(x => (x.stage, x.lc_now, x.fc_now, text(fill: amber, x.after))).flatten(),
-    )
-  },
-) <tab:sixest>
 
 // =============================================================== STATUS ==
 // The status page starts on its own page so that its two box rows are not
@@ -1225,13 +1216,14 @@ rotations) and the speed is reported without a gate (cells uncoloured).
     set text(8.2pt)
     set par(justify: false)
     let sx6 = six.rows
-    let lc-of(k) = sx6.find(r => r.key == k).leading_colour
-    let g8 = sx6.find(r => r.key == "gg_gggggg")
-    [*$2 -> 6$* (M-FINAL item 1, #flag[preliminary]; @tab:summary, #link(<sixlegs>)[records and caveats])]
+    let of(k) = sx6.find(r => r.key == k)
+    let g8 = of("gg_gggggg")
+    let lcfc(r) = [#dur(r.leading_colour.seconds_per_point) / #dur(r.full_colour.seconds_per_point)]
+    [*$2 -> 6$* (M-FINAL item 1, #flag[measured]; @tab:summary, #link(<sixlegs>)[records and checks])]
     [
-      - *From existing records only* (`data/2to6.json`; engine #raw(six.engine.native.split("-").last()), pre-optimisation): $g g -> 6g$ #dur(g8.leading_colour.seconds_per_point) per point at LC and #dur(g8.full_colour.seconds_per_point) at full colour (one rotation block, partly in swap), $u overline(u) -> 6g$ #dur(lc-of("uux_gggggg").seconds_per_point) and $u overline(u) -> u overline(u) g g g g$ #dur(lc-of("uux_uuxgggg").seconds_per_point) at LC; generation up to #dur(calc.max(..sx6.map(r => r.generation.main.seconds))) and #gib(calc.max(..sx6.map(r => r.generation.main.peak_gib))) (generate + plan export).
-      - *Internal checks* (no reference exists): double pole = universal value on every LC row; Ward and double-double pass on $u overline(u) -> u overline(u) g g g g$, whose LC Catani differs by the LC definitions (full colour pending); the full-colour point 16 of $g g -> 6g$ is binary64-unstable, a rescue case; the rest is pending.
-      - *User stop* (2026-11-01 \~23:00): no 8-leg run until the coordinator lifts it; optimisation rounds first (RAM, generation and runtime).
+      - *On one engine* (`data/2to6.json`; #raw(six.engine.revision), not the pin), per point LC / FC: $g g -> 6g$ #lcfc(g8) (FC at $B = #g8.full_colour.batch$), $u overline(u) -> 6g$ #lcfc(of("uux_gggggg")), $u overline(u) -> u overline(u) g g g g$ #lcfc(of("uux_uuxgggg")); generation up to #dur(calc.max(..sx6.map(r => r.generation.main.seconds))) and #gib(calc.max(..sx6.map(r => r.generation.main.peak_gib))) (generate + plan export); every store step below #calc.ceil(calc.max(..sxj.rows.map(r => r.generation.step.peak_rss_gb)))~GB (budget 150 GB).
+      - *Internal checks* (no reference exists): double pole, Catani (FC), NGluon (LC, 8 gluons), double-double and the quark rows' Ward pass; the 8-gluon LC Ward is recorded, not asserted (beyond the binary64 scope); at 8 gluons most points are rescue cases (binary64 $E > 10^(-5)$).
+      - *Not run* (user, 2026-11-04): the 8-gluon full-colour and double-double Wards (\~17:35: enough evidence) and the 8-gluon full-colour $B = 128$ timing (\~17:48).
     ]
   }),
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
@@ -2795,7 +2787,7 @@ and so is the check of the timed configuration against NJet's ten points (@tab:s
   ([Electroweak, complex mass], "supported", [*M-SM* (@msm, @tab:cms): QCD, QED and joint `[virt=QCD QED]` corrections on the shipped `loop_qcd_qed_sm` and `loop_qcd_qed_sm_Gmu` reproduce MadLoop in every class of `m-sm/PLAN.md` §1.1 (#sxc.pass of #sx-rows rows pass, #sx-partial.join(" and ") partial: F7, accepted). EW native inputs (ew-native, EWI-N), the EW ladder (ew-validate, EWI-7: ghosts of vetoed vector bosons, Goldstone-side root mixing), *per-leg photon tagging* (MS-PHOTON: `loop.external_photons` = `"final"` by default, `"all"`, `"none"` or a leg list, as MG5's `!a!`; $alpha(0)$ and the conversion counterterm on the tagged legs only), the *complex-mass scheme* (MS-CMS: MG5's transform per (mass, width) pair, coloured widths included; MS-CMS-N: native complex pole masses; = MadLoop CMS on CM01–CM05 and CM07–CM10), the EW pole split (MS-POLES), the EW generation stages in Rust (MS-GEN: catalogue segment polynomials and the parameter program's renaming behind PyO3, the Python stages the oracles, outputs byte-identical, EW generation 2.6–3.2× faster) and Symbolica-free binary64 (MS-MASTERS); since M-FINAL-b the EW export's kernel-string reading and parameter-program renaming run in Rust too (MF-RUST, `b36af289`: Python stages the oracles, byte-identical; EW $2 -> 3$ export 62.3 → 32.4 s). Before M-SM on `loop`: the QED Catani operator, EW fermion lines, 't Hooft–Feynman gauge for trees, loops and counterterms, on-shell photons at $alpha(0)$, the UFO's EW counterterms lowered at scale, Lorentz `Epsilon`, lepton lines through the loop (EWI-0 to EWI-7b). Refused, typed: the Missing box of @status; EW LC/NLC never.]),
   ([Required set], "supported", [All eight generate and agree with their references in all coefficients with native inputs: seven in @tab:validation (validated on the WP3.1 branch before its integration), the EW target in the M-SM campaign (TV07 against MadLoop, Recola and OpenLoops, @msm); $g g -> g g g g g$ against NJet's double-double values (its binary64 points 4 and 8 at $O(10^(-8))$ accepted by the user, within the estimate); the generator is on `loop` since G-int, and G1 times all seven in batches at full and leading colour (@g1; the $2 -> 5$ rows since `measure-g1-7leg`; all re-timed at #raw(g.slice_revision)). The seven-gluon Ward check (addendum H): #ms.status_notes.notes.gg_ggggg.ward_status. The G1 accuracy check asserts binary64 where $E <= 10^(-9)$ and DD elsewhere (user E1 ruling, g1-accuracy); R3 for QCD is recorded (DECISIONS 2026-10-29 \~18:25: two providers per process within their agreement, $g g -> g g g g g$ against NJet alone, addendum F). G1 times the EW target indicatively (@msm). The provider reference trees no longer read the old working root (reference-relocate, `48aeb123`; provider values bitwise, and the toolkit refuses provider files outside the configured reference root).]),
   ([Performance gates], "partial", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) without a matched provider: no gate]\; the gate is taken at $B = 128$ only (user 2026-10-28): $B = 1$ and the $2 -> 5$ rows' $B = 16$ are reported without a verdict (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history).#for r in ew-status [ The EW row #box(math-label(r.math)) (EW) is timed indicatively: #ratio-mult(r.full_colour.main) of #r.full_colour.fastest.name's time at $B = 128$, no verdict ([U5]).] Missing: the binding EW speed gate and the provider protocol-mode columns (M-FINAL).]),
-  ([$2 -> 6$], "progress", [M-FINAL item 1 (user ruling 2026-10-31): $g g -> 6g$ ($N_f = 5$, no top) at LC and full colour, $u overline(u) -> 6g$ and $u overline(u) -> u overline(u) g g g g$ at LC generate, store, load and evaluate on the engine of M-SM (*preliminary* rows of @tab:summary, #link(<sixlegs>)[records]; the N = 8 reduction adapter is tested, MF-8G-0 `7cdd32e9`); the internal checks are incomplete and the evaluation peaks large: the user stopped every 8-leg run on 2026-11-01 for optimisation rounds (RAM first), which run on the slice after this pin.]),
+  ([$2 -> 6$], "progress", [M-FINAL item 1 (user ruling 2026-10-31): $g g -> 6g$ ($N_f = 5$, no top), $u overline(u) -> 6g$ and $u overline(u) -> u overline(u) g g g g$, each at LC and full colour, generate, store (every step below 150 GB), load and evaluate on one engine after the optimisation rounds (#raw(sxj.engine.revision.slice(0, 8)), not this pin; @tab:summary, #link(<sixlegs>)[records and checks]\; the N = 8 reduction adapter is tested, MF-8G-0 `7cdd32e9`); double pole, Catani (FC), NGluon (LC), double-double and the quark rows' Ward pass, the 8-gluon Ward is recorded but not asserted (beyond the binary64 scope) and its full-colour and double-double Wards were not run (user, 2026-11-04).]),
 )
 #figure(kind: table,
   caption: [*Capability matrix* of the v2 engine on `loop` at #ms.engine_revision, with branch work marked.],
@@ -3094,10 +3086,10 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     `test_loop_v2_corr_recola.py` (their artifacts reloaded, JUnit) in the same records; the rescue and mapping counts of
     @status: that campaign's `junit/rescue.xml` and mf-map-fix's run at `f3d9e361` (slice-status UPDATE 2026-11-02
     \~01:05).
-  - *@tab:summary ($2 -> 6$ rows), @tab:sixrecs, @tab:sixest:* `data/2to6.json`, written by `scripts/build_2to6.py`
-    from the 58 records listed in `workspace/reports/engine-v2/m-final/records/m1101-mfb-2to6/args.txt` (the
-    benchmark's `workspace/tmp/bench-2to6/` runs, logs and dry runs, `workspace/artifacts/2to6/*/generation.json`, the
-    8g0-report); reproduced byte for byte; Table 1 through `data/summary.json` `preliminary`.
+  - *@tab:summary ($2 -> 6$ rows), @tab:sixrecs:* `data/2to6.json`, written by `scripts/build_2to6.py` from the
+    #sxj.sources.len() mf-2to6 records it lists in `sources` (`workspace/tmp/mf-2to6/runs/`,
+    `workspace/artifacts/2to6/*-2f3f76d9/generation.json`, `processes.json`; arguments in
+    `workspace/tmp/mf-2to6/build_args.sh`); reproduced byte for byte; Table 1 through `data/summary.json` `preliminary`.
   - *@status (M-QCD), @mqcd, @tab:fft, @tab:mqcdrows:* `data/mqcd.json` (`scripts/build_mqcd.py` from the campaign's
     records), `data/mqcd-findings.json` (MQ-VALIDATE's triage, re-checked at the pin), `data/mqcd-public.json` (the
     public-route representatives), `data/mqcd-fft-cost.json` and `data/mqcd-fft-worst.json` (FFT cost and worst points),

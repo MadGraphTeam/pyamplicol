@@ -1173,7 +1173,7 @@
        "uncertainty": 0.01222158960425002,
        "stages": {
         "inputs": 0.0004601918203125,
-        "numerator": 0.0031049185312500005,
+        "numerator": 0.00310491853125,
         "scatter": 0.0004560935234375,
         "ninjars": 0.0005195645937499996,
         "masters": 0.00024450566406250003,
@@ -3663,27 +3663,32 @@
  ],
  "preliminary": {
   "name": "2->6",
-  "status": "PRELIMINARY: harvested from existing records only (no new 8-leg run: STOP-8LEG); pre-optimisation engine; checks incomplete; runs stopped by the USER",
+  "status": "M-FINAL 2->6 rows (mf-2to6): fresh generation, store, load and checks on one engine",
   "engine": {
-   "branch": "work/v2-bench-2to6",
-   "base": "15d4ef5a (milestone M-SM report head; engine pin 71e2041e)",
-   "harness_commits": [
-    "8a062a52",
-    "d5ed94c2"
-   ],
-   "engine_source_change_vs_base": "none (15d4ef5a..8a062a52 touches tools/loop_benchmark and its unit test only)",
-   "native": "loop-native-v2-slice-71e2041e",
-   "native_digest": "f8d77c97",
-   "protocol": "binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up excluded, paired blocks, setup heap frozen out of the cyclic collector"
+   "branch": "work/v2-mf-8g-3",
+   "base": "d24a01ae (slice: mf-8g-2b integrated) + mf-8g-3",
+   "revision": "2f3f76d9",
+   "one_engine": true,
+   "engine_source_change_vs_base": "mf-8g-3 (native Catani prediction from stored dipole orbits, stored_checks.py, NGluon driver)",
+   "native": "loop-native-mf-2to6-2f3f76d9-lto",
+   "native_digest": "2bae17f9",
+   "protocol": "timing: binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up 16 points excluded, one block of B points, setup heap frozen out of the cyclic collector; indicative (shared host)"
   },
-  "stop": "8-leg (2->6) runs stopped by the USER (2026-11-01 ~23:00 UTC); coordinator lifts it by removing this file and writing a COORDINATOR line in slice-status DECISIONS. See DECISIONS ~23:15.",
+  "stop": "lifted by the coordinator for mf-2to6 (slice-status DECISIONS 2026-11-04 ~08:35 UTC)",
   "global_caveats": [
-   "PRE-OPTIMISATION engine (15d4ef5a, native 71e2041e): the M-FINAL optimisation rounds (mf-8g-1, mf-8g-1b, mf-8g-2) target exactly these generation, load and evaluation peaks; the numbers are a baseline, not the M-FINAL result",
-   "runs stopped by the USER on 2026-11-01 ~23:00 UTC for optimisation rounds (workspace/tmp/STOP-8LEG); checks are incomplete (see each row's 'not obtained' entries)",
-   "one pinned thread on a shared, loaded host; several steps were killed by host-memory floors set below other projects' usage (a 'host memory' end is not a defect); timings indicative",
-   "no external reference exists at 2->6 (no provider entry): acceptance is internal (double pole, Catani, Ward, double-double, rotations); speed is reported without a gate",
-   "stability estimates and check budgets are relative to the finite part (loops.v2.stability)",
-   "the stored artifacts are kept in workspace/artifacts/2to6/<row>/ (loop-runtime.pacbin + generation.json)"
+   "no external reference exists at 2->6: acceptance is internal (Ward, rotations, Catani poles, double pole, double-double, NGluon at LC)",
+   "timings are indicative: shared host (load 100-250 of 384 cores), one pinned thread, one block per B"
+  ],
+  "not_obtained": [
+   "g g > g g g g g g (LC, N_f = 5, no top): ward not asserted (inconclusive: the harness verdict is FAILED (no point asserted) because every point has a leg with E beyond the binary64 scope (1e-9); the rows are recorded only, so this row carries no Ward evidence)",
+   "g g > g g g g g g (LC, N_f = 5, no top): binary64 E above 1e-5 at points [0, 1] (a rescue case, not a failure)",
+   "g g > g g g g g g (LC, N_f = 5, no top): ward-lc-dd not run (USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator))",
+   "g g > g g g g g g (FC, N_f = 5, no top): timing B = 128 not run (USER 2026-11-04 ~17:48: 8-gluon B = 128 skipped, B = 16 measured (stopped by the coordinator in its timed block))",
+   "g g > g g g g g g (FC, N_f = 5, no top): ward not run (store-ward-fc, ward-fc, ward-fc-dd: USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator))",
+   "g g > g g g g g g (FC, N_f = 5, no top): binary64 E above 1e-5 at points [0, 1] (a rescue case, not a failure)",
+   "u u~ > g g g g g g (LC, N_f = 5, no top): LC single pole unchecked (the native Catani operator is full colour only and NGluon serves only all-gluon rows); the LC double pole is checked",
+   "u u~ > g g g g g g (FC, N_f = 5, no top): ward-fc-dd not run (USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator))",
+   "u u~ > u u~ g g g g (LC, N_f = 5, no top): LC single pole unchecked (the native Catani operator is full colour only and NGluon serves only all-gluon rows); the LC double pole is checked"
   ],
   "source": "data/2to6.json (scripts/build_2to6.py)",
   "rows": [
@@ -3697,7 +3702,7 @@
     "particle_veto": [
      6
     ],
-    "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+    "particle_veto_note": "PDG [6] (processes.json particle_veto): vetoed particles leave every tree vertex, loop line and propagator; 5 quark flavours in the loops",
     "families": {
      "fc": 47348,
      "lc": 47348
@@ -3705,171 +3710,188 @@
     "generation": {
      "main": {
       "accuracy": "full",
-      "seconds": 13331.878228469985,
-      "peak_gib": 235.153,
-      "plan_mb": 3057.034,
-      "store_s": 3827.419515135931,
-      "store_peak_gib": 246.518,
-      "artifact_gb": 2.565,
-      "load_s": 1164.6646069120616,
-      "load_peak_gib": 159.948,
+      "seconds": 3319.802991674049,
+      "peak_gib": 73.95,
+      "plan_mb": 486.15,
+      "store_s": 1550.668403886957,
+      "store_peak_gib": 76.358,
+      "artifact_gb": 0.53,
+      "load_s": 4.212540735956281,
+      "load_peak_gib": 1.056,
       "families": 47348,
-      "revision": "d5ed94c2",
+      "threads": 24,
+      "revision": "2f3f76d9",
       "source": "data/2to6.json rows[gg_gggggg-full].generation.stages, .artifact, .load"
      },
      "lc": {
       "accuracy": "lc",
-      "seconds": 13692.593748504063,
-      "peak_gib": 217.2,
-      "plan_mb": 1869.625,
-      "store_s": 2857.895605367841,
-      "store_peak_gib": 228.558,
-      "artifact_gb": 2.14,
-      "load_s": 854.2267109509557,
-      "load_peak_gib": 139.648,
+      "seconds": 2768.944706534967,
+      "peak_gib": 63.893,
+      "plan_mb": 327.486,
+      "store_s": 1289.9492964819074,
+      "store_peak_gib": 57.997,
+      "artifact_gb": 0.364,
+      "load_s": 3.2004700440447778,
+      "load_peak_gib": 0.737,
       "families": 47348,
-      "revision": "d5ed94c2",
+      "threads": 24,
+      "revision": "2f3f76d9",
       "source": "data/2to6.json rows[gg_gggggg-lc].generation.stages, .artifact, .load"
      }
     },
     "full_colour": {
      "status": "measured",
      "accuracy": "full",
-     "seconds_per_point": 478.3518096214975,
+     "seconds_per_point": 200.5925812850619,
      "batch": 16,
      "blocks": 1,
      "points": 16,
-     "protocol": "one rotation block: 4 points x 4 copies",
-     "colour_contraction": [
-      "symmetric-group-fft"
-     ],
-     "peak_gib": 239.189,
+     "protocol": "1 block of 16",
+     "colour_contraction": null,
+     "peak_gib": 40.066,
      "stages": {
-      "inputs": 265.7935939621875,
-      "numerator": 194.51809729400009,
-      "scatter": 0.18545455575,
-      "ninjars": 15.964738933499998,
-      "masters": 0.8865357554374999,
-      "glue": 1.003389120622387,
+      "inputs": 110.35131843525,
+      "numerator": 80.36439067243754,
+      "scatter": 0.13033218418750003,
+      "ninjars": 8.504197327437502,
+      "masters": 0.7892601693750001,
+      "glue": 0.45308249637437825,
       "untimed": 0.0
      },
-     "revision": "8a062a52",
-     "note": "ran partly in swap: time likely inflated",
-     "source": "data/2to6.json rows[gg_gggggg-full].evaluation; row_caveats[gg_gggggg-full]"
+     "other_batches": {
+      "128": {
+       "status": "not run",
+       "reason": "USER 2026-11-04 ~17:48: 8-gluon B = 128 skipped, B = 16 measured (stopped by the coordinator in its timed block)"
+      }
+     },
+     "revision": "2f3f76d9",
+     "source": "data/2to6.json rows[gg_gggggg-full].evaluation, .evaluations; row_caveats[gg_gggggg-full]"
     },
     "leading_colour": {
      "status": "measured",
      "accuracy": "lc",
-     "seconds_per_point": 119.17577555963362,
-     "batch": 16,
-     "blocks": 2,
-     "points": 32,
-     "protocol": "2 blocks of 16",
+     "seconds_per_point": 98.04424762882809,
+     "batch": 128,
+     "blocks": 1,
+     "points": 128,
+     "protocol": "1 block of 128",
      "colour_contraction": null,
-     "peak_gib": 327.059,
+     "peak_gib": 27.244,
      "stages": {
-      "inputs": 20.0265673975,
-      "numerator": 87.29748032634375,
-      "scatter": 0.12490553628124998,
-      "ninjars": 10.49951831996875,
-      "masters": 0.75424018371875,
-      "glue": 0.47306379582114744,
+      "inputs": 34.66934200833594,
+      "numerator": 53.22511420478905,
+      "scatter": 0.11678265014843751,
+      "ninjars": 8.787782028484376,
+      "masters": 0.804538846328125,
+      "glue": 0.4406878907421685,
       "untimed": 0.0
      },
-     "revision": "d5ed94c2",
-     "source": "data/2to6.json rows[gg_gggggg-lc].evaluation; row_caveats[gg_gggggg-lc]"
+     "other_batches": {
+      "16": {
+       "seconds_per_point": 101.51003395725274,
+       "peak_gib": 27.206
+      }
+     },
+     "revision": "2f3f76d9",
+     "source": "data/2to6.json rows[gg_gggggg-lc].evaluation, .evaluations; row_caveats[gg_gggggg-lc]"
     },
     "checks": [
      {
-      "check": "rotation_spread",
-      "accuracy": "FC",
-      "status": "rescue case",
-      "value": 2.1017314282033674,
-      "unstable": [
-       16
-      ],
-      "stable_max": 2.821314906125663e-07,
-      "points": 4
-     },
-     {
       "check": "double_pole",
       "accuracy": "FC",
-      "status": "not obtained",
-      "value": null,
-      "why": "the FC physical-points job (phys-gg_gggggg-full: load, 1-point warm-up, points 0-2 with every pole) was killed by the host-memory floor on all 3 attempts before its warm-up finished (no warm-up line in its logs), then held at its 480 GB start gate until the USER stop"
-     },
-     {
-      "check": "catani_single_pole",
-      "accuracy": "FC",
-      "status": "not obtained",
-      "value": null,
-      "why": "catani-gg_gggggg-full needs the FC physical rows: never started"
-     },
-     {
-      "check": "ward",
-      "accuracy": "FC",
-      "status": "not obtained",
-      "value": null,
-      "why": "no FC Ward run was started"
-     },
-     {
-      "check": "double_double",
-      "accuracy": "FC",
-      "status": "not obtained",
-      "value": null,
-      "why": "no double-double run at 2->6 g g > 6g (the chain skips DD when 100 x s/pt > 1 h)"
-     },
-     {
-      "check": "double_pole",
-      "accuracy": "LC",
       "status": "pass",
-      "value": 9.98180670997894e-12,
+      "value": 8.392461886776193e-11,
       "points": 3
      },
      {
-      "check": "catani_single_pole",
-      "accuracy": "LC",
-      "status": "not obtained",
-      "value": null,
-      "why": "tree-engine Catani route (8-leg LC tree + 28 dipole correlators) produced 0 points: still in the tree generation after 41393.1 s, killed at 2026-11-01T11:05:36Z by the host-memory floor (MemAvailable 117 GB < 120 GB; job peak 151 GiB) per logs/guard-catani-gg-lc.log; the status label 'time bound' (rc 124) is wrong (its stopped watchdog held the old 7200 s bound); a re-run alone was planned, then the USER stop"
-     },
-     {
-      "check": "ward",
-      "accuracy": "LC",
-      "status": "not obtained",
-      "value": null,
-      "why": "deferred (logs/ward-gg_gggggg-lc.status.json): coordinator 2026-11-01 ~01:35 UTC: deferred so the 8-gluon FC store (own track, USER priority) does not share the host with a second ~230 GB job; it never ran before the USER stop"
-     },
-     {
-      "check": "double_double",
-      "accuracy": "LC",
-      "status": "not obtained",
-      "value": null,
-      "why": "skipped by the chain rule (logs/dd-gg_gggggg-lc.skip): skipped: estimated 100 x 119.17577555963362 s/pt > 1 h (or no timing)"
-     },
-     {
       "check": "stability",
-      "accuracy": "LC",
+      "accuracy": "FC",
       "status": "rescue case",
-      "value": 0.001679210969010091,
+      "value": 0.0051092813705644145,
       "points": 3,
       "above": [
        0,
        1
       ]
+     },
+     {
+      "check": "catani",
+      "accuracy": "FC",
+      "status": "pass",
+      "value": 7.063579265312242e-05,
+      "double": 2.08044508113876e-11,
+      "double_double": 0.0
+     },
+     {
+      "check": "double_double",
+      "accuracy": "FC",
+      "status": "pass",
+      "value": 0.00012243579626148858,
+      "estimate": 0.0051092813705644145
+     },
+     {
+      "check": "rescue",
+      "accuracy": "FC",
+      "status": "done",
+      "value": 11,
+      "of": 16
+     },
+     {
+      "check": "ward",
+      "accuracy": "FC",
+      "status": "not run",
+      "value": null,
+      "why": "store-ward-fc, ward-fc, ward-fc-dd: USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator)"
+     },
+     {
+      "check": "double_pole",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 9.984639371541588e-12,
+      "points": 3
+     },
+     {
+      "check": "stability",
+      "accuracy": "LC",
+      "status": "rescue case",
+      "value": 0.0014019833628048672,
+      "points": 3,
+      "above": [
+       0,
+       1
+      ]
+     },
+     {
+      "check": "double_double",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 7.402321336999544e-05,
+      "estimate": 0.0014019833628048672
+     },
+     {
+      "check": "rescue",
+      "accuracy": "LC",
+      "status": "done",
+      "value": 11,
+      "of": 16
+     },
+     {
+      "check": "ward",
+      "accuracy": "LC",
+      "status": "not asserted",
+      "value": 2.6218517796041292e-09,
+      "why": "inconclusive: the harness verdict is FAILED (no point asserted) because every point has a leg with E beyond the binary64 scope (1e-9); the rows are recorded only, so this row carries no Ward evidence"
+     },
+     {
+      "check": "ngluon",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 6.279856447938119e-13,
+      "carrier": "double-double"
      }
     ],
-    "caveats": [
-     "the rotated FC run ran partly in zram swap, so its 'native trees' time (265.8 s/pt vs 20.0 s/pt at LC) is likely inflated [inf, 8g0-report \u00a70 item 4]",
-     "s/pt is ONE block of 16 = stream points [16, 17, 18, 19] x 4 copies (identity + 3 exact rotations) with FFT colour contraction, not the paired 2-block protocol of the LC rows",
-     "stream point(s) [16] binary64-unstable (rotation spread 2.1): a rescue case (the Python-API rescue stack, mf-rescue 2234ee33, is the remedy; not applied in this run)",
-     "the block VmHWM (239.2 GiB) understates the footprint under swap; the step peak 380.7 GB came from the warm-up",
-     "no FC poles, Catani, Ward or double-double: the physical-points job never got past its warm-up",
-     "the watchdog's step peak (153.93 GB) under-reports: the watchdog was SIGSTOPped from 2026-10-31T17:20:28Z to 2026-10-31T19:44:56Z (logs/guard-store-gg-lc.log); the guard's 5-min samples peak at 225 GiB and the harness store-stage VmHWM is 228.558 GiB",
-     "Catani step status says 'time bound' but the cause was the host-memory floor (guard log)",
-     "points [0, 1] have binary64 stability estimates above 1e-5 (1.7e-03, 8.9e-05): rescue candidates; no double-double cross-check at 2->6 g g > 6g"
-    ],
-    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured"
+    "caveats": [],
+    "gate": "none: no provider at 2->6 (speed reported without a gate)"
    },
    {
     "key": "uux_gggggg",
@@ -3881,98 +3903,183 @@
     "particle_veto": [
      6
     ],
-    "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+    "particle_veto_note": "PDG [6] (processes.json particle_veto): vetoed particles leave every tree vertex, loop line and propagator; 5 quark flavours in the loops",
     "families": {
-     "fc": null,
+     "fc": 47348,
      "lc": 23437
     },
     "generation": {
      "main": {
-      "accuracy": "lc",
-      "seconds": 3367.871721867239,
-      "peak_gib": 41.781,
-      "plan_mb": 209.061,
-      "store_s": 579.9580826249439,
-      "store_peak_gib": 31.626,
-      "artifact_gb": 0.178,
-      "load_s": 74.87945208698511,
-      "load_peak_gib": 12.594,
-      "families": 23437,
-      "revision": "8a062a52",
-      "source": "data/2to6.json rows[uux_gggggg-lc].generation.stages, .artifact, .load"
+      "accuracy": "full",
+      "seconds": 4417.766353040002,
+      "peak_gib": 92.936,
+      "plan_mb": 814.015,
+      "store_s": 449.04359289398417,
+      "store_peak_gib": 89.27,
+      "artifact_gb": 0.143,
+      "load_s": 3.8530188689474016,
+      "load_peak_gib": 1.663,
+      "families": 47348,
+      "threads": 16,
+      "revision": "2f3f76d9",
+      "source": "data/2to6.json rows[uux_gggggg-full].generation.stages, .artifact, .load"
      },
-     "lc": null
+     "lc": {
+      "accuracy": "lc",
+      "seconds": 1227.6983952301089,
+      "peak_gib": 46.969,
+      "plan_mb": 30.666,
+      "store_s": 197.60084683005698,
+      "store_peak_gib": 34.946,
+      "artifact_gb": 0.047,
+      "load_s": 0.5098156090825796,
+      "load_peak_gib": 0.136,
+      "families": 23437,
+      "threads": 16,
+      "revision": "2f3f76d9",
+      "source": "data/2to6.json rows[uux_gggggg-lc].generation.stages, .artifact, .load"
+     }
     },
     "full_colour": {
-     "status": "not run",
-     "reason": "not generated before the user's stop (its dry run passes)",
-     "source": "data/2to6.json dry_runs.rows[uux_gggggg-full]"
+     "status": "measured",
+     "accuracy": "full",
+     "seconds_per_point": 62.130819162101034,
+     "batch": 128,
+     "blocks": 1,
+     "points": 128,
+     "protocol": "1 block of 128",
+     "colour_contraction": null,
+     "peak_gib": 31.704,
+     "stages": {
+      "inputs": 7.037990269210938,
+      "numerator": 48.00071037265625,
+      "scatter": 0.10568569539062513,
+      "ninjars": 5.608535733335926,
+      "masters": 0.9511352501093749,
+      "glue": 0.4267618413979122,
+      "untimed": 0.0
+     },
+     "other_batches": {
+      "16": {
+       "seconds_per_point": 65.02810013842827,
+       "peak_gib": 30.684
+      }
+     },
+     "revision": "2f3f76d9",
+     "source": "data/2to6.json rows[uux_gggggg-full].evaluation, .evaluations; row_caveats[uux_gggggg-full]"
     },
     "leading_colour": {
      "status": "measured",
      "accuracy": "lc",
-     "seconds_per_point": 19.935267116179602,
+     "seconds_per_point": 10.91488285089872,
      "batch": 128,
-     "blocks": 2,
-     "points": 256,
-     "protocol": "2 blocks of 128",
+     "blocks": 1,
+     "points": 128,
+     "protocol": "1 block of 128",
      "colour_contraction": null,
-     "peak_gib": 90.946,
+     "peak_gib": 12.573,
      "stages": {
-      "inputs": 3.592311317667969,
-      "numerator": 12.594337636484372,
-      "scatter": 0.05770338733203126,
-      "ninjars": 3.0493114222421878,
-      "masters": 0.3935943507343751,
-      "glue": 0.2480090017186658,
+      "inputs": 1.66098380175,
+      "numerator": 6.517070247390626,
+      "scatter": 0.04885195980468752,
+      "ninjars": 2.158499963367186,
+      "masters": 0.36853912975,
+      "glue": 0.16093774883622203,
       "untimed": 0.0
      },
-     "revision": "8a062a52",
-     "source": "data/2to6.json rows[uux_gggggg-lc].evaluation; row_caveats[uux_gggggg-lc]"
+     "other_batches": {
+      "16": {
+       "seconds_per_point": 9.535169559487258,
+       "peak_gib": 11.129
+      }
+     },
+     "revision": "2f3f76d9",
+     "source": "data/2to6.json rows[uux_gggggg-lc].evaluation, .evaluations; row_caveats[uux_gggggg-lc]"
     },
     "checks": [
      {
       "check": "double_pole",
-      "accuracy": "LC",
+      "accuracy": "FC",
       "status": "pass",
-      "value": 4.569839649913085e-12,
+      "value": 1.0655114074623225e-11,
       "points": 3
      },
      {
-      "check": "catani_single_pole",
-      "accuracy": "LC",
-      "status": "not obtained",
-      "value": null,
-      "why": "tree-engine Catani route: 6 chain attempts all killed by the 120 GB host-memory floor while in the tree generation (longest 4856.0 s), 0 points; the own-track re-run started 2026-11-01T22:51:18Z (record: 0 points; its status still says running, last update at 842 s) was ended by the USER stop"
+      "check": "stability",
+      "accuracy": "FC",
+      "status": "pass",
+      "value": 5.94711974546968e-06,
+      "points": 3,
+      "above": []
      },
      {
-      "check": "ward",
-      "accuracy": "LC",
-      "status": "not obtained",
-      "value": null,
-      "why": "ward-uux_gggggg-lc killed by the host-memory floor 90.6 s after its start (2026-11-01T16:00:40Z); not re-run before the USER stop"
+      "check": "catani",
+      "accuracy": "FC",
+      "status": "pass",
+      "value": 3.270271225309436e-08,
+      "double": 1.106810045894969e-11,
+      "double_double": 0.0
      },
      {
       "check": "double_double",
+      "accuracy": "FC",
+      "status": "pass",
+      "value": 1.6722990136385684e-10,
+      "estimate": 4.099103442677773e-09
+     },
+     {
+      "check": "rescue",
+      "accuracy": "FC",
+      "status": "done",
+      "value": 2,
+      "of": 16
+     },
+     {
+      "check": "ward",
+      "accuracy": "FC",
+      "status": "pass",
+      "value": 2.113028867236775e-11,
+      "double_double": null
+     },
+     {
+      "check": "double_pole",
       "accuracy": "LC",
-      "status": "not obtained",
-      "value": null,
-      "why": "dd-uux_gggggg-lc (point 0) killed by the host-memory floor on attempt 1 (161.2 s), then waiting at its start gate when the USER stop ended it"
+      "status": "pass",
+      "value": 4.5749067712176986e-12,
+      "points": 3
      },
      {
       "check": "stability",
       "accuracy": "LC",
       "status": "pass",
-      "value": 8.283730613945452e-07,
+      "value": 6.156081418345096e-07,
       "points": 3,
       "above": []
+     },
+     {
+      "check": "double_double",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 8.447996590413055e-11,
+      "estimate": 9.273361988701146e-10
+     },
+     {
+      "check": "rescue",
+      "accuracy": "LC",
+      "status": "done",
+      "value": 1,
+      "of": 16
+     },
+     {
+      "check": "ward",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 6.456342765674378e-12,
+      "double_double": null
      }
     ],
-    "caveats": [
-     "Catani, Ward and double-double not obtained (host-memory kills, then the USER stop)",
-     "first timing attempt killed by the host-memory floor; the recorded timing is attempt 1 of the relaunched chain"
-    ],
-    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured"
+    "caveats": [],
+    "gate": "none: no provider at 2->6 (speed reported without a gate)"
    },
    {
     "key": "uux_uuxgggg",
@@ -3984,96 +4091,187 @@
     "particle_veto": [
      6
     ],
-    "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+    "particle_veto_note": "PDG [6] (processes.json particle_veto): vetoed particles leave every tree vertex, loop line and propagator; 5 quark flavours in the loops",
     "families": {
-     "fc": null,
+     "fc": 40454,
      "lc": 13318
     },
     "generation": {
      "main": {
-      "accuracy": "lc",
-      "seconds": 1417.9710351019166,
-      "peak_gib": 17.304,
-      "plan_mb": 53.683,
-      "store_s": 45.345222579082474,
-      "store_peak_gib": 15.672,
-      "artifact_gb": 0.023,
-      "load_s": 13.090995524078608,
-      "load_peak_gib": 1.553,
-      "families": 13318,
-      "revision": "8a062a52",
-      "source": "data/2to6.json rows[uux_uuxgggg-lc].generation.stages, .artifact, .load"
+      "accuracy": "full",
+      "seconds": 1789.9956626361236,
+      "peak_gib": 42.54,
+      "plan_mb": 315.125,
+      "store_s": 46.39326225803234,
+      "store_peak_gib": 41.083,
+      "artifact_gb": 0.038,
+      "load_s": 1.5093502041418105,
+      "load_peak_gib": 0.684,
+      "families": 40454,
+      "threads": 16,
+      "revision": "2f3f76d9",
+      "source": "data/2to6.json rows[uux_uuxgggg-full].generation.stages, .artifact, .load"
      },
-     "lc": null
+     "lc": {
+      "accuracy": "lc",
+      "seconds": 506.0182873411104,
+      "peak_gib": 18.171,
+      "plan_mb": 5.866,
+      "store_s": 14.589338913094252,
+      "store_peak_gib": 15.323,
+      "artifact_gb": 0.009,
+      "load_s": 0.19831888191401958,
+      "load_peak_gib": 0.09,
+      "families": 13318,
+      "threads": 16,
+      "revision": "2f3f76d9",
+      "source": "data/2to6.json rows[uux_uuxgggg-lc].generation.stages, .artifact, .load"
+     }
     },
     "full_colour": {
-     "status": "not run",
-     "reason": "its store was killed by the host-memory floor 15 s after its start; not re-run before the user's stop",
-     "source": "data/2to6.json rows[uux_uuxgggg-lc].checks.catani_single_pole.fc_check_pending"
+     "status": "measured",
+     "accuracy": "full",
+     "seconds_per_point": 19.20285136710845,
+     "batch": 128,
+     "blocks": 1,
+     "points": 128,
+     "protocol": "1 block of 128",
+     "colour_contraction": null,
+     "peak_gib": 35.988,
+     "stages": {
+      "inputs": 0.7895164188203125,
+      "numerator": 14.372480434117183,
+      "scatter": 0.07425798188281246,
+      "ninjars": 2.7985545352578125,
+      "masters": 0.8437704761796874,
+      "glue": 0.3242715208506439,
+      "untimed": 0.0
+     },
+     "other_batches": {
+      "16": {
+       "seconds_per_point": 18.23689086905506,
+       "peak_gib": 34.569
+      }
+     },
+     "revision": "2f3f76d9",
+     "source": "data/2to6.json rows[uux_uuxgggg-full].evaluation, .evaluations; row_caveats[uux_uuxgggg-full]"
     },
     "leading_colour": {
      "status": "measured",
      "accuracy": "lc",
-     "seconds_per_point": 4.720926953577873,
+     "seconds_per_point": 2.667641950671168,
      "batch": 128,
-     "blocks": 2,
-     "points": 256,
-     "protocol": "2 blocks of 128",
+     "blocks": 1,
+     "points": 128,
+     "protocol": "1 block of 128",
      "colour_contraction": null,
-     "peak_gib": 23.342,
+     "peak_gib": 7.383,
      "stages": {
-      "inputs": 0.47319294121093747,
-      "numerator": 2.948092926136718,
-      "scatter": 0.031239898230468764,
-      "ninjars": 0.9362742326210945,
-      "masters": 0.20575592592187497,
-      "glue": 0.12637102945677903,
+      "inputs": 0.3123303849609375,
+      "numerator": 1.479188202257813,
+      "scatter": 0.025667934187499984,
+      "ninjars": 0.5831185836640619,
+      "masters": 0.17949209582812498,
+      "glue": 0.08784474977273105,
       "untimed": 0.0
      },
-     "revision": "8a062a52",
-     "source": "data/2to6.json rows[uux_uuxgggg-lc].evaluation; row_caveats[uux_uuxgggg-lc]"
+     "other_batches": {
+      "16": {
+       "seconds_per_point": 2.583046676503727,
+       "peak_gib": 4.849
+      }
+     },
+     "revision": "2f3f76d9",
+     "source": "data/2to6.json rows[uux_uuxgggg-lc].evaluation, .evaluations; row_caveats[uux_uuxgggg-lc]"
     },
     "checks": [
      {
       "check": "double_pole",
-      "accuracy": "LC",
+      "accuracy": "FC",
       "status": "pass",
-      "value": 6.749124071005404e-14,
+      "value": 2.0412216063150257e-13,
       "points": 3
      },
      {
-      "check": "catani_single_pole",
-      "accuracy": "LC",
-      "status": "open",
-      "value": 0.09832117368696008,
-      "double": 6.749124071005404e-14
+      "check": "stability",
+      "accuracy": "FC",
+      "status": "pass",
+      "value": 6.524550808207488e-06,
+      "points": 3,
+      "above": []
      },
      {
-      "check": "ward",
-      "accuracy": "LC",
+      "check": "catani",
+      "accuracy": "FC",
       "status": "pass",
-      "value": 2.4747692024330705e-12
+      "value": 6.639581222099505e-11,
+      "double": 1.7730291426223436e-13,
+      "double_double": 0.0
      },
      {
       "check": "double_double",
+      "accuracy": "FC",
+      "status": "pass",
+      "value": 1.2612744262540207e-11,
+      "estimate": 7.737301946829285e-10
+     },
+     {
+      "check": "rescue",
+      "accuracy": "FC",
+      "status": "done",
+      "value": 4,
+      "of": 16
+     },
+     {
+      "check": "ward",
+      "accuracy": "FC",
+      "status": "pass",
+      "value": 8.459342947250419e-12,
+      "double_double": [
+       1.1061018012306714e-28,
+       2.1978661956869389e-29,
+       8.877837051075175e-32
+      ]
+     },
+     {
+      "check": "double_pole",
       "accuracy": "LC",
       "status": "pass",
-      "value": 2.256e-11,
-      "estimate": 3.336065682685094e-10
+      "value": 6.716281618105134e-14,
+      "points": 3
      },
      {
       "check": "stability",
       "accuracy": "LC",
       "status": "pass",
-      "value": 2.624280371426821e-06,
+      "value": 7.548260639830787e-07,
       "points": 3,
       "above": []
+     },
+     {
+      "check": "double_double",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 1.278739870536058e-11,
+      "estimate": 2.5531999273538905e-10
+     },
+     {
+      "check": "rescue",
+      "accuracy": "LC",
+      "status": "done",
+      "value": 2,
+      "of": 16
+     },
+     {
+      "check": "ward",
+      "accuracy": "LC",
+      "status": "pass",
+      "value": 4.256491202838568e-12,
+      "double_double": null
      }
     ],
-    "caveats": [
-     "LC Catani single pole 6.9-9.8 % off: differing LC definitions (tree vs loop engine) for quark lines; the decisive FC check is pending"
-    ],
-    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured"
+    "caveats": [],
+    "gate": "none: no provider at 2->6 (speed reported without a gate)"
    }
   ]
  }
