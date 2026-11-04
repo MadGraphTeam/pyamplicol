@@ -410,6 +410,45 @@ def build(runs: Path, art: Path, processes: Path, keys=KEYS) -> dict:
     }
 
 
+HEADER = """\
+# M-FINAL 2->6 rows (mf-2to6): g g > 6g, u u~ > 6g, u u~ > u u~ 4g at LC and FC
+
+Package mf-2to6 (M-FINAL item 1, closing: MF-8G-3's 8-leg runs, MF-8Q, the 2->6
+timing rows). Data: `docs/performance_reports/loop/data/2to6.json` on
+`work/v2-mf-2to6`; this file's tables are printed by
+`docs/performance_reports/loop/scripts/build_2to6.py md`. Records:
+`workspace/tmp/mf-2to6/runs/<key>-<lc|fc>/`; artifacts (kept):
+`workspace/artifacts/2to6/<key>-<lc|fc>[-ward]-<sha8>/`.
+
+**Engine (every row):** {engine_line}
+
+**Method.** (1) generate + export + store with the G1 harness (`--inputs native
+--kernels production --store`, 24 threads, 16 for the quark rows): stage times
+and VmHWM peaks from the harness record, the step's process-group peak from the
+watchdog. (2) `tools/loop_benchmark/stored_checks.py` on the store (loaded as the
+runtime loads it, nothing regenerated): binary64 at stream points 0 1 2 with every
+pole and the recommended checks (E: rotation + rescaled reduction estimate), the
+universal double pole, Catani's poles at FC (native, from the stored dipole
+orbits; each deviation <= 10 E + 1e-12), double-double at point 0 against
+binary64, and the default rescue policy's level 0 on points 0-15 (its DD level on
+at most 2 points incl. the DD point; never the arbitrary level). (3) Ward on a
+second store generated on the full tree kernels: epsilon_j -> p_j / p_j^0 on the
+first, middle and last external gluon at the three stream points of smallest
+level-0 E (binary64; at FC also double-double at the first). (4) At LC on the
+all-gluon row: NGluon (NJet 3.1.2 `ngluon2` LC primitives) on exactly rotated
+points (quaternion (5, 3, -2, 7)), binary64 at points 0-2 within 1e-9 + 10 E,
+double-double at point 0 within 1e-12 of pyAmpliCol's DD point (the LC single
+pole: the native Catani operator is full colour only). (5) Timing: the store
+loaded from a hard-linked copy with every generation entry point raising,
+binary64, finite part only, checks off, one thread pinned to an idle core,
+warm-up 16 points, then one block of B = 16 and (separate job) B = 128 points;
+indicative (shared host). Jobs ran as systemd user units under a watchdog (start:
+MemAvailable minus our other live jobs' remaining expected peak >= peak + ~110 GB
+held 10 min; kill only below 100 GB host free, youngest first; retried).
+Precision is lax: a deviation below ~1e-5 relative is not a finding.
+"""
+
+
 def _e(x) -> str:
     return "-" if x is None else f"{x:.1e}"
 
@@ -424,8 +463,68 @@ def _t(s) -> str:
     )
 
 
-def markdown(d: dict) -> str:
+def _verdict(c: dict) -> str:
+    keys = ("double_pole", "catani", "double_double", "ward", "ngluon")
     out = []
+    for k in keys:
+        x = c.get(k)
+        if not x:
+            continue
+        if x.get("status") != "done":
+            out.append(f"{k} {x.get('status')}")
+            continue
+        ok = x.get("verdict") == "pass" if k == "double_pole" else x.get("passed")
+        out.append(f"{k} {'pass' if ok else 'FAIL'}")
+    if "rescue" in c:
+        out.append(f"rescue {c['rescue']['count']}/{c['rescue']['of']}")
+    return "; ".join(out) or "-"
+
+
+def summary(d: dict) -> list[str]:
+    out = [
+        "| Row | generation (gen + export + store) / peak | artifact | load / resident peak "
+        "| s/pt B = 16 / peak | s/pt B = 128 / peak | checks |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for r in d["rows"]:
+        g = r["generation"]
+        if g is None:
+            out.append(f"| {r['label']} | not generated | | | | | |")
+            continue
+        st = g["stages"]
+        gen = sum(st[k]["s"] for k in ("generate", "export", "store") if k in st)
+        ev = []
+        for b in BATCHES:
+            e = r["evaluations"].get(b)
+            if e and e.get("status") == "measured":
+                ev.append(f"{e['s_per_point']:.2f} / {e['peak_gib']:.1f} GiB")
+            else:
+                ev.append("-" if not e else e.get("status", "-"))
+        load = r["load"]
+        out.append(
+            f"| {r['label']} | {_t(gen)} / {g['peak_gib']:.1f} GiB | {(r['artifact'] or {}).get('gb')} GB "
+            f"| {'-' if not load else _t(load['s']) + ' / ' + format(load['peak_gib'], '.1f') + ' GiB'} "
+            f"| {ev[0]} | {ev[1]} | {_verdict(r['checks'])} |"
+        )
+    return out
+
+
+def markdown(d: dict) -> str:
+    e = d["engine"]
+    nat = e["native"] or {}
+    prof = nat.get("profile", {})
+    engine_line = (
+        f"`{e['branch']}` at `{(e['revision'] or '')[:8]}` ({e['base']}); native "
+        f"`{nat.get('directory')}` (digest `{(nat.get('digest') or '')[:8]}...`, release CGU "
+        f"{prof.get('CARGO_PROFILE_RELEASE_CODEGEN_UNITS')}, LTO {prof.get('CARGO_PROFILE_RELEASE_LTO')})."
+    )
+    out = [
+        HEADER.format(engine_line=engine_line),
+        "## Summary\n",
+        *summary(d),
+        "",
+        "## Tables per process\n",
+    ]
     for r in d["rows"]:
         out.append(f"### {r['label']}\n")
         g = r["generation"]
