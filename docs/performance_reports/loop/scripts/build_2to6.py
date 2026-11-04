@@ -10,15 +10,23 @@ and the watchdog status files) and the stores' generation.json under ART.
 Standard library only, no network, no clock: the output depends only on those
 files. Stores are never opened beyond generation.json.
 
+Every value comes from those records: process names from the store records, the
+flavour label from processes.json particle_veto, thread counts from the
+keeper's progress log, the rescue target from the stored-checks criteria. Only
+the engine's branch label and base (not in the records: the run tree is a
+detached worktree) are inputs (--engine-branch, --engine-base, --engine-change);
+the builder fails when the records do not share one engine.
+
 Usage:
-  python3 -I build_2to6.py json RUNS ART PROCESSES_JSON --out data/2to6.json
-  python3 -I build_2to6.py md RUNS ART PROCESSES_JSON [--notes FINDINGS.md] --out REPORT.md
+  python3 -I build_2to6.py json RUNS ART PROCESSES_JSON ENGINE-OPTIONS --out data/2to6.json
+  python3 -I build_2to6.py md RUNS ART PROCESSES_JSON ENGINE-OPTIONS [--notes FINDINGS.md] --out REPORT.md
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -26,7 +34,8 @@ KEYS = ("gg_gggggg", "uux_gggggg", "uux_uuxgggg")
 TAGS = (("lc", "lc"), ("fc", "full"))
 LAX = 1e-5  # USER 2026-10-29: a discrepancy below ~1e-5 relative is not a finding
 BATCHES = ("16", "128")
-NAMES = {21: "g", 2: "u", -2: "u~", 1: "d", -1: "d~"}
+# The six quark flavours of the SM (PDG 1-6): a vetoed one leaves the loops (N_f = 6 - vetoed flavours).
+QUARKS = {1: "d", 2: "u", 3: "s", 4: "c", 5: "b", 6: "top"}
 
 
 # Steps stopped on purpose (--not-run RUN/STEP=REASON): (run directory name, step) -> reason. A stopped step's
@@ -38,8 +47,53 @@ def _not_run(run: Path, step: str) -> str | None:
     return NOT_RUN.get((run.name, step))
 
 
+# Every record file read (workspace-relative), for data/2to6.json "sources".
+SOURCES: set[str] = set()
+
+
+def _source(path: Path) -> str:
+    parts = path.resolve().parts
+    if "workspace" in parts:
+        i = len(parts) - 1 - parts[::-1].index("workspace")
+        return "/".join(parts[i:])
+    return path.name
+
+
 def _read(path: Path):
-    return json.loads(path.read_text()) if path.exists() else None
+    if not path.exists():
+        return None
+    SOURCES.add(_source(path))
+    return json.loads(path.read_text())
+
+
+def _text(path: Path) -> str | None:
+    if not path.exists():
+        return None
+    SOURCES.add(_source(path))
+    return path.read_text()
+
+
+def _threads(run: Path, part: str) -> int | None:
+    """The thread count of the keeper's last 'start PART' line (progress.txt)."""
+    found = re.findall(
+        rf"start {part} \(.*?threads (\d+)", _text(run / "progress.txt") or ""
+    )
+    return int(found[-1]) if found else None
+
+
+def _flavours(veto: list[int]) -> tuple[str, str]:
+    """(label suffix, note) of a particle veto: the quark flavours left in the loops."""
+    gone = sorted({abs(int(x)) for x in veto if abs(int(x)) in QUARKS})
+    suffix = f"N_f = {len(QUARKS) - len(gone)}"
+    if gone:
+        suffix += ", no " + ", ".join(QUARKS[q] for q in gone)
+    note = (
+        f"PDG {list(veto)} (processes.json particle_veto): vetoed particles leave every tree vertex, "
+        f"loop line and propagator; {len(QUARKS) - len(gone)} quark flavours in the loops"
+        if veto
+        else "no particle veto (processes.json)"
+    )
+    return suffix, note
 
 
 def _status(run: Path, step: str) -> dict | None:
@@ -52,6 +106,8 @@ def _status(run: Path, step: str) -> dict | None:
         "end",
         "elapsed_s",
         "peak_rss_gb",
+        "expect_gb",
+        "start_gb",
         "gate_wait_s",
         "min_available_gb",
         "reason",
@@ -69,12 +125,15 @@ def _rel(a, b):
 
 
 def _generation(
-    run: Path, art: Path, t: str
+    run: Path, art: Path, t: str, ward: bool = False
 ) -> tuple[dict | None, dict | None, dict | None]:
-    rec = _read(run / f"store-{t}.json")
+    step = f"store-ward-{t}" if ward else f"store-{t}"
+    rec = _read(run / f"{step}.json")
     if rec is None:
         return None, None, None
-    store_dir = art / f"{rec['process']}-{t}-{rec['revision'][:8]}"
+    store_dir = art / (
+        f"{rec['process']}-{t}{'-ward' if ward else ''}-{rec['revision'][:8]}"
+    )
     meta = _read(store_dir / "generation.json")
     stages = {
         k: {
@@ -100,8 +159,10 @@ def _generation(
         "stage_sum_s": round(sum(v["s"] for v in stages.values()), 1),
         "peak_gib": _max(v["peak_gib"] for v in stages.values()),
         "peak_note": "max of the per-stage VmHWM peaks (the harness resets the high-water mark per stage)",
-        "step": _status(run, f"store-{t}"),
-        "threads": None,
+        "step": _status(run, step),
+        "threads": _threads(run, "ward" if ward else "main"),
+        # the harness writes "kernels" only for the full tree kernels (stored_checks.py reads it the same way)
+        "kernels": None if meta is None else meta.get("kernels", "production"),
         "revision": rec["revision"],
         "dirty": rec["dirty"],
         "native": rec["native"],
@@ -117,10 +178,10 @@ def _timing(run: Path, t: str, b: str) -> dict | None:
             return {"status": "not run", "why": why, "step": st}
         return None if st is None else {"status": "not measured", "step": st}
     s = rec["batches"][b]
-    log = run / f"time-{t}-b{b}.log"
+    log = _text(run / f"time-{t}-b{b}.log")
     core = None
-    if log.exists():
-        first = log.read_text().splitlines()[:1]
+    if log is not None:
+        first = log.splitlines()[:1]
         if first and first[0].startswith("pinned to core"):
             core = int(first[0].split()[3])
     return {
@@ -211,34 +272,42 @@ def _checks(run: Path, t: str, acc: str, gluon_row: bool) -> dict:
         dd = c.get("dd", [])
         if dd:
             d = dd[0]
-            (s,) = d["sectors"].values()
+            sectors = list(d["sectors"].values())
             b64 = (
                 next(r for r in rows if r["index"] == d["index"])
                 if any(r["index"] == d["index"] for r in rows)
                 else None
             )
+            # component-wise worst over the coupling-order sectors (one sector at QCD^14)
+            err = [
+                _max(
+                    s["deviation"][k] / abs(s["double_double"][k])
+                    if s["double_double"][k]
+                    else s["deviation"][k]
+                    for s in sectors
+                )
+                for k in range(3)
+            ]
             out["double_double"] = {
                 "status": "done",
                 "passed": all(x["passed"] for x in dd),
                 "point": d["index"],
-                "binary64_true_error_relative": [
-                    x / abs(v) if v else x
-                    for x, v in zip(s["deviation"], s["double_double"], strict=True)
-                ],
-                "binary64_true_error_finite_relative": s["deviation"][0]
-                / abs(s["double_double"][0]),
+                "sectors": list(d["sectors"]),
+                "binary64_true_error_relative": err,
+                "binary64_true_error_finite_relative": err[0],
                 "binary64": {
                     "estimate_finite_relative": None
                     if b64 is None
                     else b64["relative_estimate"]
                 },
-                "within_10E": s.get("within_10E"),
+                "within_10E": all(s.get("within_10E") for s in sectors),
             }
         rs = c.get("rescue")
         if rs:
             out["rescue"] = {
                 "status": "done",
-                "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+                "policy": "stored_checks.py's default VirtualRescuePolicy(), level 0 (binary64 with the recommended "
+                f"checks), target {c['criteria']['rescue_target']:g} (record criteria)",
                 "sent_up": rs["sent_up"],
                 "count": rs["count"],
                 "of": rs["of"],
@@ -312,8 +381,11 @@ def _checks(run: Path, t: str, acc: str, gluon_row: bool) -> dict:
             "status": "done" if asserted else "not asserted",
             "why": None
             if asserted
-            else "every row beyond the binary64 scope (E > 1e-9): recorded, not asserted",
+            else "inconclusive: the harness verdict is FAILED (no point asserted) because every point has a "
+            "leg with E beyond the binary64 scope (1e-9); the rows are recorded only, so this row carries no "
+            "Ward evidence",
             "passed": bool(asserted) and all(r["passed"] for r in asserted),
+            "harness_passed": [w["passed"] for _name, w in wards],
             "asserted": [[r["point"], r["carrier"]] for r in asserted],
             "legs": sorted(legs),
             # binary64 rows, asserted or only recorded (an out-of-scope row stays below its estimate E)
@@ -338,9 +410,10 @@ def _checks(run: Path, t: str, acc: str, gluon_row: bool) -> dict:
             else None,
             "rows": rows,
             "recorded_not_asserted": [r["point"] for r in rows if not r["asserted"]],
-            "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); "
-            "a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the "
-            "double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
+            "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs), "
+            "factor c = 1 only (stored_checks.py: the real part of the interference; c = i, the imaginary part, "
+            "is not run); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at "
+            "8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
             "steps": {name: _status(run, name) for name, _ in wards},
             "not_run": stopped,
         }
@@ -488,15 +561,25 @@ def not_obtained(d: dict) -> list[str]:
     return out
 
 
-def build(runs: Path, art: Path, processes: Path, keys=KEYS) -> dict:
-    spec = {p["name"]: p for p in json.loads(processes.read_text())["processes"]}
+def build(
+    runs: Path,
+    art: Path,
+    processes: Path,
+    keys=KEYS,
+    label: dict | None = None,
+) -> dict:
+    """label: the engine's branch, base and source change (not in the records)."""
+    spec = {p["name"]: p for p in _read(processes)["processes"]}
     rows, engine = [], None
     for key in keys:
         p = spec[key]
         gluon_row = all(int(x) == 21 for x in p["pdgs"])
+        veto = p.get("particle_veto", [])
+        suffix, veto_note = _flavours(veto)
         for t, acc in TAGS:
             run = runs / f"{key}-{t}"
             gen, artifact, rec = _generation(run, art, t)
+            wgen, wartifact, _ = _generation(run, art, t, ward=True)
             if rec is not None and engine is None:
                 engine = {"revision": rec["revision"], "native": rec["native"]}
             evals = {b: e for b in BATCHES if (e := _timing(run, t, b)) is not None}
@@ -509,22 +592,26 @@ def build(runs: Path, art: Path, processes: Path, keys=KEYS) -> dict:
                     "peak_gib": measured[0]["load"]["peak_gib"],
                     "source": f"timing record B = {measured[0]['B']} (hard-linked copy, generation forbidden)",
                 }
+            name = rec["process_text"].lower() if rec else key
             rows.append(
                 {
                     "key": f"{key}-{acc}",
-                    "process": rec["process_text"] if rec else None,
-                    "label": f"{' '.join(NAMES[int(x)] for x in p['pdgs'][:2])} > "
-                    f"{' '.join(NAMES[int(x)] for x in p['pdgs'][2:])} ({t.upper()}, N_f = 5, no top)",
+                    "process": name,
+                    "label": f"{name} ({t.upper()}, {suffix})",
                     "accuracy": acc,
                     "all_gluon": gluon_row,
-                    "particle_veto": p.get("particle_veto", []),
-                    "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+                    "particle_veto": veto,
+                    "particle_veto_note": veto_note,
                     "born_orders": p["born_orders"],
                     "correction": p["correction"],
                     "lanes": (rec or {}).get("lanes"),
                     "structure": (rec or {}).get("structure"),
                     "generation": gen,
                     "artifact": artifact,
+                    # the Ward store: the same process on the full tree kernels (stored_checks' Ward input)
+                    "ward_store": None
+                    if wgen is None
+                    else {**wgen, "artifact": wartifact},
                     "load": load,
                     "evaluation": main,
                     "evaluations": evals,
@@ -536,19 +623,31 @@ def build(runs: Path, art: Path, processes: Path, keys=KEYS) -> dict:
                     "engine": _row_engine(run),
                 }
             )
+    label = label or {}
+    engines = [r["engine"] for r in rows if r["engine"]]
+    one = (
+        bool(engines)
+        and all(e["one_engine"] for e in engines)
+        and len({(e["revision"], e["native_digest"]) for e in engines}) == 1
+    )
+    if engines and not one:
+        raise SystemExit(
+            "the records do not share one engine: "
+            + "; ".join(f"{e['revision']} / {e['native_digest']}" for e in engines)
+        )
     return {
         "schema": "pyamplicol-2to6/2",
         "status": "M-FINAL 2->6 rows (mf-2to6): fresh generation, store, load and checks on one engine",
         "engine": {
-            "branch": "work/v2-mf-8g-3",
-            "base": "d24a01ae (slice: mf-8g-2b integrated) + mf-8g-3",
+            "branch": label.get("branch"),
+            "base": label.get("base"),
             "revision": None if engine is None else engine["revision"],
+            "one_engine": one,
             "native": None if engine is None else engine["native"],
             "native_digest_short": None
             if engine is None
             else engine["native"]["digest"][:8],
-            "harness_commits": {},
-            "engine_source_change_vs_base": "mf-8g-3 (native Catani prediction from stored dipole orbits, stored_checks.py, NGluon driver)",
+            "engine_source_change_vs_base": label.get("change"),
             "protocol": "timing: binary64, finite part only (poles off), no stability check, one thread on one pinned "
             "core, warm-up 16 points excluded, one block of B points, setup heap frozen out of the cyclic "
             "collector; indicative (shared host)",
@@ -586,7 +685,7 @@ timing rows). Data: `docs/performance_reports/loop/data/2to6.json` on
 **Engine (every row):** {engine_line}
 
 **Method.** (1) generate + export + store with the G1 harness (`--inputs native
---kernels production --store`, 24 threads, 16 for the quark rows): stage times
+--kernels production --store`; {threads}): stage times
 and VmHWM peaks from the harness record, the step's process-group peak from the
 watchdog. (2) `tools/loop_benchmark/stored_checks.py` on the store (loaded as the
 runtime loads it, nothing regenerated): binary64 at stream points 0 1 2 with every
@@ -597,7 +696,9 @@ binary64, and the default rescue policy's level 0 on points 0-15 (its DD level o
 at most 2 points incl. the DD point; never the arbitrary level). (3) Ward on a
 second store generated on the full tree kernels: epsilon_j -> p_j / p_j^0 on the
 first, middle and last external gluon at the three stream points of smallest
-level-0 E (binary64; at FC also double-double at the first). (4) At LC on the
+level-0 E (binary64; at FC also double-double at the first). stored_checks runs
+the factor c = 1 only, so a Ward row tests the real part of the interference
+(c = i, the imaginary part, is not run). (4) At LC on the
 all-gluon row: NGluon (NJet 3.1.2 `ngluon2` LC primitives) on exactly rotated
 points (quaternion (5, 3, -2, 7)), binary64 at points 0-2 within 1e-9 + 10 E,
 double-double at point 0 within 1e-12 of pyAmpliCol's DD point (the LC single
@@ -689,8 +790,17 @@ def markdown(d: dict, notes: str = "") -> str:
         f"`{nat.get('directory')}` (digest `{(nat.get('digest') or '')[:8]}...`, release CGU "
         f"{prof.get('CARGO_PROFILE_RELEASE_CODEGEN_UNITS')}, LTO {prof.get('CARGO_PROFILE_RELEASE_LTO')})."
     )
+    by_threads: dict = {}
+    for r in d["rows"]:
+        n = (r["generation"] or {}).get("threads")
+        names = by_threads.setdefault(n, [])
+        if r["process"] not in names:
+            names.append(r["process"])
+    threads = "; ".join(
+        f"{n} threads: {', '.join(names)}" for n, names in by_threads.items()
+    )
     out = [
-        HEADER.format(engine_line=engine_line),
+        HEADER.format(engine_line=engine_line, threads=threads),
         "## Summary\n",
         *summary(d),
         "",
@@ -715,11 +825,21 @@ def markdown(d: dict, notes: str = "") -> str:
                     f"| {k}{extra} | {_t(st[k]['s'])} | {st[k]['peak_gib']:.1f} GiB |"
                 )
         out.append(
-            f"| step (watchdog; {step.get('attempts')} attempt(s), gate wait {_t(step.get('gate_wait_s'))}) | "
+            f"| step (watchdog; {step.get('attempts')} attempt(s), gate wait {_t(step.get('gate_wait_s'))}; "
+            f"reserved {step.get('expect_gb')} GB, start gate {step.get('start_gb')} GB) | "
             f"{_t(step.get('elapsed_s'))} | {step.get('peak_rss_gb')} GB group |"
         )
         a = r["artifact"] or {}
         out.append(f"| artifact | {a.get('gb')} GB | |")
+        w = r.get("ward_store")
+        if w is not None:
+            ws, wst = w["stages"], w["step"] or {}
+            out.append(
+                f"| Ward store ({w['kernels']} kernels; generate + export + store; reserved {wst.get('expect_gb')} GB, "
+                f"start gate {wst.get('start_gb')} GB) | "
+                f"{_t(sum(ws[k]['s'] for k in ('generate', 'export', 'store') if k in ws))} | "
+                f"{w['peak_gib']:.1f} GiB; {wst.get('peak_rss_gb')} GB group |"
+            )
         if r["load"]:
             out.append(
                 f"| load (hard-linked copy, generation forbidden) | {_t(r['load']['s'])} | {r['load']['peak_gib']:.2f} GiB |"
@@ -837,14 +957,30 @@ def main(argv: list[str] | None = None) -> int:
         default=list(KEYS),
         help="rows (default: the three 2->6 rows)",
     )
+    parser.add_argument(
+        "--engine-branch", help="the engine's branch (the run tree is detached)"
+    )
+    parser.add_argument(
+        "--engine-base", help="the engine's base, e.g. 'd24a01ae (slice) + mf-8g-3'"
+    )
+    parser.add_argument(
+        "--engine-change", help="the engine's source change against its base"
+    )
     o = parser.parse_args(argv)
     for item in o.not_run:
         where, why = item.split("=", 1)
         run, step = where.split("/", 1)
         NOT_RUN[(run, step)] = why
-    d = build(o.runs, o.art, o.processes, tuple(o.keys))
+    d = build(
+        o.runs,
+        o.art,
+        o.processes,
+        tuple(o.keys),
+        {"branch": o.engine_branch, "base": o.engine_base, "change": o.engine_change},
+    )
     d["not_run_on_purpose"] = {f"{r}/{st}": why for (r, st), why in NOT_RUN.items()}
     d["not_obtained"] = not_obtained(d)
+    d["sources"] = sorted(SOURCES)
     text = (
         json.dumps(d, indent=1, sort_keys=False) + "\n"
         if o.mode == "json"

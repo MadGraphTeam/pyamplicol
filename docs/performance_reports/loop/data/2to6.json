@@ -5,6 +5,7 @@
   "branch": "work/v2-mf-8g-3",
   "base": "d24a01ae (slice: mf-8g-2b integrated) + mf-8g-3",
   "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+  "one_engine": true,
   "native": {
    "directory": "loop-native-mf-2to6-2f3f76d9-lto",
    "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
@@ -16,7 +17,6 @@
    }
   },
   "native_digest_short": "2bae17f9",
-  "harness_commits": {},
   "engine_source_change_vs_base": "mf-8g-3 (native Catani prediction from stored dipole orbits, stored_checks.py, NGluon driver)",
   "protocol": "timing: binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up 16 points excluded, one block of B points, setup heap frozen out of the cyclic collector; indicative (shared host)"
  },
@@ -39,14 +39,14 @@
  "rows": [
   {
    "key": "gg_gggggg-lc",
-   "process": "G G > G G G G G G",
+   "process": "g g > g g g g g g",
    "label": "g g > g g g g g g (LC, N_f = 5, no top)",
    "accuracy": "lc",
    "all_gluon": true,
    "particle_veto": [
     6
    ],
-   "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "particle_veto_note": "PDG [6] (processes.json particle_veto): vetoed particles leave every tree vertex, loop line and propagator; 5 quark flavours in the loops",
    "born_orders": {
     "QCD": 6,
     "QED": 0
@@ -85,12 +85,15 @@
      "end": "2026-11-04T09:53:39Z",
      "elapsed_s": 4162,
      "peak_rss_gb": 68.35,
+     "expect_gb": 70.0,
+     "start_gb": 190.0,
      "gate_wait_s": 600,
      "min_available_gb": 110.5,
      "reason": "ok",
      "attempts": 1
     },
-    "threads": null,
+    "threads": 24,
+    "kernels": "production",
     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
     "dirty": false,
     "native": {
@@ -110,6 +113,63 @@
     "gb": 0.364,
     "plan_sha256": "edb3e93bb3de16e5074fee524b3027895da3c0c20a5ba35b7342420aff37ffe1",
     "point_inputs": "native-v2"
+   },
+   "ward_store": {
+    "stages": {
+     "model": {
+      "s": 2.8105245309416205,
+      "peak_gib": 0.354
+     },
+     "generate": {
+      "s": 1379.6745744540822,
+      "peak_gib": 48.916
+     },
+     "export": {
+      "s": 1302.8575881111901,
+      "peak_gib": 63.819,
+      "plan_mb": 327.486
+     },
+     "store": {
+      "s": 1127.3705962009262,
+      "peak_gib": 59.029
+     }
+    },
+    "stage_sum_s": 3812.7,
+    "peak_gib": 63.819,
+    "peak_note": "max of the per-stage VmHWM peaks (the harness resets the high-water mark per stage)",
+    "step": {
+     "start": "2026-11-04T12:10:21Z",
+     "end": "2026-11-04T13:15:08Z",
+     "elapsed_s": 3887,
+     "peak_rss_gb": 68.05,
+     "expect_gb": 75.0,
+     "start_gb": 185.0,
+     "gate_wait_s": 7326,
+     "min_available_gb": 204.8,
+     "reason": "ok",
+     "attempts": 1
+    },
+    "threads": 24,
+    "kernels": "full",
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "dirty": false,
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
+    },
+    "artifact": {
+     "path": "workspace/artifacts/2to6/gg_gggggg-lc-ward-2f3f76d9/loop-runtime.pacbin",
+     "bytes": 364334184,
+     "gb": 0.364,
+     "plan_sha256": "edb3e93bb3de16e5074fee524b3027895da3c0c20a5ba35b7342420aff37ffe1",
+     "point_inputs": "native-v2"
+    }
    },
    "load": {
     "s": 3.2004700440447778,
@@ -158,6 +218,8 @@
      "end": "2026-11-04T16:16:19Z",
      "elapsed_s": 14756,
      "peak_rss_gb": 29.15,
+     "expect_gb": 50.0,
+     "start_gb": 160.0,
      "gate_wait_s": 7327,
      "min_available_gb": 180.7,
      "reason": "ok",
@@ -219,6 +281,8 @@
       "end": "2026-11-04T13:14:15Z",
       "elapsed_s": 3833,
       "peak_rss_gb": 29.13,
+      "expect_gb": 50.0,
+      "start_gb": 160.0,
       "gate_wait_s": 7326,
       "min_available_gb": 205.2,
       "reason": "ok",
@@ -279,6 +343,8 @@
       "end": "2026-11-04T16:16:19Z",
       "elapsed_s": 14756,
       "peak_rss_gb": 29.15,
+      "expect_gb": 50.0,
+      "start_gb": 160.0,
       "gate_wait_s": 7327,
       "min_available_gb": 180.7,
       "reason": "ok",
@@ -335,6 +401,9 @@
      "status": "done",
      "passed": true,
      "point": 0,
+     "sectors": [
+      "QCD^14"
+     ],
      "binary64_true_error_relative": [
       7.402321336999544e-05,
       3.976137660413695e-05,
@@ -348,7 +417,7 @@
     },
     "rescue": {
      "status": "done",
-     "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+     "policy": "stored_checks.py's default VirtualRescuePolicy(), level 0 (binary64 with the recommended checks), target 1e-05 (record criteria)",
      "sent_up": [
       0,
       1,
@@ -400,6 +469,8 @@
       "end": "2026-11-04T13:00:48Z",
       "elapsed_s": 3028,
       "peak_rss_gb": 37.3,
+      "expect_gb": 60.0,
+      "start_gb": 170.0,
       "gate_wait_s": 7324,
       "min_available_gb": 205.6,
       "reason": "ok",
@@ -408,8 +479,11 @@
     },
     "ward": {
      "status": "not asserted",
-     "why": "every row beyond the binary64 scope (E > 1e-9): recorded, not asserted",
+     "why": "inconclusive: the harness verdict is FAILED (no point asserted) because every point has a leg with E beyond the binary64 scope (1e-9); the rows are recorded only, so this row carries no Ward evidence",
      "passed": false,
+     "harness_passed": [
+      false
+     ],
      "asserted": [],
      "legs": [
       1,
@@ -497,13 +571,15 @@
       10,
       11
      ],
-     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs), factor c = 1 only (stored_checks.py: the real part of the interference; c = i, the imaginary part, is not run); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
      "steps": {
       "ward-lc": {
        "start": "2026-11-04T16:26:28Z",
        "end": "2026-11-04T16:46:49Z",
        "elapsed_s": 1221,
        "peak_rss_gb": 29.31,
+       "expect_gb": 60.0,
+       "start_gb": 185.0,
        "gate_wait_s": 11480,
        "min_available_gb": 226.4,
        "reason": "rc 1",
@@ -544,6 +620,8 @@
        "end": "2026-11-04T08:58:45Z",
        "elapsed_s": 868,
        "peak_rss_gb": 0.17,
+       "expect_gb": 2.0,
+       "start_gb": 110.0,
        "gate_wait_s": 600,
        "min_available_gb": 180.7,
        "reason": "ok",
@@ -575,6 +653,8 @@
        "end": "2026-11-04T10:32:14Z",
        "elapsed_s": 4417,
        "peak_rss_gb": 0.17,
+       "expect_gb": 2.0,
+       "start_gb": 110.0,
        "gate_wait_s": 693,
        "min_available_gb": 110.4,
        "reason": "ok",
@@ -602,14 +682,14 @@
   },
   {
    "key": "gg_gggggg-full",
-   "process": "G G > G G G G G G",
+   "process": "g g > g g g g g g",
    "label": "g g > g g g g g g (FC, N_f = 5, no top)",
    "accuracy": "full",
    "all_gluon": true,
    "particle_veto": [
     6
    ],
-   "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "particle_veto_note": "PDG [6] (processes.json particle_veto): vetoed particles leave every tree vertex, loop line and propagator; 5 quark flavours in the loops",
    "born_orders": {
     "QCD": 6,
     "QED": 0
@@ -648,12 +728,15 @@
      "end": "2026-11-04T10:07:18Z",
      "elapsed_s": 4981,
      "peak_rss_gb": 79.6,
+     "expect_gb": 95.0,
+     "start_gb": 220.0,
      "gate_wait_s": 600,
      "min_available_gb": 110.3,
      "reason": "ok",
      "attempts": 1
     },
-    "threads": null,
+    "threads": 24,
+    "kernels": "production",
     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
     "dirty": false,
     "native": {
@@ -674,6 +757,7 @@
     "plan_sha256": "db286a17403016e3c881a9180d29c111b763bed50948277e10edaf07cb1b4710",
     "point_inputs": "native-v2"
    },
+   "ward_store": null,
    "load": {
     "s": 4.212540735956281,
     "peak_gib": 1.056,
@@ -721,6 +805,8 @@
      "end": "2026-11-04T14:08:59Z",
      "elapsed_s": 7117,
      "peak_rss_gb": 42.9,
+     "expect_gb": 60.0,
+     "start_gb": 170.0,
      "gate_wait_s": 7327,
      "min_available_gb": 205.9,
      "reason": "ok",
@@ -782,6 +868,8 @@
       "end": "2026-11-04T14:08:59Z",
       "elapsed_s": 7117,
       "peak_rss_gb": 42.9,
+      "expect_gb": 60.0,
+      "start_gb": 170.0,
       "gate_wait_s": 7327,
       "min_available_gb": 205.9,
       "reason": "ok",
@@ -808,6 +896,8 @@
       "end": null,
       "elapsed_s": 20100,
       "peak_rss_gb": 36.05,
+      "expect_gb": 60.0,
+      "start_gb": 170.0,
       "gate_wait_s": 7328,
       "min_available_gb": 180.9,
       "reason": null,
@@ -866,6 +956,9 @@
      "status": "done",
      "passed": true,
      "point": 0,
+     "sectors": [
+      "QCD^14"
+     ],
      "binary64_true_error_relative": [
       0.00012243579626148858,
       7.063579264333845e-05,
@@ -879,7 +972,7 @@
     },
     "rescue": {
      "status": "done",
-     "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+     "policy": "stored_checks.py's default VirtualRescuePolicy(), level 0 (binary64 with the recommended checks), target 1e-05 (record criteria)",
      "sent_up": [
       0,
       1,
@@ -943,6 +1036,8 @@
       "end": "2026-11-04T15:21:04Z",
       "elapsed_s": 11443,
       "peak_rss_gb": 65.3,
+      "expect_gb": 65.0,
+      "start_gb": 175.0,
       "gate_wait_s": 7325,
       "min_available_gb": 178.7,
       "reason": "ok",
@@ -973,14 +1068,14 @@
   },
   {
    "key": "uux_gggggg-lc",
-   "process": "u u~ > G G G G G G",
+   "process": "u u~ > g g g g g g",
    "label": "u u~ > g g g g g g (LC, N_f = 5, no top)",
    "accuracy": "lc",
    "all_gluon": false,
    "particle_veto": [
     6
    ],
-   "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "particle_veto_note": "PDG [6] (processes.json particle_veto): vetoed particles leave every tree vertex, loop line and propagator; 5 quark flavours in the loops",
    "born_orders": {
     "QCD": 6,
     "QED": 0
@@ -1019,12 +1114,15 @@
      "end": "2026-11-04T12:34:37Z",
      "elapsed_s": 1453,
      "peak_rss_gb": 50.44,
+     "expect_gb": 60.0,
+     "start_gb": 180.0,
      "gate_wait_s": 7328,
      "min_available_gb": 205.0,
      "reason": "ok",
      "attempts": 1
     },
-    "threads": null,
+    "threads": 16,
+    "kernels": "production",
     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
     "dirty": false,
     "native": {
@@ -1044,6 +1142,63 @@
     "gb": 0.047,
     "plan_sha256": "b2f131858f3ad0391d464d12067dc8a953456fafea4db1addeeca95bbcd607e7",
     "point_inputs": "native-v2"
+   },
+   "ward_store": {
+    "stages": {
+     "model": {
+      "s": 3.2714635299053043,
+      "peak_gib": 0.337
+     },
+     "generate": {
+      "s": 516.8371679231059,
+      "peak_gib": 33.35
+     },
+     "export": {
+      "s": 715.7850537269842,
+      "peak_gib": 47.003,
+      "plan_mb": 30.666
+     },
+     "store": {
+      "s": 195.17039769911207,
+      "peak_gib": 34.431
+     }
+    },
+    "stage_sum_s": 1431.1,
+    "peak_gib": 47.003,
+    "peak_note": "max of the per-stage VmHWM peaks (the harness resets the high-water mark per stage)",
+    "step": {
+     "start": "2026-11-04T14:18:36Z",
+     "end": "2026-11-04T14:42:52Z",
+     "elapsed_s": 1456,
+     "peak_rss_gb": 50.56,
+     "expect_gb": 60.0,
+     "start_gb": 180.0,
+     "gate_wait_s": 15020,
+     "min_available_gb": 179.5,
+     "reason": "ok",
+     "attempts": 1
+    },
+    "threads": 16,
+    "kernels": "full",
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "dirty": false,
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
+    },
+    "artifact": {
+     "path": "workspace/artifacts/2to6/uux_gggggg-lc-ward-2f3f76d9/loop-runtime.pacbin",
+     "bytes": 46827528,
+     "gb": 0.047,
+     "plan_sha256": "b2f131858f3ad0391d464d12067dc8a953456fafea4db1addeeca95bbcd607e7",
+     "point_inputs": "native-v2"
+    }
    },
    "load": {
     "s": 0.5098156090825796,
@@ -1092,6 +1247,8 @@
      "end": "2026-11-04T13:49:49Z",
      "elapsed_s": 1605,
      "peak_rss_gb": 13.15,
+     "expect_gb": 60.0,
+     "start_gb": 180.0,
      "gate_wait_s": 2866,
      "min_available_gb": 263.5,
      "reason": "ok",
@@ -1153,6 +1310,8 @@
       "end": "2026-11-04T13:29:46Z",
       "elapsed_s": 402,
       "peak_rss_gb": 11.95,
+      "expect_gb": 60.0,
+      "start_gb": 180.0,
       "gate_wait_s": 2865,
       "min_available_gb": 344.9,
       "reason": "ok",
@@ -1213,6 +1372,8 @@
       "end": "2026-11-04T13:49:49Z",
       "elapsed_s": 1605,
       "peak_rss_gb": 13.15,
+      "expect_gb": 60.0,
+      "start_gb": 180.0,
       "gate_wait_s": 2866,
       "min_available_gb": 263.5,
       "reason": "ok",
@@ -1266,6 +1427,9 @@
      "status": "done",
      "passed": true,
      "point": 0,
+     "sectors": [
+      "QCD^14"
+     ],
      "binary64_true_error_relative": [
       8.447996590413055e-11,
       4.991861619796638e-11,
@@ -1279,7 +1443,7 @@
     },
     "rescue": {
      "status": "done",
-     "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+     "policy": "stored_checks.py's default VirtualRescuePolicy(), level 0 (binary64 with the recommended checks), target 1e-05 (record criteria)",
      "sent_up": [
       4
      ],
@@ -1321,6 +1485,8 @@
       "end": "2026-11-04T14:09:06Z",
       "elapsed_s": 546,
       "peak_rss_gb": 15.36,
+      "expect_gb": 60.0,
+      "start_gb": 180.0,
       "gate_wait_s": 5123,
       "min_available_gb": 246.6,
       "reason": "ok",
@@ -1331,6 +1497,9 @@
      "status": "done",
      "why": null,
      "passed": true,
+     "harness_passed": [
+      true
+     ],
      "asserted": [
       [
        2,
@@ -1427,13 +1596,15 @@
       }
      ],
      "recorded_not_asserted": [],
-     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs), factor c = 1 only (stored_checks.py: the real part of the interference; c = i, the imaginary part, is not run); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
      "steps": {
       "ward-lc": {
        "start": "2026-11-04T15:31:21Z",
        "end": "2026-11-04T15:33:31Z",
        "elapsed_s": 130,
        "peak_rss_gb": 11.02,
+       "expect_gb": 60.0,
+       "start_gb": 180.0,
        "gate_wait_s": 2908,
        "min_available_gb": 473.5,
        "reason": "ok",
@@ -1460,14 +1631,14 @@
   },
   {
    "key": "uux_gggggg-full",
-   "process": "u u~ > G G G G G G",
+   "process": "u u~ > g g g g g g",
    "label": "u u~ > g g g g g g (FC, N_f = 5, no top)",
    "accuracy": "full",
    "all_gluon": false,
    "particle_veto": [
     6
    ],
-   "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "particle_veto_note": "PDG [6] (processes.json particle_veto): vetoed particles leave every tree vertex, loop line and propagator; 5 quark flavours in the loops",
    "born_orders": {
     "QCD": 6,
     "QED": 0
@@ -1506,12 +1677,15 @@
      "end": "2026-11-04T14:29:19Z",
      "elapsed_s": 4934,
      "peak_rss_gb": 98.74,
+     "expect_gb": 60.0,
+     "start_gb": 180.0,
      "gate_wait_s": 10729,
      "min_available_gb": 179.3,
      "reason": "ok",
      "attempts": 1
     },
-    "threads": null,
+    "threads": 16,
+    "kernels": "production",
     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
     "dirty": false,
     "native": {
@@ -1531,6 +1705,63 @@
     "gb": 0.143,
     "plan_sha256": "2e7b367cdda4e8fb6013f7ce4c192fe87e2128344c11035b00dabd9e26176759",
     "point_inputs": "native-v2"
+   },
+   "ward_store": {
+    "stages": {
+     "model": {
+      "s": 2.9989045921247452,
+      "peak_gib": 0.348
+     },
+     "generate": {
+      "s": 336.4558458861429,
+      "peak_gib": 15.833
+     },
+     "export": {
+      "s": 4098.769486818928,
+      "peak_gib": 97.273,
+      "plan_mb": 814.015
+     },
+     "store": {
+      "s": 485.06403320492245,
+      "peak_gib": 92.977
+     }
+    },
+    "stage_sum_s": 4923.3,
+    "peak_gib": 97.273,
+    "peak_note": "max of the per-stage VmHWM peaks (the harness resets the high-water mark per stage)",
+    "step": {
+     "start": "2026-11-04T13:23:23Z",
+     "end": "2026-11-04T14:47:08Z",
+     "elapsed_s": 5026,
+     "peak_rss_gb": 104.17,
+     "expect_gb": 60.0,
+     "start_gb": 180.0,
+     "gate_wait_s": 11707,
+     "min_available_gb": 179.5,
+     "reason": "ok",
+     "attempts": 1
+    },
+    "threads": 16,
+    "kernels": "full",
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "dirty": false,
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
+    },
+    "artifact": {
+     "path": "workspace/artifacts/2to6/uux_gggggg-fc-ward-2f3f76d9/loop-runtime.pacbin",
+     "bytes": 142854056,
+     "gb": 0.143,
+     "plan_sha256": "2e7b367cdda4e8fb6013f7ce4c192fe87e2128344c11035b00dabd9e26176759",
+     "point_inputs": "native-v2"
+    }
    },
    "load": {
     "s": 3.8530188689474016,
@@ -1579,6 +1810,8 @@
      "end": "2026-11-04T17:28:39Z",
      "elapsed_s": 9072,
      "peak_rss_gb": 33.9,
+     "expect_gb": 85.0,
+     "start_gb": 198.0,
      "gate_wait_s": 1607,
      "min_available_gb": 178.2,
      "reason": "ok",
@@ -1640,6 +1873,8 @@
       "end": "2026-11-04T15:36:11Z",
       "elapsed_s": 2324,
       "peak_rss_gb": 32.85,
+      "expect_gb": 85.0,
+      "start_gb": 198.0,
       "gate_wait_s": 1606,
       "min_available_gb": 277.6,
       "reason": "ok",
@@ -1700,6 +1935,8 @@
       "end": "2026-11-04T17:28:39Z",
       "elapsed_s": 9072,
       "peak_rss_gb": 33.9,
+      "expect_gb": 85.0,
+      "start_gb": 198.0,
       "gate_wait_s": 1607,
       "min_available_gb": 178.2,
       "reason": "ok",
@@ -1767,6 +2004,9 @@
      "status": "done",
      "passed": true,
      "point": 0,
+     "sectors": [
+      "QCD^14"
+     ],
      "binary64_true_error_relative": [
       1.6722990136385684e-10,
       1.1601268920935547e-10,
@@ -1780,7 +2020,7 @@
     },
     "rescue": {
      "status": "done",
-     "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+     "policy": "stored_checks.py's default VirtualRescuePolicy(), level 0 (binary64 with the recommended checks), target 1e-05 (record criteria)",
      "sent_up": [
       4,
       12
@@ -1835,6 +2075,8 @@
       "end": "2026-11-04T16:41:43Z",
       "elapsed_s": 4225,
       "peak_rss_gb": 42.04,
+      "expect_gb": 105.0,
+      "start_gb": 218.0,
       "gate_wait_s": 3637,
       "min_available_gb": 226.5,
       "reason": "ok",
@@ -1845,6 +2087,9 @@
      "status": "done",
      "why": null,
      "passed": true,
+     "harness_passed": [
+      true
+     ],
      "asserted": [
       [
        2,
@@ -1941,13 +2186,15 @@
       }
      ],
      "recorded_not_asserted": [],
-     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs), factor c = 1 only (stored_checks.py: the real part of the interference; c = i, the imaginary part, is not run); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
      "steps": {
       "ward-fc": {
        "start": "2026-11-04T17:09:08Z",
        "end": "2026-11-04T17:20:18Z",
        "elapsed_s": 670,
        "peak_rss_gb": 37.27,
+       "expect_gb": 55.0,
+       "start_gb": 170.0,
        "gate_wait_s": 1601,
        "min_available_gb": 254.1,
        "reason": "ok",
@@ -1977,14 +2224,14 @@
   },
   {
    "key": "uux_uuxgggg-lc",
-   "process": "u u~ > u u~ G G G G",
+   "process": "u u~ > u u~ g g g g",
    "label": "u u~ > u u~ g g g g (LC, N_f = 5, no top)",
    "accuracy": "lc",
    "all_gluon": false,
    "particle_veto": [
     6
    ],
-   "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "particle_veto_note": "PDG [6] (processes.json particle_veto): vetoed particles leave every tree vertex, loop line and propagator; 5 quark flavours in the loops",
    "born_orders": {
     "QCD": 6,
     "QED": 0
@@ -2023,12 +2270,15 @@
      "end": "2026-11-04T12:19:18Z",
      "elapsed_s": 537,
      "peak_rss_gb": 19.69,
+     "expect_gb": 22.0,
+     "start_gb": 135.0,
      "gate_wait_s": 1740,
      "min_available_gb": 430.7,
      "reason": "ok",
      "attempts": 1
     },
-    "threads": null,
+    "threads": 16,
+    "kernels": "production",
     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
     "dirty": false,
     "native": {
@@ -2048,6 +2298,63 @@
     "gb": 0.009,
     "plan_sha256": "427babe55bb518037b4317cdb610076d482f402c2dc3c69ef2522c069149297d",
     "point_inputs": "native-v2"
+   },
+   "ward_store": {
+    "stages": {
+     "model": {
+      "s": 2.862463417928666,
+      "peak_gib": 0.348
+     },
+     "generate": {
+      "s": 270.4912555948831,
+      "peak_gib": 13.303
+     },
+     "export": {
+      "s": 285.79645806504413,
+      "peak_gib": 17.598,
+      "plan_mb": 5.866
+     },
+     "store": {
+      "s": 15.13151126797311,
+      "peak_gib": 14.865
+     }
+    },
+    "stage_sum_s": 574.3,
+    "peak_gib": 17.598,
+    "peak_note": "max of the per-stage VmHWM peaks (the harness resets the high-water mark per stage)",
+    "step": {
+     "start": "2026-11-04T10:21:48Z",
+     "end": "2026-11-04T10:31:40Z",
+     "elapsed_s": 592,
+     "peak_rss_gb": 19.15,
+     "expect_gb": 30.0,
+     "start_gb": 150.0,
+     "gate_wait_s": 812,
+     "min_available_gb": 144.2,
+     "reason": "ok",
+     "attempts": 1
+    },
+    "threads": 16,
+    "kernels": "full",
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "dirty": false,
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
+    },
+    "artifact": {
+     "path": "workspace/artifacts/2to6/uux_uuxgggg-lc-ward-2f3f76d9/loop-runtime.pacbin",
+     "bytes": 8702584,
+     "gb": 0.009,
+     "plan_sha256": "427babe55bb518037b4317cdb610076d482f402c2dc3c69ef2522c069149297d",
+     "point_inputs": "native-v2"
+    }
    },
    "load": {
     "s": 0.19831888191401958,
@@ -2096,6 +2403,8 @@
      "end": "2026-11-04T12:57:28Z",
      "elapsed_s": 392,
      "peak_rss_gb": 7.9,
+     "expect_gb": 22.0,
+     "start_gb": 135.0,
      "gate_wait_s": 1896,
      "min_available_gb": 289.7,
      "reason": "ok",
@@ -2157,6 +2466,8 @@
       "end": "2026-11-04T12:52:27Z",
       "elapsed_s": 94,
       "peak_rss_gb": 5.17,
+      "expect_gb": 22.0,
+      "start_gb": 135.0,
       "gate_wait_s": 1893,
       "min_available_gb": 288.5,
       "reason": "ok",
@@ -2217,6 +2528,8 @@
       "end": "2026-11-04T12:57:28Z",
       "elapsed_s": 392,
       "peak_rss_gb": 7.9,
+      "expect_gb": 22.0,
+      "start_gb": 135.0,
       "gate_wait_s": 1896,
       "min_available_gb": 289.7,
       "reason": "ok",
@@ -2270,6 +2583,9 @@
      "status": "done",
      "passed": true,
      "point": 0,
+     "sectors": [
+      "QCD^14"
+     ],
      "binary64_true_error_relative": [
       1.278739870536058e-11,
       4.168317819157959e-12,
@@ -2283,7 +2599,7 @@
     },
     "rescue": {
      "status": "done",
-     "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+     "policy": "stored_checks.py's default VirtualRescuePolicy(), level 0 (binary64 with the recommended checks), target 1e-05 (record criteria)",
      "sent_up": [
       4,
       6
@@ -2326,6 +2642,8 @@
       "end": "2026-11-04T13:06:29Z",
       "elapsed_s": 175,
       "peak_rss_gb": 7.62,
+      "expect_gb": 22.0,
+      "start_gb": 135.0,
       "gate_wait_s": 2656,
       "min_available_gb": 321.3,
       "reason": "ok",
@@ -2336,6 +2654,9 @@
      "status": "done",
      "why": null,
      "passed": true,
+     "harness_passed": [
+      true
+     ],
      "asserted": [
       [
        0,
@@ -2432,13 +2753,15 @@
       }
      ],
      "recorded_not_asserted": [],
-     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs), factor c = 1 only (stored_checks.py: the real part of the interference; c = i, the imaginary part, is not run); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
      "steps": {
       "ward-lc": {
        "start": "2026-11-04T13:20:36Z",
        "end": "2026-11-04T13:21:12Z",
        "elapsed_s": 36,
        "peak_rss_gb": 4.87,
+       "expect_gb": 22.0,
+       "start_gb": 135.0,
        "gate_wait_s": 794,
        "min_available_gb": 417.4,
        "reason": "ok",
@@ -2465,14 +2788,14 @@
   },
   {
    "key": "uux_uuxgggg-full",
-   "process": "u u~ > u u~ G G G G",
+   "process": "u u~ > u u~ g g g g",
    "label": "u u~ > u u~ g g g g (FC, N_f = 5, no top)",
    "accuracy": "full",
    "all_gluon": false,
    "particle_veto": [
     6
    ],
-   "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "particle_veto_note": "PDG [6] (processes.json particle_veto): vetoed particles leave every tree vertex, loop line and propagator; 5 quark flavours in the loops",
    "born_orders": {
     "QCD": 6,
     "QED": 0
@@ -2511,12 +2834,15 @@
      "end": "2026-11-04T12:41:27Z",
      "elapsed_s": 1867,
      "peak_rss_gb": 44.71,
+     "expect_gb": 22.0,
+     "start_gb": 135.0,
      "gate_wait_s": 1740,
      "min_available_gb": 206.0,
      "reason": "ok",
      "attempts": 1
     },
-    "threads": null,
+    "threads": 16,
+    "kernels": "production",
     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
     "dirty": false,
     "native": {
@@ -2536,6 +2862,63 @@
     "gb": 0.038,
     "plan_sha256": "adcec896bdaaf4dea1d5867eee1884a52b7d7329b23e109243b258cc0064212e",
     "point_inputs": "native-v2"
+   },
+   "ward_store": {
+    "stages": {
+     "model": {
+      "s": 3.106905875960365,
+      "peak_gib": 0.341
+     },
+     "generate": {
+      "s": 222.80497095687315,
+      "peak_gib": 8.136
+     },
+     "export": {
+      "s": 1519.377302075969,
+      "peak_gib": 40.025,
+      "plan_mb": 315.125
+     },
+     "store": {
+      "s": 45.97433514287695,
+      "peak_gib": 38.452
+     }
+    },
+    "stage_sum_s": 1791.3,
+    "peak_gib": 40.025,
+    "peak_note": "max of the per-stage VmHWM peaks (the harness resets the high-water mark per stage)",
+    "step": {
+     "start": "2026-11-04T12:10:21Z",
+     "end": "2026-11-04T12:40:44Z",
+     "elapsed_s": 1823,
+     "peak_rss_gb": 42.74,
+     "expect_gb": 22.0,
+     "start_gb": 135.0,
+     "gate_wait_s": 1741,
+     "min_available_gb": 206.1,
+     "reason": "ok",
+     "attempts": 1
+    },
+    "threads": 16,
+    "kernels": "full",
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "dirty": false,
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
+    },
+    "artifact": {
+     "path": "workspace/artifacts/2to6/uux_uuxgggg-fc-ward-2f3f76d9/loop-runtime.pacbin",
+     "bytes": 38017864,
+     "gb": 0.038,
+     "plan_sha256": "adcec896bdaaf4dea1d5867eee1884a52b7d7329b23e109243b258cc0064212e",
+     "point_inputs": "native-v2"
+    }
    },
    "load": {
     "s": 1.5093502041418105,
@@ -2584,6 +2967,8 @@
      "end": "2026-11-04T13:50:17Z",
      "elapsed_s": 2829,
      "peak_rss_gb": 38.57,
+     "expect_gb": 22.0,
+     "start_gb": 135.0,
      "gate_wait_s": 1247,
      "min_available_gb": 262.7,
      "reason": "ok",
@@ -2645,6 +3030,8 @@
       "end": "2026-11-04T13:13:27Z",
       "elapsed_s": 619,
       "peak_rss_gb": 37.03,
+      "expect_gb": 22.0,
+      "start_gb": 135.0,
       "gate_wait_s": 1247,
       "min_available_gb": 295.0,
       "reason": "ok",
@@ -2705,6 +3092,8 @@
       "end": "2026-11-04T13:50:17Z",
       "elapsed_s": 2829,
       "peak_rss_gb": 38.57,
+      "expect_gb": 22.0,
+      "start_gb": 135.0,
       "gate_wait_s": 1247,
       "min_available_gb": 262.7,
       "reason": "ok",
@@ -2772,6 +3161,9 @@
      "status": "done",
      "passed": true,
      "point": 0,
+     "sectors": [
+      "QCD^14"
+     ],
      "binary64_true_error_relative": [
       1.2612744262540207e-11,
       6.504438796721682e-12,
@@ -2785,7 +3177,7 @@
     },
     "rescue": {
      "status": "done",
-     "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+     "policy": "stored_checks.py's default VirtualRescuePolicy(), level 0 (binary64 with the recommended checks), target 1e-05 (record criteria)",
      "sent_up": [
       1,
       4,
@@ -2842,6 +3234,8 @@
       "end": "2026-11-04T13:40:34Z",
       "elapsed_s": 2240,
       "peak_rss_gb": 42.5,
+      "expect_gb": 22.0,
+      "start_gb": 135.0,
       "gate_wait_s": 1307,
       "min_available_gb": 288.6,
       "reason": "ok",
@@ -2852,6 +3246,10 @@
      "status": "done",
      "why": null,
      "passed": true,
+     "harness_passed": [
+      true,
+      true
+     ],
      "asserted": [
       [
        5,
@@ -2974,13 +3372,15 @@
       }
      ],
      "recorded_not_asserted": [],
-     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs), factor c = 1 only (stored_checks.py: the real part of the interference; c = i, the imaginary part, is not run); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
      "steps": {
       "ward-fc": {
        "start": "2026-11-04T13:59:00Z",
        "end": "2026-11-04T14:02:33Z",
        "elapsed_s": 213,
        "peak_rss_gb": 36.37,
+       "expect_gb": 22.0,
+       "start_gb": 135.0,
        "gate_wait_s": 1094,
        "min_available_gb": 256.1,
        "reason": "ok",
@@ -2991,6 +3391,8 @@
        "end": "2026-11-04T14:50:59Z",
        "elapsed_s": 2148,
        "peak_rss_gb": 27.24,
+       "expect_gb": 22.0,
+       "start_gb": 135.0,
        "gate_wait_s": 759,
        "min_available_gb": 181.0,
        "reason": "ok",
@@ -3026,7 +3428,7 @@
   "gg_gggggg-fc/time-fc-b128": "USER 2026-11-04 ~17:48: 8-gluon B = 128 skipped, B = 16 measured (stopped by the coordinator in its timed block)"
  },
  "not_obtained": [
-  "g g > g g g g g g (LC, N_f = 5, no top): ward not asserted (every row beyond the binary64 scope (E > 1e-9): recorded, not asserted)",
+  "g g > g g g g g g (LC, N_f = 5, no top): ward not asserted (inconclusive: the harness verdict is FAILED (no point asserted) because every point has a leg with E beyond the binary64 scope (1e-9); the rows are recorded only, so this row carries no Ward evidence)",
   "g g > g g g g g g (LC, N_f = 5, no top): binary64 E above 1e-5 at points [0, 1] (a rescue case, not a failure)",
   "g g > g g g g g g (LC, N_f = 5, no top): ward-lc-dd not run (USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator))",
   "g g > g g g g g g (FC, N_f = 5, no top): timing B = 128 not run (USER 2026-11-04 ~17:48: 8-gluon B = 128 skipped, B = 16 measured (stopped by the coordinator in its timed block))",
@@ -3035,5 +3437,113 @@
   "u u~ > g g g g g g (LC, N_f = 5, no top): LC single pole unchecked (the native Catani operator is full colour only and NGluon serves only all-gluon rows); the LC double pole is checked",
   "u u~ > g g g g g g (FC, N_f = 5, no top): ward-fc-dd not run (USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator))",
   "u u~ > u u~ g g g g (LC, N_f = 5, no top): LC single pole unchecked (the native Catani operator is full colour only and NGluon serves only all-gluon rows); the LC double pole is checked"
+ ],
+ "sources": [
+  "workspace/artifacts/2to6/gg_gggggg-fc-2f3f76d9/generation.json",
+  "workspace/artifacts/2to6/gg_gggggg-lc-2f3f76d9/generation.json",
+  "workspace/artifacts/2to6/gg_gggggg-lc-ward-2f3f76d9/generation.json",
+  "workspace/artifacts/2to6/uux_gggggg-fc-2f3f76d9/generation.json",
+  "workspace/artifacts/2to6/uux_gggggg-fc-ward-2f3f76d9/generation.json",
+  "workspace/artifacts/2to6/uux_gggggg-lc-2f3f76d9/generation.json",
+  "workspace/artifacts/2to6/uux_gggggg-lc-ward-2f3f76d9/generation.json",
+  "workspace/artifacts/2to6/uux_uuxgggg-fc-2f3f76d9/generation.json",
+  "workspace/artifacts/2to6/uux_uuxgggg-fc-ward-2f3f76d9/generation.json",
+  "workspace/artifacts/2to6/uux_uuxgggg-lc-2f3f76d9/generation.json",
+  "workspace/artifacts/2to6/uux_uuxgggg-lc-ward-2f3f76d9/generation.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-fc/checks-fc.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-fc/checks-fc.status.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-fc/progress.txt",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-fc/store-fc.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-fc/store-fc.status.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-fc/time-fc-b128.status.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-fc/time-fc-b16.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-fc/time-fc-b16.log",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-fc/time-fc-b16.status.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/checks-lc.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/checks-lc.status.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/ngluon-compare.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/ngluon-dd-compare.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/ngluon-dd.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/ngluon-dd.status.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/ngluon.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/ngluon.status.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/progress.txt",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/store-lc.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/store-lc.status.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/store-ward-lc.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/store-ward-lc.status.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/time-lc-b128.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/time-lc-b128.log",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/time-lc-b128.status.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/time-lc-b16.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/time-lc-b16.log",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/time-lc-b16.status.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/ward-lc-dd.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/ward-lc.json",
+  "workspace/tmp/mf-2to6/runs/gg_gggggg-lc/ward-lc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/checks-fc.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/checks-fc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/progress.txt",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/store-fc.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/store-fc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/store-ward-fc.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/store-ward-fc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/time-fc-b128.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/time-fc-b128.log",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/time-fc-b128.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/time-fc-b16.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/time-fc-b16.log",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/time-fc-b16.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/ward-fc-dd.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/ward-fc.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-fc/ward-fc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/checks-lc.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/checks-lc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/progress.txt",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/store-lc.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/store-lc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/store-ward-lc.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/store-ward-lc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/time-lc-b128.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/time-lc-b128.log",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/time-lc-b128.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/time-lc-b16.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/time-lc-b16.log",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/time-lc-b16.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/ward-lc.json",
+  "workspace/tmp/mf-2to6/runs/uux_gggggg-lc/ward-lc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/checks-fc.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/checks-fc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/progress.txt",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/store-fc.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/store-fc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/store-ward-fc.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/store-ward-fc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/time-fc-b128.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/time-fc-b128.log",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/time-fc-b128.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/time-fc-b16.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/time-fc-b16.log",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/time-fc-b16.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/ward-fc-dd.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/ward-fc-dd.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/ward-fc.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-fc/ward-fc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/checks-lc.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/checks-lc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/progress.txt",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/store-lc.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/store-lc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/store-ward-lc.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/store-ward-lc.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/time-lc-b128.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/time-lc-b128.log",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/time-lc-b128.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/time-lc-b16.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/time-lc-b16.log",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/time-lc-b16.status.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/ward-lc.json",
+  "workspace/tmp/mf-2to6/runs/uux_uuxgggg-lc/ward-lc.status.json",
+  "workspace/worktrees/run8-2f3f76d9/tools/loop_benchmark/processes.json"
  ]
 }

@@ -95,10 +95,10 @@ at the M-FINAL pin; Table 1 and Figure 1 keep M-SM's G1 at `71e2041e`, the
 title line says so) and adds the decay capability matrix (section "Decays",
 from `data/dec-matrix.json`) with the decay campaign's per-row appendix, the
 HC_NLO_X0 table (`data/hc.json`) and the Recola correlation table
-(`data/corr.json`), the PRELIMINARY 2 → 6 rows of Table 1 and their short
+(`data/corr.json`), the 2 → 6 rows of Table 1 and their short
 section after "Reading the summary" (`data/2to6.json` through `summary.json`
-`preliminary`: pyAmpliCol only, no provider, no gate, uncoloured; another
-engine, `71e2041e`, stated once in the table), and re-runs the M-SM, M-QCD and
+`preliminary`: pyAmpliCol only, no provider, no gate, uncoloured; their own
+engine, `2f3f76d9` on `work/v2-mf-8g-3`, stated once in the table), and re-runs the M-SM, M-QCD and
 decay campaigns at the pin (their files replace the earlier ones; no status
 changed). Then a status page
 (what is on `loop`, M-SM, the gate, M-QCD kept, M-FINAL next, what is missing
@@ -202,7 +202,7 @@ revision ("record 0ea83af2").
 | `dec-matrix.json` | The decay capability matrix (per row: process, model, scheme, sectors, DD and binary64 deviations, Catani or Catani + QED poles, Ward, LC/NLC, form factor, public route, native inputs, status), the further checks and the per-row appendix data, written by `scripts/build_dec_matrix.py` from `dec.json` and the decay manifest; never by hand. |
 | `hc.json` | The HC_NLO_X0 genericity rows (MF-GM-HC: HC01–HC04, HC06 against MadLoop 3.7.0, HC05's typed refusal) with the JUnit outcomes of `tests/unit/test_loop_v2_hc.py`, written by `scripts/build_hc.py` from that file's whole-file job (its stored artifacts reloaded). |
 | `corr.json` | The Recola correlation rows (MF-CORR: four processes × plain Born, colour, spin and spin-colour; correlated Borns and one-loop Laurent coefficients) with the JUnit outcomes of `tests/unit/test_loop_v2_corr_recola.py`, written by `scripts/build_corr.py` from that file's whole-file job. |
-| `2to6.json` | The PRELIMINARY 2 → 6 records (M-FINAL item 1: g g > 6g LC and FC, u u~ > 6g LC, u u~ > u u~ g g g g LC; engine `71e2041e` on `work/v2-bench-2to6`), written by `scripts/build_2to6.py` from the existing benchmark records only (the user stopped every 8-leg run on 2026-11-01): generation stages, artifact, load, evaluation, checks done and not obtained, caveats, dry runs and the mf-8g-0 study's estimates, labelled as estimates. `build_summary.py` turns it into `summary.json` `preliminary` (Table 1's 2 → 6 group). |
+| `2to6.json` | The 2 → 6 records (M-FINAL item 1, package mf-2to6: g g > 6g, u u~ > 6g and u u~ > u u~ g g g g, each at LC and FC; engine `2f3f76d9` on `work/v2-mf-8g-3`, native digest `2bae17f9`, one engine for every record), written by `scripts/build_2to6.py` from the mf-2to6 run records (store, stored-checks, Ward, NGluon and timing records, watchdog status files, the stores' `generation.json`; every file read is listed in `sources`): generation stages, the Ward store, artifact, load, evaluations at B = 16 and 128, the checks (done, not asserted, or not run with the reason), what failed or could not run (`not_obtained`). `build_summary.py` turns it into `summary.json` `preliminary` (Table 1's 2 → 6 group, one row per process with its FC and LC records). |
 | `measurements.json`, `provider-cold.json`, `legacy-labels.json` | The legacy per-diagram engine's timing snapshot of 2026-10-18 (unchanged, cited by `docs/development/loop_v2/DESIGN.md`) and its labels; no longer shown (the history table is in the report revisions up to `ba7d510d`). |
 | `colour-measurements.json` | The legacy engine's LC/FC runs; not shown, kept for the citations in DESIGN.md and `research-leading-colour-structure.md`. |
 
@@ -340,11 +340,14 @@ Table 1 once, in its column header).
   docs/performance_reports/loop/scripts/build_hc.py B J data/hc.json` and
   `… build_corr.py B J data/corr.json` (they reload the tests' artifacts and
   regenerate nothing but HC05's typed refusal).
-- `2to6.json`: `python3 -I scripts/build_2to6.py --out data/2to6.json $(cat
-  args.txt)` with the 58 inputs listed in
-  `workspace/reports/engine-v2/m-final/records/m1101-mfb-2to6/args.txt`
-  (standard library only; byte-identical under Python 3.11 and 3.14 and for
-  any argument order); then `build_summary.py`.
+- `2to6.json`: from the workspace root, `source tmp/mf-2to6/build_args.sh`, then
+  `python3 -I <repo>/docs/performance_reports/loop/scripts/build_2to6.py json
+  tmp/mf-2to6/runs artifacts/2to6
+  worktrees/run8-2f3f76d9/tools/loop_benchmark/processes.json "${ENGINE[@]}"
+  "${NOTRUN[@]}" --out <repo>/docs/performance_reports/loop/data/2to6.json`
+  (standard library only; `md` mode with `--notes tmp/mf-2to6/findings.md`
+  prints `workspace/reports/engine-v2/m-final/2to6-report.md`); then
+  `build_summary.py`.
 - `measured.json`: `python scripts/collect_milestone.py <workspace>` reads the
   run records under `<workspace>/tmp/generation-scale/runs/` and
   `<workspace>/tmp/ct-recursion/s4/` (JSON and `/usr/bin/time` logs: wall,
