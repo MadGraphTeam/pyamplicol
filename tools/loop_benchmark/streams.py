@@ -9,6 +9,10 @@ points per process, with mu_R cycling through 1000, 700 and 1400 GeV:
   decimals, minimal ``2|p_i.p_j|/s`` of 1/1000, resonance exclusion around
   M_Z, M_H and M_t), so the stream's first block is checked against the
   committed provider references (``tests/fixtures/loop/required/<key>.json``);
+- beyond ``CAMPAIGN_MAX_FINAL`` massless final-state particles (2->6: no
+  provider serves it, so there is no campaign to start with) the whole stream
+  is RAMBO's: the campaign construction finds no point passing the 1/1000
+  invariant cut there (0 of ~17,000 candidates in 30 s at 2->6);
 - the others come from the same tool's construction when the final state is
   massive (its parameter grid holds thousands of points), and otherwise from
   RAMBO at sqrt(s) = 1 TeV made exactly massless and momentum conserving
@@ -51,6 +55,8 @@ STREAM_LENGTH = 128
 MU_R = ("1000", "700", "1400")
 CUT = Fraction(1, 1000)
 CAMPAIGN_PREFIX = 3
+# The largest massless final state of a required-references campaign (2->5).
+CAMPAIGN_MAX_FINAL = 5
 RAMBO_SEED = 20261024
 
 
@@ -257,9 +263,18 @@ def make_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
         if name in values and Fraction(values[name])
     ]
     pdgs = process["pdgs"]
+    prefix_count = CAMPAIGN_PREFIX
     if any(masses[2:]):
         points = _massive_grid(masses, count, resonances, pdgs)
         construction = "exact_points grid (distinct points after the prefix)"
+    elif len(pdgs) - 2 > CAMPAIGN_MAX_FINAL:
+        prefix_count = 0
+        points = _rambo(count, len(pdgs), pdgs, resonances)
+        construction = (
+            "RAMBO at sqrt(s) = 1 TeV made exactly massless "
+            "(loop_v2_stability_calibration.exact_point, its jet cuts); no campaign "
+            f"prefix beyond {CAMPAIGN_MAX_FINAL} final-state particles"
+        )
     else:
         prefix = exact_points.generate(
             masses, CAMPAIGN_PREFIX, CUT, resonances, pdgs=pdgs
@@ -280,7 +295,7 @@ def make_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
             "particle-antiparticle pairs",
             "resonances": resonances,
         },
-        "campaign_prefix": CAMPAIGN_PREFIX,
+        "campaign_prefix": prefix_count,
         "points": [[[_text(x) for x in leg] for leg in point] for point in points],
         "mu_r": list(itertools.islice(itertools.cycle(MU_R), count)),
     }

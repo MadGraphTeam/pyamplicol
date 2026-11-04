@@ -101,6 +101,32 @@ def main(argv: list[str] | None = None) -> int:
         help="time a stored process (--store) instead of generating: loaded "
         "as the public runtime loads an artifact, nothing regenerated",
     )
+    v2.add_argument(
+        "--colour-contraction",
+        choices=("auto", "direct", "fft"),
+        help="the executor's seed contraction (default: the request's); 'fft' "
+        "is refused without a certified symmetric-group Fourier record",
+    )
+    v2.add_argument(
+        "--rotation-samples",
+        type=int,
+        help="with --rotations: after the warm-up, time one batch of these many "
+        "stream points (those after the warm-up's), each as --rotations copies "
+        "(copy 0 the point, the others its exact rotations), instead of the "
+        "paired rounds; the copies' spread is the stability estimate",
+    )
+    v2.add_argument(
+        "--rotations",
+        type=int,
+        help="copies per --rotation-samples point (>= 2)",
+    )
+    v2.add_argument(
+        "--kernels",
+        choices=("production", "full"),
+        default="production",
+        help="'full': generate on the full tree kernels (ward.ward_slice), a "
+        "--store that serves the Ward mode of stored_checks.py",
+    )
 
     wardp = commands.add_parser(
         "ward", help="the Ward identity at chosen stream points"
