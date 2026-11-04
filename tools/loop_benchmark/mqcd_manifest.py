@@ -1067,8 +1067,9 @@ FIXTURE_ROOT = INDEX.parent.parent  # .../tests/fixtures/loop
 
 # Rows whose Python per-point inputs exceed the nightly job budget (one
 # g g > g g g g point took > 22 min, u u~ > g g g g g > 22 min at 17 GB):
-# the native-input route, whose executor forms no Catani prediction (WP3.1
-# I5c): rule 4 takes the harness's massless Catani operator on the tree
+# the native-input route, whose executor forms Catani's prediction only
+# with ``catani=True`` (NATIVE_CATANI below; WP3.1 I5c until M-FINAL
+# MF-8G-3): rule 4 of the other rows takes the harness's massless Catani operator on the tree
 # engine's colour-correlated Born (catani "tree"), committed per row by
 # tools/loop_benchmark/mqcd_tree_correlations.py (TREE_FIXTURE: the tree
 # artifact of g g > g g g g takes 968 s and 11 GB, too much for the nightly
@@ -1078,6 +1079,11 @@ FIXTURE_ROOT = INDEX.parent.parent  # .../tests/fixtures/loop
 # checks, 25 GB: two points keep its nightly job within 30 min.
 NATIVE_ROWS = {"A14": [0, 1, 2], "A15": [0, 1, 2, 3], "A23": [0, 1, 2], "A24": [0, 1]}
 TREE_FIXTURE = "tests/fixtures/loop/mqcd/references/tree-correlations-{}.json"
+# Native rows whose executor forms Catani's prediction itself (catani
+# "native": the Born vectors' colour correlations contracted over the dipole
+# orbits, ``NativeExecutor(catani=True)``, M-FINAL MF-8G-3, F11): g g >
+# g g g g g has no tree-engine fixture (its tree artifact is too large).
+NATIVE_CATANI = {"A24"}
 # The ``ward`` extra (O10 on the native input path, ``ward.ward_check``)
 # checks every external massless vector leg with c = 1 and c = i at the row's
 # first point; a 2->4 row checks one leg (g g > g g g g: one double-double
@@ -1623,7 +1629,9 @@ for r in R:
     if r["id"] in NATIVE_ROWS:
         entry["inputs"] = "native"
         tree = TREE_FIXTURE.format(r["id"])
-        if (WT / tree).is_file():
+        if r["id"] in NATIVE_CATANI:
+            entry["catani"] = "native"
+        elif (WT / tree).is_file():
             entry["catani"], entry["tree_correlations"] = "tree", tree
         else:
             entry["catani"] = "none"

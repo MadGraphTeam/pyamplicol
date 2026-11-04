@@ -67,6 +67,20 @@ generation and states the load (``stored``). This splits a seven-gluon row
 (about an hour of generation, then an hour of timing) into bounded jobs and
 lets its checks reuse one generation.
 
+Rotation timing (``--rotation-samples K --rotations R``): after the warm-up,
+the timed block is the K stream points that follow the warm-up's, each as R
+copies (copy 0 the point, copy r > 0 every momentum rotated by the stability
+checks' exact rational rotation ``loops.v2.stability.default_rotation(r - 1)``),
+evaluated once as one batch of K x R points in the timing configuration; it
+replaces the paired rounds. The record (``rotation_timing``) keeps the batch's
+seconds per point and peak memory, per sample the finite part of every copy and
+their relative spread max_r |f_r - f_0| / |f_0| (the stability estimate), and
+the seed contraction the executor ran (``colour_contraction``: the policy, the
+results' ``colour_contraction`` and the report's ``plan_export.FFT_SEED_JOBS``
+count). ``--colour-contraction`` sets the executor's seed-contraction policy
+(default: the request's); an explicit ``fft`` is refused by an executor whose
+plan has no certified symmetric-group Fourier record.
+
 Stage split of each block (seconds per point; MASTER_PLAN's report rules):
 
 - ``python trees``, ``python counterterm program``, ``python scalars``,
@@ -398,6 +412,14 @@ def _totals(result: Any) -> tuple[float, float]:
     return float(born), float(finite)
 
 
+def _spread(values: list[float]) -> float | None:
+    """max_r |values[r] - values[0]| / |values[0]| (none at a zero first)."""
+
+    if not values[0]:
+        return None
+    return max(abs(x - values[0]) for x in values[1:]) / abs(values[0])
+
+
 def _relative(a: float, b: float, floor: float = 0.0) -> float:
     scale = max(abs(a), abs(b), floor)
     return 0.0 if scale == 0 else abs(a - b) / scale
@@ -602,6 +624,41 @@ def _native_build(directory: Path | None) -> dict[str, Any] | None:
     }
 
 
+def check_store_native(
+    meta: dict[str, Any], native_build: Path | None
+) -> dict[str, Any]:
+    """The ``--native-build`` record of a run reading the stored process of
+    ``meta`` (its ``generation.json``); refused unless the store was
+    generated with the same native build (its inputs' digest)."""
+
+    build = _native_build(native_build)
+    if build is None or meta.get("native") is None:
+        raise SystemExit("a stored process needs --native-build on both sides")
+    if build["digest"] != meta["native"]["digest"]:
+        raise SystemExit(
+            "the stored process was generated with another native build "
+            f"({meta['native']['digest'][:12]}...)"
+        )
+    return build
+
+
+def read_store_process(directory: Path, meta: dict[str, Any]) -> Any:
+    """The ``NativeProcess`` of a ``--store`` directory as the public runtime
+    loads it, file-backed (``artifact.load_native_process``: the executor
+    reads the plan and binary tree program from the PACBIN), nothing
+    regenerated: the one loader of the stored process for ``Run.load`` and
+    ``stored_checks.py`` (its plan checked against the recorded digest)."""
+
+    from pyamplicol.loops.v2.artifact import load_native_process, plan_digest, read_plan
+
+    runtime = directory / STORED_RUNTIME
+    plan = read_plan(runtime)
+    if plan is None or plan_digest(plan) != meta["plan_sha256"]:
+        raise SystemExit("the stored plan does not have its recorded digest")
+    del plan
+    return load_native_process(runtime)
+
+
 class Run:
     """One process, accuracy and checkout (module docstring)."""
 
@@ -658,7 +715,14 @@ class Run:
         start = time.perf_counter()
         request = _request(self.key, self.options.accuracy, compiled)
         self.record["process_text"] = request.process
-        slice_ = LoopSlice.generate(compiled, request, native)
+        if getattr(self.options, "kernels", None) == "full":
+            # The full tree kernels (``ward.ward_slice``): a store that
+            # serves the Ward mode (``tools/loop_benchmark/stored_checks.py``).
+            from pyamplicol.loops.v2.ward import ward_slice
+
+            slice_ = ward_slice(compiled, request, native)
+        else:
+            slice_ = LoopSlice.generate(compiled, request, native)
         stages["generate"] = {
             "seconds": time.perf_counter() - start,
             "peak_gib": _gib(_status("VmHWM")),
@@ -673,6 +737,7 @@ class Run:
         }
         if self.options.inputs == "native":
             options["inputs"] = "native"
+        options.update(self._contraction())
         self.executor = NativeExecutor(slice_, **options)
         stages["export"] = {
             "seconds": time.perf_counter() - start,
@@ -695,13 +760,26 @@ class Run:
     # -- stored processes ---------------------------------------------------
 
     def _configuration(self) -> dict[str, Any]:
-        return {
+        out = {
             "process": self.key,
             "accuracy": self.options.accuracy,
             "inputs": self.options.inputs,
             "lanes": self.options.lanes,
             "schedule": self.options.schedule,
         }
+        if getattr(self.options, "kernels", None) == "full":
+            out["kernels"] = "full"
+        return out
+
+    def _contraction(self) -> dict[str, Any]:
+        """The executor's seed-contraction option (``--colour-contraction``;
+        none: the request's policy), recorded when given."""
+
+        policy = getattr(self.options, "colour_contraction", None)
+        if policy is None:
+            return {}
+        self.record["colour_contraction_policy"] = policy
+        return {"contraction": policy}
 
     def store(self, directory: Path) -> None:
         """Write the generated process as the artifact's loop runtime member
@@ -761,11 +839,6 @@ class Run:
 
         from pyamplicol.generation.loop_artifact import LOOP_V2_NATIVE_POINT_INPUTS
         from pyamplicol.loops.native import load_loop_native
-        from pyamplicol.loops.v2.artifact import (
-            load_native_process,
-            plan_digest,
-            read_plan,
-        )
 
         meta = json.loads((directory / STORED_META).read_text())
         if meta.get("kind") != "stored-process":
@@ -774,27 +847,15 @@ class Run:
         stored = {k: meta.get(k) for k in wanted}
         if stored != wanted:
             raise SystemExit(f"stored process {stored} is not this run's {wanted}")
-        build = _native_build(self.options.native_build)
-        if build is None or meta["native"] is None:
-            raise SystemExit("a stored process needs --native-build on both sides")
-        if build["digest"] != meta["native"]["digest"]:
-            raise SystemExit(
-                "the stored process was generated with another native build "
-                f"({meta['native']['digest'][:12]}...)"
-            )
+        build = check_store_native(meta, self.options.native_build)
         native = load_loop_native()
         self.record["native"] = build
         _reset_peak()
         start = time.perf_counter()
-        runtime = directory / STORED_RUNTIME
-        plan = read_plan(runtime)
-        if plan is None or plan_digest(plan) != meta["plan_sha256"]:
-            raise SystemExit("the stored plan does not have its recorded digest")
-        del plan
-        # File-backed, as the public runtime loads it (the executor reads the
-        # plan and binary tree program from the PACBIN).
-        process = load_native_process(runtime)
-        self.executor = process.executor(native, lanes=self.options.lanes, threads=1)
+        process = read_store_process(directory, meta)
+        self.executor = process.executor(
+            native, lanes=self.options.lanes, threads=1, **self._contraction()
+        )
         loaded = {
             "seconds": time.perf_counter() - start,
             "peak_gib": _gib(_status("VmHWM")),
@@ -865,6 +926,21 @@ class Run:
 
     def evaluate(self, start: int, size: int) -> dict[str, Any]:
         points, scales = self._batch(start, size)
+        results, entry = self._timed(points, scales)
+        return {
+            "start": start,
+            "points": size,
+            **entry,
+            "values": {
+                (start + k) % len(self.stream["points"]): _totals(r)
+                for k, r in enumerate(results)
+            },
+        }
+
+    def _timed(self, points: list, scales: list) -> tuple[list, dict[str, Any]]:
+        """One timed evaluation call of ``points`` (``evaluate``): the results
+        and the call's wall time, stage split and report."""
+
         self.timers.clear()
         options: dict[str, Any] = {
             "parameters": self.parameters,
@@ -886,19 +962,13 @@ class Run:
             seconds["native trees"] = report["seconds"]["trees"]
         accounted = sum(seconds.get(stage, 0.0) for stage in STAGES if stage != "other")
         seconds["other"] = wall - accounted
-        return {
-            "start": start,
-            "points": size,
+        return results, {
             "wall": wall,
             "seconds": seconds,
             "counts": dict(report["counts"]),
             "lanes": report["lanes"],
             "threads": report["threads"],
             "reals_per_lane": dict(report["reals_per_lane"]),
-            "values": {
-                (start + k) % len(self.stream["points"]): _totals(r)
-                for k, r in enumerate(results)
-            },
         }
 
     def accuracy(self) -> None:
@@ -1020,6 +1090,11 @@ class Run:
             )
             # The warm-up includes lazy compilation; the estimate scales the
             # cheapest B per point.
+        if getattr(options, "rotation_samples", None):
+            self.record["warm_up_seconds"] = warm
+            self.record["warm_up_points"] = warm_points
+            self.rotation_timing(max(warm_points.values()))
+            return
         per_point = min(warm[b] / warm_points[b] for b in batches)
         planned = []
         for size in batches:
@@ -1069,6 +1144,107 @@ class Run:
                 ),
                 flush=True,
             )
+
+    def rotation_timing(self, first: int) -> None:
+        """The rotation block (module docstring): the ``--rotation-samples``
+        stream points from ``first``, each as ``--rotations`` copies (copy 0
+        the point, copy r its exact rotation ``default_rotation(r - 1)``),
+        timed once as one batch; the record's ``rotation_timing`` and the
+        block's ``batches`` summary (its values: the unrotated copies')."""
+
+        from pyamplicol.loops.v2.plan_export import FFT_SEED_JOBS
+        from pyamplicol.loops.v2.stability import default_rotation
+
+        samples, copies = self.options.rotation_samples, self.options.rotations
+        count = len(self.stream["points"])
+        indices = [(first + k) % count for k in range(samples)]
+        rotations = [default_rotation(r) for r in range(copies - 1)]
+        points: list = []
+        scales: list = []
+        for index in indices:
+            point = streams.exact(self.stream, index)
+            scale = str(Fraction(self.stream["mu_r"][index]) ** 2)
+            points.append(point)
+            points.extend([list(m) for m in r.apply(point)] for r in rotations)
+            scales.extend([scale] * copies)
+        size = len(points)
+        _reset_peak()
+        results, entry = self._timed(points, scales)
+        peak = _gib(_status("VmHWM"))
+        rows = []
+        for k, index in enumerate(indices):
+            values = [_totals(r) for r in results[k * copies : (k + 1) * copies]]
+            born = [b for b, _ in values]
+            finite = [f for _, f in values]
+            rows.append(
+                {
+                    "index": index,
+                    "born": born,
+                    "finite": finite,
+                    "born_relative_spread": _spread(born),
+                    "relative_spread": _spread(finite),
+                }
+            )
+        evaluated = sorted(
+            {str(getattr(r, "colour_contraction", None)) for r in results}
+        )
+        contraction = {
+            "policy": getattr(self.executor, "contraction", None),
+            "certified_fourier_record": getattr(
+                getattr(self.executor, "exported", None), "fourier", None
+            )
+            is not None,
+            "evaluated": evaluated,
+            "fft_seed_jobs": entry["counts"].get(FFT_SEED_JOBS, 0),
+        }
+        spreads = [row["relative_spread"] for row in rows]
+        self.record["rotation_timing"] = {
+            "protocol": "after the warm-up, one timed batch of K stream points x R "
+            "copies (copy 0 the point, copy r every momentum rotated by "
+            "loops.v2.stability.default_rotation(r - 1)), the timing "
+            "configuration; relative_spread = max_r |f_r - f_0| / |f_0|",
+            "samples": samples,
+            "rotations": copies,
+            "points": size,
+            "stream_indices": indices,
+            "copies": ["identity"]
+            + [f"default_rotation({r})" for r in range(copies - 1)],
+            "wall": entry["wall"],
+            "seconds_per_point": entry["wall"] / size,
+            "stages_per_point": {k: v / size for k, v in entry["seconds"].items()},
+            "counts": entry["counts"],
+            "lanes": entry["lanes"],
+            "threads": entry["threads"],
+            "peak_gib": peak,
+            "colour_contraction": contraction,
+            "rows": rows,
+            "max_relative_spread": None if None in spreads else max(spreads),
+        }
+        run = {
+            "start": first,
+            "points": size,
+            **entry,
+            "values": {
+                index: _totals(results[k * copies]) for k, index in enumerate(indices)
+            },
+        }
+        self.record["batches"] = {str(size): _summary([run])}
+        print(
+            self.key,
+            f"rotation block B={size} ({samples} x {copies}): "
+            f"{entry['wall'] / size:.3f} s/pt, peak {peak} GiB",
+            flush=True,
+        )
+        for row in rows:
+            print(
+                self.key,
+                f"rotation point {row['index']}: finite {row['finite']} "
+                f"relative spread {row['relative_spread']} "
+                f"(born {row['born_relative_spread']})",
+                flush=True,
+            )
+        print(self.key, "colour contraction", json.dumps(contraction), flush=True)
+        self.checkpoint(partial=True)
 
     def checkpoint(self, *, partial: bool) -> None:
         """Write the record so far to ``--json`` (``partial`` while the run
@@ -1507,6 +1683,12 @@ def ward(options: Any) -> int:
 
 
 def main(options: Any) -> int:
+    samples = getattr(options, "rotation_samples", None)
+    copies = getattr(options, "rotations", None)
+    if (samples is None) != (copies is None):
+        raise SystemExit("--rotation-samples and --rotations go together")
+    if samples is not None and (samples < 1 or copies < 2):
+        raise SystemExit("a rotation block needs >= 1 sample and >= 2 rotations")
     if options.inputs == "native" and not _native_inputs_supported():
         raise SystemExit("this checkout has no native point inputs (WP3.1)")
     if getattr(options, "load", None) is not None and (
