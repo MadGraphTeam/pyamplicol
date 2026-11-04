@@ -69,6 +69,7 @@ ESTIMATES = 10
 CATANI_FLOOR = 1e-12
 DOUBLE_POLE_FLOOR = 1e-10
 DD_FLOOR = 1e-12
+_WARD_ROW_KEYS = ("leg", "born", "parts", "estimate", "in_scope", "passed")
 
 
 def _peak_gib() -> float:
@@ -128,9 +129,7 @@ def point_row(
     row: dict[str, Any] = {
         "born": born,
         "sectors": sectors,
-        "relative_estimate": None
-        if estimate is None
-        else float(estimate.relative),
+        "relative_estimate": None if estimate is None else float(estimate.relative),
         "catani_formed": result.ir_poles is not None,
     }
     if require_catani and result.ir_poles is None:
@@ -139,9 +138,11 @@ def point_row(
         ratio = double / born
         bound = DOUBLE_POLE_FLOOR * abs(expected_double)
         if estimate is not None:
-            bound += ESTIMATES * sum(
-                abs(float(b.coefficients[2])) for b in estimate.absolute.values()
-            ) / abs(born)
+            bound += (
+                ESTIMATES
+                * sum(abs(float(b.coefficients[2])) for b in estimate.absolute.values())
+                / abs(born)
+            )
         row["double_pole"] = {
             "over_born": ratio,
             "universal": expected_double,
@@ -290,9 +291,7 @@ def check_process(
         rows = []
         for index, result in zip(points, results, strict=True):
             checked[index] = result
-            rows.append(
-                {"index": index, **point_row(result, expected, require_catani)}
-            )
+            rows.append({"index": index, **point_row(result, expected, require_catani)})
         record["checked"] = rows
         stage("checked", begin, points=len(rows), passed=all(r["passed"] for r in rows))
 
@@ -361,9 +360,11 @@ def check_process(
                 # Ward bound is a fixed 1e-25 of the scale (g g > 4g stream
                 # point 1: binary64 E 2.4e-6, double-double residual 1.4e-24
                 # = the binary64 one times the carriers' roundoff ratio).
-                scope = [
-                    r.get("in_scope", True) for r in found["rows"]
-                ] if carrier == "double" else None
+                scope = (
+                    [r.get("in_scope", True) for r in found["rows"]]
+                    if carrier == "double"
+                    else None
+                )
                 if scope is not None:
                     in_scope[index] = all(scope)
                 asserted = in_scope.get(index, True)
@@ -375,12 +376,7 @@ def check_process(
                         "asserted": asserted,
                         "passed": found["passed"] if asserted else None,
                         "rows": [
-                            {
-                                k: v
-                                for k, v in r.items()
-                                if k
-                                in ("leg", "born", "parts", "estimate", "in_scope", "passed")
-                            }
+                            {k: v for k, v in r.items() if k in _WARD_ROW_KEYS}
                             for r in found["rows"]
                         ],
                     }
@@ -521,7 +517,9 @@ def main(argv: list[str] | None = None) -> int:
         key,
         meta["accuracy"],
         points=options.points,
-        dd_points=options.points[:1] if options.dd_points is None else options.dd_points,
+        dd_points=(
+            options.points[:1] if options.dd_points is None else options.dd_points
+        ),
         ward_points=options.ward_points,
         ward_dd_points=options.ward_dd_points,
         ward_legs=options.ward_legs,
@@ -533,10 +531,12 @@ def main(argv: list[str] | None = None) -> int:
         write=write,
         require_catani=False if options.no_catani else None,
     )
-    status = "passed" if record["passed"] in (True, None) else "FAILED"
+    # A run whose stages carry no verdict (e.g. --rescue-points only: a count,
+    # not a gate) says so; it exits 0, a failed verdict exits 1.
+    status = {True: "passed", False: "FAILED", None: "no verdict"}[record["passed"]]
     Path(f"{options.json}.DONE").write_text(f"{status}\n")
     print(key, "DONE", status, flush=True)
-    return 0 if record["passed"] in (True, None) else 1
+    return 1 if record["passed"] is False else 0
 
 
 if __name__ == "__main__":

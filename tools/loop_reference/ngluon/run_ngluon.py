@@ -214,22 +214,23 @@ def command_run(args) -> int:
         path = handle.name
     start = time.perf_counter()
     parts = []
+    jobs: list[subprocess.Popen] = []
     try:
-        jobs = [
-            subprocess.Popen(
-                [
-                    str(binary),
-                    f"points={path}",
-                    f"first={j}",
-                    f"stride={args.jobs}",
-                    f"prec={args.prec}",
-                    f"reflect={int(args.reflect)}",
-                ],
-                stdout=subprocess.PIPE,
-                text=True,
+        for j in range(args.jobs):
+            jobs.append(
+                subprocess.Popen(
+                    [
+                        str(binary),
+                        f"points={path}",
+                        f"first={j}",
+                        f"stride={args.jobs}",
+                        f"prec={args.prec}",
+                        f"reflect={int(args.reflect)}",
+                    ],
+                    stdout=subprocess.PIPE,
+                    text=True,
+                )
             )
-            for j in range(args.jobs)
-        ]
         for job in jobs:
             out, _ = job.communicate()
             if job.returncode:
@@ -239,6 +240,12 @@ def command_run(args) -> int:
                 json.loads(line) for line in out.splitlines() if line.startswith("{")
             ]
     finally:
+        # A failed (or interrupted) job leaves no child running: at 8 gluons
+        # the others would run for hours unsupervised.
+        for job in jobs:
+            if job.poll() is None:
+                job.kill()
+                job.wait()
         os.unlink(path)
     rows = []
     for k, index in enumerate(args.points):
