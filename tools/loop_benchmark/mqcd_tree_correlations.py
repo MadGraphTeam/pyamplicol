@@ -10,9 +10,10 @@ For each row: the tree engine's artifact of its process with every dipole
 row's restriction and Born orders; an artifact already in DIR/tree-<row> is
 reused), evaluated at every manifest point of the row in ``mqcd.TREE_DIGITS``
 digits, written to tests/fixtures/loop/mqcd/references/tree-correlations-
-<row>.json. The campaign's rule 4 reads it on rows whose native-input
-executor forms no Catani prediction (WP3.1 I5c; manifest
-``tree_correlations``) instead of generating the tree artifact in the
+<row>.json. The campaign's rule 4 reads it on native-input rows with catani
+"tree" (manifest ``tree_correlations``; the native executor forms the
+prediction itself only on catani "native" rows, ``NATIVE_CATANI``, M-FINAL
+MF-8G-3) instead of generating the tree artifact in the
 nightly tier (g g > g g g g: 968 s and 11 GB), and checks the fixture's
 momenta against the reference point and its Born against ours (1e-24).
 """
