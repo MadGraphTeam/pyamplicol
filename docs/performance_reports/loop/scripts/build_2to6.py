@@ -29,6 +29,15 @@ BATCHES = ("16", "128")
 NAMES = {21: "g", 2: "u", -2: "u~", 1: "d", -1: "d~"}
 
 
+# Steps stopped on purpose (--not-run RUN/STEP=REASON): (run directory name, step) -> reason. A stopped step's
+# partial record (no verdict) is ignored and the item is reported as not run with its reason.
+NOT_RUN: dict[tuple[str, str], str] = {}
+
+
+def _not_run(run: Path, step: str) -> str | None:
+    return NOT_RUN.get((run.name, step))
+
+
 def _read(path: Path):
     return json.loads(path.read_text()) if path.exists() else None
 
@@ -104,6 +113,8 @@ def _timing(run: Path, t: str, b: str) -> dict | None:
     rec = _read(run / f"time-{t}-b{b}.json")
     if rec is None or b not in rec.get("batches", {}):
         st = _status(run, f"time-{t}-b{b}")
+        if (why := _not_run(run, f"time-{t}-b{b}")) is not None:
+            return {"status": "not run", "why": why, "step": st}
         return None if st is None else {"status": "not measured", "step": st}
     s = rec["batches"][b]
     log = run / f"time-{t}-b{b}.log"
@@ -251,13 +262,17 @@ def _checks(run: Path, t: str, acc: str, gluon_row: bool) -> dict:
         }
     wards = []
     running = []
+    stopped = {
+        name: why
+        for name in (f"store-ward-{t}", f"ward-{t}", f"ward-{t}-dd")
+        if (why := _not_run(run, name)) is not None
+    }
     for name in (f"ward-{t}", f"ward-{t}-dd"):
         w = _read(run / f"{name}.json")
         if w is not None and "passed" in w:
             wards.append((name, w))
-        elif (
-            w is not None
-        ):  # rewritten after every stage: no verdict yet = still running
+        elif w is not None and name not in stopped:
+            # rewritten after every stage: no verdict yet = still running
             running.append(name)
     if running:
         out["ward"] = {
@@ -327,6 +342,16 @@ def _checks(run: Path, t: str, acc: str, gluon_row: bool) -> dict:
             "a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the "
             "double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
             "steps": {name: _status(run, name) for name, _ in wards},
+            "not_run": stopped,
+        }
+    elif stopped:
+        out["ward"] = {
+            "status": "not run",
+            "why": "; ".join(
+                f"{', '.join(k for k, v in stopped.items() if v == why)}: {why}"
+                for why in dict.fromkeys(stopped.values())
+            ),
+            "not_run": stopped,
         }
     elif (run / f"store-ward-{t}.status.json").exists() or (
         run / f"ward-{t}.status.json"
@@ -411,6 +436,8 @@ def not_obtained(d: dict) -> list[str]:
             e = r["evaluations"].get(b)
             if e is None:
                 out.append(f"{label}: timing B = {b} not run")
+            elif e.get("status") == "not run":
+                out.append(f"{label}: timing B = {b} not run ({e['why']})")
             elif e.get("status") != "measured":
                 out.append(
                     f"{label}: timing B = {b} not measured ({(e.get('step') or {}).get('reason')})"
@@ -446,6 +473,9 @@ def not_obtained(d: dict) -> list[str]:
                 f"{label}: binary64 E above 1e-5 at points {st['points_above_1e-5']} (a rescue case, not a failure)"
             )
         w = c.get("ward", {})
+        if w.get("status") in ("done", "not asserted"):
+            for step, why in (w.get("not_run") or {}).items():
+                out.append(f"{label}: {step} not run ({why})")
         if w.get("status") == "done" and w.get("recorded_not_asserted"):
             out.append(
                 f"{label}: Ward recorded but not asserted at points {w['recorded_not_asserted']} (E beyond 1e-9)"
@@ -524,7 +554,7 @@ def build(runs: Path, art: Path, processes: Path, keys=KEYS) -> dict:
             "collector; indicative (shared host)",
         },
         "stop": {
-            "text": "lifted by the coordinator for mf-2to6 (slice-status DECISIONS 2026-11-04)",
+            "text": "lifted by the coordinator for mf-2to6 (slice-status DECISIONS 2026-11-04 ~08:35 UTC)",
             "source": "workspace/tmp/STOP-8LEG",
         },
         "units": {
@@ -702,7 +732,7 @@ def markdown(d: dict, notes: str = "") -> str:
                 )
             else:
                 out.append(
-                    f"| eval B = {b} | {e.get('status')} ({(e.get('step') or {}).get('reason')}) | |"
+                    f"| eval B = {b} | {e.get('status')} ({e.get('why') or (e.get('step') or {}).get('reason')}) | |"
                 )
         out.append("")
         c = r["checks"]
@@ -757,6 +787,8 @@ def markdown(d: dict, notes: str = "") -> str:
                         f"(virtual/scale finite, 1/eps, 1/eps^2; Born/scale) | "
                         f"{', '.join(_e(v) for v in x['virtual_over_scale'])}; {_e(x['born_over_scale'])}{est} | {verdict} |"
                     )
+                for step, why in (w.get("not_run") or {}).items():
+                    out.append(f"| Ward {step} | not run ({why}) | - |")
                 if w["status"] == "not asserted":
                     out.append(f"| Ward verdict | {w['why']} | - |")
             else:
@@ -788,6 +820,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("processes", type=Path)
     parser.add_argument("--out", type=Path)
     parser.add_argument(
+        "--not-run",
+        action="append",
+        default=[],
+        metavar="RUN/STEP=REASON",
+        help="a step stopped on purpose (e.g. gg_gggggg-fc/time-fc-b128=...), repeatable",
+    )
+    parser.add_argument(
         "--notes",
         type=Path,
         help="md mode: a markdown file inserted after the summary (findings)",
@@ -799,7 +838,12 @@ def main(argv: list[str] | None = None) -> int:
         help="rows (default: the three 2->6 rows)",
     )
     o = parser.parse_args(argv)
+    for item in o.not_run:
+        where, why = item.split("=", 1)
+        run, step = where.split("/", 1)
+        NOT_RUN[(run, step)] = why
     d = build(o.runs, o.art, o.processes, tuple(o.keys))
+    d["not_run_on_purpose"] = {f"{r}/{st}": why for (r, st), why in NOT_RUN.items()}
     d["not_obtained"] = not_obtained(d)
     text = (
         json.dumps(d, indent=1, sort_keys=False) + "\n"

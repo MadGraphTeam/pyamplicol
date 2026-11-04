@@ -21,7 +21,7 @@
   "protocol": "timing: binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up 16 points excluded, one block of B points, setup heap frozen out of the cyclic collector; indicative (shared host)"
  },
  "stop": {
-  "text": "lifted by the coordinator for mf-2to6 (slice-status DECISIONS 2026-11-04)",
+  "text": "lifted by the coordinator for mf-2to6 (slice-status DECISIONS 2026-11-04 ~08:35 UTC)",
   "source": "workspace/tmp/STOP-8LEG"
  },
  "units": {
@@ -407,17 +407,111 @@
      }
     },
     "ward": {
-     "status": "in progress",
-     "why": "ward-lc running",
-     "step": {
-      "start": "2026-11-04T16:26:28Z",
-      "end": null,
-      "elapsed_s": 603,
-      "peak_rss_gb": 26.82,
-      "gate_wait_s": 11480,
-      "min_available_gb": 235.2,
-      "reason": null,
-      "attempts": 1
+     "status": "not asserted",
+     "why": "every row beyond the binary64 scope (E > 1e-9): recorded, not asserted",
+     "passed": false,
+     "asserted": [],
+     "legs": [
+      1,
+      5,
+      8
+     ],
+     "max_virtual_ratio_finite_single_double": [
+      2.6218517796041292e-09,
+      8.19836251865303e-10,
+      6.82820639047077e-14
+     ],
+     "max_born_ratio": 5.742345717481217e-31,
+     "double_double_virtual_ratio": null,
+     "binary64_within_estimate": true,
+     "rows": [
+      {
+       "point": 3,
+       "carrier": "double",
+       "asserted": false,
+       "passed": null,
+       "legs": [
+        1,
+        5,
+        8
+       ],
+       "virtual_over_scale": [
+        2.6218517796041292e-09,
+        8.19836251865303e-10,
+        5.24071189124943e-15
+       ],
+       "born_over_scale": 5.742345717481217e-31,
+       "estimate_over_scale": [
+        3.687430349767693e-08,
+        1.1439422827038413e-08,
+        2.3251224949214e-12
+       ]
+      },
+      {
+       "point": 10,
+       "carrier": "double",
+       "asserted": false,
+       "passed": null,
+       "legs": [
+        1,
+        5,
+        8
+       ],
+       "virtual_over_scale": [
+        2.746259613445131e-10,
+        1.1763512123341617e-10,
+        4.730246104139199e-15
+       ],
+       "born_over_scale": 9.943667396918508e-32,
+       "estimate_over_scale": [
+        5.347479225431831e-09,
+        1.8326374925858081e-09,
+        4.594640294707308e-13
+       ]
+      },
+      {
+       "point": 11,
+       "carrier": "double",
+       "asserted": false,
+       "passed": null,
+       "legs": [
+        1,
+        5,
+        8
+       ],
+       "virtual_over_scale": [
+        8.573629151590981e-10,
+        1.905098326746478e-10,
+        6.82820639047077e-14
+       ],
+       "born_over_scale": 6.576320150030534e-32,
+       "estimate_over_scale": [
+        7.771945538045049e-08,
+        2.0849471971013727e-08,
+        7.043921758624339e-12
+       ]
+      }
+     ],
+     "recorded_not_asserted": [
+      3,
+      10,
+      11
+     ],
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
+     "steps": {
+      "ward-lc": {
+       "start": "2026-11-04T16:26:28Z",
+       "end": "2026-11-04T16:46:49Z",
+       "elapsed_s": 1221,
+       "peak_rss_gb": 29.31,
+       "gate_wait_s": 11480,
+       "min_available_gb": 226.4,
+       "reason": "rc 1",
+       "attempts": 1
+      }
+     },
+     "not_run": {
+      "ward-lc-dd": "USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator)"
      }
     },
     "ngluon": {
@@ -501,6 +595,7 @@
      "store-ward-lc",
      "time-lc-b128",
      "time-lc-b16",
+     "ward-lc-dd",
      "ward-lc"
     ]
    }
@@ -706,11 +801,12 @@
      "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
     },
     "128": {
-     "status": "not measured",
+     "status": "not run",
+     "why": "USER 2026-11-04 ~17:48: 8-gluon B = 128 skipped, B = 16 measured (stopped by the coordinator in its timed block)",
      "step": {
       "start": "2026-11-04T12:10:24Z",
       "end": null,
-      "elapsed_s": 15904,
+      "elapsed_s": 20100,
       "peak_rss_gb": 36.05,
       "gate_wait_s": 7328,
       "min_available_gb": 180.9,
@@ -854,17 +950,12 @@
      }
     },
     "ward": {
-     "status": "not obtained",
-     "why": "Ward step not finished",
-     "step": {
-      "start": "2026-11-04T16:26:27Z",
-      "end": null,
-      "elapsed_s": 603,
-      "peak_rss_gb": 41.42,
-      "gate_wait_s": 22692,
-      "min_available_gb": 236.8,
-      "reason": null,
-      "attempts": 1
+     "status": "not run",
+     "why": "store-ward-fc, ward-fc, ward-fc-dd: USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator)",
+     "not_run": {
+      "store-ward-fc": "USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator)",
+      "ward-fc": "USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator)",
+      "ward-fc-dd": "USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator)"
      }
     }
    },
@@ -1238,7 +1329,22 @@
     },
     "ward": {
      "status": "done",
+     "why": null,
      "passed": true,
+     "asserted": [
+      [
+       2,
+       "double"
+      ],
+      [
+       6,
+       "double"
+      ],
+      [
+       10,
+       "double"
+      ]
+     ],
      "legs": [
       3,
       6,
@@ -1250,6 +1356,8 @@
       1.963170923743165e-14
      ],
      "max_born_ratio": 1.5615372994885977e-18,
+     "double_double_virtual_ratio": null,
+     "binary64_within_estimate": true,
      "rows": [
       {
        "point": 2,
@@ -1266,7 +1374,12 @@
         1.0956866101744848e-13,
         6.628509463321619e-15
        ],
-       "born_over_scale": 1.3892328184255874e-18
+       "born_over_scale": 1.3892328184255874e-18,
+       "estimate_over_scale": [
+        9.961869254197309e-12,
+        3.4138601520061503e-12,
+        2.152606708092861e-13
+       ]
       },
       {
        "point": 6,
@@ -1283,7 +1396,12 @@
         1.2859981163280207e-12,
         1.963170923743165e-14
        ],
-       "born_over_scale": 1.5615372994885977e-18
+       "born_over_scale": 1.5615372994885977e-18,
+       "estimate_over_scale": [
+        1.3042312458979905e-10,
+        1.2490412488105247e-11,
+        1.8097423379444366e-12
+       ]
       },
       {
        "point": 10,
@@ -1300,11 +1418,16 @@
         5.587114193843803e-13,
         9.972880287698676e-15
        ],
-       "born_over_scale": 7.767838981915283e-19
+       "born_over_scale": 7.767838981915283e-19,
+       "estimate_over_scale": [
+        1.3282341853170393e-10,
+        2.7078176434689392e-11,
+        2.9693809348590144e-12
+       ]
       }
      ],
      "recorded_not_asserted": [],
-     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted",
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
      "steps": {
       "ward-lc": {
        "start": "2026-11-04T15:31:21Z",
@@ -1316,7 +1439,8 @@
        "reason": "ok",
        "attempts": 1
       }
-     }
+     },
+     "not_run": {}
     }
    },
    "engine": {
@@ -1415,48 +1539,48 @@
    },
    "evaluation": {
     "status": "measured",
-    "B": 16,
+    "B": 128,
     "lanes": 16,
     "threads": 1,
-    "host_core": 2,
+    "host_core": 23,
     "warm_up": {
      "points": 16,
-     "s": 1266.866457652999,
+     "s": 1100.0343621668871,
      "note": "includes lazy compilation"
     },
     "timed": {
      "blocks": 1,
-     "points_per_block": 16,
-     "points": 16
+     "points_per_block": 128,
+     "points": 128
     },
-    "s_per_point": 65.02810013842827,
+    "s_per_point": 62.130819162101034,
     "stages_s_per_point": {
-     "assembly": 0.06954021859564818,
-     "dressing": 20.179856057812497,
-     "factors": 0.12786341162500003,
-     "input conversion": 6.889218639116734e-05,
-     "native trees": 7.8399836759375,
-     "other": 0.3960653604586071,
-     "python point parameters": 6.533775012940168e-05,
-     "reduction": 6.654119032812501,
-     "reduction: masters": 0.9401547728750002,
-     "reduction: masters (oneloopmaster)": 0.0071405765,
-     "scatter": 0.09363643081249999,
-     "seeds": 29.6669017204375
+     "assembly": 0.05408850844469271,
+     "dressing": 20.93416276455469,
+     "factors": 0.13558623552343738,
+     "input conversion": 4.255814019415993e-05,
+     "native trees": 7.037990269210938,
+     "other": 0.3725831589928035,
+     "python point parameters": 4.761582022183575e-05,
+     "reduction": 6.559670983445301,
+     "reduction: masters": 0.9511352501093749,
+     "reduction: masters (oneloopmaster)": 0.009162766828124997,
+     "scatter": 0.10568569539062513,
+     "seeds": 26.930961372578125
     },
     "load": {
-     "seconds": 3.8530188689474016,
+     "seconds": 4.279983813175932,
      "peak_gib": 1.663
     },
-    "peak_gib": 30.684,
+    "peak_gib": 31.704,
     "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
     "step": {
-     "start": "2026-11-04T14:57:27Z",
-     "end": "2026-11-04T15:36:11Z",
-     "elapsed_s": 2324,
-     "peak_rss_gb": 32.85,
-     "gate_wait_s": 1606,
-     "min_available_gb": 277.6,
+     "start": "2026-11-04T14:57:28Z",
+     "end": "2026-11-04T17:28:39Z",
+     "elapsed_s": 9072,
+     "peak_rss_gb": 33.9,
+     "gate_wait_s": 1607,
+     "min_available_gb": 178.2,
      "reason": "ok",
      "attempts": 1
     },
@@ -1535,21 +1659,68 @@
      "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
     },
     "128": {
-     "status": "not measured",
+     "status": "measured",
+     "B": 128,
+     "lanes": 16,
+     "threads": 1,
+     "host_core": 23,
+     "warm_up": {
+      "points": 16,
+      "s": 1100.0343621668871,
+      "note": "includes lazy compilation"
+     },
+     "timed": {
+      "blocks": 1,
+      "points_per_block": 128,
+      "points": 128
+     },
+     "s_per_point": 62.130819162101034,
+     "stages_s_per_point": {
+      "assembly": 0.05408850844469271,
+      "dressing": 20.93416276455469,
+      "factors": 0.13558623552343738,
+      "input conversion": 4.255814019415993e-05,
+      "native trees": 7.037990269210938,
+      "other": 0.3725831589928035,
+      "python point parameters": 4.761582022183575e-05,
+      "reduction": 6.559670983445301,
+      "reduction: masters": 0.9511352501093749,
+      "reduction: masters (oneloopmaster)": 0.009162766828124997,
+      "scatter": 0.10568569539062513,
+      "seeds": 26.930961372578125
+     },
+     "load": {
+      "seconds": 4.279983813175932,
+      "peak_gib": 1.663
+     },
+     "peak_gib": 31.704,
+     "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
      "step": {
       "start": "2026-11-04T14:57:28Z",
-      "end": null,
-      "elapsed_s": 6003,
+      "end": "2026-11-04T17:28:39Z",
+      "elapsed_s": 9072,
       "peak_rss_gb": 33.9,
       "gate_wait_s": 1607,
-      "min_available_gb": 236.6,
-      "reason": null,
+      "min_available_gb": 178.2,
+      "reason": "ok",
       "attempts": 1
-     }
+     },
+     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "native": {
+      "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+      "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+      "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
+      }
+     },
+     "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
     }
    },
    "table1": {
-    "eval_peak_gib": 30.684,
+    "eval_peak_gib": 31.704,
     "gate": "none: no provider at 2->6 (speed reported without a gate)"
    },
    "checks": {
@@ -1617,13 +1788,21 @@
      "count": 2,
      "of": 16,
      "max_level0_estimate": 0.0008729525760277219,
-     "double_double": {},
-     "double_double_seconds": null
+     "double_double": {
+      "4": {
+       "estimate": 6.82127912380095e-21,
+       "met": true,
+       "finite": [
+        -2.004619425684491e-12
+       ]
+      }
+     },
+     "double_double_seconds": 2279.87
     },
     "stored_checks": {
-     "status": "in progress",
-     "why": "stages so far: ['load', 'executor', 'checked', 'dd', 'rescue level 0']",
-     "passed": null,
+     "status": "done",
+     "why": null,
+     "passed": true,
      "stages": {
       "load": {
        "seconds": 4.24,
@@ -1644,32 +1823,139 @@
       "rescue level 0": {
        "seconds": 574.06,
        "peak_gib": 38.89
+      },
+      "rescue double-double": {
+       "seconds": 2279.87,
+       "peak_gib": 38.89
       }
      },
-     "max_rss_gib": null,
+     "max_rss_gib": 38.89,
      "step": {
       "start": "2026-11-04T15:31:18Z",
-      "end": null,
-      "elapsed_s": 3902,
+      "end": "2026-11-04T16:41:43Z",
+      "elapsed_s": 4225,
       "peak_rss_gb": 42.04,
       "gate_wait_s": 3637,
-      "min_available_gb": 236.6,
-      "reason": null,
+      "min_available_gb": 226.5,
+      "reason": "ok",
       "attempts": 1
      }
     },
     "ward": {
-     "status": "not obtained",
-     "why": "Ward step not finished",
-     "step": {
-      "start": "2026-11-04T13:23:23Z",
-      "end": "2026-11-04T14:47:08Z",
-      "elapsed_s": 5026,
-      "peak_rss_gb": 104.17,
-      "gate_wait_s": 11707,
-      "min_available_gb": 179.5,
-      "reason": "ok",
-      "attempts": 1
+     "status": "done",
+     "why": null,
+     "passed": true,
+     "asserted": [
+      [
+       2,
+       "double"
+      ],
+      [
+       6,
+       "double"
+      ],
+      [
+       10,
+       "double"
+      ]
+     ],
+     "legs": [
+      3,
+      6,
+      8
+     ],
+     "max_virtual_ratio_finite_single_double": [
+      2.113028867236775e-11,
+      3.292797087085744e-12,
+      2.697655925586055e-13
+     ],
+     "max_born_ratio": 1.8185969784317228e-18,
+     "double_double_virtual_ratio": null,
+     "binary64_within_estimate": true,
+     "rows": [
+      {
+       "point": 2,
+       "carrier": "double",
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        3,
+        6,
+        8
+       ],
+       "virtual_over_scale": [
+        2.7707939373995896e-12,
+        3.030446320832667e-13,
+        7.981121443635676e-15
+       ],
+       "born_over_scale": 1.8185969784317228e-18,
+       "estimate_over_scale": [
+        7.258313133685501e-11,
+        2.5460781313216376e-11,
+        9.778887147239123e-13
+       ]
+      },
+      {
+       "point": 6,
+       "carrier": "double",
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        3,
+        6,
+        8
+       ],
+       "virtual_over_scale": [
+        2.113028867236775e-11,
+        2.4920576536150196e-12,
+        1.3897834560070904e-13
+       ],
+       "born_over_scale": 1.1726290405709204e-18,
+       "estimate_over_scale": [
+        8.223983127158332e-10,
+        1.1744398171926896e-10,
+        1.1909688686346358e-11
+       ]
+      },
+      {
+       "point": 10,
+       "carrier": "double",
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        3,
+        6,
+        8
+       ],
+       "virtual_over_scale": [
+        1.4545529173712132e-11,
+        3.292797087085744e-12,
+        2.697655925586055e-13
+       ],
+       "born_over_scale": 9.855182730081337e-19,
+       "estimate_over_scale": [
+        4.778112157384337e-10,
+        1.0588744159196987e-10,
+        2.2142617944081198e-11
+       ]
+      }
+     ],
+     "recorded_not_asserted": [],
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
+     "steps": {
+      "ward-fc": {
+       "start": "2026-11-04T17:09:08Z",
+       "end": "2026-11-04T17:20:18Z",
+       "elapsed_s": 670,
+       "peak_rss_gb": 37.27,
+       "gate_wait_s": 1601,
+       "min_available_gb": 254.1,
+       "reason": "ok",
+       "attempts": 1
+      }
+     },
+     "not_run": {
+      "ward-fc-dd": "USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator)"
      }
     }
    },
@@ -1682,7 +1968,10 @@
      "checks-fc",
      "store-fc",
      "store-ward-fc",
-     "time-fc-b16"
+     "time-fc-b128",
+     "time-fc-b16",
+     "ward-fc-dd",
+     "ward-fc"
     ]
    }
   },
@@ -2045,7 +2334,22 @@
     },
     "ward": {
      "status": "done",
+     "why": null,
      "passed": true,
+     "asserted": [
+      [
+       0,
+       "double"
+      ],
+      [
+       11,
+       "double"
+      ],
+      [
+       13,
+       "double"
+      ]
+     ],
      "legs": [
       5,
       7,
@@ -2057,6 +2361,8 @@
       2.9899452158797853e-14
      ],
      "max_born_ratio": 2.718782424993183e-17,
+     "double_double_virtual_ratio": null,
+     "binary64_within_estimate": true,
      "rows": [
       {
        "point": 0,
@@ -2073,7 +2379,12 @@
         8.601431936162169e-13,
         6.831004255669174e-16
        ],
-       "born_over_scale": 4.107220026282227e-18
+       "born_over_scale": 4.107220026282227e-18,
+       "estimate_over_scale": [
+        1.578762436635817e-10,
+        4.739648537693434e-11,
+        2.0444277864550956e-13
+       ]
       },
       {
        "point": 11,
@@ -2090,7 +2401,12 @@
         6.983529452359597e-14,
         2.9899452158797853e-14
        ],
-       "born_over_scale": 4.539400800497767e-19
+       "born_over_scale": 4.539400800497767e-19,
+       "estimate_over_scale": [
+        1.7348566093431743e-11,
+        2.6520599643288623e-12,
+        1.2547914060514722e-12
+       ]
       },
       {
        "point": 13,
@@ -2107,11 +2423,16 @@
         5.225750703885346e-13,
         4.693240860680604e-15
        ],
-       "born_over_scale": 2.718782424993183e-17
+       "born_over_scale": 2.718782424993183e-17,
+       "estimate_over_scale": [
+        5.82439897651664e-11,
+        7.99255024859941e-12,
+        1.3016128420747335e-12
+       ]
       }
      ],
      "recorded_not_asserted": [],
-     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted",
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
      "steps": {
       "ward-lc": {
        "start": "2026-11-04T13:20:36Z",
@@ -2123,7 +2444,8 @@
        "reason": "ok",
        "attempts": 1
       }
-     }
+     },
+     "not_run": {}
     }
    },
    "engine": {
@@ -2528,7 +2850,26 @@
     },
     "ward": {
      "status": "done",
+     "why": null,
      "passed": true,
+     "asserted": [
+      [
+       5,
+       "double"
+      ],
+      [
+       11,
+       "double"
+      ],
+      [
+       13,
+       "double"
+      ],
+      [
+       5,
+       "double-double"
+      ]
+     ],
      "legs": [
       5,
       7,
@@ -2540,6 +2881,12 @@
       7.552065638151497e-13
      ],
      "max_born_ratio": 6.7460803704934965e-18,
+     "double_double_virtual_ratio": [
+      1.1061018012306714e-28,
+      2.1978661956869389e-29,
+      8.877837051075175e-32
+     ],
+     "binary64_within_estimate": true,
      "rows": [
       {
        "point": 5,
@@ -2556,7 +2903,12 @@
         6.015786793480414e-13,
         1.4607803295628912e-15
        ],
-       "born_over_scale": 1.4991393865184285e-18
+       "born_over_scale": 1.4991393865184285e-18,
+       "estimate_over_scale": [
+        6.764697362972381e-11,
+        1.4891816247156143e-11,
+        2.981719189601353e-13
+       ]
       },
       {
        "point": 11,
@@ -2573,7 +2925,12 @@
         3.468348453327236e-13,
         7.552065638151497e-13
        ],
-       "born_over_scale": 1.8673451531053374e-18
+       "born_over_scale": 1.8673451531053374e-18,
+       "estimate_over_scale": [
+        1.1490491270404314e-10,
+        2.4271600358612358e-11,
+        1.93864435111409e-11
+       ]
       },
       {
        "point": 13,
@@ -2590,7 +2947,12 @@
         1.5192568678683112e-12,
         6.315533144877393e-14
        ],
-       "born_over_scale": 6.7460803704934965e-18
+       "born_over_scale": 6.7460803704934965e-18,
+       "estimate_over_scale": [
+        2.1262665313357844e-10,
+        6.729335270601917e-11,
+        2.11769425564375e-11
+       ]
       },
       {
        "point": 5,
@@ -2607,11 +2969,12 @@
         2.1978661956869389e-29,
         8.877837051075175e-32
        ],
-       "born_over_scale": 3.931608263163583e-34
+       "born_over_scale": 3.931608263163583e-34,
+       "estimate_over_scale": null
       }
      ],
      "recorded_not_asserted": [],
-     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted",
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
      "steps": {
       "ward-fc": {
        "start": "2026-11-04T13:59:00Z",
@@ -2633,7 +2996,8 @@
        "reason": "ok",
        "attempts": 1
       }
-     }
+     },
+     "not_run": {}
     }
    },
    "engine": {
@@ -2653,16 +3017,23 @@
    }
   }
  ],
+ "not_run_on_purpose": {
+  "gg_gggggg-lc/ward-lc-dd": "USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator)",
+  "gg_gggggg-fc/store-ward-fc": "USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator)",
+  "gg_gggggg-fc/ward-fc": "USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator)",
+  "gg_gggggg-fc/ward-fc-dd": "USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator)",
+  "uux_gggggg-fc/ward-fc-dd": "USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator)",
+  "gg_gggggg-fc/time-fc-b128": "USER 2026-11-04 ~17:48: 8-gluon B = 128 skipped, B = 16 measured (stopped by the coordinator in its timed block)"
+ },
  "not_obtained": [
-  "g g > g g g g g g (LC, N_f = 5, no top): ward in progress (ward-lc running)",
+  "g g > g g g g g g (LC, N_f = 5, no top): ward not asserted (every row beyond the binary64 scope (E > 1e-9): recorded, not asserted)",
   "g g > g g g g g g (LC, N_f = 5, no top): binary64 E above 1e-5 at points [0, 1] (a rescue case, not a failure)",
-  "g g > g g g g g g (FC, N_f = 5, no top): timing B = 128 not measured (None)",
-  "g g > g g g g g g (FC, N_f = 5, no top): ward not obtained (Ward step not finished)",
+  "g g > g g g g g g (LC, N_f = 5, no top): ward-lc-dd not run (USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator))",
+  "g g > g g g g g g (FC, N_f = 5, no top): timing B = 128 not run (USER 2026-11-04 ~17:48: 8-gluon B = 128 skipped, B = 16 measured (stopped by the coordinator in its timed block))",
+  "g g > g g g g g g (FC, N_f = 5, no top): ward not run (store-ward-fc, ward-fc, ward-fc-dd: USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator))",
   "g g > g g g g g g (FC, N_f = 5, no top): binary64 E above 1e-5 at points [0, 1] (a rescue case, not a failure)",
   "u u~ > g g g g g g (LC, N_f = 5, no top): LC single pole unchecked (the native Catani operator is full colour only and NGluon serves only all-gluon rows); the LC double pole is checked",
-  "u u~ > g g g g g g (FC, N_f = 5, no top): timing B = 128 not measured (None)",
-  "u u~ > g g g g g g (FC, N_f = 5, no top): stored checks not obtained (stages so far: ['load', 'executor', 'checked', 'dd', 'rescue level 0'])",
-  "u u~ > g g g g g g (FC, N_f = 5, no top): ward not obtained (Ward step not finished)",
+  "u u~ > g g g g g g (FC, N_f = 5, no top): ward-fc-dd not run (USER 2026-11-04 ~17:35: no further Ward / Catani / DD check job, enough evidence (stopped by the coordinator))",
   "u u~ > u u~ g g g g (LC, N_f = 5, no top): LC single pole unchecked (the native Catani operator is full colour only and NGluon serves only all-gluon rows); the LC double pole is checked"
  ]
 }
