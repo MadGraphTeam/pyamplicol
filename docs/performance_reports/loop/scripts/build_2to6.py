@@ -283,24 +283,49 @@ def _checks(run: Path, t: str, acc: str, gluon_row: bool) -> dict:
                             for k in range(3)
                         ],
                         "born_over_scale": max(abs(r["born"]) for r in parts),
+                        "estimate_over_scale": [
+                            max(r["estimate"][k] for r in parts) for k in range(3)
+                        ]
+                        if all(r.get("estimate") for r in parts)
+                        else None,
                     }
                 )
         asserted = [r for r in rows if r["asserted"]]
-        b64 = [r for r in asserted if r["carrier"] == "double"]
+        b64 = [r for r in rows if r["carrier"] == "double"]
+        dd = [r for r in rows if r["carrier"] != "double"]
         out["ward"] = {
-            "status": "done",
+            "status": "done" if asserted else "not asserted",
+            "why": None
+            if asserted
+            else "every row beyond the binary64 scope (E > 1e-9): recorded, not asserted",
             "passed": bool(asserted) and all(r["passed"] for r in asserted),
+            "asserted": [[r["point"], r["carrier"]] for r in asserted],
             "legs": sorted(legs),
+            # binary64 rows, asserted or only recorded (an out-of-scope row stays below its estimate E)
             "max_virtual_ratio_finite_single_double": [
                 _max(r["virtual_over_scale"][k] for r in b64) for k in range(3)
             ]
             if b64
             else None,
             "max_born_ratio": _max(r["born_over_scale"] for r in b64),
+            "double_double_virtual_ratio": [
+                _max(r["virtual_over_scale"][k] for r in dd) for k in range(3)
+            ]
+            if dd
+            else None,
+            "binary64_within_estimate": all(
+                r["virtual_over_scale"][k] <= r["estimate_over_scale"][k]
+                for r in b64
+                if r["estimate_over_scale"]
+                for k in range(3)
+            )
+            if b64
+            else None,
             "rows": rows,
             "recorded_not_asserted": [r["point"] for r in rows if not r["asserted"]],
             "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); "
-            "a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted",
+            "a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted; at 8 legs the "
+            "double-double Ward (bound 1e-25 of the scale) runs at the Ward point of smallest level-0 E",
             "steps": {name: _status(run, name) for name, _ in wards},
         }
     elif (run / f"store-ward-{t}.status.json").exists() or (
@@ -421,7 +446,7 @@ def not_obtained(d: dict) -> list[str]:
                 f"{label}: binary64 E above 1e-5 at points {st['points_above_1e-5']} (a rescue case, not a failure)"
             )
         w = c.get("ward", {})
-        if w.get("recorded_not_asserted"):
+        if w.get("status") == "done" and w.get("recorded_not_asserted"):
             out.append(
                 f"{label}: Ward recorded but not asserted at points {w['recorded_not_asserted']} (E beyond 1e-9)"
             )
@@ -715,22 +740,27 @@ def markdown(d: dict, notes: str = "") -> str:
             )
         if "ward" in c:
             w = c["ward"]
-            if w["status"] == "done":
-                pts = sorted({(x["point"], x["carrier"]) for x in w["rows"]})
-                out.append(
-                    f"| Ward legs {w['legs']} at {pts} (virtual/scale finite, 1/eps, 1/eps^2; Born) | "
-                    f"{', '.join(_e(x) for x in (w['max_virtual_ratio_finite_single_double'] or []))}; {_e(w['max_born_ratio'])}"
-                    f"{'; recorded, not asserted: ' + str(w['recorded_not_asserted']) if w['recorded_not_asserted'] else ''} | "
-                    f"{'pass' if w['passed'] else 'FAIL'} |"
-                )
-                dd = [x for x in w["rows"] if x["carrier"] != "double"]
-                for x in dd:
-                    out.append(
-                        f"| Ward DD pt {x['point']} | {', '.join(_e(v) for v in x['virtual_over_scale'])}; {_e(x['born_over_scale'])} | "
-                        f"{'pass' if x['passed'] else 'FAIL'} |"
+            if w["status"] in ("done", "not asserted"):
+                for x in w["rows"]:
+                    verdict = (
+                        ("pass" if x["passed"] else "FAIL")
+                        if x["asserted"]
+                        else "recorded, not asserted (E > 1e-9)"
                     )
+                    est = (
+                        f" (E {', '.join(_e(v) for v in x['estimate_over_scale'])})"
+                        if x.get("estimate_over_scale")
+                        else ""
+                    )
+                    out.append(
+                        f"| Ward {'DD' if x['carrier'] != 'double' else 'binary64'} pt {x['point']}, legs {x['legs']} "
+                        f"(virtual/scale finite, 1/eps, 1/eps^2; Born/scale) | "
+                        f"{', '.join(_e(v) for v in x['virtual_over_scale'])}; {_e(x['born_over_scale'])}{est} | {verdict} |"
+                    )
+                if w["status"] == "not asserted":
+                    out.append(f"| Ward verdict | {w['why']} | - |")
             else:
-                out.append(f"| Ward | {w['status']} | - |")
+                out.append(f"| Ward | {w['status']} ({w.get('why')}) | - |")
         if "ngluon" in c:
             for name in ("ngluon", "ngluon-dd"):
                 if name in c["ngluon"]:
