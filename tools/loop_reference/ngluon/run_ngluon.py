@@ -292,22 +292,25 @@ def compare(ours: dict, theirs: dict, tolerance: float, estimates: float) -> dic
     rows, each Laurent coefficient within ``tolerance`` of pyAmpliCol's value
     plus ``estimates`` times its estimate E (over the Born); double-double
     against its ``dd`` rows within ``tolerance`` (the Born of the dd row, else
-    of the checked row)."""
+    of the checked row). An NGluon point without its pyAmpliCol row
+    (``unmatched``) fails the comparison."""
 
     dd = ours.get("precision") == "dd"
     checked = {row["index"]: row for row in theirs.get("checked", [])}
     reference = {row["index"]: row for row in theirs.get("dd", [])} if dd else checked
     out = []
+    unmatched = []
     worst = 0.0
     passed = True
     for row in ours["rows"]:
         other = reference.get(row["index"])
-        if other is None or "sectors" not in other:
+        born = None
+        if other is not None and "sectors" in other:
+            born = other.get("born", checked.get(row["index"], {}).get("born"))
+        if born is None:
+            unmatched.append(row["index"])
             continue
         ((sector, entry),) = other["sectors"].items()
-        born = other.get("born", checked.get(row["index"], {}).get("born"))
-        if born is None:
-            continue
         values = [v / born for v in entry["double_double" if dd else "virtual"]]
         estimate = None if dd else entry.get("estimate")
         errors, ok = [], True
@@ -340,7 +343,8 @@ def compare(ours: dict, theirs: dict, tolerance: float, estimates: float) -> dic
         "tolerance": tolerance,
         "estimates": 0 if dd else estimates,
         "rotation": ours.get("rotation"),
-        "passed": bool(out) and passed,
+        "unmatched": unmatched,
+        "passed": bool(out) and passed and not unmatched,
     }
 
 
