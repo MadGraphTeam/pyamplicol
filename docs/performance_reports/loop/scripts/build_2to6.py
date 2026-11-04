@@ -327,6 +327,99 @@ def _checks(run: Path, t: str, acc: str, gluon_row: bool) -> dict:
     return out
 
 
+def _row_engine(run: Path) -> dict | None:
+    """The engine commit and native build of every record of a row (store, checks, Ward, timing)."""
+    revisions, natives, records = set(), set(), []
+    for f in sorted(run.glob("*.json")):
+        if f.name.endswith(".status.json") or f.name.endswith("-compare.json"):
+            continue
+        rec = _read(f)
+        nat = rec.get("native") if isinstance(rec, dict) else None
+        if not isinstance(nat, dict) or "digest" not in nat:
+            continue
+        records.append(f.stem)
+        natives.add((nat.get("directory"), nat["digest"]))
+        revisions.add(rec.get("revision") or nat.get("source_revision"))
+    if not records:
+        return None
+    return {
+        "revision": sorted(revisions)[0] if len(revisions) == 1 else sorted(revisions),
+        "native_directory": sorted(natives)[0][0] if len(natives) == 1 else None,
+        "native_digest": sorted(natives)[0][1]
+        if len(natives) == 1
+        else sorted(natives),
+        "one_engine": len(revisions) == 1 and len(natives) == 1,
+        "records": records,
+    }
+
+
+EXPECTED = ("double_pole", "stability", "double_double", "rescue", "ward")
+
+
+def not_obtained(d: dict) -> list[str]:
+    """Every expected item of every row that failed, is missing or was not run (with the reason recorded)."""
+    out = []
+    for r in d["rows"]:
+        label = r["label"]
+        if r["generation"] is None:
+            out.append(f"{label}: not generated (no store record)")
+            continue
+        eng = r.get("engine") or {}
+        if eng and not eng.get("one_engine"):
+            out.append(
+                f"{label}: records on more than one engine: {eng['revision']} / {eng['native_digest']}"
+            )
+        for b in BATCHES:
+            e = r["evaluations"].get(b)
+            if e is None:
+                out.append(f"{label}: timing B = {b} not run")
+            elif e.get("status") != "measured":
+                out.append(
+                    f"{label}: timing B = {b} not measured ({(e.get('step') or {}).get('reason')})"
+                )
+        c = r["checks"]
+        sc = c.get("stored_checks", {})
+        if sc.get("status") != "done":
+            out.append(f"{label}: stored checks not obtained ({sc.get('why')})")
+        expected = list(EXPECTED)
+        if r["accuracy"] == "full":
+            expected.insert(1, "catani")
+        if r["accuracy"] == "lc" and r["all_gluon"]:
+            expected.append("ngluon")
+        for k in expected:
+            x = c.get(k)
+            if x is None:
+                if sc.get("status") == "done" or k in ("ward", "ngluon"):
+                    out.append(f"{label}: {k} not run")
+                continue
+            if x.get("status") != "done":
+                out.append(f"{label}: {k} {x.get('status')} ({x.get('why')})")
+                continue
+            ok = (
+                x.get("verdict") == "pass"
+                if k == "double_pole"
+                else x.get("passed", True)
+            )
+            if not ok:
+                out.append(f"{label}: {k} FAILED (see its table)")
+        st = c.get("stability", {})
+        if st.get("points_above_1e-5"):
+            out.append(
+                f"{label}: binary64 E above 1e-5 at points {st['points_above_1e-5']} (a rescue case, not a failure)"
+            )
+        w = c.get("ward", {})
+        if w.get("recorded_not_asserted"):
+            out.append(
+                f"{label}: Ward recorded but not asserted at points {w['recorded_not_asserted']} (E beyond 1e-9)"
+            )
+        if r["accuracy"] == "lc" and not r["all_gluon"]:
+            out.append(
+                f"{label}: LC single pole unchecked (the native Catani operator is full colour only and NGluon "
+                "serves only all-gluon rows); the LC double pole is checked"
+            )
+    return out
+
+
 def build(runs: Path, art: Path, processes: Path, keys=KEYS) -> dict:
     spec = {p["name"]: p for p in json.loads(processes.read_text())["processes"]}
     rows, engine = [], None
@@ -355,6 +448,7 @@ def build(runs: Path, art: Path, processes: Path, keys=KEYS) -> dict:
                     "label": f"{' '.join(NAMES[int(x)] for x in p['pdgs'][:2])} > "
                     f"{' '.join(NAMES[int(x)] for x in p['pdgs'][2:])} ({t.upper()}, N_f = 5, no top)",
                     "accuracy": acc,
+                    "all_gluon": gluon_row,
                     "particle_veto": p.get("particle_veto", []),
                     "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
                     "born_orders": p["born_orders"],
@@ -371,6 +465,7 @@ def build(runs: Path, art: Path, processes: Path, keys=KEYS) -> dict:
                         "gate": "none: no provider at 2->6 (speed reported without a gate)",
                     },
                     "checks": _checks(run, t, acc, gluon_row),
+                    "engine": _row_engine(run),
                 }
             )
     return {
@@ -480,16 +575,24 @@ def _verdict(c: dict) -> str:
     return "; ".join(out) or "-"
 
 
+def _engine(e: dict | None) -> str:
+    if not e:
+        return "-"
+    if not e["one_engine"]:
+        return f"MIXED {e['revision']} / {e['native_digest']}"
+    return f"`{e['revision'][:8]}` / `{e['native_digest'][:8]}`"
+
+
 def summary(d: dict) -> list[str]:
     out = [
         "| Row | generation (gen + export + store) / peak | artifact | load / resident peak "
-        "| s/pt B = 16 / peak | s/pt B = 128 / peak | checks |",
-        "|---|---|---|---|---|---|---|",
+        "| s/pt B = 16 / peak | s/pt B = 128 / peak | checks | engine / native |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for r in d["rows"]:
         g = r["generation"]
         if g is None:
-            out.append(f"| {r['label']} | not generated | | | | | |")
+            out.append(f"| {r['label']} | not generated | | | | | | |")
             continue
         st = g["stages"]
         gen = sum(st[k]["s"] for k in ("generate", "export", "store") if k in st)
@@ -504,7 +607,7 @@ def summary(d: dict) -> list[str]:
         out.append(
             f"| {r['label']} | {_t(gen)} / {g['peak_gib']:.1f} GiB | {(r['artifact'] or {}).get('gb')} GB "
             f"| {'-' if not load else _t(load['s']) + ' / ' + format(load['peak_gib'], '.1f') + ' GiB'} "
-            f"| {ev[0]} | {ev[1]} | {_verdict(r['checks'])} |"
+            f"| {ev[0]} | {ev[1]} | {_verdict(r['checks'])} | {_engine(r.get('engine'))} |"
         )
     return out
 
@@ -624,6 +727,12 @@ def markdown(d: dict) -> str:
                         f"{'pass' if k['passed'] else 'FAIL'} |"
                     )
         out.append("")
+    out.append("## What failed or could not run\n")
+    items = d.get("not_obtained")
+    if items is None:
+        items = not_obtained(d)
+    out.extend(f"- {x}" for x in items) if items else out.append("- nothing")
+    out.append("")
     return "\n".join(out)
 
 
@@ -642,6 +751,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     o = parser.parse_args(argv)
     d = build(o.runs, o.art, o.processes, tuple(o.keys))
+    d["not_obtained"] = not_obtained(d)
     text = (
         json.dumps(d, indent=1, sort_keys=False) + "\n"
         if o.mode == "json"
