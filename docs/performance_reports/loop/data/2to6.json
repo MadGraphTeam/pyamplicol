@@ -1,324 +1,525 @@
 {
- "schema": "pyamplicol-2to6-harvest/1",
- "status": "PRELIMINARY: harvested from existing records only (no new 8-leg run: STOP-8LEG); pre-optimisation engine; checks incomplete; runs stopped by the USER",
+ "schema": "pyamplicol-2to6/2",
+ "status": "M-FINAL 2->6 rows (mf-2to6): fresh generation, store, load and checks on one engine",
  "engine": {
-  "branch": "work/v2-bench-2to6",
-  "base": "15d4ef5a (milestone M-SM report head; engine pin 71e2041e)",
-  "harness_commits": {
-   "d5ed94c2": "processes.json rows gg_gggggg / uux_gggggg / uux_uuxgggg (particle_veto [6]) + frozen streams; at 2->6 the stream is RAMBO from its first point (no campaign point passes the 1/1000 cut)",
-   "8a062a52": "--rotation-samples/--rotations rotation timing block and --colour-contraction"
-  },
-  "engine_source_change_vs_base": "none (15d4ef5a..8a062a52 touches tools/loop_benchmark and its unit test only)",
-  "revisions_in_records": [
-   "8a062a5222d91ab0b12f130f8de3709361b6d554",
-   "d5ed94c26e87a82a6b2a6e20497f5977f6343327"
-  ],
+  "branch": "work/v2-mf-8g-3",
+  "base": "d24a01ae (slice: mf-8g-2b integrated) + mf-8g-3",
+  "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
   "native": {
-   "digest": "f8d77c97ebc8c6b845f043c2da3e3cf446a7558e7f85c80c35d267a15fbe5425",
-   "directory": "loop-native-v2-slice-71e2041e",
+   "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+   "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+   "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
    "profile": {
     "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
     "CARGO_PROFILE_RELEASE_LTO": "thin",
     "name": "release"
-   },
-   "source_revision": "71e2041effa7e11c4cb903094f994a784695e527"
+   }
   },
-  "native_digest_short": "f8d77c97",
-  "protocol": "binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up excluded, paired blocks, setup heap frozen out of the cyclic collector"
+  "native_digest_short": "2bae17f9",
+  "harness_commits": {},
+  "engine_source_change_vs_base": "mf-8g-3 (native Catani prediction from stored dipole orbits, stored_checks.py, NGluon driver)",
+  "protocol": "timing: binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up 16 points excluded, one block of B points, setup heap frozen out of the cyclic collector; indicative (shared host)"
  },
  "stop": {
-  "text": "8-leg (2->6) runs stopped by the USER (2026-11-01 ~23:00 UTC); coordinator lifts it by removing this file and writing a COORDINATOR line in slice-status DECISIONS. See DECISIONS ~23:15.",
+  "text": "lifted by the coordinator for mf-2to6 (slice-status DECISIONS 2026-11-04)",
   "source": "workspace/tmp/STOP-8LEG"
  },
  "units": {
   "s": "seconds wall",
-  "gib": "2^30 bytes (harness VmHWM / ru_maxrss)",
+  "gib": "2^30 bytes (VmHWM / ru_maxrss)",
   "gb": "1e9 bytes (watchdog process-group VmRSS samples)",
   "s_per_point": "seconds per phase-space point, one thread"
  },
  "lax_precision_threshold": 1e-05,
+ "global_caveats": [
+  "no external reference exists at 2->6: acceptance is internal (Ward, rotations, Catani poles, double pole, double-double, NGluon at LC)",
+  "timings are indicative: shared host (load 100-250 of 384 cores), one pinned thread, one block per B"
+ ],
+ "row_caveats": {},
  "rows": [
   {
    "key": "gg_gggggg-lc",
-   "process": "g g > g g g g g g",
-   "label": "g g > 6g (LC, N_f = 5, no top)",
+   "process": "G G > G G G G G G",
+   "label": "g g > g g g g g g (LC, N_f = 5, no top)",
    "accuracy": "lc",
+   "all_gluon": true,
    "particle_veto": [
     6
    ],
-   "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
    "born_orders": {
     "QCD": 6,
     "QED": 0
    },
    "correction": "QCD",
-   "revisions": {
-    "generation": "d5ed94c26e87a82a6b2a6e20497f5977f6343327",
-    "timing": "d5ed94c26e87a82a6b2a6e20497f5977f6343327"
-   },
    "lanes": 16,
    "structure": {
     "families": 47348,
     "b_trie_nodes": 1381065
    },
-   "evaluation_B_reason": "projected evaluation peak > 150 GB at any B (the peak does not depend on B): B = 16 (smallest; bounds the time); likely to hit the RSS cap (a result)",
    "generation": {
     "stages": {
      "model": {
-      "s": 4.321934676961973,
-      "peak_gib": 0.368
+      "s": 2.7152699711732566,
+      "peak_gib": 0.36
      },
      "generate": {
-      "s": 4629.892367278924,
-      "peak_gib": 91.782
+      "s": 1428.1291047160048,
+      "peak_gib": 51.395
      },
      "export": {
-      "s": 9062.701381225139,
-      "peak_gib": 217.2,
-      "plan_mb": 1869.625
+      "s": 1340.815601818962,
+      "peak_gib": 63.893,
+      "plan_mb": 327.486
      },
      "store": {
-      "s": 2857.895605367841,
-      "peak_gib": 228.558
+      "s": 1289.9492964819074,
+      "peak_gib": 57.997
      }
     },
-    "stage_sum_s": 16554.8,
-    "step_wall_s": 16961.5,
-    "step_wall_h": 4.71,
-    "peak_gib": 228.558,
-    "peak_note": "max of the per-stage VmHWM peaks (harness resets the high-water mark per stage)",
+    "stage_sum_s": 4061.6,
+    "peak_gib": 63.893,
+    "peak_note": "max of the per-stage VmHWM peaks (the harness resets the high-water mark per stage)",
     "step": {
-     "start": "2026-10-31T15:02:10Z",
-     "end": "2026-10-31T19:44:51Z",
-     "elapsed_s": 16961.5,
-     "peak_rss_gb": 153.93,
-     "rc": 0,
+     "start": "2026-11-04T08:44:17Z",
+     "end": "2026-11-04T09:53:39Z",
+     "elapsed_s": 4162,
+     "peak_rss_gb": 68.35,
+     "gate_wait_s": 600,
+     "min_available_gb": 110.5,
      "reason": "ok",
-     "core": 1,
-     "peak_rss_gib": 143.36,
-     "running": false,
-     "source": "workspace/tmp/bench-2to6/logs/store-gg_gggggg-lc.status.json"
+     "attempts": 1
     },
-    "revision": "d5ed94c26e87a82a6b2a6e20497f5977f6343327",
+    "threads": null,
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
     "dirty": false,
-    "lanes": 16,
-    "structure": {
-     "families": 47348,
-     "b_trie_nodes": 1381065
-    },
-    "step_peak_caveat": "the watchdog's step peak (153.93 GB) under-reports: the watchdog was SIGSTOPped from 2026-10-31T17:20:28Z to 2026-10-31T19:44:56Z (logs/guard-store-gg-lc.log); the guard's 5-min samples peak at 225 GiB and the harness store-stage VmHWM is 228.558 GiB",
-    "guard_true_peak_gib": 225
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
+    }
    },
    "artifact": {
-    "path": "workspace/artifacts/2to6/gg_gggggg-lc/loop-runtime.pacbin",
-    "bytes": 2140235608,
-    "gb": 2.14,
-    "plan_sha256": "c82863f57774a0be343b24b3499081502860229a7631d65cefd6e6360e109026",
-    "point_inputs": "native-v2",
-    "source": "workspace/artifacts/2to6/gg_gggggg-lc/generation.json (store.bytes; artifact not opened)"
+    "path": "workspace/artifacts/2to6/gg_gggggg-lc-2f3f76d9/loop-runtime.pacbin",
+    "bytes": 364333736,
+    "gb": 0.364,
+    "plan_sha256": "edb3e93bb3de16e5074fee524b3027895da3c0c20a5ba35b7342420aff37ffe1",
+    "point_inputs": "native-v2"
    },
    "load": {
-    "s": 854.2267109509557,
-    "peak_gib": 139.648
+    "s": 3.2004700440447778,
+    "peak_gib": 0.737,
+    "source": "timing record B = 16 (hard-linked copy, generation forbidden)"
    },
    "evaluation": {
-    "mode": "normal timing: warm-up, then paired timed blocks of B stream points (finite part, poles off, checks off)",
-    "B": 16,
+    "status": "measured",
+    "B": 128,
     "lanes": 16,
     "threads": 1,
-    "threads_source": "record protocol: binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up excluded, paired blocks, setup heap frozen out of the cyclic collector",
-    "host_core": [
-     5
-    ],
+    "host_core": 190,
     "warm_up": {
      "points": 16,
-     "B": 16,
-     "s": 3015.3695997430477,
-     "s_per_point": 188.5,
+     "s": 2188.293886048021,
      "note": "includes lazy compilation"
     },
     "timed": {
-     "blocks": 2,
-     "points_per_block": 16,
-     "points": 32,
-     "samples_s_per_point": [
-      122.67574024676287,
-      115.67581087250437
-     ]
+     "blocks": 1,
+     "points_per_block": 128,
+     "points": 128
     },
-    "s_per_point": 119.17577555963362,
+    "s_per_point": 98.04424762882809,
     "stages_s_per_point": {
-     "assembly": 0.05340140491898637,
-     "dressing": 81.59602397496874,
-     "factors": 2.6580480598437495,
-     "input conversion": 0.0001020644122036174,
-     "native trees": 20.0265673975,
-     "other": 0.41947152870962157,
-     "python point parameters": 8.879778033588082e-05,
-     "reduction": 11.2537585036875,
-     "reduction: masters": 0.75424018371875,
-     "reduction: masters (oneloopmaster)": 0.006859616000000001,
-     "scatter": 0.12490553628124998,
-     "seeds": 3.04340829153125
+     "assembly": 0.054766590483268374,
+     "dressing": 51.3035830413203,
+     "factors": 1.7734761055000001,
+     "input conversion": 3.632733569247648e-05,
+     "native trees": 34.66934200833594,
+     "other": 0.38583926343844155,
+     "python point parameters": 4.570948476612102e-05,
+     "reduction": 9.5923208748125,
+     "reduction: masters": 0.804538846328125,
+     "reduction: masters (oneloopmaster)": 0.006718328828125,
+     "scatter": 0.11678265014843751,
+     "seeds": 0.14805505796875001
     },
-    "peak_gib_harness": 327.059,
-    "peak_note": "harness ru_maxrss of the timing process; step = watchdog process-group VmRSS samples (GB = 1e9 B)",
+    "load": {
+     "seconds": 2.8548836859408766,
+     "peak_gib": 0.737
+    },
+    "peak_gib": 27.244,
+    "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
     "step": {
-     "start": "2026-10-31T19:44:54Z",
-     "end": "2026-10-31T23:37:04Z",
-     "elapsed_s": 13929.3,
-     "peak_rss_gb": 350.95,
-     "rc": 0,
+     "start": "2026-11-04T12:10:23Z",
+     "end": "2026-11-04T16:16:19Z",
+     "elapsed_s": 14756,
+     "peak_rss_gb": 29.15,
+     "gate_wait_s": 7327,
+     "min_available_gb": 180.7,
      "reason": "ok",
-     "core": 5,
-     "peak_rss_gib": 326.85,
-     "running": false,
-     "source": "workspace/tmp/bench-2to6/logs/time-gg_gggggg-lc.status.json"
+     "attempts": 1
     },
-    "revision": "d5ed94c26e87a82a6b2a6e20497f5977f6343327",
-    "colour_contraction": null
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
+    },
+    "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
+   },
+   "evaluations": {
+    "16": {
+     "status": "measured",
+     "B": 16,
+     "lanes": 16,
+     "threads": 1,
+     "host_core": 191,
+     "warm_up": {
+      "points": 16,
+      "s": 2194.5160817811266,
+      "note": "includes lazy compilation"
+     },
+     "timed": {
+      "blocks": 1,
+      "points_per_block": 16,
+      "points": 16
+     },
+     "s_per_point": 101.51003395725274,
+     "stages_s_per_point": {
+      "assembly": 0.050042603761539795,
+      "dressing": 52.02767804462499,
+      "factors": 1.8545270453124993,
+      "input conversion": 6.566032243426889e-05,
+      "native trees": 37.026285735375005,
+      "other": 0.3455051571106935,
+      "python point parameters": 5.881399556528777e-05,
+      "reduction": 9.955011301812503,
+      "reduction: masters": 0.8082300674999998,
+      "reduction: masters (oneloopmaster)": 0.0065592065,
+      "scatter": 0.11948111706249998,
+      "seeds": 0.131378477875
+     },
+     "load": {
+      "seconds": 3.2004700440447778,
+      "peak_gib": 0.737
+     },
+     "peak_gib": 27.206,
+     "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
+     "step": {
+      "start": "2026-11-04T12:10:22Z",
+      "end": "2026-11-04T13:14:15Z",
+      "elapsed_s": 3833,
+      "peak_rss_gb": 29.13,
+      "gate_wait_s": 7326,
+      "min_available_gb": 205.2,
+      "reason": "ok",
+      "attempts": 1
+     },
+     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "native": {
+      "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+      "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+      "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
+      }
+     },
+     "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
+    },
+    "128": {
+     "status": "measured",
+     "B": 128,
+     "lanes": 16,
+     "threads": 1,
+     "host_core": 190,
+     "warm_up": {
+      "points": 16,
+      "s": 2188.293886048021,
+      "note": "includes lazy compilation"
+     },
+     "timed": {
+      "blocks": 1,
+      "points_per_block": 128,
+      "points": 128
+     },
+     "s_per_point": 98.04424762882809,
+     "stages_s_per_point": {
+      "assembly": 0.054766590483268374,
+      "dressing": 51.3035830413203,
+      "factors": 1.7734761055000001,
+      "input conversion": 3.632733569247648e-05,
+      "native trees": 34.66934200833594,
+      "other": 0.38583926343844155,
+      "python point parameters": 4.570948476612102e-05,
+      "reduction": 9.5923208748125,
+      "reduction: masters": 0.804538846328125,
+      "reduction: masters (oneloopmaster)": 0.006718328828125,
+      "scatter": 0.11678265014843751,
+      "seeds": 0.14805505796875001
+     },
+     "load": {
+      "seconds": 2.8548836859408766,
+      "peak_gib": 0.737
+     },
+     "peak_gib": 27.244,
+     "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
+     "step": {
+      "start": "2026-11-04T12:10:23Z",
+      "end": "2026-11-04T16:16:19Z",
+      "elapsed_s": 14756,
+      "peak_rss_gb": 29.15,
+      "gate_wait_s": 7327,
+      "min_available_gb": 180.7,
+      "reason": "ok",
+      "attempts": 1
+     },
+     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "native": {
+      "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+      "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+      "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
+      }
+     },
+     "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
+    }
+   },
+   "table1": {
+    "eval_peak_gib": 27.244,
+    "gate": "none: no provider at 2->6 (speed reported without a gate)"
    },
    "checks": {
     "double_pole": {
      "status": "done",
-     "what": "double pole / Born of the renormalised virtual against the universal value (every pole, binary64)",
+     "verdict": "pass",
+     "max_deviation": 9.984639371541588e-12,
      "points": [
-      {
-       "index": 0,
-       "born": 3.2346550332508265e-09,
-       "finite": -1.2211755617991756e-08,
-       "single_pole_over_born_abs": 2.486130220151431,
-       "double_pole_over_born": -0.45072679883174854,
-       "universal_double_pole": -0.4507267988362476,
-       "double_pole_deviation": 9.98180670997894e-12,
-       "seconds_per_point_all_poles": 524.2713909460387
-      },
-      {
-       "index": 1,
-       "born": 1.258606908065893e-11,
-       "finite": -1.414109311945734e-11,
-       "single_pole_over_born_abs": 1.7726506645594222,
-       "double_pole_over_born": -0.4507267988362421,
-       "universal_double_pole": -0.4507267988362476,
-       "double_pole_deviation": 1.219276063922509e-14,
-       "seconds_per_point_all_poles": 524.2713909460387
-      },
-      {
-       "index": 2,
-       "born": 7.143730330018408e-10,
-       "finite": -3.232189009576889e-09,
-       "single_pole_over_born_abs": 2.6118177310504964,
-       "double_pole_over_born": -0.45072679883630323,
-       "universal_double_pole": -0.4507267988362476,
-       "double_pole_deviation": 1.2340551677276302e-13,
-       "seconds_per_point_all_poles": 524.2713909460387
-      }
-     ],
-     "max_deviation": 9.98180670997894e-12,
-     "verdict": "pass"
-    },
-    "catani_single_pole": {
-     "status": "not obtained",
-     "why": "tree-engine Catani route (8-leg LC tree + 28 dipole correlators) produced 0 points: still in the tree generation after 41393.1 s, killed at 2026-11-01T11:05:36Z by the host-memory floor (MemAvailable 117 GB < 120 GB; job peak 151 GiB) per logs/guard-catani-gg-lc.log; the status label 'time bound' (rc 124) is wrong (its stopped watchdog held the old 7200 s bound); a re-run alone was planned, then the USER stop",
-     "points": 0,
-     "step": {
-      "start": "2026-10-31T23:37:07Z",
-      "end": "2026-11-01T11:07:00Z",
-      "elapsed_s": 41393.1,
-      "peak_rss_gb": 103.37,
-      "rc": 124,
-      "reason": "time bound",
-      "core": 96,
-      "peak_rss_gib": 96.27,
-      "running": false,
-      "source": "workspace/tmp/bench-2to6/logs/catani-gg_gggggg-lc.status.json"
-     }
-    },
-    "ward": {
-     "status": "not obtained",
-     "why": "deferred (logs/ward-gg_gggggg-lc.status.json): coordinator 2026-11-01 ~01:35 UTC: deferred so the 8-gluon FC store (own track, USER priority) does not share the host with a second ~230 GB job; it never ran before the USER stop"
-    },
-    "double_double": {
-     "status": "not obtained",
-     "why": "skipped by the chain rule (logs/dd-gg_gggggg-lc.skip): skipped: estimated 100 x 119.17577555963362 s/pt > 1 h (or no timing)"
+      0,
+      1,
+      2
+     ]
     },
     "stability": {
      "status": "done",
-     "what": "recommended stability estimate (loops.v2.stability.RECOMMENDED_CHECKS: one generic exact rotation default_rotation(0) + the rescaled reduction check), binary64, stream points 0-2; estimate = 2 x (rotation budget + reduction budget) + 16 u S, relative to the finite part; the check budgets are each check's own relative budget (sum over reduction lanes of |Omega - Omega'| plus local parts), not a spread of two totals",
+     "max_estimate": 0.0014019833628048672,
+     "estimates": {
+      "0": 0.0014019833628048672,
+      "1": 5.546508071718957e-05,
+      "2": 4.060196980052293e-07
+     },
      "points": [
-      {
-       "index": 0,
-       "arithmetic": "double",
-       "finite": -1.2211755617991756e-08,
-       "estimate_finite_relative": 0.001679210969010091,
-       "rotation-0_budget_relative": 0.00040389018421413663,
-       "reduction-rescaled_budget_relative": 0.0004357153002806153,
-       "seconds_per_point_with_checks": 1282.3723151683032,
-       "above_1e-5": true
-      },
-      {
-       "index": 1,
-       "arithmetic": "double",
-       "finite": -1.414109311945734e-11,
-       "estimate_finite_relative": 8.912402504724668e-05,
-       "rotation-0_budget_relative": 2.0516768191648986e-05,
-       "reduction-rescaled_budget_relative": 2.4045244322559764e-05,
-       "seconds_per_point_with_checks": 1282.3723151683032,
-       "above_1e-5": true
-      },
-      {
-       "index": 2,
-       "arithmetic": "double",
-       "finite": -3.232189009576889e-09,
-       "estimate_finite_relative": 4.820717227681012e-07,
-       "rotation-0_budget_relative": 1.0394036838016996e-07,
-       "reduction-rescaled_budget_relative": 1.3709548921108852e-07,
-       "seconds_per_point_with_checks": 1282.3723151683032,
-       "above_1e-5": false
-      }
+      0,
+      1,
+      2
      ],
-     "max_estimate": 0.001679210969010091,
      "points_above_1e-5": [
       0,
       1
+     ]
+    },
+    "double_double": {
+     "status": "done",
+     "passed": true,
+     "point": 0,
+     "binary64_true_error_relative": [
+      7.402321336999544e-05,
+      3.976137660413695e-05,
+      1.012667335447608e-11
      ],
-     "source": "workspace/tmp/bench-2to6/runs/stability-time-gg_gggggg-lc.json"
+     "binary64_true_error_finite_relative": 7.402321336999544e-05,
+     "binary64": {
+      "estimate_finite_relative": 0.0014019833628048672
+     },
+     "within_10E": true
+    },
+    "rescue": {
+     "status": "done",
+     "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+     "sent_up": [
+      0,
+      1,
+      4,
+      5,
+      6,
+      7,
+      8,
+      12,
+      13,
+      14,
+      15
+     ],
+     "count": 11,
+     "of": 16,
+     "max_level0_estimate": 62.03439360133024,
+     "double_double": {},
+     "double_double_seconds": null
+    },
+    "stored_checks": {
+     "status": "done",
+     "why": null,
+     "passed": true,
+     "stages": {
+      "load": {
+       "seconds": 3.92,
+       "peak_gib": 0.71
+      },
+      "executor": {
+       "seconds": 0.01,
+       "peak_gib": 0.71
+      },
+      "checked": {
+       "seconds": 698.11,
+       "peak_gib": 27.22
+      },
+      "dd": {
+       "seconds": 1428.7,
+       "peak_gib": 30.73
+      },
+      "rescue level 0": {
+       "seconds": 886.41,
+       "peak_gib": 34.61
+      }
+     },
+     "max_rss_gib": 34.61,
+     "step": {
+      "start": "2026-11-04T12:10:20Z",
+      "end": "2026-11-04T13:00:48Z",
+      "elapsed_s": 3028,
+      "peak_rss_gb": 37.3,
+      "gate_wait_s": 7324,
+      "min_available_gb": 205.6,
+      "reason": "ok",
+      "attempts": 1
+     }
+    },
+    "ward": {
+     "status": "in progress",
+     "why": "ward-lc running",
+     "step": {
+      "start": "2026-11-04T16:26:28Z",
+      "end": null,
+      "elapsed_s": 603,
+      "peak_rss_gb": 26.82,
+      "gate_wait_s": 11480,
+      "min_available_gb": 235.2,
+      "reason": null,
+      "attempts": 1
+     }
+    },
+    "ngluon": {
+     "status": "done",
+     "passed": true,
+     "ngluon": {
+      "passed": true,
+      "worst": 7.381894350821457e-05,
+      "tolerance": 1e-09,
+      "estimates": 10,
+      "points": [
+       0,
+       1,
+       2
+      ],
+      "unmatched": [],
+      "rotation": [
+       5,
+       3,
+       -2,
+       7
+      ],
+      "max_relative": [
+       7.381894350821457e-05,
+       5.310537153339527e-05,
+       9.99276787873418e-12
+      ],
+      "step": {
+       "start": "2026-11-04T08:44:17Z",
+       "end": "2026-11-04T08:58:45Z",
+       "elapsed_s": 868,
+       "peak_rss_gb": 0.17,
+       "gate_wait_s": 600,
+       "min_available_gb": 180.7,
+       "reason": "ok",
+       "attempts": 1
+      }
+     },
+     "ngluon-dd": {
+      "passed": true,
+      "worst": 6.279856447938119e-13,
+      "tolerance": 1e-12,
+      "estimates": 0,
+      "points": [
+       0
+      ],
+      "unmatched": [],
+      "rotation": [
+       5,
+       3,
+       -2,
+       7
+      ],
+      "max_relative": [
+       6.279856447938119e-13,
+       0.0,
+       0.0
+      ],
+      "step": {
+       "start": "2026-11-04T09:18:37Z",
+       "end": "2026-11-04T10:32:14Z",
+       "elapsed_s": 4417,
+       "peak_rss_gb": 0.17,
+       "gate_wait_s": 693,
+       "min_available_gb": 110.4,
+       "reason": "ok",
+       "attempts": 1
+      }
+     },
+     "rule": "NJet 3.1.2 ngluon2 LC primitives on exactly rotated points; binary64 within 1e-9 of the value + 10 E, double-double within 1e-12 of pyAmpliCol's DD point"
     }
    },
-   "table1": {
-    "label": "g g > 6g (LC, N_f = 5, no top)",
-    "generation_h": 4.71,
-    "generation_peak_gib": 228.558,
-    "artifact_gb": 2.14,
-    "load_s": 854.2267109509557,
-    "load_peak_gib": 139.648,
-    "s_per_point": 119.17577555963362,
-    "B": 16,
-    "eval_peak_gib": 327.059,
-    "eval_step_peak_gib": 326.85,
-    "fastest_olp_s_per_point": null,
-    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured",
-    "preliminary": true
+   "engine": {
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "native_directory": "loop-native-mf-2to6-2f3f76d9-lto",
+    "native_digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+    "one_engine": true,
+    "records": [
+     "checks-lc",
+     "store-lc",
+     "store-ward-lc",
+     "time-lc-b128",
+     "time-lc-b16",
+     "ward-lc"
+    ]
    }
   },
   {
    "key": "gg_gggggg-full",
-   "process": "g g > g g g g g g",
-   "label": "g g > 6g (FC, N_f = 5, no top)",
+   "process": "G G > G G G G G G",
+   "label": "g g > g g g g g g (FC, N_f = 5, no top)",
    "accuracy": "full",
+   "all_gluon": true,
    "particle_veto": [
     6
    ],
-   "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
    "born_orders": {
     "QCD": 6,
     "QED": 0
    },
    "correction": "QCD",
-   "revisions": {
-    "generation": "d5ed94c26e87a82a6b2a6e20497f5977f6343327",
-    "timing": "8a062a5222d91ab0b12f130f8de3709361b6d554"
-   },
    "lanes": 16,
    "structure": {
     "families": 47348,
@@ -327,334 +528,373 @@
    "generation": {
     "stages": {
      "model": {
-      "s": 3.042250509141013,
-      "peak_gib": 0.362
+      "s": 2.773897967999801,
+      "peak_gib": 0.351
      },
      "generate": {
-      "s": 2778.8347896069754,
-      "peak_gib": 62.569
+      "s": 860.2553694720846,
+      "peak_gib": 39.572
      },
      "export": {
-      "s": 10553.04343886301,
-      "peak_gib": 235.153,
-      "plan_mb": 3057.034
+      "s": 2459.5476222019643,
+      "peak_gib": 73.95,
+      "plan_mb": 486.15
      },
      "store": {
-      "s": 3827.419515135931,
-      "peak_gib": 246.518
+      "s": 1550.668403886957,
+      "peak_gib": 76.358
      }
     },
-    "stage_sum_s": 17162.3,
-    "step_wall_s": 17488.6,
-    "step_wall_h": 4.86,
-    "peak_gib": 246.518,
-    "peak_note": "max of the per-stage VmHWM peaks (harness resets the high-water mark per stage)",
+    "stage_sum_s": 4873.2,
+    "peak_gib": 76.358,
+    "peak_note": "max of the per-stage VmHWM peaks (the harness resets the high-water mark per stage)",
     "step": {
-     "start": "2026-11-01T01:34:41Z",
-     "end": "2026-11-01T06:26:10Z",
-     "elapsed_s": 17488.6,
-     "peak_rss_gb": 260.16,
-     "rc": 0,
+     "start": "2026-11-04T08:44:17Z",
+     "end": "2026-11-04T10:07:18Z",
+     "elapsed_s": 4981,
+     "peak_rss_gb": 79.6,
+     "gate_wait_s": 600,
+     "min_available_gb": 110.3,
      "reason": "ok",
-     "core": 8,
-     "peak_rss_gib": 242.29,
-     "running": false,
-     "source": "workspace/tmp/bench-2to6/logs/store-gg_gggggg-full.status.json"
+     "attempts": 1
     },
-    "revision": "d5ed94c26e87a82a6b2a6e20497f5977f6343327",
+    "threads": null,
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
     "dirty": false,
-    "lanes": 16,
-    "structure": {
-     "families": 47348,
-     "b_trie_nodes": 1999165
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
     }
    },
    "artifact": {
-    "path": "workspace/artifacts/2to6/gg_gggggg-full/loop-runtime.pacbin",
-    "bytes": 2565435176,
-    "gb": 2.565,
-    "plan_sha256": "820a0171bc48ccfc73913b95d592e3172e62d1ae8a5bdbad71d56d597bb303c8",
-    "point_inputs": "native-v2",
-    "source": "workspace/artifacts/2to6/gg_gggggg-full/generation.json (store.bytes; artifact not opened)"
+    "path": "workspace/artifacts/2to6/gg_gggggg-fc-2f3f76d9/loop-runtime.pacbin",
+    "bytes": 529592120,
+    "gb": 0.53,
+    "plan_sha256": "db286a17403016e3c881a9180d29c111b763bed50948277e10edaf07cb1b4710",
+    "point_inputs": "native-v2"
    },
    "load": {
-    "s": 1164.6646069120616,
-    "peak_gib": 159.948,
-    "all_loads_of_this_artifact": [
-     {
-      "s": 1164.6646069120616,
-      "peak_gib": 159.948
-     },
-     {
-      "s": 1030.4368666398805,
-      "peak_gib": 159.951
-     },
-     {
-      "s": 1104.6582662209403,
-      "peak_gib": 148.833
-     },
-     {
-      "s": 923.00252559199,
-      "peak_gib": 159.953
-     },
-     {
-      "s": 1066.1161839149427,
-      "peak_gib": 159.512
-     }
-    ],
-    "range_s": [
-     923.00252559199,
-     1164.6646069120616
-    ]
+    "s": 4.212540735956281,
+    "peak_gib": 1.056,
+    "source": "timing record B = 16 (hard-linked copy, generation forbidden)"
    },
    "evaluation": {
-    "mode": "rotation block (USER 2026-11-01 ~09:50): warm-up 16 stream points, then ONE timed batch of 16 = 4 stream points x 4 copies (identity + default_rotation(0..2)), finite part, poles off, checks off; not the paired 2-block protocol",
+    "status": "measured",
     "B": 16,
     "lanes": 16,
     "threads": 1,
-    "host_core": [
-     99
-    ],
+    "host_core": 162,
     "warm_up": {
      "points": 16,
-     "B": 16,
-     "s": 9832.101815809961,
-     "s_per_point": 614.5,
+     "s": 3881.6086253358517,
      "note": "includes lazy compilation"
     },
     "timed": {
      "blocks": 1,
      "points_per_block": 16,
-     "points": 16,
-     "stream_indices": [
-      16,
-      17,
-      18,
-      19
-     ],
-     "copies": [
-      "identity",
-      "default_rotation(0)",
-      "default_rotation(1)",
-      "default_rotation(2)"
-     ],
-     "wall_s": 7653.62895394396,
-     "samples_s_per_point": [
-      478.3518096214975
-     ]
+     "points": 16
     },
-    "s_per_point": 478.3518096214975,
+    "s_per_point": 200.5925812850619,
     "stages_s_per_point": {
-     "python point parameters": 0.00011017857468686998,
-     "input conversion": 0.00018684956012293696,
-     "assembly": 0.09348236567166168,
-     "seeds": 7.879704547875,
-     "factors": 5.749176323500003,
-     "dressing": 180.88921642262508,
-     "scatter": 0.18545455575,
-     "reduction": 16.851274688937497,
-     "reduction: masters": 0.8865357554374999,
-     "reduction: masters (oneloopmaster)": 0.0038969726875000004,
-     "native trees": 265.7935939621875,
-     "other": 0.9096097268159156
+     "assembly": 0.04640251136152074,
+     "dressing": 77.27847213025004,
+     "factors": 2.3554266377500004,
+     "input conversion": 6.576220039278269e-05,
+     "native trees": 110.35131843525,
+     "other": 0.40654879881313377,
+     "python point parameters": 6.542399933096021e-05,
+     "reduction": 9.293457496812502,
+     "reduction: masters": 0.7892601693750001,
+     "reduction: masters (oneloopmaster)": 0.006541113937500001,
+     "scatter": 0.13033218418750003,
+     "seeds": 0.7304919044375
     },
-    "colour_contraction": {
-     "policy": "fft",
-     "certified_fourier_record": true,
-     "evaluated": [
-      "symmetric-group-fft"
-     ],
-     "fft_seed_jobs": 1
+    "load": {
+     "seconds": 4.212540735956281,
+     "peak_gib": 1.056
     },
-    "peak_gib_harness": 239.189,
-    "peak_note": "harness VmHWM of the timed block (reset before it); the step peak (watchdog, GB = 1e9 B) includes the warm-up",
+    "peak_gib": 40.066,
+    "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
     "step": {
-     "start": "2026-11-01T09:57:40Z",
-     "end": "2026-11-01T15:29:27Z",
-     "elapsed_s": 19906.7,
-     "peak_rss_gb": 380.66,
-     "rc": 0,
+     "start": "2026-11-04T12:10:23Z",
+     "end": "2026-11-04T14:08:59Z",
+     "elapsed_s": 7117,
+     "peak_rss_gb": 42.9,
+     "gate_wait_s": 7327,
+     "min_available_gb": 205.9,
      "reason": "ok",
-     "core": 99,
-     "peak_rss_gib": 354.52,
-     "running": false,
-     "source": "workspace/tmp/bench-2to6/logs/time-rot-gg_gggggg-full.status.json"
+     "attempts": 1
     },
-    "revision": "8a062a5222d91ab0b12f130f8de3709361b6d554",
-    "fc_over_lc_s_per_point": 4.01,
-    "earlier_normal_timing_stopped_after_warm_up": {
-     "load": {
-      "s": 1030.4368666398805,
-      "peak_gib": 159.951
-     },
-     "warm_up": {
-      "B": 16,
-      "points": 16,
-      "s": 9586.832
-     },
-     "step": {
-      "start": "2026-11-01T06:49:41Z",
-      "end": "2026-11-01T09:57:27Z",
-      "elapsed_s": 11266.6,
-      "peak_rss_gb": 336.42,
-      "rc": -15,
-      "reason": "error",
-      "core": 1,
-      "peak_rss_gib": 313.32,
-      "running": false,
-      "source": "workspace/tmp/bench-2to6/logs/time-gg_gggggg-full.status.json"
-     },
-     "prose_only": {
-      "why_stopped": "stopped by the coordinator at 09:56 to switch to the rotation layout (STATE.md COORDINATOR 2026-11-01 ~10:00); the status only says rc -15"
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
      }
-    }
+    },
+    "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
    },
-   "checks": {
-    "rotation_spread": {
-     "status": "done",
-     "what": "finite-part relative spread max_r |f_r - f_0| / |f_0| over the 4 copies of each sample (binary64, from the timed block itself)",
-     "points": [
-      {
-       "stream_index": 16,
-       "finite": [
-        1.0941469202395159e-10,
-        3.3937498895788295e-10,
-        1.2240186815033633e-10,
-        2.41285629926831e-10
-       ],
-       "relative_spread": 2.1017314282033674,
-       "born_relative_spread": 4.677757838640472e-15,
-       "above_1e-5": true
-      },
-      {
-       "stream_index": 17,
-       "finite": [
-        -2.3896456052263496e-10,
-        -2.3896456053557067e-10,
-        -2.3896456059690947e-10,
-        -2.3896456048011663e-10
-       ],
-       "relative_spread": 3.1081810454507047e-10,
-       "born_relative_spread": 8.480407794128953e-15,
-       "above_1e-5": false
-      },
-      {
-       "stream_index": 18,
-       "finite": [
-        -1.1568978905756341e-10,
-        -1.1568979052633967e-10,
-        -1.1568979045868762e-10,
-        -1.1568978888555066e-10
-       ],
-       "relative_spread": 1.2695815891650159e-08,
-       "born_relative_spread": 2.5940979259252953e-15,
-       "above_1e-5": false
-      },
-      {
-       "stream_index": 19,
-       "finite": [
-        -4.07544491076979e-11,
-        -4.075445323678101e-11,
-        -4.075445811262911e-11,
-        -4.0754460605811375e-11
-       ],
-       "relative_spread": 2.821314906125663e-07,
-       "born_relative_spread": 8.086996952319462e-15,
-       "above_1e-5": false
+   "evaluations": {
+    "16": {
+     "status": "measured",
+     "B": 16,
+     "lanes": 16,
+     "threads": 1,
+     "host_core": 162,
+     "warm_up": {
+      "points": 16,
+      "s": 3881.6086253358517,
+      "note": "includes lazy compilation"
+     },
+     "timed": {
+      "blocks": 1,
+      "points_per_block": 16,
+      "points": 16
+     },
+     "s_per_point": 200.5925812850619,
+     "stages_s_per_point": {
+      "assembly": 0.04640251136152074,
+      "dressing": 77.27847213025004,
+      "factors": 2.3554266377500004,
+      "input conversion": 6.576220039278269e-05,
+      "native trees": 110.35131843525,
+      "other": 0.40654879881313377,
+      "python point parameters": 6.542399933096021e-05,
+      "reduction": 9.293457496812502,
+      "reduction: masters": 0.7892601693750001,
+      "reduction: masters (oneloopmaster)": 0.006541113937500001,
+      "scatter": 0.13033218418750003,
+      "seeds": 0.7304919044375
+     },
+     "load": {
+      "seconds": 4.212540735956281,
+      "peak_gib": 1.056
+     },
+     "peak_gib": 40.066,
+     "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
+     "step": {
+      "start": "2026-11-04T12:10:23Z",
+      "end": "2026-11-04T14:08:59Z",
+      "elapsed_s": 7117,
+      "peak_rss_gb": 42.9,
+      "gate_wait_s": 7327,
+      "min_available_gb": 205.9,
+      "reason": "ok",
+      "attempts": 1
+     },
+     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "native": {
+      "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+      "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+      "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
       }
-     ],
-     "max_relative_spread": 2.1017314282033674,
-     "unstable_points": [
-      16
-     ],
-     "verdict": "stream point(s) [16] binary64-unstable (spread 2.1: no correct digit): a rescue case; points [17, 18, 19] below 1e-5"
+     },
+     "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
     },
-    "double_pole": {
-     "status": "not obtained",
-     "why": "the FC physical-points job (phys-gg_gggggg-full: load, 1-point warm-up, points 0-2 with every pole) was killed by the host-memory floor on all 3 attempts before its warm-up finished (no warm-up line in its logs), then held at its 480 GB start gate until the USER stop",
-     "attempts": [
-      {
-       "start": "2026-11-01T15:30:50Z",
-       "elapsed_s": 2137.9,
-       "peak_rss_gb": 179.7,
-       "reason": "host memory",
-       "load": {
-        "s": 1104.6582662209403,
-        "peak_gib": 148.833
-       }
-      },
-      {
-       "start": "2026-11-01T18:31:00Z",
-       "elapsed_s": 3444.2,
-       "peak_rss_gb": 385.3,
-       "reason": "host memory",
-       "load": {
-        "s": 923.00252559199,
-        "peak_gib": 159.953
-       }
-      },
-      {
-       "start": "2026-11-01T19:33:27Z",
-       "elapsed_s": 2937.9,
-       "peak_rss_gb": 315.33,
-       "reason": "host memory",
-       "load": {
-        "s": 1066.1161839149427,
-        "peak_gib": 159.512
-       }
-      }
-     ]
-    },
-    "catani_single_pole": {
-     "status": "not obtained",
-     "why": "catani-gg_gggggg-full needs the FC physical rows: never started"
-    },
-    "ward": {
-     "status": "not obtained",
-     "why": "no FC Ward run was started",
-     "prose_only": {
-      "plan": "planned only if >= 500 GiB were free (STATE.md 2026-11-01 16:15)"
+    "128": {
+     "status": "not measured",
+     "step": {
+      "start": "2026-11-04T12:10:24Z",
+      "end": null,
+      "elapsed_s": 15904,
+      "peak_rss_gb": 36.05,
+      "gate_wait_s": 7328,
+      "min_available_gb": 180.9,
+      "reason": null,
+      "attempts": 1
      }
-    },
-    "double_double": {
-     "status": "not obtained",
-     "why": "no double-double run at 2->6 g g > 6g (the chain skips DD when 100 x s/pt > 1 h)"
     }
    },
    "table1": {
-    "label": "g g > 6g (FC, N_f = 5, no top)",
-    "generation_h": 4.86,
-    "generation_peak_gib": 246.518,
-    "artifact_gb": 2.565,
-    "load_s": 1164.6646069120616,
-    "load_peak_gib": 159.948,
-    "s_per_point": 478.3518096214975,
-    "B": 16,
-    "eval_peak_gib": 239.189,
-    "eval_step_peak_gib": 354.52,
-    "fastest_olp_s_per_point": null,
-    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured",
-    "preliminary": true
+    "eval_peak_gib": 40.066,
+    "gate": "none: no provider at 2->6 (speed reported without a gate)"
+   },
+   "checks": {
+    "double_pole": {
+     "status": "done",
+     "verdict": "pass",
+     "max_deviation": 8.392461886776193e-11,
+     "points": [
+      0,
+      1,
+      2
+     ]
+    },
+    "stability": {
+     "status": "done",
+     "max_estimate": 0.0051092813705644145,
+     "estimates": {
+      "0": 0.0051092813705644145,
+      "1": 0.00021805799693758168,
+      "2": 5.898885920924044e-07
+     },
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "points_above_1e-5": [
+      0,
+      1
+     ]
+    },
+    "catani": {
+     "status": "done",
+     "passed": true,
+     "formed_at_every_point": true,
+     "max_single_deviation": 7.063579265312242e-05,
+     "max_double_deviation": 2.08044508113876e-11,
+     "max_double_double_deviation": 0.0,
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "rule": "native Catani prediction from the stored dipole orbits; each deviation <= 10 E + 1e-12"
+    },
+    "double_double": {
+     "status": "done",
+     "passed": true,
+     "point": 0,
+     "binary64_true_error_relative": [
+      0.00012243579626148858,
+      7.063579264333845e-05,
+      2.0782897501033553e-11
+     ],
+     "binary64_true_error_finite_relative": 0.00012243579626148858,
+     "binary64": {
+      "estimate_finite_relative": 0.0051092813705644145
+     },
+     "within_10E": true
+    },
+    "rescue": {
+     "status": "done",
+     "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+     "sent_up": [
+      0,
+      1,
+      4,
+      5,
+      6,
+      7,
+      8,
+      12,
+      13,
+      14,
+      15
+     ],
+     "count": 11,
+     "of": 16,
+     "max_level0_estimate": 19.091876694739145,
+     "double_double": {
+      "1": {
+       "estimate": 7.485193115361556e-21,
+       "met": true,
+       "finite": [
+        -6.8037508878623205e-12
+       ]
+      }
+     },
+     "double_double_seconds": 5243.56
+    },
+    "stored_checks": {
+     "status": "done",
+     "why": null,
+     "passed": true,
+     "stages": {
+      "load": {
+       "seconds": 4.72,
+       "peak_gib": 1.03
+      },
+      "executor": {
+       "seconds": 0.01,
+       "peak_gib": 1.03
+      },
+      "checked": {
+       "seconds": 1582.1,
+       "peak_gib": 44.28
+      },
+      "dd": {
+       "seconds": 2630.65,
+       "peak_gib": 53.56
+      },
+      "rescue level 0": {
+       "seconds": 1954.42,
+       "peak_gib": 60.76
+      },
+      "rescue double-double": {
+       "seconds": 5243.56,
+       "peak_gib": 60.76
+      }
+     },
+     "max_rss_gib": 60.76,
+     "step": {
+      "start": "2026-11-04T12:10:20Z",
+      "end": "2026-11-04T15:21:04Z",
+      "elapsed_s": 11443,
+      "peak_rss_gb": 65.3,
+      "gate_wait_s": 7325,
+      "min_available_gb": 178.7,
+      "reason": "ok",
+      "attempts": 1
+     }
+    },
+    "ward": {
+     "status": "not obtained",
+     "why": "Ward step not finished",
+     "step": {
+      "start": "2026-11-04T16:26:27Z",
+      "end": null,
+      "elapsed_s": 603,
+      "peak_rss_gb": 41.42,
+      "gate_wait_s": 22692,
+      "min_available_gb": 236.8,
+      "reason": null,
+      "attempts": 1
+     }
+    }
+   },
+   "engine": {
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "native_directory": "loop-native-mf-2to6-2f3f76d9-lto",
+    "native_digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+    "one_engine": true,
+    "records": [
+     "checks-fc",
+     "store-fc",
+     "time-fc-b16"
+    ]
    }
   },
   {
    "key": "uux_gggggg-lc",
-   "process": "u u~ > g g g g g g",
-   "label": "u u~ > 6g (LC, N_f = 5, no top)",
+   "process": "u u~ > G G G G G G",
+   "label": "u u~ > g g g g g g (LC, N_f = 5, no top)",
    "accuracy": "lc",
+   "all_gluon": false,
    "particle_veto": [
     6
    ],
-   "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
    "born_orders": {
     "QCD": 6,
     "QED": 0
    },
    "correction": "QCD",
-   "revisions": {
-    "generation": "8a062a5222d91ab0b12f130f8de3709361b6d554",
-    "timing": "8a062a5222d91ab0b12f130f8de3709361b6d554"
-   },
    "lanes": 16,
    "structure": {
     "families": 23437,
@@ -663,305 +903,804 @@
    "generation": {
     "stages": {
      "model": {
-      "s": 5.433447347953916,
-      "peak_gib": 0.362
+      "s": 3.3506536989007145,
+      "peak_gib": 0.348
      },
      "generate": {
-      "s": 1655.2204901741352,
-      "peak_gib": 15.352
+      "s": 495.4658088630531,
+      "peak_gib": 33.849
      },
      "export": {
-      "s": 1712.651231693104,
-      "peak_gib": 41.781,
-      "plan_mb": 209.061
+      "s": 732.2325863670558,
+      "peak_gib": 46.969,
+      "plan_mb": 30.666
      },
      "store": {
-      "s": 579.9580826249439,
-      "peak_gib": 31.626
+      "s": 197.60084683005698,
+      "peak_gib": 34.946
      }
     },
-    "stage_sum_s": 3953.3,
-    "step_wall_s": 4038.9,
-    "step_wall_h": 1.12,
-    "peak_gib": 41.781,
-    "peak_note": "max of the per-stage VmHWM peaks (harness resets the high-water mark per stage)",
+    "stage_sum_s": 1428.6,
+    "peak_gib": 46.969,
+    "peak_note": "max of the per-stage VmHWM peaks (the harness resets the high-water mark per stage)",
     "step": {
-     "start": "2026-11-01T14:08:02Z",
-     "end": "2026-11-01T15:15:21Z",
-     "elapsed_s": 4038.9,
-     "peak_rss_gb": 44.22,
-     "rc": 0,
+     "start": "2026-11-04T12:10:24Z",
+     "end": "2026-11-04T12:34:37Z",
+     "elapsed_s": 1453,
+     "peak_rss_gb": 50.44,
+     "gate_wait_s": 7328,
+     "min_available_gb": 205.0,
      "reason": "ok",
-     "core": 1,
-     "peak_rss_gib": 41.18,
-     "running": false,
-     "source": "workspace/tmp/bench-2to6/logs/store-uux_gggggg-lc.status.json"
+     "attempts": 1
     },
-    "revision": "8a062a5222d91ab0b12f130f8de3709361b6d554",
+    "threads": null,
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
     "dirty": false,
-    "lanes": 16,
-    "structure": {
-     "families": 23437,
-     "b_trie_nodes": 245170
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
     }
    },
    "artifact": {
-    "path": "workspace/artifacts/2to6/uux_gggggg-lc/loop-runtime.pacbin",
-    "bytes": 177661176,
-    "gb": 0.178,
-    "plan_sha256": "363db994e83e4976f3e20873875457ab8ddc43e1eaeb64e84ab0c51402ed9094",
-    "point_inputs": "native-v2",
-    "source": "workspace/artifacts/2to6/uux_gggggg-lc/generation.json (store.bytes; artifact not opened)"
+    "path": "workspace/artifacts/2to6/uux_gggggg-lc-2f3f76d9/loop-runtime.pacbin",
+    "bytes": 46827080,
+    "gb": 0.047,
+    "plan_sha256": "b2f131858f3ad0391d464d12067dc8a953456fafea4db1addeeca95bbcd607e7",
+    "point_inputs": "native-v2"
    },
    "load": {
-    "s": 74.87945208698511,
-    "peak_gib": 12.594
+    "s": 0.5098156090825796,
+    "peak_gib": 0.136,
+    "source": "timing record B = 16 (hard-linked copy, generation forbidden)"
    },
    "evaluation": {
-    "mode": "normal timing: warm-up, then paired timed blocks of B stream points (finite part, poles off, checks off)",
+    "status": "measured",
     "B": 128,
     "lanes": 16,
     "threads": 1,
-    "threads_source": "record protocol: binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up excluded, paired blocks, setup heap frozen out of the cyclic collector",
-    "host_core": [
-     4
-    ],
+    "host_core": 6,
     "warm_up": {
      "points": 16,
-     "B": 128,
-     "s": 434.5452992049977,
-     "s_per_point": 27.2,
+     "s": 200.12296886206605,
      "note": "includes lazy compilation"
     },
     "timed": {
-     "blocks": 2,
+     "blocks": 1,
      "points_per_block": 128,
-     "points": 256,
-     "samples_s_per_point": [
-      19.98328792106986,
-      19.887246311289346
-     ]
+     "points": 128
     },
-    "s_per_point": 19.935267116179602,
+    "s_per_point": 10.91488285089872,
     "stages_s_per_point": {
-     "assembly": 0.04213071888261766,
-     "dressing": 11.398749783273434,
-     "factors": 0.14772680407031247,
-     "input conversion": 0.00010382137861597585,
-     "native trees": 3.592311317667969,
-     "other": 0.20570081914847016,
-     "python point parameters": 7.364230896200752e-05,
-     "reduction": 3.442905772976563,
-     "reduction: masters": 0.3935943507343751,
-     "reduction: masters (oneloopmaster)": 0.007951460402343753,
-     "scatter": 0.05770338733203126,
-     "seeds": 1.047861049140625
+     "assembly": 0.02568577455713239,
+     "dressing": 6.27170993384375,
+     "factors": 0.1588222704609375,
+     "input conversion": 3.755265788640827e-05,
+     "native trees": 1.66098380175,
+     "other": 0.13516637048953228,
+     "python point parameters": 4.8051131670945324e-05,
+     "reduction": 2.527039093117186,
+     "reduction: masters": 0.36853912975,
+     "reduction: masters (oneloopmaster)": 0.0068103992578125005,
+     "scatter": 0.04885195980468752,
+     "seeds": 0.08653804308593749
     },
-    "peak_gib_harness": 90.946,
-    "peak_note": "harness ru_maxrss of the timing process; step = watchdog process-group VmRSS samples (GB = 1e9 B)",
+    "load": {
+     "seconds": 0.3531719639431685,
+     "peak_gib": 0.136
+    },
+    "peak_gib": 12.573,
+    "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
     "step": {
-     "start": "2026-11-01T16:17:37Z",
-     "end": "2026-11-01T18:03:47Z",
-     "elapsed_s": 6369.9,
-     "peak_rss_gb": 97.65,
-     "rc": 0,
+     "start": "2026-11-04T13:23:04Z",
+     "end": "2026-11-04T13:49:49Z",
+     "elapsed_s": 1605,
+     "peak_rss_gb": 13.15,
+     "gate_wait_s": 2866,
+     "min_available_gb": 263.5,
      "reason": "ok",
-     "core": 4,
-     "peak_rss_gib": 90.94,
-     "attempt": 1,
-     "previous_attempts": [],
-     "running": false,
-     "waiting_for_memory": false,
-     "gate_wait_s": 450,
-     "source": "workspace/tmp/bench-2to6/logs/time-uux_gggggg-lc.status.json"
+     "attempts": 1
     },
-    "revision": "8a062a5222d91ab0b12f130f8de3709361b6d554",
-    "colour_contraction": null,
-    "earlier_attempt_killed": {
-     "start": "2026-11-01T15:15:24Z",
-     "elapsed_s": 2712.7,
-     "peak_rss_gb": 86.75,
-     "reason": "host memory",
-     "load": {
-      "s": 74.16820335807279,
-      "peak_gib": 12.601
-     },
-     "warm_up": {
-      "B": 128,
-      "points": 16,
-      "s": 459.779
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
      }
+    },
+    "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
+   },
+   "evaluations": {
+    "16": {
+     "status": "measured",
+     "B": 16,
+     "lanes": 16,
+     "threads": 1,
+     "host_core": 26,
+     "warm_up": {
+      "points": 16,
+      "s": 243.39901570603251,
+      "note": "includes lazy compilation"
+     },
+     "timed": {
+      "blocks": 1,
+      "points_per_block": 16,
+      "points": 16
+     },
+     "s_per_point": 9.535169559487258,
+     "stages_s_per_point": {
+      "assembly": 0.02351254467794206,
+      "dressing": 5.578112698000001,
+      "factors": 0.1415422675625,
+      "input conversion": 4.542207170743495e-05,
+      "native trees": 1.5385162143125002,
+      "other": 0.12600173360771905,
+      "python point parameters": 4.408087988849729e-05,
+      "reduction": 2.000801477125,
+      "reduction: masters": 0.3337789373750001,
+      "reduction: masters (oneloopmaster)": 0.0049609150625,
+      "scatter": 0.0434504934375,
+      "seeds": 0.08314262781250001
+     },
+     "load": {
+      "seconds": 0.5098156090825796,
+      "peak_gib": 0.136
+     },
+     "peak_gib": 11.129,
+     "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
+     "step": {
+      "start": "2026-11-04T13:23:03Z",
+      "end": "2026-11-04T13:29:46Z",
+      "elapsed_s": 402,
+      "peak_rss_gb": 11.95,
+      "gate_wait_s": 2865,
+      "min_available_gb": 344.9,
+      "reason": "ok",
+      "attempts": 1
+     },
+     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "native": {
+      "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+      "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+      "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
+      }
+     },
+     "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
+    },
+    "128": {
+     "status": "measured",
+     "B": 128,
+     "lanes": 16,
+     "threads": 1,
+     "host_core": 6,
+     "warm_up": {
+      "points": 16,
+      "s": 200.12296886206605,
+      "note": "includes lazy compilation"
+     },
+     "timed": {
+      "blocks": 1,
+      "points_per_block": 128,
+      "points": 128
+     },
+     "s_per_point": 10.91488285089872,
+     "stages_s_per_point": {
+      "assembly": 0.02568577455713239,
+      "dressing": 6.27170993384375,
+      "factors": 0.1588222704609375,
+      "input conversion": 3.755265788640827e-05,
+      "native trees": 1.66098380175,
+      "other": 0.13516637048953228,
+      "python point parameters": 4.8051131670945324e-05,
+      "reduction": 2.527039093117186,
+      "reduction: masters": 0.36853912975,
+      "reduction: masters (oneloopmaster)": 0.0068103992578125005,
+      "scatter": 0.04885195980468752,
+      "seeds": 0.08653804308593749
+     },
+     "load": {
+      "seconds": 0.3531719639431685,
+      "peak_gib": 0.136
+     },
+     "peak_gib": 12.573,
+     "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
+     "step": {
+      "start": "2026-11-04T13:23:04Z",
+      "end": "2026-11-04T13:49:49Z",
+      "elapsed_s": 1605,
+      "peak_rss_gb": 13.15,
+      "gate_wait_s": 2866,
+      "min_available_gb": 263.5,
+      "reason": "ok",
+      "attempts": 1
+     },
+     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "native": {
+      "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+      "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+      "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
+      }
+     },
+     "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
     }
+   },
+   "table1": {
+    "eval_peak_gib": 12.573,
+    "gate": "none: no provider at 2->6 (speed reported without a gate)"
    },
    "checks": {
     "double_pole": {
      "status": "done",
-     "what": "double pole / Born of the renormalised virtual against the universal value (every pole, binary64)",
+     "verdict": "pass",
+     "max_deviation": 4.5749067712176986e-12,
      "points": [
-      {
-       "index": 0,
-       "born": 1.2738580311807341e-11,
-       "finite": -4.703724171921071e-11,
-       "single_pole_over_born_abs": 2.3021036123374765,
-       "double_pole_over_born": -0.3943859489835189,
-       "universal_double_pole": -0.39438594898171664,
-       "double_pole_deviation": 4.569839649913085e-12,
-       "seconds_per_point_all_poles": 79.34102144037995
-      },
-      {
-       "index": 1,
-       "born": 1.7909657935486554e-13,
-       "finite": -2.2147613167877069e-13,
-       "single_pole_over_born_abs": 1.6640218153630686,
-       "double_pole_over_born": -0.39438594898243257,
-       "universal_double_pole": -0.39438594898171664,
-       "double_pole_deviation": 1.815296207377616e-12,
-       "seconds_per_point_all_poles": 79.34102144037995
-      },
-      {
-       "index": 2,
-       "born": 5.505623585219442e-12,
-       "finite": -2.315528280627664e-11,
-       "single_pole_over_born_abs": 2.3809285002190212,
-       "double_pole_over_born": -0.3943859489817248,
-       "universal_double_pole": -0.39438594898171664,
-       "double_pole_deviation": 2.069074532716985e-14,
-       "seconds_per_point_all_poles": 79.34102144037995
-      }
-     ],
-     "max_deviation": 4.569839649913085e-12,
-     "verdict": "pass"
-    },
-    "catani_single_pole": {
-     "status": "not obtained",
-     "why": "tree-engine Catani route: 6 chain attempts all killed by the 120 GB host-memory floor while in the tree generation (longest 4856.0 s), 0 points; the own-track re-run started 2026-11-01T22:51:18Z (record: 0 points; its status still says running, last update at 842 s) was ended by the USER stop",
-     "attempts": [
-      {
-       "attempt": 1,
-       "start": "2026-11-01T18:03:50Z",
-       "elapsed_s": 3733.2,
-       "peak_rss_gb": 13.93,
-       "reason": "host memory"
-      },
-      {
-       "attempt": 2,
-       "start": "2026-11-01T19:09:36Z",
-       "elapsed_s": 136.1,
-       "peak_rss_gb": 1.68,
-       "reason": "host memory"
-      },
-      {
-       "attempt": 3,
-       "start": "2026-11-01T19:12:25Z",
-       "elapsed_s": 549.6,
-       "peak_rss_gb": 3.84,
-       "reason": "host memory"
-      },
-      {
-       "attempt": 4,
-       "start": "2026-11-01T19:39:14Z",
-       "elapsed_s": 2406.6,
-       "peak_rss_gb": 10.51,
-       "reason": "host memory"
-      },
-      {
-       "attempt": 5,
-       "start": "2026-11-01T20:30:51Z",
-       "elapsed_s": 4856.0,
-       "peak_rss_gb": 15.23,
-       "reason": "host memory"
-      },
-      {
-       "attempt": 6,
-       "start": "2026-11-01T22:33:11Z",
-       "elapsed_s": 726.6,
-       "peak_rss_gb": 9.22,
-       "reason": "host memory"
-      }
+      0,
+      1,
+      2
      ]
-    },
-    "ward": {
-     "status": "not obtained",
-     "why": "ward-uux_gggggg-lc killed by the host-memory floor 90.6 s after its start (2026-11-01T16:00:40Z); not re-run before the USER stop"
-    },
-    "double_double": {
-     "status": "not obtained",
-     "why": "dd-uux_gggggg-lc (point 0) killed by the host-memory floor on attempt 1 (161.2 s), then waiting at its start gate when the USER stop ended it"
     },
     "stability": {
      "status": "done",
-     "what": "recommended stability estimate (loops.v2.stability.RECOMMENDED_CHECKS: one generic exact rotation default_rotation(0) + the rescaled reduction check), binary64, stream points 0-2; estimate = 2 x (rotation budget + reduction budget) + 16 u S, relative to the finite part; the check budgets are each check's own relative budget (sum over reduction lanes of |Omega - Omega'| plus local parts), not a spread of two totals",
+     "max_estimate": 6.156081418345096e-07,
+     "estimates": {
+      "0": 9.273361988701146e-10,
+      "1": 6.156081418345096e-07,
+      "2": 5.1430215613111e-11
+     },
      "points": [
+      0,
+      1,
+      2
+     ],
+     "points_above_1e-5": []
+    },
+    "double_double": {
+     "status": "done",
+     "passed": true,
+     "point": 0,
+     "binary64_true_error_relative": [
+      8.447996590413055e-11,
+      4.991861619796638e-11,
+      4.572373563261551e-12
+     ],
+     "binary64_true_error_finite_relative": 8.447996590413055e-11,
+     "binary64": {
+      "estimate_finite_relative": 9.273361988701146e-10
+     },
+     "within_10E": true
+    },
+    "rescue": {
+     "status": "done",
+     "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+     "sent_up": [
+      4
+     ],
+     "count": 1,
+     "of": 16,
+     "max_level0_estimate": 7.068337121289457e-05,
+     "double_double": {},
+     "double_double_seconds": null
+    },
+    "stored_checks": {
+     "status": "done",
+     "why": null,
+     "passed": true,
+     "stages": {
+      "load": {
+       "seconds": 0.65,
+       "peak_gib": 0.14
+      },
+      "executor": {
+       "seconds": 0.01,
+       "peak_gib": 0.14
+      },
+      "checked": {
+       "seconds": 77.77,
+       "peak_gib": 9.46
+      },
+      "dd": {
+       "seconds": 306.04,
+       "peak_gib": 10.99
+      },
+      "rescue level 0": {
+       "seconds": 158.39,
+       "peak_gib": 14.22
+      }
+     },
+     "max_rss_gib": 14.22,
+     "step": {
+      "start": "2026-11-04T14:00:00Z",
+      "end": "2026-11-04T14:09:06Z",
+      "elapsed_s": 546,
+      "peak_rss_gb": 15.36,
+      "gate_wait_s": 5123,
+      "min_available_gb": 246.6,
+      "reason": "ok",
+      "attempts": 1
+     }
+    },
+    "ward": {
+     "status": "done",
+     "passed": true,
+     "legs": [
+      3,
+      6,
+      8
+     ],
+     "max_virtual_ratio_finite_single_double": [
+      6.456342765674378e-12,
+      1.2859981163280207e-12,
+      1.963170923743165e-14
+     ],
+     "max_born_ratio": 1.5615372994885977e-18,
+     "rows": [
       {
-       "index": 0,
-       "arithmetic": "double",
-       "finite": -4.703724171921071e-11,
-       "estimate_finite_relative": 7.711756541786481e-10,
-       "rotation-0_budget_relative": 1.6506724444661835e-10,
-       "reduction-rescaled_budget_relative": 2.205136967581115e-10,
-       "seconds_per_point_with_checks": 148.4209262423683,
-       "above_1e-5": false
+       "point": 2,
+       "carrier": "double",
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        3,
+        6,
+        8
+       ],
+       "virtual_over_scale": [
+        1.90520508815645e-13,
+        1.0956866101744848e-13,
+        6.628509463321619e-15
+       ],
+       "born_over_scale": 1.3892328184255874e-18
       },
       {
-       "index": 1,
-       "arithmetic": "double",
-       "finite": -2.2147613167877069e-13,
-       "estimate_finite_relative": 8.283730613945452e-07,
-       "rotation-0_budget_relative": 1.9091448367355085e-07,
-       "reduction-rescaled_budget_relative": 2.2327203815902945e-07,
-       "seconds_per_point_with_checks": 148.4209262423683,
-       "above_1e-5": false
+       "point": 6,
+       "carrier": "double",
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        3,
+        6,
+        8
+       ],
+       "virtual_over_scale": [
+        6.456342765674378e-12,
+        1.2859981163280207e-12,
+        1.963170923743165e-14
+       ],
+       "born_over_scale": 1.5615372994885977e-18
       },
       {
-       "index": 2,
-       "arithmetic": "double",
-       "finite": -2.315528280627664e-11,
-       "estimate_finite_relative": 5.186488111217212e-11,
-       "rotation-0_budget_relative": 1.416884492754139e-11,
-       "reduction-rescaled_budget_relative": 1.175955860803082e-11,
-       "seconds_per_point_with_checks": 148.4209262423683,
-       "above_1e-5": false
+       "point": 10,
+       "carrier": "double",
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        3,
+        6,
+        8
+       ],
+       "virtual_over_scale": [
+        4.31627447541035e-12,
+        5.587114193843803e-13,
+        9.972880287698676e-15
+       ],
+       "born_over_scale": 7.767838981915283e-19
       }
      ],
-     "max_estimate": 8.283730613945452e-07,
-     "points_above_1e-5": [],
-     "source": "workspace/tmp/bench-2to6/runs/stability-time-uux_gggggg-lc.json"
+     "recorded_not_asserted": [],
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted",
+     "steps": {
+      "ward-lc": {
+       "start": "2026-11-04T15:31:21Z",
+       "end": "2026-11-04T15:33:31Z",
+       "elapsed_s": 130,
+       "peak_rss_gb": 11.02,
+       "gate_wait_s": 2908,
+       "min_available_gb": 473.5,
+       "reason": "ok",
+       "attempts": 1
+      }
+     }
     }
    },
-   "table1": {
-    "label": "u u~ > 6g (LC, N_f = 5, no top)",
-    "generation_h": 1.12,
-    "generation_peak_gib": 41.781,
-    "artifact_gb": 0.178,
-    "load_s": 74.87945208698511,
-    "load_peak_gib": 12.594,
-    "s_per_point": 19.935267116179602,
-    "B": 128,
-    "eval_peak_gib": 90.946,
-    "eval_step_peak_gib": 90.94,
-    "fastest_olp_s_per_point": null,
-    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured",
-    "preliminary": true
+   "engine": {
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "native_directory": "loop-native-mf-2to6-2f3f76d9-lto",
+    "native_digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+    "one_engine": true,
+    "records": [
+     "checks-lc",
+     "store-lc",
+     "store-ward-lc",
+     "time-lc-b128",
+     "time-lc-b16",
+     "ward-lc"
+    ]
    }
   },
   {
-   "key": "uux_uuxgggg-lc",
-   "process": "u u~ > u u~ g g g g",
-   "label": "u u~ > u u~ 4g (LC, N_f = 5, no top)",
-   "accuracy": "lc",
+   "key": "uux_gggggg-full",
+   "process": "u u~ > G G G G G G",
+   "label": "u u~ > g g g g g g (FC, N_f = 5, no top)",
+   "accuracy": "full",
+   "all_gluon": false,
    "particle_veto": [
     6
    ],
-   "particle_veto_note": "PDG [6] (processes.json); dry run veto 't': top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
    "born_orders": {
     "QCD": 6,
     "QED": 0
    },
    "correction": "QCD",
-   "revisions": {
-    "generation": "8a062a5222d91ab0b12f130f8de3709361b6d554",
-    "timing": "8a062a5222d91ab0b12f130f8de3709361b6d554"
+   "lanes": 16,
+   "structure": {
+    "families": 47348,
+    "b_trie_nodes": 758777
    },
+   "generation": {
+    "stages": {
+     "model": {
+      "s": 2.75559278880246,
+      "peak_gib": 0.359
+     },
+     "generate": {
+      "s": 335.5710750948638,
+      "peak_gib": 15.962
+     },
+     "export": {
+      "s": 4082.1952779451385,
+      "peak_gib": 92.936,
+      "plan_mb": 814.015
+     },
+     "store": {
+      "s": 449.04359289398417,
+      "peak_gib": 89.27
+     }
+    },
+    "stage_sum_s": 4869.6,
+    "peak_gib": 92.936,
+    "peak_note": "max of the per-stage VmHWM peaks (the harness resets the high-water mark per stage)",
+    "step": {
+     "start": "2026-11-04T13:07:05Z",
+     "end": "2026-11-04T14:29:19Z",
+     "elapsed_s": 4934,
+     "peak_rss_gb": 98.74,
+     "gate_wait_s": 10729,
+     "min_available_gb": 179.3,
+     "reason": "ok",
+     "attempts": 1
+    },
+    "threads": null,
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "dirty": false,
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
+    }
+   },
+   "artifact": {
+    "path": "workspace/artifacts/2to6/uux_gggggg-fc-2f3f76d9/loop-runtime.pacbin",
+    "bytes": 142853608,
+    "gb": 0.143,
+    "plan_sha256": "2e7b367cdda4e8fb6013f7ce4c192fe87e2128344c11035b00dabd9e26176759",
+    "point_inputs": "native-v2"
+   },
+   "load": {
+    "s": 3.8530188689474016,
+    "peak_gib": 1.663,
+    "source": "timing record B = 16 (hard-linked copy, generation forbidden)"
+   },
+   "evaluation": {
+    "status": "measured",
+    "B": 16,
+    "lanes": 16,
+    "threads": 1,
+    "host_core": 2,
+    "warm_up": {
+     "points": 16,
+     "s": 1266.866457652999,
+     "note": "includes lazy compilation"
+    },
+    "timed": {
+     "blocks": 1,
+     "points_per_block": 16,
+     "points": 16
+    },
+    "s_per_point": 65.02810013842827,
+    "stages_s_per_point": {
+     "assembly": 0.06954021859564818,
+     "dressing": 20.179856057812497,
+     "factors": 0.12786341162500003,
+     "input conversion": 6.889218639116734e-05,
+     "native trees": 7.8399836759375,
+     "other": 0.3960653604586071,
+     "python point parameters": 6.533775012940168e-05,
+     "reduction": 6.654119032812501,
+     "reduction: masters": 0.9401547728750002,
+     "reduction: masters (oneloopmaster)": 0.0071405765,
+     "scatter": 0.09363643081249999,
+     "seeds": 29.6669017204375
+    },
+    "load": {
+     "seconds": 3.8530188689474016,
+     "peak_gib": 1.663
+    },
+    "peak_gib": 30.684,
+    "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
+    "step": {
+     "start": "2026-11-04T14:57:27Z",
+     "end": "2026-11-04T15:36:11Z",
+     "elapsed_s": 2324,
+     "peak_rss_gb": 32.85,
+     "gate_wait_s": 1606,
+     "min_available_gb": 277.6,
+     "reason": "ok",
+     "attempts": 1
+    },
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
+    },
+    "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
+   },
+   "evaluations": {
+    "16": {
+     "status": "measured",
+     "B": 16,
+     "lanes": 16,
+     "threads": 1,
+     "host_core": 2,
+     "warm_up": {
+      "points": 16,
+      "s": 1266.866457652999,
+      "note": "includes lazy compilation"
+     },
+     "timed": {
+      "blocks": 1,
+      "points_per_block": 16,
+      "points": 16
+     },
+     "s_per_point": 65.02810013842827,
+     "stages_s_per_point": {
+      "assembly": 0.06954021859564818,
+      "dressing": 20.179856057812497,
+      "factors": 0.12786341162500003,
+      "input conversion": 6.889218639116734e-05,
+      "native trees": 7.8399836759375,
+      "other": 0.3960653604586071,
+      "python point parameters": 6.533775012940168e-05,
+      "reduction": 6.654119032812501,
+      "reduction: masters": 0.9401547728750002,
+      "reduction: masters (oneloopmaster)": 0.0071405765,
+      "scatter": 0.09363643081249999,
+      "seeds": 29.6669017204375
+     },
+     "load": {
+      "seconds": 3.8530188689474016,
+      "peak_gib": 1.663
+     },
+     "peak_gib": 30.684,
+     "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
+     "step": {
+      "start": "2026-11-04T14:57:27Z",
+      "end": "2026-11-04T15:36:11Z",
+      "elapsed_s": 2324,
+      "peak_rss_gb": 32.85,
+      "gate_wait_s": 1606,
+      "min_available_gb": 277.6,
+      "reason": "ok",
+      "attempts": 1
+     },
+     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "native": {
+      "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+      "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+      "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
+      }
+     },
+     "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
+    },
+    "128": {
+     "status": "not measured",
+     "step": {
+      "start": "2026-11-04T14:57:28Z",
+      "end": null,
+      "elapsed_s": 6003,
+      "peak_rss_gb": 33.9,
+      "gate_wait_s": 1607,
+      "min_available_gb": 236.6,
+      "reason": null,
+      "attempts": 1
+     }
+    }
+   },
+   "table1": {
+    "eval_peak_gib": 30.684,
+    "gate": "none: no provider at 2->6 (speed reported without a gate)"
+   },
+   "checks": {
+    "double_pole": {
+     "status": "done",
+     "verdict": "pass",
+     "max_deviation": 1.0655114074623225e-11,
+     "points": [
+      0,
+      1,
+      2
+     ]
+    },
+    "stability": {
+     "status": "done",
+     "max_estimate": 5.94711974546968e-06,
+     "estimates": {
+      "0": 4.099103442677773e-09,
+      "1": 5.94711974546968e-06,
+      "2": 2.151436673523507e-10
+     },
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "points_above_1e-5": []
+    },
+    "catani": {
+     "status": "done",
+     "passed": true,
+     "formed_at_every_point": true,
+     "max_single_deviation": 3.270271225309436e-08,
+     "max_double_deviation": 1.106810045894969e-11,
+     "max_double_double_deviation": 0.0,
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "rule": "native Catani prediction from the stored dipole orbits; each deviation <= 10 E + 1e-12"
+    },
+    "double_double": {
+     "status": "done",
+     "passed": true,
+     "point": 0,
+     "binary64_true_error_relative": [
+      1.6722990136385684e-10,
+      1.1601268920935547e-10,
+      1.1044155378218604e-11
+     ],
+     "binary64_true_error_finite_relative": 1.6722990136385684e-10,
+     "binary64": {
+      "estimate_finite_relative": 4.099103442677773e-09
+     },
+     "within_10E": true
+    },
+    "rescue": {
+     "status": "done",
+     "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+     "sent_up": [
+      4,
+      12
+     ],
+     "count": 2,
+     "of": 16,
+     "max_level0_estimate": 0.0008729525760277219,
+     "double_double": {},
+     "double_double_seconds": null
+    },
+    "stored_checks": {
+     "status": "in progress",
+     "why": "stages so far: ['load', 'executor', 'checked', 'dd', 'rescue level 0']",
+     "passed": null,
+     "stages": {
+      "load": {
+       "seconds": 4.24,
+       "peak_gib": 1.64
+      },
+      "executor": {
+       "seconds": 0.04,
+       "peak_gib": 1.64
+      },
+      "checked": {
+       "seconds": 398.91,
+       "peak_gib": 33.97
+      },
+      "dd": {
+       "seconds": 955.88,
+       "peak_gib": 36.05
+      },
+      "rescue level 0": {
+       "seconds": 574.06,
+       "peak_gib": 38.89
+      }
+     },
+     "max_rss_gib": null,
+     "step": {
+      "start": "2026-11-04T15:31:18Z",
+      "end": null,
+      "elapsed_s": 3902,
+      "peak_rss_gb": 42.04,
+      "gate_wait_s": 3637,
+      "min_available_gb": 236.6,
+      "reason": null,
+      "attempts": 1
+     }
+    },
+    "ward": {
+     "status": "not obtained",
+     "why": "Ward step not finished",
+     "step": {
+      "start": "2026-11-04T13:23:23Z",
+      "end": "2026-11-04T14:47:08Z",
+      "elapsed_s": 5026,
+      "peak_rss_gb": 104.17,
+      "gate_wait_s": 11707,
+      "min_available_gb": 179.5,
+      "reason": "ok",
+      "attempts": 1
+     }
+    }
+   },
+   "engine": {
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "native_directory": "loop-native-mf-2to6-2f3f76d9-lto",
+    "native_digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+    "one_engine": true,
+    "records": [
+     "checks-fc",
+     "store-fc",
+     "store-ward-fc",
+     "time-fc-b16"
+    ]
+   }
+  },
+  {
+   "key": "uux_uuxgggg-lc",
+   "process": "u u~ > u u~ G G G G",
+   "label": "u u~ > u u~ g g g g (LC, N_f = 5, no top)",
+   "accuracy": "lc",
+   "all_gluon": false,
+   "particle_veto": [
+    6
+   ],
+   "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "born_orders": {
+    "QCD": 6,
+    "QED": 0
+   },
+   "correction": "QCD",
    "lanes": 16,
    "structure": {
     "families": 13318,
@@ -970,618 +1709,960 @@
    "generation": {
     "stages": {
      "model": {
-      "s": 4.544907022034749,
-      "peak_gib": 0.362
+      "s": 3.3309953338466585,
+      "peak_gib": 0.343
      },
      "generate": {
-      "s": 933.2743865689263,
-      "peak_gib": 8.56
+      "s": 247.91824485198595,
+      "peak_gib": 13.652
      },
      "export": {
-      "s": 484.69664853299037,
-      "peak_gib": 17.304,
-      "plan_mb": 53.683
+      "s": 258.10004248912446,
+      "peak_gib": 18.171,
+      "plan_mb": 5.866
      },
      "store": {
-      "s": 45.345222579082474,
-      "peak_gib": 15.672
+      "s": 14.589338913094252,
+      "peak_gib": 15.323
      }
     },
-    "stage_sum_s": 1467.9,
-    "step_wall_s": 1502.3,
-    "step_wall_h": 0.42,
-    "peak_gib": 17.304,
-    "peak_note": "max of the per-stage VmHWM peaks (harness resets the high-water mark per stage)",
+    "stage_sum_s": 523.9,
+    "peak_gib": 18.171,
+    "peak_note": "max of the per-stage VmHWM peaks (the harness resets the high-water mark per stage)",
     "step": {
-     "start": "2026-11-01T11:07:03Z",
-     "end": "2026-11-01T11:32:05Z",
-     "elapsed_s": 1502.3,
-     "peak_rss_gb": 18.48,
-     "rc": 0,
+     "start": "2026-11-04T12:10:20Z",
+     "end": "2026-11-04T12:19:18Z",
+     "elapsed_s": 537,
+     "peak_rss_gb": 19.69,
+     "gate_wait_s": 1740,
+     "min_available_gb": 430.7,
      "reason": "ok",
-     "core": 5,
-     "peak_rss_gib": 17.21,
-     "running": false,
-     "source": "workspace/tmp/bench-2to6/logs/store-uux_uuxgggg-lc.status.json"
+     "attempts": 1
     },
-    "revision": "8a062a5222d91ab0b12f130f8de3709361b6d554",
+    "threads": null,
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
     "dirty": false,
-    "lanes": 16,
-    "structure": {
-     "families": 13318,
-     "b_trie_nodes": 90998
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
     }
    },
    "artifact": {
-    "path": "workspace/artifacts/2to6/uux_uuxgggg-lc/loop-runtime.pacbin",
-    "bytes": 22541800,
-    "gb": 0.023,
-    "plan_sha256": "90140bfb0c4ed698b3d78208a6a4c6b60a625920391792bd4ac73ff59d703aef",
-    "point_inputs": "native-v2",
-    "source": "workspace/artifacts/2to6/uux_uuxgggg-lc/generation.json (store.bytes; artifact not opened)"
+    "path": "workspace/artifacts/2to6/uux_uuxgggg-lc-2f3f76d9/loop-runtime.pacbin",
+    "bytes": 8702136,
+    "gb": 0.009,
+    "plan_sha256": "427babe55bb518037b4317cdb610076d482f402c2dc3c69ef2522c069149297d",
+    "point_inputs": "native-v2"
    },
    "load": {
-    "s": 13.090995524078608,
-    "peak_gib": 1.553
+    "s": 0.19831888191401958,
+    "peak_gib": 0.09,
+    "source": "timing record B = 16 (hard-linked copy, generation forbidden)"
    },
    "evaluation": {
-    "mode": "normal timing: warm-up, then paired timed blocks of B stream points (finite part, poles off, checks off)",
+    "status": "measured",
     "B": 128,
     "lanes": 16,
     "threads": 1,
-    "threads_source": "record protocol: binary64, finite part only (poles off), no stability check, one thread on one pinned core, warm-up excluded, paired blocks, setup heap frozen out of the cyclic collector",
-    "host_core": [
-     4
-    ],
+    "host_core": 3,
     "warm_up": {
      "points": 16,
-     "B": 128,
-     "s": 98.05876071401872,
-     "s_per_point": 6.1,
+     "s": 45.987781486008316,
      "note": "includes lazy compilation"
     },
     "timed": {
-     "blocks": 2,
+     "blocks": 1,
      "points_per_block": 128,
-     "points": 256,
-     "samples_s_per_point": [
-      4.82692174685144,
-      4.614932160304306
-     ]
+     "points": 128
     },
-    "s_per_point": 4.720926953577873,
+    "s_per_point": 2.667641950671168,
     "stages_s_per_point": {
-     "assembly": 0.02127395349634753,
-     "dressing": 2.5816970009257805,
-     "factors": 0.02831073555859377,
-     "input conversion": 0.00010074026977235917,
-     "native trees": 0.47319294121093747,
-     "other": 0.10492129987028598,
-     "python point parameters": 7.503582037315937e-05,
-     "reduction": 1.1420301585429695,
-     "reduction: masters": 0.20575592592187497,
-     "reduction: masters (oneloopmaster)": 0.006506882550781251,
-     "scatter": 0.031239898230468764,
-     "seeds": 0.3380851896523438
+     "assembly": 0.014810249058427871,
+     "dressing": 1.3873396852578128,
+     "factors": 0.029087049703125003,
+     "input conversion": 3.456880403973628e-05,
+     "native trees": 0.3123303849609375,
+     "other": 0.0729571129106179,
+     "python point parameters": 4.281899964553304e-05,
+     "reduction": 0.7626106794921869,
+     "reduction: masters": 0.17949209582812498,
+     "reduction: masters (oneloopmaster)": 0.005425890992187502,
+     "scatter": 0.025667934187499984,
+     "seeds": 0.062761467296875
     },
-    "peak_gib_harness": 23.342,
-    "peak_note": "harness ru_maxrss of the timing process; step = watchdog process-group VmRSS samples (GB = 1e9 B)",
+    "load": {
+     "seconds": 0.1300885360687971,
+     "peak_gib": 0.089
+    },
+    "peak_gib": 7.383,
+    "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
     "step": {
-     "start": "2026-11-01T11:32:08Z",
-     "end": "2026-11-01T11:56:53Z",
-     "elapsed_s": 1484.7,
-     "peak_rss_gb": 25.01,
-     "rc": 0,
+     "start": "2026-11-04T12:50:56Z",
+     "end": "2026-11-04T12:57:28Z",
+     "elapsed_s": 392,
+     "peak_rss_gb": 7.9,
+     "gate_wait_s": 1896,
+     "min_available_gb": 289.7,
      "reason": "ok",
-     "core": 4,
-     "peak_rss_gib": 23.29,
-     "running": false,
-     "source": "workspace/tmp/bench-2to6/logs/time-uux_uuxgggg-lc.status.json"
+     "attempts": 1
     },
-    "revision": "8a062a5222d91ab0b12f130f8de3709361b6d554",
-    "colour_contraction": null
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
+    },
+    "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
+   },
+   "evaluations": {
+    "16": {
+     "status": "measured",
+     "B": 16,
+     "lanes": 16,
+     "threads": 1,
+     "host_core": 6,
+     "warm_up": {
+      "points": 16,
+      "s": 47.90258954791352,
+      "note": "includes lazy compilation"
+     },
+     "timed": {
+      "blocks": 1,
+      "points_per_block": 16,
+      "points": 16
+     },
+     "s_per_point": 2.583046676503727,
+     "stages_s_per_point": {
+      "assembly": 0.013358384559978731,
+      "dressing": 1.4056749980625003,
+      "factors": 0.03556747987500001,
+      "input conversion": 3.8963305996730924e-05,
+      "native trees": 0.2449236496875,
+      "other": 0.08782051607223051,
+      "python point parameters": 4.460956552065909e-05,
+      "reduction": 0.7396928795000001,
+      "reduction: masters": 0.18260915725,
+      "reduction: masters (oneloopmaster)": 0.0055889999375,
+      "scatter": 0.0243584709375,
+      "seeds": 0.0315667249375
+     },
+     "load": {
+      "seconds": 0.19831888191401958,
+      "peak_gib": 0.09
+     },
+     "peak_gib": 4.849,
+     "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
+     "step": {
+      "start": "2026-11-04T12:50:54Z",
+      "end": "2026-11-04T12:52:27Z",
+      "elapsed_s": 94,
+      "peak_rss_gb": 5.17,
+      "gate_wait_s": 1893,
+      "min_available_gb": 288.5,
+      "reason": "ok",
+      "attempts": 1
+     },
+     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "native": {
+      "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+      "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+      "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
+      }
+     },
+     "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
+    },
+    "128": {
+     "status": "measured",
+     "B": 128,
+     "lanes": 16,
+     "threads": 1,
+     "host_core": 3,
+     "warm_up": {
+      "points": 16,
+      "s": 45.987781486008316,
+      "note": "includes lazy compilation"
+     },
+     "timed": {
+      "blocks": 1,
+      "points_per_block": 128,
+      "points": 128
+     },
+     "s_per_point": 2.667641950671168,
+     "stages_s_per_point": {
+      "assembly": 0.014810249058427871,
+      "dressing": 1.3873396852578128,
+      "factors": 0.029087049703125003,
+      "input conversion": 3.456880403973628e-05,
+      "native trees": 0.3123303849609375,
+      "other": 0.0729571129106179,
+      "python point parameters": 4.281899964553304e-05,
+      "reduction": 0.7626106794921869,
+      "reduction: masters": 0.17949209582812498,
+      "reduction: masters (oneloopmaster)": 0.005425890992187502,
+      "scatter": 0.025667934187499984,
+      "seeds": 0.062761467296875
+     },
+     "load": {
+      "seconds": 0.1300885360687971,
+      "peak_gib": 0.089
+     },
+     "peak_gib": 7.383,
+     "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
+     "step": {
+      "start": "2026-11-04T12:50:56Z",
+      "end": "2026-11-04T12:57:28Z",
+      "elapsed_s": 392,
+      "peak_rss_gb": 7.9,
+      "gate_wait_s": 1896,
+      "min_available_gb": 289.7,
+      "reason": "ok",
+      "attempts": 1
+     },
+     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "native": {
+      "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+      "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+      "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
+      }
+     },
+     "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
+    }
+   },
+   "table1": {
+    "eval_peak_gib": 7.383,
+    "gate": "none: no provider at 2->6 (speed reported without a gate)"
    },
    "checks": {
     "double_pole": {
      "status": "done",
-     "what": "double pole / Born of the renormalised virtual against the universal value (every pole, binary64)",
+     "verdict": "pass",
+     "max_deviation": 6.716281618105134e-14,
      "points": [
-      {
-       "index": 0,
-       "born": 1.0988979081067035e-09,
-       "finite": -2.2104575726292332e-09,
-       "single_pole_over_born_abs": 1.9208848644107683,
-       "double_pole_over_born": -0.3380450991271705,
-       "universal_double_pole": -0.33804509912718567,
-       "double_pole_deviation": 4.4829948208868014e-14,
-       "seconds_per_point_all_poles": 17.913132960675284
-      },
-      {
-       "index": 1,
-       "born": 4.2332482451315975e-13,
-       "finite": -1.8945003786984686e-13,
-       "single_pole_over_born_abs": 1.4215785710629016,
-       "double_pole_over_born": -0.3380450991272085,
-       "universal_double_pole": -0.33804509912718567,
-       "double_pole_deviation": 6.749124071005404e-14,
-       "seconds_per_point_all_poles": 17.913132960675284
-      },
-      {
-       "index": 2,
-       "born": 4.314431323873399e-13,
-       "finite": -7.925255845596801e-13,
-       "single_pole_over_born_abs": 1.8579874482061036,
-       "double_pole_over_born": -0.33804509912719316,
-       "universal_double_pole": -0.33804509912718567,
-       "double_pole_deviation": 2.2168655707681985e-14,
-       "seconds_per_point_all_poles": 17.913132960675284
-      }
-     ],
-     "max_deviation": 6.749124071005404e-14,
-     "verdict": "pass"
+      0,
+      1,
+      2
+     ]
     },
-    "catani_single_pole": {
-     "status": "done (LC); decisive FC check pending",
-     "what": "tree engine's colour-correlated Born + massless Catani (mqcd 'tree' route, n_f = 5) at tree accuracy 'lc' against the loop's poles; single pole compared in magnitude, both normalised to their own Born; single_deviation = loop/Catani - 1; born_ratio = loop LC Born / tree LC Born",
+    "stability": {
+     "status": "done",
+     "max_estimate": 7.548260639830787e-07,
+     "estimates": {
+      "0": 2.5531999273538905e-10,
+      "1": 7.548260639830787e-07,
+      "2": 1.198025955381903e-09
+     },
      "points": [
-      {
-       "index": 0,
-       "mu_r": "1000",
-       "tree_born": 1.095708839931299e-09,
-       "loop_born": 1.0988979081067035e-09,
-       "born_ratio": 1.0029105069332145,
-       "catani_single_over_born": -1.7970136615198715,
-       "loop_single_over_born_abs": 1.9208848644107683,
-       "single_deviation": 0.06893169792940221,
-       "catani_double_over_born": -0.33804509912718567,
-       "loop_double_over_born": -0.3380450991271705,
-       "double_deviation": 4.4829948208868014e-14,
-       "passed_1e-5": false,
-       "seconds": 122.0064628769178
-      },
-      {
-       "index": 1,
-       "mu_r": "700",
-       "tree_born": 4.78042956401094e-13,
-       "loop_born": 4.2332482451315975e-13,
-       "born_ratio": 0.8855372071583795,
-       "catani_single_over_born": -1.2943195534424572,
-       "loop_single_over_born_abs": 1.4215785710629016,
-       "single_deviation": 0.09832117368696008,
-       "catani_double_over_born": -0.33804509912718567,
-       "loop_double_over_born": -0.3380450991272085,
-       "double_deviation": 6.749124071005404e-14,
-       "passed_1e-5": false,
-       "seconds": 59.398579705972224
-      },
-      {
-       "index": 2,
-       "mu_r": "1400",
-       "tree_born": 4.901901388383471e-13,
-       "loop_born": 4.314431323873399e-13,
-       "born_ratio": 0.8801546547014881,
-       "catani_single_over_born": -1.7308820880406484,
-       "loop_single_over_born_abs": 1.8579874482061036,
-       "single_deviation": 0.07343386418039488,
-       "catani_double_over_born": -0.33804509912718567,
-       "loop_double_over_born": -0.33804509912719316,
-       "double_deviation": 2.2168655707681985e-14,
-       "passed_1e-5": false,
-       "seconds": 68.29554432700388
-      }
+      0,
+      1,
+      2
      ],
-     "max_single_deviation": 0.09832117368696008,
-     "max_double_deviation": 6.749124071005404e-14,
-     "tree_generation_s": 5124.744937343989,
-     "tree_peak_gib": 16.304279327392578,
+     "points_above_1e-5": []
+    },
+    "double_double": {
+     "status": "done",
+     "passed": true,
+     "point": 0,
+     "binary64_true_error_relative": [
+      1.278739870536058e-11,
+      4.168317819157959e-12,
+      6.596699714478533e-14
+     ],
+     "binary64_true_error_finite_relative": 1.278739870536058e-11,
+     "binary64": {
+      "estimate_finite_relative": 2.5531999273538905e-10
+     },
+     "within_10E": true
+    },
+    "rescue": {
+     "status": "done",
+     "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+     "sent_up": [
+      4,
+      6
+     ],
+     "count": 2,
+     "of": 16,
+     "max_level0_estimate": 0.22756716346225783,
+     "double_double": {},
+     "double_double_seconds": null
+    },
+    "stored_checks": {
+     "status": "done",
+     "why": null,
+     "passed": true,
+     "stages": {
+      "load": {
+       "seconds": 0.41,
+       "peak_gib": 0.14
+      },
+      "executor": {
+       "seconds": 0.01,
+       "peak_gib": 0.14
+      },
+      "checked": {
+       "seconds": 18.2,
+       "peak_gib": 4.07
+      },
+      "dd": {
+       "seconds": 108.53,
+       "peak_gib": 5.38
+      },
+      "rescue level 0": {
+       "seconds": 45.95,
+       "peak_gib": 6.99
+      }
+     },
+     "max_rss_gib": 6.99,
      "step": {
-      "start": "2026-11-01T11:56:56Z",
-      "end": "2026-11-01T13:26:51Z",
-      "elapsed_s": 5395.0,
-      "peak_rss_gb": 16.97,
-      "rc": 0,
+      "start": "2026-11-04T13:03:34Z",
+      "end": "2026-11-04T13:06:29Z",
+      "elapsed_s": 175,
+      "peak_rss_gb": 7.62,
+      "gate_wait_s": 2656,
+      "min_available_gb": 321.3,
       "reason": "ok",
-      "core": 6,
-      "peak_rss_gib": 15.8,
-      "running": false,
-      "source": "workspace/tmp/bench-2to6/logs/catani-uux_uuxgggg-lc.status.json"
-     },
-     "verdict": "double pole passes (<= 6.7e-14); single pole off by 6.9 / 9.8 / 7.3 % (not passed at 1e-5) while the two engines' LC Borns differ too (born_ratio 1.003 / 0.886 / 0.880): the tree engine's LC (colour-flow truncation and its LC colour correlations) is not the loop engine's formal-N_c LC for quark lines, so this LC comparison is not like for like; to be decided by the FC check (exact colour on both sides), which is pending",
-     "route_validation": {
-      "process": "g g > g g g",
-      "tree_accuracy": "full",
-      "max_single_deviation": 2.7521782615273113e-13,
-      "max_double_deviation": 4.76675361394513e-13,
-      "source": "workspace/tmp/bench-2to6/smoke/catani-gg_ggg-2.json",
-      "note": "the route agrees at full colour on g g > g g g; it was never run at LC on a gluon row"
-     },
-     "fc_check_pending": {
-      "why": "store-uux_uuxgggg-full (the FC phase's first step) was killed by the host-memory floor 15.0 s after its start (2026-11-01T16:02:14Z); the FC phase never re-ran before the USER stop"
-     },
-     "prose_only": {
-      "explanation_source": "STATE.md COORDINATOR 2026-11-01 ~13:50 (LC-definition reading; not investigated further by ruling)"
+      "attempts": 1
      }
     },
     "ward": {
      "status": "done",
-     "what": "tools/loop_v2_ward.py on a regenerated LC process: point 0, leg 8 polarisation replaced by c p_j / p_j^0 with factors 1 and i, binary64, every pole; ratios to the scale of each Laurent coefficient",
      "passed": true,
-     "max_born_ratio": 4.056793395106989e-17,
-     "max_virtual_ratio_finite_single_double": [
-      2.4747692024330705e-12,
-      3.81539239500166e-13,
-      4.7838806661583e-16
+     "legs": [
+      5,
+      7,
+      8
      ],
+     "max_virtual_ratio_finite_single_double": [
+      4.256491202838568e-12,
+      8.601431936162169e-13,
+      2.9899452158797853e-14
+     ],
+     "max_born_ratio": 2.718782424993183e-17,
      "rows": [
       {
        "point": 0,
        "carrier": "double",
-       "leg": 8,
-       "factor": "1",
-       "born": 5.477922900991818e-19,
-       "virtual_finite_single_double": [
-        2.4072848846149953e-14,
-        7.480256299185132e-15,
-        3.5503018462795987e-16
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        5,
+        7,
+        8
        ],
-       "in_scope": true,
-       "passed": true
+       "virtual_over_scale": [
+        2.90058861712625e-12,
+        8.601431936162169e-13,
+        6.831004255669174e-16
+       ],
+       "born_over_scale": 4.107220026282227e-18
       },
       {
-       "point": 0,
+       "point": 11,
        "carrier": "double",
-       "leg": 8,
-       "factor": "i",
-       "born": 4.056793395106989e-17,
-       "virtual_finite_single_double": [
-        2.4747692024330705e-12,
-        3.81539239500166e-13,
-        4.7838806661583e-16
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        5,
+        7,
+        8
        ],
-       "in_scope": true,
-       "passed": true
+       "virtual_over_scale": [
+        2.9816260805368444e-13,
+        6.983529452359597e-14,
+        2.9899452158797853e-14
+       ],
+       "born_over_scale": 4.539400800497767e-19
+      },
+      {
+       "point": 13,
+       "carrier": "double",
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        5,
+        7,
+        8
+       ],
+       "virtual_over_scale": [
+        4.256491202838568e-12,
+        5.225750703885346e-13,
+        4.693240860680604e-15
+       ],
+       "born_over_scale": 2.718782424993183e-17
       }
      ],
-     "criterion": {
-      "born": {
-       "double": 1e-12,
-       "double-double": 1e-24
-      },
-      "virtual": {
-       "double-double": 1e-25
-      },
-      "estimate_factor": 10,
-      "binary64_scope": 1e-09,
-      "binary64_floor": 1e-12,
-      "vector": "c p_j / p_j^0",
-      "checks": {
-       "double": "reduction-direction"
+     "recorded_not_asserted": [],
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted",
+     "steps": {
+      "ward-lc": {
+       "start": "2026-11-04T13:20:36Z",
+       "end": "2026-11-04T13:21:12Z",
+       "elapsed_s": 36,
+       "peak_rss_gb": 4.87,
+       "gate_wait_s": 794,
+       "min_available_gb": 417.4,
+       "reason": "ok",
+       "attempts": 1
+      }
+     }
+    }
+   },
+   "engine": {
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "native_directory": "loop-native-mf-2to6-2f3f76d9-lto",
+    "native_digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+    "one_engine": true,
+    "records": [
+     "checks-lc",
+     "store-lc",
+     "store-ward-lc",
+     "time-lc-b128",
+     "time-lc-b16",
+     "ward-lc"
+    ]
+   }
+  },
+  {
+   "key": "uux_uuxgggg-full",
+   "process": "u u~ > u u~ G G G G",
+   "label": "u u~ > u u~ g g g g (FC, N_f = 5, no top)",
+   "accuracy": "full",
+   "all_gluon": false,
+   "particle_veto": [
+    6
+   ],
+   "particle_veto_note": "PDG [6] (processes.json): top-free massless five-flavour QCD (USER Q-A 2026-10-31)",
+   "born_orders": {
+    "QCD": 6,
+    "QED": 0
+   },
+   "correction": "QCD",
+   "lanes": 16,
+   "structure": {
+    "families": 40454,
+    "b_trie_nodes": 398600
+   },
+   "generation": {
+    "stages": {
+     "model": {
+      "s": 4.409846806898713,
+      "peak_gib": 0.349
+     },
+     "generate": {
+      "s": 229.4885149761103,
+      "peak_gib": 8.273
+     },
+     "export": {
+      "s": 1560.5071476600133,
+      "peak_gib": 42.54,
+      "plan_mb": 315.125
+     },
+     "store": {
+      "s": 46.39326225803234,
+      "peak_gib": 41.083
+     }
+    },
+    "stage_sum_s": 1840.8,
+    "peak_gib": 42.54,
+    "peak_note": "max of the per-stage VmHWM peaks (the harness resets the high-water mark per stage)",
+    "step": {
+     "start": "2026-11-04T12:10:21Z",
+     "end": "2026-11-04T12:41:27Z",
+     "elapsed_s": 1867,
+     "peak_rss_gb": 44.71,
+     "gate_wait_s": 1740,
+     "min_available_gb": 206.0,
+     "reason": "ok",
+     "attempts": 1
+    },
+    "threads": null,
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "dirty": false,
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
+    }
+   },
+   "artifact": {
+    "path": "workspace/artifacts/2to6/uux_uuxgggg-fc-2f3f76d9/loop-runtime.pacbin",
+    "bytes": 38017480,
+    "gb": 0.038,
+    "plan_sha256": "adcec896bdaaf4dea1d5867eee1884a52b7d7329b23e109243b258cc0064212e",
+    "point_inputs": "native-v2"
+   },
+   "load": {
+    "s": 1.5093502041418105,
+    "peak_gib": 0.684,
+    "source": "timing record B = 16 (hard-linked copy, generation forbidden)"
+   },
+   "evaluation": {
+    "status": "measured",
+    "B": 128,
+    "lanes": 16,
+    "threads": 1,
+    "host_core": 70,
+    "warm_up": {
+     "points": 16,
+     "s": 358.5100289587863,
+     "note": "includes lazy compilation"
+    },
+    "timed": {
+     "blocks": 1,
+     "points_per_block": 128,
+     "points": 128
+    },
+    "s_per_point": 19.20285136710845,
+    "stages_s_per_point": {
+     "assembly": 0.042195337073280825,
+     "dressing": 6.904596864554684,
+     "factors": 0.04213489100781244,
+     "input conversion": 5.209812479733955e-05,
+     "native trees": 0.7895164188203125,
+     "other": 0.2819545406454296,
+     "python point parameters": 6.954500713618472e-05,
+     "reduction": 3.6423250114375,
+     "reduction: masters": 0.8437704761796874,
+     "reduction: masters (oneloopmaster)": 0.0100045078828125,
+     "scatter": 0.07425798188281246,
+     "seeds": 7.425748678554687
+    },
+    "load": {
+     "seconds": 2.0727764959447086,
+     "peak_gib": 0.684
+    },
+    "peak_gib": 35.988,
+    "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
+    "step": {
+     "start": "2026-11-04T13:03:08Z",
+     "end": "2026-11-04T13:50:17Z",
+     "elapsed_s": 2829,
+     "peak_rss_gb": 38.57,
+     "gate_wait_s": 1247,
+     "min_available_gb": 262.7,
+     "reason": "ok",
+     "attempts": 1
+    },
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "native": {
+     "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+     "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+     "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "profile": {
+      "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+      "CARGO_PROFILE_RELEASE_LTO": "thin",
+      "name": "release"
+     }
+    },
+    "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
+   },
+   "evaluations": {
+    "16": {
+     "status": "measured",
+     "B": 16,
+     "lanes": 16,
+     "threads": 1,
+     "host_core": 24,
+     "warm_up": {
+      "points": 16,
+      "s": 317.5093128059525,
+      "note": "includes lazy compilation"
+     },
+     "timed": {
+      "blocks": 1,
+      "points_per_block": 16,
+      "points": 16
+     },
+     "s_per_point": 18.23689086905506,
+     "stages_s_per_point": {
+      "assembly": 0.040647176443599164,
+      "dressing": 6.3494178971875,
+      "factors": 0.04514866656249998,
+      "input conversion": 4.099518992006779e-05,
+      "native trees": 0.631189121875,
+      "other": 0.3016975577348511,
+      "python point parameters": 4.620831168722361e-05,
+      "reduction": 2.9827061941874993,
+      "reduction: masters": 0.775588909,
+      "reduction: masters (oneloopmaster)": 0.008811012812499998,
+      "scatter": 0.06688368012499997,
+      "seeds": 7.8191133714375
+     },
+     "load": {
+      "seconds": 1.5093502041418105,
+      "peak_gib": 0.684
+     },
+     "peak_gib": 34.569,
+     "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
+     "step": {
+      "start": "2026-11-04T13:03:08Z",
+      "end": "2026-11-04T13:13:27Z",
+      "elapsed_s": 619,
+      "peak_rss_gb": 37.03,
+      "gate_wait_s": 1247,
+      "min_available_gb": 295.0,
+      "reason": "ok",
+      "attempts": 1
+     },
+     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "native": {
+      "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+      "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+      "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
       }
      },
-     "regeneration": {
-      "model": 4.396786272991449,
-      "generate": 979.0715134190395,
-      "generate_peak_gib": 8.456977844238281,
-      "export": 513.3551941309124,
-      "export_peak_gib": 16.511878967285156
-     },
-     "max_rss_gib": 23.606258392333984,
-     "step": {
-      "start": "2026-11-01T13:40:52Z",
-      "end": "2026-11-01T14:07:59Z",
-      "elapsed_s": 1626.6,
-      "peak_rss_gb": 24.89,
-      "rc": 0,
-      "reason": "ok",
-      "core": 1,
-      "peak_rss_gib": 23.18,
-      "running": false,
-      "source": "workspace/tmp/bench-2to6/logs/ward-uux_uuxgggg-lc.status.json"
-     },
-     "verdict": "pass"
+     "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
     },
-    "double_double": {
-     "status": "done",
-     "what": "stream point 0 in binary64 and double-double, recommended checks on both",
-     "binary64": {
-      "born": 1.0988979081067035e-09,
-      "finite": -2.2104575726292332e-09,
-      "estimate_finite_relative": 3.336065682685094e-10,
-      "seconds_per_point_with_checks": 123.57440985692665
+    "128": {
+     "status": "measured",
+     "B": 128,
+     "lanes": 16,
+     "threads": 1,
+     "host_core": 70,
+     "warm_up": {
+      "points": 16,
+      "s": 358.5100289587863,
+      "note": "includes lazy compilation"
      },
-     "double_double": {
-      "born": 1.0988979081067269e-09,
-      "finite": -2.210457572579359e-09,
-      "estimate_finite_relative": 2.767914552798443e-26,
-      "seconds_per_point_with_checks": 694.3699882188812
+     "timed": {
+      "blocks": 1,
+      "points_per_block": 128,
+      "points": 128
      },
-     "binary64_true_error_finite_relative": 2.256e-11,
-     "binary64_born_difference_relative": 2.13e-14,
-     "estimate_over_true_error": 14.8,
+     "s_per_point": 19.20285136710845,
+     "stages_s_per_point": {
+      "assembly": 0.042195337073280825,
+      "dressing": 6.904596864554684,
+      "factors": 0.04213489100781244,
+      "input conversion": 5.209812479733955e-05,
+      "native trees": 0.7895164188203125,
+      "other": 0.2819545406454296,
+      "python point parameters": 6.954500713618472e-05,
+      "reduction": 3.6423250114375,
+      "reduction: masters": 0.8437704761796874,
+      "reduction: masters (oneloopmaster)": 0.0100045078828125,
+      "scatter": 0.07425798188281246,
+      "seeds": 7.425748678554687
+     },
+     "load": {
+      "seconds": 2.0727764959447086,
+      "peak_gib": 0.684
+     },
+     "peak_gib": 35.988,
+     "peak_note": "the timing process's ru_maxrss (load, warm-up and the block)",
      "step": {
-      "start": "2026-11-01T13:26:55Z",
-      "end": "2026-11-01T13:40:49Z",
-      "elapsed_s": 834.5,
-      "peak_rss_gb": 16.05,
-      "rc": 0,
+      "start": "2026-11-04T13:03:08Z",
+      "end": "2026-11-04T13:50:17Z",
+      "elapsed_s": 2829,
+      "peak_rss_gb": 38.57,
+      "gate_wait_s": 1247,
+      "min_available_gb": 262.7,
       "reason": "ok",
-      "core": 2,
-      "peak_rss_gib": 14.95,
-      "running": false,
-      "source": "workspace/tmp/bench-2to6/logs/dd-uux_uuxgggg-lc.status.json"
+      "attempts": 1
      },
-     "verdict": "pass: binary64 agrees with double-double to 2.3e-11 relative; the binary64 estimate (3.3e-10) covers it"
-    },
-    "stability": {
-     "status": "done",
-     "what": "recommended stability estimate (loops.v2.stability.RECOMMENDED_CHECKS: one generic exact rotation default_rotation(0) + the rescaled reduction check), binary64, stream points 0-2; estimate = 2 x (rotation budget + reduction budget) + 16 u S, relative to the finite part; the check budgets are each check's own relative budget (sum over reduction lanes of |Omega - Omega'| plus local parts), not a spread of two totals",
-     "points": [
-      {
-       "index": 0,
-       "arithmetic": "double",
-       "finite": -2.2104575726292332e-09,
-       "estimate_finite_relative": 3.336065682685094e-10,
-       "rotation-0_budget_relative": 9.571300191914965e-11,
-       "reduction-rescaled_budget_relative": 7.107727429872879e-11,
-       "seconds_per_point_with_checks": 34.85476255766116,
-       "above_1e-5": false
-      },
-      {
-       "index": 1,
-       "arithmetic": "double",
-       "finite": -1.8945003786984686e-13,
-       "estimate_finite_relative": 2.624280371426821e-06,
-       "rotation-0_budget_relative": 5.804384129157617e-07,
-       "reduction-rescaled_budget_relative": 7.317017467741085e-07,
-       "seconds_per_point_with_checks": 34.85476255766116,
-       "above_1e-5": false
-      },
-      {
-       "index": 2,
-       "arithmetic": "double",
-       "finite": -7.925255845596801e-13,
-       "estimate_finite_relative": 7.042370132661528e-10,
-       "rotation-0_budget_relative": 1.3530555395645406e-10,
-       "reduction-rescaled_budget_relative": 2.1680435550577222e-10,
-       "seconds_per_point_with_checks": 34.85476255766116,
-       "above_1e-5": false
+     "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+     "native": {
+      "directory": "loop-native-mf-2to6-2f3f76d9-lto",
+      "digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+      "source_revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+      "profile": {
+       "CARGO_PROFILE_RELEASE_CODEGEN_UNITS": "1",
+       "CARGO_PROFILE_RELEASE_LTO": "thin",
+       "name": "release"
       }
-     ],
-     "max_estimate": 2.624280371426821e-06,
-     "points_above_1e-5": [],
-     "source": "workspace/tmp/bench-2to6/runs/stability-time-uux_uuxgggg-lc.json"
+     },
+     "loaded_from": "hard-linked copy of the store, every generation entry point raising (forbid_run.py)"
     }
    },
    "table1": {
-    "label": "u u~ > u u~ 4g (LC, N_f = 5, no top)",
-    "generation_h": 0.42,
-    "generation_peak_gib": 17.304,
-    "artifact_gb": 0.023,
-    "load_s": 13.090995524078608,
-    "load_peak_gib": 1.553,
-    "s_per_point": 4.720926953577873,
-    "B": 128,
-    "eval_peak_gib": 23.342,
-    "eval_step_peak_gib": 23.29,
-    "fastest_olp_s_per_point": null,
-    "gate": "none: no external reference at 2->6 (no provider entry); speed reported without a gate, cell uncoloured",
-    "preliminary": true
+    "eval_peak_gib": 35.988,
+    "gate": "none: no provider at 2->6 (speed reported without a gate)"
+   },
+   "checks": {
+    "double_pole": {
+     "status": "done",
+     "verdict": "pass",
+     "max_deviation": 2.0412216063150257e-13,
+     "points": [
+      0,
+      1,
+      2
+     ]
+    },
+    "stability": {
+     "status": "done",
+     "max_estimate": 6.524550808207488e-06,
+     "estimates": {
+      "0": 7.737301946829285e-10,
+      "1": 6.524550808207488e-06,
+      "2": 1.1265831335603553e-09
+     },
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "points_above_1e-5": []
+    },
+    "catani": {
+     "status": "done",
+     "passed": true,
+     "formed_at_every_point": true,
+     "max_single_deviation": 6.639581222099505e-11,
+     "max_double_deviation": 1.7730291426223436e-13,
+     "max_double_double_deviation": 0.0,
+     "points": [
+      0,
+      1,
+      2
+     ],
+     "rule": "native Catani prediction from the stored dipole orbits; each deviation <= 10 E + 1e-12"
+    },
+    "double_double": {
+     "status": "done",
+     "passed": true,
+     "point": 0,
+     "binary64_true_error_relative": [
+      1.2612744262540207e-11,
+      6.504438796721682e-12,
+      1.5875299980204486e-13
+     ],
+     "binary64_true_error_finite_relative": 1.2612744262540207e-11,
+     "binary64": {
+      "estimate_finite_relative": 7.737301946829285e-10
+     },
+     "within_10E": true
+    },
+    "rescue": {
+     "status": "done",
+     "policy": "VirtualRescuePolicy() level 0 (binary64, rotation euler:0.1,0.2,0.3 + rescaled check), target 1e-5",
+     "sent_up": [
+      1,
+      4,
+      6,
+      7
+     ],
+     "count": 4,
+     "of": 16,
+     "max_level0_estimate": 0.7889985175086988,
+     "double_double": {
+      "1": {
+       "estimate": 2.0514702218233988e-22,
+       "met": true,
+       "finite": [
+        -1.6642713382982678e-13
+       ]
+      }
+     },
+     "double_double_seconds": 1396.81
+    },
+    "stored_checks": {
+     "status": "done",
+     "why": null,
+     "passed": true,
+     "stages": {
+      "load": {
+       "seconds": 1.66,
+       "peak_gib": 0.67
+      },
+      "executor": {
+       "seconds": 0.09,
+       "peak_gib": 0.67
+      },
+      "checked": {
+       "seconds": 132.99,
+       "peak_gib": 34.73
+      },
+      "dd": {
+       "seconds": 495.7,
+       "peak_gib": 37.6
+      },
+      "rescue level 0": {
+       "seconds": 205.46,
+       "peak_gib": 40.22
+      },
+      "rescue double-double": {
+       "seconds": 1396.81,
+       "peak_gib": 40.22
+      }
+     },
+     "max_rss_gib": 40.22,
+     "step": {
+      "start": "2026-11-04T13:03:15Z",
+      "end": "2026-11-04T13:40:34Z",
+      "elapsed_s": 2240,
+      "peak_rss_gb": 42.5,
+      "gate_wait_s": 1307,
+      "min_available_gb": 288.6,
+      "reason": "ok",
+      "attempts": 1
+     }
+    },
+    "ward": {
+     "status": "done",
+     "passed": true,
+     "legs": [
+      5,
+      7,
+      8
+     ],
+     "max_virtual_ratio_finite_single_double": [
+      8.459342947250419e-12,
+      1.5192568678683112e-12,
+      7.552065638151497e-13
+     ],
+     "max_born_ratio": 6.7460803704934965e-18,
+     "rows": [
+      {
+       "point": 5,
+       "carrier": "double",
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        5,
+        7,
+        8
+       ],
+       "virtual_over_scale": [
+        2.814918198437185e-12,
+        6.015786793480414e-13,
+        1.4607803295628912e-15
+       ],
+       "born_over_scale": 1.4991393865184285e-18
+      },
+      {
+       "point": 11,
+       "carrier": "double",
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        5,
+        7,
+        8
+       ],
+       "virtual_over_scale": [
+        3.737921436044734e-12,
+        3.468348453327236e-13,
+        7.552065638151497e-13
+       ],
+       "born_over_scale": 1.8673451531053374e-18
+      },
+      {
+       "point": 13,
+       "carrier": "double",
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        5,
+        7,
+        8
+       ],
+       "virtual_over_scale": [
+        8.459342947250419e-12,
+        1.5192568678683112e-12,
+        6.315533144877393e-14
+       ],
+       "born_over_scale": 6.7460803704934965e-18
+      },
+      {
+       "point": 5,
+       "carrier": "double-double",
+       "asserted": true,
+       "passed": true,
+       "legs": [
+        5,
+        7,
+        8
+       ],
+       "virtual_over_scale": [
+        1.1061018012306714e-28,
+        2.1978661956869389e-29,
+        8.877837051075175e-32
+       ],
+       "born_over_scale": 3.931608263163583e-34
+      }
+     ],
+     "recorded_not_asserted": [],
+     "rule": "epsilon_j -> p_j / p_j^0 on the first, middle and last external gluon (stored gauge_legs); a binary64 point with E beyond the binary64 scope (1e-9) is recorded, not asserted",
+     "steps": {
+      "ward-fc": {
+       "start": "2026-11-04T13:59:00Z",
+       "end": "2026-11-04T14:02:33Z",
+       "elapsed_s": 213,
+       "peak_rss_gb": 36.37,
+       "gate_wait_s": 1094,
+       "min_available_gb": 256.1,
+       "reason": "ok",
+       "attempts": 1
+      },
+      "ward-fc-dd": {
+       "start": "2026-11-04T14:15:11Z",
+       "end": "2026-11-04T14:50:59Z",
+       "elapsed_s": 2148,
+       "peak_rss_gb": 27.24,
+       "gate_wait_s": 759,
+       "min_available_gb": 181.0,
+       "reason": "ok",
+       "attempts": 1
+      }
+     }
+    }
+   },
+   "engine": {
+    "revision": "2f3f76d9c343af2d8c1a0d6ea8ee57a37ac6d576",
+    "native_directory": "loop-native-mf-2to6-2f3f76d9-lto",
+    "native_digest": "2bae17f9da34b17a3c37580760e542f6d91fe34bb2e3a69d0a15d11221bf3a57",
+    "one_engine": true,
+    "records": [
+     "checks-fc",
+     "store-fc",
+     "store-ward-fc",
+     "time-fc-b128",
+     "time-fc-b16",
+     "ward-fc-dd",
+     "ward-fc"
+    ]
    }
   }
  ],
- "dry_runs": {
-  "what": "Generator.plan dry runs (no structure counts); all configurations, including top-included g g > 6g FC (Q-A)",
-  "rows": {
-   "gg_gggggg-lc": {
-    "expression": "g g > g g g g g g",
-    "accuracy": "lc",
-    "particle_veto": "t",
-    "passed": true,
-    "blockers": [],
-    "plan_s": 841.5688374938909,
-    "peak_gib": 24.3428955078125
-   },
-   "gg_gggggg-full": {
-    "expression": "g g > g g g g g g",
-    "accuracy": "full",
-    "particle_veto": "t",
-    "passed": true,
-    "blockers": [],
-    "plan_s": 976.8625764609315,
-    "peak_gib": 24.284046173095703
-   },
-   "gg_gggggg_top-full": {
-    "expression": "g g > g g g g g g",
-    "accuracy": "full",
-    "particle_veto": "-",
-    "passed": true,
-    "blockers": [],
-    "plan_s": 838.8042212808505,
-    "peak_gib": 24.31829071044922
-   },
-   "uux_gggggg-lc": {
-    "expression": "u u~ > g g g g g g",
-    "accuracy": "lc",
-    "particle_veto": "t",
-    "passed": true,
-    "blockers": [],
-    "plan_s": 116.8342883689329,
-    "peak_gib": 2.3534889221191406
-   },
-   "uux_gggggg-full": {
-    "expression": "u u~ > g g g g g g",
-    "accuracy": "full",
-    "particle_veto": "t",
-    "passed": true,
-    "blockers": [],
-    "plan_s": 115.9886069309432,
-    "peak_gib": 2.358287811279297
-   },
-   "uux_uuxgggg-lc": {
-    "expression": "u u~ > u u~ g g g g",
-    "accuracy": "lc",
-    "particle_veto": "t",
-    "passed": true,
-    "blockers": [],
-    "plan_s": 145.91650635795668,
-    "peak_gib": 1.7235107421875
-   },
-   "uux_uuxgggg-full": {
-    "expression": "u u~ > u u~ g g g g",
-    "accuracy": "full",
-    "particle_veto": "t",
-    "passed": true,
-    "blockers": [],
-    "plan_s": 137.49915088503622,
-    "peak_gib": 1.7213897705078125
-   }
-  }
- },
- "estimates_after_mf_8g_1_2": {
-  "label": "ESTIMATES [inf] +-50 %, not measured (8g0-report §5 'now -> after MF-8G-1/-2')",
-  "heading": "5. Revised estimates at 2->6 (now → after MF-8G-1/-2, [inf] ±50 %)",
-  "rows": [
-   {
-    "stage": "generate",
-    "lc_now": "4630 s / 92 GiB",
-    "fc_now": "2779 s / 63 GiB",
-    "after": "1500-2500 s / ≤ 60 GiB"
-   },
-   {
-    "stage": "export; store",
-    "lc_now": "9063 s / 217; 2858 s / 229 GiB",
-    "fc_now": "10553 s / 235; 3827 s / 247 GiB",
-    "after": "900-1800 s / ≤ 75 GiB; 200-400 s, no new peak"
-   },
-   {
-    "stage": "load",
-    "lc_now": "854 s / 140 GiB",
-    "fc_now": "≈ 1100 s / 160 GiB",
-    "after": "1-3 min / ≤ 20 GiB"
-   },
-   {
-    "stage": "eval peak B = 128",
-    "lc_now": "≈ 450-490 GiB (base 225-250 + state 213 + rows 15-25)",
-    "fc_now": "≈ 410-445 GiB",
-    "after": "≤ 64 GB (§7)"
-   },
-   {
-    "stage": "eval time",
-    "lc_now": "119 s/pt",
-    "fc_now": "478 s/pt (swap)",
-    "after": "dressing first, then trees"
-   }
-  ]
- },
- "stored_program_scans": {
-  "label": "mf-8g-0 scans of the stored plans/tree programs (8g0-report §4; not re-derived here)",
-  "rows": {
-   "JSON GB: plan / trees / companion": {
-    "g g > 6g LC": "1.87 / 13.1 / 3.34",
-    "g g > 6g FC": "3.06 / 15.0 / 3.57",
-    "u u~ > u u~ 4g LC": "0.054 / 0.169 / 0.029",
-    "u u~ > 6g LC": "0.209 / 1.33 / 0.225"
-   },
-   "tree + CT state, complex/pt (GiB/pt)": {
-    "g g > 6g LC": "7.61 M + 103.9 M (1.66)",
-    "g g > 6g FC": "7.61 M + 67.4 M (1.12)",
-    "u u~ > u u~ 4g LC": "0.32 + 4.64 M (0.074)",
-    "u u~ > 6g LC": "1.04 + 20.1 M (0.32)"
-   }
-  }
- },
- "global_caveats": [
-  "PRE-OPTIMISATION engine (15d4ef5a, native 71e2041e): the M-FINAL optimisation rounds (mf-8g-1, mf-8g-1b, mf-8g-2) target exactly these generation, load and evaluation peaks; the numbers are a baseline, not the M-FINAL result",
-  "runs stopped by the USER on 2026-11-01 ~23:00 UTC for optimisation rounds (workspace/tmp/STOP-8LEG); checks are incomplete (see each row's 'not obtained' entries)",
-  "one pinned thread on a shared, loaded host; several steps were killed by host-memory floors set below other projects' usage (a 'host memory' end is not a defect); timings indicative",
-  "no external reference exists at 2->6 (no provider entry): acceptance is internal (double pole, Catani, Ward, double-double, rotations); speed is reported without a gate",
-  "stability estimates and check budgets are relative to the finite part (loops.v2.stability)",
-  "the stored artifacts are kept in workspace/artifacts/2to6/<row>/ (loop-runtime.pacbin + generation.json)"
- ],
- "row_caveats": {
-  "gg_gggggg-lc": [
-   "the watchdog's step peak (153.93 GB) under-reports: the watchdog was SIGSTOPped from 2026-10-31T17:20:28Z to 2026-10-31T19:44:56Z (logs/guard-store-gg-lc.log); the guard's 5-min samples peak at 225 GiB and the harness store-stage VmHWM is 228.558 GiB",
-   "Catani step status says 'time bound' but the cause was the host-memory floor (guard log)",
-   "points [0, 1] have binary64 stability estimates above 1e-5 (1.7e-03, 8.9e-05): rescue candidates; no double-double cross-check at 2->6 g g > 6g"
-  ],
-  "gg_gggggg-full": [
-   "the rotated FC run ran partly in zram swap, so its 'native trees' time (265.8 s/pt vs 20.0 s/pt at LC) is likely inflated [inf, 8g0-report §0 item 4]",
-   "s/pt is ONE block of 16 = stream points [16, 17, 18, 19] x 4 copies (identity + 3 exact rotations) with FFT colour contraction, not the paired 2-block protocol of the LC rows",
-   "stream point(s) [16] binary64-unstable (rotation spread 2.1): a rescue case (the Python-API rescue stack, mf-rescue 2234ee33, is the remedy; not applied in this run)",
-   "the block VmHWM (239.2 GiB) understates the footprint under swap; the step peak 380.7 GB came from the warm-up",
-   "no FC poles, Catani, Ward or double-double: the physical-points job never got past its warm-up"
-  ],
-  "uux_gggggg-lc": [
-   "Catani, Ward and double-double not obtained (host-memory kills, then the USER stop)",
-   "first timing attempt killed by the host-memory floor; the recorded timing is attempt 1 of the relaunched chain"
-  ],
-  "uux_uuxgggg-lc": [
-   "LC Catani single pole 6.9-9.8 % off: differing LC definitions (tree vs loop engine) for quark lines; the decisive FC check is pending"
-  ]
- },
- "prose_only": {
-  "gg_gggggg-full_swap": "VmSwap ~143 GB at the end of the rotated run, host zram swap ~246 GB used, process system time 2674 s of 19100 s CPU (STATE.md waiter 2, 2026-11-01 15:25)",
-  "host_memory_other_projects": "other projects held ~600-950 GB of host memory during the runs (STATE.md 16:03-22:12 lines; slice-status DECISIONS ~23:20)",
-  "stop_ruling": "USER 2026-11-01 ~23:00: 'stop your 8-point runs now and do a couple round of optimizations first' (STATE.md COORDINATOR ~23:05; slice-status DECISIONS ~23:15)"
- },
- "sources": [
-  "tools/loop_benchmark/processes.json (work/v2-bench-2to6)",
-  "workspace/artifacts/2to6/gg_gggggg-full/generation.json",
-  "workspace/artifacts/2to6/gg_gggggg-lc/generation.json",
-  "workspace/artifacts/2to6/uux_gggggg-lc/generation.json",
-  "workspace/artifacts/2to6/uux_uuxgggg-lc/generation.json",
-  "workspace/reports/engine-v2/m-final/8g0-report.md",
-  "workspace/tmp/STOP-8LEG",
-  "workspace/tmp/bench-2to6/dryrun/gg_gggggg-full.json",
-  "workspace/tmp/bench-2to6/dryrun/gg_gggggg-lc.json",
-  "workspace/tmp/bench-2to6/dryrun/gg_gggggg_top-full.json",
-  "workspace/tmp/bench-2to6/dryrun/uux_gggggg-full.json",
-  "workspace/tmp/bench-2to6/dryrun/uux_gggggg-lc.json",
-  "workspace/tmp/bench-2to6/dryrun/uux_uuxgggg-full.json",
-  "workspace/tmp/bench-2to6/dryrun/uux_uuxgggg-lc.json",
-  "workspace/tmp/bench-2to6/estimates.json",
-  "workspace/tmp/bench-2to6/logs/catani-gg_gggggg-lc.status.json",
-  "workspace/tmp/bench-2to6/logs/catani-uux_gggggg-lc.killed-2245.status.json",
-  "workspace/tmp/bench-2to6/logs/catani-uux_gggggg-lc.status.json",
-  "workspace/tmp/bench-2to6/logs/catani-uux_uuxgggg-lc.status.json",
-  "workspace/tmp/bench-2to6/logs/dd-gg_gggggg-lc.skip",
-  "workspace/tmp/bench-2to6/logs/dd-uux_gggggg-lc.status.json",
-  "workspace/tmp/bench-2to6/logs/dd-uux_uuxgggg-lc.status.json",
-  "workspace/tmp/bench-2to6/logs/guard-catani-gg-lc.log",
-  "workspace/tmp/bench-2to6/logs/guard-store-gg-lc.log",
-  "workspace/tmp/bench-2to6/logs/phys-gg_gggggg-full.killed-1606.log",
-  "workspace/tmp/bench-2to6/logs/phys-gg_gggggg-full.killed-1606.status.json",
-  "workspace/tmp/bench-2to6/logs/phys-gg_gggggg-full.log",
-  "workspace/tmp/bench-2to6/logs/phys-gg_gggggg-full.status.json",
-  "workspace/tmp/bench-2to6/logs/store-gg_gggggg-full.status.json",
-  "workspace/tmp/bench-2to6/logs/store-gg_gggggg-lc.status.json",
-  "workspace/tmp/bench-2to6/logs/store-uux_gggggg-lc.status.json",
-  "workspace/tmp/bench-2to6/logs/store-uux_uuxgggg-full.killed-1602.status.json",
-  "workspace/tmp/bench-2to6/logs/store-uux_uuxgggg-lc.status.json",
-  "workspace/tmp/bench-2to6/logs/time-gg_gggggg-full.log",
-  "workspace/tmp/bench-2to6/logs/time-gg_gggggg-full.status.json",
-  "workspace/tmp/bench-2to6/logs/time-gg_gggggg-lc.status.json",
-  "workspace/tmp/bench-2to6/logs/time-rot-gg_gggggg-full.status.json",
-  "workspace/tmp/bench-2to6/logs/time-uux_gggggg-lc.killed-1600.log",
-  "workspace/tmp/bench-2to6/logs/time-uux_gggggg-lc.killed-1600.status.json",
-  "workspace/tmp/bench-2to6/logs/time-uux_gggggg-lc.status.json",
-  "workspace/tmp/bench-2to6/logs/time-uux_uuxgggg-lc.status.json",
-  "workspace/tmp/bench-2to6/logs/ward-gg_gggggg-lc.status.json",
-  "workspace/tmp/bench-2to6/logs/ward-uux_gggggg-lc.killed-1602.status.json",
-  "workspace/tmp/bench-2to6/logs/ward-uux_uuxgggg-lc.status.json",
-  "workspace/tmp/bench-2to6/runs/catani-gg_gggggg-lc.json",
-  "workspace/tmp/bench-2to6/runs/catani-uux_gggggg-lc.json",
-  "workspace/tmp/bench-2to6/runs/catani-uux_gggggg-lc.killed-2245.json",
-  "workspace/tmp/bench-2to6/runs/catani-uux_uuxgggg-lc.json",
-  "workspace/tmp/bench-2to6/runs/dd-uux_uuxgggg-lc.json",
-  "workspace/tmp/bench-2to6/runs/stability-time-gg_gggggg-lc.json",
-  "workspace/tmp/bench-2to6/runs/stability-time-uux_gggggg-lc.json",
-  "workspace/tmp/bench-2to6/runs/stability-time-uux_uuxgggg-lc.json",
-  "workspace/tmp/bench-2to6/runs/time-gg_gggggg-lc.json",
-  "workspace/tmp/bench-2to6/runs/time-rot-gg_gggggg-full.json",
-  "workspace/tmp/bench-2to6/runs/time-uux_gggggg-lc.json",
-  "workspace/tmp/bench-2to6/runs/time-uux_uuxgggg-lc.json",
-  "workspace/tmp/bench-2to6/runs/ward-uux_uuxgggg-lc.json",
-  "workspace/tmp/bench-2to6/smoke/catani-gg_ggg-2.json"
+ "not_obtained": [
+  "g g > g g g g g g (LC, N_f = 5, no top): ward in progress (ward-lc running)",
+  "g g > g g g g g g (LC, N_f = 5, no top): binary64 E above 1e-5 at points [0, 1] (a rescue case, not a failure)",
+  "g g > g g g g g g (FC, N_f = 5, no top): timing B = 128 not measured (None)",
+  "g g > g g g g g g (FC, N_f = 5, no top): ward not obtained (Ward step not finished)",
+  "g g > g g g g g g (FC, N_f = 5, no top): binary64 E above 1e-5 at points [0, 1] (a rescue case, not a failure)",
+  "u u~ > g g g g g g (LC, N_f = 5, no top): LC single pole unchecked (the native Catani operator is full colour only and NGluon serves only all-gluon rows); the LC double pole is checked",
+  "u u~ > g g g g g g (FC, N_f = 5, no top): timing B = 128 not measured (None)",
+  "u u~ > g g g g g g (FC, N_f = 5, no top): stored checks not obtained (stages so far: ['load', 'executor', 'checked', 'dd', 'rescue level 0'])",
+  "u u~ > g g g g g g (FC, N_f = 5, no top): ward not obtained (Ward step not finished)",
+  "u u~ > u u~ g g g g (LC, N_f = 5, no top): LC single pole unchecked (the native Catani operator is full colour only and NGluon serves only all-gluon rows); the LC double pole is checked"
  ]
 }

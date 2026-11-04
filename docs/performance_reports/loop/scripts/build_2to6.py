@@ -250,11 +250,22 @@ def _checks(run: Path, t: str, acc: str, gluon_row: bool) -> dict:
             "step": _status(run, f"checks-{t}"),
         }
     wards = []
+    running = []
     for name in (f"ward-{t}", f"ward-{t}-dd"):
         w = _read(run / f"{name}.json")
-        if w is not None:
+        if w is not None and "passed" in w:
             wards.append((name, w))
-    if wards:
+        elif (
+            w is not None
+        ):  # rewritten after every stage: no verdict yet = still running
+            running.append(name)
+    if running:
+        out["ward"] = {
+            "status": "in progress",
+            "why": f"{', '.join(running)} running",
+            "step": _status(run, running[0]),
+        }
+    elif wards:
         rows, legs = [], set()
         for _name, w in wards:
             for x in w.get("ward", []):
