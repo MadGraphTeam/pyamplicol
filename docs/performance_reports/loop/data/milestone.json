@@ -1,13 +1,13 @@
 {
- "date": "2026-11-02",
- "engine_revision": "f3d9e361",
- "previous_loop": "15d4ef5a",
- "previous_engine": "71e2041e",
+ "date": "2026-11-05",
+ "engine_revision": "c8885cc5",
+ "previous_loop": "ce442fb4",
+ "previous_engine": "f3d9e361",
  "native_build": {
-  "name": "loop-native-v2-slice-b36af289",
-  "digest": "58b40383",
+  "name": "loop-native-v2-slice-e0a8375c",
+  "digest": "f3bc13a9",
   "profile": "release, codegen-units 1, thin LTO, rustc 1.97.1",
-  "source": "workspace/reports/engine-v2/slice-status.md, mf-rust integration (b36af289, UPDATE 2026-11-01 ~20:45 UTC): integrator release build (native_digest 58b40383...); mf-dec-2, mf-small2 and mf-map-fix are Python/test only, so the pin f3d9e361 (= 617b59cd + the test-only mf-map-fix) uses it; the M-SM campaign, the M-QCD re-run and the new rows (decays, HC, correlations, rescue) ran on it at 617b59cd (stage --source accepted the digest). G1 was not re-timed (one final retime at the M-FINAL pin, user Q11): Table 1 keeps M-SM's G1 at 71e2041e on loop-native-v2-slice-71e2041e. Release natives need glibc >= 2.38 with a typed load-time error below (glibc-floor, 5301e24a)"
+  "source": "workspace/reports/engine-v2/slice-status.md, mf-symbolica integration (e0a8375c, UPDATE 2026-11-05 ~08:55 UTC): integrator release build (native_digest f3bc13a9...); 6f3973e2 (goldens) and c8885cc5 (regenerated assets) change no native input, so the pin c8885cc5 uses it. No campaign and no G1 timing ran on it at this milestone (lean close, DECISIONS 2026-11-05 ~07:35): Table 1 keeps the M-FINAL-b report's G1 (ce442fb4; timed at 71e2041e on loop-native-v2-slice-71e2041e); the 2->6 records ran on 2f3f76d9 (loop-native-mf-2to6-2f3f76d9-lto). Python: Community builds/community-release-python-20a9da94 or PyPI symbolica 3.0.3. Release natives need glibc >= 2.38 with a typed load-time error below (glibc-floor, 5301e24a)"
  },
  "development": {
   "source": "git: 889af02c and the G1 scratch commit 39824f9b (tag g1-native-inputs-39824f9b) are on work/v2-generation-scale; work/v2-generation-scale d7e40cfb was integrated into work/v2-slice at 4e9b5a9e (G-int; 889af02c, fef92189, 0ea83af2 and 6f5a64cc are ancestors of 4e9b5a9e, the scratch commit 39824f9b is not); workspace/reports/engine-v2/slice-status.md, G-int integration block and DECISIONS 2026-10-24 ~21:50 UTC; label and integration: HANDOFF_24_10_2026.md section 6.2 (WP3.1 generation-scale, integration package G-int)",
@@ -21,8 +21,8 @@
   "integrated_at": "4e9b5a9e"
  },
  "ancestry": {
-  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout; 2026-10-25: milestone m1025a for 1d27426b, in the main checkout; 2026-10-26: milestone m1025c for 4fc72e39, in the report worktree at 4fc72e39 (it replaces db13c260, the pin of the m1025b attempt, which was not pushed); 2026-10-27: milestone m1026a for 11542fd5, in the report worktree at 11542fd5; 2026-10-28: milestone m1028a for 28a16255, in the report worktree at 28a16255; 2026-10-29: milestone M-QCD for e18a024b, in the report worktree at e18a024b; 2026-10-31: milestone M-SM for 71e2041e, in the report worktree at 71e2041e); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present; 2026-11-02: milestone M-FINAL-b for f3d9e361 (= 617b59cd + the test-only mf-map-fix), in the report worktree at f3d9e361)",
-  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records) and of the engine on loop: every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. f3d9e361 is the engine on loop at this milestone (M-FINAL-b; no G1 campaign: every other revision of the data is its ancestor); 71e2041e was the engine on loop at milestone M-SM and is still the G1 campaign (slice_revision of g1.json and msm-g1.json; G1 is re-timed once at the M-FINAL pin, user Q11); e18a024b was the engine on loop and the G1 campaign of milestone M-QCD (earlier_runs now); 28a16255 was the engine on loop and the G1 campaign of milestone m1028a (earlier_runs now); 11542fd5 was the engine on loop and the G1 campaign of milestone m1026a (earlier_runs); 4fc72e39 was the engine on loop at m1025c (not a G1 campaign); 1d27426b was the G1 campaign of milestone m1025a and of the 2->5 rows (earlier_runs), 4e9b5a9e G-int's (earlier_runs too); 1c971289 and 889af02c were the sides of the campaign before (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e, 1d27426b, 4fc72e39, 11542fd5, 28a16255, e18a024b, 71e2041e or f3d9e361 and is no candidate)",
+  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout; 2026-10-25: milestone m1025a for 1d27426b, in the main checkout; 2026-10-26: milestone m1025c for 4fc72e39, in the report worktree at 4fc72e39 (it replaces db13c260, the pin of the m1025b attempt, which was not pushed); 2026-10-27: milestone m1026a for 11542fd5, in the report worktree at 11542fd5; 2026-10-28: milestone m1028a for 28a16255, in the report worktree at 28a16255; 2026-10-29: milestone M-QCD for e18a024b, in the report worktree at e18a024b; 2026-10-31: milestone M-SM for 71e2041e, in the report worktree at 71e2041e); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present; 2026-11-02: milestone M-FINAL-b for f3d9e361 (= 617b59cd + the test-only mf-map-fix), in the report worktree at f3d9e361; 2026-11-05: milestone M-FINAL for c8885cc5, in the report worktree at c8885cc5)",
+  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records) and of the engine on loop: every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. c8885cc5 is the engine on loop at this milestone (M-FINAL; no G1 campaign: every other revision of the data is its ancestor); f3d9e361 was the engine on loop at milestone M-FINAL-b (no G1 campaign either); 71e2041e was the engine on loop at milestone M-SM and is still the G1 campaign (slice_revision of g1.json and msm-g1.json; the final retime is deferred to the next milestone, DECISIONS 2026-11-05 ~07:35); e18a024b was the engine on loop and the G1 campaign of milestone M-QCD (earlier_runs now); 28a16255 was the engine on loop and the G1 campaign of milestone m1028a (earlier_runs now); 11542fd5 was the engine on loop and the G1 campaign of milestone m1026a (earlier_runs); 4fc72e39 was the engine on loop at m1025c (not a G1 campaign); 1d27426b was the G1 campaign of milestone m1025a and of the 2->5 rows (earlier_runs), 4e9b5a9e G-int's (earlier_runs too); 1c971289 and 889af02c were the sides of the campaign before (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e, 1d27426b, 4fc72e39, 11542fd5, 28a16255, e18a024b, 71e2041e, f3d9e361 or c8885cc5 and is no candidate)",
   "revisions": [
    "1c971289",
    "889af02c",
@@ -36,7 +36,8 @@
    "28a16255",
    "e18a024b",
    "71e2041e",
-   "f3d9e361"
+   "f3d9e361",
+   "c8885cc5"
   ],
   "ancestors": [
    [
@@ -338,6 +339,58 @@
    [
     "71e2041e",
     "f3d9e361"
+   ],
+   [
+    "1c971289",
+    "c8885cc5"
+   ],
+   [
+    "889af02c",
+    "c8885cc5"
+   ],
+   [
+    "fef92189",
+    "c8885cc5"
+   ],
+   [
+    "0ea83af2",
+    "c8885cc5"
+   ],
+   [
+    "6f5a64cc",
+    "c8885cc5"
+   ],
+   [
+    "4e9b5a9e",
+    "c8885cc5"
+   ],
+   [
+    "1d27426b",
+    "c8885cc5"
+   ],
+   [
+    "4fc72e39",
+    "c8885cc5"
+   ],
+   [
+    "11542fd5",
+    "c8885cc5"
+   ],
+   [
+    "28a16255",
+    "c8885cc5"
+   ],
+   [
+    "e18a024b",
+    "c8885cc5"
+   ],
+   [
+    "71e2041e",
+    "c8885cc5"
+   ],
+   [
+    "f3d9e361",
+    "c8885cc5"
    ]
   ]
  },
@@ -354,87 +407,135 @@
  },
  "integrated": [
   {
-   "sha": "821ae808",
-   "wp": "MF-CORR",
-   "title": "Recola correlation oracles",
-   "detail": "Recola colour / spin / spin-colour correlation driver and binary64 references on 4 processes; the one-loop evaluate_correlated_many and the tree Runtime.evaluate_correlated_many = Recola (Born <= 6e-14, virtual <= 1.3e-9); tools, fixtures and tests only"
+   "sha": "abab2ea4",
+   "wp": "MF-SDK",
+   "title": "SDK v4 extras",
+   "detail": "resolved, colour/spin-correlated, double-double and arbitrary precision for plan v4 through the Rust SDK, the C ABI (additive, version 2), C++/Fortran wrappers, UMAMI and the packaged Rust wrapper (+ DESIGN note 41fb77fc); new native"
   },
   {
-   "sha": "2234ee33",
-   "wp": "MF-RESCUE",
-   "title": "Stability rescue stack",
-   "detail": "built-in gammaloop-style rescue in the Python native evaluate API only (VirtualRescuePolicy, DEFAULT_RESCUE double -> double-double -> arbitrary(57), target 1e-5, euler rotation + rescaled check, per-lane records); legacy VirtualStabilityPolicy removed; SDKs, CLI and config unchanged (user Q9)"
-  },
-  {
-   "sha": "e1a1fea2",
-   "wp": "MF-SMALL",
-   "title": "Small fixes",
-   "detail": "benchmark calibration never planned from a cold probe call; the EW test takes the scalar predicate heads from the registry; a non-finite counterterm coupling fails only its own points (isolate_scale_failures)"
-  },
-  {
-   "sha": "e2f0c78e",
-   "wp": "MF-GM-HC",
-   "title": "HC_NLO_X0 genericity (+ 6605f6b4)",
-   "detail": "HC01-HC04 and HC06 = MadLoop 3.7.0 to <= 2.4e-13; generic fixes: UFO namespace head, Feynman-gauge refusal only where massive vectors run in loops, positional UFO counterterm keys, colour-singlet contact through an adjoint auxiliary; HC05 blocked (five-point f*f*f*f R2 contact); 6605f6b4 test-only integration fix"
-  },
-  {
-   "sha": "dbc92efb",
-   "wp": "MF-UP",
-   "title": "SymJIT 2.28.3",
-   "detail": "SymJIT re-pinned to =2.28.3 (siravan/symjit #26, #30, #31), jump-flattening workaround dropped, random-call-tag xfail removed; new native build"
-  },
-  {
-   "sha": "25d39f6b",
-   "wp": "MF-CLEAN",
-   "title": "Legacy agreement check removed",
-   "detail": "verification.rs, agreement_rows and the SDK policy argument removed from the Rust SDK, C ABI, C/C++/Fortran wrappers and UMAMI: virtual C ABI version 2; oracle overlap_traces refuses unpaired open colour strings; new native build"
-  },
-  {
-   "sha": "9ad0c77f",
-   "wp": "MF-MAP",
-   "title": "Permutation aliases and group members",
-   "detail": "one-loop permutation aliases and permuted process-group members of plan v4 processes served from the stored target at permuted momenta, colour/spin correlations composed; numerical process-group analysis stays refused typed"
-  },
-  {
-   "sha": "eddb4b49",
-   "wp": "MF-DEC-1",
-   "title": "Tree-level 1 -> n decays",
-   "detail": "1 initial leg admitted generically (1 -> n, n >= 2); rest-frame massive Dirac spinor fix; exact rest-frame decay points, MG5 tree fixtures and 8 MadLoop QP decay references; new native build"
-  },
-  {
-   "sha": "7cdd32e9",
-   "wp": "MF-8G-0",
-   "title": "2 -> 6 feasibility study",
-   "detail": "N = 8 reduction adapter test (fast, reversed-frame and DoubleFloat engines agree at 8 propagators; 8 -> 7 pinch identity) and the 2 -> 6 study (m-final/8g0-report.md); test-only"
-  },
-  {
-   "sha": "b36af289",
-   "wp": "MF-RUST",
-   "title": "EW export parses in Rust",
-   "detail": "kernel-string reading and parameter-program renaming in Rust with the Python stages as oracles (byte-identical), one fierz_laurent; EW 2 -> 3 export 62.3 -> 32.4 s; new native build (the pin's)"
-  },
-  {
-   "sha": "28b24a2a",
-   "wp": "MF-DEC-2",
-   "title": "One-loop 1 -> n decays",
-   "detail": "the loop decay-process refusal retired; XX01-XX08 = MadLoop QP (binary64 and DD, worst 9.6e-14); loop-induced decays stay refused typed (loop-induced); the decaying particle at its real mass with zero own width"
-  },
-  {
-   "sha": "617b59cd",
-   "wp": "MF-SMALL2",
-   "title": "Determinism and spin-source guard",
-   "detail": "parameter-program evaluator bytes independent of the model cache (scalar predicates in their own id block); a spin-correlated leg without a four-component vector source refused at generation; stale SymJIT regression test removed"
-  },
-  {
-   "sha": "f3d9e361",
+   "sha": "7eec2da6",
    "wp": "mf-map-fix",
-   "title": "Mapping test spin classes (test only)",
-   "detail": "tests/unit/test_loop_v2_mapping.py declares spin classes valid for every member, plus a quark-leg refusal test (MF-SMALL2's guard unchanged); one commit on 617b59cd, the pin"
+   "title": "Mapping test (slice merge)",
+   "detail": "the test-only M-FINAL-b fix f3d9e361 (already the M-FINAL-b pin on loop) merged into work/v2-slice"
+  },
+  {
+   "sha": "e071d022",
+   "wp": "MF-8G-2",
+   "title": "Bounded evaluation memory",
+   "detail": "tree/CT fill chunked to a 4 GiB state budget, batches streamed within a 3 GiB row budget, chunk-input liveness (8 GiB) with bitwise rebuild, V2Executor.derive; values bitwise unchanged; new native"
+  },
+  {
+   "sha": "29332d14",
+   "wp": "MF-8G-1B",
+   "title": "Lighter 2 -> 6 generation",
+   "detail": "native counterterm-closure root colours, loop Born DAG compiled once and summarised; 7-leg artifacts byte-identical; 7 gluons generation -26 % FC / -19 % LC; new native"
+  },
+  {
+   "sha": "21400667",
+   "wp": "MF-SMALL3",
+   "title": "Small fixes",
+   "detail": "precision-scoped companion lanes, SDK spin-source check, UMAMI virtual layout 2, typed NonFiniteCountertermError, mapping-kind selection message, licensed v2_reduce tests; new native"
+  },
+  {
+   "sha": "3ce92bdf",
+   "wp": "MF-MASKS",
+   "title": "Stored LC selections as masks",
+   "detail": "one template column set per process, selections are masks (rows, basis, components, families); no executor or native heap per selection; bitwise = the per-selection oracle; new native"
+  },
+  {
+   "sha": "9a2f7c36",
+   "wp": "MF-8G-1C",
+   "title": "Generation time, round 2",
+   "detail": "structural loop Born DAG, deferred full GC passes, interned schedule-B tries, read-keyed fermion signs; 7-gluon LC generate 137 -> 59 s, plans and stored pacbin bitwise; new native"
+  },
+  {
+   "sha": "7161a2bb",
+   "wp": "MF-PERF-OPT",
+   "title": "Evaluation optimisation round",
+   "detail": "row-sized interference blocks with cached z-sum keys, compact Born metric stream, SIMD-width kernels; values bitwise; new native"
+  },
+  {
+   "sha": "d0a54212",
+   "wp": "MF-8G-1",
+   "title": "Generation and store memory",
+   "detail": "native CT DAG per-mask maps, binary tree program and plan member as the stored forms, streamed plan records, native closure-term sections, stored dipole orbits; new native"
+  },
+  {
+   "sha": "e3d4ef4d",
+   "wp": "MF-HC05",
+   "title": "HC05 = MadLoop",
+   "detail": "g g > x0 g g on HC_NLO_X0 through the generic exact N_c = 3 projection of vocabulary-refused counterterm colours (ct_colour_projection.vocabulary_colours); HC01-04/06 bitwise unchanged; Python only"
+  },
+  {
+   "sha": "d24a01ae",
+   "wp": "MF-8G-2B",
+   "title": "Bounded load memory",
+   "detail": "stored members read on demand through the handle opened at load, compact Rust plan and tree program, 1,024-lane reducer calls; 7g load resident LC 3.53 -> 0.73 GiB, FC 4.37 -> 0.99 GiB; values bitwise; new native"
+  },
+  {
+   "sha": "a7452422",
+   "wp": "LP-MODELS",
+   "title": "External PRs #30 #37 #38 (#24)",
+   "detail": "lsimon125's PRs merged with heads intact: #30 reducer construction under the licence scope, #37 built-in SM-HEFT restriction cards, #38 the 4x over-count of compiled-mode HEFT quark tree amplitudes fixed (built-in SM-HEFT and HC_NLO_X0, = MG5 and the MadLoop Borns); #24 adapted with credit; new native"
+  },
+  {
+   "sha": "d5a1f770",
+   "wp": "LP-COLOUR",
+   "title": "External PRs #32 #34",
+   "detail": "#32 strict-lc / strict-nlc and N_c-graded colour output; #34 exact U(1)-subtraction weight 1/N_c (binary64 quark-line values move by rounding only, <= 1e-12 accepted), MODEL_COMPILER_VERSION 17; new native"
+  },
+  {
+   "sha": "df1d2a5d",
+   "wp": "MF-8G-3",
+   "title": "Validation without a provider",
+   "detail": "native Catani from a stored full-colour QCD record (A24 now forms rule 4), stored 6-7-leg check harness (Ward, rotations, Catani, DD), NGluon leading-colour driver; new native"
+  },
+  {
+   "sha": "28573ea4",
+   "wp": "MF-MASKS-ROWS",
+   "title": "Per-call row liveness",
+   "detail": "pruned schedule-B family copies for stored LC selections behind a link-share gate; values bitwise; 7-leg one-helicity B = 4 1.53 -> 0.87 s/pt; new native"
+  },
+  {
+   "sha": "9df24a8e",
+   "wp": "LP-PRECISION",
+   "title": "External PRs #26 #29 #36 #39",
+   "detail": "lsimon125's tree-runtime precision PRs merged with heads intact: DD/AP contracted-colour replay, G_mu UFO boost fix, exact correlated weights, couplings, parameters and masses at working precision; new native"
+  },
+  {
+   "sha": "68928fcb",
+   "wp": "MF-2TO6",
+   "title": "2 -> 6 records",
+   "detail": "data/2to6.json: g g > 6g, u u~ > 6g, u u~ > u u~ g g g g at LC and FC on engine 2f3f76d9 (generation, store, load, timing, internal checks); data/tools/tests only"
+  },
+  {
+   "sha": "d958f2ea",
+   "wp": "MF-LIMITS-PY",
+   "title": "Python-side limits lifted",
+   "detail": "mechanical hard-coded limits removed (compile timeout and slots, exact rational charges and grouping factors, built-in SM 1 -> n decays, uncapped mappings and fixpoints, N_c powers at any multiplicity); tuning bounds as settings; Python only"
+  },
+  {
+   "sha": "72fe20dc",
+   "wp": "MF-LIMITS-RUST",
+   "title": "Rust-side limits lifted",
+   "detail": "one rank admission from the reducer, one 1..=64 leg boundary, checked narrowing, typed OrderSpace errors, S_m colour-FFT degree while m! fits usize, heap scratch past the stack budget; values bitwise; new native"
+  },
+  {
+   "sha": "049a9389",
+   "wp": "MF-NORM",
+   "title": "Built-in SM fixes",
+   "detail": "tree-level built-in SM = UFO sm in every lane: colourless processes x 1/(4 e^4) = 27.797 too small, initial Z/W/H averaging, recurrence WW-photon/WW-Z doubling, missing lepton/neutrino and quark electroweak currents, H H H H / H H V V contacts; built-in-vs-UFO sweep test; Python only"
+  },
+  {
+   "sha": "e0a8375c",
+   "wp": "MF-SYMBOLICA",
+   "title": "Symbolica re-pin, no fork",
+   "detail": "Symbolica symbolica-dev community 36cbac3a + PR symbolica-dev/symbolica#163 (ValentinHirschi/symbolica 20a9da94), NinjaRS main b3a29c85, oneloopmaster main 128ea664; canonical saved evaluators; + 6f3973e2 (goldens) and c8885cc5 (regenerated assets), the pin; new native (the pin's)"
   }
  ],
- "integrated_tip": "f3d9e361",
+ "integrated_tip": "c8885cc5",
  "after_integration": [],
- "already_on_loop": "v2 waves 0-1 (gates S1, G0), native executor, colour, stability API, schedule M, observables, NJet reference, public v2 engine with plan v4 artifacts, counterterms as plain tree insertions (addendum J), runtime pole selection, Rust A0-A3, the G1 harness, G-int (native per-point inputs and generation stages), the summary-first report; at milestone m1025a ct-perf, ew-poles (EW guards, QED Catani operator), lc-perf, artifact-portability and ew-lines; at m1025c native-dag A4, ew-gauge EWI-4a, precision-ap, ew-ct EWI-0/EWI-3, measure-g1-7leg (G1 at 2->5), reference-relocate, model-determinism, native-lowering D phase 1 part 1 and onshell-consistency; at m1026a ew-gauge EWI-4b, native-seeds B phase 1, native-cells C phase 1, genericity-fixes, ew-poles EWI-6b, fermion-lines and generation-scale-2; at m1028a ew-ct EWI-3R, ew-epsilon EWI-7b, fail-closed, sdk-parity, ew-leptons EWI-5, identical-flavour-lc and gate-b128; at M-QCD onshell-threshold, fail-closed-2, glibc-floor, MQ-WARD, MQ-FFT, MQ-REF, MQ-MODEL, MQ-STAB, MQ-VALIDATE, MQ-NC, MQ-5F, MQ-EWJOIN, MQ-SELECT, MQ-LEGACY-REMOVE and g1-accuracy; at M-SM ew-native, ew-validate, MS-REF, MS-PHOTON, MS-CMS-N, MS-MODEL, MS-CMS, MS-GEN, MS-POLES, MS-UFODB, MS-UFO-PATCH, MS-VALIDATE, ms-policy-fix and MS-MASTERS",
+ "already_on_loop": "v2 waves 0-1 (gates S1, G0), native executor, colour, stability API, schedule M, observables, NJet reference, public v2 engine with plan v4 artifacts, counterterms as plain tree insertions (addendum J), runtime pole selection, Rust A0-A3, the G1 harness, G-int (native per-point inputs and generation stages), the summary-first report; at milestone m1025a ct-perf, ew-poles (EW guards, QED Catani operator), lc-perf, artifact-portability and ew-lines; at m1025c native-dag A4, ew-gauge EWI-4a, precision-ap, ew-ct EWI-0/EWI-3, measure-g1-7leg (G1 at 2->5), reference-relocate, model-determinism, native-lowering D phase 1 part 1 and onshell-consistency; at m1026a ew-gauge EWI-4b, native-seeds B phase 1, native-cells C phase 1, genericity-fixes, ew-poles EWI-6b, fermion-lines and generation-scale-2; at m1028a ew-ct EWI-3R, ew-epsilon EWI-7b, fail-closed, sdk-parity, ew-leptons EWI-5, identical-flavour-lc and gate-b128; at M-QCD onshell-threshold, fail-closed-2, glibc-floor, MQ-WARD, MQ-FFT, MQ-REF, MQ-MODEL, MQ-STAB, MQ-VALIDATE, MQ-NC, MQ-5F, MQ-EWJOIN, MQ-SELECT, MQ-LEGACY-REMOVE and g1-accuracy; at M-SM ew-native, ew-validate, MS-REF, MS-PHOTON, MS-CMS-N, MS-MODEL, MS-CMS, MS-GEN, MS-POLES, MS-UFODB, MS-UFO-PATCH, MS-VALIDATE, ms-policy-fix and MS-MASTERS; at M-FINAL-b MF-CORR, MF-RESCUE, MF-SMALL, MF-GM-HC, MF-UP (SymJIT 2.28.3), MF-CLEAN, MF-MAP, MF-DEC-1, MF-8G-0, MF-RUST, MF-DEC-2, MF-SMALL2 and the test-only mf-map-fix (f3d9e361)",
  "addendum_commits": [
   "b91d23a8",
   "2dd36f65",
@@ -634,7 +735,7 @@
   "notes": {
    "gg_ttxemepg_ew": {
     "gate": "EW: indicative, not gated",
-    "gate_reason": "the EW speed gate binds in M-FINAL (m-sm/PLAN.md [U5] and the milestone plan)",
+    "gate_reason": "the EW speed gate binds with the final G1 retime, deferred to the next milestone (m-sm/PLAN.md [U5]; DECISIONS 2026-11-05 ~07:35)",
     "leading_colour": "refused by design: EW LC/NLC is never supported (user 2026-10-30, Q4; typed colour-declaration-coverage)",
     "ew_model": "loop_qcd_qed_sm_Gmu (reference/models/loop_qcd_qed_sm_Gmu_py3, msm-g1.json ew_model)"
    },
@@ -722,5 +823,5 @@
    }
   ]
  },
- "milestone": "M-FINAL-b (m1101-mfb)"
+ "milestone": "M-FINAL (m1105-mfinal)"
 }

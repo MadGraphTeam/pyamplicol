@@ -1,12 +1,12 @@
 {
  "source": "scripts/build_mqcd_matrix.py from data/mqcd.json, mqcd-findings.json, mqcd-public.json, mqcd-fft-cost.json and mqcd-fft-worst.json",
  "campaign": {
-  "campaign_head": "617b59cd (M-FINAL-b pin; campaign-m1101-mfb-mqcd: default, manifest and nightly jobs n1-n7 as whole files, one pytest process per job; delegated ids with --junitxml; n2 and A15 rerun after memguard kills)",
-  "native": "loop-native-v2-slice-b36af289 (native_digest 58b40383)",
+  "campaign_head": "617b59cd (M-FINAL-b pin; campaign-m1101-mfb-mqcd: default, manifest and nightly jobs n1-n7 as whole files, one pytest process per job; delegated ids with --junitxml; n2 and A15 rerun after memguard kills); A24 from mf-8g-3's nightly record (catani native; re-run by its evidence audit on 2f3f76d9 with the same numbers)",
+  "native": "loop-native-v2-slice-b36af289 (native_digest 58b40383); A24: mf-8g-3's development native",
   "date": "2026-11-02",
   "counts": {
-   "pass": 76,
-   "partial": 1,
+   "pass": 77,
+   "partial": 0,
    "fail": 1,
    "pending": 0,
    "not-run": 0
@@ -19,9 +19,8 @@
    "content": "gluons and massless quark lines, every initial state",
    "rows": 22,
    "counts": {
-    "pass": 20,
-    "fail": 1,
-    "partial": 1
+    "pass": 21,
+    "fail": 1
    },
    "max_outgoing": 5,
    "public": [
@@ -59,9 +58,7 @@
     "value": 1.1731808814312099e-22,
     "row": "A09",
     "no_predicted_sector": [],
-    "not_formed": [
-     "A24"
-    ]
+    "not_formed": []
    },
    "nc": {
     "rows": [
@@ -98,14 +95,6 @@
      ],
      "accepted": true,
      "note": "accepted limitation for the M-QCD gate (coordinator ruling 2026-10-29 ~11:25 (a)): typed failures, no wrong value"
-    },
-    {
-     "id": "F11",
-     "rows": [
-      "A24"
-     ],
-     "accepted": true,
-     "note": "accepted 'partial' for the M-QCD gate (coordinator ruling 2026-10-29 ~11:25 (b))"
     }
    ],
    "status": "accepted"

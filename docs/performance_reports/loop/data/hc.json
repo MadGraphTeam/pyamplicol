@@ -1,5 +1,5 @@
 {
- "source": "tests/unit/test_loop_v2_hc.py whole-file job (every tier, JUnit) + hc_rows.py re-evaluation of its artifacts",
+ "source": "tests/unit/test_loop_v2_hc.py whole-file job (every tier, JUnit) + hc_rows.py re-evaluation of its artifacts; HC05 from the mf-hc05 package record (row 'record')",
  "commit": "617b59cdb106e398b4a84b403e60920fbcd3a501",
  "native": "loop-native-v2-slice-b36af289 (digest 58b40383)",
  "date": "2026-11-01 23:42 UTC",
@@ -22,9 +22,9 @@
   "test_hc_rows_equal_madloop[HC06]": "passed"
  },
  "counts": {
-  "pass": 5,
+  "pass": 6,
   "fail": 0,
-  "blocked": 1
+  "blocked": 0
  },
  "all_required_pass": true,
  "rows": [
@@ -225,16 +225,21 @@
    "particle_veto": [
     "t"
    ],
+   "madloop_process": "g g > x0 g g / t [virt=QCD]",
    "model": "HC_NLO_X0_UFO (v1.3)",
    "restriction": "heft",
-   "status": "blocked",
-   "reason": "five-point f*f*f*f R2 contact (G G G G X0) needs the multi-trace colour state (DESIGN \u00a76.1); recorded limitation (optional row)",
-   "refusal": {
-    "key": "unlowered-counterterm",
-    "message": "unlowered-counterterm: counterterm rules the tree recursion cannot lower, whose vertices can enter a tree of the request: PYAMPLICOL_CT_V76 [G G G G X0] (counterterm colour 'f(1,-1,-2)*f(2,-2,-3)*f(3,-3,-4)*f(4,-4,-1)' is a product the tree colour flow carries only as the multi-trace colour state of design \u00a76.1 (it does not cancel between the rules of its vertex)). Rule: a reachable counterterm vertex is inserted exactly once or refused (REQUIREMENTS_ADDENDUM J); an unreachable one is inert. Instead: report the request; bound its coupling orders",
-    "type": "LoopEngineRefusal",
-    "seconds": 6.7
-   }
+   "reference": "tests/fixtures/loop/required/hc/hc05.json (MadLoop 3.7.0)",
+   "points": 2,
+   "mu_r": [
+    "125",
+    "91.188"
+   ],
+   "status": "pass",
+   "max_relative_deviation_all": 2.6e-12,
+   "acceptance": 1e-05,
+   "record": "mf-hc05 (M-FINAL MF-HC05, integrated e3d4ef4d, 2026-11-03): binary64 = MadLoop 3.7.0 within 2.6e-12 over every Laurent coefficient at 2 points x 2 scales; the nightly HC05 row of tests/unit/test_loop_v2_hc.py with double-double and a rotation passed (package sweep3 on 644c1838 and the integration sweep on e3d4ef4d); not re-run at this milestone (USER 2026-11-04 ~17:35); source workspace/tmp/mf-hc05/STATE.md and slice-status UPDATE 2026-11-03 ~21:25 UTC",
+   "method": "the five-point R2 contact [G G G G X0] (colour f*f*f*f) is lowered through the generic exact N_c = 3 projection of vocabulary-refused counterterm colours onto products of at most two primitive adjoint tensors (loops/v2/ct_colour_projection.vocabulary_colours; zero residual required, else unlowered)",
+   "previous": "blocked at 617b59cd (M-FINAL-b): typed unlowered-counterterm"
   }
  ]
 }

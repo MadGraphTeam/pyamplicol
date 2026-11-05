@@ -1,0 +1,242 @@
+{
+ "source": "workspace/reports/engine-v2/m-final/round-table-7leg.md (mf-8g-table, 2026-11-04; independent spot check in its 'Check' section): transcribed by hand, the cells as that table gives them",
+ "what": "the M-FINAL optimisation rounds at seven legs (round 1: mf-8g-2, mf-8g-1b, mf-8g-1; round 2: mf-8g-1c, mf-perf-opt, mf-8g-2b): the 8g0 baseline against now, per stage, one pinned thread; s / peak GiB",
+ "baseline": "8g0-report records (workspace/tmp/mf-8g-0/{store,eval,eval128}-{lc,full}.json, slice before round 1, 1 thread); u u~ > 5g FC: mf-8g-2's A/B base side (ab-uux-rel-base.json)",
+ "now": "measured once at work/v2-slice d24a01ae (native loop-native-v2-slice-d24a01ae), 2026-11-04 07:24-07:42 UTC, three idle pinned cores, 1 thread each (RAYON_NUM_THREADS=1); indicative (shared host); values bitwise equal to the round records in all 9 evaluation blocks, stored artifacts byte-identical to mf-8g-1's",
+ "process": "g g > g g g g g (top-free, N_f = 5)",
+ "rows": [
+  {
+   "stage": "generate",
+   "unit": "s / GiB",
+   "lc": {
+    "baseline": [
+     281,
+     4.44
+    ],
+    "now": [
+     62,
+     3.3
+    ]
+   },
+   "fc": {
+    "baseline": [
+     279,
+     4.05
+    ],
+    "now": [
+     46,
+     2.52
+    ]
+   }
+  },
+  {
+   "stage": "export",
+   "unit": "s / GiB",
+   "lc": {
+    "baseline": [
+     349,
+     10.05
+    ],
+    "now": [
+     93,
+     4.05
+    ]
+   },
+   "fc": {
+    "baseline": [
+     353,
+     9.41
+    ],
+    "now": [
+     93,
+     4.54
+    ]
+   }
+  },
+  {
+   "stage": "store",
+   "unit": "s / GiB",
+   "lc": {
+    "baseline": [
+     161,
+     10.8
+    ],
+    "now": [
+     50,
+     3.82
+    ]
+   },
+   "fc": {
+    "baseline": [
+     169,
+     11.0
+    ],
+    "now": [
+     36,
+     4.66
+    ]
+   }
+  },
+  {
+   "stage": "generation total (wall, max peak)",
+   "unit": "s / GiB",
+   "lc": {
+    "baseline": [
+     791,
+     10.8
+    ],
+    "now": [
+     205,
+     4.05
+    ]
+   },
+   "fc": {
+    "baseline": [
+     801,
+     11.0
+    ],
+    "now": [
+     175,
+     4.66
+    ]
+   }
+  },
+  {
+   "stage": "artifact (pacbin)",
+   "unit": "MB",
+   "lc": {
+    "baseline": [
+     70.2
+    ],
+    "now": [
+     16.9
+    ]
+   },
+   "fc": {
+    "baseline": [
+     83.1
+    ],
+    "now": [
+     21.2
+    ]
+   }
+  },
+  {
+   "stage": "load (time, resident)",
+   "unit": "s / GiB",
+   "lc": {
+    "baseline": [
+     93,
+     8.43
+    ],
+    "now": [
+     18.6,
+     0.73
+    ]
+   },
+   "fc": {
+    "baseline": [
+     106,
+     9.69
+    ],
+    "now": [
+     15.3,
+     1.03
+    ]
+   }
+  },
+  {
+   "stage": "evaluation B = 16 (per point, peak)",
+   "unit": "s / GiB",
+   "lc": {
+    "baseline": [
+     6.2,
+     13.1
+    ],
+    "now": [
+     3.95,
+     3.73
+    ]
+   },
+   "fc": {
+    "baseline": [
+     11.8,
+     15.1
+    ],
+    "now": [
+     5.1,
+     4.41
+    ]
+   }
+  },
+  {
+   "stage": "evaluation B = 128 (per point, peak)",
+   "unit": "s / GiB",
+   "lc": {
+    "baseline": [
+     5.9,
+     24.4
+    ],
+    "now": [
+     4.02,
+     5.73
+    ]
+   },
+   "fc": {
+    "baseline": [
+     11.1,
+     21.0
+    ],
+    "now": [
+     5.22,
+     6.15
+    ]
+   }
+  }
+ ],
+ "uux_ggggg_fc": {
+  "process": "u u~ > g g g g g (full colour; evaluation only touched)",
+  "rows": [
+   {
+    "stage": "load (time, resident)",
+    "unit": "s / GiB",
+    "baseline": [
+     10.3,
+     1.9
+    ],
+    "now": [
+     3.5,
+     0.335
+    ]
+   },
+   {
+    "stage": "evaluation B = 16 (per point, peak)",
+    "unit": "s / GiB",
+    "baseline": [
+     1.62,
+     4.57
+    ],
+    "now": [
+     1.4,
+     1.18
+    ]
+   },
+   {
+    "stage": "evaluation B = 128 (per point, peak)",
+    "unit": "s / GiB",
+    "baseline": [
+     1.65,
+     6.04
+    ],
+    "now": [
+     1.32,
+     3.65
+    ]
+   }
+  ]
+ },
+ "notes": [
+  "the spot check re-measured the LC cells within 5 % (evaluation) and 0.5 % (peaks); a first generate run on a core with a busy SMT sibling was 1.5x slower, the repeat on an idle core reproduced 62 s within 2 %",
+  "after round 2 the store's companion re-export is the largest remaining generation piece (43.7 of 50 s LC, 29 of 36 s FC at 7 legs; ~950-1,100 s at 8 legs)"
+ ]
+}
