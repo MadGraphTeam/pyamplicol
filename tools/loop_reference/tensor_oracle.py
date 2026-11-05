@@ -327,7 +327,7 @@ def diphoton_r2_oracle() -> dict:
         "full_rational_term": "2",
         "r1_inferred_from_full_minus_r2": "1",
         "full_explicit_epsilon_bubble_finite_term": "2",
-        "fixture": "diphoton_r2.json",
+        "fixture": "rust/loop-reduction/tests/fixtures/diphoton_r2.json",
     }
 
 
