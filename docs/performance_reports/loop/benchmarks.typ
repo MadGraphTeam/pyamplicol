@@ -1548,10 +1548,10 @@ shipped `loop_sm` and evaluate the stored artifact with the recommended checks. 
 The HC rows ran through the generic fixes of MF-GM-HC (`e2f0c78e`): the UFO namespace head, the Feynman-gauge refusal only
 where massive vectors run in the loops (`ew_policy.require_loop_gauge`), positional UFO counterterm keys with zero extra
 positions (other key lengths are the listed source refusal `ufo-counterterm-keys`) and a four-point contact with a colour-singlet
-leg split through an adjoint auxiliary. #if hc5 != none and "record" in hc5 [#hc5.id (#box(math-label(ap-math(hc5.process))), refused typed at M-FINAL-b) passes since mf-hc05 (`e3d4ef4d`): #hc5.method\; binary64 = MadLoop 3.7.0 within #sci(hc5.max_relative_deviation_all) over every Laurent coefficient at #hc5.points points × 2 scales, and the nightly row with double-double and a rotation passed (the package's record, not re-run here; HC01–HC04 and HC06 bitwise unchanged). Still refused typed: $u overline(u) -> x_0 g g g$ (the U(1)-leak check) and single-trace or C-odd five-point $R_2$ colours.] #hc-blocked.map(r => [#r.id (#box(math-label(ap-math(r.process)))) stays refused at
+leg split through an adjoint auxiliary. #if hc5 != none and "record" in hc5 [#hc5.id (#box(math-label(ap-math(hc5.process))), refused typed at M-FINAL-b) passes since mf-hc05 (`e3d4ef4d`): #hc5.method\; binary64 = MadLoop 3.7.0 within #sci(hc5.max_relative_deviation_all) over every Laurent coefficient at #hc5.points points × 2 scales, and the nightly row with double-double and a rotation passed (the package's record, not re-run here; HC01–HC04 and HC06 bitwise unchanged). Still refused typed: $u overline(u) -> x_0 g g g$ (the U(1)-leak check) and single-trace or C-odd five-point $R_2$ colours.]#if hc-blocked.len() > 0 [ #hc-blocked.map(r => [#r.id (#box(math-label(ap-math(r.process)))) stays refused at
 generation: the five-point $R_2$ contact `[G G G G X0]` carries the colour $f f f f$ that the tree colour flow holds only as the
 multi-trace colour state of DESIGN §6.1, so the reachable vertex is refused, never dropped (addendum J); a recorded limitation
-(optional row)]).join([; ]).
+(optional row)]).join([; ]).]
 ]
 
 // Recola correlation rows (m-final/PLAN.md §2.4 MF-CORR): data/corr.json,
@@ -1832,7 +1832,7 @@ stream's exact rational points, the providers their binary64 decimal text.
 The configurations:
 
 - *native inputs, on `loop`* — the engine at #raw(g.slice_revision) (milestone M-SM: the engine of M-QCD,
-  `e18a024b`, with M-SM's 14 packages, ew-native to MS-MASTERS; not re-timed at M-FINAL-b nor at M-FINAL (the final retime is deferred to the next milestone), whose engine #raw(ms.engine_revision) adds the packages of @status\; build #raw(g.slice_build), digest
+  `e18a024b`, with M-SM's 14 packages, ew-native to MS-MASTERS; not re-timed at M-FINAL-b nor at M-FINAL (the final retime is deferred to the next milestone), whose engine #raw(ms.engine_revision) adds M-FINAL-b's packages and those of @status\; build #raw(g.slice_build), digest
   #raw(g.slice_native_digest.slice(0, 8))): the executor forms the trees, the Born and the counterterm inputs per
   point (binary64 SymJIT plane applications, tree closures in lanes of points), skips the counterterm interactions
   that only feed poles in finite-only mode, then runs the loop stage. #gname("gg_ggggg") is timed from its stored
@@ -3154,7 +3154,16 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     2026-10-31 \~11:00 (M-FINAL order, rescue only in the Python API, decays at the real mass with zero own width, EW
     LC/NLC never), \~14:20 (direct $R_2$ dropped), Q11 (one final retime) and 2026-11-01 \~23:15 (8-leg runs stopped
     for optimisation rounds); the G1 regression spot check at `617b59cd` against `71e2041e`:
-    `workspace/tmp/g1-m1101-mfb/logs/compare.txt`); `HANDOFF_24_10_2026.md` §6; MASTER_PLAN
+    `workspace/tmp/g1-m1101-mfb/logs/compare.txt`); milestone M-FINAL, closed (pin #raw(ms.engine_revision), native
+    #raw(ms.native_build.name)\; USER 2026-11-04 \~08:00 'close M-FINAL now' and the lean close of 2026-11-05 \~07:30,
+    DECISIONS \~07:35: no local gate sweep, no retime, no closing audit, global tests by CI on `loop`; DECISIONS 2026-11-04
+    \~17:40 (no Ward/Catani/campaign re-runs; status changes from package evidence only), \~22:00 (no pedantic tests),
+    \~19:15 (mechanical limits only), \~08:35 (8-leg stop lifted) and 2026-11-03 \~13:05 (model compiler 17); the
+    integration blocks of the packages in `data/milestone.json` `integrated`; the 2 → 6 report
+    `workspace/reports/engine-v2/m-final/2to6-report.md`, the seven-leg round table `m-final/round-table-7leg.md`, mf-8g-3's
+    report `m-final/8g3-report.md` §9 (A24) and the Symbolica re-pin report `m-final/symbolica-repin-report.md`; the
+    built-in SM fixes: mf-norm's package report (its table for the collaborator) with the integration block of
+    slice-status UPDATE 2026-11-05 \~08:05 and DECISIONS \~06:10); `HANDOFF_24_10_2026.md` §6; MASTER_PLAN
     2026-10-23/24 entries; REQUIREMENTS_ADDENDUM A, D, F, G, H, I, J; DESIGN §5.5,
     §3.3, §5.7 (G1), §6.1, §6.2, §7.2, §7.5, §7.9, §12.1, §12.4, WP3.1, WP3.2; the 24 October pushes (59badc7a and b4d76cc3,
     gates in slice-status.md), the G-int push (79df367a, 25 October), the m1025a push (bae3b9ea, 25 October), the
@@ -3187,7 +3196,9 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     `workspace/tmp/campaign-m1101-mfb`: `results/`, the JUnit and logs of its 33 jobs, `wheel/out/`, `compare.py`,
     `msm-table.md`, `STATE.md`). The M-QCD re-run at M-FINAL-b: `data/mqcd.json`, records in
     `workspace/reports/engine-v2/m-qcd/records/m1101-mfb-mqcd/` (`c1/`, `compare.json` against the M-SM re-run's file,
-    which came from `records/m1031-msm-mqcd/`).
+    which came from `records/m1031-msm-mqcd/`). At M-FINAL `data/mqcd.json` is rebuilt from those records with
+    mf-8g-3's A24 nightly record (`workspace/tmp/mf-8g-3/a24/results/A24.nightly.json`, catani native) as the later
+    directory, and F11 of `data/mqcd-findings.json` is resolved (no new run).
   - *@dec, @tab:dec, @tab:decrows:* `data/dec.json` (`scripts/build_mqcd.py` with `--manifest
     tests/fixtures/loop/dec/manifest.json` and the decay checks' JUnit, re-run at `617b59cd`; `dec-compare.json` against
     MF-DEC-2's file: no status change), combined with the manifest by `scripts/build_dec_matrix.py` into
@@ -3197,11 +3208,14 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     `scripts/build_corr.py` from the whole-file jobs of `tests/unit/test_loop_v2_hc.py` and
     `test_loop_v2_corr_recola.py` (their artifacts reloaded, JUnit) in the same records; the rescue and mapping counts of
     @status: that campaign's `junit/rescue.xml` and mf-map-fix's run at `f3d9e361` (slice-status UPDATE 2026-11-02
-    \~01:05).
+    \~01:05). HC05's row: the mf-hc05 record (`workspace/tmp/mf-hc05/STATE.md`, slice-status UPDATE 2026-11-03 \~21:25),
+    entered by hand (`record`).
   - *@tab:summary ($2 -> 6$ rows), @tab:sixrecs:* `data/2to6.json`, written by `scripts/build_2to6.py` from the
     #sxj.sources.len() mf-2to6 records it lists in `sources` (`workspace/tmp/mf-2to6/runs/`,
     `workspace/artifacts/2to6/*-2f3f76d9/generation.json`, `processes.json`; arguments in
     `workspace/tmp/mf-2to6/build_args.sh`); reproduced byte for byte; Table 1 through `data/summary.json` `preliminary`.
+    *@rounds7 (rounds at seven legs):* `data/rounds-7leg.json`, transcribed from
+    `workspace/reports/engine-v2/m-final/round-table-7leg.md` (records `workspace/tmp/mf-8g-table/rec/`).
   - *@status (M-QCD), @mqcd, @tab:fft, @tab:mqcdrows:* `data/mqcd.json` (`scripts/build_mqcd.py` from the campaign's
     records), `data/mqcd-findings.json` (MQ-VALIDATE's triage, re-checked at the pin), `data/mqcd-public.json` (the
     public-route representatives), `data/mqcd-fft-cost.json` and `data/mqcd-fft-worst.json` (FFT cost and worst points),

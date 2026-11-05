@@ -100,14 +100,28 @@ section after "Reading the summary" (`data/2to6.json` through `summary.json`
 `preliminary`: pyAmpliCol only, no provider, no gate, uncoloured; their own
 engine, `2f3f76d9` on `work/v2-mf-8g-3`, stated once in the table), and re-runs the M-SM, M-QCD and
 decay campaigns at the pin (their files replace the earlier ones; no status
-changed). Then a status page
-(what is on `loop`, M-SM, the gate, M-QCD kept, M-FINAL next, what is missing
+changed). Milestone M-FINAL, **closed** (2026-11-05, engine `c8885cc5` on
+`loop`, build `loop-native-v2-slice-e0a8375c`; `milestone.json` `closed`; lean
+close, slice-status DECISIONS 2026-11-05 ~07:35: no local gate sweep, no retime,
+no closing audit, the global tests by CI on `loop`) runs no new measurement:
+Table 1 keeps the M-FINAL-b report's G1 cells (`ce442fb4`, timed at
+`71e2041e`; the final retime is deferred to the next milestone, the title line
+says so) and the 2 → 6 rows of `data/2to6.json` (engine `2f3f76d9`, an
+ancestor of the pin); the M-FINAL-b campaigns stand, with two status changes
+from package evidence: A24 passes rule 4 with the native Catani operator
+(mf-8g-3; `mqcd.json` rebuilt from the M-FINAL-b records with its A24 record,
+F11 resolved) and HC05 = MadLoop (mf-hc05; its `hc.json` row entered from the
+package record). It adds the seven-leg table of the optimisation rounds
+(`data/rounds-7leg.json`), the built-in SM fixes, the dependency status and
+the lifted hard-coded limits. Then a status page
+(what is on `loop`, what closed, the gate, the built-in SM fixes, M-SM and
+M-QCD kept, dependencies and limits, 2 → 6, the next milestone, what is missing
 with the typed refusal keys and the accepted limitations, the timing
 protocol), the electroweak and QCD capability matrices, the gate-G1
 details (provider grid with B = 1 and B = 128, gate bands, stage
 split, levers, leading colour, throughput and recalibration, schedule B
-against M, values), the required processes, the seven-gluon comparison with
-NJet, the capability matrix and the architecture of the recursive v2 engine.
+against M, values), the required processes, the seven- and eight-gluon
+comparison with NJet, the capability matrix and the architecture of the recursive v2 engine.
 
 ## Build
 
@@ -200,9 +214,10 @@ revision ("record 0ea83af2").
 | `msm-g1.json`, `msm-g1-values.json` | The electroweak G1 row (`gg_ttxemepg_ew`), written by `python -m tools.loop_benchmark gate` over the EW records like `g1.json`; `build_summary.py` adds it to `g1.json`'s integrated configuration when both campaigns timed the same engine (`slice_revision`; otherwise the build stops) and labels it from `milestone.json` `status_notes` (indicative, not gated). |
 | `dec.json` | The decay campaign (M-FINAL item 2, `m-final/PLAN.md` §2.2 MF-DEC-2): the same build as `mqcd.json` on the decay manifest (`tests/fixtures/loop/dec/manifest.json`, rows XX01–XX08, 1 → 2 and 1 → 3, QCD and EW, against MadLoop's quadruple precision), per row its tiers, variants (`@public`), delegated columns (`nc`: the N_c scan, `ff`: the massless vector form factor) and status. Its JSON may hold `Infinity` (out-of-scope estimates), so the report reads it only through `dec-matrix.json`. |
 | `dec-matrix.json` | The decay capability matrix (per row: process, model, scheme, sectors, DD and binary64 deviations, Catani or Catani + QED poles, Ward, LC/NLC, form factor, public route, native inputs, status), the further checks and the per-row appendix data, written by `scripts/build_dec_matrix.py` from `dec.json` and the decay manifest; never by hand. |
-| `hc.json` | The HC_NLO_X0 genericity rows (MF-GM-HC: HC01–HC04, HC06 against MadLoop 3.7.0, HC05's typed refusal) with the JUnit outcomes of `tests/unit/test_loop_v2_hc.py`, written by `scripts/build_hc.py` from that file's whole-file job (its stored artifacts reloaded). |
+| `hc.json` | The HC_NLO_X0 genericity rows (MF-GM-HC: HC01–HC04, HC06 against MadLoop 3.7.0; HC05 = MadLoop since M-FINAL, entered by hand from the mf-hc05 record with one bound over every coefficient, `record`, where M-FINAL-b had its typed refusal) with the JUnit outcomes of `tests/unit/test_loop_v2_hc.py`, written by `scripts/build_hc.py` from that file's whole-file job (its stored artifacts reloaded). |
 | `corr.json` | The Recola correlation rows (MF-CORR: four processes × plain Born, colour, spin and spin-colour; correlated Borns and one-loop Laurent coefficients) with the JUnit outcomes of `tests/unit/test_loop_v2_corr_recola.py`, written by `scripts/build_corr.py` from that file's whole-file job. |
 | `2to6.json` | The 2 → 6 records (M-FINAL item 1, package mf-2to6: g g > 6g, u u~ > 6g and u u~ > u u~ g g g g, each at LC and FC; engine `2f3f76d9` on `work/v2-mf-8g-3`, native digest `2bae17f9`, one engine for every record), written by `scripts/build_2to6.py` from the mf-2to6 run records (store, stored-checks, Ward, NGluon and timing records, watchdog status files, the stores' `generation.json`; every file read is listed in `sources`): generation stages, the Ward store, artifact, load, evaluations at B = 16 and 128, the checks (done, not asserted, or not run with the reason), what failed or could not run (`not_obtained`). `build_summary.py` turns it into `summary.json` `preliminary` (Table 1's 2 → 6 group, one row per process with its FC and LC records). |
+| `rounds-7leg.json` | The M-FINAL optimisation rounds at seven legs (g g > g g g g g LC and FC, u u~ > g g g g g FC): the 8g0 baseline against the slice after round 2 (`d24a01ae`) per stage, one pinned thread; transcribed by hand from `workspace/reports/engine-v2/m-final/round-table-7leg.md` (no build script). |
 | `measurements.json`, `provider-cold.json`, `legacy-labels.json` | The legacy per-diagram engine's timing snapshot of 2026-10-18 (unchanged, cited by `docs/development/loop_v2/DESIGN.md`) and its labels; no longer shown (the history table is in the report revisions up to `ba7d510d`). |
 | `colour-measurements.json` | The legacy engine's LC/FC runs; not shown, kept for the citations in DESIGN.md and `research-leading-colour-structure.md`. |
 
@@ -323,7 +338,13 @@ Table 1 once, in its column header).
   `msm-selftest.json` with the import modes from that campaign's `public.xml`
   and `wheel/out/selftest-pin-{pypi,community}.json`; `mqcd.json` from
   `m1101-mfb-mqcd` (`compare.json` against the previous file); then both matrix
-  builders.
+  builders. At M-FINAL (no re-run): `python scripts/build_mqcd.py
+  <records>/m1101-mfb-mqcd/c1/results
+  <workspace>/tmp/mf-8g-3/a24/results --junit <records>/m1101-mfb-mqcd/c1/junit-*.xml
+  --findings data/mqcd-findings.json --output data/mqcd.json --meta
+  campaign_head=… native=… references=… date=2026-11-02` (the later directory
+  supplies A24; F11 marked resolved in `mqcd-findings.json` by hand), then
+  `python scripts/build_mqcd_matrix.py`.
 - `dec.json`: `python scripts/build_mqcd.py <campaign>/results --manifest
   tests/fixtures/loop/dec/manifest.json --output data/dec.json --junit
   <campaign>/junit/dec_checks.xml --meta "rules=m-final/PLAN.md §1.4
@@ -380,7 +401,8 @@ Table 1 once, in its column header).
   with its eight; at milestone m1028a `28a16255`, engine and G1 campaign,
   with its nine; at milestone M-QCD `e18a024b` with its ten; at milestone M-SM
   `71e2041e` with its eleven; at milestone M-FINAL-b `f3d9e361`, the engine on
-  `loop` without a G1 campaign, with its twelve); the 2 → 5 rows kept the development validation
+  `loop` without a G1 campaign, with its twelve; at milestone M-FINAL
+  `c8885cc5`, likewise, with its thirteen); the 2 → 5 rows kept the development validation
   records (made on the branch before its integration,
   `development.integrated_at`) until the seven-leg G1 rows
   (`measure-g1-7leg`) were added to `g1.json`, which now supplies their
@@ -399,9 +421,9 @@ Table 1 once, in its column header).
   Figure 1 say "refused on the development branch"; the stage-split table of
   the gate-G1 details still assumes a generable native-input configuration);
   a cell only the integrated side measured (shown with its origin). The status page's gate
-  box reads Table 1's values, its M-FINAL-b box `data/dec-matrix.json`, `data/hc.json` and `data/corr.json`, its
+  box reads Table 1's values, its M-FINAL box `data/hc.json`, `data/rounds-7leg.json` and `data/dec-matrix.json`, its
   2 → 6 box `summary.json` `preliminary`, its M-SM box `data/msm-matrix.json`, its M-QCD box `data/mqcd-matrix.json`; its
-  hand-written boxes ("Next: M-FINAL-a", "Missing or incomplete") and the
+  hand-written boxes ("Built-in SM fixes", "Dependencies", "Hard-coded limits", "Next milestone", "Missing or incomplete") and the
   feature capability matrix are updated by hand at each milestone (the QCD
   and electroweak capability matrices and the CMS table are generated). Keep the `status_notes`, `pending`, `development` (label,
   integration package, revisions) and `gate_decisions` of `milestone.json`
