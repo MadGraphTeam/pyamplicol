@@ -1056,16 +1056,16 @@ is reported without a gate (cells uncoloured).
 ]
 
 // The M-FINAL optimisation rounds at seven legs (data/rounds-7leg.json,
-// transcribed from m-final/round-table-7leg.md): the 8g0 baseline against
+// transcribed from m-final/round-table-7leg.md): the 8g0 baseline (u u~ > 5g: mf-8g-2's A/B base side) against
 // now (d24a01ae), per stage, one pinned thread.
 #let r7t = json("data/rounds-7leg.json")
 #heading(numbering: none, level: 2)[Optimisation rounds at seven legs (M-FINAL)]
 #let r7-val(unit, xs) = if unit == "MB" [#sig(xs.at(0))~MB] else if xs.len() == 1 [#dur(xs.at(0))] else [#dur(xs.at(0)) · #gib(xs.at(1))]
-#let r7-fac(xs, ys) = xs.zip(ys).map(((a, b)) => [×#fixed(b / a, 2)]).join([ · ])
+#let r7-fac(xs, ys) = xs.zip(ys).map(((a, b)) => [×#fixed(b / a + 1e-9, 2)]).join([ · ])
 #let r7-cell(unit, x) = [#r7-val(unit, x.baseline) → *#r7-val(unit, x.now)* #tiny[#r7-fac(x.baseline, x.now)]]
 #figure(kind: table,
   caption: [*The optimisation rounds at seven legs* (`data/rounds-7leg.json`, from `m-final/round-table-7leg.md`): $g g -> g g g g g$ (top-free, $N_f = 5$) and, below, $u overline(u) -> 5g$ at full colour,
-    the 8g0 baseline (#r7t.baseline.split(" (").first(), before round 1) against the slice after round 2 (`d24a01ae`), one
+    the baseline (for $g g -> g g g g g$ the 8g0 records, #r7t.baseline.split(" (").first(), before round 1; for $u overline(u) -> 5g$ mf-8g-2's A/B base side) against the slice after round 2 (`d24a01ae`), one
     pinned thread, s and peak GiB per stage, factors now/baseline; values bitwise through every round, the stored artifacts
     byte-identical between the rounds' records; indicative (shared host). The $2 -> 6$ records above ran on the engine
     after these rounds plus mf-8g-3.],
@@ -1252,7 +1252,7 @@ is reported without a gate (cells uncoloured).
       table.header[Process class][Lanes][Since][Effect (old value against the UFO `sm`)],
       [every process without a coloured leg, decays included], [all], [`2f876d1b`], [too small by $1 slash (8 pi alpha)^2 = 27.797$ (old = $4 e^4 approx 0.036$ × correct); a run-time change of $alpha$ rescaled them with the wrong power],
       [initial $Z$ or $W$; initial Higgs], [all], [`2f876d1b`], [×3/2 per $Z$/$W$, ×1/2 per Higgs (spin averages; fixed by mf-limits-py)],
-      [$W W gamma$ / $W W Z$ vertices and four-boson contacts], [recurrence], [`43e6fa5e`], [counted twice: $gamma gamma -> W^+ W^-$ ×16, $e^+ e^- -> W^+ W^-$ ×4, $u overline(u) -> W^+ W^-$ point-dependent],
+      [$W W gamma$ / $W W Z$ vertices and four-boson contacts], [recurrence], [`43e6fa5e`], [counted twice (old recurrence value against the compiled lane): $gamma gamma -> W^+ W^-$ ×16, $e^+ e^- -> W^+ W^-$ ×4 (the compiled lane itself lacked the neutrino exchange, next row), $u overline(u) -> W^+ W^-$ point-dependent],
       [$e^+ e^- -> W^+ W^-$; $e^+ e^- -> nu_e overline(nu)_e$], [all], [`2f876d1b`], [the $t$-channel neutrino exchange missing (e.g. 245× at one 500 GeV point); $nu_e overline(nu)_e$ refused (missing lepton/neutrino currents)],
       [electroweak exchange between quark lines], [all], [`2f876d1b`], [quark EW currents missing: QED-allowed requests silently gave the QCD-only value ($u overline(u) -> d overline(d)$: 1.445, 0.105, 1.079 × at three 700 GeV points); purely EW four-quark processes refused],
       [the $H H H H$ contact ($h h -> h h$, ...)], [compiled, eager, on-the-fly], [`2f876d1b`], [21.8, 97.8, 48.7 × at 700 GeV (and a further 1/27.797 before the colourless fix)],
@@ -1261,7 +1261,7 @@ is reported without a gate (cells uncoloured).
   }
   #v(-0.2em)
   #set text(7.9pt)
-  *Regression test:* `tests/integration/test_builtin_sm_ufo_sweep.py` (default tier): every SM $2 -> 2$ process of the particle table (1993, reduced to 154 classes by crossing, charge-parity conjugation and the vertex-table relabellings), every $1 -> 2$ decay, 12 sample $2 -> 3$ and $1 -> 3$ processes and three four-quark requests at explicit orders, in the compiled, eager, on-the-fly and recurrence lanes, against committed UFO `sm` values (MG5 3.7.0, `no_masses`) to $10^(-10)$ relative; where the UFO has no tree amplitude the built-in must refuse; a nightly variant runs 901 $2 -> 2$ processes against a freshly compiled UFO. Coloured processes: the compiled lane bitwise unchanged, the prepared lanes at ulp level ($<= 1.3 times 10^(-15)$, accepted). Typed refusals as the UFO `sm`: four-quark processes without gluon exchange in the recurrence lane, a massive top on a massless-$b$ line (`dirac-weyl-closure`). The one-loop engine is unaffected (it refuses the tree-only built-in SM).
+  *Regression test:* `tests/integration/test_builtin_sm_ufo_sweep.py` (default tier): every SM $2 -> 2$ process of the particle table (1993, reduced to 154 classes by crossing, charge-parity conjugation and the vertex-table relabellings), every $1 -> 2$ decay, 12 sample processes (seven $2 -> 3$, four $1 -> 3$, one $2 -> 2$) and three four-quark requests at explicit orders, in the compiled, eager, on-the-fly and recurrence lanes, against committed UFO `sm` values (MG5 3.7.0, `no_masses`) to $10^(-10)$ relative; where the UFO has no tree amplitude the built-in must refuse; a nightly variant runs 901 $2 -> 2$ processes against a freshly compiled UFO. Coloured processes: the compiled lane bitwise unchanged, the prepared lanes at ulp level ($<= 1.3 times 10^(-15)$, $9.6 times 10^(-14)$ at one ill-conditioned point; accepted). Typed refusals as the UFO `sm`: four-quark processes without gluon exchange in the recurrence lane, a massive top on a massless-$b$ line (`dirac-weyl-closure`). The one-loop engine is unaffected (it refuses the tree-only built-in SM).
 ]
 
 #grid(columns: (1fr, 1fr), gutter: 8pt,
@@ -1508,8 +1508,8 @@ shipped `loop_sm` and evaluate the stored artifact with the recommended checks. 
 
 #let hc-dev(r, k) = esci(r.max_relative_deviation.at(k))
 #figure(kind: table,
-  caption: [*HC_NLO_X0 rows against MadLoop 3.7.0* (`data/hc.json` at #raw(hcj.commit.slice(0, 8)), #hcj.native.split(" ").first(); `tests/unit/test_loop_v2_hc.py`
-    #hcj.junit.values().filter(x => x == "passed").len()/#hcj.junit.len() passed): the Higgs characterisation UFO at NLO (v1.3) with its
+  caption: [*HC_NLO_X0 rows against MadLoop 3.7.0* (`data/hc.json`: the campaign rows at #raw(hcj.commit.slice(0, 8)), #hcj.native.split(" ").first(), `tests/unit/test_loop_v2_hc.py`
+    #hcj.junit.values().filter(x => x == "passed").len()/#hcj.junit.len() passed#{ let rec = hcj.rows.filter(r => "record" in r).map(r => r.id); if rec.len() > 0 [; #rec.join(", ") from the mf-hc05 package record (integrated `e3d4ef4d`)] }): the Higgs characterisation UFO at NLO (v1.3) with its
     restriction and parameter cards ($kappa$ settings), the largest relative deviation #hcj.precision.split("; ").last() per
     Laurent coefficient (acceptance $10^(-5)$), the poles against Catani, the rotation estimate and double-double where run.],
   {
@@ -3149,8 +3149,8 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     green-to-red run times, summary pages with only Table 1, Figure 1 and legends,
     and the gate rule "#thr-rule.label", recorded as `gate_decisions.threshold_rule`
     and applied by `scripts/build_summary.py` and this report); milestone M-FINAL-b (DECISIONS 2026-11-01 \~23:35 and
-    2026-11-02 \~00:20, \~01:05, \~03:08: pin #raw(ms.engine_revision) = `617b59cd` + the test-only mf-map-fix, native
-    #raw(ms.native_build.name)\; the plan `workspace/reports/engine-v2/m-final/PLAN.md` §2, §3 and the user's rulings of
+    2026-11-02 \~00:20, \~01:05, \~03:08: pin #raw(ms.previous_engine) = `617b59cd` + the test-only mf-map-fix, native
+    `loop-native-v2-slice-b36af289`\; the plan `workspace/reports/engine-v2/m-final/PLAN.md` §2, §3 and the user's rulings of
     2026-10-31 \~11:00 (M-FINAL order, rescue only in the Python API, decays at the real mass with zero own width, EW
     LC/NLC never), \~14:20 (direct $R_2$ dropped), Q11 (one final retime) and 2026-11-01 \~23:15 (8-leg runs stopped
     for optimisation rounds); the G1 regression spot check at `617b59cd` against `71e2041e`:
