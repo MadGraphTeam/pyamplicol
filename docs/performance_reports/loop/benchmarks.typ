@@ -31,7 +31,7 @@
 #set page(paper: "a4", margin: (x: 1.6cm, top: 1.7cm, bottom: 1.6cm), numbering: "1 / 1",
   header: context if counter(page).get().first() > 1 {
     set text(8pt, fill: luma(110))
-    [pyAmpliCol at one loop #h(1fr) milestone #ms.at("milestone", default: ms.date).split(" ").first() (#ms.date) · engine #ms.engine_revision on `loop` · G1 timed at #g.slice_revision (`loop`)#if g.at("native_revision", default: none) != none [ and #g.native_revision (development)]]
+    [pyAmpliCol at one loop #h(1fr) milestone #ms.at("milestone", default: ms.date).split(" ").first()#if ms.at("closed", default: none) != none [ closed] (#ms.date) · engine #ms.engine_revision on `loop` · G1 timed at #g.slice_revision (`loop`)#if g.at("native_revision", default: none) != none [ and #g.native_revision (development)]]
   })
 #set text(font: "Libertinus Serif", size: 10.5pt, lang: "en")
 #set par(justify: true, leading: 0.62em)
@@ -740,13 +740,13 @@
   #v(-0.6em)
   #text(11.5pt, fill: luma(80))[The recursive one-loop engine against MadLoop, Recola, OpenLoops and NJet]
   #v(-0.4em)
-  #text(8.6pt, fill: luma(105))[milestone #ms.at("milestone", default: ms.date).split(" ").first() (#ms.date) · engine #raw(sm.engine_on_loop) on `loop` · #sm.host.split(",").first(), shared host · finite part, binary64, one pinned thread, $B = 128$]
+  #text(8.6pt, fill: luma(105))[milestone #ms.at("milestone", default: ms.date).split(" ").first()#if ms.at("closed", default: none) != none [ *closed*] (#ms.date) · engine #raw(sm.engine_on_loop) on `loop` · #sm.host.split(",").first(), shared host · finite part, binary64, one pinned thread, $B = 128$]
   // The engine on loop and the engine G1 timed differ when a milestone does
   // not re-measure G1: say so once, here (data/g1.json slice_revision,
-  // slice_build; data/milestone.json engine_revision).
+  // slice_build; data/milestone.json engine_revision, previous_loop).
   #if g.slice_revision.slice(0, 8) != sm.engine_on_loop.slice(0, 8) {
     v(-0.45em)
-    text(8.6pt, fill: amber)[pyAmpliCol timed by G1 on #sm.date: engine #raw(g.slice_revision), native #raw(g.slice_build) (not re-measured on #raw(sm.engine_on_loop): one final retime at the M-FINAL pin, user Q11)]
+    text(8.6pt, fill: amber)[G1 cells as in the M-FINAL-b report (#raw(ms.previous_loop)): timed by G1 on #sm.date at engine #raw(g.slice_revision), native #raw(g.slice_build)\; not re-measured on #raw(sm.engine_on_loop): the final retime is deferred to the next milestone]
   }
 ]
 
@@ -813,7 +813,7 @@
       // The PRELIMINARY 2 -> 6 rows: their engine and status, stated once.
       ..if six != none {
         (
-          table.cell(colspan: 5, fill: warm, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber)[*$2 -> 6$* (M-FINAL item 1, #link(<sixlegs>)[below Figure 1]): pyAmpliCol only, no provider exists at $2 -> 6$, so no ratio, no gate and no colour · engine #raw(six.engine.revision) (#raw(six.engine.branch)), native #raw(six.engine.native) (#raw(six.engine.native_digest)…), not this milestone's pin · internal checks only]}),
+          table.cell(colspan: 5, fill: warm, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber)[*$2 -> 6$* (M-FINAL item 1, #link(<sixlegs>)[below Figure 1]): pyAmpliCol only, no provider exists at $2 -> 6$, so no ratio, no gate and no colour · engine #raw(six.engine.revision) (#raw(six.engine.branch)), native #raw(six.engine.native) (#raw(six.engine.native_digest)…), an ancestor of this milestone's pin, not re-run on it · internal checks only]}),
           table.cell(rowspan: six.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon, breakable: false,
             rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", group-title.at(six.name)))),
           ..six.rows.map(r => (t6-process(r), t6-generation(r), t6-timing(r.full_colour), t6-timing(r.leading_colour, gate: false))).flatten(),
@@ -969,7 +969,7 @@ unbatched development timings (e.g. a seven-gluon point with its rotation check)
 amber a known limitation of the value, in grey its run conditions: #note-cells.map(x => [#box(math-label(x.r.math)), #cell-word.at(x.k) ("#x.r.at(x.k).main.note.label"): #x.r.at(x.k).main.note.reason]).join([\; ]).]
 
 
-#if six != none [*The $2 -> 6$ rows* (M-FINAL item 1; `data/2to6.json` through `summary.json` `preliminary`; #link(<sixlegs>)[their records and checks below]) are outside the main-configuration rule: pyAmpliCol only (no provider exists at $2 -> 6$), so no multiplier, no gate and no colour in any cell; engine #raw(six.engine.revision) (#raw(six.engine.branch)) for every record, not this milestone's pin (loop stores made before model compiler 17 do not load on the pin, so the rows keep their engine); generation = generate + plan export (store, artifact and load beside it; "FC" marks the full-colour generation, LC below it); the timed evaluation is binary64, finite part, checks off, one pinned thread, at the largest batch measured. The process cell lists the internal checks ($epsilon^(-2)$: double pole against the universal value; $E$: the recommended stability estimate, with the points above $10^(-5)$; rescue: the stream points of 16 the default rescue policy's binary64 level sends up; Ward on the external gluons; binary64 against double-double; Catani at full colour; NGluon at leading colour on the all-gluon row) and, in grey, those not run or not asserted.
+#if six != none [*The $2 -> 6$ rows* (M-FINAL item 1; `data/2to6.json` through `summary.json` `preliminary`; #link(<sixlegs>)[their records and checks below]) are outside the main-configuration rule: pyAmpliCol only (no provider exists at $2 -> 6$), so no multiplier, no gate and no colour in any cell; engine #raw(six.engine.revision) (#raw(six.engine.branch)) for every record, an ancestor of this milestone's pin, not re-run on it (loop stores made before model compiler 17 do not load on the pin, so the rows keep their engine); generation = generate + plan export (store, artifact and load beside it; "FC" marks the full-colour generation, LC below it); the timed evaluation is binary64, finite part, checks off, one pinned thread, at the largest batch measured. The process cell lists the internal checks ($epsilon^(-2)$: double pole against the universal value; $E$: the recommended stability estimate, with the points above $10^(-5)$; rescue: the stream points of 16 the default rescue policy's binary64 level sends up; Ward on the external gluons; binary64 against double-double; Catani at full colour; NGluon at leading colour on the all-gluon row) and, in grey, those not run or not asserted.
 
 ]*Figure 1* places each row's batched full-colour value of Table 1 (dots; the most recent measured configuration:
 #measured-ids.filter(id => C.at(id).main_cells.full_colour.len() > 0 and C.at(id).kind == "g1").map(cfg-short).join([\; ])#if C.at("development", default: none) != none and C.development.main_cells.full_colour.len() > 0 [\; development, not yet on `loop`]) against the providers (diamonds, the darkest
@@ -994,7 +994,7 @@ The $2 -> 6$ rows of @tab:summary come from `data/2to6.json`, which `scripts/bui
 mf-2to6 run records (harness store records, stored-checks, Ward, NGluon and timing records, watchdog status files and the
 stores' `generation.json`; #sxj.sources.len() sources). Engine (every record#if not sxj.engine.one_engine [, #text(fill: fail-ink)[*not* one engine]]):
 #raw(sxj.engine.branch) at #raw(sxj.engine.revision.slice(0, 8)) (#sxj.engine.base), native #raw(sxj.engine.native.directory)
-(digest #raw(sxj.engine.native_digest_short)…), not this milestone's pin. Protocol: #sxj.engine.protocol\; particle veto
+(digest #raw(sxj.engine.native_digest_short)…), an ancestor of this milestone's pin (integrated as mf-8g-3, `df1d2a5d`), not re-run on it. Protocol: #sxj.engine.protocol\; particle veto
 PDG #sxj.rows.first().particle_veto.map(str).join(", ") (top-free, $N_f = 5$, user Q-A), #sxj.rows.first().lanes lanes. No external reference exists at $2 -> 6$: acceptance is internal (double pole against the
 universal value, Catani at full colour, NGluon at leading colour, Ward, double-double, the stability estimate) and the speed
 is reported without a gate (cells uncoloured).
@@ -1055,11 +1055,45 @@ is reported without a gate (cells uncoloured).
   #list(..sxj.not_obtained.map(x => text(8pt, x)))
 ]
 
+// The M-FINAL optimisation rounds at seven legs (data/rounds-7leg.json,
+// transcribed from m-final/round-table-7leg.md): the 8g0 baseline against
+// now (d24a01ae), per stage, one pinned thread.
+#let r7t = json("data/rounds-7leg.json")
+#heading(numbering: none, level: 2)[Optimisation rounds at seven legs (M-FINAL)]
+#let r7-val(unit, xs) = if unit == "MB" [#sig(xs.at(0))~MB] else if xs.len() == 1 [#dur(xs.at(0))] else [#dur(xs.at(0)) · #gib(xs.at(1))]
+#let r7-fac(xs, ys) = xs.zip(ys).map(((a, b)) => [×#fixed(b / a, 2)]).join([ · ])
+#let r7-cell(unit, x) = [#r7-val(unit, x.baseline) → *#r7-val(unit, x.now)* #tiny[#r7-fac(x.baseline, x.now)]]
+#figure(kind: table,
+  caption: [*The optimisation rounds at seven legs* (`data/rounds-7leg.json`, from `m-final/round-table-7leg.md`): $g g -> g g g g g$ (top-free, $N_f = 5$) and, below, $u overline(u) -> 5g$ at full colour,
+    the 8g0 baseline (#r7t.baseline.split(" (").first(), before round 1) against the slice after round 2 (`d24a01ae`), one
+    pinned thread, s and peak GiB per stage, factors now/baseline; values bitwise through every round, the stored artifacts
+    byte-identical between the rounds' records; indicative (shared host). The $2 -> 6$ records above ran on the engine
+    after these rounds plus mf-8g-3.],
+  {
+    set text(6.8pt, font: sans, stretch: 87.5%)
+    set par(justify: false, leading: 0.36em)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold")
+    table(
+      columns: (3.6cm, 1fr, 1fr),
+      align: left + horizon, inset: (x: 2.6pt, y: 2.2pt),
+      stroke: (x, y) => (top: if y <= 1 { none } else { 0.3pt + luma(225) }),
+      fill: (x, y) => if y == 0 { navy } else { none },
+      table.header[Stage][LC: baseline → now][Full colour: baseline → now],
+      ..r7t.rows.map(x => (x.stage, r7-cell(x.unit, x.lc), r7-cell(x.unit, x.fc))).flatten(),
+      ..r7t.uux_ggggg_fc.rows.map(x => ([#x.stage #tiny[($u overline(u) -> 5g$)]], [—], r7-cell(x.unit, x))).flatten(),
+    )
+  },
+) <rounds7>
+#[
+#set text(8.6pt)
+#r7t.notes.map(x => [#upper(x.first())#x.slice(1).replace("~", "≈").replace("1.5x", "1.5×")]).join([. ]).
+]
+
 // =============================================================== STATUS ==
 // The status page starts on its own page so that its two box rows are not
 // split across pages.
 #pagebreak(weak: true)
-= Status at this milestone: M-FINAL-b <status>
+= Status at this milestone: M-FINAL (closed) <status>
 
 // The gate box reads Table 1's values (data/summary.json): the gated G1
 // rows' full-colour main cells, their configuration and verdicts, and for
@@ -1130,7 +1164,9 @@ is reported without a gate (cells uncoloured).
 #let dml = dm.largest
 #let hc-ok = hcj.rows.filter(r => r.status == "pass")
 #let hc-blocked = hcj.rows.filter(r => r.status == "blocked")
-#let hc-max = calc.max(..hc-ok.map(r => calc.max(..r.max_relative_deviation.values())))
+// HC05 comes from the mf-hc05 package record (one bound over every
+// Laurent coefficient, `max_relative_deviation_all`, and its `record`).
+#let hc-max = calc.max(..hc-ok.map(r => if "max_relative_deviation" in r { calc.max(..r.max_relative_deviation.values()) } else { r.max_relative_deviation_all }))
 #let cr-born = calc.max(..crj.rows.map(r => calc.max(r.max_relative_deviation.tree_born, r.max_relative_deviation.virtual_born)))
 #let cr-laurent = calc.max(..crj.rows.map(r => calc.max(r.max_relative_deviation.finite, r.max_relative_deviation.single_pole, r.max_relative_deviation.double_pole)))
 #let cr-procs = crj.rows.map(r => r.process).dedup()
@@ -1148,16 +1184,25 @@ is reported without a gate (cells uncoloured).
     *Native build* #raw(ms.native_build.name) (digest #raw(ms.native_build.digest)…)#if g.slice_revision.slice(0, 8) != ms.engine_revision.slice(0, 8) [; G1 ran on #raw(g.slice_build) (engine #raw(g.slice_revision))].]
 ]
 
+// M-FINAL closing (lean close, slice-status DECISIONS 2026-11-05 ~07:35):
+// what closed, the gate, the built-in SM fixes, dependencies and limits,
+// the kept campaigns of M-FINAL-b, 2 -> 6 and the next milestone.
+#let a24 = mq.rows.find(r => r.id == "A24")
+#let hc5 = hcj.rows.find(r => r.id == "HC05")
+#let r7 = json("data/rounds-7leg.json")
+#let r7-of(stage) = r7.rows.find(x => x.stage == stage)
+#let r7-f(stage, acc, k) = { let x = r7-of(stage).at(acc); x.baseline.at(k) / x.now.at(k) }
 #grid(columns: (1fr, 1fr), gutter: 8pt,
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
     set text(8.2pt)
     set par(justify: false)
-    [*M-FINAL-b* (item 2 complete and the item-4 packages, `m-final/PLAN.md` §3.1 wave 5; campaigns at #raw(dm.campaign.slice), the pin adds a test-only commit)]
+    [*M-FINAL closed* (engine #raw(ms.engine_revision)\; `m-final/PLAN.md`, the user's rulings of 2026-10-31 \~11:00, the lean close of 2026-11-05 \~07:30)]
     [
-      - *Decays $1 -> n$* (@dec, @tab:decrows): #dm.rows.len() rows XX01–XX08 ($1 -> 2$ and $1 -> 3$, QCD and EW, `loop_sm` and both shipped EW UFOs), #dmc.pass pass, #dmc.fail fail. Largest: DD from MadLoop's quadruple precision #sci(dml.dd_vs_reference.value) (#dml.dd_vs_reference.row), binary64 from DD #sci(dml.binary64_vs_dd.value) (#dml.binary64_vs_dd.row), Catani and QED poles in DD #sci(dml.catani_dd.value) (#dml.catani_dd.row); $Z -> u overline(u)$ = the massless vector form factor, Ward on XX07, LC/NLC = the $N_c$ scan; public route and native inputs. The decaying particle at its real mass with zero own width.
-      - *HC_NLO_X0 genericity* (@tab:hc): #hc-ok.map(r => r.id).join(", ") = MadLoop 3.7.0 to ≤ #sci(hc-max)#for r in hc-blocked [; #r.id (#box(math-label(ap-math(r.process)))) blocked, typed #raw(r.refusal.key) (five-point $f f f f$ $R_2$ contact)].
-      - *Correlations against Recola* (@tab:corr): #crj.rows.len() rows on #cr-procs.len() processes pass, correlated Borns ≤ #sci(cr-born), one-loop Laurent coefficients ≤ #sci(cr-laurent) of the row's scale.
-      - *Product* (@tab:caps): the stability rescue stack (Python native evaluate API only; `test_loop_v2_rescue.py` 16/16); permutation aliases and permuted group members served from the stored target (`test_loop_v2_mapping.py` 17/17 at `f3d9e361`); SymJIT 2.28.3; virtual C ABI version 2 (legacy agreement check removed); EW export parses in Rust.
+      - *Item 1, $2 -> 6$* (@tab:summary, #link(<sixlegs>)[records]): $g g -> 6g$ ($N_f = 5$, no top), $u overline(u) -> 6g$ and $u overline(u) -> u overline(u) g g g g$ at LC and full colour generated, stored (every step below 150 GB), loaded and evaluated on one engine (#raw(six.engine.revision.slice(0, 8)), an ancestor of the pin); every asserted internal check passes, no provider exists.
+      - *Item 2, decays $1 -> n$* (M-FINAL-b, @dec): XX01–XX08 = MadLoop's quadruple precision, QCD and EW.
+      - *Item 4:* the rescue stack (Python native evaluate API only; M-FINAL-b); HC_NLO_X0 #hc-ok.map(r => r.id).sorted().join(", ") = MadLoop 3.7.0 (@tab:hc; HC05 since mf-hc05); the optimisation rounds (#link(<rounds7>)[seven-leg table]: generation ÷#fixed(r7-f("generation total (wall, max peak)", "lc", 0), 1) LC / ÷#fixed(r7-f("generation total (wall, max peak)", "fc", 0), 1) FC, load resident ÷#fixed(r7-f("load (time, resident)", "lc", 1), 0) / ÷#fixed(r7-f("load (time, resident)", "fc", 1), 0), $B = 128$ peak ÷#fixed(r7-f("evaluation B = 128 (per point, peak)", "lc", 1), 1) / ÷#fixed(r7-f("evaluation B = 128 (per point, peak)", "fc", 1), 1), values bitwise); the Recola correlation oracles (M-FINAL-b). The final G1 retime is deferred to the next milestone.
+      - *Also since M-FINAL-b:* the SDK v4 extras (mf-sdk); lsimon125's PRs \#26 \#29 \#30 \#32 \#34 \#36 \#37 \#38 \#39 (\#24 adapted with credit): \#38 fixes a real 4× over-count of compiled-mode HEFT quark tree amplitudes (built-in SM-HEFT and HC_NLO_X0, now = MG5 and the MadLoop Borns), \#34 moves binary64 quark-line values by rounding only ($<= 10^(-12)$, accepted); the built-in SM fixes; the mechanical hard-coded limits lifted; Symbolica off the fork (boxes below).
+      - *Validation scope:* the campaigns of M-FINAL-b (#raw(dm.campaign.slice): M-SM, M-QCD, decays, HC, correlations) stand, plus package evidence (A24 passes rule 4 with native Catani: mf-8g-3; HC05 = MadLoop: mf-hc05). The pin itself carries its integrators' targeted tests; the global tests run in CI on `loop` (no local whole-suite sweep, wheel self-test or retime: user 2026-11-05 \~07:30).
     ]
   }),
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
@@ -1165,7 +1210,7 @@ is reported without a gate (cells uncoloured).
     set par(justify: false)
     [*Gate G1* (@g1; finite part, $2 -> 3$ and beyond)]
     [
-      - *Not re-timed here* (user Q11: one final retime at the M-FINAL pin): Table 1 and Figure 1 keep M-SM's G1 at #raw(g.slice_revision) (#raw(g.slice_build)). Regression spot check of the pin's engine against #raw(g.slice_revision) (same core, paired; the four largest gated rows, the smallest and the EW row): plans identical, time per point ×0.96–1.08: no regression.
+      - *Not re-timed at M-FINAL* (the final retime is deferred to the next milestone, user 2026-11-05 \~07:30): Table 1 and Figure 1 keep the cells of the M-FINAL-b report (#raw(ms.previous_loop)), i.e. M-SM's G1 at #raw(g.slice_revision) (#raw(g.slice_build)). At M-FINAL-b a paired spot check of its engine (#raw(ms.previous_engine)) against #raw(g.slice_revision) found the plans identical and ×0.96–1.08 per point; the evaluation and memory rounds since then keep the values bitwise and are not in G1's cells (#link(<rounds7>)[seven-leg table]).
       - *Most recent configuration* (Table 1 and Figure 1): #s-ids.map(s-config).join([; ]) at $B = 128$:
         #s-with("pass").len() of #s-blocking.len() gated #if s-blocking.len() == 1 [process passes] else [processes pass]#if s-decided.len() > 0 [ (#s-decided.map(r => { let x = s-gate(r); [#math-label(r.math) by #x.decision (#fixed(x.ratio_to_limit, 2) of its limit, band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2))] }).join([, ]))]#if s-with("open").len() > 0 [, #row-names(s-with("open").map(r => r.key)) open]#if s-with("fail").len() > 0 [, #row-names(s-with("fail").map(r => r.key)) #if s-with("fail").len() == 1 [fails] else [fail]
         (#s-with("fail").map(r => [×#fixed(s-gate(r).ratio_to_limit, 2)]).join([, ]) of the limit)]#if s-thr.len() > 0 [; #row-names(s-thr.map(r => r.key)) #if s-thr.len() == 1 [runs] else [run] below 5 ms per point: *not gated* (user 2026-10-24\; #s-thr.map(r => fixed(s-gate(r).ratio_to_limit, 2)).join([, ]) of the limit)].
@@ -1182,8 +1227,62 @@ is reported without a gate (cells uncoloured).
       - *#row-span(s-pending.map(r => r.key)):* not timed yet (#s-pending.map(r => r.full_colour.main.package).dedup().map(raw).join(", "))#if s-no-gate.len() > 0 [\; #row-names(s-no-gate.map(r => r.key)) #if s-no-gate.len() == 1 [has] else [have] no matched provider].
 ]
     #if ew-status.len() > 0 [
-      - *EW row* #flag[indicative] (`data/msm-g1.json`, not gated: [U5], binding in M-FINAL): #ew-status.map(r => { let m = s-main(r); [#box(math-label(r.math)) (#r.corrections) #dur(m.seconds_per_point) per point at $B = 128$, #ratio-mult(m) of #r.full_colour.fastest.name's time] }).join([; ]) (@msm).
+      - *EW row* #flag[indicative] (`data/msm-g1.json`, not gated: [U5]; its gate binds with the final retime, next milestone): #ew-status.map(r => { let m = s-main(r); [#box(math-label(r.math)) (#r.corrections) #dur(m.seconds_per_point) per point at $B = 128$, #ratio-mult(m) of #r.full_colour.fastest.name's time] }).join([; ]) (@msm).
 ]
+    ]
+  }),
+)
+
+// The built-in SM fixes of mf-norm (049a9389) for the collaborator: the
+// package report's table (slice-status UPDATE 2026-11-05 ~08:05; the
+// factor wording of DECISIONS 2026-11-05 ~06:10 (c)).
+#box-note(fill: white, stroke: 0.6pt + luma(205), breakable: false)[
+  #set par(justify: false)
+  *Built-in SM fixes* (tree level; mf-norm `049a9389`, with mf-limits-py `d958f2ea` for the initial-state averages): the built-in SM now equals the UFO `sm` in every lane. What was wrong, since when (2f876d1b, 2026-07-16, where the built-in model files enter this history, also on `origin/main`; 43e6fa5e, 2026-07-22) and by how much:
+  #v(-0.2em)
+  #{
+    set text(6.9pt, font: sans, stretch: 87.5%)
+    set par(leading: 0.35em)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold")
+    table(
+      columns: (4.6cm, 2.4cm, 1.6cm, 1fr),
+      align: left + horizon, inset: (x: 2.6pt, y: 2.0pt),
+      stroke: (x, y) => (top: if y <= 1 { none } else { 0.3pt + luma(225) }),
+      fill: (x, y) => if y == 0 { navy } else { none },
+      table.header[Process class][Lanes][Since][Effect (old value against the UFO `sm`)],
+      [every process without a coloured leg, decays included], [all], [`2f876d1b`], [too small by $1 slash (8 pi alpha)^2 = 27.797$ (old = $4 e^4 approx 0.036$ × correct); a run-time change of $alpha$ rescaled them with the wrong power],
+      [initial $Z$ or $W$; initial Higgs], [all], [`2f876d1b`], [×3/2 per $Z$/$W$, ×1/2 per Higgs (spin averages; fixed by mf-limits-py)],
+      [$W W gamma$ / $W W Z$ vertices and four-boson contacts], [recurrence], [`43e6fa5e`], [counted twice: $gamma gamma -> W^+ W^-$ ×16, $e^+ e^- -> W^+ W^-$ ×4, $u overline(u) -> W^+ W^-$ point-dependent],
+      [$e^+ e^- -> W^+ W^-$; $e^+ e^- -> nu_e overline(nu)_e$], [all], [`2f876d1b`], [the $t$-channel neutrino exchange missing (e.g. 245× at one 500 GeV point); $nu_e overline(nu)_e$ refused (missing lepton/neutrino currents)],
+      [electroweak exchange between quark lines], [all], [`2f876d1b`], [quark EW currents missing: QED-allowed requests silently gave the QCD-only value ($u overline(u) -> d overline(d)$: 1.445, 0.105, 1.079 × at three 700 GeV points); purely EW four-quark processes refused],
+      [the $H H H H$ contact ($h h -> h h$, ...)], [compiled, eager, on-the-fly], [`2f876d1b`], [21.8, 97.8, 48.7 × at 700 GeV (and a further 1/27.797 before the colourless fix)],
+      [the $H H V V$ contact ($h h -> Z Z$, $h h -> W^+ W^-$)], [all], [`2f876d1b`], [204, 11.4, 72 × and 381, 15.6, 121 × at 700 GeV],
+    )
+  }
+  #v(-0.2em)
+  #set text(7.9pt)
+  *Regression test:* `tests/integration/test_builtin_sm_ufo_sweep.py` (default tier): every SM $2 -> 2$ process of the particle table (1993, reduced to 154 classes by crossing, charge-parity conjugation and the vertex-table relabellings), every $1 -> 2$ decay, 12 sample $2 -> 3$ and $1 -> 3$ processes and three four-quark requests at explicit orders, in the compiled, eager, on-the-fly and recurrence lanes, against committed UFO `sm` values (MG5 3.7.0, `no_masses`) to $10^(-10)$ relative; where the UFO has no tree amplitude the built-in must refuse; a nightly variant runs 901 $2 -> 2$ processes against a freshly compiled UFO. Coloured processes: the compiled lane bitwise unchanged, the prepared lanes at ulp level ($<= 1.3 times 10^(-15)$, accepted). Typed refusals as the UFO `sm`: four-quark processes without gluon exchange in the recurrence lane, a massive top on a massless-$b$ line (`dirac-weyl-closure`). The one-loop engine is unaffected (it refuses the tree-only built-in SM).
+]
+
+#grid(columns: (1fr, 1fr), gutter: 8pt,
+  block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
+    set text(8.2pt)
+    set par(justify: false)
+    [*M-SM, kept* (QCD + QED/EW on the shipped `loop_qcd_qed_sm(_Gmu)`; `m-sm/PLAN.md` §5; validated at M-FINAL-b, not re-run here: user 2026-11-04 \~17:35)]
+    [
+      - *Validation campaign* at #raw(sx-pin) (@msm, @tab:msmrows): #sx-rows rows in #sx.classes.len() classes, #sxc.pass pass, #sxc.partial partial, #sxc.fail fail (#sx-partial.join(", "): F7, accepted); no deviation above $10^(-5)$, no wrong pole or sector; against M-SM's campaign no status change and no deviation change above $10^(-5)$ (40 values in 8 rows moved by ≤ $7.4 times 10^(-11)$). Largest: DD from the reference #sci(sx-dd.value) (#sx-dd.row), binary64 from DD #sci(sx-b64.value) (#sx-b64.row), Catani DD #sci(sx-cat.value) (#sx-cat.row) at rule 4's standard tolerance (relaxed by the user's ruling: #sx-relaxed.map(r => [#r.row #sci(r.value) ≤ #sci(r.tolerance, d: 0)]).join(", ")).
+      - *CMS* (@tab:cms): #sx.cms.len() rows = MadLoop CMS; the acceptance row #sx-cm07.row (#box(math-label(ap-math(sx-cm07.process)))) DD #sci(sx-cm07.dd_vs_reference), binary64 from DD #sci(sx-cm07.binary64_vs_dd), native inputs.
+      - *Public route* on both shipped EW UFOs: `test_loop_v2_ew_public_models.py` #sx.public_route.tests.passed/#sx.public_route.tests.total at #raw(sx-pin)\; wheel self-test #if sx.selftest.passed [#sx.selftest.checks/#sx.selftest.checks] else [*failed*] in two fresh venvs, its EW virtual from the shipped prepared artifact = MadLoop to #sx-ew-st.
+      - *EW products:* per-leg photon tagging (`loop.external_photons`, default `"final"`), poles `uv | ir | split` by the model's regulators, native complex pole masses, EW generation stages in Rust, binary64 of a stored artifact without Symbolica (@tab:caps).
+    ]
+  }),
+  block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
+    set text(8.2pt)
+    set par(justify: false)
+    [*M-QCD, kept* (QCD on the stock `loop_sm`; `m-qcd/PLAN.md` §5; validated at M-FINAL-b, A24 from mf-8g-3)]
+    [
+      - *Campaign* at #raw(mx.campaign.campaign_head.split(" ").first()) (#mx.campaign.date, @mqcd, @tab:mqcdrows): #mx-all.map(c => c.rows).sum() rows, #mxc.pass pass, #mxc.partial partial, #mxc.fail fail#if open-f.len() > 0 [ (#open-f.join(", "), accepted)]. *A24* ($g g -> g g g g g$) passes since mf-8g-3: rule 4 with the native Catani operator from a stored QCD record (DD #sci(a24.max_catani_dd), binary64 #sci(a24.tiers.nightly.max_catani_binary64); rule 1 = NJet's DD to #sci(a24.max_dd_vs_reference); F11 resolved; the package's nightly record, re-run by its evidence audit on `2f3f76d9`). At M-FINAL-b, against M-SM's re-run, 42 of 1212 values moved, all binary64 (the largest, information only: A14's finite part against the providers $1.5 times 10^(-8) -> 5.6 times 10^(-8)$), every double-double value bitwise. Largest: DD from the reference #sci(mx-dd.value) (#mx-dd.row), binary64 from DD #sci(mx-b64.value) (#mx-b64.row), Catani DD #sci(mx-cat.value) (#mx-cat.row).
+      - *At `e18a024b`* (not repeated: no status changed): public route on the shipped `loop_sm`, one row per class, DD from MadLoop ≤ #sci(mx-pub-dd)\; FFT seed contraction = direct to rounding, ×#fixed(calc.min(..fft-seed), 2)–#fixed(calc.max(..fft-seed), 1) of direct (@tab:fft). *Colour:* full colour by default; LC and NLC pass rule 7 on #mx-all.map(c => c.nc.rows.len()).sum() rows. *Ward* up to seven gluons (#ms.status_notes.notes.gg_ggggg.ward_status).
     ]
   }),
 )
@@ -1192,21 +1291,20 @@ is reported without a gate (cells uncoloured).
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
     set text(8.2pt)
     set par(justify: false)
-    [*M-SM, kept* (QCD + QED/EW on the shipped `loop_qcd_qed_sm(_Gmu)`; `m-sm/PLAN.md` §5; re-run at this pin)]
+    [*Dependencies* (`dependencies/manifest.json`; no fork: user 2026-11-02 \~19:00 / \~21:30)]
     [
-      - *Validation campaign* at #raw(sx-pin) (@msm, @tab:msmrows): #sx-rows rows in #sx.classes.len() classes, #sxc.pass pass, #sxc.partial partial, #sxc.fail fail (#sx-partial.join(", "): F7, accepted); no deviation above $10^(-5)$, no wrong pole or sector; against M-SM's campaign no status change and no deviation change above $10^(-5)$ (40 values in 8 rows moved by ≤ $7.4 times 10^(-11)$). Largest: DD from the reference #sci(sx-dd.value) (#sx-dd.row), binary64 from DD #sci(sx-b64.value) (#sx-b64.row), Catani DD #sci(sx-cat.value) (#sx-cat.row) at rule 4's standard tolerance (relaxed by the user's ruling: #sx-relaxed.map(r => [#r.row #sci(r.value) ≤ #sci(r.tolerance, d: 0)]).join(", ")).
-      - *CMS* (@tab:cms): #sx.cms.len() rows = MadLoop CMS; the acceptance row #sx-cm07.row (#box(math-label(ap-math(sx-cm07.process)))) DD #sci(sx-cm07.dd_vs_reference), binary64 from DD #sci(sx-cm07.binary64_vs_dd), native inputs.
-      - *Public route* on both shipped EW UFOs: `test_loop_v2_ew_public_models.py` #sx.public_route.tests.passed/#sx.public_route.tests.total at the pin; wheel self-test #if sx.selftest.passed [#sx.selftest.checks/#sx.selftest.checks] else [*failed*] in two fresh venvs, its EW virtual from the shipped prepared artifact = MadLoop to #sx-ew-st.
-      - *EW products:* per-leg photon tagging (`loop.external_photons`, default `"final"`), poles `uv | ir | split` by the model's regulators, native complex pole masses, EW generation stages in Rust, binary64 of a stored artifact without Symbolica (@tab:caps).
+      - *Symbolica* = symbolica-dev `community` `36cbac3a` plus the single consolidated PR symbolica-dev/symbolica\#163 (branch `loop_me_pyamplicol`, `20a9da94`, 6 commits; moves upstream once merged); the alphal00p fork is gone from the graph (mf-symbolica).
+      - *NinjaRS* main `b3a29c85` (PRs \#7–\#12 and \#14 merged: UV residues from `ninjars::fast::TensorUvResidues`, the light-like spinors of \#10) and *oneloopmaster* main `128ea664`.
+      - *Python:* the Community build of `20a9da94` or PyPI symbolica 3.0.3; every stored saved evaluator is canonical (referenced symbols only, numbered by name), so loop artifacts are byte-identical from either.
     ]
   }),
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
     set text(8.2pt)
     set par(justify: false)
-    [*M-QCD, kept* (QCD on the stock `loop_sm`; `m-qcd/PLAN.md` §5; re-run at this pin)]
+    [*Hard-coded limits* (mechanical ones: user 2026-11-04)]
     [
-      - *Campaign re-run* at #raw(mx.campaign.campaign_head.split(" ").first()) (#mx.campaign.date, @mqcd, @tab:mqcdrows): #mx-all.map(c => c.rows).sum() rows, #mxc.pass pass, #mxc.partial partial, #mxc.fail fail#if open-f.len() > 0 [ (#open-f.join(", "), accepted)], the statuses and check counts of M-QCD's campaign (`e18a024b`); against M-SM's re-run 42 of its 1212 values moved, all binary64 (QCD-only rows too; the largest, information only: A14's finite part against the providers $1.5 times 10^(-8) -> 5.6 times 10^(-8)$), every double-double value bitwise. Largest: DD from the reference #sci(mx-dd.value) (#mx-dd.row), binary64 from DD #sci(mx-b64.value) (#mx-b64.row), Catani DD #sci(mx-cat.value) (#mx-cat.row).
-      - *At `e18a024b`* (not repeated: no status changed): public route on the shipped `loop_sm`, one row per class, DD from MadLoop ≤ #sci(mx-pub-dd)\; FFT seed contraction = direct to rounding, ×#fixed(calc.min(..fft-seed), 2)–#fixed(calc.max(..fft-seed), 1) of direct (@tab:fft). *Colour:* full colour by default; LC and NLC pass rule 7 on #mx-all.map(c => c.nc.rows.len()).sum() rows. *Ward* up to seven gluons (#ms.status_notes.notes.gg_ggggg.ward_status).
+      - *Lifted:* Python (mf-limits-py `d958f2ea`): compile timeout and slots, exact rational charges and grouping factors, built-in SM $1 -> n$ decays, uncapped mappings and fixpoints, $N_c$ powers at any multiplicity; three tuning bounds became settings (`color.*`, `generation.validation.*`). Rust (mf-limits-rust `72fe20dc`): one rank admission from the reducer, one leg boundary 1–64, checked narrowing, the $S_m$ colour-FFT degree while $m!$ fits `usize`; values bitwise.
+      - *Not supported* (generalisations; typed refusals, no milestone planned): rank $> N + 2$ (NinjaRS, oneloopmaster), multi-fermion loop vertices, coloured $n$-point EFT contacts, nested singlet contacts, octet/sextet fermions, an LC/NLC menu, binary64-only paths, C-API precision.
     ]
   }),
 )
@@ -1221,18 +1319,19 @@ is reported without a gate (cells uncoloured).
     let lcfc(r) = [#dur(r.leading_colour.seconds_per_point) / #dur(r.full_colour.seconds_per_point)]
     [*$2 -> 6$* (M-FINAL item 1, #flag[measured]; @tab:summary, #link(<sixlegs>)[records and checks])]
     [
-      - *On one engine* (`data/2to6.json`; #raw(six.engine.revision), not the pin), per point LC / FC: $g g -> 6g$ #lcfc(g8) (FC at $B = #g8.full_colour.batch$), $u overline(u) -> 6g$ #lcfc(of("uux_gggggg")), $u overline(u) -> u overline(u) g g g g$ #lcfc(of("uux_uuxgggg")); generation up to #dur(calc.max(..sx6.map(r => r.generation.main.seconds))) and #gib(calc.max(..sx6.map(r => r.generation.main.peak_gib))) (generate + plan export); every store step below #calc.ceil(calc.max(..sxj.rows.map(r => r.generation.step.peak_rss_gb)))~GB (budget 150 GB).
+      - *On one engine* (`data/2to6.json`; #raw(six.engine.revision), an ancestor of the pin), per point LC / FC: $g g -> 6g$ #lcfc(g8) (FC at $B = #g8.full_colour.batch$), $u overline(u) -> 6g$ #lcfc(of("uux_gggggg")), $u overline(u) -> u overline(u) g g g g$ #lcfc(of("uux_uuxgggg")); generation up to #dur(calc.max(..sx6.map(r => r.generation.main.seconds))) and #gib(calc.max(..sx6.map(r => r.generation.main.peak_gib))) (generate + plan export); every store step below #calc.ceil(calc.max(..sxj.rows.map(r => r.generation.step.peak_rss_gb)))~GB (budget 150 GB).
       - *Internal checks* (no reference exists): double pole, Catani (FC), NGluon (LC, 8 gluons), double-double and the quark rows' Ward pass; the 8-gluon LC Ward is recorded, not asserted (beyond the binary64 scope); at 8 gluons most points are rescue cases (binary64 $E > 10^(-5)$).
-      - *Not run* (user, 2026-11-04): the 8-gluon full-colour and double-double Wards (\~17:35: enough evidence) and the 8-gluon full-colour $B = 128$ timing (\~17:48).
+      - *Not run* (user, 2026-11-04): the 8-gluon full-colour and double-double Wards and the $u overline(u) -> 6g$ FC double-double Ward (\~17:35: enough evidence), the 8-gluon full-colour $B = 128$ timing (\~17:48).
     ]
   }),
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
     set text(8.2pt)
     set par(justify: false)
-    [*Next: M-FINAL-a* (`m-final/PLAN.md` §3.1)]
+    [*Next milestone* (user 2026-11-03 \~21:15 and 2026-11-05 \~07:30)]
     [
-      - The optimisation rounds on the slice after this pin (round 1, bounded evaluation memory: mf-8g-2, integrated; round 2: load-time and evaluation memory, evaluation runtime), then the $2 -> 6$ runs again: storage below 150 GB, the pending checks, full colour.
-      - The SDK v4 extras (resolved, colour/spin-correlated, double-double and arbitrary precision in every SDK language and UMAMI; integrated after this pin, mf-sdk), the final G1 retime with the new processes and the *binding EW speed gate*, then the M-FINAL gate and push.
+      - *Loop-induced processes* (refused typed today, `loop-induced`).
+      - *TIRust* (`iregi-rust`) as an alternative reduction backend to NinjaRS.
+      - *The final G1 retime* deferred from M-FINAL, with the *binding EW speed gate*.
     ]
   }),
 )
@@ -1242,47 +1341,48 @@ is reported without a gate (cells uncoloured).
     *Missing or incomplete* (typed refusal keys, listed and shown by the dry run)
     #set text(7.9pt)
     #grid(columns: (1fr, 1fr), column-gutter: 12pt)[
-    - *Refused (typed):* loop-induced processes, including loop-induced decays ($h -> g g$) and the loop-squared members
-      of multiparticle requests (`loop-induced`; a multiparticle request generates its members with a Born and records
-      the others as skipped); decay chains and `$` (`madloop-syntax`); Majorana fermions (`majorana-fermion`) and
-      multi-fermion contact vertices (`multi-fermion-contact`); the five-point $f f f f$ $R_2$ contact of HC05
-      (`unlowered-counterterm`: its colour is a multi-trace state); numerical process-group analysis
+    - *Next milestone:* loop-induced processes, including loop-induced decays ($h -> g g$) and the loop-squared members
+      of multiparticle requests (refused typed, `loop-induced`; a multiparticle request generates its members with a
+      Born and records the others as skipped), with TIRust as an alternative reduction backend; the final G1 retime
+      (deferred from M-FINAL: Table 1 shows the M-FINAL-b report's G1) with the binding EW speed gate (the EW row is
+      indicative here).
+    - *Refused (typed):* decay chains and `$` (`madloop-syntax`); Majorana fermions (`majorana-fermion`) and
+      multi-fermion contact vertices (`multi-fermion-contact`); numerical process-group analysis
       (`process-group-analysis`; exact aliases and members are served); photon-only and partial EW vetoes on the NLOCT
       UFOs (`veto-unlabelled-counterterms`: their counterterm couplings are not split by loop content); the
       complex-mass scheme for a width whose mass is an internal parameter (`cms-internal-mass`: `loop_sm`'s $W$), an
       external unstable species under CMS (`cms-external-width`), a Yukawa input under CMS (`cms-yukawa-input`); a width
       outside CMS (`electroweak-width`, `coloured-width`; a decaying particle has zero own width); tagged photons
-      without an $alpha(0)$ input (`external-photon-scheme`); Dirac–Weyl currents the tree lanes cannot close
-      (`dirac-weyl-closure`); a spin-correlated leg without a vector source (refused at generation).
-    - *M-FINAL-a, in progress:* the $2 -> 6$ validation (Catani, Ward, double-double, full-colour poles; after the
-      optimisation rounds, #link(<sixlegs>)[records]); the *binding EW speed gate* with the final G1 retime (the EW row is indicative
-      here); the SDK v4 extras (after this pin).
-    - *Not in M-FINAL* (rulings): loop-induced processes (user Q8); helicity and colour-flow selection at NLC and full
-      colour (LC has it; refused for mapped processes); the publication-grade timing campaign and the provider
-      protocol-mode columns (user Q11).
+      without an $alpha(0)$ input (`external-photon-scheme`); a spin-correlated leg without a vector source (refused at
+      generation). HC_NLO_X0: $u overline(u) -> x_0 g g g$ (the U(1)-leak check), single-trace and C-odd five-point
+      $R_2$ colours. *Tree level:* four-quark processes without gluon exchange in the recurrence lane (the other lanes
+      serve them) and Dirac–Weyl currents the tree lanes cannot close (`dirac-weyl-closure`: a massive top on a
+      massless-$b$ line), both as for the UFO `sm`.
+    - *Not supported* (no milestone planned): reduction rank $> N + 2$ and the other capability generalisations of the
+      limits box; helicity and colour-flow selection at NLC and full colour (LC has it; refused for mapped processes);
+      the publication-grade timing campaign and the provider protocol-mode columns (user Q11).
     - *Not supported, by design:* EW LC/NLC (`colour-declaration-coverage`, permanent: user 2026-10-30; no plan to
       lift it).
     ][
-    - *Accepted at the pin:* F7 — LL02 and SC02 partial (rule 4 not formed: the massive-muon $G_mu$ copy writes the
-      field renormalisation of massless leptons; rule 1 = MadLoop); SC03's τ-mass relaxation of rule 4 to $10^(-5)$
-      (the EW counterterms omit the τ mass, the user's retained model limitation; MadLoop has the same offset). M-QCD's
-      A09\@collinear (F7: typed `Unstable` / `CutFailed{DegenerateGram}`, never a value) and A24 (F11: rule 4 not
-      formed at seven gluons, poles = NJet).
-    - *Recorded test outcomes* (not gate failures): #[#show raw: set text(6pt); `test_loop_v2_companion.py` `::test_companion_seeds_on_the_slice_certificates_ggg`]
-      misses a bitwise claim by \~$10^(-16)$ relative since SymJIT 2.28.3 (below the lax-precision line; routed to
-      mf-8g-1b); the five NinjaRS light-like spinor xfails stay (NinjaRS \#10 open).
+    - *Accepted (validated at M-FINAL-b):* F7 — LL02 and SC02 partial (rule 4 not formed: the massive-muon $G_mu$ copy
+      writes the field renormalisation of massless leptons; rule 1 = MadLoop); SC03's τ-mass relaxation of rule 4 to
+      $10^(-5)$ (the EW counterterms omit the τ mass, the user's retained model limitation; MadLoop has the same
+      offset); M-QCD's A09\@collinear (F7: typed `Unstable` / `CutFailed{DegenerateGram}`, never a value).
+    - *Recorded test outcomes* (not gate failures; the integrators' records): `rusticol-capi`
+      #[#show raw: set text(6pt); `static_c_api_advertises_all_symbolica_free_f64_capabilities`] fails as before
+      mf-limits-rust (a legacy-JIT capability advertised); under PyPI symbolica 3.0.3 six double-double rows of
+      `test_loop_v2_sdk_extras.py` differ at \~$10^(-30)$ relative (the Community build passes); the tree prepared-model
+      kernels are not byte-reproducible run to run (operand order; their state sections are canonical).
     - *Compatibility notes:* the shipped EW UFOs are UFOmodeldb `6ca4b120` plus the user's issue-1 patch (PROVENANCE
       records the local delta); MadLoop never inserts R2_G0tt_b on the unpatched models (mg5amcnlo\#475): pyAmpliCol
       keeps the UFO-complete $R_2$ insertion (user Q7).
-    - *Fast binary64 lanes:* NinjaRS light-like spinors near the $-z$ axis (\~$10^(-5)$) and model units \~$10^4$ from
-      GeV (silent percent-level errors with checks off): the recommended checks flag them, and the rescue stack
-      escalates such points in the Python API.
-    - *No longer missing:* $1 -> n$ decays at tree level and one loop, QCD and EW (M-FINAL-b); permutation aliases,
-      process-group members and correlations composed with them; independent Recola oracles of correlated Borns and
-      virtuals; the stability rescue stack (Python API); the EW corrections, CMS and external-photon artifacts of M-SM.
+    - *No longer missing* (since M-FINAL-b): the $2 -> 6$ processes; HC05 ($g g -> x_0 g g$, its five-point $f f f f$
+      $R_2$ contact); A24's rule 4 (native Catani); the built-in SM tree defects; NinjaRS's light-like spinors along
+      $-z$ (\#10: the five xfails are plain cases, large unit factors keep the virtual); the alphal00p Symbolica fork;
+      the SDK v4 extras. Earlier (M-FINAL-b): $1 -> n$ decays, permutation aliases and process-group members, Recola
+      oracles of correlated Borns and virtuals, the stability rescue stack (Python API).
   ]
 ]
-
 #block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, breakable: false, {
   set text(8.4pt)
   set par(justify: false)
@@ -1294,7 +1394,8 @@ is reported without a gate (cells uncoloured).
       timing has none); $2 -> 2$ is reported without a gate. A process whose time per point at $B = 128$ is below 5 ms
       has no blocking gate: its ratio is shown, its verdict is "#thr-rule.label" (user decision; `data/milestone.json`
       `gate_decisions.threshold_rule`); optimisation effort goes to higher multiplicities. The electroweak row is timed
-      and reported indicatively at M-SM, without a verdict ([U5]; `data/msm-g1.json`): its gate binds in M-FINAL.
+      and reported indicatively at M-SM, without a verdict ([U5]; `data/msm-g1.json`): its gate binds with the final retime
+      (deferred to the next milestone).
       Aspiration: fastest of all tools from $2 -> 3$.
     - *Protocol.* Providers in production mode with poles off where they allow it (OpenLoops `truepoles 0`, Recola without IR
       poles, MadLoop production build); pyAmpliCol finite-only (`poles = "none"`) with stability checks off, one pinned
@@ -1425,6 +1526,12 @@ shipped `loop_sm` and evaluate the stored artifact with the recommended checks. 
       ..hcj.rows.map(r => if r.status == "blocked" {
         (text(weight: "bold", r.id), text(8pt, font: "Libertinus Serif", math-label(ap-math(r.process))), [#r.restriction#if r.particle_veto.len() > 0 [ · / #r.particle_veto.join(" ")]],
           table.cell(colspan: 8)[#mq-chip("blocked") typed #raw(r.refusal.key): #r.reason])
+      } else if "record" in r {
+        // A row from a package record (not this campaign's job): one bound.
+        (text(weight: "bold", r.id), text(8pt, font: "Libertinus Serif", math-label(ap-math(r.process))), [#r.restriction#if r.particle_veto.len() > 0 [ · / #r.particle_veto.join(" ")]],
+          [#r.points · #(2 * r.points)], table.cell(colspan: 4, align: center + horizon)[≤ #esci(r.max_relative_deviation_all) #tiny[(every coefficient)]],
+          table.cell(colspan: 2)[#tiny[DD and rotation: the nightly row passed]],
+          [#mq-chip(r.status) #tiny[mf-hc05 record]])
       } else {
         (text(weight: "bold", r.id), text(8pt, font: "Libertinus Serif", math-label(ap-math(r.process))), [#r.restriction#if r.particle_veto.len() > 0 [ · / #r.particle_veto.join(" ")]],
           [#r.points · #r.values], hc-dev(r, "born"), hc-dev(r, "finite"), hc-dev(r, "single_pole"), hc-dev(r, "double_pole"),
@@ -1441,7 +1548,7 @@ shipped `loop_sm` and evaluate the stored artifact with the recommended checks. 
 The HC rows ran through the generic fixes of MF-GM-HC (`e2f0c78e`): the UFO namespace head, the Feynman-gauge refusal only
 where massive vectors run in the loops (`ew_policy.require_loop_gauge`), positional UFO counterterm keys with zero extra
 positions (other key lengths are the listed source refusal `ufo-counterterm-keys`) and a four-point contact with a colour-singlet
-leg split through an adjoint auxiliary. #hc-blocked.map(r => [#r.id (#box(math-label(ap-math(r.process)))) stays refused at
+leg split through an adjoint auxiliary. #if hc5 != none and "record" in hc5 [#hc5.id (#box(math-label(ap-math(hc5.process))), refused typed at M-FINAL-b) passes since mf-hc05 (`e3d4ef4d`): #hc5.method\; binary64 = MadLoop 3.7.0 within #sci(hc5.max_relative_deviation_all) over every Laurent coefficient at #hc5.points points × 2 scales, and the nightly row with double-double and a rotation passed (the package's record, not re-run here; HC01–HC04 and HC06 bitwise unchanged). Still refused typed: $u overline(u) -> x_0 g g g$ (the U(1)-leak check) and single-trace or C-odd five-point $R_2$ colours.] #hc-blocked.map(r => [#r.id (#box(math-label(ap-math(r.process)))) stays refused at
 generation: the five-point $R_2$ contact `[G G G G X0]` carries the colour $f f f f$ that the tree colour flow holds only as the
 multi-trace colour state of DESIGN §6.1, so the reachable vertex is refused, never dropped (addendum J); a recorded limitation
 (optional row)]).join([; ]).
@@ -1725,7 +1832,7 @@ stream's exact rational points, the providers their binary64 decimal text.
 The configurations:
 
 - *native inputs, on `loop`* — the engine at #raw(g.slice_revision) (milestone M-SM: the engine of M-QCD,
-  `e18a024b`, with M-SM's 14 packages, ew-native to MS-MASTERS; not re-timed at M-FINAL-b, whose engine #raw(ms.engine_revision) adds the packages of @status\; build #raw(g.slice_build), digest
+  `e18a024b`, with M-SM's 14 packages, ew-native to MS-MASTERS; not re-timed at M-FINAL-b nor at M-FINAL (the final retime is deferred to the next milestone), whose engine #raw(ms.engine_revision) adds the packages of @status\; build #raw(g.slice_build), digest
   #raw(g.slice_native_digest.slice(0, 8))): the executor forms the trees, the Born and the counterterm inputs per
   point (binary64 SymJIT plane applications, tree closures in lanes of points), skips the counterterm interactions
   that only feed poles in finite-only mode, then runs the loop stage. #gname("gg_ggggg") is timed from its stored
@@ -2603,14 +2710,16 @@ from #rn.processes.uux_ggggg.record.split(",").first(), the newest record of tha
 heads (eighth and ninth increments) do not include it. It uses the same production counterterm route; its check is in @tab:sevencheck.
 
 // ========================================================== SEVEN GLUONS ==
-= Seven gluons: NJet and pyAmpliCol <sevenglue>
+= Seven and eight gluons: NJet and pyAmpliCol <sevenglue>
 
 == NJet: Table 5 of arXiv:1209.0100, re-measured on this host
 
 NJet is the independent reference for $g g -> g g g g g$, where MadLoop and
 Recola cannot generate under the 45-minute rule and OpenLoops has no library.
 It is massless five-flavour QCD, and it is not one of the gate's matched
-providers.
+providers. At eight gluons ($g g -> 6g$, M-FINAL item 1) NJet's leading-colour primitives (NGluon, on exactly rotated
+points) check pyAmpliCol's LC virtual in double-double to #esci(six-rec("gg_gggggg-lc").checks.ngluon.at("ngluon-dd").max_relative.first()) and in binary64 within 10~$E$
+(#link(<sixlegs>)[the $2 -> 6$ records]); no provider times eight gluons.
 
 #let nj-cell(v, ref, note: none) = if v == none {
   table.cell(text(7pt, fill: ink2, style: "italic", if note == none [—] else { note }))
@@ -2772,22 +2881,25 @@ and so is the check of the timed configuration against NJet's ten points (@tab:s
   ([Recursive engine], "supported", [Trees, families and loop numerators from recursions; no loop diagram is enumerated (FeynKit graphs are test oracles only). Any number of coloured fermion lines, identical or distinct flavours, QCD and EW (fermion-lines, `db1ed5cb`: the fold of mixed colour-connection parities before the evaluation reuse, Python and Rust lanes; $u overline(u) -> d overline(d) s overline(s)$, $u overline(u) -> u overline(u) d overline(d)$, $u overline(u) -> u overline(u) u overline(u)$ and $u overline(u) -> u overline(u) e^+ e^-$ equal MadLoop in quadruple precision and Recola). Since ew-leptons (EWI-5, `b82d8280`) any number of lepton and colour-singlet fermion lines, through the loop too, with one reading-sign rule and one fermion classifier taken from the tree engine (Bhabha against MadLoop; genericity audit 2 G2-M5, G2-M6); since ew-epsilon (`6da37352`) one root-closure reading sign on every fermionless vertex (G2-M7). Listed, typed refusals replace every silent-wrong-value path of the second genericity audit (fail-closed, `fb54246c`; visible in the dry run). Counterterms: see below.]),
   ([Default engine], "supported", [v2 is the only one-loop engine (MQ-LEGACY-REMOVE, `539dffdd`; user 2026-10-28 \~16:10 Q3): the per-diagram legacy engine, its plan v3 artifacts and its precision-rescue options are removed (the built-in rescue stack of M-FINAL-b replaces them in the Python API, see Stability); `loop.engine`, `--loop-engine` and a non-default `[evaluation.stability]` are refused with the removal reason; tests that used the legacy engine as an oracle keep an independent one (frozen captures or providers).]),
   ([Shipped models, public route], "supported", [The wheel ships MG5 3.7.0's `loop_sm` and its restrictions with a `[loop.model]` profile (MQ-MODEL, `321efdb4`): every QCD class generates through `Generator` / TOML / CLI without a `tools/` helper or hand-written declaration, a multiparticle label one entry per subprocess, bitwise the tools route (@mqcd); MadLoop syntax mapped (`[virt=QCD]` → `loop_coupling_orders`, `QED=n` → `max_coupling_orders`, `/ x` → `particle_veto`), decay chains and `$` refused typed (decays are served since M-FINAL-b); `pyamplicol self-test` evaluates a `loop_sm` virtual against MadLoop. *Since M-SM* the wheel also ships `loop_qcd_qed_sm` and `loop_qcd_qed_sm_Gmu`, UFOmodeldb `6ca4b120` plus the user's issue-1 patch ($R_2$ of `R2_G0tt` split by loop origin, exactly unitary CKM, the $G_mu$ bottom-mass charge counterterm; PROVENANCE and `MANIFEST.sha256` record the local delta; MS-MODEL `2ae8b88b`, MS-UFODB `0e5930c2`, MS-UFO-PATCH `3eb4db9f`), with digest-keyed profiles and the structural Goldstone-flag repair: every EW class generates through the public route, bitwise the tools view (@msm); a multiparticle request generates its members with a Born and records the loop-induced members as skipped (`loop-induced`, Q2); the self-test also evaluates an EW virtual from the shipped prepared artifact (= MadLoop to #sx-ew-st).]),
-  ([Full, NLC and LC colour], "supported", [*Full colour is the default* of loop requests (user 2026-10-28 Q1); LC and NLC are opt-in through the shipped `loop_sm` $N_c$ declaration (MQ-NC, `d8d9349f`: every counterterm vertex, resolved by structural digest; formal-$N_c$ projections equal to $N_c$ scans and checked against independent oracles, rule 7; an uncovered vertex refused, `colour-declaration-coverage`). *LC helicity and colour-flow selection* (MQ-SELECT, `e4964fc3`): `helicities=` / `color_flows=` at generation (recursion pruned to the selection) and at evaluation, tree-engine IDs; a complete set of selections sums to the inclusive LC value; NLC and full colour keep their API (selectors refused there). Exact seed tables in $N_c$, built in Rust since native-seeds (`7e3841f3`), with native colour cells, seed records and dipole orbits since native-cells (`5ebcebea`; the Python stages are the oracles); LC/NLC by generated classes and truncated cells. #if lc-slower.len() == 0 [LC is faster than full colour end to end on every G1 row at $B = 128$, the $2 -> 5$ rows included (LC/FC #fixed(lc-now.first().r, 2)–#fixed(lc-now.last().r, 2), @tab:g1lc); the top-free seven-gluon LC plan keeps every full-colour family by construction (@lc).] else [LC is cheaper in the loop stage but not yet end to end at large batches (@tab:g1lc), nor to generate at seven legs.] Since identical-flavour-lc (`5cb5ea83`) LC and NLC of identical-flavour quark lines (from $u overline(u) -> u overline(u) g$ up, any number of lines) are exact formal-$N_c$ projections: blocks and counterterm program split by U(1)-subtraction $N_c$ grade in both lanes, order-free grades (G2-M1; the limitation of m1026a is removed, @lc); a block that still mixes grades is refused (`colour-accuracy-nc-exact`, fail-closed). *EW LC/NLC is not supported, by design* (user 2026-10-30 Q4: the typed `colour-declaration-coverage` refusal is permanent); electroweak requests run at full colour.]),
+  ([Full, NLC and LC colour], "supported", [*Full colour is the default* of loop requests (user 2026-10-28 Q1); LC and NLC are opt-in through the shipped `loop_sm` $N_c$ declaration (MQ-NC, `d8d9349f`: every counterterm vertex, resolved by structural digest; formal-$N_c$ projections equal to $N_c$ scans and checked against independent oracles, rule 7; an uncovered vertex refused, `colour-declaration-coverage`). *LC helicity and colour-flow selection* (MQ-SELECT, `e4964fc3`): `helicities=` / `color_flows=` at generation (recursion pruned to the selection) and at evaluation, tree-engine IDs; a complete set of selections sums to the inclusive LC value; NLC and full colour keep their API (selectors refused there). Exact seed tables in $N_c$, built in Rust since native-seeds (`7e3841f3`), with native colour cells, seed records and dipole orbits since native-cells (`5ebcebea`; the Python stages are the oracles); LC/NLC by generated classes and truncated cells. #if lc-slower.len() == 0 [LC is faster than full colour end to end on every G1 row at $B = 128$, the $2 -> 5$ rows included (LC/FC #fixed(lc-now.first().r, 2)–#fixed(lc-now.last().r, 2), @tab:g1lc); the top-free seven-gluon LC plan keeps every full-colour family by construction (@lc).] else [LC is cheaper in the loop stage but not yet end to end at large batches (@tab:g1lc), nor to generate at seven legs.] Since identical-flavour-lc (`5cb5ea83`) LC and NLC of identical-flavour quark lines (from $u overline(u) -> u overline(u) g$ up, any number of lines) are exact formal-$N_c$ projections: blocks and counterterm program split by U(1)-subtraction $N_c$ grade in both lanes, order-free grades (G2-M1; the limitation of m1026a is removed, @lc); a block that still mixes grades is refused (`colour-accuracy-nc-exact`, fail-closed). *EW LC/NLC is not supported, by design* (user 2026-10-30 Q4: the typed `colour-declaration-coverage` refusal is permanent); electroweak requests run at full colour. *Since M-FINAL-b:* `strict-lc` / `strict-nlc` and $N_c$-graded colour output (PR \#32), the exact U(1)-subtraction weight $1 slash N_c$ (PR \#34; binary64 quark-line values move by rounding only, model compiler 17: older loop artifacts are refused at load and regenerated); stored LC selections are masks on one template per process with per-call row liveness (mf-masks, mf-masks-rows: no executor or native heap per selection, bitwise the per-selection oracle).]),
   ([FFT colour contraction], "supported", [Certified symmetric-group FFT of the seed contraction in the native executor at full colour and NLC, binary64, double-double and MPFR (MQ-FFT, `da6980b0`): generic over the plan's certified pairs, policy `auto | direct | fft` (the algorithm run is reported; a forced FFT without a certified pair is refused, `forced-seed-fft-unserved`), public `color.contraction` route; FFT = direct to rounding up to $g g -> g g g g g$; the seed stage ×0.46–0.70 of direct at $S_5$, $S_6$, slower below, the whole evaluation unchanged within noise (@tab:fft).]),
   ([Colour and spin correlations], "supported", [Directed colour histories at LC/NLC/FC, spin sources, resolved helicities, flavour aliases, Ward sources (WP2.5). Since generation-scale-2 the directed metrics are native and stored with the process (correlated and resolved calls of a stored process regenerate nothing; one seed column per self-adjoint dipole): declaring the NLO dipoles costs +10 % of the six-gluon generation (38.5 against 35.0 s); at seven gluons 784 against 419 s, whose metric tables go to `native-cells`' next run. LC/NLC correlations of identical-flavour quark lines use the graded blocks of the colour row. *Independent oracles since M-FINAL-b* (MF-CORR, `821ae808`): Recola's colour, spin and spin-colour correlations on four processes equal the one-loop `evaluate_correlated_many` and the tree `Runtime.evaluate_correlated_many` (Born ≤ #sci(cr-born), Laurent coefficients ≤ #sci(cr-laurent) of the row scale, @tab:corr); a spin-correlated leg without a four-component vector source is refused at generation, as on the tree route (MF-SMALL2); correlations with an LC selection are refused (`selected-correlators`).]),
   ([Per-order partials], "supported", [Every squared coupling order at tree level and at one loop, mixed Born orders, per-correction loop orders.]),
   ([Poles at runtime], "supported", [`poles = "all" | "none" | "uv" | "ir" | "split"` (WP2.10, on `loop` since 24 October): finite-only mode with the finite part bitwise unchanged and the pole work skipped (natively per counterterm interaction since generation-scale-2's I5 record); `"uv"` and `"ir"` with the user's semantics of 23 October, from a lean stored companion of the certified-scaleless families (bitwise at $g g -> g g g$ and $u overline(u) -> g g g g$, equal to rounding at six and seven gluons) and in the SDK v4 too; the IR poles sum one Catani operator per correction, QED included (ew-poles, `8b52179b`; a correction without a prediction gives none); since `e6e7543a` a mixed QCD×EW sector is predicted only where the requested corrections complete its loops, and joint requests predict it exactly; since MQ-EWJOIN a sector whose QCD loop selection omits IR-divergent loops (gluon exchange between quark lines joined by a $W$/$Z$ in the loop, `separated-exchange`) is not predicted and checked against MadLoop per split order. Photon-only QED corrections on `loop_qcd_qed_sm` are refused (`veto-unlabelled-counterterms`: the veto reaches counterterms with empty or nominal loop labels; full EW on that model matches Catani; EWI-7). The UV residue comes from an interim local module until the NinjaRS re-pin; a `"uv"` estimate needs a rotation check. *EW pole split* (MS-POLES, `42b2794f`): on EW requests `"uv"` and `"split"` come from the model's pole regulators (`epsUV`, `epsIR`) under both mass schemes, at the cost of one more regulated pass of the tree program; the conventions record the regulators (= MadLoop on DY01 and TT01).]),
   ([Stability estimates], "supported", [*Recommended checks* (MQ-STAB, `a2aa0d84`): `loops.v2.stability.RECOMMENDED_CHECKS`, one generic exact rotation and the rescaled reduction check, the O1 estimate of the campaign and G1 (calibration: binary64 misses 0 % / 0.05–0.10 % of points, DD none; true error ≤ 10 $E$ at every campaign point; R3, DECISIONS 2026-10-29 \~18:25). Rotation checks (any number, 0 = estimate absent), reduction direction, exact rescaling, in any combination; no automatic escalation by default. *Rescue stack* (MF-RESCUE, `2234ee33`; user Q9: only in pyAmpliCol's Python native evaluate API, never in an SDK, the CLI or the config): `stability=VirtualRescuePolicy(...)` per call or as the `Runtime.load(..., stability=)` default, `DEFAULT_RESCUE` double → double-double → arbitrary precision (57 digits) to a target of $10^(-5)$, each level with an Euler rotation (`euler:0.1,0.2,0.3`) and the rescaled check; per-lane `VirtualEvaluation.rescue` records and `rescue_counts`, typed refusals; the legacy `VirtualStabilityPolicy` is removed. A non-finite counterterm coupling fails only its own points (MF-SMALL, `isolate_scale_failures`). Generation's post-build validation re-checks a binary64 miss alone against a 32-digit reference: double-double must agree at the same tolerance, binary64 Borns at the tolerance and binary64 virtuals within the larger of the tolerance and their own estimate (one exact rotation and the reduction direction; an estimate above $10^(-9)$ or absent refuses), else generation refuses; an accepted point is logged (onshell-consistency, `4fc72e39`). The rotation and reduction-direction checks flag the fast binary64 lanes' known misses (precision row): use them for such kinematics or model units.]),
-  ([Precision carriers], "partial", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; since G-int the native per-point inputs run in binary64, DoubleFloat and arbitrary precision (DESIGN §5.5). Since `7db32901` binary64 runs SymJIT plane applications and needs no Symbolica licence; DoubleFloat and arbitrary precision run under pyAmpliCol's library key. Since precision-ap (`a8409830`) a master-integral invariant of one external leg is that leg's squared mass at the point's parameters: DoubleFloat and arbitrary-precision virtuals were O(1) wrong at binary64-rounded massive momenta and now agree with a MadLoop quadruple-precision run within $10^(-15)$ (and DoubleFloat massive spinors along $-z$ are fixed); since generation-scale-2 derived masses (e.g. $M_W$ of `loop_sm`) are parameter-program outputs, bound exactly (genericity M2). Since `onshell-threshold` (`6e123fdb`, G2-M3) binary64 lanes at the fast engine's absolute thresholds (light masses, invariants near a mass shell) go to the generic binary64 engine. *Known limitations of the fast binary64 lanes* (NinjaRS spinor package paused): Ninja's light-like spinors are off by up to \~$10^(-5)$ for legs near the $-z$ axis, and models whose units are \~$10^4$ or more away from GeV can give silent percent-level errors with stability checks off; double-double is exact there and the recommended checks flag them. *Binary64 evaluation of a stored artifact never calls Symbolica* (user 2026-10-30), complex-mass artifacts included: a cut-function argument that becomes real when complex-mass widths are exactly zero takes its real part at run time (MS-MASTERS, `71e2041e`; binary64 = DD = AP(32) on the CM01 zero-width fuzz, = MadLoop where its double and quadruple precision agree).]),
-  ([Native executor, schedules], "supported", [Rust, 16 lanes (also for a one-point call, a G1 lever), threads; native tree closures in lanes of points with runtime AVX-512/AVX2 widths (lc-perf); in finite-only mode the counterterm interactions that only feed poles are skipped natively (generation-scale-2); G1 decision on the schedule-dependent stages (@tab:g1bm, provisional until compiled trees): M for pure-gluon LC from $n = 6$, B for every other class at $n <= 6$; F as oracle. The NinjaRS reduction runs serially. Development report: stage times, modelled kernel work, master-integral time.]),
-  ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; the artifact stores the native process (`point_inputs = "native-v2"`). Since `7db32901` (addendum G) its SymJIT -O2 applications are stored as IR and recompiled at load for the loading CPU (AVX and FMA3 required), no host string is embedded, and binary64 values are bitwise equal after relocation to another machine, user and path; since M-FINAL-b SymJIT 2.28.3 (MF-UP: siravan/symjit \#26, \#30, \#31) makes the stored runtime members byte-reproducible between generations, and the parameter program's evaluator bytes no longer depend on how the model was obtained (MF-SMALL2: the runtime-bound scalar predicates in their own id block). *Permutation aliases and process-group members* (MF-MAP, `9ad0c77f`): a one-loop alias or a permuted member of a plan v4 process is served from the stored target at permuted momenta, colour and spin correlations composed, LC anchors relabelled; numerical process-group analysis stays refused (`process-group-analysis`) and helicity/colour-flow selection is refused for mapped processes. *Virtual C ABI version 2* (MF-CLEAN, `25d39f6b`): the legacy agreement check and the SDK policy argument are removed from the Rust SDK, the C ABI, the C/C++/Fortran wrappers and UMAMI. Since model-determinism (`4e9262b5`) the compiled model and the artifact's digest no longer depend on the process history; since native-lowering (`79f2a5bd`) the plan JSON is written by the Rust plan model (Python writer as oracle). Since generation-scale-2 (`11542fd5`) no call of a stored process regenerates (every pole selection with the stored companion, correlated, resolved, flavour and catalogue calls), a process the native export cannot store fails its generation with a typed refusal (genericity M1; the plan-only, regenerated-at-load artifacts are gone), and the Rust/C/C++/Fortran SDK v4 evaluates these artifacts with the `"uv"`/`"ir"` selections, bitwise the Python API. Since sdk-parity (`f6619f34`) one parameter rule holds in the Python API, `V2Runtime`, the Rust SDK and the C/C++/Fortran clients: ASCII decimal values checked before names, unknown, generation-fixed (naming who fixed them) and scale parameters refused with typed errors (G2-M2). The release natives need glibc $>=$ 2.38, a lower glibc giving the typed `NativePlatformError` at load (glibc-floor, `5301e24a`). Since M-SM external-photon and complex-mass artifacts are `native-v2` too (ew-native, MS-CMS-N: complex pole masses through the native trees and executor, bitwise after relocation). Open: the plane check's outcome depends on the parameter order (G2-M4: a listed `plane-mismatch` refusal, never a wrong value).]),
+  ([Precision carriers], "partial", [Binary64, DoubleFloat, arbitrary precision and exact rationals in the native executor; since G-int the native per-point inputs run in binary64, DoubleFloat and arbitrary precision (DESIGN §5.5). Since `7db32901` binary64 runs SymJIT plane applications and needs no Symbolica licence; DoubleFloat and arbitrary precision run under pyAmpliCol's library key. Since precision-ap (`a8409830`) a master-integral invariant of one external leg is that leg's squared mass at the point's parameters: DoubleFloat and arbitrary-precision virtuals were O(1) wrong at binary64-rounded massive momenta and now agree with a MadLoop quadruple-precision run within $10^(-15)$ (and DoubleFloat massive spinors along $-z$ are fixed); since generation-scale-2 derived masses (e.g. $M_W$ of `loop_sm`) are parameter-program outputs, bound exactly (genericity M2). Since `onshell-threshold` (`6e123fdb`, G2-M3) binary64 lanes at the fast engine's absolute thresholds (light masses, invariants near a mass shell) go to the generic binary64 engine. *The fast binary64 lanes' light-like spinors* near the $-z$ axis (off by up to \~$10^(-5)$ before, with silent percent-level errors at model units \~$10^4$ from GeV) are taken from the larger light-cone component since NinjaRS \#10 (in NinjaRS main since mf-symbolica: the five xfails are plain cases, large unit factors keep the virtual). *Tree runtime* (lsimon125's PRs \#26, \#29, \#36, \#39, LP-PRECISION): double-double and arbitrary-precision contracted-colour replay, exact correlated weights, couplings, parameters and masses at working precision, the $G_mu$ UFO boost fix. *Binary64 evaluation of a stored artifact never calls Symbolica* (user 2026-10-30), complex-mass artifacts included: a cut-function argument that becomes real when complex-mass widths are exactly zero takes its real part at run time (MS-MASTERS, `71e2041e`; binary64 = DD = AP(32) on the CM01 zero-width fuzz, = MadLoop where its double and quadruple precision agree).]),
+  ([Native executor, schedules], "supported", [Rust, 16 lanes (also for a one-point call, a G1 lever), threads; native tree closures in lanes of points with runtime AVX-512/AVX2 widths (lc-perf); in finite-only mode the counterterm interactions that only feed poles are skipped natively (generation-scale-2); G1 decision on the schedule-dependent stages (@tab:g1bm, provisional until compiled trees): M for pure-gluon LC from $n = 6$, B for every other class at $n <= 6$; F as oracle. The NinjaRS reduction runs serially. Development report: stage times, modelled kernel work, master-integral time. *Memory and speed rounds of M-FINAL* (#link(<rounds7>)[seven-leg table], values bitwise): tree/CT fill and batches within fixed state, row and chunk-input budgets (mf-8g-2), stored members read on demand at load with a compact Rust plan and tree program (mf-8g-2b), binary stored forms and native CT DAG maps (mf-8g-1), lighter generation (mf-8g-1b, mf-8g-1c), row-sized interference blocks (mf-perf-opt).]),
+  ([Plan v4 artifacts and API], "partial", [Published and loaded through Python, TOML and CLI; the artifact stores the native process (`point_inputs = "native-v2"`). Since `7db32901` (addendum G) its SymJIT -O2 applications are stored as IR and recompiled at load for the loading CPU (AVX and FMA3 required), no host string is embedded, and binary64 values are bitwise equal after relocation to another machine, user and path; since M-FINAL-b SymJIT 2.28.3 (MF-UP: siravan/symjit \#26, \#30, \#31) makes the stored runtime members byte-reproducible between generations, and the parameter program's evaluator bytes no longer depend on how the model was obtained (MF-SMALL2: the runtime-bound scalar predicates in their own id block). *Permutation aliases and process-group members* (MF-MAP, `9ad0c77f`): a one-loop alias or a permuted member of a plan v4 process is served from the stored target at permuted momenta, colour and spin correlations composed, LC anchors relabelled; numerical process-group analysis stays refused (`process-group-analysis`) and helicity/colour-flow selection is refused for mapped processes. *Virtual C ABI version 2* (MF-CLEAN, `25d39f6b`): the legacy agreement check and the SDK policy argument are removed from the Rust SDK, the C ABI, the C/C++/Fortran wrappers and UMAMI. Since model-determinism (`4e9262b5`) the compiled model and the artifact's digest no longer depend on the process history; since native-lowering (`79f2a5bd`) the plan JSON is written by the Rust plan model (Python writer as oracle). Since generation-scale-2 (`11542fd5`) no call of a stored process regenerates (every pole selection with the stored companion, correlated, resolved, flavour and catalogue calls), a process the native export cannot store fails its generation with a typed refusal (genericity M1; the plan-only, regenerated-at-load artifacts are gone), and the Rust/C/C++/Fortran SDK v4 evaluates these artifacts with the `"uv"`/`"ir"` selections, bitwise the Python API. Since sdk-parity (`f6619f34`) one parameter rule holds in the Python API, `V2Runtime`, the Rust SDK and the C/C++/Fortran clients: ASCII decimal values checked before names, unknown, generation-fixed (naming who fixed them) and scale parameters refused with typed errors (G2-M2). The release natives need glibc $>=$ 2.38, a lower glibc giving the typed `NativePlatformError` at load (glibc-floor, `5301e24a`). Since M-SM external-photon and complex-mass artifacts are `native-v2` too (ew-native, MS-CMS-N: complex pole masses through the native trees and executor, bitwise after relocation). *Since M-FINAL-b:* the SDK v4 extras (mf-sdk: resolved, colour/spin-correlated, double-double and arbitrary precision through the Rust SDK, the C ABI, the C++/Fortran wrappers, UMAMI and the packaged Rust wrapper); every stored saved evaluator is canonical (mf-symbolica: referenced symbols only, numbered by name), so artifact bytes no longer depend on the producing Symbolica (Community or PyPI 3.0.3) or the process history. Open: the plane check's outcome depends on the parameter order (G2-M4: a listed `plane-mismatch` refusal, never a wrong value).]),
   ([Counterterms (model UV, $R_2$)], "supported", [Plain tree vertices of the recursion inserted exactly once (WP2.2, a18b7599; addendum J, b4d76cc3), admitted by coupling orders and the public `particle_veto`; no witness table or loop matching in production. *Stock `loop_sm` compatibility rule* (MQ-MODEL): its four-$G^0$ vertex `V_1001` names the three-slot constant `SSS1` where the four-slot `SSSS1` (same exact value) is meant; model preparation moves such references by structure, only on vertices a request reaches, and records each repair (`pyamplicol_source_repairs`, `source_compatibility_diagnostics` in the dry run); any other slot mismatch is refused (`lorentz-slot-arity`). Vertices whose couplings vanish at the restriction leave the loop catalogue (fail-closed-2, `loop-vertex-outside-tree-model` otherwise). An unlowerable counterterm vertex that no tree of the request reaches is inert and recorded in the artifact; a reachable one is refused. Site closure is the test oracle. Per point they are formed natively (G-int), the Python stages kept as oracle; generation of the counterterm route has output-identical savings (ct-perf, `201bece5`: compile memos, a content-addressed lowered-model cache), and since A4 (`1b13005a`) the native DAG builder is the production route for the loop blocks and the counterterm program (its counterterm emission byte-identical to the Python oracle; 11 listed features keep a recorded per-request Python fallback, any other native failure fails closed), at parity with the site oracle. In EW requests ('t Hooft–Feynman gauge, EWI-4b, `8b19dae8`) the Goldstone–vector mixing counterterms are lowered as vertex insertions. The UFO's EW counterterms (ew-ct, `392d3f4a`) are lowered through the model's own helper bodies with MadLoop's branch side for exactly real arguments: every Laurent piece of MadLoop's model library equals pyAmpliCol's to $3.7 times 10^(-15)$ in binary64 and $6.0 times 10^(-31)$ in double-double (against MadLoop's quadruple precision). Since EWI-3R (`59d47cb3`) the lowering runs at scale: native, parallel kernel-equivalence proofs (Python the oracle), one reference pair per Laurent coefficient, shared Horner schemes; about 26 s cold at the target instead of 259 s, 8.4 % of the $G_mu$ $g g -> t overline(t)$ (EW) generation (criterion < 20 %, user 2026-10-28); a non-polynomial coupling term or one below $epsilon^(-2)$ is refused when reachable. Lorentz `Epsilon` is lowered (EWI-7b, `6da37352`; sign = MadLoop to $10^(-12)$), and the Goldstone–vector mixing sign, from the tree engine's momenta, matches MadLoop's counterterm selection. *UFO-complete $R_2$ insertion* on the EW UFOs (user Q7): every $R_2$ vertex a tree of the request reaches is inserted. Compatibility note: MadLoop never inserts R2_G0tt_b on the unpatched models (its label `[W+, b]` equals no loop's propagator set; mg5amcnlo\#475, up to 8.4 % on $t overline(t) -> z h$); on the shipped patched models MadLoop's exports call every $R_2$ coupling pyAmpliCol inserts (MS-VALIDATE).]),
   ([Decays $1 -> n$], "supported", [*Since M-FINAL-b* (MF-DEC-1 `eddb4b49`, MF-DEC-2 `28b24a2a`): one initial leg is admitted generically ($1 -> n$, $n >= 2$) at tree level and one loop, QCD and EW, through the same recursion; the decaying particle at its real mass with zero own width (the existing width guards; internal CMS widths allowed), MadLoop's convention (amputated loops, its absorptive self-energy dropped, $delta Z$ from the UFO counterterms); the rest-frame massive Dirac spinor fixed (was $2 times |M|^2$ at $|p| = 0$). XX01–XX08 = MadLoop's quadruple precision (@tab:dec: #dmc.pass of #dm.rows.len() pass, DD ≤ #sci(dml.dd_vs_reference.value)), $Z -> u overline(u)$ = the massless form factor, Ward on $t -> b W^+ g$, LC/NLC by the $N_c$ scan, public route and native inputs. Refused typed: loop-induced decays (`loop-induced`), chains and `$` (`madloop-syntax`).]),
-  ([UFO genericity: HC_NLO_X0], "partial", [*Since M-FINAL-b* (MF-GM-HC, `e2f0c78e`): the Higgs characterisation UFO at NLO, HC01–HC04 and HC06 = MadLoop 3.7.0 to ≤ #sci(hc-max) (@tab:hc) through generic fixes (UFO namespace head, Feynman-gauge refusal only where massive vectors run in the loops, positional counterterm keys, a colour-singlet contact split through an adjoint auxiliary). Open: HC05 ($g g -> x_0 g g$) is refused typed (`unlowered-counterterm`): its five-point $f f f f$ $R_2$ contact needs the multi-trace colour state (DESIGN §6.1).]),
+  ([UFO genericity: HC_NLO_X0], "partial", [*Since M-FINAL-b* (MF-GM-HC, `e2f0c78e`): the Higgs characterisation UFO at NLO, HC01–HC04 and HC06 = MadLoop 3.7.0 through generic fixes (UFO namespace head, Feynman-gauge refusal only where massive vectors run in the loops, positional counterterm keys, a colour-singlet contact split through an adjoint auxiliary); *since M-FINAL* HC05 ($g g -> x_0 g g$) too (MF-HC05, `e3d4ef4d`): a counterterm colour the tree vocabulary refuses (its five-point $f f f f$ $R_2$ contact) is projected exactly at $N_c = 3$ onto products of at most two primitive adjoint tensors (zero residual required, else refused); all six ≤ #sci(hc-max) (@tab:hc). *PR \#38* (LP-MODELS): compiled-mode HEFT quark tree amplitudes (built-in SM-HEFT and HC_NLO_X0) were 4× too large, now = MG5 and the MadLoop Borns. Open, typed: $u overline(u) -> x_0 g g g$ (the U(1)-leak check), single-trace and C-odd five-point $R_2$ colours.]),
   ([Electroweak, complex mass], "supported", [*M-SM* (@msm, @tab:cms): QCD, QED and joint `[virt=QCD QED]` corrections on the shipped `loop_qcd_qed_sm` and `loop_qcd_qed_sm_Gmu` reproduce MadLoop in every class of `m-sm/PLAN.md` §1.1 (#sxc.pass of #sx-rows rows pass, #sx-partial.join(" and ") partial: F7, accepted). EW native inputs (ew-native, EWI-N), the EW ladder (ew-validate, EWI-7: ghosts of vetoed vector bosons, Goldstone-side root mixing), *per-leg photon tagging* (MS-PHOTON: `loop.external_photons` = `"final"` by default, `"all"`, `"none"` or a leg list, as MG5's `!a!`; $alpha(0)$ and the conversion counterterm on the tagged legs only), the *complex-mass scheme* (MS-CMS: MG5's transform per (mass, width) pair, coloured widths included; MS-CMS-N: native complex pole masses; = MadLoop CMS on CM01–CM05 and CM07–CM10), the EW pole split (MS-POLES), the EW generation stages in Rust (MS-GEN: catalogue segment polynomials and the parameter program's renaming behind PyO3, the Python stages the oracles, outputs byte-identical, EW generation 2.6–3.2× faster) and Symbolica-free binary64 (MS-MASTERS); since M-FINAL-b the EW export's kernel-string reading and parameter-program renaming run in Rust too (MF-RUST, `b36af289`: Python stages the oracles, byte-identical; EW $2 -> 3$ export 62.3 → 32.4 s). Before M-SM on `loop`: the QED Catani operator, EW fermion lines, 't Hooft–Feynman gauge for trees, loops and counterterms, on-shell photons at $alpha(0)$, the UFO's EW counterterms lowered at scale, Lorentz `Epsilon`, lepton lines through the loop (EWI-0 to EWI-7b). Refused, typed: the Missing box of @status; EW LC/NLC never.]),
   ([Required set], "supported", [All eight generate and agree with their references in all coefficients with native inputs: seven in @tab:validation (validated on the WP3.1 branch before its integration), the EW target in the M-SM campaign (TV07 against MadLoop, Recola and OpenLoops, @msm); $g g -> g g g g g$ against NJet's double-double values (its binary64 points 4 and 8 at $O(10^(-8))$ accepted by the user, within the estimate); the generator is on `loop` since G-int, and G1 times all seven in batches at full and leading colour (@g1; the $2 -> 5$ rows since `measure-g1-7leg`; all re-timed at #raw(g.slice_revision)). The seven-gluon Ward check (addendum H): #ms.status_notes.notes.gg_ggggg.ward_status. The G1 accuracy check asserts binary64 where $E <= 10^(-9)$ and DD elsewhere (user E1 ruling, g1-accuracy); R3 for QCD is recorded (DECISIONS 2026-10-29 \~18:25: two providers per process within their agreement, $g g -> g g g g g$ against NJet alone, addendum F). G1 times the EW target indicatively (@msm). The provider reference trees no longer read the old working root (reference-relocate, `48aeb123`; provider values bitwise, and the toolkit refuses provider files outside the configured reference root).]),
-  ([Performance gates], "partial", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) without a matched provider: no gate]\; the gate is taken at $B = 128$ only (user 2026-10-28): $B = 1$ and the $2 -> 5$ rows' $B = 16$ are reported without a verdict (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history).#for r in ew-status [ The EW row #box(math-label(r.math)) (EW) is timed indicatively: #ratio-mult(r.full_colour.main) of #r.full_colour.fastest.name's time at $B = 128$, no verdict ([U5]).] Missing: the binding EW speed gate and the provider protocol-mode columns (M-FINAL).]),
-  ([$2 -> 6$], "progress", [M-FINAL item 1 (user ruling 2026-10-31): $g g -> 6g$ ($N_f = 5$, no top), $u overline(u) -> 6g$ and $u overline(u) -> u overline(u) g g g g$, each at LC and full colour, generate, store (every step below 150 GB), load and evaluate on one engine after the optimisation rounds (#raw(sxj.engine.revision.slice(0, 8)), not this pin; @tab:summary, #link(<sixlegs>)[records and checks]\; the N = 8 reduction adapter is tested, MF-8G-0 `7cdd32e9`); double pole, Catani (FC), NGluon (LC), double-double and the quark rows' Ward pass, the 8-gluon Ward is recorded but not asserted (beyond the binary64 scope) and its full-colour and double-double Wards were not run (user, 2026-11-04).]),
+  ([Performance gates], "partial", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) without a matched provider: no gate]\; the gate is taken at $B = 128$ only (user 2026-10-28): $B = 1$ and the $2 -> 5$ rows' $B = 16$ are reported without a verdict (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history).#for r in ew-status [ The EW row #box(math-label(r.math)) (EW) is timed indicatively: #ratio-mult(r.full_colour.main) of #r.full_colour.fastest.name's time at $B = 128$, no verdict ([U5]).] Not re-timed at M-FINAL (G1 of the M-FINAL-b report). Missing: the final retime with the binding EW speed gate (deferred to the next milestone) and the provider protocol-mode columns.]),
+  ([$2 -> 6$], "supported", [M-FINAL item 1 (user ruling 2026-10-31): $g g -> 6g$ ($N_f = 5$, no top), $u overline(u) -> 6g$ and $u overline(u) -> u overline(u) g g g g$, each at LC and full colour, generate, store (every step below 150 GB), load and evaluate on one engine after the optimisation rounds (#raw(sxj.engine.revision.slice(0, 8)), an ancestor of the pin; @tab:summary, #link(<sixlegs>)[records and checks]\; the N = 8 reduction adapter is tested, MF-8G-0 `7cdd32e9`); double pole, Catani (FC), NGluon (LC), double-double and the quark rows' Ward pass, the 8-gluon Ward is recorded but not asserted (beyond the binary64 scope) and its full-colour and double-double Wards were not run (user, 2026-11-04). Internal checks only: no provider exists.]),
+  ([Built-in SM (tree)], "supported", [*Since M-FINAL* (MF-NORM `049a9389`, MF-LIMITS-PY `d958f2ea`): equal to the UFO `sm` in the compiled, eager, on-the-fly and recurrence lanes (the defects corrected and their history: @status, built-in SM fixes), $1 -> n$ decays; checked by the default-tier sweep `tests/integration/test_builtin_sm_ufo_sweep.py` (every $2 -> 2$ class, the $1 -> 2$ decays, $2 -> 3$ / $1 -> 3$ samples) against the UFO `sm` to $10^(-10)$. Typed refusals as for the UFO `sm`: four-quark processes without gluon exchange in the recurrence lane, `dirac-weyl-closure`. A one-loop request needs an NLO UFO (the built-in SM is tree only).]),
+  ([Dependencies], "supported", [No fork (user 2026-11-02, MF-SYMBOLICA `e0a8375c`; `dependencies/manifest.json`): Symbolica = symbolica-dev `community` `36cbac3a` + the consolidated PR symbolica-dev/symbolica\#163 (`20a9da94`), NinjaRS main `b3a29c85`, oneloopmaster main `128ea664`; Python through the Community build of `20a9da94` or PyPI symbolica 3.0.3.]),
+  ([Hard-coded limits], "partial", [Mechanical limits lifted (MF-LIMITS-PY `d958f2ea`, MF-LIMITS-RUST `72fe20dc`; @status, limits box): one rank admission from the reducer, one leg boundary 1–64, checked narrowing, exact rational charges, uncapped mappings and fixpoints, tuning bounds as settings. *Not supported* (capability generalisations, typed refusals, no milestone planned): rank $> N + 2$, multi-fermion loop vertices, coloured $n$-point EFT contacts, nested singlet contacts, octet/sextet fermions, an LC/NLC menu, binary64-only paths, C-API precision.]),
 )
 #figure(kind: table,
   caption: [*Capability matrix* of the v2 engine on `loop` at #ms.engine_revision, with branch work marked.],

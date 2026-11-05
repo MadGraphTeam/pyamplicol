@@ -823,5 +823,9 @@
    }
   ]
  },
- "milestone": "M-FINAL (m1105-mfinal)"
+ "milestone": "M-FINAL (m1105-mfinal)",
+ "closed": {
+  "date": "2026-11-05",
+  "source": "USER 2026-11-04 ~08:00 ('close M-FINAL now so we can get ready for the next milestone'); lean close: slice-status DECISIONS 2026-11-05 ~07:35 (no local gate sweep, no retime, no closing audit; global tests by CI on loop)"
+ }
 }

@@ -184,6 +184,28 @@
    "status": "pass"
   },
   {
+   "id": "HC05",
+   "process": "g g > x0 g g",
+   "particle_veto": [
+    "t"
+   ],
+   "madloop_process": "g g > x0 g g / t [virt=QCD]",
+   "model": "HC_NLO_X0_UFO (v1.3)",
+   "restriction": "heft",
+   "reference": "tests/fixtures/loop/required/hc/hc05.json (MadLoop 3.7.0)",
+   "points": 2,
+   "mu_r": [
+    "125",
+    "91.188"
+   ],
+   "status": "pass",
+   "max_relative_deviation_all": 2.6e-12,
+   "acceptance": 1e-05,
+   "record": "mf-hc05 (M-FINAL MF-HC05, integrated e3d4ef4d, 2026-11-03): binary64 = MadLoop 3.7.0 within 2.6e-12 over every Laurent coefficient at 2 points x 2 scales; the nightly HC05 row of tests/unit/test_loop_v2_hc.py with double-double and a rotation passed (package sweep3 on 644c1838 and the integration sweep on e3d4ef4d); not re-run at this milestone (USER 2026-11-04 ~17:35); source workspace/tmp/mf-hc05/STATE.md and slice-status UPDATE 2026-11-03 ~21:25 UTC",
+   "method": "the five-point R2 contact [G G G G X0] (colour f*f*f*f) is lowered through the generic exact N_c = 3 projection of vocabulary-refused counterterm colours onto products of at most two primitive adjoint tensors (loops/v2/ct_colour_projection.vocabulary_colours; zero residual required, else unlowered)",
+   "previous": "blocked at 617b59cd (M-FINAL-b): typed unlowered-counterterm"
+  },
+  {
    "id": "HC06",
    "process": "g g > x0 t t~",
    "particle_veto": [],
@@ -218,28 +240,6 @@
    "double_double": null,
    "test": "passed",
    "status": "pass"
-  },
-  {
-   "id": "HC05",
-   "process": "g g > x0 g g",
-   "particle_veto": [
-    "t"
-   ],
-   "madloop_process": "g g > x0 g g / t [virt=QCD]",
-   "model": "HC_NLO_X0_UFO (v1.3)",
-   "restriction": "heft",
-   "reference": "tests/fixtures/loop/required/hc/hc05.json (MadLoop 3.7.0)",
-   "points": 2,
-   "mu_r": [
-    "125",
-    "91.188"
-   ],
-   "status": "pass",
-   "max_relative_deviation_all": 2.6e-12,
-   "acceptance": 1e-05,
-   "record": "mf-hc05 (M-FINAL MF-HC05, integrated e3d4ef4d, 2026-11-03): binary64 = MadLoop 3.7.0 within 2.6e-12 over every Laurent coefficient at 2 points x 2 scales; the nightly HC05 row of tests/unit/test_loop_v2_hc.py with double-double and a rotation passed (package sweep3 on 644c1838 and the integration sweep on e3d4ef4d); not re-run at this milestone (USER 2026-11-04 ~17:35); source workspace/tmp/mf-hc05/STATE.md and slice-status UPDATE 2026-11-03 ~21:25 UTC",
-   "method": "the five-point R2 contact [G G G G X0] (colour f*f*f*f) is lowered through the generic exact N_c = 3 projection of vocabulary-refused counterterm colours onto products of at most two primitive adjoint tensors (loops/v2/ct_colour_projection.vocabulary_colours; zero residual required, else unlowered)",
-   "previous": "blocked at 617b59cd (M-FINAL-b): typed unlowered-counterterm"
   }
  ]
 }
