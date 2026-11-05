@@ -375,7 +375,7 @@ projection, summing orientations and the form-factor normalization give
 reduction retains the epsilon-dependent bubble coefficient and gives total
 rational term 2; `R1=1` is inferred from that total minus R2.
 
-`diphoton_r2.json` exports the exact polynomial and a nonsingular massive
+`rust/loop-reduction/tests/fixtures/diphoton_r2.json` exports the exact polynomial and a nonsingular massive
 triangle route for the NinjaRS adapter: epsilon sectors `[2*mu2, 0, 0]`,
 expected Laurent coefficients `[1, 0, 0]`. Its rational-number strings
 should be converted directly into the target arithmetic, without binary64
