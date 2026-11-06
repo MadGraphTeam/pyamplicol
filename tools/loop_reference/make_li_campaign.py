@@ -149,15 +149,18 @@ def fixture_summary(process):
     timing = sorted(p.name for p in TIMING.glob(f"{process}-providers*.json"))
     if timing:
         out["provider_timing_records"] = [f"required/li/timing/{name}" for name in timing]
-        out["provider_ms_per_point"] = timing_summary(process)
+        out["provider_ms_per_point"], misses = timing_summary(process)
+        if misses:
+            out["provider_timing_misses"] = misses
     return out
 
 
 def timing_summary(process):
     """Mean ms per point of each timed provider (16 stream points, one pinned
     core): MadLoop 7|6|1 (production card), its 6|7|1 OPP column, its
-    one-helicity column (mean per kept-helicity call), OpenLoops, Recola."""
-    out = {}
+    one-helicity column (mean per kept-helicity call), OpenLoops, Recola;
+    and the timing columns a record marks as missed (45-minute rule)."""
+    out, misses = {}, {}
     main = TIMING / f"{process}-providers.json"
     records = [main] if main.exists() else []
     records.append(TIMING / f"{process}-providers-madloop-opp.json")
@@ -173,9 +176,12 @@ def timing_summary(process):
                 continue
             if tag == "":
                 out[provider] = round(entry["mean_seconds_per_point"] * 1e3, 4)
-            if provider == "madloop" and "one_helicity" in entry:
-                out["madloop_one_helicity"] = round(entry["one_helicity"]["mean_seconds_per_call"] * 1e3, 4)
-    return out
+            one = entry.get("one_helicity") if provider == "madloop" else None
+            if one and "miss" in one:
+                misses["madloop_one_helicity"] = one["miss"]
+            elif one:
+                out["madloop_one_helicity"] = round(one["mean_seconds_per_call"] * 1e3, 4)
+    return out, misses
 
 
 def build():

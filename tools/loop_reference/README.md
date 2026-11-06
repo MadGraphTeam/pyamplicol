@@ -1246,7 +1246,13 @@ once), mean ms per point; the one-helicity column is MadLoop's mean time of one
 | `g g > h g g g` | 1.98e+03 (1.5e+03 / 1.39 / 274 / 6.09) | 193 | 7.07e+03 | 876 | 588 |
 | `g g > e+ e- mu+ mu-` | 33.5 (28.3 / 0.165 / 5.18 / 0.0511) | 3.35 | 104 | 6.7 | 3.79 |
 | `g g > a a g g` | 5.9e+03 (5.01e+03 / 1.07 / 605 / 5.14) | 285 | 2.36e+04 | 2.04e+03 | 1.69e+03 |
+| `g g > z z z z` | 1.99e+04 (1.81e+04 / 6.2 / 1.63e+03 / 6.55) | missed (45 min) | 9.58e+04 | — | 5.1e+03 |
 | `g g > e+ e- mu+ mu- g` | 1.2e+03 (933 / 1.92 / 201 / 1.43) | 121 | 3.56e+03 | 252 | 62.9 |
+
+`g g > z z z z`: MadLoop 7|6|1 with its stage split ran after the others, on a
+core of its own; its one-helicity column (324 helicities, each called alone)
+missed the 45-minute rule twice, also in a run of its own (recorded in the
+record and in `li_campaign.json` `provider_timing_misses`).
 
 ## Legacy-engine oracles for the v2 engine (WP0.1)
 
