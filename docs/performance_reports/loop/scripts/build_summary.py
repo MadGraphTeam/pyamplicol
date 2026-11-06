@@ -2593,8 +2593,11 @@ def _li_providers(row: dict, prov: dict | None) -> dict:
 def _li_records(
     row: dict, timing: dict | None, recency: Recency, default: str
 ) -> list[dict]:
-    """The row's timing records at its newest revision, the default backend
-    (the registry's, TIRust) first, then the other."""
+    """The row's timing records at its newest revision: the gate batch
+    (B = 128) first, there the default backend (the registry's, TIRust)
+    before the other, then the other batches (B = 1 is reported in the
+    detailed sections, PLAN §5.1). One record per backend and batch at a
+    revision: a repeat is ambiguous and refused."""
     if timing is None:
         return []
     recs = [r for r in timing["records"] if r["key"] == row["key"]]
@@ -2608,7 +2611,25 @@ def _li_records(
         return []
     newest = recency.newest_first([r["revision"][:8] for r in recs])[0]
     recs = [r for r in recs if r["revision"][:8] == newest]
-    return sorted(recs, key=lambda r: (r["backend"] != default, r["backend"]))
+    seen = set()
+    for r in recs:
+        cell = (r["backend"], int(r["batch"]))
+        if cell in seen:
+            raise ValueError(
+                f"{LI_TIMING}: two records of {row['key']} at {newest} with"
+                f" backend {cell[0]} and B = {cell[1]}"
+            )
+        seen.add(cell)
+    gate = int(GATE_BATCH)
+    return sorted(
+        recs,
+        key=lambda r: (
+            int(r["batch"]) != gate,
+            r["backend"] != default,
+            r["backend"],
+            int(r["batch"]),
+        ),
+    )
 
 
 def _li_gate(row: dict, t: float, rec: dict, prov: dict, rule: dict) -> dict:
@@ -2713,9 +2734,13 @@ def _li_cells(
         if fg is not None:
             out["generation"]["ratio_to_fastest"] = gen["seconds"] / fg["seconds"]
     if int(main["batch"]) != int(GATE_BATCH):
+        # No B = 128 record at the newest revision (Table 1's rule): no
+        # batched cell, the batches timed named.
+        timed = sorted({int(r["batch"]) for r in recs})
         out["timing"] = {
-            "status": "no gate batch",
-            "timed_batches": sorted({int(r["batch"]) for r in recs}),
+            "status": _no_gate_batch({"batches": timed}),
+            "reason": f"timed B = {', '.join(map(str, timed))} only",
+            "timed_batches": timed,
             "revision": main["revision"][:8],
             "source": src,
         }
@@ -2732,7 +2757,11 @@ def _li_cells(
         "native_build": main.get("native_build"),
         "source": src,
     }
-    other = [r for r in recs[1:] if int(r["batch"]) == int(GATE_BATCH)]
+    other = [
+        r
+        for r in recs[1:]
+        if int(r["batch"]) == int(GATE_BATCH) and r["backend"] != main["backend"]
+    ]
     if other:
         cell["other_backend"] = {
             "backend": other[0]["backend"],

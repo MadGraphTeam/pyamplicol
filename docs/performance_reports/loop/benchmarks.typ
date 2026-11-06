@@ -903,8 +903,11 @@
 #let LI = json("data/summary-li.json")
 #let li-meta = LI.meta
 #let li-rows = LI.groups.map(gr => gr.rows).flatten()
-#let li-group-title = ("2->1 / 1->2": [$2 -> 1$ · $1 -> 2$], "2->2": [$2 -> 2$], "1->3": [$1 -> 3$], "2->3": [$2 -> 3$], "2->4": [$2 -> 4$], "2->5": [$2 -> 5$], "EFT": [EFT])
-#let li-title(c) = (pending: [pending], "not run": [not run], "not recorded": [not recorded], "no gate batch": [no $B = 128$ timing]).at(c.status, default: c.status)
+// A group's title from its registry name ("2->3" as $2 -> 3$, "/" as a
+// middle dot; any name milestone.json declares).
+#let li-group-title(name) = name.split(" / ").map(part => { let xs = part.split("->"); if xs.len() == 2 and xs.all(x => x.trim().len() > 0) { $#xs.at(0).trim() -> #xs.at(1).trim()$ } else { part } }).join([ · ])
+// Missing-cell titles; the batch statuses take Table 1's words (status-title).
+#let li-title(c) = if c.status in ("not batched", "no gate batch") { status-title(c) } else { (pending: [pending], "not run": [not run], "not recorded": [not recorded]).at(c.status, default: c.status) }
 #let li-pending-rows = li-rows.filter(r => r.timing.status == "pending")
 #let li-served = li-rows.filter(r => r.landed)
 // The provider line of a row (lit-ref's timings, or why there are none).
@@ -941,7 +944,7 @@
     valued(fill: none, dur(m.seconds), mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
       [#gib(m.peak_gib) peak#if m.plan_mb != none [ · plan #box[#sig(m.plan_mb)~MB]]], pline)
   } else {
-    absent(li-title(m), m.reason, pline)
+    absent(li-title(m), m.at("reason", default: none), pline)
   }
 }
 #let li-timing(r) = {
@@ -952,7 +955,7 @@
       [#li-prov-line(r) #h(1fr) $B = #m.batch$],
       [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "other_backend" in m [ · #m.other_backend.backend_label #dur(m.other_backend.seconds_per_point)]])
   } else {
-    absent(li-title(m), m.reason, li-prov-line(r))
+    absent(li-title(m), m.at("reason", default: none), li-prov-line(r))
   }
 }
 // Generation and timing pending for the same reason: one marker over both.
@@ -987,7 +990,7 @@
       ),
       ..LI.groups.map(gr => (
         table.cell(rowspan: gr.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon, breakable: false,
-          rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", li-group-title.at(gr.name)))),
+          rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", li-group-title(gr.name)))),
         ..gr.rows.map(r => (li-process(r), ..li-cells(r))).flatten(),
       )).flatten(),
     )
