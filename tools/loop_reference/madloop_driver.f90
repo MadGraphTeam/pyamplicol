@@ -45,6 +45,8 @@ program madloop_reference
   real(dp), allocatable :: answer(:,:), accuracy(:), p(:,:,:), scales(:)
   integer, allocatable :: tuples(:,:), table(:,:), hel_index(:)
   integer :: row(nexternal)
+  integer :: userhel
+  common/ML5_0_USERCHOICE/userhel
   character(512) :: card_path, resource_path
   read(*, *) born_orders, loop_orders, alpha_s, target, force_check
   read(*, *) count
@@ -130,5 +132,8 @@ program madloop_reference
       seconds = real(c1 - c0, dp) / rate
       write(*, '(A,3I6,ES16.8,*(ES26.17E3))') 'HEL_ROW ', i, h, status, seconds, answer, accuracy
     end do
+    ! SLOOPMATRIXHEL leaves MadLoop's USERHEL at the last helicity: without this
+    ! reset the next point's summed ROW would be that helicity alone (x HELAVGFACTOR).
+    if (nhel > 0) userhel = -1
   end do
 end program
