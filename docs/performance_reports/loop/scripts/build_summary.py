@@ -2474,13 +2474,19 @@ def _li_registry(ms: dict) -> dict:
                 f"{src}: {legs} legs and gate class {row['gate_class']!r}"
                 " (four legs or fewer is exactly 'reported', PLAN §5.2)"
             )
-        elif row.get("process") and legs != len(row["process"].replace(">", "").split()):
+        elif row.get("process") and legs != len(
+            row["process"].replace(">", "").split()
+        ):
             raise ValueError(f"{src}: legs {legs} != the process's")
     if reg["default_backend"] not in LI_BACKENDS:
-        raise ValueError(f"milestone.json loop_induced.default_backend {reg['default_backend']!r}")
+        raise ValueError(
+            f"milestone.json loop_induced.default_backend {reg['default_backend']!r}"
+        )
     unknown = set(reg["landed"]) - {r["served_by"] for r in reg["rows"]}
     if unknown:
-        raise ValueError(f"milestone.json loop_induced.landed: {sorted(unknown)} serve no row")
+        raise ValueError(
+            f"milestone.json loop_induced.landed: {sorted(unknown)} serve no row"
+        )
     return reg
 
 
@@ -2510,7 +2516,9 @@ def _li_campaign(reg: dict, repo: Path) -> dict:
         for i in row["ids"]:
             known.add(i)
             if i not in manifest:
-                raise ValueError(f"loop_induced row {row['key']}: {i} is not in {LI_CAMPAIGN}")
+                raise ValueError(
+                    f"loop_induced row {row['key']}: {i} is not in {LI_CAMPAIGN}"
+                )
             if row.get("process") and _li_norm(row["process"]) not in manifest[i]:
                 raise ValueError(
                     f"loop_induced row {row['key']}: {row['process']!r} is not a"
@@ -2558,14 +2566,21 @@ def _li_providers(row: dict, prov: dict | None) -> dict:
         if x is None:
             continue
         if "seconds_per_point" in x:
-            providers[k] = {"seconds_per_point": x["seconds_per_point"], "source": f"{src}.{k}"}
+            providers[k] = {
+                "seconds_per_point": x["seconds_per_point"],
+                "source": f"{src}.{k}",
+            }
             if x.get("setting"):
                 providers[k]["setting"] = x["setting"]
             times[k] = x["seconds_per_point"]
         else:
             if x.get("status") not in ("unavailable", "not run") or not x.get("reason"):
                 raise ValueError(f"{src}.{k}: a time, or a status with its reason")
-            providers[k] = {"status": x["status"], "reason": x["reason"], "source": f"{src}.{k}"}
+            providers[k] = {
+                "status": x["status"],
+                "reason": x["reason"],
+                "source": f"{src}.{k}",
+            }
     out = {"status": "recorded", "providers": providers, "fastest": None}
     if times:
         k = min(times, key=times.get)
@@ -2603,13 +2618,17 @@ def _li_gate(row: dict, t: float, rec: dict, prov: dict, rule: dict) -> dict:
     """The cell's gate rule: reported (four legs or fewer), the user's 5 ms
     rule, no matched provider, lit-perf's verdict, or no verdict yet."""
     if row["gate_class"] == "reported":
-        return {"status": "reported", "label": f"no gate ({_li_legs_word(row['process'])})"}
+        return {
+            "status": "reported",
+            "label": f"no gate ({_li_legs_word(row['process'])})",
+        }
     if t < rule["below_seconds_per_point"]:
         return {
             "status": rule["verdict"],
             "label": rule["short"],
             "rule": rule["label"],
-            "rule_source": f"milestone.json gate_decisions.threshold_rule ({rule['source']})",
+            "rule_source": "milestone.json gate_decisions.threshold_rule"
+            f" ({rule['source']})",
         }
     if prov.get("status") == "recorded" and prov["fastest"] is None:
         return {"status": "no gate", "label": "no matched provider: no gate"}
@@ -2636,9 +2655,14 @@ def _li_cells(
     out = {"providers": prov}
     val = files[LI_VALIDATION]
     if val is None:
-        out["validation"] = _li_pending("validation", f"{LI_VALIDATION} not written yet (lit-val)")
+        out["validation"] = _li_pending(
+            "validation", f"{LI_VALIDATION} not written yet (lit-val)"
+        )
     elif row["key"] not in val["rows"]:
-        out["validation"] = {"status": "not run", "reason": f"no record in {LI_VALIDATION}"}
+        out["validation"] = {
+            "status": "not run",
+            "reason": f"no record in {LI_VALIDATION}",
+        }
     else:
         v = val["rows"][row["key"]]
         refs = {k: x for k, x in v["references"].items() if k in LI_SHORT}
@@ -2663,14 +2687,22 @@ def _li_cells(
         return out
     recs = _li_records(row, files[LI_TIMING], recency, default)
     if not recs:
-        missing = {"status": "not run", "reason": f"no record of the row in {LI_TIMING}"}
+        missing = {
+            "status": "not run",
+            "reason": f"no record of the row in {LI_TIMING}",
+        }
         out["generation"], out["timing"] = dict(missing), dict(missing)
         return out
     main = recs[0]
-    src = f"{LI_TIMING} records[{row['key']}, {main['backend']}, {main['revision'][:8]}]"
+    src = (
+        f"{LI_TIMING} records[{row['key']}, {main['backend']}, {main['revision'][:8]}]"
+    )
     gen = main.get("generation")
     if gen is None:
-        out["generation"] = {"status": "not recorded", "reason": f"{src} has no generation"}
+        out["generation"] = {
+            "status": "not recorded",
+            "reason": f"{src} has no generation",
+        }
     else:
         out["generation"] = {
             "status": "measured",
@@ -2748,7 +2780,9 @@ def build_loop_induced(
                     "served_by": row["served_by"],
                     "landed": landed,
                     "note": row.get("note"),
-                    **_li_cells(row, landed, files, recency, rule, reg["default_backend"]),
+                    **_li_cells(
+                        row, landed, files, recency, rule, reg["default_backend"]
+                    ),
                 }
             )
         if rows:
