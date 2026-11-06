@@ -432,6 +432,8 @@ def command_run(args):
               "host": platform.node(), "cpu": args.cpu, "points_file": str(args.points.resolve()),
               "timing_scope": "single thread pinned; untimed warm-up (MadLoop: past its initialisation), then each "
                               "point timed once; not a benchmark campaign"}
+    if points.get("rotation"):
+        result["points_rotation"] = points["rotation"]
     runner = {"madloop": run_madloop, "recola": run_recola, "openloops": run_openloops,
               "analytic": run_analytic}[args.provider]
     try:
@@ -504,6 +506,11 @@ def command_merge(args):
                                    "value": limits["rows"][index]["value"],
                                    "ratio_to_reference": limits["rows"][index]["value"] / row["value"]}
         rows.append(row)
+    # Secondary runs (``run --tag``) at the same points: another reduction
+    # library or card, a rotated frame (``points_rotation``), production values
+    # taken from a timing record (``settings.timing_record``). Their deviations
+    # are recorded per point; a point where one exceeds L1 carries an
+    # ``l1_caution`` (the reference is uncertain there at the L1 level).
     secondary = {}
     for path in sorted(work.glob("*-*-result.json")):
         label = path.name[: -len("-result.json")]
@@ -513,10 +520,31 @@ def command_merge(args):
         data = json.loads(path.read_text())
         deviation = [relative(r["value"], rows[i]["value"]) for i, r in enumerate(data["rows"])]
         secondary[label] = {"settings": data.get("settings"), "max_relative_deviation_from_reference": max(deviation),
+                            "relative_deviation_from_reference": deviation,
                             "seconds": [r["seconds"] for r in data["rows"]],
                             "statuses": [r.get("status") for r in data["rows"]],
                             "initial_call_seconds": data.get("initial_call_seconds"),
                             "initialization_calls": data.get("initialization_calls")}
+        for key in ("points_rotation",):
+            if data.get(key):
+                secondary[label][key] = data[key]
+        if any("accuracy" in r for r in data["rows"]):
+            secondary[label]["accuracy"] = [r.get("accuracy") for r in data["rows"]]
+        if any("single_pole" in r for r in data["rows"]):
+            secondary[label]["pole_over_value"] = [
+                [abs(r["single_pole"] / r["value"]), abs(r["double_pole"] / r["value"])] if r["value"] else None
+                for r in data["rows"]]
+        if spec.get("zero"):
+            continue  # rounding noise around zero: recorded, not compared
+        for row, error in zip(rows, deviation):
+            row.setdefault("secondary_relative_deviations", {})[label] = error
+    for row in rows:
+        beyond = {k: v for k, v in row.get("secondary_relative_deviations", {}).items() if v > L1_TOLERANCE}
+        if beyond:
+            row["l1_caution"] = (f"secondary run(s) {', '.join(f'{k} {v:.1e}' for k, v in beyond.items())} deviate "
+                                 f"beyond L1 ({L1_TOLERANCE:g}) from the reference at this point: the reference is "
+                                 "uncertain here at the L1 level (see secondary_relative_deviations, the secondary "
+                                 "runs' accuracy and the providers' pole_over_value)")
     providers = {}
     for provider, result in results.items():
         providers[provider] = {k: v for k, v in result.items() if k != "rows"}

@@ -584,6 +584,35 @@ def _prepare_madloop(
     return settings, cache
 
 
+def _madloop_production_run(
+    spec: dict,
+    export: Path,
+    run: Path,
+    trees: Trees,
+    params: dict[str, str] | None = None,
+) -> tuple[Path, list[str], dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """A MadLoop run directory at the export's production build: the
+    production-flag check, the driver built against the relocated export
+    (Born-less for a loop-induced process) and the prepared card. Returns the
+    driver, its QP model repairs, the build flags, the card settings and the
+    Collier cache decision."""
+
+    references = _references()
+    run.mkdir(parents=True, exist_ok=True)
+    flags = references.madloop_build_flags(export, trees.mg5)
+    if not flags["production_build"]:
+        raise RuntimeError(f"{export} is not built with MG5's production flags")
+    build = (
+        _li_references().build_madloop
+        if spec.get("loop_induced")
+        else references.build_madloop
+    )
+    with _relocated_madloop_build(trees.root):
+        binary, repairs = build(export, run, flags["export_make_opts"]["GLOBAL_FLAG"])
+    settings, cache = _prepare_madloop(spec, export, run, trees, params)
+    return binary, repairs, flags, settings, cache
+
+
 def madloop(
     spec: dict,
     points: dict,
@@ -594,22 +623,10 @@ def madloop(
     params: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     references = _references()
-    mg5 = trees.mg5
     run = work / "madloop-run"
-    run.mkdir(parents=True, exist_ok=True)
-    flags = references.madloop_build_flags(export, mg5)
-    if not flags["production_build"]:
-        raise RuntimeError(f"{export} is not built with MG5's production flags")
-    with _relocated_madloop_build(trees.root):
-        if spec.get("loop_induced"):
-            binary, repairs = _li_references().build_madloop(
-                export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
-            )
-        else:
-            binary, repairs = references.build_madloop(
-                export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
-            )
-    settings, cache = _prepare_madloop(spec, export, run, trees, params)
+    binary, repairs, flags, settings, cache = _madloop_production_run(
+        spec, export, run, trees, params
+    )
     count = len(points["points"])
     header = _madloop_header(spec, run, count)
     stdin = header + "\n".join(references.point_lines(points)) + "\n"
@@ -661,16 +678,9 @@ def madloop_one_helicity(
 
     references = _references()
     li = _li_references()
-    run = work / "madloop-one-helicity-run"
-    run.mkdir(parents=True, exist_ok=True)
-    flags = references.madloop_build_flags(export, trees.mg5)
-    if not flags["production_build"]:
-        raise RuntimeError(f"{export} is not built with MG5's production flags")
-    with _relocated_madloop_build(trees.root):
-        binary, _ = li.build_madloop(
-            export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
-        )
-    settings, _ = _prepare_madloop(spec, export, run, trees, params)
+    binary, _, _, settings, _ = _madloop_production_run(
+        spec, export, work / "madloop-one-helicity-run", trees, params
+    )
     count = len(points["points"])
     tuples = references.madloop_helicities(export)
     stdin = (
@@ -1125,6 +1135,9 @@ def _modified(path: Path) -> str:
     return stamp.strftime("%Y-%m-%d %H:%M UTC")
 
 
+VALUE_ANNOTATIONS = ("values_excluded", "value_exceptions")
+
+
 def main(options: Any) -> int:
     key = options.process
     spec = streams.spec(key)
@@ -1185,6 +1198,12 @@ def main(options: Any) -> int:
                     )
         except Exception as error:  # recorded, never silently dropped
             result = {"provider": provider, "error": f"{type(error).__name__}: {error}"}
+        # The specification's value annotations travel with the timing: values
+        # excluded as a reference (a different scheme) or recorded exceptions
+        # at stream points (1-based) where the provider is no reference.
+        for field in VALUE_ANNOTATIONS:
+            if field in spec.get(provider, {}) and "error" not in result:
+                result[field] = spec[provider][field]
         result["harness_wall_seconds"] = time.perf_counter() - start
         record["providers"][provider] = result
         mean = result.get("mean_seconds_per_point")
