@@ -930,7 +930,7 @@
   block(spacing: 0pt, text(6.4pt, fill: ink2)[#if r.legs != none [#r.legs legs · ]#r.corrections · #r.ids.join(", ")#if r.backends.len() == 1 [ · #r.backends.first() only]])
   v(3.4pt)
   let v = r.validation
-  block(spacing: 0pt, text(6.2pt, if v.status == "pending" { dim[validation pending (lit-val)] } else if v.status == "not run" { dim[validation not run (no record in `data/lit.json`)] } else [#v.references.map(x => [#x.short #esci(x.max_relative)]).join([~· ]) · #v.status#if v.points != none [ · #v.points pts]]))
+  block(spacing: 0pt, text(6.2pt, if v.status == "pending" { dim[validation pending (lit-val)] } else if v.status == "not run" { dim[validation not run (no record in lit.json)] } else [#v.references.map(x => [#x.short #esci(x.max_relative)]).join([~· ]) · #v.status#if v.points != none [ · #v.points pts]]))
 })
 #let li-generation(r) = {
   let m = r.generation
