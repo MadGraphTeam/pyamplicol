@@ -224,12 +224,14 @@ def _text(x: Fraction) -> str:
 
 
 def decay_keys() -> list[str]:
-    """The decay processes (``"initial": 1``) of the reference specification."""
+    """The decay processes (``"initial": 1``) of the reference specification,
+    the Born-interfered ones (the loop-induced decays, M-LIT, have their
+    points in their reference fixtures)."""
 
     return [
         p["name"]
         for p in json.loads(DECAY_SPEC.read_text())["processes"]
-        if p.get("initial") == 1
+        if p.get("initial") == 1 and not p.get("loop_induced")
     ]
 
 
