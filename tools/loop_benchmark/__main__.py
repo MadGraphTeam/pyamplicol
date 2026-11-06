@@ -200,6 +200,11 @@ def main(argv: list[str] | None = None) -> int:
         help="also time MadLoop's stages with an instrumented driver",
     )
     providers.add_argument(
+        "--madloop-one-helicity",
+        action="store_true",
+        help="loop-induced: also time MadLoop one helicity at a time (MadEvent mode)",
+    )
+    providers.add_argument(
         "--madloop-param",
         action="append",
         default=[],

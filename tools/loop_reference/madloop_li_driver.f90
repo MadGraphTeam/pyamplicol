@@ -20,7 +20,11 @@
 ! driver cycles through the input points until MadLoop has left its
 ! initialisation phase (return-code tens digit not 3 or 4) AND at least
 ! `warmup` calls were made (the runner passes CheckCycle+1), then times every
-! point once (points 1..n in order).
+! point once (points 1..n in order). The warm-up calls run at MadLoop's own
+! MLStabThres without a forced stability test (its initialisation checks run
+! anyway): they only set up MadLoop's internal state, so a reference at a
+! tight target does not pay quadruple precision on them (2026-11-06; before,
+! a 2->3 warm-up took four quadruple-precision calls).
 ! Output: SPLIT_ORDER_INDICES loop_index nanswer nloop, LOOP_SO lines,
 ! INITIAL_CALL_SECONDS seconds calls status, then per point
 !   ROW i status seconds ans(0:3,loop_index) acc(loop_index) ans(0:3,0)
@@ -107,8 +111,8 @@ program madloop_li_reference
     i = mod(attempt, count) + 1
     attempt = attempt + 1
     call update_as_param2(scales(i)**2, alpha_s)
-    call ML5_0_force_stability_check(force_check /= 0)
-    call ML5_0_sloopmatrix_thres(p(:, :, i), answer, target, accuracy, status)
+    call ML5_0_force_stability_check(.false.)
+    call ML5_0_sloopmatrix_thres(p(:, :, i), answer, -1d0, accuracy, status)
     if (attempt >= warmup .and. mod(status / 10, 10) /= 3 .and. mod(status / 10, 10) /= 4) exit
     if (attempt > 100000) stop 'madloop li driver: MadLoop never left its initialisation phase'
   end do
