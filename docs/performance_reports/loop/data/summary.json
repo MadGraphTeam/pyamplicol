@@ -47,6 +47,7 @@
     "revision": "ca602436",
     "lc_revision": "ca602436",
     "native_build": "loop-native-v2-slice-ca602436",
+    "native_digest": "4cbb549f21521d021b2a39e295a5a44ab4bd15b20a8a4657a50da2e9660b4bb2",
     "date": "2026-11-06",
     "inputs": [
      "native"
@@ -142,7 +143,7 @@
       "gg_ggggg"
      ]
     },
-    "source": "g1.json slice_revision, slice_lc_revision, slice_build, date; the EW rows of msm-g1.json (gg_ttxemepg_ew, same engine)"
+    "source": "g1.json slice_revision, slice_lc_revision, slice_build, slice_native_digest, date; the EW rows of msm-g1.json (gg_ttxemepg_ew, same engine)"
    },
    "development_records": {
     "kind": "records",

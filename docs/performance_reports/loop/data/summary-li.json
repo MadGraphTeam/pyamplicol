@@ -3,6 +3,10 @@
  "meta": {
   "date": "2026-11-06",
   "engine_on_loop": "ca602436",
+  "native_build_on_loop": {
+   "name": "loop-native-v2-slice-ca602436",
+   "digest": "4cbb549f"
+  },
   "default_backend": "TIRust",
   "gate_batch": 128,
   "threshold_rule": {
@@ -596,16 +600,19 @@
       "providers": {
        "openloops": {
         "seconds_per_point": 0.001561181,
-        "source": "required/li/timing/li_gg_hh-providers.json providers.openloops"
+        "source": "required/li/timing/li_gg_hh-providers.json providers.openloops",
+        "host": "itphlies"
        },
        "recola": {
         "seconds_per_point": 0.0013595255,
-        "source": "required/li/timing/li_gg_hh-providers.json providers.recola"
+        "source": "required/li/timing/li_gg_hh-providers.json providers.recola",
+        "host": "itphlies"
        },
        "madloop": {
         "seconds_per_point": 0.000691913,
         "source": "required/li/timing/li_gg_hh-providers.json providers.madloop",
-        "setting": "MLReductionLib 7|6|1"
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
        }
       },
       "fastest": {
@@ -1495,16 +1502,19 @@
       "providers": {
        "openloops": {
         "seconds_per_point": 0.02568697,
-        "source": "required/li/timing/li_gg_hgg-providers.json providers.openloops"
+        "source": "required/li/timing/li_gg_hgg-providers.json providers.openloops",
+        "host": "itphlies"
        },
        "recola": {
         "seconds_per_point": 0.02546004,
-        "source": "required/li/timing/li_gg_hgg-providers.json providers.recola"
+        "source": "required/li/timing/li_gg_hgg-providers.json providers.recola",
+        "host": "itphlies"
        },
        "madloop": {
         "seconds_per_point": 0.086247677,
         "source": "required/li/timing/li_gg_hgg-providers.json providers.madloop",
-        "setting": "MLReductionLib 7|6|1"
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
        }
       },
       "fastest": {
@@ -1567,16 +1577,19 @@
       "providers": {
        "openloops": {
         "seconds_per_point": 0.18309176900000002,
-        "source": "required/li/timing/li_gg_zzg-providers.json providers.openloops"
+        "source": "required/li/timing/li_gg_zzg-providers.json providers.openloops",
+        "host": "itphlies"
        },
        "recola": {
         "seconds_per_point": 0.1777489585,
-        "source": "required/li/timing/li_gg_zzg-providers.json providers.recola"
+        "source": "required/li/timing/li_gg_zzg-providers.json providers.recola",
+        "host": "itphlies"
        },
        "madloop": {
         "seconds_per_point": 0.7213941095,
         "source": "required/li/timing/li_gg_zzg-providers.json providers.madloop",
-        "setting": "MLReductionLib 7|6|1"
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
        }
       },
       "fastest": {
