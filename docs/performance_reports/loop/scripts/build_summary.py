@@ -12,10 +12,11 @@ and every entry names its source:
 - data/g1.json            gate-G1 campaign (python -m tools.loop_benchmark gate)
 - data/msm-g1.json        the electroweak G1 rows (the same gate tool on the EW
                           records), part of g1.json's integrated configuration
-                          when both timed the same engine; indicative at M-SM
-                          (no gate: m-sm/PLAN.md [U5]), their gate rule and
-                          leading-colour status from milestone.json
-                          status_notes (_with_ew_rows, _ew_cells)
+                          when both timed the same engine; gated since the
+                          final G1 retime (M-LIT-a0; indicative at M-SM,
+                          m-sm/PLAN.md [U5]), their leading-colour status from
+                          milestone.json status_notes (_with_ew_rows,
+                          _ew_cells)
 - data/measured.json      development run records (scripts/collect_milestone.py):
                           the WP3.1 native validations of the required set and
                           the provider reference runs' records (generation,
@@ -2098,8 +2099,9 @@ def _with_ew_rows(g1: dict) -> tuple[dict, set[str]]:
     tool on the EW records; m-sm/PLAN.md §5.1 item 6). They join the
     campaign's integrated configuration only when both campaigns timed the
     same engine (slice_revision): another engine would be a configuration of
-    its own and stops the build. At M-SM the EW rows are indicative (no gate,
-    [U5]: the EW speed gate binds in M-FINAL): a gated EW row stops it too."""
+    its own and stops the build. The EW rows are gated like the others since
+    the final G1 retime (M-LIT-a0, m-final/PLAN.md §2.4 MF-RETIME; at M-SM
+    they were indicative, [U5]): the gate tool's verdict stands."""
     path = DATA / EW_G1
     if not path.exists():
         return g1, set()
@@ -2112,29 +2114,24 @@ def _with_ew_rows(g1: dict) -> tuple[dict, set[str]]:
     known = {p["key"] for p in g1["processes"]}
     procs = []
     for proc in ew["processes"]:
-        if proc["key"] in known or proc["gated"]:
-            raise ValueError(f"{EW_G1} processes[{proc['key']}]: in g1.json or gated")
+        if proc["key"] in known:
+            raise ValueError(f"{EW_G1} processes[{proc['key']}]: in g1.json")
         procs.append(proc)
     return dict(g1, processes=g1["processes"] + procs), {p["key"] for p in procs}
 
 
 def _ew_cells(rows: list[dict], keys: set[str], notes: dict) -> None:
-    """The EW rows' registry attributions (milestone.json status_notes): the
-    full-colour cell's gate rule (indicative, not gated) and the leading
-    colour, which EW requests never support (typed refusal, by design); every
-    source names msm-g1.json."""
+    """The EW rows' registry attribution (milestone.json status_notes): the
+    leading colour, which EW requests never support (typed refusal, by
+    design); every source names msm-g1.json. Their gate rule is the gate
+    tool's (gated since the final G1 retime, M-LIT-a0)."""
     for i, r in enumerate(rows):
         if r["key"] not in keys:
             continue
         note = notes.get(r["key"], {})
         src = f"milestone.json status_notes.notes[{r['key']}]"
-        if "gate" not in note or "leading_colour" not in note:
-            raise ValueError(f"{src}: an EW G1 row needs 'gate' and 'leading_colour'")
-        r["full_colour"].update(
-            gate_rule=note["gate"],
-            gate_rule_reason=note.get("gate_reason"),
-            gate_rule_source=src,
-        )
+        if "leading_colour" not in note:
+            raise ValueError(f"{src}: an EW G1 row needs 'leading_colour'")
         if r["leading_colour"]["main"].get("status") == "not timed":
             r["leading_colour"]["main"] = {
                 "status": "not supported",

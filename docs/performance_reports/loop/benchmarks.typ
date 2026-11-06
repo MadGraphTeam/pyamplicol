@@ -753,8 +753,9 @@
 
 // Compact visual legend of Table 1 (its text: "Reading the summary").
 #let thr-rows = all-rows.filter(r => { let x = decided-gate(r); x != none and x.status == thr-rule.verdict })
-// EW G1 rows (data/msm-g1.json through summary.json): indicative, no gate.
-#let ew-rows = all-rows.filter(r => r.full_colour.at("gate_rule_reason", default: none) != none)
+// EW G1 rows (data/msm-g1.json through summary.json): gated since the final
+// G1 retime (M-LIT-a0; indicative at M-SM, [U5]).
+#let ew-rows = all-rows.filter(r => r.corrections == "EW")
 #let m-rows = all-rows.filter(r => "adopted_schedule" in r.leading_colour.main)
 #let key-swatch(fill) = box(baseline: 0.5pt, rect(width: 5pt, height: 5pt, fill: fill, stroke: 0.3pt + luma(200)))
 #block(breakable: false, width: 100%, above: 1.0em, below: 0.9em, {
@@ -1015,7 +1016,7 @@ ancestry of the revisions; a newer check that only repeats part of an older comp
 *Gate chips* (Table 1 and Figure 1): the time over the binding limit (MadLoop's time, or 1.30 × the faster of Recola and
 OpenLoops), *pass* or *fail* when the whole uncertainty band is below or above 1, else *open*. The user's gate rule of 2026-10-24:
 a process whose time per point at $B = 128$ is below 5 ms has no blocking gate, its verdict is "#thr-rule.label" and its chip
-("#thr-rule.short") keeps the measured ratio#if thr-rows.len() > 0 [ (#thr-rows.map(r => { let x = decided-gate(r); [#box(math-label(r.math)) #dur(r.full_colour.main.seconds_per_point), #fixed(x.ratio_to_limit, 2) of its limit] }).join([, ], last: [ and ]))]. #box(math-label("g g -> g g")) ($2 -> 2$) has no gate#for r in ew-rows [; #box(math-label(r.math)) (#r.corrections, `data/msm-g1.json`) is timed and reported *indicatively*, chip "#r.full_colour.gate_rule": #r.full_colour.gate_rule_reason\; its leading colour is #r.leading_colour.main.reason]#for r in decided-rows.filter(r => decided-gate(r).status != thr-rule.verdict) { let x = decided-gate(r); [; ‡ #math-label(r.math): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }. The gate is taken at $B = 128$ only (user 2026-10-28,
+("#thr-rule.short") keeps the measured ratio#if thr-rows.len() > 0 [ (#thr-rows.map(r => { let x = decided-gate(r); [#box(math-label(r.math)) #dur(r.full_colour.main.seconds_per_point), #fixed(x.ratio_to_limit, 2) of its limit] }).join([, ], last: [ and ]))]. #box(math-label("g g -> g g")) ($2 -> 2$) has no gate#for r in ew-rows [; #box(math-label(r.math)) (#r.corrections, `data/msm-g1.json`) is gated like the QCD rows since the final G1 retime (M-LIT-a0\; at M-SM it was timed indicatively, [U5])\; its leading colour is #r.leading_colour.main.reason]#for r in decided-rows.filter(r => decided-gate(r).status != thr-rule.verdict) { let x = decided-gate(r); [; ‡ #math-label(r.math): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }. The gate is taken at $B = 128$ only (user 2026-10-28,
 `gate_decisions.gate_batch`): $B = 1$ and the $2 -> 5$ rows' $B = 16$ are measured and *reported* with their ratios
 (@tab:g1, @tab:g1batch), without a verdict or a verdict colour.
 
@@ -1281,7 +1282,7 @@ is reported without a gate (cells uncoloured).
 #let sx-partial = sx.rows.filter(r => r.status != "pass").map(r => r.row)
 #let sx-cm07 = sx.cms.find(r => "U4" in r.features)
 #let sx-ew-st = sx.selftest.virtuals.find(v => v.name == "physics-virtual-prepared").detail.split("MadLoop to ").last().split(" ").first()
-#let ew-status = all-rows.filter(r => r.full_colour.at("gate_rule_reason", default: none) != none and r.full_colour.main.status == "measured")
+#let ew-status = all-rows.filter(r => r.corrections == "EW" and r.full_colour.main.status == "measured")
 // M-FINAL-b at a glance: decays (data/dec-matrix.json), HC_NLO_X0
 // (data/hc.json), Recola correlations (data/corr.json), 2 -> 6 (summary.json
 // preliminary).
@@ -1352,7 +1353,7 @@ is reported without a gate (cells uncoloured).
       - *#row-span(s-pending.map(r => r.key)):* not timed yet (#s-pending.map(r => r.full_colour.main.package).dedup().map(raw).join(", "))#if s-no-gate.len() > 0 [\; #row-names(s-no-gate.map(r => r.key)) #if s-no-gate.len() == 1 [has] else [have] no matched provider].
 ]
     #if ew-status.len() > 0 [
-      - *EW row* #flag[indicative] (`data/msm-g1.json`, not gated: [U5]; its gate binds with the final retime, next milestone): #ew-status.map(r => { let m = s-main(r); [#box(math-label(r.math)) (#r.corrections) #dur(m.seconds_per_point) per point at $B = 128$, #ratio-mult(m) of #r.full_colour.fastest.name's time] }).join([; ]) (@msm).
+      - *EW row* (`data/msm-g1.json`; gated since this retime, indicative at M-SM: [U5]): #ew-status.map(r => { let m = s-main(r); [#box(math-label(r.math)) (#r.corrections) #dur(m.seconds_per_point) per point at $B = 128$, #ratio-mult(m) of #r.full_colour.fastest.name's time#if s-gate(r) != none [, #gate-chip(s-gate(r))]] }).join([; ]) (@msm).
 ]
     ]
   }),
@@ -1519,8 +1520,8 @@ is reported without a gate (cells uncoloured).
       timing has none); $2 -> 2$ is reported without a gate. A process whose time per point at $B = 128$ is below 5 ms
       has no blocking gate: its ratio is shown, its verdict is "#thr-rule.label" (user decision; `data/milestone.json`
       `gate_decisions.threshold_rule`); optimisation effort goes to higher multiplicities. The electroweak row is timed
-      and reported indicatively at M-SM, without a verdict ([U5]; `data/msm-g1.json`): its gate binds with the final retime
-      (deferred to the next milestone).
+      and gated like the QCD rows since the final G1 retime (M-LIT-a0; `data/msm-g1.json`), after its indicative timing
+      at M-SM ([U5]).
       Aspiration: fastest of all tools from $2 -> 3$.
     - *Protocol.* Providers in production mode with poles off where they allow it (OpenLoops `truepoles 0`, Recola without IR
       poles, MadLoop production build); pyAmpliCol finite-only (`poles = "none"`) with stability checks off, one pinned
@@ -1713,7 +1714,7 @@ multi-trace colour state of DESIGN §6.1, so the reachable vertex is refused, ne
 // data/msm-matrix.json, written by scripts/build_msm_matrix.py from
 // data/msm.json, the campaign's public-route and self-test data and the
 // manifest; the per-row data are in the appendix (@tab:msmrows). The G1 EW
-// row: data/msm-g1.json (indicative, not gated).
+// row: data/msm-g1.json (gated since M-LIT-a0).
 #pagebreak(weak: true)
 = Electroweak capability matrix (M-SM) <msm>
 
@@ -1812,7 +1813,8 @@ multi-trace colour state of DESIGN §6.1, so the reachable vertex is refused, ne
   },
 ) <tab:cms>
 
-// The G1 electroweak row (data/msm-g1.json): indicative, not gated.
+// The G1 electroweak row (data/msm-g1.json): gated since the final G1 retime
+// (M-LIT-a0; indicative at M-SM, [U5]).
 #let ew-p = eg.processes.first()
 #let ew-c = ew-p.pyamplicol.at("native/full")
 #let ew-b = ew-c.batches.at("128")
@@ -1825,13 +1827,13 @@ multi-trace colour state of DESIGN §6.1, so the reachable vertex is refused, ne
 #let ew-row = all-rows.find(r => r.key == ew-p.key)
 #[
 #set text(9pt)
-*G1, electroweak row* #flag[indicative] (`data/msm-g1.json`, the gate tool on the EW records; [U5]: its speed gate binds in
-M-FINAL, so no verdict here). #box(math-label(ap-math(ew-p.label))) (EW) on #raw(eg.ew_model.split("/").last()) (the workspace's
+*G1, electroweak row* (`data/msm-g1.json`, the gate tool on the EW records; gated since the final G1 retime, M-LIT-a0, after
+its indicative timing at M-SM, [U5]). #box(math-label(ap-math(ew-p.label))) (EW) on #raw(eg.ew_model.split("/").last()) (the workspace's
 Python-3 reference copy of `loop_qcd_qed_sm_Gmu`, the harness default; not the shipped patched UFO, which the campaign
 used), native per-point inputs, full colour, binary64 finite part, checks off, one pinned core (#ew-c.host_cpus.map(str).join(", ")), at
 $B = 128$: *#ms2(ew-t * 1000) ms per point* (±#fixed(100 * ew-b.uncertainty, 1) %) against Recola #dur(ew-rc), OpenLoops
 #dur(ew-prov("openloops")) and MadLoop #dur(ew-prov("madloop")) (provider records reused, not re-run): ×#fixed(ew-t / ew-rc, 3) of Recola's
-time, #fixed(ew-t / (eg.gate_factor * ew-rc), 3) of 1.30 × Recola (Table 1 row, Figure 1). Generation #dur(ew-gen.generate.seconds) + #dur(ew-gen.export.seconds), peak
+time, #fixed(ew-t / (eg.gate_factor * ew-rc), 3) of 1.30 × Recola, gate *#ew-b.gate.status* (#fixed(ew-b.gate.ratio_to_binding_limit, 3) of the binding limit; Table 1 row, Figure 1). Generation #dur(ew-gen.generate.seconds) + #dur(ew-gen.export.seconds), peak
 #gib(calc.max(ew-gen.generate.peak_gib, ew-gen.export.peak_gib)). Accuracy: against its fixture (#ew-acc.points points) #sci(ew-acc.max_error)
 (DD asserted at point #ew-acc.double_double_points.map(str).join(", "), where $E > 10^(-9)$; binary64 #sci(ew-acc.max_error_binary64)); against the providers at #ew-row.validation.points stream points in binary64:
 #ew-row.validation.references.map(x => [#x.short #sci(x.max_finite)]).join(", "). #if ew-early.len() > 0 [Earlier run (MS-VALIDATE, #raw(ew-early.last().revision.slice(0, 8))): #ew-early.last().batches.pairs().map(((b, x)) => [$B = #b$ #dur(x.median_seconds_per_point)]).join(", ").]
@@ -1990,8 +1992,8 @@ against M-QCD, model + generate + export changed by −19 % to +5 % (median −3
 everywhere, and the seven-gluon plans are M-QCD's (#gname("gg_ggggg"): full colour 171 + 213 s, 9.5 GiB; LC 178 + 213 s,
 10.0 GiB). The provider records are reused unchanged (`provider_records`). With #gname("uux_emepgg") at
 #dur(bat(nat-c(gproc("uux_emepgg")), big).median_seconds_per_point) per point (M-QCD: 4.93 ms) one more process is above the
-5 ms floor and gated. The electroweak row is timed by the same protocol in `data/msm-g1.json`, indicative and not gated
-(@msm); the tables of this section are `data/g1.json`'s.
+5 ms floor and gated. The electroweak row is timed by the same protocol in `data/msm-g1.json` and gated (@msm); the tables
+of this section are `data/g1.json`'s.
 
 #let g7f-note = all-rows.find(r => r.key == "gg_ggggg").full_colour.main.at("note", default: none)
 #if g7f-note != none [*Seven gluons, full colour* #flag[contention]: #gname("gg_ggggg")'s full-colour runtime was #g7f-note.reason (`seven_leg_rows`, `host` in `data/g1.json`; @tab:summary marks the cell). It has no gate.]
@@ -2828,7 +2830,7 @@ lower multiplicities and existing references.
 #let ttq-errs = ttq.max_error_per_point.sorted()
 The $g g -> t overline(t) e^- e^+ g$ (QCD) finite part deviates by #sci(ttq-errs.last()) at one of its three points and by at
 most #sci(ttq-errs.at(-2)) at the others: the point's known binary64 conditioning (earlier record, DESIGN WP3.1 fourth
-increment: #ttq-old.validation). The electroweak target is validated by the M-SM campaign (@msm, @tab:msmrows), row #ms.required.rows.find(r => r.label.starts-with("g g -> t overline(t) e^- e^+ g") and r.at("corr", default: none) == "EW").validation; G1 times it indicatively (`data/msm-g1.json`, @msm; Table 1), and its
+increment: #ttq-old.validation). The electroweak target is validated by the M-SM campaign (@msm, @tab:msmrows), row #ms.required.rows.find(r => r.label.starts-with("g g -> t overline(t) e^- e^+ g") and r.at("corr", default: none) == "EW").validation; G1 times and gates it since the final retime (`data/msm-g1.json`, @msm; Table 1), and its
 generation and validation are the integrated configuration's, not a development record (so it is not in the table
 above). The QCD classes are M-QCD's (@mqcd). The $u overline(u) -> g g g g g$ row comes
 from #rn.processes.uux_ggggg.record.split(",").first(), the newest record of that process: the later re-runs on the merged
@@ -3019,8 +3021,8 @@ and so is the check of the timed configuration against NJet's ten points (@tab:s
   ([Decays $1 -> n$], "supported", [*Since M-FINAL-b* (MF-DEC-1 `eddb4b49`, MF-DEC-2 `28b24a2a`): one initial leg is admitted generically ($1 -> n$, $n >= 2$) at tree level and one loop, QCD and EW, through the same recursion; the decaying particle at its real mass with zero own width (the existing width guards; internal CMS widths allowed), MadLoop's convention (amputated loops, its absorptive self-energy dropped, $delta Z$ from the UFO counterterms); the rest-frame massive Dirac spinor fixed (was $2 times |M|^2$ at $|p| = 0$). XX01–XX08 = MadLoop's quadruple precision (@tab:dec: #dmc.pass of #dm.rows.len() pass, DD ≤ #sci(dml.dd_vs_reference.value)), $Z -> u overline(u)$ = the massless form factor, Ward on $t -> b W^+ g$, LC/NLC by the $N_c$ scan, public route and native inputs. Refused typed: loop-induced decays (`loop-induced`), chains and `$` (`madloop-syntax`).]),
   ([UFO genericity: HC_NLO_X0], "partial", [*Since M-FINAL-b* (MF-GM-HC, `e2f0c78e`): the Higgs characterisation UFO at NLO, HC01–HC04 and HC06 = MadLoop 3.7.0 through generic fixes (UFO namespace head, Feynman-gauge refusal only where massive vectors run in the loops, positional counterterm keys, a colour-singlet contact split through an adjoint auxiliary); *since M-FINAL* HC05 ($g g -> x_0 g g$) too (MF-HC05, `e3d4ef4d`): a counterterm colour the tree vocabulary refuses (its five-point $f f f f$ $R_2$ contact) is projected exactly at $N_c = 3$ onto products of at most two primitive adjoint tensors (zero residual required, else refused); all six ≤ #sci(hc-max) (@tab:hc). *PR \#38* (LP-MODELS): compiled-mode HEFT quark tree amplitudes (built-in SM-HEFT and HC_NLO_X0) were 4× too large, now = MG5 and the MadLoop Borns. Open, typed: $u overline(u) -> x_0 g g g$ (the U(1)-leak check), single-trace and C-odd five-point $R_2$ colours.]),
   ([Electroweak, complex mass], "supported", [*M-SM* (@msm, @tab:cms): QCD, QED and joint `[virt=QCD QED]` corrections on the shipped `loop_qcd_qed_sm` and `loop_qcd_qed_sm_Gmu` reproduce MadLoop in every class of `m-sm/PLAN.md` §1.1 (#sxc.pass of #sx-rows rows pass, #sx-partial.join(" and ") partial: F7, accepted). EW native inputs (ew-native, EWI-N), the EW ladder (ew-validate, EWI-7: ghosts of vetoed vector bosons, Goldstone-side root mixing), *per-leg photon tagging* (MS-PHOTON: `loop.external_photons` = `"final"` by default, `"all"`, `"none"` or a leg list, as MG5's `!a!`; $alpha(0)$ and the conversion counterterm on the tagged legs only), the *complex-mass scheme* (MS-CMS: MG5's transform per (mass, width) pair, coloured widths included; MS-CMS-N: native complex pole masses; = MadLoop CMS on CM01–CM05 and CM07–CM10), the EW pole split (MS-POLES), the EW generation stages in Rust (MS-GEN: catalogue segment polynomials and the parameter program's renaming behind PyO3, the Python stages the oracles, outputs byte-identical, EW generation 2.6–3.2× faster) and Symbolica-free binary64 (MS-MASTERS); since M-FINAL-b the EW export's kernel-string reading and parameter-program renaming run in Rust too (MF-RUST, `b36af289`: Python stages the oracles, byte-identical; EW $2 -> 3$ export 62.3 → 32.4 s). Before M-SM on `loop`: the QED Catani operator, EW fermion lines, 't Hooft–Feynman gauge for trees, loops and counterterms, on-shell photons at $alpha(0)$, the UFO's EW counterterms lowered at scale, Lorentz `Epsilon`, lepton lines through the loop (EWI-0 to EWI-7b). Refused, typed: the Missing box of @status; EW LC/NLC never.]),
-  ([Required set], "supported", [All eight generate and agree with their references in all coefficients with native inputs: seven in @tab:validation (validated on the WP3.1 branch before its integration), the EW target in the M-SM campaign (TV07 against MadLoop, Recola and OpenLoops, @msm); $g g -> g g g g g$ against NJet's double-double values (its binary64 points 4 and 8 at $O(10^(-8))$ accepted by the user, within the estimate); the generator is on `loop` since G-int, and G1 times all seven in batches at full and leading colour (@g1; the $2 -> 5$ rows since `measure-g1-7leg`; all re-timed at #raw(g.slice_revision)). The seven-gluon Ward check (addendum H): #ms.status_notes.notes.gg_ggggg.ward_status. The G1 accuracy check asserts binary64 where $E <= 10^(-9)$ and DD elsewhere (user E1 ruling, g1-accuracy); R3 for QCD is recorded (DECISIONS 2026-10-29 \~18:25: two providers per process within their agreement, $g g -> g g g g g$ against NJet alone, addendum F). G1 times the EW target indicatively (@msm). The provider reference trees no longer read the old working root (reference-relocate, `48aeb123`; provider values bitwise, and the toolkit refuses provider files outside the configured reference root).]),
-  ([Performance gates], "partial", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) without a matched provider: no gate]\; the gate is taken at $B = 128$ only (user 2026-10-28): $B = 1$ and the $2 -> 5$ rows' $B = 16$ are reported without a verdict (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history).#for r in ew-status [ The EW row #box(math-label(r.math)) (EW) is timed indicatively: #ratio-mult(r.full_colour.main) of #r.full_colour.fastest.name's time at $B = 128$, no verdict ([U5]).] Not re-timed at M-FINAL (G1 of the M-FINAL-b report). Missing: the final retime with the binding EW speed gate (deferred to the next milestone) and the provider protocol-mode columns.]),
+  ([Required set], "supported", [All eight generate and agree with their references in all coefficients with native inputs: seven in @tab:validation (validated on the WP3.1 branch before its integration), the EW target in the M-SM campaign (TV07 against MadLoop, Recola and OpenLoops, @msm); $g g -> g g g g g$ against NJet's double-double values (its binary64 points 4 and 8 at $O(10^(-8))$ accepted by the user, within the estimate); the generator is on `loop` since G-int, and G1 times all seven in batches at full and leading colour (@g1; the $2 -> 5$ rows since `measure-g1-7leg`; all re-timed at #raw(g.slice_revision)). The seven-gluon Ward check (addendum H): #ms.status_notes.notes.gg_ggggg.ward_status. The G1 accuracy check asserts binary64 where $E <= 10^(-9)$ and DD elsewhere (user E1 ruling, g1-accuracy); R3 for QCD is recorded (DECISIONS 2026-10-29 \~18:25: two providers per process within their agreement, $g g -> g g g g g$ against NJet alone, addendum F). G1 times and gates the EW target since the final retime (@msm). The provider reference trees no longer read the old working root (reference-relocate, `48aeb123`; provider values bitwise, and the toolkit refuses provider files outside the configured reference root).]),
+  ([Performance gates], "partial", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) without a matched provider: no gate]\; the gate is taken at $B = 128$ only (user 2026-10-28): $B = 1$ and the $2 -> 5$ rows' $B = 16$ are reported without a verdict (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history).#for r in ew-status [ The EW row #box(math-label(r.math)) (EW) is gated since the final retime: #ratio-mult(r.full_colour.main) of #r.full_colour.fastest.name's time at $B = 128$#if s-gate(r) != none [, #s-gate(r).status].] Re-timed at M-LIT-a0 (the final retime deferred from M-FINAL, on #raw(g.slice_revision)). Missing: the provider protocol-mode columns.]),
   ([$2 -> 6$], "supported", [M-FINAL item 1 (user ruling 2026-10-31): $g g -> 6g$ ($N_f = 5$, no top), $u overline(u) -> 6g$ and $u overline(u) -> u overline(u) g g g g$, each at LC and full colour, generate, store (every step below 150 GB), load and evaluate on one engine after the optimisation rounds (#raw(sxj.engine.revision.slice(0, 8)), an ancestor of the pin; @tab:summary, #link(<sixlegs>)[records and checks]\; the N = 8 reduction adapter is tested, MF-8G-0 `7cdd32e9`); double pole, Catani (FC), NGluon (LC), double-double and the quark rows' Ward pass, the 8-gluon Ward is recorded but not asserted (beyond the binary64 scope) and its full-colour and double-double Wards were not run (user, 2026-11-04). Internal checks only: no provider exists.]),
   ([Built-in SM (tree)], "supported", [*Since M-FINAL* (MF-NORM `049a9389`, MF-LIMITS-PY `d958f2ea`): equal to the UFO `sm` in the compiled, eager, on-the-fly and recurrence lanes (the defects corrected and their history: @status, built-in SM fixes), $1 -> n$ decays; checked by the default-tier sweep `tests/integration/test_builtin_sm_ufo_sweep.py` (every $2 -> 2$ class, the $1 -> 2$ decays, $2 -> 3$ / $1 -> 3$ samples) against the UFO `sm` to $10^(-10)$. Typed refusals as for the UFO `sm`: four-quark processes without gluon exchange in the recurrence lane, `dirac-weyl-closure`. A one-loop request needs an NLO UFO (the built-in SM is tree only).]),
   ([Dependencies], "supported", [No fork (user 2026-11-02, MF-SYMBOLICA `e0a8375c`; `dependencies/manifest.json`): Symbolica = symbolica-dev `community` `36cbac3a` + the consolidated PR symbolica-dev/symbolica\#163 (`20a9da94`), NinjaRS main `b3a29c85`, oneloopmaster main `128ea664`; Python through the Community build of `20a9da94` or PyPI symbolica 3.0.3.]),
