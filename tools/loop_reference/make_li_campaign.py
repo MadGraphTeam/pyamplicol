@@ -111,13 +111,14 @@ ROWS = [
      "2->4 optional", None),
     ("LI-51", "g g > e+ e- mu+ mu- g or g g > h g g g g (2->5 stretch: the first is run)", ["li_gg_emepmupmumg"],
      "ML, OL ppllllj2 (added library), RC", ["L1"], "N, T", "2->5 stretch", None),
-    ("LI-X1", "one EFT row with rank > N+2", None,
-     "ML (TIR); NOT PRODUCED (lit-ref-b): HC_NLO_X0 declares QNP expansion_order = 1, so an amplitude carries one "
-     "x0 vertex and its loops reach rank N+1 at most (the heft g g > x0 g export: MAXRANK 5 at N = 4); MG5 caps "
-     "g g > x0 x0 x0 QNP=3 at QNP=1 and generates no diagram; by power counting a single dimension-6 (SMEFT) insertion "
-     "also stays at rank <= N+1 in Feynman gauge: the row needs a ruling (a model with a higher declared expansion "
-     "order, or another row)",
-     ["L1"], "T", "EFT", "lit-eft"),
+    ("LI-X1", "rank > N+2 execution check: EFT examples with two dimension-6 insertions (Q24 open)", None,
+     "none (USER 2026-11-06 ~14:55): run-only through TIRust, which must go through and agree with NinjaRS wherever "
+     "NinjaRS serves (NinjaRS refuses rank > N+2: those families are TIRust-only); no benchmark, no correctness or "
+     "gauge claim, no MadLoop TIR reference. Why the planned MadLoop row was not produced: HC_NLO_X0 declares QNP "
+     "expansion_order = 1, so an amplitude carries one x0 vertex and its loops reach rank N+1 at most (the heft "
+     "g g > x0 g export: MAXRANK 5 at N = 4; g g > x0 x0 x0 QNP=3 is capped at QNP=1 and has no diagram), and one "
+     "dimension-6 insertion stays at rank <= N+1 in Feynman gauge",
+     ["run", "L6"], "T (N where it serves)", "EFT", "lit-eft"),
     ("LI-O1", "correlated, colour-resolved and single-helicity outputs", None,
      "RC loop-induced colour correlations; identities", ["sum_h"], "N, T", "observables", "lit-obs"),
     ("LI-C1", "complex-mass scheme rows (Q7)",

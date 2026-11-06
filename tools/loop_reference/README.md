@@ -1212,12 +1212,14 @@ complex-mass scheme all three agree to 2e-13), LI-51 `g g > e+ e- mu+ mu- g`
 45-minute misses: MadLoop for LI-44 `g g > a a g g` (OpenLoops = Recola to 4e-9)
 and `g g > z z z z` (Recola only), both for the reference with every helicity and
 for the helicity-summed one alone. Every MadLoop export (MG5 3.7.0, the 2->5
-included) took about two minutes. LI-X1 (rank > N+2) is not produced: HC_NLO_X0
-declares `QNP` with expansion order 1, so an amplitude carries one x0 vertex and
-its loops stop at rank N+1 (the heft `g g > x0 g` export: MAXRANK 5 at N = 4;
+included) took about two minutes. LI-X1 (rank > N+2) has no provider
+reference (USER 2026-11-06 ~14:55: Q24 stays open; the row is lit-eft's run-only
+execution check, two dimension-6 insertions through TIRust, TIRust = NinjaRS
+where NinjaRS serves, no MadLoop TIR reference). The planned MadLoop row could not exist anyway: HC_NLO_X0 declares
+`QNP` with expansion order 1, so an amplitude carries one x0 vertex and its
+loops stop at rank N+1 (the heft `g g > x0 g` export: MAXRANK 5 at N = 4;
 `g g > x0 x0 x0 QNP=3` is capped at QNP = 1 and has no diagram), and by power
-counting one dimension-6 insertion stays at rank N+1 as well: the row needs a
-ruling.
+counting one dimension-6 insertion stays at rank N+1 as well.
 
 Provider timings (`tools/loop_benchmark providers`, 16 stream points, one pinned
 core each; records in `tests/fixtures/loop/required/li/timing/`; the 2->4 and
