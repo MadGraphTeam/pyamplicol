@@ -667,7 +667,9 @@ def madloop_one_helicity(
     if not flags["production_build"]:
         raise RuntimeError(f"{export} is not built with MG5's production flags")
     with _relocated_madloop_build(trees.root):
-        binary, _ = li.build_madloop(export, run, flags["export_make_opts"]["GLOBAL_FLAG"])
+        binary, _ = li.build_madloop(
+            export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
+        )
     settings, _ = _prepare_madloop(spec, export, run, trees, params)
     count = len(points["points"])
     tuples = references.madloop_helicities(export)
@@ -1175,7 +1177,9 @@ def main(options: Any) -> int:
                     )
                 if getattr(options, "madloop_one_helicity", False):
                     if not spec.get("loop_induced"):
-                        raise RuntimeError("the one-helicity column is loop-induced only")
+                        raise RuntimeError(
+                            "the one-helicity column is loop-induced only"
+                        )
                     result["one_helicity"] = madloop_one_helicity(
                         spec, points, work, options.cpu, export, trees, params or None
                     )
