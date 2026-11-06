@@ -1182,23 +1182,69 @@ Jikia-Tkabladze's low-energy 14/5 s^2/M^4, (s^2+t^2+u^2)/(10 M^4) and
 sigma_W = 2751 alpha^4 s^3/(16000 pi M^8), the Euler-Heisenberg
 973 alpha^4 omega^6/(10125 pi m^8), the massless box and PSZ's normalisation.
 
-State (2026-11-06): every 2->1, 1->2, 2->2 and 1->3 row of PLAN §4 is stored:
-MadLoop, Recola and OpenLoops (where designated) agree to <= 3.8e-11 on every
-row, the oracles to <= 7e-13 (`a a > a a` under CMS: Recola = oracle to 1e-14,
-MadLoop 5.5e-7 off); the zero rows (`g g > z`, `z > g g`, `g g > h a`,
-`e+ e- > g g`) record the providers' values (~1e-30 and below; `h > g a`,
-`z > g a`: MG5 generates no diagram). LI-32 `g g > h g g` and LI-33
-`g g > z z g` are stored too (MadLoop / Recola / OpenLoops to 4e-11 and 8e-8:
-OpenLoops' hybrid-precision target; the LI-33 MadLoop reference took 41.6 min,
-quadruple precision with every helicity). No 45-minute miss. Provider timings
-(`tools/loop_benchmark providers`, 16 stream points, one pinned core; records
-in `tests/fixtures/loop/required/li/timing/`), mean ms per point:
+State (2026-11-06; first delivery lit-ref, second lit-ref-b): every 2->1, 1->2,
+2->2 and 1->3 row of PLAN §4 is stored: MadLoop, Recola and OpenLoops (where
+designated) agree to <= 3.8e-11 on every row, the oracles to <= 7e-13 (`a a > a a`
+under CMS: Recola = oracle to 1e-14, MadLoop 5.5e-7 off); the zero rows
+(`g g > z`, `z > g g`, `g g > h a`, `e+ e- > g g`) record the providers' values
+(~1e-30 and below; `h > g a`, `z > g a`: MG5 generates no diagram).
 
-| row | MadLoop 7\|6\|1 (numerators / Born+CT / reduction / colour) | MadLoop 6\|7\|1 | OpenLoops ls | Recola |
-|---|---|---|---|---|
-| `g g > h h` | 0.997 (0.322 / 0.001 / 0.615 / 0.002) | 1.99 | 2.56 | 1.58 |
-| `g g > h g g` | 85.7 (70.5 / 0.12 / 16.3 / 0.27) | 286.9 | 27.8 | 26.0 |
-| `g g > z z g` | 720.8 (674.1 / 0.43 / 69.9 / 0.85) | 2594 | 187.2 | 178.7 |
+Every 2->3 row is stored too: LI-31 `g g > h h h`, LI-32 `g g > h g g`, LI-33
+`g g > z z g`, `g g > a a g`, `g g > w+ w- g`, LI-34 `g g > z z z`, LI-35
+`g g > h z g`, `g g > a g g`, `g g > z g g` (no OpenLoops library), LI-36
+`u u~ > h g g`, `u u~ > d d~ h` (QED <= 1; Recola with its H Z Z and H W+ W- tree
+vertices switched off, the only vertices of the EW tree), LI-E4 `e+ e- > g g g`
+(no OpenLoops library), each with MadLoop's quadruple-precision reference with
+every helicity: MadLoop and Recola agree to <= 4.8e-9 (`e+ e- > g g g`: 1.4e-8),
+OpenLoops to <= 4.3e-8 (its hybrid-precision target). The 2->3
+zero row LI-Z1b `g g > a a a` has Recola only (~1e-42): MG5 removes closed
+fermion loops with an odd number of vector couplings by Furry's theorem and
+generates no diagram (a rule-based zero, Q13). Complex-mass rows LI-C1:
+`g g > a a g` (2.4e-11), `e+ e- > g g g` (1.5e-8) and `g g > e+ e- mu+ mu-` (2e-13).
+
+2->4 and 2->5 (45-minute rule, Q5 = (a)): LI-41 `g g > h h g g` (all three, 1.2e-7),
+LI-42 `g g > h g g g` (all three, 2e-11; MadLoop 30 min with three point blocks),
+LI-43 `g g > e+ e- mu+ mu-` (fixed widths: MadLoop = OpenLoops to 7e-14; Recola's
+on-shell scheme with widths is not that fixed-width scheme, 8e-4 to 1.4e-3, also
+with on-shell mass input: excluded with its deviation recorded, while under the
+complex-mass scheme all three agree to 2e-13), LI-51 `g g > e+ e- mu+ mu- g`
+(MadLoop = OpenLoops to 1.4e-12; Recola excluded for the same width convention).
+45-minute misses: MadLoop for LI-44 `g g > a a g g` (OpenLoops = Recola to 4e-9)
+and `g g > z z z z` (Recola only), both for the reference with every helicity and
+for the helicity-summed one alone. Every MadLoop export (MG5 3.7.0, the 2->5
+included) took about two minutes. LI-X1 (rank > N+2) is not produced: HC_NLO_X0
+declares `QNP` with expansion order 1, so an amplitude carries one x0 vertex and
+its loops stop at rank N+1 (the heft `g g > x0 g` export: MAXRANK 5 at N = 4;
+`g g > x0 x0 x0 QNP=3` is capped at QNP = 1 and has no diagram), and by power
+counting one dimension-6 insertion stays at rank N+1 as well: the row needs a
+ruling.
+
+Provider timings (`tools/loop_benchmark providers`, 16 stream points, one pinned
+core each; records in `tests/fixtures/loop/required/li/timing/`; the 2->4 and
+2->5 rows ran OpenLoops + Recola, MadLoop and MadLoop 6|7|1 on three cores at
+once), mean ms per point; the one-helicity column is MadLoop's mean time of one
+`SLOOPMATRIXHEL_THRES` call over the helicities it keeps (MadEvent mode):
+
+| row | MadLoop 7\|6\|1 (numerators / Born+CT / reduction / colour) | MadLoop one helicity | MadLoop 6\|7\|1 | OpenLoops ls | Recola |
+|---|---|---|---|---|---|
+| `g g > h h` | 0.997 (0.322 / 0.000525 / 0.615 / 0.00156) | 0.692 | 1.99 | 2.56 | 1.58 |
+| `g g > h g g` | 85.7 (70.5 / 0.121 / 16.3 / 0.269) | 9.69 | 287 | 27.8 | 26 |
+| `g g > z z g` | 721 (674 / 0.43 / 69.9 / 0.852) | 16.3 | 2.59e+03 | 187 | 179 |
+| `g g > a a g` | 201 (179 / 0.123 / 23.1 / 0.19) | 13.9 | 672 | 55 | 48.2 |
+| `g g > w+ w- g` | 347 (298 / 0.492 / 45.9 / 0.569) | 18.8 | 1.27e+03 | 86.9 | 69.8 |
+| `g g > h h h` | 9.14 (4.5 / 0.00292 / 4.45 / 0.00517) | 9.08 | 33.3 | 23.6 | 5.91 |
+| `g g > z z z` | 558 (503 / 0.443 / 48.3 / 0.422) | 10.8 | 2.11e+03 | 152 | 135 |
+| `g g > h z g` | 74 (62 / 0.106 / 10.3 / 0.0977) | 7.48 | 271 | 36.5 | 19.4 |
+| `g g > a g g` | 252 (229 / 0.155 / 31.3 / 0.461) | 16.5 | 804 | 81.9 | 77.4 |
+| `g g > z g g` | 476 (401 / 1.34 / 53.8 / 1.96) | 20.2 | 1.39e+03 | — | 117 |
+| `u u~ > h g g` | 2.79 (1.82 / 0.0165 / 0.952 / 0.0115) | 0.885 | 7.36 | 2.79 | 1.63 |
+| `u u~ > d d~ h` | 0.145 (0.0995 / 0.00124 / 0.0331 / 0.000474) | 0.0558 | 0.263 | 0.286 | 0.55 |
+| `e+ e- > g g g` | 15.7 (12.8 / 0.0638 / 2.82 / 0.0475) | 1.8 | 45.8 | — | 4.51 |
+| `g g > h h g g` | 671 (477 / 0.129 / 167 / 0.719) | 195 | 2.52e+03 | 589 | 203 |
+| `g g > h g g g` | 1.98e+03 (1.5e+03 / 1.39 / 274 / 6.09) | 193 | 7.07e+03 | 876 | 588 |
+| `g g > e+ e- mu+ mu-` | 33.5 (28.3 / 0.165 / 5.18 / 0.0511) | 3.35 | 104 | 6.7 | 3.79 |
+| `g g > a a g g` | 5.9e+03 (5.01e+03 / 1.07 / 605 / 5.14) | 285 | 2.36e+04 | 2.04e+03 | 1.69e+03 |
+| `g g > e+ e- mu+ mu- g` | 1.2e+03 (933 / 1.92 / 201 / 1.43) | 121 | 3.56e+03 | 252 | 62.9 |
 
 ## Legacy-engine oracles for the v2 engine (WP0.1)
 
