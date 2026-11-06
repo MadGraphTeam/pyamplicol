@@ -146,12 +146,20 @@ def fixture_summary(process):
         out["reports"] = {k: {"value": v[0], "expected": v[1]} for k, v in reports.items()}
     if any("limit_oracle" in row for row in data["rows"]):
         out["limit_oracle_ratios"] = [row["limit_oracle"]["ratio_to_reference"] for row in data["rows"]]
+    if data.get("secondary_runs"):
+        out["secondary_runs"] = {k: v["max_relative_deviation_from_reference"]
+                                 for k, v in data["secondary_runs"].items()}
+    cautions = [index + 1 for index, row in enumerate(data["rows"]) if row.get("l1_caution")]
+    if cautions:
+        out["l1_caution_points"] = cautions
     timing = sorted(p.name for p in TIMING.glob(f"{process}-providers*.json"))
     if timing:
         out["provider_timing_records"] = [f"required/li/timing/{name}" for name in timing]
-        out["provider_ms_per_point"], misses = timing_summary(process)
+        out["provider_ms_per_point"], misses, notes = timing_summary(process)
         if misses:
             out["provider_timing_misses"] = misses
+        if notes:
+            out["provider_value_notes"] = notes
     return out
 
 
@@ -159,8 +167,10 @@ def timing_summary(process):
     """Mean ms per point of each timed provider (16 stream points, one pinned
     core): MadLoop 7|6|1 (production card), its 6|7|1 OPP column, its
     one-helicity column (mean per kept-helicity call), OpenLoops, Recola;
-    and the timing columns a record marks as missed (45-minute rule)."""
-    out, misses = {}, {}
+    the timing columns a record marks as missed (45-minute rule); and the
+    providers whose values a record excludes or excepts at some stream points
+    (the timing stays valid)."""
+    out, misses, notes = {}, {}, {}
     main = TIMING / f"{process}-providers.json"
     records = [main] if main.exists() else []
     records.append(TIMING / f"{process}-providers-madloop-opp.json")
@@ -176,22 +186,39 @@ def timing_summary(process):
                 continue
             if tag == "":
                 out[provider] = round(entry["mean_seconds_per_point"] * 1e3, 4)
+                for field in ("values_excluded", "value_exceptions"):
+                    if field in entry:
+                        notes.setdefault(provider, {})[field] = entry[field]
             one = entry.get("one_helicity") if provider == "madloop" else None
             if one and "miss" in one:
                 misses["madloop_one_helicity"] = one["miss"]
             elif one:
                 out["madloop_one_helicity"] = round(one["mean_seconds_per_call"] * 1e3, 4)
-    return out, misses
+    return out, misses, notes
+
+
+# PLAN §4.1: the 2->4 optional rows are gated where run and matched, the 2->5
+# stretch only if a provider matches: a provider timing of one of its runs.
+OPTIONAL_TIERS = ("2->4 optional", "2->5 stretch")
+TIMED_PROVIDERS = ("madloop", "openloops", "recola")
+
+
+def gated(tier, runs):
+    if "gate" in tier:
+        return True
+    return tier in OPTIONAL_TIERS and any(
+        provider in run.get("provider_ms_per_point", {}) for run in runs for provider in TIMED_PROVIDERS)
 
 
 def build():
     rows = []
     for row_id, text, processes, references, checks, backends, tier, owner in ROWS:
+        runs = [fixture_summary(p) for p in processes or ()]
         entry = {"row": row_id, "processes": text, "references": references, "checks": checks, "backends": backends,
-                 "tier": tier, "gated": "gate" in tier}
+                 "tier": tier, "gated": gated(tier, runs)}
         if owner:
             entry["owner"] = owner
-        entry["runs"] = [fixture_summary(p) for p in processes or ()]
+        entry["runs"] = runs
         rows.append(entry)
     return {
         "description": ("M-LIT loop-induced validation matrix (workspace/reports/engine-v2/m-lit/PLAN.md §4): the rows "
@@ -210,7 +237,8 @@ def build():
             "single_helicity": "|A(h)|^2/avg (Q39) = MadLoop's USERHEL value / HELAVGFACTOR",
         },
         "conventions": "|A_loop|^2 summed over final and averaged over initial helicities and colours, with the final "
-                       "identical-particle factor; physical couplings; widths zero outside the complex-mass rows",
+                       "identical-particle factor; physical couplings; widths zero except in the complex-mass rows (LI-C1) "
+                       "and the fixed-width four-lepton rows (LI-43, LI-51, scheme qcd-widths)",
         "rows": rows,
     }
 

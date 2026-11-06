@@ -678,8 +678,9 @@ def madloop_one_helicity(
 
     references = _references()
     li = _li_references()
+    run = work / "madloop-one-helicity-run"
     binary, _, _, settings, _ = _madloop_production_run(
-        spec, export, work / "madloop-one-helicity-run", trees, params
+        spec, export, run, trees, params
     )
     count = len(points["points"])
     tuples = references.madloop_helicities(export)
