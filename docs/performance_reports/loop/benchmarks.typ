@@ -1083,7 +1083,7 @@ dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The rati
 #heading(numbering: none, level: 2, outlined: false)[The loop-induced table] <reading-li>
 // The legend of the loop-induced summary table (data/summary-li.json meta).
 #let li-inputs = li-meta.inputs.values()
-@tab:summary-li follows Table 1's rules for loop-induced processes, $|A_"loop"|^2$ without a Born (`data/summary-li.json`,
+@tab:summary-li follows Table 1’s rules for loop-induced processes, $|A_"loop"|^2$ without a Born (`data/summary-li.json`,
 written by `scripts/build_summary.py` from the row registry `data/milestone.json` `loop_induced` and the loop-induced
 records). One row per process of the M-LIT validation matrix (`m-lit/PLAN.md` §4.1; its ids in the process cell),
 grouped by multiplicity; the backend-unit, zero, identity, observable and complex-mass-scheme rows (#li-meta.validation_only.ids.join(", ")) stay in the
@@ -1091,16 +1091,16 @@ validation tables. The cell is the batched $B = #li-meta.gate_batch$ time per po
 thread, checks off) on the default backend #li-meta.default_backend\; NinjaRS per amplitude, labelled in the cell, where
 TIR does not serve the row yet; the other backend's time beside it when both ran. Its multiplier against the fastest
 matched provider (MadLoop's loop-induced production setting 7|6|1, OpenLoops `ls`, Recola; production mode, from
-`lit-ref`) colours it with Table 1's scale; generation is uncoloured. Rows of four legs or fewer ($2 -> 1$, $1 -> 2$,
-$2 -> 2$, $1 -> 3$) are reported without a gate; from $2 -> 3$ upward the gate is Table 1's (faster than MadLoop and at
+`lit-ref`) colours it with Table 1’s scale; generation is uncoloured. Rows of four legs or fewer ($2 -> 1$, $1 -> 2$,
+$2 -> 2$, $1 -> 3$) are reported without a gate; from $2 -> 3$ upward the gate is Table 1’s (faster than MadLoop and at
 most 1.30× each matched OpenLoops and Recola time, on TIRust), "#thr-rule.short" below 5 ms per point, no gate without a
 matched provider; verdict chips come with `lit-perf`'s records, "no verdict yet" before them. Grey cells are explicit
 markers: *pending* (the package that serves the row, named in the cell, has not landed at this head, or the input file
 that fills the cell does not exist yet), *not run* (a landed package without a record of the row), and a provider's
 reason where it has no matched time (no library, beyond the 45-minute rule). Nothing is estimated or extrapolated; each
 cell shows the newest record of its row (git ancestry of the record revisions). At this head #li-served.len() of
-#li-rows.len() rows are served; inputs: #li-inputs.map(x => [`#x.file` #if x.present [present] else [not written yet (#x.owner)]]).join([, ]);
-the registry against `lit-ref`'s manifest (`#li-meta.campaign.file`): #if li-meta.campaign.checked [checked, #li-meta.campaign.rows rows] else [#li-meta.campaign.reason].
+#li-rows.len() rows are served; inputs: #li-inputs.map(x => [#raw(x.file) #if x.present [present] else [not written yet (#x.owner)]]).join([, ])\;
+the registry against `lit-ref`'s manifest (#raw(li-meta.campaign.file)): #if li-meta.campaign.checked [checked, #li-meta.campaign.rows rows] else [#li-meta.campaign.reason].
 ]
 
 
@@ -1307,7 +1307,10 @@ is reported without a gate (cells uncoloured).
   #grid(columns: (1fr, 1fr), column-gutter: 10pt, pk(ms.integrated.slice(0, half)), pk(ms.integrated.slice(half)))
   #v(-0.3em)
   #text(7.6pt)[*Before (engine #ms.previous_engine):* #ms.already_on_loop.
-    *Native build* #raw(ms.native_build.name) (digest #raw(ms.native_build.digest)…)#if g.slice_revision.slice(0, 8) != ms.engine_revision.slice(0, 8) [; G1 ran on #raw(g.slice_build) (engine #raw(g.slice_revision))].]
+    *Native build* #raw(ms.native_build.name) (digest #raw(ms.native_build.digest)…)#if g.slice_revision.slice(0, 8) != ms.engine_revision.slice(0, 8) [; G1 ran on #raw(g.slice_build) (engine #raw(g.slice_revision))].
+    // Integrations after the measured engine (data/milestone.json after_integration).
+    #let after = ms.at("after_integration", default: ())
+    #if after.len() > 0 [*Integrated after it, not re-timed:* #after.map(r => [#raw(r.sha) #r.what (#r.detail)]).join("; ").]]
 ]
 
 // M-LIT-a0, the first milestone push of M-LIT (m-lit/PLAN.md §3.2
@@ -1363,7 +1366,7 @@ is reported without a gate (cells uncoloured).
         $B = 1$ (16 lanes#if one-revs.len() > 0 [, the runs of #rev-list(one-revs), not re-timed]) is *reported*, not gated (user 2026-10-28): #ratio-range(one-lim) of the limit (@tab:g1batch).
 #if s-five.len() > 0 [
       - *$2 -> 5$* (full and leading colour at $B = 128$; $B = 16$ reported): #s-five-gated.filter(r => s-gate(r).status == "pass").len() of #s-five-gated.len() gated
-        rows pass (#s-five-gated.map(r => { let m = s-main(r); [#box(math-label(r.math)) #dur(m.seconds_per_point), #gratio(s-gate(r).ratio_to_limit) of its limit#if m.at("ratio_to_fastest_bound", default: none) == "lower" [, #ratio-mult(m) against #r.full_colour.fastest.name's upper bound]] }).join([\; ]))#for r in s-five-free [; #box(math-label(r.math)) #dur(s-main(r).seconds_per_point)#if "note" in s-main(r) [ (#s-main(r).note.label)] at full and #dur(r.leading_colour.main.seconds_per_point) at leading colour per point, no matched provider and no gate].
+        rows pass (#s-five-gated.map(r => { let m = s-main(r); [#box(math-label(r.math))#if r.corrections == "EW" [ (EW)] #dur(m.seconds_per_point), #gratio(s-gate(r).ratio_to_limit) of its limit#if m.at("ratio_to_fastest_bound", default: none) == "lower" [, #ratio-mult(m) against #r.full_colour.fastest.name's upper bound]] }).join([\; ]))#for r in s-five-free [; #box(math-label(r.math)) #dur(s-main(r).seconds_per_point)#if "note" in s-main(r) [ (#s-main(r).note.label)] at full and #dur(r.leading_colour.main.seconds_per_point) at leading colour per point, no matched provider and no gate].
 ]
 #if py-timed.len() > 0 [
       - *Before G-int* (Python per-point inputs, G1 at #rev-list(py-revs)\; history, @g1): failed every gated process it

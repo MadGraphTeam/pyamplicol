@@ -1,8 +1,8 @@
 {
  "what": "the loop-induced summary table <tab:summary-li> of docs/performance_reports/loop/benchmarks.typ, written by scripts/build_summary.py (build_loop_induced); do not edit by hand",
  "meta": {
-  "date": "2026-11-05",
-  "engine_on_loop": "c8885cc5",
+  "date": "2026-11-06",
+  "engine_on_loop": "ca602436",
   "default_backend": "TIRust",
   "gate_batch": 128,
   "threshold_rule": {

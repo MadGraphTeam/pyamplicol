@@ -507,7 +507,18 @@
   }
  ],
  "integrated_tip": "ca602436",
- "after_integration": [],
+ "after_integration": [
+  {
+   "sha": "a2ade899",
+   "what": "lit-ci",
+   "detail": "CI only: licensed loop jobs in tests.yml (no native input changed, native digest 4cbb549f)"
+  },
+  {
+   "sha": "35a5a9b2",
+   "what": "lit-col",
+   "detail": "loop-induced amplitude colour basis (new native digest b044768c); the Born-interfered path not re-timed: the package's Born A/B is byte-identical (slice-status 2026-11-06 ~10:25)"
+  }
+ ],
  "already_on_loop": "v2 waves 0-1 (gates S1, G0), native executor, colour, stability API, schedule M, observables, NJet reference, public v2 engine with plan v4 artifacts, counterterms as plain tree insertions (addendum J), runtime pole selection, Rust A0-A3, the G1 harness, G-int (native per-point inputs and generation stages), the summary-first report; at milestone m1025a ct-perf, ew-poles (EW guards, QED Catani operator), lc-perf, artifact-portability and ew-lines; at m1025c native-dag A4, ew-gauge EWI-4a, precision-ap, ew-ct EWI-0/EWI-3, measure-g1-7leg (G1 at 2->5), reference-relocate, model-determinism, native-lowering D phase 1 part 1 and onshell-consistency; at m1026a ew-gauge EWI-4b, native-seeds B phase 1, native-cells C phase 1, genericity-fixes, ew-poles EWI-6b, fermion-lines and generation-scale-2; at m1028a ew-ct EWI-3R, ew-epsilon EWI-7b, fail-closed, sdk-parity, ew-leptons EWI-5, identical-flavour-lc and gate-b128; at M-QCD onshell-threshold, fail-closed-2, glibc-floor, MQ-WARD, MQ-FFT, MQ-REF, MQ-MODEL, MQ-STAB, MQ-VALIDATE, MQ-NC, MQ-5F, MQ-EWJOIN, MQ-SELECT, MQ-LEGACY-REMOVE and g1-accuracy; at M-SM ew-native, ew-validate, MS-REF, MS-PHOTON, MS-CMS-N, MS-MODEL, MS-CMS, MS-GEN, MS-POLES, MS-UFODB, MS-UFO-PATCH, MS-VALIDATE, ms-policy-fix and MS-MASTERS; at M-FINAL-b MF-CORR, MF-RESCUE, MF-SMALL, MF-GM-HC, MF-UP (SymJIT 2.28.3), MF-CLEAN, MF-MAP, MF-DEC-1, MF-8G-0, MF-RUST, MF-DEC-2, MF-SMALL2 and the test-only mf-map-fix (f3d9e361); at M-FINAL MF-SDK, mf-map-fix, MF-8G-2, MF-8G-1b, MF-SMALL3, MF-MASKS, MF-8G-1c, MF-PERF-OPT, MF-8G-1, MF-HC05, MF-8G-2b, lp-models, lp-colour, MF-8G-3, MF-MASKS-ROWS, lp-precision, MF-2TO6, MF-LIMITS-PY, MF-LIMITS-RUST, MF-NORM and MF-SYMBOLICA (c8885cc5)",
  "addendum_commits": [
   "b91d23a8",
