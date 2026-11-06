@@ -576,11 +576,19 @@ def _values_of(summary: dict[str, Any]) -> dict[int, tuple]:
 
 
 def build(
-    paths: list[Path], reference_root: Path | None = None
+    paths: list[Path],
+    reference_root: Path | None = None,
+    host_spread: float | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """The gate document and the per-point values document. Provider files
     are resolved relative to ``reference_root`` only (``_export_of``): the
-    absolute paths stored in the records are never read."""
+    absolute paths stored in the records are never read.
+
+    A provider without repeats is assigned the host's provider spread: the
+    largest half-range of this run's provider repeats, or ``host_spread``
+    where that is larger (another campaign's ``host_provider_spread`` on the
+    same host, for a run whose own providers have no repeats: the EW row
+    gated beside G1)."""
 
     records = [json.loads(path.read_text()) for path in paths]
     order = streams.keys()
@@ -730,7 +738,11 @@ def build(
         for entry in processes.values()
         for runs in entry["repeats"].values()
     ]
-    host_spread = max((s for s in spreads if s is not None), default=0.0)
+    own_spread = max((s for s in spreads if s is not None), default=0.0)
+    assumed_spread = host_spread
+    host_spread = (
+        own_spread if assumed_spread is None else max(own_spread, assumed_spread)
+    )
     out = []
     values_document: dict[str, Any] = {"processes": {}}
     for key in order:
@@ -944,6 +956,8 @@ def build(
         "host_provider_spread": host_spread,
         "processes": out,
     }
+    if assumed_spread is not None:
+        document["host_provider_spread_of_run"] = own_spread
     if str(streams.ROOT) not in sys.path:
         sys.path.insert(0, str(streams.ROOT))
     from tools.loop_v2_costmodel import g1_estimates, g1_recalibration
@@ -993,7 +1007,11 @@ def main(options: Any) -> int:
     import os
 
     root = options.reference_root or os.environ.get("LOOP_REFERENCE_ROOT")
-    document, values = build(options.records, Path(root) if root else None)
+    document, values = build(
+        options.records,
+        Path(root) if root else None,
+        getattr(options, "host_spread", None),
+    )
     for item in options.meta or ():
         key, _, value = item.partition("=")
         document[key] = value

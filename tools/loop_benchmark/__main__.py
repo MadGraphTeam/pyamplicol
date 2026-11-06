@@ -227,6 +227,13 @@ def main(argv: list[str] | None = None) -> int:
         "the absolute paths of the records (default: $LOOP_REFERENCE_ROOT)",
     )
     gate.add_argument(
+        "--host-spread",
+        type=float,
+        help="another campaign's host provider spread on this host (its gate "
+        "document's host_provider_spread): the assumed uncertainty of a "
+        "provider without repeats where larger than this run's own",
+    )
+    gate.add_argument(
         "--meta",
         nargs="*",
         metavar="KEY=VALUE",

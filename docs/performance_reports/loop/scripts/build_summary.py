@@ -1,7 +1,9 @@
 # SPDX-License-Identifier: 0BSD
-"""Write data/summary.json, the data of Table 1 of the live loop report.
+"""Write data/summary.json, the data of Table 1 of the live loop report, and
+data/summary-li.json, the data of the loop-induced summary table
+(<tab:summary-li>, build_loop_induced).
 
-Usage: python scripts/build_summary.py [output]
+Usage: python scripts/build_summary.py [output [output-loop-induced]]
 
 Every value of Table 1 (times, memory, sizes, ratios, gate verdicts, stage
 shares, validation figures) is assembled here from the report's data files,
@@ -10,10 +12,11 @@ and every entry names its source:
 - data/g1.json            gate-G1 campaign (python -m tools.loop_benchmark gate)
 - data/msm-g1.json        the electroweak G1 rows (the same gate tool on the EW
                           records), part of g1.json's integrated configuration
-                          when both timed the same engine; indicative at M-SM
-                          (no gate: m-sm/PLAN.md [U5]), their gate rule and
-                          leading-colour status from milestone.json
-                          status_notes (_with_ew_rows, _ew_cells)
+                          when both timed the same engine; gated since the
+                          final G1 retime (M-LIT-a0; indicative at M-SM,
+                          m-sm/PLAN.md [U5]), their leading-colour status from
+                          milestone.json status_notes (_with_ew_rows,
+                          _ew_cells)
 - data/measured.json      development run records (scripts/collect_milestone.py):
                           the WP3.1 native validations of the required set and
                           the provider reference runs' records (generation,
@@ -34,6 +37,23 @@ and every entry names its source:
                           outside the main-configuration rule (their own
                           engine, pyAmpliCol only: no provider, no gate,
                           uncoloured) (_preliminary)
+
+The loop-induced summary table (data/summary-li.json, build_loop_induced;
+m-lit/PLAN.md §3.7 "Pushes") reads, each absent file read as "pending":
+
+- data/milestone.json loop_induced  its row registry (every process row of
+                          m-lit/PLAN.md §4.1 by multiplicity group, gate
+                          class, serving package), checked against lit-ref's
+                          manifest tools/loop_reference/li_campaign.json
+                          once that exists
+- data/li-timing.json     pyAmpliCol's loop-induced timing and generation
+                          records (§5.1 protocol; lit-perf's gate tool
+                          records from that package on)
+- lit-ref's provider timings: the provider timing records of the manifest's
+                          reference runs (tests/fixtures/loop/required/li/
+                          timing/; MadLoop loop-induced production 7|6|1,
+                          OpenLoops ls, Recola)
+- data/lit.json           lit-val's validation figures
 
 Main-configuration rule (MAIN_RULE below): every cell of Table 1 and Figure
 1 shows the most recent configuration that measured it, recency by git
@@ -2081,8 +2101,9 @@ def _with_ew_rows(g1: dict) -> tuple[dict, set[str]]:
     tool on the EW records; m-sm/PLAN.md §5.1 item 6). They join the
     campaign's integrated configuration only when both campaigns timed the
     same engine (slice_revision): another engine would be a configuration of
-    its own and stops the build. At M-SM the EW rows are indicative (no gate,
-    [U5]: the EW speed gate binds in M-FINAL): a gated EW row stops it too."""
+    its own and stops the build. The EW rows are gated like the others since
+    the final G1 retime (M-LIT-a0, m-final/PLAN.md §2.4 MF-RETIME; at M-SM
+    they were indicative, [U5]): the gate tool's verdict stands."""
     path = DATA / EW_G1
     if not path.exists():
         return g1, set()
@@ -2095,29 +2116,24 @@ def _with_ew_rows(g1: dict) -> tuple[dict, set[str]]:
     known = {p["key"] for p in g1["processes"]}
     procs = []
     for proc in ew["processes"]:
-        if proc["key"] in known or proc["gated"]:
-            raise ValueError(f"{EW_G1} processes[{proc['key']}]: in g1.json or gated")
+        if proc["key"] in known:
+            raise ValueError(f"{EW_G1} processes[{proc['key']}]: in g1.json")
         procs.append(proc)
     return dict(g1, processes=g1["processes"] + procs), {p["key"] for p in procs}
 
 
 def _ew_cells(rows: list[dict], keys: set[str], notes: dict) -> None:
-    """The EW rows' registry attributions (milestone.json status_notes): the
-    full-colour cell's gate rule (indicative, not gated) and the leading
-    colour, which EW requests never support (typed refusal, by design); every
-    source names msm-g1.json."""
+    """The EW rows' registry attribution (milestone.json status_notes): the
+    leading colour, which EW requests never support (typed refusal, by
+    design); every source names msm-g1.json. Their gate rule is the gate
+    tool's (gated since the final G1 retime, M-LIT-a0)."""
     for i, r in enumerate(rows):
         if r["key"] not in keys:
             continue
         note = notes.get(r["key"], {})
         src = f"milestone.json status_notes.notes[{r['key']}]"
-        if "gate" not in note or "leading_colour" not in note:
-            raise ValueError(f"{src}: an EW G1 row needs 'gate' and 'leading_colour'")
-        r["full_colour"].update(
-            gate_rule=note["gate"],
-            gate_rule_reason=note.get("gate_reason"),
-            gate_rule_source=src,
-        )
+        if "leading_colour" not in note:
+            raise ValueError(f"{src}: an EW G1 row needs 'leading_colour'")
         if r["leading_colour"]["main"].get("status") == "not timed":
             r["leading_colour"]["main"] = {
                 "status": "not supported",
@@ -2347,6 +2363,599 @@ def _preliminary() -> dict | None:
     }
 
 
+# ------------------------------------------------- loop-induced table --
+# The loop-induced summary table <tab:summary-li> (USER 2026-11-06 ~06:00;
+# m-lit/PLAN.md §3.7 "Pushes"): data/summary-li.json, the equivalent of
+# Table 1 for loop-induced |A_loop|^2, written from
+#   data/milestone.json loop_induced  the row registry (hand-maintained):
+#                         every process row of m-lit/PLAN.md §4.1 by
+#                         multiplicity group, with its §4.1 ids, gate class
+#                         and the package that serves it ("served_by");
+#                         "landed" lists the serving packages integrated at
+#                         this head; checked against lit-ref's manifest
+#                         tools/loop_reference/li_campaign.json once it
+#                         exists (LI_CAMPAIGN);
+#   data/li-timing.json   pyAmpliCol's loop-induced timing and generation
+#                         records (development records under the §5.1
+#                         protocol until lit-perf's gate tool writes them):
+#                         {"records": [{"key", "revision", "backend"
+#                         ("tirust" | "ninjars"), "batch", "seconds_per_point"
+#                         (median, finite part, one pinned thread, checks
+#                         off), "generation": {"seconds", "peak_gib",
+#                         "plan_mb"?}?, "native_build"?, "source", "gate"?
+#                         (lit-perf: {"status", "ratio_to_limit", "band"})}]};
+#   lit-ref's provider timings: the manifest tools/loop_reference/
+#                         li_campaign.json, per reference run of a row's
+#                         process ("madloop_process") its
+#                         "provider_timing_records" (paths below
+#                         tests/fixtures/loop/; the gate tool's providers
+#                         format, median per point) and "unavailable"
+#                         ({provider: reason}); MadLoop at its production
+#                         card only (LI_MADLOOP_PRODUCTION; the OPP column
+#                         belongs to the detailed sections);
+#   data/lit.json         lit-val's validation figures: {"rows": {key:
+#                         {"status", "references": {provider or "analytic":
+#                         largest relative deviation}, "points", "note"?,
+#                         "source"}}}.
+# A file that does not exist yet reads as "pending" for every cell it would
+# fill. The rules are Table 1's: the newest measurement of a row (by git
+# ancestry of the record revisions, Recency), nothing estimated or
+# extrapolated, a value without a record stays absent with an explicit
+# marker; the cell is the batched B = 128 time per point on the default
+# backend (TIRust), NinjaRS per amplitude (labelled) where only NinjaRS is
+# timed at the row's newest revision; the ratio to the fastest matched
+# provider colours the cell (Table 1's colour map); generation is
+# uncoloured; rows of four legs or fewer are reported (no gate); below the
+# 5 ms rule a row is not gated; gate verdicts only from lit-perf's records
+# (before them: "no verdict yet").
+LI_TIMING = "li-timing.json"
+LI_VALIDATION = "lit.json"
+LI_CAMPAIGN = Path("tools") / "loop_reference" / "li_campaign.json"
+# The manifest's fixture paths are relative to this directory.
+LI_FIXTURES = Path("tests") / "fixtures" / "loop"
+# MadLoop's loop-induced production card (PLAN §5.1/§5.2: COLLIER first,
+# MLReductionLib 7|6|1): the summary's MadLoop time; other reduction orders
+# (the 6|7|1 OPP column) are detailed-section columns.
+LI_MADLOOP_PRODUCTION = "7|6|1"
+LI_BACKENDS = {"tirust": "TIRust", "ninjars": "NinjaRS per amplitude"}
+LI_REFERENCES = ("analytic", "madloop", "openloops", "recola")
+LI_SHORT = {"analytic": "AN", **{k: SHORT[k] for k in PROVIDERS}}
+# The serving package of each input file (the "pending" marker's owner).
+LI_OWNERS = {
+    LI_TIMING: "the row's serving package",
+    str(LI_CAMPAIGN): "lit-ref",
+    LI_VALIDATION: "lit-val",
+}
+LI_RULE = (
+    "every row of the registry (milestone.json loop_induced, PLAN §4.1"
+    " process rows) by multiplicity; the cell is the newest record's"
+    " batched B = 128 time per point (git ancestry of the record"
+    " revisions) on the default backend TIRust, NinjaRS per amplitude"
+    " labelled where only NinjaRS is timed at that revision; the ratio to"
+    " the fastest matched provider (production mode) colours it; generation"
+    " uncoloured; four legs or fewer reported, below the 5 ms rule not"
+    " gated, gate verdicts only from lit-perf's records; a row whose serving"
+    " package has not landed, or whose input file does not exist yet, is"
+    " pending; nothing estimated or extrapolated"
+)
+
+
+def _li_legs_word(process: str) -> str:
+    """'g g > h' -> '2->1' (the gate rule's multiplicity words)."""
+    initial, final = process.split(" > ")
+    return f"{len(initial.split())}->{len(final.split())}"
+
+
+def _li_registry(ms: dict) -> dict:
+    """milestone.json loop_induced, checked: unique keys and ids, declared
+    groups, gate classes and backends; four legs or fewer is exactly the
+    reported class (the gate tool's multiplicity rule, PLAN §5.2), the EFT
+    row (no process fixed yet) excepted."""
+    reg = ms.get("loop_induced")
+    if reg is None:
+        raise ValueError("milestone.json has no loop_induced registry")
+    keys, ids = set(), {}
+    for row in reg["rows"]:
+        src = f"milestone.json loop_induced.rows[{row['key']}]"
+        if row["key"] in keys:
+            raise ValueError(f"{src}: duplicate key")
+        keys.add(row["key"])
+        for i in row["ids"]:
+            ids.setdefault(i, []).append(row["key"])
+            if i in reg["validation_only"]["ids"]:
+                raise ValueError(f"{src}: {i} is a validation-only id")
+        if row["group"] not in reg["groups"]:
+            raise ValueError(f"{src}: group {row['group']!r} is not declared")
+        if row["gate_class"] not in reg["gate_classes"]:
+            raise ValueError(f"{src}: gate class {row['gate_class']!r} unknown")
+        if not row["backends"] or set(row["backends"]) - set(LI_BACKENDS):
+            raise ValueError(f"{src}: backends {row['backends']}")
+        if set(row["references"]) - set(LI_REFERENCES):
+            raise ValueError(f"{src}: references {row['references']}")
+        legs = row["legs"]
+        if legs is None:
+            if row["gate_class"] != "eft":
+                raise ValueError(f"{src}: only the EFT row may leave legs open")
+        elif (legs <= 4) != (row["gate_class"] == "reported"):
+            raise ValueError(
+                f"{src}: {legs} legs and gate class {row['gate_class']!r}"
+                " (four legs or fewer is exactly 'reported', PLAN §5.2)"
+            )
+        elif row.get("process") and legs != len(
+            row["process"].replace(">", "").split()
+        ):
+            raise ValueError(f"{src}: legs {legs} != the process's")
+    if reg["default_backend"] not in LI_BACKENDS:
+        raise ValueError(
+            f"milestone.json loop_induced.default_backend {reg['default_backend']!r}"
+        )
+    unknown = set(reg["landed"]) - {r["served_by"] for r in reg["rows"]}
+    if unknown:
+        raise ValueError(
+            f"milestone.json loop_induced.landed: {sorted(unknown)} serve no row"
+        )
+    return reg
+
+
+def _li_norm(process: str) -> str:
+    """A process string without order annotations or bracketed options."""
+    text = re.sub(r"\[[^\]]*\]|\S+(?:<=|>=|==|=)\S+", " ", process)
+    return " ".join(text.split())
+
+
+def _li_manifest_ids(row_id: str) -> list[str]:
+    """The ids of one manifest row: "LI-W1/L1/P1/C1/S1" (one row for the
+    identity rows of PLAN §4.1) is LI-W1, LI-L1, LI-P1, LI-C1, LI-S1."""
+    head, *rest = row_id.split("/")
+    prefix = head.rsplit("-", 1)[0] + "-" if "-" in head else ""
+    return [head, *(prefix + r for r in rest)]
+
+
+def _li_listed(process: str, text: str) -> bool:
+    """Whether a manifest row's process text lists ``process`` as an item
+    of its own (delimited by , ; : ( or 'or' / 'vs'): "g g > h" is listed
+    in "g g > h (t; t + b ...)", not in "g g > h g, ..."."""
+    item = re.escape(process)
+    pattern = rf"(?:^|[,;:(]\s*|\bor\s+){item}(?=\s*$|\s*[,;()]|\s+or\b|\s+vs\b)"
+    return re.search(pattern, text) is not None
+
+
+def _li_manifest(repo: Path) -> dict | None:
+    """lit-ref's manifest by id: per manifest row carrying the id, its
+    reference runs and its process text (normalised), with the number of
+    manifest rows; None while it does not exist."""
+    path = repo / LI_CAMPAIGN
+    if not path.exists():
+        return None
+    rows = _load(path)["rows"]
+    ids: dict[str, list[dict]] = {}
+    for row in rows:
+        text = row.get("processes") or row.get("process") or ""
+        if isinstance(text, list):
+            text = ", ".join(text)
+        entry = {"row": row["row"], "runs": row.get("runs", []), "text": _li_norm(text)}
+        for i in _li_manifest_ids(row["row"]):
+            ids.setdefault(i, []).append(entry)
+    return {"rows": len(rows), "ids": ids}
+
+
+def _li_runs(entry: dict, process: str) -> list[dict]:
+    """A manifest row's reference runs of ``process`` (normalised)."""
+    return [
+        r
+        for r in entry["runs"]
+        if r.get("madloop_process") and _li_norm(r["madloop_process"]) == process
+    ]
+
+
+def _li_campaign(reg: dict, manifest: dict | None) -> dict:
+    """The registry against lit-ref's manifest (li_campaign.json), once it
+    exists: every registry id is a manifest row (a row may carry several
+    ids, ``_li_manifest_ids``) whose processes include the registry's
+    process and alternative: a process of the row's reference runs
+    (``runs[].madloop_process``) or an item of its ``processes`` text; and
+    every manifest id is a registry row or validation-only. Absent:
+    recorded as not checked yet."""
+    out = {"file": str(LI_CAMPAIGN), "present": manifest is not None}
+    out["checked"] = False
+    if manifest is None:
+        out["reason"] = "not written yet (lit-ref)"
+        return out
+    by_id = manifest["ids"]
+    known = set(reg["validation_only"]["ids"])
+    for row in reg["rows"]:
+        for i in row["ids"]:
+            known.add(i)
+            if i not in by_id:
+                raise ValueError(
+                    f"loop_induced row {row['key']}: {i} is not in {LI_CAMPAIGN}"
+                )
+            for process in (row.get("process"), row.get("alternative")):
+                if not process:
+                    continue
+                p = _li_norm(process)
+                if not any(
+                    _li_runs(e, p) or _li_listed(p, e["text"]) for e in by_id[i]
+                ):
+                    raise ValueError(
+                        f"loop_induced row {row['key']}: {process!r} is not a"
+                        f" process of {LI_CAMPAIGN} row {i}"
+                    )
+    extra = sorted(set(by_id) - known)
+    if extra:
+        raise ValueError(
+            f"{LI_CAMPAIGN} rows {extra} are neither registry rows nor"
+            " validation-only (milestone.json loop_induced)"
+        )
+    out.update(checked=True, rows=manifest["rows"], ids=len(by_id))
+    return out
+
+
+def _li_input(data: Path, name: str) -> dict | None:
+    path = data / name
+    return _load(path) if path.exists() else None
+
+
+def _li_pending(what: str, reason: str) -> dict:
+    return {"status": "pending", "reason": reason, "what": what}
+
+
+def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
+    """The row's provider entries from lit-ref's timing records
+    (production mode: MadLoop at LI_MADLOOP_PRODUCTION), the reasons of
+    the providers its runs record as unavailable, and the fastest matched
+    one."""
+    expected = [LI_SHORT[k] for k in row["references"] if k != "analytic"]
+    if manifest is None:
+        return {
+            "status": "pending",
+            "reason": f"provider timings: {LI_CAMPAIGN.name} not written yet (lit-ref)",
+            "expected": expected,
+        }
+    runs, seen = [], set()
+    if row.get("process"):
+        p = _li_norm(row["process"])
+        for i in row["ids"]:
+            for e in manifest["ids"].get(i, ()):
+                for r in _li_runs(e, p):
+                    # A manifest row with several ids is met once per id.
+                    if (e["row"], r.get("process")) not in seen:
+                        seen.add((e["row"], r.get("process")))
+                        runs.append(r)
+    records = sorted({x for r in runs for x in r.get("provider_timing_records", ())})
+    if not records and not any(r.get("unavailable") for r in runs):
+        return {
+            "status": "not run",
+            "reason": f"no provider timing record of the row in {LI_CAMPAIGN.name}",
+            "expected": expected,
+        }
+    providers, times, gens = {}, {}, {}
+    for name in records:
+        rec = _load(repo / LI_FIXTURES / name)
+        for k, x in rec["providers"].items():
+            if k not in PROVIDERS or "median_seconds_per_point" not in x:
+                continue
+            lib = (x.get("madloop_params") or {}).get("MLReductionLib")
+            if lib is not None and lib != LI_MADLOOP_PRODUCTION:
+                continue
+            if k in providers:
+                raise ValueError(
+                    f"{LI_CAMPAIGN.name} {row['key']}: two production timings"
+                    f" of {k} ({providers[k]['source']}, {name})"
+                )
+            t = x["median_seconds_per_point"]
+            providers[k] = {"seconds_per_point": t, "source": f"{name} providers.{k}"}
+            if lib is not None:
+                providers[k]["setting"] = f"MLReductionLib {lib}"
+            times[k] = t
+            gen = (x.get("setup") or {}).get("generation_seconds")
+            if gen is not None:
+                gens[k] = gen
+    for r in runs:
+        for k, reason in (r.get("unavailable") or {}).items():
+            if k in PROVIDERS and k not in providers:
+                providers[k] = {
+                    "status": "unavailable",
+                    "reason": reason,
+                    "source": f"{LI_CAMPAIGN.name} runs[{r.get('process')}]",
+                }
+    for k in row["references"]:
+        if k in PROVIDERS and k not in providers:
+            providers[k] = {"status": "not timed", "reason": "no production timing yet"}
+    out = {"status": "recorded", "providers": providers, "fastest": None}
+    # No provider can be matched: every reference provider is unavailable.
+    out["unmatched"] = not times and all(
+        x.get("status") == "unavailable" for x in providers.values()
+    )
+    if times:
+        k = min(times, key=times.get)
+        out["fastest"] = {"key": k, "name": NAMES[k], "seconds_per_point": times[k]}
+    out["generation"] = gens
+    if gens:
+        k = min(gens, key=gens.get)
+        out["fastest_generation"] = {"key": k, "name": NAMES[k], "seconds": gens[k]}
+    return out
+
+
+def _li_records(
+    row: dict, timing: dict | None, recency: Recency, default: str
+) -> list[dict]:
+    """The row's timing records at its newest revision: the gate batch
+    (B = 128) first, there the default backend (the registry's, TIRust)
+    before the other, then the other batches (B = 1 is reported in the
+    detailed sections, PLAN §5.1). One record per backend and batch at a
+    revision: a repeat is ambiguous and refused."""
+    if timing is None:
+        return []
+    recs = [r for r in timing["records"] if r["key"] == row["key"]]
+    for r in recs:
+        if r["backend"] not in row["backends"]:
+            raise ValueError(
+                f"{LI_TIMING} record of {row['key']}: backend {r['backend']}"
+                f" is not one of the row's {row['backends']}"
+            )
+    if not recs:
+        return []
+    newest = recency.newest_first([r["revision"][:8] for r in recs])[0]
+    recs = [r for r in recs if r["revision"][:8] == newest]
+    seen = set()
+    for r in recs:
+        cell = (r["backend"], int(r["batch"]))
+        if cell in seen:
+            raise ValueError(
+                f"{LI_TIMING}: two records of {row['key']} at {newest} with"
+                f" backend {cell[0]} and B = {cell[1]}"
+            )
+        seen.add(cell)
+    gate = int(GATE_BATCH)
+    return sorted(
+        recs,
+        key=lambda r: (
+            int(r["batch"]) != gate,
+            r["backend"] != default,
+            r["backend"],
+            int(r["batch"]),
+        ),
+    )
+
+
+def _li_gate(row: dict, t: float, rec: dict, prov: dict, rule: dict) -> dict:
+    """The cell's gate rule: reported (four legs or fewer), the user's 5 ms
+    rule, no matched provider (every reference unavailable), lit-perf's
+    verdict, or no verdict yet (no provider time yet)."""
+    if row["gate_class"] == "reported":
+        return {
+            "status": "reported",
+            "label": f"no gate ({_li_legs_word(row['process'])})",
+        }
+    if t < rule["below_seconds_per_point"]:
+        return {
+            "status": rule["verdict"],
+            "label": rule["short"],
+            "rule": rule["label"],
+            "rule_source": "milestone.json gate_decisions.threshold_rule"
+            f" ({rule['source']})",
+        }
+    if prov.get("status") == "recorded" and prov["unmatched"]:
+        return {"status": "no gate", "label": "no matched provider: no gate"}
+    g = rec.get("gate")
+    if g is not None:
+        status = {"inconclusive": "open"}.get(g["status"], g["status"])
+        if status not in ("pass", "fail", "open"):
+            raise ValueError(f"{LI_TIMING} {row['key']}: gate status {g['status']!r}")
+        return {
+            "status": status,
+            "ratio_to_limit": g["ratio_to_limit"],
+            "band": g["band"],
+            "source": f"{rec['source']} (lit-perf gate tool)",
+        }
+    if prov.get("fastest") is None:
+        return {"status": "no verdict", "label": "no provider time yet"}
+    return {"status": "no verdict", "label": "no verdict yet"}
+
+
+def _li_cells(
+    row: dict,
+    landed: bool,
+    files: dict,
+    prov: dict,
+    recency: Recency,
+    rule: dict,
+    default: str,
+) -> dict:
+    """The row's process, generation and timing cells (``prov``: its
+    provider entries, ``_li_providers``)."""
+    pending_pkg = f"served by {row['served_by']} (not landed at this head)"
+    out = {"providers": prov}
+    val = files[LI_VALIDATION]
+    if val is None:
+        out["validation"] = _li_pending(
+            "validation", f"{LI_VALIDATION} not written yet (lit-val)"
+        )
+    elif row["key"] not in val["rows"]:
+        out["validation"] = {
+            "status": "not run",
+            "reason": f"no record in {LI_VALIDATION}",
+        }
+    else:
+        v = val["rows"][row["key"]]
+        refs = {k: x for k, x in v["references"].items() if k in LI_SHORT}
+        out["validation"] = {
+            "status": v["status"],
+            "references": [
+                {"key": k, "short": LI_SHORT[k], "max_relative": refs[k]}
+                for k in sorted(refs, key=refs.get)
+            ],
+            "points": v.get("points"),
+            "note": v.get("note"),
+            "source": f"{LI_VALIDATION} rows[{row['key']}]",
+        }
+    if not landed:
+        out["generation"] = _li_pending("generation", pending_pkg)
+        out["timing"] = _li_pending("timing", pending_pkg)
+        return out
+    if files[LI_TIMING] is None:
+        why = f"{LI_TIMING} not written yet ({row['served_by']})"
+        out["generation"] = _li_pending("generation", why)
+        out["timing"] = _li_pending("timing", why)
+        return out
+    recs = _li_records(row, files[LI_TIMING], recency, default)
+    if not recs:
+        missing = {
+            "status": "not run",
+            "reason": f"no record of the row in {LI_TIMING}",
+        }
+        out["generation"], out["timing"] = dict(missing), dict(missing)
+        return out
+    main = recs[0]
+    src = (
+        f"{LI_TIMING} records[{row['key']}, {main['backend']}, {main['revision'][:8]}]"
+    )
+    gen = main.get("generation")
+    if gen is None:
+        out["generation"] = {
+            "status": "not recorded",
+            "reason": f"{src} has no generation",
+        }
+    else:
+        out["generation"] = {
+            "status": "measured",
+            "seconds": gen["seconds"],
+            "peak_gib": gen["peak_gib"],
+            "plan_mb": gen.get("plan_mb"),
+            "revision": main["revision"][:8],
+            "source": f"{src}.generation",
+        }
+        fg = prov.get("fastest_generation")
+        if fg is not None:
+            out["generation"]["ratio_to_fastest"] = gen["seconds"] / fg["seconds"]
+    if int(main["batch"]) != int(GATE_BATCH):
+        # No B = 128 record at the newest revision (Table 1's rule): no
+        # batched cell, the batches timed named.
+        timed = sorted({int(r["batch"]) for r in recs})
+        out["timing"] = {
+            "status": _no_gate_batch({"batches": timed}),
+            "reason": f"timed B = {', '.join(map(str, timed))} only",
+            "timed_batches": timed,
+            "revision": main["revision"][:8],
+            "source": src,
+        }
+        return out
+    t = main["seconds_per_point"]
+    cell = {
+        "status": "measured",
+        "batch": int(main["batch"]),
+        "seconds_per_point": t,
+        "backend": main["backend"],
+        "backend_label": LI_BACKENDS[main["backend"]],
+        "default_backend": main["backend"] == default,
+        "revision": main["revision"][:8],
+        "native_build": main.get("native_build"),
+        "source": src,
+    }
+    other = [
+        r
+        for r in recs[1:]
+        if int(r["batch"]) == int(GATE_BATCH) and r["backend"] != main["backend"]
+    ]
+    if other:
+        cell["other_backend"] = {
+            "backend": other[0]["backend"],
+            "backend_label": LI_BACKENDS[other[0]["backend"]],
+            "seconds_per_point": other[0]["seconds_per_point"],
+        }
+    fastest = prov.get("fastest")
+    if fastest is not None:
+        cell["ratio_to_fastest"] = t / fastest["seconds_per_point"]
+    cell["gate"] = _li_gate(row, t, main, prov, rule)
+    out["timing"] = cell
+    return out
+
+
+def build_loop_induced(
+    ms: dict, recency: Recency, data: Path = DATA, repo: Path = REPO
+) -> dict:
+    """data/summary-li.json: the loop-induced summary table."""
+    reg = _li_registry(ms)
+    manifest = _li_manifest(repo)
+    campaign = _li_campaign(reg, manifest)
+    names = (LI_TIMING, LI_VALIDATION)
+    files = {n: _li_input(data, n) for n in names}
+    rule = ms["gate_decisions"]["threshold_rule"]
+    groups = []
+    for name in reg["groups"]:
+        rows = []
+        for row in (r for r in reg["rows"] if r["group"] == name):
+            landed = row["served_by"] in reg["landed"]
+            rows.append(
+                {
+                    "key": row["key"],
+                    "process": row.get("process"),
+                    "math": _math(row["process"]) if row.get("process") else None,
+                    "label": row.get("label") or row.get("process"),
+                    "alternative": row.get("alternative"),
+                    "ids": row["ids"],
+                    "legs": row["legs"],
+                    "corrections": row["corrections"],
+                    "gate_class": row["gate_class"],
+                    "backends": [LI_BACKENDS[b] for b in row["backends"]],
+                    "references": [LI_SHORT[k] for k in row["references"]],
+                    "served_by": row["served_by"],
+                    "landed": landed,
+                    "note": row.get("note"),
+                    **_li_cells(
+                        row,
+                        landed,
+                        files,
+                        _li_providers(row, manifest, repo),
+                        recency,
+                        rule,
+                        reg["default_backend"],
+                    ),
+                }
+            )
+        if rows:
+            groups.append({"name": name, "rows": rows})
+    return {
+        "what": (
+            "the loop-induced summary table <tab:summary-li> of"
+            " docs/performance_reports/loop/benchmarks.typ, written by"
+            " scripts/build_summary.py (build_loop_induced); do not edit by hand"
+        ),
+        "meta": {
+            "date": ms["date"],
+            "engine_on_loop": ms["engine_revision"],
+            "default_backend": LI_BACKENDS[reg["default_backend"]],
+            "gate_batch": int(GATE_BATCH),
+            "threshold_rule": rule,
+            "gate_classes": reg["gate_classes"],
+            "landed": reg["landed"],
+            "rule": LI_RULE,
+            "registry": f"milestone.json loop_induced ({reg['source']})",
+            "inputs": {
+                LI_TIMING: {
+                    "file": f"data/{LI_TIMING}",
+                    "present": files[LI_TIMING] is not None,
+                    "owner": LI_OWNERS[LI_TIMING],
+                },
+                "providers": {
+                    "file": f"{LI_CAMPAIGN} (provider_timing_records)",
+                    "present": manifest is not None,
+                    "owner": LI_OWNERS[str(LI_CAMPAIGN)],
+                },
+                LI_VALIDATION: {
+                    "file": f"data/{LI_VALIDATION}",
+                    "present": files[LI_VALIDATION] is not None,
+                    "owner": LI_OWNERS[LI_VALIDATION],
+                },
+            },
+            "campaign": campaign,
+            "validation_only": reg["validation_only"],
+        },
+        "groups": groups,
+    }
+
+
 def build() -> tuple[dict, Recency]:
     """summary.json, and the recency order it used (for the build log)."""
     g1, ew_keys = _with_ew_rows(_load(DATA / "g1.json"))
@@ -2448,8 +3057,11 @@ def build() -> tuple[dict, Recency]:
 
 def main() -> None:
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else DATA / "summary.json"
+    out_li = Path(sys.argv[2]) if len(sys.argv) > 2 else DATA / "summary-li.json"
     summary, recency = build()
     out.write_text(json.dumps(summary, indent=1) + "\n")
+    loop_induced = build_loop_induced(_load(DATA / "milestone.json"), recency)
+    out_li.write_text(json.dumps(loop_induced, indent=1) + "\n")
     print(
         f"recency: {len(recency.facts())} facts used;"
         f" {recency.checked} ancestry queries checked against git",
