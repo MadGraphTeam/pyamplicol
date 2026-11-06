@@ -2037,11 +2037,13 @@ def _configurations(
             "revision": g1.get("native_revision"),
             "commit": g1.get("native_commit"),
             "native_build": g1.get("native_build"),
+            "native_digest": g1.get("native_digest"),
             "date": g1["date"],
             "inputs": _side_inputs(g1, side["development"]),
             "main_rows": main_rows("development"),
             "main_cells": main_cells("development"),
-            "source": "g1.json native_revision, native_commit, native_build, date;"
+            "source": "g1.json native_revision, native_commit, native_build,"
+            " native_digest, date;"
             " label, integration and branch: milestone.json development",
         }
     out["integrated"] = {
@@ -2050,11 +2052,13 @@ def _configurations(
         "revision": g1["slice_revision"],
         "lc_revision": g1.get("slice_lc_revision"),
         "native_build": g1.get("slice_build"),
+        "native_digest": g1.get("slice_native_digest"),
         "date": g1["date"],
         "inputs": _side_inputs(g1, side["integrated"]),
         "main_rows": main_rows("integrated"),
         "main_cells": main_cells("integrated"),
-        "source": "g1.json slice_revision, slice_lc_revision, slice_build, date",
+        "source": "g1.json slice_revision, slice_lc_revision, slice_build,"
+        " slice_native_digest, date",
     }
     branch = meas["required_native"]["branch"]
     in_development = branch in (development.get("revisions") or {}).values()
@@ -2647,6 +2651,9 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
             providers[k] = {"seconds_per_point": t, "source": f"{name} providers.{k}"}
             if lib is not None:
                 providers[k]["setting"] = f"MLReductionLib {lib}"
+            # The record's host: the table's provenance line.
+            if rec.get("host") is not None:
+                providers[k]["host"] = rec["host"]
             times[k] = t
             gen = (x.get("setup") or {}).get("generation_seconds")
             if gen is not None:
@@ -2851,6 +2858,7 @@ def _li_cells(
         "default_backend": main["backend"] == default,
         "revision": main["revision"][:8],
         "native_build": main.get("native_build"),
+        "native_digest": main.get("native_digest"),
         "source": src,
     }
     other = [
@@ -2925,6 +2933,11 @@ def build_loop_induced(
         "meta": {
             "date": ms["date"],
             "engine_on_loop": ms["engine_revision"],
+            # The engine's native build (name, digest): the provenance line
+            # while no record of its own names one.
+            "native_build_on_loop": {
+                k: (ms.get("native_build") or {}).get(k) for k in ("name", "digest")
+            },
             "default_backend": LI_BACKENDS[reg["default_backend"]],
             "gate_batch": int(GATE_BATCH),
             "threshold_rule": rule,
