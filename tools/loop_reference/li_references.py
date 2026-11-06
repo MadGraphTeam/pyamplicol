@@ -28,7 +28,11 @@ MadLoop runs. The REFERENCE run (no ``--tag``) requests relative accuracy
 rescue through CutTools/Ninja), the numerical helicity filter OFF
 (``HelicityFilterLevel = 0``: MadLoop's filter can map or drop helicities that
 agree only at symmetric points) and every helicity configuration
-(``SLOOPMATRIXHEL_THRES``). A TIMING run (``--tag production``) keeps the
+(``SLOOPMATRIXHEL_THRES``); its untimed warm-up runs at MadLoop's own
+``MLStabThres`` (``madloop_li_driver.f90``), and ``--jobs n`` splits the points
+into n blocks run concurrently on cores ``--cpu`` .. ``--cpu + n - 1``, each
+block in its own copy of the run directory with its own warm-up (the 45-minute
+rule at 2->3 and 2->4). A TIMING run (``--tag production``) keeps the
 export's own MadLoopParams.dat (MG5's loop-induced card: ``MLReductionLib
 7|6|1``, COLLIER UV/IR poles off, helicity filter level 2) and MadLoop's own
 ``MLStabThres``; ``--madloop-param MLReductionLib=6|7|1`` gives the OPP column.
