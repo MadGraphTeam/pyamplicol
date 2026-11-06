@@ -1135,8 +1135,8 @@ Born orders; `required_spec._loop_induced`); `li_campaign.json`
 | File | Role |
 |---|---|
 | `li_references.py` | `points` (the specification's `points` record: `exact_points.py [--scale-window]`, `supplied_points.py --family rest/regular`, `decay_points.py`), `export` (`madloop_export.py` under `timeout`, a timeout recorded as a 45-minute miss), `run --provider madloop/recola/openloops/analytic`, `merge`, `fixture` (paths rewritten to `${LOOP_REFERENCE_ROOT}` / `${REPOSITORY}`). |
-| `run_li.sh <process> <cpu>` | One row end to end in `$LOOP_REFERENCE_ROOT/runs/li/<process>/` (done steps kept; every step under `LI_TIMEOUT`, default 2700 s). |
-| `madloop_li_driver.f90` | MadLoop driver of a `[sqrvirt=...]` export: no Born split-order index; warm-up cycling through the points until MadLoop leaves its initialisation and at least CheckCycle + 1 calls (its loop-induced zero-test scale is a median of earlier results); per-helicity rows (`SLOOPMATRIXHEL_THRES`) with MadLoop's `USERHEL` reset to -1 afterwards. |
+| `run_li.sh <process> <cpu>` | One row end to end in `$LOOP_REFERENCE_ROOT/runs/li/<process>/` (done steps kept; every step under `LI_TIMEOUT`, default 2700 s; `LI_MADLOOP_JOBS=n` splits the MadLoop reference points into n blocks on cores cpu .. cpu+n-1, `li_references.py run --jobs`; a specification's `madloop.unavailable` skips MadLoop). Do not edit the script while a run is in flight: bash reads it as it goes. |
+| `madloop_li_driver.f90` | MadLoop driver of a `[sqrvirt=...]` export: no Born split-order index; warm-up cycling through the points until MadLoop leaves its initialisation and at least CheckCycle + 1 calls (its loop-induced zero-test scale is a median of earlier results); per-helicity rows (`SLOOPMATRIXHEL_THRES`) with MadLoop's `USERHEL` reset to -1 afterwards. The warm-up calls run at MadLoop's own `MLStabThres` without a forced stability test (since 2026-11-06: a tight reference target no longer pays quadruple precision on them). |
 | `li_analytic.py`, `test_li_analytic.py` | mpmath oracles (below) and their checks against published values. |
 | `make_li_campaign.py`, `li_campaign.json` | The validation matrix with each row's runs, fixtures, providers, worst deviation, misses and owners. |
 
@@ -1156,8 +1156,12 @@ G_mu scheme Recola takes MG5's alpha (GfRedefinitionChoice = 1) through
 `alphaz`, since a loop-induced |A|^2 has no EW renormalisation (Recola's own
 CMS alpha differs by a constant (alpha_RC/alpha_MG5)^2 = 0.99904). OpenLoops:
 `ol_evaluate_loop2` (amptype 12) on the designated `ls` libraries (PLAN Q34 =
-(b): ppvv2, pphh2, pphj2, pphz2, ppvj2, pphjj2, ppvvj2 installed with
-`openloops libinstall`; `u g > h u` is served by crossing from `uuxhg`).
+(b): ppvv2, pphh2, pphhh2, pphj2, pphjj2, pphz2, pphzj2, ppvj2, ppvvj2, ppvvv2,
+ppllll2, pphhjj2, pphjjj2, installed with `openloops libinstall`; `u g > h u` is
+served by crossing from `uuxhg`). A cited process outside that list got its
+library under the 45-minute rule (ppajj2 `agggg`, ppaajj2 `aagggg`, ppllllj2
+`eexmmxggg`); `g g > z g g` and `g g > z z z z` have no `ls` channel in the public
+channel database (`proclib/channels_public.rinfo`) and are MadLoop/Recola rows.
 Widths are zero outside the complex-mass rows (LI-C1, scheme `ew-gmu-cms`).
 
 Analytic oracles (`li_analytic.py`, sources under `workspace/reference/papers/li-*`):
