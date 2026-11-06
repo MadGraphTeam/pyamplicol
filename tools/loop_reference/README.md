@@ -1183,9 +1183,18 @@ MadLoop, Recola and OpenLoops (where designated) agree to <= 3.8e-11 on every
 row, the oracles to <= 7e-13 (`a a > a a` under CMS: Recola = oracle to 1e-14,
 MadLoop 5.5e-7 off); the zero rows (`g g > z`, `z > g g`, `g g > h a`,
 `e+ e- > g g`) record the providers' values (~1e-30 and below; `h > g a`,
-`z > g a`: MG5 generates no diagram). No 45-minute miss. Provider timings
+`z > g a`: MG5 generates no diagram). LI-32 `g g > h g g` and LI-33
+`g g > z z g` are stored too (MadLoop / Recola / OpenLoops to 4e-11 and 8e-8:
+OpenLoops' hybrid-precision target; the LI-33 MadLoop reference took 41.6 min,
+quadruple precision with every helicity). No 45-minute miss. Provider timings
 (`tools/loop_benchmark providers`, 16 stream points, one pinned core; records
-in `tests/fixtures/loop/required/li/timing/`): see `li_campaign.json`.
+in `tests/fixtures/loop/required/li/timing/`), mean ms per point:
+
+| row | MadLoop 7\|6\|1 (numerators / Born+CT / reduction / colour) | MadLoop 6\|7\|1 | OpenLoops ls | Recola |
+|---|---|---|---|---|
+| `g g > h h` | 0.997 (0.322 / 0.001 / 0.615 / 0.002) | 1.99 | 2.56 | 1.58 |
+| `g g > h g g` | 85.7 (70.5 / 0.12 / 16.3 / 0.27) | 286.9 | 27.8 | 26.0 |
+| `g g > z z g` | 720.8 (674.1 / 0.43 / 69.9 / 0.85) | 2594 | 187.2 | 178.7 |
 
 ## Legacy-engine oracles for the v2 engine (WP0.1)
 
