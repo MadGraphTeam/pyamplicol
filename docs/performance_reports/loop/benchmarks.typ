@@ -1103,7 +1103,7 @@ that fills the cell does not exist yet), *not run* (a landed package without a r
 reason where it has no matched time (no library, beyond the 45-minute rule). Nothing is estimated or extrapolated; each
 cell shows the newest record of its row (git ancestry of the record revisions). At this head #li-served.len() of
 #li-rows.len() rows are served; inputs: #li-inputs.map(x => [#raw(x.file) #if x.present [present] else [not written yet (#x.owner)]]).join([, ])\;
-the registry against `lit-ref`'s manifest (#raw(li-meta.campaign.file)): #if li-meta.campaign.checked [checked, #li-meta.campaign.rows rows] else [#li-meta.campaign.reason].
+the registry against `lit-ref`'s manifest (#raw(li-meta.campaign.file)): #if li-meta.campaign.checked [checked: every registry id is a manifest row listing the registry's process, and each of its #li-meta.campaign.rows rows (#li-meta.campaign.ids ids) is a table row or validation-only] else [#li-meta.campaign.reason].
 ]
 
 

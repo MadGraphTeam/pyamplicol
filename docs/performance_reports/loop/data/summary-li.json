@@ -43,9 +43,10 @@
   },
   "campaign": {
    "file": "tools/loop_reference/li_campaign.json",
-   "present": false,
-   "checked": false,
-   "reason": "not written yet (lit-ref)"
+   "present": true,
+   "checked": true,
+   "rows": 39,
+   "ids": 42
   },
   "validation_only": {
    "ids": [

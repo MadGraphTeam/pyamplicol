@@ -2493,21 +2493,49 @@ def _li_norm(process: str) -> str:
     return " ".join(text.split())
 
 
+def _li_manifest_ids(row_id: str) -> list[str]:
+    """The ids of one manifest row: "LI-W1/L1/P1/C1/S1" (one row for the
+    identity rows of PLAN §4.1) is LI-W1, LI-L1, LI-P1, LI-C1, LI-S1."""
+    head, *rest = row_id.split("/")
+    prefix = head.rsplit("-", 1)[0] + "-" if "-" in head else ""
+    return [head, *(prefix + r for r in rest)]
+
+
+def _li_listed(process: str, text: str) -> bool:
+    """Whether a manifest row's process text lists ``process`` as an item
+    of its own (delimited by , ; : ( or 'or' / 'vs'): "g g > h" is listed
+    in "g g > h (t; t + b ...)", not in "g g > h g, ..."."""
+    item = re.escape(process)
+    pattern = rf"(?:^|[,;:(]\s*|\bor\s+){item}(?=\s*$|\s*[,;()]|\s+or\b|\s+vs\b)"
+    return re.search(pattern, text) is not None
+
+
 def _li_campaign(reg: dict, repo: Path) -> dict:
-    """The registry against lit-ref's manifest (li_campaign.json, the
-    M-QCD/M-SM row format: rows with "row" and "process" or "processes"),
-    once it exists: every registry id is a manifest row whose processes
-    include the registry's process, and every manifest row is in the
-    registry or validation-only. Absent: recorded as not checked yet."""
+    """The registry against lit-ref's manifest (li_campaign.json), once it
+    exists: every registry id is a manifest row (a row may carry several
+    ids, ``_li_manifest_ids``) whose processes include the registry's
+    process and alternative: a process of the row's reference runs
+    (``runs[].madloop_process``) or an item of its ``processes`` text; and
+    every manifest id is a registry row or validation-only. Absent:
+    recorded as not checked yet."""
     path = repo / LI_CAMPAIGN
     out = {"file": str(LI_CAMPAIGN), "present": path.exists(), "checked": False}
     if not path.exists():
         out["reason"] = "not written yet (lit-ref)"
         return out
-    manifest = {}
-    for row in _load(path)["rows"]:
-        procs = row.get("processes") or [row["process"]]
-        manifest[row["row"]] = {_li_norm(p) for p in procs}
+    manifest: dict[str, list[tuple[set[str], str]]] = {}
+    rows = _load(path)["rows"]
+    for row in rows:
+        runs = {
+            _li_norm(r["madloop_process"])
+            for r in row.get("runs", ())
+            if r.get("madloop_process")
+        }
+        text = row.get("processes") or row.get("process") or ""
+        if isinstance(text, list):
+            text = ", ".join(text)
+        for i in _li_manifest_ids(row["row"]):
+            manifest.setdefault(i, []).append((runs, _li_norm(text)))
     known = set(reg["validation_only"]["ids"])
     for row in reg["rows"]:
         for i in row["ids"]:
@@ -2516,18 +2544,22 @@ def _li_campaign(reg: dict, repo: Path) -> dict:
                 raise ValueError(
                     f"loop_induced row {row['key']}: {i} is not in {LI_CAMPAIGN}"
                 )
-            if row.get("process") and _li_norm(row["process"]) not in manifest[i]:
-                raise ValueError(
-                    f"loop_induced row {row['key']}: {row['process']!r} is not a"
-                    f" process of {LI_CAMPAIGN} row {i}"
-                )
+            for process in (row.get("process"), row.get("alternative")):
+                if not process:
+                    continue
+                p = _li_norm(process)
+                if not any(p in runs or _li_listed(p, t) for runs, t in manifest[i]):
+                    raise ValueError(
+                        f"loop_induced row {row['key']}: {process!r} is not a"
+                        f" process of {LI_CAMPAIGN} row {i}"
+                    )
     extra = sorted(set(manifest) - known)
     if extra:
         raise ValueError(
             f"{LI_CAMPAIGN} rows {extra} are neither registry rows nor"
             " validation-only (milestone.json loop_induced)"
         )
-    out.update(checked=True, rows=len(manifest))
+    out.update(checked=True, rows=len(rows), ids=len(manifest))
     return out
 
 
