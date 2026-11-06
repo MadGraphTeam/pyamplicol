@@ -376,7 +376,7 @@
   })
   cell-lines(lines.pos())
 })
-#let absent(title, ..lines) = table.cell(fill: neutral, breakable: false, {
+#let absent(title, colspan: 1, ..lines) = table.cell(colspan: colspan, fill: neutral, breakable: false, {
   set par(leading: 0.34em, justify: false)
   block(spacing: 0pt, text(8pt, weight: "bold", fill: luma(105), style: "italic", title))
   set text(fill: luma(55))
@@ -753,8 +753,9 @@
 
 // Compact visual legend of Table 1 (its text: "Reading the summary").
 #let thr-rows = all-rows.filter(r => { let x = decided-gate(r); x != none and x.status == thr-rule.verdict })
-// EW G1 rows (data/msm-g1.json through summary.json): indicative, no gate.
-#let ew-rows = all-rows.filter(r => r.full_colour.at("gate_rule_reason", default: none) != none)
+// EW G1 rows (data/msm-g1.json through summary.json): gated since the final
+// G1 retime (M-LIT-a0; indicative at M-SM, [U5]).
+#let ew-rows = all-rows.filter(r => r.corrections == "EW")
 #let m-rows = all-rows.filter(r => "adopted_schedule" in r.leading_colour.main)
 #let key-swatch(fill) = box(baseline: 0.5pt, rect(width: 5pt, height: 5pt, fill: fill, stroke: 0.3pt + luma(200)))
 #block(breakable: false, width: 100%, above: 1.0em, below: 0.9em, {
@@ -890,6 +891,120 @@
   },
 ) <fig:gate>
 
+// ====================================================== LOOP-INDUCED TABLE ==
+// The loop-induced summary table (USER 2026-11-06 ~06:00; m-lit/PLAN.md §3.7
+// "Pushes"): renders data/summary-li.json (scripts/build_summary.py,
+// build_loop_induced) as is, drawn with Table 1's own cell, colour and marker
+// functions (valued, absent, ratio-fill, gate-chip, plain-chip, dur, gib,
+// mult2): one row per process of PLAN §4.1 by multiplicity, the batched
+// B = 128 time on the default backend (TIRust; NinjaRS per amplitude
+// labelled where TIR does not serve the row yet) against the fastest matched
+// provider, generation uncoloured, explicit pending and missing markers.
+#let LI = json("data/summary-li.json")
+#let li-meta = LI.meta
+#let li-rows = LI.groups.map(gr => gr.rows).flatten()
+// A group's title from its registry name ("2->3" as $2 -> 3$, "/" as a
+// middle dot; any name milestone.json declares).
+#let li-group-title(name) = name.split(" / ").map(part => { let xs = part.split("->"); if xs.len() == 2 and xs.all(x => x.trim().len() > 0) { $#xs.at(0).trim() -> #xs.at(1).trim()$ } else { part } }).join([ · ])
+// Missing-cell titles; the batch statuses take Table 1's words (status-title).
+#let li-title(c) = if c.status in ("not batched", "no gate batch") { status-title(c) } else { (pending: [pending], "not run": [not run], "not recorded": [not recorded]).at(c.status, default: c.status) }
+#let li-pending-rows = li-rows.filter(r => r.timing.status == "pending")
+#let li-served = li-rows.filter(r => r.landed)
+// The provider line of a row (lit-ref's timings, or why there are none).
+#let li-prov-line(r) = {
+  let p = r.providers
+  if p.status == "pending" [providers pending (lit-ref): #p.expected.join(" · ")]
+  else if p.status == "not run" [#p.expected.join(" · "): #p.reason]
+  else {
+    // Timed providers by time (the fastest in bold), then the others grouped
+    // by their status and reason.
+    let f = p.fastest
+    let timed = p.providers.pairs().filter(((k, x)) => "seconds_per_point" in x).sorted(key: ((k, x)) => x.seconds_per_point)
+    let why = (:)
+    for (k, x) in p.providers.pairs().filter(((k, x)) => "seconds_per_point" not in x) {
+      let g = x.status + ": " + x.reason
+      why.insert(g, why.at(g, default: ()) + (pkey(k),))
+    }
+    (timed.map(((k, x)) => if f != none and k == f.key { text(weight: "bold")[#pkey(k) #dur(x.seconds_per_point)] } else [#pkey(k) #dur(x.seconds_per_point)])
+      + why.pairs().map(((g, ks)) => [#ks.join(" · ") #g])).join([~· ])
+  }
+}
+// A cell's gate marker: lit-perf's verdict as Table 1's gate chip, every
+// rule (reported, 5 ms, no matched provider, no verdict yet) as Table 1's
+// plain chip.
+#let li-chip(g) = if g.status in ("pass", "fail", "open") { gate-chip((status: g.status, ratio_to_limit: g.ratio_to_limit)) } else { plain-chip[#g.label.replace("->", "→")] }
+#let li-process(r) = table.cell(breakable: false, {
+  set par(leading: 0.34em, justify: false)
+  block(spacing: 0pt, text(10pt, font: "Libertinus Serif", if r.math != none { math-label(r.math) } else { text(8.4pt, font: sans, stretch: 87.5%, r.label) }))
+  if r.alternative != none { v(1.6pt); block(spacing: 0pt, text(6.4pt, fill: ink2)[or #box(text(8pt, font: "Libertinus Serif", math-label(r.alternative.split(" ").map(tok).join(" "))))]) }
+  v(3.6pt)
+  block(spacing: 0pt, text(6.4pt, fill: ink2)[#if r.legs != none [#r.legs legs · ]#r.corrections · #r.ids.join(", ")#if r.backends.len() == 1 [ · #r.backends.first() only]])
+  v(3.4pt)
+  let v = r.validation
+  block(spacing: 0pt, text(6.2pt, if v.status == "pending" { dim[validation pending (lit-val)] } else if v.status == "not run" { dim[validation not run (no record in lit.json)] } else [#v.references.map(x => [#x.short #esci(x.max_relative)]).join([~· ]) · #v.status#if v.points != none [ · #v.points pts]]))
+})
+#let li-generation(r) = {
+  let m = r.generation
+  let p = r.providers
+  let gens = if p.status == "recorded" { p.generation } else { (:) }
+  let pline = if gens.len() == 0 { none } else { gens.pairs().sorted(key: ((k, s)) => s).map(((k, s)) => [#pkey(k) #dur(s)]).join([~· ]) }
+  if m.status == "measured" {
+    valued(fill: none, dur(m.seconds), mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
+      [#gib(m.peak_gib) peak#if m.plan_mb != none [ · plan #box[#sig(m.plan_mb)~MB]]], pline)
+  } else {
+    absent(li-title(m), m.at("reason", default: none), pline)
+  }
+}
+#let li-timing(r) = {
+  let m = r.timing
+  if m.status == "measured" {
+    valued(fill: if "ratio_to_fastest" in m { ratio-fill(m.ratio_to_fastest) } else { none }, dur(m.seconds_per_point),
+      mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
+      [#li-prov-line(r) #h(1fr) $B = #m.batch$],
+      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "other_backend" in m [ · #m.other_backend.backend_label #dur(m.other_backend.seconds_per_point)]])
+  } else {
+    absent(li-title(m), m.at("reason", default: none), li-prov-line(r))
+  }
+}
+// Generation and timing pending for the same reason: one marker over both.
+#let li-cells(r) = if r.generation.status == "pending" and r.timing.status == "pending" and r.generation.reason == r.timing.reason {
+  (absent(li-title(r.timing), colspan: 2, r.timing.reason, li-prov-line(r)),)
+} else { (li-generation(r), li-timing(r)) }
+#let li-head = {
+  if li-meta.landed.len() == 0 [no loop-induced package has landed at this head: every row *pending* (served by the package named in its cell) · default backend #li-meta.default_backend · nothing estimated]
+  else [packages landed: #li-meta.landed.map(raw).join(", ") · default backend #li-meta.default_backend, NinjaRS per amplitude labelled where TIR does not serve the row yet · the newest record of each cell]
+}
+#figure(kind: table,
+  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary). How to read it: #link(<reading-li>)[after Figure 1].],
+  {
+    set text(7pt, font: sans, stretch: 87.5%)
+    set par(justify: false)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold", size: 8pt)
+    table(
+      columns: (0.5cm, 4.8cm, 4.0cm, 1fr),
+      align: left + std.top,
+      inset: (x: 4.5pt, y: 4.2pt),
+      stroke: (x, y) => (top: if y <= 3 { none } else { 0.6pt + white }, left: if x > 0 and y != 1 { 0.6pt + white } else { none }),
+      fill: (x, y) => if y == 0 { navy } else if y == 1 { warm } else if y == 2 { pale } else { none },
+      table.header(
+        [], [Process · validation], [Generation], [$|A_"loop"|^2$ · per point, batched, default backend],
+        table.cell(colspan: 4, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
+        [],
+        ..(
+          [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
+          [generate + plan export, peak memory; provider generation],
+          [median per point at $B = 128$; provider times (lit-ref); gate (lit-perf) or rule; backend],
+        ).map(t => text(6.1pt, fill: ink2, t)),
+      ),
+      ..LI.groups.map(gr => (
+        table.cell(rowspan: gr.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon, breakable: false,
+          rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", li-group-title(gr.name)))),
+        ..gr.rows.map(r => (li-process(r), ..li-cells(r))).flatten(),
+      )).flatten(),
+    )
+  },
+) <tab:summary-li>
+
 #pagebreak(weak: true)
 
 // ============================================================== READING ==
@@ -912,7 +1027,7 @@ ancestry of the revisions; a newer check that only repeats part of an older comp
 *Gate chips* (Table 1 and Figure 1): the time over the binding limit (MadLoop's time, or 1.30 × the faster of Recola and
 OpenLoops), *pass* or *fail* when the whole uncertainty band is below or above 1, else *open*. The user's gate rule of 2026-10-24:
 a process whose time per point at $B = 128$ is below 5 ms has no blocking gate, its verdict is "#thr-rule.label" and its chip
-("#thr-rule.short") keeps the measured ratio#if thr-rows.len() > 0 [ (#thr-rows.map(r => { let x = decided-gate(r); [#box(math-label(r.math)) #dur(r.full_colour.main.seconds_per_point), #fixed(x.ratio_to_limit, 2) of its limit] }).join([, ], last: [ and ]))]. #box(math-label("g g -> g g")) ($2 -> 2$) has no gate#for r in ew-rows [; #box(math-label(r.math)) (#r.corrections, `data/msm-g1.json`) is timed and reported *indicatively*, chip "#r.full_colour.gate_rule": #r.full_colour.gate_rule_reason\; its leading colour is #r.leading_colour.main.reason]#for r in decided-rows.filter(r => decided-gate(r).status != thr-rule.verdict) { let x = decided-gate(r); [; ‡ #math-label(r.math): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }. The gate is taken at $B = 128$ only (user 2026-10-28,
+("#thr-rule.short") keeps the measured ratio#if thr-rows.len() > 0 [ (#thr-rows.map(r => { let x = decided-gate(r); [#box(math-label(r.math)) #dur(r.full_colour.main.seconds_per_point), #fixed(x.ratio_to_limit, 2) of its limit] }).join([, ], last: [ and ]))]. #box(math-label("g g -> g g")) ($2 -> 2$) has no gate#for r in ew-rows [; #box(math-label(r.math)) (#r.corrections, `data/msm-g1.json`) is gated like the QCD rows since the final G1 retime (M-LIT-a0\; at M-SM it was timed indicatively, [U5])\; its leading colour is #r.leading_colour.main.reason]#for r in decided-rows.filter(r => decided-gate(r).status != thr-rule.verdict) { let x = decided-gate(r); [; ‡ #math-label(r.math): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }. The gate is taken at $B = 128$ only (user 2026-10-28,
 `gate_decisions.gate_batch`): $B = 1$ and the $2 -> 5$ rows' $B = 16$ are measured and *reported* with their ratios
 (@tab:g1, @tab:g1batch), without a verdict or a verdict colour.
 
@@ -975,6 +1090,30 @@ amber a known limitation of the value, in grey its run conditions: #note-cells.m
 #measured-ids.filter(id => C.at(id).main_cells.full_colour.len() > 0 and C.at(id).kind == "g1").map(cfg-short).join([\; ])#if C.at("development", default: none) != none and C.development.main_cells.full_colour.len() > 0 [\; development, not yet on `loop`]) against the providers (diamonds, the darkest
 the fastest) and the gate limit (red bar, the shaded side fails; grey bar: the limit of a process below 5 ms, not gated;
 dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The ratios and bands at every batch size: @tab:g1batch.
+
+#heading(numbering: none, level: 2, outlined: false)[The loop-induced table] <reading-li>
+// The legend of the loop-induced summary table (data/summary-li.json meta).
+#let li-inputs = li-meta.inputs.values()
+@tab:summary-li follows Table 1’s rules for loop-induced processes, $|A_"loop"|^2$ without a Born (`data/summary-li.json`,
+written by `scripts/build_summary.py` from the row registry `data/milestone.json` `loop_induced` and the loop-induced
+records). One row per process of the M-LIT validation matrix (`m-lit/PLAN.md` §4.1; its ids in the process cell),
+grouped by multiplicity; the backend-unit, zero, identity, observable and complex-mass-scheme rows (#li-meta.validation_only.ids.join(", ")) stay in the
+validation tables. The cell is the batched $B = #li-meta.gate_batch$ time per point (median, finite part, one pinned
+thread, checks off) on the default backend #li-meta.default_backend\; NinjaRS per amplitude, labelled in the cell, where
+TIR does not serve the row yet; the other backend's time beside it when both ran. Its multiplier against the fastest
+matched provider (MadLoop's loop-induced production setting 7|6|1, OpenLoops `ls`, Recola; production mode, from
+`lit-ref`'s timing records named in its manifest; MadLoop's 6|7|1 OPP column belongs to the detailed sections) colours it
+with Table 1’s scale; generation is uncoloured. Rows of four legs or fewer ($2 -> 1$, $1 -> 2$,
+$2 -> 2$, $1 -> 3$) are reported without a gate; from $2 -> 3$ upward the gate is Table 1’s (faster than MadLoop and at
+most 1.30× each matched OpenLoops and Recola time, on TIRust), "#thr-rule.short" below 5 ms per point, no gate without a
+matched provider (every reference provider unavailable); verdict chips come with `lit-perf`'s records, "no verdict yet"
+before them ("no provider time yet" while `lit-ref` has not timed a provider of the row). Grey cells are explicit
+markers: *pending* (the package that serves the row, named in the cell, has not landed at this head, or the input file
+that fills the cell does not exist yet), *not run* (a landed package without a record of the row), and a provider's
+reason where it has no matched time (no library, beyond the 45-minute rule). Nothing is estimated or extrapolated; each
+cell shows the newest record of its row (git ancestry of the record revisions). At this head #li-served.len() of
+#li-rows.len() rows are served; inputs: #li-inputs.map(x => [#raw(x.file) #if x.present [present] else [not written yet (#x.owner)]]).join([, ])\;
+the registry against `lit-ref`'s manifest (#raw(li-meta.campaign.file)): #if li-meta.campaign.checked [checked: every registry id is a manifest row listing the registry's process, and each of its #li-meta.campaign.rows rows (#li-meta.campaign.ids ids) is a table row or validation-only] else [#li-meta.campaign.reason].
 ]
 
 
@@ -1093,7 +1232,7 @@ is reported without a gate (cells uncoloured).
 // The status page starts on its own page so that its two box rows are not
 // split across pages.
 #pagebreak(weak: true)
-= Status at this milestone: M-FINAL (closed) <status>
+= Status at this milestone: M-LIT-a0 <status>
 
 // The gate box reads Table 1's values (data/summary.json): the gated G1
 // rows' full-colour main cells, their configuration and verdicts, and for
@@ -1156,7 +1295,7 @@ is reported without a gate (cells uncoloured).
 #let sx-partial = sx.rows.filter(r => r.status != "pass").map(r => r.row)
 #let sx-cm07 = sx.cms.find(r => "U4" in r.features)
 #let sx-ew-st = sx.selftest.virtuals.find(v => v.name == "physics-virtual-prepared").detail.split("MadLoop to ").last().split(" ").first()
-#let ew-status = all-rows.filter(r => r.full_colour.at("gate_rule_reason", default: none) != none and r.full_colour.main.status == "measured")
+#let ew-status = all-rows.filter(r => r.corrections == "EW" and r.full_colour.main.status == "measured")
 // M-FINAL-b at a glance: decays (data/dec-matrix.json), HC_NLO_X0
 // (data/hc.json), Recola correlations (data/corr.json), 2 -> 6 (summary.json
 // preliminary).
@@ -1181,12 +1320,35 @@ is reported without a gate (cells uncoloured).
   #grid(columns: (1fr, 1fr), column-gutter: 10pt, pk(ms.integrated.slice(0, half)), pk(ms.integrated.slice(half)))
   #v(-0.3em)
   #text(7.6pt)[*Before (engine #ms.previous_engine):* #ms.already_on_loop.
-    *Native build* #raw(ms.native_build.name) (digest #raw(ms.native_build.digest)…)#if g.slice_revision.slice(0, 8) != ms.engine_revision.slice(0, 8) [; G1 ran on #raw(g.slice_build) (engine #raw(g.slice_revision))].]
+    *Native build* #raw(ms.native_build.name) (digest #raw(ms.native_build.digest)…)#if g.slice_revision.slice(0, 8) != ms.engine_revision.slice(0, 8) [; G1 ran on #raw(g.slice_build) (engine #raw(g.slice_revision))].
+    // Integrations after the measured engine (data/milestone.json after_integration).
+    #let after = ms.at("after_integration", default: ())
+    #if after.len() > 0 [*Integrated after it, not re-timed:* #after.map(r => [#raw(r.sha) #r.what (#r.detail)]).join("; ").]]
+]
+
+// M-LIT-a0, the first milestone push of M-LIT (m-lit/PLAN.md §3.2
+// LIT-RETIME, §3.7 "Pushes"): the final G1 retime deferred from M-FINAL and
+// the loop-induced summary table (every row pending).
+#box-note(fill: white, stroke: 0.6pt + luma(205), breakable: false)[
+  #set par(justify: false)
+  *M-LIT-a0* (the first milestone push of M-LIT, loop-induced processes and the TIRust backend; user green light
+  2026-11-06 \~07:05; `m-lit/PLAN.md` §3.2 LIT-RETIME)
+  #v(-0.2em)
+  #set text(7.9pt)
+  - *The final G1 retime* (deferred from M-FINAL, `m-final/PLAN.md` §2.4): every G1 loop artifact regenerated
+    (model compiler 17) and every G1 row re-timed on #raw(g.slice_revision) (#raw(g.slice_build)) with the G1
+    protocol (finite part, $B = 128$, one pinned thread, checks off, providers' production records; no quiet
+    window); the EW row is gated from now on; the $2 -> 6$ rows stay `data/2to6.json`'s. Not re-timed (LIT-RETIME's scope, which leaves out these rows of M-FINAL's MF-RETIME): the decay rows XX01–XX08 and HC01–HC04 (ungated) and the rescue level counts (indicative) keep their M-FINAL-b records (@dec, @tab:hc, the M-FINAL box). #if g.at("retime_vs_previous", default: none) != none [#g.retime_vs_previous.] This run is the baseline of every
+    M-LIT no-regression A/B of the Born-interfered default (NinjaRS).
+  - *The loop-induced summary table* (@tab:summary-li, `data/summary-li.json`): the #li-rows.len() process rows of
+    the M-LIT validation matrix by multiplicity, #if li-served.len() == 0 [every row *pending*: no loop-induced
+    package has landed at this push] else [#li-served.len() served]. Loop-induced requests are still refused typed
+    (`loop-induced`) at this head.
 ]
 
 // M-FINAL closing (lean close, slice-status DECISIONS 2026-11-05 ~07:35):
 // what closed, the gate, the built-in SM fixes, dependencies and limits,
-// the kept campaigns of M-FINAL-b, 2 -> 6 and the next milestone.
+// the kept campaigns of M-FINAL-b, 2 -> 6; kept below M-LIT-a0.
 #let a24 = mq.rows.find(r => r.id == "A24")
 #let hc5 = hcj.rows.find(r => r.id == "HC05")
 #let r7 = json("data/rounds-7leg.json")
@@ -1196,11 +1358,11 @@ is reported without a gate (cells uncoloured).
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
     set text(8.2pt)
     set par(justify: false)
-    [*M-FINAL closed* (engine #raw(ms.engine_revision)\; `m-final/PLAN.md`, the user's rulings of 2026-10-31 \~11:00, the lean close of 2026-11-05 \~07:30)]
+    [*M-FINAL, closed 2026-11-05* (engine #raw(ms.previous_engine)\; `m-final/PLAN.md`, the user's rulings of 2026-10-31 \~11:00, the lean close of 2026-11-05 \~07:30)]
     [
       - *Item 1, $2 -> 6$* (@tab:summary, #link(<sixlegs>)[records]): $g g -> 6g$ ($N_f = 5$, no top), $u overline(u) -> 6g$ and $u overline(u) -> u overline(u) g g g g$ at LC and full colour generated, stored (every step below 150 GB), loaded and evaluated on one engine (#raw(six.engine.revision.slice(0, 8)), an ancestor of the pin); every asserted internal check passes, no provider exists.
       - *Item 2, decays $1 -> n$* (M-FINAL-b, @dec): XX01–XX08 = MadLoop's quadruple precision, QCD and EW.
-      - *Item 4:* the rescue stack (Python native evaluate API only; M-FINAL-b); HC_NLO_X0 #hc-ok.map(r => r.id).sorted().join(", ") = MadLoop 3.7.0 (@tab:hc; HC05 since mf-hc05); the optimisation rounds (#link(<rounds7>)[seven-leg table]: generation ÷#fixed(r7-f("generation total (wall, max peak)", "lc", 0), 1) LC / ÷#fixed(r7-f("generation total (wall, max peak)", "fc", 0), 1) FC, load resident ÷#fixed(r7-f("load (time, resident)", "lc", 1), 0) / ÷#fixed(r7-f("load (time, resident)", "fc", 1), 0), $B = 128$ peak ÷#fixed(r7-f("evaluation B = 128 (per point, peak)", "lc", 1), 1) / ÷#fixed(r7-f("evaluation B = 128 (per point, peak)", "fc", 1), 1), values bitwise); the Recola correlation oracles (M-FINAL-b). The final G1 retime is deferred to the next milestone.
+      - *Item 4:* the rescue stack (Python native evaluate API only; M-FINAL-b); HC_NLO_X0 #hc-ok.map(r => r.id).sorted().join(", ") = MadLoop 3.7.0 (@tab:hc; HC05 since mf-hc05); the optimisation rounds (#link(<rounds7>)[seven-leg table]: generation ÷#fixed(r7-f("generation total (wall, max peak)", "lc", 0), 1) LC / ÷#fixed(r7-f("generation total (wall, max peak)", "fc", 0), 1) FC, load resident ÷#fixed(r7-f("load (time, resident)", "lc", 1), 0) / ÷#fixed(r7-f("load (time, resident)", "fc", 1), 0), $B = 128$ peak ÷#fixed(r7-f("evaluation B = 128 (per point, peak)", "lc", 1), 1) / ÷#fixed(r7-f("evaluation B = 128 (per point, peak)", "fc", 1), 1), values bitwise); the Recola correlation oracles (M-FINAL-b). The final G1 retime followed at M-LIT-a0 (box above).
       - *Also since M-FINAL-b:* the SDK v4 extras (mf-sdk); lsimon125's PRs \#26 \#29 \#30 \#32 \#34 \#36 \#37 \#38 \#39 (\#24 adapted with credit): \#38 fixes a real 4× over-count of compiled-mode HEFT quark tree amplitudes (built-in SM-HEFT and HC_NLO_X0, now = MG5 and the MadLoop Borns), \#34 moves binary64 quark-line values by rounding only ($<= 10^(-12)$, accepted); the built-in SM fixes; the mechanical hard-coded limits lifted; Symbolica off the fork (boxes below).
       - *Validation scope:* the campaigns of M-FINAL-b (#raw(dm.campaign.slice): M-SM, M-QCD, decays, HC, correlations) stand, plus package evidence (A24 passes rule 4 with native Catani: mf-8g-3; HC05 = MadLoop: mf-hc05). The pin itself carries its integrators' targeted tests; the global tests run in CI on `loop` (no local whole-suite sweep, wheel self-test or retime: user 2026-11-05 \~07:30).
     ]
@@ -1210,14 +1372,14 @@ is reported without a gate (cells uncoloured).
     set par(justify: false)
     [*Gate G1* (@g1; finite part, $2 -> 3$ and beyond)]
     [
-      - *Not re-timed at M-FINAL* (the final retime is deferred to the next milestone, user 2026-11-05 \~07:30): Table 1 and Figure 1 keep the cells of the M-FINAL-b report (#raw(ms.previous_loop)), i.e. M-SM's G1 at #raw(g.slice_revision) (#raw(g.slice_build)). At M-FINAL-b a paired spot check of its engine (#raw(ms.previous_engine)) against #raw(g.slice_revision) found the plans identical and ×0.96–1.08 per point; the evaluation and memory rounds since then keep the values bitwise and are not in G1's cells (#link(<rounds7>)[seven-leg table]).
+      - *Re-timed at M-LIT-a0* (the final retime deferred from M-FINAL): every G1 row on #raw(g.slice_revision) (#raw(g.slice_build)), the EW row gated#if g.at("retime_vs_previous", default: none) != none [; #g.retime_vs_previous]. The evaluation and memory rounds of M-FINAL (#link(<rounds7>)[seven-leg table]) are in these cells now.
       - *Most recent configuration* (Table 1 and Figure 1): #s-ids.map(s-config).join([; ]) at $B = 128$:
         #s-with("pass").len() of #s-blocking.len() gated #if s-blocking.len() == 1 [process passes] else [processes pass]#if s-decided.len() > 0 [ (#s-decided.map(r => { let x = s-gate(r); [#math-label(r.math) by #x.decision (#fixed(x.ratio_to_limit, 2) of its limit, band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2))] }).join([, ]))]#if s-with("open").len() > 0 [, #row-names(s-with("open").map(r => r.key)) open]#if s-with("fail").len() > 0 [, #row-names(s-with("fail").map(r => r.key)) #if s-with("fail").len() == 1 [fails] else [fail]
         (#s-with("fail").map(r => [×#fixed(s-gate(r).ratio_to_limit, 2)]).join([, ]) of the limit)]#if s-thr.len() > 0 [; #row-names(s-thr.map(r => r.key)) #if s-thr.len() == 1 [runs] else [run] below 5 ms per point: *not gated* (user 2026-10-24\; #s-thr.map(r => fixed(s-gate(r).ratio_to_limit, 2)).join([, ]) of the limit)].
         $B = 1$ (16 lanes#if one-revs.len() > 0 [, the runs of #rev-list(one-revs), not re-timed]) is *reported*, not gated (user 2026-10-28): #ratio-range(one-lim) of the limit (@tab:g1batch).
 #if s-five.len() > 0 [
       - *$2 -> 5$* (full and leading colour at $B = 128$; $B = 16$ reported): #s-five-gated.filter(r => s-gate(r).status == "pass").len() of #s-five-gated.len() gated
-        rows pass (#s-five-gated.map(r => { let m = s-main(r); [#box(math-label(r.math)) #dur(m.seconds_per_point), #gratio(s-gate(r).ratio_to_limit) of its limit#if m.at("ratio_to_fastest_bound", default: none) == "lower" [, #ratio-mult(m) against #r.full_colour.fastest.name's upper bound]] }).join([\; ]))#for r in s-five-free [; #box(math-label(r.math)) #dur(s-main(r).seconds_per_point)#if "note" in s-main(r) [ (#s-main(r).note.label)] at full and #dur(r.leading_colour.main.seconds_per_point) at leading colour per point, no matched provider and no gate].
+        rows pass (#s-five-gated.map(r => { let m = s-main(r); [#box(math-label(r.math))#if r.corrections == "EW" [ (EW)] #dur(m.seconds_per_point), #gratio(s-gate(r).ratio_to_limit) of its limit#if m.at("ratio_to_fastest_bound", default: none) == "lower" [, #ratio-mult(m) against #r.full_colour.fastest.name's upper bound]] }).join([\; ]))#for r in s-five-free [; #box(math-label(r.math)) #dur(s-main(r).seconds_per_point)#if "note" in s-main(r) [ (#s-main(r).note.label)] at full and #dur(r.leading_colour.main.seconds_per_point) at leading colour per point, no matched provider and no gate].
 ]
 #if py-timed.len() > 0 [
       - *Before G-int* (Python per-point inputs, G1 at #rev-list(py-revs)\; history, @g1): failed every gated process it
@@ -1227,7 +1389,7 @@ is reported without a gate (cells uncoloured).
       - *#row-span(s-pending.map(r => r.key)):* not timed yet (#s-pending.map(r => r.full_colour.main.package).dedup().map(raw).join(", "))#if s-no-gate.len() > 0 [\; #row-names(s-no-gate.map(r => r.key)) #if s-no-gate.len() == 1 [has] else [have] no matched provider].
 ]
     #if ew-status.len() > 0 [
-      - *EW row* #flag[indicative] (`data/msm-g1.json`, not gated: [U5]; its gate binds with the final retime, next milestone): #ew-status.map(r => { let m = s-main(r); [#box(math-label(r.math)) (#r.corrections) #dur(m.seconds_per_point) per point at $B = 128$, #ratio-mult(m) of #r.full_colour.fastest.name's time] }).join([; ]) (@msm).
+      - *EW row* (`data/msm-g1.json`; gated since this retime, indicative at M-SM: [U5]): #ew-status.map(r => { let m = s-main(r); [#box(math-label(r.math)) (#r.corrections) #dur(m.seconds_per_point) per point at $B = 128$, #ratio-mult(m) of #r.full_colour.fastest.name's time#if s-gate(r) != none [, #gate-chip(s-gate(r))]] }).join([; ]) (@msm).
 ]
     ]
   }),
@@ -1327,11 +1489,11 @@ is reported without a gate (cells uncoloured).
   block(width: 100%, stroke: 0.6pt + luma(195), inset: 9pt, radius: 3pt, {
     set text(8.2pt)
     set par(justify: false)
-    [*Next milestone* (user 2026-11-03 \~21:15 and 2026-11-05 \~07:30)]
+    [*This milestone, M-LIT* (in progress; user 2026-11-03 \~21:15, green light 2026-11-06 \~07:05; `m-lit/PLAN.md`)]
     [
-      - *Loop-induced processes* (refused typed today, `loop-induced`).
-      - *TIRust* (`iregi-rust`) as an alternative reduction backend to NinjaRS.
-      - *The final G1 retime* deferred from M-FINAL, with the *binding EW speed gate*.
+      - *Loop-induced processes* $|A_"loop"|^2$ (refused typed at this push, `loop-induced`): every row of @tab:summary-li pending.
+      - *TIRust* (`huashengshao/TIRust`) as a tensor-integral reduction backend next to NinjaRS: the loop-induced default, on which the loop-induced speed gates are taken; M-LIT closes only when it lands.
+      - *Done at M-LIT-a0:* the final G1 retime, with the EW speed gate binding.
     ]
   }),
 )
@@ -1341,11 +1503,10 @@ is reported without a gate (cells uncoloured).
     *Missing or incomplete* (typed refusal keys, listed and shown by the dry run)
     #set text(7.9pt)
     #grid(columns: (1fr, 1fr), column-gutter: 12pt)[
-    - *Next milestone:* loop-induced processes, including loop-induced decays ($h -> g g$) and the loop-squared members
-      of multiparticle requests (refused typed, `loop-induced`; a multiparticle request generates its members with a
-      Born and records the others as skipped), with TIRust as an alternative reduction backend; the final G1 retime
-      (deferred from M-FINAL: Table 1 shows the M-FINAL-b report's G1) with the binding EW speed gate (the EW row is
-      indicative here).
+    - *This milestone (M-LIT, in progress):* loop-induced processes, including loop-induced decays ($h -> g g$) and the
+      loop-squared members of multiparticle requests (refused typed at this push, `loop-induced`; a multiparticle
+      request generates its members with a Born and records the others as skipped; every row of @tab:summary-li
+      pending), with TIRust as a tensor-integral reduction backend (the loop-induced default).
     - *Refused (typed):* decay chains and `$` (`madloop-syntax`); Majorana fermions (`majorana-fermion`) and
       multi-fermion contact vertices (`multi-fermion-contact`); numerical process-group analysis
       (`process-group-analysis`; exact aliases and members are served); photon-only and partial EW vetoes on the NLOCT
@@ -1394,8 +1555,8 @@ is reported without a gate (cells uncoloured).
       timing has none); $2 -> 2$ is reported without a gate. A process whose time per point at $B = 128$ is below 5 ms
       has no blocking gate: its ratio is shown, its verdict is "#thr-rule.label" (user decision; `data/milestone.json`
       `gate_decisions.threshold_rule`); optimisation effort goes to higher multiplicities. The electroweak row is timed
-      and reported indicatively at M-SM, without a verdict ([U5]; `data/msm-g1.json`): its gate binds with the final retime
-      (deferred to the next milestone).
+      and gated like the QCD rows since the final G1 retime (M-LIT-a0; `data/msm-g1.json`), after its indicative timing
+      at M-SM ([U5]).
       Aspiration: fastest of all tools from $2 -> 3$.
     - *Protocol.* Providers in production mode with poles off where they allow it (OpenLoops `truepoles 0`, Recola without IR
       poles, MadLoop production build); pyAmpliCol finite-only (`poles = "none"`) with stability checks off, one pinned
@@ -1416,7 +1577,7 @@ is reported without a gate (cells uncoloured).
       (main-configuration rule of `scripts/build_summary.py`; `data/summary.json` names the configuration and source of every
       value); the column header of @tab:summary states it once, with branch and commit, and "Reading the summary" says
       when it is a development measurement not yet on `loop`. The detailed G1 tables (@g1) show the configuration on `loop` and, labelled,
-      its history: the runs of milestones M-QCD (`e18a024b`), m1028a (`28a16255`), m1026a (`11542fd5`) and m1025a (`1d27426b`) and of G-int (`4e9b5a9e`), the
+      its history: the runs of milestones M-SM (`71e2041e`), M-QCD (`e18a024b`), m1028a (`28a16255`), m1026a (`11542fd5`) and m1025a (`1d27426b`) and of G-int (`4e9b5a9e`), the
       Python per-point inputs before G-int and the development runs of
       #rev-list(l1-revs).
       Missing values are marked, never estimated or extrapolated; test durations are never used as event timings. The legacy per-diagram engine's timings of 18 October are history (data kept in
@@ -1588,7 +1749,7 @@ multi-trace colour state of DESIGN §6.1, so the reachable vertex is refused, ne
 // data/msm-matrix.json, written by scripts/build_msm_matrix.py from
 // data/msm.json, the campaign's public-route and self-test data and the
 // manifest; the per-row data are in the appendix (@tab:msmrows). The G1 EW
-// row: data/msm-g1.json (indicative, not gated).
+// row: data/msm-g1.json (gated since M-LIT-a0).
 #pagebreak(weak: true)
 = Electroweak capability matrix (M-SM) <msm>
 
@@ -1687,7 +1848,8 @@ multi-trace colour state of DESIGN §6.1, so the reachable vertex is refused, ne
   },
 ) <tab:cms>
 
-// The G1 electroweak row (data/msm-g1.json): indicative, not gated.
+// The G1 electroweak row (data/msm-g1.json): gated since the final G1 retime
+// (M-LIT-a0; indicative at M-SM, [U5]).
 #let ew-p = eg.processes.first()
 #let ew-c = ew-p.pyamplicol.at("native/full")
 #let ew-b = ew-c.batches.at("128")
@@ -1700,13 +1862,13 @@ multi-trace colour state of DESIGN §6.1, so the reachable vertex is refused, ne
 #let ew-row = all-rows.find(r => r.key == ew-p.key)
 #[
 #set text(9pt)
-*G1, electroweak row* #flag[indicative] (`data/msm-g1.json`, the gate tool on the EW records; [U5]: its speed gate binds in
-M-FINAL, so no verdict here). #box(math-label(ap-math(ew-p.label))) (EW) on #raw(eg.ew_model.split("/").last()) (the workspace's
+*G1, electroweak row* (`data/msm-g1.json`, the gate tool on the EW records; gated since the final G1 retime, M-LIT-a0, after
+its indicative timing at M-SM, [U5]). #box(math-label(ap-math(ew-p.label))) (EW) on #raw(eg.ew_model.split("/").last()) (the workspace's
 Python-3 reference copy of `loop_qcd_qed_sm_Gmu`, the harness default; not the shipped patched UFO, which the campaign
 used), native per-point inputs, full colour, binary64 finite part, checks off, one pinned core (#ew-c.host_cpus.map(str).join(", ")), at
 $B = 128$: *#ms2(ew-t * 1000) ms per point* (±#fixed(100 * ew-b.uncertainty, 1) %) against Recola #dur(ew-rc), OpenLoops
 #dur(ew-prov("openloops")) and MadLoop #dur(ew-prov("madloop")) (provider records reused, not re-run): ×#fixed(ew-t / ew-rc, 3) of Recola's
-time, #fixed(ew-t / (eg.gate_factor * ew-rc), 3) of 1.30 × Recola (Table 1 row, Figure 1). Generation #dur(ew-gen.generate.seconds) + #dur(ew-gen.export.seconds), peak
+time, #fixed(ew-t / (eg.gate_factor * ew-rc), 3) of 1.30 × Recola, gate *#ew-b.gate.status*#if "ratio_to_binding_limit" in ew-b.gate [ (#fixed(ew-b.gate.ratio_to_binding_limit, 3) of the binding limit#if "band_to_binding_limit" in ew-b.gate [, band #fixed(ew-b.gate.band_to_binding_limit.at(0), 3)–#fixed(ew-b.gate.band_to_binding_limit.at(1), 3): pyAmpliCol's block spread plus the provider spread #fixed(100 * eg.host_provider_spread, 1)~%#if "host_provider_spread_source" in eg [, the G1 campaign's on the same host (`data/g1.json` `host_provider_spread`, the gate tool's `--host-spread`) for the single provider runs, as for the G1 rows]])] (Table 1 row, Figure 1). Generation #dur(ew-gen.generate.seconds) + #dur(ew-gen.export.seconds), peak
 #gib(calc.max(ew-gen.generate.peak_gib, ew-gen.export.peak_gib)). Accuracy: against its fixture (#ew-acc.points points) #sci(ew-acc.max_error)
 (DD asserted at point #ew-acc.double_double_points.map(str).join(", "), where $E > 10^(-9)$; binary64 #sci(ew-acc.max_error_binary64)); against the providers at #ew-row.validation.points stream points in binary64:
 #ew-row.validation.references.map(x => [#x.short #sci(x.max_finite)]).join(", "). #if ew-early.len() > 0 [Earlier run (MS-VALIDATE, #raw(ew-early.last().revision.slice(0, 8))): #ew-early.last().batches.pairs().map(((b, x)) => [$B = #b$ #dur(x.median_seconds_per_point)]).join(", ").]
@@ -1831,42 +1993,25 @@ stream's exact rational points, the providers their binary64 decimal text.
 #let py-lc-revs = revs-of(p => cfg(p, "python/lc"))
 The configurations:
 
-- *native inputs, on `loop`* — the engine at #raw(g.slice_revision) (milestone M-SM: the engine of M-QCD,
-  `e18a024b`, with M-SM's 14 packages, ew-native to MS-MASTERS; not re-timed at M-FINAL-b nor at M-FINAL (the final retime is deferred to the next milestone), whose engine #raw(ms.engine_revision) adds M-FINAL-b's packages and those of @status\; build #raw(g.slice_build), digest
+- *native inputs, on `loop`* — the engine at #raw(g.slice_revision) (milestone M-LIT-a0, the final G1 retime: M-FINAL's
+  engine `c8885cc5` with the 1.0.2 release and its CI fixes, @status\; build #raw(g.slice_build), digest
   #raw(g.slice_native_digest.slice(0, 8))): the executor forms the trees, the Born and the counterterm inputs per
   point (binary64 SymJIT plane applications, tree closures in lanes of points), skips the counterterm interactions
   that only feed poles in finite-only mode, then runs the loop stage. #gname("gg_ggggg") is timed from its stored
-  process. The public path (#gname("uux_ddxg")): the public generator's artifact has the harness's plan digest,
-  `Runtime.load` in a fresh interpreter makes no generation call, and the loaded executor returns the timed run's
-  binary64 values bitwise at all 128 stream points (`public_path_check` in `data/g1.json`; its plan digest is also
-  M-QCD's). *Values against M-QCD* (`e18a024b`, `values_note`): bitwise in 22 of 30 configurations; the other 8 are the
-  full- and leading-colour configurations of the four rows with an $e^- e^+$ pair (electroweak couplings), changed at
-  rounding level (largest $1.2 times 10^(-9)$, #gname("uux_emepddxg") full colour). The binary64-unstable stream points
-  of M-QCD's analysis (at 6 of #gname("gg_ggggg")'s 128 points, 17, 89, 93, 95, 109 and 112, binary64 is wrong by $O(1)$
-  or more; the recommended checks flag every one, $E$ = 8 to $5 times 10^3$) lie in configurations whose values are
-  bitwise M-QCD's, whose stability rows stay inputs; of the 65 stability rows re-run here, 60 are bitwise M-QCD's and
-  the others within $5.8 times 10^(-12)$. The timing runs evaluate every point with checks off. Earlier campaigns
-  (M-QCD `e18a024b`, m1028a `28a16255`, m1026a `11542fd5`, m1025a `1d27426b`, G-int `4e9b5a9e`, the development
-  campaign of #rev-list(l1-revs)) are `earlier_runs`, history;
+  process. The public path (#gname("uux_ddxg"), `public_path_check` in `data/g1.json`): #g.public_path_check.
+  *Values against the previous campaign* (`values_note`): #g.values_note. The timing runs evaluate every point with
+  checks off. Earlier campaigns (M-SM `71e2041e`, M-QCD `e18a024b`, m1028a `28a16255`, m1026a `11542fd5`, m1025a
+  `1d27426b`, G-int `4e9b5a9e`, the development campaign of #rev-list(l1-revs)) are `earlier_runs`, history;
 - *Python inputs* #flag[history] — the engine on `loop` before G-int, G1 at
   #rev-list(py-revs)#if py-lc-revs.len() > 0 [ (LC at #rev-list(py-lc-revs))]: trees, Born amplitudes and
   counterterm scalars formed per point in Python, then the loop stage natively.
 
-*Timing protocol at #raw(g.slice_revision)* (`timing_protocol` in `data/g1.json`): the committed harness, binary64,
-finite part only, no stability check, one thread on one pinned core, setup heap frozen out of Python's cyclic collector
-before the warm-up, the frozen streams. The native digest changed (`1be09f92` → #raw(g.slice_native_digest.slice(0, 8))),
-so every configuration was re-timed at $B = 128$ (three blocks; at $2 -> 5$ after a 16-point warm-up), full and leading
-colour, in one round (timings indicative, user 2026-10-28: no repeat for host contention; no verdict was open, so no
-verdict repeat). $B = 1$ and the $2 -> 5$ rows' $B = 16$ were *not re-timed*: the tables show m1028a's runs (`28a16255`,
-each configuration's last earlier run) marked °. Host: #g.host.
+*Timing protocol at #raw(g.slice_revision)* (`timing_protocol` in `data/g1.json`): #g.timing_protocol. Host: #g.host.
+#if g.at("retime_vs_previous", default: none) != none [*Against the previous campaign:* #g.retime_vs_previous.]
 
-*Generation* (`generation_protocol`): every row generated cold in its own process with fresh caches, as in m1026a;
-against M-QCD, model + generate + export changed by −19 % to +5 % (median −3 %), plan sizes and structure equal
-everywhere, and the seven-gluon plans are M-QCD's (#gname("gg_ggggg"): full colour 171 + 213 s, 9.5 GiB; LC 178 + 213 s,
-10.0 GiB). The provider records are reused unchanged (`provider_records`). With #gname("uux_emepgg") at
-#dur(bat(nat-c(gproc("uux_emepgg")), big).median_seconds_per_point) per point (M-QCD: 4.93 ms) one more process is above the
-5 ms floor and gated. The electroweak row is timed by the same protocol in `data/msm-g1.json`, indicative and not gated
-(@msm); the tables of this section are `data/g1.json`'s.
+*Generation* (`generation_protocol`): #g.generation_protocol. The provider records are reused unchanged
+(`provider_records`). The electroweak row is timed by the same protocol in `data/msm-g1.json` and gated (@msm); the
+tables of this section are `data/g1.json`'s.
 
 #let g7f-note = all-rows.find(r => r.key == "gg_ggggg").full_colour.main.at("note", default: none)
 #if g7f-note != none [*Seven gluons, full colour* #flag[contention]: #gname("gg_ggggg")'s full-colour runtime was #g7f-note.reason (`seven_leg_rows`, `host` in `data/g1.json`; @tab:summary marks the cell). It has no gate.]
@@ -2703,7 +2848,7 @@ lower multiplicities and existing references.
 #let ttq-errs = ttq.max_error_per_point.sorted()
 The $g g -> t overline(t) e^- e^+ g$ (QCD) finite part deviates by #sci(ttq-errs.last()) at one of its three points and by at
 most #sci(ttq-errs.at(-2)) at the others: the point's known binary64 conditioning (earlier record, DESIGN WP3.1 fourth
-increment: #ttq-old.validation). The electroweak target is validated by the M-SM campaign (@msm, @tab:msmrows), row #ms.required.rows.find(r => r.label.starts-with("g g -> t overline(t) e^- e^+ g") and r.at("corr", default: none) == "EW").validation; G1 times it indicatively (`data/msm-g1.json`, @msm; Table 1), and its
+increment: #ttq-old.validation). The electroweak target is validated by the M-SM campaign (@msm, @tab:msmrows), row #ms.required.rows.find(r => r.label.starts-with("g g -> t overline(t) e^- e^+ g") and r.at("corr", default: none) == "EW").validation; G1 times and gates it since the final retime (`data/msm-g1.json`, @msm; Table 1), and its
 generation and validation are the integrated configuration's, not a development record (so it is not in the table
 above). The QCD classes are M-QCD's (@mqcd). The $u overline(u) -> g g g g g$ row comes
 from #rn.processes.uux_ggggg.record.split(",").first(), the newest record of that process: the later re-runs on the merged
@@ -2894,8 +3039,8 @@ and so is the check of the timed configuration against NJet's ten points (@tab:s
   ([Decays $1 -> n$], "supported", [*Since M-FINAL-b* (MF-DEC-1 `eddb4b49`, MF-DEC-2 `28b24a2a`): one initial leg is admitted generically ($1 -> n$, $n >= 2$) at tree level and one loop, QCD and EW, through the same recursion; the decaying particle at its real mass with zero own width (the existing width guards; internal CMS widths allowed), MadLoop's convention (amputated loops, its absorptive self-energy dropped, $delta Z$ from the UFO counterterms); the rest-frame massive Dirac spinor fixed (was $2 times |M|^2$ at $|p| = 0$). XX01–XX08 = MadLoop's quadruple precision (@tab:dec: #dmc.pass of #dm.rows.len() pass, DD ≤ #sci(dml.dd_vs_reference.value)), $Z -> u overline(u)$ = the massless form factor, Ward on $t -> b W^+ g$, LC/NLC by the $N_c$ scan, public route and native inputs. Refused typed: loop-induced decays (`loop-induced`), chains and `$` (`madloop-syntax`).]),
   ([UFO genericity: HC_NLO_X0], "partial", [*Since M-FINAL-b* (MF-GM-HC, `e2f0c78e`): the Higgs characterisation UFO at NLO, HC01–HC04 and HC06 = MadLoop 3.7.0 through generic fixes (UFO namespace head, Feynman-gauge refusal only where massive vectors run in the loops, positional counterterm keys, a colour-singlet contact split through an adjoint auxiliary); *since M-FINAL* HC05 ($g g -> x_0 g g$) too (MF-HC05, `e3d4ef4d`): a counterterm colour the tree vocabulary refuses (its five-point $f f f f$ $R_2$ contact) is projected exactly at $N_c = 3$ onto products of at most two primitive adjoint tensors (zero residual required, else refused); all six ≤ #sci(hc-max) (@tab:hc). *PR \#38* (LP-MODELS): compiled-mode HEFT quark tree amplitudes (built-in SM-HEFT and HC_NLO_X0) were 4× too large, now = MG5 and the MadLoop Borns. Open, typed: $u overline(u) -> x_0 g g g$ (the U(1)-leak check), single-trace and C-odd five-point $R_2$ colours.]),
   ([Electroweak, complex mass], "supported", [*M-SM* (@msm, @tab:cms): QCD, QED and joint `[virt=QCD QED]` corrections on the shipped `loop_qcd_qed_sm` and `loop_qcd_qed_sm_Gmu` reproduce MadLoop in every class of `m-sm/PLAN.md` §1.1 (#sxc.pass of #sx-rows rows pass, #sx-partial.join(" and ") partial: F7, accepted). EW native inputs (ew-native, EWI-N), the EW ladder (ew-validate, EWI-7: ghosts of vetoed vector bosons, Goldstone-side root mixing), *per-leg photon tagging* (MS-PHOTON: `loop.external_photons` = `"final"` by default, `"all"`, `"none"` or a leg list, as MG5's `!a!`; $alpha(0)$ and the conversion counterterm on the tagged legs only), the *complex-mass scheme* (MS-CMS: MG5's transform per (mass, width) pair, coloured widths included; MS-CMS-N: native complex pole masses; = MadLoop CMS on CM01–CM05 and CM07–CM10), the EW pole split (MS-POLES), the EW generation stages in Rust (MS-GEN: catalogue segment polynomials and the parameter program's renaming behind PyO3, the Python stages the oracles, outputs byte-identical, EW generation 2.6–3.2× faster) and Symbolica-free binary64 (MS-MASTERS); since M-FINAL-b the EW export's kernel-string reading and parameter-program renaming run in Rust too (MF-RUST, `b36af289`: Python stages the oracles, byte-identical; EW $2 -> 3$ export 62.3 → 32.4 s). Before M-SM on `loop`: the QED Catani operator, EW fermion lines, 't Hooft–Feynman gauge for trees, loops and counterterms, on-shell photons at $alpha(0)$, the UFO's EW counterterms lowered at scale, Lorentz `Epsilon`, lepton lines through the loop (EWI-0 to EWI-7b). Refused, typed: the Missing box of @status; EW LC/NLC never.]),
-  ([Required set], "supported", [All eight generate and agree with their references in all coefficients with native inputs: seven in @tab:validation (validated on the WP3.1 branch before its integration), the EW target in the M-SM campaign (TV07 against MadLoop, Recola and OpenLoops, @msm); $g g -> g g g g g$ against NJet's double-double values (its binary64 points 4 and 8 at $O(10^(-8))$ accepted by the user, within the estimate); the generator is on `loop` since G-int, and G1 times all seven in batches at full and leading colour (@g1; the $2 -> 5$ rows since `measure-g1-7leg`; all re-timed at #raw(g.slice_revision)). The seven-gluon Ward check (addendum H): #ms.status_notes.notes.gg_ggggg.ward_status. The G1 accuracy check asserts binary64 where $E <= 10^(-9)$ and DD elsewhere (user E1 ruling, g1-accuracy); R3 for QCD is recorded (DECISIONS 2026-10-29 \~18:25: two providers per process within their agreement, $g g -> g g g g g$ against NJet alone, addendum F). G1 times the EW target indicatively (@msm). The provider reference trees no longer read the old working root (reference-relocate, `48aeb123`; provider values bitwise, and the toolkit refuses provider files outside the configured reference root).]),
-  ([Performance gates], "partial", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) without a matched provider: no gate]\; the gate is taken at $B = 128$ only (user 2026-10-28): $B = 1$ and the $2 -> 5$ rows' $B = 16$ are reported without a verdict (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history).#for r in ew-status [ The EW row #box(math-label(r.math)) (EW) is timed indicatively: #ratio-mult(r.full_colour.main) of #r.full_colour.fastest.name's time at $B = 128$, no verdict ([U5]).] Not re-timed at M-FINAL (G1 of the M-FINAL-b report). Missing: the final retime with the binding EW speed gate (deferred to the next milestone) and the provider protocol-mode columns.]),
+  ([Required set], "supported", [All eight generate and agree with their references in all coefficients with native inputs: seven in @tab:validation (validated on the WP3.1 branch before its integration), the EW target in the M-SM campaign (TV07 against MadLoop, Recola and OpenLoops, @msm); $g g -> g g g g g$ against NJet's double-double values (its binary64 points 4 and 8, above the check's $2 times 10^(-8)$, accepted by the user: within the estimate, DD = NJet); the generator is on `loop` since G-int, and G1 times all seven in batches at full and leading colour (@g1; the $2 -> 5$ rows since `measure-g1-7leg`; all re-timed at #raw(g.slice_revision)). The seven-gluon Ward check (addendum H): #ms.status_notes.notes.gg_ggggg.ward_status. The G1 accuracy check asserts binary64 where $E <= 10^(-9)$ and DD elsewhere (user E1 ruling, g1-accuracy); R3 for QCD is recorded (DECISIONS 2026-10-29 \~18:25: two providers per process within their agreement, $g g -> g g g g g$ against NJet alone, addendum F). G1 times and gates the EW target since the final retime (@msm). The provider reference trees no longer read the old working root (reference-relocate, `48aeb123`; provider values bitwise, and the toolkit refuses provider files outside the configured reference root).]),
+  ([Performance gates], "partial", [G1 on `loop` (@g1, native per-point inputs, #raw(g.slice_revision)) at $B = 128$: #nat-pass.len() of #nat-gated.len() gated processes pass#if nat-decided.len() > 0 [ (#names(nat-decided) by user decision, #nat-decided.map(p => decision(p, big, bat(nat-c(p), big).gate).label.replace("user decision ", "")).join([, ]))]#if nat-open.len() > 0 [, #names(nat-open) open]#if nat-fail.len() > 0 [, #names(nat-fail) #if nat-fail.len() == 1 [fails] else [fail]]#if nat-ungated.len() > 0 [; #nat-ungated.len() below 5 ms per point are not gated (user, 2026-10-24)]#if s-no-gate.len() > 0 [; #row-names(s-no-gate.map(r => r.key)) without a matched provider: no gate]\; the gate is taken at $B = 128$ only (user 2026-10-28): $B = 1$ and the $2 -> 5$ rows' $B = 16$ are reported without a verdict (@tab:g1batch). The Python per-point inputs before G-int failed every gate they generated (history).#for r in ew-status [ The EW row #box(math-label(r.math)) (EW) is gated since the final retime: #ratio-mult(r.full_colour.main) of #r.full_colour.fastest.name's time at $B = 128$#if s-gate(r) != none [, #s-gate(r).status].] Re-timed at M-LIT-a0 (the final retime deferred from M-FINAL, on #raw(g.slice_revision)). Missing: the provider protocol-mode columns.]),
   ([$2 -> 6$], "supported", [M-FINAL item 1 (user ruling 2026-10-31): $g g -> 6g$ ($N_f = 5$, no top), $u overline(u) -> 6g$ and $u overline(u) -> u overline(u) g g g g$, each at LC and full colour, generate, store (every step below 150 GB), load and evaluate on one engine after the optimisation rounds (#raw(sxj.engine.revision.slice(0, 8)), an ancestor of the pin; @tab:summary, #link(<sixlegs>)[records and checks]\; the N = 8 reduction adapter is tested, MF-8G-0 `7cdd32e9`); double pole, Catani (FC), NGluon (LC), double-double and the quark rows' Ward pass, the 8-gluon Ward is recorded but not asserted (beyond the binary64 scope) and its full-colour and double-double Wards were not run (user, 2026-11-04). Internal checks only: no provider exists.]),
   ([Built-in SM (tree)], "supported", [*Since M-FINAL* (MF-NORM `049a9389`, MF-LIMITS-PY `d958f2ea`): equal to the UFO `sm` in the compiled, eager, on-the-fly and recurrence lanes (the defects corrected and their history: @status, built-in SM fixes), $1 -> n$ decays; checked by the default-tier sweep `tests/integration/test_builtin_sm_ufo_sweep.py` (every $2 -> 2$ class, the $1 -> 2$ decays, $2 -> 3$ / $1 -> 3$ samples) against the UFO `sm` to $10^(-10)$. Typed refusals as for the UFO `sm`: four-quark processes without gluon exchange in the recurrence lane, `dirac-weyl-closure`. A one-loop request needs an NLO UFO (the built-in SM is tree only).]),
   ([Dependencies], "supported", [No fork (user 2026-11-02, MF-SYMBOLICA `e0a8375c`; `dependencies/manifest.json`): Symbolica = symbolica-dev `community` `36cbac3a` + the consolidated PR symbolica-dev/symbolica\#163 (`20a9da94`), NinjaRS main `b3a29c85`, oneloopmaster main `128ea664`; Python through the Community build of `20a9da94` or PyPI symbolica 3.0.3.]),
@@ -3124,7 +3269,7 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
   - *Build:* `typst compile benchmarks.typ benchmarks.pdf` in
     `docs/performance_reports/loop/` (Typst 0.15).
   - *Status, in-flight work, decisions:* `data/milestone.json`, from the
-    integration merges of #ms.engine_revision since #ms.previous_loop
+    commits and integration merges of #ms.engine_revision since #ms.previous_loop
     (#ms.integrated.map(r => [#r.wp.split(" ").last() #raw(r.sha)]).join([, ])\; commit subjects "Integrate work/v2-…")\;
     `workspace/reports/engine-v2/slice-status.md` (integration blocks,
     DECISIONS 2026-10-23 to 29, the milestone pushes m1025a of 2026-10-25 \~13:45 UTC, m1025c of 2026-10-26 \~06:35 UTC
@@ -3149,13 +3294,13 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     green-to-red run times, summary pages with only Table 1, Figure 1 and legends,
     and the gate rule "#thr-rule.label", recorded as `gate_decisions.threshold_rule`
     and applied by `scripts/build_summary.py` and this report); milestone M-FINAL-b (DECISIONS 2026-11-01 \~23:35 and
-    2026-11-02 \~00:20, \~01:05, \~03:08: pin #raw(ms.previous_engine) = `617b59cd` + the test-only mf-map-fix, native
+    2026-11-02 \~00:20, \~01:05, \~03:08: pin `f3d9e361` = `617b59cd` + the test-only mf-map-fix, native
     `loop-native-v2-slice-b36af289`\; the plan `workspace/reports/engine-v2/m-final/PLAN.md` §2, §3 and the user's rulings of
     2026-10-31 \~11:00 (M-FINAL order, rescue only in the Python API, decays at the real mass with zero own width, EW
     LC/NLC never), \~14:20 (direct $R_2$ dropped), Q11 (one final retime) and 2026-11-01 \~23:15 (8-leg runs stopped
     for optimisation rounds); the G1 regression spot check at `617b59cd` against `71e2041e`:
-    `workspace/tmp/g1-m1101-mfb/logs/compare.txt`); milestone M-FINAL, closed (pin #raw(ms.engine_revision), native
-    #raw(ms.native_build.name)\; USER 2026-11-04 \~08:00 'close M-FINAL now' and the lean close of 2026-11-05 \~07:30,
+    `workspace/tmp/g1-m1101-mfb/logs/compare.txt`); milestone M-FINAL, closed (pin #raw(ms.previous_engine), native
+    `loop-native-v2-slice-e0a8375c`\; USER 2026-11-04 \~08:00 'close M-FINAL now' and the lean close of 2026-11-05 \~07:30,
     DECISIONS \~07:35: no local gate sweep, no retime, no closing audit, global tests by CI on `loop`; DECISIONS 2026-11-04
     \~17:40 (no Ward/Catani/campaign re-runs; status changes from package evidence only), \~22:00 (no pedantic tests),
     \~19:15 (mechanical limits only), \~08:35 (8-leg stop lifted) and 2026-11-03 \~13:05 (model compiler 17); the
@@ -3163,7 +3308,11 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     `workspace/reports/engine-v2/m-final/2to6-report.md`, the seven-leg round table `m-final/round-table-7leg.md`, mf-8g-3's
     report `m-final/8g3-report.md` §9 (A24) and the Symbolica re-pin report `m-final/symbolica-repin-report.md`; the
     built-in SM fixes: mf-norm's package report (its table for the collaborator) with the integration block of
-    slice-status UPDATE 2026-11-05 \~08:05 and DECISIONS \~06:10); `HANDOFF_24_10_2026.md` §6; MASTER_PLAN
+    slice-status UPDATE 2026-11-05 \~08:05 and DECISIONS \~06:10); milestone M-LIT-a0 (pin #raw(ms.engine_revision), native
+    #raw(ms.native_build.name)\; the user's green light for M-LIT of 2026-11-06 \~07:05 and DECISIONS \~07:20, \~07:32;
+    `workspace/reports/engine-v2/m-lit/PLAN.md` §3.2 LIT-RETIME, §3.7 "Pushes", §5.1, and `m-final/PLAN.md` §2.4 MF-RETIME;
+    the user's request of 2026-11-06 \~06:00 for the loop-induced summary table; the retime's records
+    `workspace/reports/engine-v2/measure-g1/records/mlita0`); `HANDOFF_24_10_2026.md` §6; MASTER_PLAN
     2026-10-23/24 entries; REQUIREMENTS_ADDENDUM A, D, F, G, H, I, J; DESIGN §5.5,
     §3.3, §5.7 (G1), §6.1, §6.2, §7.2, §7.5, §7.9, §12.1, §12.4, WP3.1, WP3.2; the 24 October pushes (59badc7a and b4d76cc3,
     gates in slice-status.md), the G-int push (79df367a, 25 October), the m1025a push (bae3b9ea, 25 October), the
@@ -3188,8 +3337,8 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     campaign's records, rebuilt byte-identically), `data/msm-findings.json`
     (MS-VALIDATE's triage, unchanged at the pin), `data/msm-public.json` (the public-route test file's JUnit outcomes and
     cases), `data/msm-selftest.json` (wheel self-test), combined with the manifest by `scripts/build_msm_matrix.py` into
-    `data/msm-matrix.json`; the G1 EW row `data/msm-g1.json` and `data/msm-g1-values.json` (`python -m tools.loop_benchmark
-    gate` over the EW records; Table 1 through `data/summary.json`); the campaign's records, logs and scripts in
+    `data/msm-matrix.json`; the G1 EW row `data/msm-g1.json` and `data/msm-g1-values.json` (`python -m tools.loop_benchmark gate`
+    over the EW records with `--host-spread` = the G1 campaign's `host_provider_spread`; Table 1 through `data/summary.json`); the campaign's records, logs and scripts in
     `workspace/reports/engine-v2/m-sm/records/m1031-msm/` (a copy of `workspace/tmp/campaign-m1031-msm`: `results/`, the
     JUnit and logs of the 32 jobs, `wheel/`, `STATE.md`). Re-run at M-FINAL-b (`617b59cd`): `data/msm.json`,
     `msm-public.json` and `msm-selftest.json` from `workspace/reports/engine-v2/m-sm/records/m1101-mfb/` (a copy of
@@ -3259,9 +3408,11 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     `out/inputs-final.txt` and labels `out/meta-final.json`, the campaign's scripts `scripts/`), milestone M-QCD's at
     `e18a024b` `m1029-mqcd/` (a copy of `workspace/tmp/g1-m1029-mqcd`: `runs/`, `logs/`, `bin/`, the gate
     inputs `inputs-final.txt`, labels `meta-final.json`, `compare.json`, `gate.log`, `STATE.md`; the seven-gluon stores
-    are not copied) and milestone M-SM's at #raw(g.slice_revision) `m1031-msm/` (a copy of `workspace/tmp/g1-m1031-msm`:
+    are not copied), milestone M-SM's at `71e2041e` `m1031-msm/` (a copy of `workspace/tmp/g1-m1031-msm`:
     the same files, the EW gate's `msm-g1.json`, `msm-g1-values.json`, `msm-gate.log` and the public-path check
-    `confirm/`); provider records reused from the first campaign and the fix round, not re-run); the
+    `confirm/`) and the final retime's (M-LIT-a0, lit-retime) at #raw(g.slice_revision) `mlita0/` (a copy of
+    `workspace/tmp/lit-retime`: `runs/`, `logs/`, `bin/`, the gate inputs and labels, `compare.json`, the EW gate's files and
+    `confirm/`; the seven-gluon stores are not copied); provider records reused from the first campaign and the fix round, not re-run); the
     earlier $2 -> 5$ records and the provider runs of those rows in
     `workspace/reports/engine-v2/measure-g1-7leg/records/` (`runs-f2/`, `runs-f4/`), MadLoop exports of the G1-only processes in
     `workspace/reference/runs/g1/`; recalibration
