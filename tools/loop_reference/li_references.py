@@ -248,19 +248,52 @@ def run_madloop(args, spec, points, run_dir, result):
     result["settings"]["HELAVGFACTOR"], result["settings"]["IDEN"] = helavg, iden
     orders = spec["squared_orders"]
     count = len(points["points"])
-    stdin = (f"{orders['QCD']} {orders['QED']} {references.value(spec['scheme_data'], 'aS')} "
-             f"{args.madloop_accuracy} {0 if production else 1} {warmup}\n{count}\n"
-             + "\n".join(references.point_lines(points)) + "\n")
+    head = (f"{orders['QCD']} {orders['QED']} {references.value(spec['scheme_data'], 'aS')} "
+            f"{args.madloop_accuracy} {0 if production else 1} {warmup}\n")
+    tail = ""
     if args.helicities:
         tuples = references.madloop_helicities(export)
-        stdin += f"{len(tuples)}\n" + "\n".join(" ".join(map(str, t)) for t in tuples) + "\n"
+        tail = f"{len(tuples)}\n" + "\n".join(" ".join(map(str, t)) for t in tuples) + "\n"
         result["per_helicity_normalization"] = (
             "value = |A(h)|^2/avg (the summed convention's divisor, PLAN Q39) = MadLoop's USERHEL value "
             "(SLOOPMATRIXHEL_THRES: colour average and identical factor, no helicity average) / HELAVGFACTOR; "
             "helicity labels in MadLoop's HelConfigs.dat convention")
-    stdout, wall = references.run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu)
-    rows, extra = parse_madloop(stdout, count, helavg)
-    return rows, extra, wall
+    jobs = max(1, min(args.jobs, count))
+    if jobs == 1:
+        stdin = head + f"{count}\n" + "\n".join(references.point_lines(points)) + "\n" + tail
+        stdout, wall = references.run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu)
+        return (*parse_madloop(stdout, count, helavg), wall)
+    # One driver per contiguous block of points, each in its own copy of the
+    # run directory (MadLoop writes its filters into the resources) on its own
+    # core (--cpu, --cpu + 1, ...): the same calls as one driver over all
+    # points, each block with its own warm-up.
+    from concurrent.futures import ThreadPoolExecutor
+
+    lines = references.point_lines(points)
+    bounds = [(k * count // jobs, (k + 1) * count // jobs) for k in range(jobs)]
+    parts = []
+    for k, (lo, hi) in enumerate(bounds):
+        part = run_dir / f"part-{k + 1}"
+        part.mkdir(exist_ok=True)
+        references.prepare_madloop_run(spec, export, part, args.mg5, len(spec["pdgs"]), params)
+        stdin = head + f"{hi - lo}\n" + "\n".join(lines[lo:hi]) + "\n" + tail
+        cpu = None if args.cpu is None else args.cpu + k
+        parts.append((part, stdin, cpu, lo, hi))
+    with ThreadPoolExecutor(jobs) as pool:
+        outputs = list(pool.map(
+            lambda job: references.run_native([str(binary)], job[1], job[0], job[0] / "output.log", job[2]), parts))
+    rows, extra, record = [], None, []
+    for (part, _, cpu, lo, hi), (stdout, wall) in zip(parts, outputs, strict=True):
+        block, block_extra = parse_madloop(stdout, hi - lo, helavg)
+        rows += block
+        extra = extra or block_extra
+        record.append({"points": [lo + 1, hi], "cpu": cpu, "wall_seconds": wall,
+                       **{key: block_extra.get(key) for key in
+                          ("initial_call_seconds", "initialization_calls", "initialization_status")}})
+    extra = {**extra, "parallel_blocks": record}
+    for key in ("initial_call_seconds", "initialization_calls", "initialization_status"):
+        extra.pop(key, None)
+    return rows, extra, max(wall for _, wall in outputs)
 
 
 # ------------------------------------------------------------------- Recola
@@ -572,6 +605,8 @@ def main():
     run.add_argument("--madloop-param", action="append", default=[], metavar="KEY=VALUE")
     run.add_argument("--madloop-quadruple", action="store_true")
     run.add_argument("--helicities", action="store_true", help="MadLoop: every helicity configuration too")
+    run.add_argument("--jobs", type=int, default=1,
+                     help="MadLoop: split the points into this many blocks run concurrently on cores --cpu, --cpu + 1, ...")
     run.add_argument("--tag", help="secondary run label, e.g. production")
     run.add_argument("--recola", type=Path)
     run.add_argument("--openloops", type=Path)

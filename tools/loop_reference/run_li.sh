@@ -6,6 +6,8 @@
 # merge and the committed fixture. Steps already done are kept (rerun to resume).
 # Every provider step runs under timeout (default 2700 s, REQUIREMENTS_ADDENDUM F);
 # a timeout is recorded as a 45-minute miss in <step>.status.json.
+# LI_MADLOOP_JOBS=n splits the MadLoop reference points into n blocks run
+# concurrently on cores cpu .. cpu+n-1 (li_references.py run --jobs).
 #   run_li.sh <process> <cpu> [fixture-dir]
 set -u
 process=$1
@@ -46,6 +48,7 @@ fi
 if [ -f "$work/export.done" ] || grep -q '"compiled"' "$work/madloop-export.generation.json" 2>/dev/null; then
   step madloop $li run --process "$process" --provider madloop --points "$work/points.json" --work-dir "$work" \
     --mg5 "$root/sources/MG5_aMC_v3_7_0" --madloop-export "$work/madloop-export" --helicities --cpu "$cpu" \
+    --jobs "${LI_MADLOOP_JOBS:-1}" \
     --reference-root "$root" || echo "MadLoop run failed" >&2
 fi
 [ "$(spec "'unavailable' in p['recola']")" = True ] || step recola $li run --process "$process" --provider recola --points "$work/points.json" --work-dir "$work" \
