@@ -6,6 +6,8 @@
 # merge and the committed fixture. Steps already done are kept (rerun to resume).
 # Every provider step runs under timeout (default 2700 s, REQUIREMENTS_ADDENDUM F);
 # a timeout is recorded as a 45-minute miss in <step>.status.json.
+# LI_MADLOOP_JOBS=n splits the MadLoop reference points into n blocks run
+# concurrently on cores cpu .. cpu+n-1 (li_references.py run --jobs).
 #   run_li.sh <process> <cpu> [fixture-dir]
 set -u
 process=$1
@@ -38,14 +40,17 @@ step() {  # step <label> <command...>
 }
 li="$python $here/li_references.py"
 step points $li points --process "$process" --output "$work/points.json" || exit 1
-if [ ! -f "$work/madloop-export.generation.json" ] || ! grep -q '"compiled"' "$work/madloop-export.generation.json"; then
+if [ "$(spec "'unavailable' in p['madloop']")" = True ]; then
+  :  # the specification records why MadLoop is no reference for this row
+elif [ ! -f "$work/madloop-export.generation.json" ] || ! grep -q '"compiled"' "$work/madloop-export.generation.json"; then
   [ -d "$work/madloop-export" ] && [ ! -f "$work/export.done" ] && { echo "incomplete export at $work/madloop-export: remove it to retry" >&2; exit 1; }
   step export $li export --process "$process" --mg5 "$root/sources/MG5_aMC_v3_7_0" --output "$work/madloop-export" \
     --timeout "$limit" || echo "MadLoop export failed" >&2
 fi
-if [ -f "$work/export.done" ] || grep -q '"compiled"' "$work/madloop-export.generation.json" 2>/dev/null; then
+if [ "$(spec "'unavailable' in p['madloop']")" != True ] && { [ -f "$work/export.done" ] || grep -q '"compiled"' "$work/madloop-export.generation.json" 2>/dev/null; }; then
   step madloop $li run --process "$process" --provider madloop --points "$work/points.json" --work-dir "$work" \
     --mg5 "$root/sources/MG5_aMC_v3_7_0" --madloop-export "$work/madloop-export" --helicities --cpu "$cpu" \
+    --jobs "${LI_MADLOOP_JOBS:-1}" \
     --reference-root "$root" || echo "MadLoop run failed" >&2
 fi
 [ "$(spec "'unavailable' in p['recola']")" = True ] || step recola $li run --process "$process" --provider recola --points "$work/points.json" --work-dir "$work" \

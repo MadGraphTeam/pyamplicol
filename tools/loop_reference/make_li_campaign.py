@@ -64,8 +64,9 @@ ROWS = [
      "analytic", "lit-val"),
     ("LI-Z1", "exact colour zeros h > g a, z > g a", None,
      "exact 0 (MG5 generates no diagram: NoDiagramException)", ["L8"], "N, T", "zeros", None),
-    ("LI-Z1b", "numerical Furry zeros g g > a a a, g g > h a", ["li_gg_ha"],
-     "zero within estimate (provider values recorded)", ["L8"], "N, T", "zeros", None),
+    ("LI-Z1b", "numerical Furry zeros g g > a a a, g g > h a", ["li_gg_ha", "li_gg_aaa"],
+     "zero within estimate (provider values recorded); g g > a a a: Recola only (MG5 removes Furry loops by rule)",
+     ["L8"], "N, T", "zeros", None),
     ("LI-Z2", "integrated zeros g g > z, z > g g, e+ e- > g g", ["li_gg_z", "li_z_gg", "li_emep_gg"],
      "zero within estimate (provider values recorded)", ["L8"], "N, T", "zeros", None),
     ("LI-W1/L1/P1/C1/S1", "Ward, rotations/boosts, amplitude poles, crossing, N_f multiplicity", None,
@@ -85,29 +86,45 @@ ROWS = [
      "ML, RC (RC mandatory); AN for a a > h (crossing of LI-A3)", ["L1"], "N, T", "EW", "lit-ew"),
     ("LI-E3", "e+ e- > h a, e+ e- > h h [QED]", ["li_emep_ha", "li_emep_hh"],
      "ML, RC (RC mandatory for e+ e- > h h)", ["L1"], "N, T", "EW", "lit-ew"),
-    ("LI-E4", "e+ e- > g g g [QED]", None, "ML, RC", ["L1"], "N, T", "2->3 gate", "lit-ref-b"),
-    ("LI-31", "g g > h h h", None, "ML, OL pphhh2, RC; supplied points", ["L1"], "N, T", "2->3 gate", "lit-ref-b"),
+    ("LI-E4", "e+ e- > g g g [QED]", ["li_emep_ggg"], "ML, RC (no OpenLoops ls library)", ["L1"], "N, T",
+     "2->3 gate", None),
+    ("LI-31", "g g > h h h", ["li_gg_hhh"], "ML, OL pphhh2, RC; supplied points", ["L1"], "N, T", "2->3 gate", None),
     ("LI-32", "g g > h g g", ["li_gg_hgg"], "ML, OL pphjj2 hgggg, RC", ["L1"], "N, T", "2->3 gate", None),
-    ("LI-33", "g g > z z g, g g > a a g, g g > w+ w- g", ["li_gg_zzg"],
-     "ML, OL ppvvj2, RC (g g > a a g, g g > w+ w- g: lit-ref-b)", ["L1"], "N, T", "2->3 gate", None),
-    ("LI-34", "g g > z z z", None, "ML, OL ppvvv2, RC; supplied points", ["L1"], "N, T", "2->3 gate", "lit-ref-b"),
-    ("LI-35", "g g > h z g, g g > a g g, g g > z g g", None, "ML, OL, RC", ["L1"], "N, T", "2->3 gate", "lit-ref-b"),
-    ("LI-36", "u u~ > h g g, u u~ > d d~ h (QED <= 1)", None, "ML, OL, RC", ["L1"], "N, T", "2->3 gate",
-     "lit-ref-b"),
+    ("LI-33", "g g > z z g, g g > a a g, g g > w+ w- g", ["li_gg_zzg", "li_gg_aag", "li_gg_wpwmg"],
+     "ML, OL ppvvj2 (zzggg, aaggg, wwxggg), RC", ["L1"], "N, T", "2->3 gate", None),
+    ("LI-34", "g g > z z z", ["li_gg_zzz"], "ML, OL ppvvv2, RC; supplied points", ["L1"], "N, T", "2->3 gate", None),
+    ("LI-35", "g g > h z g, g g > a g g, g g > z g g", ["li_gg_hzg", "li_gg_agg", "li_gg_zgg"],
+     "ML, OL pphzj2 hzggg / ppajj2 agggg (added library), RC; g g > z g g: ML, RC (no OpenLoops ls library)",
+     ["L1"], "N, T", "2->3 gate", None),
+    ("LI-36", "u u~ > h g g, u u~ > d d~ h (QED <= 1)", ["li_uux_hgg", "li_uux_ddxh"],
+     "ML, OL pphjj2 uuxhgg / uuxddxh, RC (mandatory for u u~ > d d~ h)", ["L1"], "N, T", "2->3 gate", None),
     ("LI-37", "h > g g g, z > g g g", ["li_h_ggg", "li_z_ggg"], "ML, RC", ["L1"], "N, T", "1->3", None),
-    ("LI-41", "g g > h h g g", None, "P15 point 1.3033633142042775e-12 GeV^-4; ML, OL", ["L1"], "N, T", "2->4 gate",
-     "lit-ref-b"),
-    ("LI-42", "g g > h g g g", None, "ML (45-min rule), OL", ["L1"], "N, T", "2->4 gate", "lit-ref-b"),
-    ("LI-43", "g g > e+ e- mu+ mu-", None, "OL ppllll2, ML", ["L1"], "N, T", "2->4 gate", "lit-ref-b"),
-    ("LI-44", "g g > a a g g, g g > z z z z", None, "OL, ML", ["L1"], "N, T", "2->4 optional", "lit-ref-b"),
-    ("LI-51", "g g > e+ e- mu+ mu- g or g g > h g g g g", None, "OL / internal", ["L1"], "N, T", "2->5 stretch",
-     "lit-ref-b"),
-    ("LI-X1", "one EFT row with rank > N+2", None, "ML (TIR)", ["L1"], "T", "EFT", "lit-eft"),
+    ("LI-41", "g g > h h g g", ["li_gg_hhgg"],
+     "ML, OL pphhjj2 hhgggg, RC; the P15 point 1.3033633142042775e-12 GeV^-4 is lit-val's", ["L1"], "N, T",
+     "2->4 gate", None),
+    ("LI-42", "g g > h g g g", ["li_gg_hggg"], "ML, OL pphjjj2 hggggg, RC", ["L1"], "N, T", "2->4 gate", None),
+    ("LI-43", "g g > e+ e- mu+ mu-", ["li_gg_emepmupmum"],
+     "ML, OL ppllll2 (fixed widths; Recola's width convention differs: excluded, deviation recorded)", ["L1"],
+     "N, T", "2->4 gate", None),
+    ("LI-44", "g g > a a g g, g g > z z z z", ["li_gg_aagg", "li_gg_zzzz"],
+     "ML, OL ppaajj2 aagggg (added library), RC; g g > z z z z: ML, RC (no OpenLoops ls library)", ["L1"], "N, T",
+     "2->4 optional", None),
+    ("LI-51", "g g > e+ e- mu+ mu- g or g g > h g g g g (2->5 stretch: the first is run)", ["li_gg_emepmupmumg"],
+     "ML, OL ppllllj2 (added library), RC", ["L1"], "N, T", "2->5 stretch", None),
+    ("LI-X1", "rank > N+2 execution check: EFT examples with two dimension-6 insertions (Q24 open)", None,
+     "none (USER 2026-11-06 ~14:55): run-only through TIRust, which must go through and agree with NinjaRS wherever "
+     "NinjaRS serves (NinjaRS refuses rank > N+2: those families are TIRust-only); no benchmark, no correctness or "
+     "gauge claim, no MadLoop TIR reference. Why the planned MadLoop row was not produced: HC_NLO_X0 declares QNP "
+     "expansion_order = 1, so an amplitude carries one x0 vertex and its loops reach rank N+1 at most (the heft "
+     "g g > x0 g export: MAXRANK 5 at N = 4; g g > x0 x0 x0 QNP=3 is capped at QNP=1 and has no diagram), and one "
+     "dimension-6 insertion stays at rank <= N+1 in Feynman gauge",
+     ["run", "L6"], "T (N where it serves)", "EFT", "lit-eft"),
     ("LI-O1", "correlated, colour-resolved and single-helicity outputs", None,
      "RC loop-induced colour correlations; identities", ["sum_h"], "N, T", "observables", "lit-obs"),
-    ("LI-C1", "complex-mass scheme rows (Q7)", ["li_gg_aa_cms", "li_aa_aa_cms", "li_gg_zz_cms"],
-     "RC, ML, OL where designated; AN with complex masses (g g > a a, a a > a a); g g > a a g, g g > e+ e- mu+ mu-, "
-     "e+ e- > g g g under CMS: lit-ref-b", ["L1", "L2"], "N, T", "EW", "lit-ew"),
+    ("LI-C1", "complex-mass scheme rows (Q7)",
+     ["li_gg_aa_cms", "li_aa_aa_cms", "li_gg_zz_cms", "li_gg_aag_cms", "li_emep_ggg_cms", "li_gg_emepmupmum_cms"],
+     "RC, ML, OL where designated; AN with complex masses (g g > a a, a a > a a)", ["L1", "L2"], "N, T", "EW",
+     "lit-ew"),
 ]
 
 
@@ -119,7 +136,8 @@ def fixture_summary(process):
     out = {"process": process, "fixture": f"required/li/{process}.json", "madloop_process": data["madloop_process"],
            "scheme": data["scheme"], "providers": sorted(data["providers"]), "points": len(data["points"]),
            "max_provider_pair_relative_error": data["max_provider_pair_relative_error"],
-           "status": "zero row" if data.get("zero_row") else "pass" if data["passed"] else "FAIL"}
+           "status": "zero row" if data.get("zero_row") else "pass" if data["passed"] else
+           "single provider" if len(data["providers"]) < 2 else "FAIL"}
     for key in ("excluded", "unavailable", "misses_45_min"):
         if data.get(key):
             out[key] = {k: (v["reason"] if isinstance(v, dict) else v) for k, v in data[key].items()}
@@ -128,20 +146,79 @@ def fixture_summary(process):
         out["reports"] = {k: {"value": v[0], "expected": v[1]} for k, v in reports.items()}
     if any("limit_oracle" in row for row in data["rows"]):
         out["limit_oracle_ratios"] = [row["limit_oracle"]["ratio_to_reference"] for row in data["rows"]]
+    if data.get("secondary_runs"):
+        out["secondary_runs"] = {k: v["max_relative_deviation_from_reference"]
+                                 for k, v in data["secondary_runs"].items()}
+    cautions = [index + 1 for index, row in enumerate(data["rows"]) if row.get("l1_caution")]
+    if cautions:
+        out["l1_caution_points"] = cautions
     timing = sorted(p.name for p in TIMING.glob(f"{process}-providers*.json"))
     if timing:
         out["provider_timing_records"] = [f"required/li/timing/{name}" for name in timing]
+        out["provider_ms_per_point"], misses, notes = timing_summary(process)
+        if misses:
+            out["provider_timing_misses"] = misses
+        if notes:
+            out["provider_value_notes"] = notes
     return out
+
+
+def timing_summary(process):
+    """Mean ms per point of each timed provider (16 stream points, one pinned
+    core): MadLoop 7|6|1 (production card), its 6|7|1 OPP column, its
+    one-helicity column (mean per kept-helicity call), OpenLoops, Recola;
+    the timing columns a record marks as missed (45-minute rule); and the
+    providers whose values a record excludes or excepts at some stream points
+    (the timing stays valid)."""
+    out, misses, notes = {}, {}, {}
+    main = TIMING / f"{process}-providers.json"
+    records = [main] if main.exists() else []
+    records.append(TIMING / f"{process}-providers-madloop-opp.json")
+    for path in records:
+        if not path.exists():
+            continue
+        tag = path.name[len(f"{process}-providers"):-len(".json")].lstrip("-")
+        for provider, entry in json.loads(path.read_text())["providers"].items():
+            if "mean_seconds_per_point" not in entry:
+                continue
+            if tag == "madloop-opp":
+                out["madloop_6|7|1"] = round(entry["mean_seconds_per_point"] * 1e3, 4)
+                continue
+            if tag == "":
+                out[provider] = round(entry["mean_seconds_per_point"] * 1e3, 4)
+                for field in ("values_excluded", "value_exceptions"):
+                    if field in entry:
+                        notes.setdefault(provider, {})[field] = entry[field]
+            one = entry.get("one_helicity") if provider == "madloop" else None
+            if one and "miss" in one:
+                misses["madloop_one_helicity"] = one["miss"]
+            elif one:
+                out["madloop_one_helicity"] = round(one["mean_seconds_per_call"] * 1e3, 4)
+    return out, misses, notes
+
+
+# PLAN §4.1: the 2->4 optional rows are gated where run and matched, the 2->5
+# stretch only if a provider matches: a provider timing of one of its runs.
+OPTIONAL_TIERS = ("2->4 optional", "2->5 stretch")
+TIMED_PROVIDERS = ("madloop", "openloops", "recola")
+
+
+def gated(tier, runs):
+    if "gate" in tier:
+        return True
+    return tier in OPTIONAL_TIERS and any(
+        provider in run.get("provider_ms_per_point", {}) for run in runs for provider in TIMED_PROVIDERS)
 
 
 def build():
     rows = []
     for row_id, text, processes, references, checks, backends, tier, owner in ROWS:
+        runs = [fixture_summary(p) for p in processes or ()]
         entry = {"row": row_id, "processes": text, "references": references, "checks": checks, "backends": backends,
-                 "tier": tier, "gated": "gate" in tier}
+                 "tier": tier, "gated": gated(tier, runs)}
         if owner:
             entry["owner"] = owner
-        entry["runs"] = [fixture_summary(p) for p in processes or ()]
+        entry["runs"] = runs
         rows.append(entry)
     return {
         "description": ("M-LIT loop-induced validation matrix (workspace/reports/engine-v2/m-lit/PLAN.md §4): the rows "
@@ -160,7 +237,8 @@ def build():
             "single_helicity": "|A(h)|^2/avg (Q39) = MadLoop's USERHEL value / HELAVGFACTOR",
         },
         "conventions": "|A_loop|^2 summed over final and averaged over initial helicities and colours, with the final "
-                       "identical-particle factor; physical couplings; widths zero outside the complex-mass rows",
+                       "identical-particle factor; physical couplings; widths zero except in the complex-mass rows (LI-C1) "
+                       "and the fixed-width four-lepton rows (LI-43, LI-51, scheme qcd-widths)",
         "rows": rows,
     }
 

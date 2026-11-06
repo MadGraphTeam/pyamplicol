@@ -223,6 +223,36 @@ def _text(x: Fraction) -> str:
     return f"{x.numerator}/{x.denominator}"
 
 
+def _supplied(
+    masses: list[Fraction], count: int, record: dict[str, Any], pdgs: list[int]
+) -> list[list[list[Fraction]]]:
+    """``supplied_points.generate`` (regular family) at the specification's
+    ``sqrt_s`` values cycled to ``count`` points: the same construction,
+    cuts and printed quantum as the reference campaign's points file, so
+    the stream starts with the campaign's points."""
+
+    _toolkit()
+    from decimal import localcontext
+
+    import supplied_points
+
+    listed = [Fraction(s) for s in record["sqrt_s"]]
+    values = list(itertools.islice(itertools.cycle(listed), count))
+    with localcontext() as context:
+        context.prec = supplied_points.CONSTRUCTION_DIGITS
+        points, scales, _ = supplied_points.generate(
+            masses, "regular", count, (), CUT, (), pdgs, sqrt_s_values=values
+        )
+        printed = [
+            supplied_points.quantise(point, scale)
+            for point, scale in zip(points, scales, strict=True)
+        ]
+    return [
+        [[Fraction(supplied_points.text(x)) for x in leg] for leg in point]
+        for point in printed
+    ]
+
+
 def decay_keys() -> list[str]:
     """The decay processes (``"initial": 1``) of the reference specification,
     the Born-interfered ones (the loop-induced decays, M-LIT, have their
@@ -317,7 +347,18 @@ def make_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
         Fraction(x)
         for x in process.get("points", {}).get("scale_window", ("800", "4000"))
     )
-    if any(masses[2:]) and len(pdgs) == 4:
+    record = process.get("points", {})
+    if record.get("tool") == "supplied_points.py" and record.get("family") == "regular":
+        # A loop-induced specification whose mass pattern exact_points cannot
+        # represent (g g > h h h, g g > z z z, g g > h z g): its listed
+        # sqrt(s) values cycled, so the first points are the campaign's.
+        points = _supplied(masses, count, record, pdgs)
+        construction = (
+            "supplied_points regular family at the specification's sqrt(s) values, "
+            "cycled (30 significant digits, exact momentum conservation, mass shells "
+            "to ~1e-29); the first points are the reference campaign's"
+        )
+    elif any(masses[2:]) and len(pdgs) == 4:
         # A massive 2 -> 2 final pair: the exact_points grid holds only a
         # dozen points (one parameter, a few rotations); the campaign prefix
         # comes from it, the rest from exact rational CM-frame points.
