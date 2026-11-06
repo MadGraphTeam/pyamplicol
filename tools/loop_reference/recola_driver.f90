@@ -8,6 +8,9 @@
 !   tis_accuracy <required> <critical>  (COLLIER TI accuracies; after generate)
 !   onshell | complex_mass                               (mass renormalization scheme)
 !   legs <n>    born_gs <n>    loop_gs <n>    pow_lo <n>    pow_nlo <n>
+!   loop_induced                     (no Born: |A1|^2 of a loop-induced process; no born_gs/pow_lo,
+!                                     'NLO' at pow_nlo = the alpha_s power of |A1|^2; the LO column is 0)
+!   switchoff3 <p1> <p2> <p3>        (switchoff_coupling3_rcl before generate, e.g. A t t~)
 !   process <Recola process string>
 !   generate
 !   points <count>  followed by <count> lines "mu E1 px1 py1 pz1 ... En pxn pyn pzn"
@@ -26,6 +29,7 @@ program recola_reference
   real(dp), allocatable :: p(:,:,:), scales(:)
   real(dp) :: result(4), stored_alpha_s = -1d0
   integer :: stored_nf = -1
+  logical :: loop_induced = .false.
   process = ''
   do
     read(*, '(A)', iostat=ios) line
@@ -66,6 +70,10 @@ program recola_reference
       read(line, *) keyword, value, mu
       call set_TIs_required_accuracy_rcl(value)
       call set_TIs_critical_accuracy_rcl(mu)
+    case ('loop_induced')
+      loop_induced = .true.
+    case ('switchoff3')
+      call switchoff_command(line)
     case ('legs')
       read(line, *) keyword, legs
     case ('born_gs')
@@ -79,15 +87,18 @@ program recola_reference
     case ('process')
       process = adjustl(line(len_trim('process') + 1:))
     case ('generate')
-      if (stored_nf < 0 .or. legs < 3 .or. born_gs < 0 .or. loop_gs < 0 .or. pow_lo < 0 .or. pow_nlo < 0 &
-          .or. len_trim(process) == 0) stop 'recola driver: incomplete process definition'
+      if (stored_nf < 0 .or. legs < 3 .or. loop_gs < 0 .or. pow_nlo < 0 .or. len_trim(process) == 0 &
+          .or. (.not. loop_induced .and. (born_gs < 0 .or. pow_lo < 0))) &
+        stop 'recola driver: incomplete process definition'
       call set_delta_uv_rcl(0d0)
       call set_delta_ir_rcl(0d0, 0d0)
       call set_dynamic_settings_rcl(1)
       call set_compute_ir_poles_rcl(1)
       call define_process_rcl(1, trim(process), 'NLO')
-      call unselect_all_gs_powers_BornAmpl_rcl(1)
-      call select_gs_power_BornAmpl_rcl(1, born_gs)
+      if (.not. loop_induced) then
+        call unselect_all_gs_powers_BornAmpl_rcl(1)
+        call select_gs_power_BornAmpl_rcl(1, born_gs)
+      end if
       call unselect_all_gs_powers_LoopAmpl_rcl(1)
       call select_gs_power_LoopAmpl_rcl(1, loop_gs)
       call system_clock(c0, rate)
@@ -126,10 +137,18 @@ contains
     call set_mu_uv_rcl(scales(i))
     call set_mu_ir_rcl(scales(i))
     call compute_process_rcl(1, p(:, :, i), 'NLO')
-    call get_squared_amplitude_rcl(1, pow_lo, 'LO', result(1))
+    result(1) = 0d0
+    if (.not. loop_induced) call get_squared_amplitude_rcl(1, pow_lo, 'LO', result(1))
     call get_squared_amplitude_rcl(1, pow_nlo, 'NLO', result(2))
     call get_squared_amplitude_rcl(1, pow_nlo, 'NLO-IR1', result(3))
     call get_squared_amplitude_rcl(1, pow_nlo, 'NLO-IR2', result(4))
+  end subroutine
+
+  subroutine switchoff_command(text)
+    character(len=*), intent(in) :: text
+    character(len=32) :: a, b, c
+    read(text, *) keyword, a, b, c
+    call switchoff_coupling3_rcl(trim(a), trim(b), trim(c))
   end subroutine
 
   subroutine mass_command(text)

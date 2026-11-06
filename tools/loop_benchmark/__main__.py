@@ -199,6 +199,13 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="also time MadLoop's stages with an instrumented driver",
     )
+    providers.add_argument(
+        "--madloop-param",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="MadLoopParams.dat entry for the MadLoop runs (e.g. MLReductionLib=6|7|1)",
+    )
     providers.add_argument("--json", type=Path)
 
     gate = commands.add_parser("gate", help="combine records into the gate table")
