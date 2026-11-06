@@ -29,7 +29,8 @@ loop-induced drivers (``tools/loop_reference/li_references.py``): OpenLoops'
 ``ol_evaluate_loop2`` (amptype 12), Recola's ``loop_induced`` mode and MadLoop's
 Born-less driver on the export's own card (MG5's loop-induced default
 ``MLReductionLib 7|6|1`` with the COLLIER poles off; ``--madloop-param
-MLReductionLib=6|7|1`` gives the OPP column), warmed up past MadLoop's
+MLReductionLib=6|7|1`` gives the OPP column, ``--madloop-one-helicity`` the
+one-helicity column ``madloop_one_helicity``), warmed up past MadLoop's
 loop-induced initialisation (at least CheckCycle + 1 calls over the points:
 its zero-test scale is the median of earlier results). The stage split
 then has a fourth bucket, MadLoop's colour-flow projection and squaring.
@@ -583,6 +584,35 @@ def _prepare_madloop(
     return settings, cache
 
 
+def _madloop_production_run(
+    spec: dict,
+    export: Path,
+    run: Path,
+    trees: Trees,
+    params: dict[str, str] | None = None,
+) -> tuple[Path, list[str], dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """A MadLoop run directory at the export's production build: the
+    production-flag check, the driver built against the relocated export
+    (Born-less for a loop-induced process) and the prepared card. Returns the
+    driver, its QP model repairs, the build flags, the card settings and the
+    Collier cache decision."""
+
+    references = _references()
+    run.mkdir(parents=True, exist_ok=True)
+    flags = references.madloop_build_flags(export, trees.mg5)
+    if not flags["production_build"]:
+        raise RuntimeError(f"{export} is not built with MG5's production flags")
+    build = (
+        _li_references().build_madloop
+        if spec.get("loop_induced")
+        else references.build_madloop
+    )
+    with _relocated_madloop_build(trees.root):
+        binary, repairs = build(export, run, flags["export_make_opts"]["GLOBAL_FLAG"])
+    settings, cache = _prepare_madloop(spec, export, run, trees, params)
+    return binary, repairs, flags, settings, cache
+
+
 def madloop(
     spec: dict,
     points: dict,
@@ -593,22 +623,10 @@ def madloop(
     params: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     references = _references()
-    mg5 = trees.mg5
     run = work / "madloop-run"
-    run.mkdir(parents=True, exist_ok=True)
-    flags = references.madloop_build_flags(export, mg5)
-    if not flags["production_build"]:
-        raise RuntimeError(f"{export} is not built with MG5's production flags")
-    with _relocated_madloop_build(trees.root):
-        if spec.get("loop_induced"):
-            binary, repairs = _li_references().build_madloop(
-                export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
-            )
-        else:
-            binary, repairs = references.build_madloop(
-                export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
-            )
-    settings, cache = _prepare_madloop(spec, export, run, trees, params)
+    binary, repairs, flags, settings, cache = _madloop_production_run(
+        spec, export, run, trees, params
+    )
     count = len(points["points"])
     header = _madloop_header(spec, run, count)
     stdin = header + "\n".join(references.point_lines(points)) + "\n"
@@ -635,6 +653,72 @@ def madloop(
         "fortran_flags": flags["export_make_opts"],
         "qp_model_repairs": repairs,
         **_summary(rows, extra, wall),
+    }
+
+
+def madloop_one_helicity(
+    spec: dict,
+    points: dict,
+    work: Path,
+    cpu: int,
+    export: Path,
+    trees: Trees,
+    params: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """MadLoop's one-helicity column of a loop-induced process (PLAN §5.1,
+    MadEvent mode): the Born-less driver at the production card evaluates,
+    after its warm-up and each point's helicity-summed call, every helicity
+    configuration of the point alone (``SLOOPMATRIXHEL_THRES``). MadLoop
+    clears its reduction caches at every call (``AUTOMATIC_CACHE_CLEARING``),
+    so a one-helicity call never reuses the summed call's integrals. The
+    column is the mean over the stream's points of the calls of the
+    helicities MadLoop keeps (a non-zero value; its helicity filter, level 2
+    in production, returns the filtered ones as zero at once), the
+    configurations MadEvent samples one per event."""
+
+    references = _references()
+    li = _li_references()
+    run = work / "madloop-one-helicity-run"
+    binary, _, _, settings, _ = _madloop_production_run(
+        spec, export, run, trees, params
+    )
+    count = len(points["points"])
+    tuples = references.madloop_helicities(export)
+    stdin = (
+        _madloop_header(spec, run, count)
+        + "\n".join(references.point_lines(points))
+        + f"\n{len(tuples)}\n"
+        + "\n".join(" ".join(map(str, h)) for h in tuples)
+        + "\n"
+    )
+    stdout, wall = references.run_native(
+        [str(binary)], stdin, run, run / "output.log", cpu
+    )
+    helavg, _ = li.helavg_factor(references.madloop_process_dir(export))
+    rows, _ = li.parse_madloop(stdout, count, helavg)
+    kept = [
+        [entry["seconds"] for entry in row["per_helicity"] if entry["value"] != 0]
+        for row in rows
+    ]
+    calls = [s for per_point in kept for s in per_point]
+    if not calls:
+        raise RuntimeError("MadLoop kept no helicity at the stream's points")
+    return {
+        "mean_seconds_per_call": statistics.fmean(calls),
+        "median_seconds_per_call": statistics.median(calls),
+        "min_seconds_per_call": min(calls),
+        "max_seconds_per_call": max(calls),
+        "calls": len(calls),
+        "helicities": len(tuples),
+        "kept_helicities_per_point": [len(per_point) for per_point in kept],
+        "summed_mean_seconds_per_point_same_run": statistics.fmean(
+            row["seconds"] for row in rows
+        ),
+        "madloop_params": settings["MadLoopParams"],
+        "process_wall_seconds": wall,
+        "method": "per point: the helicity-summed call, then each helicity alone "
+        "(SLOOPMATRIXHEL_THRES, caches cleared per call); mean over the calls of "
+        "the helicities MadLoop keeps (non-zero value)",
     }
 
 
@@ -1052,6 +1136,9 @@ def _modified(path: Path) -> str:
     return stamp.strftime("%Y-%m-%d %H:%M UTC")
 
 
+VALUE_ANNOTATIONS = ("values_excluded", "value_exceptions")
+
+
 def main(options: Any) -> int:
     key = options.process
     spec = streams.spec(key)
@@ -1102,8 +1189,22 @@ def main(options: Any) -> int:
                     result["stages"] = madloop_stages(
                         spec, points, work, options.cpu, export, trees, params or None
                     )
+                if getattr(options, "madloop_one_helicity", False):
+                    if not spec.get("loop_induced"):
+                        raise RuntimeError(
+                            "the one-helicity column is loop-induced only"
+                        )
+                    result["one_helicity"] = madloop_one_helicity(
+                        spec, points, work, options.cpu, export, trees, params or None
+                    )
         except Exception as error:  # recorded, never silently dropped
             result = {"provider": provider, "error": f"{type(error).__name__}: {error}"}
+        # The specification's value annotations travel with the timing: values
+        # excluded as a reference (a different scheme) or recorded exceptions
+        # at stream points (1-based) where the provider is no reference.
+        for field in VALUE_ANNOTATIONS:
+            if field in spec.get(provider, {}) and "error" not in result:
+                result[field] = spec[provider][field]
         result["harness_wall_seconds"] = time.perf_counter() - start
         record["providers"][provider] = result
         mean = result.get("mean_seconds_per_point")

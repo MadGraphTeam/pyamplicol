@@ -1135,8 +1135,8 @@ Born orders; `required_spec._loop_induced`); `li_campaign.json`
 | File | Role |
 |---|---|
 | `li_references.py` | `points` (the specification's `points` record: `exact_points.py [--scale-window]`, `supplied_points.py --family rest/regular`, `decay_points.py`), `export` (`madloop_export.py` under `timeout`, a timeout recorded as a 45-minute miss), `run --provider madloop/recola/openloops/analytic`, `merge`, `fixture` (paths rewritten to `${LOOP_REFERENCE_ROOT}` / `${REPOSITORY}`). |
-| `run_li.sh <process> <cpu>` | One row end to end in `$LOOP_REFERENCE_ROOT/runs/li/<process>/` (done steps kept; every step under `LI_TIMEOUT`, default 2700 s). |
-| `madloop_li_driver.f90` | MadLoop driver of a `[sqrvirt=...]` export: no Born split-order index; warm-up cycling through the points until MadLoop leaves its initialisation and at least CheckCycle + 1 calls (its loop-induced zero-test scale is a median of earlier results); per-helicity rows (`SLOOPMATRIXHEL_THRES`) with MadLoop's `USERHEL` reset to -1 afterwards. |
+| `run_li.sh <process> <cpu>` | One row end to end in `$LOOP_REFERENCE_ROOT/runs/li/<process>/` (done steps kept; every step under `LI_TIMEOUT`, default 2700 s; `LI_MADLOOP_JOBS=n` splits the MadLoop reference points into n blocks on cores cpu .. cpu+n-1, `li_references.py run --jobs`; a specification's `madloop.unavailable` skips MadLoop). Do not edit the script while a run is in flight: bash reads it as it goes. |
+| `madloop_li_driver.f90` | MadLoop driver of a `[sqrvirt=...]` export: no Born split-order index; warm-up cycling through the points until MadLoop leaves its initialisation and at least CheckCycle + 1 calls (its loop-induced zero-test scale is a median of earlier results); per-helicity rows (`SLOOPMATRIXHEL_THRES`) with MadLoop's `USERHEL` reset to -1 afterwards. The warm-up calls run at MadLoop's own `MLStabThres` without a forced stability test (since 2026-11-06: a tight reference target no longer pays quadruple precision on them). |
 | `li_analytic.py`, `test_li_analytic.py` | mpmath oracles (below) and their checks against published values. |
 | `make_li_campaign.py`, `li_campaign.json` | The validation matrix with each row's runs, fixtures, providers, worst deviation, misses and owners. |
 
@@ -1156,9 +1156,14 @@ G_mu scheme Recola takes MG5's alpha (GfRedefinitionChoice = 1) through
 `alphaz`, since a loop-induced |A|^2 has no EW renormalisation (Recola's own
 CMS alpha differs by a constant (alpha_RC/alpha_MG5)^2 = 0.99904). OpenLoops:
 `ol_evaluate_loop2` (amptype 12) on the designated `ls` libraries (PLAN Q34 =
-(b): ppvv2, pphh2, pphj2, pphz2, ppvj2, pphjj2, ppvvj2 installed with
-`openloops libinstall`; `u g > h u` is served by crossing from `uuxhg`).
-Widths are zero outside the complex-mass rows (LI-C1, scheme `ew-gmu-cms`).
+(b): ppvv2, pphh2, pphhh2, pphj2, pphjj2, pphz2, pphzj2, ppvj2, ppvvj2, ppvvv2,
+ppllll2, pphhjj2, pphjjj2, installed with `openloops libinstall`; `u g > h u` is
+served by crossing from `uuxhg`). A cited process outside that list got its
+library under the 45-minute rule (ppajj2 `agggg`, ppaajj2 `aagggg`, ppllllj2
+`eexmmxggg`); `g g > z g g` and `g g > z z z z` have no `ls` channel in the public
+channel database (`proclib/channels_public.rinfo`) and are MadLoop/Recola rows.
+Widths are zero except in the complex-mass rows (LI-C1, scheme `ew-gmu-cms`) and
+the fixed-width four-lepton rows LI-43 and LI-51 (scheme `qcd-widths`).
 
 Analytic oracles (`li_analytic.py`, sources under `workspace/reference/papers/li-*`):
 `g g > h`, `h > g g` (Spira hep-ph/9705337); `h > a a`, `a a > h` (Djouadi
@@ -1178,23 +1183,107 @@ Jikia-Tkabladze's low-energy 14/5 s^2/M^4, (s^2+t^2+u^2)/(10 M^4) and
 sigma_W = 2751 alpha^4 s^3/(16000 pi M^8), the Euler-Heisenberg
 973 alpha^4 omega^6/(10125 pi m^8), the massless box and PSZ's normalisation.
 
-State (2026-11-06): every 2->1, 1->2, 2->2 and 1->3 row of PLAN §4 is stored:
-MadLoop, Recola and OpenLoops (where designated) agree to <= 3.8e-11 on every
-row, the oracles to <= 7e-13 (`a a > a a` under CMS: Recola = oracle to 1e-14,
-MadLoop 5.5e-7 off); the zero rows (`g g > z`, `z > g g`, `g g > h a`,
-`e+ e- > g g`) record the providers' values (~1e-30 and below; `h > g a`,
-`z > g a`: MG5 generates no diagram). LI-32 `g g > h g g` and LI-33
-`g g > z z g` are stored too (MadLoop / Recola / OpenLoops to 4e-11 and 8e-8:
-OpenLoops' hybrid-precision target; the LI-33 MadLoop reference took 41.6 min,
-quadruple precision with every helicity). No 45-minute miss. Provider timings
-(`tools/loop_benchmark providers`, 16 stream points, one pinned core; records
-in `tests/fixtures/loop/required/li/timing/`), mean ms per point:
+State (2026-11-06; first delivery lit-ref, second lit-ref-b): every 2->1, 1->2,
+2->2 and 1->3 row of PLAN §4 is stored: MadLoop, Recola and OpenLoops (where
+designated) agree to <= 3.8e-11 on every row, the oracles to <= 7e-13 (`a a > a a`
+under CMS: Recola = oracle to 1e-14, MadLoop 5.5e-7 off); the zero rows
+(`g g > z`, `z > g g`, `g g > h a`, `e+ e- > g g`) record the providers' values
+(~1e-30 and below; `h > g a`, `z > g a`: MG5 generates no diagram).
 
-| row | MadLoop 7\|6\|1 (numerators / Born+CT / reduction / colour) | MadLoop 6\|7\|1 | OpenLoops ls | Recola |
-|---|---|---|---|---|
-| `g g > h h` | 0.997 (0.322 / 0.001 / 0.615 / 0.002) | 1.99 | 2.56 | 1.58 |
-| `g g > h g g` | 85.7 (70.5 / 0.12 / 16.3 / 0.27) | 286.9 | 27.8 | 26.0 |
-| `g g > z z g` | 720.8 (674.1 / 0.43 / 69.9 / 0.85) | 2594 | 187.2 | 178.7 |
+Every 2->3 row is stored too: LI-31 `g g > h h h`, LI-32 `g g > h g g`, LI-33
+`g g > z z g`, `g g > a a g`, `g g > w+ w- g`, LI-34 `g g > z z z`, LI-35
+`g g > h z g`, `g g > a g g`, `g g > z g g` (no OpenLoops library), LI-36
+`u u~ > h g g`, `u u~ > d d~ h` (QED <= 1; Recola with its H Z Z and H W+ W- tree
+vertices switched off, the only vertices of the EW tree), LI-E4 `e+ e- > g g g`
+(no OpenLoops library), each with MadLoop's quadruple-precision reference with
+every helicity: MadLoop and Recola agree to <= 4.8e-9 (`e+ e- > g g g`: 1.4e-8),
+OpenLoops to <= 4.3e-8 (its hybrid-precision target). The 2->3
+zero row LI-Z1b `g g > a a a` has Recola only (~1e-42): MG5 removes closed
+fermion loops with an odd number of vector couplings by Furry's theorem and
+generates no diagram (a rule-based zero, Q13). Complex-mass rows LI-C1:
+`g g > a a g` (2.4e-11), `e+ e- > g g g` (1.5e-8) and `g g > e+ e- mu+ mu-` (2e-13).
+
+2->4 and 2->5 (45-minute rule, Q5 = (a)): LI-41 `g g > h h g g` (all three, 1.2e-7),
+LI-42 `g g > h g g g` (all three, 2e-11; MadLoop 30 min with three point blocks),
+LI-43 `g g > e+ e- mu+ mu-` (fixed widths: MadLoop = OpenLoops to 7e-14; Recola's
+on-shell scheme with widths is not that fixed-width scheme, 3.0e-4 to 8.4e-4 at
+the reference points, of the same order with on-shell mass input: excluded with its
+deviation recorded, while under the complex-mass scheme all three agree to 2e-13),
+LI-51 `g g > e+ e- mu+ mu- g` (MadLoop = OpenLoops to 1.4e-12; Recola excluded for
+the same width convention, 1.7e-4 to 3.6e-4).
+45-minute misses: MadLoop for LI-44 `g g > a a g g` (OpenLoops = Recola to 4e-9)
+and `g g > z z z z` (Recola only), both for the reference with every helicity and
+for the helicity-summed one alone. The `g g > z z z z` reference carries secondary
+runs (`secondary_runs`, per-point `secondary_relative_deviations`): MadLoop's
+production binary64 values at the same points (7|6|1 and 6|7|1, from the timing
+record, whose stream points 1-3 are the reference points) and Recola at exactly
+rotated points. Points 1 and 2 agree to <= 1.2e-7. Point 3 (sqrt s = 1500) does
+not: Recola moves by 6.6e-5 under the rotation (its pole/value, 3.6e-6, understates
+that), MadLoop 7|6|1 is 4.4e-5 off (its own estimate 4.0e-6), 6|7|1 5.2e-6; the
+value is known to ~1e-4 only and the row carries an `l1_caution` there (generic in
+`li_references.py merge`: a secondary run beyond L1 at a point), so it is no L1
+reference at point 3. Every MadLoop export (MG5 3.7.0, the 2->5
+included) took about two minutes. LI-X1 (rank > N+2) has no provider
+reference (USER 2026-11-06 ~14:55: Q24 stays open; the row is lit-eft's run-only
+execution check, two dimension-6 insertions through TIRust, TIRust = NinjaRS
+where NinjaRS serves, no MadLoop TIR reference). The planned MadLoop row could not exist anyway: HC_NLO_X0 declares
+`QNP` with expansion order 1, so an amplitude carries one x0 vertex and its
+loops stop at rank N+1 (the heft `g g > x0 g` export: MAXRANK 5 at N = 4;
+`g g > x0 x0 x0 QNP=3` is capped at QNP = 1 and has no diagram), and by power
+counting one dimension-6 insertion stays at rank N+1 as well.
+
+Provider timings (`tools/loop_benchmark providers`, 16 stream points, one pinned
+core each; records in `tests/fixtures/loop/required/li/timing/`; the 2->4 and
+2->5 rows ran OpenLoops + Recola, MadLoop and MadLoop 6|7|1 on three cores at
+once), mean ms per point; the one-helicity column is MadLoop's mean time of one
+`SLOOPMATRIXHEL_THRES` call over the helicities it keeps (MadEvent mode). That
+column comes from a run of its own, which interleaves each point's summed call with
+every helicity alone (caches cleared per call): its own summed calls
+(`summed_mean_seconds_per_point_same_run`) are 0.69 to 1.9 times the production
+column (`g g > z z g` 499 vs 721 ms, `g g > h h h` 17.3 vs 9.14 ms), so it
+indicates a call's cost, not a production timing (reported, never gated):
+
+| row | MadLoop 7\|6\|1 (numerators / Born+CT / reduction / colour) | MadLoop one helicity | MadLoop 6\|7\|1 | OpenLoops ls | Recola |
+|---|---|---|---|---|---|
+| `g g > h h` | 0.997 (0.322 / 0.000525 / 0.615 / 0.00156) | 0.692 | 1.99 | 2.56 | 1.58 |
+| `g g > h g g` | 85.7 (70.5 / 0.121 / 16.3 / 0.269) | 9.69 | 287 | 27.8 | 26 |
+| `g g > z z g` | 721 (674 / 0.43 / 69.9 / 0.852) | 16.3 | 2.59e+03 | 187 | 179 |
+| `g g > a a g` | 201 (179 / 0.123 / 23.1 / 0.19) | 13.9 | 672 | 55 | 48.2 |
+| `g g > w+ w- g` | 347 (298 / 0.492 / 45.9 / 0.569) | 18.8 | 1.27e+03 | 86.9 | 69.8 |
+| `g g > h h h` | 9.14 (4.5 / 0.00292 / 4.45 / 0.00517) | 9.08 | 33.3 | 23.6 | 5.91 |
+| `g g > z z z` | 558 (503 / 0.443 / 48.3 / 0.422) | 10.8 | 2.11e+03 | 152 | 135 |
+| `g g > h z g` | 74 (62 / 0.106 / 10.3 / 0.0977) | 7.48 | 271 | 36.5 | 19.4 |
+| `g g > a g g` | 252 (229 / 0.155 / 31.3 / 0.461) | 16.5 | 804 | 81.9 | 77.4 |
+| `g g > z g g` | 476 (401 / 1.34 / 53.8 / 1.96) | 20.2 | 1.39e+03 | — | 117 |
+| `u u~ > h g g` | 2.79 (1.82 / 0.0165 / 0.952 / 0.0115) | 0.885 | 7.36 | 2.79 | 1.63 |
+| `u u~ > d d~ h` | 0.145 (0.0995 / 0.00124 / 0.0331 / 0.000474) | 0.0558 | 0.263 | 0.286 | 0.55 |
+| `e+ e- > g g g` | 15.7 (12.8 / 0.0638 / 2.82 / 0.0475) | 1.8 | 45.8 | — | 4.51 |
+| `g g > h h g g` | 671 (477 / 0.129 / 167 / 0.719) | 195 | 2.52e+03 | 589 | 203 |
+| `g g > h g g g` | 1.98e+03 (1.5e+03 / 1.39 / 274 / 6.09) | 193 | 7.07e+03 | 876 | 588 |
+| `g g > e+ e- mu+ mu-` | 33.5 (28.3 / 0.165 / 5.18 / 0.0511) | 3.35 | 104 | 6.7 | 3.79 |
+| `g g > a a g g` | 5.9e+03 (5.01e+03 / 1.07 / 605 / 5.14) | 285 | 2.36e+04 | 2.04e+03 | 1.69e+03 |
+| `g g > z z z z` | 1.99e+04 (1.81e+04 / 6.2 / 1.63e+03 / 6.55) | missed (45 min) | 9.58e+04 | — | 5.1e+03 |
+| `g g > e+ e- mu+ mu- g` | 1.2e+03 (933 / 1.92 / 201 / 1.43) | 121 | 3.56e+03 | 252 | 62.9 |
+
+`g g > z z z z`: MadLoop 7|6|1 with its stage split ran after the others, on a
+core of its own; its one-helicity column (324 helicities, each called alone)
+missed the 45-minute rule twice, also in a run of its own (recorded in the
+record and in `li_campaign.json` `provider_timing_misses`).
+
+Provider values in the timing records. The benchmark specification's value
+annotations travel with each record (`providers.py` copies them): `values_excluded`
+(Recola on LI-43 and LI-51, the width convention; it is the fastest provider on
+both rows, 3.79 vs OpenLoops 6.70 ms and 62.9 vs 252 ms, so whether it is a matched
+provider for the speed gate is lit-perf's / the coordinator's call) and
+`value_exceptions` (Recola at stream points 7 and 13 of `g g > z z z z`: an exact
+rotation moves its value by +136 % and -24 %, its single pole is 1.1-1.5 times its
+finite part; its values there are 32 and 9.7 times MadLoop's and no reference, its
+timing stays valid; MadLoop's values there are COLLIER's alone, the 6|7|1 run falling
+back to COLLIER, so no second provider validates them). The gate's
+`compare_values` meets these points; `li_campaign.json` lists the annotations under
+`provider_value_notes`. `test_provider_timing_records` checks that every other
+provider value agrees within the record's MadLoop production threshold
+(`MLStabThres`) and that every recorded exception is real.
 
 ## Legacy-engine oracles for the v2 engine (WP0.1)
 

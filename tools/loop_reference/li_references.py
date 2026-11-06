@@ -28,7 +28,11 @@ MadLoop runs. The REFERENCE run (no ``--tag``) requests relative accuracy
 rescue through CutTools/Ninja), the numerical helicity filter OFF
 (``HelicityFilterLevel = 0``: MadLoop's filter can map or drop helicities that
 agree only at symmetric points) and every helicity configuration
-(``SLOOPMATRIXHEL_THRES``). A TIMING run (``--tag production``) keeps the
+(``SLOOPMATRIXHEL_THRES``); its untimed warm-up runs at MadLoop's own
+``MLStabThres`` (``madloop_li_driver.f90``), and ``--jobs n`` splits the points
+into n blocks run concurrently on cores ``--cpu`` .. ``--cpu + n - 1``, each
+block in its own copy of the run directory with its own warm-up (the 45-minute
+rule at 2->3 and 2->4). A TIMING run (``--tag production``) keeps the
 export's own MadLoopParams.dat (MG5's loop-induced card: ``MLReductionLib
 7|6|1``, COLLIER UV/IR poles off, helicity filter level 2) and MadLoop's own
 ``MLStabThres``; ``--madloop-param MLReductionLib=6|7|1`` gives the OPP column.
@@ -248,19 +252,52 @@ def run_madloop(args, spec, points, run_dir, result):
     result["settings"]["HELAVGFACTOR"], result["settings"]["IDEN"] = helavg, iden
     orders = spec["squared_orders"]
     count = len(points["points"])
-    stdin = (f"{orders['QCD']} {orders['QED']} {references.value(spec['scheme_data'], 'aS')} "
-             f"{args.madloop_accuracy} {0 if production else 1} {warmup}\n{count}\n"
-             + "\n".join(references.point_lines(points)) + "\n")
+    head = (f"{orders['QCD']} {orders['QED']} {references.value(spec['scheme_data'], 'aS')} "
+            f"{args.madloop_accuracy} {0 if production else 1} {warmup}\n")
+    tail = ""
     if args.helicities:
         tuples = references.madloop_helicities(export)
-        stdin += f"{len(tuples)}\n" + "\n".join(" ".join(map(str, t)) for t in tuples) + "\n"
+        tail = f"{len(tuples)}\n" + "\n".join(" ".join(map(str, t)) for t in tuples) + "\n"
         result["per_helicity_normalization"] = (
             "value = |A(h)|^2/avg (the summed convention's divisor, PLAN Q39) = MadLoop's USERHEL value "
             "(SLOOPMATRIXHEL_THRES: colour average and identical factor, no helicity average) / HELAVGFACTOR; "
             "helicity labels in MadLoop's HelConfigs.dat convention")
-    stdout, wall = references.run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu)
-    rows, extra = parse_madloop(stdout, count, helavg)
-    return rows, extra, wall
+    jobs = max(1, min(args.jobs, count))
+    if jobs == 1:
+        stdin = head + f"{count}\n" + "\n".join(references.point_lines(points)) + "\n" + tail
+        stdout, wall = references.run_native([str(binary)], stdin, run_dir, run_dir / "output.log", args.cpu)
+        return (*parse_madloop(stdout, count, helavg), wall)
+    # One driver per contiguous block of points, each in its own copy of the
+    # run directory (MadLoop writes its filters into the resources) on its own
+    # core (--cpu, --cpu + 1, ...): the same calls as one driver over all
+    # points, each block with its own warm-up.
+    from concurrent.futures import ThreadPoolExecutor
+
+    lines = references.point_lines(points)
+    bounds = [(k * count // jobs, (k + 1) * count // jobs) for k in range(jobs)]
+    parts = []
+    for k, (lo, hi) in enumerate(bounds):
+        part = run_dir / f"part-{k + 1}"
+        part.mkdir(exist_ok=True)
+        references.prepare_madloop_run(spec, export, part, args.mg5, len(spec["pdgs"]), params)
+        stdin = head + f"{hi - lo}\n" + "\n".join(lines[lo:hi]) + "\n" + tail
+        cpu = None if args.cpu is None else args.cpu + k
+        parts.append((part, stdin, cpu, lo, hi))
+    with ThreadPoolExecutor(jobs) as pool:
+        outputs = list(pool.map(
+            lambda job: references.run_native([str(binary)], job[1], job[0], job[0] / "output.log", job[2]), parts))
+    rows, extra, record = [], None, []
+    for (part, _, cpu, lo, hi), (stdout, wall) in zip(parts, outputs, strict=True):
+        block, block_extra = parse_madloop(stdout, hi - lo, helavg)
+        rows += block
+        extra = extra or block_extra
+        record.append({"points": [lo + 1, hi], "cpu": cpu, "wall_seconds": wall,
+                       **{key: block_extra.get(key) for key in
+                          ("initial_call_seconds", "initialization_calls", "initialization_status")}})
+    extra = {**extra, "parallel_blocks": record}
+    for key in ("initial_call_seconds", "initialization_calls", "initialization_status"):
+        extra.pop(key, None)
+    return rows, extra, max(wall for _, wall in outputs)
 
 
 # ------------------------------------------------------------------- Recola
@@ -395,6 +432,8 @@ def command_run(args):
               "host": platform.node(), "cpu": args.cpu, "points_file": str(args.points.resolve()),
               "timing_scope": "single thread pinned; untimed warm-up (MadLoop: past its initialisation), then each "
                               "point timed once; not a benchmark campaign"}
+    if points.get("rotation"):
+        result["points_rotation"] = points["rotation"]
     runner = {"madloop": run_madloop, "recola": run_recola, "openloops": run_openloops,
               "analytic": run_analytic}[args.provider]
     try:
@@ -467,6 +506,11 @@ def command_merge(args):
                                    "value": limits["rows"][index]["value"],
                                    "ratio_to_reference": limits["rows"][index]["value"] / row["value"]}
         rows.append(row)
+    # Secondary runs (``run --tag``) at the same points: another reduction
+    # library or card, a rotated frame (``points_rotation``), production values
+    # taken from a timing record (``settings.timing_record``). Their deviations
+    # are recorded per point; a point where one exceeds L1 carries an
+    # ``l1_caution`` (the reference is uncertain there at the L1 level).
     secondary = {}
     for path in sorted(work.glob("*-*-result.json")):
         label = path.name[: -len("-result.json")]
@@ -476,10 +520,31 @@ def command_merge(args):
         data = json.loads(path.read_text())
         deviation = [relative(r["value"], rows[i]["value"]) for i, r in enumerate(data["rows"])]
         secondary[label] = {"settings": data.get("settings"), "max_relative_deviation_from_reference": max(deviation),
+                            "relative_deviation_from_reference": deviation,
                             "seconds": [r["seconds"] for r in data["rows"]],
                             "statuses": [r.get("status") for r in data["rows"]],
                             "initial_call_seconds": data.get("initial_call_seconds"),
                             "initialization_calls": data.get("initialization_calls")}
+        for key in ("points_rotation",):
+            if data.get(key):
+                secondary[label][key] = data[key]
+        if any("accuracy" in r for r in data["rows"]):
+            secondary[label]["accuracy"] = [r.get("accuracy") for r in data["rows"]]
+        if any("single_pole" in r for r in data["rows"]):
+            secondary[label]["pole_over_value"] = [
+                [abs(r["single_pole"] / r["value"]), abs(r["double_pole"] / r["value"])] if r["value"] else None
+                for r in data["rows"]]
+        if spec.get("zero"):
+            continue  # rounding noise around zero: recorded, not compared
+        for row, error in zip(rows, deviation):
+            row.setdefault("secondary_relative_deviations", {})[label] = error
+    for row in rows:
+        beyond = {k: v for k, v in row.get("secondary_relative_deviations", {}).items() if v > L1_TOLERANCE}
+        if beyond:
+            row["l1_caution"] = (f"secondary run(s) {', '.join(f'{k} {v:.1e}' for k, v in beyond.items())} deviate "
+                                 f"beyond L1 ({L1_TOLERANCE:g}) from the reference at this point: the reference is "
+                                 "uncertain here at the L1 level (see secondary_relative_deviations, the secondary "
+                                 "runs' accuracy and the providers' pole_over_value)")
     providers = {}
     for provider, result in results.items():
         providers[provider] = {k: v for k, v in result.items() if k != "rows"}
@@ -518,7 +583,7 @@ def command_merge(args):
         "zero_row": bool(spec.get("zero")),
         "providers": providers,
         "secondary_runs": secondary,
-        "unavailable": {p: spec[p]["unavailable"] for p in ("recola", "openloops")
+        "unavailable": {p: spec[p]["unavailable"] for p in ("madloop", "recola", "openloops")
                         if spec.get(p, {}).get("unavailable") and p not in excluded},
         "excluded": excluded,
         "misses_45_min": misses,
@@ -572,6 +637,8 @@ def main():
     run.add_argument("--madloop-param", action="append", default=[], metavar="KEY=VALUE")
     run.add_argument("--madloop-quadruple", action="store_true")
     run.add_argument("--helicities", action="store_true", help="MadLoop: every helicity configuration too")
+    run.add_argument("--jobs", type=int, default=1,
+                     help="MadLoop: split the points into this many blocks run concurrently on cores --cpu, --cpu + 1, ...")
     run.add_argument("--tag", help="secondary run label, e.g. production")
     run.add_argument("--recola", type=Path)
     run.add_argument("--openloops", type=Path)
