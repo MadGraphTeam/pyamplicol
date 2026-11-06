@@ -772,9 +772,9 @@
      8
     ],
     "tolerance": 2e-08,
-    "label": "accepted (user 2026-10-25): O(1e-8) binary64, within the estimate, DD = NJet",
+    "label": "accepted (user 2026-10-25): binary64 within the estimate, DD = NJet",
     "short": "accepted (user 2026-10-25)",
-    "reason": "binary64 deviations from NJet's double-double values 3.73e-8 (fixture point 4) and 2.2e-8 (point 8) at the fixture's mu_R = 1000 GeV, each within pyAmpliCol's binary64 estimate E (rotation and reduction direction); pyAmpliCol's double-double values equal NJet's double-double values at both points"
+    "reason": "binary64 deviations from NJet's double-double values 3.73e-8 (fixture point 4) and 2.2e-8 (point 8) at the fixture's mu_R = 1000 GeV, each within pyAmpliCol's binary64 estimate E (rotation and reduction direction); pyAmpliCol's double-double values equal NJet's double-double values at both points; at the final retime (M-LIT-a0, ca602436) the binary64 deviations are 1.5e-7 (point 4) and 2.6e-8 (point 8), still the only points above the tolerance, within E (1.5e-6 and 3.4e-7) and with pyAmpliCol's double-double values equal to NJet's: the binary64 values moved with the accepted rounding-level changes since M-SM (g1.json values_note), amplified at these conditioned points; below the user's lax precision rule (~1e-5)"
    }
   ]
  },
