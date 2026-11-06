@@ -261,6 +261,8 @@ def main():
     parser.add_argument("--cut", default="1/1000", help="minimal 2|p_i.p_j|/s")
     parser.add_argument("--half-scale-point", action="store_true",
                         help="append a copy of point 1 at half its scale (mu_R = mu_0/2)")
+    parser.add_argument("--scale-window", nargs=2, default=["800", "4000"], metavar=("LOW", "HIGH"),
+                        help="sqrt(s) window of the points (default 800 4000)")
     args = parser.parse_args()
     import required_spec
 
@@ -268,7 +270,8 @@ def main():
     masses = required_spec.masses(spec)
     values = {**spec["scheme_data"]["parameters"], **spec["scheme_data"]["fixed_parameters"]}
     resonances = [values[name] for name in ("MZ", "MW", "MH", "MT") if name in values and F(values[name])]
-    points = generate(masses, args.count, F(args.cut), resonances, pdgs=spec["pdgs"])
+    window = (F(args.scale_window[0]), F(args.scale_window[1]))
+    points = generate(masses, args.count, F(args.cut), resonances, scale_window=window, pdgs=spec["pdgs"])
     mu_r = list(itertools.islice(itertools.cycle(args.mu_r), args.count))
     if args.half_scale_point:
         points.append(points[0])
@@ -279,6 +282,7 @@ def main():
         "masses": [decimal_string(m) for m in masses],
         "construction": "tools/loop_reference/exact_points.py: deterministic exact terminating-decimal "
         "sequential construction; mass shells and momentum conservation exact",
+        **({"scale_window": args.scale_window} if window != (F(800), F(4000)) else {}),
         "cuts": {"min_2pipj_over_s": args.cut, "resonance_exclusion": "|s_ij-M^2| >= M^2/10 for final particle-antiparticle pairs",
                  "resonances": resonances},
         "sqrt_s": [decimal_string(p[0][0] + p[1][0]) for p in points],

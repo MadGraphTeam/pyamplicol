@@ -5,7 +5,9 @@
 //   points <count>, then <count> lines "mu E1 px1 py1 pz1 ... En pxn pyn pzn"
 // Point 1 is evaluated once untimed (initialization), then points 2..n,1 are
 // timed with "mu" set per point. Loop values are returned as provided by
-// ol_evaluate_loop (finite, 1/eps, 1/eps^2).
+// ol_evaluate_loop (finite, 1/eps, 1/eps^2). A process registered with amptype
+// 12 (loop squared, a loop-induced |A1|^2) is evaluated with ol_evaluate_loop2:
+// the ROW then holds 0 (no Born), |A1|^2, 0, 0 and the accuracy.
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -19,7 +21,7 @@
 int main() {
   try {
     std::string line;
-    int id = -1, legs = 0;
+    int id = -1, legs = 0, amptype = 0;
     while (std::getline(std::cin, line)) {
       std::istringstream in(line);
       std::string command;
@@ -31,7 +33,6 @@ int main() {
         else if (command == "double") ol_setparameter_double(name.c_str(), std::stod(value));
         else ol_setparameter_string(name.c_str(), value.c_str());
       } else if (command == "register") {
-        int amptype;
         in >> amptype;
         std::string process;
         std::getline(in, process);
@@ -56,6 +57,11 @@ int main() {
         }
         auto evaluate = [&](std::size_t i, double *out) {
           ol_setparameter_double("mu", scales[i]);
+          if (amptype == 12) {
+            out[0] = 0.; out[2] = 0.; out[3] = 0.;
+            ol_evaluate_loop2(id, &momenta[i * legs * 5], &out[1], &out[4]);
+            return;
+          }
           double loop[3];
           ol_evaluate_loop(id, &momenta[i * legs * 5], &out[0], loop, &out[4]);
           out[1] = loop[0]; out[2] = loop[1]; out[3] = loop[2];
