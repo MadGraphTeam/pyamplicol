@@ -1852,7 +1852,7 @@ Python-3 reference copy of `loop_qcd_qed_sm_Gmu`, the harness default; not the s
 used), native per-point inputs, full colour, binary64 finite part, checks off, one pinned core (#ew-c.host_cpus.map(str).join(", ")), at
 $B = 128$: *#ms2(ew-t * 1000) ms per point* (±#fixed(100 * ew-b.uncertainty, 1) %) against Recola #dur(ew-rc), OpenLoops
 #dur(ew-prov("openloops")) and MadLoop #dur(ew-prov("madloop")) (provider records reused, not re-run): ×#fixed(ew-t / ew-rc, 3) of Recola's
-time, #fixed(ew-t / (eg.gate_factor * ew-rc), 3) of 1.30 × Recola, gate *#ew-b.gate.status* (#fixed(ew-b.gate.ratio_to_binding_limit, 3) of the binding limit; Table 1 row, Figure 1). Generation #dur(ew-gen.generate.seconds) + #dur(ew-gen.export.seconds), peak
+time, #fixed(ew-t / (eg.gate_factor * ew-rc), 3) of 1.30 × Recola, gate *#ew-b.gate.status*#if "ratio_to_binding_limit" in ew-b.gate [ (#fixed(ew-b.gate.ratio_to_binding_limit, 3) of the binding limit)] (Table 1 row, Figure 1). Generation #dur(ew-gen.generate.seconds) + #dur(ew-gen.export.seconds), peak
 #gib(calc.max(ew-gen.generate.peak_gib, ew-gen.export.peak_gib)). Accuracy: against its fixture (#ew-acc.points points) #sci(ew-acc.max_error)
 (DD asserted at point #ew-acc.double_double_points.map(str).join(", "), where $E > 10^(-9)$; binary64 #sci(ew-acc.max_error_binary64)); against the providers at #ew-row.validation.points stream points in binary64:
 #ew-row.validation.references.map(x => [#x.short #sci(x.max_finite)]).join(", "). #if ew-early.len() > 0 [Earlier run (MS-VALIDATE, #raw(ew-early.last().revision.slice(0, 8))): #ew-early.last().batches.pairs().map(((b, x)) => [$B = #b$ #dur(x.median_seconds_per_point)]).join(", ").]
@@ -3253,7 +3253,7 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
   - *Build:* `typst compile benchmarks.typ benchmarks.pdf` in
     `docs/performance_reports/loop/` (Typst 0.15).
   - *Status, in-flight work, decisions:* `data/milestone.json`, from the
-    integration merges of #ms.engine_revision since #ms.previous_loop
+    commits and integration merges of #ms.engine_revision since #ms.previous_loop
     (#ms.integrated.map(r => [#r.wp.split(" ").last() #raw(r.sha)]).join([, ])\; commit subjects "Integrate work/v2-…")\;
     `workspace/reports/engine-v2/slice-status.md` (integration blocks,
     DECISIONS 2026-10-23 to 29, the milestone pushes m1025a of 2026-10-25 \~13:45 UTC, m1025c of 2026-10-26 \~06:35 UTC
@@ -3278,13 +3278,13 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     green-to-red run times, summary pages with only Table 1, Figure 1 and legends,
     and the gate rule "#thr-rule.label", recorded as `gate_decisions.threshold_rule`
     and applied by `scripts/build_summary.py` and this report); milestone M-FINAL-b (DECISIONS 2026-11-01 \~23:35 and
-    2026-11-02 \~00:20, \~01:05, \~03:08: pin #raw(ms.previous_engine) = `617b59cd` + the test-only mf-map-fix, native
+    2026-11-02 \~00:20, \~01:05, \~03:08: pin `f3d9e361` = `617b59cd` + the test-only mf-map-fix, native
     `loop-native-v2-slice-b36af289`\; the plan `workspace/reports/engine-v2/m-final/PLAN.md` §2, §3 and the user's rulings of
     2026-10-31 \~11:00 (M-FINAL order, rescue only in the Python API, decays at the real mass with zero own width, EW
     LC/NLC never), \~14:20 (direct $R_2$ dropped), Q11 (one final retime) and 2026-11-01 \~23:15 (8-leg runs stopped
     for optimisation rounds); the G1 regression spot check at `617b59cd` against `71e2041e`:
-    `workspace/tmp/g1-m1101-mfb/logs/compare.txt`); milestone M-FINAL, closed (pin #raw(ms.engine_revision), native
-    #raw(ms.native_build.name)\; USER 2026-11-04 \~08:00 'close M-FINAL now' and the lean close of 2026-11-05 \~07:30,
+    `workspace/tmp/g1-m1101-mfb/logs/compare.txt`); milestone M-FINAL, closed (pin #raw(ms.previous_engine), native
+    `loop-native-v2-slice-e0a8375c`\; USER 2026-11-04 \~08:00 'close M-FINAL now' and the lean close of 2026-11-05 \~07:30,
     DECISIONS \~07:35: no local gate sweep, no retime, no closing audit, global tests by CI on `loop`; DECISIONS 2026-11-04
     \~17:40 (no Ward/Catani/campaign re-runs; status changes from package evidence only), \~22:00 (no pedantic tests),
     \~19:15 (mechanical limits only), \~08:35 (8-leg stop lifted) and 2026-11-03 \~13:05 (model compiler 17); the
@@ -3292,7 +3292,11 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     `workspace/reports/engine-v2/m-final/2to6-report.md`, the seven-leg round table `m-final/round-table-7leg.md`, mf-8g-3's
     report `m-final/8g3-report.md` §9 (A24) and the Symbolica re-pin report `m-final/symbolica-repin-report.md`; the
     built-in SM fixes: mf-norm's package report (its table for the collaborator) with the integration block of
-    slice-status UPDATE 2026-11-05 \~08:05 and DECISIONS \~06:10); `HANDOFF_24_10_2026.md` §6; MASTER_PLAN
+    slice-status UPDATE 2026-11-05 \~08:05 and DECISIONS \~06:10); milestone M-LIT-a0 (pin #raw(ms.engine_revision), native
+    #raw(ms.native_build.name)\; the user's green light for M-LIT of 2026-11-06 \~07:05 and DECISIONS \~07:20, \~07:32;
+    `workspace/reports/engine-v2/m-lit/PLAN.md` §3.2 LIT-RETIME, §3.7 "Pushes", §5.1, and `m-final/PLAN.md` §2.4 MF-RETIME;
+    the user's request of 2026-11-06 \~06:00 for the loop-induced summary table; the retime's records
+    `workspace/reports/engine-v2/measure-g1/records/mlita0`); `HANDOFF_24_10_2026.md` §6; MASTER_PLAN
     2026-10-23/24 entries; REQUIREMENTS_ADDENDUM A, D, F, G, H, I, J; DESIGN §5.5,
     §3.3, §5.7 (G1), §6.1, §6.2, §7.2, §7.5, §7.9, §12.1, §12.4, WP3.1, WP3.2; the 24 October pushes (59badc7a and b4d76cc3,
     gates in slice-status.md), the G-int push (79df367a, 25 October), the m1025a push (bae3b9ea, 25 October), the
