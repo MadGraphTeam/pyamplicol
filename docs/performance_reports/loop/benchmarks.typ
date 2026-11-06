@@ -916,9 +916,17 @@
   if p.status == "pending" [providers pending (lit-ref): #p.expected.join(" · ")]
   else if p.status == "not run" [#p.expected.join(" · "): #p.reason]
   else {
+    // Timed providers by time (the fastest in bold), then the others grouped
+    // by their status and reason.
     let f = p.fastest
-    let xs = p.providers.pairs().sorted(key: ((k, x)) => x.at("seconds_per_point", default: 1e300))
-    xs.map(((k, x)) => if "seconds_per_point" in x { if f != none and k == f.key { text(weight: "bold")[#pkey(k) #dur(x.seconds_per_point)] } else [#pkey(k) #dur(x.seconds_per_point)] } else [#pkey(k) #x.status: #x.reason]).join([~· ])
+    let timed = p.providers.pairs().filter(((k, x)) => "seconds_per_point" in x).sorted(key: ((k, x)) => x.seconds_per_point)
+    let why = (:)
+    for (k, x) in p.providers.pairs().filter(((k, x)) => "seconds_per_point" not in x) {
+      let g = x.status + ": " + x.reason
+      why.insert(g, why.at(g, default: ()) + (pkey(k),))
+    }
+    (timed.map(((k, x)) => if f != none and k == f.key { text(weight: "bold")[#pkey(k) #dur(x.seconds_per_point)] } else [#pkey(k) #dur(x.seconds_per_point)])
+      + why.pairs().map(((g, ks)) => [#ks.join(" · ") #g])).join([~· ])
   }
 }
 // A cell's gate marker: lit-perf's verdict as Table 1's gate chip, every
@@ -1094,10 +1102,12 @@ validation tables. The cell is the batched $B = #li-meta.gate_batch$ time per po
 thread, checks off) on the default backend #li-meta.default_backend\; NinjaRS per amplitude, labelled in the cell, where
 TIR does not serve the row yet; the other backend's time beside it when both ran. Its multiplier against the fastest
 matched provider (MadLoop's loop-induced production setting 7|6|1, OpenLoops `ls`, Recola; production mode, from
-`lit-ref`) colours it with Table 1’s scale; generation is uncoloured. Rows of four legs or fewer ($2 -> 1$, $1 -> 2$,
+`lit-ref`'s timing records named in its manifest; MadLoop's 6|7|1 OPP column belongs to the detailed sections) colours it
+with Table 1’s scale; generation is uncoloured. Rows of four legs or fewer ($2 -> 1$, $1 -> 2$,
 $2 -> 2$, $1 -> 3$) are reported without a gate; from $2 -> 3$ upward the gate is Table 1’s (faster than MadLoop and at
 most 1.30× each matched OpenLoops and Recola time, on TIRust), "#thr-rule.short" below 5 ms per point, no gate without a
-matched provider; verdict chips come with `lit-perf`'s records, "no verdict yet" before them. Grey cells are explicit
+matched provider (every reference provider unavailable); verdict chips come with `lit-perf`'s records, "no verdict yet"
+before them ("no provider time yet" while `lit-ref` has not timed a provider of the row). Grey cells are explicit
 markers: *pending* (the package that serves the row, named in the cell, has not landed at this head, or the input file
 that fills the cell does not exist yet), *not run* (a landed package without a record of the row), and a provider's
 reason where it has no matched time (no library, beyond the 45-minute rule). Nothing is estimated or extrapolated; each

@@ -49,8 +49,10 @@ m-lit/PLAN.md §3.7 "Pushes") reads, each absent file read as "pending":
 - data/li-timing.json     pyAmpliCol's loop-induced timing and generation
                           records (§5.1 protocol; lit-perf's gate tool
                           records from that package on)
-- data/li-providers.json  lit-ref's provider timings (MadLoop loop-induced
-                          production 7|6|1, OpenLoops ls, Recola)
+- lit-ref's provider timings: the provider timing records of the manifest's
+                          reference runs (tests/fixtures/loop/required/li/
+                          timing/; MadLoop loop-induced production 7|6|1,
+                          OpenLoops ls, Recola)
 - data/lit.json           lit-val's validation figures
 
 Main-configuration rule (MAIN_RULE below): every cell of Table 1 and Figure
@@ -2382,12 +2384,15 @@ def _preliminary() -> dict | None:
 #                         off), "generation": {"seconds", "peak_gib",
 #                         "plan_mb"?}?, "native_build"?, "source", "gate"?
 #                         (lit-perf: {"status", "ratio_to_limit", "band"})}]};
-#   data/li-providers.json lit-ref's provider timings (production mode,
-#                         within the 45-minute rule): {"rows": {key:
-#                         {"madloop" | "openloops" | "recola":
-#                         {"seconds_per_point", "setting"?, "source"} or
-#                         {"status": "unavailable" | "not run", "reason"},
-#                         "generation"?: {provider: seconds}}}};
+#   lit-ref's provider timings: the manifest tools/loop_reference/
+#                         li_campaign.json, per reference run of a row's
+#                         process ("madloop_process") its
+#                         "provider_timing_records" (paths below
+#                         tests/fixtures/loop/; the gate tool's providers
+#                         format, median per point) and "unavailable"
+#                         ({provider: reason}); MadLoop at its production
+#                         card only (LI_MADLOOP_PRODUCTION; the OPP column
+#                         belongs to the detailed sections);
 #   data/lit.json         lit-val's validation figures: {"rows": {key:
 #                         {"status", "references": {provider or "analytic":
 #                         largest relative deviation}, "points", "note"?,
@@ -2404,16 +2409,21 @@ def _preliminary() -> dict | None:
 # 5 ms rule a row is not gated; gate verdicts only from lit-perf's records
 # (before them: "no verdict yet").
 LI_TIMING = "li-timing.json"
-LI_PROVIDERS = "li-providers.json"
 LI_VALIDATION = "lit.json"
 LI_CAMPAIGN = Path("tools") / "loop_reference" / "li_campaign.json"
+# The manifest's fixture paths are relative to this directory.
+LI_FIXTURES = Path("tests") / "fixtures" / "loop"
+# MadLoop's loop-induced production card (PLAN §5.1/§5.2: COLLIER first,
+# MLReductionLib 7|6|1): the summary's MadLoop time; other reduction orders
+# (the 6|7|1 OPP column) are detailed-section columns.
+LI_MADLOOP_PRODUCTION = "7|6|1"
 LI_BACKENDS = {"tirust": "TIRust", "ninjars": "NinjaRS per amplitude"}
 LI_REFERENCES = ("analytic", "madloop", "openloops", "recola")
 LI_SHORT = {"analytic": "AN", **{k: SHORT[k] for k in PROVIDERS}}
 # The serving package of each input file (the "pending" marker's owner).
 LI_OWNERS = {
     LI_TIMING: "the row's serving package",
-    LI_PROVIDERS: "lit-ref",
+    str(LI_CAMPAIGN): "lit-ref",
     LI_VALIDATION: "lit-val",
 }
 LI_RULE = (
@@ -2510,7 +2520,35 @@ def _li_listed(process: str, text: str) -> bool:
     return re.search(pattern, text) is not None
 
 
-def _li_campaign(reg: dict, repo: Path) -> dict:
+def _li_manifest(repo: Path) -> dict | None:
+    """lit-ref's manifest by id: per manifest row carrying the id, its
+    reference runs and its process text (normalised), with the number of
+    manifest rows; None while it does not exist."""
+    path = repo / LI_CAMPAIGN
+    if not path.exists():
+        return None
+    rows = _load(path)["rows"]
+    ids: dict[str, list[dict]] = {}
+    for row in rows:
+        text = row.get("processes") or row.get("process") or ""
+        if isinstance(text, list):
+            text = ", ".join(text)
+        entry = {"row": row["row"], "runs": row.get("runs", []), "text": _li_norm(text)}
+        for i in _li_manifest_ids(row["row"]):
+            ids.setdefault(i, []).append(entry)
+    return {"rows": len(rows), "ids": ids}
+
+
+def _li_runs(entry: dict, process: str) -> list[dict]:
+    """A manifest row's reference runs of ``process`` (normalised)."""
+    return [
+        r
+        for r in entry["runs"]
+        if r.get("madloop_process") and _li_norm(r["madloop_process"]) == process
+    ]
+
+
+def _li_campaign(reg: dict, manifest: dict | None) -> dict:
     """The registry against lit-ref's manifest (li_campaign.json), once it
     exists: every registry id is a manifest row (a row may carry several
     ids, ``_li_manifest_ids``) whose processes include the registry's
@@ -2518,29 +2556,17 @@ def _li_campaign(reg: dict, repo: Path) -> dict:
     (``runs[].madloop_process``) or an item of its ``processes`` text; and
     every manifest id is a registry row or validation-only. Absent:
     recorded as not checked yet."""
-    path = repo / LI_CAMPAIGN
-    out = {"file": str(LI_CAMPAIGN), "present": path.exists(), "checked": False}
-    if not path.exists():
+    out = {"file": str(LI_CAMPAIGN), "present": manifest is not None}
+    out["checked"] = False
+    if manifest is None:
         out["reason"] = "not written yet (lit-ref)"
         return out
-    manifest: dict[str, list[tuple[set[str], str]]] = {}
-    rows = _load(path)["rows"]
-    for row in rows:
-        runs = {
-            _li_norm(r["madloop_process"])
-            for r in row.get("runs", ())
-            if r.get("madloop_process")
-        }
-        text = row.get("processes") or row.get("process") or ""
-        if isinstance(text, list):
-            text = ", ".join(text)
-        for i in _li_manifest_ids(row["row"]):
-            manifest.setdefault(i, []).append((runs, _li_norm(text)))
+    by_id = manifest["ids"]
     known = set(reg["validation_only"]["ids"])
     for row in reg["rows"]:
         for i in row["ids"]:
             known.add(i)
-            if i not in manifest:
+            if i not in by_id:
                 raise ValueError(
                     f"loop_induced row {row['key']}: {i} is not in {LI_CAMPAIGN}"
                 )
@@ -2548,18 +2574,20 @@ def _li_campaign(reg: dict, repo: Path) -> dict:
                 if not process:
                     continue
                 p = _li_norm(process)
-                if not any(p in runs or _li_listed(p, t) for runs, t in manifest[i]):
+                if not any(
+                    _li_runs(e, p) or _li_listed(p, e["text"]) for e in by_id[i]
+                ):
                     raise ValueError(
                         f"loop_induced row {row['key']}: {process!r} is not a"
                         f" process of {LI_CAMPAIGN} row {i}"
                     )
-    extra = sorted(set(manifest) - known)
+    extra = sorted(set(by_id) - known)
     if extra:
         raise ValueError(
             f"{LI_CAMPAIGN} rows {extra} are neither registry rows nor"
             " validation-only (milestone.json loop_induced)"
         )
-    out.update(checked=True, rows=len(rows), ids=len(manifest))
+    out.update(checked=True, rows=manifest["rows"], ids=len(by_id))
     return out
 
 
@@ -2572,49 +2600,76 @@ def _li_pending(what: str, reason: str) -> dict:
     return {"status": "pending", "reason": reason, "what": what}
 
 
-def _li_providers(row: dict, prov: dict | None) -> dict:
-    """The row's provider entries (production-mode times, or why missing)
-    and the fastest matched one."""
-    if prov is None:
+def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
+    """The row's provider entries from lit-ref's timing records
+    (production mode: MadLoop at LI_MADLOOP_PRODUCTION), the reasons of
+    the providers its runs record as unavailable, and the fastest matched
+    one."""
+    expected = [LI_SHORT[k] for k in row["references"] if k != "analytic"]
+    if manifest is None:
         return {
             "status": "pending",
-            "reason": f"provider timings: {LI_PROVIDERS} not written yet (lit-ref)",
-            "expected": [LI_SHORT[k] for k in row["references"] if k != "analytic"],
+            "reason": f"provider timings: {LI_CAMPAIGN.name} not written yet (lit-ref)",
+            "expected": expected,
         }
-    entry = prov["rows"].get(row["key"])
-    src = f"{LI_PROVIDERS} rows[{row['key']}]"
-    if entry is None:
+    runs, seen = [], set()
+    if row.get("process"):
+        p = _li_norm(row["process"])
+        for i in row["ids"]:
+            for e in manifest["ids"].get(i, ()):
+                for r in _li_runs(e, p):
+                    # A manifest row with several ids is met once per id.
+                    if (e["row"], r.get("process")) not in seen:
+                        seen.add((e["row"], r.get("process")))
+                        runs.append(r)
+    records = sorted({x for r in runs for x in r.get("provider_timing_records", ())})
+    if not records and not any(r.get("unavailable") for r in runs):
         return {
             "status": "not run",
-            "reason": f"no provider record of the row in {LI_PROVIDERS}",
-            "expected": [LI_SHORT[k] for k in row["references"] if k != "analytic"],
+            "reason": f"no provider timing record of the row in {LI_CAMPAIGN.name}",
+            "expected": expected,
         }
-    providers, times = {}, {}
-    for k in PROVIDERS:
-        x = entry.get(k)
-        if x is None:
-            continue
-        if "seconds_per_point" in x:
-            providers[k] = {
-                "seconds_per_point": x["seconds_per_point"],
-                "source": f"{src}.{k}",
-            }
-            if x.get("setting"):
-                providers[k]["setting"] = x["setting"]
-            times[k] = x["seconds_per_point"]
-        else:
-            if x.get("status") not in ("unavailable", "not run") or not x.get("reason"):
-                raise ValueError(f"{src}.{k}: a time, or a status with its reason")
-            providers[k] = {
-                "status": x["status"],
-                "reason": x["reason"],
-                "source": f"{src}.{k}",
-            }
+    providers, times, gens = {}, {}, {}
+    for name in records:
+        rec = _load(repo / LI_FIXTURES / name)
+        for k, x in rec["providers"].items():
+            if k not in PROVIDERS or "median_seconds_per_point" not in x:
+                continue
+            lib = (x.get("madloop_params") or {}).get("MLReductionLib")
+            if lib is not None and lib != LI_MADLOOP_PRODUCTION:
+                continue
+            if k in providers:
+                raise ValueError(
+                    f"{LI_CAMPAIGN.name} {row['key']}: two production timings"
+                    f" of {k} ({providers[k]['source']}, {name})"
+                )
+            t = x["median_seconds_per_point"]
+            providers[k] = {"seconds_per_point": t, "source": f"{name} providers.{k}"}
+            if lib is not None:
+                providers[k]["setting"] = f"MLReductionLib {lib}"
+            times[k] = t
+            gen = (x.get("setup") or {}).get("generation_seconds")
+            if gen is not None:
+                gens[k] = gen
+    for r in runs:
+        for k, reason in (r.get("unavailable") or {}).items():
+            if k in PROVIDERS and k not in providers:
+                providers[k] = {
+                    "status": "unavailable",
+                    "reason": reason,
+                    "source": f"{LI_CAMPAIGN.name} runs[{r.get('process')}]",
+                }
+    for k in row["references"]:
+        if k in PROVIDERS and k not in providers:
+            providers[k] = {"status": "not timed", "reason": "no production timing yet"}
     out = {"status": "recorded", "providers": providers, "fastest": None}
+    # No provider can be matched: every reference provider is unavailable.
+    out["unmatched"] = not times and all(
+        x.get("status") == "unavailable" for x in providers.values()
+    )
     if times:
         k = min(times, key=times.get)
         out["fastest"] = {"key": k, "name": NAMES[k], "seconds_per_point": times[k]}
-    gens = {k: s for k, s in (entry.get("generation") or {}).items() if k in PROVIDERS}
     out["generation"] = gens
     if gens:
         k = min(gens, key=gens.get)
@@ -2666,7 +2721,8 @@ def _li_records(
 
 def _li_gate(row: dict, t: float, rec: dict, prov: dict, rule: dict) -> dict:
     """The cell's gate rule: reported (four legs or fewer), the user's 5 ms
-    rule, no matched provider, lit-perf's verdict, or no verdict yet."""
+    rule, no matched provider (every reference unavailable), lit-perf's
+    verdict, or no verdict yet (no provider time yet)."""
     if row["gate_class"] == "reported":
         return {
             "status": "reported",
@@ -2680,7 +2736,7 @@ def _li_gate(row: dict, t: float, rec: dict, prov: dict, rule: dict) -> dict:
             "rule_source": "milestone.json gate_decisions.threshold_rule"
             f" ({rule['source']})",
         }
-    if prov.get("status") == "recorded" and prov["fastest"] is None:
+    if prov.get("status") == "recorded" and prov["unmatched"]:
         return {"status": "no gate", "label": "no matched provider: no gate"}
     g = rec.get("gate")
     if g is not None:
@@ -2693,15 +2749,23 @@ def _li_gate(row: dict, t: float, rec: dict, prov: dict, rule: dict) -> dict:
             "band": g["band"],
             "source": f"{rec['source']} (lit-perf gate tool)",
         }
+    if prov.get("fastest") is None:
+        return {"status": "no verdict", "label": "no provider time yet"}
     return {"status": "no verdict", "label": "no verdict yet"}
 
 
 def _li_cells(
-    row: dict, landed: bool, files: dict, recency: Recency, rule: dict, default: str
+    row: dict,
+    landed: bool,
+    files: dict,
+    prov: dict,
+    recency: Recency,
+    rule: dict,
+    default: str,
 ) -> dict:
-    """The row's process, generation and timing cells."""
+    """The row's process, generation and timing cells (``prov``: its
+    provider entries, ``_li_providers``)."""
     pending_pkg = f"served by {row['served_by']} (not landed at this head)"
-    prov = _li_providers(row, files[LI_PROVIDERS])
     out = {"providers": prov}
     val = files[LI_VALIDATION]
     if val is None:
@@ -2813,8 +2877,9 @@ def build_loop_induced(
 ) -> dict:
     """data/summary-li.json: the loop-induced summary table."""
     reg = _li_registry(ms)
-    campaign = _li_campaign(reg, repo)
-    names = (LI_TIMING, LI_PROVIDERS, LI_VALIDATION)
+    manifest = _li_manifest(repo)
+    campaign = _li_campaign(reg, manifest)
+    names = (LI_TIMING, LI_VALIDATION)
     files = {n: _li_input(data, n) for n in names}
     rule = ms["gate_decisions"]["threshold_rule"]
     groups = []
@@ -2839,7 +2904,13 @@ def build_loop_induced(
                     "landed": landed,
                     "note": row.get("note"),
                     **_li_cells(
-                        row, landed, files, recency, rule, reg["default_backend"]
+                        row,
+                        landed,
+                        files,
+                        _li_providers(row, manifest, repo),
+                        recency,
+                        rule,
+                        reg["default_backend"],
                     ),
                 }
             )
@@ -2862,12 +2933,21 @@ def build_loop_induced(
             "rule": LI_RULE,
             "registry": f"milestone.json loop_induced ({reg['source']})",
             "inputs": {
-                n: {
-                    "file": f"data/{n}",
-                    "present": files[n] is not None,
-                    "owner": LI_OWNERS[n],
-                }
-                for n in names
+                LI_TIMING: {
+                    "file": f"data/{LI_TIMING}",
+                    "present": files[LI_TIMING] is not None,
+                    "owner": LI_OWNERS[LI_TIMING],
+                },
+                "providers": {
+                    "file": f"{LI_CAMPAIGN} (provider_timing_records)",
+                    "present": manifest is not None,
+                    "owner": LI_OWNERS[str(LI_CAMPAIGN)],
+                },
+                LI_VALIDATION: {
+                    "file": f"data/{LI_VALIDATION}",
+                    "present": files[LI_VALIDATION] is not None,
+                    "owner": LI_OWNERS[LI_VALIDATION],
+                },
             },
             "campaign": campaign,
             "validation_only": reg["validation_only"],

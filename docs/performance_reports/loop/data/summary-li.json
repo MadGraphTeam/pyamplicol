@@ -30,9 +30,9 @@
     "present": false,
     "owner": "the row's serving package"
    },
-   "li-providers.json": {
-    "file": "data/li-providers.json",
-    "present": false,
+   "providers": {
+    "file": "tools/loop_reference/li_campaign.json (provider_timing_records)",
+    "present": true,
     "owner": "lit-ref"
    },
    "lit.json": {
@@ -95,8 +95,8 @@
      "landed": false,
      "note": "top loop; top + bottom (m_b = 4.7) separately; Spira's analytic value is the reference",
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -144,12 +144,25 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "status": "unavailable",
+        "reason": "decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries",
+        "source": "li_campaign.json runs[li_h_gg]"
+       },
+       "madloop": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       },
+       "recola": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       }
+      },
+      "fastest": null,
+      "unmatched": false,
+      "generation": {}
      },
      "validation": {
       "status": "pending",
@@ -193,12 +206,25 @@
      "landed": false,
      "note": "loop_qcd_qed_sm (G_mu); W, Goldstone and ghost loops",
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "status": "unavailable",
+        "reason": "decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries",
+        "source": "li_campaign.json runs[li_h_aa]"
+       },
+       "madloop": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       },
+       "recola": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       }
+      },
+      "fastest": null,
+      "unmatched": false,
+      "generation": {}
      },
      "validation": {
       "status": "pending",
@@ -242,12 +268,25 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "status": "unavailable",
+        "reason": "decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries",
+        "source": "li_campaign.json runs[li_h_za]"
+       },
+       "madloop": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       },
+       "recola": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       }
+      },
+      "fastest": null,
+      "unmatched": false,
+      "generation": {}
      },
      "validation": {
       "status": "pending",
@@ -289,12 +328,25 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "status": "unavailable",
+        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "source": "li_campaign.json runs[li_aa_h]"
+       },
+       "madloop": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       },
+       "recola": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       }
+      },
+      "fastest": null,
+      "unmatched": false,
+      "generation": {}
      },
      "validation": {
       "status": "pending",
@@ -343,8 +395,8 @@
      "landed": false,
      "note": "five massless flavours; the top alone against the massive-quark box",
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -392,8 +444,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -441,8 +493,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -490,8 +542,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -540,13 +592,36 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "OL",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.001561181,
+        "source": "required/li/timing/li_gg_hh-providers.json providers.openloops"
+       },
+       "recola": {
+        "seconds_per_point": 0.0013595255,
+        "source": "required/li/timing/li_gg_hh-providers.json providers.recola"
+       },
+       "madloop": {
+        "seconds_per_point": 0.000691913,
+        "source": "required/li/timing/li_gg_hh-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1"
+       }
+      },
+      "fastest": {
+       "key": "madloop",
+       "name": "MadLoop",
+       "seconds_per_point": 0.000691913
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 0.085119532
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 0.085119532
+      }
      },
      "validation": {
       "status": "pending",
@@ -589,8 +664,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -639,8 +714,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -689,8 +764,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -738,8 +813,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -787,8 +862,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -836,8 +911,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -886,12 +961,25 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "status": "unavailable",
+        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "source": "li_campaign.json runs[li_emep_ha]"
+       },
+       "madloop": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       },
+       "recola": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       }
+      },
+      "fastest": null,
+      "unmatched": false,
+      "generation": {}
      },
      "validation": {
       "status": "pending",
@@ -935,12 +1023,25 @@
      "landed": false,
      "note": "complete [QED]: fermion, W, Goldstone and ghost loops (the only a a > a a row)",
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "status": "unavailable",
+        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "source": "li_campaign.json runs[li_aa_aa]"
+       },
+       "madloop": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       },
+       "recola": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       }
+      },
+      "fastest": null,
+      "unmatched": false,
+      "generation": {}
      },
      "validation": {
       "status": "pending",
@@ -982,12 +1083,25 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "status": "unavailable",
+        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "source": "li_campaign.json runs[li_aa_zz]"
+       },
+       "madloop": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       },
+       "recola": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       }
+      },
+      "fastest": null,
+      "unmatched": false,
+      "generation": {}
      },
      "validation": {
       "status": "pending",
@@ -1029,12 +1143,25 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "status": "unavailable",
+        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "source": "li_campaign.json runs[li_aa_hh]"
+       },
+       "madloop": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       },
+       "recola": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       }
+      },
+      "fastest": null,
+      "unmatched": false,
+      "generation": {}
      },
      "validation": {
       "status": "pending",
@@ -1076,12 +1203,25 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "status": "unavailable",
+        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "source": "li_campaign.json runs[li_emep_hh]"
+       },
+       "madloop": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       },
+       "recola": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       }
+      },
+      "fastest": null,
+      "unmatched": false,
+      "generation": {}
      },
      "validation": {
       "status": "pending",
@@ -1128,12 +1268,25 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "status": "unavailable",
+        "reason": "decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries",
+        "source": "li_campaign.json runs[li_h_ggg]"
+       },
+       "madloop": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       },
+       "recola": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       }
+      },
+      "fastest": null,
+      "unmatched": false,
+      "generation": {}
      },
      "validation": {
       "status": "pending",
@@ -1175,12 +1328,25 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "status": "unavailable",
+        "reason": "decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries",
+        "source": "li_campaign.json runs[li_z_ggg]"
+       },
+       "madloop": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       },
+       "recola": {
+        "status": "not timed",
+        "reason": "no production timing yet"
+       }
+      },
+      "fastest": null,
+      "unmatched": false,
+      "generation": {}
      },
      "validation": {
       "status": "pending",
@@ -1227,8 +1393,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "Rc"
@@ -1275,8 +1441,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -1325,13 +1491,36 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "OL",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.02568697,
+        "source": "required/li/timing/li_gg_hgg-providers.json providers.openloops"
+       },
+       "recola": {
+        "seconds_per_point": 0.02546004,
+        "source": "required/li/timing/li_gg_hgg-providers.json providers.recola"
+       },
+       "madloop": {
+        "seconds_per_point": 0.086247677,
+        "source": "required/li/timing/li_gg_hgg-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.02546004
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 0.21021671
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 0.21021671
+      }
      },
      "validation": {
       "status": "pending",
@@ -1374,13 +1563,36 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
-      "expected": [
-       "ML",
-       "OL",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.18309176900000002,
+        "source": "required/li/timing/li_gg_zzg-providers.json providers.openloops"
+       },
+       "recola": {
+        "seconds_per_point": 0.1777489585,
+        "source": "required/li/timing/li_gg_zzg-providers.json providers.recola"
+       },
+       "madloop": {
+        "seconds_per_point": 0.7213941095,
+        "source": "required/li/timing/li_gg_zzg-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.1777489585
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 1.54554174
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 1.54554174
+      }
      },
      "validation": {
       "status": "pending",
@@ -1423,8 +1635,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -1472,8 +1684,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -1521,8 +1733,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -1570,8 +1782,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -1619,8 +1831,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -1668,8 +1880,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -1717,8 +1929,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -1766,8 +1978,8 @@
      "landed": false,
      "note": "loop-induced by its order limit (QED <= 1)",
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL",
@@ -1819,8 +2031,8 @@
      "landed": false,
      "note": "P15's point 1.3033633142042775e-12 GeV^-4 checks it (lit-val)",
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL"
@@ -1866,8 +2078,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL"
@@ -1913,8 +2125,8 @@
      "landed": false,
      "note": "fixed tree widths (Q7)",
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML",
        "OL"
@@ -1959,8 +2171,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "OL"
       ]
@@ -2004,8 +2216,8 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML"
       ]
@@ -2054,8 +2266,8 @@
      "landed": false,
      "note": "one 2->5 stretch row: this process or the alternative; outside TIRust's validated domain (N <= 6), reported, never enforced (Q5)",
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "OL"
       ]
@@ -2103,8 +2315,8 @@
      "landed": false,
      "note": "TIR-only artifact (NinjaRS refuses it typed); MadLoop TIR is its second reference",
      "providers": {
-      "status": "pending",
-      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "status": "not run",
+      "reason": "no provider timing record of the row in li_campaign.json",
       "expected": [
        "ML"
       ]
