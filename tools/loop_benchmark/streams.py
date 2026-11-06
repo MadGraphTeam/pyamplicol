@@ -86,7 +86,11 @@ def _invariants_pass(point: list[list[Fraction]]) -> bool:
 
 
 def _massive_grid(
-    masses: list[Fraction], count: int, resonances: list[str], pdgs: list[int]
+    masses: list[Fraction],
+    count: int,
+    resonances: list[str],
+    pdgs: list[int],
+    window: tuple[Fraction, Fraction] = (Fraction(800), Fraction(4000)),
 ) -> list[list[list[Fraction]]]:
     """``exact_points.generate`` without its distinct-sqrt(s) rule after the
     campaign prefix (later points need only be distinct): same candidate
@@ -99,7 +103,6 @@ def _massive_grid(
     seen: set[tuple[Fraction, ...]] = set()
     scales: set[Fraction] = set()
     chooser = random.Random(20261020)
-    window = (Fraction(800), Fraction(4000))
     for trial in itertools.count():
         if len(accepted) == count:
             return accepted
@@ -130,6 +133,48 @@ def _massive_grid(
         seen.add(key)
         scales.add(sqrt_s)
     raise AssertionError("unreachable")
+
+
+def _pair_points(
+    masses: list[Fraction],
+    count: int,
+    window: tuple[Fraction, Fraction],
+    taken: list[list[list[Fraction]]],
+) -> list[list[list[Fraction]]]:
+    """``count`` exact 2 -> 2 points with a massive final pair: the final
+    state of each is ``decay_points``' exact rational two-body split of the
+    centre-of-mass system (a rational point on the momentum sphere, seeded
+    rotation), at distinct sqrt(s) inside ``window`` (sqrt(s) values whose
+    momentum sphere holds no rational point are skipped)."""
+
+    exact_points, _ = _toolkit()
+    import decay_points
+
+    final = masses[2:]
+    low = max(window[0], sum(final) + 1)
+    seen = {tuple(x for p in point for x in p) for point in taken}
+    out: list[list[list[Fraction]]] = []
+    step = 0
+    while len(out) < count:
+        step += 1
+        if step > 100 * count:
+            raise RuntimeError(f"only {len(out)} of {count} two-body points")
+        sqrt_s = low + (window[1] - low) * Fraction(step, 4 * count + 1)
+        try:
+            (rest,) = decay_points.generate(
+                [sqrt_s, *final], 1, CUT, (), seed=decay_points.SEED + step
+            )
+        except ValueError:
+            continue
+        half, zero = sqrt_s / 2, Fraction(0)
+        point = [[half, zero, zero, half], [half, zero, zero, -half], rest[1], rest[2]]
+        key = tuple(x for p in point for x in p)
+        if key in seen or not _invariants_pass(point):
+            continue
+        exact_points.check(point, masses, 2)
+        out.append(point)
+        seen.add(key)
+    return out
 
 
 def _resonant(final, pdgs, resonances) -> bool:
@@ -264,8 +309,24 @@ def make_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
     ]
     pdgs = process["pdgs"]
     prefix_count = CAMPAIGN_PREFIX
-    if any(masses[2:]):
-        points = _massive_grid(masses, count, resonances, pdgs)
+    # A loop-induced specification may set its points' sqrt(s) window
+    # (``points.scale_window`` of the toolkit specification).
+    window = tuple(
+        Fraction(x)
+        for x in process.get("points", {}).get("scale_window", ("800", "4000"))
+    )
+    if any(masses[2:]) and len(pdgs) == 4:
+        # A massive 2 -> 2 final pair: the exact_points grid holds only a
+        # dozen points (one parameter, a few rotations); the campaign prefix
+        # comes from it, the rest from exact rational CM-frame points.
+        prefix = _massive_grid(masses, CAMPAIGN_PREFIX, resonances, pdgs, window)
+        points = prefix + _pair_points(masses, count - CAMPAIGN_PREFIX, window, prefix)
+        construction = (
+            "exact_points campaign prefix, then exact rational centre-of-mass "
+            "points of distinct sqrt(s) (decay_points' two-body construction)"
+        )
+    elif any(masses[2:]):
+        points = _massive_grid(masses, count, resonances, pdgs, window)
         construction = "exact_points grid (distinct points after the prefix)"
     elif len(pdgs) - 2 > CAMPAIGN_MAX_FINAL:
         prefix_count = 0
@@ -337,7 +398,9 @@ def campaign_agreement(key: str, stream: dict[str, Any]) -> bool | None:
     """Whether the stream starts with the committed fixture's points (None
     without a fixture)."""
 
-    fixture = FIXTURES / f"{key}.json"
+    # Loop-induced references: required/li (tools/loop_reference/li_references.py).
+    sub = "li" if spec(key).get("loop_induced") else ""
+    fixture = FIXTURES / sub / f"{key}.json"
     if not fixture.exists():
         return None
     data = json.loads(fixture.read_text())

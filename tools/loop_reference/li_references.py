@@ -81,7 +81,7 @@ def command_points(args):
     spec = load(args)
     record = spec["points"]
     tool = record["tool"]
-    command = [sys.executable, "-I", str(HERE / tool), "--spec", str(args.spec), "--process", spec["name"],
+    command = [sys.executable, str(HERE / tool), "--spec", str(args.spec), "--process", spec["name"],
                "--output", str(args.output), "--count", str(args.count)]
     if tool == "supplied_points.py":
         command += ["--family", record.get("family", "regular")]
@@ -123,8 +123,8 @@ def command_export(args):
 
 def helavg_factor(process_dir):
     text = (process_dir / "loop_matrix.f").read_text()
-    factor = re.search(r"DATA HELAVGFACTOR/(\d+)/", text)
-    iden = re.search(r"DATA IDEN/(\d+)/", text)
+    factor = re.search(r"DATA HELAVGFACTOR/\s*(\d+)\s*/", text)
+    iden = re.search(r"DATA IDEN/\s*(\d+)\s*/", text)
     if factor is None or iden is None:
         raise RuntimeError(f"no HELAVGFACTOR / IDEN in {process_dir}/loop_matrix.f")
     return int(factor.group(1)), int(iden.group(1))
@@ -345,15 +345,17 @@ def run_analytic(args, spec, points, run_dir, result):
     import li_analytic
 
     start = time.perf_counter()
+    oracles = [*spec.get("analytic", ()), *spec.get("analytic_limit", ())]
     values = {oracle: li_analytic.evaluate(oracle, spec["scheme_data"], points["points"], args.dps)
-              for oracle in spec.get("analytic", ())}
+              for oracle in oracles}
     if not values:
         raise SystemExit(f"{spec['name']} has no analytic oracle")
-    primary = spec["analytic"][0]
+    primary = oracles[0]
     rows = [{"value": float(values[primary][i]), "decimal": values[primary][i],
              **({"other_oracles": {o: values[o][i] for o in values if o != primary}} if len(values) > 1 else {})}
             for i in range(len(points["points"]))]
-    result["settings"] = {"oracle": primary, "dps": args.dps}
+    result["settings"] = {"oracle": primary, "dps": args.dps,
+                          "limit": primary in spec.get("analytic_limit", ())}
     result["version"] = "li_analytic.py (mpmath)"
     return rows, {}, time.perf_counter() - start
 
@@ -409,8 +411,18 @@ def command_merge(args):
     points = json.loads(args.points.read_text())
     references.check_point_masses(spec, points)
     work = args.work_dir.resolve()
-    results = {p: json.loads((work / f"{p}-result.json").read_text())
-               for p in PROVIDERS if (work / f"{p}-result.json").exists()}
+    found = {p: json.loads((work / f"{p}-result.json").read_text())
+             for p in PROVIDERS if (work / f"{p}-result.json").exists()}
+    # A provider the specification marks unavailable for this row is not a
+    # reference (its measured deviation is recorded); an analytic oracle that
+    # is only a limit (``analytic_limit``, e.g. the m_t -> infinity LET) is
+    # reported beside the comparison.
+    excluded = {p: {"reason": spec[p]["unavailable"]} for p in found
+                if p != "analytic" and spec.get(p, {}).get("unavailable")}
+    limits = {}
+    if "analytic" in found and not spec.get("analytic"):
+        limits = found.pop("analytic")
+    results = {p: r for p, r in found.items() if p not in excluded}
     if not results:
         raise SystemExit("no provider results")
     primary = "madloop" if "madloop" in results else next(iter(results))
@@ -430,9 +442,16 @@ def command_merge(args):
                 error = relative(results[a]["rows"][index]["value"], results[b]["rows"][index]["value"])
                 row["provider_pair_relative_errors"][f"{a}-{b}"] = error
                 worst = max(worst, error)
-        if "per_helicity" in results.get("madloop", {"rows": [{}]})["rows"][index]:
+        if "madloop" in results and "per_helicity" in results["madloop"]["rows"][index]:
             row["per_helicity"] = [{k: e[k] for k in ("helicity", "value", "accuracy", "status")}
                                    for e in results["madloop"]["rows"][index]["per_helicity"]]
+        for provider in excluded:
+            excluded[provider].setdefault("relative_deviation_from_reference", []).append(
+                relative(found[provider]["rows"][index]["value"], row["value"]))
+        if limits:
+            row["limit_oracle"] = {"oracle": limits["settings"]["oracle"],
+                                   "value": limits["rows"][index]["value"],
+                                   "ratio_to_reference": limits["rows"][index]["value"] / row["value"]}
         rows.append(row)
     secondary = {}
     for path in sorted(work.glob("*-*-result.json")):
@@ -481,7 +500,9 @@ def command_merge(args):
         "passed": len(results) >= 2 and worst <= L1_TOLERANCE,
         "providers": providers,
         "secondary_runs": secondary,
-        "unavailable": {p: spec.get(p, {}).get("unavailable") for p in ("openloops",) if spec.get(p, {}).get("unavailable")},
+        "unavailable": {p: spec[p]["unavailable"] for p in ("recola", "openloops")
+                        if spec.get(p, {}).get("unavailable") and p not in excluded},
+        "excluded": excluded,
         "misses_45_min": misses,
     }
     if spec.get("note"):
