@@ -1,0 +1,2130 @@
+{
+ "what": "the loop-induced summary table <tab:summary-li> of docs/performance_reports/loop/benchmarks.typ, written by scripts/build_summary.py (build_loop_induced); do not edit by hand",
+ "meta": {
+  "date": "2026-11-05",
+  "engine_on_loop": "c8885cc5",
+  "default_backend": "TIRust",
+  "gate_batch": 128,
+  "threshold_rule": {
+   "below_seconds_per_point": 0.005,
+   "verdict": "not gated",
+   "label": "below 5 ms: not gated (user 2026-10-24)",
+   "short": "<5 ms: not gated",
+   "applies": "a process whose pyAmpliCol time per point at B = 128 is below 5 ms has no blocking gate: its ratio and band stay as measured and are shown, its verdict is the label; the batched time is the configuration's own at B = 128 (the gate batch, user 2026-10-28: every other batch size, B = 1 and the 2->5 rows' B = 16 included, is reported with its ratio and band and carries no verdict; a configuration without a B = 128 timing, e.g. the one-lane runs, has none, never one derived from another batch size); it takes precedence over a decision; the exact-rational vs binary64 input question is therefore moot and the protocol stays",
+   "source": "workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts)"
+  },
+  "gate_classes": {
+   "reported": "four legs or fewer (2->1, 1->2, 2->2, 1->3): reported, no gate (PLAN \u00a75.2)",
+   "gated": "2->3 upward with a matched provider: B = 128 median on TIRust faster than MadLoop and <= 1.30x each matched OpenLoops and Recola time; below 5 ms not gated (PLAN \u00a75.2, Q35, Q40)",
+   "gated where a provider matches": "as gated, where a matched provider timing exists or is obtainable within 45 min; else reported with the reason",
+   "optional": "2->4 optional: gated where run and matched (PLAN \u00a74.1 LI-44)",
+   "stretch": "2->5 stretch: internal; gated only if a provider matches (PLAN \u00a74.1 LI-51)",
+   "eft": "TIR only (rank > N+2, lit-eft): its gate follows its multiplicity once the process is fixed"
+  },
+  "landed": [],
+  "rule": "every row of the registry (milestone.json loop_induced, PLAN \u00a74.1 process rows) by multiplicity; the cell is the newest record's batched B = 128 time per point (git ancestry of the record revisions) on the default backend TIRust, NinjaRS per amplitude labelled where only NinjaRS is timed at that revision; the ratio to the fastest matched provider (production mode) colours it; generation uncoloured; four legs or fewer reported, below the 5 ms rule not gated, gate verdicts only from lit-perf's records; a row whose serving package has not landed, or whose input file does not exist yet, is pending; nothing estimated or extrapolated",
+  "registry": "milestone.json loop_induced (workspace/reports/engine-v2/m-lit/PLAN.md revision 2d: \u00a74.1 (the process rows, their ids and references), \u00a75.2 and \u00a74.1's tier column (gate classes), \u00a73.3 LIT-AMP 'Rows', \u00a73.4 LIT-EW 'Scope', \u00a73.5 LIT-EFT and \u00a73.7 'Pushes' (the serving package: M-LIT-a lit-amp's rows; M-LIT-b lit-ew's EW rows and the production route lit-r2's other rows; LI-X1 lit-eft); USER 2026-11-06 ~06:00 (the table, every row pending at M-LIT-a0))",
+  "inputs": {
+   "li-timing.json": {
+    "file": "data/li-timing.json",
+    "present": false,
+    "owner": "the row's serving package"
+   },
+   "li-providers.json": {
+    "file": "data/li-providers.json",
+    "present": false,
+    "owner": "lit-ref"
+   },
+   "lit.json": {
+    "file": "data/lit.json",
+    "present": false,
+    "owner": "lit-val"
+   }
+  },
+  "campaign": {
+   "file": "tools/loop_reference/li_campaign.json",
+   "present": false,
+   "checked": false,
+   "reason": "not written yet (lit-ref)"
+  },
+  "validation_only": {
+   "ids": [
+    "LI-B1",
+    "LI-B2",
+    "LI-Z1",
+    "LI-Z1b",
+    "LI-Z2",
+    "LI-W1",
+    "LI-L1",
+    "LI-P1",
+    "LI-C1",
+    "LI-S1",
+    "LI-O1"
+   ],
+   "reason": "the backend-unit, zero, identity, observable and CMS rows stay in the validation tables (PLAN \u00a73.7 'Pushes'); LI-C1 is the complex-mass-scheme row (the identity rows LI-W1, L1, P1, C1, S1 of \u00a74.1 share the prefix: Ward, rotations, amplitude poles, crossing, N_f)"
+  }
+ },
+ "groups": [
+  {
+   "name": "2->1 / 1->2",
+   "rows": [
+    {
+     "key": "gg_h",
+     "process": "g g > h",
+     "math": "g g -> h",
+     "label": "g g > h",
+     "alternative": null,
+     "ids": [
+      "LI-A1"
+     ],
+     "legs": 3,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "AN",
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-amp",
+     "landed": false,
+     "note": "top loop; top + bottom (m_b = 4.7) separately; Spira's analytic value is the reference",
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "h_gg",
+     "process": "h > g g",
+     "math": "h -> g g",
+     "label": "h > g g",
+     "alternative": null,
+     "ids": [
+      "LI-A2"
+     ],
+     "legs": 3,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "AN",
+      "ML",
+      "Rc"
+     ],
+     "served_by": "lit-amp",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "h_aa",
+     "process": "h > a a",
+     "math": "h -> a a",
+     "label": "h > a a",
+     "alternative": null,
+     "ids": [
+      "LI-A3",
+      "LI-E1"
+     ],
+     "legs": 3,
+     "corrections": "QED",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "AN",
+      "ML",
+      "Rc"
+     ],
+     "served_by": "lit-ew",
+     "landed": false,
+     "note": "loop_qcd_qed_sm (G_mu); W, Goldstone and ghost loops",
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "h_za",
+     "process": "h > z a",
+     "math": "h -> z a",
+     "label": "h > z a",
+     "alternative": null,
+     "ids": [
+      "LI-A4",
+      "LI-E1"
+     ],
+     "legs": 3,
+     "corrections": "QED",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "AN",
+      "ML",
+      "Rc"
+     ],
+     "served_by": "lit-ew",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "aa_h",
+     "process": "a a > h",
+     "math": "a a -> h",
+     "label": "a a > h",
+     "alternative": null,
+     "ids": [
+      "LI-E2"
+     ],
+     "legs": 3,
+     "corrections": "QED",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "Rc"
+     ],
+     "served_by": "lit-ew",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "timing"
+     }
+    }
+   ]
+  },
+  {
+   "name": "2->2",
+   "rows": [
+    {
+     "key": "gg_aa",
+     "process": "g g > a a",
+     "math": "g g -> a a",
+     "label": "g g > a a",
+     "alternative": null,
+     "ids": [
+      "LI-A5"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "AN",
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-amp",
+     "landed": false,
+     "note": "five massless flavours; the top alone against the massive-quark box",
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_zz",
+     "process": "g g > z z",
+     "math": "g g -> z z",
+     "label": "g g > z z",
+     "alternative": null,
+     "ids": [
+      "LI-21"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-amp",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_wpwm",
+     "process": "g g > w+ w-",
+     "math": "g g -> w^+ w^-",
+     "label": "g g > w+ w-",
+     "alternative": null,
+     "ids": [
+      "LI-22"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_za",
+     "process": "g g > z a",
+     "math": "g g -> z a",
+     "label": "g g > z a",
+     "alternative": null,
+     "ids": [
+      "LI-23"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_hh",
+     "process": "g g > h h",
+     "math": "g g -> h h",
+     "label": "g g > h h",
+     "alternative": null,
+     "ids": [
+      "LI-24",
+      "LI-A7"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-amp",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_hz",
+     "process": "g g > h z",
+     "math": "g g -> h z",
+     "label": "g g > h z",
+     "alternative": null,
+     "ids": [
+      "LI-25"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_hg",
+     "process": "g g > h g",
+     "math": "g g -> h g",
+     "label": "g g > h g",
+     "alternative": null,
+     "ids": [
+      "LI-26",
+      "LI-A7"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-amp",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "uux_hg",
+     "process": "u u~ > h g",
+     "math": "u overline(u) -> h g",
+     "label": "u u~ > h g",
+     "alternative": null,
+     "ids": [
+      "LI-26",
+      "LI-A7"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-amp",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-amp (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "ug_hu",
+     "process": "u g > h u",
+     "math": "u g -> h u",
+     "label": "u g > h u",
+     "alternative": null,
+     "ids": [
+      "LI-26"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_zg",
+     "process": "g g > z g",
+     "math": "g g -> z g",
+     "label": "g g > z g",
+     "alternative": null,
+     "ids": [
+      "LI-27"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_ag",
+     "process": "g g > a g",
+     "math": "g g -> a g",
+     "label": "g g > a g",
+     "alternative": null,
+     "ids": [
+      "LI-27"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "emep_ha",
+     "process": "e+ e- > h a",
+     "math": "e^+ e^- -> h a",
+     "label": "e+ e- > h a",
+     "alternative": null,
+     "ids": [
+      "LI-A4",
+      "LI-E3"
+     ],
+     "legs": 4,
+     "corrections": "QED",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "AN",
+      "ML",
+      "Rc"
+     ],
+     "served_by": "lit-ew",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "aa_aa",
+     "process": "a a > a a",
+     "math": "a a -> a a",
+     "label": "a a > a a",
+     "alternative": null,
+     "ids": [
+      "LI-A6",
+      "LI-E2"
+     ],
+     "legs": 4,
+     "corrections": "QED",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "AN",
+      "ML",
+      "Rc"
+     ],
+     "served_by": "lit-ew",
+     "landed": false,
+     "note": "complete [QED]: fermion, W, Goldstone and ghost loops (the only a a > a a row)",
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "aa_zz",
+     "process": "a a > z z",
+     "math": "a a -> z z",
+     "label": "a a > z z",
+     "alternative": null,
+     "ids": [
+      "LI-E2"
+     ],
+     "legs": 4,
+     "corrections": "QED",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "Rc"
+     ],
+     "served_by": "lit-ew",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "aa_hh",
+     "process": "a a > h h",
+     "math": "a a -> h h",
+     "label": "a a > h h",
+     "alternative": null,
+     "ids": [
+      "LI-E2"
+     ],
+     "legs": 4,
+     "corrections": "QED",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "Rc"
+     ],
+     "served_by": "lit-ew",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "emep_hh",
+     "process": "e+ e- > h h",
+     "math": "e^+ e^- -> h h",
+     "label": "e+ e- > h h",
+     "alternative": null,
+     "ids": [
+      "LI-E3"
+     ],
+     "legs": 4,
+     "corrections": "QED",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "Rc"
+     ],
+     "served_by": "lit-ew",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "timing"
+     }
+    }
+   ]
+  },
+  {
+   "name": "1->3",
+   "rows": [
+    {
+     "key": "h_ggg",
+     "process": "h > g g g",
+     "math": "h -> g g g",
+     "label": "h > g g g",
+     "alternative": null,
+     "ids": [
+      "LI-37"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "z_ggg",
+     "process": "z > g g g",
+     "math": "z -> g g g",
+     "label": "z > g g g",
+     "alternative": null,
+     "ids": [
+      "LI-37"
+     ],
+     "legs": 4,
+     "corrections": "QCD",
+     "gate_class": "reported",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    }
+   ]
+  },
+  {
+   "name": "2->3",
+   "rows": [
+    {
+     "key": "emep_ggg",
+     "process": "e+ e- > g g g",
+     "math": "e^+ e^- -> g g g",
+     "label": "e+ e- > g g g",
+     "alternative": null,
+     "ids": [
+      "LI-E4"
+     ],
+     "legs": 5,
+     "corrections": "QED",
+     "gate_class": "gated where a provider matches",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "Rc"
+     ],
+     "served_by": "lit-ew",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-ew (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_hhh",
+     "process": "g g > h h h",
+     "math": "g g -> h h h",
+     "label": "g g > h h h",
+     "alternative": null,
+     "ids": [
+      "LI-31"
+     ],
+     "legs": 5,
+     "corrections": "QCD",
+     "gate_class": "gated",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_hgg",
+     "process": "g g > h g g",
+     "math": "g g -> h g g",
+     "label": "g g > h g g",
+     "alternative": null,
+     "ids": [
+      "LI-32",
+      "LI-A7"
+     ],
+     "legs": 5,
+     "corrections": "QCD",
+     "gate_class": "gated",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_zzg",
+     "process": "g g > z z g",
+     "math": "g g -> z z g",
+     "label": "g g > z z g",
+     "alternative": null,
+     "ids": [
+      "LI-33"
+     ],
+     "legs": 5,
+     "corrections": "QCD",
+     "gate_class": "gated",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_aag",
+     "process": "g g > a a g",
+     "math": "g g -> a a g",
+     "label": "g g > a a g",
+     "alternative": null,
+     "ids": [
+      "LI-33"
+     ],
+     "legs": 5,
+     "corrections": "QCD",
+     "gate_class": "gated",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_wpwmg",
+     "process": "g g > w+ w- g",
+     "math": "g g -> w^+ w^- g",
+     "label": "g g > w+ w- g",
+     "alternative": null,
+     "ids": [
+      "LI-33"
+     ],
+     "legs": 5,
+     "corrections": "QCD",
+     "gate_class": "gated",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_zzz",
+     "process": "g g > z z z",
+     "math": "g g -> z z z",
+     "label": "g g > z z z",
+     "alternative": null,
+     "ids": [
+      "LI-34"
+     ],
+     "legs": 5,
+     "corrections": "QCD",
+     "gate_class": "gated",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_hzg",
+     "process": "g g > h z g",
+     "math": "g g -> h z g",
+     "label": "g g > h z g",
+     "alternative": null,
+     "ids": [
+      "LI-35"
+     ],
+     "legs": 5,
+     "corrections": "QCD",
+     "gate_class": "gated where a provider matches",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_agg",
+     "process": "g g > a g g",
+     "math": "g g -> a g g",
+     "label": "g g > a g g",
+     "alternative": null,
+     "ids": [
+      "LI-35"
+     ],
+     "legs": 5,
+     "corrections": "QCD",
+     "gate_class": "gated where a provider matches",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_zgg",
+     "process": "g g > z g g",
+     "math": "g g -> z g g",
+     "label": "g g > z g g",
+     "alternative": null,
+     "ids": [
+      "LI-35"
+     ],
+     "legs": 5,
+     "corrections": "QCD",
+     "gate_class": "gated where a provider matches",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "uux_hgg",
+     "process": "u u~ > h g g",
+     "math": "u overline(u) -> h g g",
+     "label": "u u~ > h g g",
+     "alternative": null,
+     "ids": [
+      "LI-36"
+     ],
+     "legs": 5,
+     "corrections": "QCD",
+     "gate_class": "gated where a provider matches",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "uux_ddxh",
+     "process": "u u~ > d d~ h",
+     "math": "u overline(u) -> d overline(d) h",
+     "label": "u u~ > d d~ h",
+     "alternative": null,
+     "ids": [
+      "LI-36"
+     ],
+     "legs": 5,
+     "corrections": "QCD",
+     "gate_class": "gated where a provider matches",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL",
+      "Rc"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": "loop-induced by its order limit (QED <= 1)",
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL",
+       "Rc"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    }
+   ]
+  },
+  {
+   "name": "2->4",
+   "rows": [
+    {
+     "key": "gg_hhgg",
+     "process": "g g > h h g g",
+     "math": "g g -> h h g g",
+     "label": "g g > h h g g",
+     "alternative": null,
+     "ids": [
+      "LI-41"
+     ],
+     "legs": 6,
+     "corrections": "QCD",
+     "gate_class": "gated where a provider matches",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": "P15's point 1.3033633142042775e-12 GeV^-4 checks it (lit-val)",
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_hggg",
+     "process": "g g > h g g g",
+     "math": "g g -> h g g g",
+     "label": "g g > h g g g",
+     "alternative": null,
+     "ids": [
+      "LI-42"
+     ],
+     "legs": 6,
+     "corrections": "QCD",
+     "gate_class": "gated where a provider matches",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_emepmupmum",
+     "process": "g g > e+ e- mu+ mu-",
+     "math": "g g -> e^+ e^- mu^+ mu^-",
+     "label": "g g > e+ e- mu+ mu-",
+     "alternative": null,
+     "ids": [
+      "LI-43"
+     ],
+     "legs": 6,
+     "corrections": "QCD",
+     "gate_class": "gated where a provider matches",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML",
+      "OL"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": "fixed tree widths (Q7)",
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML",
+       "OL"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_aagg",
+     "process": "g g > a a g g",
+     "math": "g g -> a a g g",
+     "label": "g g > a a g g",
+     "alternative": null,
+     "ids": [
+      "LI-44"
+     ],
+     "legs": 6,
+     "corrections": "QCD",
+     "gate_class": "optional",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "OL"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "OL"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    },
+    {
+     "key": "gg_zzzz",
+     "process": "g g > z z z z",
+     "math": "g g -> z z z z",
+     "label": "g g > z z z z",
+     "alternative": null,
+     "ids": [
+      "LI-44"
+     ],
+     "legs": 6,
+     "corrections": "QCD",
+     "gate_class": "optional",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "ML"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": null,
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    }
+   ]
+  },
+  {
+   "name": "2->5",
+   "rows": [
+    {
+     "key": "li51",
+     "process": "g g > e+ e- mu+ mu- g",
+     "math": "g g -> e^+ e^- mu^+ mu^- g",
+     "label": "g g > e+ e- mu+ mu- g",
+     "alternative": "g g > h g g g g",
+     "ids": [
+      "LI-51"
+     ],
+     "legs": 7,
+     "corrections": "QCD",
+     "gate_class": "stretch",
+     "backends": [
+      "NinjaRS per amplitude",
+      "TIRust"
+     ],
+     "references": [
+      "OL"
+     ],
+     "served_by": "lit-r2",
+     "landed": false,
+     "note": "one 2->5 stretch row: this process or the alternative; outside TIRust's validated domain (N <= 6), reported, never enforced (Q5)",
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "OL"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-r2 (not landed at this head)",
+      "what": "timing"
+     }
+    }
+   ]
+  },
+  {
+   "name": "EFT",
+   "rows": [
+    {
+     "key": "li_x1",
+     "process": null,
+     "math": null,
+     "label": "rank > N+2 EFT row (HC_NLO_X0 or SMEFT)",
+     "alternative": null,
+     "ids": [
+      "LI-X1"
+     ],
+     "legs": null,
+     "corrections": "EFT",
+     "gate_class": "eft",
+     "backends": [
+      "TIRust"
+     ],
+     "references": [
+      "ML"
+     ],
+     "served_by": "lit-eft",
+     "landed": false,
+     "note": "TIR-only artifact (NinjaRS refuses it typed); MadLoop TIR is its second reference",
+     "providers": {
+      "status": "pending",
+      "reason": "provider timings: li-providers.json not written yet (lit-ref)",
+      "expected": [
+       "ML"
+      ]
+     },
+     "validation": {
+      "status": "pending",
+      "reason": "lit.json not written yet (lit-val)",
+      "what": "validation"
+     },
+     "generation": {
+      "status": "pending",
+      "reason": "served by lit-eft (not landed at this head)",
+      "what": "generation"
+     },
+     "timing": {
+      "status": "pending",
+      "reason": "served by lit-eft (not landed at this head)",
+      "what": "timing"
+     }
+    }
+   ]
+  }
+ ]
+}

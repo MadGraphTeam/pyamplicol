@@ -376,7 +376,7 @@
   })
   cell-lines(lines.pos())
 })
-#let absent(title, ..lines) = table.cell(fill: neutral, breakable: false, {
+#let absent(title, colspan: 1, ..lines) = table.cell(colspan: colspan, fill: neutral, breakable: false, {
   set par(leading: 0.34em, justify: false)
   block(spacing: 0pt, text(8pt, weight: "bold", fill: luma(105), style: "italic", title))
   set text(fill: luma(55))
@@ -890,6 +890,109 @@
   },
 ) <fig:gate>
 
+// ====================================================== LOOP-INDUCED TABLE ==
+// The loop-induced summary table (USER 2026-11-06 ~06:00; m-lit/PLAN.md §3.7
+// "Pushes"): renders data/summary-li.json (scripts/build_summary.py,
+// build_loop_induced) as is, drawn with Table 1's own cell, colour and marker
+// functions (valued, absent, ratio-fill, gate-chip, plain-chip, dur, gib,
+// mult2): one row per process of PLAN §4.1 by multiplicity, the batched
+// B = 128 time on the default backend (TIRust; NinjaRS per amplitude
+// labelled where TIR does not serve the row yet) against the fastest matched
+// provider, generation uncoloured, explicit pending and missing markers.
+#let LI = json("data/summary-li.json")
+#let li-meta = LI.meta
+#let li-rows = LI.groups.map(gr => gr.rows).flatten()
+#let li-group-title = ("2->1 / 1->2": [$2 -> 1$ · $1 -> 2$], "2->2": [$2 -> 2$], "1->3": [$1 -> 3$], "2->3": [$2 -> 3$], "2->4": [$2 -> 4$], "2->5": [$2 -> 5$], "EFT": [EFT])
+#let li-title(c) = (pending: [pending], "not run": [not run], "not recorded": [not recorded], "no gate batch": [no $B = 128$ timing]).at(c.status, default: c.status)
+#let li-pending-rows = li-rows.filter(r => r.timing.status == "pending")
+#let li-served = li-rows.filter(r => r.landed)
+// The provider line of a row (lit-ref's timings, or why there are none).
+#let li-prov-line(r) = {
+  let p = r.providers
+  if p.status == "pending" [providers pending (lit-ref): #p.expected.join(" · ")]
+  else if p.status == "not run" [#p.expected.join(" · "): #p.reason]
+  else {
+    let f = p.fastest
+    let xs = p.providers.pairs().sorted(key: ((k, x)) => x.at("seconds_per_point", default: 1e300))
+    xs.map(((k, x)) => if "seconds_per_point" in x { if f != none and k == f.key { text(weight: "bold")[#pkey(k) #dur(x.seconds_per_point)] } else [#pkey(k) #dur(x.seconds_per_point)] } else [#pkey(k) #x.status: #x.reason]).join([~· ])
+  }
+}
+// A cell's gate marker: lit-perf's verdict as Table 1's gate chip, every
+// rule (reported, 5 ms, no matched provider, no verdict yet) as Table 1's
+// plain chip.
+#let li-chip(g) = if g.status in ("pass", "fail", "open") { gate-chip((status: g.status, ratio_to_limit: g.ratio_to_limit)) } else { plain-chip[#g.label.replace("->", "→")] }
+#let li-process(r) = table.cell(breakable: false, {
+  set par(leading: 0.34em, justify: false)
+  block(spacing: 0pt, text(10pt, font: "Libertinus Serif", if r.math != none { math-label(r.math) } else { text(8.4pt, font: sans, stretch: 87.5%, r.label) }))
+  if r.alternative != none { v(1.6pt); block(spacing: 0pt, text(6.4pt, fill: ink2)[or #box(text(8pt, font: "Libertinus Serif", math-label(r.alternative.split(" ").map(tok).join(" "))))]) }
+  v(3.6pt)
+  block(spacing: 0pt, text(6.4pt, fill: ink2)[#if r.legs != none [#r.legs legs · ]#r.corrections · #r.ids.join(", ")#if r.backends.len() == 1 [ · #r.backends.first() only]])
+  v(3.4pt)
+  let v = r.validation
+  block(spacing: 0pt, text(6.2pt, if v.status == "pending" { dim[validation pending (lit-val)] } else if v.status == "not run" { dim[validation not run (no record in `data/lit.json`)] } else [#v.references.map(x => [#x.short #esci(x.max_relative)]).join([~· ]) · #v.status#if v.points != none [ · #v.points pts]]))
+})
+#let li-generation(r) = {
+  let m = r.generation
+  let p = r.providers
+  let gens = if p.status == "recorded" { p.generation } else { (:) }
+  let pline = if gens.len() == 0 { none } else { gens.pairs().sorted(key: ((k, s)) => s).map(((k, s)) => [#pkey(k) #dur(s)]).join([~· ]) }
+  if m.status == "measured" {
+    valued(fill: none, dur(m.seconds), mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
+      [#gib(m.peak_gib) peak#if m.plan_mb != none [ · plan #box[#sig(m.plan_mb)~MB]]], pline)
+  } else {
+    absent(li-title(m), m.reason, pline)
+  }
+}
+#let li-timing(r) = {
+  let m = r.timing
+  if m.status == "measured" {
+    valued(fill: if "ratio_to_fastest" in m { ratio-fill(m.ratio_to_fastest) } else { none }, dur(m.seconds_per_point),
+      mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
+      [#li-prov-line(r) #h(1fr) $B = #m.batch$],
+      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "other_backend" in m [ · #m.other_backend.backend_label #dur(m.other_backend.seconds_per_point)]])
+  } else {
+    absent(li-title(m), m.reason, li-prov-line(r))
+  }
+}
+// Generation and timing pending for the same reason: one marker over both.
+#let li-cells(r) = if r.generation.status == "pending" and r.timing.status == "pending" and r.generation.reason == r.timing.reason {
+  (absent(li-title(r.timing), colspan: 2, r.timing.reason, li-prov-line(r)),)
+} else { (li-generation(r), li-timing(r)) }
+#let li-head = {
+  if li-meta.landed.len() == 0 [no loop-induced package has landed at this head: every row *pending* (served by the package named in its cell) · default backend #li-meta.default_backend · nothing estimated]
+  else [packages landed: #li-meta.landed.map(raw).join(", ") · default backend #li-meta.default_backend, NinjaRS per amplitude labelled where TIR does not serve the row yet · the newest record of each cell]
+}
+#figure(kind: table,
+  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary). How to read it: #link(<reading-li>)[after Figure 1].],
+  {
+    set text(7pt, font: sans, stretch: 87.5%)
+    set par(justify: false)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold", size: 8pt)
+    table(
+      columns: (0.5cm, 4.8cm, 4.0cm, 1fr),
+      align: left + std.top,
+      inset: (x: 4.5pt, y: 4.2pt),
+      stroke: (x, y) => (top: if y <= 3 { none } else { 0.6pt + white }, left: if x > 0 and y != 1 { 0.6pt + white } else { none }),
+      fill: (x, y) => if y == 0 { navy } else if y == 1 { warm } else if y == 2 { pale } else { none },
+      table.header(
+        [], [Process · validation], [Generation], [$|A_"loop"|^2$ · per point, batched, default backend],
+        table.cell(colspan: 4, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
+        [],
+        ..(
+          [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
+          [generate + plan export, peak memory; provider generation],
+          [median per point at $B = 128$; provider times (lit-ref); gate (lit-perf) or rule; backend],
+        ).map(t => text(6.1pt, fill: ink2, t)),
+      ),
+      ..LI.groups.map(gr => (
+        table.cell(rowspan: gr.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon, breakable: false,
+          rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", li-group-title.at(gr.name)))),
+        ..gr.rows.map(r => (li-process(r), ..li-cells(r))).flatten(),
+      )).flatten(),
+    )
+  },
+) <tab:summary-li>
+
 #pagebreak(weak: true)
 
 // ============================================================== READING ==
@@ -975,6 +1078,28 @@ amber a known limitation of the value, in grey its run conditions: #note-cells.m
 #measured-ids.filter(id => C.at(id).main_cells.full_colour.len() > 0 and C.at(id).kind == "g1").map(cfg-short).join([\; ])#if C.at("development", default: none) != none and C.development.main_cells.full_colour.len() > 0 [\; development, not yet on `loop`]) against the providers (diamonds, the darkest
 the fastest) and the gate limit (red bar, the shaded side fails; grey bar: the limit of a process below 5 ms, not gated;
 dotted line: 5 ms), for the rows with a matched provider, at $B = 128$. The ratios and bands at every batch size: @tab:g1batch.
+
+#heading(numbering: none, level: 2, outlined: false)[The loop-induced table] <reading-li>
+// The legend of the loop-induced summary table (data/summary-li.json meta).
+#let li-inputs = li-meta.inputs.values()
+@tab:summary-li follows Table 1's rules for loop-induced processes, $|A_"loop"|^2$ without a Born (`data/summary-li.json`,
+written by `scripts/build_summary.py` from the row registry `data/milestone.json` `loop_induced` and the loop-induced
+records). One row per process of the M-LIT validation matrix (`m-lit/PLAN.md` §4.1; its ids in the process cell),
+grouped by multiplicity; the backend-unit, zero, identity, observable and complex-mass-scheme rows (#li-meta.validation_only.ids.join(", ")) stay in the
+validation tables. The cell is the batched $B = #li-meta.gate_batch$ time per point (median, finite part, one pinned
+thread, checks off) on the default backend #li-meta.default_backend\; NinjaRS per amplitude, labelled in the cell, where
+TIR does not serve the row yet; the other backend's time beside it when both ran. Its multiplier against the fastest
+matched provider (MadLoop's loop-induced production setting 7|6|1, OpenLoops `ls`, Recola; production mode, from
+`lit-ref`) colours it with Table 1's scale; generation is uncoloured. Rows of four legs or fewer ($2 -> 1$, $1 -> 2$,
+$2 -> 2$, $1 -> 3$) are reported without a gate; from $2 -> 3$ upward the gate is Table 1's (faster than MadLoop and at
+most 1.30× each matched OpenLoops and Recola time, on TIRust), "#thr-rule.short" below 5 ms per point, no gate without a
+matched provider; verdict chips come with `lit-perf`'s records, "no verdict yet" before them. Grey cells are explicit
+markers: *pending* (the package that serves the row, named in the cell, has not landed at this head, or the input file
+that fills the cell does not exist yet), *not run* (a landed package without a record of the row), and a provider's
+reason where it has no matched time (no library, beyond the 45-minute rule). Nothing is estimated or extrapolated; each
+cell shows the newest record of its row (git ancestry of the record revisions). At this head #li-served.len() of
+#li-rows.len() rows are served; inputs: #li-inputs.map(x => [`#x.file` #if x.present [present] else [not written yet (#x.owner)]]).join([, ]);
+the registry against `lit-ref`'s manifest (`#li-meta.campaign.file`): #if li-meta.campaign.checked [checked, #li-meta.campaign.rows rows] else [#li-meta.campaign.reason].
 ]
 
 
