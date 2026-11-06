@@ -268,6 +268,15 @@ def run_madloop(args, spec, points, run_dir, result):
 def recola_commands(spec, points, uncached):
     loop = spec["loop_orders"]["QCD"]
     lines = references.recola_setup_commands(spec, points, uncached)
+    scheme = spec["scheme_data"]
+    if scheme.get("complex_mass_scheme") and scheme["electroweak_inputs"] == "gmu":
+        # A loop-induced |A|^2 has no EW renormalisation: the input scheme only
+        # sets alpha. Recola's complex-mass G_mu alpha is not MG5's
+        # (GfRedefinitionChoice = 1: sqrt2 G_F |mu_W^2 (1 - mu_W^2/mu_Z^2)| / pi;
+        # measured: a constant (alpha_Recola/alpha_MG5)^2 = 0.99904 on g g > a a),
+        # so Recola takes that alpha directly.
+        at = next(i for i, line in enumerate(lines) if line.startswith("gfermi "))
+        lines[at] = f"alphaz {references.derived_parameters(scheme)['alpha']}"
     lines += [f"legs {len(spec['pdgs'])}", "loop_induced", f"loop_gs {loop}", f"pow_nlo {loop}"]
     lines += [f"switchoff3 {' '.join(triple)}" for triple in spec["recola"].get("switchoff", ())]
     lines += [f"process {spec['recola']['process']}", "generate"]
@@ -439,6 +448,8 @@ def command_merge(args):
             row["providers"][provider] = entry
         for i, a in enumerate(names):
             for b in names[i + 1:]:
+                if spec.get("zero"):
+                    continue  # rounding noise around zero: values recorded, not compared
                 error = relative(results[a]["rows"][index]["value"], results[b]["rows"][index]["value"])
                 row["provider_pair_relative_errors"][f"{a}-{b}"] = error
                 worst = max(worst, error)
@@ -496,8 +507,12 @@ def command_merge(args):
         "points": points["points"], "mu_r": points["mu_r"],
         "rows": rows,
         "max_provider_pair_relative_error": worst,
-        "rule": f"PLAN §4.0 L1: provider agreement <= {L1_TOLERANCE:g} relative (lax); digits recorded",
-        "passed": len(results) >= 2 and worst <= L1_TOLERANCE,
+        "rule": (f"PLAN §4.0 L8 ({spec['zero']} zero, Q13): the provider values are recorded, not compared; "
+                 "pyAmpliCol checks |A|^2 <= 10 E_abs against its own pre-cancellation estimate")
+        if spec.get("zero") else
+        f"PLAN §4.0 L1: provider agreement <= {L1_TOLERANCE:g} relative (lax); digits recorded",
+        "passed": None if spec.get("zero") else len(results) >= 2 and worst <= L1_TOLERANCE,
+        "zero_row": bool(spec.get("zero")),
         "providers": providers,
         "secondary_runs": secondary,
         "unavailable": {p: spec[p]["unavailable"] for p in ("recola", "openloops")
@@ -509,7 +524,8 @@ def command_merge(args):
         out["note"] = spec["note"]
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(out, indent=2) + "\n")
-    print(args.output, "max pair error", f"{worst:.2e}", "passed" if out["passed"] else "NOT PASSED")
+    print(args.output, "max pair error", f"{worst:.2e}",
+          "zero row" if spec.get("zero") else "passed" if out["passed"] else "NOT PASSED")
 
 
 def command_fixture(args):

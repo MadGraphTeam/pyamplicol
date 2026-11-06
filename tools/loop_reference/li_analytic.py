@@ -101,14 +101,22 @@ class Parameters:
         else:
             self.MW = mp.mpf(required_spec.derived_mw(scheme))
         self.sw2 = 1 - self.MW ** 2 / self.MZ ** 2
-        if scheme["electroweak_inputs"] == "alpha_fixed":
+        cms = bool(scheme.get("complex_mass_scheme"))
+        if scheme["electroweak_inputs"] == "alpha_fixed" and not cms:
             self.alpha = 1 / mp.mpf(values["aEWM1"])
-        elif scheme["electroweak_inputs"] == "gmu":
+        elif scheme["electroweak_inputs"] == "gmu" and not cms:
             self.alpha = mp.sqrt(2) * gf * self.MW ** 2 * self.sw2 / mp.pi
+        elif scheme["electroweak_inputs"] == "gmu":
+            # MG5's complex-mass G_mu scheme, GfRedefinitionChoice = 1:
+            # alpha = sqrt2 G_F |mu_W^2 (1 - mu_W^2/mu_Z^2)| / pi, mu^2 = M^2 - i M Gamma.
+            if not str(scheme.get("conventions", {}).get("GfRedefinitionChoice", "")).startswith("1"):
+                raise NotImplementedError("complex-mass alpha for this GfRedefinitionChoice")
+            mw2 = self.MW ** 2 - 1j * self.MW * mp.mpf(values.get("WW", "0"))
+            mz2 = self.MZ ** 2 - 1j * self.MZ * mp.mpf(values.get("WZ", "0"))
+            self.alpha = mp.sqrt(2) * gf * abs(mw2 * (1 - mw2 / mz2)) / mp.pi
         else:
             raise NotImplementedError(f"electroweak inputs {scheme['electroweak_inputs']!r}")
-        if scheme.get("complex_mass_scheme"):
-            raise NotImplementedError("the analytic oracles use real masses")
+        self.complex_mass_scheme = cms
         self.GF = gf
         self.v = 1 / mp.sqrt(mp.sqrt(2) * gf)
         self.masses = {f: mp.mpf(values[MASS_NAMES[f]]) if MASS_NAMES.get(f) in values else mp.mpf(0)
@@ -118,6 +126,17 @@ class Parameters:
                 raise NotImplementedError(f"Yukawa mass {name} differs from the pole mass")
         # Yukawa couplings m_f / v (the tree relation of the schemes' UFOs).
         self.yukawa = dict(self.masses)
+        if cms:
+            # Complex masses mu = sqrt(M^2 - i M Gamma) in every propagator (Q7); the
+            # loop-squared boxes take them as an analytic continuation of the masses.
+            widths = {"t": "WT", "b": "WB", "tau": "WTau"}
+            for f, name in widths.items():
+                if self.masses[f] and mp.mpf(values.get(name, "0")):
+                    m = self.masses[f]
+                    self.masses[f] = mp.sqrt(m * m - 1j * m * mp.mpf(values[name]))
+            self.MW_complex = mp.sqrt(self.MW ** 2 - 1j * self.MW * mp.mpf(values.get("WW", "0")))
+        else:
+            self.MW_complex = self.MW
         self.loop_quark_flavours = int(scheme.get("loop_quark_flavours", 6))
 
 
@@ -128,8 +147,9 @@ def _delta():
 
 
 def _m2(m):
-    """m^2 (1 - i delta): the s + i0 prescription of every closed form."""
-    return mp.mpc(m * m, -m * m * _delta())
+    """m^2 (1 - i delta): the s + i0 prescription of every closed form (m may
+    be a complex mass of the complex-mass scheme)."""
+    return m * m * (1 - 1j * _delta())
 
 
 def _beta(x, m2):
@@ -260,7 +280,7 @@ def aa_aa(point, par, w_loop=True):
         m = par.masses[f] or _massless_regulator(s)
         loops.append((nc * _mpf(q) ** 4 * par.alpha ** 2, "fermion", m))
     if w_loop:
-        loops.append((par.alpha ** 2, "w", par.MW))
+        loops.append((par.alpha ** 2, "w", par.MW_complex))
     return lbl_helicity_sum(_box_sum(loops, s, t, u)) / 8
 
 
