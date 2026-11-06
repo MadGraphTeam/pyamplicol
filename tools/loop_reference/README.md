@@ -1122,6 +1122,80 @@ python tools/loop_reference/njet/njet_fixture.py compare tests/fixtures/loop/req
 Runs, calibration and timings are under `workspace/reference/runs/njet/`; the
 report is `workspace/reports/engine-v2/njet-benchmark.md`.
 
+## Loop-induced references (M-LIT, `li_references.py`)
+
+References for the loop-induced rows of `workspace/reports/engine-v2/m-lit/PLAN.md`
+§4: |A_loop|^2 of a process without a Born amplitude. Specifications are the
+`"loop_induced": true` processes of `required_processes.json` (`loop_orders` =
+the amplitude orders of the one-loop amplitude, `squared_orders` twice them, no
+Born orders; `required_spec._loop_induced`); `li_campaign.json`
+(`make_li_campaign.py`) is the PLAN §4.1 matrix pointing at the fixtures
+`tests/fixtures/loop/required/li/<process>.json`.
+
+| File | Role |
+|---|---|
+| `li_references.py` | `points` (the specification's `points` record: `exact_points.py [--scale-window]`, `supplied_points.py --family rest/regular`, `decay_points.py`), `export` (`madloop_export.py` under `timeout`, a timeout recorded as a 45-minute miss), `run --provider madloop/recola/openloops/analytic`, `merge`, `fixture` (paths rewritten to `${LOOP_REFERENCE_ROOT}` / `${REPOSITORY}`). |
+| `run_li.sh <process> <cpu>` | One row end to end in `$LOOP_REFERENCE_ROOT/runs/li/<process>/` (done steps kept; every step under `LI_TIMEOUT`, default 2700 s). |
+| `madloop_li_driver.f90` | MadLoop driver of a `[sqrvirt=...]` export: no Born split-order index; warm-up cycling through the points until MadLoop leaves its initialisation and at least CheckCycle + 1 calls (its loop-induced zero-test scale is a median of earlier results); per-helicity rows (`SLOOPMATRIXHEL_THRES`) with MadLoop's `USERHEL` reset to -1 afterwards. |
+| `li_analytic.py`, `test_li_analytic.py` | mpmath oracles (below) and their checks against published values. |
+| `make_li_campaign.py`, `li_campaign.json` | The validation matrix with each row's runs, fixtures, providers, worst deviation, misses and owners. |
+
+Provider settings. MadLoop reference runs: target accuracy `1e-11` with the
+stability test forced on every call (quadruple-precision rescue), the
+numerical helicity filter OFF (`HelicityFilterLevel = 0`), every helicity; the
+export's card is MG5's loop-induced card (`MLReductionLib 7|6|1`, COLLIER UV/IR
+poles off), kept for timing (`tools/loop_benchmark providers`, plus a `6|7|1`
+OPP column with `--madloop-param MLReductionLib=6|7|1`). Single-helicity values
+are `|A(h)|^2/avg` (PLAN Q39) = MadLoop's USERHEL value / HELAVGFACTOR (read
+from the export); their sum is the summed value. Recola: the driver's
+`loop_induced` command (no Born gs power, `'NLO'` at the alpha_s power of
+|A1|^2), IR poles computed as a finiteness check; `switchoff3 p1 p2 p3` calls
+`switchoff_coupling3_rcl` (it removes a tree vertex only: R2 vertices stay, so
+Recola is no reference for the five-flavour `g g > a a`); under the complex-mass
+G_mu scheme Recola takes MG5's alpha (GfRedefinitionChoice = 1) through
+`alphaz`, since a loop-induced |A|^2 has no EW renormalisation (Recola's own
+CMS alpha differs by a constant (alpha_RC/alpha_MG5)^2 = 0.99904). OpenLoops:
+`ol_evaluate_loop2` (amptype 12) on the designated `ls` libraries (PLAN Q34 =
+(b): ppvv2, pphh2, pphj2, pphz2, ppvj2, pphjj2, ppvvj2 installed with
+`openloops libinstall`; `u g > h u` is served by crossing from `uuxhg`).
+Widths are zero outside the complex-mass rows (LI-C1, scheme `ew-gmu-cms`).
+
+Analytic oracles (`li_analytic.py`, sources under `workspace/reference/papers/li-*`):
+`g g > h`, `h > g g` (Spira hep-ph/9705337); `h > a a`, `a a > h` (Djouadi
+hep-ph/0503172); `h > z a` (Spira's I1, I2); `g g > a a`, `a a > a a` from the
+one-loop helicity amplitudes of Gounaris-Porfyriadis-Renard hep-ph/9902230 App. A
+(the Jikia-Tkabladze W loop and the Glover-van der Bij / Karplus-Neuman fermion
+box) with closed-form equal-mass B0, C0, D0 at `m^2 (1 - i delta)` (the D0
+form's overall factor 2 fixed against Feynman-parameter integrals; continuous
+in delta); massless loops at a mass regulator 10^-(dps/4) sqrt(s), checked
+against the published massless box (Bern et al. hep-ph/0109079); the
+`g g > h h` low-energy theorem (Plehn-Spira-Zerwas hep-ph/9603205), a limit
+reported beside the comparison (`analytic_limit`). Complex masses are taken as
+the analytic continuation (the CMS rows). `test_li_analytic.py` checks the
+heavy-quark series 1 + 7/120 r + 1/168 r^2 + 13/16800 r^3 + 2/17325 r^4,
+Djouadi's A_1/2 -> 4/3, A_1 -> -7 and A_1 = -5 - 3 pi^2/4 at the WW threshold,
+Jikia-Tkabladze's low-energy 14/5 s^2/M^4, (s^2+t^2+u^2)/(10 M^4) and
+sigma_W = 2751 alpha^4 s^3/(16000 pi M^8), the Euler-Heisenberg
+973 alpha^4 omega^6/(10125 pi m^8), the massless box and PSZ's normalisation.
+
+State (2026-11-06): every 2->1, 1->2, 2->2 and 1->3 row of PLAN §4 is stored:
+MadLoop, Recola and OpenLoops (where designated) agree to <= 3.8e-11 on every
+row, the oracles to <= 7e-13 (`a a > a a` under CMS: Recola = oracle to 1e-14,
+MadLoop 5.5e-7 off); the zero rows (`g g > z`, `z > g g`, `g g > h a`,
+`e+ e- > g g`) record the providers' values (~1e-30 and below; `h > g a`,
+`z > g a`: MG5 generates no diagram). LI-32 `g g > h g g` and LI-33
+`g g > z z g` are stored too (MadLoop / Recola / OpenLoops to 4e-11 and 8e-8:
+OpenLoops' hybrid-precision target; the LI-33 MadLoop reference took 41.6 min,
+quadruple precision with every helicity). No 45-minute miss. Provider timings
+(`tools/loop_benchmark providers`, 16 stream points, one pinned core; records
+in `tests/fixtures/loop/required/li/timing/`), mean ms per point:
+
+| row | MadLoop 7\|6\|1 (numerators / Born+CT / reduction / colour) | MadLoop 6\|7\|1 | OpenLoops ls | Recola |
+|---|---|---|---|---|
+| `g g > h h` | 0.997 (0.322 / 0.001 / 0.615 / 0.002) | 1.99 | 2.56 | 1.58 |
+| `g g > h g g` | 85.7 (70.5 / 0.12 / 16.3 / 0.27) | 286.9 | 27.8 | 26.0 |
+| `g g > z z g` | 720.8 (674.1 / 0.43 / 69.9 / 0.85) | 2594 | 187.2 | 178.7 |
+
 ## Legacy-engine oracles for the v2 engine (WP0.1)
 
 The legacy per-diagram engine was removed (user ruling 2026-10-28, M-QCD Q3);

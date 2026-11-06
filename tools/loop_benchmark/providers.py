@@ -24,6 +24,16 @@ from that campaign, as the addendum asks:
   built with MG5's production Fortran flags, with ``COLLIERGlobalCache`` as
   in production (``collier_cache``); MadLoop always returns its poles.
 
+Loop-induced processes (``"loop_induced": true``, M-LIT) take the toolkit's
+loop-induced drivers (``tools/loop_reference/li_references.py``): OpenLoops'
+``ol_evaluate_loop2`` (amptype 12), Recola's ``loop_induced`` mode and MadLoop's
+Born-less driver on the export's own card (MG5's loop-induced default
+``MLReductionLib 7|6|1`` with the COLLIER poles off; ``--madloop-param
+MLReductionLib=6|7|1`` gives the OPP column), warmed up past MadLoop's
+loop-induced initialisation (at least CheckCycle + 1 calls over the points:
+its zero-test scale is the median of earlier results). The stage split
+then has a fourth bucket, MadLoop's colour-flow projection and squaring.
+
 Caches are those of production (REQUIREMENTS_ADDENDUM D). The one exception
 is the documented COLLIER global-cache defect at N = 7 of the releases
 ``COLLIER_CACHE_DEFECT`` (the toolkit's ``UNCACHED_LEG_THRESHOLD``): the
@@ -378,10 +388,12 @@ def openloops(
             check=True,
             cwd=run,
         )
-    commands = [
-        "int truepoles 0" if c == "int truepoles 1" else c
-        for c in references.openloops_commands(spec)
-    ]
+    built = (
+        _li_references().openloops_commands(spec)
+        if spec.get("loop_induced")
+        else references.openloops_commands(spec)
+    )
+    commands = ["int truepoles 0" if c == "int truepoles 1" else c for c in built]
     if "int truepoles 0" not in commands:
         raise RuntimeError("the toolkit's OpenLoops commands changed")
     count = len(points["points"])
@@ -504,7 +516,11 @@ def recola(
         cache = collier_cache(len(spec["pdgs"]), collier[0])
         if cache["on"] is None:
             raise RuntimeError(f"no Collier cache decision: {cache['reason']}")
-        commands = references.recola_commands(spec, points, not cache["on"])
+        commands = (
+            _li_references().recola_commands(spec, points, not cache["on"])
+            if spec.get("loop_induced")
+            else references.recola_commands(spec, points, not cache["on"])
+        )
         commands.insert(commands.index("generate"), "irpoles 0")
         count = len(points["points"])
         lines = [*commands, f"points {count}", *references.point_lines(points)]
@@ -533,7 +549,11 @@ def recola(
 
 
 def _prepare_madloop(
-    spec: dict, export: Path, run: Path, trees: Trees
+    spec: dict,
+    export: Path,
+    run: Path,
+    trees: Trees,
+    params: dict[str, str] | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """The toolkit's ``prepare_madloop_run`` (it sets ``COLLIERGlobalCache``
     to 0 at seven legs or more) with the export's own production value
@@ -542,7 +562,9 @@ def _prepare_madloop(
 
     references = _references()
     legs = len(spec["pdgs"])
-    settings = references.prepare_madloop_run(spec, export, run, trees.mg5, legs)
+    settings = references.prepare_madloop_run(
+        spec, export, run, trees.mg5, legs, params
+    )
     cache = collier_cache(legs, _madloop_collier(export, trees.root))
     if cache["on"] is None:
         raise RuntimeError(f"no Collier cache decision: {cache['reason']}")
@@ -562,7 +584,13 @@ def _prepare_madloop(
 
 
 def madloop(
-    spec: dict, points: dict, work: Path, cpu: int, export: Path, trees: Trees
+    spec: dict,
+    points: dict,
+    work: Path,
+    cpu: int,
+    export: Path,
+    trees: Trees,
+    params: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     references = _references()
     mg5 = trees.mg5
@@ -572,17 +600,17 @@ def madloop(
     if not flags["production_build"]:
         raise RuntimeError(f"{export} is not built with MG5's production flags")
     with _relocated_madloop_build(trees.root):
-        binary, repairs = references.build_madloop(
-            export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
-        )
-    settings, cache = _prepare_madloop(spec, export, run, trees)
-    born, loop = spec["born_orders"], spec["loop_orders"]
+        if spec.get("loop_induced"):
+            binary, repairs = _li_references().build_madloop(
+                export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
+            )
+        else:
+            binary, repairs = references.build_madloop(
+                export, run, flags["export_make_opts"]["GLOBAL_FLAG"]
+            )
+    settings, cache = _prepare_madloop(spec, export, run, trees, params)
     count = len(points["points"])
-    alpha_s = references.value(spec["scheme_data"], "aS")
-    header = (
-        f"{2 * born['QCD']} {2 * born['QED']} {born['QCD'] + loop['QCD']} "
-        f"{born['QED'] + loop['QED']} {alpha_s} -1 0\n{count}\n"
-    )
+    header = _madloop_header(spec, run, count)
     stdin = header + "\n".join(references.point_lines(points)) + "\n"
     stdout, wall = references.run_native(
         [str(binary)], stdin, run, run / "output.log", cpu
@@ -590,7 +618,13 @@ def madloop(
     rows, extra = references.parse_rows(stdout, "madloop", count)
     return {
         "provider": "madloop",
-        "mode": "production: MLStabThres and the default stability test, MG5 "
+        "loop_induced": bool(spec.get("loop_induced")),
+        "mode": (
+            "loop-induced, the export's card (warm-up past the initialisation), "
+            if spec.get("loop_induced")
+            else ""
+        )
+        + "production: MLStabThres and the default stability test, MG5 "
         "production Fortran flags, COLLIERGlobalCache "
         + ("as in production" if cache["on"] else "0")
         + f" ({cache['reason']})",
@@ -610,25 +644,28 @@ def madloop(
 # 2 reduction and masters (LOOP_CT_CALLS: the reducers and their integrals,
 # stability retries included); multiple-precision variants count alike.
 STAGE_CALL = re.compile(
-    r"\s+CALL ML5_\d+_(?:MP_)?(COEF_CONSTRUCTION|HELAS_CALLS_AMPB|HELAS_CALLS_UVCT"
-    r"|LOOP_CT_CALLS)_\d+\(.*\)\s*$"
+    r"\s+CALL ML5_\d+_(?:MP_)?(?:(COEF_CONSTRUCTION|HELAS_CALLS_AMPB|HELAS_CALLS_UVCT"
+    r"|LOOP_CT_CALLS)_\d+|(COMPUTE_COLOR_FLOWS|COMPUTE_RES_FROM_JAMP))\(.*\)\s*$"
 )
 STAGE_BUCKETS = {
     "COEF_CONSTRUCTION": 0,
     "HELAS_CALLS_AMPB": 1,
     "HELAS_CALLS_UVCT": 1,
     "LOOP_CT_CALLS": 2,
+    "COMPUTE_COLOR_FLOWS": 3,
+    "COMPUTE_RES_FROM_JAMP": 3,
 }
 STAGE_NAMES = (
     "loop numerator coefficients",
     "Born and counterterm HELAS",
     "reduction and masters",
+    "colour flows and squaring",
 )
 STAGE_TIMER = r"""
 #include <stdio.h>
 #include <time.h>
-static double total[3], begin[3];
-static unsigned long long calls[3];
+static double total[4], begin[4];
+static unsigned long long calls[4];
 static double now(void) {
   struct timespec t;
   clock_gettime(CLOCK_MONOTONIC, &t);
@@ -642,15 +679,21 @@ void reference_stage_stop_(const int *i) {
 __attribute__((destructor)) static void report(void) {
   FILE *f = fopen("madloop-stages.json", "w");
   if (!f) return;
-  fprintf(f, "{\"seconds\": [%.9e, %.9e, %.9e], \"calls\": [%llu, %llu, %llu]}\n",
-          total[0], total[1], total[2], calls[0], calls[1], calls[2]);
+  fprintf(f, "{\"seconds\": [%.9e, %.9e, %.9e, %.9e], "
+             "\"calls\": [%llu, %llu, %llu, %llu]}\n",
+          total[0], total[1], total[2], total[3],
+          calls[0], calls[1], calls[2], calls[3]);
   fclose(f);
 }
 """
 
 
 def _instrumented_madloop(
-    export: Path, run: Path, global_flag: str, reference_root: Path
+    export: Path,
+    run: Path,
+    global_flag: str,
+    reference_root: Path,
+    loop_induced: bool = False,
 ) -> Path:
     """MadLoop's driver linked with copies of ``loop_matrix.f`` and
     ``mp_compute_loop_coefs.f`` whose stage calls are bracketed by wall-clock
@@ -668,7 +711,7 @@ def _instrumented_madloop(
         for line in (process / name).read_text().splitlines(keepends=True):
             match = STAGE_CALL.match(line)
             if match:
-                bucket = STAGE_BUCKETS[match.group(1)]
+                bucket = STAGE_BUCKETS[match.group(1) or match.group(2)]
                 lines += [
                     f"      CALL REFERENCE_STAGE_START({bucket})\n",
                     line,
@@ -716,11 +759,16 @@ def _instrumented_madloop(
         cwd=run,
     )
     objects.append(run / "stage_timer.o")
-    driver = run / "madloop_driver.f90"
+    source = "madloop_li_driver.f90" if loop_induced else "madloop_driver.f90"
+    prefix = references.madloop_prefix(process)
+    driver = run / source
     driver.write_text(
-        (streams.REFERENCE / "madloop_driver.f90")
+        (streams.REFERENCE / source)
         .read_text()
-        .replace("ML5_0_", references.madloop_prefix(process))
+        .replace("ML5_0_", prefix)
+        .replace(
+            "HELCONFIGS_FILE", f"SubProcesses/MadLoop5_resources/{prefix}HelConfigs.dat"
+        )
     )
     fixes, _ = references.madloop_model_fix(export, run, global_flag)
     binary = run / "madloop-driver-stages"
@@ -751,7 +799,13 @@ def _instrumented_madloop(
 
 
 def madloop_stages(
-    spec: dict, points: dict, work: Path, cpu: int, export: Path, trees: Trees
+    spec: dict,
+    points: dict,
+    work: Path,
+    cpu: int,
+    export: Path,
+    trees: Trees,
+    params: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """MadLoop's numerator / Born-and-CT / reduction-and-masters split.
 
@@ -768,14 +822,15 @@ def madloop_stages(
     run = work / "madloop-stages-run"
     run.mkdir(parents=True, exist_ok=True)
     flags = references.madloop_build_flags(export, mg5)
+    loop_induced = bool(spec.get("loop_induced"))
     binary = _instrumented_madloop(
-        export, run, flags["export_make_opts"]["GLOBAL_FLAG"], trees.root
+        export, run, flags["export_make_opts"]["GLOBAL_FLAG"], trees.root, loop_induced
     )
-    _prepare_madloop(spec, export, run, trees)
-    born, loop = spec["born_orders"], spec["loop_orders"]
-    alpha_s = references.value(spec["scheme_data"], "aS")
+    _prepare_madloop(spec, export, run, trees, params)
     totals = {}
     rows = {}
+    if loop_induced:
+        return _li_madloop_stages(spec, points, run, cpu, binary)
     # MadLoop stores its helicity and loop filters in the resources at the
     # end of its initialisation; the untimed warm-up writes them, so both
     # measured runs load them and initialise identically.
@@ -786,10 +841,7 @@ def madloop_stages(
             "points": points["points"][:count],
             "mu_r": points["mu_r"][:count],
         }
-        header = (
-            f"{2 * born['QCD']} {2 * born['QED']} {born['QCD'] + loop['QCD']} "
-            f"{born['QED'] + loop['QED']} {alpha_s} -1 0\n{count}\n"
-        )
+        header = _madloop_header(spec, run, count)
         stdin = header + "\n".join(references.point_lines(subset)) + "\n"
         stdout, _ = references.run_native(
             [str(binary)], stdin, run, run / f"output-{label}.log", cpu
@@ -817,6 +869,85 @@ def madloop_stages(
                 totals["all"]["calls"], totals["first"]["calls"], strict=True
             )
         ],
+    }
+
+
+def _li_references() -> Any:
+    _references()
+    import li_references
+
+    return li_references
+
+
+def _madloop_header(spec: dict, run: Path, count: int) -> str:
+    """The driver's first input lines at MadLoop's production setting: the
+    Born and loop squared orders (Born-interfered driver) or the loop squared
+    orders and the warm-up count CheckCycle + 1 (loop-induced driver)."""
+
+    references = _references()
+    alpha_s = references.value(spec["scheme_data"], "aS")
+    if spec.get("loop_induced"):
+        orders = spec["squared_orders"]
+        warmup = _li_references().checkcycle(run) + 1
+        return f"{orders['QCD']} {orders['QED']} {alpha_s} -1 0 {warmup}\n{count}\n"
+    born, loop = spec["born_orders"], spec["loop_orders"]
+    return (
+        f"{2 * born['QCD']} {2 * born['QED']} {born['QCD'] + loop['QCD']} "
+        f"{born['QED'] + loop['QED']} {alpha_s} -1 0\n{count}\n"
+    )
+
+
+def _li_madloop_stages(
+    spec: dict, points: dict, run: Path, cpu: int, binary: Path
+) -> dict[str, Any]:
+    """The loop-induced stage split: the instrumented Born-less driver warms
+    up over the points (CheckCycle + 1 calls at least) and then times them;
+    a run over the n points and one over the same n points twice have the
+    same warm-up, so the difference of their stage totals over n is the
+    per-point stage time (the second pass repeats points 1..n, each call
+    still a new point after the previous one)."""
+
+    references = _references()
+    n = len(points["points"])
+    totals, rows = {}, {}
+    runs = (("warm-up", 1), ("once", 1), ("twice", 2))
+    for label, repeat in runs:
+        subset = {
+            **points,
+            "points": points["points"] * repeat,
+            "mu_r": points["mu_r"] * repeat,
+        }
+        count = n * repeat
+        stdin = (
+            _madloop_header(spec, run, count)
+            + "\n".join(references.point_lines(subset))
+            + "\n"
+        )
+        stdout, _ = references.run_native(
+            [str(binary)], stdin, run, run / f"output-{label}.log", cpu
+        )
+        rows[label], _ = references.parse_rows(stdout, "madloop", count)
+        totals[label] = json.loads((run / "madloop-stages.json").read_text())
+    stage = [
+        (a - b) / n
+        for a, b in zip(
+            totals["twice"]["seconds"], totals["once"]["seconds"], strict=True
+        )
+    ]
+    per_point = statistics.fmean(row["seconds"] for row in rows["twice"][n:])
+    return {
+        "stages_seconds_per_point": dict(zip(STAGE_NAMES, stage, strict=True)),
+        "residual_seconds_per_point": per_point - sum(stage),
+        "instrumented_seconds_per_point": per_point,
+        "points": n,
+        "calls_per_point": [
+            (a - b) / n
+            for a, b in zip(
+                totals["twice"]["calls"], totals["once"]["calls"], strict=True
+            )
+        ],
+        "method": "loop-induced: (stage totals of the points twice - once) / n, "
+        "same warm-up",
     }
 
 
@@ -960,10 +1091,16 @@ def main(options: Any) -> int:
                 export = trees.madloop_export(spec, options.madloop_export)
                 if export is None:
                     raise RuntimeError("no MadLoop export for this process")
-                result = madloop(spec, points, work, options.cpu, export, trees)
+                params = dict(
+                    item.split("=", 1)
+                    for item in getattr(options, "madloop_param", None) or ()
+                )
+                result = madloop(
+                    spec, points, work, options.cpu, export, trees, params or None
+                )
                 if options.madloop_stages:
                     result["stages"] = madloop_stages(
-                        spec, points, work, options.cpu, export, trees
+                        spec, points, work, options.cpu, export, trees, params or None
                     )
         except Exception as error:  # recorded, never silently dropped
             result = {"provider": provider, "error": f"{type(error).__name__}: {error}"}
