@@ -365,6 +365,9 @@ def run_analytic(args, spec, points, run_dir, result):
             for i in range(len(points["points"]))]
     result["settings"] = {"oracle": primary, "dps": args.dps,
                           "limit": primary in spec.get("analytic_limit", ())}
+    reports = {k: v for oracle in oracles for k, v in li_analytic.report(oracle, spec["scheme_data"], args.dps).items()}
+    if reports:
+        result["reports"] = reports
     result["version"] = "li_analytic.py (mpmath)"
     return rows, {}, time.perf_counter() - start
 

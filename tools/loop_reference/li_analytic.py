@@ -459,6 +459,20 @@ ROWS = {
 }
 
 
+# Reported beside an oracle's values (PLAN §4.1 LI-A1: the HEFT ratio is reported only).
+REPORTS = {"gg_h": ("heft_ratio", heft_ratio)}
+
+
+def report(oracle, scheme, dps=DEFAULT_DPS):
+    """{name: [value, expected]} reported beside ``oracle`` (``REPORTS``)."""
+    if oracle not in REPORTS:
+        return {}
+    name, function = REPORTS[oracle]
+    with mp.workdps(dps):
+        value, expected = function(Parameters(scheme))
+        return {name: [mp.nstr(value, 20), mp.nstr(expected, 20)]}
+
+
 def evaluate(oracle, scheme, points, dps=DEFAULT_DPS):
     """[|M|^2 as a decimal string] of ``oracle`` (a ``ROWS`` key) at ``points``."""
     with mp.workdps(dps):

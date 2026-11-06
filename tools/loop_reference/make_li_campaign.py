@@ -123,6 +123,9 @@ def fixture_summary(process):
     for key in ("excluded", "unavailable", "misses_45_min"):
         if data.get(key):
             out[key] = {k: (v["reason"] if isinstance(v, dict) else v) for k, v in data[key].items()}
+    reports = data["providers"].get("analytic", {}).get("reports")
+    if reports:
+        out["reports"] = {k: {"value": v[0], "expected": v[1]} for k, v in reports.items()}
     if any("limit_oracle" in row for row in data["rows"]):
         out["limit_oracle_ratios"] = [row["limit_oracle"]["ratio_to_reference"] for row in data["rows"]]
     timing = sorted(p.name for p in TIMING.glob(f"{process}-providers*.json"))
