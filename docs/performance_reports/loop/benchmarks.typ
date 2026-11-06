@@ -1561,7 +1561,7 @@ is reported without a gate (cells uncoloured).
       (main-configuration rule of `scripts/build_summary.py`; `data/summary.json` names the configuration and source of every
       value); the column header of @tab:summary states it once, with branch and commit, and "Reading the summary" says
       when it is a development measurement not yet on `loop`. The detailed G1 tables (@g1) show the configuration on `loop` and, labelled,
-      its history: the runs of milestones M-QCD (`e18a024b`), m1028a (`28a16255`), m1026a (`11542fd5`) and m1025a (`1d27426b`) and of G-int (`4e9b5a9e`), the
+      its history: the runs of milestones M-SM (`71e2041e`), M-QCD (`e18a024b`), m1028a (`28a16255`), m1026a (`11542fd5`) and m1025a (`1d27426b`) and of G-int (`4e9b5a9e`), the
       Python per-point inputs before G-int and the development runs of
       #rev-list(l1-revs).
       Missing values are marked, never estimated or extrapolated; test durations are never used as event timings. The legacy per-diagram engine's timings of 18 October are history (data kept in
@@ -3392,9 +3392,11 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     `out/inputs-final.txt` and labels `out/meta-final.json`, the campaign's scripts `scripts/`), milestone M-QCD's at
     `e18a024b` `m1029-mqcd/` (a copy of `workspace/tmp/g1-m1029-mqcd`: `runs/`, `logs/`, `bin/`, the gate
     inputs `inputs-final.txt`, labels `meta-final.json`, `compare.json`, `gate.log`, `STATE.md`; the seven-gluon stores
-    are not copied) and milestone M-SM's at #raw(g.slice_revision) `m1031-msm/` (a copy of `workspace/tmp/g1-m1031-msm`:
+    are not copied), milestone M-SM's at `71e2041e` `m1031-msm/` (a copy of `workspace/tmp/g1-m1031-msm`:
     the same files, the EW gate's `msm-g1.json`, `msm-g1-values.json`, `msm-gate.log` and the public-path check
-    `confirm/`); provider records reused from the first campaign and the fix round, not re-run); the
+    `confirm/`) and the final retime's (M-LIT-a0, lit-retime) at #raw(g.slice_revision) `mlita0/` (a copy of
+    `workspace/tmp/lit-retime`: `runs/`, `logs/`, `bin/`, the gate inputs and labels, `compare.json`, the EW gate's files and
+    `confirm/`; the seven-gluon stores are not copied); provider records reused from the first campaign and the fix round, not re-run); the
     earlier $2 -> 5$ records and the provider runs of those rows in
     `workspace/reports/engine-v2/measure-g1-7leg/records/` (`runs-f2/`, `runs-f4/`), MadLoop exports of the G1-only processes in
     `workspace/reference/runs/g1/`; recalibration
