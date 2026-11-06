@@ -29,7 +29,8 @@ loop-induced drivers (``tools/loop_reference/li_references.py``): OpenLoops'
 ``ol_evaluate_loop2`` (amptype 12), Recola's ``loop_induced`` mode and MadLoop's
 Born-less driver on the export's own card (MG5's loop-induced default
 ``MLReductionLib 7|6|1`` with the COLLIER poles off; ``--madloop-param
-MLReductionLib=6|7|1`` gives the OPP column), warmed up past MadLoop's
+MLReductionLib=6|7|1`` gives the OPP column, ``--madloop-one-helicity`` the
+one-helicity column ``madloop_one_helicity``), warmed up past MadLoop's
 loop-induced initialisation (at least CheckCycle + 1 calls over the points:
 its zero-test scale is the median of earlier results). The stage split
 then has a fourth bucket, MadLoop's colour-flow projection and squaring.
@@ -638,6 +639,76 @@ def madloop(
     }
 
 
+def madloop_one_helicity(
+    spec: dict,
+    points: dict,
+    work: Path,
+    cpu: int,
+    export: Path,
+    trees: Trees,
+    params: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """MadLoop's one-helicity column of a loop-induced process (PLAN §5.1,
+    MadEvent mode): the Born-less driver at the production card evaluates,
+    after its warm-up and each point's helicity-summed call, every helicity
+    configuration of the point alone (``SLOOPMATRIXHEL_THRES``). MadLoop
+    clears its reduction caches at every call (``AUTOMATIC_CACHE_CLEARING``),
+    so a one-helicity call never reuses the summed call's integrals. The
+    column is the mean over the stream's points of the calls of the
+    helicities MadLoop keeps (a non-zero value; its helicity filter, level 2
+    in production, returns the filtered ones as zero at once), the
+    configurations MadEvent samples one per event."""
+
+    references = _references()
+    li = _li_references()
+    run = work / "madloop-one-helicity-run"
+    run.mkdir(parents=True, exist_ok=True)
+    flags = references.madloop_build_flags(export, trees.mg5)
+    if not flags["production_build"]:
+        raise RuntimeError(f"{export} is not built with MG5's production flags")
+    with _relocated_madloop_build(trees.root):
+        binary, _ = li.build_madloop(export, run, flags["export_make_opts"]["GLOBAL_FLAG"])
+    settings, _ = _prepare_madloop(spec, export, run, trees, params)
+    count = len(points["points"])
+    tuples = references.madloop_helicities(export)
+    stdin = (
+        _madloop_header(spec, run, count)
+        + "\n".join(references.point_lines(points))
+        + f"\n{len(tuples)}\n"
+        + "\n".join(" ".join(map(str, h)) for h in tuples)
+        + "\n"
+    )
+    stdout, wall = references.run_native(
+        [str(binary)], stdin, run, run / "output.log", cpu
+    )
+    helavg, _ = li.helavg_factor(references.madloop_process_dir(export))
+    rows, _ = li.parse_madloop(stdout, count, helavg)
+    kept = [
+        [entry["seconds"] for entry in row["per_helicity"] if entry["value"] != 0]
+        for row in rows
+    ]
+    calls = [s for per_point in kept for s in per_point]
+    if not calls:
+        raise RuntimeError("MadLoop kept no helicity at the stream's points")
+    return {
+        "mean_seconds_per_call": statistics.fmean(calls),
+        "median_seconds_per_call": statistics.median(calls),
+        "min_seconds_per_call": min(calls),
+        "max_seconds_per_call": max(calls),
+        "calls": len(calls),
+        "helicities": len(tuples),
+        "kept_helicities_per_point": [len(per_point) for per_point in kept],
+        "summed_mean_seconds_per_point_same_run": statistics.fmean(
+            row["seconds"] for row in rows
+        ),
+        "madloop_params": settings["MadLoopParams"],
+        "process_wall_seconds": wall,
+        "method": "per point: the helicity-summed call, then each helicity alone "
+        "(SLOOPMATRIXHEL_THRES, caches cleared per call); mean over the calls of "
+        "the helicities MadLoop keeps (non-zero value)",
+    }
+
+
 # MadLoop's per-point call sites, grouped as the live report shows them:
 # 0 loop-numerator coefficients (COEF_CONSTRUCTION), 1 Born, counterterm and
 # shared wavefunction HELAS calls (HELAS_CALLS_AMPB, HELAS_CALLS_UVCT),
@@ -1100,6 +1171,12 @@ def main(options: Any) -> int:
                 )
                 if options.madloop_stages:
                     result["stages"] = madloop_stages(
+                        spec, points, work, options.cpu, export, trees, params or None
+                    )
+                if getattr(options, "madloop_one_helicity", False):
+                    if not spec.get("loop_induced"):
+                        raise RuntimeError("the one-helicity column is loop-induced only")
+                    result["one_helicity"] = madloop_one_helicity(
                         spec, points, work, options.cpu, export, trees, params or None
                     )
         except Exception as error:  # recorded, never silently dropped

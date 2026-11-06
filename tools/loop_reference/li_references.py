@@ -551,7 +551,7 @@ def command_merge(args):
         "zero_row": bool(spec.get("zero")),
         "providers": providers,
         "secondary_runs": secondary,
-        "unavailable": {p: spec[p]["unavailable"] for p in ("recola", "openloops")
+        "unavailable": {p: spec[p]["unavailable"] for p in ("madloop", "recola", "openloops")
                         if spec.get(p, {}).get("unavailable") and p not in excluded},
         "excluded": excluded,
         "misses_45_min": misses,
