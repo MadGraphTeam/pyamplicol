@@ -109,7 +109,7 @@ ROWS = [
     ("LI-44", "g g > a a g g, g g > z z z z", ["li_gg_aagg", "li_gg_zzzz"],
      "ML, OL ppaajj2 aagggg (added library), RC; g g > z z z z: ML, RC (no OpenLoops ls library)", ["L1"], "N, T",
      "2->4 optional", None),
-    ("LI-51", "g g > e+ e- mu+ mu- g (2->5 stretch)", ["li_gg_emepmupmumg"],
+    ("LI-51", "g g > e+ e- mu+ mu- g or g g > h g g g g (2->5 stretch: the first is run)", ["li_gg_emepmupmumg"],
      "ML, OL ppllllj2 (added library), RC", ["L1"], "N, T", "2->5 stretch", None),
     ("LI-X1", "one EFT row with rank > N+2", None,
      "ML (TIR); NOT PRODUCED (lit-ref-b): HC_NLO_X0 declares QNP expansion_order = 1, so an amplitude carries one "
@@ -159,7 +159,7 @@ def timing_summary(process):
     out = {}
     main = TIMING / f"{process}-providers.json"
     records = [main] if main.exists() else []
-    records += [TIMING / f"{process}-providers-madloop-{tag}.json" for tag in ("opp", "one-helicity")]
+    records.append(TIMING / f"{process}-providers-madloop-opp.json")
     for path in records:
         if not path.exists():
             continue
