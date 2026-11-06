@@ -1328,7 +1328,7 @@ is reported without a gate (cells uncoloured).
   - *The final G1 retime* (deferred from M-FINAL, `m-final/PLAN.md` §2.4): every G1 loop artifact regenerated
     (model compiler 17) and every G1 row re-timed on #raw(g.slice_revision) (#raw(g.slice_build)) with the G1
     protocol (finite part, $B = 128$, one pinned thread, checks off, providers' production records; no quiet
-    window); the EW row is gated from now on; the $2 -> 6$ rows stay `data/2to6.json`'s. #if g.at("retime_vs_previous", default: none) != none [#g.retime_vs_previous.] This run is the baseline of every
+    window); the EW row is gated from now on; the $2 -> 6$ rows stay `data/2to6.json`'s. Not re-timed (LIT-RETIME's scope, which leaves out these rows of M-FINAL's MF-RETIME): the decay rows XX01–XX08 and HC01–HC04 (ungated) and the rescue level counts (indicative) keep their M-FINAL-b records (@dec, @tab:hc, the M-FINAL box). #if g.at("retime_vs_previous", default: none) != none [#g.retime_vs_previous.] This run is the baseline of every
     M-LIT no-regression A/B of the Born-interfered default (NinjaRS).
   - *The loop-induced summary table* (@tab:summary-li, `data/summary-li.json`): the #li-rows.len() process rows of
     the M-LIT validation matrix by multiplicity, #if li-served.len() == 0 [every row *pending*: no loop-induced
@@ -1858,7 +1858,7 @@ Python-3 reference copy of `loop_qcd_qed_sm_Gmu`, the harness default; not the s
 used), native per-point inputs, full colour, binary64 finite part, checks off, one pinned core (#ew-c.host_cpus.map(str).join(", ")), at
 $B = 128$: *#ms2(ew-t * 1000) ms per point* (±#fixed(100 * ew-b.uncertainty, 1) %) against Recola #dur(ew-rc), OpenLoops
 #dur(ew-prov("openloops")) and MadLoop #dur(ew-prov("madloop")) (provider records reused, not re-run): ×#fixed(ew-t / ew-rc, 3) of Recola's
-time, #fixed(ew-t / (eg.gate_factor * ew-rc), 3) of 1.30 × Recola, gate *#ew-b.gate.status*#if "ratio_to_binding_limit" in ew-b.gate [ (#fixed(ew-b.gate.ratio_to_binding_limit, 3) of the binding limit)] (Table 1 row, Figure 1). Generation #dur(ew-gen.generate.seconds) + #dur(ew-gen.export.seconds), peak
+time, #fixed(ew-t / (eg.gate_factor * ew-rc), 3) of 1.30 × Recola, gate *#ew-b.gate.status*#if "ratio_to_binding_limit" in ew-b.gate [ (#fixed(ew-b.gate.ratio_to_binding_limit, 3) of the binding limit#if "band_to_binding_limit" in ew-b.gate [, band #fixed(ew-b.gate.band_to_binding_limit.at(0), 3)–#fixed(ew-b.gate.band_to_binding_limit.at(1), 3): pyAmpliCol's block spread plus the provider spread #fixed(100 * eg.host_provider_spread, 1)~%#if "host_provider_spread_source" in eg [, the G1 campaign's on the same host (`data/g1.json` `host_provider_spread`, the gate tool's `--host-spread`) for the single provider runs, as for the G1 rows]])] (Table 1 row, Figure 1). Generation #dur(ew-gen.generate.seconds) + #dur(ew-gen.export.seconds), peak
 #gib(calc.max(ew-gen.generate.peak_gib, ew-gen.export.peak_gib)). Accuracy: against its fixture (#ew-acc.points points) #sci(ew-acc.max_error)
 (DD asserted at point #ew-acc.double_double_points.map(str).join(", "), where $E > 10^(-9)$; binary64 #sci(ew-acc.max_error_binary64)); against the providers at #ew-row.validation.points stream points in binary64:
 #ew-row.validation.references.map(x => [#x.short #sci(x.max_finite)]).join(", "). #if ew-early.len() > 0 [Earlier run (MS-VALIDATE, #raw(ew-early.last().revision.slice(0, 8))): #ew-early.last().batches.pairs().map(((b, x)) => [$B = #b$ #dur(x.median_seconds_per_point)]).join(", ").]
@@ -3327,8 +3327,8 @@ generation. The Rust/C/C++/Fortran SDK v4 loads the same artifact.
     campaign's records, rebuilt byte-identically), `data/msm-findings.json`
     (MS-VALIDATE's triage, unchanged at the pin), `data/msm-public.json` (the public-route test file's JUnit outcomes and
     cases), `data/msm-selftest.json` (wheel self-test), combined with the manifest by `scripts/build_msm_matrix.py` into
-    `data/msm-matrix.json`; the G1 EW row `data/msm-g1.json` and `data/msm-g1-values.json` (`python -m tools.loop_benchmark
-    gate` over the EW records; Table 1 through `data/summary.json`); the campaign's records, logs and scripts in
+    `data/msm-matrix.json`; the G1 EW row `data/msm-g1.json` and `data/msm-g1-values.json` (`python -m tools.loop_benchmark gate`
+    over the EW records with `--host-spread` = the G1 campaign's `host_provider_spread`; Table 1 through `data/summary.json`); the campaign's records, logs and scripts in
     `workspace/reports/engine-v2/m-sm/records/m1031-msm/` (a copy of `workspace/tmp/campaign-m1031-msm`: `results/`, the
     JUnit and logs of the 32 jobs, `wheel/`, `STATE.md`). Re-run at M-FINAL-b (`617b59cd`): `data/msm.json`,
     `msm-public.json` and `msm-selftest.json` from `workspace/reports/engine-v2/m-sm/records/m1101-mfb/` (a copy of

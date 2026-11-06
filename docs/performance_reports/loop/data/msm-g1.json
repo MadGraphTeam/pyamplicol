@@ -1,6 +1,6 @@
 {
  "gate_factor": 1.3,
- "host_provider_spread": 0.0,
+ "host_provider_spread": 0.07626638499479058,
  "processes": [
   {
    "key": "gg_ttxemepg_ew",
@@ -203,15 +203,15 @@
    },
    "provider_uncertainty": {
     "openloops": {
-     "relative": 0.0,
+     "relative": 0.07626638499479058,
      "assumed": true
     },
     "recola": {
-     "relative": 0.0,
+     "relative": 0.07626638499479058,
      "assumed": true
     },
     "madloop": {
-     "relative": 0.0,
+     "relative": 0.07626638499479058,
      "assumed": true
     }
    },
@@ -525,11 +525,11 @@
           "limit": 1.826235892,
           "ratio_to_limit": 0.07168913270449855,
           "band": [
-           0.07116998619343218,
-           0.07220827921556491
+           0.06570251519864827,
+           0.07767575021034884
           ],
-          "uncertainty": 0.007241634700844843,
-          "reference_uncertainty": 0.0,
+          "uncertainty": 0.08350801969563541,
+          "reference_uncertainty": 0.07626638499479058,
           "reference_uncertainty_assumed": true,
           "passed": true,
           "status": "pass"
@@ -539,11 +539,11 @@
           "limit": 1.2827538672,
           "ratio_to_limit": 0.10206265641364363,
           "band": [
-           0.10132355593929819,
-           0.10280175688798908
+           0.09353960609166422,
+           0.11058570673562307
           ],
-          "uncertainty": 0.007241634700844843,
-          "reference_uncertainty": 0.0,
+          "uncertainty": 0.08350801969563541,
+          "reference_uncertainty": 0.07626638499479058,
           "reference_uncertainty_assumed": true,
           "passed": true,
           "status": "pass"
@@ -553,11 +553,11 @@
           "limit": 7.070939095,
           "ratio_to_limit": 0.018515400210968196,
           "band": [
-           0.018381318446300417,
-           0.018649481975635974
+           0.016969215805478093,
+           0.0200615846164583
           ],
-          "uncertainty": 0.007241634700844843,
-          "reference_uncertainty": 0.0,
+          "uncertainty": 0.08350801969563541,
+          "reference_uncertainty": 0.07626638499479058,
           "reference_uncertainty_assumed": true,
           "passed": true,
           "status": "pass"
@@ -569,8 +569,8 @@
         "binding_limit": 1.2827538672,
         "ratio_to_binding_limit": 0.10206265641364363,
         "band_to_binding_limit": [
-         0.10132355593929819,
-         0.10280175688798908
+         0.09353960609166422,
+         0.11058570673562307
         ],
         "ratio_to_binding_limit_of_means": 0.09380539050447206
        }
@@ -596,6 +596,7 @@
    }
   }
  ],
+ "host_provider_spread_of_run": 0.0,
  "recalibration": [
   {
    "process": "gg_ttxemepg_ew",
@@ -617,5 +618,6 @@
  "measured_revision": "ca602436",
  "native_build": "loop-native-v2-slice-ca602436",
  "slice_native_digest": "4cbb549f21521d021b2a39e295a5a44ab4bd15b20a8a4657a50da2e9660b4bb2",
- "ew_model": "reference/models/loop_qcd_qed_sm_Gmu_py3"
+ "ew_model": "reference/models/loop_qcd_qed_sm_Gmu_py3",
+ "host_provider_spread_source": "data/g1.json host_provider_spread (G1 campaign of M-LIT-a0, same host; the EW providers have single runs)"
 }

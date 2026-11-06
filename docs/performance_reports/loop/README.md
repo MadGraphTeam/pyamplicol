@@ -324,9 +324,13 @@ Table 1 once, in its column header).
 - `msm-g1.json`, `msm-g1-values.json`: `python -m tools.loop_benchmark gate
   <MS-VALIDATE's EW record> <the campaign's EW record> <the merged EW provider
   record> --json data/msm-g1.json --values-json data/msm-g1-values.json
-  --reference-root ROOT --meta date=… slice_revision=… measured_revision=…
-  native_build=… slice_native_digest=… ew_model=…` (at M-SM: `bin/finalize.sh`
-  of `records/m1031-msm/`, inputs in its `ew-inputs/` and `runs/`); then
+  --reference-root ROOT --host-spread <g1.json host_provider_spread> --meta
+  date=… slice_revision=… measured_revision=… native_build=…
+  slice_native_digest=… ew_model=… host_provider_spread_source=…` (at M-SM:
+  `bin/finalize.sh` of `records/m1031-msm/`, inputs in its `ew-inputs/` and
+  `runs/`, without `--host-spread`; at M-LIT-a0: `bin/finalize.sh` of
+  `records/mlita0/`). The EW providers have single runs, so their assumed
+  uncertainty is G1's host provider spread, as for the G1 rows; then
   `build_summary.py`.
 - `mqcd.json`: `python scripts/build_mqcd.py <campaign>/c1/results --junit
   <campaign>/c1/junit-*.xml --findings data/mqcd-findings.json --meta ...`
