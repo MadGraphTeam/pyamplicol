@@ -16,6 +16,10 @@
 ! (Recola's normalisation), IR1/IR2 its Delta_IR coefficients from
 ! (1,0)/(0,1) and RES the linearity residual at (2,3). For born, F/IR1/IR2 are
 ! the public NLO/NLO-IR1/NLO-IR2 getters and RES = 0.
+! With the command loop_induced (a process without a Born: no born_gs/pow_lo)
+! the correlations are Recola's loop-induced ones (order 'NLO' without a LO:
+! |A1|^2 correlated), LO = 0; switchoff3 a b c switches a coupling off as in
+! recola_driver.f90.
 program recola_correlations
   use recola
   implicit none
@@ -28,7 +32,7 @@ program recola_correlations
   real(dp), allocatable :: p(:,:,:), scales(:)
   real(dp) :: stored_alpha_s = -1d0
   integer :: stored_nf = -1
-  logical :: ok
+  logical :: ok, loop_induced = .false.
   complex(dp) :: v(0:3)
   process = ''
   do
@@ -63,6 +67,10 @@ program recola_correlations
     case ('cache')
       read(line, *) keyword, k
       call set_cache_mode_rcl(k)
+    case ('loop_induced')
+      loop_induced = .true.
+    case ('switchoff3')
+      call switchoff_command(line)
     case ('legs')
       read(line, *) keyword, legs
     case ('born_gs')
@@ -76,15 +84,18 @@ program recola_correlations
     case ('process')
       process = adjustl(line(len_trim('process') + 1:))
     case ('generate')
-      if (stored_nf < 0 .or. legs < 3 .or. born_gs < 0 .or. loop_gs < 0 .or. pow_lo < 0 .or. pow_nlo < 0 &
-          .or. len_trim(process) == 0) stop 'recola correlations: incomplete process definition'
+      if (stored_nf < 0 .or. legs < 3 .or. loop_gs < 0 .or. pow_nlo < 0 .or. len_trim(process) == 0 &
+          .or. (.not. loop_induced .and. (born_gs < 0 .or. pow_lo < 0))) &
+        stop 'recola correlations: incomplete process definition'
       call set_delta_uv_rcl(0d0)
       call set_delta_ir_rcl(0d0, 0d0)
       call set_dynamic_settings_rcl(1)
       call set_compute_ir_poles_rcl(1)
       call define_process_rcl(1, trim(process), 'NLO')
-      call unselect_all_gs_powers_BornAmpl_rcl(1)
-      call select_gs_power_BornAmpl_rcl(1, born_gs)
+      if (.not. loop_induced) then
+        call unselect_all_gs_powers_BornAmpl_rcl(1)
+        call select_gs_power_BornAmpl_rcl(1, born_gs)
+      end if
       call unselect_all_gs_powers_LoopAmpl_rcl(1)
       call select_gs_power_LoopAmpl_rcl(1, loop_gs)
       call generate_processes_rcl()
@@ -127,13 +138,13 @@ contains
     out = 0d0
     if (what == 'born') then
       call compute_process_rcl(1, p(:, :, ip), 'NLO', momenta_check=ok)
-      call get_squared_amplitude_rcl(1, pow_lo, 'LO', out(1))
+      if (.not. loop_induced) call get_squared_amplitude_rcl(1, pow_lo, 'LO', out(1))
       call get_squared_amplitude_rcl(1, pow_nlo, 'NLO', out(2))
       call get_squared_amplitude_rcl(1, pow_nlo, 'NLO-IR1', out(3))
       call get_squared_amplitude_rcl(1, pow_nlo, 'NLO-IR2', out(4))
       return
     end if
-    call correlation(what, i1, i2, ip, v, 'LO', ok, out(1))
+    if (.not. loop_induced) call correlation(what, i1, i2, ip, v, 'LO', ok, out(1))
     do n = 0, 3
       call set_delta_ir_rcl(d1(n), d2(n))
       call correlation(what, i1, i2, ip, v, 'NLO', ok, a(n))
@@ -162,6 +173,13 @@ contains
       write(*, *) 'recola correlations: unknown request ', what
       stop 1
     end select
+  end subroutine
+
+  subroutine switchoff_command(text)
+    character(len=*), intent(in) :: text
+    character(len=32) :: a, b, c
+    read(text, *) keyword, a, b, c
+    call switchoff_coupling3_rcl(trim(a), trim(b), trim(c))
   end subroutine
 
   subroutine mass_command(text)
