@@ -1,5 +1,5 @@
 {
- "date": "2026-11-06",
+ "date": "2026-11-07",
  "engine_revision": "ca602436",
  "previous_loop": "7266c160",
  "previous_engine": "c8885cc5",
@@ -805,12 +805,14 @@
    }
   ]
  },
- "milestone": "M-LIT-a0 (mlit-a0)",
+ "milestone": "M-LIT-a (mlit-a)",
  "loop_induced": {
   "source": "workspace/reports/engine-v2/m-lit/PLAN.md revision 2d: \u00a74.1 (the process rows, their ids and references), \u00a75.2 and \u00a74.1's tier column (gate classes), \u00a73.3 LIT-AMP 'Rows', \u00a73.4 LIT-EW 'Scope', \u00a73.5 LIT-EFT and \u00a73.7 'Pushes' (the serving package: M-LIT-a lit-amp's rows; M-LIT-b lit-ew's EW rows and the production route lit-r2's other rows; LI-X1 lit-eft); USER 2026-11-06 ~06:00 (the table, every row pending at M-LIT-a0)",
   "what": "row registry of the loop-induced summary table (<tab:summary-li>, data/summary-li.json, scripts/build_summary.py build_loop_induced): every process row of PLAN \u00a74.1 by multiplicity group with its ids, corrections, gate class, the references \u00a74.1 names and the package that serves it; hand-maintained by the milestone steps (PLAN \u00a73.7 'Pushes'), checked against lit-ref's manifest tools/loop_reference/li_campaign.json once it exists. 'landed' lists the serving packages integrated at this head: a row of a package not landed prints 'pending'",
   "default_backend": "tirust",
-  "landed": [],
+  "landed": [
+   "lit-amp"
+  ],
   "groups": [
    "2->1 / 1->2",
    "2->2",

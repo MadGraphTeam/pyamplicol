@@ -1,0 +1,179 @@
+{
+ "records": [
+  {
+   "key": "gg_h",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 128,
+   "seconds_per_point": 0.0002904415232478641,
+   "generation": {
+    "seconds": 4.174765669973567,
+    "peak_gib": 0.505,
+    "plan_mb": 0.01
+   },
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_h.json, fixture li_gg_h): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 4.7 s not included)"
+  },
+  {
+   "key": "gg_h",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 1,
+   "seconds_per_point": 0.0009683190146461129,
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_h.json, fixture li_gg_h): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
+  },
+  {
+   "key": "h_gg",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 128,
+   "seconds_per_point": 0.0003109983354079304,
+   "generation": {
+    "seconds": 4.121870510047302,
+    "peak_gib": 0.508,
+    "plan_mb": 0.01
+   },
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/h_gg.json, fixture li_h_gg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 4.7 s not included)"
+  },
+  {
+   "key": "h_gg",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 1,
+   "seconds_per_point": 0.0010003340430557728,
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/h_gg.json, fixture li_h_gg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
+  },
+  {
+   "key": "gg_aa",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 128,
+   "seconds_per_point": 0.005464409710839391,
+   "generation": {
+    "seconds": 5.917645844863728,
+    "peak_gib": 0.578,
+    "plan_mb": 0.021
+   },
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_aa.json, fixture li_gg_aa): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 10.4 s not included)"
+  },
+  {
+   "key": "gg_aa",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 1,
+   "seconds_per_point": 0.04976920795161277,
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_aa.json, fixture li_gg_aa): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
+  },
+  {
+   "key": "gg_zz",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 128,
+   "seconds_per_point": 0.026851383217945113,
+   "generation": {
+    "seconds": 6.6462600021623075,
+    "peak_gib": 0.586,
+    "plan_mb": 0.028
+   },
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_zz.json, fixture li_gg_zz): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 14.1 s not included)"
+  },
+  {
+   "key": "gg_zz",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 1,
+   "seconds_per_point": 0.3195920744910836,
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_zz.json, fixture li_gg_zz): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
+  },
+  {
+   "key": "gg_hh",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 128,
+   "seconds_per_point": 0.0007793467739247717,
+   "generation": {
+    "seconds": 4.481218135915697,
+    "peak_gib": 0.518,
+    "plan_mb": 0.01
+   },
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_hh.json, fixture li_gg_hh): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 7.4 s not included)"
+  },
+  {
+   "key": "gg_hh",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 1,
+   "seconds_per_point": 0.003662046045064926,
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_hh.json, fixture li_gg_hh): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
+  },
+  {
+   "key": "gg_hg",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 128,
+   "seconds_per_point": 0.0023914725861686748,
+   "generation": {
+    "seconds": 4.704800355946645,
+    "peak_gib": 0.518,
+    "plan_mb": 0.011
+   },
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_hg.json, fixture li_gg_hg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 6.8 s not included)"
+  },
+  {
+   "key": "gg_hg",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 1,
+   "seconds_per_point": 0.018160384497605264,
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_hg.json, fixture li_gg_hg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
+  },
+  {
+   "key": "uux_hg",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 128,
+   "seconds_per_point": 0.00037407171112135984,
+   "generation": {
+    "seconds": 4.7626748769544065,
+    "peak_gib": 0.519,
+    "plan_mb": 0.01
+   },
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/uux_hg.json, fixture li_uux_hg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 5.1 s not included)"
+  },
+  {
+   "key": "uux_hg",
+   "revision": "aaff892db76713f26ea224db2f5a37187652271a",
+   "backend": "ninjars",
+   "native_build": "loop-native-v2-slice-aaff892d",
+   "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+   "batch": 1,
+   "seconds_per_point": 0.0011761250207200646,
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/uux_hg.json, fixture li_uux_hg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
+  }
+ ]
+}

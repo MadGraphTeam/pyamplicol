@@ -1,7 +1,7 @@
 {
  "what": "the loop-induced summary table <tab:summary-li> of docs/performance_reports/loop/benchmarks.typ, written by scripts/build_summary.py (build_loop_induced); do not edit by hand",
  "meta": {
-  "date": "2026-11-06",
+  "date": "2026-11-07",
   "engine_on_loop": "ca602436",
   "native_build_on_loop": {
    "name": "loop-native-v2-slice-ca602436",
@@ -25,13 +25,15 @@
    "stretch": "2->5 stretch: internal; gated only if a provider matches (PLAN \u00a74.1 LI-51)",
    "eft": "TIR only (rank > N+2, lit-eft): its gate follows its multiplicity once the process is fixed"
   },
-  "landed": [],
+  "landed": [
+   "lit-amp"
+  ],
   "rule": "every row of the registry (milestone.json loop_induced, PLAN \u00a74.1 process rows) by multiplicity; the cell is the newest record's batched B = 128 time per point (git ancestry of the record revisions) on the default backend TIRust, NinjaRS per amplitude labelled where only NinjaRS is timed at that revision; the ratio to the fastest matched provider (production mode) colours it; generation uncoloured; four legs or fewer reported, below the 5 ms rule not gated, gate verdicts only from lit-perf's records; a row whose serving package has not landed, or whose input file does not exist yet, is pending; nothing estimated or extrapolated",
   "registry": "milestone.json loop_induced (workspace/reports/engine-v2/m-lit/PLAN.md revision 2d: \u00a74.1 (the process rows, their ids and references), \u00a75.2 and \u00a74.1's tier column (gate classes), \u00a73.3 LIT-AMP 'Rows', \u00a73.4 LIT-EW 'Scope', \u00a73.5 LIT-EFT and \u00a73.7 'Pushes' (the serving package: M-LIT-a lit-amp's rows; M-LIT-b lit-ew's EW rows and the production route lit-r2's other rows; LI-X1 lit-eft); USER 2026-11-06 ~06:00 (the table, every row pending at M-LIT-a0))",
   "inputs": {
    "li-timing.json": {
     "file": "data/li-timing.json",
-    "present": false,
+    "present": true,
     "owner": "the row's serving package"
    },
    "providers": {
@@ -96,7 +98,7 @@
       "Rc"
      ],
      "served_by": "lit-amp",
-     "landed": false,
+     "landed": true,
      "note": "top loop; top + bottom (m_b = 4.7) separately; Spira's analytic value is the reference",
      "providers": {
       "status": "not run",
@@ -113,14 +115,28 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 4.174765669973567,
+      "peak_gib": 0.505,
+      "plan_mb": 0.01,
+      "revision": "aaff892d",
+      "source": "li-timing.json records[gg_h, ninjars, aaff892d].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0002904415232478641,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "aaff892d",
+      "native_build": "loop-native-v2-slice-aaff892d",
+      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "source": "li-timing.json records[gg_h, ninjars, aaff892d]",
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->1)"
+      }
      }
     },
     {
@@ -145,7 +161,7 @@
       "Rc"
      ],
      "served_by": "lit-amp",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -174,14 +190,28 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 4.121870510047302,
+      "peak_gib": 0.508,
+      "plan_mb": 0.01,
+      "revision": "aaff892d",
+      "source": "li-timing.json records[h_gg, ninjars, aaff892d].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0003109983354079304,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "aaff892d",
+      "native_build": "loop-native-v2-slice-aaff892d",
+      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "source": "li-timing.json records[h_gg, ninjars, aaff892d]",
+      "gate": {
+       "status": "reported",
+       "label": "no gate (1->2)"
+      }
      }
     },
     {
@@ -396,7 +426,7 @@
       "Rc"
      ],
      "served_by": "lit-amp",
-     "landed": false,
+     "landed": true,
      "note": "five massless flavours; the top alone against the massive-quark box",
      "providers": {
       "status": "not run",
@@ -413,14 +443,28 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 5.917645844863728,
+      "peak_gib": 0.578,
+      "plan_mb": 0.021,
+      "revision": "aaff892d",
+      "source": "li-timing.json records[gg_aa, ninjars, aaff892d].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.005464409710839391,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "aaff892d",
+      "native_build": "loop-native-v2-slice-aaff892d",
+      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "source": "li-timing.json records[gg_aa, ninjars, aaff892d]",
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -445,7 +489,7 @@
       "Rc"
      ],
      "served_by": "lit-amp",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "not run",
@@ -462,14 +506,28 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 6.6462600021623075,
+      "peak_gib": 0.586,
+      "plan_mb": 0.028,
+      "revision": "aaff892d",
+      "source": "li-timing.json records[gg_zz, ninjars, aaff892d].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.026851383217945113,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "aaff892d",
+      "native_build": "loop-native-v2-slice-aaff892d",
+      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "source": "li-timing.json records[gg_zz, ninjars, aaff892d]",
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -593,7 +651,7 @@
       "Rc"
      ],
      "served_by": "lit-amp",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -636,14 +694,30 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 4.481218135915697,
+      "peak_gib": 0.518,
+      "plan_mb": 0.01,
+      "revision": "aaff892d",
+      "source": "li-timing.json records[gg_hh, ninjars, aaff892d].generation",
+      "ratio_to_fastest": 52.64617920967536
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0007793467739247717,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "aaff892d",
+      "native_build": "loop-native-v2-slice-aaff892d",
+      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "source": "li-timing.json records[gg_hh, ninjars, aaff892d]",
+      "ratio_to_fastest": 1.1263652712476449,
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -718,7 +792,7 @@
       "Rc"
      ],
      "served_by": "lit-amp",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "not run",
@@ -735,14 +809,28 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 4.704800355946645,
+      "peak_gib": 0.518,
+      "plan_mb": 0.011,
+      "revision": "aaff892d",
+      "source": "li-timing.json records[gg_hg, ninjars, aaff892d].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0023914725861686748,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "aaff892d",
+      "native_build": "loop-native-v2-slice-aaff892d",
+      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "source": "li-timing.json records[gg_hg, ninjars, aaff892d]",
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -768,7 +856,7 @@
       "Rc"
      ],
      "served_by": "lit-amp",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "not run",
@@ -785,14 +873,28 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 4.7626748769544065,
+      "peak_gib": 0.519,
+      "plan_mb": 0.01,
+      "revision": "aaff892d",
+      "source": "li-timing.json records[uux_hg, ninjars, aaff892d].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-amp (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.00037407171112135984,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "aaff892d",
+      "native_build": "loop-native-v2-slice-aaff892d",
+      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "source": "li-timing.json records[uux_hg, ninjars, aaff892d]",
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -1400,12 +1502,39 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "recola": {
+        "seconds_per_point": 0.004443382,
+        "source": "required/li/timing/li_emep_ggg-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 0.015461968,
+        "source": "required/li/timing/li_emep_ggg-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       },
+       "openloops": {
+        "status": "unavailable",
+        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "source": "li_campaign.json runs[li_emep_ggg]"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.004443382
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 0.160166071
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 0.160166071
+      }
      },
      "validation": {
       "status": "pending",
@@ -1448,13 +1577,39 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "OL",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.022879906,
+        "source": "required/li/timing/li_gg_hhh-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 0.0056448415,
+        "source": "required/li/timing/li_gg_hhh-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 0.009034304,
+        "source": "required/li/timing/li_gg_hhh-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.0056448415
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 0.07705391
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 0.07705391
+      }
      },
      "validation": {
       "status": "pending",
@@ -1648,13 +1803,39 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "OL",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.052470322,
+        "source": "required/li/timing/li_gg_aag-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 0.047742524,
+        "source": "required/li/timing/li_gg_aag-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 0.1998882605,
+        "source": "required/li/timing/li_gg_aag-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.047742524
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 0.274242849
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 0.274242849
+      }
      },
      "validation": {
       "status": "pending",
@@ -1697,13 +1878,39 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "OL",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.084359499,
+        "source": "required/li/timing/li_gg_wpwmg-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 0.06879455500000001,
+        "source": "required/li/timing/li_gg_wpwmg-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 0.3466215305,
+        "source": "required/li/timing/li_gg_wpwmg-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.06879455500000001
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 1.36941366
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 1.36941366
+      }
      },
      "validation": {
       "status": "pending",
@@ -1746,13 +1953,39 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "OL",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.15101618300000003,
+        "source": "required/li/timing/li_gg_zzz-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 0.133528967,
+        "source": "required/li/timing/li_gg_zzz-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 0.5604789674999999,
+        "source": "required/li/timing/li_gg_zzz-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.133528967
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 0.861615649
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 0.861615649
+      }
      },
      "validation": {
       "status": "pending",
@@ -1795,13 +2028,39 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "OL",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.032311431,
+        "source": "required/li/timing/li_gg_hzg-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 0.019106282,
+        "source": "required/li/timing/li_gg_hzg-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 0.07393606750000001,
+        "source": "required/li/timing/li_gg_hzg-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.019106282
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 0.198086554
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 0.198086554
+      }
      },
      "validation": {
       "status": "pending",
@@ -1844,13 +2103,39 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "OL",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.078785631,
+        "source": "required/li/timing/li_gg_agg-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 0.075816684,
+        "source": "required/li/timing/li_gg_agg-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 0.2502013195,
+        "source": "required/li/timing/li_gg_agg-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.075816684
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 0.733419753
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 0.733419753
+      }
      },
      "validation": {
       "status": "pending",
@@ -1893,13 +2178,39 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "OL",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "recola": {
+        "seconds_per_point": 0.115874218,
+        "source": "required/li/timing/li_gg_zgg-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 0.476024859,
+        "source": "required/li/timing/li_gg_zgg-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       },
+       "openloops": {
+        "status": "unavailable",
+        "reason": "no OpenLoops ls library serves g g > z g g: the public channel database of OpenLoops 2.1.5 (proclib/channels_public.rinfo, 2026-11-06) has zgg/zggg (ppvj2) but no zgggg channel; row ML/RC only (PLAN \u00a73.2)",
+        "source": "li_campaign.json runs[li_gg_zgg]"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.115874218
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 1.45326772
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 1.45326772
+      }
      },
      "validation": {
       "status": "pending",
@@ -1942,13 +2253,39 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "OL",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.0026113205,
+        "source": "required/li/timing/li_uux_hgg-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 0.001534496,
+        "source": "required/li/timing/li_uux_hgg-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 0.00263379,
+        "source": "required/li/timing/li_uux_hgg-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.001534496
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 0.726963609
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 0.726963609
+      }
      },
      "validation": {
       "status": "pending",
@@ -1991,13 +2328,39 @@
      "landed": false,
      "note": "loop-induced by its order limit (QED <= 1)",
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "OL",
-       "Rc"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.000270746,
+        "source": "required/li/timing/li_uux_ddxh-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 0.0005361825,
+        "source": "required/li/timing/li_uux_ddxh-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 0.000133996,
+        "source": "required/li/timing/li_uux_ddxh-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "madloop",
+       "name": "MadLoop",
+       "seconds_per_point": 0.000133996
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 0.244140656
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 0.244140656
+      }
      },
      "validation": {
       "status": "pending",
@@ -2044,12 +2407,39 @@
      "landed": false,
      "note": "P15's point 1.3033633142042775e-12 GeV^-4 checks it (lit-val)",
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "OL"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.5720159170000001,
+        "source": "required/li/timing/li_gg_hhgg-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 0.18927592399999998,
+        "source": "required/li/timing/li_gg_hhgg-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 0.6706941495000001,
+        "source": "required/li/timing/li_gg_hhgg-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.18927592399999998
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 0.380427034
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 0.380427034
+      }
      },
      "validation": {
       "status": "pending",
@@ -2091,12 +2481,39 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "OL"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.8531388215,
+        "source": "required/li/timing/li_gg_hggg-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 0.577291888,
+        "source": "required/li/timing/li_gg_hggg-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 1.97841356,
+        "source": "required/li/timing/li_gg_hggg-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.577291888
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 3.19748192
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 3.19748192
+      }
      },
      "validation": {
       "status": "pending",
@@ -2138,12 +2555,39 @@
      "landed": false,
      "note": "fixed tree widths (Q7)",
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML",
-       "OL"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.0066417005,
+        "source": "required/li/timing/li_gg_emepmupmum-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 0.003703114,
+        "source": "required/li/timing/li_gg_emepmupmum-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 0.033803844,
+        "source": "required/li/timing/li_gg_emepmupmum-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.003703114
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 0.20941882
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 0.20941882
+      }
      },
      "validation": {
       "status": "pending",
@@ -2184,11 +2628,39 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "OL"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 1.95623842,
+        "source": "required/li/timing/li_gg_aagg-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 1.671407485,
+        "source": "required/li/timing/li_gg_aagg-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 5.894728765,
+        "source": "required/li/timing/li_gg_aagg-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 1.671407485
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 8.77546562
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 8.77546562
+      }
      },
      "validation": {
       "status": "pending",
@@ -2229,11 +2701,39 @@
      "landed": false,
      "note": null,
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML"
-      ]
+      "status": "recorded",
+      "providers": {
+       "madloop": {
+        "seconds_per_point": 19.882722049999998,
+        "source": "required/li/timing/li_gg_zzzz-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 5.068242805000001,
+        "source": "required/li/timing/li_gg_zzzz-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "openloops": {
+        "status": "unavailable",
+        "reason": "no OpenLoops ls library serves g g > z z z z (public channel database of OpenLoops 2.1.5, 2026-11-06); row ML/RC only (PLAN \u00a73.2)",
+        "source": "li_campaign.json runs[li_gg_zzzz]"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 5.068242805000001
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 26.6829317
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 26.6829317
+      }
      },
      "validation": {
       "status": "pending",
@@ -2279,11 +2779,39 @@
      "landed": false,
      "note": "one 2->5 stretch row: this process or the alternative; outside TIRust's validated domain (N <= 6), reported, never enforced (Q5)",
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "OL"
-      ]
+      "status": "recorded",
+      "providers": {
+       "openloops": {
+        "seconds_per_point": 0.25179946200000003,
+        "source": "required/li/timing/li_gg_emepmupmumg-providers.json providers.openloops",
+        "host": "itphlies"
+       },
+       "recola": {
+        "seconds_per_point": 0.0634028725,
+        "source": "required/li/timing/li_gg_emepmupmumg-providers.json providers.recola",
+        "host": "itphlies"
+       },
+       "madloop": {
+        "seconds_per_point": 1.200016825,
+        "source": "required/li/timing/li_gg_emepmupmumg-providers.json providers.madloop",
+        "setting": "MLReductionLib 7|6|1",
+        "host": "itphlies"
+       }
+      },
+      "fastest": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.0634028725
+      },
+      "unmatched": false,
+      "generation": {
+       "recola": 1.17092075
+      },
+      "fastest_generation": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds": 1.17092075
+      }
      },
      "validation": {
       "status": "pending",
