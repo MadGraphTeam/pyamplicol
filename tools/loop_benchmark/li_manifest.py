@@ -69,6 +69,9 @@ CAMPAIGN = WT / "tools" / "loop_reference" / "li_campaign.json"
 MILESTONE = WT / "docs" / "performance_reports" / "loop" / "data" / "milestone.json"
 FIXTURES = WT / "tests" / "fixtures" / "loop" / "required" / "li"
 LIT = WT / "docs" / "performance_reports" / "loop" / "data" / "lit.json"
+# This package's additional fixtures (the same format; each names its §4.1
+# row in "li_row"): the P15 point of LI-41.
+EXTRA = FIXTURES / "lit-val"
 
 BACKENDS = ("ninjars", "tirust")
 # PLAN §4.1: binary64 and double-double on every row, arbitrary precision on
@@ -117,7 +120,29 @@ def _load(path: Path) -> dict:
 
 
 def fixture(name: str) -> dict:
-    return _load(FIXTURES / f"{name}.json")
+    path = FIXTURES / f"{name}.json"
+    return _load(path if path.is_file() else EXTRA / f"{name}.json")
+
+
+def _extra_runs(campaign: dict) -> list[dict]:
+    """The additional fixtures as reference runs of their rows (their
+    providers: those of their reference rows)."""
+
+    out = []
+    for path in sorted(EXTRA.glob("*.json")):
+        data = _load(path)
+        providers = sorted({p for row in data["rows"] for p in row["providers"]})
+        out.append(
+            (
+                data["li_row"],
+                {
+                    "process": data["name"],
+                    "madloop_process": data["madloop_process"],
+                    "providers": providers,
+                },
+            )
+        )
+    return out
 
 
 def _norm(process: str) -> str:
@@ -150,10 +175,12 @@ def runs(campaign: dict | None = None, reg: dict | None = None) -> list[dict]:
     campaign = _load(CAMPAIGN) if campaign is None else campaign
     reg = registry() if reg is None else reg
     out: dict[str, dict] = {}
+    extra = _extra_runs(campaign)
     for row in campaign["rows"]:
         if row["row"] in DELEGATED:
             continue
-        for run in row.get("runs", []):
+        added = [run for row_id, run in extra if row_id == row["row"]]
+        for run in [*row.get("runs", []), *added]:
             name = run["process"]
             entry = out.setdefault(
                 name,
@@ -541,6 +568,10 @@ def evaluate(
     runtime = Runtime.load(artifact, process="p", model_parameters=parameters)
     points = data["points"]
     scales = [str(Fraction(mu) ** 2) for mu in data["mu_r"]]
+    carriers = tuple(data.get("carriers", CARRIERS))
+    exact = carriers == CARRIERS
+    identity = identity and exact
+    ap = ap and exact
     transformed = [lorentz(p) for p in points] if identity else []
     record: dict[str, Any] = {
         "fixture": name,
@@ -553,7 +584,7 @@ def evaluate(
         "complete": False,
     }
     plan: list[tuple[str, str, str, bool, list]] = []
-    for arithmetic in CARRIERS:
+    for arithmetic in carriers:
         for backend in BACKENDS:
             for checked in (False, True) if arithmetic == "double" else (True,):
                 tag = "checked" if checked else "plain"
@@ -579,7 +610,7 @@ def evaluate(
         record["peak_gib"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**20
         if write is not None:
             write(record)
-    record["l3_probes"] = finiteness_probes(runtime, data, parameters)
+    record["l3_probes"] = finiteness_probes(runtime, data, parameters, carriers)
     record["complete"] = True
     if write is not None:
         write(record)
@@ -590,7 +621,9 @@ def evaluate(
 PROBES = (("ninjars", "double"), ("ninjars", "double_double"), ("tirust", "double"))
 
 
-def finiteness_probes(runtime: Any, data: dict, parameters: dict) -> dict:
+def finiteness_probes(
+    runtime: Any, data: dict, parameters: dict, carriers: tuple = CARRIERS
+) -> dict:
     """L3 at every fixture point: the amplitude-level finiteness probe
     (``induced.probe`` on the loaded artifact's native executor, its
     calibrated checks) per backend and carrier (``PROBES``); a point TIRust
@@ -603,6 +636,8 @@ def finiteness_probes(runtime: Any, data: dict, parameters: dict) -> dict:
     executor = runtime._backend._executor
     out: dict[str, list] = {}
     for backend, carrier in PROBES:
+        if carrier.replace("_", "-") not in carriers:
+            continue
         rows = []
         for point, mu in zip(data["points"], data["mu_r"], strict=True):
             try:
@@ -736,7 +771,9 @@ def judge(record: dict, entry: dict) -> dict:
     arms = record["arms"]
     n64, n64c = arms["ninjars/double/plain"], arms["ninjars/double/checked"]
     t64, t64c = arms["tirust/double/plain"], arms["tirust/double/checked"]
-    ndd, tdd = arms["ninjars/double-double/checked"], arms["tirust/double-double/checked"]
+    # (a binary64-only fixture, ``carriers``, has no double-double arms)
+    ndd = arms.get("ninjars/double-double/checked", {})
+    tdd = arms.get("tirust/double-double/checked", {})
     nap = arms.get(f"ninjars/{ARBITRARY}/plain")
     out: dict[str, Any] = {}
     count = len(data["points"])
@@ -759,7 +796,8 @@ def judge(record: dict, entry: dict) -> dict:
             reference = row["providers"][provider]["value"]
             dev = _rel(value, reference)
             if row.get("l1_caution") and dev > LAX:
-                dd = _total(ndd["points"][p]["values"]) if _served(ndd)[p] else None
+                served = _served(ndd)
+                dd = _total(ndd["points"][p]["values"]) if p < len(served) and served[p] else None
                 caution.append(
                     {
                         "point": p,
@@ -969,7 +1007,9 @@ def judge(record: dict, entry: dict) -> dict:
             "of": count,
             "tirust_failed_reasons": _reasons(t64),
         },
-        "double-double": {"status": f"waits: {TIR_MP}", "tirust": tdd.get("refused")},
+        "double-double": {"status": f"waits: {TIR_MP}", "tirust": tdd.get("refused")}
+        if tdd
+        else {"status": "not run", "reason": "a binary64-only fixture (its carriers)"},
     }
     if nap is not None:
         out["L6"][ARBITRARY] = {
