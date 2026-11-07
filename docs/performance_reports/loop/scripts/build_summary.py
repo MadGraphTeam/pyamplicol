@@ -55,6 +55,10 @@ m-lit/PLAN.md §3.7 "Pushes") reads, each absent file read as "pending":
                           OpenLoops ls, Recola)
 - data/lit.json           lit-val's validation figures
 
+and its "figure" holds Figure 1's loop-induced rows (li_figure: the rows of
+the table with a pyAmpliCol time and a matched provider time, drawn as
+diamonds beside Table 1's).
+
 Main-configuration rule (MAIN_RULE below): every cell of Table 1 and Figure
 1 shows the most recent configuration that measured it, recency by git
 ancestry of the configurations' revisions (and a G1 campaign's own roles),
@@ -2998,6 +3002,74 @@ def build_loop_induced(
     }
 
 
+# Figure 1's loop-induced rows (USER 2026-11-07 ~10:40, m-lit USER-NOTES:
+# "the loop-induced processes should eventually be added to the progress bar
+# summary with diamond markers (Figure. 1)").
+LI_FIGURE_RULE = (
+    "every row of the loop-induced table with a measured batched (B = 128)"
+    " pyAmpliCol time and a matched provider time (its ratio to the fastest"
+    " provider), in the table's order, drawn as a diamond on Figure 1's time"
+    " axis beside Table 1's rows: the providers' production times, and the"
+    " gate limit where the row is gated (2->3 upward: MadLoop's time and the"
+    " gate factor times each other matched provider's, the smallest; grey"
+    " below the 5 ms rule); the other rows are not drawn, counted by reason"
+)
+LI_NO_TIME = "no pyAmpliCol time at B = 128"
+LI_NO_PROVIDER = "no matched provider time"
+
+
+def li_figure(loop_induced: dict, factor: float) -> dict:
+    """summary-li.json "figure": Figure 1's loop-induced rows (LI_FIGURE_RULE)
+    from the table's own cells (build_loop_induced), nothing else read;
+    ``factor``: the gate factor of OpenLoops and Recola (g1.json, Table 1's)."""
+    rows, missing = [], {LI_NO_TIME: [], LI_NO_PROVIDER: []}
+    for group in loop_induced["groups"]:
+        for r in group["rows"]:
+            t = r["timing"]
+            if t.get("status") != "measured":
+                missing[LI_NO_TIME].append(r["key"])
+                continue
+            if "ratio_to_fastest" not in t:
+                missing[LI_NO_PROVIDER].append(r["key"])
+                continue
+            prov = r["providers"]
+            timed = {
+                k: x["seconds_per_point"]
+                for k, x in prov["providers"].items()
+                if "seconds_per_point" in x
+            }
+            limit = None
+            if r["gate_class"] != "reported":
+                limits = [
+                    ((1.0 if k == "madloop" else factor) * s, NAMES[k])
+                    for k, s in timed.items()
+                ]
+                seconds, binding = min(limits)
+                limit = {"seconds": seconds, "binding": binding}
+            rows.append(
+                {
+                    "key": r["key"],
+                    "group": group["name"],
+                    "math": r["math"],
+                    "corrections": r["corrections"],
+                    "seconds_per_point": t["seconds_per_point"],
+                    "backend_label": t["backend_label"],
+                    "ratio_to_fastest": t["ratio_to_fastest"],
+                    "providers": timed,
+                    "fastest": prov["fastest"]["key"],
+                    "limit": limit,
+                    "gate": t["gate"],
+                    "source": f"groups[{group['name']}].rows[{r['key']}].timing",
+                }
+            )
+    return {
+        "rule": LI_FIGURE_RULE,
+        "gate_factor": factor,
+        "rows": rows,
+        "not_drawn": {k: v for k, v in missing.items() if v},
+    }
+
+
 def build() -> tuple[dict, Recency]:
     """summary.json, and the recency order it used (for the build log)."""
     g1, ew_keys = _with_ew_rows(_load(DATA / "g1.json"))
@@ -3141,6 +3213,7 @@ def main() -> None:
     summary, recency = build()
     ms = _load(DATA / "milestone.json")
     loop_induced = build_loop_induced(ms, recency)
+    loop_induced["figure"] = li_figure(loop_induced, summary["meta"]["gate_factor"])
     summary["meta"]["report"] = report_meta(summary, loop_induced, recency, ms)
     out.write_text(json.dumps(summary, indent=1) + "\n")
     out_li.write_text(json.dumps(loop_induced, indent=1) + "\n")

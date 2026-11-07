@@ -13,7 +13,7 @@ every later milestone push. The report holds, in this order:
 |---|---|---|
 | `<tab:summary>` | **Table 1**, Born-interfered one-loop processes, on the first pages | the summary table (user 2026-10-24) |
 | `<tab:summary-li>` | **Table 2**, loop-induced processes (\|A_loop\|²), Table 1's rules | the loop-induced summary table (user 2026-11-06 ~06:00) |
-| `<fig:gate>` | **Figure 1**, Table 1's batched full-colour times against the providers and the gate limit (log scale) | the only view of how far each row is from its limit |
+| `<fig:gate>` | **Figure 1**, Table 1's batched full-colour times against the providers and the gate limit (log scale); beneath them, as diamonds, Table 2's rows with a pyAmpliCol time and a matched provider time (the others not drawn, counted in the key) | the only view of how far each row is from its limit (loop-induced rows: user 2026-11-07 ~10:40) |
 | `<tab:gate>` | **Table 3**, gate and stage split at B = 128: limit, binding provider, band, chip, ms per stage | the numbers behind Table 1's gate chips and stage bars (the table view of Figure 1 and of the bars) |
 | `<reading>` | "Reading the tables": one paragraph per table and marker | the explanations the summary pages leave out |
 
@@ -64,7 +64,8 @@ Update source, data and PDF together at each milestone push.
 ## Data
 
 `scripts/build_summary.py` writes `data/summary.json` (Table 1, Figure 1,
-Table 3) and `data/summary-li.json` (Table 2) from the campaign records below;
+Table 3) and `data/summary-li.json` (Table 2, and in `figure` Figure 1's
+loop-induced rows) from the campaign records below;
 never edit either by hand. Every value names its `source`.
 
 **Main-configuration rule** (`MAIN_RULE`, `Recency`): every Table 1 cell
