@@ -26,9 +26,11 @@
    "eft": "TIR only (rank > N+2, lit-eft): its gate follows its multiplicity once the process is fixed"
   },
   "landed": [
-   "lit-amp"
+   "lit-amp",
+   "lit-r2",
+   "lit-ew"
   ],
-  "rule": "every row of the registry (milestone.json loop_induced, PLAN \u00a74.1 process rows) by multiplicity; the cell is the newest record's batched B = 128 time per point (git ancestry of the record revisions) on the default backend TIRust, NinjaRS per amplitude labelled where only NinjaRS is timed at that revision; the ratio to the fastest matched provider (production mode) colours it; generation = the full production generate cost (generate + plan export + the mandatory generation-time probes, their share shown), uncoloured; every record names its host; four legs or fewer reported, below the 5 ms rule not gated, gate verdicts only from lit-perf's records; a row whose serving package has not landed, or whose input file does not exist yet, is pending; nothing estimated or extrapolated",
+  "rule": "every row of the registry (milestone.json loop_induced, PLAN \u00a74.1 process rows) by multiplicity; the cell is the newest record's batched B = 128 time per point (git ancestry of the record revisions) of the backend 'auto' serves at that revision (its effective backend labelled; records without a request: the default backend TIRust first, NinjaRS per amplitude labelled where only NinjaRS is timed), never a record with failed points; the other backend beside it with its served fraction and the recorded cause of its failed points, its time only where it served every point; the ratio to the fastest matched provider (production mode) colours it; generation = the full production generate cost (generate + the exact helicity-zero filter + plan export + the mandatory generation-time probes, their share shown), uncoloured; every record names its host; four legs or fewer reported, below the 5 ms rule not gated, gate verdicts only from lit-perf's records; a row whose serving package has not landed, or whose input file does not exist yet, is pending; nothing estimated or extrapolated",
   "registry": "milestone.json loop_induced (workspace/reports/engine-v2/m-lit/PLAN.md revision 2d: \u00a74.1 (the process rows, their ids and references), \u00a75.2 and \u00a74.1's tier column (gate classes), \u00a73.3 LIT-AMP 'Rows', \u00a73.4 LIT-EW 'Scope', \u00a73.5 LIT-EFT and \u00a73.7 'Pushes' (the serving package: M-LIT-a lit-amp's rows; M-LIT-b lit-ew's EW rows and the production route lit-r2's other rows; LI-X1 lit-eft); USER 2026-11-06 ~06:00 (the table, every row pending at M-LIT-a0))",
   "inputs": {
    "li-timing.json": {
@@ -116,28 +118,38 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 8.880751210032031,
-      "generate_seconds": 4.174765669973567,
-      "probes_seconds": 4.705985540058464,
-      "probe_share": 0.5299084985898946,
-      "peak_gib": 0.563,
+      "seconds": 6.0618719276972115,
+      "generate_seconds": 2.964356943964958,
+      "probes_seconds": 3.0975149837322533,
+      "probe_share": 0.5109832442317764,
+      "peak_gib": 0.565,
       "plan_mb": 0.01,
-      "revision": "aaff892d",
+      "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_h, ninjars, aaff892d].generation"
+      "source": "li-timing.json records[gg_h, ninjars, e852f448].generation"
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.0002904415232478641,
+      "seconds_per_point": 0.00020298825620557182,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "aaff892d",
-      "native_build": "loop-native-v2-slice-aaff892d",
-      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_h, ninjars, aaff892d]",
+      "source": "li-timing.json records[gg_h, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.00019219461682951078
+      },
       "gate": {
        "status": "reported",
        "label": "no gate (2->1)"
@@ -196,28 +208,38 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 8.793984590098262,
-      "generate_seconds": 4.121870510047302,
-      "probes_seconds": 4.67211408005096,
-      "probe_share": 0.5312852248242063,
-      "peak_gib": 0.563,
+      "seconds": 6.028565690852702,
+      "generate_seconds": 2.947490833699703,
+      "probes_seconds": 3.0810748571529984,
+      "probe_share": 0.5110792541960674,
+      "peak_gib": 0.565,
       "plan_mb": 0.01,
-      "revision": "aaff892d",
+      "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[h_gg, ninjars, aaff892d].generation"
+      "source": "li-timing.json records[h_gg, ninjars, e852f448].generation"
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.0003109983354079304,
+      "seconds_per_point": 0.00021597964223474264,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "aaff892d",
-      "native_build": "loop-native-v2-slice-aaff892d",
-      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
       "host": "itphlies",
-      "source": "li-timing.json records[h_gg, ninjars, aaff892d]",
+      "source": "li-timing.json records[h_gg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.00020540100740618072
+      },
       "gate": {
        "status": "reported",
        "label": "no gate (1->2)"
@@ -247,7 +269,7 @@
       "Rc"
      ],
      "served_by": "lit-ew",
-     "landed": false,
+     "landed": true,
      "note": "loop_qcd_qed_sm (G_mu); W, Goldstone and ghost loops",
      "providers": {
       "status": "recorded",
@@ -276,14 +298,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 145.78034562105313,
+      "generate_seconds": 72.05644930526614,
+      "probes_seconds": 73.72389631578699,
+      "probe_share": 0.5057190391592817,
+      "peak_gib": 3.227,
+      "plan_mb": 0.027,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[h_aa, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0006394666343112476,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[h_aa, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0006197671027621254
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (1->2)"
+      }
      }
     },
     {
@@ -309,7 +360,7 @@
       "Rc"
      ],
      "served_by": "lit-ew",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -338,14 +389,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 254.35228580329567,
+      "generate_seconds": 75.03367369715124,
+      "probes_seconds": 179.31861210614443,
+      "probe_share": 0.7050009853059515,
+      "peak_gib": 4.487,
+      "plan_mb": 0.035,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[h_za, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0007858965363993775,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[h_za, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0006840797868790105
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (1->2)"
+      }
      }
     },
     {
@@ -369,7 +449,7 @@
       "Rc"
      ],
      "served_by": "lit-ew",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -398,14 +478,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 146.03293990483508,
+      "generate_seconds": 72.42245093779638,
+      "probes_seconds": 73.61048896703869,
+      "probe_share": 0.5040677056492067,
+      "peak_gib": 3.254,
+      "plan_mb": 0.027,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[aa_h, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.000613656455243472,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[aa_h, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0005983294286124874
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->1)"
+      }
      }
     }
    ]
@@ -454,28 +563,38 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 16.30876739998348,
-      "generate_seconds": 5.917645844863728,
-      "probes_seconds": 10.391121555119753,
-      "probe_share": 0.6371494117409682,
-      "peak_gib": 0.701,
+      "seconds": 11.00443246634677,
+      "generate_seconds": 4.059622294269502,
+      "probes_seconds": 6.944810172077268,
+      "probe_share": 0.6310920797883539,
+      "peak_gib": 0.671,
       "plan_mb": 0.021,
-      "revision": "aaff892d",
+      "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_aa, ninjars, aaff892d].generation"
+      "source": "li-timing.json records[gg_aa, ninjars, e852f448].generation"
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.005464409710839391,
+      "seconds_per_point": 0.0034155418616137467,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "aaff892d",
-      "native_build": "loop-native-v2-slice-aaff892d",
-      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_aa, ninjars, aaff892d]",
+      "source": "li-timing.json records[gg_aa, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0021663884945155587
+      },
       "gate": {
        "status": "reported",
        "label": "no gate (2->2)"
@@ -522,28 +641,38 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 20.729480423033237,
-      "generate_seconds": 6.6462600021623075,
-      "probes_seconds": 14.08322042087093,
-      "probe_share": 0.6793812547864239,
-      "peak_gib": 0.783,
-      "plan_mb": 0.028,
-      "revision": "aaff892d",
+      "seconds": 13.61197379603982,
+      "generate_seconds": 4.556427561212331,
+      "probes_seconds": 9.055546234827489,
+      "probe_share": 0.6652632726535259,
+      "peak_gib": 0.701,
+      "plan_mb": 0.029,
+      "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_zz, ninjars, aaff892d].generation"
+      "source": "li-timing.json records[gg_zz, ninjars, e852f448].generation"
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.026851383217945113,
+      "seconds_per_point": 0.00861282766709337,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "aaff892d",
-      "native_build": "loop-native-v2-slice-aaff892d",
-      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_zz, ninjars, aaff892d]",
+      "source": "li-timing.json records[gg_zz, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.005428543787274975
+      },
       "gate": {
        "status": "reported",
        "label": "no gate (2->2)"
@@ -572,7 +701,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "not run",
@@ -589,14 +718,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 15.440266400575638,
+      "generate_seconds": 4.996912003029138,
+      "probes_seconds": 10.4433543975465,
+      "probe_share": 0.6763713867758885,
+      "peak_gib": 0.712,
+      "plan_mb": 0.042,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_wpwm, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.009553450618113857,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_wpwm, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0045324557831918355
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -621,7 +779,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "not run",
@@ -638,14 +796,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 13.377873547375202,
+      "generate_seconds": 4.842215803451836,
+      "probes_seconds": 8.535657743923366,
+      "probe_share": 0.6380429381168803,
+      "peak_gib": 0.688,
+      "plan_mb": 0.036,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_za, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.004879517997324001,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_za, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.002786113320325967
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -715,30 +902,40 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 11.896981255849823,
-      "generate_seconds": 4.481218135915697,
-      "probes_seconds": 7.415763119934127,
-      "probe_share": 0.6233314956504405,
-      "peak_gib": 0.601,
+      "seconds": 8.10887629725039,
+      "generate_seconds": 3.1933502815663815,
+      "probes_seconds": 4.915526015684009,
+      "probe_share": 0.6061907760697739,
+      "peak_gib": 0.603,
       "plan_mb": 0.01,
-      "revision": "aaff892d",
+      "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hh, ninjars, aaff892d].generation",
-      "ratio_to_fastest": 139.76793547043732
+      "source": "li-timing.json records[gg_hh, ninjars, e852f448].generation",
+      "ratio_to_fastest": 95.2645780201234
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.0007793467739247717,
+      "seconds_per_point": 0.0005579019234573934,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "aaff892d",
-      "native_build": "loop-native-v2-slice-aaff892d",
-      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hh, ninjars, aaff892d]",
-      "ratio_to_fastest": 1.1263652712476449,
+      "source": "li-timing.json records[gg_hh, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0004041566717205569
+      },
+      "ratio_to_fastest": 0.8063180247478996,
       "gate": {
        "status": "reported",
        "label": "no gate (2->2)"
@@ -767,7 +964,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "not run",
@@ -784,14 +981,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 11.61853610817343,
+      "generate_seconds": 5.494672182016075,
+      "probes_seconds": 6.123863926157355,
+      "probe_share": 0.5270770662621884,
+      "peak_gib": 0.683,
+      "plan_mb": 0.028,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_hz, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0012793270070687868,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_hz, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0009557627781759948
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -835,28 +1061,38 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 11.468991363886744,
-      "generate_seconds": 4.704800355946645,
-      "probes_seconds": 6.764191007940099,
-      "probe_share": 0.5897808092557297,
-      "peak_gib": 0.61,
+      "seconds": 7.750973687041551,
+      "generate_seconds": 3.3000645427964628,
+      "probes_seconds": 4.450909144245088,
+      "probe_share": 0.574238711671326,
+      "peak_gib": 0.599,
       "plan_mb": 0.011,
-      "revision": "aaff892d",
+      "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hg, ninjars, aaff892d].generation"
+      "source": "li-timing.json records[gg_hg, ninjars, e852f448].generation"
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.0023914725861686748,
+      "seconds_per_point": 0.0014490264693449717,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "aaff892d",
-      "native_build": "loop-native-v2-slice-aaff892d",
-      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hg, ninjars, aaff892d]",
+      "source": "li-timing.json records[gg_hg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0009081966381927487
+      },
       "gate": {
        "status": "reported",
        "label": "no gate (2->2)"
@@ -904,28 +1140,38 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 9.90522627811879,
-      "generate_seconds": 4.7626748769544065,
-      "probes_seconds": 5.142551401164383,
-      "probe_share": 0.5191755601307738,
+      "seconds": 6.8550602798350155,
+      "generate_seconds": 3.3419186947867274,
+      "probes_seconds": 3.513141585048288,
+      "probe_share": 0.5124887953768426,
       "peak_gib": 0.575,
       "plan_mb": 0.01,
-      "revision": "aaff892d",
+      "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[uux_hg, ninjars, aaff892d].generation"
+      "source": "li-timing.json records[uux_hg, ninjars, e852f448].generation"
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.00037407171112135984,
+      "seconds_per_point": 0.0002644789819896687,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "aaff892d",
-      "native_build": "loop-native-v2-slice-aaff892d",
-      "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
       "host": "itphlies",
-      "source": "li-timing.json records[uux_hg, ninjars, aaff892d]",
+      "source": "li-timing.json records[uux_hg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.00024849727560649626
+      },
       "gate": {
        "status": "reported",
        "label": "no gate (2->2)"
@@ -954,7 +1200,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "not run",
@@ -971,14 +1217,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 7.003946606069803,
+      "generate_seconds": 3.4816898042336106,
+      "probes_seconds": 3.5222568018361926,
+      "probe_share": 0.5028960099129985,
+      "peak_gib": 0.575,
+      "plan_mb": 0.01,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[ug_hu, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.00025812661624513566,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[ug_hu, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.00024889462656574324
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -1003,7 +1278,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "not run",
@@ -1020,14 +1295,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 16.431701962836087,
+      "generate_seconds": 4.834190960042179,
+      "probes_seconds": 11.597511002793908,
+      "probe_share": 0.7058009589648251,
+      "peak_gib": 0.703,
+      "plan_mb": 0.029,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_zg, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.013179443991248263,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_zg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0059040029445895925
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -1052,7 +1356,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "not run",
@@ -1069,14 +1373,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 14.976262989919633,
+      "generate_seconds": 4.593871674966067,
+      "probes_seconds": 10.382391314953566,
+      "probe_share": 0.6932564767286636,
+      "peak_gib": 0.688,
+      "plan_mb": 0.023,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_ag, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0068795248662354425,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_ag, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.003425754879572196
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -1102,7 +1435,7 @@
       "Rc"
      ],
      "served_by": "lit-ew",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -1131,14 +1464,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 247.69757184386253,
+      "generate_seconds": 120.29813861986622,
+      "probes_seconds": 127.39943322399631,
+      "probe_share": 0.5143346068176365,
+      "peak_gib": 5.654,
+      "plan_mb": 0.067,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[emep_ha, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0011385140169295482,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[emep_ha, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0012203351325297263
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -1164,7 +1526,7 @@
       "Rc"
      ],
      "served_by": "lit-ew",
-     "landed": false,
+     "landed": true,
      "note": "complete [QED]: fermion, W, Goldstone and ghost loops (the only a a > a a row)",
      "providers": {
       "status": "recorded",
@@ -1193,14 +1555,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 227.3062975173816,
+      "generate_seconds": 111.81506986077875,
+      "probes_seconds": 115.49122765660286,
+      "probe_share": 0.5080863527231202,
+      "peak_gib": 6.112,
+      "plan_mb": 0.039,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[aa_aa, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.007503026547055924,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[aa_aa, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.004051384516060352
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -1224,7 +1615,7 @@
       "Rc"
      ],
      "served_by": "lit-ew",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -1253,14 +1644,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 431.68476089974865,
+      "generate_seconds": 126.5096895005554,
+      "probes_seconds": 305.17507139919326,
+      "probe_share": 0.706939644482991,
+      "peak_gib": 6.828,
+      "plan_mb": 0.092,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[aa_zz, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.018679868680919753,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[aa_zz, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.010210163578449283
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -1284,7 +1704,7 @@
       "Rc"
      ],
      "served_by": "lit-ew",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -1313,14 +1733,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 186.18159972131252,
+      "generate_seconds": 88.78831270011142,
+      "probes_seconds": 97.3932870212011,
+      "probe_share": 0.5231090890130123,
+      "peak_gib": 3.656,
+      "plan_mb": 0.034,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[aa_hh, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0017194211031892337,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[aa_hh, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0013324273204489145
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -1344,7 +1793,7 @@
       "Rc"
      ],
      "served_by": "lit-ew",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -1373,14 +1822,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 238.7301200288348,
+      "generate_seconds": 115.69303954578936,
+      "probes_seconds": 123.03708048304543,
+      "probe_share": 0.5153814712118626,
+      "peak_gib": 5.634,
+      "plan_mb": 0.039,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[emep_hh, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.000987691124464618,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[emep_hh, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.001027461123157991
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     }
    ]
@@ -1409,7 +1887,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -1438,14 +1916,43 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 7.900573136284947,
+      "generate_seconds": 3.3143400023691356,
+      "probes_seconds": 4.586233133915812,
+      "probe_share": 0.5804937255567735,
+      "peak_gib": 0.599,
+      "plan_mb": 0.011,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[h_ggg, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0015754904234199785,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[h_ggg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.001034191380313132
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (1->3)"
+      }
      }
     },
     {
@@ -1469,7 +1976,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -1498,14 +2005,53 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 15.463474765885621,
+      "generate_seconds": 4.784285442903638,
+      "probes_seconds": 10.679189322981983,
+      "probe_share": 0.6906073495551999,
+      "peak_gib": 0.704,
+      "plan_mb": 0.029,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[z_ggg, ninjars, e852f448].generation"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.009994512372941244,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[z_ggg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        42,
+        42
+       ],
+       "served_fraction": 0.671875,
+       "every_point": false,
+       "causes": {
+        "ruling (d)": 42
+       },
+       "label": "42/128 failed closed, ruling (d)"
+      },
+      "gate": {
+       "status": "reported",
+       "label": "no gate (1->3)"
+      }
      }
     }
    ]
@@ -1534,7 +2080,7 @@
       "Rc"
      ],
      "served_by": "lit-ew",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -1577,14 +2123,55 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 118.32201333949342,
+      "generate_seconds": 60.40818974329159,
+      "probes_seconds": 57.91382359620184,
+      "probe_share": 0.4894594163981438,
+      "peak_gib": 3.646,
+      "plan_mb": 0.038,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[emep_ggg, ninjars, e852f448].generation",
+      "ratio_to_fastest": 738.7458067788491
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-ew (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.00806797488257871,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[emep_ggg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        128,
+        128
+       ],
+       "served_fraction": 0.0,
+       "every_point": true,
+       "causes": {
+        "ruling (d)": 128
+       },
+       "label": "failed closed on every point (128/128), ruling (d)"
+      },
+      "ratio_to_fastest": 1.8157283984538601,
+      "gate": {
+       "status": "no verdict",
+       "label": "no verdict yet"
+      }
      }
     },
     {
@@ -1609,7 +2196,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -1652,14 +2239,57 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 10.55801696004346,
+      "generate_seconds": 3.3490686351433396,
+      "probes_seconds": 7.2089483249001205,
+      "probe_share": 0.6827937814631476,
+      "peak_gib": 0.68,
+      "plan_mb": 0.012,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_hhh, ninjars, e852f448].generation",
+      "ratio_to_fastest": 137.02117076269667
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0038197422109078616,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_hhh, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        42,
+        42
+       ],
+       "served_fraction": 0.671875,
+       "every_point": false,
+       "causes": {
+        "ruling (d)": 42
+       },
+       "label": "42/128 failed closed, ruling (d)"
+      },
+      "ratio_to_fastest": 0.6766783816530298,
+      "gate": {
+       "status": "not gated",
+       "label": "<5 ms: not gated",
+       "rule": "below 5 ms: not gated (user 2026-10-24)",
+       "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+      }
      }
     },
     {
@@ -1685,7 +2315,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -1728,14 +2358,55 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 29.433310768567026,
+      "generate_seconds": 4.207342606969178,
+      "probes_seconds": 25.225968161597848,
+      "probe_share": 0.8570550679788845,
+      "peak_gib": 0.772,
+      "plan_mb": 0.019,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_hgg, ninjars, e852f448].generation",
+      "ratio_to_fastest": 140.01413478770087
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.043156410716619575,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_hgg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        128,
+        128
+       ],
+       "served_fraction": 0.0,
+       "every_point": true,
+       "causes": {
+        "ruling (d)": 128
+       },
+       "label": "failed closed on every point (128/128), ruling (d)"
+      },
+      "ratio_to_fastest": 1.695064529223818,
+      "gate": {
+       "status": "no verdict",
+       "label": "no verdict yet"
+      }
      }
     },
     {
@@ -1760,7 +2431,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -1803,14 +2474,55 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 195.13894773367792,
+      "generate_seconds": 6.194167346693575,
+      "probes_seconds": 188.94478038698435,
+      "probe_share": 0.9682576573327265,
+      "peak_gib": 1.17,
+      "plan_mb": 0.038,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_zzg, ninjars, e852f448].generation",
+      "ratio_to_fastest": 126.25925439818786
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.36689425846998347,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_zzg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        128,
+        128
+       ],
+       "served_fraction": 0.0,
+       "every_point": true,
+       "causes": {
+        "ruling (d)": 128
+       },
+       "label": "failed closed on every point (128/128), ruling (d)"
+      },
+      "ratio_to_fastest": 2.064114814321027,
+      "gate": {
+       "status": "no verdict",
+       "label": "no verdict yet"
+      }
      }
     },
     {
@@ -1835,7 +2547,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -1878,14 +2590,55 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 117.67469177860767,
+      "generate_seconds": 4.934039112646133,
+      "probes_seconds": 112.74065266596153,
+      "probe_share": 0.9580705159446774,
+      "peak_gib": 0.986,
+      "plan_mb": 0.03,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_aag, ninjars, e852f448].generation",
+      "ratio_to_fastest": 429.08937172909714
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.1565712155534129,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_aag, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        128,
+        128
+       ],
+       "served_fraction": 0.0,
+       "every_point": true,
+       "causes": {
+        "ruling (d)": 128
+       },
+       "label": "failed closed on every point (128/128), ruling (d)"
+      },
+      "ratio_to_fastest": 3.279491791288892,
+      "gate": {
+       "status": "no verdict",
+       "label": "no verdict yet"
+      }
      }
     },
     {
@@ -1910,7 +2663,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -1953,14 +2706,55 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 186.6181602519937,
+      "generate_seconds": 6.207961192820221,
+      "probes_seconds": 180.41019905917346,
+      "probe_share": 0.9667344207850002,
+      "peak_gib": 1.236,
+      "plan_mb": 0.058,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_wpwmg, ninjars, e852f448].generation",
+      "ratio_to_fastest": 136.2759593416015
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.37236428433607216,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_wpwmg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        128,
+        128
+       ],
+       "served_fraction": 0.0,
+       "every_point": true,
+       "causes": {
+        "ruling (d)": 128
+       },
+       "label": "failed closed on every point (128/128), ruling (d)"
+      },
+      "ratio_to_fastest": 5.412699948943229,
+      "gate": {
+       "status": "no verdict",
+       "label": "no verdict yet"
+      }
      }
     },
     {
@@ -1985,7 +2779,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -2028,14 +2822,55 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 146.78986455639824,
+      "generate_seconds": 15.452543140389025,
+      "probes_seconds": 131.33732141600922,
+      "probe_share": 0.8947301764526665,
+      "peak_gib": 1.061,
+      "plan_mb": 0.033,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_zzz, ninjars, e852f448].generation",
+      "ratio_to_fastest": 170.36582927290615
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.339951517413283,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_zzz, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        85,
+        85
+       ],
+       "served_fraction": 0.3359375,
+       "every_point": false,
+       "causes": {
+        "ruling (d)": 85
+       },
+       "label": "85/128 failed closed, ruling (d)"
+      },
+      "ratio_to_fastest": 2.545900901137676,
+      "gate": {
+       "status": "no verdict",
+       "label": "no verdict yet"
+      }
      }
     },
     {
@@ -2060,7 +2895,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -2103,14 +2938,55 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 33.97819025395438,
+      "generate_seconds": 5.375976440962404,
+      "probes_seconds": 28.602213812991977,
+      "probe_share": 0.8417815545565512,
+      "peak_gib": 0.824,
+      "plan_mb": 0.033,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_hzg, ninjars, e852f448].generation",
+      "ratio_to_fastest": 171.5320377270755
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.04756227239704458,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_hzg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        42,
+        42
+       ],
+       "served_fraction": 0.671875,
+       "every_point": false,
+       "causes": {
+        "ruling (d)": 42
+       },
+       "label": "42/128 failed closed, ruling (d)"
+      },
+      "ratio_to_fastest": 2.4893525803212047,
+      "gate": {
+       "status": "no verdict",
+       "label": "no verdict yet"
+      }
      }
     },
     {
@@ -2135,7 +3011,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -2178,14 +3054,55 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 199.13784492295235,
+      "generate_seconds": 6.225762236863375,
+      "probes_seconds": 192.91208268608898,
+      "probe_share": 0.9687364185382635,
+      "peak_gib": 1.341,
+      "plan_mb": 0.046,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_agg, ninjars, e852f448].generation",
+      "ratio_to_fastest": 271.51960948473715
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.29106062006758293,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_agg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        128,
+        128
+       ],
+       "served_fraction": 0.0,
+       "every_point": true,
+       "causes": {
+        "ruling (d)": 128
+       },
+       "label": "failed closed on every point (128/128), ruling (d)"
+      },
+      "ratio_to_fastest": 3.839004882719257,
+      "gate": {
+       "status": "no verdict",
+       "label": "no verdict yet"
+      }
      }
     },
     {
@@ -2210,7 +3127,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -2253,14 +3170,55 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 199.2798852622509,
+      "generate_seconds": 6.829127713106573,
+      "probes_seconds": 192.45075754914433,
+      "probe_share": 0.9657309732785149,
+      "peak_gib": 1.469,
+      "plan_mb": 0.052,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_zgg, ninjars, e852f448].generation",
+      "ratio_to_fastest": 137.12537787755372
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.4527017778127629,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_zgg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        128,
+        128
+       ],
+       "served_fraction": 0.0,
+       "every_point": true,
+       "causes": {
+        "ruling (d)": 128
+       },
+       "label": "failed closed on every point (128/128), ruling (d)"
+      },
+      "ratio_to_fastest": 3.9068378248970177,
+      "gate": {
+       "status": "no verdict",
+       "label": "no verdict yet"
+      }
      }
     },
     {
@@ -2285,7 +3243,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -2328,14 +3286,57 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 10.378089644946158,
+      "generate_seconds": 4.496844212990254,
+      "probes_seconds": 5.881245431955904,
+      "probe_share": 0.5666982684833434,
+      "peak_gib": 0.611,
+      "plan_mb": 0.011,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[uux_hgg, ninjars, e852f448].generation",
+      "ratio_to_fastest": 14.275941073889653
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.002348669553612126,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[uux_hgg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        43,
+        43
+       ],
+       "served_fraction": 0.6640625,
+       "every_point": false,
+       "causes": {
+        "ruling (d)": 43
+       },
+       "label": "43/128 failed closed, ruling (d)"
+      },
+      "ratio_to_fastest": 1.5305804339744946,
+      "gate": {
+       "status": "not gated",
+       "label": "<5 ms: not gated",
+       "rule": "below 5 ms: not gated (user 2026-10-24)",
+       "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+      }
      }
     },
     {
@@ -2360,7 +3361,7 @@
       "Rc"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": "loop-induced by its order limit (QED <= 1)",
      "providers": {
       "status": "recorded",
@@ -2403,14 +3404,47 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 9.106862145010382,
+      "generate_seconds": 4.718573400285095,
+      "probes_seconds": 4.388288744725287,
+      "probe_share": 0.481866165848312,
+      "peak_gib": 0.581,
+      "plan_mb": 0.01,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[uux_ddxh, ninjars, e852f448].generation",
+      "ratio_to_fastest": 37.30170260954153
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.0005106028984300792,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[uux_ddxh, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0006038936735421885
+      },
+      "ratio_to_fastest": 3.8105831400196966,
+      "gate": {
+       "status": "not gated",
+       "label": "<5 ms: not gated",
+       "rule": "below 5 ms: not gated (user 2026-10-24)",
+       "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+      }
      }
     }
    ]
@@ -2439,7 +3473,7 @@
       "OL"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": "P15's point 1.3033633142042775e-12 GeV^-4 checks it (lit-val)",
      "providers": {
       "status": "recorded",
@@ -2482,14 +3516,55 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 397.15803024405614,
+      "generate_seconds": 9.263015172909945,
+      "probes_seconds": 387.8950150711462,
+      "probe_share": 0.9766767521552623,
+      "peak_gib": 1.771,
+      "plan_mb": 0.047,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_hhgg, ninjars, e852f448].generation",
+      "ratio_to_fastest": 1043.97951446336
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.9807981397971162,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_hhgg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        128,
+        128
+       ],
+       "served_fraction": 0.0,
+       "every_point": true,
+       "causes": {
+        "ruling (d)": 128
+       },
+       "label": "failed closed on every point (128/128), ruling (d)"
+      },
+      "ratio_to_fastest": 5.181843094830784,
+      "gate": {
+       "status": "no verdict",
+       "label": "no verdict yet"
+      }
      }
     },
     {
@@ -2513,7 +3588,7 @@
       "OL"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -2556,14 +3631,12 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "not run",
+      "reason": "no record of the row in li-timing.json"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "not run",
+      "reason": "no record of the row in li-timing.json"
      }
     },
     {
@@ -2587,7 +3660,7 @@
       "OL"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": "fixed tree widths (Q7)",
      "providers": {
       "status": "recorded",
@@ -2630,14 +3703,47 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 14.313742389436811,
+      "generate_seconds": 6.014861692674458,
+      "probes_seconds": 8.298880696762353,
+      "probe_share": 0.5797841312895726,
+      "peak_gib": 0.7,
+      "plan_mb": 0.038,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_emepmupmum, ninjars, e852f448].generation",
+      "ratio_to_fastest": 68.34983784856017
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.004716364055639133,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_emepmupmum, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.0032050784211605787
+      },
+      "ratio_to_fastest": 1.2736210809710782,
+      "gate": {
+       "status": "not gated",
+       "label": "<5 ms: not gated",
+       "rule": "below 5 ms: not gated (user 2026-10-24)",
+       "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+      }
      }
     },
     {
@@ -2660,7 +3766,7 @@
       "OL"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -2703,14 +3809,18 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "not run",
+      "reason": "generation beyond the 45-min rule (R9): generate + plan export + exact helicity-zero filter done in 14.0 s (peak 0.63 GiB); the mandatory double-double generation-time probes still running when stopped at 45 min 44 s (2.9 GB RSS; 23:03 UTC); no time"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "not run",
+      "reason": "generation beyond the 45-min rule (R9): generate + plan export + exact helicity-zero filter done in 14.0 s (peak 0.63 GiB); the mandatory double-double generation-time probes still running when stopped at 45 min 44 s (2.9 GB RSS; 23:03 UTC); no time",
+      "label": "not run",
+      "requested": "auto",
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "revision": "e852f448",
+      "source": "li-timing.json records[gg_aagg, ninjars, e852f448]"
      }
     },
     {
@@ -2733,7 +3843,7 @@
       "ML"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": null,
      "providers": {
       "status": "recorded",
@@ -2776,14 +3886,18 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "not run",
+      "reason": "generation beyond the 45-min rule (R9): generate + plan export + exact helicity-zero filter done in 9.8 s (peak 0.60 GiB); the mandatory double-double generation-time probes still running when stopped at 45 min 45 s (3.7 GB RSS; 23:03 UTC); no time"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "not run",
+      "reason": "generation beyond the 45-min rule (R9): generate + plan export + exact helicity-zero filter done in 9.8 s (peak 0.60 GiB); the mandatory double-double generation-time probes still running when stopped at 45 min 45 s (3.7 GB RSS; 23:03 UTC); no time",
+      "label": "not run",
+      "requested": "auto",
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "revision": "e852f448",
+      "source": "li-timing.json records[gg_zzzz, ninjars, e852f448]"
      }
     }
    ]
@@ -2811,7 +3925,7 @@
       "OL"
      ],
      "served_by": "lit-r2",
-     "landed": false,
+     "landed": true,
      "note": "one 2->5 stretch row: this process or the alternative; outside TIRust's validated domain (N <= 6), reported, never enforced (Q5)",
      "providers": {
       "status": "recorded",
@@ -2854,14 +3968,45 @@
       "what": "validation"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "generation"
+      "status": "measured",
+      "seconds": 94.83948589162901,
+      "generate_seconds": 7.711959567386657,
+      "probes_seconds": 87.12752632424235,
+      "probe_share": 0.9186840850634835,
+      "peak_gib": 1.137,
+      "plan_mb": 0.053,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[li51, ninjars, e852f448].generation",
+      "ratio_to_fastest": 80.99564884440643
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-r2 (not landed at this head)",
-      "what": "timing"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 0.19462855899109854,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[li51, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "served",
+       "served_fraction": 1.0,
+       "seconds_per_point": 0.08103614099309198
+      },
+      "ratio_to_fastest": 3.0697120069930355,
+      "gate": {
+       "status": "no verdict",
+       "label": "no verdict yet"
+      }
      }
     }
    ]
@@ -2925,9 +4070,9 @@
     "group": "2->2",
     "math": "g g -> h h",
     "corrections": "QCD",
-    "seconds_per_point": 0.0007793467739247717,
+    "seconds_per_point": 0.0005579019234573934,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 1.1263652712476449,
+    "ratio_to_fastest": 0.8063180247478996,
     "providers": {
      "openloops": 0.001561181,
      "recola": 0.0013595255,
@@ -2940,16 +4085,394 @@
      "label": "no gate (2->2)"
     },
     "source": "groups[2->2].rows[gg_hh].timing"
+   },
+   {
+    "key": "emep_ggg",
+    "group": "2->3",
+    "math": "e^+ e^- -> g g g",
+    "corrections": "QED",
+    "seconds_per_point": 0.00806797488257871,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 1.8157283984538601,
+    "providers": {
+     "recola": 0.004443382,
+     "madloop": 0.015461968
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.005776396600000001,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "no verdict",
+     "label": "no verdict yet"
+    },
+    "source": "groups[2->3].rows[emep_ggg].timing"
+   },
+   {
+    "key": "gg_hhh",
+    "group": "2->3",
+    "math": "g g -> h h h",
+    "corrections": "QCD",
+    "seconds_per_point": 0.0038197422109078616,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 0.6766783816530298,
+    "providers": {
+     "openloops": 0.022879906,
+     "recola": 0.0056448415,
+     "madloop": 0.009034304
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.007338293950000001,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "not gated",
+     "label": "<5 ms: not gated",
+     "rule": "below 5 ms: not gated (user 2026-10-24)",
+     "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+    },
+    "source": "groups[2->3].rows[gg_hhh].timing"
+   },
+   {
+    "key": "gg_hgg",
+    "group": "2->3",
+    "math": "g g -> h g g",
+    "corrections": "QCD",
+    "seconds_per_point": 0.043156410716619575,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 1.695064529223818,
+    "providers": {
+     "openloops": 0.02568697,
+     "recola": 0.02546004,
+     "madloop": 0.086247677
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.033098052,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "no verdict",
+     "label": "no verdict yet"
+    },
+    "source": "groups[2->3].rows[gg_hgg].timing"
+   },
+   {
+    "key": "gg_zzg",
+    "group": "2->3",
+    "math": "g g -> z z g",
+    "corrections": "QCD",
+    "seconds_per_point": 0.36689425846998347,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 2.064114814321027,
+    "providers": {
+     "openloops": 0.18309176900000002,
+     "recola": 0.1777489585,
+     "madloop": 0.7213941095
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.23107364605,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "no verdict",
+     "label": "no verdict yet"
+    },
+    "source": "groups[2->3].rows[gg_zzg].timing"
+   },
+   {
+    "key": "gg_aag",
+    "group": "2->3",
+    "math": "g g -> a a g",
+    "corrections": "QCD",
+    "seconds_per_point": 0.1565712155534129,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 3.279491791288892,
+    "providers": {
+     "openloops": 0.052470322,
+     "recola": 0.047742524,
+     "madloop": 0.1998882605
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.0620652812,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "no verdict",
+     "label": "no verdict yet"
+    },
+    "source": "groups[2->3].rows[gg_aag].timing"
+   },
+   {
+    "key": "gg_wpwmg",
+    "group": "2->3",
+    "math": "g g -> w^+ w^- g",
+    "corrections": "QCD",
+    "seconds_per_point": 0.37236428433607216,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 5.412699948943229,
+    "providers": {
+     "openloops": 0.084359499,
+     "recola": 0.06879455500000001,
+     "madloop": 0.3466215305
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.08943292150000001,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "no verdict",
+     "label": "no verdict yet"
+    },
+    "source": "groups[2->3].rows[gg_wpwmg].timing"
+   },
+   {
+    "key": "gg_zzz",
+    "group": "2->3",
+    "math": "g g -> z z z",
+    "corrections": "QCD",
+    "seconds_per_point": 0.339951517413283,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 2.545900901137676,
+    "providers": {
+     "openloops": 0.15101618300000003,
+     "recola": 0.133528967,
+     "madloop": 0.5604789674999999
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.17358765710000001,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "no verdict",
+     "label": "no verdict yet"
+    },
+    "source": "groups[2->3].rows[gg_zzz].timing"
+   },
+   {
+    "key": "gg_hzg",
+    "group": "2->3",
+    "math": "g g -> h z g",
+    "corrections": "QCD",
+    "seconds_per_point": 0.04756227239704458,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 2.4893525803212047,
+    "providers": {
+     "openloops": 0.032311431,
+     "recola": 0.019106282,
+     "madloop": 0.07393606750000001
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.0248381666,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "no verdict",
+     "label": "no verdict yet"
+    },
+    "source": "groups[2->3].rows[gg_hzg].timing"
+   },
+   {
+    "key": "gg_agg",
+    "group": "2->3",
+    "math": "g g -> a g g",
+    "corrections": "QCD",
+    "seconds_per_point": 0.29106062006758293,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 3.839004882719257,
+    "providers": {
+     "openloops": 0.078785631,
+     "recola": 0.075816684,
+     "madloop": 0.2502013195
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.0985616892,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "no verdict",
+     "label": "no verdict yet"
+    },
+    "source": "groups[2->3].rows[gg_agg].timing"
+   },
+   {
+    "key": "gg_zgg",
+    "group": "2->3",
+    "math": "g g -> z g g",
+    "corrections": "QCD",
+    "seconds_per_point": 0.4527017778127629,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 3.9068378248970177,
+    "providers": {
+     "recola": 0.115874218,
+     "madloop": 0.476024859
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.1506364834,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "no verdict",
+     "label": "no verdict yet"
+    },
+    "source": "groups[2->3].rows[gg_zgg].timing"
+   },
+   {
+    "key": "uux_hgg",
+    "group": "2->3",
+    "math": "u overline(u) -> h g g",
+    "corrections": "QCD",
+    "seconds_per_point": 0.002348669553612126,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 1.5305804339744946,
+    "providers": {
+     "openloops": 0.0026113205,
+     "recola": 0.001534496,
+     "madloop": 0.00263379
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.0019948448000000002,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "not gated",
+     "label": "<5 ms: not gated",
+     "rule": "below 5 ms: not gated (user 2026-10-24)",
+     "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+    },
+    "source": "groups[2->3].rows[uux_hgg].timing"
+   },
+   {
+    "key": "uux_ddxh",
+    "group": "2->3",
+    "math": "u overline(u) -> d overline(d) h",
+    "corrections": "QCD",
+    "seconds_per_point": 0.0005106028984300792,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 3.8105831400196966,
+    "providers": {
+     "openloops": 0.000270746,
+     "recola": 0.0005361825,
+     "madloop": 0.000133996
+    },
+    "fastest": "madloop",
+    "limit": {
+     "seconds": 0.000133996,
+     "binding": "MadLoop"
+    },
+    "gate": {
+     "status": "not gated",
+     "label": "<5 ms: not gated",
+     "rule": "below 5 ms: not gated (user 2026-10-24)",
+     "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+    },
+    "source": "groups[2->3].rows[uux_ddxh].timing"
+   },
+   {
+    "key": "gg_hhgg",
+    "group": "2->4",
+    "math": "g g -> h h g g",
+    "corrections": "QCD",
+    "seconds_per_point": 0.9807981397971162,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 5.181843094830784,
+    "providers": {
+     "openloops": 0.5720159170000001,
+     "recola": 0.18927592399999998,
+     "madloop": 0.6706941495000001
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.24605870119999998,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "no verdict",
+     "label": "no verdict yet"
+    },
+    "source": "groups[2->4].rows[gg_hhgg].timing"
+   },
+   {
+    "key": "gg_emepmupmum",
+    "group": "2->4",
+    "math": "g g -> e^+ e^- mu^+ mu^-",
+    "corrections": "QCD",
+    "seconds_per_point": 0.004716364055639133,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 1.2736210809710782,
+    "providers": {
+     "openloops": 0.0066417005,
+     "recola": 0.003703114,
+     "madloop": 0.033803844
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.0048140482000000005,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "not gated",
+     "label": "<5 ms: not gated",
+     "rule": "below 5 ms: not gated (user 2026-10-24)",
+     "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+    },
+    "source": "groups[2->4].rows[gg_emepmupmum].timing"
+   },
+   {
+    "key": "li51",
+    "group": "2->5",
+    "math": "g g -> e^+ e^- mu^+ mu^- g",
+    "corrections": "QCD",
+    "seconds_per_point": 0.19462855899109854,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 3.0697120069930355,
+    "providers": {
+     "openloops": 0.25179946200000003,
+     "recola": 0.0634028725,
+     "madloop": 1.200016825
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.08242373425,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "no verdict",
+     "label": "no verdict yet"
+    },
+    "source": "groups[2->5].rows[li51].timing"
    }
   ],
   "not_drawn": {
    "no pyAmpliCol time at B = 128": [
+    "gg_hggg",
+    "gg_aagg",
+    "gg_zzzz",
+    "li_x1"
+   ],
+   "no matched provider time": [
+    "gg_h",
+    "h_gg",
     "h_aa",
     "h_za",
     "aa_h",
+    "gg_aa",
+    "gg_zz",
     "gg_wpwm",
     "gg_za",
     "gg_hz",
+    "gg_hg",
+    "uux_hg",
     "ug_hu",
     "gg_zg",
     "gg_ag",
@@ -2959,34 +4482,7 @@
     "aa_hh",
     "emep_hh",
     "h_ggg",
-    "z_ggg",
-    "emep_ggg",
-    "gg_hhh",
-    "gg_hgg",
-    "gg_zzg",
-    "gg_aag",
-    "gg_wpwmg",
-    "gg_zzz",
-    "gg_hzg",
-    "gg_agg",
-    "gg_zgg",
-    "uux_hgg",
-    "uux_ddxh",
-    "gg_hhgg",
-    "gg_hggg",
-    "gg_emepmupmum",
-    "gg_aagg",
-    "gg_zzzz",
-    "li51",
-    "li_x1"
-   ],
-   "no matched provider time": [
-    "gg_h",
-    "h_gg",
-    "gg_aa",
-    "gg_zz",
-    "gg_hg",
-    "uux_hg"
+    "z_ggg"
    ]
   }
  }

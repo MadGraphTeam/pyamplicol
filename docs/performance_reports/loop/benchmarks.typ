@@ -660,8 +660,9 @@
     absent(li-title(m), if "requested" in m [#raw(m.requested) (#m.backend_label): #m.at("reason", default: m.label)] else { m.at("reason", default: none) }, li-prov-line(r))
   }
 }
-// Generation and timing pending for the same reason: one marker over both.
-#let li-cells(r) = if r.generation.status == "pending" and r.timing.status == "pending" and r.generation.reason == r.timing.reason {
+// Generation and timing pending, or not run, for the same reason: one
+// marker over both.
+#let li-cells(r) = if r.generation.status in ("pending", "not run") and r.timing.status == r.generation.status and r.generation.at("reason", default: none) == r.timing.at("reason", default: none) {
   (absent(li-title(r.timing), colspan: 2, r.timing.reason, li-prov-line(r)),)
 } else { (li-generation(r), li-timing(r)) }
 // The provenance row of the loop-induced table (one line): pyAmpliCol's
