@@ -57,6 +57,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     v2.add_argument("--native-build", type=Path, help="staged native build directory")
     v2.add_argument(
+        "--reduction",
+        choices=("ninjars", "tirust"),
+        default="ninjars",
+        help="the reduction backend of every evaluation (loops.v2.reduction."
+        "running; tirust: binary64)",
+    )
+    v2.add_argument(
         "--scratch",
         type=Path,
         help="parent of the run's temporary model directory (default: the "
