@@ -1610,7 +1610,11 @@ CHECKS = ("N", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "E")
 
 
 def _run_status(judged: dict) -> str:
-    return _worst([judged[c]["status"] for c in CHECKS if c in judged])
+    """A run's verdict: its worst check ('recorded' figures, e.g. a zero
+    row's provider values, are information, not a verdict)."""
+
+    statuses = [judged[c]["status"] for c in CHECKS if c in judged]
+    return _worst([x for x in statuses if x != "recorded"] or statuses)
 
 
 def _merge(key, done, judged, fixtures, source) -> dict:
