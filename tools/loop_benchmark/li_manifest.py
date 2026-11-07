@@ -1097,6 +1097,175 @@ def _complex(text: str) -> tuple[Decimal, Decimal]:
     return Decimal(text), Decimal(0)
 
 
+# ------------------------------------------------------------- LI-A7
+
+
+# The large-m_t row (PLAN §4.1 LI-A7): the registry rows that carry it.
+LIMIT_ROW = "LI-A7"
+# The heavy-top scan: m_t = y_t = the fixture's m_t times 2^k, k = 0 ..
+# DOUBLINGS (overridable, ``limits --doublings``), in double-double at the
+# fixture's exact points (the loop integrals cancel to O(s / m_t^2)).
+DOUBLINGS = 7
+HEFT = "built-in-sm-heft"
+
+
+def limit_targets(entries: list[dict]) -> list[dict]:
+    """LI-A7's fixtures: the campaign run of every registry row carrying
+    the id, against its limit oracle: the fixture rows' ``limit_oracle``
+    (g g > h h: the low-energy theorem) or else the process's HEFT tree."""
+
+    keys = {r["key"] for r in registry()["rows"] if LIMIT_ROW in r["ids"]}
+    out = []
+    for entry in entries:
+        if entry["key"] in keys and (FIXTURES / f"{entry['fixture']}.json").is_file():
+            data = fixture(entry["fixture"])
+            oracle = "let" if "limit_oracle" in data["rows"][0] else "heft"
+            out.append({"fixture": entry["fixture"], "key": entry["key"], "oracle": oracle})
+    return out
+
+
+def _heft_runtime(data: dict, work: Path, process: str) -> Any:
+    """The HEFT tree of the fixture's process (``built-in-sm-heft``, the
+    loop model's MG5 particle names), generated once into ``work``."""
+
+    from pyamplicol import Runtime
+    from pyamplicol.api import Generator, ProcessRequest, ProcessSet
+    from pyamplicol.config import resolve_config
+
+    root = work / f"heft-{data['name']}"
+    output = root / "artifact"
+    if not (output / "artifact.json").is_file():
+        root.mkdir(parents=True, exist_ok=True)
+        path = root / "card.toml"
+        path.write_text(
+            "\n".join(
+                [
+                    'action = "generate"',
+                    "[model]",
+                    f"source = {json.dumps(HEFT)}",
+                    "[process]",
+                    f"entries = [{{expression = {json.dumps(process)}, name = \"p\"}}]",
+                    "[generation]",
+                    f"output = {json.dumps(str(output))}",
+                    "emit_api_bundle = false",
+                    "[generation.validation]",
+                    "post_build_validation = false",
+                ]
+            )
+            + "\n"
+        )
+        Generator(resolve_config(path)).generate(
+            ProcessSet((ProcessRequest.parse(process, name="p"),)), output
+        )
+    return Runtime.load(output, process="p")
+
+
+def _richardson(h: list[float], values: list[Decimal]) -> tuple[float, float]:
+    """R(h -> 0) from the last three samples of R(h) = R0 + a h + b h^2
+    (h = 1 / m_t^2), with the difference to the two-term extrapolation of
+    the last two as its error estimate."""
+
+    with localcontext() as context:
+        context.prec = 60
+        x = [Decimal(repr(v)) for v in h[-3:]]
+        y = values[-3:]
+        # Lagrange interpolation at 0 through three points (quadratic).
+        r3 = sum(
+            y[i]
+            * math.prod((Decimal(0) - x[j]) / (x[i] - x[j]) for j in range(3) if j != i)
+            for i in range(3)
+        )
+        r2 = (y[2] * x[1] - y[1] * x[2]) / (x[1] - x[2])
+        return float(r3), float(abs(r3 - r2))
+
+
+def limits(name: str, oracle: str, work: Path, doublings: int = DOUBLINGS) -> dict:
+    """LI-A7 for one fixture: |A_loop|^2(m_t) over the limit oracle at
+    every fixture point for m_t = y_t scanned (``DOUBLINGS``), the loop in
+    double-double on the campaign's artifact (``work / name``), and its
+    Richardson extrapolation to m_t -> infinity; passes when it equals 1
+    within ten times its own extrapolation error (no fixed tolerance: the
+    decoupling of the scan decides). The HEFT tree carries the shipped
+    m_t corrections of its coupling (r = M_H^2 / m_t^2 through r^3), the
+    low-energy theorem none."""
+
+    from pyamplicol import Runtime
+
+    data = fixture(name)
+    compiled = compile_model(data, work / "model-cache")
+    known = set(compiled.parameter_defaults)
+    fixed = data["scheme_data"]["fixed_parameters"]
+    parameters = {
+        k: v
+        for k, v in data["scheme_data"]["parameters"].items()
+        if k not in fixed and k in known
+    }
+    base = Fraction(parameters["MT"])
+    masses = [base * 2**k for k in range(doublings + 1)]
+    points = data["points"]
+    scales = [_decimal(Fraction(mu) ** 2) for mu in data["mu_r"]]
+    shared: list[str] = []
+    if oracle == "heft":
+        heft = _heft_runtime(data, work, expression(data, compiled))
+        # The fixture's parameters the HEFT model shares (the others, e.g.
+        # its Yukawa, are none of the tree's).
+        for key, value in parameters.items():
+            try:
+                heft.set_model_parameter(key, float(value))
+            except (KeyError, ValueError):
+                continue
+            shared.append(key)
+        if "MT" not in shared or "aS" not in shared:
+            raise ValueError(f"the HEFT tree takes {shared}: no MT / aS")
+    loop, reference = [], []
+    for mass in masses:
+        text = _decimal(mass)
+        runtime = Runtime.load(
+            work / name / "artifact",
+            process="p",
+            model_parameters={**parameters, "MT": text, "ymt": text},
+        )
+        result = runtime.evaluate(points, mu_r2=scales, arithmetic="double-double", poles="none")
+        loop.append([_total([_laurent(s) for s in v]) for v in result.values])
+        if oracle == "heft":
+            for key in ("MT", "ymt"):
+                if key in shared:
+                    heft.set_model_parameter(key, float(mass))
+            values = heft.evaluate([[[float(Fraction(c)) for c in m] for m in p] for p in points])
+            reference.append([Decimal(repr(complex(v).real)) for v in values])
+        else:
+            reference.append([Decimal(repr(row["limit_oracle"]["value"])) for row in data["rows"]])
+    h = [float(1 / (m * m)) for m in masses]
+    out = {
+        "oracle": oracle,
+        "masses": [str(m) for m in masses],
+        "heft_parameters": shared,
+        "points": [],
+    }
+    status = []
+    for p in range(len(points)):
+        with localcontext() as context:
+            context.prec = 60
+            ratios = [loop[k][p] / reference[k][p] for k in range(len(masses))]
+        limit, error = _richardson(h, ratios)
+        s = sum(Fraction(points[p][i][0]) for i in range(data["initial"])) ** 2 - sum(
+            sum(Fraction(points[p][i][k]) for i in range(data["initial"])) ** 2 for k in (1, 2, 3)
+        )
+        passed = abs(limit - 1) <= FACTOR * error
+        status.append(passed)
+        out["points"].append(
+            {
+                "ratios": [float(r) for r in ratios],
+                "s_over_mt2": [float(s / (m * m)) for m in masses],
+                "limit": limit,
+                "extrapolation_error": error,
+                "passed": passed,
+            }
+        )
+    out["status"] = "pass" if all(status) else "fail"
+    return out
+
+
 # ------------------------------------------------------------- data/lit.json
 
 
@@ -1195,6 +1364,9 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--work-dir", type=Path, required=True)
     run.add_argument("--digits", type=int, default=DIGITS)
     run.add_argument("fixtures", nargs="+")
+    lim = sub.add_parser("limits", help="LI-A7: the heavy-top scan of the limit rows")
+    lim.add_argument("--work-dir", type=Path, required=True)
+    lim.add_argument("--doublings", type=int, default=DOUBLINGS)
     out = sub.add_parser("lit", help="write data/lit.json from run records")
     out.add_argument("--records", type=Path, required=True)
     out.add_argument("--output", type=Path, default=LIT)
@@ -1225,6 +1397,15 @@ def main(argv: list[str] | None = None) -> int:
                 name, args.work_dir, ap=bool(entry["ap"]), digits=args.digits, write=write
             )
             print(name, json.dumps({c: v.get("status") for c, v in judge(record, entry).items() if isinstance(v, dict) and "status" in v}), flush=True)
+        return 0
+    if args.command == "limits":
+        result = {}
+        for target in limit_targets(entries):
+            result[target["fixture"]] = limits(
+                target["fixture"], target["oracle"], args.work_dir, args.doublings
+            )
+            print(target["fixture"], json.dumps(result[target["fixture"]]["status"]), flush=True)
+            (args.work_dir / "limits.json").write_text(json.dumps(result, indent=1) + "\n")
         return 0
     records = {
         path.parent.name: record
