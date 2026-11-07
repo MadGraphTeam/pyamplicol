@@ -738,7 +738,17 @@ def _verdict(strict: bool, lax: bool) -> str:
 
 
 def _worst(statuses: list[str]) -> str:
-    order = ["fail", "estimate miss", "partial", "waits", "not run", "pass (lax)", "pass"]
+    order = [
+        "fail",
+        "estimate miss",
+        "reference defect",
+        "partial",
+        "waits",
+        "not run",
+        "recorded",
+        "pass (lax)",
+        "pass",
+    ]
     present = [s.split(":")[0] for s in statuses]
     for s in order:
         if s in present:
@@ -950,7 +960,8 @@ def judge(record: dict, entry: dict) -> dict:
         out["L5"] = {
             "status": "not run"
             if worst is None
-            else ("pass" if worst <= 1 else "estimate miss"),
+            # A numerical zero is two roundings: L8 judges it.
+            else ("recorded" if ZERO_TIER in entry["tiers"] else ("pass" if worst <= 1 else "estimate miss")),
             "worst_ratio_to_10E": worst,
             "double_double_max_relative": max(devs, default=None),
             "transformed_estimate_relative": max(moved, default=None),
@@ -1269,17 +1280,49 @@ def limits(name: str, oracle: str, work: Path, doublings: int = DOUBLINGS) -> di
 # ------------------------------------------------------------- data/lit.json
 
 
-def lit(records: dict[str, dict], entries: list[dict], source: str) -> dict:
+# Records of the rows other packages run and of findings on the references
+# (data/lit.json's delegated ids; a check a finding names is a reference
+# defect, not a pyAmpliCol failure).
+DELEGATED_RECORDS = EXTRA / "records" / "delegated.json"
+# The identity rows (§4.1 "LI-W1, L1, P1, C1, S1"): the check of every run
+# each stands on (W1: the generation-time Ward / Goldstone probes; L1: the
+# exact Lorentz transform; P1: the amplitude poles), C1 the crossing-related
+# processes of the row whose runs relate by crossing (LI-26), S1 the N_f
+# rows (LI-A5's runs with and without the top loop).
+IDENTITIES = {"LI-W1": "L4", "LI-L1": "L5", "LI-P1": "L3"}
+CROSSING_ROW, FLAVOUR_ROW = "LI-26", "LI-A5"
+
+
+def lit(
+    records: dict[str, dict],
+    entries: list[dict],
+    source: str,
+    limit_results: dict | None = None,
+    delegated: dict | None = None,
+) -> dict:
     """data/lit.json: per registry key its status, reference deviations
     (binary64, NinjaRS; the analytic oracle's too), points and per-check
-    figures over its runs; the validation-only ids alike under ``ids``."""
+    figures over its runs (with LI-A7's heavy-top scan as L9 of its rows'
+    runs, ``limit_results``); per §4.1 id under ``ids``, the identity rows
+    from every run's checks, the delegated rows from their records."""
 
+    delegated = _load(DELEGATED_RECORDS) if delegated is None else delegated
+    findings = delegated.get("findings", {})
     by_fixture = {e["fixture"]: e for e in entries}
     judged = {
         name: judge(record, by_fixture[name])
         for name, record in records.items()
         if name in by_fixture
     }
+    for name, result in (limit_results or {}).items():
+        if name in judged:
+            judged[name]["L9"] = dict(result)
+    for name, checks in findings.items():
+        for check, note in checks.items():
+            if name in judged and check in judged[name]:
+                if judged[name][check]["status"] == "fail":
+                    judged[name][check]["status"] = "reference defect"
+                judged[name][check]["finding"] = note
     rows: dict[str, dict] = {}
     for key, fixtures in registry_runs(entries).items():
         done = [f for f in fixtures if f in judged]
@@ -1304,9 +1347,39 @@ def lit(records: dict[str, dict], entries: list[dict], source: str) -> dict:
                 entry["fixture"]
             ]
     for i, value in ids.items():
-        value["status"] = _worst(
-            [_run_status(j) for j in value["runs"].values()]
-        )
+        value["status"] = _worst([_run_status(j) for j in value["runs"].values()])
+    if limit_results:
+        ids[LIMIT_ROW] = {
+            "status": _worst([judged[f]["L9"]["status"] for f in limit_results if f in judged]),
+            "runs": {f: judged[f]["L9"] for f in limit_results if f in judged},
+        }
+    for i, check in IDENTITIES.items():
+        per_run = {f: j[check] for f, j in judged.items() if check in j}
+        ids[i] = {
+            "check": check,
+            "status": _worst([v["status"] for v in per_run.values()]),
+            "runs": per_run,
+        }
+    crossing = [e["fixture"] for e in entries if CROSSING_ROW in e["ids"]]
+    ids["LI-C1"] = {
+        "status": "partial",
+        "note": "no direct crossing evaluation: the public route takes physical momenta only; the "
+        f"crossing-related processes of {CROSSING_ROW} each against their providers (L1) and their "
+        "common heavy-top limit (LI-A7)",
+        "runs": {f: {c: judged[f][c] for c in ("L1", "L9") if c in judged[f]} for f in crossing if f in judged},
+    }
+    flavours = [e["fixture"] for e in entries if FLAVOUR_ROW in e["ids"]]
+    ids["LI-S1"] = {
+        "status": _worst(
+            [judged[f][c]["status"] for f in flavours if f in judged for c in ("L1", "L2") if c in judged[f]]
+        ),
+        "note": f"{FLAVOUR_ROW}'s runs with and without the top loop against the analytic oracle "
+        "(the quark sum with its charges) and the providers",
+        "runs": {f: {c: judged[f][c] for c in ("L1", "L2") if c in judged[f]} for f in flavours if f in judged},
+    }
+    for i, record in delegated.items():
+        if i.startswith("LI-"):
+            ids[i] = record
     return {
         "what": "lit-val's loop-induced validation figures (m-lit PLAN §3.4 LIT-VAL, "
         "§4.0 rules, §4.1 rows): rows keyed by milestone.json loop_induced keys "
@@ -1319,7 +1392,7 @@ def lit(records: dict[str, dict], entries: list[dict], source: str) -> dict:
     }
 
 
-CHECKS = ("L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8")
+CHECKS = ("L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9")
 
 
 def _run_status(judged: dict) -> str:
@@ -1371,6 +1444,7 @@ def main(argv: list[str] | None = None) -> int:
     out.add_argument("--records", type=Path, required=True)
     out.add_argument("--output", type=Path, default=LIT)
     out.add_argument("--source", required=True)
+    out.add_argument("--limits", type=Path, default=None, help="the limits command's output")
     args = parser.parse_args(argv)
     sys.path.insert(0, str(WT))
     entries = runs()
@@ -1412,7 +1486,10 @@ def main(argv: list[str] | None = None) -> int:
         for path in sorted(args.records.glob("*/record.json"))
         if (record := _load(path)).get("complete")
     }
-    args.output.write_text(json.dumps(lit(records, entries, args.source), indent=1) + "\n")
+    limit_results = _load(args.limits) if args.limits else None
+    args.output.write_text(
+        json.dumps(lit(records, entries, args.source, limit_results), indent=1) + "\n"
+    )
     return 0
 
 
