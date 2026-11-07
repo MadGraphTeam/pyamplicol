@@ -497,13 +497,20 @@ def _call(runtime, points, scales, *, backend, arithmetic, checked, digits) -> d
 
 
 def evaluate(
-    name: str, work: Path, *, ap: bool, digits: int = DIGITS, identity: bool = True
+    name: str,
+    work: Path,
+    *,
+    ap: bool,
+    digits: int = DIGITS,
+    identity: bool = True,
+    write: Any = None,
 ) -> dict:
-    """Every arm of one fixture run (module docstring): binary64 on both
-    backends with and without the checks, double-double with the checks
-    (TIRust's typed refusal recorded), AP without checks on an AP run, and
-    the identity check's transformed points (binary64 checked, double-double)
-    on NinjaRS."""
+    """Every arm of one fixture run (module docstring), cheapest first:
+    binary64 on both backends with and without the checks, double-double
+    with the checks (TIRust's typed refusal recorded), the identity check's
+    transformed points (binary64 checked, double-double) on NinjaRS, and AP
+    without checks on an AP run. ``write`` (if given) receives the record
+    after every arm (``complete`` False until the last)."""
 
     from pyamplicol import Runtime
 
@@ -519,53 +526,48 @@ def evaluate(
     runtime = Runtime.load(artifact, process="p", model_parameters=parameters)
     points = data["points"]
     scales = [str(Fraction(mu) ** 2) for mu in data["mu_r"]]
-    arms: dict[str, dict] = {}
-    for backend in BACKENDS:
-        for arithmetic in CARRIERS:
-            for checked in (False, True) if arithmetic == "double" else (True,):
-                arms[f"{backend}/{arithmetic}/{'checked' if checked else 'plain'}"] = (
-                    _call(
-                        runtime,
-                        points,
-                        scales,
-                        backend=backend,
-                        arithmetic=arithmetic,
-                        checked=checked,
-                        digits=digits,
-                    )
-                )
-        if ap:
-            arms[f"{backend}/{ARBITRARY}/plain"] = _call(
-                runtime,
-                points,
-                scales,
-                backend=backend,
-                arithmetic=ARBITRARY,
-                checked=False,
-                digits=digits,
-            )
     transformed = [lorentz(p) for p in points] if identity else []
-    if identity:
-        for arithmetic in CARRIERS:
-            arms[f"identity/ninjars/{arithmetic}"] = _call(
-                runtime,
-                transformed,
-                scales,
-                backend="ninjars",
-                arithmetic=arithmetic,
-                checked=arithmetic == "double",
-                digits=digits,
-            )
-    return {
+    record: dict[str, Any] = {
         "fixture": name,
         "revision": _revision(),
         "native_digest": _native_digest(),
         "generation": generation,
         "digits": digits if ap else None,
         "transformed_points": transformed,
-        "arms": arms,
-        "peak_gib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**20,
+        "arms": {},
+        "complete": False,
     }
+    plan: list[tuple[str, str, str, bool, list]] = []
+    for arithmetic in CARRIERS:
+        for backend in BACKENDS:
+            for checked in (False, True) if arithmetic == "double" else (True,):
+                tag = "checked" if checked else "plain"
+                plan.append((f"{backend}/{arithmetic}/{tag}", backend, arithmetic, checked, points))
+    if identity:
+        for arithmetic in CARRIERS:
+            plan.append(
+                (f"identity/ninjars/{arithmetic}", "ninjars", arithmetic, arithmetic == "double", transformed)
+            )
+    if ap:
+        for backend in BACKENDS:
+            plan.append((f"{backend}/{ARBITRARY}/plain", backend, ARBITRARY, False, points))
+    for label, backend, arithmetic, checked, inputs in plan:
+        record["arms"][label] = _call(
+            runtime,
+            inputs,
+            scales,
+            backend=backend,
+            arithmetic=arithmetic,
+            checked=checked,
+            digits=digits,
+        )
+        record["peak_gib"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**20
+        if write is not None:
+            write(record)
+    record["complete"] = True
+    if write is not None:
+        write(record)
+    return record
 
 
 def _revision() -> str:
@@ -1078,9 +1080,14 @@ def main(argv: list[str] | None = None) -> int:
         by_fixture = {e["fixture"]: e for e in entries}
         for name in args.fixtures:
             entry = by_fixture[name]
-            record = evaluate(name, args.work_dir, ap=bool(entry["ap"]), digits=args.digits)
             path = args.work_dir / name / "record.json"
-            path.write_text(json.dumps(record, indent=1) + "\n")
+
+            def write(record: dict, path: Path = path) -> None:
+                path.write_text(json.dumps(record, indent=1) + "\n")
+
+            record = evaluate(
+                name, args.work_dir, ap=bool(entry["ap"]), digits=args.digits, write=write
+            )
             print(name, json.dumps({c: v.get("status") for c, v in judge(record, entry).items() if isinstance(v, dict) and "status" in v}), flush=True)
         return 0
     records = {
