@@ -579,9 +579,64 @@ def evaluate(
         record["peak_gib"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**20
         if write is not None:
             write(record)
+    record["l3_probes"] = finiteness_probes(runtime, data, parameters)
     record["complete"] = True
     if write is not None:
         write(record)
+    return record
+
+
+# The L3 probe arms: (backend, carrier) (TIRust: binary64 only, R4).
+PROBES = (("ninjars", "double"), ("ninjars", "double_double"), ("tirust", "double"))
+
+
+def finiteness_probes(runtime: Any, data: dict, parameters: dict) -> dict:
+    """L3 at every fixture point: the amplitude-level finiteness probe
+    (``induced.probe`` on the loaded artifact's native executor, its
+    calibrated checks) per backend and carrier (``PROBES``); a point TIRust
+    fails closed is recorded with its typed reason."""
+
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.assemble import Precision
+    from pyamplicol.loops.v2.reduction import running
+
+    executor = runtime._backend._executor
+    out: dict[str, list] = {}
+    for backend, carrier in PROBES:
+        rows = []
+        for point, mu in zip(data["points"], data["mu_r"], strict=True):
+            try:
+                with running(backend):
+                    result = induced.probe(
+                        executor,
+                        point,
+                        Fraction(mu) ** 2,
+                        parameters=parameters,
+                        precision=getattr(Precision, carrier)(),
+                    )
+                rows.append({"worst": result.worst, "passed": result.passed})
+            except Exception as error:  # a typed failure of the arm, recorded
+                rows.append({"error": f"{type(error).__name__}: {str(error)[:200]}"})
+        out[f"{backend}/{carrier.replace('_', '-')}"] = rows
+    return out
+
+
+def add_probes(name: str, work: Path, record: dict) -> dict:
+    """The L3 probes of a record written before they were part of a run."""
+
+    from pyamplicol import Runtime
+
+    data = fixture(name)
+    compiled = compile_model(data, work / "model-cache")
+    known = set(compiled.parameter_defaults)
+    fixed = data["scheme_data"]["fixed_parameters"]
+    parameters = {
+        k: v
+        for k, v in data["scheme_data"]["parameters"].items()
+        if k not in fixed and k in known
+    }
+    runtime = Runtime.load(work / name / "artifact", process="p", model_parameters=parameters)
+    record["l3_probes"] = finiteness_probes(runtime, data, parameters)
     return record
 
 
@@ -719,7 +774,24 @@ def judge(record: dict, entry: dict) -> dict:
             refs[provider] = max(refs.get(provider, 0.0), dev)
             if tvalue is not None:
                 tir_refs[provider] = max(tir_refs.get(provider, 0.0), _rel(tvalue, reference))
-    if refs or "L1" in entry["checks"]:
+    zero = ZERO_TIER in entry["tiers"]
+    if zero:
+        # A numerical zero: the providers' values are their own rounding,
+        # no relative reference (L8 is the rule); recorded absolutely.
+        out["L1"] = {
+            "status": "recorded",
+            "providers_max_abs": {
+                provider: max(
+                    abs(row["providers"][provider]["value"])
+                    for row in data["rows"][:count]
+                    if provider in row["providers"]
+                )
+                for provider in entry["providers"]
+                if provider != "analytic"
+            },
+        }
+        refs = {}
+    elif refs or "L1" in entry["checks"]:
         worst = max(refs.values(), default=None)
         out["L1"] = {
             "status": "not run"
@@ -755,51 +827,39 @@ def judge(record: dict, entry: dict) -> dict:
                 statuses.append(_verdict(max(devs) <= target, max(devs) <= LAX))
         out["L2"] = {"status": _worst(statuses), "max_relative": l2}
         refs["analytic"] = l2.get("double")
-    # L3 finiteness (with checks), NinjaRS and TIRust, binary64 and DD.
+    # L3 finiteness: the amplitude-level probe at every fixture point
+    # (``induced.probe``: per (loop order, row) the poles against their
+    # estimate on the row's term floor, the x10 rule of the generation-time
+    # probe), NinjaRS and TIRust in binary64, NinjaRS in double-double; the
+    # lanes' public finiteness ratios are recorded beside it.
     l3: dict[str, Any] = {}
     statuses = []
-    for label, arm in (
-        ("ninjars/double", n64c),
-        ("ninjars/double-double", ndd),
-        ("tirust/double", t64c),
-    ):
-        ratios = []
-        for pt in arm.get("points", []):
-            if pt["status"] != "success" or pt["finiteness"] is None:
-                continue
-            bound = _pole_estimate(pt["estimate"])
-            ratios.append(
-                pt["finiteness"] / bound
-                if bound
-                else (0.0 if not pt["finiteness"] else math.inf)
-            )
-        served = sum(_served(arm))
-        if not ratios:
-            if label.startswith("tirust"):
-                l3[label] = {"status": "partial", "served": served, "of": count}
-                statuses.append("partial")
-            continue
-        worst = max(ratios)
-        finiteness = max(
-            pt["finiteness"]
-            for pt in arm["points"]
-            if pt["status"] == "success" and pt["finiteness"] is not None
-        )
-        status = (
-            "pass"
-            if worst <= FACTOR
-            else ("estimate miss" if finiteness <= LAX else "fail")
-        )
-        if served < count:
-            status = "partial"
+    for label, probe in (record.get("l3_probes") or {}).items():
+        worst = [x["worst"] for x in probe if "worst" in x]
+        served = len(worst)
+        if not worst:
+            status = "partial" if label.startswith("tirust") else "not run"
+        elif max(worst) <= FACTOR:
+            status = "pass" if served == count else "partial"
+        else:
+            status = "fail"
         l3[label] = {
             "status": status,
-            "worst_ratio": worst,
-            "worst_finiteness": finiteness,
+            "worst_ratio": max(worst, default=None),
             "served": served,
             "of": count,
+            "failed": [x["error"] for x in probe if "error" in x][:3],
         }
         statuses.append(status)
+    if not l3:
+        statuses.append("not run")
+    l3["lane_finiteness"] = {
+        label: max(
+            (pt["finiteness"] for pt in arm.get("points", []) if pt["finiteness"] is not None),
+            default=None,
+        )
+        for label, arm in (("ninjars/double", n64c), ("ninjars/double-double", ndd), ("tirust/double", t64c))
+    }
     # The necessary-only cross-check at the |A|^2 level: every computed pole
     # of the sum within ten times its absolute estimate.
     poles = []
@@ -924,6 +984,20 @@ def judge(record: dict, entry: dict) -> dict:
             if a["values"] is not None and b["values"] is not None
         ]
         worst = max(devs, default=None)
+        if zero:
+            devs = [
+                abs(float(_total(a["values"]) - _total(b["values"])))
+                / (FACTOR * (_abs_finite(a["estimate"]) or math.inf))
+                for a, b in zip(ndd["points"], nap["points"], strict=True)
+                if a["values"] is not None and b["values"] is not None
+            ]
+            worst = max(devs, default=None)
+            out["L7"] = {
+                "status": "not run" if worst is None else ("pass" if worst <= 1 else "fail"),
+                "max_difference_over_10E_dd": worst,
+                "digits": record.get("digits"),
+            }
+    if nap is not None and "points" in nap and not zero:
         out["L7"] = {
             "status": "not run"
             if worst is None
@@ -1096,6 +1170,13 @@ def main(argv: list[str] | None = None) -> int:
         for name in args.fixtures:
             entry = by_fixture[name]
             path = args.work_dir / name / "record.json"
+            if path.is_file():
+                done = _load(path)
+                if done.get("complete") and "l3_probes" not in done:
+                    path.write_text(
+                        json.dumps(add_probes(name, args.work_dir, done), indent=1) + "\n"
+                    )
+                    continue
 
             def write(record: dict, path: Path = path) -> None:
                 path.write_text(json.dumps(record, indent=1) + "\n")
