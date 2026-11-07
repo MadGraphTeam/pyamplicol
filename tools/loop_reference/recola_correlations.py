@@ -14,7 +14,11 @@ For one process of ``required_processes.json`` this builds the generic driver
 * ``scc``: ``compute_spin_colour_correlation_rcl(g, j, v)`` for every gluon g
   and coloured partner j != g, LO and NLO;
 
-and writes one JSON fixture with Recola's raw values. The NLO pole
+and writes one JSON fixture with Recola's raw values. A loop-induced process
+(``"loop_induced": true``, m-lit LIT-OBS) takes the command stream of its
+loop-induced references (``li_references.recola_commands``) and Recola's
+loop-induced correlations (order 'NLO' without a Born: |A1|^2 correlated;
+the LO column is 0). The NLO pole
 coefficients come from Delta_IR = (0,0), (1,0), (0,1) with a linearity check
 at (2,3). Each spin vector v is complex and transverse (v.k = 0 exactly):
 Recola projects v onto the gluon's two physical helicities, which equals the
@@ -228,12 +232,17 @@ def run(args) -> dict:
         cwd=work,
     )
     process = recola_process(spec)
-    commands = [
-        line if not line.startswith("process ") else f"process {process}"
-        for line in references.recola_commands(
-            {**spec, "recola": {"process": process}}, points, uncached=True
-        )
-    ]
+    if spec.get("loop_induced"):
+        import li_references
+
+        commands = li_references.recola_commands(spec, points, uncached=True)
+    else:
+        commands = [
+            line if not line.startswith("process ") else f"process {process}"
+            for line in references.recola_commands(
+                {**spec, "recola": {"process": process}}, points, uncached=True
+            )
+        ]
     rows = catalogue(spec, points)
     stdin = (
         "\n".join(
@@ -270,7 +279,8 @@ def run(args) -> dict:
         "pdgs": spec["pdgs"],
         "recola_process": process,
         "scheme": spec["scheme"],
-        "born_orders": spec["born_orders"],
+        "born_orders": spec.get("born_orders", []),
+        "loop_induced": bool(spec.get("loop_induced")),
         "provenance": (
             f"Recola2 {versions.get('recola')} (recola2-2.3.0 tree), COLLIER "
             f"{versions.get('collier')}, model {versions.get('modelfile')}; "
