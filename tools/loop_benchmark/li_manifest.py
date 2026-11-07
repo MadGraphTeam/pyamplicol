@@ -223,7 +223,12 @@ def runs(campaign: dict | None = None, reg: dict | None = None) -> list[dict]:
         ]
         if len(keys) > 1:
             raise ValueError(f"{entry['fixture']}: registry keys {keys}")
-        entry["key"] = keys[0] if keys else None
+        # A stress fixture is validation-only (no reference, its own checks).
+        stress = fixture(entry["fixture"]).get("stress")
+        entry["key"] = keys[0] if keys and not stress else None
+        if stress:
+            entry["tiers"] = ["stress"]
+            entry["checks"] = ["E", "L6", "L7"]
     ordered = list(out.values())
     ap: dict[str, str] = {}
     for tier in dict.fromkeys(t for e in ordered for t in e["tiers"]):
@@ -569,9 +574,10 @@ def evaluate(
     points = data["points"]
     scales = [_decimal(Fraction(mu) ** 2) for mu in data["mu_r"]]
     carriers = tuple(data.get("carriers", CARRIERS))
-    exact = carriers == CARRIERS
+    exact = set(CARRIERS) <= set(carriers)
     identity = identity and exact
-    ap = ap and exact
+    ap = (ap or ARBITRARY in carriers) and exact
+    carriers = tuple(c for c in carriers if c != ARBITRARY)
     transformed = [lorentz(p) for p in points] if identity else []
     record: dict[str, Any] = {
         "fixture": name,
@@ -966,6 +972,34 @@ def judge(record: dict, entry: dict) -> dict:
             "double_double_max_relative": max(devs, default=None),
             "transformed_estimate_relative": max(moved, default=None),
         }
+    # E: the binary64 estimate covers the binary64 error against the
+    # double-double value (|b64 - DD| <= 10 E_abs, every point both serve;
+    # a miss goes to lit-stab-n / lit-stab-t; TIRust's estimate on its
+    # served points alike).
+    e_rows = {}
+    for label, plain, checked in (("ninjars", n64, n64c), ("tirust", t64, t64c)):
+        ratios, errors = [], []
+        for p in range(count):
+            a = checked["points"][p] if "points" in checked else None
+            b = ndd["points"][p] if "points" in ndd else None
+            if not a or not b or a["status"] != "success" or b["status"] != "success":
+                continue
+            e = _abs_finite(a["estimate"])
+            diff = abs(float(_total(a["values"]) - _total(b["values"])))
+            errors.append(_rel(_total(a["values"]), _total(b["values"])))
+            ratios.append(diff / (FACTOR * e) if e else (0.0 if not diff else math.inf))
+        e_rows[label] = {
+            "worst_error_over_10E": max(ratios, default=None),
+            "worst_relative_error": max(errors, default=None),
+            "points": len(ratios),
+        }
+    worst = e_rows["ninjars"]["worst_error_over_10E"]
+    out["E"] = {
+        "status": "not run"
+        if worst is None
+        else ("pass" if worst <= 1 and (e_rows["tirust"]["worst_error_over_10E"] or 0) <= 1 else "estimate miss"),
+        **e_rows,
+    }
     # L6 both backends: binary64 through the one comparison.
     rows, failed = [], {}
     t_served = _served(t64)
@@ -1106,6 +1140,139 @@ def _complex(text: str) -> tuple[Decimal, Decimal]:
         value = complex(text)
         return Decimal(value.real), Decimal(value.imag)
     return Decimal(text), Decimal(0)
+
+
+# ------------------------------------------------------------- stress points
+
+
+# PLAN §4.1 "Stress points" (M §4.7), on the 2 -> 2 rows whose final pair is
+# equal-mass or massless (their exact construction, ``_pair``): (base
+# fixture, kind, the stress parameter values, the CM energy at which the
+# angular stresses sit). Each kind writes one stress fixture
+# (``EXTRA/li_stress_<base>_<kind>.json``: the base's scheme, no reference,
+# binary64 + double-double + AP; judged by E, L6, L7).
+STRESS = (
+    ("li_gg_zz", "pt", ("1", "0.1", "0.01"), "500"),
+    ("li_gg_hh", "threshold", ("1e-2", "1e-3", "1e-4"), None),
+    ("li_gg_hh", "forward", ("1e-3", "1e-4", "1e-5"), "500"),
+    ("li_gg_aa", "forward", ("1e-3", "1e-4", "1e-5"), "500"),
+    ("li_gg_ag", "forward", ("1e-3", "1e-4", "1e-5"), "500"),
+    ("li_gg_hh", "top-threshold", ("-1e-3", "1e-3"), None),
+    ("li_gg_zz", "top-threshold", ("-1e-3", "1e-3"), None),
+)
+# The transverse momentum of the (top-)threshold stresses' pair (GeV).
+THRESHOLD_PT = Fraction(1, 100)
+
+
+def _near(target: float, span: int = 60) -> Fraction:
+    """The 2^x 5^y (|x| + |y| <= span) nearest ``target`` on a log scale:
+    a coarse knob whose every product and quotient stays a terminating
+    decimal."""
+
+    best = min(
+        ((x, y) for x in range(-span, span + 1) for y in range(abs(x) - span, span - abs(x) + 1)),
+        key=lambda e: abs(e[0] * math.log(2) + e[1] * math.log(5) - math.log(target)),
+    )
+    return Fraction(2) ** best[0] * Fraction(5) ** best[1]
+
+
+def _pair(mass2: Fraction, pt: Fraction, rho: Fraction) -> list:
+    """An exact 2 -> 2 point with massless beams along z and a final pair of
+    equal squared mass ``mass2`` back to back at transverse momentum ``pt``:
+    with M^2 = mass2 + pt^2, particle 3 has E + p_z = u (u = 2^x 5^y near M)
+    and E - p_z = M^2 / u, the beams a = (u + w) / 2 and b = a (M^2 / u) / w
+    with w = rho u, so that particle 4 = p1 + p2 - p3 is on the same shell;
+    then sqrt(s) = M (sqrt(rho) + 1 / sqrt(rho)) (a z-boosted frame: pt and
+    the invariants are those of the CM frame). Every entry a terminating
+    decimal, mass shells and momentum conservation exact."""
+
+    m2 = mass2 + pt * pt
+    u = _near(math.sqrt(m2))
+    r = m2 / u
+    w = rho * u
+    a = (u + w) / 2
+    b = a * r / w
+    p3 = [(u + r) / 2, pt, Fraction(0), (u - r) / 2]
+    p4 = [a + b - p3[0], -pt, Fraction(0), a - b - p3[3]]
+    return [[a, 0, 0, a], [b, 0, 0, -b], p3, p4]
+
+
+def _rho(ratio: float) -> float:
+    """rho with sqrt(rho) + 1 / sqrt(rho) = ratio (= sqrt(s) / M >= 2)."""
+
+    root = (ratio + math.sqrt(ratio * ratio - 4)) / 2
+    return root * root
+
+
+def stress_points(base: dict, kind: str, values: tuple, energy: str | None) -> list:
+    """The exact points of one stress kind (``STRESS``): ``pt`` at the
+    transverse momenta ``values`` (sqrt(s) near ``energy``), ``forward`` at
+    the CM angles ``values`` (pt = theta sqrt(s) / 2), ``threshold`` at the
+    distances sqrt(s) / 2M - 1 ~ ``values`` above the pair threshold (rho
+    from the 2^x 5^y knob, ``THRESHOLD_PT``), ``top-threshold`` at
+    sqrt(s) = 2 m_t (1 + value) (to ~1e-12, pt chosen for it)."""
+
+    point = [[Fraction(c) for c in p] for p in base["points"][0]]
+    mass2 = point[2][0] ** 2 - sum(c * c for c in point[2][1:])
+    out = []
+    for text in values:
+        value = Fraction(Decimal(text))
+        if kind in ("pt", "forward"):
+            pt = value if kind == "pt" else value * Fraction(energy) / 2
+            ratio = float(Fraction(energy)) / math.sqrt(float(mass2 + pt * pt))
+            out.append(_pair(mass2, pt, _near(_rho(ratio))))
+        elif kind == "threshold":
+            root = math.sqrt(float(value)) + math.sqrt(float(value) + 1)
+            out.append(_pair(mass2, THRESHOLD_PT, _near(root * root)))
+        elif kind == "top-threshold":
+            mt = Fraction(base["scheme_data"]["parameters"]["MT"])
+            rho = _near(4.0)
+            m = 2 * float(mt * (1 + value)) / (math.sqrt(rho) + 1 / math.sqrt(rho))
+            pt = Fraction(Decimal(format(math.sqrt(m * m - float(mass2)), ".12f")))
+            out.append(_pair(mass2, pt, rho))
+        else:
+            raise ValueError(f"unknown stress kind {kind!r}")
+    return [[[_decimal(Fraction(c)) for c in p] for p in q] for q in out]
+
+
+def write_stress() -> list[Path]:
+    """Write every ``STRESS`` fixture (deterministic)."""
+
+    paths = []
+    for name, kind, values, energy in STRESS:
+        base = fixture(name)
+        points = stress_points(base, kind, values, energy)
+        data = {
+            "name": f"li_stress_{name.removeprefix('li_')}_{kind}",
+            "li_row": base["li_row"],
+            "stress": {"kind": kind, "values": list(values), "energy": energy, "base": name},
+            **{
+                k: base[k]
+                for k in (
+                    "loop_induced",
+                    "pdgs",
+                    "initial",
+                    "madloop_process",
+                    "loop_orders",
+                    "squared_orders",
+                    "correction",
+                    "scheme",
+                    "scheme_data",
+                    "normalization",
+                )
+            },
+            "carriers": [*CARRIERS, ARBITRARY],
+            "points": points,
+            "mu_r": [base["mu_r"][0]] * len(points),
+            "rows": [{"providers": {}} for _ in points],
+            "source": "PLAN §4.1 stress points (M §4.7): exact decimal CM points of "
+            "tools/loop_benchmark/li_manifest.py write_stress; no provider reference "
+            "(the binary64 estimate against double-double and AP, NinjaRS against TIRust)",
+        }
+        path = EXTRA / f"{data['name']}.json"
+        path.write_text(json.dumps(data, indent=1) + "\n")
+        paths.append(path)
+    return paths
 
 
 # ------------------------------------------------------------- LI-A7
@@ -1392,7 +1559,7 @@ def lit(
     }
 
 
-CHECKS = ("L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9")
+CHECKS = ("L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "E")
 
 
 def _run_status(judged: dict) -> str:
@@ -1433,6 +1600,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("rows", help="print the run matrix")
+    sub.add_parser("stress", help="write the stress-point fixtures")
     run = sub.add_parser("run", help="evaluate fixture runs")
     run.add_argument("--work-dir", type=Path, required=True)
     run.add_argument("--digits", type=int, default=DIGITS)
@@ -1448,6 +1616,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     sys.path.insert(0, str(WT))
     entries = runs()
+    if args.command == "stress":
+        for path in write_stress():
+            print(path.relative_to(WT))
+        return 0
     if args.command == "rows":
         print(json.dumps(entries, indent=1))
         return 0
