@@ -1552,7 +1552,9 @@ def lit(
     for entry in entries:
         if entry["fixture"] not in judged:
             continue
-        for i in entry["ids"]:
+        # The stress fixtures (PLAN §4.1 "Stress points") are their own
+        # validation-only entry, not their base row's.
+        for i in ["stress"] if "stress" in entry["tiers"] else entry["ids"]:
             ids.setdefault(i, {"runs": {}})["runs"][entry["fixture"]] = judged[
                 entry["fixture"]
             ]
@@ -1563,11 +1565,13 @@ def lit(
             "status": _worst([judged[f]["L9"]["status"] for f in limit_results if f in judged]),
             "runs": {f: judged[f]["L9"] for f in limit_results if f in judged},
         }
+    campaign_runs = {f for f in judged if "stress" not in by_fixture[f]["tiers"]}
     for i, check in IDENTITIES.items():
-        per_run = {f: j[check] for f, j in judged.items() if check in j}
+        per_run = {f: j[check] for f, j in judged.items() if check in j and f in campaign_runs}
         ids[i] = {
             "check": check,
-            "status": _worst([v["status"] for v in per_run.values()]),
+            # (a zero row's 'recorded' identity is L8's: not this row's verdict)
+            "status": _worst([v["status"] for v in per_run.values() if v["status"] != "recorded"]),
             "runs": per_run,
         }
     crossing = [e["fixture"] for e in entries if CROSSING_ROW in e["ids"]]
