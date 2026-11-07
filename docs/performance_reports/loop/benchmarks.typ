@@ -928,7 +928,7 @@ serves at the row's revision: its effective backend in bold, the request in brac
 process on the same points: its time where it served all #li-meta.gate_batch points of every block, else the points
 it failed closed per block of #li-meta.gate_batch with the recorded cause ("ruling (d)": binary64 TIRust serves only
 the rows its conditioning gates pass, its method choice being off at this head, slice-status DECISIONS 2026-11-07
-~17:20 (d), until `lit-tir-mp`; a call that fails points is timed whole, which is no served-point time); a record with
+\~17:20 (d), until `lit-tir-mp`; a call that fails points is timed whole, which is no served-point time); a record with
 a failed point is never the cell, never coloured and never drawn in @fig:gate. The multiplier
 against the fastest matched provider (MadLoop at its loop-induced production setting 7|6|1, OpenLoops `ls`, Recola;
 production mode) colours the cell with @tab:summary's scale. Generation, uncoloured, is the full production `generate`
@@ -940,8 +940,9 @@ value), with the peak memory over all of them; the provenance line names pyAmpli
 5 ms per point, no gate without a matched provider; verdict chips come with the gate tool's records, "no verdict yet"
 before them ("no provider time yet" while no provider of the row is timed). Grey cells are explicit markers:
 *pending* (the package that serves the row, named in the cell, has not landed at this head, or the input file that
-fills the cell does not exist yet), *not run* (a landed package without a record of the row), and a provider's reason
-where it has no matched time. Nothing is estimated or extrapolated; each cell shows the newest record of its row. At
+fills the cell does not exist yet), *not run* (a landed package without a record of the row), *failed closed* or
+*refused* (the record of the cell's request failed points or was refused: no time), and a provider's reason where it
+has no matched time. Nothing is estimated or extrapolated; each cell shows the newest record of its row. At
 this head #li-served.len() of #li-rows.len() rows are served; inputs: #li-inputs.map(x => [#raw(x.file) #if x.present [present] else [not written yet (#x.owner)]]).join([, ])\;
 the registry against `lit-ref`'s manifest (#raw(li-meta.campaign.file)): #if li-meta.campaign.checked [checked (#li-meta.campaign.rows rows, #li-meta.campaign.ids ids)] else [#li-meta.campaign.reason].
 

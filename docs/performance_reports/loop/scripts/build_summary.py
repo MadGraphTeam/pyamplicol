@@ -2400,7 +2400,10 @@ def _preliminary() -> dict | None:
 #                         failed points}), "whole_call_seconds_per_point"?
 #                         (a call that failed points, timed whole: not a
 #                         served-point time), "refused"? (a typed refusal of
-#                         the request: no time), "host", "generation":
+#                         the request: no time), "missing"? (the row was not
+#                         generated or timed: the measured reason, e.g. a
+#                         generation beyond the 45-min rule with its
+#                         progress; no time), "host", "generation":
 #                         {"seconds" (generate + the exact helicity-zero
 #                         filter + plan export), "probes_seconds" (the
 #                         mandatory generation-time double-double probes,
@@ -2788,11 +2791,12 @@ def _li_check_record(r: dict) -> None:
     if r.get("effective", r["backend"]) != r["backend"]:
         raise ValueError(f"{src}: effective {r['effective']!r} is not its backend")
     failed = r.get("failed_points") or []
-    if (r.get("refused") or any(failed)) and "seconds_per_point" in r:
+    unserved = r.get("refused") or r.get("missing")
+    if (unserved or any(failed)) and "seconds_per_point" in r:
         raise ValueError(
-            f"{src}: a refused call or one with failed points has no time per point"
+            f"{src}: a refused, missing or failed call has no time per point"
         )
-    if not r.get("refused") and not any(failed) and "seconds_per_point" not in r:
+    if not unserved and not any(failed) and "seconds_per_point" not in r:
         raise ValueError(f"{src}: a served record without its time per point")
     if failed and "served_fraction" in r:
         fraction = 1 - sum(failed) / (int(r["batch"]) * len(failed))
@@ -2833,6 +2837,9 @@ def _li_failed(r: dict) -> dict:
 
     if r.get("refused"):
         return {"status": "refused", "reason": r["refused"], "label": "refused"}
+    if r.get("missing"):
+        # Not generated or timed: the measured reason (never an estimate).
+        return {"status": "not run", "reason": r["missing"], "label": "not run"}
     failed = r["failed_points"]
     batch = int(r["batch"])
     causes = dict(r.get("failure_causes") or {})
@@ -2970,7 +2977,9 @@ def _li_cells(
     at = f"{row['key']}, {first['backend']}, {first['revision'][:8]}"
     src = f"{LI_TIMING} records[{at}]"
     gen = first.get("generation")
-    if gen is None:
+    if gen is None and first.get("missing"):
+        out["generation"] = {"status": "not run", "reason": first["missing"]}
+    elif gen is None:
         out["generation"] = {
             "status": "not recorded",
             "reason": f"{src} has no generation",
