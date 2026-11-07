@@ -567,7 +567,7 @@ def evaluate(
     }
     runtime = Runtime.load(artifact, process="p", model_parameters=parameters)
     points = data["points"]
-    scales = [str(Fraction(mu) ** 2) for mu in data["mu_r"]]
+    scales = [_decimal(Fraction(mu) ** 2) for mu in data["mu_r"]]
     carriers = tuple(data.get("carriers", CARRIERS))
     exact = carriers == CARRIERS
     identity = identity and exact
@@ -1227,7 +1227,9 @@ def main(argv: list[str] | None = None) -> int:
             print(name, json.dumps({c: v.get("status") for c, v in judge(record, entry).items() if isinstance(v, dict) and "status" in v}), flush=True)
         return 0
     records = {
-        path.parent.name: _load(path) for path in sorted(args.records.glob("*/record.json"))
+        path.parent.name: record
+        for path in sorted(args.records.glob("*/record.json"))
+        if (record := _load(path)).get("complete")
     }
     args.output.write_text(json.dumps(lit(records, entries, args.source), indent=1) + "\n")
     return 0
