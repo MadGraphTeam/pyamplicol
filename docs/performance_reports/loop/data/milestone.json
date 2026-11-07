@@ -21,8 +21,8 @@
   "integrated_at": "4e9b5a9e"
  },
  "ancestry": {
-  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout; 2026-10-25: milestone m1025a for 1d27426b, in the main checkout; 2026-10-26: milestone m1025c for 4fc72e39, in the report worktree at 4fc72e39 (it replaces db13c260, the pin of the m1025b attempt, which was not pushed); 2026-10-27: milestone m1026a for 11542fd5, in the report worktree at 11542fd5; 2026-10-28: milestone m1028a for 28a16255, in the report worktree at 28a16255; 2026-10-29: milestone M-QCD for e18a024b, in the report worktree at e18a024b; 2026-10-31: milestone M-SM for 71e2041e, in the report worktree at 71e2041e); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present; 2026-11-02: milestone M-FINAL-b for f3d9e361 (= 617b59cd + the test-only mf-map-fix), in the report worktree at f3d9e361; 2026-11-05: milestone M-FINAL for c8885cc5, in the report worktree at c8885cc5; 2026-11-06: M-LIT-a0 (lit-retime) for ca602436, in the package worktree at ca602436)",
-  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records) and of the engine on loop: every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. ca602436 is the engine on loop at this milestone (M-LIT-a0: M-FINAL's c8885cc5 plus the 1.0.2 release and its CI fixes) and the G1 campaign (slice_revision of g1.json and msm-g1.json, the final retime); c8885cc5 was the engine on loop at M-FINAL (no G1 campaign); f3d9e361 was the engine on loop at milestone M-FINAL-b (no G1 campaign either); 71e2041e was the engine on loop and the G1 campaign of milestone M-SM (earlier_runs now); e18a024b was the engine on loop and the G1 campaign of milestone M-QCD (earlier_runs now); 28a16255 was the engine on loop and the G1 campaign of milestone m1028a (earlier_runs now); 11542fd5 was the engine on loop and the G1 campaign of milestone m1026a (earlier_runs); 4fc72e39 was the engine on loop at m1025c (not a G1 campaign); 1d27426b was the G1 campaign of milestone m1025a and of the 2->5 rows (earlier_runs), 4e9b5a9e G-int's (earlier_runs too); 1c971289 and 889af02c were the sides of the campaign before (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e, 1d27426b, 4fc72e39, 11542fd5, 28a16255, e18a024b, 71e2041e, f3d9e361, c8885cc5 or ca602436 and is no candidate)",
+  "source": "git merge-base --is-ancestor on every ordered pair of the revisions below (2026-10-24: package report-dev for the first five, in a checkout with work/v2-generation-scale; package report-gint for 4e9b5a9e, in the work/v2-slice checkout; 2026-10-25: milestone m1025a for 1d27426b, in the main checkout; 2026-10-26: milestone m1025c for 4fc72e39, in the report worktree at 4fc72e39 (it replaces db13c260, the pin of the m1025b attempt, which was not pushed); 2026-10-27: milestone m1026a for 11542fd5, in the report worktree at 11542fd5; 2026-10-28: milestone m1028a for 28a16255, in the report worktree at 28a16255; 2026-10-29: milestone M-QCD for e18a024b, in the report worktree at e18a024b; 2026-10-31: milestone M-SM for 71e2041e, in the report worktree at 71e2041e); scripts/build_summary.py checks every fact it uses against git wherever both revisions are present; 2026-11-02: milestone M-FINAL-b for f3d9e361 (= 617b59cd + the test-only mf-map-fix), in the report worktree at f3d9e361; 2026-11-05: milestone M-FINAL for c8885cc5, in the report worktree at c8885cc5; 2026-11-06: M-LIT-a0 (lit-retime) for ca602436, in the package worktree at ca602436; 2026-11-07: lit-amp-b for aaff892d (the M-LIT-a loop-induced records of li-timing.json, which the report's head line orders against Table 1's ca602436), in the package worktree)",
+  "what": "git ancestry of the revisions the main-configuration rule orders (G1's slice_revision and native_revision, the revisions of the development validation records) and of the engine on loop, and the revisions of li-timing.json that the report's head line orders (aaff892d: the M-LIT-a loop-induced records): every pair [older, newer] where older is an ancestor of newer; two listed revisions without a pair are not ordered by ancestry. Recorded as data so that summary.json rebuilds identically in a checkout without the development revisions. ca602436 is the engine on loop at this milestone (M-LIT-a0: M-FINAL's c8885cc5 plus the 1.0.2 release and its CI fixes) and the G1 campaign (slice_revision of g1.json and msm-g1.json, the final retime); c8885cc5 was the engine on loop at M-FINAL (no G1 campaign); f3d9e361 was the engine on loop at milestone M-FINAL-b (no G1 campaign either); 71e2041e was the engine on loop and the G1 campaign of milestone M-SM (earlier_runs now); e18a024b was the engine on loop and the G1 campaign of milestone M-QCD (earlier_runs now); 28a16255 was the engine on loop and the G1 campaign of milestone m1028a (earlier_runs now); 11542fd5 was the engine on loop and the G1 campaign of milestone m1026a (earlier_runs); 4fc72e39 was the engine on loop at m1025c (not a G1 campaign); 1d27426b was the G1 campaign of milestone m1025a and of the 2->5 rows (earlier_runs), 4e9b5a9e G-int's (earlier_runs too); 1c971289 and 889af02c were the sides of the campaign before (kept with their facts; the G1 scratch commit 39824f9b is not an ancestor of 4e9b5a9e, 1d27426b, 4fc72e39, 11542fd5, 28a16255, e18a024b, 71e2041e, f3d9e361, c8885cc5 or ca602436 and is no candidate)",
   "revisions": [
    "1c971289",
    "889af02c",
@@ -38,7 +38,8 @@
    "71e2041e",
    "f3d9e361",
    "c8885cc5",
-   "ca602436"
+   "ca602436",
+   "aaff892d"
   ],
   "ancestors": [
    [
@@ -448,6 +449,66 @@
    [
     "c8885cc5",
     "ca602436"
+   ],
+   [
+    "1c971289",
+    "aaff892d"
+   ],
+   [
+    "889af02c",
+    "aaff892d"
+   ],
+   [
+    "fef92189",
+    "aaff892d"
+   ],
+   [
+    "0ea83af2",
+    "aaff892d"
+   ],
+   [
+    "6f5a64cc",
+    "aaff892d"
+   ],
+   [
+    "4e9b5a9e",
+    "aaff892d"
+   ],
+   [
+    "1d27426b",
+    "aaff892d"
+   ],
+   [
+    "4fc72e39",
+    "aaff892d"
+   ],
+   [
+    "11542fd5",
+    "aaff892d"
+   ],
+   [
+    "28a16255",
+    "aaff892d"
+   ],
+   [
+    "e18a024b",
+    "aaff892d"
+   ],
+   [
+    "71e2041e",
+    "aaff892d"
+   ],
+   [
+    "f3d9e361",
+    "aaff892d"
+   ],
+   [
+    "c8885cc5",
+    "aaff892d"
+   ],
+   [
+    "ca602436",
+    "aaff892d"
    ]
   ]
  },
