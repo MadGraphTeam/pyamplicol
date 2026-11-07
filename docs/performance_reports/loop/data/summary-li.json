@@ -28,7 +28,7 @@
   "landed": [
    "lit-amp"
   ],
-  "rule": "every row of the registry (milestone.json loop_induced, PLAN \u00a74.1 process rows) by multiplicity; the cell is the newest record's batched B = 128 time per point (git ancestry of the record revisions) on the default backend TIRust, NinjaRS per amplitude labelled where only NinjaRS is timed at that revision; the ratio to the fastest matched provider (production mode) colours it; generation uncoloured; four legs or fewer reported, below the 5 ms rule not gated, gate verdicts only from lit-perf's records; a row whose serving package has not landed, or whose input file does not exist yet, is pending; nothing estimated or extrapolated",
+  "rule": "every row of the registry (milestone.json loop_induced, PLAN \u00a74.1 process rows) by multiplicity; the cell is the newest record's batched B = 128 time per point (git ancestry of the record revisions) on the default backend TIRust, NinjaRS per amplitude labelled where only NinjaRS is timed at that revision; the ratio to the fastest matched provider (production mode) colours it; generation = the full production generate cost (generate + plan export + the mandatory generation-time probes, their share shown), uncoloured; every record names its host; four legs or fewer reported, below the 5 ms rule not gated, gate verdicts only from lit-perf's records; a row whose serving package has not landed, or whose input file does not exist yet, is pending; nothing estimated or extrapolated",
   "registry": "milestone.json loop_induced (workspace/reports/engine-v2/m-lit/PLAN.md revision 2d: \u00a74.1 (the process rows, their ids and references), \u00a75.2 and \u00a74.1's tier column (gate classes), \u00a73.3 LIT-AMP 'Rows', \u00a73.4 LIT-EW 'Scope', \u00a73.5 LIT-EFT and \u00a73.7 'Pushes' (the serving package: M-LIT-a lit-amp's rows; M-LIT-b lit-ew's EW rows and the production route lit-r2's other rows; LI-X1 lit-eft); USER 2026-11-06 ~06:00 (the table, every row pending at M-LIT-a0))",
   "inputs": {
    "li-timing.json": {
@@ -116,10 +116,14 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 4.174765669973567,
-      "peak_gib": 0.505,
+      "seconds": 8.880751210032031,
+      "generate_seconds": 4.174765669973567,
+      "probes_seconds": 4.705985540058464,
+      "probe_share": 0.5299084985898946,
+      "peak_gib": 0.563,
       "plan_mb": 0.01,
       "revision": "aaff892d",
+      "host": "itphlies",
       "source": "li-timing.json records[gg_h, ninjars, aaff892d].generation"
      },
      "timing": {
@@ -132,6 +136,7 @@
       "revision": "aaff892d",
       "native_build": "loop-native-v2-slice-aaff892d",
       "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "host": "itphlies",
       "source": "li-timing.json records[gg_h, ninjars, aaff892d]",
       "gate": {
        "status": "reported",
@@ -191,10 +196,14 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 4.121870510047302,
-      "peak_gib": 0.508,
+      "seconds": 8.793984590098262,
+      "generate_seconds": 4.121870510047302,
+      "probes_seconds": 4.67211408005096,
+      "probe_share": 0.5312852248242063,
+      "peak_gib": 0.563,
       "plan_mb": 0.01,
       "revision": "aaff892d",
+      "host": "itphlies",
       "source": "li-timing.json records[h_gg, ninjars, aaff892d].generation"
      },
      "timing": {
@@ -207,6 +216,7 @@
       "revision": "aaff892d",
       "native_build": "loop-native-v2-slice-aaff892d",
       "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "host": "itphlies",
       "source": "li-timing.json records[h_gg, ninjars, aaff892d]",
       "gate": {
        "status": "reported",
@@ -444,10 +454,14 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 5.917645844863728,
-      "peak_gib": 0.578,
+      "seconds": 16.30876739998348,
+      "generate_seconds": 5.917645844863728,
+      "probes_seconds": 10.391121555119753,
+      "probe_share": 0.6371494117409682,
+      "peak_gib": 0.701,
       "plan_mb": 0.021,
       "revision": "aaff892d",
+      "host": "itphlies",
       "source": "li-timing.json records[gg_aa, ninjars, aaff892d].generation"
      },
      "timing": {
@@ -460,6 +474,7 @@
       "revision": "aaff892d",
       "native_build": "loop-native-v2-slice-aaff892d",
       "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "host": "itphlies",
       "source": "li-timing.json records[gg_aa, ninjars, aaff892d]",
       "gate": {
        "status": "reported",
@@ -507,10 +522,14 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 6.6462600021623075,
-      "peak_gib": 0.586,
+      "seconds": 20.729480423033237,
+      "generate_seconds": 6.6462600021623075,
+      "probes_seconds": 14.08322042087093,
+      "probe_share": 0.6793812547864239,
+      "peak_gib": 0.783,
       "plan_mb": 0.028,
       "revision": "aaff892d",
+      "host": "itphlies",
       "source": "li-timing.json records[gg_zz, ninjars, aaff892d].generation"
      },
      "timing": {
@@ -523,6 +542,7 @@
       "revision": "aaff892d",
       "native_build": "loop-native-v2-slice-aaff892d",
       "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "host": "itphlies",
       "source": "li-timing.json records[gg_zz, ninjars, aaff892d]",
       "gate": {
        "status": "reported",
@@ -695,12 +715,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 4.481218135915697,
-      "peak_gib": 0.518,
+      "seconds": 11.896981255849823,
+      "generate_seconds": 4.481218135915697,
+      "probes_seconds": 7.415763119934127,
+      "probe_share": 0.6233314956504405,
+      "peak_gib": 0.601,
       "plan_mb": 0.01,
       "revision": "aaff892d",
+      "host": "itphlies",
       "source": "li-timing.json records[gg_hh, ninjars, aaff892d].generation",
-      "ratio_to_fastest": 52.64617920967536
+      "ratio_to_fastest": 139.76793547043732
      },
      "timing": {
       "status": "measured",
@@ -712,6 +736,7 @@
       "revision": "aaff892d",
       "native_build": "loop-native-v2-slice-aaff892d",
       "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "host": "itphlies",
       "source": "li-timing.json records[gg_hh, ninjars, aaff892d]",
       "ratio_to_fastest": 1.1263652712476449,
       "gate": {
@@ -810,10 +835,14 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 4.704800355946645,
-      "peak_gib": 0.518,
+      "seconds": 11.468991363886744,
+      "generate_seconds": 4.704800355946645,
+      "probes_seconds": 6.764191007940099,
+      "probe_share": 0.5897808092557297,
+      "peak_gib": 0.61,
       "plan_mb": 0.011,
       "revision": "aaff892d",
+      "host": "itphlies",
       "source": "li-timing.json records[gg_hg, ninjars, aaff892d].generation"
      },
      "timing": {
@@ -826,6 +855,7 @@
       "revision": "aaff892d",
       "native_build": "loop-native-v2-slice-aaff892d",
       "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "host": "itphlies",
       "source": "li-timing.json records[gg_hg, ninjars, aaff892d]",
       "gate": {
        "status": "reported",
@@ -874,10 +904,14 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 4.7626748769544065,
-      "peak_gib": 0.519,
+      "seconds": 9.90522627811879,
+      "generate_seconds": 4.7626748769544065,
+      "probes_seconds": 5.142551401164383,
+      "probe_share": 0.5191755601307738,
+      "peak_gib": 0.575,
       "plan_mb": 0.01,
       "revision": "aaff892d",
+      "host": "itphlies",
       "source": "li-timing.json records[uux_hg, ninjars, aaff892d].generation"
      },
      "timing": {
@@ -890,6 +924,7 @@
       "revision": "aaff892d",
       "native_build": "loop-native-v2-slice-aaff892d",
       "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
+      "host": "itphlies",
       "source": "li-timing.json records[uux_hg, ninjars, aaff892d]",
       "gate": {
        "status": "reported",

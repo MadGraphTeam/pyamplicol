@@ -1,7 +1,7 @@
 // pyAmpliCol one-loop benchmarks: the essentials (user 2026-11-06 ~13:25:
 // "keep this document to the essential with mostly just the relevant
-// tables"). Table 1 (Born-interfered processes), Figure 1 (Table 1 against
-// the gate), Table 2 (loop-induced processes), Table 3 (the numbers behind
+// tables"). Table 1 (Born-interfered processes), Table 2 (loop-induced
+// processes), Figure 1 (Table 1 against the gate), Table 3 (the numbers behind
 // Table 1's gate chips and stage bars) and how to read them: the newest
 // measurement of each cell only, no history, no milestone narrative, one
 // provenance line per table. Every value comes from data/summary.json and
@@ -11,6 +11,10 @@
 #let S = json("data/summary.json")
 #let LI = json("data/summary-li.json")
 #let sm = S.meta
+// The report's own line (summary.json meta.report): its date and its newest
+// measured engine revision, beside Table 1's configuration, labelled as such.
+#let rep = sm.report
+#let t2-engine = if rep.table2 == none [Table 2: no record yet] else [Table 2: engine #raw(rep.table2)]
 
 
 // ------------------------------------------------------------------ style --
@@ -25,7 +29,7 @@
 #set page(paper: "a4", margin: (x: 1.6cm, top: 1.7cm, bottom: 1.6cm), numbering: "1 / 1",
   header: context if counter(page).get().first() > 1 {
     set text(8pt, fill: luma(110))
-    [pyAmpliCol at one loop: benchmarks #h(1fr) #sm.date · engine #sm.engine_on_loop]
+    [pyAmpliCol at one loop: benchmarks #h(1fr) report #rep.date, newest engine #raw(rep.head) · Table 1: engine #raw(sm.engine_on_loop), G1 #sm.date]
   })
 #set text(font: "Libertinus Serif", size: 10.5pt, lang: "en")
 #set par(justify: true, leading: 0.62em)
@@ -493,7 +497,7 @@
 #let no-ratio-rows = all-rows.filter(r => r.kind == "g1" and "no_ratio" in r.generation.main)
 
 // ================================================================= PAGE 1 ==
-// The first pages hold the title line, Table 1, Figure 1, Table 2 and their
+// The first pages hold the title line, Table 1, Table 2, Figure 1 and their
 // compact visual legends; the explanations follow in "Reading the tables".
 #align(center)[
   #v(-0.3em)
@@ -501,7 +505,7 @@
   #v(-0.6em)
   #text(11.5pt, fill: luma(80))[Benchmarks of the recursive one-loop engine against MadLoop, Recola and OpenLoops]
   #v(-0.4em)
-  #text(8.6pt, fill: luma(105))[#sm.date · engine #raw(sm.engine_on_loop) · #sm.host.split(",").first(), shared host · finite part, binary64, one pinned thread, $B = 128$]
+  #text(8.6pt, fill: luma(105))[report #rep.date · newest engine measured #raw(rep.head) · finite part, binary64, one pinned thread, $B = 128$ \ Table 1: engine #raw(sm.engine_on_loop), G1 #sm.date, #sm.host.split(",").first(), shared host · #t2-engine]
 ]
 
 // Compact visual legend of Table 1 (its text: "Reading the tables").
@@ -573,6 +577,134 @@
   },
 ) <tab:summary>
 
+
+// ====================================================== LOOP-INDUCED TABLE ==
+// The loop-induced summary table (USER 2026-11-06 ~06:00; m-lit/PLAN.md §3.7
+// "Pushes"): renders data/summary-li.json (scripts/build_summary.py,
+// build_loop_induced) as is, drawn with Table 1's own cell, colour and marker
+// functions (valued, absent, ratio-fill, gate-chip, plain-chip, dur, gib,
+// mult2): one row per process of PLAN §4.1 by multiplicity, the batched
+// B = 128 time on the default backend (TIRust; NinjaRS per amplitude
+// labelled where TIR does not serve the row yet) against the fastest matched
+// provider, generation uncoloured, explicit pending and missing markers.
+#let li-meta = LI.meta
+#let li-rows = LI.groups.map(gr => gr.rows).flatten()
+// A group's title from its registry name ("2->3" as $2 -> 3$, "/" as a
+// middle dot; any name milestone.json declares).
+#let li-group-title(name) = name.split(" / ").map(part => { let xs = part.split("->"); if xs.len() == 2 and xs.all(x => x.trim().len() > 0) { $#xs.at(0).trim() -> #xs.at(1).trim()$ } else { part } }).join([ · ])
+// Missing-cell titles; the batch statuses take Table 1's words (status-title).
+#let li-title(c) = if c.status in ("not batched", "no gate batch") { status-title(c) } else { (pending: [pending], "not run": [not run], "not recorded": [not recorded]).at(c.status, default: c.status) }
+#let li-served = li-rows.filter(r => r.landed)
+// The provider line of a row (lit-ref's timings, or why there are none).
+#let li-prov-line(r) = {
+  let p = r.providers
+  if p.status == "pending" [providers pending (lit-ref): #p.expected.join(" · ")]
+  else if p.status == "not run" [#p.expected.join(" · "): #p.reason]
+  else {
+    // Timed providers by time (the fastest in bold), then the others grouped
+    // by their status and reason.
+    let f = p.fastest
+    let timed = p.providers.pairs().filter(((k, x)) => "seconds_per_point" in x).sorted(key: ((k, x)) => x.seconds_per_point)
+    let why = (:)
+    for (k, x) in p.providers.pairs().filter(((k, x)) => "seconds_per_point" not in x) {
+      let g = x.status + ": " + x.reason
+      why.insert(g, why.at(g, default: ()) + (pkey(k),))
+    }
+    (timed.map(((k, x)) => if f != none and k == f.key { text(weight: "bold")[#pkey(k) #dur(x.seconds_per_point)] } else [#pkey(k) #dur(x.seconds_per_point)])
+      + why.pairs().map(((g, ks)) => [#ks.join(" · ") #g])).join([~· ])
+  }
+}
+// A cell's gate marker: lit-perf's verdict as Table 1's gate chip, every
+// rule (reported, 5 ms, no matched provider, no verdict yet) as Table 1's
+// plain chip.
+#let li-chip(g) = if g.status in ("pass", "fail", "open") { gate-chip((status: g.status, ratio_to_limit: g.ratio_to_limit)) } else { plain-chip[#g.label.replace("->", "→")] }
+#let li-process(r) = table.cell(breakable: false, {
+  set par(leading: 0.34em, justify: false)
+  block(spacing: 0pt, text(10pt, font: "Libertinus Serif", if r.math != none { math-label(r.math) } else { text(8.4pt, font: sans, stretch: 87.5%, r.label) }))
+  if r.alternative != none { v(1.6pt); block(spacing: 0pt, text(6.4pt, fill: ink2)[or #box(text(8pt, font: "Libertinus Serif", math-label(r.alternative.split(" ").map(tok).join(" "))))]) }
+  v(3.6pt)
+  block(spacing: 0pt, text(6.4pt, fill: ink2)[#if r.legs != none [#r.legs legs · ]#r.corrections · #r.ids.join(", ")#if r.backends.len() == 1 [ · #r.backends.first() only]])
+  v(3.4pt)
+  let v = r.validation
+  block(spacing: 0pt, text(6.2pt, if v.status == "pending" { dim[validation pending (lit-val)] } else if v.status == "not run" { dim[validation not run (no record in lit.json)] } else [#v.references.map(x => [#x.short #esci(x.max_relative)]).join([~· ]) · #v.status#if v.points != none [ · #v.points pts]]))
+})
+#let li-generation(r) = {
+  let m = r.generation
+  let p = r.providers
+  let gens = if p.status == "recorded" { p.generation } else { (:) }
+  let pline = if gens.len() == 0 { none } else { gens.pairs().sorted(key: ((k, s)) => s).map(((k, s)) => [#pkey(k) #dur(s)]).join([~· ]) }
+  if m.status == "measured" {
+    // The full production generate cost: generate + plan export + the
+    // mandatory generation-time probes, their time and share beneath.
+    valued(fill: none, dur(m.seconds), mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
+      [incl. probes #dur(m.probes_seconds) (#fixed(100 * m.probe_share, 0)~%)],
+      [#gib(m.peak_gib) peak#if m.plan_mb != none [ · plan #box[#sig(m.plan_mb)~MB]]], pline)
+  } else {
+    absent(li-title(m), m.at("reason", default: none), pline)
+  }
+}
+#let li-timing(r) = {
+  let m = r.timing
+  if m.status == "measured" {
+    valued(fill: if "ratio_to_fastest" in m { ratio-fill(m.ratio_to_fastest) } else { none }, dur(m.seconds_per_point),
+      mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
+      [#li-prov-line(r) #h(1fr) $B = #m.batch$],
+      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "other_backend" in m [ · #m.other_backend.backend_label #dur(m.other_backend.seconds_per_point)]])
+  } else {
+    absent(li-title(m), m.at("reason", default: none), li-prov-line(r))
+  }
+}
+// Generation and timing pending for the same reason: one marker over both.
+#let li-cells(r) = if r.generation.status == "pending" and r.timing.status == "pending" and r.generation.reason == r.timing.reason {
+  (absent(li-title(r.timing), colspan: 2, r.timing.reason, li-prov-line(r)),)
+} else { (li-generation(r), li-timing(r)) }
+// The provenance row of the loop-induced table (one line): pyAmpliCol's
+// records (engine revision, native build and digest, host) or, without any,
+// the engine at this head; the providers' host; the date.
+#let li-timed = li-rows.filter(r => r.timing.status == "measured")
+#let li-builds = li-timed.map(r => (revision: r.timing.revision, native_build: r.timing.at("native_build", default: none), native_digest: r.timing.at("native_digest", default: none))).dedup()
+#let li-our-hosts = li-timed.map(r => r.timing.host).dedup().sorted()
+#let li-hosts = li-rows.filter(r => r.providers.status == "recorded").map(r => r.providers.providers.values().filter(x => "host" in x).map(x => x.host)).flatten().dedup().sorted()
+#let li-engine = (revision: li-meta.engine_on_loop, native_build: li-meta.native_build_on_loop.name, native_digest: li-meta.native_build_on_loop.digest)
+#let li-head = {
+  let ours = if li-builds.len() == 0 [no pyAmpliCol record at this head: every row *pending*, served by the package named in its cell · engine #raw(li-engine.revision)#native-of(li-engine)]
+    else [*pyAmpliCol:* #li-builds.map(x => [engine #raw(x.revision)#native-of(x)]).join([, ]) on #li-our-hosts.join(", ")#if li-meta.landed.len() > 0 [ (packages landed: #li-meta.landed.map(raw).join(", "))]]
+  [#ours · default backend #li-meta.default_backend · providers: `lit-ref`'s production timing records#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · #li-meta.date · nothing estimated]
+}
+// Table 2 starts a page: its caption never stays behind at the foot of
+// Table 1's last page.
+#pagebreak(weak: true)
+#figure(kind: table,
+  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary). How to read it: #link(<reading>)[after Table 3].],
+  {
+    set text(7pt, font: sans, stretch: 87.5%)
+    set par(justify: false)
+    show table.cell.where(y: 0): set text(fill: white, weight: "bold", size: 8pt)
+    table(
+      columns: (0.5cm, 4.8cm, 4.0cm, 1fr),
+      align: left + std.top,
+      inset: (x: 4.5pt, y: 4.2pt),
+      stroke: (x, y) => (top: if y <= 3 { none } else { 0.6pt + white }, left: if x > 0 and y != 1 { 0.6pt + white } else { none }),
+      fill: (x, y) => if y == 0 { navy } else if y == 1 { warm } else if y == 2 { pale } else { none },
+      table.header(
+        [], [Process · validation], [Generation], [$|A_"loop"|^2$ · per point, batched, default backend],
+        table.cell(colspan: 4, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
+        [],
+        ..(
+          [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
+          [generate + plan export + probes (share), peak memory; provider generation],
+          [median per point at $B = 128$; provider times (lit-ref); gate (lit-perf) or rule; backend],
+        ).map(t => text(6.1pt, fill: ink2, t)),
+      ),
+      ..LI.groups.map(gr => (
+        table.cell(rowspan: gr.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon, breakable: false,
+          rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", li-group-title(gr.name)))),
+        ..gr.rows.map(r => (li-process(r), ..li-cells(r))).flatten(),
+      )).flatten(),
+    )
+  },
+) <tab:summary-li>
+
 // Figure 1: the batched full-colour time of each G1 row against its gate
 // limit and the providers, on a log scale (data/summary.json).
 #let fig-lo = calc.log(0.0005, base: 10)
@@ -639,126 +771,6 @@
     })
   },
 ) <fig:gate>
-
-// ====================================================== LOOP-INDUCED TABLE ==
-// The loop-induced summary table (USER 2026-11-06 ~06:00; m-lit/PLAN.md §3.7
-// "Pushes"): renders data/summary-li.json (scripts/build_summary.py,
-// build_loop_induced) as is, drawn with Table 1's own cell, colour and marker
-// functions (valued, absent, ratio-fill, gate-chip, plain-chip, dur, gib,
-// mult2): one row per process of PLAN §4.1 by multiplicity, the batched
-// B = 128 time on the default backend (TIRust; NinjaRS per amplitude
-// labelled where TIR does not serve the row yet) against the fastest matched
-// provider, generation uncoloured, explicit pending and missing markers.
-#let li-meta = LI.meta
-#let li-rows = LI.groups.map(gr => gr.rows).flatten()
-// A group's title from its registry name ("2->3" as $2 -> 3$, "/" as a
-// middle dot; any name milestone.json declares).
-#let li-group-title(name) = name.split(" / ").map(part => { let xs = part.split("->"); if xs.len() == 2 and xs.all(x => x.trim().len() > 0) { $#xs.at(0).trim() -> #xs.at(1).trim()$ } else { part } }).join([ · ])
-// Missing-cell titles; the batch statuses take Table 1's words (status-title).
-#let li-title(c) = if c.status in ("not batched", "no gate batch") { status-title(c) } else { (pending: [pending], "not run": [not run], "not recorded": [not recorded]).at(c.status, default: c.status) }
-#let li-served = li-rows.filter(r => r.landed)
-// The provider line of a row (lit-ref's timings, or why there are none).
-#let li-prov-line(r) = {
-  let p = r.providers
-  if p.status == "pending" [providers pending (lit-ref): #p.expected.join(" · ")]
-  else if p.status == "not run" [#p.expected.join(" · "): #p.reason]
-  else {
-    // Timed providers by time (the fastest in bold), then the others grouped
-    // by their status and reason.
-    let f = p.fastest
-    let timed = p.providers.pairs().filter(((k, x)) => "seconds_per_point" in x).sorted(key: ((k, x)) => x.seconds_per_point)
-    let why = (:)
-    for (k, x) in p.providers.pairs().filter(((k, x)) => "seconds_per_point" not in x) {
-      let g = x.status + ": " + x.reason
-      why.insert(g, why.at(g, default: ()) + (pkey(k),))
-    }
-    (timed.map(((k, x)) => if f != none and k == f.key { text(weight: "bold")[#pkey(k) #dur(x.seconds_per_point)] } else [#pkey(k) #dur(x.seconds_per_point)])
-      + why.pairs().map(((g, ks)) => [#ks.join(" · ") #g])).join([~· ])
-  }
-}
-// A cell's gate marker: lit-perf's verdict as Table 1's gate chip, every
-// rule (reported, 5 ms, no matched provider, no verdict yet) as Table 1's
-// plain chip.
-#let li-chip(g) = if g.status in ("pass", "fail", "open") { gate-chip((status: g.status, ratio_to_limit: g.ratio_to_limit)) } else { plain-chip[#g.label.replace("->", "→")] }
-#let li-process(r) = table.cell(breakable: false, {
-  set par(leading: 0.34em, justify: false)
-  block(spacing: 0pt, text(10pt, font: "Libertinus Serif", if r.math != none { math-label(r.math) } else { text(8.4pt, font: sans, stretch: 87.5%, r.label) }))
-  if r.alternative != none { v(1.6pt); block(spacing: 0pt, text(6.4pt, fill: ink2)[or #box(text(8pt, font: "Libertinus Serif", math-label(r.alternative.split(" ").map(tok).join(" "))))]) }
-  v(3.6pt)
-  block(spacing: 0pt, text(6.4pt, fill: ink2)[#if r.legs != none [#r.legs legs · ]#r.corrections · #r.ids.join(", ")#if r.backends.len() == 1 [ · #r.backends.first() only]])
-  v(3.4pt)
-  let v = r.validation
-  block(spacing: 0pt, text(6.2pt, if v.status == "pending" { dim[validation pending (lit-val)] } else if v.status == "not run" { dim[validation not run (no record in lit.json)] } else [#v.references.map(x => [#x.short #esci(x.max_relative)]).join([~· ]) · #v.status#if v.points != none [ · #v.points pts]]))
-})
-#let li-generation(r) = {
-  let m = r.generation
-  let p = r.providers
-  let gens = if p.status == "recorded" { p.generation } else { (:) }
-  let pline = if gens.len() == 0 { none } else { gens.pairs().sorted(key: ((k, s)) => s).map(((k, s)) => [#pkey(k) #dur(s)]).join([~· ]) }
-  if m.status == "measured" {
-    valued(fill: none, dur(m.seconds), mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
-      [#gib(m.peak_gib) peak#if m.plan_mb != none [ · plan #box[#sig(m.plan_mb)~MB]]], pline)
-  } else {
-    absent(li-title(m), m.at("reason", default: none), pline)
-  }
-}
-#let li-timing(r) = {
-  let m = r.timing
-  if m.status == "measured" {
-    valued(fill: if "ratio_to_fastest" in m { ratio-fill(m.ratio_to_fastest) } else { none }, dur(m.seconds_per_point),
-      mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
-      [#li-prov-line(r) #h(1fr) $B = #m.batch$],
-      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "other_backend" in m [ · #m.other_backend.backend_label #dur(m.other_backend.seconds_per_point)]])
-  } else {
-    absent(li-title(m), m.at("reason", default: none), li-prov-line(r))
-  }
-}
-// Generation and timing pending for the same reason: one marker over both.
-#let li-cells(r) = if r.generation.status == "pending" and r.timing.status == "pending" and r.generation.reason == r.timing.reason {
-  (absent(li-title(r.timing), colspan: 2, r.timing.reason, li-prov-line(r)),)
-} else { (li-generation(r), li-timing(r)) }
-// The provenance row of the loop-induced table (one line): pyAmpliCol's
-// records (engine revision, native build and digest) or, without any, the
-// engine at this head; the providers' host; the date.
-#let li-timed = li-rows.filter(r => r.timing.status == "measured")
-#let li-builds = li-timed.map(r => (revision: r.timing.revision, native_build: r.timing.at("native_build", default: none), native_digest: r.timing.at("native_digest", default: none))).dedup()
-#let li-hosts = li-rows.filter(r => r.providers.status == "recorded").map(r => r.providers.providers.values().filter(x => "host" in x).map(x => x.host)).flatten().dedup().sorted()
-#let li-engine = (revision: li-meta.engine_on_loop, native_build: li-meta.native_build_on_loop.name, native_digest: li-meta.native_build_on_loop.digest)
-#let li-head = {
-  let ours = if li-builds.len() == 0 [no pyAmpliCol record at this head: every row *pending*, served by the package named in its cell · engine #raw(li-engine.revision)#native-of(li-engine)]
-    else [*pyAmpliCol:* #li-builds.map(x => [engine #raw(x.revision)#native-of(x)]).join([, ])#if li-meta.landed.len() > 0 [ (packages landed: #li-meta.landed.map(raw).join(", "))]]
-  [#ours · default backend #li-meta.default_backend · providers: `lit-ref`'s production timing records#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · #li-meta.date · nothing estimated]
-}
-#figure(kind: table,
-  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary). How to read it: #link(<reading>)[after Table 3].],
-  {
-    set text(7pt, font: sans, stretch: 87.5%)
-    set par(justify: false)
-    show table.cell.where(y: 0): set text(fill: white, weight: "bold", size: 8pt)
-    table(
-      columns: (0.5cm, 4.8cm, 4.0cm, 1fr),
-      align: left + std.top,
-      inset: (x: 4.5pt, y: 4.2pt),
-      stroke: (x, y) => (top: if y <= 3 { none } else { 0.6pt + white }, left: if x > 0 and y != 1 { 0.6pt + white } else { none }),
-      fill: (x, y) => if y == 0 { navy } else if y == 1 { warm } else if y == 2 { pale } else { none },
-      table.header(
-        [], [Process · validation], [Generation], [$|A_"loop"|^2$ · per point, batched, default backend],
-        table.cell(colspan: 4, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
-        [],
-        ..(
-          [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
-          [generate + plan export, peak memory; provider generation],
-          [median per point at $B = 128$; provider times (lit-ref); gate (lit-perf) or rule; backend],
-        ).map(t => text(6.1pt, fill: ink2, t)),
-      ),
-      ..LI.groups.map(gr => (
-        table.cell(rowspan: gr.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon, breakable: false,
-          rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", li-group-title(gr.name)))),
-        ..gr.rows.map(r => (li-process(r), ..li-cells(r))).flatten(),
-      )).flatten(),
-    )
-  },
-) <tab:summary-li>
 
 // ================================================================ TABLE 3 ==
 // The numbers behind Table 1's gate chips and stage bars and Figure 1: the
@@ -851,9 +863,7 @@ $10^(-5)$; rescue: the stream points the default rescue policy's binary64 level 
 binary64 against double-double; Catani at full colour; NGluon at leading colour on the all-gluon row) and, in grey,
 those not run or not asserted.
 
-]*@fig:gate* places each row's batched full-colour value of @tab:summary (dots) against the providers (diamonds, the
-darkest the fastest) and the gate limit (red bar, the shaded side fails; grey bar: the limit of a process below 5 ms,
-not gated; dotted line: 5 ms), for the rows with a matched provider.
+]
 
 // The legend of the loop-induced summary table (data/summary-li.json meta).
 #let li-inputs = li-meta.inputs.values()
@@ -864,7 +874,10 @@ validation-only and not listed. The cell is the batched $B = #li-meta.gate_batch
 one pinned thread, checks off) on the default backend #li-meta.default_backend\; NinjaRS per amplitude, labelled in
 the cell, where TIR does not serve the row yet; the other backend's time beside it when both ran. Its multiplier
 against the fastest matched provider (MadLoop at its loop-induced production setting 7|6|1, OpenLoops `ls`, Recola;
-production mode) colours it with @tab:summary's scale; generation is uncoloured. Rows of four legs or fewer
+production mode) colours it with @tab:summary's scale. Generation, uncoloured, is the full production `generate`
+cost: generate + plan export + the generation-time double-double finiteness and Ward probes, which run for every
+loop-induced process (their time and share beneath the value), with the peak memory over all three; the provenance
+line names pyAmpliCol's host and the providers'. Rows of four legs or fewer
 ($2 -> 1$, $1 -> 2$, $2 -> 2$, $1 -> 3$) are reported without a gate; from $2 -> 3$ upward the gate is @tab:summary's
 (faster than MadLoop and at most 1.30× each matched OpenLoops and Recola time, on TIRust), "#thr-rule.short" below
 5 ms per point, no gate without a matched provider; verdict chips come with the gate tool's records, "no verdict yet"
@@ -874,6 +887,10 @@ fills the cell does not exist yet), *not run* (a landed package without a record
 where it has no matched time. Nothing is estimated or extrapolated; each cell shows the newest record of its row. At
 this head #li-served.len() of #li-rows.len() rows are served; inputs: #li-inputs.map(x => [#raw(x.file) #if x.present [present] else [not written yet (#x.owner)]]).join([, ])\;
 the registry against `lit-ref`'s manifest (#raw(li-meta.campaign.file)): #if li-meta.campaign.checked [checked (#li-meta.campaign.rows rows, #li-meta.campaign.ids ids)] else [#li-meta.campaign.reason].
+
+*@fig:gate* places each row's batched full-colour value of @tab:summary (dots) against the providers (diamonds, the
+darkest the fastest) and the gate limit (red bar, the shaded side fails; grey bar: the limit of a process below 5 ms,
+not gated; dotted line: 5 ms), for the rows with a matched provider.
 
 *@tab:gate* lists, for every row of @tab:summary timed at $B = 128$, the numbers its gate chip and stage bar summarise:
 the binding limit and its provider, the uncertainty band of time ÷ limit (the standard error of pyAmpliCol's median over

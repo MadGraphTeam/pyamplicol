@@ -8,12 +8,14 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 128,
    "seconds_per_point": 0.0002904415232478641,
+   "host": "itphlies",
    "generation": {
     "seconds": 4.174765669973567,
-    "peak_gib": 0.505,
+    "probes_seconds": 4.705985540058464,
+    "peak_gib": 0.563,
     "plan_mb": 0.01
    },
-   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_h.json, fixture li_gg_h): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 4.7 s not included)"
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_h.json, fixture li_gg_h): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export + the double-double generation-time probes (induced.generation_probes, same run); peak over the three: the probe phase's 0.563 GiB from lit-amp-b's re-run of the same steps on core 270, 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/lit-amp-b-probe-peak/gg_h.json; the M-LIT-a run kept no probe peak)"
   },
   {
    "key": "gg_h",
@@ -23,6 +25,7 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 1,
    "seconds_per_point": 0.0009683190146461129,
+   "host": "itphlies",
    "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_h.json, fixture li_gg_h): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
   },
   {
@@ -33,12 +36,14 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 128,
    "seconds_per_point": 0.0003109983354079304,
+   "host": "itphlies",
    "generation": {
     "seconds": 4.121870510047302,
-    "peak_gib": 0.508,
+    "probes_seconds": 4.67211408005096,
+    "peak_gib": 0.563,
     "plan_mb": 0.01
    },
-   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/h_gg.json, fixture li_h_gg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 4.7 s not included)"
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/h_gg.json, fixture li_h_gg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export + the double-double generation-time probes (induced.generation_probes, same run); peak over the three: the probe phase's 0.563 GiB from lit-amp-b's re-run of the same steps on core 270, 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/lit-amp-b-probe-peak/h_gg.json; the M-LIT-a run kept no probe peak)"
   },
   {
    "key": "h_gg",
@@ -48,6 +53,7 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 1,
    "seconds_per_point": 0.0010003340430557728,
+   "host": "itphlies",
    "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/h_gg.json, fixture li_h_gg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
   },
   {
@@ -58,12 +64,14 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 128,
    "seconds_per_point": 0.005464409710839391,
+   "host": "itphlies",
    "generation": {
     "seconds": 5.917645844863728,
-    "peak_gib": 0.578,
+    "probes_seconds": 10.391121555119753,
+    "peak_gib": 0.701,
     "plan_mb": 0.021
    },
-   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_aa.json, fixture li_gg_aa): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 10.4 s not included)"
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_aa.json, fixture li_gg_aa): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export + the double-double generation-time probes (induced.generation_probes, same run); peak over the three: the probe phase's 0.701 GiB from lit-amp-b's re-run of the same steps on core 270, 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/lit-amp-b-probe-peak/gg_aa.json; the M-LIT-a run kept no probe peak)"
   },
   {
    "key": "gg_aa",
@@ -73,6 +81,7 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 1,
    "seconds_per_point": 0.04976920795161277,
+   "host": "itphlies",
    "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_aa.json, fixture li_gg_aa): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
   },
   {
@@ -83,12 +92,14 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 128,
    "seconds_per_point": 0.026851383217945113,
+   "host": "itphlies",
    "generation": {
     "seconds": 6.6462600021623075,
-    "peak_gib": 0.586,
+    "probes_seconds": 14.08322042087093,
+    "peak_gib": 0.783,
     "plan_mb": 0.028
    },
-   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_zz.json, fixture li_gg_zz): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 14.1 s not included)"
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_zz.json, fixture li_gg_zz): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export + the double-double generation-time probes (induced.generation_probes, same run); peak over the three: the probe phase's 0.783 GiB from lit-amp-b's re-run of the same steps on core 270, 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/lit-amp-b-probe-peak/gg_zz.json; the M-LIT-a run kept no probe peak)"
   },
   {
    "key": "gg_zz",
@@ -98,6 +109,7 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 1,
    "seconds_per_point": 0.3195920744910836,
+   "host": "itphlies",
    "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_zz.json, fixture li_gg_zz): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
   },
   {
@@ -108,12 +120,14 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 128,
    "seconds_per_point": 0.0007793467739247717,
+   "host": "itphlies",
    "generation": {
     "seconds": 4.481218135915697,
-    "peak_gib": 0.518,
+    "probes_seconds": 7.415763119934127,
+    "peak_gib": 0.601,
     "plan_mb": 0.01
    },
-   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_hh.json, fixture li_gg_hh): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 7.4 s not included)"
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_hh.json, fixture li_gg_hh): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export + the double-double generation-time probes (induced.generation_probes, same run); peak over the three: the probe phase's 0.601 GiB from lit-amp-b's re-run of the same steps on core 270, 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/lit-amp-b-probe-peak/gg_hh.json; the M-LIT-a run kept no probe peak)"
   },
   {
    "key": "gg_hh",
@@ -123,6 +137,7 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 1,
    "seconds_per_point": 0.003662046045064926,
+   "host": "itphlies",
    "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_hh.json, fixture li_gg_hh): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
   },
   {
@@ -133,12 +148,14 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 128,
    "seconds_per_point": 0.0023914725861686748,
+   "host": "itphlies",
    "generation": {
     "seconds": 4.704800355946645,
-    "peak_gib": 0.518,
+    "probes_seconds": 6.764191007940099,
+    "peak_gib": 0.61,
     "plan_mb": 0.011
    },
-   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_hg.json, fixture li_gg_hg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 6.8 s not included)"
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_hg.json, fixture li_gg_hg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export + the double-double generation-time probes (induced.generation_probes, same run); peak over the three: the probe phase's 0.610 GiB from lit-amp-b's re-run of the same steps on core 270, 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/lit-amp-b-probe-peak/gg_hg.json; the M-LIT-a run kept no probe peak)"
   },
   {
    "key": "gg_hg",
@@ -148,6 +165,7 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 1,
    "seconds_per_point": 0.018160384497605264,
+   "host": "itphlies",
    "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/gg_hg.json, fixture li_gg_hg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
   },
   {
@@ -158,12 +176,14 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 128,
    "seconds_per_point": 0.00037407171112135984,
+   "host": "itphlies",
    "generation": {
     "seconds": 4.7626748769544065,
-    "peak_gib": 0.519,
+    "probes_seconds": 5.142551401164383,
+    "peak_gib": 0.575,
     "plan_mb": 0.01
    },
-   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/uux_hg.json, fixture li_uux_hg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export (double-double generation probes 5.1 s not included)"
+   "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/uux_hg.json, fixture li_uux_hg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 7 B = 128 blocks after a warm-up; generation = LoopSlice.generate + plan export + the double-double generation-time probes (induced.generation_probes, same run); peak over the three: the probe phase's 0.575 GiB from lit-amp-b's re-run of the same steps on core 270, 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/lit-amp-b-probe-peak/uux_hg.json; the M-LIT-a run kept no probe peak)"
   },
   {
    "key": "uux_hg",
@@ -173,6 +193,7 @@
    "native_digest": "5bfdbad8dfdf091e035929acc3a7829302b88d733eadb5a27d9ab0c29f3e48e3",
    "batch": 1,
    "seconds_per_point": 0.0011761250207200646,
+   "host": "itphlies",
    "source": "M-LIT-a integrator run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlita-li/uux_hg.json, fixture li_uux_hg): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, one thread pinned to idle core 340, NinjaRS per amplitude (route R1, TIRust not landed); fixture points cycled; median of 32 single-point calls"
   }
  ]
