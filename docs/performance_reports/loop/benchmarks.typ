@@ -1,8 +1,9 @@
 // pyAmpliCol one-loop benchmarks: the essentials (user 2026-11-06 ~13:25:
 // "keep this document to the essential with mostly just the relevant
 // tables"). Table 1 (Born-interfered processes), Table 2 (loop-induced
-// processes), Figure 1 (Table 1 against the gate), Table 3 (the numbers behind
-// Table 1's gate chips and stage bars) and how to read them: the newest
+// processes), Figure 1 (Table 1 and the timed loop-induced rows of Table 2
+// against the gate), Table 3 (the numbers behind Table 1's gate chips and
+// stage bars) and how to read them: the newest
 // measurement of each cell only, no history, no milestone narrative, one
 // provenance line per table. Every value comes from data/summary.json and
 // data/summary-li.json, which scripts/build_summary.py writes from the
@@ -706,55 +707,91 @@
 ) <tab:summary-li>
 
 // Figure 1: the batched full-colour time of each G1 row against its gate
-// limit and the providers, on a log scale (data/summary.json).
-#let fig-lo = calc.log(0.0005, base: 10)
-#let fig-hi = calc.log(1000.0, base: 10)
+// limit and the providers, on a log scale (data/summary.json), and beneath
+// them the loop-induced rows of Table 2 with a pyAmpliCol time and a matched
+// provider time, pyAmpliCol as a diamond (USER 2026-11-07 ~10:40;
+// data/summary-li.json figure, scripts/build_summary.py li_figure).
+#let fig-rows = all-rows.filter(r => r.full_colour.at("fastest", default: none) != none)
+#let fig-li = LI.at("figure", default: (rows: (), not_drawn: (:)))
+// The axis: 0.5 ms to 1000 s, widened where a drawn time (with its marker's
+// room) falls outside; ticks at the whole decades inside.
+#let fig-times = (
+  fig-rows.map(r => {
+    let c = r.full_colour
+    let provs = c.providers.values().map(x => if "seconds_per_point" in x { x.seconds_per_point } else if "outside_protocol" in x and "production_upper_bound" in x.outside_protocol { x.outside_protocol.seconds_per_point } else { none })
+    let g = c.main.at("gate", default: none)
+    (if c.main.status == "measured" { c.main.seconds_per_point }, if g != none { g.limit_seconds }, ..provs)
+  }).flatten()
+  + fig-li.rows.map(f => (f.seconds_per_point, if f.limit != none { f.limit.seconds } else { none }, ..f.providers.values())).flatten()
+).filter(t => t != none)
+#let fig-lo = calc.log(calc.min(0.0005, ..fig-times.map(t => t / 1.2)), base: 10)
+#let fig-hi = calc.log(calc.max(1000.0, ..fig-times.map(t => t * 1.2)), base: 10)
 #let fig-w = 11.2cm
 #let fig-h = 8pt
 #let xpos(t) = fig-w * (calc.log(t, base: 10) - fig-lo) / (fig-hi - fig-lo)
-#let fig-ticks = ((0.001, [1 ms]), (0.01, [10 ms]), (0.1, [100 ms]), (1.0, [1 s]), (10.0, [10 s]), (100.0, [100 s]))
-#let fig-rows = all-rows.filter(r => r.full_colour.at("fastest", default: none) != none)
+#let fig-tick-label(e) = if e < -3 [#fixed(calc.pow(10.0, e + 3), -e - 3)~ms] else if e < 0 [#calc.pow(10, e + 3)~ms] else [#calc.pow(10, e)~s]
+#let fig-ticks = range(calc.ceil(fig-lo), calc.ceil(fig-hi)).map(e => (calc.pow(10.0, e), fig-tick-label(e)))
 #let fig-dot(fill: none, stroke: none) = circle(radius: 2.9pt, fill: fill, stroke: stroke)
+// pyAmpliCol's marker on a loop-induced row (Table 2): a diamond, larger
+// than the providers' and in pyAmpliCol's colour.
+#let fig-li-mark = rotate(45deg, square(size: 5pt, fill: navy, stroke: 0.6pt + white))
+// One bar: the decade ticks, the gate limit (`limit`, seconds; grey where
+// `grey`: below 5 ms, not gated), the 5 ms line, the provider diamonds
+// (`provs`: seconds, fastest, outside-protocol upper bound) and pyAmpliCol's
+// marker (`mark`, `size` wide) at `t`.
+#let fig-bar(t, provs, limit, grey, mark, size) = box(width: fig-w, height: fig-h, {
+  for (x, _) in fig-ticks { place(dx: xpos(x), line(start: (0pt, 0pt), end: (0pt, fig-h), stroke: 0.4pt + luma(222))) }
+  place(dy: fig-h / 2, line(start: (0pt, 0pt), end: (fig-w, 0pt), stroke: 0.4pt + luma(205)))
+  if limit != none and grey {
+    // Below 5 ms per point: no blocking gate (user rule), the limit grey.
+    place(dx: xpos(limit) - 0.6pt, rect(width: 1.2pt, height: fig-h, fill: luma(150), stroke: none))
+  } else if limit != none {
+    let xl = xpos(limit)
+    place(dx: xl, rect(width: fig-w - xl, height: fig-h, fill: slow-red.transparentize(86%), stroke: none))
+    place(dx: xl - 0.7pt, rect(width: 1.4pt, height: fig-h, fill: fail-ink, stroke: none))
+  }
+  place(dx: xpos(thr-rule.below_seconds_per_point), line(start: (0pt, 0pt), end: (0pt, fig-h), stroke: (paint: luma(110), thickness: 0.6pt, dash: "dotted")))
+  for p in provs {
+    let ink = if p.fast { luma(40) } else { luma(165) }
+    place(dx: xpos(p.seconds) - 2.4pt, dy: fig-h / 2 - 2.4pt,
+      rotate(45deg, if p.bound { square(size: 3.4pt, fill: white, stroke: 0.9pt + ink) } else { square(size: 3.4pt, fill: ink, stroke: 0.4pt + white) }))
+  }
+  if t != none { place(dx: xpos(t) - size / 2, dy: fig-h / 2 - size / 2, mark) }
+})
 // One value per row: Table 1's main value (the most recent configuration).
 #let fig-row(r) = {
   let c = r.full_colour
   let m = c.main
   let g = m.at("gate", default: none)
-  box(width: fig-w, height: fig-h, {
-    for (t, _) in fig-ticks { place(dx: xpos(t), line(start: (0pt, 0pt), end: (0pt, fig-h), stroke: 0.4pt + luma(222))) }
-    place(dy: fig-h / 2, line(start: (0pt, 0pt), end: (fig-w, 0pt), stroke: 0.4pt + luma(205)))
-    if g != none and g.status == thr-rule.verdict {
-      // Below 5 ms per point: no blocking gate (user rule), the limit grey.
-      place(dx: xpos(g.limit_seconds) - 0.6pt, rect(width: 1.2pt, height: fig-h, fill: luma(150), stroke: none))
-    } else if g != none {
-      let xl = xpos(g.limit_seconds)
-      place(dx: xl, rect(width: fig-w - xl, height: fig-h, fill: slow-red.transparentize(86%), stroke: none))
-      place(dx: xl - 0.7pt, rect(width: 1.4pt, height: fig-h, fill: fail-ink, stroke: none))
-    }
-    place(dx: xpos(thr-rule.below_seconds_per_point), line(start: (0pt, 0pt), end: (0pt, fig-h), stroke: (paint: luma(110), thickness: 0.6pt, dash: "dotted")))
-    for (k, x) in c.providers.pairs() {
-      let fast = k == c.fastest.key
-      if "seconds_per_point" in x {
-        place(dx: xpos(x.seconds_per_point) - 2.4pt, dy: fig-h / 2 - 2.4pt,
-          rotate(45deg, square(size: 3.4pt, fill: if fast { luma(40) } else { luma(165) }, stroke: 0.4pt + white)))
-      } else if "outside_protocol" in x and "production_upper_bound" in x.outside_protocol {
-        place(dx: xpos(x.outside_protocol.seconds_per_point) - 2.4pt, dy: fig-h / 2 - 2.4pt,
-          rotate(45deg, square(size: 3.4pt, fill: white, stroke: 0.9pt + if fast { luma(40) } else { luma(165) })))
-      }
-    }
-    if m.status == "measured" { place(dx: xpos(m.seconds_per_point) - 2.9pt, dy: fig-h / 2 - 2.9pt, fig-dot(fill: navy, stroke: 0.6pt + white)) }
-  })
+  let provs = c.providers.pairs().map(((k, x)) => {
+    if "seconds_per_point" in x { (seconds: x.seconds_per_point, fast: k == c.fastest.key, bound: false) }
+    else if "outside_protocol" in x and "production_upper_bound" in x.outside_protocol { (seconds: x.outside_protocol.seconds_per_point, fast: k == c.fastest.key, bound: true) }
+  }).filter(p => p != none)
+  fig-bar(if m.status == "measured" { m.seconds_per_point }, provs, if g != none { g.limit_seconds }, g != none and g.status == thr-rule.verdict,
+    fig-dot(fill: navy, stroke: 0.6pt + white), 5.8pt)
 }
+// A loop-induced row (summary-li.json figure): its providers' production
+// times and, where gated, its gate limit.
+#let fig-li-row(f) = fig-bar(f.seconds_per_point,
+  f.providers.pairs().map(((k, s)) => (seconds: s, fast: k == f.fastest, bound: false)),
+  if f.limit != none { f.limit.seconds }, f.gate.status == thr-rule.verdict, fig-li-mark, 5pt)
+#let fig-label(math, corrections) = box[#text(7.8pt, font: "Libertinus Serif", math-label(math))#if corrections != "QCD" [ #text(6.6pt, fill: ink2)[(#corrections)]]]
+#let fig-li-missing = fig-li.not_drawn.values().map(v => v.len()).sum(default: 0)
 #figure(
-  caption: [*Batched full colour against the gate* (finite part, $B = 128$; the rows of @tab:summary with a matched provider).],
+  caption: [*Batched full colour against the gate* (finite part, $B = 128$; the rows of @tab:summary with a matched provider and, as diamonds, the rows of @tab:summary-li with a pyAmpliCol time and a matched provider time).],
   {
     set text(7pt, font: sans, stretch: 87.5%)
     grid(columns: (3.2cm, fig-w, 1fr), column-gutter: 6pt, row-gutter: 1.6pt, align: (right + horizon, left + horizon, left + horizon),
       ..fig-rows.map(r => {
         let m = r.full_colour.main
         let chip = if m.status != "measured" { plain-chip[#status-title(m)] } else if "gate" in m { gate-chip(m.gate) } else { plain-chip[#r.full_colour.gate_rule.replace("->", "→")] }
-        (box[#text(7.8pt, font: "Libertinus Serif", math-label(r.math))#if r.corrections != "QCD" [ #text(6.6pt, fill: ink2)[(#r.corrections)]]], fig-row(r), chip)
+        (fig-label(r.math, r.corrections), fig-row(r), chip)
       }).flatten(),
+      // The loop-induced rows of Table 2, under a rule.
+      ..if fig-li.rows.len() > 0 {
+        (grid.cell(colspan: 3, inset: (top: 1.4pt, bottom: 0.6pt), line(length: 100%, stroke: 0.5pt + luma(190))),
+          ..fig-li.rows.map(f => (fig-label(f.math, f.corrections), fig-li-row(f), li-chip(f.gate))).flatten())
+      } else { () },
       [], box(width: fig-w, height: 9pt, for (t, l) in fig-ticks { place(dx: xpos(t) - 1cm, box(width: 2cm, align(center, text(fill: ink2, l)))) }), [],
     )
     // Compact visual key (its text: "Reading the tables").
@@ -762,12 +799,17 @@
     v(2pt)
     text(fill: ink2, {
       box[#key-mark(place(dx: 1.1pt, dy: 0.6pt, fig-dot(fill: navy, stroke: 0.6pt + white)))#[pyAmpliCol (@tab:summary)]]; h(5pt)
+      box[#key-mark(place(dx: 1.5pt, dy: 1pt, fig-li-mark))#[pyAmpliCol, loop-induced (@tab:summary-li)]]; h(5pt)
       box[#key-mark(place(dx: 1.6pt, dy: 1.2pt, rotate(45deg, square(size: 3.4pt, fill: luma(40), stroke: 0.4pt + white))))#[fastest provider]]; h(5pt)
       box[#key-mark(place(dx: 1.6pt, dy: 1.2pt, rotate(45deg, square(size: 3.4pt, fill: luma(165), stroke: 0.4pt + white))))#[other providers]]; h(5pt)
       box[#key-mark(place(dx: 1.6pt, dy: 1.2pt, rotate(45deg, square(size: 3.4pt, fill: white, stroke: 0.9pt + luma(40)))))#[upper bound (outside protocol)]]; h(5pt)
       box[#key-mark({ place(dx: 1pt, rect(width: 1.4pt, height: 7pt, fill: fail-ink, stroke: none)); place(dx: 2.4pt, rect(width: 5.6pt, height: 7pt, fill: slow-red.transparentize(86%), stroke: none)) })#[gate limit, shaded side fails]]; h(5pt)
       box[#key-mark(place(dx: 3pt, rect(width: 1.2pt, height: 7pt, fill: luma(150), stroke: none)))#[limit, not gated]]; h(5pt)
       box[#key-mark(place(dx: 3.5pt, line(start: (0pt, 0pt), end: (0pt, 7pt), stroke: (paint: luma(110), thickness: 0.6pt, dash: "dotted"))))#[5 ms]]
+      if fig-li-missing > 0 {
+        linebreak()
+        [Not drawn: #fig-li-missing of the #(fig-li.rows.len() + fig-li-missing) rows of @tab:summary-li (#fig-li.not_drawn.pairs().map(((why, keys)) => [#keys.len() #why]).join([, ])).]
+      }
     })
   },
 ) <fig:gate>
@@ -890,7 +932,10 @@ the registry against `lit-ref`'s manifest (#raw(li-meta.campaign.file)): #if li-
 
 *@fig:gate* places each row's batched full-colour value of @tab:summary (dots) against the providers (diamonds, the
 darkest the fastest) and the gate limit (red bar, the shaded side fails; grey bar: the limit of a process below 5 ms,
-not gated; dotted line: 5 ms), for the rows with a matched provider.
+not gated; dotted line: 5 ms), for the rows with a matched provider. Beneath them, under a rule, the rows of
+@tab:summary-li with a batched pyAmpliCol time and a matched provider time, pyAmpliCol as a larger diamond in its
+colour, on the same axis with their providers and, from $2 -> 3$ upward, the gate limit (MadLoop's time and 1.30× each
+other matched provider's, the smallest); the rows without both are not drawn, counted in the key by reason.
 
 *@tab:gate* lists, for every row of @tab:summary timed at $B = 128$, the numbers its gate chip and stage bar summarise:
 the binding limit and its provider, the uncertainty band of time ÷ limit (the standard error of pyAmpliCol's median over
