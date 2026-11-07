@@ -1052,15 +1052,12 @@ def judge(record: dict, entry: dict) -> dict:
             "of": count,
             "tirust_failed_reasons": _reasons(t64),
         },
-        "double-double": {"status": f"waits: {TIR_MP}", "tirust": tdd.get("refused")}
+        "double-double": _high_l6(ndd, tdd)
         if tdd
         else {"status": "not run", "reason": "a binary64-only fixture (its carriers)"},
     }
     if nap is not None:
-        out["L6"][ARBITRARY] = {
-            "status": f"waits: {TIR_MP}",
-            "tirust": arms.get(f"tirust/{ARBITRARY}/plain", {}).get("refused"),
-        }
+        out["L6"][ARBITRARY] = _high_l6(nap, arms.get(f"tirust/{ARBITRARY}/plain", {}))
     # L7 DD vs AP.
     if nap is not None and "points" in nap:
         devs = [
@@ -1110,6 +1107,44 @@ def judge(record: dict, entry: dict) -> dict:
     return out
 
 
+def _high_l6(ninjars: dict, tirust: dict) -> dict:
+    """L6 in double-double / AP: |N - T| <= 1e-24 of the sector's largest
+    coefficient through the one comparison (a target, R5: below ~1e-5 it is
+    recorded, never a failure); TIRust's typed refusal of the carrier (at
+    this pin) is the arm waiting on lit-tir-mp."""
+
+    from tools.loop_v2_observables_backends import _compare
+
+    if "refused" in tirust or "points" not in tirust:
+        return {"status": f"waits: {TIR_MP}", "tirust": tirust.get("refused")}
+    rows, failed = [], 0
+    for n, t in zip(ninjars.get("points", []), tirust["points"], strict=False):
+        if n["status"] != "success" or t["status"] != "success":
+            failed += t["status"] != "success"
+            continue
+        rows.extend(_compare(_entries(n, {"absolute": []}), _entries(t, {"absolute": []}), False))
+    worst = max((r["difference"] / r["bound"] for r in rows if r["bound"]), default=None)
+    relative = max(
+        (
+            r["difference"] / max(abs(float(Decimal(r["ninjars"][0]))), 1e-300)
+            for r in rows
+            if r["coefficient"] == "finite"
+        ),
+        default=None,
+    )
+    strict = all(r["passed"] for r in rows)
+    status = _verdict(strict, relative is None or relative <= LAX) if rows else "not run"
+    if failed:
+        status = _worst([status, "partial"])
+    return {
+        "status": status,
+        "compared_entries": len(rows),
+        "worst_ratio_to_bound": worst,
+        "finite_max_relative": relative,
+        "tirust_failed": failed,
+    }
+
+
 def _entries(point: dict, estimate: dict | None = None) -> list:
     """A record point as the one comparison's entries (``_laurents``'s
     shape: per sector (coefficient, (re, im), absolute estimate))."""
@@ -1117,7 +1152,7 @@ def _entries(point: dict, estimate: dict | None = None) -> list:
     estimate = point["estimate"] if estimate is None else estimate
     out = []
     for s, sector in enumerate(point["values"]):
-        errors = estimate["absolute"][s] if estimate else None
+        errors = estimate["absolute"][s] if estimate and estimate["absolute"] else None
         out.append(
             [
                 (
