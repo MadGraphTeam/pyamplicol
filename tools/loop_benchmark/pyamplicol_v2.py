@@ -1702,7 +1702,12 @@ def main(options: Any) -> int:
         raise SystemExit(
             f"{options.store} exists: a stored process is never overwritten"
         )
-    record = Run(options).run()
+    from pyamplicol.loops.v2.reduction import running
+
+    backend = getattr(options, "reduction", "ninjars")
+    with running(backend):
+        record = Run(options).run()
+    record["reduction"] = backend
     if options.json:
         options.json.parent.mkdir(parents=True, exist_ok=True)
         options.json.write_text(json.dumps(record, indent=1) + "\n")
