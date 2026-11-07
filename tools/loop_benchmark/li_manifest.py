@@ -274,32 +274,45 @@ def _toml(value: Any) -> str:
     return json.dumps(value)
 
 
-def known_parameters(data: dict, cache: Path) -> set[str]:
-    """The external parameters of a fixture's model (compiled once into the
-    model cache ``cache``): the fixture's fixed and run-time parameters the
-    model does not declare (e.g. a width of a particle the model's
-    restriction removed) are not passed (as the loop-induced tests do)."""
+def compile_model(data: dict, cache: Path) -> Any:
+    """A fixture's model, compiled once into the model cache ``cache``: its
+    external parameters filter the fixture's fixed and run-time parameters
+    (a parameter the model does not declare, e.g. a width of a particle its
+    restriction removed, is not passed, as the loop-induced tests do) and
+    its particle names spell the process (by PDG code)."""
 
     from pyamplicol.models.loading import compile_model_source
 
     source, restriction, _ = _model(data["scheme_data"])
-    compiled = compile_model_source(
+    return compile_model_source(
         source,
         restriction=restriction or "default",
         require_supported=False,
         cache_dir=cache,
     )
-    return set(compiled.parameter_defaults)
 
 
-def card(data: dict, output: Path, known: set[str], name: str = "p") -> str:
+def expression(data: dict, compiled: Any) -> str:
+    """The fixture's process in the model's particle names (by PDG code)."""
+
+    names = {int(r.pdg_code): str(r.name) for r in compiled.ir.particles}
+    pdgs, initial = data["pdgs"], data["initial"]
+    return (
+        " ".join(names[pdg] for pdg in pdgs[:initial])
+        + " > "
+        + " ".join(names[pdg] for pdg in pdgs[initial:])
+    )
+
+
+def card(
+    data: dict, output: Path, known: set[str], process: str, name: str = "p"
+) -> str:
     """The generation card of a fixture: its model, correction (MadLoop's
     ``[sqrvirt=...]``), order limits (``X=n`` tokens), particle veto (``/
     x``), fixed parameters the model declares (``known``) and mass scheme
     (``complex_mass_scheme``)."""
 
     madloop = data["madloop_process"]
-    process = _norm(madloop)
     correction = re.search(r"\[\s*sqrvirt\s*=\s*(\w+)\s*\]", madloop).group(1)
     limits = {
         m.group(1): int(m.group(2))
@@ -345,7 +358,7 @@ def card(data: dict, output: Path, known: set[str], name: str = "p") -> str:
     return "\n".join(lines) + "\n"
 
 
-def generate(name: str, work: Path, known: set[str]) -> tuple[Path, dict]:
+def generate(name: str, work: Path, compiled: Any) -> tuple[Path, dict]:
     """The fixture's loop-induced artifact through the public ``Generator``
     (kept in ``work / name / "artifact"`` and re-used), with its generation
     record: seconds and the artifact's generation-time probe record."""
@@ -360,10 +373,11 @@ def generate(name: str, work: Path, known: set[str]) -> tuple[Path, dict]:
     if not (output / "artifact.json").is_file():
         root.mkdir(parents=True, exist_ok=True)
         path = root / "card.toml"
-        path.write_text(card(data, output, known))
+        process = expression(data, compiled)
+        path.write_text(card(data, output, set(compiled.parameter_defaults), process))
         start = time.perf_counter()
         Generator(resolve_config(path)).generate(
-            ProcessSet((ProcessRequest.parse(_norm(data["madloop_process"]), name="p"),)),
+            ProcessSet((ProcessRequest.parse(process, name="p"),)),
             output,
         )
         seconds = time.perf_counter() - start
@@ -515,8 +529,9 @@ def evaluate(
     from pyamplicol import Runtime
 
     data = fixture(name)
-    known = known_parameters(data, work / "model-cache")
-    artifact, generation = generate(name, work, known)
+    compiled = compile_model(data, work / "model-cache")
+    known = set(compiled.parameter_defaults)
+    artifact, generation = generate(name, work, compiled)
     fixed = data["scheme_data"]["fixed_parameters"]
     parameters = {
         k: v
