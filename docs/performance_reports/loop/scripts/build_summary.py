@@ -2387,12 +2387,24 @@ def _preliminary() -> dict | None:
 #                         records (development records under the §5.1
 #                         protocol until lit-perf's gate tool writes them):
 #                         {"records": [{"key", "revision", "backend"
-#                         ("tirust" | "ninjars"), "batch", "seconds_per_point"
-#                         (median, finite part, one pinned thread, checks
-#                         off), "host", "generation": {"seconds" (generate +
-#                         plan export), "probes_seconds" (the mandatory
-#                         generation-time double-double probes, m-lit Q12),
-#                         "peak_gib" (over generate, export and probes),
+#                         ("tirust" | "ninjars": the effective backend),
+#                         "requested"? ("auto" | "ninjars" | "tirust": the
+#                         backend the timed calls requested, as the runtime
+#                         resolves a call; with "effective" and "reason" as
+#                         returned), "batch", "seconds_per_point" (median,
+#                         finite part, one pinned thread, checks off; only a
+#                         record that served every point of every block has
+#                         one), "failed_points"? (per block, the points the
+#                         call failed closed, plan_export.FailedPoints),
+#                         "served_fraction"?, "failure_causes"? ({cause:
+#                         failed points}), "whole_call_seconds_per_point"?
+#                         (a call that failed points, timed whole: not a
+#                         served-point time), "refused"? (a typed refusal of
+#                         the request: no time), "host", "generation":
+#                         {"seconds" (generate + the exact helicity-zero
+#                         filter + plan export), "probes_seconds" (the
+#                         mandatory generation-time double-double probes,
+#                         m-lit Q12), "peak_gib" (over all of them),
 #                         "plan_mb"?}?, "native_build"?, "source", "gate"?
 #                         (lit-perf: {"status", "ratio_to_limit", "band"})}]};
 #   lit-ref's provider timings: the manifest tools/loop_reference/
@@ -2412,16 +2424,22 @@ def _preliminary() -> dict | None:
 # fill. The rules are Table 1's: the newest measurement of a row (by git
 # ancestry of the record revisions, Recency), nothing estimated or
 # extrapolated, a value without a record stays absent with an explicit
-# marker; the cell is the batched B = 128 time per point on the default
-# backend (TIRust), NinjaRS per amplitude (labelled) where only NinjaRS is
-# timed at the row's newest revision; the ratio to the fastest matched
+# marker; the cell is the batched B = 128 time per point of the record the
+# backend "auto" serves at the row's newest revision (its effective backend
+# labelled; records before the "requested" field: the default backend
+# TIRust first, NinjaRS per amplitude labelled where only NinjaRS is timed),
+# never a record with failed points; the other backend's B = 128 record is
+# shown beside it with its served fraction and the recorded cause of its
+# failed points (its time per point only when it served every point); the
+# ratio to the fastest matched
 # provider colours the cell (Table 1's colour map); generation is
 # uncoloured; rows of four legs or fewer are reported (no gate); below the
 # 5 ms rule a row is not gated; gate verdicts only from lit-perf's records
 # (before them: "no verdict yet"). The generation cell is the full production
-# `generate` cost: generate + plan export + the generation-time probes, which
-# run for every loop-induced process (m-lit Q12; their share is shown); a
-# record without its probe time is "not recorded" (never a partial cost).
+# `generate` cost: generate + the exact helicity-zero filter + plan export +
+# the generation-time probes, which run for every loop-induced process (m-lit
+# Q10, Q12; the probes' share is shown); a record without its probe time is
+# "not recorded" (never a partial cost).
 LI_TIMING = "li-timing.json"
 LI_VALIDATION = "lit.json"
 LI_CAMPAIGN = Path("tools") / "loop_reference" / "li_campaign.json"
@@ -2444,11 +2462,17 @@ LI_RULE = (
     "every row of the registry (milestone.json loop_induced, PLAN §4.1"
     " process rows) by multiplicity; the cell is the newest record's"
     " batched B = 128 time per point (git ancestry of the record"
-    " revisions) on the default backend TIRust, NinjaRS per amplitude"
-    " labelled where only NinjaRS is timed at that revision; the ratio to"
+    " revisions) of the backend 'auto' serves at that revision (its"
+    " effective backend labelled; records without a request: the default"
+    " backend TIRust first, NinjaRS per amplitude labelled where only"
+    " NinjaRS is timed), never a record with failed points; the other"
+    " backend beside it with its served fraction and the recorded cause of"
+    " its failed points, its time only where it served every point; the"
+    " ratio to"
     " the fastest matched provider (production mode) colours it; generation"
-    " = the full production generate cost (generate + plan export + the"
-    " mandatory generation-time probes, their share shown), uncoloured;"
+    " = the full production generate cost (generate + the exact"
+    " helicity-zero filter + plan export + the mandatory generation-time"
+    " probes, their share shown), uncoloured;"
     " every record names its host; four legs or fewer reported, below the"
     " 5 ms rule not"
     " gated, gate verdicts only from lit-perf's records; a row whose serving"
@@ -2719,17 +2743,18 @@ def _li_records(
                 f"{LI_TIMING} record of {row['key']}: backend {r['backend']}"
                 f" is not one of the row's {row['backends']}"
             )
+        _li_check_record(r)
     if not recs:
         return []
     newest = recency.newest_first([r["revision"][:8] for r in recs])[0]
     recs = [r for r in recs if r["revision"][:8] == newest]
     seen = set()
     for r in recs:
-        cell = (r["backend"], int(r["batch"]))
+        cell = (r.get("requested", r["backend"]), r["backend"], int(r["batch"]))
         if cell in seen:
             raise ValueError(
                 f"{LI_TIMING}: two records of {row['key']} at {newest} with"
-                f" backend {cell[0]} and B = {cell[1]}"
+                f" request {cell[0]}, backend {cell[1]} and B = {cell[2]}"
             )
         seen.add(cell)
     gate = int(GATE_BATCH)
@@ -2742,6 +2767,112 @@ def _li_records(
             int(r["batch"]),
         ),
     )
+
+
+def _li_check_record(r: dict) -> None:
+    """A timing record's request and outcome are consistent: an explicit
+    request is its own effective backend (never a silent switch); a
+    record that failed points (``failed_points``, per block) or was refused
+    carries no time per point (its call was timed whole: not a served-point
+    time), and its served fraction is the one its failed points give."""
+
+    src = f"{LI_TIMING} record of {r['key']} at {r['revision'][:8]}"
+    requested = r.get("requested")
+    if requested is not None:
+        if requested != "auto" and requested not in LI_BACKENDS:
+            raise ValueError(f"{src}: unknown request {requested!r}")
+        if requested != "auto" and requested != r["backend"]:
+            raise ValueError(
+                f"{src}: {requested!r} was requested but {r['backend']!r} ran"
+            )
+    if r.get("effective", r["backend"]) != r["backend"]:
+        raise ValueError(f"{src}: effective {r['effective']!r} is not its backend")
+    failed = r.get("failed_points") or []
+    if (r.get("refused") or any(failed)) and "seconds_per_point" in r:
+        raise ValueError(
+            f"{src}: a refused call or one with failed points has no time per point"
+        )
+    if not r.get("refused") and not any(failed) and "seconds_per_point" not in r:
+        raise ValueError(f"{src}: a served record without its time per point")
+    if failed and "served_fraction" in r:
+        fraction = 1 - sum(failed) / (int(r["batch"]) * len(failed))
+        if abs(fraction - r["served_fraction"]) > 1e-12:
+            raise ValueError(
+                f"{src}: served fraction {r['served_fraction']} is not its"
+                f" failed points' {fraction}"
+            )
+
+
+def _li_served(r: dict) -> bool:
+    """Whether a timing record served every point of every block."""
+
+    return "seconds_per_point" in r
+
+
+def _li_main(batched: list[dict], default: str) -> tuple[dict | None, dict | None]:
+    """(the cell's record, the record that names the request's outcome)
+    among the B = 128 records of a revision (``_li_records``' order): the
+    record of the backend "auto" serves (``requested == "auto"``) when one
+    was taken, else (records before the request field, or explicit
+    requests only) the first served one, the default backend first; never
+    a record with failed points or a refusal (None, with the "auto"
+    record that failed or was refused)."""
+
+    auto = [r for r in batched if r.get("requested") == "auto"]
+    if auto:
+        return (auto[0] if _li_served(auto[0]) else None), auto[0]
+    served = [r for r in batched if _li_served(r)]
+    return (served[0] if served else None), (served[0] if served else batched[0])
+
+
+def _li_failed(r: dict) -> dict:
+    """The outcome of a B = 128 record that did not serve every point: the
+    refusal, or the points failed closed per block of the batch, the
+    served fraction and the recorded causes (``failure_causes``; a call
+    that failed points was timed whole and has no time per point)."""
+
+    if r.get("refused"):
+        return {"status": "refused", "reason": r["refused"], "label": "refused"}
+    failed = r["failed_points"]
+    batch = int(r["batch"])
+    causes = dict(r.get("failure_causes") or {})
+    low, high = min(failed), max(failed)
+    count = str(low) if low == high else f"{low}-{high}"
+    label = (
+        f"failed closed on every point ({batch}/{batch})"
+        if low == batch
+        else f"{count}/{batch} failed closed"
+    )
+    return {
+        "status": "failed closed",
+        "batch": batch,
+        "blocks": len(failed),
+        "failed_points": [low, high],
+        "served_fraction": 1 - sum(failed) / (batch * len(failed)),
+        "every_point": low == batch,
+        "causes": causes,
+        # The cell's words: the points failed closed per block of the batch
+        # and the recorded causes.
+        "label": ", ".join([label, *causes]),
+    }
+
+
+def _li_other(r: dict) -> dict:
+    """The other backend's B = 128 record beside the cell: its request,
+    its time per point only where it served every point, else its served
+    fraction and causes (``_li_failed``)."""
+
+    out = {
+        "backend": r["backend"],
+        "backend_label": LI_BACKENDS[r["backend"]],
+        "requested": r.get("requested", r["backend"]),
+    }
+    if _li_served(r):
+        out.update(status="served", served_fraction=1.0)
+        out["seconds_per_point"] = r["seconds_per_point"]
+    else:
+        out.update(_li_failed(r))
+    return out
 
 
 def _li_gate(row: dict, t: float, rec: dict, prov: dict, rule: dict) -> dict:
@@ -2832,11 +2963,13 @@ def _li_cells(
         }
         out["generation"], out["timing"] = dict(missing), dict(missing)
         return out
-    main = recs[0]
-    src = (
-        f"{LI_TIMING} records[{row['key']}, {main['backend']}, {main['revision'][:8]}]"
-    )
-    gen = main.get("generation")
+    gate = int(GATE_BATCH)
+    batched = [r for r in recs if int(r["batch"]) == gate]
+    main, named = _li_main(batched, default) if batched else (recs[0], recs[0])
+    first = main or named
+    at = f"{row['key']}, {first['backend']}, {first['revision'][:8]}"
+    src = f"{LI_TIMING} records[{at}]"
+    gen = first.get("generation")
     if gen is None:
         out["generation"] = {
             "status": "not recorded",
@@ -2861,14 +2994,14 @@ def _li_cells(
             "probe_share": gen["probes_seconds"] / total if total else 0.0,
             "peak_gib": gen["peak_gib"],
             "plan_mb": gen.get("plan_mb"),
-            "revision": main["revision"][:8],
-            "host": main["host"],
+            "revision": first["revision"][:8],
+            "host": first["host"],
             "source": f"{src}.generation",
         }
         fg = prov.get("fastest_generation")
         if fg is not None:
             out["generation"]["ratio_to_fastest"] = total / fg["seconds"]
-    if int(main["batch"]) != int(GATE_BATCH):
+    if not batched:
         # No B = 128 record at the newest revision (Table 1's rule): no
         # batched cell, the batches timed named.
         timed = sorted({int(r["batch"]) for r in recs})
@@ -2876,7 +3009,20 @@ def _li_cells(
             "status": _no_gate_batch({"batches": timed}),
             "reason": f"timed B = {', '.join(map(str, timed))} only",
             "timed_batches": timed,
-            "revision": main["revision"][:8],
+            "revision": first["revision"][:8],
+            "source": src,
+        }
+        return out
+    if main is None:
+        # The request's record failed points or was refused: never a cell
+        # (status "failed closed" or "refused", with its fraction, causes or
+        # reason).
+        out["timing"] = {
+            **_li_failed(named),
+            "requested": named.get("requested", named["backend"]),
+            "backend": named["backend"],
+            "backend_label": LI_BACKENDS[named["backend"]],
+            "revision": named["revision"][:8],
             "source": src,
         }
         return out
@@ -2894,17 +3040,15 @@ def _li_cells(
         "host": main["host"],
         "source": src,
     }
-    other = [
-        r
-        for r in recs[1:]
-        if int(r["batch"]) == int(GATE_BATCH) and r["backend"] != main["backend"]
-    ]
+    if "requested" in main:
+        # The request as the runtime resolved it (requested, reason).
+        cell["requested"] = main["requested"]
+        cell["reason"] = main.get("reason")
+    other = [r for r in batched if r["backend"] != main["backend"]]
     if other:
-        cell["other_backend"] = {
-            "backend": other[0]["backend"],
-            "backend_label": LI_BACKENDS[other[0]["backend"]],
-            "seconds_per_point": other[0]["seconds_per_point"],
-        }
+        # An explicit request of the other backend before an "auto" one.
+        other.sort(key=lambda r: r.get("requested") == "auto")
+        cell["other_backend"] = _li_other(other[0])
     fastest = prov.get("fastest")
     if fastest is not None:
         cell["ratio_to_fastest"] = t / fastest["seconds_per_point"]
