@@ -12,8 +12,8 @@ every later milestone push. The report holds, in this order:
 | Label | Content | Why it is there |
 |---|---|---|
 | `<tab:summary>` | **Table 1**, Born-interfered one-loop processes, on the first pages | the summary table (user 2026-10-24) |
-| `<fig:gate>` | **Figure 1**, Table 1's batched full-colour times against the providers and the gate limit (log scale) | the only view of how far each row is from its limit |
 | `<tab:summary-li>` | **Table 2**, loop-induced processes (\|A_loop\|²), Table 1's rules | the loop-induced summary table (user 2026-11-06 ~06:00) |
+| `<fig:gate>` | **Figure 1**, Table 1's batched full-colour times against the providers and the gate limit (log scale) | the only view of how far each row is from its limit |
 | `<tab:gate>` | **Table 3**, gate and stage split at B = 128: limit, binding provider, band, chip, ms per stage | the numbers behind Table 1's gate chips and stage bars (the table view of Figure 1 and of the bars) |
 | `<reading>` | "Reading the tables": one paragraph per table and marker | the explanations the summary pages leave out |
 
@@ -22,7 +22,10 @@ data (earlier retimes, older milestones' records, superseded comparisons,
 development history), milestone descriptions and narratives (status pages,
 "what changed"), capability matrices, campaign appendices and architecture
 text. Each table states its provenance in one line, its first row (engine
-revision, native build and digest, host, date). The report reads only
+revision, native build and digest, host, date); the running header and the
+page-1 subtitle name the report's date and newest measured engine revision
+and label Table 1's configuration as Table 1's (`summary.json`
+`meta.report`). The report reads only
 `data/summary.json` and `data/summary-li.json`;
 `tests/unit/test_performance_report_policy.py` checks these rules on the
 source.
@@ -43,8 +46,9 @@ The table rules:
   on one side of 1, else open; taken at B = 128 only (user 2026-10-28);
   below 5 ms per point not gated (user 2026-10-24); 2 → 2 not gated;
 - Table 2: the default backend TIRust, NinjaRS per amplitude labelled where TIR
-  does not serve the row yet; rows of four legs or fewer reported without a
-  gate; *pending* where the serving package has not landed or the input file
+  does not serve the row yet; generation is the full production `generate`
+  cost, the mandatory generation-time probes included (their share shown);
+  rows of four legs or fewer reported without a gate; *pending* where the serving package has not landed or the input file
   does not exist yet, *not run* for a landed package without a record.
 
 ## Build
@@ -80,15 +84,20 @@ repeats part of an older, more complete one leaves the older in the cell
 (`VALIDATION_RULE`); a generation multiplier pairs values timed under the same
 kind of conditions (`GENERATION_RULE`). `meta.configurations` gives each
 configuration's revision, native build and digest, date and the rows it
-supplies; `meta.host` and `meta.date` the G1 host and date.
+supplies; `meta.host` and `meta.date` the G1 host and date; `meta.report` the
+report's date (`milestone.json` `date`) and the newest revision of the
+measured cells of both tables (`report_meta`, by the recorded ancestry).
 
 **Loop-induced table** (`build_loop_induced`): the row registry
 `milestone.json` `loop_induced` (every process row of `m-lit/PLAN.md` §4.1 by
 multiplicity group, ids, gate class, references, serving package; `landed`),
 checked against `lit-ref`'s manifest `tools/loop_reference/li_campaign.json`;
 pyAmpliCol's records `data/li-timing.json` (per record `key`, `revision`,
-`backend` `tirust` or `ninjars`, `batch`, `seconds_per_point`, `generation`
-`{seconds, peak_gib, plan_mb}`, `source`, optional `native_build`,
+`backend` `tirust` or `ninjars`, `batch`, `seconds_per_point`, `host`,
+`generation` `{seconds` (generate + plan export), `probes_seconds` (the
+generation-time probes), `peak_gib` (over the three), `plan_mb}`; the cell is
+their sum, a record without `probes_seconds` is "not recorded"), `source`,
+optional `native_build`,
 `native_digest` (the provenance line) and, from `lit-perf` on, `gate`); the
 providers' production timing records the manifest names (below
 `tests/fixtures/loop/`, MadLoop at its loop-induced card `MLReductionLib

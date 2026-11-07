@@ -2385,7 +2385,10 @@ def _preliminary() -> dict | None:
 #                         {"records": [{"key", "revision", "backend"
 #                         ("tirust" | "ninjars"), "batch", "seconds_per_point"
 #                         (median, finite part, one pinned thread, checks
-#                         off), "generation": {"seconds", "peak_gib",
+#                         off), "host", "generation": {"seconds" (generate +
+#                         plan export), "probes_seconds" (the mandatory
+#                         generation-time double-double probes, m-lit Q12),
+#                         "peak_gib" (over generate, export and probes),
 #                         "plan_mb"?}?, "native_build"?, "source", "gate"?
 #                         (lit-perf: {"status", "ratio_to_limit", "band"})}]};
 #   lit-ref's provider timings: the manifest tools/loop_reference/
@@ -2411,7 +2414,10 @@ def _preliminary() -> dict | None:
 # provider colours the cell (Table 1's colour map); generation is
 # uncoloured; rows of four legs or fewer are reported (no gate); below the
 # 5 ms rule a row is not gated; gate verdicts only from lit-perf's records
-# (before them: "no verdict yet").
+# (before them: "no verdict yet"). The generation cell is the full production
+# `generate` cost: generate + plan export + the generation-time probes, which
+# run for every loop-induced process (m-lit Q12; their share is shown); a
+# record without its probe time is "not recorded" (never a partial cost).
 LI_TIMING = "li-timing.json"
 LI_VALIDATION = "lit.json"
 LI_CAMPAIGN = Path("tools") / "loop_reference" / "li_campaign.json"
@@ -2437,7 +2443,10 @@ LI_RULE = (
     " revisions) on the default backend TIRust, NinjaRS per amplitude"
     " labelled where only NinjaRS is timed at that revision; the ratio to"
     " the fastest matched provider (production mode) colours it; generation"
-    " uncoloured; four legs or fewer reported, below the 5 ms rule not"
+    " = the full production generate cost (generate + plan export + the"
+    " mandatory generation-time probes, their share shown), uncoloured;"
+    " every record names its host; four legs or fewer reported, below the"
+    " 5 ms rule not"
     " gated, gate verdicts only from lit-perf's records; a row whose serving"
     " package has not landed, or whose input file does not exist yet, is"
     " pending; nothing estimated or extrapolated"
@@ -2696,6 +2705,11 @@ def _li_records(
         return []
     recs = [r for r in timing["records"] if r["key"] == row["key"]]
     for r in recs:
+        if not r.get("host"):
+            raise ValueError(
+                f"{LI_TIMING} record of {row['key']} at {r['revision'][:8]}"
+                " names no host"
+            )
         if r["backend"] not in row["backends"]:
             raise ValueError(
                 f"{LI_TIMING} record of {row['key']}: backend {r['backend']}"
@@ -2824,18 +2838,32 @@ def _li_cells(
             "status": "not recorded",
             "reason": f"{src} has no generation",
         }
+    elif gen.get("probes_seconds") is None:
+        # The probes are part of every loop-induced generation (m-lit Q12):
+        # without their time the record holds no full production cost.
+        out["generation"] = {
+            "status": "not recorded",
+            "reason": f"{src} has no generation-time probe time",
+        }
     else:
+        # The full production `generate` cost: generate + plan export + the
+        # mandatory generation-time probes (their share shown).
+        total = gen["seconds"] + gen["probes_seconds"]
         out["generation"] = {
             "status": "measured",
-            "seconds": gen["seconds"],
+            "seconds": total,
+            "generate_seconds": gen["seconds"],
+            "probes_seconds": gen["probes_seconds"],
+            "probe_share": gen["probes_seconds"] / total if total else 0.0,
             "peak_gib": gen["peak_gib"],
             "plan_mb": gen.get("plan_mb"),
             "revision": main["revision"][:8],
+            "host": main["host"],
             "source": f"{src}.generation",
         }
         fg = prov.get("fastest_generation")
         if fg is not None:
-            out["generation"]["ratio_to_fastest"] = gen["seconds"] / fg["seconds"]
+            out["generation"]["ratio_to_fastest"] = total / fg["seconds"]
     if int(main["batch"]) != int(GATE_BATCH):
         # No B = 128 record at the newest revision (Table 1's rule): no
         # batched cell, the batches timed named.
@@ -2859,6 +2887,7 @@ def _li_cells(
         "revision": main["revision"][:8],
         "native_build": main.get("native_build"),
         "native_digest": main.get("native_digest"),
+        "host": main["host"],
         "source": src,
     }
     other = [
@@ -3068,12 +3097,52 @@ def build() -> tuple[dict, Recency]:
     return summary, recency
 
 
+def report_meta(summary: dict, loop_induced: dict, recency: Recency, ms: dict) -> dict:
+    """The report's own line (its running header and page-1 subtitle): its
+    date (milestone.json date) and its newest measured engine revision, the
+    newest (git ancestry, Recency) of the revisions Table 1's and Table 2's
+    cells show, beside each table's own newest revision, so that no reader
+    takes the whole report to be at Table 1's configuration. The 2 -> 6 rows
+    (another engine, labelled in Table 1) take no part."""
+
+    def newest(revisions: list[str]) -> str | None:
+        found = sorted({r[:8] for r in revisions if r})
+        return recency.newest_first(found)[0] if found else None
+
+    table1 = [
+        r[kind]["main"].get("revision")
+        for g in summary["groups"]
+        for r in g["rows"]
+        for kind in ("generation", "full_colour", "leading_colour")
+        if r[kind]["main"].get("status") == "measured"
+    ]
+    table2 = [
+        r[cell].get("revision")
+        for g in loop_induced["groups"]
+        for r in g["rows"]
+        for cell in ("generation", "timing")
+        if r[cell].get("status") == "measured"
+    ]
+    one, two = newest(table1), newest(table2)
+    return {
+        "date": ms["date"],
+        "head": newest([x for x in (one, two) if x]),
+        "table1": one,
+        "table2": two,
+        "source": "milestone.json date; the newest revision of the measured"
+        " cells of summary.json and summary-li.json (git ancestry:"
+        " milestone.json ancestry)",
+    }
+
+
 def main() -> None:
     out = Path(sys.argv[1]) if len(sys.argv) > 1 else DATA / "summary.json"
     out_li = Path(sys.argv[2]) if len(sys.argv) > 2 else DATA / "summary-li.json"
     summary, recency = build()
+    ms = _load(DATA / "milestone.json")
+    loop_induced = build_loop_induced(ms, recency)
+    summary["meta"]["report"] = report_meta(summary, loop_induced, recency, ms)
     out.write_text(json.dumps(summary, indent=1) + "\n")
-    loop_induced = build_loop_induced(_load(DATA / "milestone.json"), recency)
     out_li.write_text(json.dumps(loop_induced, indent=1) + "\n")
     print(
         f"recency: {len(recency.facts())} facts used;"
