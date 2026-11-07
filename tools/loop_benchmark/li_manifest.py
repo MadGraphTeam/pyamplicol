@@ -6,6 +6,7 @@ Usage (worktree root, licence in the environment, the staged native)::
 
     python tools/loop_benchmark/li_manifest.py rows            # the run matrix
     python tools/loop_benchmark/li_manifest.py run --work-dir W li_gg_h ...
+    python tools/loop_benchmark/li_manifest.py crossing --work-dir W  # C1
     python tools/loop_benchmark/li_manifest.py lit --records W [--output F]
 
 The run matrix is read off lit-ref's manifest
@@ -38,8 +39,8 @@ against the same term floor, binary64 and double-double, NinjaRS and TIRust;
 L4/W1 the generation-time Ward, Goldstone and finiteness probes (double-
 double, zero widths, m-lit Q12) recorded from the artifact; L5/L1-identity
 an exact Lorentz transform (rotation and boost with terminating-decimal
-entries) leaves |A|^2 within 10 (E + E') in binary64 and is recorded in
-double-double; L6 |T - N| <= 10 max(E_N, E_T) per sector and Laurent
+entries) leaves |A|^2 within 10 E of the fixture point in binary64 and is
+recorded in double-double; C1 the crossing (``crossing``); L6 |T - N| <= 10 max(E_N, E_T) per sector and Laurent
 coefficient through the one comparison (``_compare``; a TIRust point whose
 checked call fails keeps E_N alone, which is conservative), points TIRust
 fails closed recorded with its typed reasons (partial), the double-double /
@@ -153,7 +154,7 @@ def _norm(process: str) -> str:
 
 
 def _ids(row_id: str) -> list[str]:
-    """"LI-W1/L1/P1/C1/S1" is LI-W1, LI-L1, LI-P1, LI-C1, LI-S1."""
+    """ "LI-W1/L1/P1/C1/S1" is LI-W1, LI-L1, LI-P1, LI-C1, LI-S1."""
 
     head, *rest = row_id.split("/")
     prefix = head.rsplit("-", 1)[0] + "-"
@@ -594,15 +595,31 @@ def evaluate(
         for backend in BACKENDS:
             for checked in (False, True) if arithmetic == "double" else (True,):
                 tag = "checked" if checked else "plain"
-                plan.append((f"{backend}/{arithmetic}/{tag}", backend, arithmetic, checked, points))
+                plan.append(
+                    (
+                        f"{backend}/{arithmetic}/{tag}",
+                        backend,
+                        arithmetic,
+                        checked,
+                        points,
+                    )
+                )
     if identity:
         for arithmetic in CARRIERS:
             plan.append(
-                (f"identity/ninjars/{arithmetic}", "ninjars", arithmetic, arithmetic == "double", transformed)
+                (
+                    f"identity/ninjars/{arithmetic}",
+                    "ninjars",
+                    arithmetic,
+                    arithmetic == "double",
+                    transformed,
+                )
             )
     if ap:
         for backend in BACKENDS:
-            plan.append((f"{backend}/{ARBITRARY}/plain", backend, ARBITRARY, False, points))
+            plan.append(
+                (f"{backend}/{ARBITRARY}/plain", backend, ARBITRARY, False, points)
+            )
     for label, backend, arithmetic, checked, inputs in plan:
         record["arms"][label] = _call(
             runtime,
@@ -676,7 +693,9 @@ def add_probes(name: str, work: Path, record: dict) -> dict:
         for k, v in data["scheme_data"]["parameters"].items()
         if k not in fixed and k in known
     }
-    runtime = Runtime.load(work / name / "artifact", process="p", model_parameters=parameters)
+    runtime = Runtime.load(
+        work / name / "artifact", process="p", model_parameters=parameters
+    )
     record["l3_probes"] = finiteness_probes(runtime, data, parameters)
     return record
 
@@ -821,7 +840,11 @@ def judge(record: dict, entry: dict) -> dict:
             dev = _rel(value, reference)
             if row.get("l1_caution") and dev > LAX:
                 served = _served(ndd)
-                dd = _total(ndd["points"][p]["values"]) if p < len(served) and served[p] else None
+                dd = (
+                    _total(ndd["points"][p]["values"])
+                    if p < len(served) and served[p]
+                    else None
+                )
                 caution.append(
                     {
                         "point": p,
@@ -835,7 +858,9 @@ def judge(record: dict, entry: dict) -> dict:
                 continue
             refs[provider] = max(refs.get(provider, 0.0), dev)
             if tvalue is not None:
-                tir_refs[provider] = max(tir_refs.get(provider, 0.0), _rel(tvalue, reference))
+                tir_refs[provider] = max(
+                    tir_refs.get(provider, 0.0), _rel(tvalue, reference)
+                )
     zero = ZERO_TIER in entry["tiers"]
     if zero:
         # A numerical zero: the providers' values are their own rounding,
@@ -856,9 +881,7 @@ def judge(record: dict, entry: dict) -> dict:
     elif refs or "L1" in entry["checks"]:
         worst = max(refs.values(), default=None)
         out["L1"] = {
-            "status": "not run"
-            if worst is None
-            else _verdict(worst <= LAX, False),
+            "status": "not run" if worst is None else _verdict(worst <= LAX, False),
             "max_relative": dict(refs),
             "tirust_max_relative": tir_refs,
             "caution_points": caution,
@@ -917,10 +940,18 @@ def judge(record: dict, entry: dict) -> dict:
         statuses.append("not run")
     l3["lane_finiteness"] = {
         label: max(
-            (pt["finiteness"] for pt in arm.get("points", []) if pt["finiteness"] is not None),
+            (
+                pt["finiteness"]
+                for pt in arm.get("points", [])
+                if pt["finiteness"] is not None
+            ),
             default=None,
         )
-        for label, arm in (("ninjars/double", n64c), ("ninjars/double-double", ndd), ("tirust/double", t64c))
+        for label, arm in (
+            ("ninjars/double", n64c),
+            ("ninjars/double-double", ndd),
+            ("tirust/double", t64c),
+        )
     }
     # The necessary-only cross-check at the |A|^2 level: every computed pole
     # of the sum within ten times its absolute estimate.
@@ -929,10 +960,14 @@ def judge(record: dict, entry: dict) -> dict:
         for pt in arm.get("points", []):
             if pt["status"] != "success" or pt["estimate"] is None:
                 continue
-            for sector, error in zip(pt["values"], pt["estimate"]["absolute"], strict=True):
+            for sector, error in zip(
+                pt["values"], pt["estimate"]["absolute"], strict=True
+            ):
                 for k in ("single_pole", "double_pole"):
                     if sector[k] is not None and error[k]:
-                        poles.append(abs(float(_complex(sector[k])[0])) / (FACTOR * error[k]))
+                        poles.append(
+                            abs(float(_complex(sector[k])[0])) / (FACTOR * error[k])
+                        )
     l3["poles_over_10E"] = max(poles, default=None)
     out["L3"] = {"status": _worst(statuses), **l3}
     # L4 / W1: the generation-time probes (double-double, zero widths).
@@ -975,7 +1010,11 @@ def judge(record: dict, entry: dict) -> dict:
             "status": "not run"
             if worst is None
             # A numerical zero is two roundings: L8 judges it.
-            else ("recorded" if ZERO_TIER in entry["tiers"] else ("pass" if worst <= 1 else "estimate miss")),
+            else (
+                "recorded"
+                if ZERO_TIER in entry["tiers"]
+                else ("pass" if worst <= 1 else "estimate miss")
+            ),
             "worst_ratio_to_10E": worst,
             "double_double_max_relative": max(devs, default=None),
             "transformed_estimate_relative": max(moved, default=None),
@@ -985,7 +1024,7 @@ def judge(record: dict, entry: dict) -> dict:
     # a miss goes to lit-stab-n / lit-stab-t; TIRust's estimate on its
     # served points alike).
     e_rows = {}
-    for label, plain, checked in (("ninjars", n64, n64c), ("tirust", t64, t64c)):
+    for label, checked in (("ninjars", n64c), ("tirust", t64c)):
         ratios, errors = [], []
         for p in range(count):
             a = checked["points"][p] if "points" in checked else None
@@ -1005,7 +1044,11 @@ def judge(record: dict, entry: dict) -> dict:
     out["E"] = {
         "status": "not run"
         if worst is None
-        else ("pass" if worst <= 1 and (e_rows["tirust"]["worst_error_over_10E"] or 0) <= 1 else "estimate miss"),
+        else (
+            "pass"
+            if worst <= 1 and (e_rows["tirust"]["worst_error_over_10E"] or 0) <= 1
+            else "estimate miss"
+        ),
         **e_rows,
     }
     # L6 both backends: binary64 through the one comparison.
@@ -1017,7 +1060,8 @@ def judge(record: dict, entry: dict) -> dict:
         tc = t64c["points"][p] if "points" in t64c else None
         n_entries = _entries(n64c["points"][p])
         t_entries = _entries(
-            t64["points"][p], tc["estimate"] if tc and tc["status"] == "success" else None
+            t64["points"][p],
+            tc["estimate"] if tc and tc["status"] == "success" else None,
         )
         for row in _compare(n_entries, t_entries, True):
             row["point"] = p
@@ -1037,7 +1081,11 @@ def judge(record: dict, entry: dict) -> dict:
     if failed:
         l6_status = "partial" if l6_status == "pass" else l6_status
     worst = max(
-        (r["difference"] / r["bound"] if r["bound"] else math.inf for r in rows if r["difference"]),
+        (
+            r["difference"] / r["bound"] if r["bound"] else math.inf
+            for r in rows
+            if r["difference"]
+        ),
         default=0.0,
     )
     finite_rel = max(
@@ -1083,7 +1131,9 @@ def judge(record: dict, entry: dict) -> dict:
             ]
             worst = max(devs, default=None)
             out["L7"] = {
-                "status": "not run" if worst is None else ("pass" if worst <= 1 else "fail"),
+                "status": "not run"
+                if worst is None
+                else ("pass" if worst <= 1 else "fail"),
                 "max_difference_over_10E_dd": worst,
                 "digits": record.get("digits"),
             }
@@ -1106,10 +1156,14 @@ def judge(record: dict, entry: dict) -> dict:
                     continue
                 e = _abs_finite(pt["estimate"])
                 value = abs(float(_total(pt["values"])))
-                ratios.append(value / (FACTOR * e) if e else (0.0 if not value else math.inf))
+                ratios.append(
+                    value / (FACTOR * e) if e else (0.0 if not value else math.inf)
+                )
             worst = max(ratios, default=None)
             l8[label] = worst
-            statuses.append("not run" if worst is None else ("pass" if worst <= 1 else "fail"))
+            statuses.append(
+                "not run" if worst is None else ("pass" if worst <= 1 else "fail")
+            )
         out["L8"] = {"status": _worst(statuses), "worst_value_over_10E_abs": l8}
     out["references"] = {k: v for k, v in refs.items() if v is not None}
     return out
@@ -1130,8 +1184,14 @@ def _high_l6(ninjars: dict, tirust: dict) -> dict:
         if n["status"] != "success" or t["status"] != "success":
             failed += t["status"] != "success"
             continue
-        rows.extend(_compare(_entries(n, {"absolute": []}), _entries(t, {"absolute": []}), False))
-    worst = max((r["difference"] / r["bound"] for r in rows if r["bound"]), default=None)
+        rows.extend(
+            _compare(
+                _entries(n, {"absolute": []}), _entries(t, {"absolute": []}), False
+            )
+        )
+    worst = max(
+        (r["difference"] / r["bound"] for r in rows if r["bound"]), default=None
+    )
     relative = max(
         (
             r["difference"] / max(abs(float(Decimal(r["ninjars"][0]))), 1e-300)
@@ -1141,7 +1201,9 @@ def _high_l6(ninjars: dict, tirust: dict) -> dict:
         default=None,
     )
     strict = all(r["passed"] for r in rows)
-    status = _verdict(strict, relative is None or relative <= LAX) if rows else "not run"
+    status = (
+        _verdict(strict, relative is None or relative <= LAX) if rows else "not run"
+    )
     if failed:
         status = _worst([status, "partial"])
     return {
@@ -1213,7 +1275,11 @@ def _near(target: float, span: int = 60) -> Fraction:
     decimal."""
 
     best = min(
-        ((x, y) for x in range(-span, span + 1) for y in range(abs(x) - span, span - abs(x) + 1)),
+        (
+            (x, y)
+            for x in range(-span, span + 1)
+            for y in range(abs(x) - span, span - abs(x) + 1)
+        ),
         key=lambda e: abs(e[0] * math.log(2) + e[1] * math.log(5) - math.log(target)),
     )
     return Fraction(2) ** best[0] * Fraction(5) ** best[1]
@@ -1288,7 +1354,12 @@ def write_stress() -> list[Path]:
         data = {
             "name": f"li_stress_{name.removeprefix('li_')}_{kind}",
             "li_row": base["li_row"],
-            "stress": {"kind": kind, "values": list(values), "energy": energy, "base": name},
+            "stress": {
+                "kind": kind,
+                "values": list(values),
+                "energy": energy,
+                "base": name,
+            },
             **{
                 k: base[k]
                 for k in (
@@ -1341,7 +1412,9 @@ def limit_targets(entries: list[dict]) -> list[dict]:
         if entry["key"] in keys and (FIXTURES / f"{entry['fixture']}.json").is_file():
             data = fixture(entry["fixture"])
             oracle = "let" if "limit_oracle" in data["rows"][0] else "heft"
-            out.append({"fixture": entry["fixture"], "key": entry["key"], "oracle": oracle})
+            out.append(
+                {"fixture": entry["fixture"], "key": entry["key"], "oracle": oracle}
+            )
     return out
 
 
@@ -1365,7 +1438,7 @@ def _heft_runtime(data: dict, work: Path, process: str) -> Any:
                     "[model]",
                     f"source = {json.dumps(HEFT)}",
                     "[process]",
-                    f"entries = [{{expression = {json.dumps(process)}, name = \"p\"}}]",
+                    f'entries = [{{expression = {json.dumps(process)}, name = "p"}}]',
                     "[generation]",
                     f"output = {json.dumps(str(output))}",
                     "emit_api_bundle = false",
@@ -1446,16 +1519,22 @@ def limits(name: str, oracle: str, work: Path, doublings: int = DOUBLINGS) -> di
             process="p",
             model_parameters={**parameters, "MT": text, "ymt": text},
         )
-        result = runtime.evaluate(points, mu_r2=scales, arithmetic="double-double", poles="none")
+        result = runtime.evaluate(
+            points, mu_r2=scales, arithmetic="double-double", poles="none"
+        )
         loop.append([_total([_laurent(s) for s in v]) for v in result.values])
         if oracle == "heft":
             for key in ("MT", "ymt"):
                 if key in shared:
                     heft.set_model_parameter(key, float(mass))
-            values = heft.evaluate([[[float(Fraction(c)) for c in m] for m in p] for p in points])
+            values = heft.evaluate(
+                [[[float(Fraction(c)) for c in m] for m in p] for p in points]
+            )
             reference.append([Decimal(repr(complex(v).real)) for v in values])
         else:
-            reference.append([Decimal(repr(row["limit_oracle"]["value"])) for row in data["rows"]])
+            reference.append(
+                [Decimal(repr(row["limit_oracle"]["value"])) for row in data["rows"]]
+            )
     h = [float(1 / (m * m)) for m in masses]
     out = {
         "oracle": oracle,
@@ -1470,7 +1549,8 @@ def limits(name: str, oracle: str, work: Path, doublings: int = DOUBLINGS) -> di
             ratios = [loop[k][p] / reference[k][p] for k in range(len(masses))]
         limit, error = _richardson(h, ratios)
         s = sum(Fraction(points[p][i][0]) for i in range(data["initial"])) ** 2 - sum(
-            sum(Fraction(points[p][i][k]) for i in range(data["initial"])) ** 2 for k in (1, 2, 3)
+            sum(Fraction(points[p][i][k]) for i in range(data["initial"])) ** 2
+            for k in (1, 2, 3)
         )
         passed = abs(limit - 1) <= FACTOR * error
         status.append(passed)
@@ -1487,6 +1567,238 @@ def limits(name: str, oracle: str, work: Path, doublings: int = DOUBLINGS) -> di
     return out
 
 
+# ------------------------------------------------------------- crossing
+
+# The crossing identity (§4.1's identity row "LI-W1, L1, P1, C1, S1": C1, the
+# crossing of LI-26's runs, g g > h g <-> u g > h u <-> u u~ > h g). Its
+# data/lit.json id is 'crossing': the id LI-C1 is the complex-mass-scheme row
+# (milestone.json loop_induced.validation_only). A run's artifact is evaluated
+# at the crossed fixture points of every run of the row it relates to by
+# crossing (itself included: the crossing of identical bosons), the crossed
+# legs carrying negative-energy momenta: the loop integrals are then taken in
+# the other process's physical region (the analytic continuation by +i0).
+CROSSING_ROW, CROSSING_ID = "LI-26", "crossing"
+
+
+def legs(data: dict, compiled: Any) -> list[dict]:
+    """Per leg of a fixture its all-outgoing flavour (an incoming leg's
+    antiparticle, from the model), direction and statistics."""
+
+    particles = {int(r.pdg_code): r for r in compiled.ir.particles}
+    codes = {str(r.name): int(r.pdg_code) for r in compiled.ir.particles}
+    out = []
+    for i, pdg in enumerate(data["pdgs"]):
+        record = particles[pdg]
+        incoming = i < data["initial"]
+        out.append(
+            {
+                "flavour": codes[str(record.antiname)] if incoming else pdg,
+                "incoming": incoming,
+                "fermion": record.statistics == "fermion",
+            }
+        )
+    return out
+
+
+def crossing_maps(target: list[dict], source: list[dict]) -> list[list[list[int]]]:
+    """Every crossing of ``source``'s legs onto ``target``'s (``legs``): per
+    target leg [source leg, sign], sign -1 for a crossed leg (its momentum
+    negated). A crossing is fixed by the set of crossed source legs (an empty
+    set is no crossing); within a target class (direction, flavour) the
+    source legs keep their order, so relabellings of identical legs are not
+    counted twice."""
+
+    n = len(target)
+    if len(source) != n or sorted(t["flavour"] for t in target) != sorted(
+        s["flavour"] for s in source
+    ):
+        return []
+    need: dict[tuple, list[int]] = {}
+    for j, t in enumerate(target):
+        need.setdefault((t["flavour"], t["incoming"]), []).append(j)
+    maps = []
+    for mask in range(1, 1 << n):
+        crossed = [bool(mask >> i & 1) for i in range(n)]
+        pool: dict[tuple, list[int]] = {}
+        for i, s in enumerate(source):
+            pool.setdefault((s["flavour"], s["incoming"] != crossed[i]), []).append(i)
+        if {k: len(v) for k, v in pool.items()} != {k: len(v) for k, v in need.items()}:
+            continue
+        mapping: list[list[int]] = [[]] * n
+        for key, targets in need.items():
+            for j, i in zip(targets, pool[key], strict=True):
+                mapping[j] = [i, -1 if crossed[i] else 1]
+        maps.append(mapping)
+    return maps
+
+
+def crossed_points(points: list, mapping: list[list[int]]) -> list[list[list[str]]]:
+    """The source's exact points on the target's legs (``crossing_maps``)."""
+
+    return [
+        [[_decimal(Fraction(c) * sign) for c in point[i]] for i, sign in mapping]
+        for point in points
+    ]
+
+
+def crossing(work: Path, entries: list[dict]) -> dict:
+    """The crossing evaluations of CROSSING_ROW's runs (module comment
+    above): per (target, source, map) the target's artifact (the campaign's,
+    ``work / target``) at the source's crossed points, NinjaRS binary64 with
+    the checks and double-double; judged in ``lit`` against the source's
+    record. Runs whose fixtures differ in their parameters do not relate."""
+
+    from pyamplicol import Runtime
+
+    names = [e["fixture"] for e in entries if CROSSING_ROW in e["ids"]]
+    data = {n: fixture(n) for n in names}
+    compiled = {n: compile_model(data[n], work / "model-cache") for n in names}
+    flavours = {n: legs(data[n], compiled[n]) for n in names}
+    out: dict[str, Any] = {
+        "row": CROSSING_ROW,
+        "revision": _revision(),
+        "crossings": [],
+    }
+    for target in names:
+        artifact, _ = generate(target, work, compiled[target])
+        known = set(compiled[target].parameter_defaults)
+        fixed = data[target]["scheme_data"]["fixed_parameters"]
+        parameters = {
+            k: v
+            for k, v in data[target]["scheme_data"]["parameters"].items()
+            if k not in fixed and k in known
+        }
+        runtime = None
+        for source in names:
+            if data[source]["scheme_data"] != data[target]["scheme_data"]:
+                continue
+            for mapping in crossing_maps(flavours[target], flavours[source]):
+                if runtime is None:
+                    runtime = Runtime.load(
+                        artifact, process="p", model_parameters=parameters
+                    )
+                points = crossed_points(data[source]["points"], mapping)
+                scales = [_decimal(Fraction(mu) ** 2) for mu in data[source]["mu_r"]]
+                fermions = sum(
+                    flavours[source][i]["fermion"] for i, sign in mapping if sign < 0
+                )
+                arms = {
+                    arithmetic: _call(
+                        runtime,
+                        points,
+                        scales,
+                        backend="ninjars",
+                        arithmetic=arithmetic,
+                        checked=True,
+                        digits=DIGITS,
+                    )
+                    for arithmetic in CARRIERS
+                }
+                out["crossings"].append(
+                    {
+                        "target": target,
+                        "source": source,
+                        "map": mapping,
+                        "crossed_fermions": fermions,
+                        "points": points,
+                        "arms": arms,
+                    }
+                )
+                print(target, source, mapping, flush=True)
+    return out
+
+
+def _summed(values: list | None, data: dict) -> Decimal | None:
+    """The finite |A|^2 summed over helicities and colours (the fixture's
+    normalisation denominator: the initial averages and the final
+    identical-particle factor)."""
+
+    total = _total(values)
+    if total is None:
+        return None
+    with localcontext() as context:
+        context.prec = 80
+        return total * data["normalization"]["denominator"]
+
+
+def _signed(value: Decimal, sign: int) -> Decimal:
+    return value.copy_negate() if sign < 0 else value  # (exact: no context rounding)
+
+
+def judge_crossing(result: dict, records: dict[str, dict]) -> dict:
+    """The crossing identity: sum |A_target|^2 at the crossed points =
+    (-1)^(crossed fermions) sum |A_source|^2 at the source's points; binary64
+    within 10 max(E_target, E_source) (each E the checked call's absolute
+    estimate, summed like its value), double-double recorded. A crossing
+    whose crossed values are exactly zero at every point where the source's
+    are not is not evaluable on the public route (its external fermion
+    wavefunctions are defined for positive energies: a negative-energy
+    massless fermion leg evaluates to zero), recorded partial with that
+    reason, never passed."""
+
+    runs: dict[str, dict] = {}
+    for c in result["crossings"]:
+        label = f"{c['target']} <- {c['source']} {c['map']}"
+        source = records.get(c["source"])
+        if source is None:
+            runs[label] = {"status": "not run", "reason": f"no record of {c['source']}"}
+            continue
+        sign = -1 if c["crossed_fermions"] % 2 else 1
+        tdata, sdata = fixture(c["target"]), fixture(c["source"])
+        ratios, devs, zeros, served = [], [], [], 0
+        for p, crossed in enumerate(c["arms"]["double"].get("points", [])):
+            reference = source["arms"]["ninjars/double/checked"]["points"][p]
+            if crossed["status"] != "success" or reference["status"] != "success":
+                continue
+            served += 1
+            lhs = _summed(crossed["values"], tdata)
+            rhs = _signed(_summed(reference["values"], sdata), sign)
+            zeros.append(lhs == 0 and rhs != 0)
+            e = max(
+                (_abs_finite(crossed["estimate"]) or 0.0)
+                * tdata["normalization"]["denominator"],
+                (_abs_finite(reference["estimate"]) or 0.0)
+                * sdata["normalization"]["denominator"],
+            )
+            diff = abs(float(lhs - rhs))
+            ratios.append(diff / (FACTOR * e) if e else (0.0 if not diff else math.inf))
+        for p, crossed in enumerate(c["arms"]["double-double"].get("points", [])):
+            reference = source["arms"]["ninjars/double-double/checked"]["points"][p]
+            if crossed["status"] == "success" and reference["status"] == "success":
+                rhs = _signed(_summed(reference["values"], sdata), sign)
+                devs.append(_rel(_summed(crossed["values"], tdata), rhs))
+        worst = max(ratios, default=None)
+        entry: dict[str, Any] = {
+            "crossed_fermions": c["crossed_fermions"],
+            "served": served,
+            "of": len(c["points"]),
+            "worst_ratio_to_10E": worst,
+            "double_double_max_relative": max(devs, default=None),
+        }
+        if zeros and all(zeros):
+            entry["status"] = "partial"
+            entry["reason"] = (
+                "not evaluable on the public route: the crossed |A|^2 is exactly zero at every point (the "
+                "external fermion wavefunctions are defined for positive energies; a negative-energy "
+                "massless fermion leg evaluates to zero)"
+            )
+        elif worst is None:
+            entry["status"] = "not run"
+        else:
+            entry["status"] = (
+                "pass"
+                if worst <= 1 and served == len(c["points"])
+                else ("estimate miss" if worst > 1 else "partial")
+            )
+        runs[label] = entry
+    return {
+        "row": "LI-W1/L1/P1/C1/S1 (C1, crossing; the id LI-C1 is the complex-mass-scheme row)",
+        "processes": CROSSING_ROW,
+        "status": _worst([r["status"] for r in runs.values()]) if runs else "not run",
+        "runs": runs,
+    }
+
+
 # ------------------------------------------------------------- data/lit.json
 
 
@@ -1496,11 +1808,11 @@ def limits(name: str, oracle: str, work: Path, doublings: int = DOUBLINGS) -> di
 DELEGATED_RECORDS = EXTRA / "records" / "delegated.json"
 # The identity rows (§4.1 "LI-W1, L1, P1, C1, S1"): the check of every run
 # each stands on (W1: the generation-time Ward / Goldstone probes; L1: the
-# exact Lorentz transform; P1: the amplitude poles), C1 the crossing-related
-# processes of the row whose runs relate by crossing (LI-26), S1 the N_f
-# rows (LI-A5's runs with and without the top loop).
+# exact Lorentz transform; P1: the amplitude poles), C1 the crossing
+# (``crossing``, id CROSSING_ID), S1 the N_f rows (LI-A5's runs with and
+# without the top loop).
 IDENTITIES = {"LI-W1": "L4", "LI-L1": "L5", "LI-P1": "L3"}
-CROSSING_ROW, FLAVOUR_ROW = "LI-26", "LI-A5"
+FLAVOUR_ROW = "LI-A5"
 
 
 def lit(
@@ -1509,12 +1821,14 @@ def lit(
     source: str,
     limit_results: dict | None = None,
     delegated: dict | None = None,
+    crossing_result: dict | None = None,
 ) -> dict:
     """data/lit.json: per registry key its status, reference deviations
     (binary64, NinjaRS; the analytic oracle's too), points and per-check
     figures over its runs (with LI-A7's heavy-top scan as L9 of its rows'
     runs, ``limit_results``); per §4.1 id under ``ids``, the identity rows
-    from every run's checks, the delegated rows from their records."""
+    from every run's checks and the crossing evaluations
+    (``crossing_result``), the delegated rows from their records."""
 
     delegated = _load(DELEGATED_RECORDS) if delegated is None else delegated
     findings = delegated.get("findings", {})
@@ -1558,38 +1872,54 @@ def lit(
             ids.setdefault(i, {"runs": {}})["runs"][entry["fixture"]] = judged[
                 entry["fixture"]
             ]
-    for i, value in ids.items():
+    for value in ids.values():
         value["status"] = _worst([_run_status(j) for j in value["runs"].values()])
     if limit_results:
         ids[LIMIT_ROW] = {
-            "status": _worst([judged[f]["L9"]["status"] for f in limit_results if f in judged]),
+            "status": _worst(
+                [judged[f]["L9"]["status"] for f in limit_results if f in judged]
+            ),
             "runs": {f: judged[f]["L9"] for f in limit_results if f in judged},
         }
     campaign_runs = {f for f in judged if "stress" not in by_fixture[f]["tiers"]}
     for i, check in IDENTITIES.items():
-        per_run = {f: j[check] for f, j in judged.items() if check in j and f in campaign_runs}
+        per_run = {
+            f: j[check] for f, j in judged.items() if check in j and f in campaign_runs
+        }
         ids[i] = {
             "check": check,
             # (a zero row's 'recorded' identity is L8's: not this row's verdict)
-            "status": _worst([v["status"] for v in per_run.values() if v["status"] != "recorded"]),
+            "status": _worst(
+                [v["status"] for v in per_run.values() if v["status"] != "recorded"]
+            ),
             "runs": per_run,
         }
-    crossing = [e["fixture"] for e in entries if CROSSING_ROW in e["ids"]]
-    ids["LI-C1"] = {
-        "status": "partial",
-        "note": "no direct crossing evaluation: the public route takes physical momenta only; the "
-        f"crossing-related processes of {CROSSING_ROW} each against their providers (L1) and their "
-        "common heavy-top limit (LI-A7)",
-        "runs": {f: {c: judged[f][c] for c in ("L1", "L9") if c in judged[f]} for f in crossing if f in judged},
-    }
+    ids[CROSSING_ID] = (
+        judge_crossing(crossing_result, records)
+        if crossing_result
+        else {
+            "status": "not run",
+            "reason": "no crossing record (li_manifest.py crossing)",
+        }
+    )
     flavours = [e["fixture"] for e in entries if FLAVOUR_ROW in e["ids"]]
     ids["LI-S1"] = {
         "status": _worst(
-            [judged[f][c]["status"] for f in flavours if f in judged for c in ("L1", "L2") if c in judged[f]]
+            [
+                judged[f][c]["status"]
+                for f in flavours
+                if f in judged
+                for c in ("L1", "L2")
+                if c in judged[f]
+            ]
         ),
         "note": f"{FLAVOUR_ROW}'s runs with and without the top loop against the analytic oracle "
         "(the quark sum with its charges) and the providers",
-        "runs": {f: {c: judged[f][c] for c in ("L1", "L2") if c in judged[f]} for f in flavours if f in judged},
+        "runs": {
+            f: {c: judged[f][c] for c in ("L1", "L2") if c in judged[f]}
+            for f in flavours
+            if f in judged
+        },
     }
     for i, record in delegated.items():
         if i.startswith("LI-"):
@@ -1663,7 +1993,16 @@ def main(argv: list[str] | None = None) -> int:
     out.add_argument("--records", type=Path, required=True)
     out.add_argument("--output", type=Path, default=LIT)
     out.add_argument("--source", required=True)
-    out.add_argument("--limits", type=Path, default=None, help="the limits command's output")
+    out.add_argument(
+        "--limits", type=Path, default=None, help="the limits command's output"
+    )
+    out.add_argument(
+        "--crossing", type=Path, default=None, help="the crossing command's output"
+    )
+    cross = sub.add_parser(
+        "crossing", help="C1: the crossing evaluations of LI-26's runs"
+    )
+    cross.add_argument("--work-dir", type=Path, required=True)
     args = parser.parse_args(argv)
     sys.path.insert(0, str(WT))
     entries = runs()
@@ -1683,7 +2022,8 @@ def main(argv: list[str] | None = None) -> int:
                 done = _load(path)
                 if done.get("complete") and "l3_probes" not in done:
                     path.write_text(
-                        json.dumps(add_probes(name, args.work_dir, done), indent=1) + "\n"
+                        json.dumps(add_probes(name, args.work_dir, done), indent=1)
+                        + "\n"
                     )
                     continue
 
@@ -1691,9 +2031,23 @@ def main(argv: list[str] | None = None) -> int:
                 path.write_text(json.dumps(record, indent=1) + "\n")
 
             record = evaluate(
-                name, args.work_dir, ap=bool(entry["ap"]), digits=args.digits, write=write
+                name,
+                args.work_dir,
+                ap=bool(entry["ap"]),
+                digits=args.digits,
+                write=write,
             )
-            print(name, json.dumps({c: v.get("status") for c, v in judge(record, entry).items() if isinstance(v, dict) and "status" in v}), flush=True)
+            print(
+                name,
+                json.dumps(
+                    {
+                        c: v.get("status")
+                        for c, v in judge(record, entry).items()
+                        if isinstance(v, dict) and "status" in v
+                    }
+                ),
+                flush=True,
+            )
         return 0
     if args.command == "limits":
         result = {}
@@ -1701,8 +2055,20 @@ def main(argv: list[str] | None = None) -> int:
             result[target["fixture"]] = limits(
                 target["fixture"], target["oracle"], args.work_dir, args.doublings
             )
-            print(target["fixture"], json.dumps(result[target["fixture"]]["status"]), flush=True)
-            (args.work_dir / "limits.json").write_text(json.dumps(result, indent=1) + "\n")
+            print(
+                target["fixture"],
+                json.dumps(result[target["fixture"]]["status"]),
+                flush=True,
+            )
+            (args.work_dir / "limits.json").write_text(
+                json.dumps(result, indent=1) + "\n"
+            )
+        return 0
+    if args.command == "crossing":
+        result = crossing(args.work_dir, entries)
+        (args.work_dir / "crossing.json").write_text(
+            json.dumps(result, indent=1) + "\n"
+        )
         return 0
     records = {
         path.parent.name: record
@@ -1710,8 +2076,19 @@ def main(argv: list[str] | None = None) -> int:
         if (record := _load(path)).get("complete")
     }
     limit_results = _load(args.limits) if args.limits else None
+    crossing_result = _load(args.crossing) if args.crossing else None
     args.output.write_text(
-        json.dumps(lit(records, entries, args.source, limit_results), indent=1) + "\n"
+        json.dumps(
+            lit(
+                records,
+                entries,
+                args.source,
+                limit_results,
+                crossing_result=crossing_result,
+            ),
+            indent=1,
+        )
+        + "\n"
     )
     return 0
 
