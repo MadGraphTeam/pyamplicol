@@ -796,7 +796,13 @@ def judge(record: dict, entry: dict) -> dict:
     n_served = _served(n64c)
     out["points"] = count
     if not all(n_served) or not all(_served(n64)):
-        out["ninjars"] = {"status": "fail", "reasons": _reasons(n64c)}
+        # NinjaRS fails points closed (typed; never a value): partial.
+        out["N"] = {
+            "status": "partial",
+            "failed": count - sum(_served(n64)),
+            "failed_checked": count - sum(n_served),
+            "reasons": _reasons(n64c),
+        }
     # L1 providers (binary64, NinjaRS; TIRust on the points it serves).
     refs: dict[str, float] = {}
     caution: list[dict] = []
@@ -805,6 +811,8 @@ def judge(record: dict, entry: dict) -> dict:
         if p >= count:
             break
         value = _total(n64["points"][p]["values"])
+        if value is None:
+            continue  # failed closed (N)
         tvalue = _total(t64["points"][p]["values"]) if _served(t64)[p] else None
         for provider in entry["providers"]:
             if provider == "analytic" or provider not in row["providers"]:
@@ -1594,7 +1602,7 @@ def lit(
     }
 
 
-CHECKS = ("L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "E")
+CHECKS = ("N", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "E")
 
 
 def _run_status(judged: dict) -> str:
