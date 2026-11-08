@@ -759,6 +759,7 @@ def configurations_of(record: dict[str, Any]) -> list[tuple[str, dict[str, Any]]
                     "batches": run.get("batches", {}),
                     "served": run.get("served", {}),
                     "profiled": run.get("profiled", {}),
+                    "one_helicity": run.get("one_helicity", {}),
                     "accuracy_check": None
                     if not check
                     else {
@@ -1106,7 +1107,7 @@ def build(
                     size: valid_blocks(summary, min_cpu_share)
                     for size, summary in record.get("batches", {}).items()
                 }
-                for arm in ("served", "profiled"):
+                for arm in ("served", "profiled", "one_helicity"):
                     record[arm] = {
                         size: valid_blocks(summary, min_cpu_share)
                         for size, summary in (record.get(arm) or {}).items()
@@ -1185,6 +1186,7 @@ def build(
                         "reduction": record.get("reduction"),
                         "served": record.get("served") or {},
                         "profiled": record.get("profiled") or {},
+                        "one_helicity": record.get("one_helicity") or {},
                         "finiteness": finiteness(record.get("physical", [])),
                         "stages": {
                             size: {
@@ -1592,6 +1594,15 @@ def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> l
                 tir = {n: counts[n] for n in TIR_COUNTS if n in counts}
                 if tir:
                     record["tir_counts_last_block"] = tir
+                one = (config.get("one_helicity") or {}).get(size)
+                if one is not None:
+                    # PLAN §5.1 (Q39): one helicity row selected, |A(h)|^2/avg.
+                    record["one_helicity"] = {
+                        "row": one.get("row"),
+                        "seconds_per_point": one["median_seconds_per_point"],
+                        "failed_points": one.get("failed_points"),
+                        "blocks": one["blocks"],
+                    }
                 if int(size) == GATE_BATCH:
                     record["generation"] = gen
                     gate = batch["gate"]

@@ -69,6 +69,13 @@ def main(argv: list[str] | None = None) -> int:
         "paired blocks on the same points",
     )
     v2.add_argument(
+        "--one-helicity",
+        action="store_true",
+        help="loop-induced: also one arm per backend at the largest B on one "
+        "helicity (the plan's first helicity row, the single-helicity row "
+        "selection |A(h)|^2/avg: only its rows are dressed)",
+    )
+    v2.add_argument(
         "--tir-profile",
         action="store_true",
         help="loop-induced: also one TIRust arm with TIRust's own stage "

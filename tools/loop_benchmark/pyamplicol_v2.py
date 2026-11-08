@@ -1576,7 +1576,11 @@ class InducedRun(Run):
     points of that warm-up block it served, one block of them per round).
     ``--tir-profile`` adds a TIRust arm with TIRust's own stage profile
     (``reduction: TIR masters`` ...; profiling costs time, so that arm is a
-    stage split, never a timing).
+    stage split, never a timing). ``--one-helicity`` adds per backend an arm
+    at the largest B on one helicity (PLAN §5.1, Q39): the executor's
+    single-helicity row selection (``NativeExecutor.row_mask``) of the plan's
+    first helicity row, whose rows alone are dressed; the value is
+    |A(h)|^2/avg (``one_helicity`` of the backend's record).
 
     **Stage split** per block (seconds per point): the native report's
     stages (``trees + CT kets``: the executor's native trees, which form the
@@ -1876,6 +1880,24 @@ class InducedRun(Run):
             },
         }
 
+    @contextlib.contextmanager
+    def _one_row(self, arm: dict[str, Any]) -> Any:
+        """A one-helicity arm's row selection on the executor for one call
+        (``NativeExecutor.row_mask``: that helicity row alone is dressed);
+        nothing for the other arms."""
+
+        if "row" not in arm:
+            yield
+            return
+        executor = arm.get("executor") or self.executor
+        rows = executor.exported.rows
+        arm["row_helicities"] = [h for _leg, h in rows[arm["row"]]]
+        executor.row_mask = tuple(k == arm["row"] for k in range(len(rows)))
+        try:
+            yield
+        finally:
+            executor.row_mask = None
+
     def _indices(self, start: int, size: int) -> list[int]:
         count = len(self.stream["points"])
         return [(start + k) % count for k in range(size)]
@@ -2008,6 +2030,18 @@ class InducedRun(Run):
                         "profile": False,
                     }
                 )
+        if getattr(options, "one_helicity", False):
+            for backend in self.backends:
+                if "effective" in backend:
+                    arms.append(
+                        {
+                            "backend": backend,
+                            "size": max(batches),
+                            "indices": self._indices(0, max(batches)),
+                            "profile": False,
+                            "row": 0,
+                        }
+                    )
         if getattr(options, "tir_profile", False) and any(
             arm["backend"].get("effective") == "tirust" for arm in arms
         ):
@@ -2034,7 +2068,11 @@ class InducedRun(Run):
             label = _arm_label(arm)
             start = time.perf_counter()
             try:
-                with running(arm["backend"]["effective"]), _profiled(arm["profile"]):
+                with (
+                    running(arm["backend"]["effective"]),
+                    _profiled(arm["profile"]),
+                    self._one_row(arm),
+                ):
                     block = self._block(arm["indices"], arm.get("executor"))
             except ReductionUnavailable as error:
                 arm["backend"]["refused_at_prepare"] = str(error)
@@ -2051,7 +2089,7 @@ class InducedRun(Run):
                 f"{block['failed_points']}/{len(arm['indices'])}",
                 flush=True,
             )
-            if block["failed_points"] and not arm["profile"]:
+            if block["failed_points"] and not arm["profile"] and "row" not in arm:
                 served = [index for index in arm["indices"] if index in block["values"]]
                 if served:
                     arms.append(
@@ -2105,6 +2143,7 @@ class InducedRun(Run):
                     with (
                         running(arm["backend"]["effective"]),
                         _profiled(arm["profile"]),
+                        self._one_row(arm),
                     ):
                         block = self._block(indices, arm.get("executor"))
                     runs[label].append(block)
@@ -2140,6 +2179,7 @@ class InducedRun(Run):
             entry["batches"] = {}
             entry["served"] = {}
             entry["profiled"] = {}
+            entry["one_helicity"] = {}
             for arm in planned:
                 if arm["backend"] is not backend or not runs[_arm_label(arm)]:
                     continue
@@ -2155,7 +2195,10 @@ class InducedRun(Run):
                     - sum(failed) / (summary["points_per_block"] * len(failed)),
                     failure_causes=causes,
                 )
-                if arm["profile"]:
+                if "row" in arm:
+                    summary["row"] = arm["row_helicities"]
+                    entry["one_helicity"][str(arm["size"])] = summary
+                elif arm["profile"]:
                     entry["profiled"][str(arm["size"])] = summary
                 elif arm.get("served"):
                     summary["indices"] = arm["indices"]
@@ -2255,6 +2298,8 @@ def _probe_run_label(args: tuple, kwargs: dict) -> str:
 
 def _arm_label(arm: dict[str, Any]) -> str:
     label = f"{arm['backend']['requested']} B={arm['size']}"
+    if "row" in arm:
+        label += f" helicity row {arm['row']}"
     if arm.get("served"):
         label += f" served {len(arm['indices'])}"
     if arm.get("profile"):
