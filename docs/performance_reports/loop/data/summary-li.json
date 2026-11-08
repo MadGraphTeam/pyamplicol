@@ -51,7 +51,7 @@
    },
    "lit.json": {
     "file": "data/lit.json",
-    "present": false,
+    "present": true,
     "owner": "lit-val"
    }
   },
@@ -118,9 +118,32 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 2.597793986355879e-13
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 6.173787262562613e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 9.154493887342762e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 9.327381274816639e-13
+       }
+      ],
+      "points": 6,
+      "note": null,
+      "source": "lit.json rows[gg_h]"
      },
      "generation": {
       "status": "measured",
@@ -209,9 +232,27 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 6.196356470990676e-14
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 6.315964539655625e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 6.341983696775221e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[h_gg]"
      },
      "generation": {
       "status": "measured",
@@ -301,9 +342,27 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 2.903463233467064e-14
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.899371939402848e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.9533592555098953e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[h_aa]"
      },
      "generation": {
       "status": "measured",
@@ -393,9 +452,27 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.570628720754559e-14
+       },
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 1.667114016027893e-14
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 7.864692344366133e-14
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[h_za]"
      },
      "generation": {
       "status": "measured",
@@ -483,9 +560,27 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 5.151298758652192e-14
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.1873042919738086e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.2360564743977466e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[aa_h]"
      },
      "generation": {
       "status": "measured",
@@ -568,9 +663,32 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 3.4139177043691134e-14
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 4.533234984490084e-14
+       },
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 4.611677846120427e-14
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 4.726962975280249e-14
+       }
+      ],
+      "points": 6,
+      "note": null,
+      "source": "lit.json rows[gg_aa]"
      },
      "generation": {
       "status": "measured",
@@ -647,9 +765,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 4.55817054337354e-12
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 5.901734251712163e-12
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 6.6072530618121685e-12
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_zz]"
      },
      "generation": {
       "status": "measured",
@@ -726,9 +862,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 1.7491494730737478e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 5.672925240253487e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 7.784561949123238e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_wpwm]"
      },
      "generation": {
       "status": "measured",
@@ -805,9 +959,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.686593659958635e-14
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 1.9119789428412846e-14
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 4.165081882092484e-14
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_za]"
      },
      "generation": {
       "status": "measured",
@@ -914,9 +1086,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 3.21653862323949e-14
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 9.26653414724885e-14
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.5543863730865184e-13
+       }
+      ],
+      "points": 3,
+      "note": "LI-24 lambda_hhh scan: not run: the campaign model (loop_qcd_qed_sm = MG5 loop_sm) has no external trilinear coupling (lam = MH^2/(2 v^2) is internal), so lambda_hhh cannot be scanned alone; no model with an independent kappa_lambda is in tools/loop_reference/li_campaign.json. The triangle-box cancellation and the threshold are li_gg_hh's runs and its stress points",
+      "source": "lit.json rows[gg_hh]"
      },
      "generation": {
       "status": "measured",
@@ -997,9 +1187,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 5.4872180690937344e-14
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 5.973412845614081e-14
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 1.9654769509959625e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_hz]"
      },
      "generation": {
       "status": "measured",
@@ -1077,9 +1285,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 5.275094219016885e-15
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 7.068855541614273e-15
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.2610772117337332e-14
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_hg]"
      },
      "generation": {
       "status": "measured",
@@ -1157,9 +1383,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.9910148824435916e-15
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 3.881808050620519e-15
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 5.082327463079659e-15
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[uux_hg]"
      },
      "generation": {
       "status": "measured",
@@ -1236,9 +1480,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 4.96788030867496e-15
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 5.260108562126427e-15
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 9.354802273786418e-15
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[ug_hu]"
      },
      "generation": {
       "status": "measured",
@@ -1315,9 +1577,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 4.330325740481514e-14
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 1.0744204711495608e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.9392068169107663e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_zg]"
      },
      "generation": {
       "status": "measured",
@@ -1394,9 +1674,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 1.6367492946541184e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.8737771683724982e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.9078948168622642e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_ag]"
      },
      "generation": {
       "status": "measured",
@@ -1486,9 +1784,22 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.1614149584383583e-14
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.2939884164637379e-14
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[emep_ha]"
      },
      "generation": {
       "status": "measured",
@@ -1578,9 +1889,27 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.5474622112380806e-14
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.5489332433519586e-14
+       },
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 1.9734020193014653e-14
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[aa_aa]"
      },
      "generation": {
       "status": "measured",
@@ -1668,9 +1997,22 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.5172788092563116e-14
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.5691775553855772e-14
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[aa_zz]"
      },
      "generation": {
       "status": "measured",
@@ -1758,9 +2100,22 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 6.054785014130162e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 6.111148098296417e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[aa_hh]"
      },
      "generation": {
       "status": "measured",
@@ -1848,9 +2203,22 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.2660408645264006e-10
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.266160425185706e-10
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[emep_hh]"
      },
      "generation": {
       "status": "measured",
@@ -1943,9 +2311,22 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 7.906648953937065e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 7.022563056807313e-12
+       }
+      ],
+      "points": 3,
+      "note": "li_h_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_h_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_h_ggg: L5 partial",
+      "source": "lit.json rows[h_ggg]"
      },
      "generation": {
       "status": "measured",
@@ -2033,9 +2414,22 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 7.791045445706497e-12
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 3.202499896287624e-11
+       }
+      ],
+      "points": 3,
+      "note": "li_z_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_z_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_z_ggg: L5 partial",
+      "source": "lit.json rows[z_ggg]"
      },
      "generation": {
       "status": "measured",
@@ -2153,9 +2547,22 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.060950915347068e-10
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.3858709964436804e-08
+       }
+      ],
+      "points": 3,
+      "note": "li_emep_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_emep_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_emep_ggg: L5 partial; li_emep_ggg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "source": "lit.json rows[emep_ggg]"
      },
      "generation": {
       "status": "measured",
@@ -2285,9 +2692,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.783754773924394e-13
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 3.1737397673352556e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 8.105623646065847e-12
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_hhh]"
      },
      "generation": {
       "status": "measured",
@@ -2425,9 +2850,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 2.74128437721751e-10
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.74148728788901e-10
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.812102753906012e-10
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_hgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hgg: L5 partial; li_gg_hgg: L6 partial (double-double partial)",
+      "source": "lit.json rows[gg_hgg]"
      },
      "generation": {
       "status": "measured",
@@ -2556,9 +2999,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.9567172607839566e-08
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.9743838899236805e-08
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 8.130222963155451e-08
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_zzg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L5 partial; li_gg_zzg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
+      "source": "lit.json rows[gg_zzg]"
      },
      "generation": {
       "status": "measured",
@@ -2689,9 +3150,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 3.256691275489199e-11
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 3.305897968955147e-11
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 4.7801068978082404e-11
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_aag: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L5 partial; li_gg_aag: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "source": "lit.json rows[gg_aag]"
      },
      "generation": {
       "status": "measured",
@@ -2822,9 +3301,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 8.551035034099082e-10
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 3.911172055787658e-09
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 4.303598014110552e-08
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_wpwmg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L5 partial; li_gg_wpwmg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "source": "lit.json rows[gg_wpwmg]"
      },
      "generation": {
       "status": "measured",
@@ -2955,9 +3452,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 9.357014019879014e-12
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 2.8156137103444434e-11
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.577297296163703e-10
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_zzz: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_zzz: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_zzz: L5 partial",
+      "source": "lit.json rows[gg_zzz]"
      },
      "generation": {
       "status": "measured",
@@ -3095,9 +3610,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.9112602164046654e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.1185053001111516e-13
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 2.493081599551001e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_hzg]"
      },
      "generation": {
       "status": "measured",
@@ -3234,9 +3767,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.3190559230774881e-11
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.1016302830431655e-11
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 3.8841363152412645e-11
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_agg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L5 partial; li_gg_agg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "source": "lit.json rows[gg_agg]"
      },
      "generation": {
       "status": "measured",
@@ -3366,9 +3917,22 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.913015479202459e-06
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.9133212812835567e-06
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_zgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L5 partial; li_gg_zgg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
+      "source": "lit.json rows[gg_zgg]"
      },
      "generation": {
       "status": "measured",
@@ -3499,9 +4063,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 7.74357259395778e-10
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 7.750250461385737e-10
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 7.768441627073551e-10
+       }
+      ],
+      "points": 3,
+      "note": "li_uux_hgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_uux_hgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_uux_hgg: L5 partial; li_uux_hgg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "source": "lit.json rows[uux_hgg]"
      },
      "generation": {
       "status": "measured",
@@ -3630,9 +4212,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 8.066863084433011e-11
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.2093021592317334e-10
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.2101328706802803e-10
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[uux_ddxh]"
      },
      "generation": {
       "status": "measured",
@@ -3751,9 +4351,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.139739417924842e-09
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.787306087572307e-09
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 1.1683457009716032e-07
+       }
+      ],
+      "points": 4,
+      "note": "li_gg_hhgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L5 partial; li_gg_hhgg: L6 partial (TIRust fails 2 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial); li_gg_hhgg_p15: L3 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L4 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L6 partial (TIRust fails 1 of 1 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double not run); li_gg_hhgg_p15: E not run",
+      "source": "lit.json rows[gg_hhgg]"
      },
      "generation": {
       "status": "measured",
@@ -3881,9 +4499,27 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.2014567275212838e-11
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.9870716260099456e-11
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 4.1570665828470867e-11
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_hggg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L5 partial; li_gg_hggg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
+      "source": "lit.json rows[gg_hggg]"
      },
      "generation": {
       "status": "measured",
@@ -4019,9 +4655,22 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 2.6795649150346414e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 3.409621989226466e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_emepmupmum]"
      },
      "generation": {
       "status": "measured",
@@ -4135,9 +4784,22 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 6.800062639854434e-06
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 6.804061926830154e-06
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_aagg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aagg: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_aagg: L5 partial; li_gg_aagg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial; arbitrary not run); li_gg_aagg: L7 not run (stopped: the 40-digit AP arm of this 2->4 optional run extrapolates to about 6.9 h (its double-double arm 7405 s times the AP / double-double ratio 3.35 of li_gg_hhgg); L7 at six legs is li_gg_hhgg's)",
+      "source": "lit.json rows[gg_aagg]"
      },
      "generation": {
       "status": "not run",
@@ -4213,9 +4875,17 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 5.17842334281022e-06
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_zzzz: L3 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L5 partial; li_gg_zzzz: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "source": "lit.json rows[gg_zzzz]"
      },
      "generation": {
       "status": "not run",
@@ -4305,9 +4975,22 @@
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 5.1980378965110704e-12
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 6.59803109185405e-12
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[li51]"
      },
      "generation": {
       "status": "measured",
@@ -4410,9 +5093,11 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "delegated (lit-eft)",
+      "references": [],
+      "points": null,
+      "note": "run-only check, outside the rows and L6 (USER 2026-11-06 ~14:55)",
+      "source": "lit.json rows[li_x1]"
      },
      "generation": {
       "status": "pending",
