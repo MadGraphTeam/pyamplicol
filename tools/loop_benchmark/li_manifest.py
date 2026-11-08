@@ -3233,6 +3233,7 @@ def lit(
             # R2: waiting on a package not yet landed is partial, naming it.
             value["status"] = "partial"
             value["waits_on"] = TIR_MP
+    _dedupe(ids, rows)
     return {
         "what": "lit-val's loop-induced validation figures (m-lit PLAN §3.4 LIT-VAL, "
         "§4.0 rules, §4.1 rows): rows keyed by milestone.json loop_induced keys "
@@ -3247,6 +3248,45 @@ def lit(
 
 
 CHECKS = ("N", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "E")
+# The typed-reason tallies of a check (per distinct message its count).
+REASONS = ("failed", "tirust_failed_reasons", "reasons")
+
+
+def _without_reasons(value: Any) -> Any:
+    """``value`` with its typed-reason tallies (``REASONS``) replaced by
+    their counts (``<key>_count``)."""
+
+    if isinstance(value, list):
+        return [_without_reasons(v) for v in value]
+    if not isinstance(value, dict):
+        return value
+    out = {}
+    for k, v in value.items():
+        if k in REASONS and isinstance(v, dict):
+            out[f"{k}_count"] = sum(v.values())
+        else:
+            out[k] = _without_reasons(v)
+    return out
+
+
+def _dedupe(ids: dict, rows: dict) -> None:
+    """Each run's checks once in data/lit.json: an id's run that a registry
+    row carries is its status and that row's key (a whole run), or the
+    check's figures without the typed-reason tallies (an identity row's
+    check); the stress and validation-only runs stay whole in their ids."""
+
+    in_rows = {f: key for key, row in rows.items() for f in (row.get("runs") or {})}
+    for value in ids.values():
+        runs = value.get("runs")
+        if not isinstance(runs, dict):
+            continue
+        for name, checks in list(runs.items()):
+            if name not in in_rows or not isinstance(checks, dict):
+                continue
+            if "points" in checks:
+                runs[name] = {"status": _run_status(checks), "row": in_rows[name]}
+            else:
+                runs[name] = {**_without_reasons(checks), "row": in_rows[name]}
 
 
 def _apply_finding(result: dict, finding: Any) -> None:
