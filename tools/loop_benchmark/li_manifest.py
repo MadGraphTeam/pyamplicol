@@ -907,13 +907,15 @@ def _capability() -> dict[str, list[str]] | None:
     (its capability query, ``reduction.native_backends``), None without
     the extension."""
 
-    try:
-        from pyamplicol import _rusticol
-    except ImportError:
-        return None
+    from pyamplicol.api.errors import DependencyError
+    from pyamplicol.loops.native import load_loop_native
     from pyamplicol.loops.v2.reduction import native_backends
 
-    return {k: sorted(v) for k, v in sorted(native_backends(_rusticol).items())}
+    try:
+        native = load_loop_native()
+    except DependencyError:
+        return None
+    return {k: sorted(v) for k, v in sorted(native_backends(native).items())}
 
 
 # A record's provenance of its arms (a resumed record keeps its own).
