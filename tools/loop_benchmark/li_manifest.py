@@ -2475,15 +2475,32 @@ def limit_targets(entries: list[dict]) -> list[dict]:
     return out
 
 
-def _heft_runtime(data: dict, work: Path, process: str) -> Any:
+def _color_accuracy(artifact: Path) -> str:
+    """The colour accuracy ``artifact`` was generated at (its effective
+    configuration's ``[color] accuracy``)."""
+
+    import tomllib
+
+    config = tomllib.loads((artifact / "config" / "effective.toml").read_text())
+    return str(config["color"]["accuracy"])
+
+
+def _heft_runtime(data: dict, work: Path, process: str, accuracy: str) -> Any:
     """The HEFT tree of the fixture's process (``built-in-sm-heft``, the
-    loop model's MG5 particle names), generated once into ``work``."""
+    loop model's MG5 particle names) at ``accuracy``, the colour accuracy
+    of the loop run it divides (loop-induced: full colour only), generated
+    once into ``work``. A tree request's own default is leading colour,
+    whose colour factor is the leading N_c power (N^2 for g g > h, not
+    N^2 - 1): unset, it put exactly N^2 / (N^2 - 1) = 9/8 into the HEFT
+    trees of every LI-A7 ratio (lit-heft)."""
 
     from pyamplicol import Runtime
     from pyamplicol.api import Generator, ProcessRequest, ProcessSet
     from pyamplicol.config import resolve_config
 
-    root = work / f"heft-{data['name']}"
+    # The accuracy names the directory: a tree of another accuracy is never
+    # reused.
+    root = work / f"heft-{data['name']}-{accuracy}"
     output = root / "artifact"
     if not (output / "artifact.json").is_file():
         root.mkdir(parents=True, exist_ok=True)
@@ -2496,6 +2513,8 @@ def _heft_runtime(data: dict, work: Path, process: str) -> Any:
                     f"source = {json.dumps(HEFT)}",
                     "[process]",
                     f'entries = [{{expression = {json.dumps(process)}, name = "p"}}]',
+                    "[color]",
+                    f"accuracy = {json.dumps(accuracy)}",
                     "[generation]",
                     f"output = {json.dumps(str(output))}",
                     "emit_api_bundle = false",
@@ -2551,7 +2570,12 @@ def limits(name: str, oracle: str, work: Path, doublings: int = DOUBLINGS) -> di
     scales = [_decimal(Fraction(mu) ** 2) for mu in data["mu_r"]]
     shared: list[str] = []
     if oracle == "heft":
-        heft = _heft_runtime(data, work, expression(data, compiled))
+        heft = _heft_runtime(
+            data,
+            work,
+            expression(data, compiled),
+            _color_accuracy(work / name / "artifact"),
+        )
         # The fixture's parameters the HEFT model shares (the others, e.g.
         # its Yukawa, are none of the tree's).
         for key, value in parameters.items():
