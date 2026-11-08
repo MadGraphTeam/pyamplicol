@@ -585,16 +585,28 @@
 // build_loop_induced) as is, drawn with Table 1's own cell, colour and marker
 // functions (valued, absent, ratio-fill, gate-chip, plain-chip, dur, gib,
 // mult2): one row per process of PLAN §4.1 by multiplicity, the batched
-// B = 128 time on the default backend (TIRust; NinjaRS per amplitude
-// labelled where TIR does not serve the row yet) against the fastest matched
-// provider, generation uncoloured, explicit pending and missing markers.
+// B = 128 time of the backend `auto` serves (labelled, with the request;
+// the other backend beside it) against the fastest matched provider,
+// generation uncoloured, explicit pending and missing markers.
 #let li-meta = LI.meta
 #let li-rows = LI.groups.map(gr => gr.rows).flatten()
 // A group's title from its registry name ("2->3" as $2 -> 3$, "/" as a
 // middle dot; any name milestone.json declares).
 #let li-group-title(name) = name.split(" / ").map(part => { let xs = part.split("->"); if xs.len() == 2 and xs.all(x => x.trim().len() > 0) { $#xs.at(0).trim() -> #xs.at(1).trim()$ } else { part } }).join([ · ])
 // Missing-cell titles; the batch statuses take Table 1's words (status-title).
-#let li-title(c) = if c.status in ("not batched", "no gate batch") { status-title(c) } else { (pending: [pending], "not run": [not run], "not recorded": [not recorded]).at(c.status, default: c.status) }
+#let li-title(c) = if c.status in ("not batched", "no gate batch") { status-title(c) } else { (pending: [pending], "not run": [not run], "not recorded": [not recorded], "failed closed": [failed closed], refused: [refused]).at(c.status, default: c.status) }
+// The other backend beside the cell: its time where it served every point
+// of every block, else its outcome (points failed closed per block and the
+// recorded causes, or the refusal): never a time of a call that failed
+// points (summary-li.json other_backend).
+#let li-other(o) = if o.status == "served" { box[#o.backend_label #dur(o.seconds_per_point) (#o.label)] } else [#o.backend_label: #o.label]
+// The fastest provider's match open (its values no reference: lit-perf's
+// call, summary-li.json providers.fastest.match): said in the cell, with
+// the multiplier to the fastest other provider (uncoloured).
+#let li-match-line(r) = {
+  let f = r.providers.at("fastest", default: none)
+  if f != none and "match" in f [#pkey(f.key) #f.match#if "ratio_to_fastest_settled" in r.timing [: #mult2(r.timing.ratio_to_fastest_settled) to #pkey(r.providers.fastest_settled.key) without it]]
+}
 #let li-served = li-rows.filter(r => r.landed)
 // The provider line of a row (lit-ref's timings, or why there are none).
 #let li-prov-line(r) = {
@@ -650,13 +662,15 @@
     valued(fill: if "ratio_to_fastest" in m { ratio-fill(m.ratio_to_fastest) } else { none }, dur(m.seconds_per_point),
       mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
       [#li-prov-line(r) #h(1fr) $B = #m.batch$],
-      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "other_backend" in m [ · #m.other_backend.backend_label #dur(m.other_backend.seconds_per_point)]])
+      li-match-line(r),
+      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "requested" in m [ (#raw(m.requested))]#if "other_backend" in m [ · #li-other(m.other_backend)]])
   } else {
-    absent(li-title(m), m.at("reason", default: none), li-prov-line(r))
+    absent(li-title(m), if "requested" in m [#raw(m.requested) (#m.at("backend_label", default: [backend #m.effective])): #m.at("reason", default: m.label)] else { m.at("reason", default: none) }, li-prov-line(r))
   }
 }
-// Generation and timing pending for the same reason: one marker over both.
-#let li-cells(r) = if r.generation.status == "pending" and r.timing.status == "pending" and r.generation.reason == r.timing.reason {
+// Generation and timing pending, or not run, for the same reason: one
+// marker over both.
+#let li-cells(r) = if r.generation.status in ("pending", "not run") and r.timing.status == r.generation.status and r.generation.at("reason", default: none) == r.timing.at("reason", default: none) {
   (absent(li-title(r.timing), colspan: 2, r.timing.reason, li-prov-line(r)),)
 } else { (li-generation(r), li-timing(r)) }
 // The provenance row of the loop-induced table (one line): pyAmpliCol's
@@ -688,17 +702,17 @@
       stroke: (x, y) => (top: if y <= 3 { none } else { 0.6pt + white }, left: if x > 0 and y != 1 { 0.6pt + white } else { none }),
       fill: (x, y) => if y == 0 { navy } else if y == 1 { warm } else if y == 2 { pale } else { none },
       table.header(
-        [], [Process · validation], [Generation], [$|A_"loop"|^2$ · per point, batched, default backend],
+        [], [Process · validation], [Generation], [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
         table.cell(colspan: 4, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
         [],
         ..(
           [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
-          [generate + plan export + probes (share), peak memory; provider generation],
-          [median per point at $B = 128$; provider times (lit-ref); gate (lit-perf) or rule; backend],
+          [generate + filter + plan export + probes (share), peak memory; provider generation],
+          [median per point at $B = 128$; provider times (lit-ref); gate (lit-perf) or rule; backend (request) · the other backend],
         ).map(t => text(6.1pt, fill: ink2, t)),
       ),
       ..LI.groups.map(gr => (
-        table.cell(rowspan: gr.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon, breakable: false,
+        table.cell(rowspan: gr.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon,
           rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", li-group-title(gr.name)))),
         ..gr.rows.map(r => (li-process(r), ..li-cells(r))).flatten(),
       )).flatten(),
@@ -810,6 +824,10 @@
         linebreak()
         [Not drawn: #fig-li-missing of the #(fig-li.rows.len() + fig-li-missing) rows of @tab:summary-li (#fig-li.not_drawn.pairs().map(((why, keys)) => [#keys.len() #why]).join([, ])).]
       }
+      let fig-li-open = fig-li.rows.filter(f => f.at("match_open", default: ()).len() > 0)
+      if fig-li-open.len() > 0 {
+        [ Drawn with a provider whose match is open (lit-perf; its values no reference): #fig-li-open.map(f => [#fig-label(f.math, f.corrections) (#f.match_open.join(", "))]).join([, ]).]
+      }
     })
   },
 ) <fig:gate>
@@ -909,24 +927,40 @@ those not run or not asserted.
 
 // The legend of the loop-induced summary table (data/summary-li.json meta).
 #let li-inputs = li-meta.inputs.values()
+// What "auto" served at this head: the cells' backends and the runtime's
+// reasons, as recorded (summary-li.json timing requested / reason).
+#let li-auto = li-timed.filter(r => r.timing.at("requested", default: none) == "auto")
+#let li-auto-labels = li-auto.map(r => r.timing.backend_label).dedup()
+#let li-auto-reasons = li-auto.map(r => r.timing.at("reason", default: none)).filter(x => x != none).dedup()
 *@tab:summary-li* follows @tab:summary's rules for loop-induced processes, $|A_"loop"|^2$ without a Born: one row per
 process of the M-LIT validation matrix (`m-lit/PLAN.md` §4.1; its ids in the process cell), grouped by multiplicity;
 the backend-unit, zero, identity, observable and complex-mass-scheme rows (#li-meta.validation_only.ids.join(", ")) are
-validation-only and not listed. The cell is the batched $B = #li-meta.gate_batch$ time per point (median, finite part,
-one pinned thread, checks off) on the default backend #li-meta.default_backend\; NinjaRS per amplitude, labelled in
-the cell, where TIR does not serve the row yet; the other backend's time beside it when both ran. Its multiplier
+validation-only and not listed. The cell is the batched $B = #li-meta.gate_batch$ time per point (median over its
+timing blocks after an untimed warm-up, finite part, one pinned thread, checks off) of the record the backend `auto`
+serves at the row's revision: its effective backend in bold, the request in brackets. #if li-auto-reasons.len() > 0 [At this head `auto` takes #li-auto-labels.join(" and ") on every timed row, with the runtime's reason (verbatim): #li-auto-reasons.map(x => ["#x"]).join([; ]). The default backend of loop-induced processes, #li-meta.default_backend, serves them on explicit request until then, so the plan's "on TIRust where `lit-tir` serves it" is overtaken (coordinator ruling, slice-status DECISIONS 2026-11-07 21:50 R9).] Beside it, the other backend requested explicitly in the same
+process on the same points: its time and served fraction (#li-meta.gate_batch/#li-meta.gate_batch) where it served all #li-meta.gate_batch points of every block, else the points
+it failed closed per block of #li-meta.gate_batch with the recorded cause ("ruling (d)": binary64 TIRust serves only
+the rows its conditioning gates pass, its method choice being off at this head, slice-status DECISIONS 2026-11-07
+\~17:20 (d), until `lit-tir-mp`; a call that fails points is timed whole, which is no served-point time); a record with
+a failed point is never the cell, never coloured and never drawn in @fig:gate. The multiplier
 against the fastest matched provider (MadLoop at its loop-induced production setting 7|6|1, OpenLoops `ls`, Recola;
-production mode) colours it with @tab:summary's scale. Generation, uncoloured, is the full production `generate`
-cost: generate + plan export + the generation-time double-double finiteness and Ward probes, which run for every
-loop-induced process (their time and share beneath the value), with the peak memory over all three; the provenance
-line names pyAmpliCol's host and the providers'. Rows of four legs or fewer
+production mode) colours the cell with @tab:summary's scale. A provider whose timing record excludes its values as a
+reference (Recola's on-shell widths against the fixed-width scheme of the others) is timed and shown, but whether it is
+a matched provider of the gate is `lit-perf`'s call (slice-status DECISIONS 2026-11-06 \~19:06): where it is the
+fastest, the cell says "match open (lit-perf)" and gives the multiplier to the fastest other provider beside it,
+uncoloured. Generation, uncoloured, is the full production `generate`
+cost (model loading excluded): generate + the exact helicity-zero filter + plan export + the generation-time
+double-double finiteness and Ward probes, which run for every loop-induced process (their time and share beneath the
+value), with the peak memory over all of them; the provenance line names pyAmpliCol's host and the providers'. Rows of four legs or fewer
 ($2 -> 1$, $1 -> 2$, $2 -> 2$, $1 -> 3$) are reported without a gate; from $2 -> 3$ upward the gate is @tab:summary's
 (faster than MadLoop and at most 1.30× each matched OpenLoops and Recola time, on TIRust), "#thr-rule.short" below
 5 ms per point, no gate without a matched provider; verdict chips come with the gate tool's records, "no verdict yet"
 before them ("no provider time yet" while no provider of the row is timed). Grey cells are explicit markers:
 *pending* (the package that serves the row, named in the cell, has not landed at this head, or the input file that
-fills the cell does not exist yet), *not run* (a landed package without a record of the row), and a provider's reason
-where it has no matched time. Nothing is estimated or extrapolated; each cell shows the newest record of its row. At
+fills the cell does not exist yet), *not run* (a landed package without a record of the row, or a run stopped before its timing, with its measured
+progress, e.g. a generation beyond the 45-min rule), *failed closed* or
+*refused* (the record of the cell's request failed points or was refused: no time), and a provider's reason where it
+has no matched time. Nothing is estimated or extrapolated; each cell shows the newest record of its row. At
 this head #li-served.len() of #li-rows.len() rows are served; inputs: #li-inputs.map(x => [#raw(x.file) #if x.present [present] else [not written yet (#x.owner)]]).join([, ])\;
 the registry against `lit-ref`'s manifest (#raw(li-meta.campaign.file)): #if li-meta.campaign.checked [checked (#li-meta.campaign.rows rows, #li-meta.campaign.ids ids)] else [#li-meta.campaign.reason].
 
