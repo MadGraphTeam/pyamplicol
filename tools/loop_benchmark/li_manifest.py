@@ -2946,6 +2946,82 @@ def rambo(masses: list[float], energy: float, rng: Any) -> list[list[str]]:
     return [[repr(float(c)) for c in v] for v in beams + final]
 
 
+def anchor_asymmetry(name: str, work: Path, record: dict | None = None) -> dict:
+    """Per carrier (binary64, double-double) and fixture point the largest
+    |anchor_0 - anchor_1| / (|anchor_0| + |anchor_1|) over the helicity
+    rows of run ``name``'s two amplitude-basis anchors (finite part,
+    NinjaRS), with the bound it is judged against: binary64 10 x the
+    point's relative estimate (``record``'s NinjaRS binary64 checked arm),
+    double-double the 1e-24 target (CARRIER)."""
+
+    from pyamplicol import Runtime
+
+    data = fixture(name)
+    compiled = compile_model(data, work / "model-cache")
+    artifact, _generation = generate(name, work, compiled)
+    runtime = Runtime.load(
+        artifact, process="p", model_parameters=run_parameters(data, compiled)
+    )
+    scales = [_decimal(Fraction(mu) ** 2) for mu in data["mu_r"]]
+    record = record if record is not None else _load(work / name / "record.json")
+    estimates = [
+        (p.get("estimate") or {}).get("relative")
+        for p in record["arms"]["ninjars/double/checked"]["points"]
+    ]
+    out: dict[str, Any] = {"run": name}
+    for carrier in CARRIERS:
+        result = runtime.evaluate_resolved(
+            data["points"],
+            mu_r2=scales,
+            color_resolution="amplitude-basis",
+            reduction="ninjars",
+            poles="all",
+            arithmetic=carrier,
+        )
+        if len(result.virtual_color_ids) != 2:
+            out[carrier] = {"reason": f"anchors {result.virtual_color_ids}: not a pair"}
+            continue
+        points = []
+        for p, values in enumerate(result.values):
+            worst = 0.0
+            for row in values[0]:
+                # (exact in the carrier's digits: Decimal of the value)
+                a, b = (Decimal(str(x.finite)) for x in row)
+                if a or b:
+                    worst = max(worst, float(abs(a - b) / (abs(a) + abs(b))))
+            bound = (
+                FACTOR * estimates[p]
+                if carrier == "double" and estimates[p] is not None
+                else (CARRIER if carrier != "double" else None)
+            )
+            points.append({"asymmetry": worst, "bound": bound})
+        out[carrier] = {
+            "anchors": list(result.virtual_color_ids),
+            "points": points,
+        }
+    return out
+
+
+def fabc_check(work: Path, check: dict) -> dict:
+    """LI-27's f^abc check (SPEC ``colour_checks``): the run's anchor
+    asymmetry within its bounds at every point and carrier (the f^abc part
+    vanishes numerically), the control's beyond them at some point (the
+    check sees an f^abc part); 'pass' when both hold, else 'fail'."""
+
+    run, control = (anchor_asymmetry(check[k], work) for k in ("run", "control"))
+
+    def within(result: dict) -> list[bool]:
+        return [
+            p["bound"] is not None and p["asymmetry"] <= p["bound"]
+            for carrier in CARRIERS
+            for p in result.get(carrier, {}).get("points", [])
+        ]
+
+    held, seen = within(run), within(control)
+    status = "pass" if held and all(held) and not all(seen) else "fail"
+    return {"status": status, "run": run, "control": control, "what": COLOUR["what"]}
+
+
 def fig7(
     work: Path,
     counts: dict[str, int],
@@ -3193,6 +3269,9 @@ def judge_fig7(results: list[dict]) -> dict:
 # lane's scale (its MARGIN, FLOOR). Each row's executor is its campaign's own
 # generation (``mqcd.Campaign``), at its tier points and the forward points.
 BORN = _load(SPEC)["born_l6"]
+# §4.1 LI-27's numerical f^abc check and the §4.1 checks not run (SPEC).
+COLOUR = _load(SPEC)["colour_checks"]
+UNRUN = _load(SPEC)["unrun_checks"]
 
 
 def lanes_module(path: Path) -> Any:
@@ -3764,6 +3843,7 @@ def lit(
     madloop: dict | None = None,
     fig7_result: dict | None = None,
     born: dict[str, dict] | None = None,
+    fabc: dict | None = None,
 ) -> dict:
     """data/lit.json: per registry key its status, reference deviations
     (binary64, NinjaRS; the analytic oracle's too), points and per-check
@@ -3927,6 +4007,16 @@ def lit(
         }
     if fig7_result:
         ids[FIG7_ID] = judge_fig7(fig7_result)
+    for i, result in (fabc or {}).items():
+        # LI-27's f^abc check (``fabc_check``) next to its runs
+        ids[i] = {
+            **ids.get(i, {}),
+            "fabc": result,
+            "status": _worst([ids.get(i, {}).get("status", "pass"), result["status"]]),
+        }
+    for i, checks in UNRUN.items():
+        if i.startswith("LI-"):
+            ids.setdefault(i, {})["not_run"] = checks
     for value in ids.values():
         status = value.get("status", "")
         if status.startswith("waits"):
@@ -4250,6 +4340,9 @@ def main(argv: list[str] | None = None) -> int:
         help="the stress-madloop command's output",
     )
     out.add_argument(
+        "--fabc", type=Path, default=None, help="the fabc command's output"
+    )
+    out.add_argument(
         "--fig7",
         type=Path,
         action="append",
@@ -4267,6 +4360,10 @@ def main(argv: list[str] | None = None) -> int:
     f7.add_argument(
         "counts", nargs="*", help="FIXTURE=POINTS (default: SPEC fig7 runs)"
     )
+    fabc = sub.add_parser(
+        "fabc", help="LI-27: the f^abc check of g g > a g (SPEC colour_checks)"
+    )
+    fabc.add_argument("--work-dir", type=Path, required=True)
     cross = sub.add_parser(
         "crossing", help="C1: the crossing evaluations of LI-26's runs"
     )
@@ -4443,6 +4540,15 @@ def main(argv: list[str] | None = None) -> int:
                 # the row's generation is not needed again (memory)
                 campaign._runs.clear()
         return 0
+    if args.command == "fabc":
+        result = {
+            i: fabc_check(args.work_dir, check)
+            for i, check in COLOUR.items()
+            if i.startswith("LI-")
+        }
+        (args.work_dir / "fabc.json").write_text(json.dumps(result, indent=1) + "\n")
+        print({i: r["status"] for i, r in result.items()}, flush=True)
+        return 0
     if args.command == "identity-tirust":
         paths = (
             [args.work_dir / n / "record.json" for n in args.fixtures]
@@ -4496,6 +4602,7 @@ def main(argv: list[str] | None = None) -> int:
                 madloop=madloop,
                 fig7_result=fig7_result,
                 born=born,
+                fabc=_load(args.fabc) if args.fabc else None,
             ),
             indent=1,
             sort_keys=True,
