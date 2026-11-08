@@ -1798,6 +1798,7 @@ class InducedRun(Run):
         executor = executor or self.executor
         self.timers.clear()
         self.native_seconds.clear()
+        cpu = time.process_time()
         begin = time.perf_counter()
         try:
             results = executor.evaluate(
@@ -1807,6 +1808,7 @@ class InducedRun(Run):
         except FailedPoints as error:
             results, failures = error.results, error.failures
         wall = time.perf_counter() - begin
+        cpu = time.process_time() - cpu
         report = executor.last_report
         seconds = dict(self.timers.seconds)
         native_stages = {
@@ -1832,6 +1834,9 @@ class InducedRun(Run):
         seconds["other"] = wall - accounted
         return results, {
             "wall": wall,
+            # The process's CPU time over the call: on one thread its share
+            # of the wall time says whether the core was shared.
+            "cpu": cpu,
             "seconds": seconds,
             "counts": dict(report["counts"]),
             "lanes": report["lanes"],
@@ -2334,6 +2339,11 @@ def _summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
         **(
             {"started": [run["started"] for run in runs]}
             if all("started" in run for run in runs)
+            else {}
+        ),
+        **(
+            {"cpu_share": [run["cpu"] / run["wall"] for run in runs]}
+            if all("cpu" in run and run["wall"] for run in runs)
             else {}
         ),
         "points_per_block": points,
