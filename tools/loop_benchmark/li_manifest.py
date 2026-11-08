@@ -3256,6 +3256,70 @@ def born_verdict(result: dict) -> str:
     return "pass (lax)" if result["beyond_10x"] else "pass"
 
 
+def judge_truth(
+    result: dict,
+    found: dict[str, list],
+    high: dict[str, list],
+    points: list[int],
+    margin: float,
+    floor: float,
+) -> None:
+    """A failing binary64 comparison (``result`` of ``compare_lanes`` on
+    ``found``) against the double-double lanes ``high`` at its failing
+    ``points`` (ruling (7): a consistent truth first): per lane beyond 10x
+    at or above LAX, where both backends' double-double values agree within
+    10 x 1e-24 of the lane (CARRIER), each backend's binary64 error against
+    them relative to the lane and its estimate (the re-test, floor ``floor``
+    x the lane's scale); a backend whose error exceeds ``margin`` x its
+    estimate has an estimate miss. Every such lane explained by an estimate
+    miss makes the status 'estimate miss' (a stability finding, the
+    backend named), otherwise it stays 'fail'."""
+
+    truths, explained = [], True
+    for b in result["beyond"]:
+        if b["zero"] or b["relative"] < LAX:
+            continue
+        k = points.index(b["point"])
+        entry: dict[str, Any] = {"point": b["point"], "lane": b["lane"]}
+        sides = [high[backend][k] for backend in BACKENDS]
+        if any("failed" in side for side in sides):
+            entry["truth"] = "a backend fails the point closed in double-double"
+            truths.append(entry)
+            explained = False
+            continue
+        key = next(x for x in sides[0]["direct"] if compact_detail(str(x)) == b["lane"])
+        dd = [[complex(x) for x in side["direct"][key]] for side in sides]
+        scale = max(abs(x) for x in dd[0]) or 1.0
+        agreement = max(abs(x - y) for x, y in zip(*dd, strict=True)) / scale
+        entry["double_double_backends_relative"] = agreement
+        if agreement > margin * CARRIER:
+            entry["truth"] = "the backends' double-double values disagree"
+            truths.append(entry)
+            explained = False
+            continue
+        missed = []
+        for backend in BACKENDS:
+            value = found[backend][b["point"]]
+            a = [complex(x) for x in value["direct"][key]]
+            c = [complex(x) for x in value["check"][key]]
+            own = max(abs(x) for x in a) or 1.0
+            estimate = max(max(abs(x - y) for x, y in zip(a, c, strict=True)) / own, floor)
+            error = max(abs(x - y) for x, y in zip(a, dd[0], strict=True)) / own
+            entry[backend] = {"error": error, "estimate": estimate}
+            if error > margin * estimate:
+                missed.append(backend)
+        entry["estimate_miss"] = missed
+        explained = explained and bool(missed)
+        truths.append(entry)
+    result["truth"] = truths
+    if truths and explained:
+        result["status"] = "estimate miss"
+        result["estimate_miss"] = {
+            backend: sum(backend in t["estimate_miss"] for t in truths)
+            for backend in BACKENDS
+        }
+
+
 def forward_points(run: Any, values: list[str], digits: int = DIGITS) -> tuple | str:
     """The forward points of a 2 -> 2 row (§4.1 LI-B1's theta rows): at the
     CM angles ``values``, sqrt(s) the 2^x 5^y nearest the row's first
@@ -3367,6 +3431,28 @@ def born_l6(
             result["points"] = list(where[:take])
             result["seconds"] = {b: round(v, 2) for b, v in seconds.items()}
             result["status"] = born_verdict(result)
+            if precision is None and result["status"] == "fail":
+                # ruling (7): a consistent truth before a defect: the
+                # double-double lanes at the failing points
+                failing = sorted(
+                    {
+                        b["point"]
+                        for b in result["beyond"]
+                        if not b["zero"] and b["relative"] >= LAX
+                    }
+                )
+                high = _Carrier(run.executor, Precision.double_double())
+                truth_found = {
+                    backend: module.lanes(
+                        high,
+                        [points[k] for k in failing],
+                        [scales[k] for k in failing],
+                        run.parameters,
+                        backend,
+                    )[0]
+                    for backend in BACKENDS
+                }
+                judge_truth(result, found, truth_found, failing, module.MARGIN, floor)
             record.setdefault("sets", {}).setdefault(label, {})[carrier] = result
     record["status"] = _worst(
         [c["status"] for s in record["sets"].values() for c in s.values()]
@@ -3540,6 +3626,8 @@ def born_summary(records: dict[str, dict]) -> dict:
                         "worst_beyond_10x",
                         "beyond_10x_zero",
                         "worst_zero_point_relative",
+                        "truth",
+                        "estimate_miss",
                         "no_estimate",
                         "failed_points",
                         "failed",
