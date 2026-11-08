@@ -898,7 +898,9 @@ def ward_probes(
     if all(label in previous.get("arms", {}) for label in labels):
         return previous
     start = time.perf_counter()
-    target = ward_slice(compiled, replace(request, fixed_parameters=fixed), load_loop_native())
+    target = ward_slice(
+        compiled, replace(request, fixed_parameters=fixed), load_loop_native()
+    )
     legs = list(gauge_legs(target))
     out: dict[str, Any] = {
         "legs": legs,
@@ -932,7 +934,10 @@ def ward_probes(
                     )
                 rows.append(
                     {
-                        "worst": {str(leg): r.worst for leg, r in zip(legs, found, strict=True)},
+                        "worst": {
+                            str(leg): r.worst
+                            for leg, r in zip(legs, found, strict=True)
+                        },
                         "passed": all(r.passed for r in found),
                     }
                 )
@@ -1414,7 +1419,9 @@ def judge(record: dict, entry: dict) -> dict:
     # massive vectors where the artifact records it); its verdict is the
     # worst of them (TIRust's arms of an extension before lit-tir-mp wait).
     probes = record["generation"]["probes"] or {}
-    generation = {k: probes[k] for k in ("finiteness", "ward", "goldstone") if k in probes}
+    generation = {
+        k: probes[k] for k in ("finiteness", "ward", "goldstone") if k in probes
+    }
     wards = record.get("ward_probes")
     l4: dict[str, Any] = {}
     statuses = []
@@ -1465,7 +1472,9 @@ def judge(record: dict, entry: dict) -> dict:
             worst = [max(x["worst"].values()) for x in arm if "worst" in x]
             if not worst:
                 status = "partial" if label.startswith("tirust") else "not run"
-            elif max(worst) <= FACTOR and all(x.get("passed") for x in arm if "worst" in x):
+            elif max(worst) <= FACTOR and all(
+                x.get("passed") for x in arm if "worst" in x
+            ):
                 status = "pass" if len(worst) == count else "partial"
             else:
                 status = "fail"
@@ -1563,9 +1572,7 @@ def judge(record: dict, entry: dict) -> dict:
                 (n.get("estimate") if n.get("status") == "success" else None),
                 (t.get("estimate") if t.get("status") == "success" else None),
             )
-            for n, t in zip(
-                ndd.get("points", []), tdd.get("points", []), strict=False
-            )
+            for n, t in zip(ndd.get("points", []), tdd.get("points", []), strict=False)
         ]
         if zero and "points" in ndd and "points" in tdd
         else ([] if zero else None)
@@ -1819,7 +1826,11 @@ def _high_l6(
         status = _worst([status, "partial"])
     return {
         "status": status,
-        **({"rule": "absolute: 10 max(E_N, E_T), the double-double estimates (L8)"} if bounds is not None else {}),
+        **(
+            {"rule": "absolute: 10 max(E_N, E_T), the double-double estimates (L8)"}
+            if bounds is not None
+            else {}
+        ),
         "compared_entries": len(rows),
         "worst_ratio_to_bound": worst,
         "finite_max_relative": relative,
@@ -3060,6 +3071,274 @@ def judge_fig7(results: list[dict]) -> dict:
     }
 
 
+# ---------------------------------------------- LI-B1: the Born-interfered L6
+
+# R8 (DECISIONS 2026-11-07 21:50): lit-val extends LI-B1's Born-interfered L6
+# to the other campaigns of PLAN §4.1 (M-QCD, M-SM incl. CMS, decay XX01-08;
+# HC through ``born_l6_public``) by lit-tir's per-lane comparison: its
+# ``scripts/li_b1.py`` (``--lanes-script``, a path argument: lit-tir's scratch
+# script, not a module of this tree) evaluates each point's lanes with their
+# re-test frames on one backend (``lanes``); every lane, every Laurent order,
+# NinjaRS vs TIRust within 10 x the larger re-test estimate, floor 4 u of the
+# lane's scale (its MARGIN, FLOOR). Each row's executor is its campaign's own
+# generation (``mqcd.Campaign``), at its tier points and the forward points.
+BORN = _load(SPEC)["born_l6"]
+
+
+def lanes_module(path: Path) -> Any:
+    """lit-tir's ``li_b1.py`` at ``path`` (``lanes``, ``MARGIN``, ``FLOOR``)."""
+
+    import importlib.util
+
+    found = importlib.util.spec_from_file_location("lit_tir_li_b1", path)
+    if found is None or found.loader is None:
+        raise ValueError(f"{path}: not a Python script")
+    module = importlib.util.module_from_spec(found)
+    found.loader.exec_module(module)
+    return module
+
+
+class _Carrier:
+    """A native executor whose batches run in ``precision`` (lit-tir's
+    ``lanes`` evaluates at the executor's default carrier, binary64)."""
+
+    def __init__(self, executor: Any, precision: Any):
+        self._executor, self._precision = executor, precision
+
+    def _evaluated(self, points, scales, parameters, _precision, *rest):
+        return self._executor._evaluated(
+            points, scales, parameters, self._precision, *rest
+        )
+
+    @property
+    def last_report(self) -> dict:
+        return self._executor.last_report
+
+
+def compare_lanes(found: dict[str, list], margin: float, floor: float) -> dict:
+    """lit-tir's per-lane L6 (li_b1.py) over ``found`` (backend -> its
+    ``lanes`` output per point): lanes compared, beyond 1x / 10x the larger
+    re-test estimate (floor ``floor`` x the lane's scale), the worst ratio to
+    10x and the worst relative deviation (of all lanes and of those beyond
+    10x), lanes served without an estimate, failed points and typed reasons
+    per backend, the virtual totals' largest relative difference."""
+
+    out = {
+        "lanes": 0,
+        "beyond_1x": 0,
+        "beyond_10x": 0,
+        "worst_over_10x": 0.0,
+        "worst_deviation": 0.0,
+        "worst_beyond_10x": 0.0,
+        "no_estimate": 0,
+        "failed_points": {b: 0 for b in BACKENDS},
+        "failed": {b: [] for b in BACKENDS},
+        "virtual_max_relative": 0.0,
+    }
+    for n, t in zip(found["ninjars"], found["tirust"], strict=True):
+        for backend, value in (("ninjars", n), ("tirust", t)):
+            if "failed" in value:
+                out["failed_points"][backend] += 1
+                out["failed"][backend].extend(str(r) for r in value["failed"])
+        if "failed" in n or "failed" in t:
+            continue
+        for lane, a in n["direct"].items():
+            b, checked = (
+                t["direct"].get(lane),
+                (n["check"].get(lane), t["check"].get(lane)),
+            )
+            if b is None or None in checked:
+                out["no_estimate"] += 1
+                continue
+            scale = float(max(abs(x) for x in a))
+            e_n = float(max(abs(x - y) for x, y in zip(a, checked[0], strict=True)))
+            e_t = float(max(abs(x - y) for x, y in zip(b, checked[1], strict=True)))
+            larger = max(e_n, e_t, floor * scale)
+            deviation = float(max(abs(x - y) for x, y in zip(a, b, strict=True)))
+            ratio = (
+                deviation / (margin * larger)
+                if larger
+                else (math.inf if deviation else 0.0)
+            )
+            relative = deviation / scale if scale else deviation
+            out["lanes"] += 1
+            out["beyond_1x"] += ratio * margin > 1
+            out["beyond_10x"] += ratio > 1
+            out["worst_over_10x"] = max(out["worst_over_10x"], ratio)
+            out["worst_deviation"] = max(out["worst_deviation"], relative)
+            if ratio > 1:
+                out["worst_beyond_10x"] = max(out["worst_beyond_10x"], relative)
+        for order, a in n["virtual"].items():
+            b = t["virtual"][order]
+            scale = max((abs(x) for x in a if x is not None), default=0.0)
+            if scale:
+                difference = max(
+                    abs(x - y) for x, y in zip(a, b, strict=True) if x is not None
+                )
+                out["virtual_max_relative"] = max(
+                    out["virtual_max_relative"], difference / scale
+                )
+    out["failed"] = {
+        b: _counted(compact_detail(r) for r in v) for b, v in out["failed"].items()
+    }
+    return out
+
+
+def born_verdict(result: dict) -> str:
+    """A comparison's verdict (DECISIONS 2026-11-08 08:31): 'fail' on a lane
+    beyond 10x deviating >= ~1e-5 relative (LAX) or served without an
+    estimate; 'pass (lax)' with lanes beyond 10x all below it; 'partial'
+    where a backend failed points (closed, typed) and the rest passes, or no
+    lane was compared; else 'pass'."""
+
+    if result["no_estimate"] or result["worst_beyond_10x"] >= LAX:
+        return "fail"
+    if any(result["failed_points"].values()) or not result["lanes"]:
+        return "partial"
+    return "pass (lax)" if result["beyond_10x"] else "pass"
+
+
+def forward_points(run: Any, values: list[str], digits: int = DIGITS) -> tuple | str:
+    """The forward points of a 2 -> 2 row (§4.1 LI-B1's theta rows): at the
+    CM angles ``values``, sqrt(s) the 2^x 5^y nearest the row's first
+    reference point's, its scale; massless beams and the row's equal final
+    masses (the model's, ``assemble._leg_masses``) in ``_pair``'s exact
+    construction (pt = theta sqrt(s) / 2). A reason (str) where the row has
+    no such construction."""
+
+    from pyamplicol.loops.v2.assemble import _leg_masses
+
+    masses = _leg_masses(run.slice, run.parameters, digits)
+    if len(masses) != 4 or masses[0] or masses[1] or masses[2] != masses[3]:
+        return "no forward construction: not 2 -> 2 with massless beams and equal final masses"
+    point = [[Fraction(Decimal(c)) for c in p] for p in run.reference.points[0]]
+    total = [p[0][k] + p[1][k] for p in [point] for k in range(4)]
+    s = total[0] ** 2 - sum(c * c for c in total[1:])
+    energy = _near(math.sqrt(float(s)))
+    out = []
+    for text in values:
+        pt = Fraction(Decimal(text)) * energy / 2
+        ratio = float(energy) / math.sqrt(float(masses[2] + pt * pt))
+        if ratio < 2:
+            return f"no forward construction: sqrt(s) = {float(energy)} below the pair threshold"
+        out.append(_pair(masses[2], pt, _near(_rho(ratio))))
+    points = [[[_decimal(Fraction(c)) for c in p] for p in q] for q in out]
+    return points, [run.reference.scales[0]] * len(points), float(energy)
+
+
+def born_l6(
+    campaign: Any,
+    name: str,
+    module: Any,
+    *,
+    forward: list[str] = BORN["forward"]["values"],
+    high_points: int = BORN["high_points"],
+) -> dict:
+    """LI-B1's L6 of campaign row ``name``: lit-tir's lanes on both backends
+    (reduction requested explicitly per call, ``reduction.running``) in
+    binary64 at the row's tier points and its forward points, and in
+    double-double at its first ``high_points`` tier points and the forward
+    points."""
+
+    from pyamplicol.loops.v2.assemble import Precision
+
+    row = campaign.rows[name]
+    record: dict[str, Any] = {"row": name, "process": row.process, "native": _native()}
+    if not row.active:
+        return {**record, "status": "not run", "reason": f"{row.status}: {row.pending}"}
+    if row.route == "public":
+        return {
+            **record,
+            "status": "not run",
+            "reason": f"public-route variant of {row.base}: its request and plan are the "
+            "tools-route base row's (compared there); the public route is the artifact path",
+        }
+    start = time.perf_counter()
+    run = campaign.run(name)
+    record["generate_seconds"] = round(time.perf_counter() - start, 2)
+    indices = sorted({i for tier in row.points for i in row.tier_points(tier)})
+    sets = {
+        "reference": (
+            indices,
+            [run.reference.points[i] for i in indices],
+            [run.reference.scales[i] for i in indices],
+        )
+    }
+    built = forward_points(run, forward)
+    if isinstance(built, str):
+        record["forward"] = built
+    else:
+        sets["forward"] = (forward, built[0], built[1])
+        record["forward_sqrt_s"] = built[2]
+    carriers = {
+        "double": (None, module.FLOOR),
+        "double-double": (Precision.double_double(), CARRIER),
+    }
+    for label, (where, points, scales) in sets.items():
+        for carrier, (precision, floor) in carriers.items():
+            # (the forward points in double-double too: binary64 fails them
+            # closed where the Gram conditioning is the stress)
+            take = (
+                len(points)
+                if precision is None or label != "reference"
+                else min(high_points, len(points))
+            )
+            executor = (
+                run.executor if precision is None else _Carrier(run.executor, precision)
+            )
+            found, seconds = {}, {}
+            for backend in BACKENDS:
+                found[backend], _counts, seconds[backend] = module.lanes(
+                    executor, points[:take], scales[:take], run.parameters, backend
+                )
+            result = compare_lanes(found, module.MARGIN, floor)
+            result["points"] = list(where[:take])
+            result["seconds"] = {b: round(v, 2) for b, v in seconds.items()}
+            result["status"] = born_verdict(result)
+            record.setdefault("sets", {}).setdefault(label, {})[carrier] = result
+    record["status"] = _worst(
+        [c["status"] for s in record["sets"].values() for c in s.values()]
+    )
+    return record
+
+
+def born_summary(records: dict[str, dict]) -> dict:
+    """LI-B1's campaign rows in data/lit.json: per campaign the verdict
+    tally and per row its compact figures (the worst carrier and point set)."""
+
+    out: dict[str, Any] = {}
+    for key, record in sorted(records.items()):
+        campaign = key.split("/", 1)[0]
+        entry = out.setdefault(campaign, {"tally": {}, "rows": {}})
+        status = record["status"]
+        entry["tally"][status] = entry["tally"].get(status, 0) + 1
+        compact: dict[str, Any] = {"status": status, "process": record["process"]}
+        if "reason" in record:
+            compact["reason"] = record["reason"]
+        for label, carriers in (record.get("sets") or {}).items():
+            for carrier, r in carriers.items():
+                compact[f"{label}/{carrier}"] = {
+                    k: r[k]
+                    for k in (
+                        "status",
+                        "points",
+                        "lanes",
+                        "beyond_10x",
+                        "worst_over_10x",
+                        "worst_deviation",
+                        "worst_beyond_10x",
+                        "no_estimate",
+                        "failed_points",
+                        "failed",
+                        "virtual_max_relative",
+                    )
+                }
+        if "forward" in record:
+            compact["forward"] = record["forward"]
+        entry["rows"][record["row"]] = compact
+    return out
+
+
 # ------------------------------------------------------------- data/lit.json
 
 
@@ -3086,6 +3365,7 @@ def lit(
     crossing_result: dict | None = None,
     madloop: dict | None = None,
     fig7_result: dict | None = None,
+    born: dict[str, dict] | None = None,
 ) -> dict:
     """data/lit.json: per registry key its status, reference deviations
     (binary64, NinjaRS; the analytic oracle's too), points and per-check
@@ -3225,6 +3505,16 @@ def lit(
     for i, record in delegated.items():
         if i.startswith("LI-"):
             ids[i] = record
+    if born:
+        # LI-B1's campaign rows (``born_l6``) next to lit-tir's G1 evidence.
+        ids["LI-B1"] = {
+            **ids.get("LI-B1", {}),
+            "campaigns": born_summary(born),
+            "status": _worst(
+                [ids.get("LI-B1", {}).get("status", "pass")]
+                + [r["status"] for r in born.values() if r["status"] != "not run"]
+            ),
+        }
     if fig7_result:
         ids[FIG7_ID] = judge_fig7(fig7_result)
     for value in ids.values():
@@ -3445,7 +3735,9 @@ def _resumable(path: Path, refresh: str | None, name: str, work: Path) -> dict |
     }
     wards = done.get("ward_probes")
     if wards is not None:
-        kept = {k: v for k, v in wards.get("arms", {}).items() if not k.startswith(refresh)}
+        kept = {
+            k: v for k, v in wards.get("arms", {}).items() if not k.startswith(refresh)
+        }
         wards = {**wards, "arms": kept}
     refreshed = [
         *done.get("refreshed", []),
@@ -3574,6 +3866,33 @@ def main(argv: list[str] | None = None) -> int:
         help="the reference tree (default: LOOP_REFERENCE_ROOT, else the workspace's)",
     )
     ml.add_argument("--cpu", type=int, default=None)
+    bl = sub.add_parser(
+        "born-l6",
+        help="LI-B1: the Born-interfered L6 of campaign rows (lit-tir's lanes)",
+    )
+    bl.add_argument("--campaign", choices=sorted(BORN["campaigns"]), required=True)
+    bl.add_argument(
+        "--lanes-script", type=Path, required=True, help="lit-tir's scripts/li_b1.py"
+    )
+    bl.add_argument("--ufo", type=Path, required=True, help="loop_sm's UFO")
+    bl.add_argument(
+        "--model-ufo",
+        action="append",
+        default=[],
+        metavar="NAME=PATH",
+        help="the UFO of a manifest model other than loop_sm (its ``models``)",
+    )
+    bl.add_argument("--work-dir", type=Path, required=True)
+    bl.add_argument(
+        "--output", type=Path, required=True, help="a directory: one record per row"
+    )
+    bl.add_argument("rows", nargs="*", help="default: every row of the campaign")
+    out.add_argument(
+        "--born-l6",
+        type=Path,
+        default=None,
+        help="the born-l6 command's output directory (LI-B1's campaign rows)",
+    )
     args = parser.parse_args(argv)
     sys.path.insert(0, str(WT))
     entries = runs()
@@ -3653,6 +3972,43 @@ def main(argv: list[str] | None = None) -> int:
             json.dumps(result, indent=1) + "\n"
         )
         return 0
+    if args.command == "born-l6":
+        from pyamplicol.loops.native import load_loop_native
+        from tools.loop_benchmark import mqcd
+
+        module = lanes_module(args.lanes_script)
+        campaign = mqcd.Campaign(
+            args.ufo,
+            load_loop_native(),
+            args.work_dir,
+            manifest=mqcd.load_manifest(WT / BORN["campaigns"][args.campaign]),
+            ufos=dict(item.split("=", 1) for item in args.model_ufo),
+        )
+        args.output.mkdir(parents=True, exist_ok=True)
+        names = args.rows or list(campaign.rows)
+        for k, name in enumerate(names):
+            path = args.output / f"{args.campaign}-{name}.json"
+            group = campaign.rows[name].base or name
+            later = {campaign.rows[n].base or n for n in names[k + 1 :]}
+            if path.is_file():
+                print(name, "recorded", flush=True)
+                continue
+            try:
+                record = born_l6(campaign, name, module)
+            except Exception as error:  # the row's record (a typed reason)
+                record = {
+                    "row": name,
+                    "process": campaign.rows[name].process,
+                    "status": "fail",
+                    "reason": f"{type(error).__name__}: {error}"[:2000],
+                }
+            record["campaign"] = args.campaign
+            path.write_text(json.dumps(record, indent=1, default=str) + "\n")
+            print(name, record["status"], flush=True)
+            if group not in later:
+                # the row's generation is not needed again (memory)
+                campaign._runs.clear()
+        return 0
     if args.command == "crossing":
         result = crossing(args.work_dir, entries)
         (args.work_dir / "crossing.json").write_text(
@@ -3668,6 +4024,14 @@ def main(argv: list[str] | None = None) -> int:
     crossing_result = _load(args.crossing) if args.crossing else None
     madloop = _load(args.stress_madloop) if args.stress_madloop else None
     fig7_result = [_load(path) for path in args.fig7] or None
+    born = (
+        {
+            f"{r['campaign']}/{r['row']}": r
+            for r in map(_load, sorted(args.born_l6.glob("*.json")))
+        }
+        if args.born_l6
+        else None
+    )
     args.output.write_text(
         json.dumps(
             lit(
@@ -3678,6 +4042,7 @@ def main(argv: list[str] | None = None) -> int:
                 crossing_result=crossing_result,
                 madloop=madloop,
                 fig7_result=fig7_result,
+                born=born,
             ),
             indent=1,
         )
