@@ -10,6 +10,10 @@ Usage (worktree root, licence in the environment, the staged native)::
     python tools/loop_benchmark/li_manifest.py crossing --work-dir W  # C1
     python tools/loop_benchmark/li_manifest.py fig7 --work-dir W li_gg_zz=200 ...
     python tools/loop_benchmark/li_manifest.py stress-madloop --work-dir W
+    python tools/loop_benchmark/li_manifest.py identity-tirust --work-dir W  # LI-L1 on T
+    python tools/loop_benchmark/li_manifest.py fabc --work-dir W  # LI-27's f^abc
+    python tools/loop_benchmark/li_manifest.py born-l6 --campaign C --lanes-script \
+        <lit-tir>/scripts/li_b1.py --ufo U --work-dir W --output D [ROWS]  # LI-B1
     python tools/loop_benchmark/li_manifest.py lit --records W [--output F]
 
 The run matrix is read off lit-ref's manifest
@@ -51,7 +55,9 @@ outside the complex-mass scheme, Q7), with the generation-time Ward and
 Goldstone probes the artifact records (a row no Ward probe reaches is
 'recorded'); L5/L1-identity an exact Lorentz transform (rotation and boost with
 terminating-decimal entries) leaves |A|^2 within 10 E of the fixture point
-in binary64 and is recorded in double-double; C1 the crossing
+in binary64 on both backends (TIRust: ``identity-tirust``) and is recorded in
+double-double; LI-27's f^abc part of g g > a g numerically (``fabc``: the
+amplitude-basis anchors' asymmetry, the control g g > z g); C1 the crossing
 (``crossing``); L6 |T - N| <= 10 max(E_N, E_T) per sector and Laurent
 coefficient in binary64 through the one comparison (``_compare``; a TIRust
 point whose checked call fails keeps E_N alone, which is conservative),
@@ -823,6 +829,11 @@ def finiteness_probes(
     from pyamplicol.loops.v2.assemble import Precision
     from pyamplicol.loops.v2.reduction import running
 
+    # (the loaded runtime's own native executor: the public Runtime has no
+    # accessor for it, and a second executor from the stored artifact,
+    # ``artifact.executor(inputs="native")``, would hold the native plans
+    # twice on the six-leg rows; a test-side developer reach, like
+    # tests/unit/test_correlator_runtime.py's)
     executor = runtime._backend._executor
     out: dict[str, list] = {}
     for backend, carrier in PROBES:
