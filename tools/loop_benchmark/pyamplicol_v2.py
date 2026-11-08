@@ -2025,20 +2025,29 @@ class InducedRun(Run):
                             "indices": served,
                             "profile": False,
                             "served": True,
+                            "warm_up": label,
                         }
                     )
-        # The budget: the cheapest arm per point scales every arm's rounds.
-        per_point = min(
-            (w["seconds"] / w["points"] for w in warm.values()), default=0.0
-        )
+        # Blocks per round: enough points per round for a small B
+        # (``--min-points``), each block the next stream points of its arm (a
+        # served-points arm repeats its points); the budget per arm from its
+        # own warm-up.
         skipped = {}
         planned = []
         for arm in arms:
-            estimate = per_point * len(arm["indices"]) * options.reps
+            blocks = (
+                1
+                if arm.get("served")
+                else max(1, math.ceil(options.min_points / arm["size"]))
+            )
+            arm["blocks"] = blocks
+            arm["offset"] = 0
+            w = warm[arm.get("warm_up", _arm_label(arm))]
+            estimate = w["seconds"] / w["points"] * arm["size"] * blocks * options.reps
             if estimate > options.budget:
                 skipped[_arm_label(arm)] = (
-                    f"estimated {estimate:.0f} s for {options.reps} rounds over the "
-                    f"budget of {options.budget:.0f} s"
+                    f"estimated {estimate:.0f} s for {options.reps} rounds of "
+                    f"{blocks} block(s) over the budget of {options.budget:.0f} s"
                 )
                 continue
             planned.append(arm)
@@ -2050,16 +2059,26 @@ class InducedRun(Run):
             order = planned if round_ % 2 == 0 else list(reversed(planned))
             for arm in order:
                 label = _arm_label(arm)
-                with running(arm["backend"]["effective"]), _profiled(arm["profile"]):
-                    block = self._block(arm["indices"], arm.get("executor"))
-                runs[label].append(block)
-                print(
-                    self.key,
-                    f"round {round_ + 1} {label}: "
-                    f"{block['wall'] / block['points'] * 1e3:.3f} ms/pt, failed "
-                    f"{block['failed_points']}/{block['points']}",
-                    flush=True,
-                )
+                for _ in range(arm["blocks"]):
+                    indices = (
+                        arm["indices"]
+                        if arm.get("served")
+                        else self._indices(arm["offset"], arm["size"])
+                    )
+                    arm["offset"] += arm["size"]
+                    with (
+                        running(arm["backend"]["effective"]),
+                        _profiled(arm["profile"]),
+                    ):
+                        block = self._block(indices, arm.get("executor"))
+                    runs[label].append(block)
+                    print(
+                        self.key,
+                        f"round {round_ + 1} {label}: "
+                        f"{block['wall'] / block['points'] * 1e3:.3f} ms/pt, failed "
+                        f"{block['failed_points']}/{block['points']}",
+                        flush=True,
+                    )
             self.record["backend_runs"] = self._summaries(planned, runs)
             self.checkpoint(partial=True)
         self.record["backend_runs"] = self._summaries(planned, runs)
@@ -2097,7 +2116,7 @@ class InducedRun(Run):
                 summary.update(
                     failed_points=failed,
                     served_fraction=1
-                    - sum(failed) / (len(arm["indices"]) * len(failed)),
+                    - sum(failed) / (summary["points_per_block"] * len(failed)),
                     failure_causes=causes,
                 )
                 if arm["profile"]:
