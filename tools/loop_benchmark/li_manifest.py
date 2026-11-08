@@ -890,15 +890,30 @@ def provenance(records: dict[str, dict]) -> dict:
     revision (and of its resumption), the staged native and the Python
     Symbolica each new record names (counts)."""
 
-    out: dict[str, dict] = {"engine_slice": {}, "native": {}, "python_symbolica": {}}
+    out: dict[str, dict] = {
+        "engine_slice": {},
+        "native": {},
+        "python_symbolica": {},
+        "refreshed": {},
+    }
     for record in records.values():
-        for revision in {record.get("revision"), record.get("resumed_at")} - {None, ""}:
+        refreshed = record.get("refreshed", [])
+        revisions = {record.get("revision"), record.get("resumed_at")}
+        revisions |= {e.get("revision") for e in refreshed}
+        for revision in revisions - {None, ""}:
             key = _engine_slice(revision)
             out["engine_slice"][key] = out["engine_slice"].get(key, 0) + 1
         native = (record.get("native") or {}).get("build") or "not recorded"
         out["native"][native] = out["native"].get(native, 0) + 1
         python = record.get("python_symbolica") or "not recorded"
         out["python_symbolica"][python] = out["python_symbolica"].get(python, 0) + 1
+        for entry in refreshed:
+            key = (
+                f"{entry['backend']} arms at "
+                f"{(entry.get('native') or {}).get('build') or 'not recorded'} "
+                f"({entry.get('python_symbolica') or 'Python Symbolica not recorded'})"
+            )
+            out["refreshed"][key] = out["refreshed"].get(key, 0) + 1
     return out
 
 
