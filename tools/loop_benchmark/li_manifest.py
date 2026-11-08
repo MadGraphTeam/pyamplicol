@@ -10,7 +10,7 @@ Usage (worktree root, licence in the environment, the staged native)::
     python tools/loop_benchmark/li_manifest.py crossing --work-dir W  # C1
     python tools/loop_benchmark/li_manifest.py fig7 --work-dir W li_gg_zz=200 ...
     python tools/loop_benchmark/li_manifest.py stress-madloop --work-dir W
-    python tools/loop_benchmark/li_manifest.py identity-tirust --work-dir W  # LI-L1 on T
+    python tools/loop_benchmark/li_manifest.py identity-tirust --work-dir W  # LI-L1, T
     python tools/loop_benchmark/li_manifest.py fabc --work-dir W  # LI-27's f^abc
     python tools/loop_benchmark/li_manifest.py born-l6 --campaign C --lanes-script \
         <lit-tir>/scripts/li_b1.py --ufo U --work-dir W --output D [ROWS]  # LI-B1
@@ -1555,7 +1555,8 @@ def judge(record: dict, entry: dict) -> dict:
         statuses.append("partial")
         l4["fixture_points"] = {
             "status": "not run",
-            "reason": "no fixture-point Ward probe in this record (li_manifest.py run resumes it)",
+            "reason": "no fixture-point Ward probe in this record (li_manifest.py run "
+            "resumes it)",
         }
     elif not wards["legs"]:
         # no external massless gauge boson: no Ward probe reaches the row
@@ -2242,9 +2243,12 @@ def derived_fixtures() -> list[dict]:
             "points": points,
             "mu_r": [base["mu_r"][0]] * len(points),
             "rows": [{"providers": {}} for _ in points],
-            "source": f"PLAN §4.1 stress points (M §4.7; {entry['source']}): exact decimal points of "
-            "tools/loop_benchmark/li_manifest.py write_stress; no provider reference in the fixture "
-            "(the binary64 estimate against double-double and AP, NinjaRS against TIRust, MadLoop "
+            "source": f"PLAN §4.1 stress points (M §4.7; {entry['source']}): exact "
+            "decimal points of "
+            "tools/loop_benchmark/li_manifest.py write_stress; no provider reference "
+            "in the fixture "
+            "(the binary64 estimate against double-double and AP, NinjaRS against "
+            "TIRust, MadLoop "
             "QP: stress-madloop)",
         }
         out.append(data)
@@ -2258,7 +2262,8 @@ def derived_fixtures() -> list[dict]:
             "points": base["points"],
             "mu_r": base["mu_r"],
             "rows": [{"providers": {}} for _ in base["points"]],
-            "source": f"{entry['source']} (tools/loop_benchmark/li_manifest.py write_stress)",
+            "source": f"{entry['source']} (tools/loop_benchmark/li_manifest.py "
+            "write_stress)",
         }
         out.append(data)
     return out
@@ -2298,7 +2303,8 @@ def stress_madloop(
         if data["pdgs"] != fixture(base)["pdgs"]:
             out[name] = {
                 "status": "not run",
-                "reason": f"a process outside lit-ref's reference set ({data['madloop_process']}): "
+                "reason": "a process outside lit-ref's reference set "
+                f"({data['madloop_process']}): "
                 "no MadLoop export in the reference tree",
             }
             continue
@@ -2354,14 +2360,16 @@ def stress_madloop(
         except subprocess.TimeoutExpired:
             out[name] = {
                 "status": "not run",
-                "reason": f"45-minute rule: MadLoop did not finish in {REFERENCE_TIMEOUT} s",
+                "reason": "45-minute rule: MadLoop did not finish in "
+                f"{REFERENCE_TIMEOUT} s",
             }
             continue
         result = run_dir / "madloop-result.json"
         if done.returncode or not result.is_file():
             out[name] = {
                 "status": "not run",
-                "reason": f"MadLoop run failed (rc {done.returncode}): {done.stderr.strip()[-2000:]}",
+                "reason": f"MadLoop run failed (rc {done.returncode}): "
+                f"{done.stderr.strip()[-2000:]}",
             }
             continue
         rows = _load(result)["rows"]
@@ -2776,13 +2784,20 @@ def _signed(value: Decimal, sign: int) -> Decimal:
 # The crossing finding (to the coordinator, for the public API / SDK owner):
 # a crossing whose crossed values are exactly zero at every point.
 CROSSING_FINDING = (
-    "the public route returns status 'success' with |A|^2 exactly 0 at every crossed point (a "
-    "negative-energy massless fermion leg), where the source's values are not zero: neither served nor "
-    "refused typed (no document states a physical-momenta contract); the boson crossings at the same "
-    "kind of negative-energy kinematics are served correctly; the tree spinors continue a negative-"
-    "energy fermion of helicity h to the other chirality, so the loop plan likely fixes each fermion "
-    "leg's chirality from positive energy (cause not established). Routed to the coordinator for the "
-    "public-API / SDK owner; reproducer: li_manifest.py crossing --work-dir W (the source records "
+    "the public route returns status 'success' with |A|^2 exactly 0 at every crossed "
+    "point (a "
+    "negative-energy massless fermion leg), where the source's values are not zero: "
+    "neither served nor "
+    "refused typed (no document states a physical-momenta contract); the boson "
+    "crossings at the same "
+    "kind of negative-energy kinematics are served correctly; the tree spinors "
+    "continue a negative-"
+    "energy fermion of helicity h to the other chirality, so the loop plan likely "
+    "fixes each fermion "
+    "leg's chirality from positive energy (cause not established). Routed to the "
+    "coordinator for the "
+    "public-API / SDK owner; reproducer: li_manifest.py crossing --work-dir W (the "
+    "source records "
     "from li_manifest.py run), then this entry"
 )
 
@@ -2897,7 +2912,8 @@ def judge_crossing(result: dict, records: dict[str, dict]) -> dict:
         entry["status"] = _worst(statuses)
         runs[label] = entry
     return {
-        "row": "LI-W1/L1/P1/C1/S1 (C1, crossing; the id LI-C1 is the complex-mass-scheme row)",
+        "row": "LI-W1/L1/P1/C1/S1 (C1, crossing; the id LI-C1 is the "
+        "complex-mass-scheme row)",
         "processes": CROSSING_ROW,
         "status": _worst([r["status"] for r in runs.values()]) if runs else "not run",
         "runs": runs,
@@ -2929,7 +2945,10 @@ def rambo(masses: list[float], energy: float, rng: Any) -> list[list[str]]:
 
     def residual(xi: float) -> float:
         return (
-            sum(math.sqrt(m * m + (xi * v[0]) ** 2) for m, v in zip(masses, p, strict=True))
+            sum(
+                math.sqrt(m * m + (xi * v[0]) ** 2)
+                for m, v in zip(masses, p, strict=True)
+            )
             - energy
         )
 
@@ -3241,7 +3260,8 @@ def judge_fig7(results: list[dict]) -> dict:
             }
         runs.append(
             {
-                "scheme": "the fixture's own scheme (loop_sm no_b_mass: NOT the paper's, b massless)"
+                "scheme": "the fixture's own scheme (loop_sm no_b_mass: NOT the "
+                "paper's, b massless)"
                 if result["own_scheme"]
                 else f"{setup['scheme_of']}'s: {setup['scheme_note']}",
                 "matched": not result["own_scheme"],
@@ -3257,11 +3277,15 @@ def judge_fig7(results: list[dict]) -> dict:
             "pyamplicol": "NinjaRS per amplitude, binary64 value + estimate ("
             + setup["checks"]
             + "), double-double at the same binary64 inputs as the truth",
-            "matched": "processes, single-helicity selections, sqrt(s) = 1 TeV, no cuts, RAMBO points, "
-            "binary64 reduction, a direction + rotation stability estimate; the paper's MG5 default "
+            "matched": "processes, single-helicity selections, sqrt(s) = 1 TeV, no "
+            "cuts, RAMBO points, "
+            "binary64 reduction, a direction + rotation stability estimate; the "
+            "paper's MG5 default "
             "parameters with massive b (the 'matched' runs)",
-            "not matched": "point counts (here 200 / 50 / 50 or 100 vs 100K / 10K / 1K), MadLoop's exact "
-            "estimate (its loop-direction test reverses the propagators; here the re-test and one "
+            "not matched": "point counts (here 200 / 50 / 50 or 100 vs 100K / 10K / "
+            "1K), MadLoop's exact "
+            "estimate (its loop-direction test reverses the propagators; here the "
+            "re-test and one "
             "rotation), the curves themselves (an image: features compared only)",
         },
         "runs": runs,
@@ -3272,22 +3296,42 @@ def judge_fig7(results: list[dict]) -> dict:
 
 # R8 (DECISIONS 2026-11-07 21:50): lit-val extends LI-B1's Born-interfered L6
 # to the other campaigns of PLAN §4.1 (M-QCD, M-SM incl. CMS, decay XX01-08;
-# HC through ``born_l6_public``) by lit-tir's per-lane comparison: its
+# HC through ``public_l6``), lane by lane (every lane, every Laurent order,
+# NinjaRS vs TIRust). Each row's executor is its campaign's own generation
+# (``mqcd.Campaign``), at its tier points and the forward points.
+#
+# Binary64 in two stages. The SCREEN is lit-tir's per-lane comparison: its
 # ``scripts/li_b1.py`` (``--lanes-script``, a path argument: lit-tir's scratch
-# script, not a module of this tree) evaluates each point's lanes with their
-# re-test frames on one backend (``lanes``); every lane, every Laurent order,
-# NinjaRS vs TIRust within 10 x the larger re-test estimate, floor 4 u of the
-# lane's scale (its MARGIN, FLOOR). Each row's executor is its campaign's own
-# generation (``mqcd.Campaign``), at its tier points and the forward points.
+# script, not a module of this tree; its sha256 is recorded) evaluates each
+# point's lanes with the reduction-direction re-test (``lanes``), E = the
+# re-test's deviation, floor 4 u of the lane's scale (its MARGIN, FLOOR). A
+# point set with a lane beyond 10 x that estimate, or deviating >= LAX
+# relative (a lane the 08:31 rule could fail), is judged entirely under the
+# L6 estimate of ruling (6) / R3 (b) (RULED): the one E configuration
+# (``backends.checks()``: three generic rotations and the rescaled re-test,
+# as the executor's ``runs`` evaluates them), per lane the stability module's
+# combination, through the one comparison (``backends._compare``). The
+# reduction-direction re-test alone misses the masters' own rounding (DESIGN
+# §10.4), so it only selects; a set it passes has no lane beyond 10 x it and
+# none >= LAX, which no estimate can fail (08:31).
 BORN = _load(SPEC)["born_l6"]
+SCREEN = "screen: lit-tir's lanes (reduction-direction re-test, floor 4 u of the lane)"
+RULED = (
+    "L6 estimate (ruling (6), R3 (b)): backends.checks(), three generic rotations "
+    "and the rescaled re-test, per lane E = SAFETY x (largest rotation deviation + "
+    "rescaled re-test deviation) + FLOOR_UNITS u |lane| (stability.StabilityEstimate), "
+    "per Laurent coefficient through backends._compare"
+)
 # §4.1 LI-27's numerical f^abc check and the §4.1 checks not run (SPEC).
 COLOUR = _load(SPEC)["colour_checks"]
 UNRUN = _load(SPEC)["unrun_checks"]
 
 
 def lanes_module(path: Path) -> Any:
-    """lit-tir's ``li_b1.py`` at ``path`` (``lanes``, ``MARGIN``, ``FLOOR``)."""
+    """lit-tir's ``li_b1.py`` at ``path`` (``lanes``, ``MARGIN``, ``FLOOR``),
+    with its sha256 as ``SHA256`` (recorded in each row's record)."""
 
+    import hashlib
     import importlib.util
 
     found = importlib.util.spec_from_file_location("lit_tir_li_b1", path)
@@ -3295,6 +3339,7 @@ def lanes_module(path: Path) -> Any:
         raise ValueError(f"{path}: not a Python script")
     module = importlib.util.module_from_spec(found)
     found.loader.exec_module(module)
+    module.SHA256 = hashlib.sha256(Path(path).read_bytes()).hexdigest()
     return module
 
 
@@ -3315,26 +3360,156 @@ class _Carrier:
         return self._executor.last_report
 
 
+def ruled_lanes(
+    executor: Any, points: list, scales: list, parameters: Any, backend: str
+) -> tuple[list[dict], float]:
+    """The binary64 lanes of ``points`` on ``backend`` with the L6 estimate
+    (RULED): the executor's ``runs`` with ``backends.checks()`` (the
+    reference evaluation re-tested in the rescaled frame and the rotated
+    points, exact as production rotates them), per point its ``direct``
+    lanes, per lane and Laurent coefficient its estimate (``estimate``:
+    ``StabilityEstimate.from_checks`` with the lane as its sector, so S =
+    |lane|) and the ``virtual`` totals; a point the reference or a check run
+    fails is ``failed`` with its typed reasons (production fails it so with
+    these checks). Returns the points and the seconds."""
+
+    from pyamplicol.loops.v2.stability import ROTATION, Budget, StabilityEstimate
+
+    stability = backends.checks().to_checks()
+    start = time.perf_counter()
+    precision, evaluations, rotated, failures = executor.runs(
+        points,
+        scales,
+        parameters=parameters,
+        poles="all",
+        stability=stability,
+        reduction=backend,
+    )
+    seconds = time.perf_counter() - start
+
+    def deviations(other: dict, lanes: dict) -> dict:
+        return {
+            lane: Budget(
+                tuple(
+                    float(abs(a - b))
+                    for a, b in zip(
+                        value,
+                        other[lane] if lane in other else [0 * x for x in value],
+                        strict=True,
+                    )
+                )
+            )
+            for lane, value in lanes.items()
+        }
+
+    out: list[dict] = []
+    for index, evaluation in enumerate(evaluations):
+        if index in failures:
+            out.append({"failed": list(failures[index])})
+            continue
+        direct = {k: v.coefficients for k, v in evaluation.families.items()}
+        retest = {k: v.coefficients for k, v in evaluation.retest_families.items()}
+        budgets = {stability.reduction: deviations(retest, direct)}
+        for k, runs in enumerate(rotated):
+            moved = {lane: v.coefficients for lane, v in runs[index].families.items()}
+            budgets[ROTATION.format(k)] = deviations(moved, direct)
+        sizes = {
+            lane: Budget(tuple(float(abs(x)) for x in v)) for lane, v in direct.items()
+        }
+        absolute = (
+            StabilityEstimate.from_checks(
+                sizes, budgets, scale=sizes, roundoff=precision.unit_roundoff
+            ).absolute
+            if direct
+            else {}
+        )
+        out.append(
+            {
+                "direct": direct,
+                "estimate": {lane: absolute[lane].coefficients for lane in direct},
+                "virtual": {
+                    str(o): [
+                        complex(x) if x is not None else None for x in v.coefficients
+                    ]
+                    for o, v in evaluation.result.components["virtual"].items()
+                },
+            }
+        )
+    return out, seconds
+
+
+def _lane_terms(
+    n: dict, t: dict, lane: Any, margin: float, floor: float
+) -> tuple[float, float, float] | None:
+    """One lane's (deviation, scale, ratio to 10 x the estimate): the screen
+    (entries with ``check``: E = the lane's largest re-test deviation,
+    floor ``floor`` x its scale) or the L6 estimate (entries with
+    ``estimate``: per Laurent coefficient through ``backends._compare``, the
+    ratio its largest difference / bound); None without an estimate."""
+
+    a, b = n["direct"][lane], t["direct"].get(lane)
+    scale = float(max(abs(x) for x in a))
+    if b is None:
+        return None
+    deviation = float(max(abs(x - y) for x, y in zip(a, b, strict=True)))
+    if "estimate" in n:
+        e_n, e_t = n["estimate"].get(lane), t["estimate"].get(lane)
+        if e_n is None or e_t is None:
+            return None
+
+        def arm(values, errors) -> list:
+            return [
+                [
+                    (
+                        backends.COEFFICIENTS[k],
+                        (Decimal(complex(x).real), Decimal(complex(x).imag)),
+                        e,
+                    )
+                    for k, (x, e) in enumerate(zip(values, errors, strict=True))
+                ]
+            ]
+
+        rows = backends._compare(arm(a, e_n), arm(b, e_t), True)
+        ratio = max(
+            (
+                r["difference"] / r["bound"]
+                if r["bound"]
+                else (math.inf if r["difference"] else 0.0)
+            )
+            for r in rows
+        )
+        return deviation, scale, ratio
+    checked = (n["check"].get(lane), t["check"].get(lane))
+    if None in checked:
+        return None
+    e_n = float(max(abs(x - y) for x, y in zip(a, checked[0], strict=True)))
+    e_t = float(max(abs(x - y) for x, y in zip(b, checked[1], strict=True)))
+    larger = max(e_n, e_t, floor * scale)
+    ratio = (
+        deviation / (margin * larger) if larger else (math.inf if deviation else 0.0)
+    )
+    return deviation, scale, ratio
+
+
 def compare_lanes(found: dict[str, list], margin: float, floor: float) -> dict:
-    """lit-tir's per-lane L6 (li_b1.py) over ``found`` (backend -> its
-    ``lanes`` output per point): lanes compared, beyond 1x / 10x the larger
-    re-test estimate (floor ``floor`` x the lane's scale), the worst ratio to
-    10x and the worst relative deviation (of all lanes and of those beyond
+    """The per-lane L6 over ``found`` (backend -> per point its lanes: the
+    screen's ``lanes`` output or ``ruled_lanes``', ``_lane_terms``): lanes
+    compared, beyond 1x / 10x the larger estimate, the worst ratio to 10x
+    and the worst relative deviation (of all lanes and of those beyond
     10x), lanes served without an estimate, failed points and typed reasons
     per backend, the virtual totals' largest relative difference.
 
     A lane beyond 10x whose deviation is within ``margin`` x ``floor`` of
     the point's lane scale (the largest coefficient of any lane at the
-    point, both backends: the magnitude the lanes' terms carry) is a
-    numerical zero at the carrier's resolution (Q13: zeros are numerical,
-    with an absolute estimate): counted in ``beyond_10x`` and
+    point, both backends: the magnitude the lanes' terms carry) is counted
+    a numerical zero at the carrier's resolution (lit-val's reading of Q13
+    and R5, for the coordinator: the lane is a cancellation at that
+    resolution and its own estimate reproduces the cancellation's rounding
+    or 0, so the 10x rule cannot judge it): counted in ``beyond_10x`` and
     ``beyond_10x_zero`` with its deviation relative to the point's lane
     scale (``worst_zero_point_relative``), and left out of
-    ``worst_beyond_10x`` (whose relative deviation to the lane's own,
-    noise-sized, scale says nothing). Such lanes' re-test reproduces the
-    rounding of their cancellation (an estimate of 0 or of the lane's own
-    rounding), so the 10x rule cannot judge them; ``beyond`` lists every
-    lane beyond 10x (point, lane, ratio, both relative deviations)."""
+    ``worst_beyond_10x``; ``beyond`` lists every lane beyond 10x (point,
+    lane, ratio, both relative deviations)."""
 
     out = {
         "lanes": 0,
@@ -3367,24 +3542,12 @@ def compare_lanes(found: dict[str, list], margin: float, floor: float) -> dict:
             ),
             default=0.0,
         )
-        for lane, a in n["direct"].items():
-            b, checked = (
-                t["direct"].get(lane),
-                (n["check"].get(lane), t["check"].get(lane)),
-            )
-            if b is None or None in checked:
+        for lane in n["direct"]:
+            terms = _lane_terms(n, t, lane, margin, floor)
+            if terms is None:
                 out["no_estimate"] += 1
                 continue
-            scale = float(max(abs(x) for x in a))
-            e_n = float(max(abs(x - y) for x, y in zip(a, checked[0], strict=True)))
-            e_t = float(max(abs(x - y) for x, y in zip(b, checked[1], strict=True)))
-            larger = max(e_n, e_t, floor * scale)
-            deviation = float(max(abs(x - y) for x, y in zip(a, b, strict=True)))
-            ratio = (
-                deviation / (margin * larger)
-                if larger
-                else (math.inf if deviation else 0.0)
-            )
+            deviation, scale, ratio = terms
             relative = deviation / scale if scale else deviation
             out["lanes"] += 1
             out["beyond_1x"] += ratio * margin > 1
@@ -3427,6 +3590,14 @@ def compare_lanes(found: dict[str, list], margin: float, floor: float) -> dict:
     return out
 
 
+def screened(result: dict) -> bool:
+    """Whether a screen comparison needs the L6 estimate: a lane beyond 10x
+    its re-test estimate, or one deviating >= LAX relative (the lanes the
+    08:31 rule could fail)."""
+
+    return bool(result["beyond_10x"]) or result["worst_deviation"] >= LAX
+
+
 def born_verdict(result: dict) -> str:
     """A comparison's verdict (DECISIONS 2026-11-08 08:31): 'fail' on a lane
     beyond 10x deviating >= ~1e-5 relative (LAX; numerical-zero lanes,
@@ -3442,6 +3613,22 @@ def born_verdict(result: dict) -> str:
     return "pass (lax)" if result["beyond_10x"] else "pass"
 
 
+def _parts(x: Any) -> tuple[Decimal, Decimal]:
+    """A carrier value's (real, imaginary) parts as exact Decimals (binary64
+    ``complex`` or ``reference_executor.Complex`` of Decimal)."""
+
+    return Decimal(x.real), Decimal(x.imag)
+
+
+def _carrier_distance(a: Any, b: Any) -> float:
+    """|a - b| formed in the carrier's digits (no binary64 truncation)."""
+
+    (ar, ai), (br, bi) = _parts(a), _parts(b)
+    with localcontext() as context:
+        context.prec = 80
+        return float(backends._modulus((ar - br, ai - bi)))
+
+
 def judge_truth(
     result: dict,
     found: dict[str, list],
@@ -3453,13 +3640,15 @@ def judge_truth(
     """A failing binary64 comparison (``result`` of ``compare_lanes`` on
     ``found``) against the double-double lanes ``high`` at its failing
     ``points`` (ruling (7): a consistent truth first): per lane beyond 10x
-    at or above LAX, where both backends' double-double values agree within
-    10 x 1e-24 of the lane (CARRIER), each backend's binary64 error against
-    them relative to the lane and its estimate (the re-test, floor ``floor``
-    x the lane's scale); a backend whose error exceeds ``margin`` x its
-    estimate has an estimate miss. Every such lane explained by an estimate
-    miss makes the status 'estimate miss' (a stability finding, the
-    backend named), otherwise it stays 'fail'."""
+    at or above LAX, where both backends' double-double values agree (their
+    difference formed in the carrier) to within 1 / ``margin`` of the
+    binary64 deviation under test, each backend's binary64 error against
+    them relative to the lane and its estimate (relative to the lane: the
+    L6 estimate's largest coefficient where ``found`` carries it, else the
+    re-test's, floor ``floor`` x the lane's scale); a backend whose error
+    exceeds ``margin`` x its estimate has an estimate miss. Every such lane
+    explained by an estimate miss makes the status 'estimate miss' (a
+    stability finding, the backend named), otherwise it stays 'fail'."""
 
     truths, explained = [], True
     for b in result["beyond"]:
@@ -3474,12 +3663,17 @@ def judge_truth(
             explained = False
             continue
         key = next(x for x in sides[0]["direct"] if compact_detail(str(x)) == b["lane"])
-        dd = [[complex(x) for x in side["direct"][key]] for side in sides]
-        scale = max(abs(x) for x in dd[0]) or 1.0
-        agreement = max(abs(x - y) for x, y in zip(*dd, strict=True)) / scale
+        dd = [side["direct"][key] for side in sides]
+        scale = max(_carrier_distance(x, 0) for x in dd[0]) or 1.0
+        agreement = (
+            max(_carrier_distance(x, y) for x, y in zip(*dd, strict=True)) / scale
+        )
         entry["double_double_backends_relative"] = agreement
-        if agreement > margin * CARRIER:
-            entry["truth"] = "the backends' double-double values disagree"
+        if agreement * margin > b["relative"]:
+            entry["truth"] = (
+                "the backends' double-double values disagree beyond a tenth of "
+                "the binary64 deviation under test"
+            )
             truths.append(entry)
             explained = False
             continue
@@ -3487,10 +3681,16 @@ def judge_truth(
         for backend in BACKENDS:
             value = found[backend][b["point"]]
             a = [complex(x) for x in value["direct"][key]]
-            c = [complex(x) for x in value["check"][key]]
             own = max(abs(x) for x in a) or 1.0
-            estimate = max(max(abs(x - y) for x, y in zip(a, c, strict=True)) / own, floor)
-            error = max(abs(x - y) for x, y in zip(a, dd[0], strict=True)) / own
+            if "estimate" in value:
+                estimate = max(value["estimate"][key]) / own
+            else:
+                c = [complex(x) for x in value["check"][key]]
+                bound = max(abs(x - y) for x, y in zip(a, c, strict=True)) / own
+                estimate = max(bound, floor)
+            error = (
+                max(abs(x - complex(y)) for x, y in zip(a, dd[0], strict=True)) / own
+            )
             entry[backend] = {"error": error, "estimate": estimate}
             if error > margin * estimate:
                 missed.append(backend)
@@ -3508,11 +3708,14 @@ def judge_truth(
 
 def forward_points(run: Any, values: list[str], digits: int = DIGITS) -> tuple | str:
     """The forward points of a 2 -> 2 row (§4.1 LI-B1's theta rows): at the
-    CM angles ``values``, sqrt(s) the 2^x 5^y nearest the row's first
-    reference point's, its scale; massless beams and the row's equal final
-    masses (the model's, ``assemble._leg_masses``) in ``_pair``'s exact
-    construction (pt = theta sqrt(s) / 2). A reason (str) where the row has
-    no such construction."""
+    angles ``values`` (pT-defined: pt = theta sqrt(s_target) / 2, the CM
+    angle theta / beta for massive final states), sqrt(s_target) the 2^x 5^y
+    nearest the row's first reference point's, its scale; massless beams and
+    the row's equal final masses (the model's, ``assemble._leg_masses``) in
+    ``_pair``'s exact construction. Returns the points, scales and their
+    figures (``sqrt_s_target``, per point the constructed ``sqrt_s`` and the
+    CM angle ``cm_theta``), or a reason (str) where the row has no such
+    construction."""
 
     from pyamplicol.loops.v2.assemble import _leg_masses
 
@@ -3526,7 +3729,10 @@ def forward_points(run: Any, values: list[str], digits: int = DIGITS) -> tuple |
             for m in _leg_masses(run.slice, run.parameters, digits)
         ]
     if len(masses) != 4 or masses[0] or masses[1] or masses[2] != masses[3]:
-        return "no forward construction: not 2 -> 2 with massless beams and equal final masses"
+        return (
+            "no forward construction: not 2 -> 2 with massless beams and equal "
+            "final masses"
+        )
     point = [[Fraction(Decimal(c)) for c in p] for p in run.reference.points[0]]
     total = [p[0][k] + p[1][k] for p in [point] for k in range(4)]
     s = total[0] ** 2 - sum(c * c for c in total[1:])
@@ -3536,10 +3742,23 @@ def forward_points(run: Any, values: list[str], digits: int = DIGITS) -> tuple |
         pt = Fraction(Decimal(text)) * energy / 2
         ratio = float(energy) / math.sqrt(float(masses[2] + pt * pt))
         if ratio < 2:
-            return f"no forward construction: sqrt(s) = {float(energy)} below the pair threshold"
+            return (
+                f"no forward construction: sqrt(s) = {float(energy)} below the pair "
+                "threshold"
+            )
         out.append(_pair(masses[2], pt, _near(_rho(ratio))))
+    figures: dict[str, Any] = {
+        "sqrt_s_target": float(energy),
+        "sqrt_s": [],
+        "cm_theta": [],
+    }
+    for q in out:
+        s_q = (q[0][0] + q[1][0]) ** 2 - (q[0][3] + q[1][3]) ** 2
+        p_cm = math.sqrt(float(s_q / 4 - masses[2]))
+        figures["sqrt_s"].append(math.sqrt(float(s_q)))
+        figures["cm_theta"].append(math.asin(float(q[2][1]) / p_cm))
     points = [[[_decimal(Fraction(c)) for c in p] for p in q] for q in out]
-    return points, [run.reference.scales[0]] * len(points), float(energy)
+    return points, [run.reference.scales[0]] * len(points), figures
 
 
 def born_l6(
@@ -3550,16 +3769,27 @@ def born_l6(
     forward: list[str] = BORN["forward"]["values"],
     high_points: int = BORN["high_points"],
 ) -> dict:
-    """LI-B1's L6 of campaign row ``name``: lit-tir's lanes on both backends
+    """LI-B1's L6 of campaign row ``name``: lanes on both backends
     (reduction requested explicitly per call, ``reduction.running``) in
-    binary64 at the row's tier points and its forward points, and in
+    binary64 at the row's tier points and its forward points (the screen,
+    then the L6 estimate where it flags a lane, ``screened``), and in
     double-double at its first ``high_points`` tier points and the forward
-    points."""
+    points (lit-tir's lanes, floor the 1e-24 target, R5); a binary64 set
+    still failing is judged against its double-double truth
+    (``judge_truth``)."""
 
     from pyamplicol.loops.v2.assemble import Precision
 
     row = campaign.rows[name]
-    record: dict[str, Any] = {"row": name, "process": row.process, "native": _native()}
+    record: dict[str, Any] = {
+        "row": name,
+        "process": row.process,
+        "native": _native(),
+        "lanes_script": {
+            "source": "lit-tir's workspace/tmp/lit-tir/scripts/li_b1.py",
+            "sha256": getattr(module, "SHA256", None),
+        },
+    }
     if not row.active:
         reason = (
             "composite row: no evaluation of its own; its single-process "
@@ -3572,8 +3802,10 @@ def born_l6(
         return {
             **record,
             "status": "not run",
-            "reason": f"public-route variant of {row.base}: its request and plan are the "
-            "tools-route base row's (compared there); the public route is the artifact path",
+            "reason": f"public-route variant of {row.base}: its request and plan are "
+            "the "
+            "tools-route base row's (compared there); the public route is the artifact "
+            "path",
         }
     start = time.perf_counter()
     run = campaign.run(name)
@@ -3591,7 +3823,7 @@ def born_l6(
         record["forward"] = built
     else:
         sets["forward"] = (forward, built[0], built[1])
-        record["forward_sqrt_s"] = built[2]
+        record["forward_points"] = built[2]
     carriers = {
         "double": (None, module.FLOOR),
         "double-double": (Precision.double_double(), CARRIER),
@@ -3614,6 +3846,23 @@ def born_l6(
                     executor, points[:take], scales[:take], run.parameters, backend
                 )
             result = compare_lanes(found, module.MARGIN, floor)
+            result["estimate"] = SCREEN
+            if precision is None and screened(result):
+                screen = {
+                    k: result[k]
+                    for k in ("beyond_10x", "worst_over_10x", "worst_deviation")
+                }
+                for backend in BACKENDS:
+                    found[backend], seconds[f"{backend}/checks"] = ruled_lanes(
+                        run.executor,
+                        points[:take],
+                        scales[:take],
+                        run.parameters,
+                        backend,
+                    )
+                result = compare_lanes(found, module.MARGIN, floor)
+                result["estimate"] = RULED
+                result["screen"] = screen
             result["points"] = list(where[:take])
             result["seconds"] = {b: round(v, 2) for b, v in seconds.items()}
             result["status"] = born_verdict(result)
@@ -3808,11 +4057,15 @@ def born_summary(records: dict[str, dict]) -> dict:
                     }
                     continue
                 # (records written before the numerical-zero split carry no
-                # ``beyond_10x_zero``: the split re-classifies 'fail' only)
-                compact[f"{label}/{carrier}"] = {
+                # ``beyond_10x_zero``: the split re-classifies 'fail' only;
+                # those before the L6 estimate stage no ``estimate``: the
+                # screen judged them, and flagged none at or above LAX)
+                compact[f"{label}/{carrier}"] = {"estimate": SCREEN} | {
                     k: r[k]
                     for k in (
                         "status",
+                        "estimate",
+                        "screen",
                         "points",
                         "lanes",
                         "beyond_10x",
@@ -3831,8 +4084,9 @@ def born_summary(records: dict[str, dict]) -> dict:
                 }
         if any(merged.values()):
             compact["failed_reasons"] = {b: v for b, v in merged.items() if v}
-        if "forward" in record:
-            compact["forward"] = record["forward"]
+        for field in ("forward", "forward_points"):
+            if field in record:
+                compact[field] = record[field]
         entry["rows"][record["row"]] = compact
     return out
 
@@ -4005,7 +4259,8 @@ def lit(
                 if c in judged[f]
             ]
         ),
-        "note": f"{FLAVOUR_ROW}'s runs with and without the top loop against the analytic oracle "
+        "note": f"{FLAVOUR_ROW}'s runs with and without the top loop against the "
+        "analytic oracle "
         "(the quark sum with its charges) and the providers",
         "runs": {
             f: {c: judged[f][c] for c in ("L1", "L2") if c in judged[f]}
@@ -4018,9 +4273,17 @@ def lit(
             ids[i] = record
     if born:
         # LI-B1's campaign rows (``born_l6``) next to lit-tir's G1 evidence.
+        scripts = sorted(
+            {
+                r["lanes_script"]["sha256"]
+                for r in born.values()
+                if (r.get("lanes_script") or {}).get("sha256")
+            }
+        )
         ids["LI-B1"] = {
             **ids.get("LI-B1", {}),
             "campaigns": born_summary(born),
+            "lanes_script_sha256": scripts,
             "status": _worst(
                 [ids.get("LI-B1", {}).get("status", "pass")]
                 + [r["status"] for r in born.values() if r["status"] != "not run"]
@@ -4036,8 +4299,21 @@ def lit(
             "status": _worst([ids.get(i, {}).get("status", "pass"), result["status"]]),
         }
     for i, checks in UNRUN.items():
-        if i.startswith("LI-"):
-            ids.setdefault(i, {})["not_run"] = checks
+        if not i.startswith("LI-"):
+            continue
+        # a §4.1 check not run makes its id and the id's rows partial (PLAN
+        # §3.4 Done: partial rows recorded with reasons)
+        ids.setdefault(i, {})["not_run"] = checks
+        ids[i]["status"] = _worst([ids[i].get("status", "partial"), "partial"])
+        for key, row_ids in ids_of.items():
+            if i in row_ids and key in rows:
+                rows[key]["status"] = _worst([rows[key]["status"], "partial"])
+                rows[key]["note"] = "; ".join(
+                    [
+                        *([rows[key]["note"]] if rows[key].get("note") else []),
+                        *(f"{i} {check}: {why}" for check, why in checks.items()),
+                    ]
+                )
     for value in ids.values():
         status = value.get("status", "")
         if status.startswith("waits"):
@@ -4148,7 +4424,8 @@ def _causes(name: str, judged: dict) -> list[str]:
             parts = []
             if b64["tirust_served"] < b64["of"]:
                 parts.append(
-                    f"TIRust fails {b64['of'] - b64['tirust_served']} of {b64['of']} binary64 "
+                    f"TIRust fails {b64['of'] - b64['tirust_served']} of {b64['of']} "
+                    "binary64 "
                     "points closed (typed: L6.double.tirust_failed_reasons)"
                 )
             for carrier in ("double-double", ARBITRARY):
@@ -4200,7 +4477,8 @@ def _merge(key, done, judged, fixtures, source) -> dict:
     notes = [
         f"WAITS ON {package}: TIRust's arms of "
         + ", ".join(sorted(c for p, c in waiting if p == package))
-        + " (taken before it, or refused typed for want of the carrier), re-run at its re-pin"
+        + " (taken before it, or refused typed for want of the carrier), re-run at its "
+        "re-pin"
         for package in waits
     ]
     for f in done:
@@ -4245,7 +4523,8 @@ def _resumable(path: Path, refresh: str | None, name: str, work: Path) -> dict |
         return None
     if not refresh_check(name, work, done):
         raise SystemExit(
-            f"{name}: the staged native does not reproduce the record's NinjaRS binary64 "
+            f"{name}: the staged native does not reproduce the record's NinjaRS "
+            "binary64 "
             "values bitwise: run it afresh in a new --work-dir"
         )
     arms = {k: v for k, v in done["arms"].items() if not k.startswith(f"{refresh}/")}
@@ -4320,7 +4599,8 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         default=[],
         metavar="LABEL=REASON",
-        help="record an arm (l3/<label> for an L3 probe arm) as not run, with the reason",
+        help="record an arm (l3/<label> for an L3 probe arm) as not run, with the "
+        "reason",
     )
     run.add_argument(
         "--high-plain",
@@ -4413,7 +4693,8 @@ def main(argv: list[str] | None = None) -> int:
         "--lanes-script",
         type=Path,
         default=None,
-        help="lit-tir's scripts/li_b1.py (the tools-route campaigns)",
+        help="lit-tir's scripts/li_b1.py (required by the tools-route campaigns; "
+        "its sha256 is recorded per row)",
     )
     bl.add_argument(
         "--ufo", type=Path, required=True, help="loop_sm's UFO (hc: HC_NLO_X0's)"
@@ -4528,6 +4809,8 @@ def main(argv: list[str] | None = None) -> int:
         from pyamplicol.loops.native import load_loop_native
         from tools.loop_benchmark import mqcd
 
+        if args.lanes_script is None:
+            parser.error(f"born-l6 --campaign {args.campaign} needs --lanes-script")
         module = lanes_module(args.lanes_script)
         campaign = mqcd.Campaign(
             args.ufo,
