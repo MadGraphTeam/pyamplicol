@@ -1455,6 +1455,11 @@ def failure_classes(causes: dict[str, int]) -> dict[str, int]:
     return out
 
 
+# The TirOptions of the harness's TIRust runs (the li-timing records'
+# ``tir_options``): the shipped defaults.
+TIR_OPTIONS = "shipped"
+
+
 def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> list:
     """The gate tool's loop-induced records of ``data/li-timing.json`` (the
     report builder's format, ``build_summary`` LI_TIMING): per loop-induced
@@ -1536,6 +1541,11 @@ def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> l
                     "core": cpus[0] if len(cpus) == 1 else cpus,
                     "eval_peak_gib": config.get("eval_peak_gib"),
                 }
+                if reduction["effective"] == "tirust":
+                    # m-lit F4 (DECISIONS 2026-11-08 16:01): TIRust at the
+                    # slice's shipped TirOptions; its re-time at the F3
+                    # target accuracy is lit-tirust-default's.
+                    record["tir_options"] = TIR_OPTIONS
                 if any(failed):
                     record["whole_call_seconds_per_point"] = batch[
                         "median_seconds_per_point"

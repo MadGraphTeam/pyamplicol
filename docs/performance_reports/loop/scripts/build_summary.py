@@ -2951,6 +2951,8 @@ def _li_other(r: dict) -> dict:
         out["seconds_per_point"] = r["seconds_per_point"]
     else:
         out.update(_li_failed(r))
+    if "tir_options" in r:
+        out["tir_options"] = r["tir_options"]
     return out
 
 
@@ -2972,6 +2974,7 @@ def _li_verdict(g: dict, rec: dict, rule: dict) -> dict:
         "backend": rec["backend"],
         "backend_label": LI_BACKENDS[rec["backend"]],
         "source": f"{rec['source']} (lit-perf gate tool)",
+        **({"tir_options": rec["tir_options"]} if "tir_options" in rec else {}),
     }
     status = {"inconclusive": "open"}.get(g["status"], g["status"])
     if status in ("pass", "fail", "open"):
@@ -3294,6 +3297,18 @@ def build_loop_induced(
                 k: (ms.get("native_build") or {}).get(k) for k in ("name", "digest")
             },
             "default_backend": LI_BACKENDS[reg["default_backend"]],
+            # The settings of the provider timings the table shows (m-lit
+            # F4: "optimistic" where lit-perf re-timed them).
+            "provider_protocols": sorted(
+                {
+                    x["protocol"]
+                    for g in groups
+                    for r in g["rows"]
+                    if r["providers"].get("status") == "recorded"
+                    for x in r["providers"]["providers"].values()
+                    if "protocol" in x
+                }
+            ),
             "gate_batch": int(GATE_BATCH),
             "threshold_rule": rule,
             "gate_classes": reg["gate_classes"],

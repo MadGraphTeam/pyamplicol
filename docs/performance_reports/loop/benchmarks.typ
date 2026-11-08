@@ -599,7 +599,10 @@
 // of every block, else its outcome (points failed closed per block and the
 // recorded causes, or the refusal): never a time of a call that failed
 // points (summary-li.json other_backend).
-#let li-other(o) = if o.status == "served" { box[#o.backend_label #dur(o.seconds_per_point) (#o.label)] } else [#o.backend_label: #o.label]
+// † marks TIRust at the slice's shipped TirOptions (m-lit F4; the re-time at
+// F3's target accuracy is lit-tirust-default's).
+#let li-tir-mark(x) = if x.at("tir_options", default: none) == "shipped" [†]
+#let li-other(o) = if o.status == "served" { box[#o.backend_label#li-tir-mark(o) #dur(o.seconds_per_point) (#o.label)] } else [#o.backend_label#li-tir-mark(o): #o.label]
 // A provider timed on the row that is not matched (its values no
 // reference, summary-li.json providers.fastest_unmatched): said in the cell
 // with the multiplier to it (uncoloured, never the gate's).
@@ -623,7 +626,10 @@
       let g = x.status + ": " + x.reason
       why.insert(g, why.at(g, default: ()) + (pkey(k),))
     }
-    (timed.map(((k, x)) => if f != none and k == f.key { text(weight: "bold")[#pkey(k) #dur(x.seconds_per_point)] } else [#pkey(k) #dur(x.seconds_per_point)])
+    // ᵖ: a production timing beside providers re-timed in their most
+    // optimistic settings (m-lit F4).
+    let mark(x) = if "optimistic" in li-meta.at("provider_protocols", default: ()) and x.at("protocol", default: "production") == "production" [#super[p]]
+    (timed.map(((k, x)) => if f != none and k == f.key { text(weight: "bold")[#pkey(k)#mark(x) #dur(x.seconds_per_point)] } else [#pkey(k)#mark(x) #dur(x.seconds_per_point)])
       + why.pairs().map(((g, ks)) => [#ks.join(" · ") #g])).join([~· ])
   }
 }
@@ -633,7 +639,7 @@
 #let li-chip(g) = {
   if g.status in ("pass", "fail", "open") { gate-chip((status: g.status, ratio_to_limit: g.ratio_to_limit)) } else { plain-chip[#g.label.replace("->", "→")] }
   // lit-perf's verdict is the gated backend's (TIRust, PLAN §5.2).
-  if "backend_label" in g { text(5.6pt, fill: ink2)[ on #g.backend_label] }
+  if "backend_label" in g { text(5.6pt, fill: ink2)[ on #g.backend_label#li-tir-mark(g)] }
 }
 #let li-process(r) = table.cell(breakable: false, {
   set par(leading: 0.34em, justify: false)
@@ -692,7 +698,7 @@
 #let li-head = {
   let ours = if li-builds.len() == 0 [no pyAmpliCol record at this head: every row *pending*, served by the package named in its cell · engine #raw(li-engine.revision)#native-of(li-engine)]
     else [*pyAmpliCol:* #li-builds.map(x => [engine #raw(x.revision)#native-of(x)]).join([, ]) on #li-our-hosts.join(", ")#if li-meta.landed.len() > 0 [ (packages landed: #li-meta.landed.map(raw).join(", "))]]
-  [#ours · cells: the backend `auto` serves; gate on #li-meta.default_backend (the loop-induced default) · providers: `lit-ref`'s production timing records#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated]
+  [#ours · cells: the backend `auto` serves; gate on #li-meta.default_backend (the loop-induced default) · providers: #if "optimistic" in li-meta.at("provider_protocols", default: ()) [each in its most optimistic settings (`lit-perf`; #super[p] `lit-ref`'s production record)] else [`lit-ref`'s production timing records]#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated]
 }
 // Table 2 starts a page: its caption never stays behind at the foot of
 // Table 1's last page.
@@ -953,8 +959,14 @@ TIRust's expansion tolerance $2^(-30)$, and gate-refused rows whose small-Gram e
 NinjaRS: lanes its binary64 fast engine marks unstable, nothing rescued at this protocol; a call that fails points
 is timed whole, which is no served-point time, and its time on the points it served is shown beside it); a record
 with a failed point is never the cell, never coloured and never drawn in @fig:gate. The multiplier
-against the fastest matched provider (MadLoop at its loop-induced production setting 7|6|1, OpenLoops `ls`, Recola;
-production mode) colours the cell with @tab:summary's scale. A provider whose timing record excludes its values as a
+against the fastest matched provider (MadLoop at its loop-induced library order 7|6|1, OpenLoops `ls`, Recola) colours
+the cell with @tab:summary's scale.#if "optimistic" in li-meta.at("provider_protocols", default: ()) [ Both sides run in their most optimistic settings
+(m-lit F4): pyAmpliCol without poles or stability checks on distinct points, batched as shipped; OpenLoops with its
+stability system off (one double-precision evaluation, where its loop-induced preset evaluates every point twice),
+MadLoop without its stability test (one evaluation, not both loop directions), Recola without dynamic settings (its
+couplings and scales set once, outside the timer) in its release build; a provider time marked #super[p] is
+`lit-ref`'s production record, not re-timed. TIRust (†) runs at the slice's shipped TirOptions; its re-time at the
+user-set target accuracy (default $10^(-5)$) is `lit-tirust-default`'s.] else [ The providers run in production mode.] A provider whose timing record excludes its values as a
 reference (Recola's on-shell widths against the fixed-width scheme of the others on the rows LI-43 and LI-51) is timed
 and shown but is no matched provider (its values miss the 1e-5 agreement of `m-lit/PLAN.md` §4.0 L1; §4.1 names
 MadLoop and OpenLoops as the references of LI-43 and OpenLoops of LI-51): never the fastest matched provider and
