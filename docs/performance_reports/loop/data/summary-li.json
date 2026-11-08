@@ -1,7 +1,7 @@
 {
  "what": "the loop-induced summary table <tab:summary-li> of docs/performance_reports/loop/benchmarks.typ, written by scripts/build_summary.py (build_loop_induced); do not edit by hand",
  "meta": {
-  "date": "2026-11-07",
+  "date": "2026-11-08",
   "engine_on_loop": "ca602436",
   "native_build_on_loop": {
    "name": "loop-native-v2-slice-ca602436",
