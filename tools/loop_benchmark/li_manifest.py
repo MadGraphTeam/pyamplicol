@@ -783,6 +783,15 @@ def evaluate(
 PROBES = tuple((b, c) for b in BACKENDS for c in ("double", "double_double"))
 
 
+def run_skips(name: str) -> tuple[dict[str, str], bool]:
+    """The arms SPEC's ``skips`` records for run ``name`` (label -> the
+    measured reason it is not taken) and whether its double-double arms run
+    without the checks (``high_plain``)."""
+
+    entry = spec().get("skips", {}).get(name, {})
+    return dict(entry.get("arms", {})), bool(entry.get("high_plain"))
+
+
 def skip_arms(specs: list[str]) -> dict[str, str]:
     """``LABEL=REASON`` arguments (``run --skip-arm``) as a mapping."""
 
@@ -1208,7 +1217,7 @@ def high_arm(arms: dict, backend: str, carrier: str = "double-double") -> dict:
     for tag in ("checked", "plain"):
         arm = arms.get(f"{backend}/{carrier}/{tag}")
         if arm is not None and "not_run" not in arm:
-            return arm
+            return {**arm, "arm": tag}
     return arms.get(f"{backend}/{carrier}/checked", {})
 
 
@@ -1835,6 +1844,11 @@ def _high_l6(
         "worst_ratio_to_bound": worst,
         "finite_max_relative": relative,
         "tirust_failed": failed,
+        "tirust_failed_reasons": _reasons(tirust),
+        # the TIRust coverage of this carrier is that of the arm compared:
+        # with the checks (a failure of a check frame alone fails the point)
+        # where the run took them, else without
+        "tirust_arm": tirust.get("arm", "checked" if carrier != ARBITRARY else "plain"),
     }
 
 
@@ -3302,6 +3316,138 @@ def born_l6(
     return record
 
 
+def public_l6(runtime: Any, points: list, scales: list, high_points: int) -> dict:
+    """LI-B1's L6 on a public-route artifact (the HC rows: no tools-route
+    executor): both backends requested explicitly per call, binary64 with
+    the checks (``backends.checks()``) through the one comparison
+    (``backends._compare``, |T - N| <= 10 max(E_N, E_T) per Laurent
+    coefficient), double-double without checks at the first
+    ``high_points`` points (1e-24 of the sector's largest coefficient, a
+    target, R5); a miss below ~1e-5 relative is 'pass (lax)' (08:31)."""
+
+    from tools.loop_v2_observables_backends import _compare
+
+    out: dict[str, Any] = {}
+    for carrier, checked, count in (
+        ("double", True, len(points)),
+        ("double-double", False, min(high_points, len(points))),
+    ):
+        arms = {
+            b: _call(
+                runtime,
+                points[:count],
+                scales[:count],
+                backend=b,
+                arithmetic=carrier,
+                checked=checked,
+                digits=DIGITS,
+            )
+            for b in BACKENDS
+        }
+        rows, failed = [], {}
+        served = {b: _served(arms[b]) for b in BACKENDS}
+        for b in BACKENDS:
+            if "refused" in arms[b]:
+                failed[b] = {arms[b]["refused"]: count}
+            elif not all(served[b]):
+                failed[b] = _reasons(arms[b])
+        for k in range(count):
+            if not all(k < len(served[b]) and served[b][k] for b in BACKENDS):
+                continue
+            n, t = (arms[b]["points"][k] for b in BACKENDS)
+            for row in _compare(_entries(n), _entries(t), carrier == "double"):
+                row["point"] = k
+                rows.append(row)
+        misses = [r for r in rows if not r["passed"]]
+        real = [
+            r
+            for r in misses
+            if r["difference"]
+            > LAX * max(abs(complex(*map(float, r["ninjars"]))), 1e-300)
+        ]
+        status = "fail" if real else ("pass (lax)" if misses else "pass")
+        if (failed or not rows) and status != "fail":
+            status = "partial"
+        out[carrier] = {
+            "status": status,
+            "points": count,
+            "coefficients": len(rows),
+            "beyond_bound": len(misses),
+            "worst_over_bound": max(
+                (
+                    r["difference"] / r["bound"] if r["bound"] else math.inf
+                    for r in rows
+                    if r["difference"]
+                ),
+                default=0.0,
+            ),
+            "worst_relative": max(
+                (
+                    r["difference"] / abs(complex(*map(float, r["ninjars"])))
+                    for r in rows
+                    if r["difference"] and abs(complex(*map(float, r["ninjars"])))
+                ),
+                default=0.0,
+            ),
+            "served": {b: sum(served[b]) for b in BACKENDS},
+            "failed": failed,
+            "reduction": sorted(
+                {
+                    tuple(p["reduction"])
+                    for b in BACKENDS
+                    for p in arms[b].get("points", [])
+                    if p.get("reduction")
+                }
+            ),
+            "seconds": {b: round(arms[b].get("seconds", 0.0), 2) for b in BACKENDS},
+        }
+    return out
+
+
+def born_l6_hc(
+    work: Path, ufo: Path, names: list[str] | None = None
+) -> dict[str, dict]:
+    """LI-B1's L6 on the HC rows (tools/loop_reference/hc_nlo_x0.json, each
+    generated as its nightly test does, ``test_loop_v2_hc._generate``) at
+    every card's fixture points (exact decimals, the card's parameters)."""
+
+    from tests.unit import test_loop_v2_hc as hc
+
+    card = hc._card()
+    work.mkdir(parents=True, exist_ok=True)
+    out = {}
+    for row in card["rows"]:
+        if names and row["id"] not in names:
+            continue
+        record: dict[str, Any] = {
+            "row": row["id"],
+            "process": row["process"],
+            "native": _native(),
+        }
+        start = time.perf_counter()
+        runtime = hc._generate(ufo, card, row, work)
+        record["generate_seconds"] = round(time.perf_counter() - start, 2)
+        fixture = _load(hc.FIXTURES / f"{row['id'].lower()}.json")
+        for c, entry in enumerate(fixture["cards"]):
+            runtime.set_model_parameters(
+                {
+                    k: v
+                    for k, v in entry["parameters"].items()
+                    if k not in card["fixed_parameters"]
+                }
+            )
+            points = [fixture["points"][v["point"]] for v in entry["values"]]
+            scales = [str(Decimal(v["mu_r"]) ** 2) for v in entry["values"]]
+            record.setdefault("sets", {})[f"card-{c}"] = public_l6(
+                runtime, points, scales, BORN["high_points"]
+            )
+        record["status"] = _worst(
+            [r["status"] for s in record["sets"].values() for r in s.values()]
+        )
+        out[row["id"]] = record
+    return out
+
+
 def born_summary(records: dict[str, dict]) -> dict:
     """LI-B1's campaign rows in data/lit.json: per campaign the verdict
     tally and per row its compact figures (the worst carrier and point set)."""
@@ -3317,6 +3463,11 @@ def born_summary(records: dict[str, dict]) -> dict:
             compact["reason"] = record["reason"]
         for label, carriers in (record.get("sets") or {}).items():
             for carrier, r in carriers.items():
+                if "coefficients" in r:  # a public-route row (public_l6)
+                    compact[f"{label}/{carrier}"] = {
+                        k: v for k, v in r.items() if k not in ("reduction", "seconds")
+                    }
+                    continue
                 compact[f"{label}/{carrier}"] = {
                     k: r[k]
                     for k in (
@@ -3397,9 +3548,21 @@ def lit(
             if name in judged and check in judged[name]:
                 _apply_finding(judged[name][check], finding)
     rows: dict[str, dict] = {}
+    ids_of = {r["key"]: r.get("ids") or [] for r in registry()["rows"]}
     for key, fixtures in registry_runs(entries).items():
         done = [f for f in fixtures if f in judged]
         if not fixtures:
+            # a row of another package's (``DELEGATED``): its record's status
+            # and reason (e.g. LI-X1, lit-eft's run-only check outside L6)
+            for i in ids_of.get(key, []):
+                if i in DELEGATED and i in delegated:
+                    rows[key] = {
+                        "status": f"{delegated[i]['status']} ({delegated[i]['owner']})",
+                        "references": {},
+                        "points": None,
+                        "note": delegated[i]["source"],
+                        "source": f"{DELEGATED_RECORDS.relative_to(WT)} {i}",
+                    }
             continue
         if not done:
             rows[key] = {
@@ -3573,7 +3736,7 @@ def _dedupe(ids: dict, rows: dict) -> None:
         for name, checks in list(runs.items()):
             if name not in in_rows or not isinstance(checks, dict):
                 continue
-            if "points" in checks:
+            if any(c in checks for c in CHECKS):  # a whole run (its checks)
                 runs[name] = {"status": _run_status(checks), "row": in_rows[name]}
             else:
                 runs[name] = {**_without_reasons(checks), "row": in_rows[name]}
@@ -3870,11 +4033,20 @@ def main(argv: list[str] | None = None) -> int:
         "born-l6",
         help="LI-B1: the Born-interfered L6 of campaign rows (lit-tir's lanes)",
     )
-    bl.add_argument("--campaign", choices=sorted(BORN["campaigns"]), required=True)
     bl.add_argument(
-        "--lanes-script", type=Path, required=True, help="lit-tir's scripts/li_b1.py"
+        "--campaign",
+        choices=sorted({*BORN["campaigns"], *BORN["public"]}),
+        required=True,
     )
-    bl.add_argument("--ufo", type=Path, required=True, help="loop_sm's UFO")
+    bl.add_argument(
+        "--lanes-script",
+        type=Path,
+        default=None,
+        help="lit-tir's scripts/li_b1.py (the tools-route campaigns)",
+    )
+    bl.add_argument(
+        "--ufo", type=Path, required=True, help="loop_sm's UFO (hc: HC_NLO_X0's)"
+    )
     bl.add_argument(
         "--model-ufo",
         action="append",
@@ -3918,6 +4090,7 @@ def main(argv: list[str] | None = None) -> int:
             if previous is not None and previous.get("complete"):
                 print(name, "complete", flush=True)
                 continue
+            own, plain = run_skips(name)
             record = evaluate(
                 name,
                 args.work_dir,
@@ -3925,8 +4098,8 @@ def main(argv: list[str] | None = None) -> int:
                 digits=args.digits,
                 write=write,
                 previous=previous,
-                skip=skip,
-                high_checked=not args.high_plain,
+                skip={**own, **skip},
+                high_checked=not (args.high_plain or plain),
             )
             print(
                 name,
@@ -3971,6 +4144,14 @@ def main(argv: list[str] | None = None) -> int:
         (args.work_dir / "stress-madloop.json").write_text(
             json.dumps(result, indent=1) + "\n"
         )
+        return 0
+    if args.command == "born-l6" and args.campaign in BORN["public"]:
+        args.output.mkdir(parents=True, exist_ok=True)
+        for name, record in born_l6_hc(args.work_dir, args.ufo, args.rows).items():
+            record["campaign"] = args.campaign
+            path = args.output / f"{args.campaign}-{name}.json"
+            path.write_text(json.dumps(record, indent=1, default=str) + "\n")
+            print(name, record["status"], flush=True)
         return 0
     if args.command == "born-l6":
         from pyamplicol.loops.native import load_loop_native
@@ -4045,6 +4226,7 @@ def main(argv: list[str] | None = None) -> int:
                 born=born,
             ),
             indent=1,
+            sort_keys=True,
         )
         + "\n"
     )
