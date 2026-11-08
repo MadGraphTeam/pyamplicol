@@ -3135,7 +3135,20 @@ def compare_lanes(found: dict[str, list], margin: float, floor: float) -> dict:
     re-test estimate (floor ``floor`` x the lane's scale), the worst ratio to
     10x and the worst relative deviation (of all lanes and of those beyond
     10x), lanes served without an estimate, failed points and typed reasons
-    per backend, the virtual totals' largest relative difference."""
+    per backend, the virtual totals' largest relative difference.
+
+    A lane beyond 10x whose deviation is within ``margin`` x ``floor`` of
+    the point's lane scale (the largest coefficient of any lane at the
+    point, both backends: the magnitude the lanes' terms carry) is a
+    numerical zero at the carrier's resolution (Q13: zeros are numerical,
+    with an absolute estimate): counted in ``beyond_10x`` and
+    ``beyond_10x_zero`` with its deviation relative to the point's lane
+    scale (``worst_zero_point_relative``), and left out of
+    ``worst_beyond_10x`` (whose relative deviation to the lane's own,
+    noise-sized, scale says nothing). Such lanes' re-test reproduces the
+    rounding of their cancellation (an estimate of 0 or of the lane's own
+    rounding), so the 10x rule cannot judge them; ``beyond`` lists every
+    lane beyond 10x (point, lane, ratio, both relative deviations)."""
 
     out = {
         "lanes": 0,
@@ -3148,14 +3161,26 @@ def compare_lanes(found: dict[str, list], margin: float, floor: float) -> dict:
         "failed_points": {b: 0 for b in BACKENDS},
         "failed": {b: [] for b in BACKENDS},
         "virtual_max_relative": 0.0,
+        "beyond_10x_zero": 0,
+        "worst_zero_point_relative": 0.0,
+        "beyond": [],
     }
-    for n, t in zip(found["ninjars"], found["tirust"], strict=True):
+    for k, (n, t) in enumerate(zip(found["ninjars"], found["tirust"], strict=True)):
         for backend, value in (("ninjars", n), ("tirust", t)):
             if "failed" in value:
                 out["failed_points"][backend] += 1
                 out["failed"][backend].extend(str(r) for r in value["failed"])
         if "failed" in n or "failed" in t:
             continue
+        point_scale = max(
+            (
+                float(abs(x))
+                for side in (n, t)
+                for lane in side["direct"].values()
+                for x in lane
+            ),
+            default=0.0,
+        )
         for lane, a in n["direct"].items():
             b, checked = (
                 t["direct"].get(lane),
@@ -3181,7 +3206,25 @@ def compare_lanes(found: dict[str, list], margin: float, floor: float) -> dict:
             out["worst_over_10x"] = max(out["worst_over_10x"], ratio)
             out["worst_deviation"] = max(out["worst_deviation"], relative)
             if ratio > 1:
-                out["worst_beyond_10x"] = max(out["worst_beyond_10x"], relative)
+                zero = deviation <= margin * floor * point_scale
+                against = deviation / point_scale if point_scale else deviation
+                out["beyond"].append(
+                    {
+                        "point": k,
+                        "lane": compact_detail(str(lane)),
+                        "over_10x": ratio,
+                        "relative": relative,
+                        "point_relative": against,
+                        "zero": zero,
+                    }
+                )
+                if zero:
+                    out["beyond_10x_zero"] += 1
+                    out["worst_zero_point_relative"] = max(
+                        out["worst_zero_point_relative"], against
+                    )
+                else:
+                    out["worst_beyond_10x"] = max(out["worst_beyond_10x"], relative)
         for order, a in n["virtual"].items():
             b = t["virtual"][order]
             scale = max((abs(x) for x in a if x is not None), default=0.0)
@@ -3200,10 +3243,11 @@ def compare_lanes(found: dict[str, list], margin: float, floor: float) -> dict:
 
 def born_verdict(result: dict) -> str:
     """A comparison's verdict (DECISIONS 2026-11-08 08:31): 'fail' on a lane
-    beyond 10x deviating >= ~1e-5 relative (LAX) or served without an
-    estimate; 'pass (lax)' with lanes beyond 10x all below it; 'partial'
-    where a backend failed points (closed, typed) and the rest passes, or no
-    lane was compared; else 'pass'."""
+    beyond 10x deviating >= ~1e-5 relative (LAX; numerical-zero lanes,
+    ``compare_lanes``, excepted) or served without an estimate; 'pass (lax)'
+    with lanes beyond 10x all below it or numerical zeros; 'partial' where a
+    backend failed points (closed, typed) and the rest passes, or no lane
+    was compared; else 'pass'."""
 
     if result["no_estimate"] or result["worst_beyond_10x"] >= LAX:
         return "fail"
@@ -3222,7 +3266,15 @@ def forward_points(run: Any, values: list[str], digits: int = DIGITS) -> tuple |
 
     from pyamplicol.loops.v2.assemble import _leg_masses
 
-    masses = _leg_masses(run.slice, run.parameters, digits)
+    with localcontext() as context:
+        # a derived mass (``_model_masses``: ``digits`` digits) squared, as a
+        # terminating decimal of ``digits`` significant digits (the shell
+        # then holds to ~10^-digits, below every carrier)
+        context.prec = digits
+        masses = [
+            Fraction(+Decimal(m.numerator) / Decimal(m.denominator))
+            for m in _leg_masses(run.slice, run.parameters, digits)
+        ]
     if len(masses) != 4 or masses[0] or masses[1] or masses[2] != masses[3]:
         return "no forward construction: not 2 -> 2 with massless beams and equal final masses"
     point = [[Fraction(Decimal(c)) for c in p] for p in run.reference.points[0]]
@@ -3259,7 +3311,13 @@ def born_l6(
     row = campaign.rows[name]
     record: dict[str, Any] = {"row": name, "process": row.process, "native": _native()}
     if not row.active:
-        return {**record, "status": "not run", "reason": f"{row.status}: {row.pending}"}
+        reason = (
+            "composite row: no evaluation of its own; its single-process "
+            "variants are compared (mqcd.py STATUSES)"
+            if row.status == "composite"
+            else f"{row.status}: {row.pending}"
+        )
+        return {**record, "status": "not run", "reason": reason}
     if row.route == "public":
         return {
             **record,
@@ -3468,6 +3526,8 @@ def born_summary(records: dict[str, dict]) -> dict:
                         k: v for k, v in r.items() if k not in ("reduction", "seconds")
                     }
                     continue
+                # (records written before the numerical-zero split carry no
+                # ``beyond_10x_zero``: the split re-classifies 'fail' only)
                 compact[f"{label}/{carrier}"] = {
                     k: r[k]
                     for k in (
@@ -3478,11 +3538,14 @@ def born_summary(records: dict[str, dict]) -> dict:
                         "worst_over_10x",
                         "worst_deviation",
                         "worst_beyond_10x",
+                        "beyond_10x_zero",
+                        "worst_zero_point_relative",
                         "no_estimate",
                         "failed_points",
                         "failed",
                         "virtual_max_relative",
                     )
+                    if k in r
                 }
         if "forward" in record:
             compact["forward"] = record["forward"]
