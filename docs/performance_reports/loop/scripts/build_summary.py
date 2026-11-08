@@ -2887,8 +2887,11 @@ def _li_main(batched: list[dict]) -> tuple[dict | None, dict | None]:
 
 
 def _ms(seconds: float) -> str:
-    """A time per point in ms, three significant digits (a label's words)."""
+    """A time per point in ms (in s from one second), three significant
+    digits (a label's words)."""
 
+    if seconds >= 1:
+        return f"{seconds:.3g} s"
     return f"{seconds * 1e3:.3g} ms"
 
 

@@ -675,7 +675,7 @@
       li-match-line(r),
       [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "requested" in m [ (#raw(m.requested))]#if "other_backend" in m [ · #li-other(m.other_backend)]])
   } else {
-    absent(li-title(m), if "requested" in m [#raw(m.requested) (#m.at("backend_label", default: [backend #m.effective])): #m.at("reason", default: m.label)] else { m.at("reason", default: none) }, li-prov-line(r),
+    absent(li-title(m), if "requested" in m [#raw(m.requested) (#if "backend_label" in m { m.backend_label } else [backend #m.at("effective", default: "not resolved")]): #m.at("reason", default: m.label)] else { m.at("reason", default: none) }, li-prov-line(r),
       // The gated backend's verdict and the other backend beside a failed
       // request (lit-perf's records).
       if "gate" in m or "other_backend" in m [#if "gate" in m { li-chip(m.gate) } #if "other_backend" in m [ · #li-other(m.other_backend)]])
@@ -722,7 +722,7 @@
         ..(
           [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
           [generate + filter + plan export + probes (share), peak memory; provider generation],
-          [median per point at $B = 128$; provider times (lit-ref); gate (lit-perf) or rule; backend (request) · the other backend],
+          [median per point at $B = 128$; provider times (#if "optimistic" in li-meta.at("provider_protocols", default: ()) [most optimistic, lit-perf] else [lit-ref]); gate (lit-perf) or rule; backend (request) · the other backend],
         ).map(t => text(6.1pt, fill: ink2, t)),
       ),
       ..LI.groups.map(gr => (
