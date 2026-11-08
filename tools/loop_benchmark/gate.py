@@ -1093,6 +1093,7 @@ def build(
                 "dirty": record["dirty"],
                 "host_cpus": record.get("host_cpus"),
                 **({"host": record["host"]} if "host" in record else {}),
+                **({"date": record["date"]} if "date" in record else {}),
                 **(
                     {"eval_peak_gib": record["eval_peak_gib"]}
                     if "eval_peak_gib" in record
@@ -1429,6 +1430,7 @@ def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> l
                     "failed_points": failed,
                     "served_fraction": 1 - sum(failed) / (int(size) * len(failed)),
                     "host": config.get("host"),
+                    "date": config.get("date"),
                     "core": cpus[0] if len(cpus) == 1 else cpus,
                     "eval_peak_gib": config.get("eval_peak_gib"),
                 }

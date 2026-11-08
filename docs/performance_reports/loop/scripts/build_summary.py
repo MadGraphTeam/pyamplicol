@@ -2420,8 +2420,8 @@ def _preliminary() -> dict | None:
 #                         tests/fixtures/loop/; the gate tool's providers
 #                         format, median per point; a provider whose
 #                         "values_excluded" names why its values are no
-#                         reference is shown with its match open,
-#                         LI_MATCH_OPEN) and "unavailable"
+#                         reference is timed and shown, not matched,
+#                         LI_NOT_MATCHED) and "unavailable"
 #                         ({provider: reason}); MadLoop at its production
 #                         card only (LI_MADLOOP_PRODUCTION; the OPP column
 #                         belongs to the detailed sections);
@@ -2649,9 +2649,12 @@ def _li_input(data: Path, name: str) -> dict | None:
 
 
 # A provider timed on the row whose values its record excludes as a
-# reference (``values_excluded``): whether it is a matched provider of the
-# gate is lit-perf's (slice-status DECISIONS 2026-11-06 ~19:06).
-LI_MATCH_OPEN = "match open (lit-perf)"
+# reference (``values_excluded``, e.g. Recola's on-shell width convention on
+# the fixed-width rows LI-43 and LI-51): not a matched provider (lit-perf's
+# reading of PLAN §5.2 with §4.0 L1 and §4.1, the gate tool's
+# ``unmatched_providers``): timed and shown, never the fastest matched
+# provider, never a limit.
+LI_NOT_MATCHED = "not matched (values excluded)"
 
 
 def _li_pending(what: str, reason: str) -> dict:
@@ -2706,11 +2709,9 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
             if lib is not None:
                 providers[k]["setting"] = f"MLReductionLib {lib}"
             if x.get("values_excluded"):
-                # Its values are no reference (the record's reason); whether
-                # its time is a matched provider of the gate is lit-perf's
-                # call (slice-status DECISIONS 2026-11-06 ~19:06): timed and
-                # shown, its match open.
-                providers[k]["match"] = LI_MATCH_OPEN
+                # Its values are no reference (the record's reason): not a
+                # matched provider (LI_NOT_MATCHED), its time shown beside.
+                providers[k]["match"] = LI_NOT_MATCHED
                 providers[k]["values_excluded"] = x["values_excluded"]
             # The record's host: the table's provenance line.
             if rec.get("host") is not None:
@@ -2735,21 +2736,21 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
     out["unmatched"] = not times and all(
         x.get("status") == "unavailable" for x in providers.values()
     )
-    if times:
-        k = min(times, key=times.get)
+    matched = {n: s for n, s in times.items() if not providers[n].get("match")}
+    if matched:
+        # The fastest matched provider (a provider whose values are excluded
+        # is timed and shown, never the fastest matched one).
+        k = min(matched, key=matched.get)
         out["fastest"] = {"key": k, "name": NAMES[k], "seconds_per_point": times[k]}
-        if providers[k].get("match"):
-            # The fastest one's match is open: the fastest of the others
-            # beside it (no choice between them is made here).
-            out["fastest"]["match"] = providers[k]["match"]
-            settled = {n: s for n, s in times.items() if not providers[n].get("match")}
-            if settled:
-                n = min(settled, key=settled.get)
-                out["fastest_settled"] = {
-                    "key": n,
-                    "name": NAMES[n],
-                    "seconds_per_point": settled[n],
-                }
+    unmatched = {n: s for n, s in times.items() if n not in matched}
+    if unmatched:
+        n = min(unmatched, key=unmatched.get)
+        out["fastest_unmatched"] = {
+            "key": n,
+            "name": NAMES[n],
+            "seconds_per_point": unmatched[n],
+            "match": providers[n]["match"],
+        }
     out["generation"] = gens
     if gens:
         k = min(gens, key=gens.get)
@@ -2925,15 +2926,71 @@ def _li_other(r: dict) -> dict:
     return out
 
 
-def _li_gate(row: dict, t: float, rec: dict, prov: dict, rule: dict) -> dict:
-    """The cell's gate rule: reported (four legs or fewer), the user's 5 ms
-    rule, no matched provider (every reference unavailable), lit-perf's
-    verdict, or no verdict yet (no provider time yet)."""
+# The gate tool's loop-induced statuses (tools/loop_benchmark/gate.py): a
+# TIRust run that failed points closed carries no verdict (the gap,
+# FAILED_CLOSED_STATUS), and below the 5 ms rule the status is the floor's
+# (GATE_FLOOR_STATUS; ``floor_basis_seconds`` the gated backend's time).
+LI_GATE_FAILED_CLOSED = "failed closed on part of the stream: no verdict (gap)"
+LI_GATE_MISSING_PROVIDER = "no matched provider timing"
+
+
+def _li_verdict(g: dict, rec: dict, rule: dict) -> dict:
+    """A cell's gate marker from lit-perf's gate record ``rec`` of the gated
+    backend (TIRust, PLAN §5.2; its ``gate``): the verdict as Table 1's chip,
+    the 5 ms rule, the gap of a run that failed points closed (no verdict,
+    its served fraction), or no matched provider."""
+
+    backend = {
+        "backend": rec["backend"],
+        "backend_label": LI_BACKENDS[rec["backend"]],
+        "source": f"{rec['source']} (lit-perf gate tool)",
+    }
+    status = {"inconclusive": "open"}.get(g["status"], g["status"])
+    if status in ("pass", "fail", "open"):
+        return {
+            "status": status,
+            "ratio_to_limit": g["ratio_to_limit"],
+            "band": g["band"],
+            **backend,
+        }
+    if "floor_basis_seconds" in g:
+        return {
+            "status": rule["verdict"],
+            "label": rule["short"],
+            "rule": rule["label"],
+            **backend,
+        }
+    if g["status"] == LI_GATE_FAILED_CLOSED:
+        failed = rec["failed_points"]
+        low, high = min(failed), max(failed)
+        count = str(low) if low == high else f"{low}-{high}"
+        return {
+            "status": "gap",
+            "label": f"no verdict: {LI_BACKENDS[rec['backend']]} failed closed"
+            f" {count}/{rec['batch']} (gap)",
+            "served_fraction": rec["served_fraction"],
+            **backend,
+        }
+    if g["status"] == LI_GATE_MISSING_PROVIDER:
+        return {"status": "no gate", "label": "no matched provider: no gate"}
+    raise ValueError(f"{LI_TIMING} {rec['key']}: gate status {g['status']!r}")
+
+
+def _li_gate(
+    row: dict, t: float, rec: dict, prov: dict, rule: dict, gated: dict | None = None
+) -> dict:
+    """The cell's gate rule: reported (four legs or fewer), lit-perf's
+    verdict on the gated backend (``gated``: its B = 128 record with the
+    gate tool's ``gate``, ``_li_verdict``), the user's 5 ms rule, no matched
+    provider (every reference unavailable), or no verdict yet (no provider
+    time yet)."""
     if row["gate_class"] == "reported":
         return {
             "status": "reported",
             "label": f"no gate ({_li_legs_word(row['process'])})",
         }
+    if gated is not None and gated.get("gate") is not None:
+        return _li_verdict(gated["gate"], gated, rule)
     if t < rule["below_seconds_per_point"]:
         return {
             "status": rule["verdict"],
@@ -3097,6 +3154,9 @@ def _li_cells(
         "host": main["host"],
         "source": src,
     }
+    if main.get("date"):
+        # The measurement date (the gate tool's records).
+        cell["date"] = main["date"]
     if "requested" in main:
         # The request as the runtime resolved it (requested, reason).
         cell["requested"] = main["requested"]
@@ -3109,12 +3169,18 @@ def _li_cells(
     fastest = prov.get("fastest")
     if fastest is not None:
         cell["ratio_to_fastest"] = t / fastest["seconds_per_point"]
-    settled = prov.get("fastest_settled")
-    if settled is not None:
-        # The fastest provider's match is open (LI_MATCH_OPEN): the ratio
-        # to the fastest settled one beside it, uncoloured.
-        cell["ratio_to_fastest_settled"] = t / settled["seconds_per_point"]
-    cell["gate"] = _li_gate(row, t, main, prov, rule)
+    unmatched = prov.get("fastest_unmatched")
+    if unmatched is not None:
+        # A provider timed on the row that is not matched (LI_NOT_MATCHED):
+        # the ratio to it beside the cell, uncoloured, never the gate's.
+        cell["ratio_to_fastest_unmatched"] = t / unmatched["seconds_per_point"]
+    # lit-perf's gate record: the gated backend's (the registry's default,
+    # TIRust: PLAN §5.2) B = 128 record at this revision with the gate tool's
+    # verdict.
+    gated = next(
+        (r for r in batched if r.get("backend") == default and "gate" in r), None
+    )
+    cell["gate"] = _li_gate(row, t, main, prov, rule, gated)
     out["timing"] = cell
     return out
 
@@ -3163,6 +3229,16 @@ def build_loop_induced(
             )
         if rows:
             groups.append({"name": name, "rows": rows})
+    # The measurement dates of the timed cells (the provenance line; records
+    # without a date: the report date).
+    measured = sorted(
+        {
+            r["timing"]["date"]
+            for g in groups
+            for r in g["rows"]
+            if r["timing"].get("date")
+        }
+    )
     return {
         "what": (
             "the loop-induced summary table <tab:summary-li> of"
@@ -3171,6 +3247,7 @@ def build_loop_induced(
         ),
         "meta": {
             "date": ms["date"],
+            **({"measured": measured} if measured else {}),
             "engine_on_loop": ms["engine_revision"],
             # The engine's native build (name, digest): the provenance line
             # while no record of its own names one.
@@ -3217,11 +3294,35 @@ LI_FIGURE_RULE = (
     " provider), in the table's order, drawn as a diamond on Figure 1's time"
     " axis beside Table 1's rows: the providers' production times, and the"
     " gate limit where the row is gated (2->3 upward: MadLoop's time and the"
-    " gate factor times each other matched provider's, the smallest; grey"
-    " below the 5 ms rule); the other rows are not drawn, counted by reason"
+    " gate factor times each other matched provider's, the smallest; a"
+    " provider whose values are excluded is not matched; no limit while a"
+    " matched provider has no production time yet; grey below the 5 ms"
+    " rule); the other rows are not drawn, counted by reason"
 )
 LI_NO_TIME = "no pyAmpliCol time at B = 128"
 LI_NO_PROVIDER = "no matched provider time"
+
+
+def _li_limit(prov: dict, factor: float) -> dict | None:
+    """A loop-induced row's gate limit from its provider entries
+    (``_li_providers``): MadLoop's production time and ``factor`` times each
+    other matched provider's, the smallest (a provider whose values are
+    excluded is no matched provider, LI_NOT_MATCHED); none while a matched
+    reference provider has no production time yet (Table 1's rule: "no
+    complete gate limit yet")."""
+
+    entries = prov.get("providers") or {}
+    if any(x.get("status") == "not timed" for x in entries.values()):
+        return None
+    limits = [
+        ((1.0 if k == "madloop" else factor) * x["seconds_per_point"], NAMES[k])
+        for k, x in entries.items()
+        if "seconds_per_point" in x and not x.get("match")
+    ]
+    if not limits:
+        return None
+    seconds, binding = min(limits)
+    return {"seconds": seconds, "binding": binding}
 
 
 def li_figure(loop_induced: dict, factor: float) -> dict:
@@ -3246,12 +3347,7 @@ def li_figure(loop_induced: dict, factor: float) -> dict:
             }
             limit = None
             if r["gate_class"] != "reported":
-                limits = [
-                    ((1.0 if k == "madloop" else factor) * s, NAMES[k])
-                    for k, s in timed.items()
-                ]
-                seconds, binding = min(limits)
-                limit = {"seconds": seconds, "binding": binding}
+                limit = _li_limit(prov, factor)
             rows.append(
                 {
                     "key": r["key"],
@@ -3263,7 +3359,7 @@ def li_figure(loop_induced: dict, factor: float) -> dict:
                     "ratio_to_fastest": t["ratio_to_fastest"],
                     "providers": timed,
                     "fastest": prov["fastest"]["key"],
-                    "match_open": sorted(
+                    "not_matched": sorted(
                         NAMES[k] for k, x in prov["providers"].items() if x.get("match")
                     ),
                     "limit": limit,

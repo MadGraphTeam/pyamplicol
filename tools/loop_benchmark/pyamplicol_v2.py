@@ -1581,6 +1581,7 @@ class InducedRun(Run):
         import platform
 
         self.record["host"] = platform.node()
+        self.record["date"] = time.strftime("%Y-%m-%d", time.gmtime())
         self.record["contribution"] = "loop-induced"
         self.record["kind"] = "pyamplicol-v2"
         self.native_seconds: dict[str, float] = {}
