@@ -207,7 +207,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.007503026547055924,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.007503026547055924,
     0.007627849092386896,
@@ -217,6 +216,7 @@
     0.0074210969905834645,
     0.007298434218682814
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -303,7 +303,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.004051384516060352,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.004051384516060352,
     0.0041632344291429035,
@@ -313,6 +312,7 @@
     0.004023449400847312,
     0.0039442285997211
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -359,7 +359,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.000613656455243472,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0006146896557766013,
     0.000613656455243472,
@@ -369,6 +368,7 @@
     0.000609532911767019,
     0.0006124746396380942
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -455,7 +455,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0005983294286124874,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0005996209220029414,
     0.0006007101401337422,
@@ -465,6 +464,7 @@
     0.0005983294286124874,
     0.0005992002188577317
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -511,7 +511,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0017194211031892337,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0015469640638912097,
     0.0015568101953249425,
@@ -521,6 +520,7 @@
     0.0017194211031892337,
     0.0018159615101467352
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -607,7 +607,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0013324273204489145,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.001311070671363268,
     0.0013081920624244958,
@@ -617,6 +616,7 @@
     0.001398255946696736,
     0.0013324273204489145
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -663,7 +663,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.018679868680919753,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.025864088998787338,
     0.01860277070227312,
@@ -673,6 +672,7 @@
     0.018679868680919753,
     0.01836728519265307
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -759,7 +759,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.010210163578449283,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.010059549669676926,
     0.010832499905518489,
@@ -769,6 +768,7 @@
     0.009769121203135,
     0.010309979534213198
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -815,7 +815,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.00806797488257871,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.007885039529355709,
     0.008468744537822204,
@@ -825,6 +824,7 @@
     0.008095657736703288,
     0.00806797488257871
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -914,8 +914,7 @@
    "failure_causes": {
     "ruling (d)": 128
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.0036777973364223726,
     0.0039895479239930864,
     0.004062576586875366,
@@ -924,6 +923,7 @@
     0.0040091227638185956,
     0.004108790053578559
    ],
+   "blocks": 7,
    "failed_points": [
     128,
     128,
@@ -970,7 +970,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0011385140169295482,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0011385140169295482,
     0.001449009359930642,
@@ -980,6 +979,7 @@
     0.0011192914353159722,
     0.0010702640356612392
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -1066,7 +1066,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0012203351325297263,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0012250307045178488,
     0.0011176743209944107,
@@ -1076,6 +1075,7 @@
     0.0011443500479799695,
     0.0012884231473435648
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -1122,7 +1122,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.000987691124464618,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0009533143384032883,
     0.0009826049317780416,
@@ -1132,6 +1131,7 @@
     0.0012796098344551865,
     0.001151091873907717
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -1218,7 +1218,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.001027461123157991,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.001186486322694691,
     0.001243484210135648,
@@ -1228,6 +1227,7 @@
     0.0009752587284310721,
     0.0010921524117293302
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -1274,7 +1274,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0034155418616137467,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.003285575545305619,
     0.0034155418616137467,
@@ -1284,6 +1283,7 @@
     0.0035507179782143794,
     0.0034463850388419814
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -1370,7 +1370,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0021663884945155587,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.00215235499854316,
     0.002238750985270599,
@@ -1380,6 +1379,7 @@
     0.0022030243490007706,
     0.0021503279604075942
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -1426,7 +1426,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.1565712155534129,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.1565712155534129,
     0.15424356981384335,
@@ -1436,6 +1435,7 @@
     0.16496145967175835,
     0.15771503118958208
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -1525,8 +1525,7 @@
    "failure_causes": {
     "ruling (d)": 128
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.06065158490673639,
     0.059123343977262266,
     0.05971025469261804,
@@ -1535,6 +1534,7 @@
     0.05870441664956161,
     0.05561155461691669
    ],
+   "blocks": 7,
    "failed_points": [
     128,
     128,
@@ -1595,7 +1595,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0068795248662354425,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0068795248662354425,
     0.0063179718417814,
@@ -1605,6 +1604,7 @@
     0.0068882821724400856,
     0.0069953391794115305
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -1691,7 +1691,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.003425754879572196,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0031428272268385626,
     0.0031201505626086146,
@@ -1701,6 +1700,7 @@
     0.0037893191947659943,
     0.0035627245051728096
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -1747,7 +1747,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.29106062006758293,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.3065233704219281,
     0.3036190123275446,
@@ -1757,6 +1756,7 @@
     0.2921514697809471,
     0.2852415452252899
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -1846,8 +1846,7 @@
    "failure_causes": {
     "ruling (d)": 128
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.11797022035170812,
     0.11807764601689996,
     0.11879292222874938,
@@ -1856,6 +1855,7 @@
     0.12274092692314298,
     0.1237498117989162
    ],
+   "blocks": 7,
    "failed_points": [
     128,
     128,
@@ -1902,7 +1902,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.004716364055639133,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.004716364055639133,
     0.004637816935428418,
@@ -1912,6 +1911,7 @@
     0.0046347115239768755,
     0.004941039358527632
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -1998,7 +1998,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0032050784211605787,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0033587445323064458,
     0.0036547698109643534,
@@ -2008,6 +2007,7 @@
     0.0031578160378558096,
     0.0033184292042278685
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -2054,7 +2054,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.00020298825620557182,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.00020141027926001698,
     0.00020212286835885607,
@@ -2064,6 +2063,7 @@
     0.00019932731083827093,
     0.00020786913955817
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -2150,7 +2150,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.00019219461682951078,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.00019958402481279336,
     0.00018939515575766563,
@@ -2160,6 +2159,7 @@
     0.00019219461682951078,
     0.00019235024956287816
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -2206,7 +2206,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0014490264693449717,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0014477626318694092,
     0.0014391818876902107,
@@ -2216,6 +2215,7 @@
     0.0015480957008549012,
     0.0014496931071334984
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -2302,7 +2302,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0009081966381927487,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0008911864933907054,
     0.0009224435088981409,
@@ -2312,6 +2311,7 @@
     0.0009140574547927827,
     0.0009184691953123547
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -2358,7 +2358,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.043156410716619575,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.043101209677843144,
     0.04316599042795133,
@@ -2368,6 +2367,7 @@
     0.043156410716619575,
     0.04415636720295879
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -2457,8 +2457,7 @@
    "failure_causes": {
     "ruling (d)": 128
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.017990114305575844,
     0.017822709243773716,
     0.01896275872422848,
@@ -2467,6 +2466,7 @@
     0.019027271577215288,
     0.018604193421197124
    ],
+   "blocks": 7,
    "failed_points": [
     128,
     128,
@@ -2503,6 +2503,161 @@
    "source": "M-LIT-b milestone run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlitb-li/gg_hgg.json, fixture li_gg_hgg, loop_sm restriction no_b_mass (test_loop_v2_induced)): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one thread pinned to idle core 199; fixture points cycled; median of 7 B = 128 blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); both backends in one process on the same points"
   },
   {
+   "key": "gg_hggg",
+   "revision": "e852f448b2db9595d5d8327290b3dff4c8175b70",
+   "requested": "auto",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+   "native_build": "loop-native-v2-slice-e852f448",
+   "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+   "batch": 128,
+   "seconds_per_point": 3.3720681745871843,
+   "block_seconds_per_point": [
+    2.625003345834557,
+    3.284963807775057,
+    3.287504473235458,
+    3.4961941797409963,
+    3.3720681745871843,
+    3.4224699559381406,
+    3.5253359576199728
+   ],
+   "blocks": 7,
+   "failed_points": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "host": "itphlies",
+   "core": 54,
+   "eval_peak_gib": 7.109,
+   "generation": {
+    "seconds": 8.185622464865446,
+    "generate_seconds": 7.452656892128289,
+    "filter_seconds": 0.00023504067212343216,
+    "export_seconds": 0.7327305320650339,
+    "probes_seconds": 853.1153192450292,
+    "peak_gib": 5.109,
+    "plan_mb": 0.1,
+    "filter_dropped_rows": 0
+   },
+   "source": "M-LIT-b milestone run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlitb-li/gg_hggg.json, fixture li_gg_hggg, loop_sm restriction no_b_mass (test_loop_v2_induced)): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one thread pinned to idle core 54; fixture points cycled; median of 7 B = 128 blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); both backends in one process on the same points"
+  },
+  {
+   "key": "gg_hggg",
+   "revision": "e852f448b2db9595d5d8327290b3dff4c8175b70",
+   "requested": "auto",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+   "native_build": "loop-native-v2-slice-e852f448",
+   "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+   "batch": 1,
+   "failed_points": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "calls": 32,
+   "host": "itphlies",
+   "core": 54,
+   "source": "M-LIT-b milestone run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlitb-li/gg_hggg.json, fixture li_gg_hggg, loop_sm restriction no_b_mass (test_loop_v2_induced)): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one thread pinned to idle core 54; fixture points cycled; median of 32 single-point calls after the B = 128 blocks; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); both backends in one process on the same points",
+   "seconds_per_point": 15.95128304651007
+  },
+  {
+   "key": "gg_hggg",
+   "revision": "e852f448b2db9595d5d8327290b3dff4c8175b70",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "native_build": "loop-native-v2-slice-e852f448",
+   "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+   "batch": 128,
+   "whole_call_seconds_per_point": 1.2435772311218898,
+   "failure_causes": {
+    "ruling (d)": 128
+   },
+   "block_whole_call_seconds_per_point": [
+    1.3160534772214305,
+    1.2435772311218898,
+    1.3000596251658862,
+    1.2913306747323077,
+    1.2180013424222125,
+    1.0145628896825656,
+    1.0157317880075425
+   ],
+   "blocks": 7,
+   "failed_points": [
+    128,
+    128,
+    128,
+    128,
+    128,
+    128,
+    128
+   ],
+   "served_fraction": 0.0,
+   "host": "itphlies",
+   "core": 54,
+   "eval_peak_gib": 6.228,
+   "tir_counts_last_block": {
+    "tensor moment rows": 21720,
+    "contracted lanes": 5000448,
+    "moment rows shared": 21720,
+    "TIR gate refusals": 5098,
+    "TIR method-choice rows": 0,
+    "TIR method-choice rows with expansions": 0,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0,
+    "TIR capability refusals": 0
+   },
+   "tir_gate_refusals_per_block": [
+    5098,
+    5098,
+    5098,
+    5098,
+    5098,
+    5098,
+    5098
+   ],
+   "source": "M-LIT-b milestone run 2026-11-07 (workspace/reports/engine-v2/measure-g1/records/mlitb-li/gg_hggg.json, fixture li_gg_hggg, loop_sm restriction no_b_mass (test_loop_v2_induced)): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one thread pinned to idle core 54; fixture points cycled; median of 7 B = 128 blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); both backends in one process on the same points"
+  },
+  {
    "key": "gg_hh",
    "revision": "e852f448b2db9595d5d8327290b3dff4c8175b70",
    "requested": "auto",
@@ -2513,7 +2668,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0005579019234573934,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0005610078769677784,
     0.0005590834080066998,
@@ -2523,6 +2677,7 @@
     0.0005579019234573934,
     0.0005563263657677453
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -2609,7 +2764,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0004041566717205569,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0004104841282241978,
     0.0004078489509993233,
@@ -2619,6 +2773,7 @@
     0.0004041566717205569,
     0.0004017295541416388
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -2665,7 +2820,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.9807981397971162,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.9669928310213436,
     0.9773165976403106,
@@ -2675,6 +2829,7 @@
     0.9304886362660909,
     0.9807981397971162
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -2764,8 +2919,7 @@
    "failure_causes": {
     "ruling (d)": 128
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.19292704279723694,
     0.1893236911164422,
     0.1926148429447494,
@@ -2774,6 +2928,7 @@
     0.2113968462253979,
     0.20285344530566363
    ],
+   "blocks": 7,
    "failed_points": [
     128,
     128,
@@ -2820,7 +2975,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0038197422109078616,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.003839455257548252,
     0.003855216498777736,
@@ -2830,6 +2984,7 @@
     0.003789234811847564,
     0.003809457797615323
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -2919,8 +3074,7 @@
    "failure_causes": {
     "ruling (d)": 42
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.002689079956326168,
     0.002775708828266943,
     0.0027324040383973625,
@@ -2929,6 +3083,7 @@
     0.0027105092667625286,
     0.00272678697729134
    ],
+   "blocks": 7,
    "failed_points": [
     42,
     42,
@@ -2975,7 +3130,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0012793270070687868,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0012651135184569284,
     0.0012820755400753114,
@@ -2985,6 +3139,7 @@
     0.0012793270070687868,
     0.0013669564359588549
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -3071,7 +3226,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0009557627781759948,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.000920296304684598,
     0.0008884053931978997,
@@ -3081,6 +3235,7 @@
     0.0009567112247168552,
     0.0009623488986107986
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -3127,7 +3282,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.04756227239704458,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.047063467874977505,
     0.046674445176904555,
@@ -3137,6 +3291,7 @@
     0.04780994670363725,
     0.04895650903927162
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -3226,8 +3381,7 @@
    "failure_causes": {
     "ruling (d)": 42
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.02613068910795846,
     0.0255129295255756,
     0.03052312346699182,
@@ -3236,6 +3390,7 @@
     0.03182562894653529,
     0.031121479467401514
    ],
+   "blocks": 7,
    "failed_points": [
     42,
     42,
@@ -3282,7 +3437,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.009553450618113857,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.01011678428039886,
     0.00942267531354446,
@@ -3292,6 +3446,7 @@
     0.00965898495996953,
     0.009527911690383917
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -3378,7 +3533,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0045324557831918355,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.004593818070134148,
     0.004557150805339916,
@@ -3388,6 +3542,7 @@
     0.004107284414203605,
     0.004058881797391223
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -3434,7 +3589,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.37236428433607216,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.3797634510228818,
     0.37236428433607216,
@@ -3444,6 +3598,7 @@
     0.3614574865605391,
     0.37385535481371335
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -3533,8 +3688,7 @@
    "failure_causes": {
     "ruling (d)": 128
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.11370215726492461,
     0.11394550762634026,
     0.11416835306954454,
@@ -3543,6 +3697,7 @@
     0.11507323002297198,
     0.12615892346730107
    ],
+   "blocks": 7,
    "failed_points": [
     128,
     128,
@@ -3589,7 +3744,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.004879517997324001,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.004879517997324001,
     0.004862274727202021,
@@ -3599,6 +3753,7 @@
     0.0048067513744172174,
     0.004970596892235335
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -3685,7 +3840,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.002786113320325967,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.002786113320325967,
     0.0027788477491412777,
@@ -3695,6 +3849,7 @@
     0.0028987491823500022,
     0.002740920564974658
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -3741,7 +3896,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.013179443991248263,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.010515502883208683,
     0.013179443991248263,
@@ -3751,6 +3905,7 @@
     0.013617910728498828,
     0.01247101941407891
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -3837,7 +3992,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0059040029445895925,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.006376005992933642,
     0.0059040029445895925,
@@ -3847,6 +4001,7 @@
     0.005665015865815803,
     0.005946715693426086
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -3893,7 +4048,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.4527017778127629,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.47418386580466176,
     0.4527017778127629,
@@ -3903,6 +4057,7 @@
     0.444972305882402,
     0.5303051993141707
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -3992,8 +4147,7 @@
    "failure_causes": {
     "ruling (d)": 128
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.19950147589770495,
     0.1983332962518034,
     0.2213390225006151,
@@ -4002,6 +4156,7 @@
     0.1958568758200272,
     0.21167729203079944
    ],
+   "blocks": 7,
    "failed_points": [
     128,
     128,
@@ -4048,7 +4203,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.00861282766709337,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.008936770962463925,
     0.008935168687457917,
@@ -4058,6 +4212,7 @@
     0.00852579933416564,
     0.008492854747601086
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -4144,7 +4299,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.005428543787274975,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.005537189008464338,
     0.005542398866964504,
@@ -4154,6 +4308,7 @@
     0.005428543787274975,
     0.005257210272247903
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -4200,7 +4355,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.36689425846998347,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.39225136979075614,
     0.3785777155389951,
@@ -4210,6 +4364,7 @@
     0.3505583404985373,
     0.34558308595296694
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -4299,8 +4454,7 @@
    "failure_causes": {
     "ruling (d)": 128
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.13290382620471064,
     0.13401860405792831,
     0.1314548532900517,
@@ -4309,6 +4463,7 @@
     0.13043835515054525,
     0.12925663236819673
    ],
+   "blocks": 7,
    "failed_points": [
     128,
     128,
@@ -4355,7 +4510,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.339951517413283,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.3300889461315819,
     0.4082232668697543,
@@ -4365,6 +4519,7 @@
     0.3581143120863999,
     0.29188361883643665
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -4454,8 +4609,7 @@
    "failure_causes": {
     "ruling (d)": 85
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.1388237108803878,
     0.13642667895328486,
     0.15144902729662135,
@@ -4464,6 +4618,7 @@
     0.13791319542360725,
     0.13842759427279816
    ],
+   "blocks": 7,
    "failed_points": [
     85,
     85,
@@ -4524,7 +4679,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0006394666343112476,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0006394666343112476,
     0.0006358931022987235,
@@ -4534,6 +4688,7 @@
     0.0006403654697351158,
     0.0006365468507283367
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -4620,7 +4775,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0006197671027621254,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0006194400630192831,
     0.0006369045077008195,
@@ -4630,6 +4784,7 @@
     0.0006324957430479117,
     0.0006208113227330614
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -4676,7 +4831,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.00021597964223474264,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0002133626039722003,
     0.00021272837693686597,
@@ -4686,6 +4840,7 @@
     0.00021622957137878984,
     0.00021848356118425727
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -4772,7 +4927,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.00020540100740618072,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.00022894219364388846,
     0.00021502394520211965,
@@ -4782,6 +4936,7 @@
     0.00020540100740618072,
     0.0002038958373304922
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -4828,7 +4983,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0015754904234199785,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0016737980949983466,
     0.0015386212908197194,
@@ -4838,6 +4992,7 @@
     0.0015754904234199785,
     0.0015372574525827076
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -4924,7 +5079,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.001034191380313132,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0012697746315097902,
     0.0009933326327882241,
@@ -4934,6 +5088,7 @@
     0.0010496866889297962,
     0.0009581366248312406
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -4980,7 +5135,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0007858965363993775,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0008059456013143063,
     0.0007858965363993775,
@@ -4990,6 +5144,7 @@
     0.000755905632104259,
     0.0007718133601883892
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -5076,7 +5231,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0006840797868790105,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0006799099319323432,
     0.0006856167492514942,
@@ -5086,6 +5240,7 @@
     0.0006888328498462215,
     0.000684180180542171
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -5132,7 +5287,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.19462855899109854,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.19462855899109854,
     0.20215007399383467,
@@ -5142,6 +5296,7 @@
     0.19449832497048192,
     0.18969418052438414
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -5228,7 +5383,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.08103614099309198,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.08155146674835123,
     0.07983536292886129,
@@ -5238,6 +5392,7 @@
     0.08103614099309198,
     0.0805160029194667
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -5284,7 +5439,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.00025812661624513566,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0002530636265873909,
     0.0002641404680616688,
@@ -5294,6 +5448,7 @@
     0.00026640079158823937,
     0.0002571272343629971
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -5380,7 +5535,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.00024889462656574324,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.00024889462656574324,
     0.0002596895174065139,
@@ -5390,6 +5544,7 @@
     0.0002480686016497202,
     0.0002525258059904445
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -5436,7 +5591,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0005106028984300792,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.00047122085379669443,
     0.00046964264765847474,
@@ -5446,6 +5600,7 @@
     0.00054581163203693,
     0.0006509612903755624
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -5532,7 +5687,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0006038936735421885,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0004954937721777242,
     0.0005106140633870382,
@@ -5542,6 +5696,7 @@
     0.00046246221972978674,
     0.0006038936735421885
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -5588,7 +5743,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.0002644789819896687,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.00026349381732870825,
     0.0002644789819896687,
@@ -5598,6 +5752,7 @@
     0.00027469840642879717,
     0.0002704129110497888
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -5684,7 +5839,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.00024849727560649626,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.0002507697863620706,
     0.00025021010151249357,
@@ -5694,6 +5848,7 @@
     0.00024643273354740813,
     0.00024764914633124135
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -5740,7 +5895,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.002348669553612126,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.002211694696597988,
     0.0020878401264781132,
@@ -5750,6 +5904,7 @@
     0.0025563869858160615,
     0.0020616284527932294
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -5839,8 +5994,7 @@
    "failure_causes": {
     "ruling (d)": 43
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.0013552552954934072,
     0.002048407375696115,
     0.0013047636821283959,
@@ -5849,6 +6003,7 @@
     0.0015355094765254762,
     0.0011821462176158093
    ],
+   "blocks": 7,
    "failed_points": [
     43,
     43,
@@ -5895,7 +6050,6 @@
    "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
    "batch": 128,
    "seconds_per_point": 0.009994512372941244,
-   "blocks": 7,
    "block_seconds_per_point": [
     0.010128554178663762,
     0.009938827377482085,
@@ -5905,6 +6059,7 @@
     0.009994512372941244,
     0.010058631931315176
    ],
+   "blocks": 7,
    "failed_points": [
     0,
     0,
@@ -5994,8 +6149,7 @@
    "failure_causes": {
     "ruling (d)": 42
    },
-   "blocks": 7,
-   "block_seconds_per_point": [
+   "block_whole_call_seconds_per_point": [
     0.004793315383722074,
     0.004890020310995169,
     0.004833126251469366,
@@ -6004,6 +6158,7 @@
     0.004884300054982305,
     0.004853916099818889
    ],
+   "blocks": 7,
    "failed_points": [
     42,
     42,

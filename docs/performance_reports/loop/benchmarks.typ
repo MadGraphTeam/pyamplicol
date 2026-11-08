@@ -941,7 +941,8 @@ value), with the peak memory over all of them; the provenance line names pyAmpli
 5 ms per point, no gate without a matched provider; verdict chips come with the gate tool's records, "no verdict yet"
 before them ("no provider time yet" while no provider of the row is timed). Grey cells are explicit markers:
 *pending* (the package that serves the row, named in the cell, has not landed at this head, or the input file that
-fills the cell does not exist yet), *not run* (a landed package without a record of the row), *failed closed* or
+fills the cell does not exist yet), *not run* (a landed package without a record of the row, or a run stopped before its timing, with its measured
+progress, e.g. a generation beyond the 45-min rule), *failed closed* or
 *refused* (the record of the cell's request failed points or was refused: no time), and a provider's reason where it
 has no matched time. Nothing is estimated or extrapolated; each cell shows the newest record of its row. At
 this head #li-served.len() of #li-rows.len() rows are served; inputs: #li-inputs.map(x => [#raw(x.file) #if x.present [present] else [not written yet (#x.owner)]]).join([, ])\;

@@ -2813,7 +2813,7 @@ def _li_served(r: dict) -> bool:
     return "seconds_per_point" in r
 
 
-def _li_main(batched: list[dict], default: str) -> tuple[dict | None, dict | None]:
+def _li_main(batched: list[dict]) -> tuple[dict | None, dict | None]:
     """(the cell's record, the record that names the request's outcome)
     among the B = 128 records of a revision (``_li_records``' order): the
     record of the backend "auto" serves (``requested == "auto"``) when one
@@ -2972,7 +2972,7 @@ def _li_cells(
         return out
     gate = int(GATE_BATCH)
     batched = [r for r in recs if int(r["batch"]) == gate]
-    main, named = _li_main(batched, default) if batched else (recs[0], recs[0])
+    main, named = _li_main(batched) if batched else (recs[0], recs[0])
     first = main or named
     at = f"{row['key']}, {first['backend']}, {first['revision'][:8]}"
     src = f"{LI_TIMING} records[{at}]"

@@ -3631,12 +3631,55 @@
       "what": "validation"
      },
      "generation": {
-      "status": "not run",
-      "reason": "no record of the row in li-timing.json"
+      "status": "measured",
+      "seconds": 861.3009417098947,
+      "generate_seconds": 8.185622464865446,
+      "probes_seconds": 853.1153192450292,
+      "probe_share": 0.9904962109426991,
+      "peak_gib": 5.109,
+      "plan_mb": 0.1,
+      "revision": "e852f448",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_hggg, ninjars, e852f448].generation",
+      "ratio_to_fastest": 269.36851036514844
      },
      "timing": {
-      "status": "not run",
-      "reason": "no record of the row in li-timing.json"
+      "status": "measured",
+      "batch": 128,
+      "seconds_per_point": 3.3720681745871843,
+      "backend": "ninjars",
+      "backend_label": "NinjaRS per amplitude",
+      "default_backend": false,
+      "revision": "e852f448",
+      "native_build": "loop-native-v2-slice-e852f448",
+      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_hggg, ninjars, e852f448]",
+      "requested": "auto",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "other_backend": {
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "requested": "tirust",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 7,
+       "failed_points": [
+        128,
+        128
+       ],
+       "served_fraction": 0.0,
+       "every_point": true,
+       "causes": {
+        "ruling (d)": 128
+       },
+       "label": "failed closed on every point (128/128), ruling (d)"
+      },
+      "ratio_to_fastest": 5.84118406075227,
+      "gate": {
+       "status": "no verdict",
+       "label": "no verdict yet"
+      }
      }
     },
     {
@@ -4403,6 +4446,30 @@
     "source": "groups[2->4].rows[gg_hhgg].timing"
    },
    {
+    "key": "gg_hggg",
+    "group": "2->4",
+    "math": "g g -> h g g g",
+    "corrections": "QCD",
+    "seconds_per_point": 3.3720681745871843,
+    "backend_label": "NinjaRS per amplitude",
+    "ratio_to_fastest": 5.84118406075227,
+    "providers": {
+     "openloops": 0.8531388215,
+     "recola": 0.577291888,
+     "madloop": 1.97841356
+    },
+    "fastest": "recola",
+    "limit": {
+     "seconds": 0.7504794544,
+     "binding": "Recola"
+    },
+    "gate": {
+     "status": "no verdict",
+     "label": "no verdict yet"
+    },
+    "source": "groups[2->4].rows[gg_hggg].timing"
+   },
+   {
     "key": "gg_emepmupmum",
     "group": "2->4",
     "math": "g g -> e^+ e^- mu^+ mu^-",
@@ -4455,7 +4522,6 @@
   ],
   "not_drawn": {
    "no pyAmpliCol time at B = 128": [
-    "gg_hggg",
     "gg_aagg",
     "gg_zzzz",
     "li_x1"
