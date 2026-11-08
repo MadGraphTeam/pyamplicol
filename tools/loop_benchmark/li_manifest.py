@@ -2549,12 +2549,34 @@ def _richardson(h: list[float], values: list[Decimal]) -> tuple[float, float]:
         return float(r3), float(abs(r3 - r2))
 
 
+def judge_limit(limit: float, error: float) -> dict:
+    """One point's LI-A7 verdict: the extrapolated ratio equals 1 within ten
+    times its error, the Richardson extrapolation error plus the oracle's
+    roundoff floor. Both oracles are binary64 values (the HEFT tree's
+    binary64 evaluation, the fixture's ``limit_oracle`` float), so the ratio
+    is known no better than FLOOR_UNITS u of a binary64 value (the floor of
+    ``stability.StabilityEstimate``): an exactly decoupling scan's
+    extrapolation error falls below it (g g > h over its HEFT tree: ~1e-17
+    at a limit 1 - 4e-16)."""
+
+    from pyamplicol.loops.v2.assemble import Precision
+    from pyamplicol.loops.v2.stability import FLOOR_UNITS
+
+    floor = FLOOR_UNITS * Precision.double().unit_roundoff
+    return {
+        "limit": limit,
+        "extrapolation_error": error,
+        "oracle_floor": floor,
+        "passed": abs(limit - 1) <= FACTOR * (error + floor),
+    }
+
+
 def limits(name: str, oracle: str, work: Path, doublings: int = DOUBLINGS) -> dict:
     """LI-A7 for one fixture: |A_loop|^2(m_t) over the limit oracle at
     every fixture point for m_t = y_t scanned (``DOUBLINGS``), the loop in
     double-double on the campaign's artifact (``work / name``), and its
     Richardson extrapolation to m_t -> infinity; passes when it equals 1
-    within ten times its own extrapolation error (no fixed tolerance: the
+    within ten times its error (``judge_limit``: no fixed tolerance, the
     decoupling of the scan decides). The HEFT tree carries the shipped
     m_t corrections of its coupling (r = M_H^2 / m_t^2 through r^3), the
     low-energy theorem none."""
@@ -2627,15 +2649,13 @@ def limits(name: str, oracle: str, work: Path, doublings: int = DOUBLINGS) -> di
             sum(Fraction(points[p][i][k]) for i in range(data["initial"])) ** 2
             for k in (1, 2, 3)
         )
-        passed = abs(limit - 1) <= FACTOR * error
-        status.append(passed)
+        judged = judge_limit(limit, error)
+        status.append(judged["passed"])
         out["points"].append(
             {
                 "ratios": [float(r) for r in ratios],
                 "s_over_mt2": [float(s / (m * m)) for m in masses],
-                "limit": limit,
-                "extrapolation_error": error,
-                "passed": passed,
+                **judged,
             }
         )
     out["status"] = "pass" if all(status) else "fail"
@@ -4403,8 +4423,8 @@ def _dedupe(ids: dict, rows: dict) -> None:
 def _apply_finding(result: dict, finding: Any) -> None:
     """A recorded reference finding on a check: attached as is; a failing
     L9 becomes 'reference defect' only where the finding's ``expected_limit``
-    explains it (every point's limit within ten times its extrapolation
-    error of it); any other failure stays a failure."""
+    explains it (every point's limit within ten times its error of it, the
+    error of ``judge_limit``); any other failure stays a failure."""
 
     note = finding if isinstance(finding, str) else finding["note"]
     result["finding"] = note
@@ -4413,7 +4433,8 @@ def _apply_finding(result: dict, finding: Any) -> None:
         return
     target = float(Fraction(expected))
     explained = [
-        abs(p["limit"] - target) <= FACTOR * p["extrapolation_error"]
+        abs(p["limit"] - target)
+        <= FACTOR * (p["extrapolation_error"] + p.get("oracle_floor", 0.0))
         for p in result.get("points", [])
     ]
     result["finding_explains"] = bool(explained) and all(explained)
