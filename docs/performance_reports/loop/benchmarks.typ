@@ -949,8 +949,10 @@ serves at the row's revision: its effective backend in bold, the request in brac
 process on the same points: its time and served fraction (#li-meta.gate_batch/#li-meta.gate_batch) where it served all #li-meta.gate_batch points of every block, else the points
 it failed closed per block of #li-meta.gate_batch with the recorded cause (TIRust: rows its conditioning gates refuse
 whose method-choice lanes its acceptance check refuses, lanes off by about $10^(-9)$ of their term scale against
-TIRust's expansion tolerance $2^(-30)$; a call that fails points is timed whole, which is no served-point time); a
-record with a failed point is never the cell, never coloured and never drawn in @fig:gate. The multiplier
+TIRust's expansion tolerance $2^(-30)$, and gate-refused rows whose small-Gram expansion its method choice refuses;
+NinjaRS: lanes its binary64 fast engine marks unstable, nothing rescued at this protocol; a call that fails points
+is timed whole, which is no served-point time, and its time on the points it served is shown beside it); a record
+with a failed point is never the cell, never coloured and never drawn in @fig:gate. The multiplier
 against the fastest matched provider (MadLoop at its loop-induced production setting 7|6|1, OpenLoops `ls`, Recola;
 production mode) colours the cell with @tab:summary's scale. A provider whose timing record excludes its values as a
 reference (Recola's on-shell widths against the fixed-width scheme of the others on the rows LI-43 and LI-51) is timed
