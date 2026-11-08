@@ -1221,6 +1221,88 @@ def high_arm(arms: dict, backend: str, carrier: str = "double-double") -> dict:
     return arms.get(f"{backend}/{carrier}/checked", {})
 
 
+def identity_tirust(name: str, work: Path, record: dict) -> dict:
+    """LI-L1 on TIRust (§4.1: the identity rows' backends N, T): the
+    record's transformed points (``lorentz``, the exact rotation plus boost)
+    and its fixture points on TIRust in binary64 with the checks, at the
+    staged native, and whether the fixture-point arm reproduces the
+    record's TIRust binary64 checked arm bitwise (the record's TIRust arms
+    may be of another native)."""
+
+    from pyamplicol import Runtime
+
+    data = fixture(name)
+    compiled = compile_model(data, work / "model-cache")
+    artifact, _generation = generate(name, work, compiled)
+    runtime = Runtime.load(
+        artifact, process="p", model_parameters=run_parameters(data, compiled)
+    )
+    scales = [_decimal(Fraction(mu) ** 2) for mu in data["mu_r"]]
+    arms = {
+        label: _call(
+            runtime,
+            inputs,
+            scales,
+            backend="tirust",
+            arithmetic="double",
+            checked=True,
+            digits=DIGITS,
+        )
+        for label, inputs in (
+            ("fixture", data["points"]),
+            ("transformed", record["transformed_points"]),
+        )
+    }
+    recorded = record["arms"]["tirust/double/checked"]
+    return {
+        **arms,
+        "native": _native(),
+        "revision": _revision(),
+        "bitwise_record": [p.get("values") for p in arms["fixture"].get("points", [])]
+        == [p.get("values") for p in recorded.get("points", [])],
+    }
+
+
+def _identity_l5(fixture_arm: dict, transformed: dict, zero: bool) -> dict:
+    """L5 of one backend: its binary64 value at the transformed points
+    within 10 E of its value at the fixture points (E its estimate there);
+    a numerical zero (ZERO_TIER) is two roundings, recorded (L8 judges it);
+    points the backend fails closed are counted with their typed reasons
+    (partial)."""
+
+    ratios, failed = [], 0
+    for a, b in zip(
+        fixture_arm.get("points", []), transformed.get("points", []), strict=True
+    ):
+        if a["status"] != "success" or b["status"] != "success":
+            failed += 1
+            continue
+        e = _abs_finite(a["estimate"]) or 0.0
+        diff = abs(float(_total(a["values"]) - _total(b["values"])))
+        ratios.append(diff / (FACTOR * e) if e else (0.0 if not diff else math.inf))
+    worst = max(ratios, default=None)
+    if worst is None:
+        status = "partial" if failed else "not run"
+    elif zero:
+        status = "recorded"
+    else:
+        status = "pass" if worst <= 1 else "estimate miss"
+        if failed and status == "pass":
+            status = "partial"
+    return {
+        "status": status,
+        "worst_ratio_to_10E": worst,
+        "served": len(ratios),
+        "failed_points": failed,
+        "reasons": _counted(
+            key
+            for arm in (fixture_arm, transformed)
+            for key, n in _reasons(arm).items()
+            for _ in range(n)
+        ),
+    }
+
+
 def judge(record: dict, entry: dict) -> dict:
     """The §4.0 checks of one run record (module docstring); per check its
     status and figures."""
@@ -1540,6 +1622,22 @@ def judge(record: dict, entry: dict) -> dict:
         }
         if idd is not None and "not_run" in idd:
             out["L5"]["double_double_not_run"] = idd["not_run"]
+        tid = record.get("identity_tirust")
+        if tid is None:
+            out["L5"]["tirust"] = {
+                "status": "not run",
+                "reason": "no TIRust identity arm in the record "
+                "(li_manifest.py identity-tirust)",
+            }
+        else:
+            l5 = _identity_l5(
+                tid["fixture"], tid["transformed"], ZERO_TIER in entry["tiers"]
+            )
+            l5["native"] = (tid.get("native") or {}).get("build")
+            l5["bitwise_record"] = tid["bitwise_record"]
+            out["L5"]["tirust"] = l5
+            if l5["status"] != "not run":
+                out["L5"]["status"] = _worst([out["L5"]["status"], l5["status"]])
     # E: the binary64 estimate covers the binary64 error against the
     # double-double value (|b64 - DD| <= 10 E_abs, every point both serve;
     # a miss goes to lit-stab-n / lit-stab-t; TIRust's estimate on its
@@ -2806,42 +2904,40 @@ FIG7_DECADES = range(3, 16)
 
 def rambo(masses: list[float], energy: float, rng: Any) -> list[list[str]]:
     """A massive RAMBO point (Kleiss, Stirling, Ellis) at sqrt(s) =
-    ``energy`` with massless beams along z, as binary64 strings."""
+    ``energy`` with massless beams along z, as binary64 strings: the
+    calibration tool's massless RAMBO (``loop_v2_stability_calibration.
+    _rambo``) rescaled to the masses by Newton on xi, iterated while the
+    energy residual decreases (it converges monotonically from below; it
+    stops at the binary64 fixed point); a residual beyond the rounding of
+    the n energies (4 n u sqrt(s)) raises (never a silently off-shell
+    point)."""
 
-    q = []
-    for _ in masses:
-        c = 2 * rng.random() - 1
-        phi = 2 * math.pi * rng.random()
-        e = -math.log(rng.random() * rng.random())
-        r = math.sqrt(1 - c * c)
-        q.append([e, e * r * math.cos(phi), e * r * math.sin(phi), e * c])
-    big = [sum(v[k] for v in q) for k in range(4)]
-    mass = math.sqrt(big[0] ** 2 - sum(x * x for x in big[1:]))
-    b = [-x / mass for x in big[1:]]
-    g = big[0] / mass
-    a = 1 / (1 + g)
-    x = energy / mass
-    p = []
-    for v in q:
-        bq = sum(b[k] * v[k + 1] for k in range(3))
-        p.append(
-            [x * (g * v[0] + bq)]
-            + [x * (v[k + 1] + b[k] * v[0] + a * bq * b[k]) for k in range(3)]
-        )
-    xi = math.sqrt(1 - (sum(masses) / energy) ** 2)
-    for _ in range(50):  # the massive rescaling (Newton on xi)
-        f = (
-            sum(
-                math.sqrt(m * m + (xi * v[0]) ** 2)
-                for m, v in zip(masses, p, strict=True)
-            )
+    from tools.loop_v2_stability_calibration import _rambo
+
+    p = _rambo(len(masses), energy, rng)
+
+    def residual(xi: float) -> float:
+        return (
+            sum(math.sqrt(m * m + (xi * v[0]) ** 2) for m, v in zip(masses, p, strict=True))
             - energy
         )
-        df = sum(
+
+    def slope(xi: float) -> float:
+        return sum(
             xi * v[0] ** 2 / math.sqrt(m * m + (xi * v[0]) ** 2)
             for m, v in zip(masses, p, strict=True)
         )
-        xi -= f / df
+
+    xi = math.sqrt(1 - (sum(masses) / energy) ** 2)
+    f = residual(xi)
+    while f:
+        trial = xi - f / slope(xi)
+        g = residual(trial)
+        if abs(g) >= abs(f):
+            break
+        xi, f = trial, g
+    if abs(f) > 4 * len(masses) * 2.0**-53 * energy:
+        raise ValueError(f"RAMBO's massive rescaling left an energy residual {f}")
     final = [
         [math.sqrt(m * m + (xi * v[0]) ** 2)] + [xi * c for c in v[1:]]
         for m, v in zip(masses, p, strict=True)
@@ -4128,6 +4224,12 @@ def main(argv: list[str] | None = None) -> int:
         "(after lit-tir-mp: tirust), the others kept if NinjaRS binary64 is bitwise",
     )
     run.add_argument("fixtures", nargs="*", help="default: every campaign run")
+    ident = sub.add_parser(
+        "identity-tirust",
+        help="LI-L1 on TIRust: the transformed points of complete records (binary64)",
+    )
+    ident.add_argument("--work-dir", type=Path, required=True)
+    ident.add_argument("fixtures", nargs="*", help="default: every complete record")
     lim = sub.add_parser("limits", help="LI-A7: the heavy-top scan of the limit rows")
     lim.add_argument("--work-dir", type=Path, required=True)
     lim.add_argument("--doublings", type=int, default=DOUBLINGS)
@@ -4340,6 +4442,25 @@ def main(argv: list[str] | None = None) -> int:
             if group not in later:
                 # the row's generation is not needed again (memory)
                 campaign._runs.clear()
+        return 0
+    if args.command == "identity-tirust":
+        paths = (
+            [args.work_dir / n / "record.json" for n in args.fixtures]
+            if args.fixtures
+            else sorted(args.work_dir.glob("*/record.json"))
+        )
+        for path in paths:
+            record = _load(path)
+            name = record["fixture"]
+            if not record.get("complete") or not record.get("transformed_points"):
+                print(name, "no identity arm", flush=True)
+                continue
+            if _same_native(record.get("identity_tirust") or {}):
+                print(name, "recorded", flush=True)
+                continue
+            record["identity_tirust"] = identity_tirust(name, args.work_dir, record)
+            path.write_text(json.dumps(record, indent=1) + "\n")
+            print(name, record["identity_tirust"]["bitwise_record"], flush=True)
         return 0
     if args.command == "crossing":
         result = crossing(args.work_dir, entries)
