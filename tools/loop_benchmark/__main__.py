@@ -10,8 +10,9 @@ Subcommands:
 - ``stability``: stability estimates at chosen stream points (or at the
   reference fixture's points, ``--fixture``);
 - ``ward``: the Ward identity at chosen stream points (``pyamplicol_v2.ward``);
-- ``providers``: time MadLoop, Recola and OpenLoops in production mode on the
-  same stream (``providers.py``);
+- ``providers``: time MadLoop, Recola and OpenLoops in production mode, or each
+  in its most optimistic settings (``--protocol optimistic``), on the same
+  stream (``providers.py``);
 - ``gate``: combine the records into the gate table (``gate.py``).
 """
 
@@ -227,6 +228,13 @@ def main(argv: list[str] | None = None) -> int:
         default=[],
         metavar="KEY=VALUE",
         help="MadLoopParams.dat entry for the MadLoop runs (e.g. MLReductionLib=6|7|1)",
+    )
+    providers.add_argument(
+        "--protocol",
+        choices=["production", "optimistic"],
+        default="production",
+        help="the providers' settings: their production settings, or each in "
+        "its most optimistic settings (loop-induced rows; providers.py)",
     )
     providers.add_argument("--json", type=Path)
 
