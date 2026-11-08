@@ -205,7 +205,18 @@ class Timers:
         # [label, seconds of its inner stages] of the open timed calls.
         self.stack: list[list[Any]] = []
 
-    def wrap(self, owner: Any, name: str, label: str, *, inner: bool = False) -> None:
+    def wrap(
+        self,
+        owner: Any,
+        name: str,
+        label: str,
+        *,
+        inner: bool = False,
+        label_of: Any = None,
+    ) -> None:
+        """Time ``owner.name`` under ``label`` (or ``label_of(args, kwargs)``,
+        the label of one call)."""
+
         original = getattr(owner, name)
         seconds = self.seconds
         timers = self
@@ -214,7 +225,8 @@ class Timers:
             if timers.depth and not inner:
                 return original(*args, **kwargs)
             timers.depth += 1
-            frame = [label, 0.0]
+            call_label = label if label_of is None else label_of(args, kwargs)
+            frame = [call_label, 0.0]
             timers.stack.append(frame)
             start = time.perf_counter()
             try:
@@ -223,7 +235,7 @@ class Timers:
                 elapsed = time.perf_counter() - start
                 timers.stack.pop()
                 timers.depth -= 1
-                seconds[label] = seconds.get(label, 0.0) + elapsed - frame[1]
+                seconds[call_label] = seconds.get(call_label, 0.0) + elapsed - frame[1]
                 if timers.stack:
                     timers.stack[-1][1] += elapsed
 
@@ -1685,8 +1697,14 @@ class InducedRun(Run):
                     (induced_module, "generation_probes", "probes: rest", False),
                     (ward, "ward_slice", "probe slice", True),
                     (induced_module, "probe_point", "probe points", True),
-                    (induced_module, "_probe_runs", "probe runs", True),
-                    (induced_module, "physical_floors", "probe term floors", True),
+                    # A probe run in binary64 is the term floors' run.
+                    (
+                        induced_module,
+                        "_probe_runs",
+                        "probe runs",
+                        True,
+                        _probe_run_label,
+                    ),
                     (induced_module, "_goldstone_probes", "Goldstone probes", True),
                     (goldstone, "goldstone_slice", "Goldstone slices", True),
                 ],
@@ -2208,6 +2226,16 @@ class InducedRun(Run):
         return self.record
 
 
+def _probe_run_label(args: tuple, kwargs: dict) -> str:
+    """A probe run's stage: the double-double probe runs, or the binary64
+    run of the term floors (``induced.physical_floors``)."""
+
+    precision = args[4] if len(args) > 4 else kwargs.get("precision")
+    if getattr(precision, "arithmetic", None) == "double":
+        return "probe term floors (binary64)"
+    return f"probe runs ({getattr(precision, 'arithmetic', 'double-double')})"
+
+
 def _arm_label(arm: dict[str, Any]) -> str:
     label = f"{arm['backend']['requested']} B={arm['size']}"
     if arm.get("served"):
@@ -2241,16 +2269,16 @@ def _profiled(on: bool) -> Any:
 
 
 @contextlib.contextmanager
-def _wrapped(timers: Timers, targets: list[tuple[Any, str, str, bool]]) -> Any:
-    """``timers.wrap`` every (owner, name, label, inner) of ``targets`` for
-    the context, then restore each attribute as it was (a class's own
-    descriptor, e.g. a classmethod, not the bound method)."""
+def _wrapped(timers: Timers, targets: list[tuple]) -> Any:
+    """``timers.wrap`` every (owner, name, label, inner[, label_of]) of
+    ``targets`` for the context, then restore each attribute as it was (a
+    class's own descriptor, e.g. a classmethod, not the bound method)."""
 
     saved = []
-    for owner, name, label, inner in targets:
+    for owner, name, label, inner, *rest in targets:
         raw = vars(owner).get(name) if isinstance(owner, type) else getattr(owner, name)
         saved.append((owner, name, raw))
-        timers.wrap(owner, name, label, inner=inner)
+        timers.wrap(owner, name, label, inner=inner, label_of=rest[0] if rest else None)
     try:
         yield
     finally:
