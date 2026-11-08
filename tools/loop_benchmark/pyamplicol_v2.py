@@ -1635,6 +1635,9 @@ class InducedRun(Run):
         # the stage around it).
         timers = Timers()
         _reset_peak()
+        # The process CPU time of each stage beside its wall time (one
+        # thread: a shared core or a stopped job shows).
+        cpu = time.process_time()
         start = time.perf_counter()
         with _wrapped(
             timers,
@@ -1658,6 +1661,7 @@ class InducedRun(Run):
             "peak_gib": _gib(_status("VmHWM")),
         }
         stages["export"] = {"seconds": total - slice_seconds}
+        stages["generate"]["cpu_seconds_with_export"] = time.process_time() - cpu
         # The candidates of the filter and the probes (CANDIDATES_FROM).
         samples = max(GenerationValidationConfig().samples, 1)
         candidates = [
@@ -1666,6 +1670,7 @@ class InducedRun(Run):
         ]
         failure = GenerationConfig().helicity_filter_failure_probability
         _reset_peak()
+        cpu = time.process_time()
         start = time.perf_counter()
         filter_record, dropped = generation_filter(
             process.slice, candidates, failure=failure
@@ -1678,6 +1683,7 @@ class InducedRun(Run):
             "peak_gib": _gib(_status("VmHWM")),
             "dropped_rows": len(dropped),
             "record": filter_record,
+            "cpu_seconds": time.process_time() - cpu,
         }
         # The probes, split by kind (nested timers).
         # The probes, split by work (nested timers): the probe slice on the
@@ -1688,6 +1694,7 @@ class InducedRun(Run):
 
         probes = Timers()
         _reset_peak()
+        cpu = time.process_time()
         start = time.perf_counter()
         error = None
         try:
@@ -1716,6 +1723,7 @@ class InducedRun(Run):
             outcome, error = None, caught
         stages["probes"] = {
             "seconds": time.perf_counter() - start,
+            "cpu_seconds": time.process_time() - cpu,
             "peak_gib": _gib(_status("VmHWM")),
             "split_seconds": dict(probes.seconds),
             "record": outcome,

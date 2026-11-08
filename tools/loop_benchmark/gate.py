@@ -1504,6 +1504,16 @@ def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> l
                 ),
                 "model_seconds": (generation.get("model") or {}).get("seconds"),
             }
+            cpu = [
+                (generation.get("generate") or {}).get("cpu_seconds_with_export"),
+                (generation.get("filter") or {}).get("cpu_seconds"),
+                probes.get("cpu_seconds"),
+            ]
+            if all(x is not None for x in cpu):
+                # The process's CPU share of the generation's wall time (one
+                # thread: below 1 a shared core or a stopped job).
+                wall = gen["seconds"] + gen["probes_seconds"]
+                gen["cpu_share"] = round(sum(cpu) / wall, 3) if wall else None
             for size, batch in sorted(
                 config["batches"].items(), key=lambda x: int(x[0])
             ):
