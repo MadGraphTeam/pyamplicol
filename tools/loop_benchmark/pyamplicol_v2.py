@@ -1557,11 +1557,17 @@ class InducedRun(Run):
     with the dressed-frame choice ``LoopSlice._frame_dressed_rows`` shown,
     and the plan export), the exact helicity-zero filter
     (``helicity_filter.generation_filter`` at the configured failure
-    probability, re-exported when rows drop) and the mandatory generation-
-    time probes (``induced.generation_probes``, m-lit Q12; split into the
-    probe slice, the probe points, the probe runs, the term floors and the
-    Goldstone probes), on ``CANDIDATES_FROM`` as the candidates. The
-    generation cell is generate + export + filter + probes.
+    probability, re-exported when rows drop), on ``CANDIDATES_FROM`` as the
+    candidates: the engine's generation, generate + export + filter. The
+    generation-time probes follow the user option
+    (``generation.loop_induced_probes``, off by default, DECISIONS
+    2026-11-08 22:34 (3); ``options.loop_induced_probes``): off, the
+    record's ``probes`` stage reads ``status`` "off" and no time; on,
+    ``induced.generation_probes`` runs untouched (no timer around its
+    parts) and the stage takes its time, split (probe slice, lift, floors,
+    the native passes per carrier, Goldstone slices and probes), carriers
+    and fallbacks from the engine's own probe record, never added into the
+    generation's time.
 
     **Timing**: each requested backend (``--reduction``: ``auto``,
     ``ninjars``, ``tirust``) resolved as the artifact runtime resolves a call
@@ -1611,8 +1617,7 @@ class InducedRun(Run):
             GenerationValidationConfig,
         )
         from pyamplicol.loops import native as native_module
-        from pyamplicol.loops.v2 import assemble, ward
-        from pyamplicol.loops.v2 import induced as induced_module
+        from pyamplicol.loops.v2 import assemble
         from pyamplicol.loops.v2.artifact import generate_process, reexport_process
         from pyamplicol.loops.v2.helicity_filter import generation_filter
         from pyamplicol.loops.v2.plan_export import NativeExecutor
@@ -1689,50 +1694,9 @@ class InducedRun(Run):
             "record": filter_record,
             "cpu_seconds": time.process_time() - cpu,
         }
-        # The probes, split by kind (nested timers).
-        # The probes, split by work (nested timers): the probe slice on the
-        # full tree kernels, the lifted probe points, the double-double probe
-        # runs (finiteness, Ward and Goldstone), the binary64 term floors,
-        # the Goldstone sides' slices and the rest of the Goldstone probes.
-        from pyamplicol.loops.v2 import goldstone
-
-        probes = Timers()
-        _reset_peak()
-        cpu = time.process_time()
-        start = time.perf_counter()
-        error = None
-        try:
-            with _wrapped(
-                probes,
-                [
-                    (induced_module, "generation_probes", "probes: rest", False),
-                    (ward, "ward_slice", "probe slice", True),
-                    (induced_module, "probe_point", "probe points", True),
-                    # A probe run in binary64 is the term floors' run.
-                    (
-                        induced_module,
-                        "_probe_runs",
-                        "probe runs",
-                        True,
-                        _probe_run_label,
-                    ),
-                    (induced_module, "_goldstone_probes", "Goldstone probes", True),
-                    (goldstone, "goldstone_slice", "Goldstone slices", True),
-                ],
-            ):
-                outcome = induced_module.generation_probes(
-                    process.slice, compiled, native, candidates
-                )
-        except Exception as caught:  # a probe failure refuses generation
-            outcome, error = None, caught
-        stages["probes"] = {
-            "seconds": time.perf_counter() - start,
-            "cpu_seconds": time.process_time() - cpu,
-            "peak_gib": _gib(_status("VmHWM")),
-            "split_seconds": dict(probes.seconds),
-            "record": outcome,
-            "candidates": CANDIDATES_FROM,
-        }
+        stages["probes"], error = probe_stage(
+            self.options, process, compiled, native, candidates
+        )
         self.record["generation"] = stages
         if error is not None:
             raise error
@@ -2286,14 +2250,45 @@ class InducedRun(Run):
         return self.record
 
 
-def _probe_run_label(args: tuple, kwargs: dict) -> str:
-    """A probe run's stage: the double-double probe runs, or the binary64
-    run of the term floors (``induced.physical_floors``)."""
+def probe_stage(
+    options: Any, process: Any, compiled: Any, native: Any, candidates: list
+) -> tuple[dict[str, Any], BaseException | None]:
+    """The generation-time probes stage of a loop-induced generation record:
+    validation, off by default (the user option
+    ``generation.loop_induced_probes``, DECISIONS 2026-11-08 22:34 (3);
+    ``options.loop_induced_probes``): off, ``status`` "off" and no time.
+    On, ``induced.generation_probes`` runs untouched (no timer around its
+    parts) and the stage takes its time, split (probe slice, lift, floors,
+    the native passes per carrier, Goldstone slices and probes), carriers
+    and fallbacks from the engine's own probe record (the gate tool's
+    ``probes_seconds`` and ``probes_split_seconds``), apart from the
+    generation's time. Returns the stage and a refusal (a failed probe)."""
 
-    precision = args[4] if len(args) > 4 else kwargs.get("precision")
-    if getattr(precision, "arithmetic", None) == "double":
-        return "probe term floors (binary64)"
-    return f"probe runs ({getattr(precision, 'arithmetic', 'double-double')})"
+    if not getattr(options, "loop_induced_probes", False):
+        return {"status": "off", "seconds": None}, None
+    from pyamplicol.loops.v2 import induced
+
+    error = None
+    _reset_peak()
+    cpu = time.process_time()
+    start = time.perf_counter()
+    try:
+        outcome = induced.generation_probes(process.slice, compiled, native, candidates)
+    except Exception as caught:  # a probe failure refuses generation
+        outcome, error = None, caught
+    wall = time.perf_counter() - start
+    split = (outcome or {}).get("seconds") or {}
+    return {
+        "seconds": split.get("total", wall),
+        "wall_seconds": wall,
+        "cpu_seconds": time.process_time() - cpu,
+        "peak_gib": _gib(_status("VmHWM")),
+        "split_seconds": {k: v for k, v in split.items() if k != "total"},
+        "carriers": (outcome or {}).get("carriers"),
+        "fallbacks": (outcome or {}).get("fallbacks"),
+        "record": outcome,
+        "candidates": CANDIDATES_FROM,
+    }, error
 
 
 def _arm_label(arm: dict[str, Any]) -> str:

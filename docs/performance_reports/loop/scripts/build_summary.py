@@ -2407,10 +2407,16 @@ def _preliminary() -> dict | None:
 #                         generation beyond the 45-min rule with its
 #                         progress; no time, no "effective"), "host",
 #                         "generation":
-#                         {"seconds" (generate + the exact helicity-zero
-#                         filter + plan export), "probes_seconds" (the
-#                         mandatory generation-time double-double probes,
-#                         m-lit Q12), "peak_gib" (over all of them),
+#                         {"seconds" (the engine's generation: generate +
+#                         the exact helicity-zero filter + plan export),
+#                         "probes_seconds"? (the optional generation-time
+#                         probes, m-lit Q12, off by default since DECISIONS
+#                         2026-11-08 22:34 (3): their time apart, never in
+#                         "seconds"; None or absent: not run),
+#                         "probes_split_seconds"? (their split: the engine
+#                         record's per-carrier passes "double" /
+#                         "double-double", or lit-perf's "probe runs
+#                         (<carrier>)"), "peak_gib" (over all of them),
 #                         "plan_mb"?}?, "native_build"?, "source", "gate"?
 #                         (lit-perf: {"status", "ratio_to_limit", "band"})}]};
 #   lit-ref's provider timings: the manifest tools/loop_reference/
@@ -3051,6 +3057,32 @@ def _li_gate(
     return {"status": "no verdict", "label": "no verdict yet"}
 
 
+def _probe_carrier(split: dict | None) -> str:
+    """The carrier label of a record's generation-time probes, from their
+    split: the engine record's native passes per carrier ("double" first,
+    "double-double" for the fallback; lit-probe), or lit-perf's harness
+    stage names "probe runs (<carrier>)". A record without a split
+    predates lit-perf's harness split (e852f448, aaff892d): the probes then
+    had one carrier, double-double (``induced.generation_probes``'s default,
+    which no caller overrode before lit-probe)."""
+
+    if split is None:
+        return "double-double"
+    keys = set(split)
+    passes = [c for c in ("double", "double-double") if c in keys]
+    passes += sorted(
+        k[len("probe runs (") : -1]
+        for k in keys
+        if k.startswith("probe runs (") and k.endswith(")")
+    )
+    names = {"double": "binary64", "double-double": "double-double"}
+    if passes[:2] == ["double", "double-double"]:
+        return "binary64, double-double fallback"
+    if not passes:
+        return "no probe ran"
+    return names.get(passes[0], passes[0])
+
+
 def _li_cells(
     row: dict,
     landed: bool,
@@ -3120,32 +3152,29 @@ def _li_cells(
             "status": "not recorded",
             "reason": f"{src} has no generation",
         }
-    elif gen.get("probes_seconds") is None:
-        # The probes are part of every loop-induced generation (m-lit Q12):
-        # without their time the record holds no full production cost.
-        out["generation"] = {
-            "status": "not recorded",
-            "reason": f"{src} has no generation-time probe time",
-        }
     else:
-        # The full production `generate` cost: generate + plan export + the
-        # mandatory generation-time probes (their share shown).
-        total = gen["seconds"] + gen["probes_seconds"]
+        # The engine's generation (generate + filter + plan export; model
+        # loading excluded), the provider ratio formed on it. The
+        # generation-time probes are validation, off by default (DECISIONS
+        # 2026-11-08 22:34 (3)): their time shown apart, with its carrier,
+        # only where a record ran them; a record without them is measured.
         out["generation"] = {
             "status": "measured",
-            "seconds": total,
-            "generate_seconds": gen["seconds"],
-            "probes_seconds": gen["probes_seconds"],
-            "probe_share": gen["probes_seconds"] / total if total else 0.0,
+            "seconds": gen["seconds"],
             "peak_gib": gen["peak_gib"],
             "plan_mb": gen.get("plan_mb"),
             "revision": first["revision"][:8],
             "host": first["host"],
             "source": f"{src}.generation",
         }
+        if gen.get("probes_seconds") is not None:
+            out["generation"]["validation"] = {
+                "seconds": gen["probes_seconds"],
+                "carrier": _probe_carrier(gen.get("probes_split_seconds")),
+            }
         fg = prov.get("fastest_generation")
         if fg is not None:
-            out["generation"]["ratio_to_fastest"] = total / fg["seconds"]
+            out["generation"]["ratio_to_fastest"] = gen["seconds"] / fg["seconds"]
     if not batched:
         # No B = 128 record at the newest revision (Table 1's rule): no
         # batched cell, the batches timed named.
