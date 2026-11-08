@@ -1844,10 +1844,14 @@ class InducedRun(Run):
     def _block(self, indices: list[int], executor: Any = None) -> dict[str, Any]:
         points = [streams.exact(self.stream, i) for i in indices]
         scales = [str(Fraction(self.stream["mu_r"][i]) ** 2) for i in indices]
+        # The block's wall-clock start (a host guard that stops the job
+        # inside a block shows against its log).
+        started = time.time()
         results, entry = self._call(points, scales, executor)
         failures = entry.pop("failures")
         return {
             "start": indices[0],
+            "started": started,
             "points": len(indices),
             **entry,
             "failed_points": len(failures),
@@ -2327,6 +2331,11 @@ def _summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
         }
     out = {
         "blocks": len(runs),
+        **(
+            {"started": [run["started"] for run in runs]}
+            if all("started" in run for run in runs)
+            else {}
+        ),
         "points_per_block": points,
         "median_seconds_per_point": median,
         "min_seconds_per_point": min(per_point),
