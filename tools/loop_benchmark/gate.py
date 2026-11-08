@@ -1458,6 +1458,10 @@ def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> l
                     record["block_seconds_per_point"] = batch[
                         "samples_seconds_per_point"
                     ]
+                if "cpu_share" in batch:
+                    # The process's CPU share of each block's wall time (one
+                    # thread: below 1 the core was shared).
+                    record["cpu_share"] = [round(x, 3) for x in batch["cpu_share"]]
                 record["stages_per_point"] = {
                     n: batch["stages_per_point"][n]
                     for n in INDUCED_STAGES
