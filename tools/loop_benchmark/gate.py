@@ -1367,6 +1367,42 @@ def registry_key(key: str, rows: list[dict[str, Any]]) -> str:
     return found[0]
 
 
+# The short causes of failed points in the li-timing records (Table 2's
+# words), from the reasons the executor records (``plan_export.
+# FailedPoints``, numbers masked): (fragment, cause), first match.
+FAILURE_CLASSES = (
+    (
+        "method-choice lane refused by its check",
+        "TIRust acceptance (method-choice lane off its second frame)",
+    ),
+    ("method-choice lane unverified", "TIRust acceptance row refused"),
+    ("ill-conditioned Gram matrix", "TIRust gates and method choice"),
+    ("ImpreciseResult", "imprecise master"),
+    ("not finite", "non-finite numerator"),
+    (": Unstable", "NinjaRS lane unstable"),
+)
+
+
+def failure_class(reason: str) -> str:
+    """The short cause of a recorded failure reason (``FAILURE_CLASSES``;
+    otherwise the reason itself, shortened)."""
+
+    for fragment, cause in FAILURE_CLASSES:
+        if fragment in reason:
+            return cause
+    return reason[:80]
+
+
+def failure_classes(causes: dict[str, int]) -> dict[str, int]:
+    """Points per short cause (a point counted once per cause)."""
+
+    out: dict[str, int] = {}
+    for reason, points in causes.items():
+        cause = failure_class(reason)
+        out[cause] = max(out.get(cause, 0), points)
+    return out
+
+
 def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> list:
     """The gate tool's loop-induced records of ``data/li-timing.json`` (the
     report builder's format, ``build_summary`` LI_TIMING): per loop-induced
@@ -1445,7 +1481,12 @@ def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> l
                     record["block_whole_call_seconds_per_point"] = batch[
                         "samples_seconds_per_point"
                     ]
-                    record["failure_causes"] = batch.get("failure_causes", {})
+                    # The short causes (Table 2's words) and the recorded
+                    # reasons, numbers masked.
+                    record["failure_causes"] = failure_classes(
+                        batch.get("failure_causes", {})
+                    )
+                    record["failure_reasons"] = batch.get("failure_causes", {})
                     served = (config.get("served") or {}).get(size)
                     if served is not None:
                         record["served_points"] = {

@@ -2872,6 +2872,12 @@ def _li_main(batched: list[dict]) -> tuple[dict | None, dict | None]:
     return (served[0] if served else None), (served[0] if served else batched[0])
 
 
+def _ms(seconds: float) -> str:
+    """A time per point in ms, three significant digits (a label's words)."""
+
+    return f"{seconds * 1e3:.3g} ms"
+
+
 def _li_failed(r: dict) -> dict:
     """The outcome of a B = 128 record that did not serve every point: the
     refusal, or the points failed closed per block of the batch, the
@@ -2893,7 +2899,7 @@ def _li_failed(r: dict) -> dict:
         if low == batch
         else f"{count}/{batch} failed closed"
     )
-    return {
+    out = {
         "status": "failed closed",
         "batch": batch,
         "blocks": len(failed),
@@ -2905,6 +2911,14 @@ def _li_failed(r: dict) -> dict:
         # and the recorded causes.
         "label": ", ".join([label, *causes]),
     }
+    served = r.get("served_points")
+    if served is not None:
+        # The gate tool's time of the same call on its served points (a
+        # separate block of them: never the cell, never coloured).
+        out["served_points"] = served
+        time = _ms(served["seconds_per_point"])
+        out["label"] += f"; its {served['points']} served points {time}"
+    return out
 
 
 def _li_other(r: dict) -> dict:
@@ -3139,6 +3153,17 @@ def _li_cells(
             out["timing"]["backend_label"] = LI_BACKENDS[named["backend"]]
         else:
             out["timing"]["effective"] = "not resolved"
+        # The other backend and lit-perf's gate record beside the marker.
+        other = [
+            r for r in batched if r.get("backend") not in (None, named.get("backend"))
+        ]
+        if other:
+            out["timing"]["other_backend"] = _li_other(other[0])
+        gated = next(
+            (r for r in batched if r.get("backend") == default and "gate" in r), None
+        )
+        if gated is not None and row["gate_class"] != "reported":
+            out["timing"]["gate"] = _li_verdict(gated["gate"], gated, rule)
         return out
     t = main["seconds_per_point"]
     cell = {

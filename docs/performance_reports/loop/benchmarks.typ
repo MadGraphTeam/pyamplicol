@@ -669,7 +669,10 @@
       li-match-line(r),
       [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "requested" in m [ (#raw(m.requested))]#if "other_backend" in m [ · #li-other(m.other_backend)]])
   } else {
-    absent(li-title(m), if "requested" in m [#raw(m.requested) (#m.at("backend_label", default: [backend #m.effective])): #m.at("reason", default: m.label)] else { m.at("reason", default: none) }, li-prov-line(r))
+    absent(li-title(m), if "requested" in m [#raw(m.requested) (#m.at("backend_label", default: [backend #m.effective])): #m.at("reason", default: m.label)] else { m.at("reason", default: none) }, li-prov-line(r),
+      // The gated backend's verdict and the other backend beside a failed
+      // request (lit-perf's records).
+      if "gate" in m or "other_backend" in m [#if "gate" in m { li-chip(m.gate) } #if "other_backend" in m [ · #li-other(m.other_backend)]])
   }
 }
 // Generation and timing pending, or not run, for the same reason: one
