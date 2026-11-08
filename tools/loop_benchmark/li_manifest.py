@@ -1555,6 +1555,21 @@ def judge(record: dict, entry: dict) -> dict:
         **e_rows,
     }
     # L6 both backends: binary64 through the one comparison.
+    # (a numerical-zero row's double-double / AP comparison is absolute, on
+    # the double-double estimates of both backends: ``_high_l6``)
+    zero_bounds = (
+        [
+            (
+                (n.get("estimate") if n.get("status") == "success" else None),
+                (t.get("estimate") if t.get("status") == "success" else None),
+            )
+            for n, t in zip(
+                ndd.get("points", []), tdd.get("points", []), strict=False
+            )
+        ]
+        if zero and "points" in ndd and "points" in tdd
+        else ([] if zero else None)
+    )
     rows, failed = [], {}
     t_served = _served(t64)
     for p in range(count):
@@ -1626,7 +1641,7 @@ def judge(record: dict, entry: dict) -> dict:
             "tirust_failed_reasons": _reasons(t64),
             **({"effective_backend_switched": switched} if switched else {}),
         },
-        "double-double": _high_l6(ndd, tdd, tir_carriers, "double-double")
+        "double-double": _high_l6(ndd, tdd, tir_carriers, "double-double", zero_bounds)
         if tdd
         else {"status": "not run", "reason": "a binary64-only fixture (its carriers)"},
     }
@@ -1636,7 +1651,11 @@ def judge(record: dict, entry: dict) -> dict:
         out["L7"] = {"status": "not run", "reason": nap["not_run"]}
     elif nap is not None:
         out["L6"][ARBITRARY] = _high_l6(
-            nap, arms.get(f"tirust/{ARBITRARY}/plain", {}), tir_carriers, ARBITRARY
+            nap,
+            arms.get(f"tirust/{ARBITRARY}/plain", {}),
+            tir_carriers,
+            ARBITRARY,
+            zero_bounds,
         )
     # L6's verdict: the worst of its carriers (a high-precision carrier not
     # run makes it partial; an arm TIRust refuses typed for want of the
@@ -1732,10 +1751,15 @@ def _high_l6(
     tirust: dict,
     served: frozenset[str] | None = None,
     carrier: str = "double-double",
+    bounds: list | None = None,
 ) -> dict:
     """L6 in double-double / AP: |N - T| <= 1e-24 of the sector's largest
     coefficient through the one comparison (a target, R5: below ~1e-5 it is
-    recorded, never a failure). TIRust's typed refusal of the whole arm is
+    recorded, never a failure); on a numerical-zero row (``bounds``: per
+    point the double-double estimates of both backends, the L8 rule) the
+    largest coefficient is rounding itself, so the comparison is absolute,
+    |N - T| <= 10 max(E_N, E_T) with those estimates (an AP value's error is
+    below its double-double estimate). TIRust's typed refusal of the whole arm is
     the arm waiting on lit-tir-mp where the extension that took it did not
     serve the carrier (``served``: ``tirust_carriers``; None, a record
     before the recorded capability query: not served), else a TIRust
@@ -1753,9 +1777,18 @@ def _high_l6(
             return {"status": "partial", "tirust": tirust.get("refused")}
         return {"status": f"waits: {TIR_MP}", "tirust": tirust.get("refused")}
     rows, failed = [], 0
-    for n, t in zip(ninjars.get("points", []), tirust["points"], strict=False):
+    for p, (n, t) in enumerate(
+        zip(ninjars.get("points", []), tirust["points"], strict=False)
+    ):
         if n["status"] != "success" or t["status"] != "success":
             failed += t["status"] != "success"
+            continue
+        if bounds is not None:
+            e_n, e_t = bounds[p]
+            if e_n is None or e_t is None:
+                failed += 1
+                continue
+            rows.extend(_compare(_entries(n, e_n), _entries(t, e_t), True))
             continue
         rows.extend(
             _compare(
@@ -1774,13 +1807,19 @@ def _high_l6(
         default=None,
     )
     strict = all(r["passed"] for r in rows)
-    status = (
-        _verdict(strict, relative is None or relative <= LAX) if rows else "not run"
-    )
+    if not rows:
+        status = "not run"
+    elif bounds is not None:
+        # a numerical zero: absolute only (a relative figure is meaningless)
+        relative = None
+        status = "pass" if strict else "fail"
+    else:
+        status = _verdict(strict, relative is None or relative <= LAX)
     if failed:
         status = _worst([status, "partial"])
     return {
         "status": status,
+        **({"rule": "absolute: 10 max(E_N, E_T), the double-double estimates (L8)"} if bounds is not None else {}),
         "compared_entries": len(rows),
         "worst_ratio_to_bound": worst,
         "finite_max_relative": relative,
