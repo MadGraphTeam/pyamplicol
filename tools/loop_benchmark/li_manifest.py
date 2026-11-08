@@ -44,10 +44,12 @@ finiteness probe (``induced.probe`` at every fixture point: per (loop order,
 row) the poles against their estimate on the row's term floor, x10),
 both backends in binary64 and double-double (the lanes' public
 ``finiteness`` ratios, formed with checks only, recorded beside it); L4/W1
-the generation-time Ward, Goldstone and finiteness probes (double-double,
-zero widths, m-lit Q12) recorded from the artifact with the legs they probe
-('partial': no binary64 Ward at the fixture points, and only the probed
-legs); L5/L1-identity an exact Lorentz transform (rotation and boost with
+the Ward probe epsilon_j -> p_j / E_j at every fixture point on every
+external massless gauge-boson leg, both backends in binary64 and
+double-double, on the run's probe slice (``ward_probes``: zero widths
+outside the complex-mass scheme, Q7), with the generation-time Ward and
+Goldstone probes the artifact records (a row no Ward probe reaches is
+'recorded'); L5/L1-identity an exact Lorentz transform (rotation and boost with
 terminating-decimal entries) leaves |A|^2 within 10 E of the fixture point
 in binary64 and is recorded in double-double; C1 the crossing
 (``crossing``); L6 |T - N| <= 10 max(E_N, E_T) per sector and Laurent
@@ -767,6 +769,7 @@ def evaluate(
         carriers,
         skip=skip,
         previous=(previous or {}).get("ward_probes"),
+        write=None if write is None else lambda w: write({**record, "ward_probes": w}),
     )
     record["complete"] = True
     if write is not None:
@@ -852,6 +855,7 @@ def ward_probes(
     carriers: tuple = CARRIERS,
     skip: dict[str, str] | None = None,
     previous: dict | None = None,
+    write: Any = None,
 ) -> dict:
     """L4 at every fixture point: the amplitude-level Ward probe epsilon_j
     -> p_j / E_j (``ward.gauge_ward``, c = 1; the amplitude is linear in it)
@@ -865,8 +869,9 @@ def ward_probes(
     term floor). Massive vectors are the generation-time Goldstone probe's
     ('t Hooft-Feynman-gauge requests) and the cited both-gauges equality
     (§4.0 L4). A probe arm named in ``skip`` (``ward/<label>``) is recorded
-    as ``{"not_run": reason}``; a resumed record's arms are kept; an exact
-    colour zero has nothing to probe."""
+    as ``{"not_run": reason}``; a resumed record's arms are kept; ``write``
+    (if given) receives the record after every arm; an exact colour zero
+    has nothing to probe."""
 
     from dataclasses import replace
 
@@ -936,6 +941,8 @@ def ward_probes(
                     {"error": compact_detail(f"{type(error).__name__}: {error}")}
                 )
         out["arms"][label] = rows
+        if write is not None:
+            write(out)
     return out
 
 
@@ -3022,7 +3029,8 @@ def judge_fig7(results: list[dict]) -> dict:
 # defect, not a pyAmpliCol failure).
 DELEGATED_RECORDS = EXTRA / "records" / "delegated.json"
 # The identity rows (§4.1 "LI-W1, L1, P1, C1, S1"): the check of every run
-# each stands on (W1: the generation-time Ward / Goldstone probes; L1: the
+# each stands on (W1: L4, the fixture-point and generation-time Ward /
+# Goldstone probes; L1: the
 # exact Lorentz transform; P1: the amplitude poles), C1 the crossing
 # (``crossing``, id CROSSING_ID), S1 the N_f rows (LI-A5's runs with and
 # without the top loop).
