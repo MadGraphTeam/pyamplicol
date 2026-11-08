@@ -118,6 +118,40 @@ WARD_RELATIVE = 1e-11
 WARD_LANES = 1e-12
 WARD_PARTS = ("virtual", "uv_local", "uv_external_fields")
 SCHEDULE_STAGES = ("seeds", "factors", "dressing", "scatter", "reduction")
+# Loop-induced rows (``processes.json`` ``loop_induced``; m-lit PLAN §5.1,
+# §5.2). The gate is taken on the loop-induced default backend TIRust (RULED
+# Q35, Q40); NinjaRS per amplitude, the second mode, is reported with its
+# ratios. The value metric is Born-free (|a - b| / max(|a|, |b|), PLAN §4.0
+# L1) and the physical rows give the amplitude-level finiteness ratio
+# instead of Catani's poles. The amplitude-mode stage split (PLAN §5.1)
+# keeps these names; schedule M has no amplitude mode, so the schedule
+# comparison's stages are unchanged.
+INDUCED_GATE_BACKEND = "tirust"
+INDUCED_METRIC = "|a - b| / max(|a|, |b|) (Born-free; m-lit PLAN §4.0 L1)"
+INDUCED_STAGES = (
+    "trees + CT kets",
+    "seeds",
+    "factors",
+    "dressing",
+    "scatter",
+    "reduction",
+    "reduction: tensor moments",
+    "reduction: contraction",
+    "reduction: TIR masters",
+    "reduction: masters",
+    "squaring",
+    "transport",
+    "input conversion",
+    "python point parameters",
+    "assembly",
+    "other",
+)
+SECOND_MODE_STATUS = "reported (NinjaRS per amplitude: the second mode, PLAN §5.2)"
+# A configuration whose B = 128 calls failed points closed: its time is a
+# whole-call time, not a served-point time, so it carries no verdict; how a
+# verdict is given on such a row is not ruled (the gap is a finding, with
+# the served fraction and the time on the served points beside it).
+FAILED_CLOSED_STATUS = "failed closed on part of the stream: no verdict (gap)"
 
 
 def multiplicity(key: str) -> int:
@@ -131,6 +165,91 @@ def label(key: str) -> str:
 
     spec = streams.spec(key)
     return spec["recola"]["process"].replace("->", ">")
+
+
+# A block's process CPU time over its wall time (``cpu_share``, the
+# loop-induced harness's, one thread): about 0.99 on a core of its own; a
+# block whose core was shared, or whose job a host guard stopped, falls far
+# below and its wall time is no measurement of the call. Overridable
+# (``build(min_cpu_share=...)``, ``gate --min-cpu-share``).
+MIN_CPU_SHARE = 0.9
+
+
+def valid_blocks(summary: dict[str, Any], min_share: float) -> dict[str, Any]:
+    """A batch summary on its blocks with at least ``min_share`` CPU share
+    (``MIN_CPU_SHARE``): median, range and samples over those, the others
+    listed (``dropped_blocks``: block index -> share); unchanged without the
+    shares, and marked (``below_min_cpu_share``) when no block reaches it."""
+
+    shares = summary.get("cpu_share")
+    if not shares:
+        return summary
+    samples = summary["samples_seconds_per_point"]
+    keep = [i for i, share in enumerate(shares) if share >= min_share]
+    if not keep:
+        # No block had its core: kept whole, and said so (no measurement
+        # of the call at the protocol; the record shows the shares).
+        return {**summary, "below_min_cpu_share": min_share}
+    if len(keep) == len(samples):
+        return summary
+    kept = [samples[i] for i in keep]
+    out = {
+        **summary,
+        "samples_seconds_per_point": kept,
+        "median_seconds_per_point": statistics.median(kept),
+        "min_seconds_per_point": min(kept),
+        "max_seconds_per_point": max(kept),
+        "blocks": len(kept),
+        "dropped_blocks": {
+            str(i): round(share, 3)
+            for i, share in enumerate(shares)
+            if share < min_share
+        },
+    }
+    if "failed_points" in summary:
+        out["failed_points"] = [summary["failed_points"][i] for i in keep]
+    return out
+
+
+def loop_induced(key: str) -> bool:
+    return bool(streams.spec(key).get("loop_induced"))
+
+
+def value_annotations(key: str, record: dict[str, Any] | None) -> dict[str, dict]:
+    """Per provider its value annotations (``providers.VALUE_ANNOTATIONS``:
+    ``values_excluded``, the reason its values are no reference;
+    ``value_exceptions``, the stream points whose values are none), from
+    the specification and the provider record."""
+
+    spec = streams.spec(key)
+    known = record["providers"] if record else {}
+    out: dict[str, dict] = {}
+    for name in ("madloop", "recola", "openloops"):
+        found = {
+            field: value
+            for source in (spec.get(name, {}), known.get(name, {}))
+            for field, value in source.items()
+            if field in provider_module.VALUE_ANNOTATIONS
+        }
+        if found:
+            out[name] = found
+    return out
+
+
+def unmatched_providers(key: str, record: dict[str, Any] | None) -> dict[str, str]:
+    """Providers timed on the row whose values are no reference
+    (``values_excluded``): not matched providers of the gate. A matched
+    provider evaluates the row's process in its scheme, its values within
+    the L1 rule (m-lit PLAN §4.0; §4.1 names the providers of each row):
+    one excluded by its own value record (e.g. Recola's on-shell width
+    convention on the fixed-width rows LI-43 and LI-51) is timed and
+    reported beside the verdict, never a limit."""
+
+    return {
+        name: found["values_excluded"]
+        for name, found in value_annotations(key, record).items()
+        if found.get("values_excluded")
+    }
 
 
 def median_uncertainty(samples: list[float]) -> float:
@@ -164,6 +283,7 @@ def gate_verdict(
     outside: dict[str, dict[str, Any]] | None = None,
     floor_basis: float | None = None,
     batch: int = GATE_BATCH,
+    unmatched: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """The speed gate of one pyAmpliCol time against the matched providers.
 
@@ -179,7 +299,10 @@ def gate_verdict(
     time below ``GATE_FLOOR_SECONDS`` is not gated (the user's rule of
     2026-10-24): its verdict is ``GATE_FLOOR_STATUS``, the checks' own as
     ``measured_status``. ``floor_basis`` is that batched time (``floor_bases``:
-    the configuration's at B = 128), ``seconds`` by default."""
+    the configuration's at B = 128), ``seconds`` by default. ``unmatched``:
+    the providers timed on the row that are no matched provider
+    (``unmatched_providers``: seconds and reason), reported as ratios beside
+    the verdict."""
 
     verdict = _verdict(
         seconds,
@@ -190,6 +313,11 @@ def gate_verdict(
         missing=missing,
         outside=outside,
     )
+    if unmatched:
+        verdict["not_matched"] = {
+            name: {**value, "ratio": seconds / value["seconds"]}
+            for name, value in unmatched.items()
+        }
     if batch != GATE_BATCH:
         return {
             **verdict,
@@ -249,6 +377,101 @@ def configuration_gate(
         "status": GATE_MISSING_STATUS,
         "reason": f"no B = {GATE_BATCH} timing ({why}); G1 is taken at "
         f"B = {GATE_BATCH} only (user 2026-10-28)",
+    }
+
+
+def induced_verdict(
+    verdict: dict[str, Any],
+    summary: dict[str, Any],
+    effective: str | None,
+    served: dict[str, Any] | None,
+    times: dict[str, float],
+) -> dict[str, Any]:
+    """A loop-induced configuration's verdict at one batch (module
+    constants): on the gate backend (``INDUCED_GATE_BACKEND``) the gate's
+    own, unless a block failed points closed (``FAILED_CLOSED_STATUS``: the
+    whole-call ratio and, where timed, the ratio of the time on the served
+    points beside it, ``measured_status`` the checks'); on the other backend
+    the ratios reported (``SECOND_MODE_STATUS``)."""
+
+    failed = summary.get("failed_points") or []
+    if any(failed) and verdict["status"] in (GATE_FLOOR_STATUS, GATE_REPORTED_STATUS):
+        # Not gated anyway (the 5 ms rule, or not the gate batch): the
+        # failed points are stated beside the status.
+        points = summary["points_per_block"]
+        verdict = {
+            **verdict,
+            "failed_points": failed,
+            "served_fraction": 1 - sum(failed) / (points * len(failed)),
+            "whole_call": True,
+        }
+        failed = []
+    if any(failed):
+        points = summary["points_per_block"]
+        out = {
+            key: value
+            for key, value in verdict.items()
+            if key
+            not in (
+                "ratio_to_binding_limit",
+                "band_to_binding_limit",
+                "ratio_to_fastest",
+                "ratio_to_binding_limit_of_means",
+                "central",
+            )
+        }
+        out.update(
+            status=FAILED_CLOSED_STATUS,
+            measured_status=verdict["status"],
+            failed_points=failed,
+            served_fraction=1 - sum(failed) / (points * len(failed)),
+            failure_causes=summary.get("failure_causes", {}),
+            whole_call_seconds_per_point=summary["median_seconds_per_point"],
+        )
+        if "ratio_to_binding_limit" in verdict:
+            out["whole_call_ratio_to_binding_limit"] = verdict["ratio_to_binding_limit"]
+        if served is not None and "binding_limit" in verdict:
+            t = served["median_seconds_per_point"]
+            out["served_points"] = {
+                "points": served["points_per_block"],
+                "seconds_per_point": t,
+                "ratio_to_binding_limit": t / verdict["binding_limit"],
+                "batch": served["points_per_block"],
+            }
+        if effective != INDUCED_GATE_BACKEND:
+            out["status"] = SECOND_MODE_STATUS
+            out["failed_closed"] = True
+        return out
+    if effective != INDUCED_GATE_BACKEND and verdict["status"] not in (
+        GATE_REPORTED_STATUS,
+    ):
+        return {
+            **verdict,
+            "status": SECOND_MODE_STATUS,
+            "measured_status": verdict.get("measured_status", verdict["status"]),
+        }
+    return verdict
+
+
+def finiteness(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """The finiteness column of a loop-induced configuration (instead of
+    Catani's poles): over its physical rows the largest amplitude-level
+    finiteness ratio (``PointResult.finiteness``: the largest ||a_-k||_G /
+    S_k over loop orders, rows and k) and the largest finite-part estimate
+    E, the points it failed closed counted."""
+
+    served = [row for row in rows if "finiteness" in row]
+    if not rows:
+        return None
+    ratios = [row["finiteness"] for row in served if row["finiteness"] is not None]
+    return {
+        "points": len(served),
+        "failed_points": len(rows) - len(served),
+        "max_finiteness": max(ratios, default=None),
+        "max_estimate": max(
+            (row["estimate"] for row in served if row.get("estimate") is not None),
+            default=None,
+        ),
     }
 
 
@@ -343,8 +566,12 @@ def _provider_values(key: str, record: dict[str, Any]) -> dict[str, dict[int, tu
     # correction (the indicative EW row; QED has double poles where charged
     # legs are massless) that conversion is not implemented, so its Recola
     # values are not compared (MadLoop's and OpenLoops' are).
+    # A loop-induced row has no Born: its |A|^2 has no universal pole to
+    # convert (Recola's finite part is MadLoop's).
     factor = (
-        provider_module.universal_double_pole(spec)
+        0.0
+        if spec.get("loop_induced")
+        else provider_module.universal_double_pole(spec)
         if spec["correction"] == "QCD"
         else None
     )
@@ -384,12 +611,28 @@ def _madloop_generation(export: Path | None) -> dict[str, Any] | None:
 
 
 def compare_values(
-    key: str, mine: dict[int, tuple], theirs: dict[str, dict[int, tuple]]
+    key: str,
+    mine: dict[int, tuple],
+    theirs: dict[str, dict[int, tuple]],
+    annotations: dict[str, dict] | None = None,
 ) -> dict[str, Any]:
+    """pyAmpliCol's values against each provider's on the common stream
+    points: the Born and the finite part (metric |a - b| / max(|a|, |b|,
+    |Born| alpha_s/(2 pi)); for a loop-induced row Born-free, ``INDUCED_
+    METRIC``). A provider whose values are excluded (``values_excluded``)
+    is not compared, its reason kept; the points of its ``value_exceptions``
+    are left out, listed."""
+
     alpha = float(streams.spec(key)["scheme_data"]["parameters"]["aS"])
+    annotations = annotations or {}
     result: dict[str, Any] = {}
     for provider, values in theirs.items():
-        common = sorted(set(values) & set(mine))
+        notes = annotations.get(provider, {})
+        if notes.get("values_excluded"):
+            result[provider] = {"excluded": notes["values_excluded"]}
+            continue
+        excepted = set((notes.get("value_exceptions") or {}).get("points", ()))
+        common = sorted((set(values) & set(mine)) - excepted)
         if not common:
             continue
         born_dev, finite_dev = 0.0, 0.0
@@ -411,6 +654,15 @@ def compare_values(
             "max_finite_deviation": finite_dev,
             "median_finite_deviation": statistics.median(deviations),
             "worst_point": worst,
+            **({"metric": INDUCED_METRIC} if loop_induced(key) else {}),
+            **(
+                {
+                    "excepted_points": sorted(excepted & set(values)),
+                    "exception": notes["value_exceptions"].get("reason"),
+                }
+                if excepted
+                else {}
+            ),
         }
     return result
 
@@ -479,6 +731,52 @@ def _configuration(record: dict[str, Any]) -> str:
     return "/".join(parts)
 
 
+def configurations_of(record: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    """The configurations of a pyAmpliCol record: the record itself, or for
+    a loop-induced run (``InducedRun``: ``backend_runs``) one per requested
+    reduction backend, named ``<inputs>/<accuracy>/<requested>``, each with
+    its request as the runtime resolved it (``reduction``: requested,
+    effective, reason), its batches, its served-points and profiled arms
+    and its own accuracy check."""
+
+    runs = record.get("backend_runs")
+    if runs is None:
+        return [(_configuration(record), record)]
+    base = {k: v for k, v in record.items() if k not in ("backend_runs", "batches")}
+    check = record.get("accuracy_check") or {}
+    out = []
+    for requested, run in runs.items():
+        out.append(
+            (
+                f"{_configuration(record)}/{requested}",
+                {
+                    **base,
+                    "reduction": {
+                        k: run[k]
+                        for k in ("requested", "effective", "reason", "refused")
+                        if k in run
+                    },
+                    "batches": run.get("batches", {}),
+                    "served": run.get("served", {}),
+                    "profiled": run.get("profiled", {}),
+                    "one_helicity": run.get("one_helicity", {}),
+                    "accuracy_check": None
+                    if not check
+                    else {
+                        **{k: v for k, v in check.items() if k != "backends"},
+                        **check.get("backends", {}).get(requested, {}),
+                    },
+                    "physical": [
+                        row
+                        for row in record.get("physical", [])
+                        if row.get("requested") == requested
+                    ],
+                },
+            )
+        )
+    return out
+
+
 def _schedule_stages(batch: dict[str, Any]) -> float:
     stages = batch["stages_per_point"]
     return sum(stages.get(name, 0.0) for name in SCHEDULE_STAGES)
@@ -535,6 +833,10 @@ def ward_rows(rows: list[dict[str, Any]], physical: list[dict[str, Any]]) -> lis
 
     scales = {}
     for row in physical:
+        if "components" not in row:
+            # A loop-induced physical row of a point its backend failed
+            # closed: no scale.
+            continue
         width = max(len(v) for v in row["components"].values())
         scales[row["index"]] = [
             max(v[k] for v in row["components"].values() if k < len(v))
@@ -579,6 +881,7 @@ def build(
     paths: list[Path],
     reference_root: Path | None = None,
     host_spread: float | None = None,
+    min_cpu_share: float = MIN_CPU_SHARE,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """The gate document and the per-point values document. Provider files
     are resolved relative to ``reference_root`` only (``_export_of``): the
@@ -700,39 +1003,39 @@ def build(
                 result.setdefault("cpu", entry["providers"]["cpu"])
         else:
             entry["text"] = entry["text"] or record.get("process_text")
-            name = _configuration(record)
-            earlier = entry["pyamplicol"].get(name)
-            if earlier is not None:
-                record["earlier_runs"] = [
-                    *earlier.get("earlier_runs", []),
-                    {
-                        "revision": earlier["revision"],
-                        "host_cpus": earlier.get("host_cpus"),
-                        "batches": {
-                            size: {
-                                k: summary[k]
-                                for k in (
-                                    "median_seconds_per_point",
-                                    "min_seconds_per_point",
-                                    "max_seconds_per_point",
-                                    "samples_seconds_per_point",
-                                )
-                            }
-                            for size, summary in earlier.get("batches", {}).items()
+            for name, record in configurations_of(record):  # noqa: B020
+                earlier = entry["pyamplicol"].get(name)
+                if earlier is not None:
+                    record["earlier_runs"] = [
+                        *earlier.get("earlier_runs", []),
+                        {
+                            "revision": earlier["revision"],
+                            "host_cpus": earlier.get("host_cpus"),
+                            "batches": {
+                                size: {
+                                    k: summary[k]
+                                    for k in (
+                                        "median_seconds_per_point",
+                                        "min_seconds_per_point",
+                                        "max_seconds_per_point",
+                                        "samples_seconds_per_point",
+                                    )
+                                }
+                                for size, summary in earlier.get("batches", {}).items()
+                            },
                         },
-                    },
-                ]
-                # A repeat that times another batch only (the seven-gluon
-                # row's B = 64 after B = 16) keeps the earlier run's checks
-                # of the same configuration, with the run they come from.
-                for check in CARRIED_CHECKS:
-                    if not record.get(check) and earlier.get(check):
-                        record[check] = earlier[check]
-                        record.setdefault("checks_from_earlier_run", {})[check] = (
-                            earlier.get("checks_from_earlier_run", {}).get(check)
-                            or earlier["revision"]
-                        )
-            entry["pyamplicol"][name] = record
+                    ]
+                    # A repeat that times another batch only (the seven-gluon
+                    # row's B = 64 after B = 16) keeps the earlier run's checks
+                    # of the same configuration, with the run they come from.
+                    for check in CARRIED_CHECKS:
+                        if not record.get(check) and earlier.get(check):
+                            record[check] = earlier[check]
+                            record.setdefault("checks_from_earlier_run", {})[check] = (
+                                earlier.get("checks_from_earlier_run", {}).get(check)
+                                or earlier["revision"]
+                            )
+                entry["pyamplicol"][name] = record
     spreads = [
         half_range([r["median_seconds_per_point"] for r in runs])
         for entry in processes.values()
@@ -753,8 +1056,23 @@ def build(
         # A specification with role "indicative" (the M-SM EW row: timed and
         # reported, its gate binds in M-FINAL, m-sm/PLAN.md [U5]) is not gated.
         indicative = streams.spec(key).get("role") == "indicative"
-        times = _times(entry["providers"], "median_seconds_per_point")
-        means = _times(entry["providers"], "mean_seconds_per_point")
+        # A provider whose values are no reference is no matched provider:
+        # its time is reported beside the verdict (``unmatched_providers``).
+        unmatched_reasons = unmatched_providers(key, entry["providers"])
+        timed = _times(entry["providers"], "median_seconds_per_point")
+        times = {n: t for n, t in timed.items() if n not in unmatched_reasons}
+        unmatched = {
+            n: {"seconds": timed[n], "reason": why}
+            for n, why in unmatched_reasons.items()
+            if n in timed
+        }
+        means = {
+            n: t
+            for n, t in _times(entry["providers"], "mean_seconds_per_point").items()
+            if n not in unmatched_reasons
+        }
+        annotations = value_annotations(key, entry["providers"])
+        induced_row = loop_induced(key)
         missing = missing_providers(key, entry["providers"])
         outside = outside_protocol(entry["providers"])
         reference_uncertainty = {}
@@ -782,6 +1100,18 @@ def build(
             elif record["accuracy"] != "full":
                 # Providers time full colour: LC/NLC carry no ratio.
                 ungated = "no gate (colour approximation)"
+            effective = (record.get("reduction") or {}).get("effective")
+            if induced_row:
+                # Only the blocks that had their core (``valid_blocks``).
+                record["batches"] = {
+                    size: valid_blocks(summary, min_cpu_share)
+                    for size, summary in record.get("batches", {}).items()
+                }
+                for arm in ("served", "profiled", "one_helicity"):
+                    record[arm] = {
+                        size: valid_blocks(summary, min_cpu_share)
+                        for size, summary in (record.get(arm) or {}).items()
+                    }
             for size, summary in record.get("batches", {}).items():
                 samples = summary["samples_seconds_per_point"]
                 uncertainty = median_uncertainty(samples)
@@ -798,7 +1128,16 @@ def build(
                         outside=outside,
                         floor_basis=bases[name],
                         batch=int(size),
+                        unmatched=unmatched,
                     )
+                    if induced_row:
+                        verdict = induced_verdict(
+                            verdict,
+                            summary,
+                            effective,
+                            (record.get("served") or {}).get(size),
+                            times,
+                        )
                 for index, value in _values_of(summary).items():
                     mine.setdefault(index, value)
                 # The per-point values go to the values document.
@@ -814,6 +1153,13 @@ def build(
                 "branch": record["branch"],
                 "dirty": record["dirty"],
                 "host_cpus": record.get("host_cpus"),
+                **({"host": record["host"]} if "host" in record else {}),
+                **({"date": record["date"]} if "date" in record else {}),
+                **(
+                    {"eval_peak_gib": record["eval_peak_gib"]}
+                    if "eval_peak_gib" in record
+                    else {}
+                ),
                 "native": record.get("native"),
                 "inputs": record["inputs"],
                 "accuracy": record["accuracy"],
@@ -829,7 +1175,31 @@ def build(
                 "skipped_batches": record.get("skipped_batches", {}),
                 "max_rss_gib": record.get("max_rss_gib"),
                 "generation_error": record.get("generation_error"),
-                "failed_points": 0,
+                "failed_points": {
+                    size: summary.get("failed_points", [0])
+                    for size, summary in record.get("batches", {}).items()
+                }
+                if induced_row
+                else 0,
+                **(
+                    {
+                        "reduction": record.get("reduction"),
+                        "served": record.get("served") or {},
+                        "profiled": record.get("profiled") or {},
+                        "one_helicity": record.get("one_helicity") or {},
+                        "finiteness": finiteness(record.get("physical", [])),
+                        "stages": {
+                            size: {
+                                stage: summary["stages_per_point"][stage]
+                                for stage in INDUCED_STAGES
+                                if stage in summary["stages_per_point"]
+                            }
+                            for size, summary in record.get("batches", {}).items()
+                        },
+                    }
+                    if induced_row
+                    else {}
+                ),
                 "rescue": "off (no stability check, no escalation)",
                 "earlier_runs": record.get("earlier_runs", []),
                 **(
@@ -847,7 +1217,9 @@ def build(
                 if ungated is not None
                 else configuration_gate(record, batches),
                 "batches": batches,
-                "values_vs_providers": compare_values(key, mine, provider_values)
+                "values_vs_providers": compare_values(
+                    key, mine, provider_values, annotations
+                )
                 if record["accuracy"] == "full"
                 else None,
             }
@@ -920,6 +1292,12 @@ def build(
                 # none (g g > g g g g g, every provider beyond HANDOFF 0.1)
                 # the speed is reported without a gate (addenda F and H).
                 "gated": legs >= 3 and bool(times) and not indicative,
+                **({"not_matched": unmatched} if unmatched else {}),
+                **(
+                    {"loop_induced": True, "gate_backend": INDUCED_GATE_BACKEND}
+                    if induced_row
+                    else {}
+                ),
                 **({"gate_note": NO_PROVIDER_NOTE} if legs >= 3 and not times else {}),
                 "providers": provider_summary,
                 "provider_cpu": entry["providers"]["cpu"]
@@ -1003,6 +1381,290 @@ def _relative_export(path: str) -> str | None:
     return str(Path(*parts[parts.index("runs") :])) if "runs" in parts else None
 
 
+# The registry of the loop-induced rows (the report's milestone.json
+# ``loop_induced``): the li-timing records are keyed by its row keys.
+REGISTRY = (
+    streams.ROOT / "docs" / "performance_reports" / "loop" / "data" / "milestone.json"
+)
+TIR_COUNTS = (
+    "tensor moment rows",
+    "contracted lanes",
+    "moment rows shared",
+    "TIR gate refusals",
+    "TIR method-choice rows",
+    "TIR method-choice rows with expansions",
+    "TIR method-choice check rows",
+    "TIR method-choice lanes refused by their check",
+    "TIR capability refusals",
+)
+
+
+def _process_words(text: str) -> str:
+    """A process text without its order limits and loop brackets
+    ('u u~ > h g g QED=1 [sqrvirt=QCD]' -> 'u u~ > h g g')."""
+
+    words = text.split("[")[0].split()
+    return " ".join(word for word in words if "=" not in word)
+
+
+def registry_key(key: str, rows: list[dict[str, Any]]) -> str:
+    """The registry row of a loop-induced specification: the row with the
+    specification's id (``li_row``) whose process is the specification's
+    MadLoop process (order limits and brackets dropped); exactly one."""
+
+    spec = streams.spec(key)
+    process = _process_words(spec["madloop"]["process"])
+    found = [
+        row["key"]
+        for row in rows
+        if spec.get("li_row") in row.get("ids", ())
+        and _process_words(row.get("process") or "") == process
+    ]
+    if len(found) != 1:
+        raise KeyError(f"{key}: {len(found)} registry rows match {process!r}")
+    return found[0]
+
+
+# The short causes of failed points in the li-timing records (Table 2's
+# words), from the reasons the executor records (``plan_export.
+# FailedPoints``, numbers masked): (fragment, cause), first match.
+FAILURE_CLASSES = (
+    (
+        "method-choice lane refused by its check",
+        "TIRust acceptance (method-choice lane off its second frame)",
+    ),
+    ("method-choice lane unverified", "TIRust acceptance row refused"),
+    ("ill-conditioned Gram matrix", "TIRust gates and method choice"),
+    ("ImpreciseResult", "imprecise master"),
+    ("not finite", "non-finite numerator"),
+    (": Unstable", "NinjaRS lane unstable"),
+)
+
+
+def failure_class(reason: str) -> str:
+    """The short cause of a recorded failure reason (``FAILURE_CLASSES``;
+    otherwise the reason itself, shortened)."""
+
+    for fragment, cause in FAILURE_CLASSES:
+        if fragment in reason:
+            return cause
+    return reason[:80]
+
+
+def failure_classes(causes: dict[str, int]) -> dict[str, int]:
+    """Points per short cause (a point counted once per cause)."""
+
+    out: dict[str, int] = {}
+    for reason, points in causes.items():
+        cause = failure_class(reason)
+        out[cause] = max(out.get(cause, 0), points)
+    return out
+
+
+# The TirOptions of the harness's TIRust runs (the li-timing records'
+# ``tir_options``): the shipped defaults.
+TIR_OPTIONS = "shipped"
+
+
+def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> list:
+    """The gate tool's loop-induced records of ``data/li-timing.json`` (the
+    report builder's format, ``build_summary`` LI_TIMING): per loop-induced
+    configuration and timed batch one record with the request as resolved
+    (requested / effective / reason verbatim), the core, per block the
+    points failed closed and the served fraction, the time per point only
+    where every block served every point (else the whole-call time), the
+    time on the served points, the stage split, the TIR counts of the last
+    block, the generation (generate + filter + export, the probes and their
+    split, peaks) and the gate verdict."""
+
+    out = []
+    for process in document["processes"]:
+        if not process.get("loop_induced"):
+            continue
+        key = registry_key(process["key"], rows)
+        for name, config in process["pyamplicol"].items():
+            reduction = config.get("reduction") or {}
+            if "effective" not in reduction:
+                continue
+            native = config.get("native") or {}
+            cpus = config.get("host_cpus") or []
+            generation = config.get("generation") or {}
+            stage = {
+                n: (generation.get(n) or {}).get("seconds", 0.0)
+                for n in ("generate", "export", "filter", "probes")
+            }
+            probes = generation.get("probes") or {}
+            gen = {
+                "seconds": stage["generate"] + stage["export"] + stage["filter"],
+                "generate_seconds": stage["generate"],
+                "dressed_frame_seconds": (generation.get("generate") or {}).get(
+                    "dressed_frame_seconds"
+                ),
+                "export_seconds": stage["export"],
+                "filter_seconds": stage["filter"],
+                "probes_seconds": stage["probes"],
+                "probes_split_seconds": probes.get("split_seconds"),
+                "peak_gib": max(
+                    (v.get("peak_gib") or 0.0)
+                    for v in generation.values()
+                    if isinstance(v, dict)
+                ),
+                "plan_mb": generation.get("plan_mb"),
+                "filter_dropped_rows": (generation.get("filter") or {}).get(
+                    "dropped_rows"
+                ),
+                "model_seconds": (generation.get("model") or {}).get("seconds"),
+            }
+            cpu = [
+                (generation.get("generate") or {}).get("cpu_seconds_with_export"),
+                (generation.get("filter") or {}).get("cpu_seconds"),
+                probes.get("cpu_seconds"),
+            ]
+            if all(x is not None for x in cpu):
+                # The process's CPU share of the generation's wall time (one
+                # thread: below 1 a shared core or a stopped job).
+                wall = gen["seconds"] + gen["probes_seconds"]
+                gen["cpu_share"] = round(sum(cpu) / wall, 3) if wall else None
+            for size, batch in sorted(
+                config["batches"].items(), key=lambda x: int(x[0])
+            ):
+                failed = batch.get("failed_points") or [0] * batch["blocks"]
+                record: dict[str, Any] = {
+                    "key": key,
+                    "revision": config["revision"],
+                    "requested": reduction["requested"],
+                    "backend": reduction["effective"],
+                    "effective": reduction["effective"],
+                    "reason": reduction["reason"],
+                    "native_build": native.get("directory"),
+                    "native_digest": native.get("digest"),
+                    "batch": int(size),
+                    "blocks": batch["blocks"],
+                    "failed_points": failed,
+                    "served_fraction": 1 - sum(failed) / (int(size) * len(failed)),
+                    "host": config.get("host"),
+                    "date": config.get("date"),
+                    "core": cpus[0] if len(cpus) == 1 else cpus,
+                    "eval_peak_gib": config.get("eval_peak_gib"),
+                }
+                if reduction["effective"] == "tirust":
+                    # m-lit F4 (DECISIONS 2026-11-08 16:01): TIRust at the
+                    # slice's shipped TirOptions; its re-time at the F3
+                    # target accuracy is lit-tirust-default's.
+                    record["tir_options"] = TIR_OPTIONS
+                if any(failed):
+                    record["whole_call_seconds_per_point"] = batch[
+                        "median_seconds_per_point"
+                    ]
+                    record["block_whole_call_seconds_per_point"] = batch[
+                        "samples_seconds_per_point"
+                    ]
+                    # The short causes (Table 2's words) and the recorded
+                    # reasons, numbers masked.
+                    record["failure_causes"] = failure_classes(
+                        batch.get("failure_causes", {})
+                    )
+                    record["failure_reasons"] = batch.get("failure_causes", {})
+                    served = (config.get("served") or {}).get(size)
+                    if served is not None:
+                        record["served_points"] = {
+                            "points": served["points_per_block"],
+                            "seconds_per_point": served["median_seconds_per_point"],
+                            "blocks": served["blocks"],
+                        }
+                else:
+                    record["seconds_per_point"] = batch["median_seconds_per_point"]
+                    record["block_seconds_per_point"] = batch[
+                        "samples_seconds_per_point"
+                    ]
+                if "dropped_blocks" in batch:
+                    record["dropped_blocks"] = batch["dropped_blocks"]
+                if "below_min_cpu_share" in batch:
+                    record["below_min_cpu_share"] = batch["below_min_cpu_share"]
+                if "cpu_share" in batch:
+                    # The process's CPU share of each block's wall time (one
+                    # thread: below 1 the core was shared).
+                    record["cpu_share"] = [round(x, 3) for x in batch["cpu_share"]]
+                record["stages_per_point"] = {
+                    n: batch["stages_per_point"][n]
+                    for n in INDUCED_STAGES
+                    if n in batch["stages_per_point"]
+                }
+                counts = batch.get("counts_per_block") or {}
+                tir = {n: counts[n] for n in TIR_COUNTS if n in counts}
+                if tir:
+                    record["tir_counts_last_block"] = tir
+                one = (config.get("one_helicity") or {}).get(size)
+                if one is not None:
+                    # PLAN §5.1 (Q39): one helicity row selected, |A(h)|^2/avg.
+                    record["one_helicity"] = {
+                        "row": one.get("row"),
+                        "seconds_per_point": one["median_seconds_per_point"],
+                        "failed_points": one.get("failed_points"),
+                        "blocks": one["blocks"],
+                    }
+                if int(size) == GATE_BATCH:
+                    record["generation"] = gen
+                    gate = batch["gate"]
+                    record["gate"] = {
+                        k: gate[k]
+                        for k in (
+                            "status",
+                            "measured_status",
+                            "binding_provider",
+                            "binding_limit",
+                            "fastest_provider",
+                            "served_fraction",
+                            "whole_call_ratio_to_binding_limit",
+                            "served_points",
+                            "not_matched",
+                            "missing",
+                            "floor_basis_seconds",
+                        )
+                        if k in gate
+                    }
+                    if "ratio_to_binding_limit" in gate:
+                        record["gate"]["ratio_to_limit"] = gate[
+                            "ratio_to_binding_limit"
+                        ]
+                        record["gate"]["band"] = gate["band_to_binding_limit"]
+                    # The settings of each provider timing the verdict uses
+                    # (providers.py: "optimistic" = m-lit F4's most
+                    # optimistic settings, "production" otherwise).
+                    record["gate"]["provider_protocols"] = {
+                        n: x.get("protocol", "production")
+                        for n, x in sorted((process.get("providers") or {}).items())
+                        if "median_seconds_per_point" in x
+                    }
+                record["source"] = (
+                    f"lit-perf gate tool (tools/loop_benchmark gate; process "
+                    f"{process['key']}, configuration {name}): PLAN §5.1 protocol, "
+                    "binary64, finite part, checks off, native inputs, full "
+                    "colour, production route R2, one pinned thread; the 128 "
+                    "distinct points of the frozen stream "
+                    f"(tools/loop_benchmark/streams/{process['key']}.json); "
+                    f"median of {batch['blocks']} paired blocks after an untimed "
+                    "warm-up; requested backend resolved as the runtime resolves "
+                    "a call (reduction.resolve, SUMMED, double); pyAmpliCol "
+                    "most optimistic (m-lit F4: no poles, no stability checks, "
+                    "distinct points, batched as shipped), TIRust at the slice's "
+                    "shipped TirOptions"
+                )
+                out.append(record)
+    return out
+
+
+def write_li_timing(path: Path, records: list[dict[str, Any]]) -> None:
+    """Merge ``records`` into ``data/li-timing.json``: a row's records at the
+    same revision are replaced, every other record is kept."""
+
+    data = json.loads(path.read_text()) if path.exists() else {"records": []}
+    new = {(r["key"], r["revision"][:8]) for r in records}
+    kept = [r for r in data["records"] if (r["key"], r["revision"][:8]) not in new]
+    data["records"] = kept + records
+    path.write_text(json.dumps(data, indent=1) + "\n")
+
+
 def main(options: Any) -> int:
     import os
 
@@ -1011,12 +1673,19 @@ def main(options: Any) -> int:
         options.records,
         Path(root) if root else None,
         getattr(options, "host_spread", None),
+        getattr(options, "min_cpu_share", None) or MIN_CPU_SHARE,
     )
     for item in options.meta or ():
         key, _, value = item.partition("=")
         document[key] = value
     options.json.parent.mkdir(parents=True, exist_ok=True)
     options.json.write_text(json.dumps(document, indent=1) + "\n")
+    if getattr(options, "li_timing", None):
+        registry = json.loads(Path(options.registry or REGISTRY).read_text())
+        write_li_timing(
+            options.li_timing,
+            li_timing_records(document, registry["loop_induced"]["rows"]),
+        )
     if options.values_json:
         options.values_json.write_text(json.dumps(values, separators=(",", ":")) + "\n")
     for process in document["processes"]:

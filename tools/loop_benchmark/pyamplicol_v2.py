@@ -140,15 +140,27 @@ STAGES = (
     "python point parameters",
     "input conversion",
     "native trees",
+    "trees + CT kets",
     "seeds",
     "factors",
     "dressing",
     "scatter",
     "reduction",
+    "transport",
+    "squaring",
     "assembly",
     "other",
 )
 NATIVE = ("seeds", "factors", "dressing", "scatter", "reduction")
+# Loop-induced runs (``InducedRun``): the native trees are the trees and the
+# counterterm kets of the amplitude basis; the reduction's TIR sub-stages
+# (TIRust) and NinjaRS's master stage are reported beside it.
+INDUCED_TREES = "trees + CT kets"
+TIR_STAGES = (
+    "reduction: tensor moments",
+    "reduction: contraction",
+    "reduction: TIR masters",
+)
 MASTERS = "reduction: masters"
 ONELOOPMASTER = "reduction: masters (oneloopmaster)"
 WORK = "dressing work (modelled complex MAC per lane)"
@@ -182,27 +194,50 @@ class Timers:
 
     A timed call inside another timed call is part of the outer stage (the
     counterterm program evaluates its own tree rows, for instance), so the
-    stages never overlap and their sum stays below the wall time."""
+    stages never overlap and their sum stays below the wall time. A stage
+    wrapped ``inner`` is timed inside another one too and its time is taken
+    out of the enclosing stage (the loop-induced squaring inside the
+    assembly): the stages still never overlap."""
 
     def __init__(self) -> None:
         self.seconds: dict[str, float] = {}
         self.depth = 0
+        # [label, seconds of its inner stages] of the open timed calls.
+        self.stack: list[list[Any]] = []
 
-    def wrap(self, owner: Any, name: str, label: str) -> None:
+    def wrap(
+        self,
+        owner: Any,
+        name: str,
+        label: str,
+        *,
+        inner: bool = False,
+        label_of: Any = None,
+    ) -> None:
+        """Time ``owner.name`` under ``label`` (or ``label_of(args, kwargs)``,
+        the label of one call)."""
+
         original = getattr(owner, name)
         seconds = self.seconds
         timers = self
 
         def timed(*args: Any, **kwargs: Any) -> Any:
-            if timers.depth:
+            if timers.depth and not inner:
                 return original(*args, **kwargs)
             timers.depth += 1
+            call_label = label if label_of is None else label_of(args, kwargs)
+            frame = [call_label, 0.0]
+            timers.stack.append(frame)
             start = time.perf_counter()
             try:
                 return original(*args, **kwargs)
             finally:
+                elapsed = time.perf_counter() - start
+                timers.stack.pop()
                 timers.depth -= 1
-                seconds[label] = seconds.get(label, 0.0) + time.perf_counter() - start
+                seconds[call_label] = seconds.get(call_label, 0.0) + elapsed - frame[1]
+                if timers.stack:
+                    timers.stack[-1][1] += elapsed
 
         timed.__wrapped__ = original  # type: ignore[attr-defined]
         setattr(owner, name, timed)
@@ -1359,6 +1394,969 @@ class Run:
         return self.record
 
 
+# ------------------------------------------------------------ loop-induced
+
+# PLAN §4.0 L1 (m-lit): a provider's |A|^2 agrees within 1e-5 relative (the
+# lax rule; the digits are recorded).
+INDUCED_TOLERANCE = 1e-5
+INDUCED_METRIC = "|a - b| / max(|a|, |b|) (Born-free; PLAN §4.0 L1)"
+# The loop-induced generation's validation points (the candidates of its
+# exact helicity-zero filter and of its probes): production draws its own
+# (``generation.validation``); the harness takes this many stream points.
+CANDIDATES_FROM = "the first generation.validation.samples stream points"
+
+
+def induced(key: str) -> bool:
+    """Whether ``key`` is a loop-induced row (``processes.json``
+    ``loop_induced``): its run is ``InducedRun``."""
+
+    return bool(streams.spec(key).get("loop_induced"))
+
+
+def induced_scheme(key: str) -> dict[str, Any]:
+    """The scheme of a loop-induced row as its reference fixture states it
+    (the model route and parameters its references were computed with:
+    loop_sm under the fixture's restriction, or the UFO of the reference
+    tree), else the specification's."""
+
+    found = reference_fixture(key)
+    if found is not None and "scheme_data" in found[1]:
+        return dict(found[1]["scheme_data"])
+    return dict(streams.spec(key)["scheme_data"])
+
+
+def _reference_ufo(text: str) -> Path:
+    import os
+
+    root = os.environ.get("LOOP_REFERENCE_ROOT") or str(
+        Path(os.environ.get("PYAMPLICOL_LOOP_WORKSPACE", ROOT.parent)) / "reference"
+    )
+    return Path(text.replace("{reference}", root))
+
+
+def induced_model(key: str, scratch: Path) -> tuple[Any, str]:
+    """The compiled model of a loop-induced row and its route: a UFO of the
+    reference tree (``{reference}``; its complex-mass model where the scheme
+    has the complex-mass scheme), else the shipped loop_sm under the
+    scheme's restriction (``mqcd.compile_restriction``, the tests' route)."""
+
+    from tools.loop_v2_operation_counts import UFO
+
+    from .mqcd import compile_restriction
+
+    scheme = induced_scheme(key)
+    source = scheme["madloop_model"]
+    if source.startswith("{reference}"):
+        from pyamplicol.models.loading import compile_model_source
+
+        ufo = _reference_ufo(source)
+        compiled = compile_model_source(
+            ufo, require_supported=False, cache_dir=scratch / "model-cache"
+        )
+        if scheme.get("complex_mass_scheme"):
+            from pyamplicol.loops.model_cms import complex_mass_model
+
+            compiled, _scheme = complex_mass_model(
+                compiled,
+                fixed_parameters=dict(scheme["fixed_parameters"]),
+                cache_dir=scratch / "model-cache",
+            )
+        return compiled, f"{ufo.name} (reference UFO)"
+    restriction = scheme.get("restriction") or "default"
+    return (
+        compile_restriction(UFO, restriction, scratch / restriction),
+        f"loop_sm restriction {restriction}",
+    )
+
+
+def induced_request(key: str, compiled: Any) -> Any:
+    """The loop-induced request of ``key``: its process in the model's
+    particle names (by PDG), the loop orders as both order limits, the
+    scheme's fixed parameters the model has, the public particle veto, and on
+    a reference-tree UFO the electroweak request options of the tools route
+    (compatibility profile, scale parameter, no external-photon scheme) and
+    a QED correction where the row's correction is QED."""
+
+    from pyamplicol.loops.v2.assemble import SliceRequest
+
+    spec = streams.spec(key)
+    scheme = induced_scheme(key)
+    orders = dict(spec["loop_orders"])
+    fixed = {
+        name: value
+        for name, value in scheme["fixed_parameters"].items()
+        if name in compiled.parameter_defaults
+    }
+    options: dict[str, Any] = {}
+    if scheme["madloop_model"].startswith("{reference}"):
+        from tools.loop_v2_generate import _EW_COMPATIBILITY, _EW_SCALE_PARAMETER
+
+        options.update(
+            compatibility=_EW_COMPATIBILITY,
+            scale_parameter=_EW_SCALE_PARAMETER,
+            external_photons="none",
+        )
+    if spec["correction"] == "QED":
+        options["corrections"] = ("QED",)
+    return SliceRequest(
+        process_text(key, compiled),
+        orders,
+        orders,
+        contribution="loop-induced",
+        fixed_parameters=fixed,
+        particle_veto=tuple(int(p) for p in spec.get("particle_veto", ())),
+        **options,
+    )
+
+
+def _masked(failures: dict[int, list[str]]) -> dict[str, int]:
+    """Each failed point's reasons with their numbers masked, counted per
+    point (the record's failure causes)."""
+
+    import re
+    from collections import Counter
+
+    number = re.compile(r"[-+]?\d+(\.\d+)?([eE][-+]?\d+)?")
+    out: Counter = Counter()
+    for items in failures.values():
+        for item in sorted({number.sub("#", str(x))[:240] for x in items}):
+            out[item] += 1
+    return dict(out.most_common())
+
+
+class _TimedNative:
+    """A native executor (``NativeExecutor.native``) whose ``evaluate`` call
+    is timed (``InducedRun``: the call's wall time beyond its own stages is
+    the result transport); every other attribute is the executor's."""
+
+    def __init__(self, inner: Any, sink: dict[str, float]) -> None:
+        self._inner = inner
+        self._sink = sink
+
+    def evaluate(self, *args: Any, **kwargs: Any) -> Any:
+        start = time.perf_counter()
+        try:
+            return self._inner.evaluate(*args, **kwargs)
+        finally:
+            self._sink["native call"] = (
+                self._sink.get("native call", 0.0) + time.perf_counter() - start
+            )
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._inner, name)
+
+
+class InducedRun(Run):
+    """One loop-induced row (``processes.json`` ``loop_induced``): the
+    production route of ``generation.loop_service._generate_v2`` (schema-5
+    amplitude-mode plan export) and the requested reduction backends timed
+    in one process on the same points.
+
+    **Generation** (every stage with its wall time and peak RSS): the model
+    (``induced_model``), ``artifact.generate_process`` (``LoopSlice.generate``
+    with the dressed-frame choice ``LoopSlice._frame_dressed_rows`` shown,
+    and the plan export), the exact helicity-zero filter
+    (``helicity_filter.generation_filter`` at the configured failure
+    probability, re-exported when rows drop) and the mandatory generation-
+    time probes (``induced.generation_probes``, m-lit Q12; split into the
+    probe slice, the probe points, the probe runs, the term floors and the
+    Goldstone probes), on ``CANDIDATES_FROM`` as the candidates. The
+    generation cell is generate + export + filter + probes.
+
+    **Timing**: each requested backend (``--reduction``: ``auto``,
+    ``ninjars``, ``tirust``) resolved as the artifact runtime resolves a call
+    (``reduction.resolve`` on the summed route at the double carrier; the
+    record keeps requested, effective and reason verbatim) and run under
+    ``reduction.running(effective)``; per round every B and backend
+    alternate (paired blocks on the same stream points). A call that fails
+    points (``plan_export.FailedPoints``) is timed whole: its blocks record
+    the failed points and their causes, and its time is a whole-call time,
+    never a served-point time. A backend whose untimed warm-up at a B fails
+    points is also timed on its served points only (``served``: the stream
+    points of that warm-up block it served, one block of them per round).
+    ``--tir-profile`` adds a TIRust arm with TIRust's own stage profile
+    (``reduction: TIR masters`` ...; profiling costs time, so that arm is a
+    stage split, never a timing). ``--one-helicity`` adds per backend an arm
+    at the largest B on one helicity (PLAN §5.1, Q39): the executor's
+    single-helicity row selection (``NativeExecutor.row_mask``) of the plan's
+    first helicity row, whose rows alone are dressed; the value is
+    |A(h)|^2/avg (``one_helicity`` of the backend's record).
+
+    **Stage split** per block (seconds per point): the native report's
+    stages (``trees + CT kets``: the executor's native trees, which form the
+    trees and the counterterm kets of the amplitude basis; seeds, factors,
+    dressing, scatter, reduction with its sub-stages), ``transport`` (the
+    native call's wall time beyond its own stages, the PyO3 boundary in and
+    out, plus the Python read of the amplitude slots, ``induced.read_native``),
+    ``squaring`` (``induced.native_square``), ``assembly`` (the rest of
+    ``_assemble``), ``input conversion`` and ``python point parameters``,
+    ``other`` the rest of the call."""
+
+    def __init__(self, options: Any) -> None:
+        super().__init__(options)
+        import platform
+
+        self.record["host"] = platform.node()
+        self.record["date"] = time.strftime("%Y-%m-%d", time.gmtime())
+        self.record["contribution"] = "loop-induced"
+        self.record["kind"] = "pyamplicol-v2"
+        self.native_seconds: dict[str, float] = {}
+        self.parameters = {}
+
+    # -- generation ---------------------------------------------------------
+
+    def generate(self) -> None:
+        from pyamplicol.config.models import (
+            GenerationConfig,
+            GenerationValidationConfig,
+        )
+        from pyamplicol.loops import native as native_module
+        from pyamplicol.loops.v2 import assemble, ward
+        from pyamplicol.loops.v2 import induced as induced_module
+        from pyamplicol.loops.v2.artifact import generate_process, reexport_process
+        from pyamplicol.loops.v2.helicity_filter import generation_filter
+        from pyamplicol.loops.v2.plan_export import NativeExecutor
+
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        native = native_module.load_loop_native()
+        self.native_module = native
+        self.record["native"] = _native_build(self.options.native_build)
+        scratch = Path(tempfile.mkdtemp(prefix="g1-model-", dir=self.options.scratch))
+        self.scratch = scratch
+        stages: dict[str, Any] = {}
+        _reset_peak()
+        start = time.perf_counter()
+        compiled, route = induced_model(self.key, scratch)
+        stages["model"] = {
+            "seconds": time.perf_counter() - start,
+            "peak_gib": _gib(_status("VmHWM")),
+            "route": route,
+        }
+        request = induced_request(self.key, compiled)
+        self.record["process_text"] = request.process
+        # The generate stage's own parts (nested timers: each excluded from
+        # the stage around it).
+        timers = Timers()
+        _reset_peak()
+        # The process CPU time of each stage beside its wall time (one
+        # thread: a shared core or a stopped job shows).
+        cpu = time.process_time()
+        start = time.perf_counter()
+        with _wrapped(
+            timers,
+            [
+                (assemble.LoopSlice, "generate", "slice", False),
+                (
+                    assemble.LoopSlice,
+                    "_frame_dressed_rows",
+                    "dressed-frame choice",
+                    True,
+                ),
+            ],
+        ):
+            process = generate_process(compiled, request, native)
+        total = time.perf_counter() - start
+        frames = timers.seconds.get("dressed-frame choice", 0.0)
+        slice_seconds = timers.seconds.get("slice", 0.0) + frames
+        stages["generate"] = {
+            "seconds": slice_seconds,
+            "dressed_frame_seconds": frames,
+            "peak_gib": _gib(_status("VmHWM")),
+        }
+        stages["export"] = {"seconds": total - slice_seconds}
+        stages["generate"]["cpu_seconds_with_export"] = time.process_time() - cpu
+        # The candidates of the filter and the probes (CANDIDATES_FROM).
+        samples = max(GenerationValidationConfig().samples, 1)
+        candidates = [
+            [[float(Fraction(x)) for x in leg] for leg in point]
+            for point in self.stream["points"][:samples]
+        ]
+        failure = GenerationConfig().helicity_filter_failure_probability
+        _reset_peak()
+        cpu = time.process_time()
+        start = time.perf_counter()
+        filter_record, dropped = generation_filter(
+            process.slice, candidates, failure=failure
+        )
+        if dropped:
+            process.slice.zero_rows = dropped
+            process = reexport_process(process, compiled, request)
+        stages["filter"] = {
+            "seconds": time.perf_counter() - start,
+            "peak_gib": _gib(_status("VmHWM")),
+            "dropped_rows": len(dropped),
+            "record": filter_record,
+            "cpu_seconds": time.process_time() - cpu,
+        }
+        # The probes, split by kind (nested timers).
+        # The probes, split by work (nested timers): the probe slice on the
+        # full tree kernels, the lifted probe points, the double-double probe
+        # runs (finiteness, Ward and Goldstone), the binary64 term floors,
+        # the Goldstone sides' slices and the rest of the Goldstone probes.
+        from pyamplicol.loops.v2 import goldstone
+
+        probes = Timers()
+        _reset_peak()
+        cpu = time.process_time()
+        start = time.perf_counter()
+        error = None
+        try:
+            with _wrapped(
+                probes,
+                [
+                    (induced_module, "generation_probes", "probes: rest", False),
+                    (ward, "ward_slice", "probe slice", True),
+                    (induced_module, "probe_point", "probe points", True),
+                    # A probe run in binary64 is the term floors' run.
+                    (
+                        induced_module,
+                        "_probe_runs",
+                        "probe runs",
+                        True,
+                        _probe_run_label,
+                    ),
+                    (induced_module, "_goldstone_probes", "Goldstone probes", True),
+                    (goldstone, "goldstone_slice", "Goldstone slices", True),
+                ],
+            ):
+                outcome = induced_module.generation_probes(
+                    process.slice, compiled, native, candidates
+                )
+        except Exception as caught:  # a probe failure refuses generation
+            outcome, error = None, caught
+        stages["probes"] = {
+            "seconds": time.perf_counter() - start,
+            "cpu_seconds": time.process_time() - cpu,
+            "peak_gib": _gib(_status("VmHWM")),
+            "split_seconds": dict(probes.seconds),
+            "record": outcome,
+            "candidates": CANDIDATES_FROM,
+        }
+        self.record["generation"] = stages
+        if error is not None:
+            raise error
+        scaleless = None
+        if process.scaleless_exported is not None:
+            scaleless = (process.scaleless_exported, process.scaleless_plan)
+        _reset_peak()
+
+        def executor() -> Any:
+            return NativeExecutor(
+                process.slice,
+                exported=process.exported,
+                plan_json=process.plan,
+                scaleless=scaleless,
+                inputs="native",
+                lanes=self.options.lanes,
+                threads=1,
+            )
+
+        self.executor = executor()
+        # The profiled TIRust arm's own executor: its TIRust backend is built
+        # with the profile once, never rebuilt between the timed arms' calls.
+        self.new_executor = executor
+        self.process = process
+        self.slice = process.slice
+        external = process.slice._external_parameters()
+        fixed = process.slice.fixed_parameters
+        self.parameters = {
+            name: value
+            for name, value in induced_scheme(self.key)["parameters"].items()
+            if name in external and name not in fixed
+        }
+        stages["plan_mb"] = round(len(process.plan) / 1e6, 3)
+        self.record["structure"] = {
+            "families": len(process.exported.families),
+            "columns": len(process.exported.columns),
+            "rows": len(process.exported.rows),
+            "amplitude_basis": process.exported.amplitude,
+            "plan_schema": json.loads(process.plan_json)["schema"],
+        }
+        print(self.key, "generation", json.dumps(stages, default=str), flush=True)
+        self._install_timers()
+
+    def _install_timers(self) -> None:
+        from pyamplicol.loops.v2 import assemble
+        from pyamplicol.loops.v2 import induced as induced_module
+        from pyamplicol.loops.v2.plan_export import NativeExecutor
+
+        wrap = self.timers.wrap
+        wrap(assemble._PointEvaluation, "_assemble", "assembly")
+        wrap(induced_module, "native_square", "squaring", inner=True)
+        wrap(induced_module, "read_native", "transport", inner=True)
+        wrap(NativeExecutor, "_inputs", "input conversion")
+        if hasattr(NativeExecutor, "_native_points"):
+            wrap(NativeExecutor, "_native_points", "python point parameters")
+        sink = self.native_seconds
+        original = NativeExecutor.native
+
+        def native(executor: Any, *args: Any, **kwargs: Any) -> Any:
+            return _TimedNative(original(executor, *args, **kwargs), sink)
+
+        native.__wrapped__ = original  # type: ignore[attr-defined]
+        NativeExecutor.native = native  # type: ignore[method-assign]
+
+    # -- evaluation -----------------------------------------------------------
+
+    def _call(
+        self, points: list, scales: list, executor: Any = None
+    ) -> tuple[list, dict[str, Any]]:
+        """One timed call: (results, entry) with the failed points and their
+        causes (a call that fails points is timed whole)."""
+
+        from pyamplicol.loops.v2.plan_export import FailedPoints
+
+        executor = executor or self.executor
+        self.timers.clear()
+        self.native_seconds.clear()
+        cpu = time.process_time()
+        begin = time.perf_counter()
+        try:
+            results = executor.evaluate(
+                points, scales, parameters=self.parameters, poles=_finite_only()
+            )
+            failures: dict[int, list[str]] = {}
+        except FailedPoints as error:
+            results, failures = error.results, error.failures
+        wall = time.perf_counter() - begin
+        cpu = time.process_time() - cpu
+        report = executor.last_report
+        seconds = dict(self.timers.seconds)
+        native_stages = {
+            name: value for name, value in report["seconds"].items() if ":" not in name
+        }
+        for name, value in report["seconds"].items():
+            if name == "trees":
+                seconds[INDUCED_TREES] = value
+            elif ":" in name or name in NATIVE or name == "seed contraction":
+                seconds[name] = value
+            else:
+                seconds[f"native: {name}"] = value
+        # The PyO3 boundary and the untimed rest of the native call.
+        call = self.native_seconds.get("native call", 0.0)
+        seconds["transport"] = (
+            seconds.get("transport", 0.0) + call - sum(native_stages.values())
+        )
+        accounted = sum(
+            value
+            for name, value in seconds.items()
+            if ":" not in name and name != "other"
+        )
+        seconds["other"] = wall - accounted
+        return results, {
+            "wall": wall,
+            # The process's CPU time over the call: on one thread its share
+            # of the wall time says whether the core was shared.
+            "cpu": cpu,
+            "seconds": seconds,
+            "counts": dict(report["counts"]),
+            "lanes": report["lanes"],
+            "threads": report["threads"],
+            "reals_per_lane": dict(report["reals_per_lane"]),
+            "failed": sorted(failures),
+            "failures": failures,
+        }
+
+    def _block(self, indices: list[int], executor: Any = None) -> dict[str, Any]:
+        points = [streams.exact(self.stream, i) for i in indices]
+        scales = [str(Fraction(self.stream["mu_r"][i]) ** 2) for i in indices]
+        # The block's wall-clock start (a host guard that stops the job
+        # inside a block shows against its log).
+        started = time.time()
+        results, entry = self._call(points, scales, executor)
+        failures = entry.pop("failures")
+        return {
+            "start": indices[0],
+            "started": started,
+            "points": len(indices),
+            **entry,
+            "failed_points": len(failures),
+            "failure_causes": _masked(failures),
+            "values": {
+                indices[k]: _totals(result)
+                for k, result in enumerate(results)
+                if result is not None
+            },
+        }
+
+    @contextlib.contextmanager
+    def _one_row(self, arm: dict[str, Any]) -> Any:
+        """A one-helicity arm's row selection on the executor for one call
+        (``NativeExecutor.row_mask``: that helicity row alone is dressed);
+        nothing for the other arms."""
+
+        if "row" not in arm:
+            yield
+            return
+        executor = arm.get("executor") or self.executor
+        rows = executor.exported.rows
+        arm["row_helicities"] = [h for _leg, h in rows[arm["row"]]]
+        executor.row_mask = tuple(k == arm["row"] for k in range(len(rows)))
+        try:
+            yield
+        finally:
+            executor.row_mask = None
+
+    def _indices(self, start: int, size: int) -> list[int]:
+        count = len(self.stream["points"])
+        return [(start + k) % count for k in range(size)]
+
+    def _backends(self) -> list[dict[str, Any]]:
+        """The requested backends, resolved as the runtime resolves a call
+        (requested / effective / reason verbatim; a refusal is the backend's
+        record)."""
+
+        from pyamplicol.api.errors import ReductionUnavailable
+        from pyamplicol.loops.v2.reduction import SUMMED, resolve
+
+        out = []
+        for requested in self.options.reduction:
+            entry: dict[str, Any] = {"requested": requested}
+            try:
+                choice = resolve(
+                    requested,
+                    contribution="loop-induced",
+                    carrier="double",
+                    native=self.native_module,
+                    route=SUMMED,
+                )
+            except ReductionUnavailable as error:
+                entry["refused"] = f"{type(error).__name__}: {error}"
+            else:
+                entry.update(effective=choice.effective, reason=choice.reason)
+            out.append(entry)
+        return out
+
+    def accuracy(self) -> None:
+        """|A|^2 at the reference fixture's points against every provider of
+        the fixture (``INDUCED_METRIC``, ``INDUCED_TOLERANCE``), per
+        requested backend, with the recommended stability checks (the
+        estimate E recorded); a point the backend fails closed is recorded
+        as such. Untimed."""
+
+        from pyamplicol.api.errors import ReductionUnavailable
+        from pyamplicol.loops.v2.plan_export import FailedPoints
+        from pyamplicol.loops.v2.reduction import running
+
+        found = reference_fixture(self.key)
+        if found is None:
+            self.record["accuracy_check"] = None
+            return
+        name, fixture = found
+        count = min(len(fixture["points"]), self.options.lanes)
+        points, scales = fixture_batch(fixture, list(range(count)))
+        checks: dict[str, Any] = {}
+        for backend in self.backends:
+            if "effective" not in backend:
+                continue
+            failures: dict[int, list[str]] = {}
+            try:
+                with running(backend["effective"]):
+                    results = self.executor.evaluate(
+                        points,
+                        scales,
+                        parameters=self.parameters,
+                        poles=_finite_only(),
+                        stability=check_configuration(),
+                    )
+            except FailedPoints as error:
+                results, failures = error.results, error.failures
+            except ReductionUnavailable as error:
+                checks[backend["requested"]] = {"refused": str(error)}
+                continue
+            rows, worst = [], 0.0
+            for index in range(count):
+                result = results[index]
+                if result is None:
+                    rows.append(
+                        {"index": index, "failed": _masked({0: failures[index]})}
+                    )
+                    continue
+                value = _totals(result)[1]
+                errors = {
+                    provider: _relative(value, float(entry["value"]))
+                    for provider, entry in fixture["rows"][index]["providers"].items()
+                    if "value" in entry
+                }
+                worst = max([worst, *errors.values()])
+                rows.append(
+                    {
+                        "index": index,
+                        "value": value,
+                        "errors": errors,
+                        "estimate": finite_estimate(result),
+                    }
+                )
+            checks[backend["requested"]] = {
+                "max_error": worst,
+                "passed": worst <= INDUCED_TOLERANCE and not failures,
+                "failed_points": sorted(failures),
+                "rows": rows,
+            }
+        self.record["accuracy_check"] = {
+            "fixture": name,
+            "points": count,
+            "metric": INDUCED_METRIC,
+            "tolerance": INDUCED_TOLERANCE,
+            "checks": CHECKS,
+            "backends": checks,
+        }
+        print(
+            self.key,
+            "accuracy vs providers:",
+            json.dumps({k: v.get("max_error") for k, v in checks.items()}),
+            flush=True,
+        )
+
+    def timing(self) -> None:
+        """Paired rounds over every B and backend (class docstring)."""
+
+        from pyamplicol.api.errors import ReductionUnavailable
+        from pyamplicol.loops.v2.reduction import running
+
+        options = self.options
+        batches = sorted(set(options.batches))
+        arms: list[dict[str, Any]] = []
+        for backend in self.backends:
+            if "effective" not in backend:
+                continue
+            for size in batches:
+                arms.append(
+                    {
+                        "backend": backend,
+                        "size": size,
+                        "indices": self._indices(0, size),
+                        "profile": False,
+                    }
+                )
+        if getattr(options, "one_helicity", False):
+            for backend in self.backends:
+                if "effective" in backend:
+                    arms.append(
+                        {
+                            "backend": backend,
+                            "size": max(batches),
+                            "indices": self._indices(0, max(batches)),
+                            "profile": False,
+                            "row": 0,
+                        }
+                    )
+        if getattr(options, "tir_profile", False) and any(
+            arm["backend"].get("effective") == "tirust" for arm in arms
+        ):
+            backend = next(
+                arm["backend"]
+                for arm in arms
+                if arm["backend"]["effective"] == "tirust"
+            )
+            arms.append(
+                {
+                    "backend": backend,
+                    "size": max(batches),
+                    "indices": self._indices(0, max(batches)),
+                    "profile": True,
+                    "executor": self.new_executor(),
+                }
+            )
+        # Untimed warm-ups (each arm once): lazy compilation, TIRust's plans,
+        # and the failed points of each arm. The evaluation's peak RSS is
+        # taken from here on.
+        _reset_peak()
+        warm: dict[str, Any] = {}
+        for arm in list(arms):
+            label = _arm_label(arm)
+            start = time.perf_counter()
+            try:
+                with (
+                    running(arm["backend"]["effective"]),
+                    _profiled(arm["profile"]),
+                    self._one_row(arm),
+                ):
+                    block = self._block(arm["indices"], arm.get("executor"))
+            except ReductionUnavailable as error:
+                arm["backend"]["refused_at_prepare"] = str(error)
+                arms.remove(arm)
+                continue
+            warm[label] = {
+                "seconds": time.perf_counter() - start,
+                "points": len(arm["indices"]),
+                "failed_points": block["failed_points"],
+            }
+            print(
+                self.key,
+                f"warm-up {label}: {warm[label]['seconds']:.3f} s, failed "
+                f"{block['failed_points']}/{len(arm['indices'])}",
+                flush=True,
+            )
+            if block["failed_points"] and not arm["profile"] and "row" not in arm:
+                served = [index for index in arm["indices"] if index in block["values"]]
+                if served:
+                    arms.append(
+                        {
+                            "backend": arm["backend"],
+                            "size": arm["size"],
+                            "indices": served,
+                            "profile": False,
+                            "served": True,
+                            "warm_up": label,
+                        }
+                    )
+        # Blocks per round: enough points per round for a small B
+        # (``--min-points``), each block the next stream points of its arm (a
+        # served-points arm repeats its points); the budget per arm from its
+        # own warm-up.
+        skipped = {}
+        planned = []
+        for arm in arms:
+            blocks = (
+                1
+                if arm.get("served")
+                else max(1, math.ceil(options.min_points / arm["size"]))
+            )
+            arm["blocks"] = blocks
+            arm["offset"] = 0
+            w = warm[arm.get("warm_up", _arm_label(arm))]
+            estimate = w["seconds"] / w["points"] * arm["size"] * blocks * options.reps
+            if estimate > options.budget:
+                skipped[_arm_label(arm)] = (
+                    f"estimated {estimate:.0f} s for {options.reps} rounds of "
+                    f"{blocks} block(s) over the budget of {options.budget:.0f} s"
+                )
+                continue
+            planned.append(arm)
+        self.record["warm_up"] = warm
+        self.record["skipped_arms"] = skipped
+        runs: dict[str, list[dict[str, Any]]] = {_arm_label(a): [] for a in planned}
+        for round_ in range(options.reps):
+            # Alternate the order per round (paired blocks, no fixed lead).
+            order = planned if round_ % 2 == 0 else list(reversed(planned))
+            for arm in order:
+                label = _arm_label(arm)
+                for _ in range(arm["blocks"]):
+                    indices = (
+                        arm["indices"]
+                        if arm.get("served")
+                        else self._indices(arm["offset"], arm["size"])
+                    )
+                    arm["offset"] += arm["size"]
+                    with (
+                        running(arm["backend"]["effective"]),
+                        _profiled(arm["profile"]),
+                        self._one_row(arm),
+                    ):
+                        block = self._block(indices, arm.get("executor"))
+                    runs[label].append(block)
+                    print(
+                        self.key,
+                        f"round {round_ + 1} {label}: "
+                        f"{block['wall'] / block['points'] * 1e3:.3f} ms/pt, failed "
+                        f"{block['failed_points']}/{block['points']}",
+                        flush=True,
+                    )
+            self.record["backend_runs"] = self._summaries(planned, runs)
+            self.checkpoint(partial=True)
+        self.record["backend_runs"] = self._summaries(planned, runs)
+        self.record["batches"] = {}
+        self.record["eval_peak_gib"] = _gib(_status("VmHWM"))
+
+    def _summaries(
+        self, planned: list[dict[str, Any]], runs: dict[str, list[dict[str, Any]]]
+    ) -> dict[str, Any]:
+        out: dict[str, Any] = {}
+        for backend in self.backends:
+            entry = {
+                k: backend[k]
+                for k in (
+                    "requested",
+                    "effective",
+                    "reason",
+                    "refused",
+                    "refused_at_prepare",
+                )
+                if k in backend
+            }
+            entry["batches"] = {}
+            entry["served"] = {}
+            entry["profiled"] = {}
+            entry["one_helicity"] = {}
+            for arm in planned:
+                if arm["backend"] is not backend or not runs[_arm_label(arm)]:
+                    continue
+                blocks = runs[_arm_label(arm)]
+                summary = _summary(blocks)
+                failed = [block["failed_points"] for block in blocks]
+                causes: dict[str, int] = {}
+                for block in blocks[-1:]:
+                    causes = block["failure_causes"]
+                summary.update(
+                    failed_points=failed,
+                    served_fraction=1
+                    - sum(failed) / (summary["points_per_block"] * len(failed)),
+                    failure_causes=causes,
+                )
+                if "row" in arm:
+                    summary["row"] = arm["row_helicities"]
+                    entry["one_helicity"][str(arm["size"])] = summary
+                elif arm["profile"]:
+                    entry["profiled"][str(arm["size"])] = summary
+                elif arm.get("served"):
+                    summary["indices"] = arm["indices"]
+                    entry["served"][str(arm["size"])] = summary
+                else:
+                    entry["batches"][str(arm["size"])] = summary
+            out[backend["requested"]] = entry
+        return out
+
+    def physical(self, indices: list[int]) -> None:
+        """One binary64 evaluation with every pole and the recommended checks
+        at the stream points ``indices`` per backend: |A|^2, its pole
+        coefficients and the amplitude-level finiteness ratio
+        (``PointResult.finiteness``: formed when checks are requested), with
+        the finite part's estimate E (the finiteness column of gate.py)."""
+
+        from pyamplicol.loops.v2.plan_export import FailedPoints
+        from pyamplicol.loops.v2.reduction import running
+
+        rows = []
+        for backend in self.backends:
+            if "effective" not in backend:
+                continue
+            for start in range(0, len(indices), self.options.lanes):
+                chunk = indices[start : start + self.options.lanes]
+                points = [streams.exact(self.stream, i) for i in chunk]
+                scales = [str(Fraction(self.stream["mu_r"][i]) ** 2) for i in chunk]
+                failures: dict[int, list[str]] = {}
+                try:
+                    with running(backend["effective"]):
+                        results = self.executor.evaluate(
+                            points,
+                            scales,
+                            parameters=self.parameters,
+                            poles=_all_poles(),
+                            stability=check_configuration(),
+                        )
+                except FailedPoints as error:
+                    results, failures = error.results, error.failures
+                for k, (index, result) in enumerate(zip(chunk, results, strict=True)):
+                    row: dict[str, Any] = {
+                        "index": index,
+                        "requested": backend["requested"],
+                    }
+                    if result is None:
+                        row["failed"] = _masked({0: failures[k]})
+                    else:
+                        _, finite = _totals(result)
+                        row.update(
+                            finite=finite,
+                            components=components(result),
+                            finiteness=result.finiteness,
+                            estimate=finite_estimate(result),
+                        )
+                    rows.append(row)
+                    print(self.key, "physical", json.dumps(row), flush=True)
+        self.record["physical"] = rows
+
+    def run(self) -> dict[str, Any]:
+        try:
+            try:
+                self.generate()
+            except Exception as error:
+                # A refusal (or a failed probe) is the row's record.
+                self.record["generation_error"] = (
+                    f"{type(error).__name__}: {str(error)[:600]}"
+                )
+                self.record["batches"] = {}
+                return self.record
+            self.backends = self._backends()
+            self.record["backends"] = self.backends
+            self.accuracy()
+            self.checkpoint(partial=True)
+            self.freeze_heap()
+            self.timing()
+            if getattr(self.options, "physical_points", None):
+                self.physical(self.options.physical_points)
+                self.checkpoint(partial=True)
+        finally:
+            self.close()
+            _unwrap_native()
+        self.record["max_rss_gib"] = _gib(
+            resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * 1024
+        )
+        return self.record
+
+
+def _probe_run_label(args: tuple, kwargs: dict) -> str:
+    """A probe run's stage: the double-double probe runs, or the binary64
+    run of the term floors (``induced.physical_floors``)."""
+
+    precision = args[4] if len(args) > 4 else kwargs.get("precision")
+    if getattr(precision, "arithmetic", None) == "double":
+        return "probe term floors (binary64)"
+    return f"probe runs ({getattr(precision, 'arithmetic', 'double-double')})"
+
+
+def _arm_label(arm: dict[str, Any]) -> str:
+    label = f"{arm['backend']['requested']} B={arm['size']}"
+    if "row" in arm:
+        label += f" helicity row {arm['row']}"
+    if arm.get("served"):
+        label += f" served {len(arm['indices'])}"
+    if arm.get("profile"):
+        label += " profiled"
+    return label
+
+
+@contextlib.contextmanager
+def _profiled(on: bool) -> Any:
+    """TIRust's stage profile on the executor's TIRust plans for one call
+    (``V2Executor.prepare_reduction(profile=True)``: the backend is rebuilt
+    with it, and again with the defaults by the next unprofiled call)."""
+
+    if not on:
+        yield
+        return
+    from pyamplicol.loops.v2 import plan_export
+
+    original = plan_export.prepare
+
+    def prepare(executor: Any) -> None:
+        executor.prepare_reduction("tirust", profile=True)
+
+    plan_export.prepare = prepare
+    try:
+        yield
+    finally:
+        plan_export.prepare = original
+
+
+@contextlib.contextmanager
+def _wrapped(timers: Timers, targets: list[tuple]) -> Any:
+    """``timers.wrap`` every (owner, name, label, inner[, label_of]) of
+    ``targets`` for the context, then restore each attribute as it was (a
+    class's own descriptor, e.g. a classmethod, not the bound method)."""
+
+    saved = []
+    for owner, name, label, inner, *rest in targets:
+        raw = vars(owner).get(name) if isinstance(owner, type) else getattr(owner, name)
+        saved.append((owner, name, raw))
+        timers.wrap(owner, name, label, inner=inner, label_of=rest[0] if rest else None)
+    try:
+        yield
+    finally:
+        for owner, name, raw in reversed(saved):
+            setattr(owner, name, raw)
+
+
+def _unwrap_native() -> None:
+    from pyamplicol.loops.v2.plan_export import NativeExecutor
+
+    found = vars(NativeExecutor).get("native")
+    original = getattr(found, "__wrapped__", None)
+    if original is not None:
+        NativeExecutor.native = original  # type: ignore[method-assign]
+
+
 def _affinity() -> set[int]:
     import os
 
@@ -1391,6 +2389,16 @@ def _summary(runs: list[dict[str, Any]]) -> dict[str, Any]:
         }
     out = {
         "blocks": len(runs),
+        **(
+            {"started": [run["started"] for run in runs]}
+            if all("started" in run for run in runs)
+            else {}
+        ),
+        **(
+            {"cpu_share": [run["cpu"] / run["wall"] for run in runs]}
+            if all("cpu" in run and run["wall"] for run in runs)
+            else {}
+        ),
         "points_per_block": points,
         "median_seconds_per_point": median,
         "min_seconds_per_point": min(per_point),
@@ -1704,10 +2712,28 @@ def main(options: Any) -> int:
         )
     from pyamplicol.loops.v2.reduction import running
 
-    backend = getattr(options, "reduction", "ninjars")
-    with running(backend):
-        record = Run(options).run()
-    record["reduction"] = backend
+    requested = getattr(options, "reduction", ["ninjars"])
+    if isinstance(requested, str):
+        requested = [requested]
+    if induced(options.process):
+        # Every requested backend in one run (``InducedRun``).
+        options.reduction = list(dict.fromkeys(requested))
+        if getattr(options, "load", None) is not None or getattr(
+            options, "store", None
+        ):
+            raise SystemExit(
+                "a loop-induced run generates its process (no --store/--load)"
+            )
+        record = InducedRun(options).run()
+    else:
+        if len(requested) != 1 or requested[0] == "auto":
+            raise SystemExit(
+                "a Born-interfered run takes one explicit --reduction backend"
+            )
+        backend = requested[0]
+        with running(backend):
+            record = Run(options).run()
+        record["reduction"] = backend
     if options.json:
         options.json.parent.mkdir(parents=True, exist_ok=True)
         options.json.write_text(json.dumps(record, indent=1) + "\n")
