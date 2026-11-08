@@ -631,6 +631,7 @@ def evaluate(
         "fixture": name,
         "revision": _revision(),
         "native": _native(),
+        "python_symbolica": _symbolica(),
         "generation": generation,
         "digits": digits if ap else None,
         "transformed_points": transformed,
@@ -795,6 +796,50 @@ def _native() -> dict | None:
         data = _load(info)
         out["build"] = Path(data["native_build"]["directory"]).name
         out["inputs_digest"] = data["native_build_inputs_sha256"]
+    return out
+
+
+def _symbolica() -> str | None:
+    """The Python Symbolica in use: its version and the name of the
+    directory holding it (no absolute path)."""
+
+    try:
+        import symbolica
+    except ImportError:
+        return None
+    where = Path(symbolica.__file__).resolve().parents[1].name
+    return f"symbolica {getattr(symbolica, '__version__', '?')} ({where})"
+
+
+def _engine_slice(revision: str) -> str:
+    """The integration-branch commit a record's revision builds on (its
+    merge base with work/v2-slice: the engine it ran, this package changing
+    no engine code), else the revision itself."""
+
+    base = subprocess.run(
+        ["git", "merge-base", revision, "work/v2-slice"],
+        cwd=WT,
+        capture_output=True,
+        text=True,
+        check=False,
+    ).stdout.strip()
+    return (base or revision)[:9]
+
+
+def provenance(records: dict[str, dict]) -> dict:
+    """Where the records come from: the engine slice of each record's
+    revision (and of its resumption), the staged native and the Python
+    Symbolica each new record names (counts)."""
+
+    out: dict[str, dict] = {"engine_slice": {}, "native": {}, "python_symbolica": {}}
+    for record in records.values():
+        for revision in {record.get("revision"), record.get("resumed_at")} - {None, ""}:
+            key = _engine_slice(revision)
+            out["engine_slice"][key] = out["engine_slice"].get(key, 0) + 1
+        native = (record.get("native") or {}).get("build") or "not recorded"
+        out["native"][native] = out["native"].get(native, 0) + 1
+        python = record.get("python_symbolica") or "not recorded"
+        out["python_symbolica"][python] = out["python_symbolica"].get(python, 0) + 1
     return out
 
 
@@ -1845,9 +1890,13 @@ def stress_madloop(
 def judge_madloop(madloop: dict, record: dict) -> dict:
     """MadLoop QP at the stress points against pyAmpliCol's 40-digit AP
     (else double-double) on the exact points: per point the relative
-    deviation and whether MadLoop's own accuracy estimate covers it
-    (|ML - AP| <= 10 x accuracy x |ML|); recorded, the stress points'
-    rules are E, L6 and L7."""
+    deviation, whether MadLoop's own accuracy estimate covers it (|ML - AP|
+    <= 10 x accuracy x |ML|) and whether the point's binary64 conditioning
+    does (MadLoop reads the momenta in binary64 and restores the shells
+    itself, ImprovePSPoint: at an ill-conditioned point it evaluates a
+    point ~1e-16 away from the exact one; pyAmpliCol's binary64 relative
+    estimate E at the point measures that conditioning: deviation <= 10 E);
+    recorded, the stress points' rules are E, L6 and L7."""
 
     if "rows" not in madloop:
         return madloop
@@ -1856,12 +1905,20 @@ def judge_madloop(madloop: dict, record: dict) -> dict:
     if not truth or "points" not in truth:
         truth, carrier = high_arm(record["arms"], "ninjars"), "double-double"
     points = []
-    for row, pt in zip(madloop["rows"], truth.get("points", []), strict=False):
+    b64 = record["arms"]["ninjars/double/checked"].get("points", [])
+    for p, (row, pt) in enumerate(
+        zip(madloop["rows"], truth.get("points", []), strict=False)
+    ):
         if pt["status"] != "success":
             points.append({"madloop": row, "truth": None})
             continue
         value = _total(pt["values"])
         deviation = _rel(row["value"], value)
+        conditioning = (
+            b64[p]["estimate"]["relative"]
+            if p < len(b64) and b64[p]["status"] == "success" and b64[p]["estimate"]
+            else None
+        )
         points.append(
             {
                 "madloop": row["value"],
@@ -1869,6 +1926,9 @@ def judge_madloop(madloop: dict, record: dict) -> dict:
                 "madloop_status": row.get("status"),
                 "relative_to_truth": deviation,
                 "covered": deviation <= FACTOR * (row.get("accuracy") or 0.0),
+                "binary64_estimate": conditioning,
+                "within_input_conditioning": conditioning is not None
+                and deviation <= FACTOR * conditioning,
             }
         )
     return {
@@ -2823,6 +2883,7 @@ def lit(
         "'ids'; written by tools/loop_benchmark/li_manifest.py lit",
         "rules": _load(CAMPAIGN)["rules"],
         "source": source,
+        "provenance": provenance(records),
         "rows": rows,
         "ids": ids,
     }
