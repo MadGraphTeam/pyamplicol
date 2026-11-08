@@ -540,6 +540,51 @@ def _estimate(estimate: Any) -> dict | None:
     }
 
 
+_NUMBER = re.compile(r"\d+(\.\d+)?(e-?\d+)?")
+_COUNTED = re.compile(r"^(\d+) x ")
+
+
+def _messages(detail: str) -> list[str]:
+    """A lane detail's messages: split between the items of a quoted list
+    (``', '``) and at '; ' outside parentheses and braces (a failed point's
+    detail lists every failed lane, per frame)."""
+
+    out = []
+    for piece in re.split(r"""(?<=['"]), (?=['"])""", detail):
+        depth, start = 0, 0
+        for i, char in enumerate(piece):
+            if char in "({[":
+                depth += 1
+            elif char in ")}]":
+                depth -= 1
+            elif depth <= 0 and piece.startswith("; ", i):
+                out.append(piece[start:i])
+                start = i + 2
+        out.append(piece[start:])
+    return [m for m in out if m]
+
+
+def compact_detail(detail: str) -> str:
+    """A lane detail with its repeated messages counted: every distinct
+    message (numbers masked) once, as its first occurrence, prefixed by its
+    count when it repeats ("N x message"). Every reason kind and its count
+    stays; the per-lane numbers of the repeats go (a TIRust point that fails
+    with checks lists every lane of every frame: tens of MB)."""
+
+    classes: dict[str, list] = {}
+    for message in _messages(detail):
+        count = 1
+        if match := _COUNTED.match(message):
+            count, message = int(match.group(1)), message[match.end() :]
+        key = _NUMBER.sub("#", message)
+        entry = classes.setdefault(key, [0, message])
+        entry[0] += count
+    return "; ".join(
+        message if count == 1 else f"{count} x {message}"
+        for count, message in classes.values()
+    )
+
+
 def _call(runtime, points, scales, *, backend, arithmetic, checked, digits) -> dict:
     """One public evaluation: per point the status, typed detail, reduction
     record, finiteness ratio, values and estimate; a typed refusal of the
@@ -573,7 +618,7 @@ def _call(runtime, points, scales, *, backend, arithmetic, checked, digits) -> d
         out.append(
             {
                 "status": lane.status,
-                "detail": lane.detail,
+                "detail": compact_detail(lane.detail),
                 "reduction": None
                 if reduction is None
                 else [reduction.requested, reduction.effective, reduction.reason],
@@ -767,7 +812,9 @@ def finiteness_probes(
                     )
                 rows.append({"worst": result.worst, "passed": result.passed})
             except Exception as error:  # a typed failure of the arm, recorded
-                rows.append({"error": f"{type(error).__name__}: {error}"})
+                rows.append(
+                    {"error": compact_detail(f"{type(error).__name__}: {error}")}
+                )
         out[label] = rows
     return out
 
@@ -929,11 +976,18 @@ def _served(arm: dict | None) -> list[bool]:
 
 
 def _reasons(arm: dict) -> dict[str, int]:
+    """The typed reasons of an arm's failed points: per distinct message
+    (numbers masked) its count over the points' lanes."""
+
     out: dict[str, int] = {}
     for p in arm.get("points", []):
         if p["status"] != "success":
-            key = re.sub(r"\d+(\.\d+)?(e-?\d+)?", "#", p["detail"])
-            out[key] = out.get(key, 0) + 1
+            for message in _messages(compact_detail(p["detail"])):
+                count = 1
+                if match := _COUNTED.match(message):
+                    count, message = int(match.group(1)), message[match.end() :]
+                key = _NUMBER.sub("#", message)
+                out[key] = out.get(key, 0) + count
     return out
 
 
@@ -942,7 +996,7 @@ def _counted(reasons) -> dict[str, int]:
 
     out: dict[str, int] = {}
     for reason in reasons:
-        key = re.sub(r"\d+(\.\d+)?(e-?\d+)?", "#", reason)
+        key = _NUMBER.sub("#", reason)
         out[key] = out.get(key, 0) + 1
     return out
 
