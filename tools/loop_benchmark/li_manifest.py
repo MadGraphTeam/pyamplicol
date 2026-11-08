@@ -3780,7 +3780,9 @@ def born_l6_hc(
 
 def born_summary(records: dict[str, dict]) -> dict:
     """LI-B1's campaign rows in data/lit.json: per campaign the verdict
-    tally and per row its compact figures (the worst carrier and point set)."""
+    tally and per row its figures per point set and carrier, the typed
+    reasons of the points each backend fails closed merged over them
+    (``failed_reasons``: per backend, per reason, its lane count)."""
 
     out: dict[str, Any] = {}
     for key, record in sorted(records.items()):
@@ -3791,11 +3793,18 @@ def born_summary(records: dict[str, dict]) -> dict:
         compact: dict[str, Any] = {"status": status, "process": record["process"]}
         if "reason" in record:
             compact["reason"] = record["reason"]
+        merged: dict[str, dict[str, int]] = {}
         for label, carriers in (record.get("sets") or {}).items():
             for carrier, r in carriers.items():
+                for backend, reasons in (r.get("failed") or {}).items():
+                    into = merged.setdefault(backend, {})
+                    for reason, n in reasons.items():
+                        into[reason] = into.get(reason, 0) + n
                 if "coefficients" in r:  # a public-route row (public_l6)
                     compact[f"{label}/{carrier}"] = {
-                        k: v for k, v in r.items() if k not in ("reduction", "seconds")
+                        k: v
+                        for k, v in r.items()
+                        if k not in ("reduction", "seconds", "failed")
                     }
                     continue
                 # (records written before the numerical-zero split carry no
@@ -3816,11 +3825,12 @@ def born_summary(records: dict[str, dict]) -> dict:
                         "estimate_miss",
                         "no_estimate",
                         "failed_points",
-                        "failed",
                         "virtual_max_relative",
                     )
                     if k in r
                 }
+        if any(merged.values()):
+            compact["failed_reasons"] = {b: v for b, v in merged.items() if v}
         if "forward" in record:
             compact["forward"] = record["forward"]
         entry["rows"][record["row"]] = compact
