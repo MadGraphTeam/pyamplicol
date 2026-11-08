@@ -6,6 +6,7 @@ Usage (worktree root, licence in the environment, the staged native)::
 
     python tools/loop_benchmark/li_manifest.py rows            # the run matrix
     python tools/loop_benchmark/li_manifest.py run --work-dir W li_gg_h ...
+        [--skip-arm LABEL=REASON]  # an unfinished record is resumed
     python tools/loop_benchmark/li_manifest.py crossing --work-dir W  # C1
     python tools/loop_benchmark/li_manifest.py lit --records W [--output F]
 
@@ -551,13 +552,21 @@ def evaluate(
     digits: int = DIGITS,
     identity: bool = True,
     write: Any = None,
+    previous: dict | None = None,
+    skip: dict[str, str] | None = None,
 ) -> dict:
     """Every arm of one fixture run (module docstring), cheapest first:
     binary64 on both backends with and without the checks, double-double
     with the checks (TIRust's typed refusal recorded), the identity check's
     transformed points (binary64 checked, double-double) on NinjaRS, and AP
     without checks on an AP run. ``write`` (if given) receives the record
-    after every arm (``complete`` False until the last)."""
+    after every arm (``complete`` False until the last). ``previous`` (an
+    unfinished record of this run at the same native) is resumed: its arms
+    and generation record are kept, not recomputed. ``skip`` maps an arm
+    label (``l3/<probe label>`` for an L3 probe arm) to the reason it is not
+    run; the arm is recorded as ``{"not_run": reason}``."""
+
+    skip = skip or {}
 
     from pyamplicol import Runtime
 
@@ -590,6 +599,11 @@ def evaluate(
         "arms": {},
         "complete": False,
     }
+    if previous is not None:
+        record["arms"] = dict(previous["arms"])
+        record["generation"] = previous["generation"]
+        record["revision"] = previous["revision"]
+        record["resumed_at"] = _revision()
     plan: list[tuple[str, str, str, bool, list]] = []
     for arithmetic in carriers:
         for backend in BACKENDS:
@@ -621,19 +635,27 @@ def evaluate(
                 (f"{backend}/{ARBITRARY}/plain", backend, ARBITRARY, False, points)
             )
     for label, backend, arithmetic, checked, inputs in plan:
-        record["arms"][label] = _call(
-            runtime,
-            inputs,
-            scales,
-            backend=backend,
-            arithmetic=arithmetic,
-            checked=checked,
-            digits=digits,
+        if label in record["arms"]:
+            continue
+        record["arms"][label] = (
+            {"not_run": skip[label]}
+            if label in skip
+            else _call(
+                runtime,
+                inputs,
+                scales,
+                backend=backend,
+                arithmetic=arithmetic,
+                checked=checked,
+                digits=digits,
+            )
         )
         record["peak_gib"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 2**20
         if write is not None:
             write(record)
-    record["l3_probes"] = finiteness_probes(runtime, data, parameters, carriers)
+    record["l3_probes"] = finiteness_probes(
+        runtime, data, parameters, carriers, skip=skip
+    )
     record["complete"] = True
     if write is not None:
         write(record)
@@ -644,13 +666,30 @@ def evaluate(
 PROBES = (("ninjars", "double"), ("ninjars", "double_double"), ("tirust", "double"))
 
 
+def skip_arms(specs: list[str]) -> dict[str, str]:
+    """``LABEL=REASON`` arguments (``run --skip-arm``) as a mapping."""
+
+    out = {}
+    for spec in specs:
+        label, sep, reason = spec.partition("=")
+        if not sep or not label or not reason:
+            raise ValueError(f"--skip-arm expects LABEL=REASON, got {spec!r}")
+        out[label] = reason
+    return out
+
+
 def finiteness_probes(
-    runtime: Any, data: dict, parameters: dict, carriers: tuple = CARRIERS
+    runtime: Any,
+    data: dict,
+    parameters: dict,
+    carriers: tuple = CARRIERS,
+    skip: dict[str, str] | None = None,
 ) -> dict:
     """L3 at every fixture point: the amplitude-level finiteness probe
     (``induced.probe`` on the loaded artifact's native executor, its
     calibrated checks) per backend and carrier (``PROBES``); a point TIRust
-    fails closed is recorded with its typed reason."""
+    fails closed is recorded with its typed reason; a probe arm named in
+    ``skip`` (``l3/<label>``) is recorded as ``{"not_run": reason}``."""
 
     from pyamplicol.loops.v2 import induced
     from pyamplicol.loops.v2.assemble import Precision
@@ -660,6 +699,10 @@ def finiteness_probes(
     out: dict[str, list] = {}
     for backend, carrier in PROBES:
         if carrier.replace("_", "-") not in carriers:
+            continue
+        label = f"{backend}/{carrier.replace('_', '-')}"
+        if f"l3/{label}" in (skip or {}):
+            out[label] = {"not_run": skip[f"l3/{label}"]}
             continue
         rows = []
         for point, mu in zip(data["points"], data["mu_r"], strict=True):
@@ -675,11 +718,13 @@ def finiteness_probes(
                 rows.append({"worst": result.worst, "passed": result.passed})
             except Exception as error:  # a typed failure of the arm, recorded
                 rows.append({"error": f"{type(error).__name__}: {str(error)[:200]}"})
-        out[f"{backend}/{carrier.replace('_', '-')}"] = rows
+        out[label] = rows
     return out
 
 
-def add_probes(name: str, work: Path, record: dict) -> dict:
+def add_probes(
+    name: str, work: Path, record: dict, skip: dict[str, str] | None = None
+) -> dict:
     """The L3 probes of a record written before they were part of a run."""
 
     from pyamplicol import Runtime
@@ -696,7 +741,7 @@ def add_probes(name: str, work: Path, record: dict) -> dict:
     runtime = Runtime.load(
         work / name / "artifact", process="p", model_parameters=parameters
     )
-    record["l3_probes"] = finiteness_probes(runtime, data, parameters)
+    record["l3_probes"] = finiteness_probes(runtime, data, parameters, skip=skip)
     return record
 
 
@@ -920,6 +965,12 @@ def judge(record: dict, entry: dict) -> dict:
     l3: dict[str, Any] = {}
     statuses = []
     for label, probe in (record.get("l3_probes") or {}).items():
+        if isinstance(probe, dict):
+            # a probe arm not run (``skip``): recorded with its reason, the
+            # check covers the others only (partial)
+            l3[label] = {"status": "not run", "reason": probe["not_run"]}
+            statuses.append("partial")
+            continue
         worst = [x["worst"] for x in probe if "worst" in x]
         served = len(worst)
         if not worst:
@@ -1001,8 +1052,7 @@ def judge(record: dict, entry: dict) -> dict:
             diff = abs(float(_total(a["values"]) - _total(b["values"])))
             ratios.append(diff / (FACTOR * e) if e else (0.0 if not diff else math.inf))
             moved.append(b["estimate"]["relative"])
-        for p in range(count):
-            a, b = ndd["points"][p], idd["points"][p]
+        for a, b in zip(ndd.get("points", []), (idd or {}).get("points", [])):
             if a["status"] == "success" and b["status"] == "success":
                 devs.append(_rel(_total(b["values"]), _total(a["values"])))
         worst = max(ratios, default=None)
@@ -1019,6 +1069,8 @@ def judge(record: dict, entry: dict) -> dict:
             "double_double_max_relative": max(devs, default=None),
             "transformed_estimate_relative": max(moved, default=None),
         }
+        if idd is not None and "not_run" in idd:
+            out["L5"]["double_double_not_run"] = idd["not_run"]
     # E: the binary64 estimate covers the binary64 error against the
     # double-double value (|b64 - DD| <= 10 E_abs, every point both serve;
     # a miss goes to lit-stab-n / lit-stab-t; TIRust's estimate on its
@@ -1112,7 +1164,11 @@ def judge(record: dict, entry: dict) -> dict:
         if tdd
         else {"status": "not run", "reason": "a binary64-only fixture (its carriers)"},
     }
-    if nap is not None:
+    if nap is not None and "not_run" in nap:
+        # the AP arm not run (``skip``): L6 / L7 in AP not run, with the reason
+        out["L6"][ARBITRARY] = {"status": "not run", "reason": nap["not_run"]}
+        out["L7"] = {"status": "not run", "reason": nap["not_run"]}
+    elif nap is not None:
         out["L6"][ARBITRARY] = _high_l6(nap, arms.get(f"tirust/{ARBITRARY}/plain", {}))
     # L7 DD vs AP.
     if nap is not None and "points" in nap:
@@ -1151,7 +1207,7 @@ def judge(record: dict, entry: dict) -> dict:
         statuses = []
         for label, arm in (("double", n64c), ("double-double", ndd)):
             ratios = []
-            for pt in arm["points"]:
+            for pt in arm.get("points", []):
                 if pt["status"] != "success":
                     continue
                 e = _abs_finite(pt["estimate"])
@@ -1985,6 +2041,13 @@ def main(argv: list[str] | None = None) -> int:
     run = sub.add_parser("run", help="evaluate fixture runs")
     run.add_argument("--work-dir", type=Path, required=True)
     run.add_argument("--digits", type=int, default=DIGITS)
+    run.add_argument(
+        "--skip-arm",
+        action="append",
+        default=[],
+        metavar="LABEL=REASON",
+        help="record an arm (l3/<label> for an L3 probe arm) as not run, with the reason",
+    )
     run.add_argument("fixtures", nargs="+")
     lim = sub.add_parser("limits", help="LI-A7: the heavy-top scan of the limit rows")
     lim.add_argument("--work-dir", type=Path, required=True)
@@ -2015,17 +2078,26 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "run":
         by_fixture = {e["fixture"]: e for e in entries}
+        skip = skip_arms(args.skip_arm)
         for name in args.fixtures:
             entry = by_fixture[name]
             path = args.work_dir / name / "record.json"
+            previous = None
             if path.is_file():
                 done = _load(path)
-                if done.get("complete") and "l3_probes" not in done:
+                if done.get("complete") and "l3_probes" in done:
+                    print(name, "complete", flush=True)
+                    continue
+                if done.get("complete"):
                     path.write_text(
-                        json.dumps(add_probes(name, args.work_dir, done), indent=1)
+                        json.dumps(
+                            add_probes(name, args.work_dir, done, skip), indent=1
+                        )
                         + "\n"
                     )
                     continue
+                if done.get("native_digest") == _native_digest():
+                    previous = done  # an unfinished run: resumed
 
             def write(record: dict, path: Path = path) -> None:
                 path.write_text(json.dumps(record, indent=1) + "\n")
@@ -2036,6 +2108,8 @@ def main(argv: list[str] | None = None) -> int:
                 ap=bool(entry["ap"]),
                 digits=args.digits,
                 write=write,
+                previous=previous,
+                skip=skip,
             )
             print(
                 name,
