@@ -2387,7 +2387,9 @@ def _preliminary() -> dict | None:
 #                         records (development records under the §5.1
 #                         protocol until lit-perf's gate tool writes them):
 #                         {"records": [{"key", "revision", "backend"
-#                         ("tirust" | "ninjars": the effective backend),
+#                         ("tirust" | "ninjars": the effective backend;
+#                         absent on a "missing" record of an "auto"
+#                         request, which resolved none),
 #                         "requested"? ("auto" | "ninjars" | "tirust": the
 #                         backend the timed calls requested, as the runtime
 #                         resolves a call; with "effective" and "reason" as
@@ -2403,7 +2405,8 @@ def _preliminary() -> dict | None:
 #                         the request: no time), "missing"? (the row was not
 #                         generated or timed: the measured reason, e.g. a
 #                         generation beyond the 45-min rule with its
-#                         progress; no time), "host", "generation":
+#                         progress; no time, no "effective"), "host",
+#                         "generation":
 #                         {"seconds" (generate + the exact helicity-zero
 #                         filter + plan export), "probes_seconds" (the
 #                         mandatory generation-time double-double probes,
@@ -2415,7 +2418,10 @@ def _preliminary() -> dict | None:
 #                         process ("madloop_process") its
 #                         "provider_timing_records" (paths below
 #                         tests/fixtures/loop/; the gate tool's providers
-#                         format, median per point) and "unavailable"
+#                         format, median per point; a provider whose
+#                         "values_excluded" names why its values are no
+#                         reference is shown with its match open,
+#                         LI_MATCH_OPEN) and "unavailable"
 #                         ({provider: reason}); MadLoop at its production
 #                         card only (LI_MADLOOP_PRODUCTION; the OPP column
 #                         belongs to the detailed sections);
@@ -2435,7 +2441,9 @@ def _preliminary() -> dict | None:
 # shown beside it with its served fraction and the recorded cause of its
 # failed points (its time per point only when it served every point); the
 # ratio to the fastest matched
-# provider colours the cell (Table 1's colour map); generation is
+# provider colours the cell (Table 1's colour map; where that provider's
+# match is open, the ratio to the fastest other one is shown beside it,
+# uncoloured, no choice made); generation is
 # uncoloured; rows of four legs or fewer are reported (no gate); below the
 # 5 ms rule a row is not gated; gate verdicts only from lit-perf's records
 # (before them: "no verdict yet"). The generation cell is the full production
@@ -2640,6 +2648,12 @@ def _li_input(data: Path, name: str) -> dict | None:
     return _load(path) if path.exists() else None
 
 
+# A provider timed on the row whose values its record excludes as a
+# reference (``values_excluded``): whether it is a matched provider of the
+# gate is lit-perf's (slice-status DECISIONS 2026-11-06 ~19:06).
+LI_MATCH_OPEN = "match open (lit-perf)"
+
+
 def _li_pending(what: str, reason: str) -> dict:
     return {"status": "pending", "reason": reason, "what": what}
 
@@ -2691,6 +2705,13 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
             providers[k] = {"seconds_per_point": t, "source": f"{name} providers.{k}"}
             if lib is not None:
                 providers[k]["setting"] = f"MLReductionLib {lib}"
+            if x.get("values_excluded"):
+                # Its values are no reference (the record's reason); whether
+                # its time is a matched provider of the gate is lit-perf's
+                # call (slice-status DECISIONS 2026-11-06 ~19:06): timed and
+                # shown, its match open.
+                providers[k]["match"] = LI_MATCH_OPEN
+                providers[k]["values_excluded"] = x["values_excluded"]
             # The record's host: the table's provenance line.
             if rec.get("host") is not None:
                 providers[k]["host"] = rec["host"]
@@ -2717,6 +2738,18 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
     if times:
         k = min(times, key=times.get)
         out["fastest"] = {"key": k, "name": NAMES[k], "seconds_per_point": times[k]}
+        if providers[k].get("match"):
+            # The fastest one's match is open: the fastest of the others
+            # beside it (no choice between them is made here).
+            out["fastest"]["match"] = providers[k]["match"]
+            settled = {n: s for n, s in times.items() if not providers[n].get("match")}
+            if settled:
+                n = min(settled, key=settled.get)
+                out["fastest_settled"] = {
+                    "key": n,
+                    "name": NAMES[n],
+                    "seconds_per_point": settled[n],
+                }
     out["generation"] = gens
     if gens:
         k = min(gens, key=gens.get)
@@ -2741,19 +2774,19 @@ def _li_records(
                 f"{LI_TIMING} record of {row['key']} at {r['revision'][:8]}"
                 " names no host"
             )
-        if r["backend"] not in row["backends"]:
+        _li_check_record(r)
+        if r.get("backend") is not None and r["backend"] not in row["backends"]:
             raise ValueError(
                 f"{LI_TIMING} record of {row['key']}: backend {r['backend']}"
                 f" is not one of the row's {row['backends']}"
             )
-        _li_check_record(r)
     if not recs:
         return []
     newest = recency.newest_first([r["revision"][:8] for r in recs])[0]
     recs = [r for r in recs if r["revision"][:8] == newest]
     seen = set()
     for r in recs:
-        cell = (r.get("requested", r["backend"]), r["backend"], int(r["batch"]))
+        cell = (r.get("requested", r.get("backend")), r.get("backend"), int(r["batch"]))
         if cell in seen:
             raise ValueError(
                 f"{LI_TIMING}: two records of {row['key']} at {newest} with"
@@ -2765,8 +2798,8 @@ def _li_records(
         recs,
         key=lambda r: (
             int(r["batch"]) != gate,
-            r["backend"] != default,
-            r["backend"],
+            r.get("backend") != default,
+            r.get("backend") or "",
             int(r["batch"]),
         ),
     )
@@ -2777,18 +2810,27 @@ def _li_check_record(r: dict) -> None:
     request is its own effective backend (never a silent switch); a
     record that failed points (``failed_points``, per block) or was refused
     carries no time per point (its call was timed whole: not a served-point
-    time), and its served fraction is the one its failed points give."""
+    time), and its served fraction is the one its failed points give; a
+    record not generated or timed (``missing``) names no effective backend
+    (none was resolved), nor a backend for an "auto" request."""
 
     src = f"{LI_TIMING} record of {r['key']} at {r['revision'][:8]}"
     requested = r.get("requested")
+    if r.get("missing"):
+        if "effective" in r or (requested == "auto" and "backend" in r):
+            raise ValueError(
+                f"{src}: a run stopped before its timing resolved no backend"
+            )
+    elif r.get("backend") is None:
+        raise ValueError(f"{src}: a timed record names its backend")
     if requested is not None:
         if requested != "auto" and requested not in LI_BACKENDS:
             raise ValueError(f"{src}: unknown request {requested!r}")
-        if requested != "auto" and requested != r["backend"]:
+        if requested != "auto" and requested != r.get("backend", requested):
             raise ValueError(
                 f"{src}: {requested!r} was requested but {r['backend']!r} ran"
             )
-    if r.get("effective", r["backend"]) != r["backend"]:
+    if r.get("effective", r.get("backend")) != r.get("backend"):
         raise ValueError(f"{src}: effective {r['effective']!r} is not its backend")
     failed = r.get("failed_points") or []
     unserved = r.get("refused") or r.get("missing")
@@ -2875,7 +2917,8 @@ def _li_other(r: dict) -> dict:
         "requested": r.get("requested", r["backend"]),
     }
     if _li_served(r):
-        out.update(status="served", served_fraction=1.0)
+        batch = int(r["batch"])
+        out.update(status="served", served_fraction=1.0, label=f"{batch}/{batch}")
         out["seconds_per_point"] = r["seconds_per_point"]
     else:
         out.update(_li_failed(r))
@@ -2974,7 +3017,9 @@ def _li_cells(
     batched = [r for r in recs if int(r["batch"]) == gate]
     main, named = _li_main(batched) if batched else (recs[0], recs[0])
     first = main or named
-    at = f"{row['key']}, {first['backend']}, {first['revision'][:8]}"
+    # A record names its effective backend, a stopped one its request.
+    name = first.get("backend", first.get("requested"))
+    at = f"{row['key']}, {name}, {first['revision'][:8]}"
     src = f"{LI_TIMING} records[{at}]"
     gen = first.get("generation")
     if gen is None and first.get("missing"):
@@ -3028,12 +3073,15 @@ def _li_cells(
         # reason).
         out["timing"] = {
             **_li_failed(named),
-            "requested": named.get("requested", named["backend"]),
-            "backend": named["backend"],
-            "backend_label": LI_BACKENDS[named["backend"]],
+            "requested": named.get("requested", named.get("backend")),
             "revision": named["revision"][:8],
             "source": src,
         }
+        if named.get("backend") is not None:
+            out["timing"]["backend"] = named["backend"]
+            out["timing"]["backend_label"] = LI_BACKENDS[named["backend"]]
+        else:
+            out["timing"]["effective"] = "not resolved"
         return out
     t = main["seconds_per_point"]
     cell = {
@@ -3053,7 +3101,7 @@ def _li_cells(
         # The request as the runtime resolved it (requested, reason).
         cell["requested"] = main["requested"]
         cell["reason"] = main.get("reason")
-    other = [r for r in batched if r["backend"] != main["backend"]]
+    other = [r for r in batched if r.get("backend") not in (None, main["backend"])]
     if other:
         # An explicit request of the other backend before an "auto" one.
         other.sort(key=lambda r: r.get("requested") == "auto")
@@ -3061,6 +3109,11 @@ def _li_cells(
     fastest = prov.get("fastest")
     if fastest is not None:
         cell["ratio_to_fastest"] = t / fastest["seconds_per_point"]
+    settled = prov.get("fastest_settled")
+    if settled is not None:
+        # The fastest provider's match is open (LI_MATCH_OPEN): the ratio
+        # to the fastest settled one beside it, uncoloured.
+        cell["ratio_to_fastest_settled"] = t / settled["seconds_per_point"]
     cell["gate"] = _li_gate(row, t, main, prov, rule)
     out["timing"] = cell
     return out
@@ -3210,6 +3263,9 @@ def li_figure(loop_induced: dict, factor: float) -> dict:
                     "ratio_to_fastest": t["ratio_to_fastest"],
                     "providers": timed,
                     "fastest": prov["fastest"]["key"],
+                    "match_open": sorted(
+                        NAMES[k] for k, x in prov["providers"].items() if x.get("match")
+                    ),
                     "limit": limit,
                     "gate": t["gate"],
                     "source": f"groups[{group['name']}].rows[{r['key']}].timing",

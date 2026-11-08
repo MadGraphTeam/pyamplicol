@@ -94,20 +94,25 @@ measured cells of both tables (`report_meta`, by the recorded ancestry).
 multiplicity group, ids, gate class, references, serving package; `landed`),
 checked against `lit-ref`'s manifest `tools/loop_reference/li_campaign.json`;
 pyAmpliCol's records `data/li-timing.json` (per record `key`, `revision`,
-`backend` `tirust` or `ninjars` (the effective one), optional `requested`
+`backend` `tirust` or `ninjars` (the effective one; absent on a `missing`
+record of an `auto` request, which resolved none), optional `requested`
 (`auto`, `ninjars` or `tirust`, resolved as the runtime resolves a call, with
 `effective` and `reason` as returned), `batch`, `seconds_per_point` (only on a
 record that served every point of every block), optional `failed_points` (per
 block), `served_fraction`, `failure_causes` and `whole_call_seconds_per_point`
-(a call that failed points, timed whole: no served-point time) or `refused`,
-`host`, `generation` `{seconds` (generate + the exact helicity-zero filter +
+(a call that failed points, timed whole: no served-point time) or `refused`
+(a typed refusal) or `missing` (the row was not generated or timed: the
+measured reason, e.g. a generation beyond the 45-min rule with its progress;
+no time, no `effective`), `host`, `generation` `{seconds` (generate + the exact helicity-zero filter +
 plan export), `probes_seconds` (the generation-time probes), `peak_gib` (over
 all of them), `plan_mb}`; the cell is their sum, a record without
 `probes_seconds` is "not recorded"), `source`, optional `native_build`,
 `native_digest` (the provenance line) and, from `lit-perf` on, `gate`); the
 providers' production timing records the manifest names (below
 `tests/fixtures/loop/`, MadLoop at its loop-induced card `MLReductionLib
-7|6|1` only, their `host` in the provenance line); `data/lit.json`
+7|6|1` only, their `host` in the provenance line; a provider whose record
+has `values_excluded` is shown with its match open, `lit-perf`'s call, and
+the multiplier to the fastest other provider beside the cell); `data/lit.json`
 (`lit-val`'s validation figures). An absent file reads as pending. The cell
 takes the newest revision's B = 128 record of the backend `auto` serves
 (records without a request: the default backend first), never one with failed
