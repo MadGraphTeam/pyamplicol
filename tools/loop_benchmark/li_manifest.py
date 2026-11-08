@@ -21,7 +21,9 @@ keys of data/lit.json) and the fixtures ``tests/fixtures/loop/required/li``
 Every fixture run of a §4.1 row is evaluated once (``run``), through the
 public route (``Generator`` -> artifact -> ``Runtime``), at the fixture's
 exact decimal points, on BOTH reduction backends (``reduction="ninjars"``,
-``reduction="tirust"``; never ``"auto"``, never TIRust's method choice), in
+``reduction="tirust"``; never ``"auto"``; TIRust in the extension's default
+configuration: its method choice off before lit-tir-mp, on in binary64
+since, ruling (d) lifted 2026-11-08 06:08), in
 binary64 and double-double on every run and in arbitrary precision on the
 AP run of each tier (the run of the tier with the fewest legs, campaign order
 breaking ties), with the binary64 rule's stability checks of the one L6
@@ -40,7 +42,7 @@ which the E check judges); L2 binary64 <= 1e-9 and double-double / AP <=
 recorded and reported, never a failure, R5); L3 the amplitude-level
 finiteness probe (``induced.probe`` at every fixture point: per (loop order,
 row) the poles against their estimate on the row's term floor, x10),
-NinjaRS binary64 and double-double, TIRust binary64 (the lanes' public
+both backends in binary64 and double-double (the lanes' public
 ``finiteness`` ratios, formed with checks only, recorded beside it); L4/W1
 the generation-time Ward, Goldstone and finiteness probes (double-double,
 zero widths, m-lit Q12) recorded from the artifact with the legs they probe
@@ -53,8 +55,11 @@ coefficient in binary64 through the one comparison (``_compare``; a TIRust
 point whose checked call fails keeps E_N alone, which is conservative),
 points TIRust fails closed recorded with its typed reasons (partial), and
 within 1e-24 of the sector's largest coefficient in double-double and AP
-(``_high_l6``); L6's verdict is the worst of its carriers, an arm TIRust
-refuses typed at this pin 'waits: lit-tir-mp' (the row partial naming it);
+(``_high_l6``); L6's verdict is the worst of its carriers; TIRust arms (L6,
+L3) of an extension before lit-tir-mp (its recorded capability query:
+TIRust not at every carrier) 'wait: lit-tir-mp' (the row partial naming
+it; ``run --refresh-backend tirust`` re-runs them), a whole-arm refusal by
+a later extension is partial with its typed reason;
 L7 double-double vs AP <= 1e-24 (target, R5); L8 numerical zeros |A|^2 <=
 10 E_abs in binary64 and double-double (Q13; no theorem-based zero), an
 exact colour zero (LI-Z1) exactly 0 with the generation's colour record.
@@ -677,6 +682,7 @@ def evaluate(
         "revision": _revision(),
         "native": _native(),
         "python_symbolica": _symbolica(),
+        "reduction_backends": _capability(),
         "generation": generation,
         "digits": digits if ap else None,
         "transformed_points": transformed,
@@ -684,7 +690,11 @@ def evaluate(
         "complete": False,
     }
     if previous is not None:
-        for key in ("generation", "revision", "native", "refreshed"):
+        # The kept arms' provenance is the previous record's (None where it
+        # predates the field: never the staged native's by default).
+        for key in RECORD_PROVENANCE:
+            record[key] = previous.get(key)
+        for key in ("generation", "revision", "refreshed", "native_digest"):
             if key in previous:
                 record[key] = previous[key]
         record["arms"] = dict(previous["arms"])
@@ -752,8 +762,10 @@ def evaluate(
     return record
 
 
-# The L3 probe arms: (backend, carrier) (TIRust: binary64 only, R4).
-PROBES = (("ninjars", "double"), ("ninjars", "double_double"), ("tirust", "double"))
+# The L3 probe arms: (backend, carrier): both backends in binary64 and
+# double-double (§4.0 L3; TIRust's double-double since lit-tir-mp: an older
+# extension's typed refusal is recorded per point).
+PROBES = tuple((b, c) for b in BACKENDS for c in ("double", "double_double"))
 
 
 def skip_arms(specs: list[str]) -> dict[str, str]:
@@ -890,15 +902,50 @@ def provenance(records: dict[str, dict]) -> dict:
     return out
 
 
-def _same_native(record: dict) -> bool:
-    """Whether ``record`` was taken with the staged extension (a record
-    without the extension's hash is not)."""
+def _capability() -> dict[str, list[str]] | None:
+    """The carriers each reduction backend of the staged extension serves
+    (its capability query, ``reduction.native_backends``), None without
+    the extension."""
 
-    native = record.get("native") or {}
-    current = _native() or {}
-    return bool(native.get("extension_sha256")) and native.get(
-        "extension_sha256"
-    ) == current.get("extension_sha256")
+    try:
+        from pyamplicol import _rusticol
+    except ImportError:
+        return None
+    from pyamplicol.loops.v2.reduction import native_backends
+
+    return {k: sorted(v) for k, v in sorted(native_backends(_rusticol).items())}
+
+
+# A record's provenance of its arms (a resumed record keeps its own).
+RECORD_PROVENANCE = ("native", "python_symbolica", "reduction_backends")
+
+
+def _same_native(record: dict, backend: str | None = None) -> bool:
+    """Whether ``record`` was taken with the staged extension, or (any
+    backend, or ``backend``) refreshed with it (a record without the
+    extension's hash is not)."""
+
+    current = (_native() or {}).get("extension_sha256")
+    natives = [record.get("native") or {}] + [
+        entry.get("native") or {}
+        for entry in record.get("refreshed", [])
+        if backend is None or entry.get("backend") == backend
+    ]
+    return bool(current) and any(n.get("extension_sha256") == current for n in natives)
+
+
+def tirust_carriers(record: dict) -> frozenset[str] | None:
+    """The carriers TIRust served in the extension that took ``record``'s
+    TIRust arms (its latest TIRust refresh, else the record's own capability
+    query); None where the record predates the recorded query."""
+
+    for entry in reversed(record.get("refreshed", [])):
+        if entry.get("backend") == "tirust":
+            capability = entry.get("reduction_backends")
+            break
+    else:
+        capability = record.get("reduction_backends")
+    return None if capability is None else frozenset(capability.get("tirust", ()))
 
 
 # ------------------------------------------------------------- the rules
@@ -1042,6 +1089,12 @@ def judge(record: dict, entry: dict) -> dict:
     ndd = high_arm(arms, "ninjars")
     tdd = high_arm(arms, "tirust")
     nap = arms.get(f"ninjars/{ARBITRARY}/plain")
+    # The carriers TIRust served when its arms were taken; arms of an
+    # extension that did not serve it at every campaign carrier (or before
+    # the recorded capability query) predate lit-tir-mp (TIRust at every
+    # carrier) and wait on it (ruling (5)).
+    tir_carriers = tirust_carriers(record)
+    stale = tir_carriers is None or not {*CARRIERS, ARBITRARY} <= tir_carriers
     out: dict[str, Any] = {}
     count = len(data["points"])
     n_served = _served(n64c)
@@ -1147,7 +1200,7 @@ def judge(record: dict, entry: dict) -> dict:
     # L3 finiteness: the amplitude-level probe at every fixture point
     # (``induced.probe``: per (loop order, row) the poles against their
     # estimate on the row's term floor, the x10 rule of the generation-time
-    # probe), NinjaRS and TIRust in binary64, NinjaRS in double-double; the
+    # probe), both backends in binary64 and double-double (``PROBES``); the
     # lanes' public finiteness ratios are recorded beside it.
     l3: dict[str, Any] = {}
     statuses = []
@@ -1174,6 +1227,19 @@ def judge(record: dict, entry: dict) -> dict:
             "failed": _counted(x["error"] for x in probe if "error" in x),
         }
         statuses.append(status)
+    if stale:
+        # TIRust's probe arms of an extension before lit-tir-mp (or absent,
+        # for a carrier the run has) wait on its re-run; a failure stays.
+        for carrier in (c for b, c in PROBES if b == "tirust"):
+            label = f"tirust/{carrier.replace('_', '-')}"
+            if label in l3:
+                l3[label]["status"] = _worst([l3[label]["status"], f"waits: {TIR_MP}"])
+            elif carrier.replace("_", "-") in data.get("carriers", CARRIERS):
+                l3[label] = {"status": f"waits: {TIR_MP}"}
+            else:
+                continue
+            statuses.append(l3[label]["status"])
+            l3["waits_on"] = TIR_MP
     if not l3:
         statuses.append("not run")
     l3["lane_finiteness"] = {
@@ -1189,12 +1255,13 @@ def judge(record: dict, entry: dict) -> dict:
             ("ninjars/double", n64c),
             ("ninjars/double-double", ndd),
             ("tirust/double", t64c),
+            ("tirust/double-double", tdd),
         )
     }
     # The necessary-only cross-check at the |A|^2 level: every computed pole
     # of the sum within ten times its absolute estimate.
     poles = []
-    for arm in (n64c, ndd, t64c):
+    for arm in (n64c, ndd, t64c, tdd):
         for pt in arm.get("points", []):
             if pt["status"] != "success" or pt["estimate"] is None:
                 continue
@@ -1381,7 +1448,7 @@ def judge(record: dict, entry: dict) -> dict:
             "tirust_failed_reasons": _reasons(t64),
             **({"effective_backend_switched": switched} if switched else {}),
         },
-        "double-double": _high_l6(ndd, tdd)
+        "double-double": _high_l6(ndd, tdd, tir_carriers, "double-double")
         if tdd
         else {"status": "not run", "reason": "a binary64-only fixture (its carriers)"},
     }
@@ -1390,18 +1457,26 @@ def judge(record: dict, entry: dict) -> dict:
         out["L6"][ARBITRARY] = {"status": "not run", "reason": nap["not_run"]}
         out["L7"] = {"status": "not run", "reason": nap["not_run"]}
     elif nap is not None:
-        out["L6"][ARBITRARY] = _high_l6(nap, arms.get(f"tirust/{ARBITRARY}/plain", {}))
+        out["L6"][ARBITRARY] = _high_l6(
+            nap, arms.get(f"tirust/{ARBITRARY}/plain", {}), tir_carriers, ARBITRARY
+        )
     # L6's verdict: the worst of its carriers (a high-precision carrier not
-    # run makes it partial; an arm TIRust refuses typed at this pin waits on
-    # lit-tir-mp, as does TIRust's binary64 arm, re-run at its re-pin).
+    # run makes it partial; an arm TIRust refuses typed for want of the
+    # carrier waits on lit-tir-mp, as do TIRust arms taken before it, re-run
+    # at its re-pin, ruling (5): a binary64 failure still fails).
     high = [
         out["L6"][c]["status"] for c in ("double-double", ARBITRARY) if c in out["L6"]
     ]
     out["L6"]["status"] = _worst(
-        [l6_status, *("partial" if h == "not run" else h for h in high)]
+        [
+            l6_status,
+            *("partial" if h == "not run" else h for h in high),
+            *([f"waits: {TIR_MP}"] if stale else []),
+        ]
     )
-    if any(h.startswith("waits") for h in high):
+    if stale or any(h.startswith("waits") for h in high):
         out["L6"]["waits_on"] = TIR_MP
+        out["L6"]["double"]["tirust_before"] = TIR_MP if stale else None
     # L7 DD vs AP.
     if nap is not None and "points" in nap:
         devs = [
@@ -1474,11 +1549,19 @@ def judge(record: dict, entry: dict) -> dict:
     return out
 
 
-def _high_l6(ninjars: dict, tirust: dict) -> dict:
+def _high_l6(
+    ninjars: dict,
+    tirust: dict,
+    served: frozenset[str] | None = None,
+    carrier: str = "double-double",
+) -> dict:
     """L6 in double-double / AP: |N - T| <= 1e-24 of the sector's largest
     coefficient through the one comparison (a target, R5: below ~1e-5 it is
-    recorded, never a failure); TIRust's typed refusal of the carrier (at
-    this pin) is the arm waiting on lit-tir-mp."""
+    recorded, never a failure). TIRust's typed refusal of the whole arm is
+    the arm waiting on lit-tir-mp where the extension that took it did not
+    serve the carrier (``served``: ``tirust_carriers``; None, a record
+    before the recorded capability query: not served), else a TIRust
+    coverage gap (partial, with the typed reason)."""
 
     from tools.loop_v2_observables_backends import _compare
 
@@ -1488,6 +1571,8 @@ def _high_l6(ninjars: dict, tirust: dict) -> dict:
             "reason": tirust.get("not_run") or ninjars.get("not_run"),
         }
     if "refused" in tirust or "points" not in tirust:
+        if served is not None and carrier in served:
+            return {"status": "partial", "tirust": tirust.get("refused")}
         return {"status": f"waits: {TIR_MP}", "tirust": tirust.get("refused")}
     rows, failed = [], 0
     for n, t in zip(ninjars.get("points", []), tirust["points"], strict=False):
@@ -3026,17 +3111,22 @@ def _merge(key, done, judged, fixtures, source) -> dict:
     status = _worst([_run_status(judged[f]) for f in done])
     if len(done) < len(fixtures):
         status = _worst([status, "partial"])
-    waits = sorted(
-        {judged[f]["L6"]["waits_on"] for f in done if "waits_on" in judged[f]["L6"]}
-    )
+    waiting = {
+        (judged[f][c]["waits_on"], c)
+        for f in done
+        for c in CHECKS
+        if c in judged[f] and "waits_on" in judged[f][c]
+    }
+    waits = sorted({package for package, _ in waiting})
     if status.startswith("waits"):
         # R2: a row whose check waits on a package not yet landed is
         # partial, naming that package.
         status = "partial"
     checks = {f: {c: judged[f][c] for c in CHECKS if c in judged[f]} for f in done}
     notes = [
-        f"WAITS ON {package}: TIRust's double-double / AP arms of L6 (refused typed at this "
-        "pin) and its binary64 L6 re-run at the re-pin"
+        f"WAITS ON {package}: TIRust's arms of "
+        + ", ".join(sorted(c for p, c in waiting if p == package))
+        + " (taken before it, or refused typed for want of the carrier), re-run at its re-pin"
         for package in waits
     ]
     for f in done:
@@ -3060,17 +3150,20 @@ def _merge(key, done, judged, fixtures, source) -> dict:
 
 def _resumable(path: Path, refresh: str | None, name: str, work: Path) -> dict | None:
     """The record at ``path`` to continue from (None: run afresh): a record
-    taken with the staged extension (``_same_native``) is kept (complete:
-    skipped; unfinished, or complete without the L3 probes: resumed); with
-    ``refresh`` (a backend) a complete record of another native keeps its
-    other arms if the staged native reproduces its NinjaRS binary64 values
-    bitwise (``refresh_check``), its ``refresh`` arms and L3 probes are
-    dropped and recomputed (recorded under ``refreshed``)."""
+    taken or refreshed (for ``refresh``: refreshed for that backend) with
+    the staged extension (``_same_native``) is kept (complete: skipped;
+    unfinished, e.g. an interrupted refresh, or complete without the L3
+    probes: resumed); with ``refresh`` (a backend) a complete record of
+    another native keeps its other arms if the staged native reproduces its
+    NinjaRS binary64 values bitwise (``refresh_check``), its ``refresh``
+    arms and L3 probes are dropped and recomputed (recorded under
+    ``refreshed`` with the extension, revision, Python Symbolica and
+    capability that took them)."""
 
     if not path.is_file():
         return None
     done = _load(path)
-    if _same_native(done) and not refresh:
+    if _same_native(done, refresh):
         if done.get("complete") and "l3_probes" not in done:
             done = {**done, "complete": False}
         return done
@@ -3089,7 +3182,13 @@ def _resumable(path: Path, refresh: str | None, name: str, work: Path) -> dict |
     }
     refreshed = [
         *done.get("refreshed", []),
-        {"backend": refresh, "native": _native(), "revision": _revision()},
+        {
+            "backend": refresh,
+            "native": _native(),
+            "revision": _revision(),
+            "python_symbolica": _symbolica(),
+            "reduction_backends": _capability(),
+        },
     ]
     return {
         **done,
