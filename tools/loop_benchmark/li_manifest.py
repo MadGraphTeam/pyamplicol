@@ -8,6 +8,8 @@ Usage (worktree root, licence in the environment, the staged native)::
     python tools/loop_benchmark/li_manifest.py run --work-dir W li_gg_h ...
         [--skip-arm LABEL=REASON]  # an unfinished record is resumed
     python tools/loop_benchmark/li_manifest.py crossing --work-dir W  # C1
+    python tools/loop_benchmark/li_manifest.py fig7 --work-dir W li_gg_zz=200 ...
+    python tools/loop_benchmark/li_manifest.py stress-madloop --work-dir W
     python tools/loop_benchmark/li_manifest.py lit --records W [--output F]
 
 The run matrix is read off lit-ref's manifest
@@ -31,23 +33,31 @@ registry keys) plus the validation-only ids.
 
 Rules (§4.0 with the rulings of the brief, m-lit DECISIONS): L1 binary64 vs
 each designated provider <= 1e-5 relative (lax; digits recorded; a fixture
-point marked ``l1_caution`` is judged against the double-double value
-instead); L2 binary64 <= 1e-9 and double-double / AP <= 1e-12 against the
-analytic oracle (targets: a deviation below ~1e-5 is recorded and reported,
-never a failure, R5); L3 the amplitude-level finiteness ratio (the lane's
-``finiteness``, formed with checks only) <= 10 times the pole estimate
-against the same term floor, binary64 and double-double, NinjaRS and TIRust;
-L4/W1 the generation-time Ward, Goldstone and finiteness probes (double-
-double, zero widths, m-lit Q12) recorded from the artifact; L5/L1-identity
-an exact Lorentz transform (rotation and boost with terminating-decimal
-entries) leaves |A|^2 within 10 E of the fixture point in binary64 and is
-recorded in double-double; C1 the crossing (``crossing``); L6 |T - N| <= 10 max(E_N, E_T) per sector and Laurent
-coefficient through the one comparison (``_compare``; a TIRust point whose
-checked call fails keeps E_N alone, which is conservative), points TIRust
-fails closed recorded with its typed reasons (partial), the double-double /
-AP arms 'WAITS ON lit-tir-mp' with TIRust's typed refusal; L7 double-double
-vs AP <= 1e-24 (target, R5); L8 numerical zeros |A|^2 <= 10 E_abs in
-binary64 and double-double (Q13; no theorem-based zero).
+point marked ``l1_caution`` whose provider deviates beyond it is left out of
+the L1 verdict and recorded with its binary64 vs double-double deviation,
+which the E check judges); L2 binary64 <= 1e-9 and double-double / AP <=
+1e-12 against the analytic oracle (targets: a deviation below ~1e-5 is
+recorded and reported, never a failure, R5); L3 the amplitude-level
+finiteness probe (``induced.probe`` at every fixture point: per (loop order,
+row) the poles against their estimate on the row's term floor, x10),
+NinjaRS binary64 and double-double, TIRust binary64 (the lanes' public
+``finiteness`` ratios, formed with checks only, recorded beside it); L4/W1
+the generation-time Ward, Goldstone and finiteness probes (double-double,
+zero widths, m-lit Q12) recorded from the artifact with the legs they probe
+('partial': no binary64 Ward at the fixture points, and only the probed
+legs); L5/L1-identity an exact Lorentz transform (rotation and boost with
+terminating-decimal entries) leaves |A|^2 within 10 E of the fixture point
+in binary64 and is recorded in double-double; C1 the crossing
+(``crossing``); L6 |T - N| <= 10 max(E_N, E_T) per sector and Laurent
+coefficient in binary64 through the one comparison (``_compare``; a TIRust
+point whose checked call fails keeps E_N alone, which is conservative),
+points TIRust fails closed recorded with its typed reasons (partial), and
+within 1e-24 of the sector's largest coefficient in double-double and AP
+(``_high_l6``); L6's verdict is the worst of its carriers, an arm TIRust
+refuses typed at this pin 'waits: lit-tir-mp' (the row partial naming it);
+L7 double-double vs AP <= 1e-24 (target, R5); L8 numerical zeros |A|^2 <=
+10 E_abs in binary64 and double-double (Q13; no theorem-based zero), an
+exact colour zero (LI-Z1) exactly 0 with the generation's colour record.
 """
 
 from __future__ import annotations
@@ -67,13 +77,22 @@ from pathlib import Path
 from typing import Any
 
 WT = Path(__file__).resolve().parents[2]
+if str(WT) not in sys.path:  # run as a script from the worktree root
+    sys.path.insert(0, str(WT))
+
+from tools import loop_v2_observables_backends as backends  # noqa: E402
+
 CAMPAIGN = WT / "tools" / "loop_reference" / "li_campaign.json"
 MILESTONE = WT / "docs" / "performance_reports" / "loop" / "data" / "milestone.json"
 FIXTURES = WT / "tests" / "fixtures" / "loop" / "required" / "li"
 LIT = WT / "docs" / "performance_reports" / "loop" / "data" / "lit.json"
 # This package's additional fixtures (the same format; each names its §4.1
-# row in "li_row"): the P15 point of LI-41.
+# row in "li_row"): the P15 point of LI-41, the stress points and LI-Z1's
+# exact colour zeros (written from SPEC, ``stress``).
 EXTRA = FIXTURES / "lit-val"
+# The campaign specification (data): identity row ids, UFO loading options,
+# the §4.1 stress points and the derived fixtures.
+SPEC = EXTRA / "spec" / "campaign.json"
 
 BACKENDS = ("ninjars", "tirust")
 # PLAN §4.1: binary64 and double-double on every row, arbitrary precision on
@@ -83,14 +102,17 @@ ARBITRARY = "arbitrary"
 # The AP carrier's digits: enough above double-double's ~32 for L7's 1e-24
 # (overridable, ``run --digits``).
 DIGITS = 40
-# PLAN §4.0 (the campaign's global rules, li_campaign.json "rules").
-FACTOR = 10  # the x10 estimate rule (L3-L6, L8)
+# PLAN §4.0 (the campaign's global rules, li_campaign.json "rules"); the x10
+# estimate rule (L3-L6, L8) and the 1e-24 of L6 / L7 are the one
+# comparison's (tools/loop_v2_observables_backends.py FACTOR, RELATIVE).
 LAX = 1e-5  # L1; below it a deviation is never a failure (precision lax, R5)
 ANALYTIC_DOUBLE = 1e-9  # L2 binary64
 ANALYTIC_HIGH = 1e-12  # L2 double-double / AP (a target, R5)
-CARRIER = 1e-24  # L7 double-double vs AP (a target, R5)
-# The waiting arm of L6 (ruling 17:20 (d), R4: DD/AP TIR is lit-tir-mp's).
+# The waiting arm of L6 (ruling 17:20 (d), R4: DD/AP TIR is lit-tir-mp's;
+# ruling (5): TIRust's binary64 L6 is re-run at its re-pin).
 TIR_MP = "lit-tir-mp"
+FACTOR = backends.FACTOR  # the x10 estimate rule
+CARRIER = float(backends.RELATIVE)  # L6 / L7 in double-double and AP
 # The rows outside this package's runs: the TIR unit row and the
 # Born-interfered backend row (lit-tir's; LI-B1 recorded from its report),
 # the EFT row (lit-eft's run-only check, USER ~14:55) and the observable row
@@ -124,6 +146,12 @@ def _load(path: Path) -> dict:
 def fixture(name: str) -> dict:
     path = FIXTURES / f"{name}.json"
     return _load(path if path.is_file() else EXTRA / f"{name}.json")
+
+
+def spec() -> dict:
+    """The campaign specification (``SPEC``)."""
+
+    return _load(SPEC)
 
 
 def _extra_runs(campaign: dict) -> list[dict]:
@@ -226,15 +254,19 @@ def runs(campaign: dict | None = None, reg: dict | None = None) -> list[dict]:
         if len(keys) > 1:
             raise ValueError(f"{entry['fixture']}: registry keys {keys}")
         # A stress fixture is validation-only (no reference, its own checks).
-        stress = fixture(entry["fixture"]).get("stress")
+        data = fixture(entry["fixture"])
+        stress = data.get("stress")
         entry["key"] = keys[0] if keys and not stress else None
+        entry["exact_zero"] = bool(data.get("exact_colour_zero"))
         if stress:
             entry["tiers"] = ["stress"]
             entry["checks"] = ["E", "L6", "L7"]
     ordered = list(out.values())
     ap: dict[str, str] = {}
     for tier in dict.fromkeys(t for e in ordered for t in e["tiers"]):
-        members = [e for e in ordered if tier in e["tiers"]]
+        # (an exact colour zero has nothing for the AP carrier to resolve)
+        members = [e for e in ordered if tier in e["tiers"] and not e["exact_zero"]]
+        members = members or [e for e in ordered if tier in e["tiers"]]
         ap[tier] = min(members, key=lambda e: e["legs"])["fixture"]
     for entry in ordered:
         entry["ap"] = sorted(t for t, f in ap.items() if f == entry["fixture"])
@@ -258,7 +290,9 @@ def registry_runs(entries: list[dict], reg: dict | None = None) -> dict:
 
 def _workspace() -> Path:
     """The loop workspace (reference UFOs): ``PYAMPLICOL_LOOP_WORKSPACE``,
-    else the ``workspace`` directory beside the main checkout."""
+    else the ``workspace`` directory beside the main checkout (the lookup of
+    tests/conftest.py and msm_manifest.py; not imported from the latter,
+    which writes its manifest when imported)."""
 
     if configured := os.environ.get("PYAMPLICOL_LOOP_WORKSPACE"):
         return Path(configured)
@@ -273,22 +307,12 @@ def _workspace() -> Path:
     return main.parent / "workspace"
 
 
-# Loading options of a source UFO, by its directory name (how that model is
-# read, as in tests/unit/test_loop_v2_induced_ew*.py; not a row property):
-# the G_mu UFO's structural compatibility profile; MadLoop's photons are
-# untagged.
-UFO_OPTIONS = {
-    "loop_qcd_qed_sm_Gmu_py3": {
-        "loop": {"external_photons": "none"},
-        "loop.preparation": {"compatibility": "gmu_particle_anti"},
-    },
-}
-
-
 def _model(data: dict) -> tuple[str, str | None, dict]:
     """(model source, restriction, UFO options) of a fixture's scheme:
     ``{mg5}/models/loop_sm[-<restriction>]`` is the shipped ``loop_sm``,
-    ``{reference}/...`` a UFO below the workspace's reference tree."""
+    ``{reference}/...`` a UFO below the workspace's reference tree, read
+    with its loading options (``SPEC`` ``ufo_options``, by its directory
+    name: how that model is read, not a row property)."""
 
     source = data["madloop_model"]
     restriction = data.get("restriction")
@@ -298,7 +322,7 @@ def _model(data: dict) -> tuple[str, str | None, dict]:
         return name, restriction or suffix or "default", {}
     if source.startswith("{reference}/"):
         path = _workspace() / "reference" / source.removeprefix("{reference}/")
-        return str(path), restriction, UFO_OPTIONS.get(path.name, {})
+        return str(path), restriction, spec()["ufo_options"].get(path.name, {})
     raise ValueError(f"unknown model source {source!r}")
 
 
@@ -327,15 +351,29 @@ def compile_model(data: dict, cache: Path) -> Any:
 
 
 def expression(data: dict, compiled: Any) -> str:
-    """The fixture's process in the model's particle names (by PDG code)."""
+    """The fixture's process in the model's particle names (by PDG code,
+    ``pyamplicol_v2.particle_names``)."""
 
-    names = {int(r.pdg_code): str(r.name) for r in compiled.ir.particles}
+    from tools.loop_benchmark.pyamplicol_v2 import particle_names
+
+    names = particle_names(compiled)
     pdgs, initial = data["pdgs"], data["initial"]
-    return (
-        " ".join(names[pdg] for pdg in pdgs[:initial])
-        + " > "
-        + " ".join(names[pdg] for pdg in pdgs[initial:])
-    )
+    legs = [names[pdg] for pdg in pdgs]
+    return " ".join(legs[:initial]) + " > " + " ".join(legs[initial:])
+
+
+def run_parameters(data: dict, compiled: Any) -> dict:
+    """The fixture's run-time model parameters: its parameters less the
+    fixed ones (the generation card's) and those the model does not declare
+    (e.g. a width of a particle its restriction removed)."""
+
+    known = set(compiled.parameter_defaults)
+    fixed = data["scheme_data"]["fixed_parameters"]
+    return {
+        k: v
+        for k, v in data["scheme_data"]["parameters"].items()
+        if k not in fixed and k in known
+    }
 
 
 def card(
@@ -392,15 +430,18 @@ def card(
     return "\n".join(lines) + "\n"
 
 
-def generate(name: str, work: Path, compiled: Any) -> tuple[Path, dict]:
+def generate(
+    name: str, work: Path, compiled: Any, data: dict | None = None
+) -> tuple[Path, dict]:
     """The fixture's loop-induced artifact through the public ``Generator``
     (kept in ``work / name / "artifact"`` and re-used), with its generation
-    record: seconds and the artifact's generation-time probe record."""
+    record: seconds and the artifact's generation-time probe record
+    (``data``: a fixture-shaped record instead of the fixture ``name``)."""
 
     from pyamplicol.api import Generator, ProcessRequest, ProcessSet
     from pyamplicol.config import resolve_config
 
-    data = fixture(name)
+    data = fixture(name) if data is None else data
     root = work / name
     output = root / "artifact"
     seconds = None
@@ -532,7 +573,7 @@ def _call(runtime, points, scales, *, backend, arithmetic, checked, digits) -> d
         out.append(
             {
                 "status": lane.status,
-                "detail": lane.detail[:300],
+                "detail": lane.detail,
                 "reduction": None
                 if reduction is None
                 else [reduction.requested, reduction.effective, reduction.reason],
@@ -575,14 +616,8 @@ def evaluate(
 
     data = fixture(name)
     compiled = compile_model(data, work / "model-cache")
-    known = set(compiled.parameter_defaults)
     artifact, generation = generate(name, work, compiled)
-    fixed = data["scheme_data"]["fixed_parameters"]
-    parameters = {
-        k: v
-        for k, v in data["scheme_data"]["parameters"].items()
-        if k not in fixed and k in known
-    }
+    parameters = run_parameters(data, compiled)
     runtime = Runtime.load(artifact, process="p", model_parameters=parameters)
     points = data["points"]
     scales = [_decimal(Fraction(mu) ** 2) for mu in data["mu_r"]]
@@ -595,7 +630,7 @@ def evaluate(
     record: dict[str, Any] = {
         "fixture": name,
         "revision": _revision(),
-        "native_digest": _native_digest(),
+        "native": _native(),
         "generation": generation,
         "digits": digits if ap else None,
         "transformed_points": transformed,
@@ -603,9 +638,10 @@ def evaluate(
         "complete": False,
     }
     if previous is not None:
+        for key in ("generation", "revision", "native", "refreshed"):
+            if key in previous:
+                record[key] = previous[key]
         record["arms"] = dict(previous["arms"])
-        record["generation"] = previous["generation"]
-        record["revision"] = previous["revision"]
         record["resumed_at"] = _revision()
     plan: list[tuple[str, str, str, bool, list]] = []
     for arithmetic in carriers:
@@ -657,7 +693,12 @@ def evaluate(
         if write is not None:
             write(record)
     record["l3_probes"] = finiteness_probes(
-        runtime, data, parameters, carriers, skip=skip
+        runtime,
+        data,
+        parameters,
+        carriers,
+        skip=skip,
+        previous=(previous or {}).get("l3_probes"),
     )
     record["complete"] = True
     if write is not None:
@@ -687,12 +728,14 @@ def finiteness_probes(
     parameters: dict,
     carriers: tuple = CARRIERS,
     skip: dict[str, str] | None = None,
+    previous: dict | None = None,
 ) -> dict:
     """L3 at every fixture point: the amplitude-level finiteness probe
     (``induced.probe`` on the loaded artifact's native executor, its
     calibrated checks) per backend and carrier (``PROBES``); a point TIRust
     fails closed is recorded with its typed reason; a probe arm named in
-    ``skip`` (``l3/<label>``) is recorded as ``{"not_run": reason}``."""
+    ``skip`` (``l3/<label>``) is recorded as ``{"not_run": reason}``; a
+    probe arm of ``previous`` (a resumed record's) is kept."""
 
     from pyamplicol.loops.v2 import induced
     from pyamplicol.loops.v2.assemble import Precision
@@ -704,6 +747,9 @@ def finiteness_probes(
         if carrier.replace("_", "-") not in carriers:
             continue
         label = f"{backend}/{carrier.replace('_', '-')}"
+        if previous and label in previous:
+            out[label] = previous[label]
+            continue
         if f"l3/{label}" in (skip or {}):
             out[label] = {"not_run": skip[f"l3/{label}"]}
             continue
@@ -720,32 +766,9 @@ def finiteness_probes(
                     )
                 rows.append({"worst": result.worst, "passed": result.passed})
             except Exception as error:  # a typed failure of the arm, recorded
-                rows.append({"error": f"{type(error).__name__}: {str(error)[:200]}"})
+                rows.append({"error": f"{type(error).__name__}: {error}"})
         out[label] = rows
     return out
-
-
-def add_probes(
-    name: str, work: Path, record: dict, skip: dict[str, str] | None = None
-) -> dict:
-    """The L3 probes of a record written before they were part of a run."""
-
-    from pyamplicol import Runtime
-
-    data = fixture(name)
-    compiled = compile_model(data, work / "model-cache")
-    known = set(compiled.parameter_defaults)
-    fixed = data["scheme_data"]["fixed_parameters"]
-    parameters = {
-        k: v
-        for k, v in data["scheme_data"]["parameters"].items()
-        if k not in fixed and k in known
-    }
-    runtime = Runtime.load(
-        work / name / "artifact", process="p", model_parameters=parameters
-    )
-    record["l3_probes"] = finiteness_probes(runtime, data, parameters, skip=skip)
-    return record
 
 
 def _revision() -> str:
@@ -754,11 +777,36 @@ def _revision() -> str:
     ).stdout.strip()
 
 
-def _native_digest() -> str | None:
-    path = WT / "src" / "pyamplicol" / "native-build.json"
-    if path.is_file():
-        return _load(path).get("native_digest")
-    return None
+def _native() -> dict | None:
+    """The staged native extension: its sha256 (what a resume compares), and
+    the build directory's name and native-input digest from the staging
+    record (``build_loop_native.py stage``; no absolute path)."""
+
+    import hashlib
+
+    staged = sorted((WT / "src" / "pyamplicol").glob("_rusticol*.so"))
+    if not staged:
+        return None
+    out: dict[str, Any] = {
+        "extension_sha256": hashlib.sha256(staged[0].read_bytes()).hexdigest()
+    }
+    info = WT / ".artifacts" / "source-runtime" / "_build_info.json"
+    if info.is_file():
+        data = _load(info)
+        out["build"] = Path(data["native_build"]["directory"]).name
+        out["inputs_digest"] = data["native_build_inputs_sha256"]
+    return out
+
+
+def _same_native(record: dict) -> bool:
+    """Whether ``record`` was taken with the staged extension (a record
+    without the extension's hash is not)."""
+
+    native = record.get("native") or {}
+    current = _native() or {}
+    return bool(native.get("extension_sha256")) and native.get(
+        "extension_sha256"
+    ) == current.get("extension_sha256")
 
 
 # ------------------------------------------------------------- the rules
@@ -822,10 +870,10 @@ def _worst(statuses: list[str]) -> str:
         "pass (lax)",
         "pass",
     ]
-    present = [s.split(":")[0] for s in statuses]
     for s in order:
-        if s in present:
-            return s
+        for status in statuses:
+            if status.split(":")[0] == s:
+                return status
     return "not run"
 
 
@@ -839,9 +887,35 @@ def _reasons(arm: dict) -> dict[str, int]:
     out: dict[str, int] = {}
     for p in arm.get("points", []):
         if p["status"] != "success":
-            key = re.sub(r"\d+(\.\d+)?(e-?\d+)?", "#", p["detail"])[:160]
+            key = re.sub(r"\d+(\.\d+)?(e-?\d+)?", "#", p["detail"])
             out[key] = out.get(key, 0) + 1
     return out
+
+
+def _counted(reasons) -> dict[str, int]:
+    """Distinct reasons with their counts (numbers masked)."""
+
+    out: dict[str, int] = {}
+    for reason in reasons:
+        key = re.sub(r"\d+(\.\d+)?(e-?\d+)?", "#", reason)
+        out[key] = out.get(key, 0) + 1
+    return out
+
+
+def _switched(arm: dict | None, backend: str) -> list:
+    """The served points of ``arm`` whose effective backend is not
+    ``backend`` (the one comparison's ``_effective`` guard on a record: a
+    silent backend switch is never compared)."""
+
+    if not arm or "points" not in arm:
+        return []
+    return [
+        [p, point["reduction"]]
+        for p, point in enumerate(arm["points"])
+        if point["status"] == "success"
+        and point.get("reduction") is not None
+        and point["reduction"][1] != backend
+    ]
 
 
 def high_arm(arms: dict, backend: str, carrier: str = "double-double") -> dict:
@@ -998,7 +1072,7 @@ def judge(record: dict, entry: dict) -> dict:
             "worst_ratio": max(worst, default=None),
             "served": served,
             "of": count,
-            "failed": [x["error"] for x in probe if "error" in x][:3],
+            "failed": _counted(x["error"] for x in probe if "error" in x),
         }
         statuses.append(status)
     if not l3:
@@ -1035,21 +1109,38 @@ def judge(record: dict, entry: dict) -> dict:
                         )
     l3["poles_over_10E"] = max(poles, default=None)
     out["L3"] = {"status": _worst(statuses), **l3}
-    # L4 / W1: the generation-time probes (double-double, zero widths).
+    # L4 / W1: the generation-time probes (double-double, zero widths, one
+    # point per artifact, the legs they probe). §4.0 L4 asks for binary64
+    # and double-double at the fixture points: the stored artifact is not
+    # on the full tree kernels the Ward probe needs, so a passing record is
+    # 'partial' (its coverage recorded), a failing one 'fail'.
     probes = record["generation"]["probes"] or {}
-    l4 = {
-        k: probes[k]
-        for k in ("finiteness", "ward", "goldstone", "exact_colour_zero")
-        if k in probes
-    }
-    out["L4"] = {
-        "status": "pass"
-        if l4 and all(v is True or v.get("passed") for v in l4.values())
-        else ("not run" if not l4 else "fail"),
-        "probes": l4,
-        "carrier": probes.get("precision"),
-        "widths": probes.get("widths"),
-    }
+    l4 = {k: probes[k] for k in ("finiteness", "ward", "goldstone") if k in probes}
+    if not l4:
+        out["L4"] = {
+            "status": "recorded" if probes.get("exact_colour_zero") else "not run",
+            "probes": probes,
+            "reason": "an exact colour zero has nothing to probe"
+            if probes.get("exact_colour_zero")
+            else "no generation-time probe recorded",
+        }
+    else:
+        passed = all(v.get("passed") for v in l4.values())
+        out["L4"] = {
+            "status": "partial" if passed else "fail",
+            "probes": l4,
+            "probed_legs": {
+                k: v["legs"]
+                for k, v in l4.items()
+                if isinstance(v, dict) and "legs" in v
+            },
+            "carrier": probes.get("precision"),
+            "widths": probes.get("widths"),
+            "reason": "generation-time double-double probes at one point per artifact on the "
+            "probed legs only (one leg per external massless gauge-boson species, the Goldstone "
+            "probe on massive vectors where the artifact records it); no binary64 Ward at the "
+            "fixture points (the stored artifact is not on the full tree kernels)",
+        }
     # L5 / LI-L1: the exact Lorentz transform: binary64 within 10 E of the
     # fixture point (the transformed point's own estimate is recorded apart:
     # outside the partonic rest frame the rotation estimate overshoots, a
@@ -1066,7 +1157,9 @@ def judge(record: dict, entry: dict) -> dict:
             diff = abs(float(_total(a["values"]) - _total(b["values"])))
             ratios.append(diff / (FACTOR * e) if e else (0.0 if not diff else math.inf))
             moved.append(b["estimate"]["relative"])
-        for a, b in zip(ndd.get("points", []), (idd or {}).get("points", [])):
+        for a, b in zip(
+            ndd.get("points", []), (idd or {}).get("points", []), strict=False
+        ):
             if a["status"] == "success" and b["status"] == "success":
                 devs.append(_rel(_total(b["values"]), _total(a["values"])))
         worst = max(ratios, default=None)
@@ -1162,9 +1255,23 @@ def judge(record: dict, entry: dict) -> dict:
         ),
         default=None,
     )
+    switched = {
+        label: found
+        for label, arm, backend in (
+            ("ninjars/double/checked", n64c, "ninjars"),
+            ("tirust/double/plain", t64, "tirust"),
+            ("tirust/double/checked", t64c, "tirust"),
+            ("ninjars/double-double", ndd, "ninjars"),
+            ("tirust/double-double", tdd, "tirust"),
+        )
+        if (found := _switched(arm, backend))
+    }
+    if switched:
+        l6_status = "fail"
     out["L6"] = {
         "status": l6_status,
         "double": {
+            "status": l6_status,
             "compared_entries": len(rows),
             "beyond_10E": len(misses),
             "worst_ratio_to_10E": worst,
@@ -1173,6 +1280,7 @@ def judge(record: dict, entry: dict) -> dict:
             "tirust_served_checked": sum(_served(t64c)),
             "of": count,
             "tirust_failed_reasons": _reasons(t64),
+            **({"effective_backend_switched": switched} if switched else {}),
         },
         "double-double": _high_l6(ndd, tdd)
         if tdd
@@ -1184,6 +1292,17 @@ def judge(record: dict, entry: dict) -> dict:
         out["L7"] = {"status": "not run", "reason": nap["not_run"]}
     elif nap is not None:
         out["L6"][ARBITRARY] = _high_l6(nap, arms.get(f"tirust/{ARBITRARY}/plain", {}))
+    # L6's verdict: the worst of its carriers (a high-precision carrier not
+    # run makes it partial; an arm TIRust refuses typed at this pin waits on
+    # lit-tir-mp, as does TIRust's binary64 arm, re-run at its re-pin).
+    high = [
+        out["L6"][c]["status"] for c in ("double-double", ARBITRARY) if c in out["L6"]
+    ]
+    out["L6"]["status"] = _worst(
+        [l6_status, *("partial" if h == "not run" else h for h in high)]
+    )
+    if any(h.startswith("waits") for h in high):
+        out["L6"]["waits_on"] = TIR_MP
     # L7 DD vs AP.
     if nap is not None and "points" in nap:
         devs = [
@@ -1235,6 +1354,23 @@ def judge(record: dict, entry: dict) -> dict:
                 "not run" if worst is None else ("pass" if worst <= 1 else "fail")
             )
         out["L8"] = {"status": _worst(statuses), "worst_value_over_10E_abs": l8}
+        if data.get("exact_colour_zero"):
+            # LI-Z1: exactly 0 with the generation's colour record (the one
+            # exact-zero mechanism, Q13), every arm that serves.
+            colour = bool(probes.get("exact_colour_zero"))
+            values = [
+                _total(pt["values"])
+                for label, arm in arms.items()
+                if isinstance(arm, dict) and "points" in arm
+                for pt in arm["points"]
+                if pt["status"] == "success"
+            ]
+            exact = colour and bool(values) and all(v == 0 for v in values)
+            out["L8"] = {
+                "status": "pass" if exact else "fail",
+                "exact_colour_zero_record": colour,
+                "values_exactly_zero": f"{sum(v == 0 for v in values)}/{len(values)}",
+            }
     out["references"] = {k: v for k, v in refs.items() if v is not None}
     return out
 
@@ -1247,6 +1383,11 @@ def _high_l6(ninjars: dict, tirust: dict) -> dict:
 
     from tools.loop_v2_observables_backends import _compare
 
+    if "not_run" in tirust or "not_run" in ninjars:
+        return {
+            "status": "not run",
+            "reason": tirust.get("not_run") or ninjars.get("not_run"),
+        }
     if "refused" in tirust or "points" not in tirust:
         return {"status": f"waits: {TIR_MP}", "tirust": tirust.get("refused")}
     rows, failed = [], 0
@@ -1320,23 +1461,24 @@ def _complex(text: str) -> tuple[Decimal, Decimal]:
 # ------------------------------------------------------------- stress points
 
 
-# PLAN §4.1 "Stress points" (M §4.7), on the 2 -> 2 rows whose final pair is
-# equal-mass or massless (their exact construction, ``_pair``): (base
-# fixture, kind, the stress parameter values, the CM energy at which the
-# angular stresses sit). Each kind writes one stress fixture
-# (``EXTRA/li_stress_<base>_<kind>.json``: the base's scheme, no reference,
-# binary64 + double-double + AP; judged by E, L6, L7).
-STRESS = (
-    ("li_gg_zz", "pt", ("1", "0.1", "0.01"), "500"),
-    ("li_gg_hh", "threshold", ("1e-2", "1e-3", "1e-4"), None),
-    ("li_gg_hh", "forward", ("1e-3", "1e-4", "1e-5"), "500"),
-    ("li_gg_aa", "forward", ("1e-3", "1e-4", "1e-5"), "500"),
-    ("li_gg_ag", "forward", ("1e-3", "1e-4", "1e-5"), "500"),
-    ("li_gg_hh", "top-threshold", ("-1e-3", "1e-3"), None),
-    ("li_gg_zz", "top-threshold", ("-1e-3", "1e-3"), None),
-)
-# The transverse momentum of the (top-)threshold stresses' pair (GeV).
-THRESHOLD_PT = Fraction(1, 100)
+# PLAN §4.1 "Stress points" (M §4.7): SPEC's "stress" entries, each one
+# stress fixture (``EXTRA/<name>.json``, default ``li_stress_<base>_<kind>``:
+# the base's scheme, or a process of its scheme (``process``), no provider
+# reference, binary64 + double-double + AP; judged by E, L6, L7). The 2 -> 2
+# kinds (``pt``, ``forward``, ``threshold``, ``top-threshold``) build an
+# equal-mass or massless final pair (``_pair``); an entry with
+# ``fractions`` / ``transverse`` builds n final particles on the light cone
+# (``_lightcone``: ``planar`` scales the out-of-plane components by the
+# value, ``top-threshold`` sits at sqrt(s) = 2 m_t (1 + value)).
+def stress_entries() -> list[dict]:
+    return spec()["stress"]
+
+
+def stress_name(entry: dict) -> str:
+    return (
+        entry.get("name")
+        or f"li_stress_{entry['base'].removeprefix('li_')}_{entry['kind']}"
+    )
 
 
 def _near(target: float, span: int = 60) -> Fraction:
@@ -1383,17 +1525,96 @@ def _rho(ratio: float) -> float:
     return root * root
 
 
-def stress_points(base: dict, kind: str, values: tuple, energy: str | None) -> list:
-    """The exact points of one stress kind (``STRESS``): ``pt`` at the
-    transverse momenta ``values`` (sqrt(s) near ``energy``), ``forward`` at
-    the CM angles ``values`` (pt = theta sqrt(s) / 2), ``threshold`` at the
-    distances sqrt(s) / 2M - 1 ~ ``values`` above the pair threshold (rho
-    from the 2^x 5^y knob, ``THRESHOLD_PT``), ``top-threshold`` at
-    sqrt(s) = 2 m_t (1 + value) (to ~1e-12, pt chosen for it)."""
+def _lightcone(
+    masses2: list[Fraction],
+    transverse: list[list[Fraction]],
+    fractions: list[Fraction],
+    s: Fraction,
+) -> list:
+    """An exact 2 -> n point with massless beams along z and final squared
+    masses ``masses2``: final particle i has transverse momentum kappa k_i
+    (``transverse``: the first n - 1, the last balances them) and light-cone
+    component E + p_z = lambda x_i (x_i the 2^x 5^y nearest ``fractions``),
+    E - p_z = (m_i^2 + kappa^2 k_i^2) / (lambda x_i); kappa (12 decimals)
+    puts sqrt(s) at the target (to ~1e-12), lambda (2^x 5^y) balances the
+    beams. Every entry a terminating decimal, mass shells and momentum
+    conservation exact."""
 
+    k = [*transverse, [-sum(c[0] for c in transverse), -sum(c[1] for c in transverse)]]
+    x = [_near(float(f)) for f in fractions]
+    total = sum(x)
+    rest = sum(m / xi for m, xi in zip(masses2, x, strict=True))
+    spread = sum((c[0] ** 2 + c[1] ** 2) / xi for c, xi in zip(k, x, strict=True))
+    kappa2 = (s / total - rest) / spread
+    if kappa2 <= 0:
+        raise ValueError(
+            f"sqrt(s) = {math.sqrt(float(s))} is below the final state's reach"
+        )
+    kappa = Fraction(Decimal(format(math.sqrt(float(kappa2)), ".12f")))
+    k = [[kappa * c[0], kappa * c[1]] for c in k]
+    big = [m + c[0] ** 2 + c[1] ** 2 for m, c in zip(masses2, k, strict=True)]
+    scale = _near(
+        math.sqrt(float(sum(m / xi for m, xi in zip(big, x, strict=True)) / total))
+    )
+    plus = [scale * xi for xi in x]
+    minus = [m / u for m, u in zip(big, plus, strict=True)]
+    a, b = sum(plus) / 2, sum(minus) / 2
+    final = [
+        [(u + v) / 2, c[0], c[1], (u - v) / 2]
+        for u, v, c in zip(plus, minus, k, strict=True)
+    ]
+    return [[a, 0, 0, a], [b, 0, 0, -b], *final]
+
+
+def _stress_masses(base: dict, entry: dict) -> list[Fraction]:
+    """The final squared masses of an n-body stress entry: the named
+    parameters of the base's scheme (``masses``), else the base point's
+    final mass shells."""
+
+    names = entry.get("masses")
+    if names:
+        parameters = base["scheme_data"]["parameters"]
+        derived = base.get("derived_parameters") or {}
+        return [
+            Fraction(0) if n is None else Fraction(parameters.get(n) or derived[n]) ** 2
+            for n in names[base["initial"] :]
+        ]
+    point = [[Fraction(c) for c in p] for p in base["points"][0]]
+    return [p[0] ** 2 - sum(c * c for c in p[1:]) for p in point[base["initial"] :]]
+
+
+def stress_points(base: dict, entry: dict) -> list:
+    """The exact points of one stress entry (``stress_entries``): ``pt`` at
+    the transverse momenta ``values`` (sqrt(s) near ``energy``), ``forward``
+    at the CM angles ``values`` (pt = theta sqrt(s) / 2), ``threshold`` at
+    the distances sqrt(s) / 2M - 1 ~ ``values`` above the pair threshold
+    (rho from the 2^x 5^y knob, the pair at ``pt``), ``top-threshold`` at
+    sqrt(s) = 2 m_t (1 + value) (to ~1e-12; the pair at ``rho``, or n final
+    particles on the light cone), ``planar`` n final particles at sqrt(s) =
+    ``energy`` with the out-of-plane transverse components scaled by the
+    value (5-point Gram ~ value^2)."""
+
+    kind, values, energy = entry["kind"], entry["values"], entry.get("energy")
+    out = []
+    if "fractions" in entry:
+        masses2 = _stress_masses(base, entry)
+        fractions = [Fraction(Decimal(f)) for f in entry["fractions"]]
+        shape = [[Fraction(Decimal(c)) for c in pair] for pair in entry["transverse"]]
+        for text in values:
+            value = Fraction(Decimal(text))
+            if kind == "planar":
+                transverse = [[c[0], c[1] * value] for c in shape]
+                target = Fraction(energy) ** 2
+            elif kind == "top-threshold":
+                transverse = shape
+                mt = Fraction(base["scheme_data"]["parameters"]["MT"])
+                target = (2 * mt * (1 + value)) ** 2
+            else:
+                raise ValueError(f"unknown n-body stress kind {kind!r}")
+            out.append(_lightcone(masses2, transverse, fractions, target))
+        return [[[_decimal(Fraction(c)) for c in p] for p in q] for q in out]
     point = [[Fraction(c) for c in p] for p in base["points"][0]]
     mass2 = point[2][0] ** 2 - sum(c * c for c in point[2][1:])
-    out = []
     for text in values:
         value = Fraction(Decimal(text))
         if kind in ("pt", "forward"):
@@ -1402,10 +1623,10 @@ def stress_points(base: dict, kind: str, values: tuple, energy: str | None) -> l
             out.append(_pair(mass2, pt, _near(_rho(ratio))))
         elif kind == "threshold":
             root = math.sqrt(float(value)) + math.sqrt(float(value) + 1)
-            out.append(_pair(mass2, THRESHOLD_PT, _near(root * root)))
+            out.append(_pair(mass2, Fraction(Decimal(entry["pt"])), _near(root * root)))
         elif kind == "top-threshold":
             mt = Fraction(base["scheme_data"]["parameters"]["MT"])
-            rho = _near(4.0)
+            rho = _near(float(Fraction(Decimal(entry["rho"]))))
             m = 2 * float(mt * (1 + value)) / (math.sqrt(rho) + 1 / math.sqrt(rho))
             pt = Fraction(Decimal(format(math.sqrt(m * m - float(mass2)), ".12f")))
             out.append(_pair(mass2, pt, rho))
@@ -1414,56 +1635,259 @@ def stress_points(base: dict, kind: str, values: tuple, energy: str | None) -> l
     return [[[_decimal(Fraction(c)) for c in p] for p in q] for q in out]
 
 
-def write_stress() -> list[Path]:
-    """Write every ``STRESS`` fixture (deterministic)."""
+# The fields a derived fixture takes from its base unchanged.
+BASE_FIELDS = (
+    "loop_induced",
+    "pdgs",
+    "initial",
+    "madloop_process",
+    "loop_orders",
+    "squared_orders",
+    "correction",
+    "scheme",
+    "scheme_data",
+    "normalization",
+)
 
-    paths = []
-    for name, kind, values, energy in STRESS:
-        base = fixture(name)
-        points = stress_points(base, kind, values, energy)
+
+def _normalization(base: dict, pdgs: list[int]) -> dict:
+    """The base's normalisation with the final identical-particle factor of
+    ``pdgs`` (the initial average is the base's: same initial state)."""
+
+    final = pdgs[base["initial"] :]
+    symmetry = math.prod(math.factorial(final.count(p)) for p in set(final))
+    initial = base["normalization"]["initial_average"]
+    return {
+        **base["normalization"],
+        "final_symmetry": symmetry,
+        "denominator": initial * symmetry,
+    }
+
+
+def _derive(base: dict, changes: dict) -> dict:
+    """The base's fields with a process of its scheme (``changes``: pdgs,
+    madloop_process, orders, fixed parameters overriding the base's)."""
+
+    out = {k: base[k] for k in BASE_FIELDS}
+    for key in ("pdgs", "madloop_process", "loop_orders", "squared_orders"):
+        if key in changes:
+            out[key] = changes[key]
+    if "fixed_parameters" in changes:
+        scheme = json.loads(json.dumps(base["scheme_data"]))
+        scheme["fixed_parameters"].update(changes["fixed_parameters"])
+        if "parameter_overrides" in scheme:
+            scheme["parameter_overrides"].update(changes["fixed_parameters"])
+        out["scheme_data"] = scheme
+    out["normalization"] = _normalization(base, out["pdgs"])
+    return out
+
+
+def write_stress() -> list[Path]:
+    """Write every derived fixture of SPEC (``derived_fixtures``)."""
+
+    return [_write_fixture(data) for data in derived_fixtures()]
+
+
+def derived_fixtures() -> list[dict]:
+    """Every derived fixture of SPEC (deterministic): the stress fixtures
+    and the exact-colour-zero fixtures (``derived``: the base's scheme and
+    points with another process, no provider reference)."""
+
+    out = []
+    for entry in stress_entries():
+        base = fixture(entry["base"])
+        process = _derive(base, entry.get("process", {}))
+        points = stress_points(base, entry)
         data = {
-            "name": f"li_stress_{name.removeprefix('li_')}_{kind}",
+            "name": stress_name(entry),
             "li_row": base["li_row"],
-            "stress": {
-                "kind": kind,
-                "values": list(values),
-                "energy": energy,
-                "base": name,
-            },
-            **{
-                k: base[k]
-                for k in (
-                    "loop_induced",
-                    "pdgs",
-                    "initial",
-                    "madloop_process",
-                    "loop_orders",
-                    "squared_orders",
-                    "correction",
-                    "scheme",
-                    "scheme_data",
-                    "normalization",
-                )
-            },
+            "stress": {k: v for k, v in entry.items() if k not in ("name", "source")},
+            **process,
             "carriers": [*CARRIERS, ARBITRARY],
             "points": points,
             "mu_r": [base["mu_r"][0]] * len(points),
             "rows": [{"providers": {}} for _ in points],
-            "source": "PLAN §4.1 stress points (M §4.7): exact decimal CM points of "
-            "tools/loop_benchmark/li_manifest.py write_stress; no provider reference "
-            "(the binary64 estimate against double-double and AP, NinjaRS against TIRust)",
+            "source": f"PLAN §4.1 stress points (M §4.7; {entry['source']}): exact decimal points of "
+            "tools/loop_benchmark/li_manifest.py write_stress; no provider reference in the fixture "
+            "(the binary64 estimate against double-double and AP, NinjaRS against TIRust, MadLoop "
+            "QP: stress-madloop)",
         }
-        path = EXTRA / f"{data['name']}.json"
-        path.write_text(json.dumps(data, indent=1) + "\n")
-        paths.append(path)
-    return paths
+        out.append(data)
+    for entry in spec()["derived"]:
+        base = fixture(entry["base"])
+        data = {
+            "name": entry["name"],
+            "li_row": entry["li_row"],
+            **_derive(base, entry),
+            "exact_colour_zero": entry["exact_colour_zero"],
+            "points": base["points"],
+            "mu_r": base["mu_r"],
+            "rows": [{"providers": {}} for _ in base["points"]],
+            "source": f"{entry['source']} (tools/loop_benchmark/li_manifest.py write_stress)",
+        }
+        out.append(data)
+    return out
+
+
+def _write_fixture(data: dict) -> Path:
+    path = EXTRA / f"{data['name']}.json"
+    path.write_text(json.dumps(data, indent=1) + "\n")
+    return path
+
+
+# The MadLoop QP comparison of the stress points (§4.1 "binary64 estimate vs
+# DD vs AP vs MadLoop QP"): lit-ref's reference run (``li_references.py run
+# --provider madloop``: relative accuracy 1e-11 with the stability test on
+# every call, quadruple-precision rescue, helicity filter off) on the base
+# process's MadLoop export of the reference tree
+# (``<root>/runs/li/<base>/madloop-export``) at the stress fixture's exact
+# points, under the 45-minute rule (``REFERENCE_TIMEOUT`` s per run).
+REFERENCE_TIMEOUT = 2700
+
+
+def stress_madloop(
+    work: Path, entries: list[dict], root: Path, cpu: int | None = None
+) -> dict:
+    """Per stress fixture its MadLoop QP rows (value, MadLoop's accuracy
+    estimate and return code per point), or why it was not run."""
+
+    out: dict[str, Any] = {}
+    tool = WT / "tools" / "loop_reference" / "li_references.py"
+    for entry in entries:
+        if "stress" not in entry["tiers"]:
+            continue
+        name = entry["fixture"]
+        data = fixture(name)
+        base = data["stress"]["base"]
+        export = root / "runs" / "li" / base / "madloop-export"
+        if data["pdgs"] != fixture(base)["pdgs"]:
+            out[name] = {
+                "status": "not run",
+                "reason": f"a process outside lit-ref's reference set ({data['madloop_process']}): "
+                "no MadLoop export in the reference tree",
+            }
+            continue
+        if not export.is_dir():
+            out[name] = {"status": "not run", "reason": f"no MadLoop export of {base}"}
+            continue
+        run_dir = work / "stress-madloop" / name
+        run_dir.mkdir(parents=True, exist_ok=True)
+        points = run_dir / "points.json"
+        points.write_text(
+            json.dumps(
+                {
+                    "process_name": base,
+                    "pdgs": data["pdgs"],
+                    "construction": data["source"],
+                    "points": data["points"],
+                    "mu_r": data["mu_r"],
+                },
+                indent=1,
+            )
+            + "\n"
+        )
+        command = [
+            sys.executable,
+            str(tool),
+            "run",
+            "--process",
+            base,
+            "--provider",
+            "madloop",
+            "--points",
+            str(points),
+            "--work-dir",
+            str(run_dir),
+            "--mg5",
+            str(root / "sources" / "MG5_aMC_v3_7_0"),
+            "--madloop-export",
+            str(export),
+            "--reference-root",
+            str(root),
+        ]
+        if cpu is not None:
+            command += ["--cpu", str(cpu)]
+        start = time.perf_counter()
+        try:
+            done = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                timeout=REFERENCE_TIMEOUT,
+                check=False,
+            )
+        except subprocess.TimeoutExpired:
+            out[name] = {
+                "status": "not run",
+                "reason": f"45-minute rule: MadLoop did not finish in {REFERENCE_TIMEOUT} s",
+            }
+            continue
+        result = run_dir / "madloop-result.json"
+        if done.returncode or not result.is_file():
+            out[name] = {
+                "status": "not run",
+                "reason": f"MadLoop run failed (rc {done.returncode}): {done.stderr.strip()[-2000:]}",
+            }
+            continue
+        rows = _load(result)["rows"]
+        out[name] = {
+            "base": base,
+            "seconds": time.perf_counter() - start,
+            "rows": [
+                {k: row[k] for k in ("value", "accuracy", "status") if k in row}
+                for row in rows
+            ],
+        }
+        print(name, json.dumps(out[name]["rows"]), flush=True)
+    return out
+
+
+def judge_madloop(madloop: dict, record: dict) -> dict:
+    """MadLoop QP at the stress points against pyAmpliCol's 40-digit AP
+    (else double-double) on the exact points: per point the relative
+    deviation and whether MadLoop's own accuracy estimate covers it
+    (|ML - AP| <= 10 x accuracy x |ML|); recorded, the stress points'
+    rules are E, L6 and L7."""
+
+    if "rows" not in madloop:
+        return madloop
+    truth = record["arms"].get(f"ninjars/{ARBITRARY}/plain")
+    carrier = ARBITRARY
+    if not truth or "points" not in truth:
+        truth, carrier = high_arm(record["arms"], "ninjars"), "double-double"
+    points = []
+    for row, pt in zip(madloop["rows"], truth.get("points", []), strict=False):
+        if pt["status"] != "success":
+            points.append({"madloop": row, "truth": None})
+            continue
+        value = _total(pt["values"])
+        deviation = _rel(row["value"], value)
+        points.append(
+            {
+                "madloop": row["value"],
+                "madloop_accuracy": row.get("accuracy"),
+                "madloop_status": row.get("status"),
+                "relative_to_truth": deviation,
+                "covered": deviation <= FACTOR * (row.get("accuracy") or 0.0),
+            }
+        )
+    return {
+        "status": "recorded",
+        "truth": f"pyAmpliCol NinjaRS {carrier} at the exact points",
+        "points": points,
+        "seconds": madloop.get("seconds"),
+    }
 
 
 # ------------------------------------------------------------- LI-A7
 
 
-# The large-m_t row (PLAN §4.1 LI-A7): the registry rows that carry it.
-LIMIT_ROW = "LI-A7"
+# The large-m_t row (PLAN §4.1 LI-A7; SPEC's ``limit_row``): the registry
+# rows that carry it.
+LIMIT_ROW = _load(SPEC)["identities"]["limit_row"]
+# LI-A1's "HEFT ratio reported" (§4.1; SPEC's ``heft_ratio_row``): its runs
+# take the same scan against the HEFT tree, recorded, no limit rule.
+HEFT_RATIO_ROW = _load(SPEC)["identities"]["heft_ratio_row"]
 # The heavy-top scan: m_t = y_t = the fixture's m_t times 2^k, k = 0 ..
 # DOUBLINGS (overridable, ``limits --doublings``), in double-double at the
 # fixture's exact points (the loop integrals cancel to O(s / m_t^2)).
@@ -1474,9 +1898,14 @@ HEFT = "built-in-sm-heft"
 def limit_targets(entries: list[dict]) -> list[dict]:
     """LI-A7's fixtures: the campaign run of every registry row carrying
     the id, against its limit oracle: the fixture rows' ``limit_oracle``
-    (g g > h h: the low-energy theorem) or else the process's HEFT tree."""
+    (g g > h h: the low-energy theorem) or else the process's HEFT tree;
+    and LI-A1's runs against the HEFT tree (its ratio reported)."""
 
-    keys = {r["key"] for r in registry()["rows"] if LIMIT_ROW in r["ids"]}
+    keys = {
+        r["key"]
+        for r in registry()["rows"]
+        if {LIMIT_ROW, HEFT_RATIO_ROW} & set(r["ids"])
+    }
     out = []
     for entry in entries:
         if entry["key"] in keys and (FIXTURES / f"{entry['fixture']}.json").is_file():
@@ -1557,13 +1986,7 @@ def limits(name: str, oracle: str, work: Path, doublings: int = DOUBLINGS) -> di
 
     data = fixture(name)
     compiled = compile_model(data, work / "model-cache")
-    known = set(compiled.parameter_defaults)
-    fixed = data["scheme_data"]["fixed_parameters"]
-    parameters = {
-        k: v
-        for k, v in data["scheme_data"]["parameters"].items()
-        if k not in fixed and k in known
-    }
+    parameters = run_parameters(data, compiled)
     base = Fraction(parameters["MT"])
     masses = [base * 2**k for k in range(doublings + 1)]
     points = data["points"]
@@ -1647,7 +2070,7 @@ def limits(name: str, oracle: str, work: Path, doublings: int = DOUBLINGS) -> di
 # crossing (itself included: the crossing of identical bosons), the crossed
 # legs carrying negative-energy momenta: the loop integrals are then taken in
 # the other process's physical region (the analytic continuation by +i0).
-CROSSING_ROW, CROSSING_ID = "LI-26", "crossing"
+CROSSING_ROW, CROSSING_ID = _load(SPEC)["identities"]["crossing_row"], "crossing"
 
 
 def legs(data: dict, compiled: Any) -> list[dict]:
@@ -1715,8 +2138,9 @@ def crossing(work: Path, entries: list[dict]) -> dict:
     """The crossing evaluations of CROSSING_ROW's runs (module comment
     above): per (target, source, map) the target's artifact (the campaign's,
     ``work / target``) at the source's crossed points, NinjaRS binary64 with
-    the checks and double-double; judged in ``lit`` against the source's
-    record. Runs whose fixtures differ in their parameters do not relate."""
+    the checks and double-double, TIRust binary64 with the checks; judged in
+    ``lit`` against the source's record. Runs whose fixtures differ in their
+    parameters do not relate."""
 
     from pyamplicol import Runtime
 
@@ -1731,13 +2155,7 @@ def crossing(work: Path, entries: list[dict]) -> dict:
     }
     for target in names:
         artifact, _ = generate(target, work, compiled[target])
-        known = set(compiled[target].parameter_defaults)
-        fixed = data[target]["scheme_data"]["fixed_parameters"]
-        parameters = {
-            k: v
-            for k, v in data[target]["scheme_data"]["parameters"].items()
-            if k not in fixed and k in known
-        }
+        parameters = run_parameters(data[target], compiled[target])
         runtime = None
         for source in names:
             if data[source]["scheme_data"] != data[target]["scheme_data"]:
@@ -1764,6 +2182,16 @@ def crossing(work: Path, entries: list[dict]) -> dict:
                     )
                     for arithmetic in CARRIERS
                 }
+                # TIRust in binary64 (its carrier at this pin, R4)
+                arms["tirust/double"] = _call(
+                    runtime,
+                    points,
+                    scales,
+                    backend="tirust",
+                    arithmetic="double",
+                    checked=True,
+                    digits=DIGITS,
+                )
                 out["crossings"].append(
                     {
                         "target": target,
@@ -1795,16 +2223,80 @@ def _signed(value: Decimal, sign: int) -> Decimal:
     return value.copy_negate() if sign < 0 else value  # (exact: no context rounding)
 
 
+# The crossing finding (to the coordinator, for the public API / SDK owner):
+# a crossing whose crossed values are exactly zero at every point.
+CROSSING_FINDING = (
+    "the public route returns status 'success' with |A|^2 exactly 0 at every crossed point (a "
+    "negative-energy massless fermion leg), where the source's values are not zero: neither served nor "
+    "refused typed (no document states a physical-momenta contract); the boson crossings at the same "
+    "kind of negative-energy kinematics are served correctly; the tree spinors continue a negative-"
+    "energy fermion of helicity h to the other chirality, so the loop plan likely fixes each fermion "
+    "leg's chirality from positive energy (cause not established). Routed to the coordinator for the "
+    "public-API / SDK owner; reproducer: li_manifest.py crossing --work-dir W (the source records "
+    "from li_manifest.py run), then this entry"
+)
+
+
+def _crossing_side(
+    arm: dict, source_arm: dict, sign: int, tdata: dict, sdata: dict
+) -> dict:
+    """One backend's crossing identity in binary64: sum |A_target|^2 at the
+    crossed points against (-1)^(crossed fermions) sum |A_source|^2 within
+    10 max(E_target, E_source) on the points both serve."""
+
+    ratios, zeros, served = [], [], 0
+    for p, crossed in enumerate(arm.get("points", [])):
+        reference = source_arm["points"][p] if "points" in source_arm else None
+        if (
+            reference is None
+            or crossed["status"] != "success"
+            or reference["status"] != "success"
+        ):
+            continue
+        served += 1
+        lhs = _summed(crossed["values"], tdata)
+        rhs = _signed(_summed(reference["values"], sdata), sign)
+        zeros.append(lhs == 0 and rhs != 0)
+        e = max(
+            (_abs_finite(crossed["estimate"]) or 0.0)
+            * tdata["normalization"]["denominator"],
+            (_abs_finite(reference["estimate"]) or 0.0)
+            * sdata["normalization"]["denominator"],
+        )
+        diff = abs(float(lhs - rhs))
+        ratios.append(diff / (FACTOR * e) if e else (0.0 if not diff else math.inf))
+    worst = max(ratios, default=None)
+    if zeros and all(zeros):
+        status = "partial"
+    elif worst is None:
+        status = "not run" if not arm.get("points") else "partial"
+    elif worst > 1:
+        status = "estimate miss"
+    else:
+        status = "pass" if served == len(arm.get("points", [])) else "partial"
+    return {
+        "status": status,
+        "served": served,
+        "of": len(arm.get("points", [])),
+        "worst_ratio_to_10E": worst,
+        "exactly_zero": bool(zeros) and all(zeros),
+        **(
+            {"failed_reasons": _reasons(arm)}
+            if served < len(arm.get("points", []))
+            else {}
+        ),
+    }
+
+
 def judge_crossing(result: dict, records: dict[str, dict]) -> dict:
     """The crossing identity: sum |A_target|^2 at the crossed points =
     (-1)^(crossed fermions) sum |A_source|^2 at the source's points; binary64
     within 10 max(E_target, E_source) (each E the checked call's absolute
-    estimate, summed like its value), double-double recorded. A crossing
-    whose crossed values are exactly zero at every point where the source's
-    are not is not evaluable on the public route (a negative-energy massless
-    fermion leg evaluates to exactly zero there; outside the route's
-    physical-momenta contract), recorded partial with that reason, never
-    passed."""
+    estimate, summed like its value) on NinjaRS and on TIRust (each against
+    the source's record of the same backend), NinjaRS double-double
+    recorded. A crossing whose crossed values are exactly zero at every
+    point where the source's are not is recorded partial with the finding
+    (``CROSSING_FINDING``), never passed."""
 
     runs: dict[str, dict] = {}
     for c in result["crossings"]:
@@ -1815,58 +2307,339 @@ def judge_crossing(result: dict, records: dict[str, dict]) -> dict:
             continue
         sign = -1 if c["crossed_fermions"] % 2 else 1
         tdata, sdata = fixture(c["target"]), fixture(c["source"])
-        ratios, devs, zeros, served = [], [], [], 0
-        for p, crossed in enumerate(c["arms"]["double"].get("points", [])):
-            reference = source["arms"]["ninjars/double/checked"]["points"][p]
-            if crossed["status"] != "success" or reference["status"] != "success":
-                continue
-            served += 1
-            lhs = _summed(crossed["values"], tdata)
-            rhs = _signed(_summed(reference["values"], sdata), sign)
-            zeros.append(lhs == 0 and rhs != 0)
-            e = max(
-                (_abs_finite(crossed["estimate"]) or 0.0)
-                * tdata["normalization"]["denominator"],
-                (_abs_finite(reference["estimate"]) or 0.0)
-                * sdata["normalization"]["denominator"],
-            )
-            diff = abs(float(lhs - rhs))
-            ratios.append(diff / (FACTOR * e) if e else (0.0 if not diff else math.inf))
+        ninjars = _crossing_side(
+            c["arms"]["double"],
+            source["arms"]["ninjars/double/checked"],
+            sign,
+            tdata,
+            sdata,
+        )
+        devs = []
         for p, crossed in enumerate(c["arms"]["double-double"].get("points", [])):
             reference = high_arm(source["arms"], "ninjars")["points"][p]
             if crossed["status"] == "success" and reference["status"] == "success":
                 rhs = _signed(_summed(reference["values"], sdata), sign)
                 devs.append(_rel(_summed(crossed["values"], tdata), rhs))
-        worst = max(ratios, default=None)
         entry: dict[str, Any] = {
             "crossed_fermions": c["crossed_fermions"],
-            "served": served,
-            "of": len(c["points"]),
-            "worst_ratio_to_10E": worst,
+            **{k: v for k, v in ninjars.items() if k != "status"},
             "double_double_max_relative": max(devs, default=None),
         }
-        if zeros and all(zeros):
-            entry["status"] = "partial"
-            entry["reason"] = (
-                "not evaluable on the public route: the crossed |A|^2 is exactly zero at every point "
-                "(a negative-energy massless fermion leg evaluates to exactly zero there, outside the "
-                "route's physical-momenta contract; the tree spinors move a negative-energy fermion "
-                "of helicity h to the other chirality, so the loop plan likely fixes each fermion "
-                "leg's chirality from positive energy: an observation, cause not established)"
+        statuses = [ninjars["status"]]
+        if "tirust/double" in c["arms"]:
+            tirust = _crossing_side(
+                c["arms"]["tirust/double"],
+                source["arms"]["tirust/double/checked"],
+                sign,
+                tdata,
+                sdata,
             )
-        elif worst is None:
-            entry["status"] = "not run"
+            entry["tirust"] = tirust
+            statuses.append(tirust["status"])
         else:
-            entry["status"] = (
-                "pass"
-                if worst <= 1 and served == len(c["points"])
-                else ("estimate miss" if worst > 1 else "partial")
-            )
+            entry["tirust"] = {
+                "status": "not run",
+                "reason": "no TIRust arm in the crossing record",
+            }
+            statuses.append("partial")
+        if ninjars["exactly_zero"]:
+            entry["finding"] = CROSSING_FINDING
+        entry["status"] = _worst(statuses)
         runs[label] = entry
     return {
         "row": "LI-W1/L1/P1/C1/S1 (C1, crossing; the id LI-C1 is the complex-mass-scheme row)",
         "processes": CROSSING_ROW,
         "status": _worst([r["status"] for r in runs.values()]) if runs else "not run",
+        "runs": runs,
+    }
+
+
+# ------------------------------------------------------------- Fig. 7
+
+
+# arXiv:1604.01363 Fig. 7 (comparison material, USER ~14:55): SPEC "fig7".
+FIG7_ID = "arXiv:1604.01363 Fig. 7"
+# The cumulative thresholds Delta of the comparison (10^-3 .. 10^-15).
+FIG7_DECADES = range(3, 16)
+
+
+def rambo(masses: list[float], energy: float, rng: Any) -> list[list[str]]:
+    """A massive RAMBO point (Kleiss, Stirling, Ellis) at sqrt(s) =
+    ``energy`` with massless beams along z, as binary64 strings."""
+
+    q = []
+    for _ in masses:
+        c = 2 * rng.random() - 1
+        phi = 2 * math.pi * rng.random()
+        e = -math.log(rng.random() * rng.random())
+        r = math.sqrt(1 - c * c)
+        q.append([e, e * r * math.cos(phi), e * r * math.sin(phi), e * c])
+    big = [sum(v[k] for v in q) for k in range(4)]
+    mass = math.sqrt(big[0] ** 2 - sum(x * x for x in big[1:]))
+    b = [-x / mass for x in big[1:]]
+    g = big[0] / mass
+    a = 1 / (1 + g)
+    x = energy / mass
+    p = []
+    for v in q:
+        bq = sum(b[k] * v[k + 1] for k in range(3))
+        p.append(
+            [x * (g * v[0] + bq)]
+            + [x * (v[k + 1] + b[k] * v[0] + a * bq * b[k]) for k in range(3)]
+        )
+    xi = math.sqrt(1 - (sum(masses) / energy) ** 2)
+    for _ in range(50):  # the massive rescaling (Newton on xi)
+        f = (
+            sum(
+                math.sqrt(m * m + (xi * v[0]) ** 2)
+                for m, v in zip(masses, p, strict=True)
+            )
+            - energy
+        )
+        df = sum(
+            xi * v[0] ** 2 / math.sqrt(m * m + (xi * v[0]) ** 2)
+            for m, v in zip(masses, p, strict=True)
+        )
+        xi -= f / df
+    final = [
+        [math.sqrt(m * m + (xi * v[0]) ** 2)] + [xi * c for c in v[1:]]
+        for m, v in zip(masses, p, strict=True)
+    ]
+    beams = [[energy / 2, 0.0, 0.0, energy / 2], [energy / 2, 0.0, 0.0, -energy / 2]]
+    return [[repr(float(c)) for c in v] for v in beams + final]
+
+
+def fig7(
+    work: Path,
+    counts: dict[str, int],
+    own_scheme: bool = False,
+    out: Path | None = None,
+) -> dict:
+    """The Fig. 7 comparison runs (SPEC "fig7"): per process (a fixture of
+    a §4.1 row, ``counts`` points each) its artifact at the paper's scheme
+    (``scheme_of``: MG5 defaults, massive b; ``own_scheme``: the fixture's
+    own scheme and its campaign artifact), RAMBO points at sqrt(s) =
+    ``energy`` (seeded), per helicity selection (initial helicities
+    ``initial_helicity``, every final Z at the selection's) the binary64
+    value with its estimate (``checks``) and the double-double value at the
+    same binary64 inputs (the truth of the error); ``out`` is rewritten
+    after each chunk (a stopped run keeps its points)."""
+
+    import random
+
+    from pyamplicol import Runtime
+    from pyamplicol.api import VirtualStabilityChecks
+
+    setup = spec()["fig7"]
+    record: dict[str, Any] = {
+        "setup": {k: v for k, v in setup.items() if k != "runs"},
+        "own_scheme": own_scheme,
+        "revision": _revision(),
+        "native": _native(),
+        "processes": {},
+    }
+    energy = float(Fraction(setup["energy"]))
+    for name, count in counts.items():
+        data = fixture(name)
+        if own_scheme:
+            label, run = name, data
+        else:
+            base = fixture(setup["scheme_of"])
+            run = {
+                **_derive(
+                    base,
+                    {
+                        k: data[k]
+                        for k in (
+                            "pdgs",
+                            "madloop_process",
+                            "loop_orders",
+                            "squared_orders",
+                        )
+                    },
+                ),
+                "name": f"fig7-{name}-{setup['scheme_of']}",
+            }
+            label = run["name"]
+        compiled = compile_model(run, work / "model-cache")
+        artifact, generation = generate(label, work, compiled, run)
+        parameters = run_parameters(run, compiled)
+        runtime = Runtime.load(artifact, process="p", model_parameters=parameters)
+        final = len(data["pdgs"]) - data["initial"]
+        wanted = {
+            selection: (setup["initial_helicity"],) * data["initial"] + (h,) * final
+            for selection, h in setup["selections"].items()
+        }
+        ids = {
+            selection: [
+                h.id for h in runtime.physics.helicities if tuple(h.values) == values
+            ]
+            for selection, values in wanted.items()
+        }
+        scheme = run["scheme_data"]
+        masses = [math.sqrt(float(m)) for m in _final_masses2(run, compiled)]
+        rng = random.Random(setup["seed"] + count)
+        points = [rambo(masses, energy, rng) for _ in range(count)]
+        scale = _decimal(Fraction(setup["mu_r"]) ** 2)
+        entry: dict[str, Any] = {
+            "points": 0,
+            "requested": count,
+            "scheme": scheme.get("description"),
+            "generation": generation,
+            "selections": {},
+        }
+        errors: dict[str, list] = {s: [] for s in ids}
+        estimates: dict[str, list] = {s: [] for s in ids}
+        seconds: dict[str, float] = {s: 0.0 for s in ids}
+        chunk = setup["chunk"]
+        for first in range(0, count, chunk):
+            block = points[first : first + chunk]
+            scales = [scale] * len(block)
+            for selection, chosen in ids.items():
+                start = time.perf_counter()
+                b64 = runtime.evaluate(
+                    block,
+                    mu_r2=scales,
+                    helicities=chosen,
+                    poles="none",
+                    reduction="ninjars",
+                    stability_checks=VirtualStabilityChecks(
+                        1, reduction_direction=True, rescaled=True
+                    ),
+                    on_failure="return",
+                )
+                dd = runtime.evaluate(
+                    block,
+                    mu_r2=scales,
+                    helicities=chosen,
+                    poles="none",
+                    reduction="ninjars",
+                    arithmetic="double-double",
+                    on_failure="return",
+                )
+                seconds[selection] += time.perf_counter() - start
+                for v, e, t, lane, lane_dd in zip(
+                    b64.values,
+                    b64.stability,
+                    dd.values,
+                    b64.diagnostics,
+                    dd.diagnostics,
+                    strict=True,
+                ):
+                    if lane.status != "success" or lane_dd.status != "success":
+                        continue
+                    value, truth = float(v[0].finite), float(t[0].finite)
+                    errors[selection].append(
+                        abs(value / truth - 1) if truth else abs(value)
+                    )
+                    estimates[selection].append(e.finite)
+            entry["points"] = first + len(block)
+            for selection, chosen in ids.items():
+                entry["selections"][selection] = {
+                    "helicity_ids": chosen,
+                    "seconds": seconds[selection],
+                    "errors": errors[selection],
+                    "estimates": estimates[selection],
+                }
+            record["processes"][name] = entry
+            if out is not None:
+                out.write_text(json.dumps(record, indent=1) + "\n")
+            print(name, entry["points"], flush=True)
+    return record
+
+
+def _final_masses2(data: dict, compiled: Any) -> list[Fraction]:
+    """The final particles' squared masses at the fixture's parameters (the
+    model's mass parameter of each PDG code; derived masses, e.g. m_W, from
+    the fixture's derived parameters)."""
+
+    particles = {int(r.pdg_code): r for r in compiled.ir.particles}
+    parameters = {
+        **(data.get("derived_parameters") or {}),
+        **data["scheme_data"]["parameters"],
+        **data["scheme_data"]["fixed_parameters"],
+    }
+    out = []
+    for pdg in data["pdgs"][data["initial"] :]:
+        mass = str(particles[abs(pdg)].mass)
+        out.append(
+            Fraction(0) if mass in ("ZERO", "0") else Fraction(parameters[mass]) ** 2
+        )
+    return out
+
+
+def judge_fig7(results: list[dict]) -> dict:
+    """The Fig. 7 figures: per run, process and selection the served
+    points, the cumulative fractions of the true binary64 error (vs
+    double-double) and of the binary64 estimate (the paper's plotted
+    quantity is MadLoop's estimate) below 10^-3 .. 10^-15, the worst error
+    and the worst error over its estimate; the setup, what is matched and
+    what is not."""
+
+    setup = spec()["fig7"]
+    runs = []
+    for result in results:
+        processes = {}
+        for name, entry in result["processes"].items():
+            selections = {}
+            for selection, data in entry["selections"].items():
+                errors, estimates = data["errors"], data["estimates"]
+
+                def below(values: list) -> dict:
+                    return (
+                        {
+                            f"1e-{k:02d}": sum(x < 10.0**-k for x in values)
+                            / len(values)
+                            for k in FIG7_DECADES
+                        }
+                        if values
+                        else {}
+                    )
+
+                selections[selection] = {
+                    "served": len(errors),
+                    "error_below": below(errors),
+                    "estimate_below": below(estimates),
+                    "max_error": max(errors, default=None),
+                    "max_estimate": max(estimates, default=None),
+                    "max_error_over_estimate": max(
+                        (
+                            x / y if y else math.inf
+                            for x, y in zip(errors, estimates, strict=True)
+                        ),
+                        default=None,
+                    ),
+                }
+            processes[name] = {
+                "points": entry["points"],
+                "selections": selections,
+                "generation_seconds": (entry.get("generation") or {}).get("seconds"),
+            }
+        runs.append(
+            {
+                "scheme": "the fixture's own scheme (loop_sm no_b_mass: NOT the paper's, b massless)"
+                if result["own_scheme"]
+                else f"{setup['scheme_of']}'s: {setup['scheme_note']}",
+                "matched": not result["own_scheme"],
+                "native": result.get("native"),
+                "processes": processes,
+            }
+        )
+    return {
+        "status": "recorded",
+        "source": setup["source"],
+        "comparison_material": setup["comparison_material"],
+        "setup": {
+            "pyamplicol": "NinjaRS per amplitude, binary64 value + estimate ("
+            + setup["checks"]
+            + "), double-double at the same binary64 inputs as the truth",
+            "matched": "processes, single-helicity selections, sqrt(s) = 1 TeV, no cuts, RAMBO points, "
+            "binary64 reduction, a direction + rotation stability estimate; the paper's MG5 default "
+            "parameters with massive b (the 'matched' runs)",
+            "not matched": "point counts (here 200 / 50 / 50 or 100 vs 100K / 10K / 1K), MadLoop's exact "
+            "estimate (its loop-direction test reverses the propagators; here the re-test and one "
+            "rotation), the curves themselves (an image: features compared only)",
+        },
         "runs": runs,
     }
 
@@ -1883,8 +2656,8 @@ DELEGATED_RECORDS = EXTRA / "records" / "delegated.json"
 # exact Lorentz transform; P1: the amplitude poles), C1 the crossing
 # (``crossing``, id CROSSING_ID), S1 the N_f rows (LI-A5's runs with and
 # without the top loop).
-IDENTITIES = {"LI-W1": "L4", "LI-L1": "L5", "LI-P1": "L3"}
-FLAVOUR_ROW = "LI-A5"
+IDENTITIES = _load(SPEC)["identities"]["checks"]
+FLAVOUR_ROW = _load(SPEC)["identities"]["flavour_row"]
 
 
 def lit(
@@ -1894,13 +2667,18 @@ def lit(
     limit_results: dict | None = None,
     delegated: dict | None = None,
     crossing_result: dict | None = None,
+    madloop: dict | None = None,
+    fig7_result: dict | None = None,
 ) -> dict:
     """data/lit.json: per registry key its status, reference deviations
     (binary64, NinjaRS; the analytic oracle's too), points and per-check
     figures over its runs (with LI-A7's heavy-top scan as L9 of its rows'
-    runs, ``limit_results``); per §4.1 id under ``ids``, the identity rows
-    from every run's checks and the crossing evaluations
-    (``crossing_result``), the delegated rows from their records."""
+    runs, ``limit_results``, and LI-A1's HEFT ratio); per §4.1 id under
+    ``ids``, the identity rows from every run's checks, the crossing
+    evaluations (``crossing_result``), the stress points with MadLoop QP
+    (``madloop``, ``stress_madloop``), the arXiv:1604.01363 Fig. 7
+    comparison (``fig7_result``) and the delegated rows from their
+    records."""
 
     delegated = _load(DELEGATED_RECORDS) if delegated is None else delegated
     findings = delegated.get("findings", {})
@@ -1910,15 +2688,17 @@ def lit(
         for name, record in records.items()
         if name in by_fixture
     }
+    ratio_rows = {e["fixture"] for e in entries if HEFT_RATIO_ROW in e["ids"]}
     for name, result in (limit_results or {}).items():
         if name in judged:
             judged[name]["L9"] = dict(result)
+            if name in ratio_rows and LIMIT_ROW not in by_fixture[name]["ids"]:
+                # LI-A1's HEFT ratio is reported (§4.1), not a limit rule.
+                judged[name]["L9"]["status"] = "recorded"
     for name, checks in findings.items():
-        for check, note in checks.items():
+        for check, finding in checks.items():
             if name in judged and check in judged[name]:
-                if judged[name][check]["status"] == "fail":
-                    judged[name][check]["status"] = "reference defect"
-                judged[name][check]["finding"] = note
+                _apply_finding(judged[name][check], finding)
     rows: dict[str, dict] = {}
     for key, fixtures in registry_runs(entries).items():
         done = [f for f in fixtures if f in judged]
@@ -1946,13 +2726,43 @@ def lit(
             ]
     for value in ids.values():
         value["status"] = _worst([_run_status(j) for j in value["runs"].values()])
+    if "stress" in ids:
+        for name, judged_run in ids["stress"]["runs"].items():
+            judged_run["madloop_qp"] = (
+                judge_madloop(madloop[name], records[name])
+                if madloop and name in madloop
+                else {
+                    "status": "not run",
+                    "reason": "no MadLoop record (li_manifest.py stress-madloop)",
+                }
+            )
     if limit_results:
+        limited = [f for f in limit_results if f in judged and f not in ratio_rows]
         ids[LIMIT_ROW] = {
-            "status": _worst(
-                [judged[f]["L9"]["status"] for f in limit_results if f in judged]
-            ),
-            "runs": {f: judged[f]["L9"] for f in limit_results if f in judged},
+            "status": _worst([judged[f]["L9"]["status"] for f in limited]),
+            "runs": {f: judged[f]["L9"] for f in limited},
         }
+        ratios = {
+            f: {
+                "heft_ratio_at_physical_mt": [
+                    p["ratios"][0] for p in judged[f]["L9"]["points"]
+                ],
+                "mt": judged[f]["L9"]["masses"][0],
+                "large_mt_limit": [p["limit"] for p in judged[f]["L9"]["points"]],
+                "extrapolation_error": [
+                    p["extrapolation_error"] for p in judged[f]["L9"]["points"]
+                ],
+                **(
+                    {"finding": judged[f]["L9"]["finding"]}
+                    if "finding" in judged[f]["L9"]
+                    else {}
+                ),
+            }
+            for f in ratio_rows
+            if f in judged and "L9" in judged[f]
+        }
+        if ratios and HEFT_RATIO_ROW in ids:
+            ids[HEFT_RATIO_ROW]["heft_ratio"] = ratios
     campaign_runs = {f for f in judged if "stress" not in by_fixture[f]["tiers"]}
     for i, check in IDENTITIES.items():
         per_run = {
@@ -1966,6 +2776,8 @@ def lit(
             ),
             "runs": per_run,
         }
+    if "LI-W1" in ids:
+        ids["LI-W1"]["cited"] = spec()["identities"].get("ward_cited", {})
     ids[CROSSING_ID] = (
         judge_crossing(crossing_result, records)
         if crossing_result
@@ -1996,6 +2808,14 @@ def lit(
     for i, record in delegated.items():
         if i.startswith("LI-"):
             ids[i] = record
+    if fig7_result:
+        ids[FIG7_ID] = judge_fig7(fig7_result)
+    for value in ids.values():
+        status = value.get("status", "")
+        if status.startswith("waits"):
+            # R2: waiting on a package not yet landed is partial, naming it.
+            value["status"] = "partial"
+            value["waits_on"] = TIR_MP
     return {
         "what": "lit-val's loop-induced validation figures (m-lit PLAN §3.4 LIT-VAL, "
         "§4.0 rules, §4.1 rows): rows keyed by milestone.json loop_induced keys "
@@ -2011,12 +2831,76 @@ def lit(
 CHECKS = ("N", "L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9", "E")
 
 
+def _apply_finding(result: dict, finding: Any) -> None:
+    """A recorded reference finding on a check: attached as is; a failing
+    L9 becomes 'reference defect' only where the finding's ``expected_limit``
+    explains it (every point's limit within ten times its extrapolation
+    error of it); any other failure stays a failure."""
+
+    note = finding if isinstance(finding, str) else finding["note"]
+    result["finding"] = note
+    expected = None if isinstance(finding, str) else finding.get("expected_limit")
+    if result["status"] != "fail" or expected is None:
+        return
+    target = float(Fraction(expected))
+    explained = [
+        abs(p["limit"] - target) <= FACTOR * p["extrapolation_error"]
+        for p in result.get("points", [])
+    ]
+    result["finding_explains"] = bool(explained) and all(explained)
+    if result["finding_explains"]:
+        result["status"] = "reference defect"
+
+
 def _run_status(judged: dict) -> str:
     """A run's verdict: its worst check ('recorded' figures, e.g. a zero
     row's provider values, are information, not a verdict)."""
 
     statuses = [judged[c]["status"] for c in CHECKS if c in judged]
     return _worst([x for x in statuses if x != "recorded"] or statuses)
+
+
+# Verdicts that need no note.
+PASSING = ("pass", "pass (lax)", "recorded")
+
+
+def _causes(name: str, judged: dict) -> list[str]:
+    """Why a run is not a plain pass: per check not passing, its status and
+    cause (the figures and typed reasons stay in the run's checks)."""
+
+    out = []
+    for check in CHECKS:
+        if check not in judged or judged[check]["status"] in PASSING:
+            continue
+        result = judged[check]
+        cause = result.get("reason") or result.get("finding")
+        if check == "L6":
+            b64 = result["double"]
+            parts = []
+            if b64["tirust_served"] < b64["of"]:
+                parts.append(
+                    f"TIRust fails {b64['of'] - b64['tirust_served']} of {b64['of']} binary64 "
+                    "points closed (typed: L6.double.tirust_failed_reasons)"
+                )
+            for carrier in ("double-double", ARBITRARY):
+                sub = result.get(carrier)
+                if sub and sub["status"] not in PASSING:
+                    parts.append(f"{carrier} {sub['status']}")
+            cause = "; ".join(parts) or cause
+        elif check == "L3":
+            cause = ", ".join(
+                f"{label} {v['status']}"
+                + (f" ({v['served']}/{v['of']} points)" if "served" in v else "")
+                for label, v in result.items()
+                if isinstance(v, dict) and v.get("status") not in (None, *PASSING)
+            )
+        elif check == "N":
+            cause = f"NinjaRS fails {result['failed']} points closed (typed: N.reasons)"
+        elif check == "L4" and result["status"] == "partial":
+            cause = "generation-time probes only"
+        text = f"{check} {result['status']}"
+        out.append(f"{name}: {text}" + (f" ({cause})" if cause else ""))
+    return out
 
 
 def _merge(key, done, judged, fixtures, source) -> dict:
@@ -2027,12 +2911,21 @@ def _merge(key, done, judged, fixtures, source) -> dict:
     status = _worst([_run_status(judged[f]) for f in done])
     if len(done) < len(fixtures):
         status = _worst([status, "partial"])
+    waits = sorted(
+        {judged[f]["L6"]["waits_on"] for f in done if "waits_on" in judged[f]["L6"]}
+    )
+    if status.startswith("waits"):
+        # R2: a row whose check waits on a package not yet landed is
+        # partial, naming that package.
+        status = "partial"
     checks = {f: {c: judged[f][c] for c in CHECKS if c in judged[f]} for f in done}
-    notes = []
+    notes = [
+        f"WAITS ON {package}: TIRust's double-double / AP arms of L6 (refused typed at this "
+        "pin) and its binary64 L6 re-run at the re-pin"
+        for package in waits
+    ]
     for f in done:
-        l6 = judged[f]["L6"]["double"]
-        if l6["tirust_served"] < l6["of"]:
-            notes.append(f"{f}: TIRust serves {l6['tirust_served']}/{l6['of']} points")
+        notes.extend(_causes(f, judged[f]))
     missing = [f for f in fixtures if f not in done]
     if missing:
         notes.append("not run: " + ", ".join(missing))
@@ -2041,12 +2934,82 @@ def _merge(key, done, judged, fixtures, source) -> dict:
         "references": refs,
         "points": sum(judged[f]["points"] for f in done),
         "note": "; ".join(notes) or None,
+        "waits_on": waits,
         "source": source,
         "runs": checks,
     }
 
 
 # ------------------------------------------------------------- CLI
+
+
+def _resumable(path: Path, refresh: str | None, name: str, work: Path) -> dict | None:
+    """The record at ``path`` to continue from (None: run afresh): a record
+    taken with the staged extension (``_same_native``) is kept (complete:
+    skipped; unfinished, or complete without the L3 probes: resumed); with
+    ``refresh`` (a backend) a complete record of another native keeps its
+    other arms if the staged native reproduces its NinjaRS binary64 values
+    bitwise (``refresh_check``), its ``refresh`` arms and L3 probes are
+    dropped and recomputed (recorded under ``refreshed``)."""
+
+    if not path.is_file():
+        return None
+    done = _load(path)
+    if _same_native(done) and not refresh:
+        if done.get("complete") and "l3_probes" not in done:
+            done = {**done, "complete": False}
+        return done
+    if not refresh or not done.get("complete"):
+        return None
+    if not refresh_check(name, work, done):
+        raise SystemExit(
+            f"{name}: the staged native does not reproduce the record's NinjaRS binary64 "
+            "values bitwise: run it afresh in a new --work-dir"
+        )
+    arms = {k: v for k, v in done["arms"].items() if not k.startswith(f"{refresh}/")}
+    probes = {
+        k: v
+        for k, v in (done.get("l3_probes") or {}).items()
+        if not k.startswith(refresh)
+    }
+    refreshed = [
+        *done.get("refreshed", []),
+        {"backend": refresh, "native": _native(), "revision": _revision()},
+    ]
+    return {
+        **done,
+        "arms": arms,
+        "l3_probes": probes,
+        "refreshed": refreshed,
+        "complete": False,
+    }
+
+
+def refresh_check(name: str, work: Path, record: dict) -> bool:
+    """Whether the staged native reproduces ``record``'s NinjaRS binary64
+    values (the plain arm) bitwise on its artifact."""
+
+    from pyamplicol import Runtime
+
+    data = fixture(name)
+    compiled = compile_model(data, work / "model-cache")
+    runtime = Runtime.load(
+        work / name / "artifact",
+        process="p",
+        model_parameters=run_parameters(data, compiled),
+    )
+    scales = [_decimal(Fraction(mu) ** 2) for mu in data["mu_r"]]
+    arm = _call(
+        runtime,
+        data["points"],
+        scales,
+        backend="ninjars",
+        arithmetic="double",
+        checked=False,
+        digits=DIGITS,
+    )
+    recorded = record["arms"]["ninjars/double/plain"]["points"]
+    return [p["values"] for p in arm["points"]] == [p["values"] for p in recorded]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -2069,7 +3032,14 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="run the double-double arms without the checks (value only)",
     )
-    run.add_argument("fixtures", nargs="+")
+    run.add_argument(
+        "--refresh-backend",
+        choices=BACKENDS,
+        default=None,
+        help="recompute this backend's arms of complete records of another native "
+        "(after lit-tir-mp: tirust), the others kept if NinjaRS binary64 is bitwise",
+    )
+    run.add_argument("fixtures", nargs="*", help="default: every campaign run")
     lim = sub.add_parser("limits", help="LI-A7: the heavy-top scan of the limit rows")
     lim.add_argument("--work-dir", type=Path, required=True)
     lim.add_argument("--doublings", type=int, default=DOUBLINGS)
@@ -2083,10 +3053,45 @@ def main(argv: list[str] | None = None) -> int:
     out.add_argument(
         "--crossing", type=Path, default=None, help="the crossing command's output"
     )
+    out.add_argument(
+        "--stress-madloop",
+        type=Path,
+        default=None,
+        help="the stress-madloop command's output",
+    )
+    out.add_argument(
+        "--fig7",
+        type=Path,
+        action="append",
+        default=[],
+        help="a fig7 command's output (repeatable)",
+    )
+    f7 = sub.add_parser("fig7", help="the arXiv:1604.01363 Fig. 7 comparison runs")
+    f7.add_argument("--work-dir", type=Path, required=True)
+    f7.add_argument("--output", type=Path, required=True)
+    f7.add_argument(
+        "--own-scheme",
+        action="store_true",
+        help="each fixture's own scheme and campaign artifact (not the paper's)",
+    )
+    f7.add_argument(
+        "counts", nargs="*", help="FIXTURE=POINTS (default: SPEC fig7 runs)"
+    )
     cross = sub.add_parser(
         "crossing", help="C1: the crossing evaluations of LI-26's runs"
     )
     cross.add_argument("--work-dir", type=Path, required=True)
+    ml = sub.add_parser(
+        "stress-madloop", help="MadLoop QP at the stress points (lit-ref's exports)"
+    )
+    ml.add_argument("--work-dir", type=Path, required=True)
+    ml.add_argument(
+        "--reference-root",
+        type=Path,
+        default=None,
+        help="the reference tree (default: LOOP_REFERENCE_ROOT, else the workspace's)",
+    )
+    ml.add_argument("--cpu", type=int, default=None)
     args = parser.parse_args(argv)
     sys.path.insert(0, str(WT))
     entries = runs()
@@ -2100,29 +3105,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "run":
         by_fixture = {e["fixture"]: e for e in entries}
         skip = skip_arms(args.skip_arm)
-        for name in args.fixtures:
+        for name in args.fixtures or list(by_fixture):
             entry = by_fixture[name]
             path = args.work_dir / name / "record.json"
-            previous = None
-            if path.is_file():
-                done = _load(path)
-                if done.get("complete") and "l3_probes" in done:
-                    print(name, "complete", flush=True)
-                    continue
-                if done.get("complete"):
-                    path.write_text(
-                        json.dumps(
-                            add_probes(name, args.work_dir, done, skip), indent=1
-                        )
-                        + "\n"
-                    )
-                    continue
-                if done.get("native_digest") == _native_digest():
-                    previous = done  # an unfinished run: resumed
 
             def write(record: dict, path: Path = path) -> None:
+                path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(json.dumps(record, indent=1) + "\n")
 
+            previous = _resumable(path, args.refresh_backend, name, args.work_dir)
+            if previous is not None and previous.get("complete"):
+                print(name, "complete", flush=True)
+                continue
             record = evaluate(
                 name,
                 args.work_dir,
@@ -2160,6 +3154,23 @@ def main(argv: list[str] | None = None) -> int:
                 json.dumps(result, indent=1) + "\n"
             )
         return 0
+    if args.command == "fig7":
+        counts = (
+            {k: int(v) for k, v in (a.split("=") for a in args.counts)}
+            if args.counts
+            else spec()["fig7"]["runs"]
+        )
+        fig7(args.work_dir, counts, args.own_scheme, args.output)
+        return 0
+    if args.command == "stress-madloop":
+        root = args.reference_root or Path(
+            os.environ.get("LOOP_REFERENCE_ROOT") or _workspace() / "reference"
+        )
+        result = stress_madloop(args.work_dir, entries, root.resolve(), args.cpu)
+        (args.work_dir / "stress-madloop.json").write_text(
+            json.dumps(result, indent=1) + "\n"
+        )
+        return 0
     if args.command == "crossing":
         result = crossing(args.work_dir, entries)
         (args.work_dir / "crossing.json").write_text(
@@ -2173,6 +3184,8 @@ def main(argv: list[str] | None = None) -> int:
     }
     limit_results = _load(args.limits) if args.limits else None
     crossing_result = _load(args.crossing) if args.crossing else None
+    madloop = _load(args.stress_madloop) if args.stress_madloop else None
+    fig7_result = [_load(path) for path in args.fig7] or None
     args.output.write_text(
         json.dumps(
             lit(
@@ -2181,6 +3194,8 @@ def main(argv: list[str] | None = None) -> int:
                 args.source,
                 limit_results,
                 crossing_result=crossing_result,
+                madloop=madloop,
+                fig7_result=fig7_result,
             ),
             indent=1,
         )
