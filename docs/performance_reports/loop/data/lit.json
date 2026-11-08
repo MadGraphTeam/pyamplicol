@@ -12,11 +12,12 @@
   "L9": "limits: HEFT / LET / crossing / symmetry identities as stated per row",
   "N0": "non-regression of the Born-interfered plans and outputs"
  },
- "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+ "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
  "provenance": {
   "engine_slice": {
-   "f1e8c98e5": 134,
+   "e80d31e43": 67,
    "e852f448b": 60,
+   "f1e8c98e5": 67,
    "cc99c9480": 2,
    "082193961": 5
   },
@@ -28,7 +29,8 @@
    "not recorded": 67
   },
   "refreshed": {
-   "tirust arms at loop-native-v2-slice-f1e8c98e (symbolica 3.0.2 (community-release-python-dfe6bd97))": 67
+   "tirust arms at loop-native-v2-slice-f1e8c98e (symbolica 3.0.2 (community-release-python-dfe6bd97))": 67,
+   "tirust arms at loop-native-v2-slice-e80d31e4 (symbolica 3.0.2 (community-release-python-dfe6bd97))": 67
   }
  },
  "rows": {
@@ -43,7 +45,7 @@
    "points": 6,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_h": {
      "L1": {
@@ -585,7 +587,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_h_gg": {
      "L1": {
@@ -752,7 +754,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_h_aa": {
      "L1": {
@@ -932,7 +934,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_h_za": {
      "L1": {
@@ -1105,7 +1107,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_aa_h": {
      "L1": {
@@ -1273,7 +1275,7 @@
    "points": 6,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_aa": {
      "L1": {
@@ -1601,7 +1603,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_zz": {
      "L1": {
@@ -1763,7 +1765,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_wpwm": {
      "L1": {
@@ -1925,7 +1927,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_za": {
      "L1": {
@@ -2089,7 +2091,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_hh": {
      "L1": {
@@ -2355,7 +2357,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_hz": {
      "L1": {
@@ -2517,7 +2519,7 @@
    "points": 3,
    "note": "li_gg_hg: L9 reference defect (the HEFT oracle is the defect: pyAmpliCol's built-in-sm-heft tree is 9/8 of the analytic LO HEFT value at g g > h (G_F alpha_s^2 m_H^4 c(r)^2 / (288 sqrt2 pi^2) with the model's own c(r); reproducer workspace/tmp/lit-val/findings/heft_gg_h.py), and the loop-induced g g > h (= Spira's analytic formula, = MadLoop / OpenLoops / Recola) over that tree extrapolates to the same 8/9; here the scan extrapolates to 8/9 within ten times its extrapolation error at every point (decoupling holds, the oracle is 9/8 too large; finding to the coordinator). The relabel 'reference defect' applies only while every point's limit is 8/9 within that error (expected_limit): any other failure stays a failure)",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_hg": {
      "L1": {
@@ -2782,7 +2784,7 @@
    "points": 3,
    "note": "li_uux_hg: L9 reference defect (the HEFT oracle is the defect: pyAmpliCol's built-in-sm-heft tree is 9/8 of the analytic LO HEFT value at g g > h (G_F alpha_s^2 m_H^4 c(r)^2 / (288 sqrt2 pi^2) with the model's own c(r); reproducer workspace/tmp/lit-val/findings/heft_gg_h.py), and the loop-induced g g > h (= Spira's analytic formula, = MadLoop / OpenLoops / Recola) over that tree extrapolates to the same 8/9; here the scan extrapolates to 8/9 within ten times its extrapolation error at every point (decoupling holds, the oracle is 9/8 too large; finding to the coordinator). The relabel 'reference defect' applies only while every point's limit is 8/9 within that error (expected_limit): any other failure stays a failure)",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_uux_hg": {
      "L1": {
@@ -3045,7 +3047,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_ug_hu": {
      "L1": {
@@ -3206,7 +3208,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_zg": {
      "L1": {
@@ -3369,7 +3371,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_ag": {
      "L1": {
@@ -3533,7 +3535,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_emep_ha": {
      "L1": {
@@ -3692,7 +3694,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_aa_aa": {
      "L1": {
@@ -3860,7 +3862,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_aa_zz": {
      "L1": {
@@ -4032,7 +4034,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_aa_hh": {
      "L1": {
@@ -4191,7 +4193,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_emep_hh": {
      "L1": {
@@ -4319,7 +4321,7 @@
    "points": 3,
    "note": "li_h_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_h_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points))",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_h_ggg": {
      "L1": {
@@ -4499,7 +4501,7 @@
    "points": 3,
    "note": "li_z_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_z_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points))",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_z_ggg": {
      "L1": {
@@ -4667,7 +4669,7 @@
    "points": 3,
    "note": "li_emep_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_emep_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_emep_ggg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_emep_ggg": {
      "L1": {
@@ -4850,7 +4852,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_hhh": {
      "L1": {
@@ -5012,7 +5014,7 @@
    "points": 3,
    "note": "li_gg_hgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hgg: L6 partial (double-double partial); li_gg_hgg: L9 reference defect (the HEFT oracle is the defect: pyAmpliCol's built-in-sm-heft tree is 9/8 of the analytic LO HEFT value at g g > h (G_F alpha_s^2 m_H^4 c(r)^2 / (288 sqrt2 pi^2) with the model's own c(r); reproducer workspace/tmp/lit-val/findings/heft_gg_h.py), and the loop-induced g g > h (= Spira's analytic formula, = MadLoop / OpenLoops / Recola) over that tree extrapolates to the same 8/9; here the scan extrapolates to 8/9 within ten times its extrapolation error at every point (decoupling holds, the oracle is 9/8 too large; finding to the coordinator). The relabel 'reference defect' applies only while every point's limit is 8/9 within that error (expected_limit): any other failure stays a failure)",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_hgg": {
      "L1": {
@@ -5286,7 +5288,7 @@
    "points": 3,
    "note": "li_gg_zzg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_zzg": {
      "L1": {
@@ -5463,7 +5465,7 @@
    "points": 3,
    "note": "li_gg_aag: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_aag": {
      "L1": {
@@ -5644,7 +5646,7 @@
    "points": 3,
    "note": "li_gg_wpwmg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_wpwmg": {
      "L1": {
@@ -5818,7 +5820,7 @@
    "points": 3,
    "note": "li_gg_zzz: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_zzz: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points))",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_zzz": {
      "L1": {
@@ -5988,7 +5990,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_hzg": {
      "L1": {
@@ -6151,7 +6153,7 @@
    "points": 3,
    "note": "li_gg_agg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_agg": {
      "L1": {
@@ -6331,7 +6333,7 @@
    "points": 3,
    "note": "li_gg_zgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_zgg": {
      "L1": {
@@ -6502,7 +6504,7 @@
    "points": 3,
    "note": "li_uux_hgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_uux_hgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_uux_hgg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_uux_hgg": {
      "L1": {
@@ -6678,7 +6680,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_uux_ddxh": {
      "L1": {
@@ -6809,7 +6811,7 @@
    "points": 4,
    "note": "li_gg_hhgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L6 partial (TIRust fails 2 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial); li_gg_hhgg_p15: L3 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L4 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L6 partial (TIRust fails 1 of 1 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double not run); li_gg_hhgg_p15: E not run",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_hhgg": {
      "L1": {
@@ -7118,7 +7120,7 @@
    "points": 3,
    "note": "li_gg_hggg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_hggg": {
      "L1": {
@@ -7288,7 +7290,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_emepmupmum": {
      "L1": {
@@ -7451,7 +7453,7 @@
    "points": 3,
    "note": "li_gg_aagg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aagg: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_aagg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial; arbitrary not run); li_gg_aagg: L7 not run (stopped: the 40-digit AP arm of this 2->4 optional run extrapolates to about 6.9 h (its double-double arm 7405 s times the AP / double-double ratio 3.35 of li_gg_hhgg); L7 at six legs is li_gg_hhgg's)",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_aagg": {
      "L1": {
@@ -7630,7 +7632,7 @@
    "points": 3,
    "note": "li_gg_zzzz: L3 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_zzzz": {
      "L1": {
@@ -7782,7 +7784,7 @@
    "points": 3,
    "note": null,
    "waits_on": [],
-   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes, the crossing and the fixture-point Ward probes (L4) at loop-native-v2-slice-f1e8c98e (digest 5966f97f, lit-tir-mp: TIRust in binary64/DD/MPFR, method choice on in binary64), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS bitwise across the three natives, N0), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
     "li_gg_emepmupmumg": {
      "L1": {
@@ -7964,6 +7966,24 @@
    },
    "status": "pass",
    "heft_ratio": {
+    "li_gg_h_tb": {
+     "heft_ratio_at_physical_mt": [
+      0.7925783809135963,
+      0.7925783809135963,
+      0.7925783809135968
+     ],
+     "mt": "173",
+     "large_mt_limit": [
+      0.7897766349521099,
+      0.7897766349521095,
+      0.7897766349521099
+     ],
+     "extrapolation_error": [
+      1.061248462958105e-12,
+      1.0612310653728883e-12,
+      1.0612563707024671e-12
+     ]
+    },
     "li_gg_h": {
      "heft_ratio_at_physical_mt": [
       0.8889050430870675,
@@ -7982,24 +8002,6 @@
       4.701673715667564e-18
      ],
      "finding": "LI-A1's HEFT ratio (reported, no limit rule): the loop-induced g g > h over the built-in-sm-heft tree; its large-m_t limit is the 8/9 of the HEFT tree finding (li_gg_hg's note)"
-    },
-    "li_gg_h_tb": {
-     "heft_ratio_at_physical_mt": [
-      0.7925783809135963,
-      0.7925783809135963,
-      0.7925783809135968
-     ],
-     "mt": "173",
-     "large_mt_limit": [
-      0.7897766349521099,
-      0.7897766349521095,
-      0.7897766349521099
-     ],
-     "extrapolation_error": [
-      1.061248462958105e-12,
-      1.0612310653728883e-12,
-      1.0612563707024671e-12
-     ]
     }
    }
   },
