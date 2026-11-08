@@ -2,12 +2,18 @@
  "what": "the loop-induced summary table <tab:summary-li> of docs/performance_reports/loop/benchmarks.typ, written by scripts/build_summary.py (build_loop_induced); do not edit by hand",
  "meta": {
   "date": "2026-11-08",
+  "measured": [
+   "2026-11-08"
+  ],
   "engine_on_loop": "ca602436",
   "native_build_on_loop": {
    "name": "loop-native-v2-slice-ca602436",
    "digest": "4cbb549f"
   },
   "default_backend": "TIRust",
+  "provider_protocols": [
+   "optimistic"
+  ],
   "gate_batch": 128,
   "threshold_rule": {
    "below_seconds_per_point": 0.005,
@@ -45,7 +51,7 @@
    },
    "lit.json": {
     "file": "data/lit.json",
-    "present": false,
+    "present": true,
     "owner": "lit-val"
    }
   },
@@ -112,9 +118,32 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 2.597793986355879e-13
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 6.173787262562613e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 9.154493887342762e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 9.327381274816639e-13
+       }
+      ],
+      "points": 6,
+      "note": null,
+      "source": "lit.json rows[gg_h]"
      },
      "generation": {
       "status": "measured",
@@ -203,9 +232,27 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 6.196356470990676e-14
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 6.315964539655625e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 6.341983696775221e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[h_gg]"
      },
      "generation": {
       "status": "measured",
@@ -295,9 +342,27 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 2.903463233467064e-14
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.899371939402848e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.9533592555098953e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[h_aa]"
      },
      "generation": {
       "status": "measured",
@@ -387,9 +452,27 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.570628720754559e-14
+       },
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 1.667114016027893e-14
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 7.864692344366133e-14
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[h_za]"
      },
      "generation": {
       "status": "measured",
@@ -477,9 +560,27 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 5.151298758652192e-14
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.1873042919738086e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.2360564743977466e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[aa_h]"
      },
      "generation": {
       "status": "measured",
@@ -562,9 +663,32 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 3.4139177043691134e-14
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 4.533234984490084e-14
+       },
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 4.611677846120427e-14
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 4.726962975280249e-14
+       }
+      ],
+      "points": 6,
+      "note": null,
+      "source": "lit.json rows[gg_aa]"
      },
      "generation": {
       "status": "measured",
@@ -641,9 +765,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 4.55817054337354e-12
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 5.901734251712163e-12
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 6.6072530618121685e-12
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_zz]"
      },
      "generation": {
       "status": "measured",
@@ -720,9 +862,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 1.7491494730737478e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 5.672925240253487e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 7.784561949123238e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_wpwm]"
      },
      "generation": {
       "status": "measured",
@@ -799,9 +959,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.686593659958635e-14
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 1.9119789428412846e-14
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 4.165081882092484e-14
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_za]"
      },
      "generation": {
       "status": "measured",
@@ -873,18 +1051,21 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.001561181,
-        "source": "required/li/timing/li_gg_hh-providers.json providers.openloops",
+        "seconds_per_point": 0.0006597924999999999,
+        "source": "required/li/timing/li_gg_hh-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.0013595255,
-        "source": "required/li/timing/li_gg_hh-providers.json providers.recola",
+        "seconds_per_point": 0.00041095149999999996,
+        "source": "required/li/timing/li_gg_hh-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.000691913,
-        "source": "required/li/timing/li_gg_hh-providers.json providers.madloop",
+        "seconds_per_point": 0.0003640015,
+        "source": "required/li/timing/li_gg_hh-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
@@ -892,50 +1073,69 @@
       "fastest": {
        "key": "madloop",
        "name": "MadLoop",
-       "seconds_per_point": 0.000691913
+       "seconds_per_point": 0.0003640015
       },
       "unmatched": false,
       "generation": {
-       "recola": 0.085119532
+       "recola": 0.098414245
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 0.085119532
+       "seconds": 0.098414245
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 3.21653862323949e-14
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 9.26653414724885e-14
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.5543863730865184e-13
+       }
+      ],
+      "points": 3,
+      "note": "LI-24 lambda_hhh scan: not run: the campaign model (loop_qcd_qed_sm = MG5 loop_sm) has no external trilinear coupling (lam = MH^2/(2 v^2) is internal), so lambda_hhh cannot be scanned alone; no model with an independent kappa_lambda is in tools/loop_reference/li_campaign.json. The triangle-box cancellation and the threshold are li_gg_hh's runs and its stress points",
+      "source": "lit.json rows[gg_hh]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 8.10887629725039,
-      "generate_seconds": 3.1933502815663815,
-      "probes_seconds": 4.915526015684009,
-      "probe_share": 0.6061907760697739,
-      "peak_gib": 0.603,
+      "seconds": 8.204013647977263,
+      "generate_seconds": 3.2190088871866465,
+      "probes_seconds": 4.985004760790616,
+      "probe_share": 0.6076299936458165,
+      "peak_gib": 0.598,
       "plan_mb": 0.01,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hh, ninjars, e852f448].generation",
-      "ratio_to_fastest": 95.2645780201234
+      "source": "li-timing.json records[gg_hh, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 83.3620544259346
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.0005579019234573934,
+      "seconds_per_point": 0.0005287416934152134,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hh, ninjars, e852f448]",
+      "source": "li-timing.json records[gg_hh, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
@@ -943,9 +1143,10 @@
        "status": "served",
        "served_fraction": 1.0,
        "label": "128/128",
-       "seconds_per_point": 0.0004041566717205569
+       "seconds_per_point": 0.00037197846177150495,
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 0.8063180247478996,
+      "ratio_to_fastest": 1.4525810839109548,
       "gate": {
        "status": "reported",
        "label": "no gate (2->2)"
@@ -986,9 +1187,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 5.4872180690937344e-14
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 5.973412845614081e-14
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 1.9654769509959625e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_hz]"
      },
      "generation": {
       "status": "measured",
@@ -1066,9 +1285,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 5.275094219016885e-15
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 7.068855541614273e-15
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.2610772117337332e-14
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_hg]"
      },
      "generation": {
       "status": "measured",
@@ -1146,9 +1383,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.9910148824435916e-15
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 3.881808050620519e-15
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 5.082327463079659e-15
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[uux_hg]"
      },
      "generation": {
       "status": "measured",
@@ -1225,9 +1480,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 4.96788030867496e-15
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 5.260108562126427e-15
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 9.354802273786418e-15
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[ug_hu]"
      },
      "generation": {
       "status": "measured",
@@ -1304,9 +1577,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 4.330325740481514e-14
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 1.0744204711495608e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.9392068169107663e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_zg]"
      },
      "generation": {
       "status": "measured",
@@ -1383,9 +1674,27 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 1.6367492946541184e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.8737771683724982e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.9078948168622642e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_ag]"
      },
      "generation": {
       "status": "measured",
@@ -1475,9 +1784,22 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.1614149584383583e-14
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.2939884164637379e-14
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[emep_ha]"
      },
      "generation": {
       "status": "measured",
@@ -1567,9 +1889,27 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.5474622112380806e-14
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.5489332433519586e-14
+       },
+       {
+        "key": "analytic",
+        "short": "AN",
+        "max_relative": 1.9734020193014653e-14
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[aa_aa]"
      },
      "generation": {
       "status": "measured",
@@ -1657,9 +1997,22 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.5172788092563116e-14
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.5691775553855772e-14
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[aa_zz]"
      },
      "generation": {
       "status": "measured",
@@ -1747,9 +2100,22 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 6.054785014130162e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 6.111148098296417e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[aa_hh]"
      },
      "generation": {
       "status": "measured",
@@ -1837,9 +2203,22 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.2660408645264006e-10
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.266160425185706e-10
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[emep_hh]"
      },
      "generation": {
       "status": "measured",
@@ -1932,9 +2311,22 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 7.906648953937065e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 7.022563056807313e-12
+       }
+      ],
+      "points": 3,
+      "note": "li_h_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_h_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_h_ggg: L5 partial",
+      "source": "lit.json rows[h_ggg]"
      },
      "generation": {
       "status": "measured",
@@ -2022,9 +2414,22 @@
       "generation": {}
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 7.791045445706497e-12
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 3.202499896287624e-11
+       }
+      ],
+      "points": 3,
+      "note": "li_z_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_z_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_z_ggg: L5 partial",
+      "source": "lit.json rows[z_ggg]"
      },
      "generation": {
       "status": "measured",
@@ -2108,13 +2513,15 @@
       "status": "recorded",
       "providers": {
        "recola": {
-        "seconds_per_point": 0.004443382,
-        "source": "required/li/timing/li_emep_ggg-providers.json providers.recola",
+        "seconds_per_point": 0.0039176409999999995,
+        "source": "required/li/timing/li_emep_ggg-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.015461968,
-        "source": "required/li/timing/li_emep_ggg-providers.json providers.madloop",
+        "seconds_per_point": 0.009609410499999999,
+        "source": "required/li/timing/li_emep_ggg-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        },
@@ -2127,72 +2534,98 @@
       "fastest": {
        "key": "recola",
        "name": "Recola",
-       "seconds_per_point": 0.004443382
+       "seconds_per_point": 0.0039176409999999995
       },
       "unmatched": false,
       "generation": {
-       "recola": 0.160166071
+       "recola": 0.182312178
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 0.160166071
+       "seconds": 0.182312178
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.060950915347068e-10
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.3858709964436804e-08
+       }
+      ],
+      "points": 3,
+      "note": "li_emep_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_emep_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_emep_ggg: L5 partial; li_emep_ggg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "source": "lit.json rows[emep_ggg]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 118.32201333949342,
-      "generate_seconds": 60.40818974329159,
-      "probes_seconds": 57.91382359620184,
-      "probe_share": 0.4894594163981438,
-      "peak_gib": 3.646,
+      "seconds": 105.08797629363835,
+      "generate_seconds": 50.53911117464304,
+      "probes_seconds": 54.54886511899531,
+      "probe_share": 0.5190780814598054,
+      "peak_gib": 3.719,
       "plan_mb": 0.038,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[emep_ggg, ninjars, e852f448].generation",
-      "ratio_to_fastest": 738.7458067788491
+      "source": "li-timing.json records[emep_ggg, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 576.4177546803173
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.00806797488257871,
+      "seconds_per_point": 0.006740317134244833,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[emep_ggg, ninjars, e852f448]",
+      "source": "li-timing.json records[emep_ggg, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        128,
-        128
+        4,
+        4
        ],
-       "served_fraction": 0.0,
-       "every_point": true,
+       "served_fraction": 0.96875,
+       "every_point": false,
        "causes": {
-        "ruling (d)": 128
+        "TIRust gates and method choice": 3,
+        "TIRust acceptance (method-choice lane off its second frame)": 1
        },
-       "label": "failed closed on every point (128/128), ruling (d)"
+       "label": "4/128 failed closed, TIRust gates and method choice, TIRust acceptance (method-choice lane off its second frame); its 124 served points 3.43 ms",
+       "served_points": {
+        "points": 124,
+        "seconds_per_point": 0.0034315028948889623,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 1.8157283984538601,
+      "ratio_to_fastest": 1.7205040314426039,
       "gate": {
-       "status": "no verdict",
-       "label": "no verdict yet"
+       "status": "not gated",
+       "label": "<5 ms: not gated",
+       "rule": "below 5 ms: not gated (user 2026-10-24)",
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_emep_ggg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_emep_ggg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -2224,18 +2657,21 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.022879906,
-        "source": "required/li/timing/li_gg_hhh-providers.json providers.openloops",
+        "seconds_per_point": 0.010407249,
+        "source": "required/li/timing/li_gg_hhh-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.0056448415,
-        "source": "required/li/timing/li_gg_hhh-providers.json providers.recola",
+        "seconds_per_point": 0.005670534,
+        "source": "required/li/timing/li_gg_hhh-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.009034304,
-        "source": "required/li/timing/li_gg_hhh-providers.json providers.madloop",
+        "seconds_per_point": 0.007593997,
+        "source": "required/li/timing/li_gg_hhh-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
@@ -2243,74 +2679,110 @@
       "fastest": {
        "key": "recola",
        "name": "Recola",
-       "seconds_per_point": 0.0056448415
+       "seconds_per_point": 0.005670534
       },
       "unmatched": false,
       "generation": {
-       "recola": 0.07705391
+       "recola": 0.11403202
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 0.07705391
+       "seconds": 0.11403202
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.783754773924394e-13
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 3.1737397673352556e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 8.105623646065847e-12
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_hhh]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 10.55801696004346,
-      "generate_seconds": 3.3490686351433396,
-      "probes_seconds": 7.2089483249001205,
-      "probe_share": 0.6827937814631476,
-      "peak_gib": 0.68,
+      "seconds": 10.253659874666482,
+      "generate_seconds": 3.230133978649974,
+      "probes_seconds": 7.023525896016508,
+      "probe_share": 0.6849774599379288,
+      "peak_gib": 0.676,
       "plan_mb": 0.012,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hhh, ninjars, e852f448].generation",
-      "ratio_to_fastest": 137.02117076269667
+      "source": "li-timing.json records[gg_hhh, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 89.91912863304958
      },
      "timing": {
-      "status": "measured",
+      "status": "failed closed",
       "batch": 128,
-      "seconds_per_point": 0.0038197422109078616,
+      "blocks": 5,
+      "failed_points": [
+       2,
+       2
+      ],
+      "served_fraction": 0.984375,
+      "every_point": false,
+      "causes": {
+       "NinjaRS lane unstable": 2
+      },
+      "label": "2/128 failed closed, NinjaRS lane unstable; its 126 served points 3.62 ms",
+      "served_points": {
+       "points": 126,
+       "seconds_per_point": 0.003621556308297884,
+       "blocks": 5
+      },
+      "requested": "auto",
+      "revision": "0bd41b22",
+      "source": "li-timing.json records[gg_hhh, ninjars, 0bd41b22]",
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
-      "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
-      "host": "itphlies",
-      "source": "li-timing.json records[gg_hhh, ninjars, e852f448]",
-      "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        42,
-        42
+        2,
+        2
        ],
-       "served_fraction": 0.671875,
+       "served_fraction": 0.984375,
        "every_point": false,
        "causes": {
-        "ruling (d)": 42
+        "TIRust acceptance (method-choice lane off its second frame)": 2
        },
-       "label": "42/128 failed closed, ruling (d)"
+       "label": "2/128 failed closed, TIRust acceptance (method-choice lane off its second frame); its 126 served points 3.32 ms",
+       "served_points": {
+        "points": 126,
+        "seconds_per_point": 0.0033249077054538895,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 0.6766783816530298,
       "gate": {
        "status": "not gated",
        "label": "<5 ms: not gated",
        "rule": "below 5 ms: not gated (user 2026-10-24)",
-       "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_hhh, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_hhh.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -2343,91 +2815,124 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.02568697,
-        "source": "required/li/timing/li_gg_hgg-providers.json providers.openloops",
+        "seconds_per_point": 0.013724587,
+        "source": "required/li/timing/li_gg_hgg-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.02546004,
-        "source": "required/li/timing/li_gg_hgg-providers.json providers.recola",
+        "seconds_per_point": 0.018677452999999997,
+        "source": "required/li/timing/li_gg_hgg-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.086247677,
-        "source": "required/li/timing/li_gg_hgg-providers.json providers.madloop",
+        "seconds_per_point": 0.039209925,
+        "source": "required/li/timing/li_gg_hgg-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
       },
       "fastest": {
-       "key": "recola",
-       "name": "Recola",
-       "seconds_per_point": 0.02546004
+       "key": "openloops",
+       "name": "OpenLoops",
+       "seconds_per_point": 0.013724587
       },
       "unmatched": false,
       "generation": {
-       "recola": 0.21021671
+       "recola": 0.187030608
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 0.21021671
+       "seconds": 0.187030608
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 2.74128437721751e-10
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.74148728788901e-10
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.812102753906012e-10
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_hgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hgg: L5 partial; li_gg_hgg: L6 partial (double-double partial)",
+      "source": "lit.json rows[gg_hgg]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 29.433310768567026,
-      "generate_seconds": 4.207342606969178,
-      "probes_seconds": 25.225968161597848,
-      "probe_share": 0.8570550679788845,
-      "peak_gib": 0.772,
+      "seconds": 29.64878771174699,
+      "generate_seconds": 4.181901687756181,
+      "probes_seconds": 25.46688602399081,
+      "probe_share": 0.858952017586227,
+      "peak_gib": 0.767,
       "plan_mb": 0.019,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hgg, ninjars, e852f448].generation",
-      "ratio_to_fastest": 140.01413478770087
+      "source": "li-timing.json records[gg_hgg, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 158.5237198809031
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.043156410716619575,
+      "seconds_per_point": 0.03963335620937869,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hgg, ninjars, e852f448]",
+      "source": "li-timing.json records[gg_hgg, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        128,
-        128
+        20,
+        20
        ],
-       "served_fraction": 0.0,
-       "every_point": true,
+       "served_fraction": 0.84375,
+       "every_point": false,
        "causes": {
-        "ruling (d)": 128
+        "TIRust acceptance (method-choice lane off its second frame)": 20
        },
-       "label": "failed closed on every point (128/128), ruling (d)"
+       "label": "20/128 failed closed, TIRust acceptance (method-choice lane off its second frame); its 108 served points 23.8 ms",
+       "served_points": {
+        "points": 108,
+        "seconds_per_point": 0.023849070339498145,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 1.695064529223818,
+      "ratio_to_fastest": 2.8877631224443174,
       "gate": {
-       "status": "no verdict",
-       "label": "no verdict yet"
+       "status": "gap",
+       "label": "no verdict: TIRust failed closed 20/128 (gap)",
+       "served_fraction": 0.84375,
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_hgg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_hgg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -2459,91 +2964,126 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.18309176900000002,
-        "source": "required/li/timing/li_gg_zzg-providers.json providers.openloops",
+        "seconds_per_point": 0.126585646,
+        "source": "required/li/timing/li_gg_zzg-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.1777489585,
-        "source": "required/li/timing/li_gg_zzg-providers.json providers.recola",
+        "seconds_per_point": 0.1271913295,
+        "source": "required/li/timing/li_gg_zzg-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.7213941095,
-        "source": "required/li/timing/li_gg_zzg-providers.json providers.madloop",
+        "seconds_per_point": 0.2738755935,
+        "source": "required/li/timing/li_gg_zzg-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
       },
       "fastest": {
-       "key": "recola",
-       "name": "Recola",
-       "seconds_per_point": 0.1777489585
+       "key": "openloops",
+       "name": "OpenLoops",
+       "seconds_per_point": 0.126585646
       },
       "unmatched": false,
       "generation": {
-       "recola": 1.54554174
+       "recola": 1.0737598
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 1.54554174
+       "seconds": 1.0737598
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.9567172607839566e-08
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.9743838899236805e-08
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 8.130222963155451e-08
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_zzg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L5 partial; li_gg_zzg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
+      "source": "lit.json rows[gg_zzg]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 195.13894773367792,
-      "generate_seconds": 6.194167346693575,
-      "probes_seconds": 188.94478038698435,
-      "probe_share": 0.9682576573327265,
-      "peak_gib": 1.17,
+      "seconds": 199.57143147615716,
+      "generate_seconds": 5.434748833999038,
+      "probes_seconds": 194.13668264215812,
+      "probe_share": 0.9727679017292196,
+      "peak_gib": 1.163,
       "plan_mb": 0.038,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_zzg, ninjars, e852f448].generation",
-      "ratio_to_fastest": 126.25925439818786
+      "source": "li-timing.json records[gg_zzg, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 185.86226777735317
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.36689425846998347,
+      "seconds_per_point": 0.36310725420116796,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_zzg, ninjars, e852f448]",
+      "source": "li-timing.json records[gg_zzg, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        128,
-        128
+        72,
+        72
        ],
-       "served_fraction": 0.0,
-       "every_point": true,
+       "served_fraction": 0.4375,
+       "every_point": false,
        "causes": {
-        "ruling (d)": 128
+        "TIRust acceptance (method-choice lane off its second frame)": 41,
+        "TIRust gates and method choice": 33,
+        "TIRust acceptance row refused": 30
        },
-       "label": "failed closed on every point (128/128), ruling (d)"
+       "label": "72/128 failed closed, TIRust acceptance (method-choice lane off its second frame), TIRust gates and method choice, TIRust acceptance row refused; its 56 served points 175 ms",
+       "served_points": {
+        "points": 56,
+        "seconds_per_point": 0.17493751001477773,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 2.064114814321027,
+      "ratio_to_fastest": 2.8684709971079023,
       "gate": {
-       "status": "no verdict",
-       "label": "no verdict yet"
+       "status": "gap",
+       "label": "no verdict: TIRust failed closed 72/128 (gap)",
+       "served_fraction": 0.4375,
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_zzg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_zzg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -2575,91 +3115,126 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.052470322,
-        "source": "required/li/timing/li_gg_aag-providers.json providers.openloops",
+        "seconds_per_point": 0.0478487405,
+        "source": "required/li/timing/li_gg_aag-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.047742524,
-        "source": "required/li/timing/li_gg_aag-providers.json providers.recola",
+        "seconds_per_point": 0.053318869,
+        "source": "required/li/timing/li_gg_aag-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.1998882605,
-        "source": "required/li/timing/li_gg_aag-providers.json providers.madloop",
+        "seconds_per_point": 0.1202394605,
+        "source": "required/li/timing/li_gg_aag-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
       },
       "fastest": {
-       "key": "recola",
-       "name": "Recola",
-       "seconds_per_point": 0.047742524
+       "key": "openloops",
+       "name": "OpenLoops",
+       "seconds_per_point": 0.0478487405
       },
       "unmatched": false,
       "generation": {
-       "recola": 0.274242849
+       "recola": 0.313989712
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 0.274242849
+       "seconds": 0.313989712
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 3.256691275489199e-11
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 3.305897968955147e-11
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 4.7801068978082404e-11
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_aag: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L5 partial; li_gg_aag: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "source": "lit.json rows[gg_aag]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 117.67469177860767,
-      "generate_seconds": 4.934039112646133,
-      "probes_seconds": 112.74065266596153,
-      "probe_share": 0.9580705159446774,
-      "peak_gib": 0.986,
+      "seconds": 118.11361512215808,
+      "generate_seconds": 4.825273802038282,
+      "probes_seconds": 113.2883413201198,
+      "probe_share": 0.9591471838615068,
+      "peak_gib": 0.981,
       "plan_mb": 0.03,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_aag, ninjars, e852f448].generation",
-      "ratio_to_fastest": 429.08937172909714
+      "source": "li-timing.json records[gg_aag, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 376.17033491262316
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.1565712155534129,
+      "seconds_per_point": 0.17332497011739179,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_aag, ninjars, e852f448]",
+      "source": "li-timing.json records[gg_aag, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        128,
-        128
+        46,
+        46
        ],
-       "served_fraction": 0.0,
-       "every_point": true,
+       "served_fraction": 0.640625,
+       "every_point": false,
        "causes": {
-        "ruling (d)": 128
+        "TIRust gates and method choice": 37,
+        "TIRust acceptance (method-choice lane off its second frame)": 10,
+        "TIRust acceptance row refused": 1
        },
-       "label": "failed closed on every point (128/128), ruling (d)"
+       "label": "46/128 failed closed, TIRust gates and method choice, TIRust acceptance (method-choice lane off its second frame), TIRust acceptance row refused; its 82 served points 69.7 ms",
+       "served_points": {
+        "points": 82,
+        "seconds_per_point": 0.06972096065945196,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 3.279491791288892,
+      "ratio_to_fastest": 3.6223517757461514,
       "gate": {
-       "status": "no verdict",
-       "label": "no verdict yet"
+       "status": "gap",
+       "label": "no verdict: TIRust failed closed 46/128 (gap)",
+       "served_fraction": 0.640625,
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_aag, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_aag.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -2691,91 +3266,126 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.084359499,
-        "source": "required/li/timing/li_gg_wpwmg-providers.json providers.openloops",
+        "seconds_per_point": 0.0734342925,
+        "source": "required/li/timing/li_gg_wpwmg-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.06879455500000001,
-        "source": "required/li/timing/li_gg_wpwmg-providers.json providers.recola",
+        "seconds_per_point": 0.078279913,
+        "source": "required/li/timing/li_gg_wpwmg-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.3466215305,
-        "source": "required/li/timing/li_gg_wpwmg-providers.json providers.madloop",
+        "seconds_per_point": 0.21508003850000001,
+        "source": "required/li/timing/li_gg_wpwmg-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
       },
       "fastest": {
-       "key": "recola",
-       "name": "Recola",
-       "seconds_per_point": 0.06879455500000001
+       "key": "openloops",
+       "name": "OpenLoops",
+       "seconds_per_point": 0.0734342925
       },
       "unmatched": false,
       "generation": {
-       "recola": 1.36941366
+       "recola": 1.51001887
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 1.36941366
+       "seconds": 1.51001887
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 8.551035034099082e-10
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 3.911172055787658e-09
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 4.303598014110552e-08
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_wpwmg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L5 partial; li_gg_wpwmg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "source": "lit.json rows[gg_wpwmg]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 186.6181602519937,
-      "generate_seconds": 6.207961192820221,
-      "probes_seconds": 180.41019905917346,
-      "probe_share": 0.9667344207850002,
-      "peak_gib": 1.236,
+      "seconds": 188.8122335523367,
+      "generate_seconds": 6.033629776444286,
+      "probes_seconds": 182.7786037758924,
+      "probe_share": 0.9680442857810279,
+      "peak_gib": 1.225,
       "plan_mb": 0.058,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_wpwmg, ninjars, e852f448].generation",
-      "ratio_to_fastest": 136.2759593416015
+      "source": "li-timing.json records[gg_wpwmg, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 125.0396516914631
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.37236428433607216,
+      "seconds_per_point": 0.374654849532817,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_wpwmg, ninjars, e852f448]",
+      "source": "li-timing.json records[gg_wpwmg, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        128,
-        128
+        106,
+        106
        ],
-       "served_fraction": 0.0,
-       "every_point": true,
+       "served_fraction": 0.171875,
+       "every_point": false,
        "causes": {
-        "ruling (d)": 128
+        "TIRust acceptance (method-choice lane off its second frame)": 75,
+        "TIRust acceptance row refused": 39,
+        "TIRust gates and method choice": 35
        },
-       "label": "failed closed on every point (128/128), ruling (d)"
+       "label": "106/128 failed closed, TIRust acceptance (method-choice lane off its second frame), TIRust acceptance row refused, TIRust gates and method choice; its 22 served points 221 ms",
+       "served_points": {
+        "points": 22,
+        "seconds_per_point": 0.2208499633707106,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 5.412699948943229,
+      "ratio_to_fastest": 5.101905891349291,
       "gate": {
-       "status": "no verdict",
-       "label": "no verdict yet"
+       "status": "gap",
+       "label": "no verdict: TIRust failed closed 106/128 (gap)",
+       "served_fraction": 0.171875,
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_wpwmg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_wpwmg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -2807,91 +3417,133 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.15101618300000003,
-        "source": "required/li/timing/li_gg_zzz-providers.json providers.openloops",
+        "seconds_per_point": 0.1389688905,
+        "source": "required/li/timing/li_gg_zzz-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.133528967,
-        "source": "required/li/timing/li_gg_zzz-providers.json providers.recola",
+        "seconds_per_point": 0.1486607955,
+        "source": "required/li/timing/li_gg_zzz-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.5604789674999999,
-        "source": "required/li/timing/li_gg_zzz-providers.json providers.madloop",
+        "seconds_per_point": 0.30318687850000003,
+        "source": "required/li/timing/li_gg_zzz-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
       },
       "fastest": {
-       "key": "recola",
-       "name": "Recola",
-       "seconds_per_point": 0.133528967
+       "key": "openloops",
+       "name": "OpenLoops",
+       "seconds_per_point": 0.1389688905
       },
       "unmatched": false,
       "generation": {
-       "recola": 0.861615649
+       "recola": 0.936634464
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 0.861615649
+       "seconds": 0.936634464
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 9.357014019879014e-12
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 2.8156137103444434e-11
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.577297296163703e-10
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_zzz: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_zzz: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_zzz: L5 partial",
+      "source": "lit.json rows[gg_zzz]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 146.78986455639824,
-      "generate_seconds": 15.452543140389025,
-      "probes_seconds": 131.33732141600922,
-      "probe_share": 0.8947301764526665,
-      "peak_gib": 1.061,
+      "seconds": 147.1066202558577,
+      "generate_seconds": 12.967502092942595,
+      "probes_seconds": 134.1391181629151,
+      "probe_share": 0.911849636199998,
+      "peak_gib": 1.059,
       "plan_mb": 0.033,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_zzz, ninjars, e852f448].generation",
-      "ratio_to_fastest": 170.36582927290615
+      "source": "li-timing.json records[gg_zzz, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 157.0587309243595
      },
      "timing": {
-      "status": "measured",
+      "status": "failed closed",
       "batch": 128,
-      "seconds_per_point": 0.339951517413283,
+      "blocks": 5,
+      "failed_points": [
+       20,
+       20
+      ],
+      "served_fraction": 0.84375,
+      "every_point": false,
+      "causes": {
+       "NinjaRS lane unstable": 20
+      },
+      "label": "20/128 failed closed, NinjaRS lane unstable; its 108 served points 344 ms",
+      "served_points": {
+       "points": 108,
+       "seconds_per_point": 0.34441504237690457,
+       "blocks": 5
+      },
+      "requested": "auto",
+      "revision": "0bd41b22",
+      "source": "li-timing.json records[gg_zzz, ninjars, 0bd41b22]",
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
-      "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
-      "host": "itphlies",
-      "source": "li-timing.json records[gg_zzz, ninjars, e852f448]",
-      "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        85,
-        85
+        2,
+        2
        ],
-       "served_fraction": 0.3359375,
+       "served_fraction": 0.984375,
        "every_point": false,
        "causes": {
-        "ruling (d)": 85
+        "TIRust gates and method choice": 1,
+        "TIRust acceptance (method-choice lane off its second frame)": 1
        },
-       "label": "85/128 failed closed, ruling (d)"
+       "label": "2/128 failed closed, TIRust gates and method choice, TIRust acceptance (method-choice lane off its second frame); its 126 served points 146 ms",
+       "served_points": {
+        "points": 126,
+        "seconds_per_point": 0.14562403928444145,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 2.545900901137676,
       "gate": {
-       "status": "no verdict",
-       "label": "no verdict yet"
+       "status": "gap",
+       "label": "no verdict: TIRust failed closed 2/128 (gap)",
+       "served_fraction": 0.984375,
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_zzz, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_zzz.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -2923,18 +3575,21 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.032311431,
-        "source": "required/li/timing/li_gg_hzg-providers.json providers.openloops",
+        "seconds_per_point": 0.02618893,
+        "source": "required/li/timing/li_gg_hzg-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.019106282,
-        "source": "required/li/timing/li_gg_hzg-providers.json providers.recola",
+        "seconds_per_point": 0.020966638,
+        "source": "required/li/timing/li_gg_hzg-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.07393606750000001,
-        "source": "required/li/timing/li_gg_hzg-providers.json providers.madloop",
+        "seconds_per_point": 0.047399934000000005,
+        "source": "required/li/timing/li_gg_hzg-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
@@ -2942,72 +3597,110 @@
       "fastest": {
        "key": "recola",
        "name": "Recola",
-       "seconds_per_point": 0.019106282
+       "seconds_per_point": 0.020966638
       },
       "unmatched": false,
       "generation": {
-       "recola": 0.198086554
+       "recola": 0.246471168
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 0.198086554
+       "seconds": 0.246471168
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.9112602164046654e-13
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.1185053001111516e-13
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 2.493081599551001e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_hzg]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 33.97819025395438,
-      "generate_seconds": 5.375976440962404,
-      "probes_seconds": 28.602213812991977,
-      "probe_share": 0.8417815545565512,
-      "peak_gib": 0.824,
+      "seconds": 32.60402266448364,
+      "generate_seconds": 5.075243533588946,
+      "probes_seconds": 27.52877913089469,
+      "probe_share": 0.8443368910083131,
+      "peak_gib": 0.821,
       "plan_mb": 0.033,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hzg, ninjars, e852f448].generation",
-      "ratio_to_fastest": 171.5320377270755
+      "source": "li-timing.json records[gg_hzg, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 132.28331300999733
      },
      "timing": {
-      "status": "measured",
+      "status": "failed closed",
       "batch": 128,
-      "seconds_per_point": 0.04756227239704458,
+      "blocks": 5,
+      "failed_points": [
+       2,
+       2
+      ],
+      "served_fraction": 0.984375,
+      "every_point": false,
+      "causes": {
+       "NinjaRS lane unstable": 2
+      },
+      "label": "2/128 failed closed, NinjaRS lane unstable; its 126 served points 39.9 ms",
+      "served_points": {
+       "points": 126,
+       "seconds_per_point": 0.03990365958787383,
+       "blocks": 5
+      },
+      "requested": "auto",
+      "revision": "0bd41b22",
+      "source": "li-timing.json records[gg_hzg, ninjars, 0bd41b22]",
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
-      "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
-      "host": "itphlies",
-      "source": "li-timing.json records[gg_hzg, ninjars, e852f448]",
-      "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        42,
-        42
+        3,
+        3
        ],
-       "served_fraction": 0.671875,
+       "served_fraction": 0.9765625,
        "every_point": false,
        "causes": {
-        "ruling (d)": 42
+        "TIRust acceptance (method-choice lane off its second frame)": 3
        },
-       "label": "42/128 failed closed, ruling (d)"
+       "label": "3/128 failed closed, TIRust acceptance (method-choice lane off its second frame); its 125 served points 15.8 ms",
+       "served_points": {
+        "points": 125,
+        "seconds_per_point": 0.015790906466543676,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 2.4893525803212047,
       "gate": {
-       "status": "no verdict",
-       "label": "no verdict yet"
+       "status": "gap",
+       "label": "no verdict: TIRust failed closed 3/128 (gap)",
+       "served_fraction": 0.9765625,
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_hzg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_hzg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -3039,91 +3732,126 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.078785631,
-        "source": "required/li/timing/li_gg_agg-providers.json providers.openloops",
+        "seconds_per_point": 0.07563068849999999,
+        "source": "required/li/timing/li_gg_agg-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.075816684,
-        "source": "required/li/timing/li_gg_agg-providers.json providers.recola",
+        "seconds_per_point": 0.0812269665,
+        "source": "required/li/timing/li_gg_agg-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.2502013195,
-        "source": "required/li/timing/li_gg_agg-providers.json providers.madloop",
+        "seconds_per_point": 0.1414039595,
+        "source": "required/li/timing/li_gg_agg-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
       },
       "fastest": {
-       "key": "recola",
-       "name": "Recola",
-       "seconds_per_point": 0.075816684
+       "key": "openloops",
+       "name": "OpenLoops",
+       "seconds_per_point": 0.07563068849999999
       },
       "unmatched": false,
       "generation": {
-       "recola": 0.733419753
+       "recola": 0.83580872
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 0.733419753
+       "seconds": 0.83580872
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.3190559230774881e-11
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.1016302830431655e-11
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 3.8841363152412645e-11
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_agg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L5 partial; li_gg_agg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "source": "lit.json rows[gg_agg]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 199.13784492295235,
-      "generate_seconds": 6.225762236863375,
-      "probes_seconds": 192.91208268608898,
-      "probe_share": 0.9687364185382635,
-      "peak_gib": 1.341,
+      "seconds": 201.79162984201685,
+      "generate_seconds": 5.668131874874234,
+      "probes_seconds": 196.1234979671426,
+      "probe_share": 0.9719109663799642,
+      "peak_gib": 1.335,
       "plan_mb": 0.046,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_agg, ninjars, e852f448].generation",
-      "ratio_to_fastest": 271.51960948473715
+      "source": "li-timing.json records[gg_agg, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 241.4327884040464
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.29106062006758293,
+      "seconds_per_point": 0.3249054933839943,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_agg, ninjars, e852f448]",
+      "source": "li-timing.json records[gg_agg, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        128,
-        128
+        46,
+        46
        ],
-       "served_fraction": 0.0,
-       "every_point": true,
+       "served_fraction": 0.640625,
+       "every_point": false,
        "causes": {
-        "ruling (d)": 128
+        "TIRust gates and method choice": 37,
+        "TIRust acceptance (method-choice lane off its second frame)": 11,
+        "TIRust acceptance row refused": 1
        },
-       "label": "failed closed on every point (128/128), ruling (d)"
+       "label": "46/128 failed closed, TIRust gates and method choice, TIRust acceptance (method-choice lane off its second frame), TIRust acceptance row refused; its 82 served points 166 ms",
+       "served_points": {
+        "points": 82,
+        "seconds_per_point": 0.16642013911112416,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 3.839004882719257,
+      "ratio_to_fastest": 4.29594784640886,
       "gate": {
-       "status": "no verdict",
-       "label": "no verdict yet"
+       "status": "gap",
+       "label": "no verdict: TIRust failed closed 46/128 (gap)",
+       "served_fraction": 0.640625,
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_agg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_agg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -3155,13 +3883,15 @@
       "status": "recorded",
       "providers": {
        "recola": {
-        "seconds_per_point": 0.115874218,
-        "source": "required/li/timing/li_gg_zgg-providers.json providers.recola",
+        "seconds_per_point": 0.13306654099999998,
+        "source": "required/li/timing/li_gg_zgg-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.476024859,
-        "source": "required/li/timing/li_gg_zgg-providers.json providers.madloop",
+        "seconds_per_point": 0.2689648625,
+        "source": "required/li/timing/li_gg_zgg-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        },
@@ -3174,72 +3904,99 @@
       "fastest": {
        "key": "recola",
        "name": "Recola",
-       "seconds_per_point": 0.115874218
+       "seconds_per_point": 0.13306654099999998
       },
       "unmatched": false,
       "generation": {
-       "recola": 1.45326772
+       "recola": 1.72274984
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 1.45326772
+       "seconds": 1.72274984
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.913015479202459e-06
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.9133212812835567e-06
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_zgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L5 partial; li_gg_zgg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
+      "source": "lit.json rows[gg_zgg]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 199.2798852622509,
-      "generate_seconds": 6.829127713106573,
-      "probes_seconds": 192.45075754914433,
-      "probe_share": 0.9657309732785149,
-      "peak_gib": 1.469,
+      "seconds": 195.94150930829346,
+      "generate_seconds": 6.291125184390694,
+      "probes_seconds": 189.65038412390277,
+      "probe_share": 0.9678928410493548,
+      "peak_gib": 1.464,
       "plan_mb": 0.052,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_zgg, ninjars, e852f448].generation",
-      "ratio_to_fastest": 137.12537787755372
+      "source": "li-timing.json records[gg_zgg, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 113.73764475769357
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.4527017778127629,
+      "seconds_per_point": 0.5090606934136304,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_zgg, ninjars, e852f448]",
+      "source": "li-timing.json records[gg_zgg, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        128,
-        128
+        74,
+        74
        ],
-       "served_fraction": 0.0,
-       "every_point": true,
+       "served_fraction": 0.421875,
+       "every_point": false,
        "causes": {
-        "ruling (d)": 128
+        "TIRust gates and method choice": 43,
+        "TIRust acceptance row refused": 36,
+        "TIRust acceptance (method-choice lane off its second frame)": 35
        },
-       "label": "failed closed on every point (128/128), ruling (d)"
+       "label": "74/128 failed closed, TIRust gates and method choice, TIRust acceptance row refused, TIRust acceptance (method-choice lane off its second frame); its 54 served points 246 ms",
+       "served_points": {
+        "points": 54,
+        "seconds_per_point": 0.24648209175750338,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 3.9068378248970177,
+      "ratio_to_fastest": 3.8256100262922623,
       "gate": {
-       "status": "no verdict",
-       "label": "no verdict yet"
+       "status": "gap",
+       "label": "no verdict: TIRust failed closed 74/128 (gap)",
+       "served_fraction": 0.421875,
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_zgg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_zgg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -3271,93 +4028,124 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.0026113205,
-        "source": "required/li/timing/li_uux_hgg-providers.json providers.openloops",
+        "seconds_per_point": 0.000981349,
+        "source": "required/li/timing/li_uux_hgg-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.001534496,
-        "source": "required/li/timing/li_uux_hgg-providers.json providers.recola",
+        "seconds_per_point": 0.0011071745,
+        "source": "required/li/timing/li_uux_hgg-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.00263379,
-        "source": "required/li/timing/li_uux_hgg-providers.json providers.madloop",
+        "seconds_per_point": 0.001717157,
+        "source": "required/li/timing/li_uux_hgg-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
       },
       "fastest": {
-       "key": "recola",
-       "name": "Recola",
-       "seconds_per_point": 0.001534496
+       "key": "openloops",
+       "name": "OpenLoops",
+       "seconds_per_point": 0.000981349
       },
       "unmatched": false,
       "generation": {
-       "recola": 0.726963609
+       "recola": 0.959745473
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 0.726963609
+       "seconds": 0.959745473
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 7.74357259395778e-10
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 7.750250461385737e-10
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 7.768441627073551e-10
+       }
+      ],
+      "points": 3,
+      "note": "li_uux_hgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_uux_hgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_uux_hgg: L5 partial; li_uux_hgg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "source": "lit.json rows[uux_hgg]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 10.378089644946158,
-      "generate_seconds": 4.496844212990254,
-      "probes_seconds": 5.881245431955904,
-      "probe_share": 0.5666982684833434,
-      "peak_gib": 0.611,
+      "seconds": 9.164937163237482,
+      "generate_seconds": 3.718036896083504,
+      "probes_seconds": 5.446900267153978,
+      "probe_share": 0.5943194339621506,
+      "peak_gib": 0.607,
       "plan_mb": 0.011,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[uux_hgg, ninjars, e852f448].generation",
-      "ratio_to_fastest": 14.275941073889653
+      "source": "li-timing.json records[uux_hgg, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 9.54934138380404
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.002348669553612126,
+      "seconds_per_point": 0.001996986975427717,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[uux_hgg, ninjars, e852f448]",
+      "source": "li-timing.json records[uux_hgg, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        43,
-        43
+        23,
+        23
        ],
-       "served_fraction": 0.6640625,
+       "served_fraction": 0.8203125,
        "every_point": false,
        "causes": {
-        "ruling (d)": 43
+        "TIRust acceptance (method-choice lane off its second frame)": 23
        },
-       "label": "43/128 failed closed, ruling (d)"
+       "label": "23/128 failed closed, TIRust acceptance (method-choice lane off its second frame); its 105 served points 1.45 ms",
+       "served_points": {
+        "points": 105,
+        "seconds_per_point": 0.0014498641448361532,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 1.5305804339744946,
+      "ratio_to_fastest": 2.0349406535572125,
       "gate": {
        "status": "not gated",
        "label": "<5 ms: not gated",
        "rule": "below 5 ms: not gated (user 2026-10-24)",
-       "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_uux_hgg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_uux_hgg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -3389,69 +4177,91 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.000270746,
-        "source": "required/li/timing/li_uux_ddxh-providers.json providers.openloops",
+        "seconds_per_point": 0.000148806,
+        "source": "required/li/timing/li_uux_ddxh-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.0005361825,
-        "source": "required/li/timing/li_uux_ddxh-providers.json providers.recola",
+        "seconds_per_point": 6.4605e-05,
+        "source": "required/li/timing/li_uux_ddxh-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.000133996,
-        "source": "required/li/timing/li_uux_ddxh-providers.json providers.madloop",
+        "seconds_per_point": 9.11305e-05,
+        "source": "required/li/timing/li_uux_ddxh-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
       },
       "fastest": {
-       "key": "madloop",
-       "name": "MadLoop",
-       "seconds_per_point": 0.000133996
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 6.4605e-05
       },
       "unmatched": false,
       "generation": {
-       "recola": 0.244140656
+       "recola": 0.292787283
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 0.244140656
+       "seconds": 0.292787283
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 8.066863084433011e-11
+       },
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 1.2093021592317334e-10
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 1.2101328706802803e-10
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[uux_ddxh]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 9.106862145010382,
-      "generate_seconds": 4.718573400285095,
-      "probes_seconds": 4.388288744725287,
-      "probe_share": 0.481866165848312,
-      "peak_gib": 0.581,
+      "seconds": 8.016544837504625,
+      "generate_seconds": 3.9135373095050454,
+      "probes_seconds": 4.10300752799958,
+      "probe_share": 0.5118174489343661,
+      "peak_gib": 0.578,
       "plan_mb": 0.01,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[uux_ddxh, ninjars, e852f448].generation",
-      "ratio_to_fastest": 37.30170260954153
+      "source": "li-timing.json records[uux_ddxh, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 27.380099146944936
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.0005106028984300792,
+      "seconds_per_point": 0.0003936712055292446,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[uux_ddxh, ninjars, e852f448]",
+      "source": "li-timing.json records[uux_ddxh, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
@@ -3459,14 +4269,18 @@
        "status": "served",
        "served_fraction": 1.0,
        "label": "128/128",
-       "seconds_per_point": 0.0006038936735421885
+       "seconds_per_point": 0.0003845985083898995,
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 3.8105831400196966,
+      "ratio_to_fastest": 6.09350987584931,
       "gate": {
        "status": "not gated",
        "label": "<5 ms: not gated",
        "rule": "below 5 ms: not gated (user 2026-10-24)",
-       "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_uux_ddxh, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_uux_ddxh.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     }
@@ -3502,18 +4316,21 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.5720159170000001,
-        "source": "required/li/timing/li_gg_hhgg-providers.json providers.openloops",
+        "seconds_per_point": 0.3293967665,
+        "source": "required/li/timing/li_gg_hhgg-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.18927592399999998,
-        "source": "required/li/timing/li_gg_hhgg-providers.json providers.recola",
+        "seconds_per_point": 0.19174384649999998,
+        "source": "required/li/timing/li_gg_hhgg-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.6706941495000001,
-        "source": "required/li/timing/li_gg_hhgg-providers.json providers.madloop",
+        "seconds_per_point": 0.4008719395,
+        "source": "required/li/timing/li_gg_hhgg-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
@@ -3521,72 +4338,102 @@
       "fastest": {
        "key": "recola",
        "name": "Recola",
-       "seconds_per_point": 0.18927592399999998
+       "seconds_per_point": 0.19174384649999998
       },
       "unmatched": false,
       "generation": {
-       "recola": 0.380427034
+       "recola": 0.393073535
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 0.380427034
+       "seconds": 0.393073535
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.139739417924842e-09
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.787306087572307e-09
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 1.1683457009716032e-07
+       }
+      ],
+      "points": 4,
+      "note": "li_gg_hhgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L5 partial; li_gg_hhgg: L6 partial (TIRust fails 2 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial); li_gg_hhgg_p15: L3 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L4 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L6 partial (TIRust fails 1 of 1 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double not run); li_gg_hhgg_p15: E not run",
+      "source": "lit.json rows[gg_hhgg]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 397.15803024405614,
-      "generate_seconds": 9.263015172909945,
-      "probes_seconds": 387.8950150711462,
-      "probe_share": 0.9766767521552623,
-      "peak_gib": 1.771,
+      "seconds": 449.5871311603114,
+      "generate_seconds": 6.118970219511539,
+      "probes_seconds": 443.46816094079986,
+      "probe_share": 0.986389801230032,
+      "peak_gib": 1.741,
       "plan_mb": 0.047,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hhgg, ninjars, e852f448].generation",
-      "ratio_to_fastest": 1043.97951446336
+      "source": "li-timing.json records[gg_hhgg, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 1143.7735973761537
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.9807981397971162,
+      "seconds_per_point": 0.771635646600771,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hhgg, ninjars, e852f448]",
+      "source": "li-timing.json records[gg_hhgg, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        128,
-        128
+        111,
+        111
        ],
-       "served_fraction": 0.0,
-       "every_point": true,
+       "served_fraction": 0.1328125,
+       "every_point": false,
        "causes": {
-        "ruling (d)": 128
+        "TIRust acceptance (method-choice lane off its second frame)": 111
        },
-       "label": "failed closed on every point (128/128), ruling (d)"
+       "label": "111/128 failed closed, TIRust acceptance (method-choice lane off its second frame); its 17 served points 541 ms",
+       "served_points": {
+        "points": 17,
+        "seconds_per_point": 0.5407249245737844,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 5.181843094830784,
+      "ratio_to_fastest": 4.024304616215003,
       "gate": {
-       "status": "no verdict",
-       "label": "no verdict yet"
+       "status": "gap",
+       "label": "no verdict: TIRust failed closed 111/128 (gap)",
+       "served_fraction": 0.1328125,
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_hhgg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_hhgg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -3617,18 +4464,21 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.8531388215,
-        "source": "required/li/timing/li_gg_hggg-providers.json providers.openloops",
+        "seconds_per_point": 0.5652155320000001,
+        "source": "required/li/timing/li_gg_hggg-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.577291888,
-        "source": "required/li/timing/li_gg_hggg-providers.json providers.recola",
+        "seconds_per_point": 0.54707478,
+        "source": "required/li/timing/li_gg_hggg-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 1.97841356,
-        "source": "required/li/timing/li_gg_hggg-providers.json providers.madloop",
+        "seconds_per_point": 1.0908425350000002,
+        "source": "required/li/timing/li_gg_hggg-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
@@ -3636,72 +4486,102 @@
       "fastest": {
        "key": "recola",
        "name": "Recola",
-       "seconds_per_point": 0.577291888
+       "seconds_per_point": 0.54707478
       },
       "unmatched": false,
       "generation": {
-       "recola": 3.19748192
+       "recola": 3.46188204
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 3.19748192
+       "seconds": 3.46188204
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 2.2014567275212838e-11
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 2.9870716260099456e-11
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 4.1570665828470867e-11
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_hggg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L5 partial; li_gg_hggg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
+      "source": "lit.json rows[gg_hggg]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 861.3009417098947,
-      "generate_seconds": 8.185622464865446,
-      "probes_seconds": 853.1153192450292,
-      "probe_share": 0.9904962109426991,
-      "peak_gib": 5.109,
+      "seconds": 1404.4762487607077,
+      "generate_seconds": 8.306573914829642,
+      "probes_seconds": 1396.169674845878,
+      "probe_share": 0.9940856430130739,
+      "peak_gib": 4.975,
       "plan_mb": 0.1,
-      "revision": "e852f448",
+      "revision": "c73475d3",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hggg, ninjars, e852f448].generation",
-      "ratio_to_fastest": 269.36851036514844
+      "source": "li-timing.json records[gg_hggg, ninjars, c73475d3].generation",
+      "ratio_to_fastest": 405.69731508260975
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 3.3720681745871843,
+      "seconds_per_point": 2.6930968948290683,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "c73475d3",
+      "native_build": "loop-native-lit-perf-d94add60",
+      "native_digest": "b44c6579fd2e15dfefbd39be0a7736439bf185b2c530e80754a536ed1997bb3c",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hggg, ninjars, e852f448]",
+      "source": "li-timing.json records[gg_hggg, ninjars, c73475d3]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
        "status": "failed closed",
        "batch": 128,
-       "blocks": 7,
+       "blocks": 5,
        "failed_points": [
-        128,
-        128
+        125,
+        125
        ],
-       "served_fraction": 0.0,
-       "every_point": true,
+       "served_fraction": 0.0234375,
+       "every_point": false,
        "causes": {
-        "ruling (d)": 128
+        "TIRust acceptance (method-choice lane off its second frame)": 125
        },
-       "label": "failed closed on every point (128/128), ruling (d)"
+       "label": "125/128 failed closed, TIRust acceptance (method-choice lane off its second frame); its 3 served points 5.25 s",
+       "served_points": {
+        "points": 3,
+        "seconds_per_point": 5.2518166413841145,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 5.84118406075227,
+      "ratio_to_fastest": 4.92272170694666,
       "gate": {
-       "status": "no verdict",
-       "label": "no verdict yet"
+       "status": "gap",
+       "label": "no verdict: TIRust failed closed 125/128 (gap)",
+       "served_fraction": 0.0234375,
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_hggg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_hggg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -3732,77 +4612,94 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.0066417005,
-        "source": "required/li/timing/li_gg_emepmupmum-providers.json providers.openloops",
+        "seconds_per_point": 0.006155216,
+        "source": "required/li/timing/li_gg_emepmupmum-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.003703114,
-        "source": "required/li/timing/li_gg_emepmupmum-providers.json providers.recola",
-        "match": "match open (lit-perf)",
+        "seconds_per_point": 0.003474845,
+        "source": "required/li/timing/li_gg_emepmupmum-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
+        "match": "not matched (values excluded)",
         "values_excluded": "width convention: Recola's on-shell scheme with widths is not MG5/OpenLoops' fixed-width scheme (qcd-widths); its values are 3.0e-4 to 8.4e-4 at the reference points and 1.3e-4 to 1.0e-3 at the 16 stream points off MadLoop = OpenLoops, so they are no reference (all three agree to 2e-13 under the complex-mass scheme, li_gg_emepmupmum_cms). Its timing is of the same process and production work; whether it counts as a matched provider for the speed gate is lit-perf's / the coordinator's call",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 0.033803844,
-        "source": "required/li/timing/li_gg_emepmupmum-providers.json providers.madloop",
+        "seconds_per_point": 0.020200679,
+        "source": "required/li/timing/li_gg_emepmupmum-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
       },
       "fastest": {
-       "key": "recola",
-       "name": "Recola",
-       "seconds_per_point": 0.003703114,
-       "match": "match open (lit-perf)"
-      },
-      "unmatched": false,
-      "fastest_settled": {
        "key": "openloops",
        "name": "OpenLoops",
-       "seconds_per_point": 0.0066417005
+       "seconds_per_point": 0.006155216
+      },
+      "unmatched": false,
+      "fastest_unmatched": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.003474845,
+       "match": "not matched (values excluded)"
       },
       "generation": {
-       "recola": 0.20941882
+       "recola": 0.270751821
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 0.20941882
+       "seconds": 0.270751821
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 2.6795649150346414e-13
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 3.409621989226466e-13
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[gg_emepmupmum]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 14.313742389436811,
-      "generate_seconds": 6.014861692674458,
-      "probes_seconds": 8.298880696762353,
-      "probe_share": 0.5797841312895726,
-      "peak_gib": 0.7,
+      "seconds": 12.814840408042073,
+      "generate_seconds": 5.2021367670968175,
+      "probes_seconds": 7.612703640945256,
+      "probe_share": 0.5940537219775154,
+      "peak_gib": 0.695,
       "plan_mb": 0.038,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_emepmupmum, ninjars, e852f448].generation",
-      "ratio_to_fastest": 68.34983784856017
+      "source": "li-timing.json records[gg_emepmupmum, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 47.33057883308594
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.004716364055639133,
+      "seconds_per_point": 0.004175588292127941,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_emepmupmum, ninjars, e852f448]",
+      "source": "li-timing.json records[gg_emepmupmum, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
@@ -3810,15 +4707,19 @@
        "status": "served",
        "served_fraction": 1.0,
        "label": "128/128",
-       "seconds_per_point": 0.0032050784211605787
+       "seconds_per_point": 0.0026319216412957758,
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 1.2736210809710782,
-      "ratio_to_fastest_settled": 0.7101139317617728,
+      "ratio_to_fastest": 0.6783820896176415,
+      "ratio_to_fastest_unmatched": 1.2016617409202255,
       "gate": {
        "status": "not gated",
        "label": "<5 ms: not gated",
        "rule": "below 5 ms: not gated (user 2026-10-24)",
-       "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_emepmupmum, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_emepmupmum.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     },
@@ -3848,41 +4749,57 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 1.95623842,
-        "source": "required/li/timing/li_gg_aagg-providers.json providers.openloops",
+        "seconds_per_point": 1.540595695,
+        "source": "required/li/timing/li_gg_aagg-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 1.671407485,
-        "source": "required/li/timing/li_gg_aagg-providers.json providers.recola",
+        "seconds_per_point": 1.78058093,
+        "source": "required/li/timing/li_gg_aagg-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 5.894728765,
-        "source": "required/li/timing/li_gg_aagg-providers.json providers.madloop",
+        "seconds_per_point": 3.1211632700000003,
+        "source": "required/li/timing/li_gg_aagg-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
       },
       "fastest": {
-       "key": "recola",
-       "name": "Recola",
-       "seconds_per_point": 1.671407485
+       "key": "openloops",
+       "name": "OpenLoops",
+       "seconds_per_point": 1.540595695
       },
       "unmatched": false,
       "generation": {
-       "recola": 8.77546562
+       "recola": 8.82801175
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 8.77546562
+       "seconds": 8.82801175
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 6.800062639854434e-06
+       },
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 6.804061926830154e-06
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_aagg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aagg: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_aagg: L5 partial; li_gg_aagg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial; arbitrary not run); li_gg_aagg: L7 not run (stopped: the 40-digit AP arm of this 2->4 optional run extrapolates to about 6.9 h (its double-double arm 7405 s times the AP / double-double ratio 3.35 of li_gg_hhgg); L7 at six legs is li_gg_hhgg's)",
+      "source": "lit.json rows[gg_aagg]"
      },
      "generation": {
       "status": "not run",
@@ -3924,14 +4841,16 @@
       "status": "recorded",
       "providers": {
        "madloop": {
-        "seconds_per_point": 19.882722049999998,
-        "source": "required/li/timing/li_gg_zzzz-providers.json providers.madloop",
+        "seconds_per_point": 21.379494049999998,
+        "source": "required/li/timing/li_gg_zzzz-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 5.068242805000001,
-        "source": "required/li/timing/li_gg_zzzz-providers.json providers.recola",
+        "seconds_per_point": 5.603843725,
+        "source": "required/li/timing/li_gg_zzzz-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "openloops": {
@@ -3943,22 +4862,30 @@
       "fastest": {
        "key": "recola",
        "name": "Recola",
-       "seconds_per_point": 5.068242805000001
+       "seconds_per_point": 5.603843725
       },
       "unmatched": false,
       "generation": {
-       "recola": 26.6829317
+       "recola": 26.9980293
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 26.6829317
+       "seconds": 26.9980293
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "partial",
+      "references": [
+       {
+        "key": "recola",
+        "short": "Rc",
+        "max_relative": 5.17842334281022e-06
+       }
+      ],
+      "points": 3,
+      "note": "li_gg_zzzz: L3 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L5 partial; li_gg_zzzz: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "source": "lit.json rows[gg_zzzz]"
      },
      "generation": {
       "status": "not run",
@@ -4005,91 +4932,130 @@
       "status": "recorded",
       "providers": {
        "openloops": {
-        "seconds_per_point": 0.25179946200000003,
-        "source": "required/li/timing/li_gg_emepmupmumg-providers.json providers.openloops",
+        "seconds_per_point": 0.1972922895,
+        "source": "required/li/timing/li_gg_emepmupmumg-providers-optimistic.json providers.openloops",
+        "protocol": "optimistic",
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.0634028725,
-        "source": "required/li/timing/li_gg_emepmupmumg-providers.json providers.recola",
-        "match": "match open (lit-perf)",
+        "seconds_per_point": 0.0588168475,
+        "source": "required/li/timing/li_gg_emepmupmumg-providers-optimistic.json providers.recola",
+        "protocol": "optimistic",
+        "match": "not matched (values excluded)",
         "values_excluded": "width convention: Recola's on-shell scheme with widths is not MG5/OpenLoops' fixed-width scheme (qcd-widths); its values are 1.7e-4 to 3.6e-4 at the reference points and 5.1e-5 to 1.1e-3 at the 16 stream points off MadLoop = OpenLoops, so they are no reference (as on LI-43). Its timing is of the same process and production work; whether it counts as a matched provider for the speed gate is lit-perf's / the coordinator's call",
         "host": "itphlies"
        },
        "madloop": {
-        "seconds_per_point": 1.200016825,
-        "source": "required/li/timing/li_gg_emepmupmumg-providers.json providers.madloop",
+        "seconds_per_point": 0.6298177855,
+        "source": "required/li/timing/li_gg_emepmupmumg-providers-optimistic.json providers.madloop",
+        "protocol": "optimistic",
         "setting": "MLReductionLib 7|6|1",
         "host": "itphlies"
        }
       },
       "fastest": {
-       "key": "recola",
-       "name": "Recola",
-       "seconds_per_point": 0.0634028725,
-       "match": "match open (lit-perf)"
-      },
-      "unmatched": false,
-      "fastest_settled": {
        "key": "openloops",
        "name": "OpenLoops",
-       "seconds_per_point": 0.25179946200000003
+       "seconds_per_point": 0.1972922895
+      },
+      "unmatched": false,
+      "fastest_unmatched": {
+       "key": "recola",
+       "name": "Recola",
+       "seconds_per_point": 0.0588168475,
+       "match": "not matched (values excluded)"
       },
       "generation": {
-       "recola": 1.17092075
+       "recola": 1.2587651
       },
       "fastest_generation": {
        "key": "recola",
        "name": "Recola",
-       "seconds": 1.17092075
+       "seconds": 1.2587651
       }
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "pass",
+      "references": [
+       {
+        "key": "openloops",
+        "short": "OL",
+        "max_relative": 5.1980378965110704e-12
+       },
+       {
+        "key": "madloop",
+        "short": "ML",
+        "max_relative": 6.59803109185405e-12
+       }
+      ],
+      "points": 3,
+      "note": null,
+      "source": "lit.json rows[li51]"
      },
      "generation": {
       "status": "measured",
-      "seconds": 94.83948589162901,
-      "generate_seconds": 7.711959567386657,
-      "probes_seconds": 87.12752632424235,
-      "probe_share": 0.9186840850634835,
-      "peak_gib": 1.137,
+      "seconds": 89.23044905019924,
+      "generate_seconds": 6.902882896363735,
+      "probes_seconds": 82.3275661538355,
+      "probe_share": 0.9226398278856547,
+      "peak_gib": 1.141,
       "plan_mb": 0.053,
-      "revision": "e852f448",
+      "revision": "0bd41b22",
       "host": "itphlies",
-      "source": "li-timing.json records[li51, ninjars, e852f448].generation",
-      "ratio_to_fastest": 80.99564884440643
+      "source": "li-timing.json records[li51, ninjars, 0bd41b22].generation",
+      "ratio_to_fastest": 70.88729187852384
      },
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.19462855899109854,
+      "seconds_per_point": 0.15950486635483685,
       "backend": "ninjars",
       "backend_label": "NinjaRS per amplitude",
       "default_backend": false,
-      "revision": "e852f448",
-      "native_build": "loop-native-v2-slice-e852f448",
-      "native_digest": "c3fda0c4aa9751a701348bb61f66501956cba6ac1dc0065fff622b270109b5b1",
+      "revision": "0bd41b22",
+      "native_build": "loop-native-lit-perf-0bd41b22",
+      "native_digest": "ee6bc5f6941ef609ab15a3f1a7706124c86232ccd70e08faa06498628c971a2e",
       "host": "itphlies",
-      "source": "li-timing.json records[li51, ninjars, e852f448]",
+      "source": "li-timing.json records[li51, ninjars, 0bd41b22]",
+      "date": "2026-11-08",
       "requested": "auto",
-      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request until its agreement with NinjaRS on loop-induced processes is established",
+      "reason": "auto: NinjaRS; TIRust, the loop-induced default, serves the summed virtual on explicit request: it still fails closed on points NinjaRS serves, so 'auto' keeps NinjaRS",
       "other_backend": {
        "backend": "tirust",
        "backend_label": "TIRust",
        "requested": "tirust",
-       "status": "served",
-       "served_fraction": 1.0,
-       "label": "128/128",
-       "seconds_per_point": 0.08103614099309198
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 5,
+       "failed_points": [
+        62,
+        62
+       ],
+       "served_fraction": 0.515625,
+       "every_point": false,
+       "causes": {
+        "TIRust gates and method choice": 38,
+        "TIRust acceptance (method-choice lane off its second frame)": 20,
+        "TIRust acceptance row refused": 18
+       },
+       "label": "62/128 failed closed, TIRust gates and method choice, TIRust acceptance (method-choice lane off its second frame), TIRust acceptance row refused; its 66 served points 64.6 ms",
+       "served_points": {
+        "points": 66,
+        "seconds_per_point": 0.06460313065062193,
+        "blocks": 5
+       },
+       "tir_options": "shipped"
       },
-      "ratio_to_fastest": 3.0697120069930355,
-      "ratio_to_fastest_settled": 0.7729506546407892,
+      "ratio_to_fastest": 0.8084698431908909,
+      "ratio_to_fastest_unmatched": 2.7118907784854818,
       "gate": {
-       "status": "no verdict",
-       "label": "no verdict yet"
+       "status": "gap",
+       "label": "no verdict: TIRust failed closed 62/128 (gap)",
+       "served_fraction": 0.515625,
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_emepmupmumg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_emepmupmumg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+       "tir_options": "shipped"
       }
      }
     }
@@ -4127,9 +5093,11 @@
       ]
      },
      "validation": {
-      "status": "pending",
-      "reason": "lit.json not written yet (lit-val)",
-      "what": "validation"
+      "status": "delegated (lit-eft)",
+      "references": [],
+      "points": null,
+      "note": "run-only check, outside the rows and L6 (USER 2026-11-06 ~14:55)",
+      "source": "lit.json rows[li_x1]"
      },
      "generation": {
       "status": "pending",
@@ -4146,7 +5114,7 @@
   }
  ],
  "figure": {
-  "rule": "every row of the loop-induced table with a measured batched (B = 128) pyAmpliCol time and a matched provider time (its ratio to the fastest provider), in the table's order, drawn as a diamond on Figure 1's time axis beside Table 1's rows: the providers' production times, and the gate limit where the row is gated (2->3 upward: MadLoop's time and the gate factor times each other matched provider's, the smallest; grey below the 5 ms rule); the other rows are not drawn, counted by reason",
+  "rule": "every row of the loop-induced table with a measured batched (B = 128) pyAmpliCol time and a matched provider time (its ratio to the fastest provider), in the table's order, drawn as a diamond on Figure 1's time axis beside Table 1's rows: the providers' production times, and the gate limit where the row is gated (2->3 upward: MadLoop's time and the gate factor times each other matched provider's, the smallest; a provider whose values are excluded is not matched; no limit while a matched provider has no production time yet; grey below the 5 ms rule); the other rows are not drawn, counted by reason",
   "gate_factor": 1.3,
   "rows": [
    {
@@ -4154,16 +5122,16 @@
     "group": "2->2",
     "math": "g g -> h h",
     "corrections": "QCD",
-    "seconds_per_point": 0.0005579019234573934,
+    "seconds_per_point": 0.0005287416934152134,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 0.8063180247478996,
+    "ratio_to_fastest": 1.4525810839109548,
     "providers": {
-     "openloops": 0.001561181,
-     "recola": 0.0013595255,
-     "madloop": 0.000691913
+     "openloops": 0.0006597924999999999,
+     "recola": 0.00041095149999999996,
+     "madloop": 0.0003640015
     },
     "fastest": "madloop",
-    "match_open": [],
+    "not_matched": [],
     "limit": null,
     "gate": {
      "status": "reported",
@@ -4176,74 +5144,57 @@
     "group": "2->3",
     "math": "e^+ e^- -> g g g",
     "corrections": "QED",
-    "seconds_per_point": 0.00806797488257871,
+    "seconds_per_point": 0.006740317134244833,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 1.8157283984538601,
+    "ratio_to_fastest": 1.7205040314426039,
     "providers": {
-     "recola": 0.004443382,
-     "madloop": 0.015461968
+     "recola": 0.0039176409999999995,
+     "madloop": 0.009609410499999999
     },
     "fastest": "recola",
-    "match_open": [],
+    "not_matched": [],
     "limit": {
-     "seconds": 0.005776396600000001,
-     "binding": "Recola"
-    },
-    "gate": {
-     "status": "no verdict",
-     "label": "no verdict yet"
-    },
-    "source": "groups[2->3].rows[emep_ggg].timing"
-   },
-   {
-    "key": "gg_hhh",
-    "group": "2->3",
-    "math": "g g -> h h h",
-    "corrections": "QCD",
-    "seconds_per_point": 0.0038197422109078616,
-    "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 0.6766783816530298,
-    "providers": {
-     "openloops": 0.022879906,
-     "recola": 0.0056448415,
-     "madloop": 0.009034304
-    },
-    "fastest": "recola",
-    "match_open": [],
-    "limit": {
-     "seconds": 0.007338293950000001,
+     "seconds": 0.0050929333,
      "binding": "Recola"
     },
     "gate": {
      "status": "not gated",
      "label": "<5 ms: not gated",
      "rule": "below 5 ms: not gated (user 2026-10-24)",
-     "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_emep_ggg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_emep_ggg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
-    "source": "groups[2->3].rows[gg_hhh].timing"
+    "source": "groups[2->3].rows[emep_ggg].timing"
    },
    {
     "key": "gg_hgg",
     "group": "2->3",
     "math": "g g -> h g g",
     "corrections": "QCD",
-    "seconds_per_point": 0.043156410716619575,
+    "seconds_per_point": 0.03963335620937869,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 1.695064529223818,
+    "ratio_to_fastest": 2.8877631224443174,
     "providers": {
-     "openloops": 0.02568697,
-     "recola": 0.02546004,
-     "madloop": 0.086247677
+     "openloops": 0.013724587,
+     "recola": 0.018677452999999997,
+     "madloop": 0.039209925
     },
-    "fastest": "recola",
-    "match_open": [],
+    "fastest": "openloops",
+    "not_matched": [],
     "limit": {
-     "seconds": 0.033098052,
-     "binding": "Recola"
+     "seconds": 0.0178419631,
+     "binding": "OpenLoops"
     },
     "gate": {
-     "status": "no verdict",
-     "label": "no verdict yet"
+     "status": "gap",
+     "label": "no verdict: TIRust failed closed 20/128 (gap)",
+     "served_fraction": 0.84375,
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_hgg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_hgg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
     "source": "groups[2->3].rows[gg_hgg].timing"
    },
@@ -4252,23 +5203,28 @@
     "group": "2->3",
     "math": "g g -> z z g",
     "corrections": "QCD",
-    "seconds_per_point": 0.36689425846998347,
+    "seconds_per_point": 0.36310725420116796,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 2.064114814321027,
+    "ratio_to_fastest": 2.8684709971079023,
     "providers": {
-     "openloops": 0.18309176900000002,
-     "recola": 0.1777489585,
-     "madloop": 0.7213941095
+     "openloops": 0.126585646,
+     "recola": 0.1271913295,
+     "madloop": 0.2738755935
     },
-    "fastest": "recola",
-    "match_open": [],
+    "fastest": "openloops",
+    "not_matched": [],
     "limit": {
-     "seconds": 0.23107364605,
-     "binding": "Recola"
+     "seconds": 0.1645613398,
+     "binding": "OpenLoops"
     },
     "gate": {
-     "status": "no verdict",
-     "label": "no verdict yet"
+     "status": "gap",
+     "label": "no verdict: TIRust failed closed 72/128 (gap)",
+     "served_fraction": 0.4375,
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_zzg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_zzg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
     "source": "groups[2->3].rows[gg_zzg].timing"
    },
@@ -4277,23 +5233,28 @@
     "group": "2->3",
     "math": "g g -> a a g",
     "corrections": "QCD",
-    "seconds_per_point": 0.1565712155534129,
+    "seconds_per_point": 0.17332497011739179,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 3.279491791288892,
+    "ratio_to_fastest": 3.6223517757461514,
     "providers": {
-     "openloops": 0.052470322,
-     "recola": 0.047742524,
-     "madloop": 0.1998882605
+     "openloops": 0.0478487405,
+     "recola": 0.053318869,
+     "madloop": 0.1202394605
     },
-    "fastest": "recola",
-    "match_open": [],
+    "fastest": "openloops",
+    "not_matched": [],
     "limit": {
-     "seconds": 0.0620652812,
-     "binding": "Recola"
+     "seconds": 0.06220336265,
+     "binding": "OpenLoops"
     },
     "gate": {
-     "status": "no verdict",
-     "label": "no verdict yet"
+     "status": "gap",
+     "label": "no verdict: TIRust failed closed 46/128 (gap)",
+     "served_fraction": 0.640625,
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_aag, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_aag.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
     "source": "groups[2->3].rows[gg_aag].timing"
    },
@@ -4302,98 +5263,58 @@
     "group": "2->3",
     "math": "g g -> w^+ w^- g",
     "corrections": "QCD",
-    "seconds_per_point": 0.37236428433607216,
+    "seconds_per_point": 0.374654849532817,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 5.412699948943229,
+    "ratio_to_fastest": 5.101905891349291,
     "providers": {
-     "openloops": 0.084359499,
-     "recola": 0.06879455500000001,
-     "madloop": 0.3466215305
+     "openloops": 0.0734342925,
+     "recola": 0.078279913,
+     "madloop": 0.21508003850000001
     },
-    "fastest": "recola",
-    "match_open": [],
+    "fastest": "openloops",
+    "not_matched": [],
     "limit": {
-     "seconds": 0.08943292150000001,
-     "binding": "Recola"
+     "seconds": 0.09546458025,
+     "binding": "OpenLoops"
     },
     "gate": {
-     "status": "no verdict",
-     "label": "no verdict yet"
+     "status": "gap",
+     "label": "no verdict: TIRust failed closed 106/128 (gap)",
+     "served_fraction": 0.171875,
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_wpwmg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_wpwmg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
     "source": "groups[2->3].rows[gg_wpwmg].timing"
-   },
-   {
-    "key": "gg_zzz",
-    "group": "2->3",
-    "math": "g g -> z z z",
-    "corrections": "QCD",
-    "seconds_per_point": 0.339951517413283,
-    "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 2.545900901137676,
-    "providers": {
-     "openloops": 0.15101618300000003,
-     "recola": 0.133528967,
-     "madloop": 0.5604789674999999
-    },
-    "fastest": "recola",
-    "match_open": [],
-    "limit": {
-     "seconds": 0.17358765710000001,
-     "binding": "Recola"
-    },
-    "gate": {
-     "status": "no verdict",
-     "label": "no verdict yet"
-    },
-    "source": "groups[2->3].rows[gg_zzz].timing"
-   },
-   {
-    "key": "gg_hzg",
-    "group": "2->3",
-    "math": "g g -> h z g",
-    "corrections": "QCD",
-    "seconds_per_point": 0.04756227239704458,
-    "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 2.4893525803212047,
-    "providers": {
-     "openloops": 0.032311431,
-     "recola": 0.019106282,
-     "madloop": 0.07393606750000001
-    },
-    "fastest": "recola",
-    "match_open": [],
-    "limit": {
-     "seconds": 0.0248381666,
-     "binding": "Recola"
-    },
-    "gate": {
-     "status": "no verdict",
-     "label": "no verdict yet"
-    },
-    "source": "groups[2->3].rows[gg_hzg].timing"
    },
    {
     "key": "gg_agg",
     "group": "2->3",
     "math": "g g -> a g g",
     "corrections": "QCD",
-    "seconds_per_point": 0.29106062006758293,
+    "seconds_per_point": 0.3249054933839943,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 3.839004882719257,
+    "ratio_to_fastest": 4.29594784640886,
     "providers": {
-     "openloops": 0.078785631,
-     "recola": 0.075816684,
-     "madloop": 0.2502013195
+     "openloops": 0.07563068849999999,
+     "recola": 0.0812269665,
+     "madloop": 0.1414039595
     },
-    "fastest": "recola",
-    "match_open": [],
+    "fastest": "openloops",
+    "not_matched": [],
     "limit": {
-     "seconds": 0.0985616892,
-     "binding": "Recola"
+     "seconds": 0.09831989504999998,
+     "binding": "OpenLoops"
     },
     "gate": {
-     "status": "no verdict",
-     "label": "no verdict yet"
+     "status": "gap",
+     "label": "no verdict: TIRust failed closed 46/128 (gap)",
+     "served_fraction": 0.640625,
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_agg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_agg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
     "source": "groups[2->3].rows[gg_agg].timing"
    },
@@ -4402,22 +5323,27 @@
     "group": "2->3",
     "math": "g g -> z g g",
     "corrections": "QCD",
-    "seconds_per_point": 0.4527017778127629,
+    "seconds_per_point": 0.5090606934136304,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 3.9068378248970177,
+    "ratio_to_fastest": 3.8256100262922623,
     "providers": {
-     "recola": 0.115874218,
-     "madloop": 0.476024859
+     "recola": 0.13306654099999998,
+     "madloop": 0.2689648625
     },
     "fastest": "recola",
-    "match_open": [],
+    "not_matched": [],
     "limit": {
-     "seconds": 0.1506364834,
+     "seconds": 0.17298650329999998,
      "binding": "Recola"
     },
     "gate": {
-     "status": "no verdict",
-     "label": "no verdict yet"
+     "status": "gap",
+     "label": "no verdict: TIRust failed closed 74/128 (gap)",
+     "served_fraction": 0.421875,
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_zgg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_zgg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
     "source": "groups[2->3].rows[gg_zgg].timing"
    },
@@ -4426,25 +5352,28 @@
     "group": "2->3",
     "math": "u overline(u) -> h g g",
     "corrections": "QCD",
-    "seconds_per_point": 0.002348669553612126,
+    "seconds_per_point": 0.001996986975427717,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 1.5305804339744946,
+    "ratio_to_fastest": 2.0349406535572125,
     "providers": {
-     "openloops": 0.0026113205,
-     "recola": 0.001534496,
-     "madloop": 0.00263379
+     "openloops": 0.000981349,
+     "recola": 0.0011071745,
+     "madloop": 0.001717157
     },
-    "fastest": "recola",
-    "match_open": [],
+    "fastest": "openloops",
+    "not_matched": [],
     "limit": {
-     "seconds": 0.0019948448000000002,
-     "binding": "Recola"
+     "seconds": 0.0012757537000000002,
+     "binding": "OpenLoops"
     },
     "gate": {
      "status": "not gated",
      "label": "<5 ms: not gated",
      "rule": "below 5 ms: not gated (user 2026-10-24)",
-     "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_uux_hgg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_uux_hgg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
     "source": "groups[2->3].rows[uux_hgg].timing"
    },
@@ -4453,25 +5382,28 @@
     "group": "2->3",
     "math": "u overline(u) -> d overline(d) h",
     "corrections": "QCD",
-    "seconds_per_point": 0.0005106028984300792,
+    "seconds_per_point": 0.0003936712055292446,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 3.8105831400196966,
+    "ratio_to_fastest": 6.09350987584931,
     "providers": {
-     "openloops": 0.000270746,
-     "recola": 0.0005361825,
-     "madloop": 0.000133996
+     "openloops": 0.000148806,
+     "recola": 6.4605e-05,
+     "madloop": 9.11305e-05
     },
-    "fastest": "madloop",
-    "match_open": [],
+    "fastest": "recola",
+    "not_matched": [],
     "limit": {
-     "seconds": 0.000133996,
-     "binding": "MadLoop"
+     "seconds": 8.39865e-05,
+     "binding": "Recola"
     },
     "gate": {
      "status": "not gated",
      "label": "<5 ms: not gated",
      "rule": "below 5 ms: not gated (user 2026-10-24)",
-     "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_uux_ddxh, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_uux_ddxh.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
     "source": "groups[2->3].rows[uux_ddxh].timing"
    },
@@ -4480,23 +5412,28 @@
     "group": "2->4",
     "math": "g g -> h h g g",
     "corrections": "QCD",
-    "seconds_per_point": 0.9807981397971162,
+    "seconds_per_point": 0.771635646600771,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 5.181843094830784,
+    "ratio_to_fastest": 4.024304616215003,
     "providers": {
-     "openloops": 0.5720159170000001,
-     "recola": 0.18927592399999998,
-     "madloop": 0.6706941495000001
+     "openloops": 0.3293967665,
+     "recola": 0.19174384649999998,
+     "madloop": 0.4008719395
     },
     "fastest": "recola",
-    "match_open": [],
+    "not_matched": [],
     "limit": {
-     "seconds": 0.24605870119999998,
+     "seconds": 0.24926700045,
      "binding": "Recola"
     },
     "gate": {
-     "status": "no verdict",
-     "label": "no verdict yet"
+     "status": "gap",
+     "label": "no verdict: TIRust failed closed 111/128 (gap)",
+     "served_fraction": 0.1328125,
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_hhgg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_hhgg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
     "source": "groups[2->4].rows[gg_hhgg].timing"
    },
@@ -4505,23 +5442,28 @@
     "group": "2->4",
     "math": "g g -> h g g g",
     "corrections": "QCD",
-    "seconds_per_point": 3.3720681745871843,
+    "seconds_per_point": 2.6930968948290683,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 5.84118406075227,
+    "ratio_to_fastest": 4.92272170694666,
     "providers": {
-     "openloops": 0.8531388215,
-     "recola": 0.577291888,
-     "madloop": 1.97841356
+     "openloops": 0.5652155320000001,
+     "recola": 0.54707478,
+     "madloop": 1.0908425350000002
     },
     "fastest": "recola",
-    "match_open": [],
+    "not_matched": [],
     "limit": {
-     "seconds": 0.7504794544,
+     "seconds": 0.711197214,
      "binding": "Recola"
     },
     "gate": {
-     "status": "no verdict",
-     "label": "no verdict yet"
+     "status": "gap",
+     "label": "no verdict: TIRust failed closed 125/128 (gap)",
+     "served_fraction": 0.0234375,
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_hggg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_hggg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
     "source": "groups[2->4].rows[gg_hggg].timing"
    },
@@ -4530,27 +5472,30 @@
     "group": "2->4",
     "math": "g g -> e^+ e^- mu^+ mu^-",
     "corrections": "QCD",
-    "seconds_per_point": 0.004716364055639133,
+    "seconds_per_point": 0.004175588292127941,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 1.2736210809710782,
+    "ratio_to_fastest": 0.6783820896176415,
     "providers": {
-     "openloops": 0.0066417005,
-     "recola": 0.003703114,
-     "madloop": 0.033803844
+     "openloops": 0.006155216,
+     "recola": 0.003474845,
+     "madloop": 0.020200679
     },
-    "fastest": "recola",
-    "match_open": [
+    "fastest": "openloops",
+    "not_matched": [
      "Recola"
     ],
     "limit": {
-     "seconds": 0.0048140482000000005,
-     "binding": "Recola"
+     "seconds": 0.0080017808,
+     "binding": "OpenLoops"
     },
     "gate": {
      "status": "not gated",
      "label": "<5 ms: not gated",
      "rule": "below 5 ms: not gated (user 2026-10-24)",
-     "rule_source": "milestone.json gate_decisions.threshold_rule (workspace/reports/engine-v2/slice-status.md, DECISIONS, 2026-10-24 ~22:35 UTC (USER: summary pages and gate focus, GATE RULE; binding for the milestone push's report:gint and for gate verdicts))"
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_emepmupmum, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_emepmupmum.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
     "source": "groups[2->4].rows[gg_emepmupmum].timing"
    },
@@ -4559,31 +5504,39 @@
     "group": "2->5",
     "math": "g g -> e^+ e^- mu^+ mu^- g",
     "corrections": "QCD",
-    "seconds_per_point": 0.19462855899109854,
+    "seconds_per_point": 0.15950486635483685,
     "backend_label": "NinjaRS per amplitude",
-    "ratio_to_fastest": 3.0697120069930355,
+    "ratio_to_fastest": 0.8084698431908909,
     "providers": {
-     "openloops": 0.25179946200000003,
-     "recola": 0.0634028725,
-     "madloop": 1.200016825
+     "openloops": 0.1972922895,
+     "recola": 0.0588168475,
+     "madloop": 0.6298177855
     },
-    "fastest": "recola",
-    "match_open": [
+    "fastest": "openloops",
+    "not_matched": [
      "Recola"
     ],
     "limit": {
-     "seconds": 0.08242373425,
-     "binding": "Recola"
+     "seconds": 0.25647997635,
+     "binding": "OpenLoops"
     },
     "gate": {
-     "status": "no verdict",
-     "label": "no verdict yet"
+     "status": "gap",
+     "label": "no verdict: TIRust failed closed 62/128 (gap)",
+     "served_fraction": 0.515625,
+     "backend": "tirust",
+     "backend_label": "TIRust",
+     "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_emepmupmumg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_emepmupmumg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions (lit-perf gate tool)",
+     "tir_options": "shipped"
     },
     "source": "groups[2->5].rows[li51].timing"
    }
   ],
   "not_drawn": {
    "no pyAmpliCol time at B = 128": [
+    "gg_hhh",
+    "gg_zzz",
+    "gg_hzg",
     "gg_aagg",
     "gg_zzzz",
     "li_x1"
