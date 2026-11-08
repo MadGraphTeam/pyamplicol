@@ -58,10 +58,20 @@ def main(argv: list[str] | None = None) -> int:
     v2.add_argument("--native-build", type=Path, help="staged native build directory")
     v2.add_argument(
         "--reduction",
-        choices=("ninjars", "tirust"),
-        default="ninjars",
+        choices=("auto", "ninjars", "tirust"),
+        nargs="+",
+        default=["ninjars"],
         help="the reduction backend of every evaluation (loops.v2.reduction."
-        "running; tirust: binary64)",
+        "running); a loop-induced row (processes.json loop_induced) takes "
+        "several, each resolved as the runtime resolves a call "
+        "(reduction.resolve: requested, effective, reason) and timed in "
+        "paired blocks on the same points",
+    )
+    v2.add_argument(
+        "--tir-profile",
+        action="store_true",
+        help="loop-induced: also one TIRust arm with TIRust's own stage "
+        "profile (reduction: TIR masters ...), a stage split, not a timing",
     )
     v2.add_argument(
         "--scratch",
@@ -239,6 +249,19 @@ def main(argv: list[str] | None = None) -> int:
         help="another campaign's host provider spread on this host (its gate "
         "document's host_provider_spread): the assumed uncertainty of a "
         "provider without repeats where larger than this run's own",
+    )
+    gate.add_argument(
+        "--li-timing",
+        type=Path,
+        help="also merge the loop-induced records into this li-timing.json "
+        "(the report's data/li-timing.json; the records of a row at the "
+        "same revision are replaced)",
+    )
+    gate.add_argument(
+        "--registry",
+        type=Path,
+        help="the registry of the loop-induced rows (default: the report's "
+        "data/milestone.json)",
     )
     gate.add_argument(
         "--meta",
