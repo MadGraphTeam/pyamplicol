@@ -4708,12 +4708,125 @@
   "gg_hhgg": {
    "status": "partial",
    "references": {
-    "madloop": 2.787306087572307e-09
+    "madloop": 2.787306087572307e-09,
+    "openloops": 1.1683457009716032e-07,
+    "recola": 2.139739417924842e-09
    },
-   "points": 1,
-   "note": "li_gg_hhgg_p15: TIRust serves 0/1 points; not run: li_gg_hhgg",
+   "points": 4,
+   "note": "li_gg_hhgg: TIRust serves 0/3 points; li_gg_hhgg_p15: TIRust serves 0/1 points",
    "source": "lit-val campaign 2026-11-07 (records at slice e852f448, native loop-native-v2-slice-e852f448 digest c3fda0c4, tir on): public route, reduction ninjars and tirust requested explicitly, binary64 + double-double, AP (40 digits) on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
    "runs": {
+    "li_gg_hhgg": {
+     "L1": {
+      "status": "pass",
+      "max_relative": {
+       "madloop": 1.74034295948057e-10,
+       "openloops": 1.1683457009716032e-07,
+       "recola": 2.139739417924842e-09
+      },
+      "tirust_max_relative": {},
+      "caution_points": []
+     },
+     "L3": {
+      "status": "partial",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.09618398621806605,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "pass",
+       "worst_ratio": 0.09954833158231506,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "tirust/double": {
+       "status": "partial",
+       "worst_ratio": null,
+       "served": 0,
+       "of": 3,
+       "failed": [
+        "ArithmeticError: the probe point failed: ['family 157 lane LaneKey { family: 157, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 9.300206539180383e-4 (refused by the",
+        "ArithmeticError: the probe point failed: ['family 157 lane LaneKey { family: 157, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 8.76663699978078e-5 (refused by the ",
+        "ArithmeticError: the probe point failed: ['family 157 lane LaneKey { family: 157, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 3.061308778261484e-4 (refused by the"
+       ]
+      },
+      "lane_finiteness": {
+       "ninjars/double": 7.027409455881985e-13,
+       "ninjars/double-double": 9.790331896447805e-30,
+       "tirust/double": null
+      },
+      "poles_over_10E": 0.00016659357618807236
+     },
+     "L4": {
+      "status": "pass",
+      "probes": {
+       "finiteness": {
+        "passed": true,
+        "worst": 0.0729
+       },
+       "ward": {
+        "legs": [
+         1
+        ],
+        "passed": true,
+        "worst": 1.23e-26
+       }
+      },
+      "carrier": "double-double",
+      "widths": "zero"
+     },
+     "L5": {
+      "status": "pass",
+      "worst_ratio_to_10E": 0.0025373016433364697,
+      "double_double_max_relative": 1.3383961622839886e-25,
+      "transformed_estimate_relative": 5.103251951056321e-06
+     },
+     "L6": {
+      "status": "partial",
+      "double": {
+       "compared_entries": 0,
+       "beyond_10E": 0,
+       "worst_ratio_to_10E": 0.0,
+       "finite_max_relative": null,
+       "tirust_served": 0,
+       "tirust_served_checked": 0,
+       "of": 3,
+       "tirust_failed_reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust Unstable: ill-conditioned Gram matrix for [#, #, #, #]: conditioning # (refused by the conditio": 3
+       }
+      },
+      "double-double": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the double-double carrier in this native extension; request 'auto' or the other backend"
+      },
+      "arbitrary": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the arbitrary carrier in this native extension; request 'auto' or the other backend"
+      }
+     },
+     "L7": {
+      "status": "pass",
+      "max_relative": 7.82516282745378e-27,
+      "digits": 40
+     },
+     "E": {
+      "status": "pass",
+      "ninjars": {
+       "worst_error_over_10E": 0.0005315579964097323,
+       "worst_relative_error": 1.7413636077620762e-10,
+       "points": 3
+      },
+      "tirust": {
+       "worst_error_over_10E": null,
+       "worst_relative_error": null,
+       "points": 0
+      }
+     }
+    },
     "li_gg_hhgg_p15": {
      "L1": {
       "status": "pass",
@@ -4824,7 +4937,32 @@
       "caution_points": []
      },
      "L3": {
-      "status": "not run",
+      "status": "partial",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.10816134762412956,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "pass",
+       "worst_ratio": 0.11535603613502447,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "tirust/double": {
+       "status": "partial",
+       "worst_ratio": null,
+       "served": 0,
+       "of": 3,
+       "failed": [
+        "ArithmeticError: the probe point failed: ['re-test of family 214 lane LaneKey { family: 214, order: 0, column: 2 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 6.784524855076975e-5 (ref",
+        "ArithmeticError: the probe point failed: ['re-test of family 12 lane LaneKey { family: 12, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 5.909356948373679e-5 (refus",
+        "ArithmeticError: the probe point failed: ['re-test of family 214 lane LaneKey { family: 214, order: 0, column: 2 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 4.6516372734076276e-5 (re"
+       ]
+      },
       "lane_finiteness": {
        "ninjars/double": 7.251246817170978e-13,
        "ninjars/double-double": 7.434811089371787e-29,
@@ -5002,18 +5140,236 @@
    }
   },
   "gg_aagg": {
-   "status": "not run",
-   "references": {},
-   "points": 0,
-   "note": "no run record: li_gg_aagg",
-   "source": "lit-val campaign 2026-11-07 (records at slice e852f448, native loop-native-v2-slice-e852f448 digest c3fda0c4, tir on): public route, reduction ninjars and tirust requested explicitly, binary64 + double-double, AP (40 digits) on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); raw records workspace/tmp/lit-val/runs/<fixture>/record.json"
+   "status": "partial",
+   "references": {
+    "openloops": 6.804061926830154e-06,
+    "recola": 6.800062639854434e-06
+   },
+   "points": 3,
+   "note": "li_gg_aagg: TIRust serves 0/3 points",
+   "source": "lit-val campaign 2026-11-07 (records at slice e852f448, native loop-native-v2-slice-e852f448 digest c3fda0c4, tir on): public route, reduction ninjars and tirust requested explicitly, binary64 + double-double, AP (40 digits) on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "runs": {
+    "li_gg_aagg": {
+     "L1": {
+      "status": "pass",
+      "max_relative": {
+       "openloops": 6.804061926830154e-06,
+       "recola": 6.800062639854434e-06
+      },
+      "tirust_max_relative": {},
+      "caution_points": []
+     },
+     "L3": {
+      "status": "partial",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.144991518263395,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "pass",
+       "worst_ratio": 0.1225207320418077,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "tirust/double": {
+       "status": "partial",
+       "worst_ratio": null,
+       "served": 0,
+       "of": 3,
+       "failed": [
+        "ArithmeticError: the probe point failed: ['re-test of family 282 lane LaneKey { family: 282, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 7.89829095033929e-4 (refu",
+        "ArithmeticError: the probe point failed: ['family 292 lane LaneKey { family: 292, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2]: conditioning 1.917683279701637e-6 (refused by the co",
+        "ArithmeticError: the probe point failed: ['re-test of family 282 lane LaneKey { family: 282, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 8.270997600635537e-4 (ref"
+       ]
+      },
+      "lane_finiteness": {
+       "ninjars/double": 2.3422892251689375e-10,
+       "ninjars/double-double": 1.2385656526806109e-26,
+       "tirust/double": null
+      },
+      "poles_over_10E": 5.288230883143515e-05
+     },
+     "L4": {
+      "status": "pass",
+      "probes": {
+       "finiteness": {
+        "passed": true,
+        "worst": 0.0594
+       },
+       "ward": {
+        "legs": [
+         1,
+         3
+        ],
+        "passed": true,
+        "worst": 0.00209
+       }
+      },
+      "carrier": "double-double",
+      "widths": "zero"
+     },
+     "L5": {
+      "status": "pass",
+      "worst_ratio_to_10E": 0.003671368681946711,
+      "double_double_max_relative": 1.2985244300550439e-20,
+      "transformed_estimate_relative": 17.908307799041506
+     },
+     "L6": {
+      "status": "partial",
+      "double": {
+       "compared_entries": 0,
+       "beyond_10E": 0,
+       "worst_ratio_to_10E": 0.0,
+       "finite_max_relative": null,
+       "tirust_served": 0,
+       "tirust_served_checked": 0,
+       "of": 3,
+       "tirust_failed_reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust Unstable: ill-conditioned Gram matrix for [#, #, #, #]: conditioning # (refused by the conditio": 2,
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust Unstable: ill-conditioned Gram matrix for [#, #, #]: conditioning # (refused by the conditionin": 1
+       }
+      },
+      "double-double": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the double-double carrier in this native extension; request 'auto' or the other backend"
+      },
+      "arbitrary": {
+       "status": "not run",
+       "reason": "stopped: the 40-digit AP arm of this 2->4 optional run extrapolates to about 6.9 h (its double-double arm 7405 s times the AP / double-double ratio 3.35 of li_gg_hhgg); L7 at six legs is li_gg_hhgg's"
+      }
+     },
+     "L7": {
+      "status": "not run",
+      "reason": "stopped: the 40-digit AP arm of this 2->4 optional run extrapolates to about 6.9 h (its double-double arm 7405 s times the AP / double-double ratio 3.35 of li_gg_hhgg); L7 at six legs is li_gg_hhgg's"
+     },
+     "E": {
+      "status": "pass",
+      "ninjars": {
+       "worst_error_over_10E": 0.00022777004415652677,
+       "worst_relative_error": 6.80007500072103e-06,
+       "points": 3
+      },
+      "tirust": {
+       "worst_error_over_10E": null,
+       "worst_relative_error": null,
+       "points": 0
+      }
+     }
+    }
+   }
   },
   "gg_zzzz": {
-   "status": "not run",
-   "references": {},
-   "points": 0,
-   "note": "no run record: li_gg_zzzz",
-   "source": "lit-val campaign 2026-11-07 (records at slice e852f448, native loop-native-v2-slice-e852f448 digest c3fda0c4, tir on): public route, reduction ninjars and tirust requested explicitly, binary64 + double-double, AP (40 digits) on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); raw records workspace/tmp/lit-val/runs/<fixture>/record.json"
+   "status": "partial",
+   "references": {
+    "recola": 5.17842334281022e-06
+   },
+   "points": 3,
+   "note": "li_gg_zzzz: TIRust serves 0/3 points",
+   "source": "lit-val campaign 2026-11-07 (records at slice e852f448, native loop-native-v2-slice-e852f448 digest c3fda0c4, tir on): public route, reduction ninjars and tirust requested explicitly, binary64 + double-double, AP (40 digits) on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); raw records workspace/tmp/lit-val/runs/<fixture>/record.json",
+   "runs": {
+    "li_gg_zzzz": {
+     "L1": {
+      "status": "pass",
+      "max_relative": {
+       "recola": 5.17842334281022e-06
+      },
+      "tirust_max_relative": {},
+      "caution_points": []
+     },
+     "L3": {
+      "status": "partial",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.06353730991537022,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "not run",
+       "reason": "skipped: about 100 min on this run (0.45 times its double-double checked arm, the ratio measured on li_gg_hggg); L3 is the binary64 probes here"
+      },
+      "tirust/double": {
+       "status": "partial",
+       "worst_ratio": null,
+       "served": 0,
+       "of": 3,
+       "failed": [
+        "ArithmeticError: the probe point failed: ['family 77 lane LaneKey { family: 77, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [1, 2, 3, 4]: conditioning 6.125589919959893e-4 (refused by the c",
+        "ArithmeticError: the probe point failed: ['family 91 lane LaneKey { family: 91, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 3.0903913560026175e-4 (refused by the ",
+        "ArithmeticError: the probe point failed: ['family 20 lane LaneKey { family: 20, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 5.141254224064045e-4 (refused by the c"
+       ]
+      },
+      "lane_finiteness": {
+       "ninjars/double": 5.110363357154241e-13,
+       "ninjars/double-double": null,
+       "tirust/double": null
+      },
+      "poles_over_10E": 2.2890839219152562e-10
+     },
+     "L4": {
+      "status": "pass",
+      "probes": {
+       "finiteness": {
+        "passed": true,
+        "worst": 0.0176
+       },
+       "ward": {
+        "legs": [
+         1
+        ],
+        "passed": true,
+        "worst": 0.000109
+       }
+      },
+      "carrier": "double-double",
+      "widths": "zero"
+     },
+     "L5": {
+      "status": "pass",
+      "worst_ratio_to_10E": 1.0948020066006743e-07,
+      "double_double_max_relative": null,
+      "transformed_estimate_relative": 216.38627487505045,
+      "double_double_not_run": "skipped: the double-double side of L5 is recorded information only (L5 is judged in binary64); about 41 min on this run"
+     },
+     "L6": {
+      "status": "partial",
+      "double": {
+       "compared_entries": 0,
+       "beyond_10E": 0,
+       "worst_ratio_to_10E": 0.0,
+       "finite_max_relative": null,
+       "tirust_served": 0,
+       "tirust_served_checked": 0,
+       "of": 3,
+       "tirust_failed_reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust Unstable: ill-conditioned Gram matrix for [#, #, #, #]: conditioning # (refused by the conditio": 3
+       }
+      },
+      "double-double": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the double-double carrier in this native extension; request 'auto' or the other backend"
+      }
+     },
+     "E": {
+      "status": "pass",
+      "ninjars": {
+       "worst_error_over_10E": 1.537933228575132e-08,
+       "worst_relative_error": 3.3909653140553108e-09,
+       "points": 3
+      },
+      "tirust": {
+       "worst_error_over_10E": null,
+       "worst_relative_error": null,
+       "points": 0
+      }
+     }
+    }
+   }
   },
   "li51": {
    "status": "partial",
@@ -11861,6 +12217,123 @@
   },
   "LI-41": {
    "runs": {
+    "li_gg_hhgg": {
+     "points": 3,
+     "L1": {
+      "status": "pass",
+      "max_relative": {
+       "madloop": 1.74034295948057e-10,
+       "openloops": 1.1683457009716032e-07,
+       "recola": 2.139739417924842e-09
+      },
+      "tirust_max_relative": {},
+      "caution_points": []
+     },
+     "L3": {
+      "status": "partial",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.09618398621806605,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "pass",
+       "worst_ratio": 0.09954833158231506,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "tirust/double": {
+       "status": "partial",
+       "worst_ratio": null,
+       "served": 0,
+       "of": 3,
+       "failed": [
+        "ArithmeticError: the probe point failed: ['family 157 lane LaneKey { family: 157, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 9.300206539180383e-4 (refused by the",
+        "ArithmeticError: the probe point failed: ['family 157 lane LaneKey { family: 157, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 8.76663699978078e-5 (refused by the ",
+        "ArithmeticError: the probe point failed: ['family 157 lane LaneKey { family: 157, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 3.061308778261484e-4 (refused by the"
+       ]
+      },
+      "lane_finiteness": {
+       "ninjars/double": 7.027409455881985e-13,
+       "ninjars/double-double": 9.790331896447805e-30,
+       "tirust/double": null
+      },
+      "poles_over_10E": 0.00016659357618807236
+     },
+     "L4": {
+      "status": "pass",
+      "probes": {
+       "finiteness": {
+        "passed": true,
+        "worst": 0.0729
+       },
+       "ward": {
+        "legs": [
+         1
+        ],
+        "passed": true,
+        "worst": 1.23e-26
+       }
+      },
+      "carrier": "double-double",
+      "widths": "zero"
+     },
+     "L5": {
+      "status": "pass",
+      "worst_ratio_to_10E": 0.0025373016433364697,
+      "double_double_max_relative": 1.3383961622839886e-25,
+      "transformed_estimate_relative": 5.103251951056321e-06
+     },
+     "E": {
+      "status": "pass",
+      "ninjars": {
+       "worst_error_over_10E": 0.0005315579964097323,
+       "worst_relative_error": 1.7413636077620762e-10,
+       "points": 3
+      },
+      "tirust": {
+       "worst_error_over_10E": null,
+       "worst_relative_error": null,
+       "points": 0
+      }
+     },
+     "L6": {
+      "status": "partial",
+      "double": {
+       "compared_entries": 0,
+       "beyond_10E": 0,
+       "worst_ratio_to_10E": 0.0,
+       "finite_max_relative": null,
+       "tirust_served": 0,
+       "tirust_served_checked": 0,
+       "of": 3,
+       "tirust_failed_reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust Unstable: ill-conditioned Gram matrix for [#, #, #, #]: conditioning # (refused by the conditio": 3
+       }
+      },
+      "double-double": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the double-double carrier in this native extension; request 'auto' or the other backend"
+      },
+      "arbitrary": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the arbitrary carrier in this native extension; request 'auto' or the other backend"
+      }
+     },
+     "L7": {
+      "status": "pass",
+      "max_relative": 7.82516282745378e-27,
+      "digits": 40
+     },
+     "references": {
+      "madloop": 1.74034295948057e-10,
+      "openloops": 1.1683457009716032e-07,
+      "recola": 2.139739417924842e-09
+     }
+    },
     "li_gg_hhgg_p15": {
      "points": 1,
      "L1": {
@@ -11968,7 +12441,32 @@
       "caution_points": []
      },
      "L3": {
-      "status": "not run",
+      "status": "partial",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.10816134762412956,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "pass",
+       "worst_ratio": 0.11535603613502447,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "tirust/double": {
+       "status": "partial",
+       "worst_ratio": null,
+       "served": 0,
+       "of": 3,
+       "failed": [
+        "ArithmeticError: the probe point failed: ['re-test of family 214 lane LaneKey { family: 214, order: 0, column: 2 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 6.784524855076975e-5 (ref",
+        "ArithmeticError: the probe point failed: ['re-test of family 12 lane LaneKey { family: 12, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 5.909356948373679e-5 (refus",
+        "ArithmeticError: the probe point failed: ['re-test of family 214 lane LaneKey { family: 214, order: 0, column: 2 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 4.6516372734076276e-5 (re"
+       ]
+      },
       "lane_finiteness": {
        "ninjars/double": 7.251246817170978e-13,
        "ninjars/double-double": 7.434811089371787e-29,
@@ -12149,6 +12647,229 @@
    },
    "status": "pass"
   },
+  "LI-44": {
+   "runs": {
+    "li_gg_aagg": {
+     "points": 3,
+     "L1": {
+      "status": "pass",
+      "max_relative": {
+       "openloops": 6.804061926830154e-06,
+       "recola": 6.800062639854434e-06
+      },
+      "tirust_max_relative": {},
+      "caution_points": []
+     },
+     "L3": {
+      "status": "partial",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.144991518263395,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "pass",
+       "worst_ratio": 0.1225207320418077,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "tirust/double": {
+       "status": "partial",
+       "worst_ratio": null,
+       "served": 0,
+       "of": 3,
+       "failed": [
+        "ArithmeticError: the probe point failed: ['re-test of family 282 lane LaneKey { family: 282, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 7.89829095033929e-4 (refu",
+        "ArithmeticError: the probe point failed: ['family 292 lane LaneKey { family: 292, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2]: conditioning 1.917683279701637e-6 (refused by the co",
+        "ArithmeticError: the probe point failed: ['re-test of family 282 lane LaneKey { family: 282, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 8.270997600635537e-4 (ref"
+       ]
+      },
+      "lane_finiteness": {
+       "ninjars/double": 2.3422892251689375e-10,
+       "ninjars/double-double": 1.2385656526806109e-26,
+       "tirust/double": null
+      },
+      "poles_over_10E": 5.288230883143515e-05
+     },
+     "L4": {
+      "status": "pass",
+      "probes": {
+       "finiteness": {
+        "passed": true,
+        "worst": 0.0594
+       },
+       "ward": {
+        "legs": [
+         1,
+         3
+        ],
+        "passed": true,
+        "worst": 0.00209
+       }
+      },
+      "carrier": "double-double",
+      "widths": "zero"
+     },
+     "L5": {
+      "status": "pass",
+      "worst_ratio_to_10E": 0.003671368681946711,
+      "double_double_max_relative": 1.2985244300550439e-20,
+      "transformed_estimate_relative": 17.908307799041506
+     },
+     "E": {
+      "status": "pass",
+      "ninjars": {
+       "worst_error_over_10E": 0.00022777004415652677,
+       "worst_relative_error": 6.80007500072103e-06,
+       "points": 3
+      },
+      "tirust": {
+       "worst_error_over_10E": null,
+       "worst_relative_error": null,
+       "points": 0
+      }
+     },
+     "L6": {
+      "status": "partial",
+      "double": {
+       "compared_entries": 0,
+       "beyond_10E": 0,
+       "worst_ratio_to_10E": 0.0,
+       "finite_max_relative": null,
+       "tirust_served": 0,
+       "tirust_served_checked": 0,
+       "of": 3,
+       "tirust_failed_reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust Unstable: ill-conditioned Gram matrix for [#, #, #, #]: conditioning # (refused by the conditio": 2,
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust Unstable: ill-conditioned Gram matrix for [#, #, #]: conditioning # (refused by the conditionin": 1
+       }
+      },
+      "double-double": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the double-double carrier in this native extension; request 'auto' or the other backend"
+      },
+      "arbitrary": {
+       "status": "not run",
+       "reason": "stopped: the 40-digit AP arm of this 2->4 optional run extrapolates to about 6.9 h (its double-double arm 7405 s times the AP / double-double ratio 3.35 of li_gg_hhgg); L7 at six legs is li_gg_hhgg's"
+      }
+     },
+     "L7": {
+      "status": "not run",
+      "reason": "stopped: the 40-digit AP arm of this 2->4 optional run extrapolates to about 6.9 h (its double-double arm 7405 s times the AP / double-double ratio 3.35 of li_gg_hhgg); L7 at six legs is li_gg_hhgg's"
+     },
+     "references": {
+      "openloops": 6.804061926830154e-06,
+      "recola": 6.800062639854434e-06
+     }
+    },
+    "li_gg_zzzz": {
+     "points": 3,
+     "L1": {
+      "status": "pass",
+      "max_relative": {
+       "recola": 5.17842334281022e-06
+      },
+      "tirust_max_relative": {},
+      "caution_points": []
+     },
+     "L3": {
+      "status": "partial",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.06353730991537022,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "not run",
+       "reason": "skipped: about 100 min on this run (0.45 times its double-double checked arm, the ratio measured on li_gg_hggg); L3 is the binary64 probes here"
+      },
+      "tirust/double": {
+       "status": "partial",
+       "worst_ratio": null,
+       "served": 0,
+       "of": 3,
+       "failed": [
+        "ArithmeticError: the probe point failed: ['family 77 lane LaneKey { family: 77, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [1, 2, 3, 4]: conditioning 6.125589919959893e-4 (refused by the c",
+        "ArithmeticError: the probe point failed: ['family 91 lane LaneKey { family: 91, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 3.0903913560026175e-4 (refused by the ",
+        "ArithmeticError: the probe point failed: ['family 20 lane LaneKey { family: 20, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 5.141254224064045e-4 (refused by the c"
+       ]
+      },
+      "lane_finiteness": {
+       "ninjars/double": 5.110363357154241e-13,
+       "ninjars/double-double": null,
+       "tirust/double": null
+      },
+      "poles_over_10E": 2.2890839219152562e-10
+     },
+     "L4": {
+      "status": "pass",
+      "probes": {
+       "finiteness": {
+        "passed": true,
+        "worst": 0.0176
+       },
+       "ward": {
+        "legs": [
+         1
+        ],
+        "passed": true,
+        "worst": 0.000109
+       }
+      },
+      "carrier": "double-double",
+      "widths": "zero"
+     },
+     "L5": {
+      "status": "pass",
+      "worst_ratio_to_10E": 1.0948020066006743e-07,
+      "double_double_max_relative": null,
+      "transformed_estimate_relative": 216.38627487505045,
+      "double_double_not_run": "skipped: the double-double side of L5 is recorded information only (L5 is judged in binary64); about 41 min on this run"
+     },
+     "E": {
+      "status": "pass",
+      "ninjars": {
+       "worst_error_over_10E": 1.537933228575132e-08,
+       "worst_relative_error": 3.3909653140553108e-09,
+       "points": 3
+      },
+      "tirust": {
+       "worst_error_over_10E": null,
+       "worst_relative_error": null,
+       "points": 0
+      }
+     },
+     "L6": {
+      "status": "partial",
+      "double": {
+       "compared_entries": 0,
+       "beyond_10E": 0,
+       "worst_ratio_to_10E": 0.0,
+       "finite_max_relative": null,
+       "tirust_served": 0,
+       "tirust_served_checked": 0,
+       "of": 3,
+       "tirust_failed_reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust Unstable: ill-conditioned Gram matrix for [#, #, #, #]: conditioning # (refused by the conditio": 3
+       }
+      },
+      "double-double": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the double-double carrier in this native extension; request 'auto' or the other backend"
+      }
+     },
+     "references": {
+      "recola": 5.17842334281022e-06
+     }
+    }
+   },
+   "status": "partial"
+  },
   "LI-51": {
    "runs": {
     "li_gg_emepmupmumg": {
@@ -12271,260 +12992,662 @@
    "status": "partial"
   },
   "LI-C1": {
-   "status": "partial",
-   "note": "no direct crossing evaluation: the public route takes physical momenta only; the crossing-related processes of LI-26 each against their providers (L1) and their common heavy-top limit (LI-A7)",
    "runs": {
-    "li_gg_hg": {
+    "li_gg_aa_cms": {
+     "points": 3,
      "L1": {
       "status": "pass",
       "max_relative": {
-       "madloop": 7.068855541614273e-15,
-       "openloops": 5.275094219016885e-15,
-       "recola": 1.2610772117337332e-14
+       "madloop": 3.7183373428067984e-14,
+       "openloops": 8.065716616907538e-15,
+       "recola": 4.508850006238129e-14
       },
       "tirust_max_relative": {
-       "madloop": 7.612613660199987e-15,
-       "openloops": 5.275094219016885e-15,
-       "recola": 1.2610772117337332e-14
+       "madloop": 3.8500353984706006e-14,
+       "openloops": 2.0540691651057863e-14,
+       "recola": 4.186789291506834e-14
       },
       "caution_points": []
      },
-     "L9": {
-      "oracle": "heft",
-      "masses": [
-       "173",
-       "346",
-       "692",
-       "1384",
-       "2768",
-       "5536",
-       "11072",
-       "22144"
-      ],
-      "heft_parameters": [
-       "aS",
-       "aEWM1",
-       "Gf",
-       "MZ",
-       "MH",
-       "MT",
-       "ymt"
-      ],
-      "points": [
-       {
-        "ratios": [
-         0.03926773922864819,
-         0.17685575761903918,
-         0.5372148534537284,
-         0.9350536645973053,
-         0.890876629133498,
-         0.8889580090970258,
-         0.8888924442108247,
-         0.8888890990941337
-        ],
-        "s_over_mt2": [
-         509.83290662902203,
-         127.45822665725551,
-         31.864556664313877,
-         7.966139166078469,
-         1.9915347915196173,
-         0.49788369787990433,
-         0.12447092446997608,
-         0.03111773111749402
-        ],
-        "limit": 0.8888891437090021,
-        "extrapolation_error": 1.1596537652801225e-06,
-        "passed": false
+     "L2": {
+      "status": "pass",
+      "max_relative": {
+       "double": 6.048437628407999e-15,
+       "double-double": 9.629250946607586e-21
+      }
+     },
+     "L3": {
+      "status": "pass",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.18539352759612227,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "pass",
+       "worst_ratio": 0.10099841555016385,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "tirust/double": {
+       "status": "pass",
+       "worst_ratio": 0.2365011337656678,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "lane_finiteness": {
+       "ninjars/double": 8.284166050068007e-14,
+       "ninjars/double-double": 5.927242565254818e-31,
+       "tirust/double": 2.563044409145784e-15
+      },
+      "poles_over_10E": 0.00015008829438412406
+     },
+     "L4": {
+      "status": "pass",
+      "probes": {
+       "finiteness": {
+        "passed": true,
+        "worst": 0.0736
        },
-       {
-        "ratios": [
-         0.6660177572857268,
-         0.9358197828876381,
-         0.8895894209866979,
-         0.888916125328113,
-         0.8888900032313313,
-         0.8888888630716971,
-         0.888888864204916,
-         0.8888888815909385
+       "ward": {
+        "legs": [
+         1,
+         3
         ],
-        "s_over_mt2": [
-         21.383941996057334,
-         5.345985499014334,
-         1.3364963747535834,
-         0.33412409368839585,
-         0.08353102342209896,
-         0.02088275585552474,
-         0.005220688963881185,
-         0.0013051722409702963
-        ],
-        "limit": 0.888888888906521,
-        "extrapolation_error": 1.5202415811435422e-09,
-        "passed": false
-       },
-       {
-        "ratios": [
-         0.06530048700397093,
-         0.2646732138665245,
-         0.6918919727581612,
-         0.9317656862365765,
-         0.8895185214720551,
-         0.8889147883756006,
-         0.8888903076311903,
-         0.8888889741014471
-        ],
-        "s_over_mt2": [
-         326.2930602425741,
-         81.57326506064352,
-         20.39331626516088,
-         5.09832906629022,
-         1.274582266572555,
-         0.31864556664313876,
-         0.07966139166078469,
-         0.019915347915196172
-        ],
-        "limit": 0.888888955072098,
-        "extrapolation_error": 4.254805652760329e-07,
-        "passed": false
+        "passed": true,
+        "worst": 0.00684
        }
-      ],
-      "status": "reference defect",
-      "finding": "the HEFT oracle is the defect: pyAmpliCol's built-in-sm-heft tree is 9/8 of the analytic LO HEFT value at g g > h (G_F alpha_s^2 m_H^4 c(r)^2 / (288 sqrt2 pi^2) with the model's own c(r); reproducer workspace/tmp/lit-val/findings/heft_gg_h.py), and the loop-induced g g > h (= Spira's analytic formula, = MadLoop / OpenLoops / Recola) over that tree extrapolates to the same 8/9; here the scan extrapolates to 8/9 to <= 1e-6 as well: decoupling holds, the oracle is 9/8 too large (finding to the coordinator)"
+      },
+      "carrier": "double-double",
+      "widths": "complex-mass"
+     },
+     "L5": {
+      "status": "pass",
+      "worst_ratio_to_10E": 0.00022090321838876583,
+      "double_double_max_relative": 1.6608189876941874e-30,
+      "transformed_estimate_relative": 1.8987345407275646e-09
+     },
+     "E": {
+      "status": "pass",
+      "ninjars": {
+       "worst_error_over_10E": 4.567665134709404e-05,
+       "worst_relative_error": 6.048432162084025e-15,
+       "points": 3
+      },
+      "tirust": {
+       "worst_error_over_10E": 0.0001886621178290932,
+       "worst_relative_error": 2.2557976105881433e-14,
+       "points": 3
+      }
+     },
+     "L6": {
+      "status": "pass",
+      "double": {
+       "compared_entries": 9,
+       "beyond_10E": 0,
+       "worst_ratio_to_10E": 0.00021603035327724893,
+       "finite_max_relative": 2.860640826796563e-14,
+       "tirust_served": 3,
+       "tirust_served_checked": 3,
+       "of": 3,
+       "tirust_failed_reasons": {}
+      },
+      "double-double": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the double-double carrier in this native extension; request 'auto' or the other backend"
+      }
+     },
+     "references": {
+      "madloop": 3.7183373428067984e-14,
+      "openloops": 8.065716616907538e-15,
+      "recola": 4.508850006238129e-14,
+      "analytic": 6.048437628407999e-15
      }
     },
-    "li_uux_hg": {
+    "li_aa_aa_cms": {
+     "points": 3,
      "L1": {
       "status": "pass",
       "max_relative": {
-       "madloop": 3.881808050620519e-15,
-       "openloops": 5.082327463079659e-15,
-       "recola": 1.9910148824435916e-15
+       "madloop": 5.517757163046282e-07,
+       "recola": 3.4034184543849416e-14
       },
       "tirust_max_relative": {
-       "madloop": 3.4406934994136417e-15,
-       "openloops": 5.082327463079659e-15,
-       "recola": 1.9910148824435916e-15
+       "madloop": 5.517757183965627e-07,
+       "recola": 3.194224885084685e-14
       },
       "caution_points": []
      },
-     "L9": {
-      "oracle": "heft",
-      "masses": [
-       "173",
-       "346",
-       "692",
-       "1384",
-       "2768",
-       "5536",
-       "11072",
-       "22144"
-      ],
-      "heft_parameters": [
-       "aS",
-       "aEWM1",
-       "Gf",
-       "MZ",
-       "MH",
-       "MT",
-       "ymt"
-      ],
-      "points": [
-       {
-        "ratios": [
-         0.007219402074725796,
-         0.04935704167224398,
-         0.29791722218410077,
-         2.1869143732252763,
-         1.4166268195366098,
-         0.9784811172516648,
-         0.9096615343049551,
-         0.8939898926315656
-        ],
-        "s_over_mt2": [
-         509.83290662902203,
-         127.45822665725551,
-         31.864556664313877,
-         7.966139166078469,
-         1.9915347915196173,
-         0.49788369787990433,
-         0.12447092446997608,
-         0.03111773111749402
-        ],
-        "limit": 0.8889023013238391,
-        "extrapolation_error": 0.00013628925007002875,
-        "passed": false
+     "L2": {
+      "status": "pass",
+      "max_relative": {
+       "double": 1.3230786398482316e-14,
+       "double-double": 3.7189295674460564e-22
+      }
+     },
+     "L3": {
+      "status": "pass",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.13448747424689947,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "pass",
+       "worst_ratio": 0.12230654565507598,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "tirust/double": {
+       "status": "pass",
+       "worst_ratio": 0.2159764149171479,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "lane_finiteness": {
+       "ninjars/double": 2.525705662302675e-14,
+       "ninjars/double-double": 4.93008996466653e-31,
+       "tirust/double": 2.087489793236218e-15
+      },
+      "poles_over_10E": 9.682579742964536e-05
+     },
+     "L4": {
+      "status": "pass",
+      "probes": {
+       "finiteness": {
+        "passed": true,
+        "worst": 0.0628
        },
-       {
-        "ratios": [
-         0.48152753234330886,
-         4.393200402218984,
-         1.1820447791252426,
-         0.9470363519035055,
-         0.9027207915238697,
-         0.892305549134001,
-         0.8897405117394848,
-         0.8891016363279285
+       "ward": {
+        "legs": [
+         1
         ],
-        "s_over_mt2": [
-         21.383941996057334,
-         5.345985499014334,
-         1.3364963747535834,
-         0.33412409368839585,
-         0.08353102342209896,
-         0.02088275585552474,
-         0.005220688963881185,
-         0.0013051722409702963
-        ],
-        "limit": 0.8888888897629273,
-        "extrapolation_error": 2.1190551758712093e-07,
-        "passed": false
-       },
-       {
-        "ratios": [
-         0.01341410637176614,
-         0.08814635731596639,
-         0.5384191308911,
-         4.757111761486356,
-         1.163540524797734,
-         0.944149111786605,
-         0.9020690659245246,
-         0.8921466016366668
-        ],
-        "s_over_mt2": [
-         326.2930602425741,
-         81.57326506064352,
-         20.39331626516088,
-         5.09832906629022,
-         1.274582266572555,
-         0.31864556664313876,
-         0.07966139166078469,
-         0.019915347915196172
-        ],
-        "limit": 0.8888922288453953,
-        "extrapolation_error": 5.3115304681098035e-05,
-        "passed": false
+        "passed": true,
+        "worst": 0.00366
        }
-      ],
-      "status": "reference defect",
-      "finding": "the HEFT oracle is the defect: pyAmpliCol's built-in-sm-heft tree is 9/8 of the analytic LO HEFT value at g g > h (G_F alpha_s^2 m_H^4 c(r)^2 / (288 sqrt2 pi^2) with the model's own c(r); reproducer workspace/tmp/lit-val/findings/heft_gg_h.py), and the loop-induced g g > h (= Spira's analytic formula, = MadLoop / OpenLoops / Recola) over that tree extrapolates to the same 8/9; here the scan extrapolates to 8/9 to <= 1e-6 as well: decoupling holds, the oracle is 9/8 too large (finding to the coordinator)"
+      },
+      "carrier": "double-double",
+      "widths": "complex-mass"
+     },
+     "L5": {
+      "status": "pass",
+      "worst_ratio_to_10E": 0.0005788321411554653,
+      "double_double_max_relative": 7.031114381693775e-31,
+      "transformed_estimate_relative": 5.671748233904756e-11
+     },
+     "E": {
+      "status": "pass",
+      "ninjars": {
+       "worst_error_over_10E": 0.0019110455911732055,
+       "worst_relative_error": 1.323078614270093e-14,
+       "points": 3
+      },
+      "tirust": {
+       "worst_error_over_10E": 0.0015956430402460809,
+       "worst_relative_error": 1.0289244354437041e-14,
+       "points": 3
+      }
+     },
+     "L6": {
+      "status": "pass",
+      "double": {
+       "compared_entries": 9,
+       "beyond_10E": 0,
+       "worst_ratio_to_10E": 0.00044727938180195043,
+       "finite_max_relative": 3.0558140038581356e-15,
+       "tirust_served": 3,
+       "tirust_served_checked": 3,
+       "of": 3,
+       "tirust_failed_reasons": {}
+      },
+      "double-double": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the double-double carrier in this native extension; request 'auto' or the other backend"
+      }
+     },
+     "references": {
+      "madloop": 5.517757163046282e-07,
+      "recola": 3.4034184543849416e-14,
+      "analytic": 1.3230786398482316e-14
      }
     },
-    "li_ug_hu": {
+    "li_gg_zz_cms": {
+     "points": 3,
      "L1": {
       "status": "pass",
       "max_relative": {
-       "madloop": 5.260108562126427e-15,
-       "openloops": 4.96788030867496e-15,
-       "recola": 9.354802273786418e-15
+       "madloop": 8.590497526797442e-12,
+       "openloops": 8.069312037621426e-12,
+       "recola": 6.357967521570599e-12
       },
       "tirust_max_relative": {
-       "madloop": 2.922282534514682e-15,
-       "openloops": 5.6825632316152195e-15,
-       "recola": 2.954148086458869e-15
+       "madloop": 4.537926889678846e-12,
+       "openloops": 4.016741400500718e-12,
+       "recola": 2.3053968844429554e-12
       },
       "caution_points": []
+     },
+     "L3": {
+      "status": "pass",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.13190125885536466,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "pass",
+       "worst_ratio": 0.1284701838120214,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "tirust/double": {
+       "status": "pass",
+       "worst_ratio": 0.14883295676762773,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "lane_finiteness": {
+       "ninjars/double": 2.776222890681029e-15,
+       "ninjars/double-double": 2.1045155902602356e-31,
+       "tirust/double": 5.591470810671344e-16
+      },
+      "poles_over_10E": 9.531461559538807e-08
+     },
+     "L4": {
+      "status": "pass",
+      "probes": {
+       "finiteness": {
+        "passed": true,
+        "worst": 0.026
+       },
+       "ward": {
+        "legs": [
+         1
+        ],
+        "passed": true,
+        "worst": 0.000174
+       }
+      },
+      "carrier": "double-double",
+      "widths": "complex-mass"
+     },
+     "L5": {
+      "status": "pass",
+      "worst_ratio_to_10E": 4.354181222081647e-06,
+      "double_double_max_relative": 6.3785562443332e-28,
+      "transformed_estimate_relative": 0.000476453186750311
+     },
+     "E": {
+      "status": "pass",
+      "ninjars": {
+       "worst_error_over_10E": 1.4422480624507899e-06,
+       "worst_relative_error": 5.785258775712769e-12,
+       "points": 3
+      },
+      "tirust": {
+       "worst_error_over_10E": 3.256577537346556e-07,
+       "worst_relative_error": 1.7326881385828046e-12,
+       "points": 3
+      }
+     },
+     "L6": {
+      "status": "pass",
+      "double": {
+       "compared_entries": 9,
+       "beyond_10E": 0,
+       "worst_ratio_to_10E": 1.7673209333970634e-06,
+       "finite_max_relative": 4.052570637153409e-12,
+       "tirust_served": 3,
+       "tirust_served_checked": 3,
+       "of": 3,
+       "tirust_failed_reasons": {}
+      },
+      "double-double": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the double-double carrier in this native extension; request 'auto' or the other backend"
+      }
+     },
+     "references": {
+      "madloop": 8.590497526797442e-12,
+      "openloops": 8.069312037621426e-12,
+      "recola": 6.357967521570599e-12
+     }
+    },
+    "li_gg_aag_cms": {
+     "points": 3,
+     "L1": {
+      "status": "pass",
+      "max_relative": {
+       "madloop": 2.2745760871318838e-11,
+       "openloops": 4.7196742175919534e-11,
+       "recola": 2.3249057332158604e-11
+      },
+      "tirust_max_relative": {},
+      "caution_points": []
+     },
+     "L3": {
+      "status": "partial",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.20058125993226744,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "pass",
+       "worst_ratio": 0.09976357405450663,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "tirust/double": {
+       "status": "partial",
+       "worst_ratio": null,
+       "served": 0,
+       "of": 3,
+       "failed": [
+        "ArithmeticError: the probe point failed: ['re-test of family 36 lane LaneKey { family: 36, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 7.898290950339072e-4 (refus",
+        "ArithmeticError: the probe point failed: ['re-test of family 36 lane LaneKey { family: 36, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 3.32105811881879e-4 (refuse",
+        "ArithmeticError: the probe point failed: ['family 0 lane LaneKey { family: 0, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [1, 2, 3, 4]: conditioning 8.237526730296461e-4 (refused by the con"
+       ]
+      },
+      "lane_finiteness": {
+       "ninjars/double": 4.334403260426874e-15,
+       "ninjars/double-double": 3.103298632058431e-31,
+       "tirust/double": null
+      },
+      "poles_over_10E": 1.299249843421576e-08
+     },
+     "L4": {
+      "status": "pass",
+      "probes": {
+       "finiteness": {
+        "passed": true,
+        "worst": 0.0169
+       },
+       "ward": {
+        "legs": [
+         1,
+         3
+        ],
+        "passed": true,
+        "worst": 0.0018
+       }
+      },
+      "carrier": "double-double",
+      "widths": "complex-mass"
+     },
+     "L5": {
+      "status": "pass",
+      "worst_ratio_to_10E": 4.202300266238691e-08,
+      "double_double_max_relative": 4.330369509678278e-27,
+      "transformed_estimate_relative": 0.052170474804044686
+     },
+     "E": {
+      "status": "pass",
+      "ninjars": {
+       "worst_error_over_10E": 3.675939268898308e-08,
+       "worst_relative_error": 2.273795427839998e-11,
+       "points": 3
+      },
+      "tirust": {
+       "worst_error_over_10E": null,
+       "worst_relative_error": null,
+       "points": 0
+      }
+     },
+     "L6": {
+      "status": "partial",
+      "double": {
+       "compared_entries": 0,
+       "beyond_10E": 0,
+       "worst_ratio_to_10E": 0.0,
+       "finite_max_relative": null,
+       "tirust_served": 0,
+       "tirust_served_checked": 0,
+       "of": 3,
+       "tirust_failed_reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust Unstable: ill-conditioned Gram matrix for [#, #, #, #]: conditioning # (refused by the conditio": 3
+       }
+      },
+      "double-double": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the double-double carrier in this native extension; request 'auto' or the other backend"
+      }
+     },
+     "references": {
+      "madloop": 2.2745760871318838e-11,
+      "openloops": 4.7196742175919534e-11,
+      "recola": 2.3249057332158604e-11
+     }
+    },
+    "li_emep_ggg_cms": {
+     "points": 3,
+     "L1": {
+      "status": "pass",
+      "max_relative": {
+       "madloop": 1.2774237271282916e-10,
+       "recola": 1.4790999902137789e-08
+      },
+      "tirust_max_relative": {},
+      "caution_points": []
+     },
+     "L3": {
+      "status": "partial",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.19290102021763256,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "pass",
+       "worst_ratio": 0.07020303842736544,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "tirust/double": {
+       "status": "partial",
+       "worst_ratio": null,
+       "served": 0,
+       "of": 3,
+       "failed": [
+        "ArithmeticError: the probe point failed: ['family 3 lane LaneKey { family: 3, order: 0, column: 16 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 2.429832885175974e-4 (refused by the co",
+        "ArithmeticError: the probe point failed: ['family 3 lane LaneKey { family: 3, order: 0, column: 16 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 1.4545356519572904e-4 (refused by the c",
+        "ArithmeticError: the probe point failed: ['family 0 lane LaneKey { family: 0, order: 0, column: 16 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 8.237526730296461e-4 (refused by the co"
+       ]
+      },
+      "lane_finiteness": {
+       "ninjars/double": 4.480984573937086e-15,
+       "ninjars/double-double": 3.2412679196913254e-31,
+       "tirust/double": null
+      },
+      "poles_over_10E": 4.27570970935983e-08
+     },
+     "L4": {
+      "status": "pass",
+      "probes": {
+       "finiteness": {
+        "passed": true,
+        "worst": 0.0453
+       },
+       "ward": {
+        "legs": [
+         3
+        ],
+        "passed": true,
+        "worst": 0.000788
+       }
+      },
+      "carrier": "double-double",
+      "widths": "complex-mass"
+     },
+     "L5": {
+      "status": "pass",
+      "worst_ratio_to_10E": 1.6453232626029526e-07,
+      "double_double_max_relative": 9.28266939196639e-27,
+      "transformed_estimate_relative": 0.0010852388574986542
+     },
+     "E": {
+      "status": "pass",
+      "ninjars": {
+       "worst_error_over_10E": 1.8083944767236258e-07,
+       "worst_relative_error": 1.2775074394047532e-10,
+       "points": 3
+      },
+      "tirust": {
+       "worst_error_over_10E": null,
+       "worst_relative_error": null,
+       "points": 0
+      }
+     },
+     "L6": {
+      "status": "partial",
+      "double": {
+       "compared_entries": 0,
+       "beyond_10E": 0,
+       "worst_ratio_to_10E": 0.0,
+       "finite_max_relative": null,
+       "tirust_served": 0,
+       "tirust_served_checked": 0,
+       "of": 3,
+       "tirust_failed_reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust Unstable: ill-conditioned Gram matrix for [#, #, #, #]: conditioning # (refused by the conditio": 3
+       }
+      },
+      "double-double": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the double-double carrier in this native extension; request 'auto' or the other backend"
+      }
+     },
+     "references": {
+      "madloop": 1.2774237271282916e-10,
+      "recola": 1.4790999902137789e-08
+     }
+    },
+    "li_gg_emepmupmum_cms": {
+     "points": 3,
+     "L1": {
+      "status": "pass",
+      "max_relative": {
+       "madloop": 2.0040314104822623e-13,
+       "openloops": 1.5780303197296053e-13,
+       "recola": 1.2578091931638567e-13
+      },
+      "tirust_max_relative": {
+       "madloop": 3.2452640460264207e-13,
+       "openloops": 2.6387985889199943e-13,
+       "recola": 1.4029567574389043e-13
+      },
+      "caution_points": []
+     },
+     "L3": {
+      "status": "pass",
+      "ninjars/double": {
+       "status": "pass",
+       "worst_ratio": 0.2074767940900831,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "ninjars/double-double": {
+       "status": "pass",
+       "worst_ratio": 0.0422307230271837,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "tirust/double": {
+       "status": "pass",
+       "worst_ratio": 0.04732493182892107,
+       "served": 3,
+       "of": 3,
+       "failed": []
+      },
+      "lane_finiteness": {
+       "ninjars/double": 2.6920478514148055e-15,
+       "ninjars/double-double": 3.96868187304157e-32,
+       "tirust/double": 1.1004457765246031e-16
+      },
+      "poles_over_10E": 7.846691575504022e-05
+     },
+     "L4": {
+      "status": "pass",
+      "probes": {
+       "finiteness": {
+        "passed": true,
+        "worst": 0.00911
+       },
+       "ward": {
+        "legs": [
+         1
+        ],
+        "passed": true,
+        "worst": 0.000164
+       }
+      },
+      "carrier": "double-double",
+      "widths": "complex-mass"
+     },
+     "L5": {
+      "status": "pass",
+      "worst_ratio_to_10E": 0.00583376204674216,
+      "double_double_max_relative": 2.408808541135542e-29,
+      "transformed_estimate_relative": 6.16266238403625e-08
+     },
+     "E": {
+      "status": "pass",
+      "ninjars": {
+       "worst_error_over_10E": 0.0002569273440592468,
+       "worst_relative_error": 1.3264016362395763e-13,
+       "points": 3
+      },
+      "tirust": {
+       "worst_error_over_10E": 5.652369703142301e-05,
+       "worst_relative_error": 1.588033422850534e-13,
+       "points": 3
+      }
+     },
+     "L6": {
+      "status": "pass",
+      "double": {
+       "compared_entries": 9,
+       "beyond_10E": 0,
+       "worst_ratio_to_10E": 0.00023360469307732204,
+       "finite_max_relative": 1.6203307938761116e-13,
+       "tirust_served": 3,
+       "tirust_served_checked": 3,
+       "of": 3,
+       "tirust_failed_reasons": {}
+      },
+      "double-double": {
+       "status": "waits: lit-tir-mp",
+       "tirust": "ReductionUnavailable: reduction 'tirust' was requested, but TIRust does not serve the double-double carrier in this native extension; request 'auto' or the other backend"
+      }
+     },
+     "references": {
+      "madloop": 2.0040314104822623e-13,
+      "openloops": 1.5780303197296053e-13,
+      "recola": 1.2578091931638567e-13
      }
     }
-   }
+   },
+   "status": "partial"
   },
   "LI-W1": {
    "check": "L4",
@@ -12835,6 +13958,25 @@
      "carrier": "double-double",
      "widths": "complex-mass"
     },
+    "li_gg_aagg": {
+     "status": "pass",
+     "probes": {
+      "finiteness": {
+       "passed": true,
+       "worst": 0.0594
+      },
+      "ward": {
+       "legs": [
+        1,
+        3
+       ],
+       "passed": true,
+       "worst": 0.00209
+      }
+     },
+     "carrier": "double-double",
+     "widths": "zero"
+    },
     "li_gg_ag": {
      "status": "pass",
      "probes": {
@@ -13049,6 +14191,24 @@
        ],
        "passed": true,
        "worst": 0.000885
+      }
+     },
+     "carrier": "double-double",
+     "widths": "zero"
+    },
+    "li_gg_hhgg": {
+     "status": "pass",
+     "probes": {
+      "finiteness": {
+       "passed": true,
+       "worst": 0.0729
+      },
+      "ward": {
+       "legs": [
+        1
+       ],
+       "passed": true,
+       "worst": 1.23e-26
       }
      },
      "carrier": "double-double",
@@ -13302,6 +14462,24 @@
        ],
        "passed": true,
        "worst": 0.0044
+      }
+     },
+     "carrier": "double-double",
+     "widths": "zero"
+    },
+    "li_gg_zzzz": {
+     "status": "pass",
+     "probes": {
+      "finiteness": {
+       "passed": true,
+       "worst": 0.0176
+      },
+      "ward": {
+       "legs": [
+        1
+       ],
+       "passed": true,
+       "worst": 0.000109
       }
      },
      "carrier": "double-double",
@@ -13594,6 +14772,12 @@
      "double_double_max_relative": 4.330369509678278e-27,
      "transformed_estimate_relative": 0.052170474804044686
     },
+    "li_gg_aagg": {
+     "status": "pass",
+     "worst_ratio_to_10E": 0.003671368681946711,
+     "double_double_max_relative": 1.2985244300550439e-20,
+     "transformed_estimate_relative": 17.908307799041506
+    },
     "li_gg_ag": {
      "status": "pass",
      "worst_ratio_to_10E": 8.235326985030982e-05,
@@ -13665,6 +14849,12 @@
      "worst_ratio_to_10E": 0.0006740545176153334,
      "double_double_max_relative": 3.8269612045280196e-30,
      "transformed_estimate_relative": 3.3512714329204627e-10
+    },
+    "li_gg_hhgg": {
+     "status": "pass",
+     "worst_ratio_to_10E": 0.0025373016433364697,
+     "double_double_max_relative": 1.3383961622839886e-25,
+     "transformed_estimate_relative": 5.103251951056321e-06
     },
     "li_gg_hhh": {
      "status": "pass",
@@ -13743,6 +14933,13 @@
      "worst_ratio_to_10E": 8.765559862613202e-08,
      "double_double_max_relative": 3.388568082233444e-27,
      "transformed_estimate_relative": 0.08737174406108981
+    },
+    "li_gg_zzzz": {
+     "status": "pass",
+     "worst_ratio_to_10E": 1.0948020066006743e-07,
+     "double_double_max_relative": null,
+     "transformed_estimate_relative": 216.38627487505045,
+     "double_double_not_run": "skipped: the double-double side of L5 is recorded information only (L5 is judged in binary64); about 41 min on this run"
     },
     "li_h_aa": {
      "status": "pass",
@@ -14310,6 +15507,40 @@
      },
      "poles_over_10E": 1.299249843421576e-08
     },
+    "li_gg_aagg": {
+     "status": "partial",
+     "ninjars/double": {
+      "status": "pass",
+      "worst_ratio": 0.144991518263395,
+      "served": 3,
+      "of": 3,
+      "failed": []
+     },
+     "ninjars/double-double": {
+      "status": "pass",
+      "worst_ratio": 0.1225207320418077,
+      "served": 3,
+      "of": 3,
+      "failed": []
+     },
+     "tirust/double": {
+      "status": "partial",
+      "worst_ratio": null,
+      "served": 0,
+      "of": 3,
+      "failed": [
+       "ArithmeticError: the probe point failed: ['re-test of family 282 lane LaneKey { family: 282, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 7.89829095033929e-4 (refu",
+       "ArithmeticError: the probe point failed: ['family 292 lane LaneKey { family: 292, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2]: conditioning 1.917683279701637e-6 (refused by the co",
+       "ArithmeticError: the probe point failed: ['re-test of family 282 lane LaneKey { family: 282, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 8.270997600635537e-4 (ref"
+      ]
+     },
+     "lane_finiteness": {
+      "ninjars/double": 2.3422892251689375e-10,
+      "ninjars/double-double": 1.2385656526806109e-26,
+      "tirust/double": null
+     },
+     "poles_over_10E": 5.288230883143515e-05
+    },
     "li_gg_ag": {
      "status": "pass",
      "ninjars/double": {
@@ -14623,7 +15854,32 @@
      "poles_over_10E": 0.0008899309051821094
     },
     "li_gg_hggg": {
-     "status": "not run",
+     "status": "partial",
+     "ninjars/double": {
+      "status": "pass",
+      "worst_ratio": 0.10816134762412956,
+      "served": 3,
+      "of": 3,
+      "failed": []
+     },
+     "ninjars/double-double": {
+      "status": "pass",
+      "worst_ratio": 0.11535603613502447,
+      "served": 3,
+      "of": 3,
+      "failed": []
+     },
+     "tirust/double": {
+      "status": "partial",
+      "worst_ratio": null,
+      "served": 0,
+      "of": 3,
+      "failed": [
+       "ArithmeticError: the probe point failed: ['re-test of family 214 lane LaneKey { family: 214, order: 0, column: 2 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 6.784524855076975e-5 (ref",
+       "ArithmeticError: the probe point failed: ['re-test of family 12 lane LaneKey { family: 12, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 5.909356948373679e-5 (refus",
+       "ArithmeticError: the probe point failed: ['re-test of family 214 lane LaneKey { family: 214, order: 0, column: 2 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 4.6516372734076276e-5 (re"
+      ]
+     },
      "lane_finiteness": {
       "ninjars/double": 7.251246817170978e-13,
       "ninjars/double-double": 7.434811089371787e-29,
@@ -14660,6 +15916,40 @@
       "tirust/double": 1.4176336262328907e-17
      },
      "poles_over_10E": 8.303496532583972e-05
+    },
+    "li_gg_hhgg": {
+     "status": "partial",
+     "ninjars/double": {
+      "status": "pass",
+      "worst_ratio": 0.09618398621806605,
+      "served": 3,
+      "of": 3,
+      "failed": []
+     },
+     "ninjars/double-double": {
+      "status": "pass",
+      "worst_ratio": 0.09954833158231506,
+      "served": 3,
+      "of": 3,
+      "failed": []
+     },
+     "tirust/double": {
+      "status": "partial",
+      "worst_ratio": null,
+      "served": 0,
+      "of": 3,
+      "failed": [
+       "ArithmeticError: the probe point failed: ['family 157 lane LaneKey { family: 157, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 9.300206539180383e-4 (refused by the",
+       "ArithmeticError: the probe point failed: ['family 157 lane LaneKey { family: 157, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 8.76663699978078e-5 (refused by the ",
+       "ArithmeticError: the probe point failed: ['family 157 lane LaneKey { family: 157, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 3.061308778261484e-4 (refused by the"
+      ]
+     },
+     "lane_finiteness": {
+      "ninjars/double": 7.027409455881985e-13,
+      "ninjars/double-double": 9.790331896447805e-30,
+      "tirust/double": null
+     },
+     "poles_over_10E": 0.00016659357618807236
     },
     "li_gg_hhgg_p15": {
      "status": "partial",
@@ -15097,6 +16387,37 @@
      },
      "poles_over_10E": 7.763310831857655e-09
     },
+    "li_gg_zzzz": {
+     "status": "partial",
+     "ninjars/double": {
+      "status": "pass",
+      "worst_ratio": 0.06353730991537022,
+      "served": 3,
+      "of": 3,
+      "failed": []
+     },
+     "ninjars/double-double": {
+      "status": "not run",
+      "reason": "skipped: about 100 min on this run (0.45 times its double-double checked arm, the ratio measured on li_gg_hggg); L3 is the binary64 probes here"
+     },
+     "tirust/double": {
+      "status": "partial",
+      "worst_ratio": null,
+      "served": 0,
+      "of": 3,
+      "failed": [
+       "ArithmeticError: the probe point failed: ['family 77 lane LaneKey { family: 77, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [1, 2, 3, 4]: conditioning 6.125589919959893e-4 (refused by the c",
+       "ArithmeticError: the probe point failed: ['family 91 lane LaneKey { family: 91, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 3.0903913560026175e-4 (refused by the ",
+       "ArithmeticError: the probe point failed: ['family 20 lane LaneKey { family: 20, order: 0, column: 0 }: TIRust Unstable: ill-conditioned Gram matrix for [0, 1, 2, 3]: conditioning 5.141254224064045e-4 (refused by the c"
+      ]
+     },
+     "lane_finiteness": {
+      "ninjars/double": 5.110363357154241e-13,
+      "ninjars/double-double": null,
+      "tirust/double": null
+     },
+     "poles_over_10E": 2.2890839219152562e-10
+    },
     "li_h_aa": {
      "status": "pass",
      "ninjars/double": {
@@ -15404,6 +16725,47 @@
       "tirust/double": 1.2423944707644372e-16
      },
      "poles_over_10E": 6.859455868143976e-07
+    }
+   }
+  },
+  "crossing": {
+   "row": "LI-W1/L1/P1/C1/S1 (C1, crossing; the id LI-C1 is the complex-mass-scheme row)",
+   "processes": "LI-26",
+   "status": "partial",
+   "runs": {
+    "li_gg_hg <- li_gg_hg [[1, 1], [3, -1], [2, 1], [0, -1]]": {
+     "crossed_fermions": 0,
+     "served": 3,
+     "of": 3,
+     "worst_ratio_to_10E": 4.529461698104903e-05,
+     "double_double_max_relative": 2.185206021216688e-31,
+     "status": "pass"
+    },
+    "li_gg_hg <- li_gg_hg [[0, 1], [3, -1], [2, 1], [1, -1]]": {
+     "crossed_fermions": 0,
+     "served": 3,
+     "of": 3,
+     "worst_ratio_to_10E": 0.00011776600415072747,
+     "double_double_max_relative": 2.1894122417564726e-31,
+     "status": "pass"
+    },
+    "li_uux_hg <- li_ug_hu [[0, 1], [3, -1], [2, 1], [1, -1]]": {
+     "crossed_fermions": 1,
+     "served": 3,
+     "of": 3,
+     "worst_ratio_to_10E": 1163236681799.3843,
+     "double_double_max_relative": 1.0,
+     "status": "partial",
+     "reason": "not evaluable on the public route: the crossed |A|^2 is exactly zero at every point (a negative-energy massless fermion leg evaluates to exactly zero there, outside the route's physical-momenta contract; the tree spinors move a negative-energy fermion of helicity h to the other chirality, so the loop plan likely fixes each fermion leg's chirality from positive energy: an observation, cause not established)"
+    },
+    "li_ug_hu <- li_uux_hg [[0, 1], [3, -1], [2, 1], [1, -1]]": {
+     "crossed_fermions": 1,
+     "served": 3,
+     "of": 3,
+     "worst_ratio_to_10E": 940604367641.9083,
+     "double_double_max_relative": 1.0,
+     "status": "partial",
+     "reason": "not evaluable on the public route: the crossed |A|^2 is exactly zero at every point (a negative-energy massless fermion leg evaluates to exactly zero there, outside the route's physical-momenta contract; the tree spinors move a negative-energy fermion of helicity h to the other chirality, so the loop plan likely fixes each fermion leg's chirality from positive energy: an observation, cause not established)"
     }
    }
   },
