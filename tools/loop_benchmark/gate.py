@@ -179,14 +179,18 @@ def valid_blocks(summary: dict[str, Any], min_share: float) -> dict[str, Any]:
     """A batch summary on its blocks with at least ``min_share`` CPU share
     (``MIN_CPU_SHARE``): median, range and samples over those, the others
     listed (``dropped_blocks``: block index -> share); unchanged without the
-    shares."""
+    shares, and marked (``below_min_cpu_share``) when no block reaches it."""
 
     shares = summary.get("cpu_share")
     if not shares:
         return summary
     samples = summary["samples_seconds_per_point"]
     keep = [i for i, share in enumerate(shares) if share >= min_share]
-    if len(keep) == len(samples) or not keep:
+    if not keep:
+        # No block had its core: kept whole, and said so (no measurement
+        # of the call at the protocol; the record shows the shares).
+        return {**summary, "below_min_cpu_share": min_share}
+    if len(keep) == len(samples):
         return summary
     kept = [samples[i] for i in keep]
     out = {
@@ -1573,6 +1577,8 @@ def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> l
                     ]
                 if "dropped_blocks" in batch:
                     record["dropped_blocks"] = batch["dropped_blocks"]
+                if "below_min_cpu_share" in batch:
+                    record["below_min_cpu_share"] = batch["below_min_cpu_share"]
                 if "cpu_share" in batch:
                     # The process's CPU share of each block's wall time (one
                     # thread: below 1 the core was shared).
