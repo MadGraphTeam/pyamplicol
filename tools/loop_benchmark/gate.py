@@ -1601,6 +1601,14 @@ def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> l
                             "ratio_to_binding_limit"
                         ]
                         record["gate"]["band"] = gate["band_to_binding_limit"]
+                    # The settings of each provider timing the verdict uses
+                    # (providers.py: "optimistic" = m-lit F4's most
+                    # optimistic settings, "production" otherwise).
+                    record["gate"]["provider_protocols"] = {
+                        n: x.get("protocol", "production")
+                        for n, x in sorted((process.get("providers") or {}).items())
+                        if "median_seconds_per_point" in x
+                    }
                 record["source"] = (
                     f"lit-perf gate tool (tools/loop_benchmark gate; process "
                     f"{process['key']}, configuration {name}): PLAN §5.1 protocol, "
@@ -1610,7 +1618,10 @@ def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> l
                     f"(tools/loop_benchmark/streams/{process['key']}.json); "
                     f"median of {batch['blocks']} paired blocks after an untimed "
                     "warm-up; requested backend resolved as the runtime resolves "
-                    "a call (reduction.resolve, SUMMED, double)"
+                    "a call (reduction.resolve, SUMMED, double); pyAmpliCol "
+                    "most optimistic (m-lit F4: no poles, no stability checks, "
+                    "distinct points, batched as shipped), TIRust at the slice's "
+                    "shipped TirOptions"
                 )
                 out.append(record)
     return out

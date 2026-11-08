@@ -2693,7 +2693,17 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
     providers, times, gens = {}, {}, {}
     for name in records:
         rec = _load(repo / LI_FIXTURES / name)
-        for k, x in rec["providers"].items():
+        # m-lit F4: a provider re-timed in its most optimistic settings
+        # (providers.py --protocol optimistic, the record beside this one)
+        # replaces its production timing; the others keep theirs.
+        entries = {k: (name, x, rec) for k, x in rec["providers"].items()}
+        optimistic = name.replace("-providers.json", "-providers-optimistic.json")
+        if optimistic != name and (repo / LI_FIXTURES / optimistic).is_file():
+            better = _load(repo / LI_FIXTURES / optimistic)
+            for k, x in better["providers"].items():
+                if "median_seconds_per_point" in x:
+                    entries[k] = (optimistic, x, better)
+        for k, (source, x, rec) in entries.items():
             if k not in PROVIDERS or "median_seconds_per_point" not in x:
                 continue
             lib = (x.get("madloop_params") or {}).get("MLReductionLib")
@@ -2702,10 +2712,14 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
             if k in providers:
                 raise ValueError(
                     f"{LI_CAMPAIGN.name} {row['key']}: two production timings"
-                    f" of {k} ({providers[k]['source']}, {name})"
+                    f" of {k} ({providers[k]['source']}, {source})"
                 )
             t = x["median_seconds_per_point"]
-            providers[k] = {"seconds_per_point": t, "source": f"{name} providers.{k}"}
+            providers[k] = {
+                "seconds_per_point": t,
+                "source": f"{source} providers.{k}",
+                "protocol": x.get("protocol", "production"),
+            }
             if lib is not None:
                 providers[k]["setting"] = f"MLReductionLib {lib}"
             if x.get("values_excluded"):
