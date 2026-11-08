@@ -554,6 +554,7 @@ def evaluate(
     write: Any = None,
     previous: dict | None = None,
     skip: dict[str, str] | None = None,
+    high_checked: bool = True,
 ) -> dict:
     """Every arm of one fixture run (module docstring), cheapest first:
     binary64 on both backends with and without the checks, double-double
@@ -564,7 +565,9 @@ def evaluate(
     unfinished record of this run at the same native) is resumed: its arms
     and generation record are kept, not recomputed. ``skip`` maps an arm
     label (``l3/<probe label>`` for an L3 probe arm) to the reason it is not
-    run; the arm is recorded as ``{"not_run": reason}``."""
+    run; the arm is recorded as ``{"not_run": reason}``. ``high_checked``
+    False runs the double-double arms without the checks (``.../plain``: the
+    value without its estimate, about a fifth of the cost)."""
 
     skip = skip or {}
 
@@ -607,7 +610,7 @@ def evaluate(
     plan: list[tuple[str, str, str, bool, list]] = []
     for arithmetic in carriers:
         for backend in BACKENDS:
-            for checked in (False, True) if arithmetic == "double" else (True,):
+            for checked in (False, True) if arithmetic == "double" else (high_checked,):
                 tag = "checked" if checked else "plain"
                 plan.append(
                     (
@@ -841,6 +844,17 @@ def _reasons(arm: dict) -> dict[str, int]:
     return out
 
 
+def high_arm(arms: dict, backend: str, carrier: str = "double-double") -> dict:
+    """A backend's arm in a high-precision carrier: the checked one, or the
+    plain one of a run made with ``--high-plain`` ({} if neither ran)."""
+
+    for tag in ("checked", "plain"):
+        arm = arms.get(f"{backend}/{carrier}/{tag}")
+        if arm is not None and "not_run" not in arm:
+            return arm
+    return arms.get(f"{backend}/{carrier}/checked", {})
+
+
 def judge(record: dict, entry: dict) -> dict:
     """The §4.0 checks of one run record (module docstring); per check its
     status and figures."""
@@ -852,8 +866,8 @@ def judge(record: dict, entry: dict) -> dict:
     n64, n64c = arms["ninjars/double/plain"], arms["ninjars/double/checked"]
     t64, t64c = arms["tirust/double/plain"], arms["tirust/double/checked"]
     # (a binary64-only fixture, ``carriers``, has no double-double arms)
-    ndd = arms.get("ninjars/double-double/checked", {})
-    tdd = arms.get("tirust/double-double/checked", {})
+    ndd = high_arm(arms, "ninjars")
+    tdd = high_arm(arms, "tirust")
     nap = arms.get(f"ninjars/{ARBITRARY}/plain")
     out: dict[str, Any] = {}
     count = len(data["points"])
@@ -1787,10 +1801,10 @@ def judge_crossing(result: dict, records: dict[str, dict]) -> dict:
     within 10 max(E_target, E_source) (each E the checked call's absolute
     estimate, summed like its value), double-double recorded. A crossing
     whose crossed values are exactly zero at every point where the source's
-    are not is not evaluable on the public route (its external fermion
-    wavefunctions are defined for positive energies: a negative-energy
-    massless fermion leg evaluates to zero), recorded partial with that
-    reason, never passed."""
+    are not is not evaluable on the public route (a negative-energy massless
+    fermion leg evaluates to exactly zero there; outside the route's
+    physical-momenta contract), recorded partial with that reason, never
+    passed."""
 
     runs: dict[str, dict] = {}
     for c in result["crossings"]:
@@ -1819,7 +1833,7 @@ def judge_crossing(result: dict, records: dict[str, dict]) -> dict:
             diff = abs(float(lhs - rhs))
             ratios.append(diff / (FACTOR * e) if e else (0.0 if not diff else math.inf))
         for p, crossed in enumerate(c["arms"]["double-double"].get("points", [])):
-            reference = source["arms"]["ninjars/double-double/checked"]["points"][p]
+            reference = high_arm(source["arms"], "ninjars")["points"][p]
             if crossed["status"] == "success" and reference["status"] == "success":
                 rhs = _signed(_summed(reference["values"], sdata), sign)
                 devs.append(_rel(_summed(crossed["values"], tdata), rhs))
@@ -1834,9 +1848,11 @@ def judge_crossing(result: dict, records: dict[str, dict]) -> dict:
         if zeros and all(zeros):
             entry["status"] = "partial"
             entry["reason"] = (
-                "not evaluable on the public route: the crossed |A|^2 is exactly zero at every point (the "
-                "external fermion wavefunctions are defined for positive energies; a negative-energy "
-                "massless fermion leg evaluates to zero)"
+                "not evaluable on the public route: the crossed |A|^2 is exactly zero at every point "
+                "(a negative-energy massless fermion leg evaluates to exactly zero there, outside the "
+                "route's physical-momenta contract; the tree spinors move a negative-energy fermion "
+                "of helicity h to the other chirality, so the loop plan likely fixes each fermion "
+                "leg's chirality from positive energy: an observation, cause not established)"
             )
         elif worst is None:
             entry["status"] = "not run"
@@ -2048,6 +2064,11 @@ def main(argv: list[str] | None = None) -> int:
         metavar="LABEL=REASON",
         help="record an arm (l3/<label> for an L3 probe arm) as not run, with the reason",
     )
+    run.add_argument(
+        "--high-plain",
+        action="store_true",
+        help="run the double-double arms without the checks (value only)",
+    )
     run.add_argument("fixtures", nargs="+")
     lim = sub.add_parser("limits", help="LI-A7: the heavy-top scan of the limit rows")
     lim.add_argument("--work-dir", type=Path, required=True)
@@ -2110,6 +2131,7 @@ def main(argv: list[str] | None = None) -> int:
                 write=write,
                 previous=previous,
                 skip=skip,
+                high_checked=not args.high_plain,
             )
             print(
                 name,
