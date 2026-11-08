@@ -756,6 +756,18 @@ def evaluate(
         skip=skip,
         previous=(previous or {}).get("l3_probes"),
     )
+    if write is not None:
+        write(record)
+    record["ward_probes"] = ward_probes(
+        name,
+        work,
+        data,
+        compiled,
+        parameters,
+        carriers,
+        skip=skip,
+        previous=(previous or {}).get("ward_probes"),
+    )
     record["complete"] = True
     if write is not None:
         write(record)
@@ -828,6 +840,102 @@ def finiteness_probes(
                     {"error": compact_detail(f"{type(error).__name__}: {error}")}
                 )
         out[label] = rows
+    return out
+
+
+def ward_probes(
+    name: str,
+    work: Path,
+    data: dict,
+    compiled: Any,
+    parameters: dict,
+    carriers: tuple = CARRIERS,
+    skip: dict[str, str] | None = None,
+    previous: dict | None = None,
+) -> dict:
+    """L4 at every fixture point: the amplitude-level Ward probe epsilon_j
+    -> p_j / E_j (``ward.gauge_ward``, c = 1; the amplitude is linear in it)
+    on EVERY external massless gauge-boson leg (``ward.gauge_legs``), per
+    backend and carrier (``PROBES``), on the run's probe slice: the stored
+    artifact's own request (``artifact.request_from_record``) with the
+    widths of the generation-time probe (``ew_policy.probe_widths``: zero
+    outside the complex-mass scheme, Q7) on the full tree kernels
+    (``ward.ward_slice``), each probe within ten times its own estimate
+    (``induced.probes``: the calibrated checks, the physical amplitude's
+    term floor). Massive vectors are the generation-time Goldstone probe's
+    ('t Hooft-Feynman-gauge requests) and the cited both-gauges equality
+    (§4.0 L4). A probe arm named in ``skip`` (``ward/<label>``) is recorded
+    as ``{"not_run": reason}``; a resumed record's arms are kept; an exact
+    colour zero has nothing to probe."""
+
+    from dataclasses import replace
+
+    from pyamplicol.loops.native import load_loop_native
+    from pyamplicol.loops.v2 import induced
+    from pyamplicol.loops.v2.artifact import request_from_record
+    from pyamplicol.loops.v2.assemble import Precision
+    from pyamplicol.loops.v2.ew_policy import probe_widths
+    from pyamplicol.loops.v2.plan_export import NativeExecutor
+    from pyamplicol.loops.v2.reduction import running
+    from pyamplicol.loops.v2.ward import gauge_legs, gauge_ward, ward_slice
+
+    if data.get("exact_colour_zero"):
+        return {"exact_colour_zero": True, "arms": {}}
+    previous = previous or {}
+    execution = _load(work / name / "artifact" / "processes" / "p" / "execution.json")
+    request = request_from_record(execution["request"])
+    fixed, zeroed = probe_widths(compiled, request.fixed_parameters)
+    labels = [
+        f"{backend}/{carrier.replace('_', '-')}"
+        for backend, carrier in PROBES
+        if carrier.replace("_", "-") in carriers
+    ]
+    if all(label in previous.get("arms", {}) for label in labels):
+        return previous
+    start = time.perf_counter()
+    target = ward_slice(compiled, replace(request, fixed_parameters=fixed), load_loop_native())
+    legs = list(gauge_legs(target))
+    out: dict[str, Any] = {
+        "legs": legs,
+        "zeroed_widths": list(zeroed),
+        "slice_seconds": time.perf_counter() - start,
+        "native": _native(),
+        "arms": dict(previous.get("arms", {})),
+    }
+    if not legs:
+        return out
+    executor = NativeExecutor(target, forward=False, inputs="native")
+    values = {k: v for k, v in parameters.items() if k not in fixed}
+    for backend, carrier in PROBES:
+        label = f"{backend}/{carrier.replace('_', '-')}"
+        if label not in labels or label in out["arms"]:
+            continue
+        if f"ward/{label}" in (skip or {}):
+            out["arms"][label] = {"not_run": skip[f"ward/{label}"]}
+            continue
+        rows = []
+        for point, mu in zip(data["points"], data["mu_r"], strict=True):
+            try:
+                with running(backend):
+                    found = induced.probes(
+                        executor,
+                        point,
+                        Fraction(mu) ** 2,
+                        [gauge_ward(leg, (1, 0), point) for leg in legs],
+                        parameters=values,
+                        precision=getattr(Precision, carrier)(),
+                    )
+                rows.append(
+                    {
+                        "worst": {str(leg): r.worst for leg, r in zip(legs, found, strict=True)},
+                        "passed": all(r.passed for r in found),
+                    }
+                )
+            except Exception as error:  # a typed failure of the arm, recorded
+                rows.append(
+                    {"error": compact_detail(f"{type(error).__name__}: {error}")}
+                )
+        out["arms"][label] = rows
     return out
 
 
@@ -1292,38 +1400,84 @@ def judge(record: dict, entry: dict) -> dict:
                         )
     l3["poles_over_10E"] = max(poles, default=None)
     out["L3"] = {"status": _worst(statuses), **l3}
-    # L4 / W1: the generation-time probes (double-double, zero widths, one
-    # point per artifact, the legs they probe). §4.0 L4 asks for binary64
-    # and double-double at the fixture points: the stored artifact is not
-    # on the full tree kernels the Ward probe needs, so a passing record is
-    # 'partial' (its coverage recorded), a failing one 'fail'.
+    # L4 / W1: the Ward probes at every fixture point on every external
+    # massless gauge-boson leg (``ward_probes``: both backends, binary64 and
+    # double-double, on the probe slice) and the generation-time probes
+    # (double-double at one point: finiteness, Ward, the Goldstone probe of
+    # massive vectors where the artifact records it); its verdict is the
+    # worst of them (TIRust's arms of an extension before lit-tir-mp wait).
     probes = record["generation"]["probes"] or {}
-    l4 = {k: probes[k] for k in ("finiteness", "ward", "goldstone") if k in probes}
-    if not l4:
-        out["L4"] = {
-            "status": "recorded" if probes.get("exact_colour_zero") else "not run",
-            "probes": probes,
-            "reason": "an exact colour zero has nothing to probe"
-            if probes.get("exact_colour_zero")
-            else "no generation-time probe recorded",
-        }
-    else:
-        passed = all(v.get("passed") for v in l4.values())
-        out["L4"] = {
-            "status": "partial" if passed else "fail",
-            "probes": l4,
-            "probed_legs": {
-                k: v["legs"]
-                for k, v in l4.items()
-                if isinstance(v, dict) and "legs" in v
-            },
+    generation = {k: probes[k] for k in ("finiteness", "ward", "goldstone") if k in probes}
+    wards = record.get("ward_probes")
+    l4: dict[str, Any] = {}
+    statuses = []
+    if generation:
+        # the verdict reads the Ward-type probes (the finiteness one is
+        # L3's, recorded here as the artifact has it), legs probed or a
+        # failure recorded
+        gauge = [
+            v
+            for k, v in generation.items()
+            if k != "finiteness" and (v.get("legs") or not v.get("passed", True))
+        ]
+        passed = all(v.get("passed") for v in generation.values())
+        if gauge or not passed:
+            statuses.append("pass" if passed else "fail")
+        l4["generation"] = {
+            "status": "pass" if passed else "fail",
+            "probes": generation,
             "carrier": probes.get("precision"),
             "widths": probes.get("widths"),
-            "reason": "generation-time double-double probes at one point per artifact on the "
-            "probed legs only (one leg per external massless gauge-boson species, the Goldstone "
-            "probe on massive vectors where the artifact records it); no binary64 Ward at the "
-            "fixture points (the stored artifact is not on the full tree kernels)",
         }
+    if probes.get("exact_colour_zero") or (wards or {}).get("exact_colour_zero"):
+        statuses.append("recorded")
+        l4["fixture_points"] = {
+            "status": "recorded",
+            "reason": "an exact colour zero has nothing to probe",
+        }
+    elif wards is None:
+        statuses.append("partial")
+        l4["fixture_points"] = {
+            "status": "not run",
+            "reason": "no fixture-point Ward probe in this record (li_manifest.py run resumes it)",
+        }
+    elif not wards["legs"]:
+        # no external massless gauge boson: no Ward probe reaches the row
+        # (m-lit Q12 (a): Recola mandatory, lit-ref's references)
+        statuses.append("recorded")
+        l4["fixture_points"] = {
+            "status": "recorded",
+            "reason": "no external massless gauge-boson leg: no Ward probe reaches it",
+        }
+    else:
+        for label, arm in wards["arms"].items():
+            if isinstance(arm, dict):
+                l4[label] = {"status": "not run", "reason": arm["not_run"]}
+                statuses.append("partial")
+                continue
+            worst = [max(x["worst"].values()) for x in arm if "worst" in x]
+            if not worst:
+                status = "partial" if label.startswith("tirust") else "not run"
+            elif max(worst) <= FACTOR and all(x.get("passed") for x in arm if "worst" in x):
+                status = "pass" if len(worst) == count else "partial"
+            else:
+                status = "fail"
+            if label.startswith("tirust") and stale:
+                status = _worst([status, f"waits: {TIR_MP}"])
+                l4["waits_on"] = TIR_MP
+            l4[label] = {
+                "status": status,
+                "worst_ratio": max(worst, default=None),
+                "served": len(worst),
+                "of": count,
+                "failed": _counted(x["error"] for x in arm if "error" in x),
+            }
+            statuses.append(status)
+        l4["legs"] = wards["legs"]
+        l4["zeroed_widths"] = wards.get("zeroed_widths")
+    if not statuses:
+        statuses.append("not run")
+    out["L4"] = {"status": _worst(statuses), **l4}
     # L5 / LI-L1: the exact Lorentz transform: binary64 within 10 E of the
     # fixture point (the transformed point's own estimate is recorded apart:
     # outside the partonic rest frame the rotation estimate overshoots, a
@@ -3113,8 +3267,13 @@ def _causes(name: str, judged: dict) -> list[str]:
             )
         elif check == "N":
             cause = f"NinjaRS fails {result['failed']} points closed (typed: N.reasons)"
-        elif check == "L4" and result["status"] == "partial":
-            cause = "generation-time probes only"
+        elif check == "L4":
+            cause = ", ".join(
+                f"{label} {v['status']}"
+                + (f" ({v['served']}/{v['of']} points)" if "served" in v else "")
+                for label, v in result.items()
+                if isinstance(v, dict) and v.get("status") not in (None, *PASSING)
+            )
         text = f"{check} {result['status']}"
         out.append(f"{name}: {text}" + (f" ({cause})" if cause else ""))
     return out
@@ -3181,7 +3340,7 @@ def _resumable(path: Path, refresh: str | None, name: str, work: Path) -> dict |
         return None
     done = _load(path)
     if _same_native(done, refresh):
-        if done.get("complete") and "l3_probes" not in done:
+        if done.get("complete") and not {"l3_probes", "ward_probes"} <= set(done):
             done = {**done, "complete": False}
         return done
     if not refresh or not done.get("complete"):
@@ -3197,6 +3356,10 @@ def _resumable(path: Path, refresh: str | None, name: str, work: Path) -> dict |
         for k, v in (done.get("l3_probes") or {}).items()
         if not k.startswith(refresh)
     }
+    wards = done.get("ward_probes")
+    if wards is not None:
+        kept = {k: v for k, v in wards.get("arms", {}).items() if not k.startswith(refresh)}
+        wards = {**wards, "arms": kept}
     refreshed = [
         *done.get("refreshed", []),
         {
@@ -3211,6 +3374,7 @@ def _resumable(path: Path, refresh: str | None, name: str, work: Path) -> dict |
         **done,
         "arms": arms,
         "l3_probes": probes,
+        **({"ward_probes": wards} if wards is not None else {}),
         "refreshed": refreshed,
         "complete": False,
     }
