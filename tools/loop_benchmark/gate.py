@@ -788,6 +788,10 @@ def ward_rows(rows: list[dict[str, Any]], physical: list[dict[str, Any]]) -> lis
 
     scales = {}
     for row in physical:
+        if "components" not in row:
+            # A loop-induced physical row of a point its backend failed
+            # closed: no scale.
+            continue
         width = max(len(v) for v in row["components"].values())
         scales[row["index"]] = [
             max(v[k] for v in row["components"].values() if k < len(v))
