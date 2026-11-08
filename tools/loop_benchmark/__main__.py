@@ -251,6 +251,12 @@ def main(argv: list[str] | None = None) -> int:
         "provider without repeats where larger than this run's own",
     )
     gate.add_argument(
+        "--min-cpu-share",
+        type=float,
+        help="loop-induced blocks below this CPU share of their wall time are "
+        "left out (a shared core or a stopped job; default gate.MIN_CPU_SHARE)",
+    )
+    gate.add_argument(
         "--li-timing",
         type=Path,
         help="also merge the loop-induced records into this li-timing.json "

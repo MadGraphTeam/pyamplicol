@@ -167,6 +167,46 @@ def label(key: str) -> str:
     return spec["recola"]["process"].replace("->", ">")
 
 
+# A block's process CPU time over its wall time (``cpu_share``, the
+# loop-induced harness's, one thread): about 0.99 on a core of its own; a
+# block whose core was shared, or whose job a host guard stopped, falls far
+# below and its wall time is no measurement of the call. Overridable
+# (``build(min_cpu_share=...)``, ``gate --min-cpu-share``).
+MIN_CPU_SHARE = 0.9
+
+
+def valid_blocks(summary: dict[str, Any], min_share: float) -> dict[str, Any]:
+    """A batch summary on its blocks with at least ``min_share`` CPU share
+    (``MIN_CPU_SHARE``): median, range and samples over those, the others
+    listed (``dropped_blocks``: block index -> share); unchanged without the
+    shares."""
+
+    shares = summary.get("cpu_share")
+    if not shares:
+        return summary
+    samples = summary["samples_seconds_per_point"]
+    keep = [i for i, share in enumerate(shares) if share >= min_share]
+    if len(keep) == len(samples) or not keep:
+        return summary
+    kept = [samples[i] for i in keep]
+    out = {
+        **summary,
+        "samples_seconds_per_point": kept,
+        "median_seconds_per_point": statistics.median(kept),
+        "min_seconds_per_point": min(kept),
+        "max_seconds_per_point": max(kept),
+        "blocks": len(kept),
+        "dropped_blocks": {
+            str(i): round(share, 3)
+            for i, share in enumerate(shares)
+            if share < min_share
+        },
+    }
+    if "failed_points" in summary:
+        out["failed_points"] = [summary["failed_points"][i] for i in keep]
+    return out
+
+
 def loop_induced(key: str) -> bool:
     return bool(streams.spec(key).get("loop_induced"))
 
@@ -836,6 +876,7 @@ def build(
     paths: list[Path],
     reference_root: Path | None = None,
     host_spread: float | None = None,
+    min_cpu_share: float = MIN_CPU_SHARE,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """The gate document and the per-point values document. Provider files
     are resolved relative to ``reference_root`` only (``_export_of``): the
@@ -1055,6 +1096,17 @@ def build(
                 # Providers time full colour: LC/NLC carry no ratio.
                 ungated = "no gate (colour approximation)"
             effective = (record.get("reduction") or {}).get("effective")
+            if induced_row:
+                # Only the blocks that had their core (``valid_blocks``).
+                record["batches"] = {
+                    size: valid_blocks(summary, min_cpu_share)
+                    for size, summary in record.get("batches", {}).items()
+                }
+                for arm in ("served", "profiled"):
+                    record[arm] = {
+                        size: valid_blocks(summary, min_cpu_share)
+                        for size, summary in (record.get(arm) or {}).items()
+                    }
             for size, summary in record.get("batches", {}).items():
                 samples = summary["samples_seconds_per_point"]
                 uncertainty = median_uncertainty(samples)
@@ -1499,6 +1551,8 @@ def li_timing_records(document: dict[str, Any], rows: list[dict[str, Any]]) -> l
                     record["block_seconds_per_point"] = batch[
                         "samples_seconds_per_point"
                     ]
+                if "dropped_blocks" in batch:
+                    record["dropped_blocks"] = batch["dropped_blocks"]
                 if "cpu_share" in batch:
                     # The process's CPU share of each block's wall time (one
                     # thread: below 1 the core was shared).
@@ -1571,6 +1625,7 @@ def main(options: Any) -> int:
         options.records,
         Path(root) if root else None,
         getattr(options, "host_spread", None),
+        getattr(options, "min_cpu_share", None) or MIN_CPU_SHARE,
     )
     for item in options.meta or ():
         key, _, value = item.partition("=")
