@@ -63,10 +63,16 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from pyamplicol.loops.v2.checks import (  # noqa: E402
+    CATANI_FLOOR,
+    ESTIMATES,
+    catani_comparison,
+    catani_dd_comparison,
+)
+
 # Catani and double-double comparisons: each deviation within ESTIMATES x E
-# plus a relative floor of the compared value (precision is lax).
-ESTIMATES = 10
-CATANI_FLOOR = 1e-12
+# plus a relative floor of the compared value (precision is lax); the Catani
+# criterion is ``pyamplicol check``'s (``loops.v2.checks``).
 DOUBLE_POLE_FLOOR = 1e-10
 DD_FLOOR = 1e-12
 _WARD_ROW_KEYS = ("leg", "born", "parts", "estimate", "in_scope", "passed")
@@ -108,15 +114,7 @@ def point_row(
         entry: dict[str, Any] = {"virtual": values, "estimate": absolute}
         poles = (result.ir_poles or {}).get(sector)
         if poles is not None and len(values) == 3:
-            catani = [_c(poles[0]).real, _c(poles[1]).real]
-            deviations, ok = [], True
-            for k in (1, 2):
-                deviation = abs(values[k] - catani[k - 1])
-                bound = CATANI_FLOOR * abs(catani[k - 1])
-                if absolute is not None:
-                    bound += ESTIMATES * absolute[k]
-                deviations.append(deviation)
-                ok = ok and deviation <= bound
+            catani, deviations, _bounds, ok = catani_comparison(values, poles, absolute)
             entry.update(catani=catani, catani_deviation=deviations, catani_passed=ok)
             passed = passed and ok
         sectors[_sector(sector)] = entry
@@ -186,13 +184,9 @@ def compare_carriers(
         }
         poles = (dd.ir_poles or {}).get(sector)
         if poles is not None:
-            catani = [_c(poles[0]).real, _c(poles[1]).real]
-            errors = [
-                abs(exact[k] - catani[k - 1]) / max(abs(catani[k - 1]), 1e-300)
-                for k in (1, 2)
-            ]
+            catani, errors, within = catani_dd_comparison(exact, poles)
             entry.update(catani=catani, catani_relative=errors)
-            ok = ok and all(e <= DD_FLOOR for e in errors)
+            ok = ok and within
         out["sectors"][_sector(sector)] = entry
         out["passed"] = out["passed"] and ok
     return out
