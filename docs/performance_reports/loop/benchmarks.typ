@@ -667,8 +667,8 @@
     // The engine's generation (generate + dressed-frame choice + plan
     // export + exact helicity filter); the validation probes apart, with
     // their status at this head (summary-li.json generation.probes_label).
-    valued(fill: none, dur(m.seconds), mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
-      [apart: #m.probes_label #dur(m.probes_seconds)],
+    valued(fill: none, dur(m.engine_seconds), mult: if "engine_ratio_to_fastest" in m { mult2(m.engine_ratio_to_fastest) },
+      [apart: #m.probes_label #dur(m.probes_seconds) (#fixed(100 * m.probe_share, 0)~% of #dur(m.seconds))],
       [#gib(m.peak_gib) peak#if m.plan_mb != none [ · plan #box[#sig(m.plan_mb)~MB]]], pline)
   } else {
     absent(li-title(m), m.at("reason", default: none), pline)
@@ -728,7 +728,7 @@
 #let li-head = {
   let ours = if li-builds.len() == 0 [no pyAmpliCol record at this head: every row *pending*, served by the package named in its cell · engine #raw(li-engine.revision)#native-of(li-engine)]
     else [*pyAmpliCol:* #li-builds.map(x => [engine #raw(x.revision)#native-of(x)]).join([, ]) on #li-our-hosts.join(", ")#if li-meta.landed.len() > 0 [ (packages landed: #li-meta.landed.map(raw).join(", "))]]
-  if li-unchecked != none [#ours · cells: #li-meta.default_backend with the unchecked setting (= `auto` with it: shown paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")), NinjaRS unchecked beside; gate on #li-meta.default_backend · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated \ #li-protocol] else [#ours · cells: the backend `auto` serves; gate on #li-meta.default_backend (the loop-induced default) · providers: #if "optimistic" in li-meta.at("provider_protocols", default: ()) [each in its most optimistic settings (`lit-perf`; #super[p] `lit-ref`'s production record)] else [`lit-ref`'s production timing records]#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated]
+  if li-unchecked != none [#ours · cells of the #li-unchecked.rows re-timed rows: #li-meta.default_backend with the unchecked setting (= `auto` with it: shown paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")), NinjaRS unchecked beside; the other rows keep their earlier record (`auto`, checked); gate on #li-meta.default_backend · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated \ #li-protocol] else [#ours · cells: the backend `auto` serves; gate on #li-meta.default_backend (the loop-induced default) · providers: #if "optimistic" in li-meta.at("provider_protocols", default: ()) [each in its most optimistic settings (`lit-perf`; #super[p] `lit-ref`'s production record)] else [`lit-ref`'s production timing records]#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated]
 }
 // Table 2 starts a page: its caption never stays behind at the foot of
 // Table 1's last page.
@@ -979,7 +979,8 @@ those not run or not asserted.
 *@tab:summary-li* follows @tab:summary's rules for loop-induced processes, $|A_"loop"|^2$ without a Born: one row per
 process of the M-LIT validation matrix (`m-lit/PLAN.md` §4.1; its ids in the process cell), grouped by multiplicity;
 the backend-unit, zero, identity, observable and complex-mass-scheme rows (#li-meta.validation_only.ids.join(", ")) are
-validation-only and not listed. #if li-unchecked != none [The cell is the batched $B = #li-meta.gate_batch$ time per point of
+validation-only and not listed. #if li-unchecked != none [On the #li-unchecked.rows rows re-timed with the setting (`lit-perf`'s timed rows; the
+other rows keep their earlier record: the backend `auto` serves, in its checked default), the cell is the batched $B = #li-meta.gate_batch$ time per point of
 TIRust with the *unchecked reduction setting* (`reduction_unchecked`, a documented public setting, off by default):
 each backend reduces without its own acceptance or refusal checks. TIRust keeps its a priori conditioning gates and
 its method choice as method selection, computes no acceptance pass, and serves what the method choice refuses by
@@ -992,9 +993,10 @@ the setting is TIRust, bitwise and without fallback (paired on #li-unchecked.aut
 Beneath, NinjaRS with the same setting: its time and multiplier where it served every point, else the points it
 failed with their cause (a call that fails points is timed whole: no served-point time). The coloured bars are the
 stage shares (trees + counterterm kets, dressing, scatter, reduction, the rest of the call) of a *separate
-instrumented run* with the same setting, points and $B$ on the same core, never the timed call. The accuracy of the
-unchecked values against the 256-bit truth is in `m-lit/lit-unchecked-report.md` §0 (g g > z z g: 18 of 128 points
-served through the last resort lie above $10^(-5)$, up to $1.2 times 10^(-2)$). The providers run in their most
+instrumented run* with the same setting, points and $B$ on the same core, never the timed call. Against the 256-bit
+truth on the 128 stream points (M-LIT `lit-unchecked`, before timing): TIRust unchecked stays within $10^(-9)$ on
+g g > h g g and $7 times 10^(-6)$ on g g > a a g, while on g g > z z g 18 points served through the last resort lie
+above $10^(-5)$, up to $1.2 times 10^(-2)$. The providers run in their most
 optimistic settings (m-lit F4: OpenLoops with its stability system off, MadLoop without its stability test, Recola
 without dynamic settings, in its release build), in the same unit on the same core as pyAmpliCol, alternating with
 it between rounds, their time the median over those rounds; the multiplier against the fastest matched provider

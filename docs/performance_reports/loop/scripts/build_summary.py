@@ -3227,15 +3227,20 @@ def _li_cells(
             "reason": f"{src} has no generation-time probe time",
         }
     else:
-        # The engine's generation (m-lit C-generation.md §1, lit-unchecked
-        # (4)): LoopSlice.generate + dressed-frame choice + plan export +
-        # exact helicity filter; the validation probes' time apart
-        # (LI_PROBES_LABEL), never added to it.
-        engine = gen["seconds"]
+        # The full production `generate` cost: generate + plan export + the
+        # mandatory generation-time probes (``seconds``, their share), and
+        # the engine's generation the cell shows (m-lit C-generation.md §1,
+        # lit-unchecked (4): LoopSlice.generate + dressed-frame choice + plan
+        # export + exact helicity filter, ``engine_seconds``), the validation
+        # probes apart (LI_PROBES_LABEL), never added to it.
+        total = gen["seconds"] + gen["probes_seconds"]
         out["generation"] = {
             "status": "measured",
-            "seconds": engine,
+            "seconds": total,
+            "generate_seconds": gen["seconds"],
+            "engine_seconds": gen["seconds"],
             "probes_seconds": gen["probes_seconds"],
+            "probe_share": gen["probes_seconds"] / total if total else 0.0,
             "probes_label": LI_PROBES_LABEL,
             "peak_gib": gen["peak_gib"],
             "plan_mb": gen.get("plan_mb"),
@@ -3245,7 +3250,10 @@ def _li_cells(
         }
         fg = prov.get("fastest_generation")
         if fg is not None:
-            out["generation"]["ratio_to_fastest"] = engine / fg["seconds"]
+            out["generation"]["ratio_to_fastest"] = total / fg["seconds"]
+            out["generation"]["engine_ratio_to_fastest"] = (
+                gen["seconds"] / fg["seconds"]
+            )
     if not batched:
         # No B = 128 record at the newest revision (Table 1's rule): no
         # batched cell, the batches timed named.
