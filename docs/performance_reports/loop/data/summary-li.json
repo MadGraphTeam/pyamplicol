@@ -33,7 +33,22 @@
     }
    ],
    "largest_instance_spread": 4.216893916089857,
-   "replication": "docs/performance_reports/loop/README.md (unchecked Table 2)"
+   "replication": "docs/performance_reports/loop/README.md (unchecked Table 2)",
+   "accuracy": {
+    "source": "data/li-unchecked-accuracy.json",
+    "lax": 1e-05,
+    "noted": [
+     "gg_aag:ninjars",
+     "gg_agg:ninjars",
+     "gg_hggg:ninjars",
+     "gg_hhh:ninjars",
+     "gg_hzg:ninjars",
+     "gg_wpwmg:tirust",
+     "gg_zgg:tirust",
+     "gg_zzg:tirust",
+     "gg_zzz:ninjars"
+    ]
+   }
   },
   "provider_protocols": [
    "optimistic"
@@ -1199,9 +1214,35 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 1.8522592430572653
+       "ratio_to_fastest": 1.8522592430572653,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 8.82e-11,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_gg_hh].ninjars"
+       }
       },
       "ratio_to_fastest": 1.322875982268736,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.41e-09,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hh].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -2701,9 +2742,35 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 2.008042197300572
+       "ratio_to_fastest": 2.008042197300572,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 4.63e-10,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_emep_ggg].ninjars"
+       }
       },
       "ratio_to_fastest": 0.9644718224407327,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.46e-07,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_emep_ggg].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -2871,9 +2938,37 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 0.6166262859589211
+       "ratio_to_fastest": 0.6166262859589211,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 4.5e+64,
+        "lax": 1e-05,
+        "above": 2,
+        "worst": 4.5e+64,
+        "served_by": [
+         "checked refused"
+        ],
+        "failed": 0,
+        "failed_classes": [],
+        "note": true,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_gg_hhh].ninjars"
+       }
       },
       "ratio_to_fastest": 0.5678574411891392,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 7.62e-07,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hhh].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -3045,9 +3140,35 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 3.1825145248758453
+       "ratio_to_fastest": 3.1825145248758453,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 7.98e-10,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "a678d177",
+        "source": "li-unchecked-accuracy.json rows[li_gg_hgg].ninjars"
+       }
       },
       "ratio_to_fastest": 1.5644964999196467,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 9.24e-10,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "a678d177",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hgg].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -3224,9 +3345,37 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 2.1539676839513633
+       "ratio_to_fastest": 2.1539676839513633,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 4.99e-08,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "a678d177",
+        "source": "li-unchecked-accuracy.json rows[li_gg_zzg].ninjars"
+       }
       },
       "ratio_to_fastest": 0.7373245640740479,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 0.012,
+       "lax": 1e-05,
+       "above": 18,
+       "worst": 0.012,
+       "served_by": [
+        "last resort"
+       ],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "revision": "a678d177",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zzg].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -3397,9 +3546,37 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 3.52586836431336
+       "ratio_to_fastest": 3.52586836431336,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 0.00314,
+        "lax": 1e-05,
+        "above": 1,
+        "worst": 0.00314,
+        "served_by": [
+         "checked served"
+        ],
+        "failed": 0,
+        "failed_classes": [],
+        "note": true,
+        "revision": "a678d177",
+        "source": "li-unchecked-accuracy.json rows[li_gg_aag].ninjars"
+       }
       },
       "ratio_to_fastest": 1.0760201396133775,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 6.99e-06,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "a678d177",
+       "source": "li-unchecked-accuracy.json rows[li_gg_aag].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -3570,9 +3747,37 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 5.530489047468028
+       "ratio_to_fastest": 5.530489047468028,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 6.17e-08,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_gg_wpwmg].ninjars"
+       }
       },
       "ratio_to_fastest": 1.8218716249036775,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 0.0136,
+       "lax": 1e-05,
+       "above": 24,
+       "worst": 0.0136,
+       "served_by": [
+        "last resort"
+       ],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_wpwmg].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -3751,9 +3956,39 @@
         "total": 0.3375151994841872,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
+       },
+       "accuracy": {
+        "points": 128,
+        "max_relative": 6.99e+33,
+        "lax": 1e-05,
+        "above": 2,
+        "worst": 6.99e+33,
+        "served_by": [
+         "checked refused"
+        ],
+        "failed": 18,
+        "failed_classes": [
+         "Unstable"
+        ],
+        "note": true,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_gg_zzz].ninjars"
        }
       },
       "ratio_to_fastest": 0.9764222633180683,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 2.25e-08,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zzz].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -3933,9 +4168,38 @@
         "total": 0.04503912907966878,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
+       },
+       "accuracy": {
+        "points": 128,
+        "max_relative": 2.99e-08,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 2,
+        "failed_classes": [
+         "MasterFailed",
+         "Unstable"
+        ],
+        "note": true,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_gg_hzg].ninjars"
        }
       },
       "ratio_to_fastest": 0.9798315862247141,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 8.18e-09,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hzg].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -4106,9 +4370,37 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 4.341483051688614
+       "ratio_to_fastest": 4.341483051688614,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 0.000683,
+        "lax": 1e-05,
+        "above": 1,
+        "worst": 0.000683,
+        "served_by": [
+         "checked served"
+        ],
+        "failed": 0,
+        "failed_classes": [],
+        "note": true,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_gg_agg].ninjars"
+       }
       },
       "ratio_to_fastest": 1.860428530336363,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.33e-06,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_agg].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -4270,9 +4562,37 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 3.4666040871698205
+       "ratio_to_fastest": 3.4666040871698205,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 6.17e-06,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_gg_zgg].ninjars"
+       }
       },
       "ratio_to_fastest": 1.587487672717923,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.12e-05,
+       "lax": 1e-05,
+       "above": 3,
+       "worst": 3.12e-05,
+       "served_by": [
+        "last resort"
+       ],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zgg].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -4443,9 +4763,35 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 3.7117164824920525
+       "ratio_to_fastest": 3.7117164824920525,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 3.48e-08,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_uux_hgg].ninjars"
+       }
       },
       "ratio_to_fastest": 1.9980977416805632,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.66e-09,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_uux_hgg].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -4613,9 +4959,35 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 8.241092138444722
+       "ratio_to_fastest": 8.241092138444722,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 4.28e-09,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_uux_ddxh].ninjars"
+       }
       },
       "ratio_to_fastest": 7.685616055805105,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 4.14e-10,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_uux_ddxh].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -4787,9 +5159,35 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 4.600843013088276
+       "ratio_to_fastest": 4.600843013088276,
+       "accuracy": {
+        "points": 32,
+        "max_relative": 1.79e-06,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_gg_hhgg].ninjars"
+       }
       },
       "ratio_to_fastest": 2.0098927330070504,
+      "accuracy": {
+       "points": 32,
+       "max_relative": 7.1e-07,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hhgg].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -4959,9 +5357,37 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 5.1587640860938215
+       "ratio_to_fastest": 5.1587640860938215,
+       "accuracy": {
+        "points": 32,
+        "max_relative": 4.38e-05,
+        "lax": 1e-05,
+        "above": 2,
+        "worst": 4.38e-05,
+        "served_by": [
+         "checked served"
+        ],
+        "failed": 0,
+        "failed_classes": [],
+        "note": true,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_gg_hggg].ninjars"
+       }
       },
       "ratio_to_fastest": 2.9266806664974325,
+      "accuracy": {
+       "points": 32,
+       "max_relative": 5.86e-08,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hggg].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -5134,9 +5560,35 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 0.9943653817536021
+       "ratio_to_fastest": 0.9943653817536021,
+       "accuracy": {
+        "points": 32,
+        "max_relative": 4.93e-10,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmum].ninjars"
+       }
       },
       "ratio_to_fastest": 0.7023392894301488,
+      "accuracy": {
+       "points": 32,
+       "max_relative": 5.45e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmum].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,
@@ -5489,9 +5941,35 @@
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "ratio_to_fastest": 0.9328140655884608
+       "ratio_to_fastest": 0.9328140655884608,
+       "accuracy": {
+        "points": 16,
+        "max_relative": 9.45e-08,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "ecc80899",
+        "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmumg].ninjars"
+       }
       },
       "ratio_to_fastest": 0.39992887093016144,
+      "accuracy": {
+       "points": 16,
+       "max_relative": 8.27e-09,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmumg].tirust"
+      },
       "lit_dress": false,
       "unchecked": true,
       "instances": 3,

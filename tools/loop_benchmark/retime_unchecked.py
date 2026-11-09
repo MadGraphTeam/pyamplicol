@@ -787,7 +787,8 @@ REPLICATION = (
     'RAYON_NUM_THREADS=1 taskset -c <core> python -c "import pyamplicol; '
     "rt = pyamplicol.Runtime.load('<artifact of {process}>', "
     "reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', "
-    "reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points "
+    "on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: "
+    "the 128 stream points "
     "of tools/loop_benchmark/streams/{process}.json)"
 )
 

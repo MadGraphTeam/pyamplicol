@@ -678,6 +678,14 @@
 // the fastest matched provider, uncoloured) where it served every point,
 // else its outcome; its stage bar.
 #let li-other-line(o) = [#text(weight: "bold", o.backend_label) (#raw(o.requested)) #if o.status == "served" [#dur(o.seconds_per_point)#if "ratio_to_fastest" in o [ #mult2(o.ratio_to_fastest)]] else [#o.label] #h(1fr) #li-stage-bar(o.at("stages", default: none))]
+// A backend's measured accuracy with the unchecked setting (summary-li.json
+// timing.accuracy, timing.other_backend.accuracy; data/li-unchecked-
+// accuracy.json, DECISIONS 2026-11-09 04:18): against the 256-bit truth, the
+// largest error; the note where points lie above the lax precision or fail.
+#let li-acc-served(a) = if a.served_by == ("last resort",) [, all served by the gate-0 PV last resort] else if a.served_by == ("checked refused",) [, finite values where the checked mode refuses] else if a.served_by == ("checked served",) [, also in the checked mode] else []
+#let li-acc-line(a) = if a == none { none } else if not a.note { dim[vs 256-bit truth (#a.points pts): max #esci(a.max_relative)] } else {
+  text(fill: fail-ink, weight: "bold")[accuracy: #if a.above > 0 [#a.above/#a.points pts above #esci(a.lax), worst #esci(a.worst)#li-acc-served(a)]#if a.above > 0 and a.failed > 0 [; ]#if a.failed > 0 [#a.failed pts fail (#a.failed_classes.join(", ")), the call timed whole]]
+}
 // "auto" with the setting against the TIRust arm, paired in the same unit
 // (summary-li.json timing.auto_pairing).
 #let li-auto-line(a) = [`auto` with the setting: #if a.values_bitwise_tirust [values bitwise TIRust's] else [values *differ* from TIRust's], #a.fallback_points per-point fallbacks, time #mult2(a.ratio_to_tirust)]
@@ -693,14 +701,19 @@
       [#li-prov-line(r) #h(1fr) $B = #m.batch$ · #m.instances runtimes #mult2(m.instance_spread)],
       li-match-line(r),
       [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label) (#raw(m.requested)) #h(1fr) #li-stage-bar(m.stages)],
+      li-acc-line(m.at("accuracy", default: none)),
       if o != none { li-other-line(o) },
+      if o != none { li-acc-line(o.at("accuracy", default: none)) },
       if "auto_pairing" in m { li-auto-line(m.auto_pairing) })
   } else if m.status == "measured" {
     valued(fill: if "ratio_to_fastest" in m { ratio-fill(m.ratio_to_fastest) } else { none }, dur(m.seconds_per_point),
       mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
       [#li-prov-line(r) #h(1fr) $B = #m.batch$],
       li-match-line(r),
-      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "requested" in m [ (#raw(m.requested))]#if "other_backend" in m [ · #li-other(m.other_backend)]])
+      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "requested" in m [ (#raw(m.requested))]#if "other_backend" in m [ · #li-other(m.other_backend)]],
+      // Beside the unchecked re-time, a row it did not re-time keeps its
+      // earlier record: its configuration said in the cell.
+      if li-meta.at("unchecked", default: none) != none { dim[earlier record: checked backends, not re-timed unchecked] })
   } else {
     absent(li-title(m), if "requested" in m [#raw(m.requested) (#if "backend_label" in m { m.backend_label } else [backend #m.at("effective", default: "not resolved")]): #m.at("reason", default: m.label)] else { m.at("reason", default: none) }, li-prov-line(r),
       // The gated backend's verdict and the other backend beside a failed
@@ -746,7 +759,7 @@
       stroke: (x, y) => (top: if y <= 3 { none } else { 0.6pt + white }, left: if x > 0 and y != 1 { 0.6pt + white } else { none }),
       fill: (x, y) => if y == 0 { navy } else if y == 1 { warm } else if y == 2 { pale } else { none },
       table.header(
-        [], [Process · validation], [Generation], if li-unchecked != none [$|A_"loop"|^2$ · per point, batched, TIRust and NinjaRS unchecked] else [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
+        [], [Process · validation], [Generation], if li-unchecked != none [$|A_"loop"|^2$ · per point, batched, TIRust and NinjaRS unchecked (re-timed rows)] else [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
         table.cell(colspan: 4, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
         [],
         ..(
@@ -985,18 +998,20 @@ TIRust with the *unchecked reduction setting* (`reduction_unchecked`, a document
 each backend reduces without its own acceptance or refusal checks. TIRust keeps its a priori conditioning gates and
 its method choice as method selection, computes no acceptance pass, and serves what the method choice refuses by
 plain Passarino--Veltman (gate 0); NinjaRS runs with zero stability thresholds; pyAmpliCol's own checks are off. Only
-what no scheme evaluates finitely (an exactly singular pivot, a non-finite output, a master failure, NinjaRS's NaN
-lanes) still fails. The time is the median over #li-unchecked.instances.map(str).join("/") fresh runtimes (created in
+what no scheme evaluates finitely (an exactly singular pivot, a non-finite output, a master failure, a NinjaRS lane
+whose tested quantity is exactly zero or NaN, `Unstable`) still fails. The time is the median over #li-unchecked.instances.map(str).join("/") fresh runtimes (created in
 rotated order) of each one's median over rounds of the public call (`Runtime.load` + `evaluate` on the 128 distinct
 stream points, poles off, one pinned thread); the spread (×, largest over smallest runtime) is beside $B$; `auto` with
 the setting is TIRust, bitwise and without fallback (paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")).
 Beneath, NinjaRS with the same setting: its time and multiplier where it served every point, else the points it
 failed with their cause (a call that fails points is timed whole: no served-point time). The coloured bars are the
 stage shares (trees + counterterm kets, dressing, scatter, reduction, the rest of the call) of a *separate
-instrumented run* with the same setting, points and $B$ on the same core, never the timed call. Against the 256-bit
-truth on the 128 stream points (M-LIT `lit-unchecked`, before timing): TIRust unchecked stays within $10^(-9)$ on
-g g > h g g and $7 times 10^(-6)$ on g g > a a g, while on g g > z z g 18 points served through the last resort lie
-above $10^(-5)$, up to $1.2 times 10^(-2)$. The providers run in their most
+instrumented run* with the same setting, points and $B$ on the same core, never the timed call. The setting has *no
+accuracy certificate*: it is a timing and benchmark mode. Beneath each backend's line, its measured accuracy on the
+row's first stream points (the same public call, binary64 finite part) against TIRust at 256 bits
+(#raw(li-unchecked.at("accuracy", default: (source: "—")).source)): the largest relative error, or in red the points
+above $10^(-5)$ with the worst and how they were served (TIRust: by the gate-0 PV last resort; NinjaRS: values the
+checked mode refuses, or also in the checked mode) and the points that fail. The providers run in their most
 optimistic settings (m-lit F4: OpenLoops with its stability system off, MadLoop without its stability test, Recola
 without dynamic settings, in its release build), in the same unit on the same core as pyAmpliCol, alternating with
 it between rounds, their time the median over those rounds; the multiplier against the fastest matched provider

@@ -28311,7 +28311,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_emep_ggg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_emep_ggg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_emep_ggg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_emep_ggg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -28458,7 +28458,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_emep_ggg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_emep_ggg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_emep_ggg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_emep_ggg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -28596,7 +28596,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_aag>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_aag.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_aag>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_aag.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -28753,7 +28753,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_aag>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_aag.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_aag>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_aag.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -28903,7 +28903,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_agg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_agg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_agg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_agg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -29060,7 +29060,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_agg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_agg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_agg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_agg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -29210,7 +29210,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_emepmupmum>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_emepmupmum.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_emepmupmum>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_emepmupmum.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -29375,7 +29375,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_emepmupmum>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_emepmupmum.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_emepmupmum>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_emepmupmum.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -29531,7 +29531,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_emepmupmumg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_emepmupmumg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_emepmupmumg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_emepmupmumg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -29694,7 +29694,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_emepmupmumg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_emepmupmumg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_emepmupmumg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_emepmupmumg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -29850,7 +29850,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hgg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hgg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -30022,7 +30022,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hgg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hgg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -30172,7 +30172,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hggg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hggg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hggg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hggg.json)",
    "batch": 128,
    "rounds": 2,
    "instances": 3,
@@ -30320,7 +30320,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hggg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hggg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hggg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hggg.json)",
    "batch": 128,
    "rounds": 2,
    "instances": 3,
@@ -30461,7 +30461,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hh.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hh.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -30620,7 +30620,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hh.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hh.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -30771,7 +30771,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hhgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hhgg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hhgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hhgg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -30928,7 +30928,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hhgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hhgg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hhgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hhgg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -31078,7 +31078,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hhh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hhh.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hhh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hhh.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -31235,7 +31235,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hhh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hhh.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hhh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hhh.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -31385,7 +31385,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hzg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hzg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hzg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hzg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -31542,7 +31542,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hzg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hzg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hzg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hzg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -31696,7 +31696,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_wpwmg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_wpwmg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_wpwmg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_wpwmg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -31853,7 +31853,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_wpwmg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_wpwmg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_wpwmg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_wpwmg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -32003,7 +32003,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zgg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zgg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -32148,7 +32148,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zgg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zgg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -32286,7 +32286,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -32443,7 +32443,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -32593,7 +32593,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzz>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzz.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzz>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzz.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -32750,7 +32750,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzz>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzz.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzz>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzz.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -32919,7 +32919,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_uux_ddxh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_uux_ddxh.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_uux_ddxh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_uux_ddxh.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -33078,7 +33078,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_uux_ddxh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_uux_ddxh.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_uux_ddxh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_uux_ddxh.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -33229,7 +33229,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_uux_hgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_uux_hgg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_uux_hgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_uux_hgg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,
@@ -33388,7 +33388,7 @@
      "pinned": "taskset -c <one idle core>"
     }
    },
-   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_uux_hgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_uux_hgg.json)",
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_uux_hgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_uux_hgg.json)",
    "batch": 128,
    "rounds": 5,
    "instances": 3,

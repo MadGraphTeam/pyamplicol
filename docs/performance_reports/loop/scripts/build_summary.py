@@ -2842,6 +2842,46 @@ def _li_paired(prov: dict, rec: dict) -> dict:
     return out
 
 
+# The measured accuracy of the unchecked setting (lit-unchecked; DECISIONS
+# 2026-11-09 04:18): per row and backend, the binary64 finite part through
+# the public API against TIRust at 256 bits with supplied invariants
+# (lit-tirust-default's calibration truth); the setting has no accuracy
+# certificate. {"what", "lax", "native", "date", "rows": {<key>:
+# {"points", "revision", "tirust" | "ninjars": {"served", "max_relative",
+# "p99_relative", "median_relative", "above_1e-5": [{"point", "relative",
+# "served_by"}] (worst first; TIRust "last resort" / "direct / method
+# choice", NinjaRS "checked refused" / "checked served"), "failed":
+# [{"point", "class"}], "last_resort_points"? (TIRust)}}}}.
+LI_ACCURACY = "li-unchecked-accuracy.json"
+
+
+def _li_accuracy(acc: dict | None, key: str, backend: str) -> dict | None:
+    """A cell's measured accuracy (``LI_ACCURACY``; None where not measured):
+    the points compared, the largest relative error, the points above the
+    lax precision (``lax``, 1e-5) with the worst and how they were served,
+    and the failed points with their classes; ``note`` where any point lies
+    above it or fails (the cell's accuracy note)."""
+
+    if acc is None or key not in acc["rows"] or backend not in acc["rows"][key]:
+        return None
+    row = acc["rows"][key]
+    e = row[backend]
+    above, failed = e["above_1e-5"], e["failed"]
+    return {
+        "points": row["points"],
+        "max_relative": e["max_relative"],
+        "lax": acc["lax"],
+        "above": len(above),
+        "worst": above[0]["relative"] if above else None,
+        "served_by": sorted({a["served_by"] for a in above}),
+        "failed": len(failed),
+        "failed_classes": sorted({f["class"] for f in failed}),
+        "note": bool(above or failed),
+        "revision": row["revision"],
+        "source": f"{LI_ACCURACY} rows[{key}].{backend}",
+    }
+
+
 def _li_stages(rec: dict) -> dict | None:
     """The stage split of the separate instrumented run beside an unchecked
     record (its ``stages``: trees + CT kets, dressing, scatter, reduction,
@@ -3310,6 +3350,14 @@ def _li_cells(
         if named.get("configuration") == LI_UNCHECKED:
             out["timing"]["unchecked"] = True
             out["timing"]["stages"] = _li_stages(named)
+            acc, stream = files.get(LI_ACCURACY), named.get("process", row["key"])
+            if named.get("backend") is not None:
+                out["timing"]["accuracy"] = _li_accuracy(
+                    acc, stream, named["backend"]
+                )
+            o = out["timing"].get("other_backend")
+            if o is not None and o.get("unchecked"):
+                o["accuracy"] = _li_accuracy(acc, stream, o["backend"])
         return out
     t = main["seconds_per_point"]
     cell = {
@@ -3346,6 +3394,12 @@ def _li_cells(
                 o["seconds_per_point"] / fastest["seconds_per_point"]
             )
     if main.get("configuration") == LI_UNCHECKED:
+        # The record's stream (``process``) keys the accuracy record.
+        acc, stream = files.get(LI_ACCURACY), main.get("process", row["key"])
+        cell["accuracy"] = _li_accuracy(acc, stream, main["backend"])
+        o = cell.get("other_backend")
+        if o is not None and o.get("unchecked"):
+            o["accuracy"] = _li_accuracy(acc, stream, o["backend"])
         cell["lit_dress"] = main.get("lit_dress")
         # Both backends unchecked: the instance control (median over fresh
         # runtimes of each one's median over rounds, their spread) and the
@@ -3388,7 +3442,7 @@ def build_loop_induced(
     reg = _li_registry(ms)
     manifest = _li_manifest(repo)
     campaign = _li_campaign(reg, manifest)
-    names = (LI_TIMING, LI_VALIDATION)
+    names = (LI_TIMING, LI_VALIDATION, LI_ACCURACY)
     files = {n: _li_input(data, n) for n in names}
     rule = ms["gate_decisions"]["threshold_rule"]
     groups = []
@@ -3459,6 +3513,21 @@ def build_loop_induced(
             "largest_instance_spread": max(c["instance_spread"] for c in timed),
             "replication": "docs/performance_reports/loop/README.md"
             " (unchecked Table 2)",
+            # The cells' measured accuracy (DECISIONS 2026-11-09 04:18): no
+            # accuracy certificate, the measured error beside every cell.
+            "accuracy": None
+            if files[LI_ACCURACY] is None
+            else {
+                "source": f"data/{LI_ACCURACY}",
+                "lax": files[LI_ACCURACY]["lax"],
+                "noted": sorted(
+                    f"{r['key']}:{c['backend']}"
+                    for g in groups
+                    for r in g["rows"]
+                    for c in (r["timing"], r["timing"].get("other_backend") or {})
+                    if (c.get("accuracy") or {}).get("note")
+                ),
+            },
         }
     return {
         "what": (

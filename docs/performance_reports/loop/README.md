@@ -45,15 +45,22 @@ The table rules:
   OpenLoops' and Recola's): pass or fail when the whole uncertainty band lies
   on one side of 1, else open; taken at B = 128 only (user 2026-10-28);
   below 5 ms per point not gated (user 2026-10-24); 2 → 2 not gated;
-- Table 2: the B = 128 record the backend `auto` serves (NinjaRS per amplitude
-  in this release, labelled, with the runtime's reason; slice-status DECISIONS
-  2026-11-07 21:50 R9 and 2026-11-08 11:17), TIRust beside it with its served
-  fraction and the recorded causes of its failed points; the gate chip is
-  `lit-perf`'s verdict on TIRust (the gated backend), "no verdict (gap)" where
-  TIRust failed points closed; generation is the full production `generate`
-  cost, the mandatory generation-time probes included (their share shown);
-  rows of four legs or fewer reported without a gate; *pending* where the serving package has not landed or the input file
-  does not exist yet, *not run* for a landed package without a record.
+- Table 2: on the rows re-timed with the unchecked reduction setting
+  ("Unchecked Table 2" below; `lit-perf`'s timed rows), TIRust unchecked as
+  the cell (= `auto` with the setting) and NinjaRS unchecked beneath, each
+  with its stage bar from a separate instrumented run and its measured
+  accuracy against the 256-bit truth (`data/li-unchecked-accuracy.json`; in
+  red the points above 1e-5 and the failed points); the providers paired in
+  the same unit on the same core; the gate chip is `gate.py`'s verdict on
+  TIRust (the gated backend). The other rows keep their earlier record
+  (labelled in the cell): the backend `auto` serves in its checked default,
+  with the other backend beside it. Generation is the engine's generation
+  (generate + filter + plan export); the optional generation-time validation
+  probes (off by default since `lit-probe`) are shown apart with their
+  carrier where a record ran them, never in it. Rows of four legs or fewer
+  are reported without a gate; *pending* where the serving package has not
+  landed or the input file does not exist yet, *not run* for a landed
+  package without a record.
 
 ## Build
 
@@ -181,7 +188,7 @@ stream = streams.load("li_gg_zzg")                # any row of Table 2
 points = streams.binary64(stream, 128)            # B = 128 distinct points
 mu_r2 = [str(Fraction(m) ** 2) for m in stream["mu_r"][:128]]
 rt = pyamplicol.Runtime.load("<artifact>", reduction_unchecked=True)
-result = rt.evaluate(points, mu_r2=mu_r2, poles="none",
+result = rt.evaluate(points, mu_r2=mu_r2, poles="none", on_failure="return",
                      reduction="tirust")          # or "ninjars", or "auto"
 PY
 ```
@@ -189,8 +196,12 @@ PY
 The settings, verbatim: `Runtime.load(..., reduction_unchecked=True)` (config
 `evaluation.reduction_unchecked = true`, CLI `--reduction-unchecked`, C ABI
 `rusticol_virtual_set_reduction_unchecked`), `evaluate(..., poles="none",
-reduction="tirust" | "ninjars")`, no `stability_checks`, no rescue policy, full
-colour, binary64, one thread. `reduction="auto"` with the setting gives the
+on_failure="return", reduction="tirust" | "ninjars")` (a call that fails
+points returns them as failed and is timed whole), no `stability_checks`, no
+rescue policy, full colour, binary64, one thread. The setting has no
+accuracy certificate: its measured accuracy per row is
+`data/li-unchecked-accuracy.json` (the same public call against TIRust at
+256 bits; shown in every re-timed cell). `reduction="auto"` with the setting gives the
 TIRust values bitwise with no per-point fallback (shown paired on one row in
 the records).
 
@@ -227,3 +238,10 @@ summaries and the PDF. The builder takes an unchecked record's paired
 providers as the row's provider times. Runtime: the rows run in parallel,
 the longest (`li_gg_hggg`, 2 rounds) about 2 h; memory up to ~30 GiB per row (`li_gg_hggg`, six runtimes in one
 process).
+
+Campaign `c1` (2026-11-09, engine `ecc80899`, before `lit-dress`): the
+records' `cpu_share` is empty (the field came after the timed revision);
+`li_gg_hggg` has 2 rounds per runtime (the row budget); g g > W+ W- g ended
+inconclusive (ratio 1.40, band 0.92-1.88, its provider rounds drifting by
+about 1.9× within the unit) and was not repeated: `lit-report` re-times
+every row after `lit-dress`.
