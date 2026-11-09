@@ -586,6 +586,7 @@ def collect(options: Any) -> int:
         process = found["process"]
         stages_path = out / "stages" / f"{process}.json"
         stages = json.loads(stages_path.read_text()) if stages_path.is_file() else None
+        paired = paired_providers(process, found["providers"])
         for arm, cell in found["cells"].items():
             records.append(
                 {
@@ -610,7 +611,15 @@ def collect(options: Any) -> int:
                     "failures": found["arms"][arm]["failures"],
                     "fallback_points": found["arms"][arm]["fallback_points"],
                     "tir_counts": found["tir_counts"] if arm != "ninjars" else None,
-                    "providers": found["providers"],
+                    "providers": paired,
+                    "gate": gate_of(
+                        process,
+                        found["arms"][arm]["effective"],
+                        cell,
+                        found["arms"][arm]["failed_points"],
+                        found["batch"],
+                        paired,
+                    ),
                     "stages": _stage_split(stages, found["arms"][arm]["effective"]),
                     "generation": None if stages is None else stages.get("generation"),
                     "native_build": Path(options.native).name,
@@ -639,6 +648,117 @@ def collect(options: Any) -> int:
         if subprocess.run(command, cwd=checkout, check=False).returncode:
             return 1
     return 0
+
+
+def paired_providers(process: str, rounds: list[dict[str, Any]]) -> dict[str, Any]:
+    """The providers timed in the row's unit (``row``'s rounds of the F4
+    most-optimistic provider tool): per provider the median over rounds of
+    its per-point median, the rounds' half range, the protocol; the ones the
+    tool could not run listed with its error, never filled."""
+
+    sys.path.insert(0, str(ROOT))
+    from tools.loop_benchmark import gate
+
+    per: dict[str, list[float]] = {}
+    errors = [r["error"] for r in rounds if "error" in r]
+    for entry in rounds:
+        for name, value in (entry.get("seconds_per_point") or {}).items():
+            if value is not None:
+                per.setdefault(name, []).append(value)
+    return {
+        "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+        "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the "
+        "order of the two blocks alternating between rounds",
+        "rounds": len(rounds),
+        "times": {
+            name: {
+                "seconds_per_point": statistics.median(values),
+                "rounds": values,
+                "half_range": gate.half_range(values),
+            }
+            for name, values in sorted(per.items())
+        },
+        "errors": errors,
+    }
+
+
+def gate_of(
+    process: str,
+    backend: str,
+    cell: dict[str, Any],
+    failed: int,
+    batch: int,
+    paired: dict[str, Any],
+) -> dict[str, Any]:
+    """gate.py's verdict, its rules unchanged, of an unchecked cell against
+    the paired provider times: ``gate.gate_verdict`` (the 5 ms rule, the
+    matched providers, the band) and ``gate.induced_verdict`` (TIRust gated,
+    NinjaRS the second mode, failed points a gap), in the li-timing record
+    shape of lit-perf's records."""
+
+    sys.path.insert(0, str(ROOT))
+    from tools.loop_benchmark import gate
+
+    record = {
+        "providers": {
+            name: {"median_seconds_per_point": value["seconds_per_point"]}
+            for name, value in paired["times"].items()
+        }
+    }
+    unmatched = gate.unmatched_providers(process, record)
+    missing = gate.missing_providers(process, record)
+    times = {
+        name: value["seconds_per_point"]
+        for name, value in paired["times"].items()
+        if name not in unmatched
+    }
+    if not times:
+        return {"status": "no matched provider timing", "missing": missing}
+    samples = cell["instance_medians"]
+    verdict = gate.gate_verdict(
+        cell["median"],
+        times,
+        uncertainty=gate.median_uncertainty(samples),
+        reference_uncertainty={
+            name: (paired["times"][name]["half_range"] or 0.0, False) for name in times
+        },
+        missing=missing,
+        batch=batch,
+        unmatched={
+            name: {
+                "seconds": paired["times"][name]["seconds_per_point"],
+                "reason": reason,
+            }
+            for name, reason in unmatched.items()
+            if name in paired["times"]
+        },
+    )
+    summary = {
+        "failed_points": [failed],
+        "points_per_block": batch,
+        "median_seconds_per_point": cell["median"],
+    }
+    verdict = gate.induced_verdict(verdict, summary, backend, None, times)
+    out = {
+        k: verdict[k]
+        for k in (
+            "status",
+            "measured_status",
+            "binding_provider",
+            "binding_limit",
+            "fastest_provider",
+            "served_fraction",
+            "not_matched",
+            "missing",
+            "floor_basis_seconds",
+        )
+        if k in verdict
+    }
+    if "ratio_to_binding_limit" in verdict:
+        out["ratio_to_limit"] = verdict["ratio_to_binding_limit"]
+        out["band"] = verdict["band_to_binding_limit"]
+    out["provider_protocols"] = {name: "optimistic" for name in sorted(times)}
+    return out
 
 
 def _stage_split(stages: dict[str, Any] | None, backend: str) -> dict[str, Any] | None:
