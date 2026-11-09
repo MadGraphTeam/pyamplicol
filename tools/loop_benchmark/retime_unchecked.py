@@ -275,6 +275,10 @@ def campaign(options: Any) -> int:
     (out / "plan.json").write_text(json.dumps(plan, indent=1))
     for entry in plan:
         subprocess.run(entry["command"], check=True)
+    if not options.wait:
+        print("units launched; when every DONE marker exists:")
+        print(shlex.join(collect_command))
+        return 0
     pending = {entry["process"] for entry in plan}
     deadline = time.time() + options.wait_hours * 3600
     while pending and time.time() < deadline:
@@ -856,6 +860,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     run.add_argument("--memory-max", default="150G")
     run.add_argument("--wait-hours", type=float, default=6.0)
+    run.add_argument(
+        "--no-wait",
+        dest="wait",
+        action="store_false",
+        help="launch the units and print the collect command",
+    )
     run.add_argument("--env", type=Path, default=workspace / "env.sh")
     run.add_argument(
         "--reference-env", type=Path, default=workspace / "reference" / "env.sh"
