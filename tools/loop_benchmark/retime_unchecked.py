@@ -194,11 +194,15 @@ def unit_command(options: Any, process: str, core: int) -> list[str]:
         str(core),
         "--rounds",
         str(options.rounds),
+        "--row-budget",
+        str(options.row_budget),
         "--instances",
         str(options.instances),
         "--provider-points",
         str(options.provider_points),
     ]
+    if options.cards is not None:
+        inner += ["--cards", shlex.quote(str(options.cards))]
     if options.auto_row == process:
         inner.append("--auto")
     if not options.providers:
@@ -295,6 +299,44 @@ def _rotated(items: list, by: int) -> list:
     return items[by:] + items[:by]
 
 
+def ensure_artifact(options: Any, process: str) -> tuple[Path, dict[str, Any]]:
+    """The row's artifact (``--artifacts``/<process>/artifact): reused when it
+    exists, else generated through the public ``Generator`` from the row's
+    run card (``--cards``/<process>/card.toml, its ``generation.output``
+    rewritten), with the command and its wall time recorded."""
+
+    import tomllib
+
+    target = Path(options.artifacts) / process / "artifact"
+    if (target / "artifact.json").is_file():
+        return target, {"artifact": str(target), "generated": "reused"}
+    from pyamplicol.api import Generator, ProcessRequest, ProcessSet
+    from pyamplicol.config import resolve_config
+
+    text = (Path(options.cards) / process / "card.toml").read_text()
+    text = re.sub(
+        r"^output = .*$", f"output = {json.dumps(str(target))}", text, flags=re.M
+    )
+    card = target.parent / "card.toml"
+    card.parent.mkdir(parents=True, exist_ok=True)
+    card.write_text(text)
+    (entry,) = tomllib.loads(text)["process"]["entries"]
+    begin = time.perf_counter()
+    Generator(resolve_config(card)).generate(
+        ProcessSet((ProcessRequest.parse(entry["expression"], name=entry["name"]),)),
+        target,
+    )
+    return target, {
+        "artifact": str(target),
+        "generated": "public Generator",
+        "card": str(card),
+        "command": "Generator(resolve_config(card)).generate(ProcessSet(("
+        f"ProcessRequest.parse({entry['expression']!r}, name={entry['name']!r}),)), "
+        "artifact)",
+        "seconds": time.perf_counter() - begin,
+    }
+
+
 def row(options: Any) -> int:
     import platform
 
@@ -303,7 +345,7 @@ def row(options: Any) -> int:
     process = options.process
     out = Path(options.out)
     (out / "rows").mkdir(parents=True, exist_ok=True)
-    artifact = Path(options.artifacts) / process / "artifact"
+    artifact, generation = ensure_artifact(options, process)
     points, scales = _stream(process)
     arms = ["tirust", "ninjars"] + (["auto"] if options.auto else [])
     kwargs = {arm: {} if arm == "auto" else {"reduction": arm} for arm in arms}
@@ -318,6 +360,7 @@ def row(options: Any) -> int:
         "rounds": options.rounds,
         "instances": options.instances,
         "native": str(options.native),
+        "public_generation": generation,
     }
     # Fresh runtimes, created in rotated arm order (the executor-instance
     # control): instance i of every arm, then i + 1.
@@ -339,8 +382,9 @@ def row(options: Any) -> int:
 
     # Untimed warm-up of every instance (kernels compiled, caches built).
     first: dict[str, Any] = {}
+    warm: dict[tuple[str, int], float] = {}
     for arm, i in runtimes:
-        _seconds, result = call(arm, i)
+        warm[arm, i], result = call(arm, i)
         first.setdefault(arm, result)
     for arm, result in first.items():
         lanes = result.diagnostics
@@ -373,7 +417,16 @@ def row(options: Any) -> int:
     }
     providers: list[dict[str, Any]] = []
     order = [(arm, i) for i in range(options.instances) for arm in arms]
-    for r in range(options.rounds):
+    # Rounds within the row's budget (``--row-budget``, one round's timed
+    # calls estimated by the warm-up), at least two (an instance's median
+    # needs a repeat).
+    round_cost = sum(warm.values())
+    rounds = max(
+        2, min(options.rounds, int(options.row_budget // max(round_cost, 1e-9)))
+    )
+    record["rounds"] = rounds
+    record["round_cost_estimate_seconds"] = round_cost
+    for r in range(rounds):
         blocks = (
             ["pyamplicol", "providers"] if r % 2 == 0 else ["providers", "pyamplicol"]
         )
@@ -630,7 +683,19 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--rows", nargs="*", help="stream processes (default: lit-perf's)")
     run.add_argument("--skip", nargs="*", help="rows not run (recorded as such)")
     run.add_argument("--artifacts", type=Path, required=True)
+    run.add_argument(
+        "--cards",
+        type=Path,
+        help="run cards <process>/card.toml of rows without an artifact",
+    )
     run.add_argument("--rounds", type=int, default=5)
+    run.add_argument(
+        "--row-budget",
+        type=float,
+        default=3600.0,
+        help="seconds of timed rounds per row (fewer rounds, at least two, "
+        "where the rounds would exceed it)",
+    )
     run.add_argument("--instances", type=int, default=3)
     run.add_argument("--provider-points", type=int, default=16)
     run.add_argument("--auto-row", default="li_gg_hgg")
@@ -661,8 +726,10 @@ def main(argv: list[str] | None = None) -> int:
     one.add_argument("process")
     common(one)
     one.add_argument("--artifacts", type=Path, required=True)
+    one.add_argument("--cards", type=Path)
     one.add_argument("--core", type=int, required=True)
     one.add_argument("--rounds", type=int, default=5)
+    one.add_argument("--row-budget", type=float, default=3600.0)
     one.add_argument("--instances", type=int, default=3)
     one.add_argument("--provider-points", type=int, default=16)
     one.add_argument("--auto", action="store_true")
