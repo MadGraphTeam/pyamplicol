@@ -345,6 +345,24 @@ def ensure_artifact(options: Any, process: str) -> tuple[Path, dict[str, Any]]:
     }
 
 
+def _git(checkout: Path, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", *args], capture_output=True, text=True, cwd=checkout, check=False
+    )
+
+
+def _revision(checkout: Path) -> dict[str, Any]:
+    """The timed checkout's revision and whether lit-dress (the dressing
+    levers lit-report re-times after) is in it: its integration merge on the
+    slice, ``Integrate work/v2-lit-dress``, in the history."""
+
+    head = _git(checkout, "rev-parse", "HEAD").stdout.strip()
+    merges = _git(
+        checkout, "log", "--oneline", "--grep", "Integrate work/v2-lit-dress", "HEAD"
+    ).stdout.strip()
+    return {"revision": head, "lit_dress": bool(merges)}
+
+
 def row(options: Any) -> int:
     import platform
 
@@ -370,6 +388,7 @@ def row(options: Any) -> int:
         "native": str(options.native),
         "public_generation": generation,
     }
+    record.update(_revision(Path(options.checkout)))
     # Fresh runtimes, created in rotated arm order (the executor-instance
     # control): instance i of every arm, then i + 1.
     runtimes: dict[tuple[str, int], Any] = {}
@@ -578,20 +597,18 @@ def collect(options: Any) -> int:
 
     checkout = Path(options.checkout)
     out = Path(options.out)
-    head = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        capture_output=True,
-        text=True,
-        cwd=checkout,
-        check=True,
-    ).stdout.strip()
     build = json.loads((Path(options.native) / "build-info.json").read_text())
-    digest = build.get("native_digest") or build.get("digest")
+    digest = build.get("native_build_inputs_sha256")
     keys = dict(timed_rows(checkout))
     records = []
+    heads: set[str] = set()
     for path in sorted((out / "rows").glob("*.json")):
         found = json.loads(path.read_text())
         process = found["process"]
+        # The timed checkout's revision (the rows' own record; the collecting
+        # checkout may be a later one).
+        timed = found.get("revision") or _revision(checkout)["revision"]
+        heads.add(timed)
         stages_path = out / "stages" / f"{process}.json"
         stages = json.loads(stages_path.read_text()) if stages_path.is_file() else None
         paired = paired_providers(process, found["providers"])
@@ -600,7 +617,8 @@ def collect(options: Any) -> int:
                 {
                     "key": keys.get(process, process),
                     "process": process,
-                    "revision": head,
+                    "revision": timed,
+                    "lit_dress": found.get("lit_dress"),
                     "configuration": "unchecked",
                     "requested": found["arms"][arm]["requested"],
                     "backend": found["arms"][arm]["effective"],
@@ -645,7 +663,7 @@ def collect(options: Any) -> int:
     data["records"] = [
         r
         for r in data["records"]
-        if not (r.get("configuration") == "unchecked" and r.get("revision") == head)
+        if not (r.get("configuration") == "unchecked" and r.get("revision") in heads)
     ] + records
     target.write_text(json.dumps(data, indent=1) + "\n")
     print(f"{len(records)} unchecked records into {target}")
