@@ -35,6 +35,23 @@ loop-induced initialisation (at least CheckCycle + 1 calls over the points:
 its zero-test scale is the median of earlier results). The stage split
 then has a fourth bucket, MadLoop's colour-flow projection and squaring.
 
+**Most optimistic settings** (``--protocol optimistic``; m-lit F4, USER
+2026-11-08 ~14:40 / ~15:40: every comparison sets each provider up as a user
+after speed alone would): OpenLoops with its stability system off
+(``expert_mode 1``, ``stability_mode 11``: one double-precision evaluation
+with its first reduction library, where its loop-induced preset, stability
+mode 21, evaluates every point twice with two libraries); MadLoop without
+its stability test (``CTModeRun 1``: one evaluation, where ``-1`` evaluates
+both loop directions); Recola without dynamic settings
+(``set_dynamic_settings_rcl(0)``), so alpha_s and the scales are those set
+before the generation, outside the timer, and with its build recorded
+(``build``: the CMake build type and Fortran flags of the libraries the run
+links; Recola's CMake files optimise every source with -O2 unless the build
+type is Debug, so a build without a build type is its release build). The
+finite part of a loop-induced process does not depend on the scales, so this
+protocol is defined for loop-induced rows; it is refused for the others. The
+record's ``protocol`` names the settings of every provider.
+
 Caches are those of production (REQUIREMENTS_ADDENDUM D). The one exception
 is the documented COLLIER global-cache defect at N = 7 of the releases
 ``COLLIER_CACHE_DEFECT`` (the toolkit's ``UNCACHED_LEG_THRESHOLD``): the
@@ -72,6 +89,7 @@ beyond HANDOFF §0.1) is recorded with that reason, never silently dropped.
 Usage:
     python -m tools.loop_benchmark providers gg_gggg --cpu 150 \\
         --work DIR --points 16 [--providers openloops recola madloop] \\
+        [--protocol production|optimistic] \\
         [--reference-root ROOT] [--madloop-export EXPORT] --json OUT.json
 """
 
@@ -124,6 +142,18 @@ class Trees:
 # DESIGN "Provider production columns"; the toolkit's UNCACHED_LEG_THRESHOLD
 # names them). Every other release keeps the production cache.
 COLLIER_CACHE_DEFECT = frozenset({"1.2.9", "1.2.10"})
+
+
+# The most optimistic settings (module docstring; ``--protocol optimistic``).
+OPTIMISTIC_OPENLOOPS = ("int expert_mode 1", "int stability_mode 11")
+OPTIMISTIC_MADLOOP = {"CTModeRun": "1"}
+
+
+def optimistic_params(params: dict[str, str] | None) -> dict[str, str]:
+    """MadLoop's most optimistic card entries over ``params`` (an explicit
+    ``--madloop-param`` of the same key wins: it is the caller's choice)."""
+
+    return {**OPTIMISTIC_MADLOOP, **(params or {})}
 
 
 def collier_cache(legs: int, version: str | None) -> dict[str, Any]:
@@ -363,7 +393,12 @@ def _summary(rows: list[dict[str, Any]], extra: dict[str, Any], wall: float) -> 
 
 
 def openloops(
-    spec: dict, points: dict, work: Path, cpu: int, trees: Trees
+    spec: dict,
+    points: dict,
+    work: Path,
+    cpu: int,
+    trees: Trees,
+    protocol: str = "production",
 ) -> dict[str, Any]:
     references = _references()
     openloops_tree = trees.openloops
@@ -397,6 +432,9 @@ def openloops(
     commands = ["int truepoles 0" if c == "int truepoles 1" else c for c in built]
     if "int truepoles 0" not in commands:
         raise RuntimeError("the toolkit's OpenLoops commands changed")
+    if protocol == "optimistic":
+        at = next(i for i, c in enumerate(commands) if c.startswith("register "))
+        commands[at:at] = OPTIMISTIC_OPENLOOPS
     count = len(points["points"])
     lines = [*commands, f"points {count}", *references.point_lines(points)]
     stdin = "\n".join(lines) + "\n"
@@ -411,8 +449,14 @@ def openloops(
     library = spec["openloops"]["library"]
     return {
         "provider": "openloops",
-        "mode": "production: truepoles 0 (Collier cache, I-operator poles, "
-        "default stability)",
+        "protocol": protocol,
+        "mode": (
+            "most optimistic: truepoles 0, stability system off (expert_mode 1, "
+            "stability_mode 11: one double-precision evaluation), Collier cache"
+            if protocol == "optimistic"
+            else "production: truepoles 0 (Collier cache, I-operator poles, "
+            "default stability)"
+        ),
         "version": f"OpenLoops {references.openloops_release(openloops_tree)}",
         "library": {
             "name": library,
@@ -425,7 +469,9 @@ def openloops(
 
 
 def _recola_driver(run: Path, recola_tree: Path, link: list[Path]) -> Path:
-    """The toolkit's Recola driver with an ``irpoles <0|1>`` command, linked
+    """The toolkit's Recola driver with an ``irpoles <0|1>`` command and a
+    ``dynamic <0|1>`` one (0: no dynamic settings, and no per-point alpha_s
+    or scale calls: those set before the generation hold), linked
     with ``link`` (``library_path``) as the linker's search path for the
     libraries Recola's own need (before their RUNPATH)."""
 
@@ -433,16 +479,32 @@ def _recola_driver(run: Path, recola_tree: Path, link: list[Path]) -> Path:
     patches = (
         (
             "  integer :: stored_nf = -1\n",
-            "  integer :: stored_nf = -1\n  integer :: irpoles = 1\n",
+            "  integer :: stored_nf = -1\n  integer :: irpoles = 1\n"
+            "  integer :: dynamic = 1\n",
         ),
         (
             "    case ('cache')",
             "    case ('irpoles')\n      read(line, *) keyword, irpoles\n"
+            "    case ('dynamic')\n      read(line, *) keyword, dynamic\n"
             "    case ('cache')",
         ),
         (
             "      call set_compute_ir_poles_rcl(1)",
             "      call set_compute_ir_poles_rcl(irpoles)",
+        ),
+        (
+            "      call set_dynamic_settings_rcl(1)",
+            "      call set_dynamic_settings_rcl(dynamic)",
+        ),
+        (
+            "    call set_alphas_rcl(stored_alpha_s, scales(i), stored_nf)\n"
+            "    call set_mu_uv_rcl(scales(i))\n"
+            "    call set_mu_ir_rcl(scales(i))\n",
+            "    if (dynamic == 1) then\n"
+            "      call set_alphas_rcl(stored_alpha_s, scales(i), stored_nf)\n"
+            "      call set_mu_uv_rcl(scales(i))\n"
+            "      call set_mu_ir_rcl(scales(i))\n"
+            "    end if\n",
         ),
         (
             "    call get_squared_amplitude_rcl(1, pow_nlo, 'NLO-IR1', result(3))\n"
@@ -484,8 +546,54 @@ def _recola_driver(run: Path, recola_tree: Path, link: list[Path]) -> Path:
     return binary
 
 
+def cmake_build(tree: Path, root: Path, target: str) -> dict[str, Any] | None:
+    """The CMake build of ``tree`` among the reference root's builds (a
+    ``CMakeCache.txt`` below ``root/builds`` whose source directory is
+    ``tree``): its build type and the Fortran flags of ``target``; None when
+    no such build is found."""
+
+    for cache in sorted(
+        [*root.glob("builds/*/CMakeCache.txt"), *root.glob("builds/*/*/CMakeCache.txt")]
+    ):
+        entries = {}
+        for line in cache.read_text().splitlines():
+            if line.startswith(("//", "#")) or "=" not in line:
+                continue
+            name, value = line.split("=", 1)
+            entries[name.split(":", 1)[0]] = value
+        home = entries.get("CMAKE_HOME_DIRECTORY")
+        if home is None or Path(home).resolve() != tree.resolve():
+            continue
+        flags = sorted(cache.parent.glob(f"**/CMakeFiles/{target}.dir/flags.make"))
+        fortran, per_source = None, set()
+        for line in flags[0].read_text().splitlines() if flags else ():
+            if line.startswith("Fortran_FLAGS"):
+                # Without the module output directory (-J<dir>): a path.
+                fortran = " ".join(
+                    flag
+                    for flag in line.split("=", 1)[1].split()
+                    if not flag.startswith("-J")
+                )
+            elif line.startswith("# Custom flags:") and "=" in line:
+                per_source.add(line.split("=", 1)[1].strip())
+        return {
+            "build_dir": str(cache.parent.relative_to(root)),
+            "build_type": entries.get("CMAKE_BUILD_TYPE") or "(none)",
+            "fortran_flags": fortran,
+            # Recola's and its model file's CMakeLists set the optimisation
+            # per source file (-O2 unless the build type is Debug).
+            "source_flags": sorted(per_source),
+        }
+    return None
+
+
 def recola(
-    spec: dict, points: dict, work: Path, cpu: int, trees: Trees
+    spec: dict,
+    points: dict,
+    work: Path,
+    cpu: int,
+    trees: Trees,
+    protocol: str = "production",
 ) -> dict[str, Any]:
     references = _references()
     recola_tree = trees.recola
@@ -523,6 +631,8 @@ def recola(
             else references.recola_commands(spec, points, not cache["on"])
         )
         commands.insert(commands.index("generate"), "irpoles 0")
+        if protocol == "optimistic":
+            commands.insert(commands.index("generate"), "dynamic 0")
         count = len(points["points"])
         lines = [*commands, f"points {count}", *references.point_lines(points)]
         stdin = "\n".join(lines) + "\n"
@@ -530,11 +640,31 @@ def recola(
             [str(binary)], stdin, run, run / "output.log", cpu
         )
     rows, extra = references.parse_rows(stdout, "recola", count)
+    build = {
+        name: cmake_build(tree, root, target)
+        for name, tree, target in (
+            ("librecola.so", recola_tree, "recola"),
+            (
+                "libmodelfile.so",
+                Path(linked.get("libmodelfile.so", {}).get("path", ".")).parent,
+                "modelfile",
+            ),
+        )
+        if name in linked
+    }
     return {
         "provider": "recola",
-        "mode": "production: compute_ir_poles 0, Collier global cache "
+        "protocol": protocol,
+        "mode": (
+            "most optimistic: dynamic_settings 0 (alpha_s and the scales set "
+            "before the generation, outside the timer), compute_ir_poles 0, "
+            if protocol == "optimistic"
+            else "production: compute_ir_poles 0, "
+        )
+        + "Collier global cache "
         + ("on" if cache["on"] else "off")
         + f" ({cache['reason']})",
+        "build": build,
         "version": "Recola2 (tree "
         + recola_tree.name
         + ") / "
@@ -636,14 +766,23 @@ def madloop(
     rows, extra = references.parse_rows(stdout, "madloop", count)
     return {
         "provider": "madloop",
+        "protocol": (
+            "optimistic"
+            if settings["MadLoopParams"].get("CTModeRun") == "1"
+            else "production"
+        ),
         "loop_induced": bool(spec.get("loop_induced")),
         "mode": (
             "loop-induced, the export's card (warm-up past the initialisation), "
             if spec.get("loop_induced")
             else ""
         )
-        + "production: MLStabThres and the default stability test, MG5 "
-        "production Fortran flags, COLLIERGlobalCache "
+        + (
+            "most optimistic: no stability test (CTModeRun 1), MG5 "
+            if settings["MadLoopParams"].get("CTModeRun") == "1"
+            else "production: MLStabThres and the default stability test, MG5 "
+        )
+        + "production Fortran flags, COLLIERGlobalCache "
         + ("as in production" if cache["on"] else "0")
         + f" ({cache['reason']})",
         "version": "MadLoop/MG5_aMC 3.7.0",
@@ -1110,6 +1249,7 @@ def imported(spec: dict, provider: str, trees: Trees) -> dict[str, Any]:
     ]
     out = {
         "provider": provider,
+        "protocol": "production",
         "mode": mode,
         "protocol_mode": protocol,
         "version": data.get("version"),
@@ -1157,8 +1297,16 @@ def main(options: Any) -> int:
         "2..n, 1 timed one by one with the driver's own timer",
         "providers": {},
     }
+    protocol = getattr(options, "protocol", "production")
+    if protocol == "optimistic" and not spec.get("loop_induced"):
+        raise SystemExit(
+            f"{key}: the most optimistic protocol is defined for loop-induced rows "
+            "(their finite part does not depend on the scales Recola then keeps "
+            "from its generation)"
+        )
     if options.json and options.json.exists():
         record = json.loads(options.json.read_text())
+    record["protocol"] = protocol
     trees = Trees(options)
     for provider in options.providers:
         start = time.perf_counter()
@@ -1171,9 +1319,9 @@ def main(options: Any) -> int:
             elif reason is not None:
                 result = {"provider": provider, "unavailable": reason}
             elif provider == "openloops":
-                result = openloops(spec, points, work, options.cpu, trees)
+                result = openloops(spec, points, work, options.cpu, trees, protocol)
             elif provider == "recola":
-                result = recola(spec, points, work, options.cpu, trees)
+                result = recola(spec, points, work, options.cpu, trees, protocol)
             else:
                 export = trees.madloop_export(spec, options.madloop_export)
                 if export is None:
@@ -1182,6 +1330,8 @@ def main(options: Any) -> int:
                     item.split("=", 1)
                     for item in getattr(options, "madloop_param", None) or ()
                 )
+                if protocol == "optimistic":
+                    params = optimistic_params(params)
                 result = madloop(
                     spec, points, work, options.cpu, export, trees, params or None
                 )

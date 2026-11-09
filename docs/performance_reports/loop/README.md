@@ -45,8 +45,12 @@ The table rules:
   OpenLoops' and Recola's): pass or fail when the whole uncertainty band lies
   on one side of 1, else open; taken at B = 128 only (user 2026-10-28);
   below 5 ms per point not gated (user 2026-10-24); 2 → 2 not gated;
-- Table 2: the default backend TIRust, NinjaRS per amplitude labelled where TIR
-  does not serve the row yet; generation is the full production `generate`
+- Table 2: the B = 128 record the backend `auto` serves (NinjaRS per amplitude
+  in this release, labelled, with the runtime's reason; slice-status DECISIONS
+  2026-11-07 21:50 R9 and 2026-11-08 11:17), TIRust beside it with its served
+  fraction and the recorded causes of its failed points; the gate chip is
+  `lit-perf`'s verdict on TIRust (the gated backend), "no verdict (gap)" where
+  TIRust failed points closed; generation is the full production `generate`
   cost, the mandatory generation-time probes included (their share shown);
   rows of four legs or fewer reported without a gate; *pending* where the serving package has not landed or the input file
   does not exist yet, *not run* for a landed package without a record.
@@ -107,12 +111,16 @@ no time, no `effective`), `host`, `generation` `{seconds` (generate + the exact 
 plan export), `probes_seconds` (the generation-time probes), `peak_gib` (over
 all of them), `plan_mb}`; the cell is their sum, a record without
 `probes_seconds` is "not recorded"), `source`, optional `native_build`,
-`native_digest` (the provenance line) and, from `lit-perf` on, `gate`); the
+`native_digest` (the provenance line) and, from `lit-perf` on, the gate
+tool's fields: `date`, `core`, `blocks`, `stages_per_point`, `served_points`
+(a failed call's time on its served points), `tir_counts_last_block` and
+`gate` `{status, ratio_to_limit, band, ...}`, written by `python -m
+tools.loop_benchmark gate --li-timing`); the
 providers' production timing records the manifest names (below
 `tests/fixtures/loop/`, MadLoop at its loop-induced card `MLReductionLib
 7|6|1` only, their `host` in the provenance line; a provider whose record
-has `values_excluded` is shown with its match open, `lit-perf`'s call, and
-the multiplier to the fastest other provider beside the cell); `data/lit.json`
+has `values_excluded` is timed and shown but no matched provider: never the
+fastest matched one or a limit, the multiplier to it beside the cell); `data/lit.json`
 (`lit-val`'s validation figures). An absent file reads as pending. The cell
 takes the newest revision's B = 128 record of the backend `auto` serves
 (records without a request: the default backend first), never one with failed
