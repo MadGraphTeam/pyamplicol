@@ -79,7 +79,11 @@ SETTINGS = {
         "pinned": "taskset -c <one idle core>",
     },
 }
-STAGES = ("trees + CT kets", "dressing", "scatter", "reduction")
+# The harness record's name of the loop-induced native "trees" stage (the
+# trees and the counterterm kets of the amplitude basis, pyamplicol_v2.py
+# INDUCED_TREES); the stage groups are pyAmpliCol's own
+# (``pyamplicol.runtime.virtual.profile_stages``, ``pyamplicol profile``).
+INDUCED_TREES = "trees + CT kets"
 LABEL = "instrumented run: stage shares, not the timed call"
 
 
@@ -949,14 +953,31 @@ def _stage_split(stages: dict[str, Any] | None, backend: str) -> dict[str, Any] 
     size = max(entry["batches"], key=int)
     summary = entry["batches"][size]
     per = summary.get("stages_per_point") or {}
-    main = {name: per.get(name, 0.0) for name in STAGES}
     total = summary["median_seconds_per_point"]
-    main["rest"] = max(total - sum(main.values()), 0.0)
+    main = _stage_groups(per, total)
     return {
         "label": LABEL,
         "batch": int(size),
         "seconds_per_point": main,
         "total": total,
+    }
+
+
+def _stage_groups(per: dict[str, float], total: float) -> dict[str, float]:
+    """A loop-induced call's ``total`` seconds per point split into
+    pyAmpliCol's stage groups (``runtime.virtual.profile_stages``: trees,
+    dressing, scatter, reduction, rest) from the harness record's stages
+    ``per``, under the record's names (the trees group as ``INDUCED_TREES``)."""
+
+    from pyamplicol.runtime.virtual import PROFILE_TREES, profile_stages
+
+    native = {
+        (PROFILE_TREES if name == INDUCED_TREES else name): value
+        for name, value in per.items()
+    }
+    return {
+        (INDUCED_TREES if group == PROFILE_TREES else group): value
+        for group, value in profile_stages(native, total, "loop-induced").items()
     }
 
 
