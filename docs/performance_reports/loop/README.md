@@ -225,4 +225,5 @@ rules unchanged, `stages` of the instrumented run, `generation`, `tir_counts`
 from a counters-only read outside the timed calls, `auto_pairing`), then the
 summaries and the PDF. The builder takes an unchecked record's paired
 providers as the row's provider times. Runtime: the rows run in parallel,
-the longest (`li_gg_hggg`) about 2.5 h; memory below 20 GiB per row.
+the longest (`li_gg_hggg`, 2 rounds) about 2 h; memory up to ~30 GiB per row (`li_gg_hggg`, six runtimes in one
+process).

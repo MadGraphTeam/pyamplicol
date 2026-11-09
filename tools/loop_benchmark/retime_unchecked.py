@@ -692,9 +692,11 @@ def _record(
     failed = outcome["failed_points"]
     batch = found["batch"]
     causes: dict[str, int] = {}
-    for details in outcome["failures"].values():
-        cause = details[0] if details else "no detail"
+    failures: dict[str, str] = {}
+    for point, details in outcome["failures"].items():
+        cause, where = _cause(details[0] if details else "no detail")
         causes[cause] = causes.get(cause, 0) + 1
+        failures[point] = f"{cause}{where}"
     record: dict[str, Any] = {
         "key": meta["key"],
         "process": process,
@@ -742,7 +744,7 @@ def _record(
         }
     if failed:
         record["whole_call_seconds_per_point"] = cell["median"]
-        record["failures"] = outcome["failures"]
+        record["failures"] = failures
         record["failure_causes"] = causes
     else:
         record["seconds_per_point"] = cell["median"]
@@ -762,6 +764,22 @@ def _record(
                 "ratio_to_tirust": found["cells"]["auto"]["median"] / cell["median"],
             }
     return record
+
+
+def _cause(detail: str) -> tuple[str, str]:
+    """A failed point's cause class and where (compact): the lane statuses
+    of a per-lane detail ("family F lane LaneKey {...}: Status; ..."), with
+    the families and the lane count, else the detail's first line."""
+
+    lanes = re.findall(r"family (\d+) lane LaneKey \{[^}]*\}: (\w+)", detail)
+    if not lanes:
+        return detail.splitlines()[0][:200], ""
+    statuses = sorted({status for _family, status in lanes})
+    families = sorted({int(family) for family, _status in lanes})
+    return (
+        f"lane status {', '.join(statuses)}",
+        f" ({len(lanes)} lanes; families {', '.join(map(str, families))})",
+    )
 
 
 # The replication command a user runs (README: the unchecked Table 2).
