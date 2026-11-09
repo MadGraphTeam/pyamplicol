@@ -1110,7 +1110,13 @@ def build(
             elif record["accuracy"] != "full":
                 # Providers time full colour: LC/NLC carry no ratio.
                 ungated = "no gate (colour approximation)"
-            effective = (record.get("reduction") or {}).get("effective")
+            # A loop-induced configuration carries its resolved request (a
+            # dict); a Born-interfered run names its one explicit backend (a
+            # string, pyamplicol_v2.main since lit-tir).
+            reduction = record.get("reduction")
+            effective = (
+                reduction.get("effective") if isinstance(reduction, dict) else reduction
+            )
             if induced_row:
                 # Only the blocks that had their core (``valid_blocks``).
                 record["batches"] = {
