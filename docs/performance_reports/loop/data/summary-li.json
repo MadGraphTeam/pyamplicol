@@ -1144,7 +1144,7 @@
       "paired": true
      },
      "validation": {
-      "status": "partial",
+      "status": "pass",
       "references": [
        {
         "key": "openloops",
@@ -1163,7 +1163,7 @@
        }
       ],
       "points": 3,
-      "note": "LI-24 lambda_hhh scan: not run: the campaign model (loop_qcd_qed_sm = MG5 loop_sm) has no external trilinear coupling (lam = MH^2/(2 v^2) is internal), so lambda_hhh cannot be scanned alone; no model with an independent kappa_lambda is in tools/loop_reference/li_campaign.json. The triangle-box cancellation and the threshold are li_gg_hh's runs and its stress points",
+      "note": "LI-24 lambda_hhh scan: not applicable (USER 2026-11-09 ~08:42): the SM models' trilinear lam = MH^2/(2 v^2) is internal and cannot be scaled independently; the triangle-box cancellation and the threshold are li_gg_hh's runs and its stress points",
       "source": "lit.json rows[gg_hh]"
      },
      "generation": {

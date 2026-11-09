@@ -1016,19 +1016,27 @@ def _symbolica() -> str | None:
     return f"symbolica {getattr(symbolica, '__version__', '?')} ({where})"
 
 
-def _engine_slice(revision: str) -> str:
-    """The integration-branch commit a record's revision builds on (its
-    merge base with work/v2-slice: the engine it ran, this package changing
-    no engine code), else the revision itself."""
+_SLICE_LINE: list[set[str]] = []
 
-    base = subprocess.run(
-        ["git", "merge-base", revision, "work/v2-slice"],
-        cwd=WT,
-        capture_output=True,
-        text=True,
-        check=False,
-    ).stdout.strip()
-    return (base or revision)[:9]
+
+def _engine_slice(revision: str) -> str:
+    """The integration-branch commit a record's revision builds on: the
+    newest commit of work/v2-slice's first-parent line among the
+    revision's ancestors (the engine it ran, this package changing no engine
+    code; unlike a merge base it stays the same after the package's own
+    integration), else the revision itself."""
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=WT, capture_output=True, text=True, check=False
+        ).stdout
+
+    if not _SLICE_LINE:
+        _SLICE_LINE.append(set(git("rev-list", "--first-parent", "work/v2-slice").split()))
+    for commit in git("rev-list", revision).split():
+        if commit in _SLICE_LINE[0]:
+            return commit[:9]
+    return revision[:9]
 
 
 def provenance(records: dict[str, dict]) -> dict:
@@ -1049,7 +1057,12 @@ def provenance(records: dict[str, dict]) -> dict:
         for revision in revisions - {None, ""}:
             key = _engine_slice(revision)
             out["engine_slice"][key] = out["engine_slice"].get(key, 0) + 1
-        native = (record.get("native") or {}).get("build") or "not recorded"
+        native = (record.get("native") or {}).get("build")
+        if native is None and record.get("revision"):
+            # A record of the format before it named its native: the engine
+            # slice it ran (the campaign source names that slice's native).
+            native = f"engine slice {_engine_slice(record['revision'])} (native not recorded by the record)"
+        native = native or "not recorded"
         out["native"][native] = out["native"].get(native, 0) + 1
         python = record.get("python_symbolica") or "not recorded"
         out["python_symbolica"][python] = out["python_symbolica"].get(python, 0) + 1
@@ -3396,9 +3409,12 @@ RULED = (
     "rescaled re-test deviation) + FLOOR_UNITS u |lane| (stability.StabilityEstimate), "
     "per Laurent coefficient through backends._compare"
 )
-# §4.1 LI-27's numerical f^abc check and the §4.1 checks not run (SPEC).
+# §4.1 LI-27's numerical f^abc check, the §4.1 checks not run and those a user
+# ruling makes not applicable (SPEC; e.g. LI-24's lambda_hhh scan, USER
+# 2026-11-09 ~08:42).
 COLOUR = _load(SPEC)["colour_checks"]
 UNRUN = _load(SPEC)["unrun_checks"]
+NOT_APPLICABLE = _load(SPEC).get("not_applicable_checks", {})
 
 
 def lanes_module(path: Path) -> Any:
@@ -4382,6 +4398,20 @@ def lit(
         for key, row_ids in ids_of.items():
             if i in row_ids and key in rows:
                 rows[key]["status"] = _worst([rows[key]["status"], "partial"])
+                rows[key]["note"] = "; ".join(
+                    [
+                        *([rows[key]["note"]] if rows[key].get("note") else []),
+                        *(f"{i} {check}: {why}" for check, why in checks.items()),
+                    ]
+                )
+    for i, checks in NOT_APPLICABLE.items():
+        if not i.startswith("LI-"):
+            continue
+        # a §4.1 check a user ruling makes not applicable: recorded with the
+        # ruling on its id and rows, their status unchanged
+        ids.setdefault(i, {})["not_applicable"] = checks
+        for key, row_ids in ids_of.items():
+            if i in row_ids and key in rows:
                 rows[key]["note"] = "; ".join(
                     [
                         *([rows[key]["note"]] if rows[key].get("note") else []),

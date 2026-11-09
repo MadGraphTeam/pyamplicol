@@ -28,8 +28,8 @@
    "status": "pass"
   },
   "LI-24": {
-   "not_run": {
-    "lambda_hhh scan": "not run: the campaign model (loop_qcd_qed_sm = MG5 loop_sm) has no external trilinear coupling (lam = MH^2/(2 v^2) is internal), so lambda_hhh cannot be scanned alone; no model with an independent kappa_lambda is in tools/loop_reference/li_campaign.json. The triangle-box cancellation and the threshold are li_gg_hh's runs and its stress points"
+   "not_applicable": {
+    "lambda_hhh scan": "not applicable (USER 2026-11-09 ~08:42): the SM models' trilinear lam = MH^2/(2 v^2) is internal and cannot be scaled independently; the triangle-box cancellation and the threshold are li_gg_hh's runs and its stress points"
    },
    "runs": {
     "li_gg_hh": {
@@ -37,7 +37,7 @@
      "status": "pass"
     }
    },
-   "status": "partial"
+   "status": "pass"
   },
   "LI-25": {
    "runs": {
@@ -27396,8 +27396,9 @@
    "f1e8c98e5": 67
   },
   "native": {
-   "loop-native-v2-slice-e852f448": 5,
-   "not recorded": 62
+   "engine slice cc99c9480 (native not recorded by the record)": 2,
+   "engine slice e852f448b (native not recorded by the record)": 60,
+   "loop-native-v2-slice-e852f448": 5
   },
   "python_symbolica": {
    "not recorded": 67
@@ -31278,7 +31279,7 @@
    "waits_on": []
   },
   "gg_hh": {
-   "note": "LI-24 lambda_hhh scan: not run: the campaign model (loop_qcd_qed_sm = MG5 loop_sm) has no external trilinear coupling (lam = MH^2/(2 v^2) is internal), so lambda_hhh cannot be scanned alone; no model with an independent kappa_lambda is in tools/loop_reference/li_campaign.json. The triangle-box cancellation and the threshold are li_gg_hh's runs and its stress points",
+   "note": "LI-24 lambda_hhh scan: not applicable (USER 2026-11-09 ~08:42): the SM models' trilinear lam = MH^2/(2 v^2) is internal and cannot be scaled independently; the triangle-box cancellation and the threshold are li_gg_hh's runs and its stress points",
    "points": 3,
    "references": {
     "madloop": 1.5543863730865184e-13,
@@ -31556,7 +31557,7 @@
     }
    },
    "source": "lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS binary64 bitwise across the three natives, N0; NinjaRS double-double values of loop-induced rows vary with the process history at ~1e-31 relative), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json; LI-L1 TIRust arms (identity-tirust) and LI-27 (fabc) at loop-native-v2-slice-f4d75a56 (the TIRust binary64 fixture arm bitwise the record's on every run); Fig. 7 matched a with the calibration tool's RAMBO, b with the previous RAMBO of 5cca8136 (the same construction, points equal to rounding); LI-B1 campaign rows (born-l6) at loop-native-v2-slice-e80d31e4, every row whose binary64 screen flags a lane (beyond 10x the reduction-direction re-test or >= 1e-5 relative: 106 rows) re-run with the L6 estimate stage at loop-native-v2-slice-f4d75a56 (lit-cache: store off by default, TIRust and NinjaRS bitwise vs e80d31e4 per its report; each record names its native and lit-tir's li_b1.py sha256), Python Symbolica Community dfe6bd97, records workspace/tmp/lit-val/born/out-r3/<campaign>-<row>.json (fix round 2 records born/out, the re-run ones born/out3); LI-A7 / LI-A1 heavy-top scans (runs/limits.json) re-run at loop-native-v2-slice-f4d75a56 with the HEFT trees at the loop run's colour accuracy (full; lit-heft fda43a16), the first scan's leading-colour trees kept in runs/limits-r2.json",
-   "status": "partial",
+   "status": "pass",
    "waits_on": []
   },
   "gg_hhgg": {
