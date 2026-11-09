@@ -388,15 +388,19 @@
   }
 }
 
-// Full-colour column.
+// Full-colour column. ᵖ: a production timing beside providers re-timed in
+// their most optimistic settings (m-lit F4, lit-report G5; summary.json
+// meta.provider_protocols and each provider's protocol).
+#let t1-optimistic = "optimistic" in S.meta.at("provider_protocols", default: ())
+#let t1-mark(x) = if t1-optimistic and x.at("protocol", default: "production") == "production" [#super[p]]
 #let t1-fc(r) = {
   let c = r.full_colour
   let (m, f) = (c.main, c.at("fastest", default: none))
   let prov-line = if f == none { none } else {
-    let rest = c.providers.pairs().filter(((k, x)) => k != f.key and "seconds_per_point" in x).sorted(key: ((k, x)) => x.seconds_per_point).map(((k, x)) => [#pkey(k) #dur(x.seconds_per_point)])
+    let rest = c.providers.pairs().filter(((k, x)) => k != f.key and "seconds_per_point" in x).sorted(key: ((k, x)) => x.seconds_per_point).map(((k, x)) => [#pkey(k) #dur(x.seconds_per_point)#t1-mark(x)])
     let gone = c.providers.pairs().filter(((k, x)) => x.status == "unavailable" and k != f.key).map(((k, x)) => if "outside_protocol" in x [#pkey(k) #dur(x.outside_protocol.seconds_per_point) outside protocol] else if k == "openloops" [#pkey(k) no library] else [#pkey(k) no production timing])
     let nr = c.providers.pairs().filter(((k, x)) => x.status == "not run").map(((k, x)) => [#pkey(k) not exported])
-    let best = if f.at("bound", default: none) == "upper" [#pkey(f.key) ≤#dur(f.seconds_per_point)] else [#pkey(f.key) #dur(f.seconds_per_point)]
+    let best = if f.at("bound", default: none) == "upper" [#pkey(f.key) ≤#dur(f.seconds_per_point)] else [#pkey(f.key) #dur(f.seconds_per_point)#t1-mark(c.providers.at(f.key))]
     ((text(weight: "bold", best),) + rest + gone + nr).join([~· ])
   }
   // Rows without a G1 record: the providers' production references (text
@@ -1051,8 +1055,14 @@ among the provider values).#if bound-rows.len() > 0 [ A provider time marked ≤
 ×1/16 and ×16). Generation multipliers are uncoloured (generation time is not the main metric) and leading colour (LC)
 has no provider ratio. Grey cells say why a value is missing. Run times are medians per phase-space point at
 $B = 128$, finite part, binary64, one pinned thread, stability checks off; generation is generate + plan export (model
-loading excluded) with its peak memory and plan size. The providers run in production mode: MadLoop 3.7.0 (ML),
-Recola 2.2.5 with COLLIER (Rc), OpenLoops 2.1.5 from prebuilt libraries (OL: no generation time). Each cell shows the
+loading excluded) with its peak memory and plan size.#if t1-optimistic [ The providers run in their most optimistic
+settings (m-lit F4; `tools/loop_benchmark providers --protocol optimistic`), timed on pyAmpliCol's core: MadLoop 3.7.0
+(ML) without its stability test (`CTModeRun 1`), Recola 2.2.5 with COLLIER (Rc) without dynamic settings (alpha_s and
+the scale set before its generation, outside the timer, so it times the stream points at the first point's $mu_R$),
+`compute_ir_poles 0`, release build, OpenLoops 2.1.5 from prebuilt libraries (OL: no generation time) with its
+stability system and I-operator poles off; each optimistic value equals the provider's production value at the timed
+points. A provider time marked #super[p] is its production record, not re-timed (#S.meta.at("provider_kept", default: "no reason recorded")).] else [ The providers run in production mode: MadLoop 3.7.0 (ML),
+Recola 2.2.5 with COLLIER (Rc), OpenLoops 2.1.5 from prebuilt libraries (OL: no generation time).] Each cell shows the
 most recent measured configuration (`scripts/build_summary.py`, by git ancestry of the revisions), named once in the
 table's first row (engine, native build and digest, date, host); a cell from another configuration names its origin.#if no-ratio-rows.len() > 0 [ A newer development record's generation in a G1 row has no multiplier (its provider generation is G1's).]
 

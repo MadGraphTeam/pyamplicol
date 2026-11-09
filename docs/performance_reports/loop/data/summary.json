@@ -229,6 +229,9 @@
     }
    ]
   },
+  "provider_protocols": [
+   "production"
+  ],
   "report": {
    "date": "2026-11-08",
    "head": "ecc80899",
@@ -383,19 +386,22 @@
         "status": "measured",
         "seconds_per_point": 0.002021657,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 0.0100246345,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "mode": "production: compute_ir_poles 0, Collier global cache on",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
         "seconds_per_point": 0.003200296,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "protocol": "production",
         "library": "ppjj"
        }
       },
@@ -602,19 +608,22 @@
         "status": "measured",
         "seconds_per_point": 0.0031719975,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 0.0031816020000000004,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "mode": "production: compute_ir_poles 0, Collier global cache on",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
         "seconds_per_point": 0.0015153435,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "protocol": "production",
         "library": "ppjjj"
        }
       },
@@ -816,19 +825,22 @@
         "status": "measured",
         "seconds_per_point": 0.008589745,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 0.005549573,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "mode": "production: compute_ir_poles 0, Collier global cache on",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
         "seconds_per_point": 0.002923722,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "protocol": "production",
         "library": "ppjjj"
        }
       },
@@ -1002,13 +1014,15 @@
         "status": "measured",
         "seconds_per_point": 0.000947682,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 0.0010836225,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "mode": "production: compute_ir_poles 0, Collier global cache on",
+        "protocol": "production"
        },
        "openloops": {
         "status": "unavailable",
@@ -1213,19 +1227,22 @@
         "status": "measured",
         "seconds_per_point": 0.028201326999999998,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 0.025324977,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "mode": "production: compute_ir_poles 0, Collier global cache on",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
         "seconds_per_point": 0.0123865575,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "protocol": "production",
         "library": "ppjjj"
        }
       },
@@ -1413,19 +1430,22 @@
         "status": "measured",
         "seconds_per_point": 0.247035011,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 0.35100113349999995,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "mode": "production: compute_ir_poles 0, Collier global cache on",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
         "seconds_per_point": 0.0969689785,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "protocol": "production",
         "library": "ppjjj"
        }
       },
@@ -1612,13 +1632,15 @@
         "status": "measured",
         "seconds_per_point": 0.027294375,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 0.010229539,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "mode": "production: compute_ir_poles 0, Collier global cache on",
+        "protocol": "production"
        },
        "openloops": {
         "status": "unavailable",
@@ -1824,19 +1846,22 @@
         "status": "measured",
         "seconds_per_point": 5.445641895,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 1.967374655,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "mode": "production: compute_ir_poles 0, Collier global cache on",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
         "seconds_per_point": 0.471792485,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "protocol": "production",
         "library": "ppttjj"
        }
       },
@@ -2019,13 +2044,15 @@
         "status": "measured",
         "seconds_per_point": 0.90834764,
         "points": 8,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "mode": "production: compute_ir_poles 0, Collier global cache on",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
         "seconds_per_point": 0.37381826949999997,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "protocol": "production",
         "library": "ppjjjj"
        }
       },
@@ -2229,19 +2256,22 @@
         "status": "measured",
         "seconds_per_point": 38.66037815,
         "points": 8,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 17.644638,
         "points": 8,
-        "mode": "production: compute_ir_poles 0, Collier global cache on"
+        "mode": "production: compute_ir_poles 0, Collier global cache on",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
         "seconds_per_point": 2.84079326,
         "points": 8,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "protocol": "production",
         "library": "ppjjjj"
        }
       },
@@ -2446,19 +2476,22 @@
         "status": "measured",
         "seconds_per_point": 0.13206965799999998,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 0.0353196005,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
+        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
         "seconds_per_point": 0.0509826425,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "protocol": "production",
         "library": "pplljjj"
        }
       },
@@ -2666,19 +2699,22 @@
         "status": "measured",
         "seconds_per_point": 1.417189965,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 0.2507888745,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
+        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
         "seconds_per_point": 0.3456512245,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "protocol": "production",
         "library": "pplljjj"
        }
       },
@@ -2886,19 +2922,22 @@
         "status": "measured",
         "seconds_per_point": 3.03517586,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 0.620191463,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
+        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
         "seconds_per_point": 0.40369187250000005,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "protocol": "production",
         "library": "ppllttj"
        }
       },
@@ -3081,19 +3120,22 @@
         "status": "measured",
         "seconds_per_point": 7.070939095,
         "points": 16,
-        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)"
+        "mode": "production: MLStabThres and the default stability test, MG5 production Fortran flags, COLLIERGlobalCache 0 (COLLIER 1.2.9 global cache defect at N = 7)",
+        "protocol": "production"
        },
        "recola": {
         "status": "measured",
         "seconds_per_point": 0.986733744,
         "points": 16,
-        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)"
+        "mode": "production: compute_ir_poles 0, Collier global cache on (COLLIER 1.2.8 has no N = 7 cache defect)",
+        "protocol": "production"
        },
        "openloops": {
         "status": "measured",
         "seconds_per_point": 1.40479684,
         "points": 16,
         "mode": "production: truepoles 0 (Collier cache, I-operator poles, default stability)",
+        "protocol": "production",
         "library": "ppllttj_ew"
        }
       },
@@ -3281,7 +3323,8 @@
         "status": "measured",
         "seconds_per_point": 569.079265,
         "points": 3,
-        "mode": "reference campaign: MadLoop MLStabThres (production setting), MadLoop default (CTModeRun=-1 after initialization), production build True"
+        "mode": "reference campaign: MadLoop MLStabThres (production setting), MadLoop default (CTModeRun=-1 after initialization), production build True",
+        "protocol": "production"
        },
        "recola": {
         "status": "unavailable",

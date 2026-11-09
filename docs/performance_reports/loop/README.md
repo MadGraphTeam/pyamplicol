@@ -37,7 +37,10 @@ The table rules:
 - large coloured cells per process, grouped by multiplicity; the cell value is
   the batched B = 128 median per point (finite part, binary64, one pinned
   thread, checks off) with its multiplier against the fastest matched provider
-  (production mode), coloured green (faster) → white → red (slower) on a log₂
+  (each provider in the settings its record names: the most optimistic ones of
+  m-lit F4 where re-timed so, a production record marked ᵖ beside them, with
+  the reason in `g1.json` `provider_kept`), coloured green (faster) → white →
+  red (slower) on a log₂
   scale clamped at ×1/16 and ×16; every coloured cell prints its multiplier;
 - generation time and memory uncoloured (the multiplier as text), leading
   colour without a provider ratio;
@@ -158,7 +161,7 @@ request, backend, batch and revision.
 | File | Content | Printed |
 |---|---|---|
 | `summary.json`, `summary-li.json` | the report's data (above) | yes |
-| `g1.json`, `g1-values.json` | the G1 campaign: providers' production-mode times, pyAmpliCol configurations per batch with stages, uncertainty and gate verdicts, value comparisons, stability rows (`python -m tools.loop_benchmark gate`); the per-point values behind it | through `summary.json` (newest configuration only) |
+| `g1.json`, `g1-values.json` | the G1 campaign: providers' times (each with its `protocol`), pyAmpliCol configurations per batch with stages, uncertainty and gate verdicts, value comparisons, stability rows (`python -m tools.loop_benchmark gate`); the per-point values behind it | through `summary.json` (newest configuration only) |
 | `msm-g1.json`, `msm-g1-values.json` | the electroweak G1 row, the same gate tool; joined to `g1.json`'s integrated configuration when both timed the same engine | through `summary.json` |
 | `milestone.json` | hand-maintained registry, each block with its `source`: engine revision and native build, `ancestry`, `development`, `gate_decisions` (user decisions, `gate_batch`, `threshold_rule`), `validation_decisions`, `status_notes`, `pending`, `cell_notes`, `loop_induced` | through the summaries |
 | `backends-born.json` | Table 3's Born-interfered rows: TIRust and NinjaRS through the public API with `reduction_unchecked = True` on Table 1's 2 → 3 / 2 → 4 rows (time, stages, the largest TIRust-vs-NinjaRS difference at the timed points), written by `lit-report`'s final re-time; absent: those cells print "not timed" | through `summary-li.json` |

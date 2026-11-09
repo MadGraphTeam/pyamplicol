@@ -501,6 +501,10 @@ def _provider_runtime(proc: dict) -> dict:
                 "seconds_per_point": rec["median_seconds_per_point"],
                 "points": rec["points"],
                 "mode": rec["mode"],
+                # The settings of the timing (providers.py: "optimistic" =
+                # m-lit F4's most optimistic settings; a record without
+                # one is a production run).
+                "protocol": rec.get("protocol", "production"),
             }
             if name == "openloops":
                 entry["library"] = rec["library"]["name"]
@@ -3872,6 +3876,24 @@ def build() -> tuple[dict, Recency]:
             "configurations": configurations,
             "gate_decisions": decisions,
             "validation_decisions": ms.get("validation_decisions"),
+            # The settings of the provider timings Table 1 shows (m-lit F4,
+            # lit-report G5: "optimistic" where re-timed so).
+            "provider_protocols": sorted(
+                {
+                    x["protocol"]
+                    for g in groups
+                    for r in g["rows"]
+                    for x in (r["full_colour"].get("providers") or {}).values()
+                    if "protocol" in x
+                }
+            ),
+            # Why a provider kept its production record (g1.json meta label
+            # ``provider_kept``, written with the re-time's gate run).
+            **(
+                {"provider_kept": g1["provider_kept"]}
+                if g1.get("provider_kept")
+                else {}
+            ),
         },
         "groups": groups,
     }
