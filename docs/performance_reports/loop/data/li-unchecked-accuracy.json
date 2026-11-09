@@ -4,7 +4,7 @@
  "native": {
   "a678d177": "loop-native-lit-unchecked-a678d177 (digest 0be1df46)",
   "ecc80899": "loop-native-lit-unchecked-b308254d (digest 0d26af4a)",
-  "3bbfa34c": "loop-native-lit-ninja-planar-3bbfa34c (digest ebe9235e; NinjaRS a1108daf, the box mu-expansion's conditioning bound): the NinjaRS halves"
+  "90059342": "loop-native-lit-ninja-planar-90059342 (digest 52a3c64f; NinjaRS 71eddb15, the box mu-expansion's conditioning bound, decided a posteriori in binary64): the NinjaRS halves"
  },
  "date": "2026-11-08 / 2026-11-09",
  "rows": {
@@ -27,7 +27,7 @@
     "median_relative": 4.1e-13,
     "above_1e-5": [],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_aag": {
@@ -55,7 +55,7 @@
      }
     ],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_agg": {
@@ -83,7 +83,7 @@
      }
     ],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_emepmupmum": {
@@ -105,7 +105,7 @@
     "median_relative": 9.79e-14,
     "above_1e-5": [],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_emepmupmumg": {
@@ -127,7 +127,7 @@
     "median_relative": 1.26e-12,
     "above_1e-5": [],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_hgg": {
@@ -149,7 +149,7 @@
     "median_relative": 8.06e-12,
     "above_1e-5": [],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_hggg": {
@@ -182,7 +182,7 @@
      }
     ],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_hh": {
@@ -204,7 +204,7 @@
     "median_relative": 2.19e-14,
     "above_1e-5": [],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_hhgg": {
@@ -226,7 +226,7 @@
     "median_relative": 2.44e-11,
     "above_1e-5": [],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_hhh": {
@@ -259,7 +259,7 @@
      }
     ],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_hzg": {
@@ -290,7 +290,7 @@
       "class": "MasterFailed"
      }
     ],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_wpwmg": {
@@ -433,7 +433,7 @@
     "median_relative": 3.76e-10,
     "above_1e-5": [],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_zgg": {
@@ -471,7 +471,7 @@
     "median_relative": 1.05e-11,
     "above_1e-5": [],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_zzg": {
@@ -584,7 +584,7 @@
     "median_relative": 3.64e-10,
     "above_1e-5": [],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_gg_zzz": {
@@ -687,7 +687,7 @@
       "class": "Unstable"
      }
     ],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_uux_ddxh": {
@@ -709,7 +709,7 @@
     "median_relative": 8.6e-13,
     "above_1e-5": [],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   },
   "li_uux_hgg": {
@@ -731,7 +731,7 @@
     "median_relative": 7.21e-11,
     "above_1e-5": [],
     "failed": [],
-    "revision": "3bbfa34c"
+    "revision": "90059342"
    }
   }
  }
