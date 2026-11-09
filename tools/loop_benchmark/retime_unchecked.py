@@ -58,7 +58,6 @@ import statistics
 import subprocess
 import sys
 import time
-from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -102,6 +101,79 @@ def timed_rows(checkout: Path) -> list[tuple[str, str]]:
         if match and match.group(1) not in found:
             found[match.group(1)] = record["key"]
     return list(found.items())
+
+
+def registry_key(checkout: Path, process: str) -> str:
+    """The Table 2 registry key (milestone.json loop_induced) of a stream
+    process: the row whose process (or alternative) is the specification's
+    MadLoop process without its loop and order annotations; the process
+    itself when no row matches."""
+
+    sys.path.insert(0, str(ROOT))
+    from tools.loop_benchmark import streams
+
+    text = streams.spec(process)["madloop"]["process"]
+    words = [w for w in re.sub(r"\[[^\]]*\]", " ", text).split() if "=" not in w]
+    wanted = " ".join(words)
+    registry = json.loads(
+        (checkout / "docs/performance_reports/loop/data/milestone.json").read_text()
+    )["loop_induced"]["rows"]
+    for row in registry:
+        if wanted in (row.get("process"), row.get("alternative")):
+            return row["key"]
+    return process
+
+
+def record_keys(checkout: Path, processes: list[str]) -> dict[str, str]:
+    """Each process's record key: lit-perf's timed rows' keys, else the
+    registry's (``registry_key``)."""
+
+    known = dict(timed_rows(checkout))
+    return {p: known.get(p) or registry_key(checkout, p) for p in processes}
+
+
+def host_state(core: int) -> dict[str, Any]:
+    """The host at the moment of a measurement: the load averages, the
+    MemAvailable, and the busy share of ``core`` and of its SMT siblings over
+    one second (``/proc``)."""
+
+    def sample() -> dict[int, tuple[int, int]]:
+        out = {}
+        for line in Path("/proc/stat").read_text().splitlines():
+            if line.startswith("cpu") and line[3:4].isdigit():
+                name, *fields = line.split()
+                values = [int(v) for v in fields]
+                out[int(name[3:])] = (sum(values), values[3] + values[4])
+        return out
+
+    siblings_file = Path(
+        f"/sys/devices/system/cpu/cpu{core}/topology/thread_siblings_list"
+    )
+    group = {core}
+    if siblings_file.is_file():
+        for part in siblings_file.read_text().strip().split(","):
+            lo, _, hi = part.partition("-")
+            group.update(range(int(lo), int(hi or lo) + 1))
+    first = sample()
+    time.sleep(1.0)
+    second = sample()
+
+    def busy(cpu: int) -> float:
+        dt = second[cpu][0] - first[cpu][0]
+        di = second[cpu][1] - first[cpu][1]
+        return round((dt - di) / dt, 3) if dt else 0.0
+
+    memory = {
+        line.split(":")[0]: int(line.split()[1])
+        for line in Path("/proc/meminfo").read_text().splitlines()
+        if line.startswith(("MemAvailable", "MemTotal"))
+    }
+    return {
+        "loadavg": Path("/proc/loadavg").read_text().split()[:3],
+        "mem_available_gib": round(memory["MemAvailable"] / 2**20, 1),
+        "core_busy": busy(core),
+        "siblings_busy": {str(c): busy(c) for c in sorted(group - {core})},
+    }
 
 
 def idle_cores(count: int, exclude: set[int]) -> list[int]:
@@ -216,6 +288,8 @@ def unit_command(options: Any, process: str, core: int) -> list[str]:
         inner.append("--no-providers")
     if not options.stages:
         inner.append("--no-stages")
+    if not options.generation:
+        inner.append("--no-generation")
     log = out / "logs" / f"{process}.log"
     done = out / "logs" / f"{process}.DONE"
     shell = (
@@ -245,7 +319,11 @@ def campaign(options: Any) -> int:
         for part in options.pythonpath.split(":")
     )
     checkout = Path(options.checkout)
-    rows = [(p, p) for p in options.rows] if options.rows else timed_rows(checkout)
+    rows = (
+        list(record_keys(checkout, options.rows).items())
+        if options.rows
+        else timed_rows(checkout)
+    )
     rows = [row for row in rows if row[0] not in set(options.skip or ())]
     cores = (
         list(range(len(rows)))
@@ -310,7 +388,8 @@ def _stream(process: str) -> tuple[list, list]:
     stream = streams.load(process)
     count = len(stream["points"])
     points = streams.binary64(stream, count)
-    scales = [str(Fraction(m) ** 2) for m in stream["mu_r"][:count]]
+    # mu_R^2 as the public API reads it: exact decimal text.
+    scales = streams.mu_r2(stream, count)
     return points, scales
 
 
@@ -357,6 +436,80 @@ def ensure_artifact(options: Any, process: str) -> tuple[Path, dict[str, Any]]:
     }
 
 
+# One public generation in a child process (its own peak RSS): the run card's
+# process through Generator(resolve_config(card)).generate(...) into
+# ``target``, timed around the call; the model and preparation caches are
+# those of PYAMPLICOL_CACHE_DIR (docs/user/configuration.md), set by the
+# caller; generation.loop_induced_probes and SymJIT as shipped (the card's).
+GENERATE = """
+import json, resource, sys, time, tomllib
+from pathlib import Path
+from pyamplicol.api import Generator, ProcessRequest, ProcessSet
+from pyamplicol.config import resolve_config
+card, target = Path(sys.argv[1]), Path(sys.argv[2])
+(entry,) = tomllib.loads(card.read_text())["process"]["entries"]
+begin = time.perf_counter()
+Generator(resolve_config(card)).generate(
+    ProcessSet((ProcessRequest.parse(entry["expression"], name=entry["name"]),)),
+    target,
+)
+seconds = time.perf_counter() - begin
+peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+print(json.dumps({"seconds": seconds, "peak_gib": peak / 2**20}))
+"""
+
+
+def public_generation(options: Any, process: str) -> dict[str, Any]:
+    """The row's generation as a user runs it (lit-ewprep open point (5)):
+    the public Generator from the row's run card, twice in one fresh scratch
+    cache (PYAMPLICOL_CACHE_DIR, the documented setting; never a user's
+    cache): ``cold`` (empty: the model compiled and prepared) and ``warm``
+    (the same cache: the second generation), each in its own child process
+    on this core with its wall time and peak RSS. The scratch cache and the
+    two artifacts are removed afterwards."""
+
+    import shutil
+    import tempfile
+
+    text = (Path(options.cards) / process / "card.toml").read_text()
+    root = Path(tempfile.mkdtemp(prefix=f"gen-{process}-", dir=options.out))
+    out: dict[str, Any] = {
+        "entry_point": "Generator(resolve_config(card)).generate(...) (Python API)",
+        "cache": "PYAMPLICOL_CACHE_DIR=<fresh scratch directory> (model and"
+        " preparation caches; docs/user/configuration.md)",
+        "settings": "the run card's (generation.loop_induced_probes off, SymJIT"
+        " optimization_level as shipped)",
+    }
+    try:
+        for state in ("cold", "warm"):
+            target = root / state / "artifact"
+            card = root / state / "card.toml"
+            card.parent.mkdir(parents=True)
+            card.write_text(
+                re.sub(
+                    r"^output = .*$",
+                    f"output = {json.dumps(str(target))}",
+                    text,
+                    flags=re.M,
+                )
+            )
+            env = {**os.environ, "PYAMPLICOL_CACHE_DIR": str(root / "cache")}
+            done = subprocess.run(
+                [PYTHON, "-c", GENERATE, str(card), str(target)],
+                capture_output=True,
+                text=True,
+                env=env,
+                check=False,
+            )
+            if done.returncode:
+                out[state] = {"error": (done.stdout + done.stderr)[-2000:]}
+                break
+            out[state] = json.loads(done.stdout.strip().splitlines()[-1])
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+    return out
+
+
 def _git(checkout: Path, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["git", *args], capture_output=True, text=True, cwd=checkout, check=False
@@ -401,6 +554,9 @@ def row(options: Any) -> int:
         "public_generation": generation,
     }
     record.update(_revision(Path(options.checkout)))
+    record["host_state"] = {"start": host_state(options.core)}
+    if options.cards is not None and options.generation:
+        record["public_generation_timing"] = public_generation(options, process)
     # Fresh runtimes, created in rotated arm order (the executor-instance
     # control): instance i of every arm, then i + 1.
     runtimes: dict[tuple[str, int], Any] = {}
@@ -520,6 +676,7 @@ def row(options: Any) -> int:
             "TIR method-choice lanes refused by their check",
         )
     }
+    record["host_state"]["end"] = host_state(options.core)
     (out / "rows" / f"{process}.json").write_text(json.dumps(record, indent=1))
     if options.stages:
         _stages(options)
@@ -594,6 +751,9 @@ def _stages(options: Any) -> None:
         "128",
         "--reps",
         "1",
+        # The one-helicity arm per backend (the plan's first helicity row,
+        # |A(h)|^2/avg): the helicity-selection table beside the bars.
+        "--one-helicity",
         "--native-build",
         str(options.native),
         "--json",
@@ -621,7 +781,10 @@ def collect(options: Any) -> int:
     out = Path(options.out)
     build = json.loads((Path(options.native) / "build-info.json").read_text())
     digest = build.get("native_build_inputs_sha256")
-    keys = dict(timed_rows(checkout))
+    keys = record_keys(
+        checkout,
+        [json.loads(p.read_text())["process"] for p in (out / "rows").glob("*.json")],
+    )
     records = []
     heads: set[str] = set()
     concurrency = len(list((out / "rows").glob("*.json")))
@@ -723,6 +886,8 @@ def _record(
         "gate": gate_of(process, outcome["effective"], cell, failed, batch, paired),
         "stages": _stage_split(stages, outcome["effective"]),
         "generation": _generation(stages),
+        "public_generation": found.get("public_generation_timing"),
+        "host_state": found.get("host_state"),
         "native_build": meta["native"],
         "native_digest": meta["digest"],
         "host": found["host"],
@@ -994,6 +1159,12 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--auto-row", default="li_gg_hgg")
     run.add_argument("--no-providers", dest="providers", action="store_false")
     run.add_argument("--no-stages", dest="stages", action="store_false")
+    run.add_argument(
+        "--no-generation",
+        dest="generation",
+        action="store_false",
+        help="skip the public cold / warm generation timing",
+    )
     run.add_argument("--exclude-cores", type=int, nargs="*")
     run.add_argument("--tag", default=time.strftime("%Y%m%dT%H%M", time.gmtime()))
     run.add_argument(
@@ -1039,6 +1210,7 @@ def main(argv: list[str] | None = None) -> int:
     one.add_argument("--auto", action="store_true")
     one.add_argument("--no-providers", dest="providers", action="store_false")
     one.add_argument("--no-stages", dest="stages", action="store_false")
+    one.add_argument("--no-generation", dest="generation", action="store_false")
 
     gather = commands.add_parser("collect", help="records, summaries, PDF")
     common(gather)

@@ -176,7 +176,9 @@ def _pair_points(
                 [sqrt_s, *final], 1, CUT, (), seed=decay_points.SEED + step
             )
         except ValueError:
-            sqrt_s = _equal_mass_scale(final, (low, window[1]), Fraction(step, 4 * count + 1))
+            sqrt_s = _equal_mass_scale(
+                final, (low, window[1]), Fraction(step, 4 * count + 1)
+            )
             if sqrt_s is None:
                 continue
             try:
@@ -305,7 +307,9 @@ def _supplied(
         if len(distinct) >= count:
             return distinct[:count]
         if length > 100 * count:
-            raise RuntimeError(f"only {len(distinct)} of {count} distinct supplied points")
+            raise RuntimeError(
+                f"only {len(distinct)} of {count} distinct supplied points"
+            )
         length *= 2
 
 
@@ -321,7 +325,9 @@ def _rest(masses: list[Fraction], count: int) -> list[list[list[Fraction]]]:
     import supplied_points
 
     if len(masses) != 3 or any(masses[:2]) or not masses[2]:
-        raise ValueError("a 2 -> 1 rest stream needs massless beams and a massive final particle")
+        raise ValueError(
+            "a 2 -> 1 rest stream needs massless beams and a massive final particle"
+        )
     pythagorean = supplied_points._PYTHAGOREAN
     half, mass, zero = masses[2] / 2, masses[2], Fraction(0)
 
@@ -470,7 +476,9 @@ def make_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
             "(the campaign's supplied_points rest rotations first, then rational "
             "points of the unit sphere)"
         )
-    elif record.get("tool") == "supplied_points.py" and record.get("family") == "regular":
+    elif (
+        record.get("tool") == "supplied_points.py" and record.get("family") == "regular"
+    ):
         # A loop-induced specification whose mass pattern exact_points cannot
         # represent (g g > h h h, g g > z z z, g g > h z g): its listed
         # sqrt(s) values cycled, so the first points are the campaign's.
@@ -549,6 +557,22 @@ def binary64(stream: dict[str, Any], count: int) -> list[list[list[str]]]:
         [[repr(float(Fraction(x))) for x in leg] for leg in point]
         for point in stream["points"][:count]
     ]
+
+
+def mu_r2(stream: dict[str, Any], count: int) -> list[str]:
+    """The first ``count`` points' mu_R^2 as decimal text, as the public API
+    reads it (``Runtime.evaluate(..., mu_r2=...)`` takes decimal numbers):
+    the exact square of the stream's mu_R (a terminating decimal stays
+    exact, e.g. M_Z^2 = 8315.251344 for a Z decay)."""
+
+    exact_points, _ = _toolkit()
+    out = []
+    for m in stream["mu_r"][:count]:
+        square = Fraction(m) ** 2
+        if not exact_points.terminating(square):
+            raise ValueError(f"mu_R^2 = {square} has no exact decimal text")
+        out.append(exact_points.decimal_string(square))
+    return out
 
 
 def fixture_name(key: str) -> str:

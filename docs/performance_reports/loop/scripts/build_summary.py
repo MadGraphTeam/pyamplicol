@@ -3337,7 +3337,31 @@ def _li_cells(
     at = f"{row['key']}, {name}, {first['revision'][:8]}"
     src = f"{LI_TIMING} records[{at}]"
     gen = first.get("generation")
-    if gen is None and first.get("missing"):
+    pub = first.get("public_generation") or {}
+    if "seconds" in (pub.get("warm") or {}) and "seconds" in (pub.get("cold") or {}):
+        # The generation as a user runs it (lit-ewprep (5)): the public
+        # Generator from the row's card, warm (the cell: a second generation
+        # in the same cache) and cold (an empty cache: the model compiled and
+        # prepared), each with its peak RSS; the plan size from the
+        # instrumented run's engine generation.
+        out["generation"] = {
+            "status": "measured",
+            "public": True,
+            "seconds": pub["warm"]["seconds"],
+            "peak_gib": pub["warm"]["peak_gib"],
+            "cold": {k: pub["cold"][k] for k in ("seconds", "peak_gib")},
+            "plan_mb": (gen or {}).get("plan_mb"),
+            "revision": first["revision"][:8],
+            "host": first["host"],
+            "source": f"{src}.public_generation",
+        }
+        fg = prov.get("fastest_generation")
+        if fg is not None:
+            out["generation"]["ratio_to_fastest"] = (
+                out["generation"]["seconds"] / fg["seconds"]
+            )
+        gen = None
+    elif gen is None and first.get("missing"):
         out["generation"] = {"status": "not run", "reason": first["missing"]}
     elif gen is None:
         out["generation"] = {

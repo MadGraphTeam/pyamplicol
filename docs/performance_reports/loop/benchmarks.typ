@@ -675,7 +675,14 @@
   let p = r.providers
   let gens = if p.status == "recorded" { p.generation } else { (:) }
   let pline = if gens.len() == 0 { none } else { gens.pairs().sorted(key: ((k, s)) => s).map(((k, s)) => [#pkey(k) #dur(s)]).join([~· ]) }
-  if m.status == "measured" {
+  if m.status == "measured" and m.at("public", default: false) {
+    // The public Generator from the row's card (lit-ewprep (5)): warm, the
+    // cell (a second generation in the same cache), cold beneath (an empty
+    // cache: the model compiled and prepared), each with its peak RSS.
+    valued(fill: none, dur(m.seconds), mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
+      [cold #dur(m.cold.seconds) · #gib(m.cold.peak_gib) peak],
+      [warm #gib(m.peak_gib) peak#if m.plan_mb != none [ · plan #box[#sig(m.plan_mb)~MB]]], pline)
+  } else if m.status == "measured" {
     // The engine's generation: generate + filter + plan export (the provider
     // ratio on it); the optional generation-time probes (validation, off by
     // default) apart beneath, with their carrier, where the record ran them.
@@ -767,24 +774,25 @@
     set par(justify: false)
     show table.cell.where(y: 0): set text(fill: white, weight: "bold", size: 8pt)
     table(
-      columns: (0.5cm, 4.8cm, 4.0cm, 1fr),
+      columns: (5.1cm, 4.0cm, 1fr),
       align: left + std.top,
       inset: (x: 4.5pt, y: 4.2pt),
       stroke: (x, y) => (top: if y <= 3 { none } else { 0.6pt + white }, left: if x > 0 and y != 1 { 0.6pt + white } else { none }),
       fill: (x, y) => if y == 0 { navy } else if y == 1 { warm } else if y == 2 { pale } else { none },
       table.header(
-        [], [Process · validation], [Generation], if li-unchecked != none [$|A_"loop"|^2$ · per point, batched, TIRust and NinjaRS unchecked (re-timed rows)] else [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
-        table.cell(colspan: 4, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
-        [],
+        [Process · validation], [Generation], if li-unchecked != none [$|A_"loop"|^2$ · per point, batched, TIRust and NinjaRS unchecked (re-timed rows)] else [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
+        table.cell(colspan: 3, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
         ..(
           [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
           [generate + filter + plan export; optional probes apart (carrier); peak memory; provider generation],
           if li-unchecked != none [median per point at $B = 128$ (fresh runtimes, spread); providers paired (most optimistic); gate or rule on TIRust; stage bars: #stage-legend(li-stage-used) (instrumented run: stage shares, not the timed call)] else [median per point at $B = 128$; provider times (#if "optimistic" in li-meta.at("provider_protocols", default: ()) [most optimistic, lit-perf] else [lit-ref]); gate (lit-perf) or rule; backend (request) · the other backend],
         ).map(t => text(6.1pt, fill: ink2, t)),
       ),
+      // Each multiplicity group opens with its own header row, repeated at
+      // the top of every page the group continues on.
       ..LI.groups.map(gr => (
-        table.cell(rowspan: gr.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon,
-          rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", li-group-title(gr.name)))),
+        table.header(level: 2, table.cell(colspan: 3, fill: luma(226), inset: (x: 4.5pt, y: 2.2pt),
+          text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", li-group-title(gr.name)))),
         ..gr.rows.map(r => (li-process(r), ..li-cells(r))).flatten(),
       )).flatten(),
     )

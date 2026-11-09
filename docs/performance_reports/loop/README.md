@@ -202,12 +202,11 @@ nothing else in the timed path):
 ```sh
 pyamplicol <card.toml>              # the public generation (the row's run card)
 RAYON_NUM_THREADS=1 taskset -c <one idle core> python - <<'PY'
-from fractions import Fraction
 import pyamplicol
 from tools.loop_benchmark import streams          # the frozen stream points
 stream = streams.load("li_gg_zzg")                # any row of Table 2
 points = streams.binary64(stream, 128)            # B = 128 distinct points
-mu_r2 = [str(Fraction(m) ** 2) for m in stream["mu_r"][:128]]
+mu_r2 = streams.mu_r2(stream, 128)                 # their mu_R^2, decimal text
 rt = pyamplicol.Runtime.load("<artifact>", reduction_unchecked=True)
 result = rt.evaluate(points, mu_r2=mu_r2, poles="none", on_failure="return",
                      reduction="tirust")          # or "ninjars", or "auto"
