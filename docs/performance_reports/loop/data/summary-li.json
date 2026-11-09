@@ -73,10 +73,11 @@
   "landed": [
    "lit-amp",
    "lit-r2",
-   "lit-ew"
+   "lit-ew",
+   "lit-eft"
   ],
   "rule": "every row of the registry (milestone.json loop_induced, PLAN \u00a74.1 process rows) by multiplicity; the cell is the newest record's batched B = 128 time per point (git ancestry of the record revisions) of the backend 'auto' serves at that revision (its effective backend labelled; records without a request: the default backend TIRust first, NinjaRS per amplitude labelled where only NinjaRS is timed), never a record with failed points; the other backend beside it with its served fraction and the recorded cause of its failed points, its time only where it served every point; the ratio to the fastest matched provider (production mode) colours it; generation = the full production generate cost (generate + the exact helicity-zero filter + plan export + the mandatory generation-time probes, their share shown), uncoloured; every record names its host; four legs or fewer reported, below the 5 ms rule not gated, gate verdicts only from lit-perf's records; a row whose serving package has not landed, or whose input file does not exist yet, is pending; nothing estimated or extrapolated",
-  "registry": "milestone.json loop_induced (workspace/reports/engine-v2/m-lit/PLAN.md revision 2d: \u00a74.1 (the process rows, their ids and references), \u00a75.2 and \u00a74.1's tier column (gate classes), \u00a73.3 LIT-AMP 'Rows', \u00a73.4 LIT-EW 'Scope', \u00a73.5 LIT-EFT and \u00a73.7 'Pushes' (the serving package: M-LIT-a lit-amp's rows; M-LIT-b lit-ew's EW rows and the production route lit-r2's other rows; LI-X1 lit-eft); USER 2026-11-06 ~06:00 (the table, every row pending at M-LIT-a0))",
+  "registry": "milestone.json loop_induced (workspace/reports/engine-v2/m-lit/PLAN.md revision 2d: \u00a74.1 (the process rows, their ids and references), \u00a75.2 and \u00a74.1's tier column (gate classes), \u00a73.3 LIT-AMP 'Rows', \u00a73.4 LIT-EW 'Scope', \u00a73.5 LIT-EFT and \u00a73.7 'Pushes' (the serving package: M-LIT-a lit-amp's rows; M-LIT-b lit-ew's EW rows and the production route lit-r2's other rows; LI-X1 lit-eft); USER 2026-11-06 ~06:00 (the table, every row pending at M-LIT-a0); LI-X1 an execution check without a reference or timing (USER 2026-11-06 ~14:55; lit-report))",
   "inputs": {
    "li-timing.json": {
     "file": "data/li-timing.json",
@@ -6018,18 +6019,14 @@
      "backends": [
       "TIRust"
      ],
-     "references": [
-      "ML"
-     ],
+     "references": [],
      "served_by": "lit-eft",
-     "landed": false,
-     "note": "TIR-only artifact (NinjaRS refuses it typed); MadLoop TIR is its second reference",
+     "landed": true,
+     "note": "TIR-only artifact (NinjaRS refuses it typed)",
      "providers": {
-      "status": "not run",
-      "reason": "no provider timing record of the row in li_campaign.json",
-      "expected": [
-       "ML"
-      ]
+      "status": "no reference",
+      "reason": "no reference provider",
+      "expected": []
      },
      "validation": {
       "status": "delegated (lit-eft)",
@@ -6039,14 +6036,12 @@
       "source": "lit.json rows[li_x1]"
      },
      "generation": {
-      "status": "pending",
-      "reason": "served by lit-eft (not landed at this head)",
-      "what": "generation"
+      "status": "not timed",
+      "reason": "execution check only (user 2026-11-06 ~14:55): rank > N+2 has no correct R2 (no dim-8 model), so no reference, no benchmark and no timing claim; lit-eft ran it (two dim-6 insertions through TIRust)"
      },
      "timing": {
-      "status": "pending",
-      "reason": "served by lit-eft (not landed at this head)",
-      "what": "timing"
+      "status": "not timed",
+      "reason": "execution check only (user 2026-11-06 ~14:55): rank > N+2 has no correct R2 (no dim-8 model), so no reference, no benchmark and no timing claim; lit-eft ran it (two dim-6 insertions through TIRust)"
      }
     }
    ]

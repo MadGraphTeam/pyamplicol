@@ -601,7 +601,7 @@
 // middle dot; any name milestone.json declares).
 #let li-group-title(name) = name.split(" / ").map(part => { let xs = part.split("->"); if xs.len() == 2 and xs.all(x => x.trim().len() > 0) { $#xs.at(0).trim() -> #xs.at(1).trim()$ } else { part } }).join([ · ])
 // Missing-cell titles; the batch statuses take Table 1's words (status-title).
-#let li-title(c) = if c.status in ("not batched", "no gate batch") { status-title(c) } else { (pending: [pending], "not run": [not run], "not recorded": [not recorded], "failed closed": [failed closed], refused: [refused]).at(c.status, default: c.status) }
+#let li-title(c) = if c.status in ("not batched", "no gate batch") { status-title(c) } else { (pending: [pending], "not run": [not run], "not timed": [not timed], "not recorded": [not recorded], "failed closed": [failed closed], refused: [refused]).at(c.status, default: c.status) }
 // The other backend beside the cell: its time where it served every point
 // of every block, else its outcome (points failed closed per block and the
 // recorded causes, or the refusal): never a time of a call that failed
@@ -622,6 +622,7 @@
 #let li-prov-line(r) = {
   let p = r.providers
   if p.status == "pending" [providers pending (lit-ref): #p.expected.join(" · ")]
+  else if p.status == "no reference" [#p.reason]
   else if p.status == "not run" [#p.expected.join(" · "): #p.reason]
   else {
     // Timed providers by time (the fastest in bold), then the others grouped
@@ -723,7 +724,7 @@
 }
 // Generation and timing pending, or not run, for the same reason: one
 // marker over both.
-#let li-cells(r) = if r.generation.status in ("pending", "not run") and r.timing.status == r.generation.status and r.generation.at("reason", default: none) == r.timing.at("reason", default: none) {
+#let li-cells(r) = if r.generation.status in ("pending", "not run", "not timed") and r.timing.status == r.generation.status and r.generation.at("reason", default: none) == r.timing.at("reason", default: none) {
   (absent(li-title(r.timing), colspan: 2, r.timing.reason, li-prov-line(r)),)
 } else { (li-generation(r), li-timing(r)) }
 // The provenance row of the loop-induced table (one line): pyAmpliCol's

@@ -2673,6 +2673,10 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
     the providers its runs record as unavailable, and the fastest matched
     one."""
     expected = [LI_SHORT[k] for k in row["references"] if k != "analytic"]
+    if not row["references"]:
+        # A row without any reference (LI-X1, an execution check: USER
+        # 2026-11-06 ~14:55): no provider is expected.
+        return {"status": "no reference", "reason": "no reference provider", "expected": []}
     if manifest is None:
         return {
             "status": "pending",
@@ -3251,6 +3255,13 @@ def _li_cells(
     if not landed:
         out["generation"] = _li_pending("generation", pending_pkg)
         out["timing"] = _li_pending("timing", pending_pkg)
+        return out
+    if row.get("untimed"):
+        # A row the registry declares untimed (LI-X1, an execution check
+        # without a reference, USER 2026-11-06 ~14:55): its explicit marker
+        # with the registry's reason, never a time.
+        out["generation"] = {"status": "not timed", "reason": row["untimed"]}
+        out["timing"] = {"status": "not timed", "reason": row["untimed"]}
         return out
     if files[LI_TIMING] is None:
         why = f"{LI_TIMING} not written yet ({row['served_by']})"
