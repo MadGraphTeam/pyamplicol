@@ -27,11 +27,19 @@ correctly rounded double), as every binary64 caller does. ``write`` freezes
 the streams as ``streams/<key>.json``.
 
 Decays (1 -> n, the processes of ``tools/loop_reference/required_processes.json``
-with ``"initial": 1``, ``decay_keys``) take ``STREAM_LENGTH`` exact points in
-the decaying particle's rest frame (``tools/loop_reference/decay_points.py``,
-same cuts; mu_R = the decaying mass); the first ``CAMPAIGN_PREFIX`` printed to
-32 digits are the decay reference campaign's points
-(``tests/fixtures/loop/required/dec/<key>.json``).
+with ``"initial": 1``, ``decay_keys``, and the loop-induced decays of
+``processes.json``) take ``STREAM_LENGTH`` exact points in the decaying
+particle's rest frame (``tools/loop_reference/decay_points.py``, same cuts;
+mu_R = the decaying mass); the first ``CAMPAIGN_PREFIX`` printed to 32 digits
+are the decay reference campaign's points (``tests/fixtures/loop/required/
+dec/<key>.json``, a loop-induced decay's ``required/li/<key>.json``).
+
+A 2 -> 1 process (the toolkit's ``rest`` family, e.g. the loop-induced
+g g > h) has one point up to the direction of the beam axis: its stream is the
+final particle at rest with the beams along ``STREAM_LENGTH`` distinct exact
+rational directions, the first ``CAMPAIGN_PREFIX`` the reference campaign's
+(``supplied_points.rotation``), the others rational points of the unit sphere
+(inverse stereographic projection of a fixed pseudo-random rational grid).
 """
 
 from __future__ import annotations
@@ -145,7 +153,10 @@ def _pair_points(
     state of each is ``decay_points``' exact rational two-body split of the
     centre-of-mass system (a rational point on the momentum sphere, seeded
     rotation), at distinct sqrt(s) inside ``window`` (sqrt(s) values whose
-    momentum sphere holds no rational point are skipped)."""
+    momentum sphere holds no rational point are skipped; for an equal-mass
+    pair, where a whole progression of sqrt(s) can lack one, e.g. Z Z or H H
+    from 800 GeV, the step's sqrt(s) is moved to ``_equal_mass_scale``,
+    whose momentum is rational)."""
 
     exact_points, _ = _toolkit()
     import decay_points
@@ -165,7 +176,15 @@ def _pair_points(
                 [sqrt_s, *final], 1, CUT, (), seed=decay_points.SEED + step
             )
         except ValueError:
-            continue
+            sqrt_s = _equal_mass_scale(final, (low, window[1]), Fraction(step, 4 * count + 1))
+            if sqrt_s is None:
+                continue
+            try:
+                (rest,) = decay_points.generate(
+                    [sqrt_s, *final], 1, CUT, (), seed=decay_points.SEED + step
+                )
+            except ValueError:
+                continue
         half, zero = sqrt_s / 2, Fraction(0)
         point = [[half, zero, zero, half], [half, zero, zero, -half], rest[1], rest[2]]
         key = tuple(x for p in point for x in p)
@@ -175,6 +194,29 @@ def _pair_points(
         out.append(point)
         seen.add(key)
     return out
+
+
+def _equal_mass_scale(
+    final: list[Fraction], window: tuple[Fraction, Fraction], fraction: Fraction
+) -> Fraction | None:
+    """For an equal-mass pair m m: a sqrt(s) = 2 m (1 + t^2) / (1 - t^2) with
+    rational t, whose momentum |p| = 2 m t / (1 - t^2) is rational, at the
+    ``fraction`` of the window in t (None for any other final state or outside
+    the window)."""
+
+    if len(final) != 2 or final[0] != final[1] or not final[0]:
+        return None
+    m = final[0]
+
+    def t_of(scale: Fraction) -> float:
+        return float((scale - 2 * m) / (scale + 2 * m)) ** 0.5
+
+    lo, hi = t_of(max(window[0], 2 * m)), t_of(window[1])
+    t = Fraction(lo + (hi - lo) * float(fraction)).limit_denominator(10**6)
+    if not 0 < t < 1:
+        return None
+    scale = 2 * m * (1 + t * t) / (1 - t * t)
+    return scale if window[0] <= scale <= window[1] else None
 
 
 def _resonant(final, pdgs, resonances) -> bool:
@@ -229,7 +271,10 @@ def _supplied(
     """``supplied_points.generate`` (regular family) at the specification's
     ``sqrt_s`` values cycled to ``count`` points: the same construction,
     cuts and printed quantum as the reference campaign's points file, so
-    the stream starts with the campaign's points."""
+    the stream starts with the campaign's points. A repeated point (a 2 -> 2
+    final state has few direction choices per sqrt(s)) is skipped: the
+    construction is extended along the same cycle until ``count`` distinct
+    points (its sequence is prefix-stable)."""
 
     _toolkit()
     from decimal import localcontext
@@ -237,19 +282,74 @@ def _supplied(
     import supplied_points
 
     listed = [Fraction(s) for s in record["sqrt_s"]]
-    values = list(itertools.islice(itertools.cycle(listed), count))
-    with localcontext() as context:
-        context.prec = supplied_points.CONSTRUCTION_DIGITS
-        points, scales, _ = supplied_points.generate(
-            masses, "regular", count, (), CUT, (), pdgs, sqrt_s_values=values
-        )
-        printed = [
-            supplied_points.quantise(point, scale)
-            for point, scale in zip(points, scales, strict=True)
-        ]
+    length = count
+    while True:
+        values = list(itertools.islice(itertools.cycle(listed), length))
+        with localcontext() as context:
+            context.prec = supplied_points.CONSTRUCTION_DIGITS
+            points, scales, _ = supplied_points.generate(
+                masses, "regular", length, (), CUT, (), pdgs, sqrt_s_values=values
+            )
+            printed = [
+                supplied_points.quantise(point, scale)
+                for point, scale in zip(points, scales, strict=True)
+            ]
+        distinct: list[list[list[Fraction]]] = []
+        seen: set[tuple[Fraction, ...]] = set()
+        for point in printed:
+            exact = [[Fraction(supplied_points.text(x)) for x in leg] for leg in point]
+            key = tuple(x for leg in exact for x in leg)
+            if key not in seen:
+                seen.add(key)
+                distinct.append(exact)
+        if len(distinct) >= count:
+            return distinct[:count]
+        if length > 100 * count:
+            raise RuntimeError(f"only {len(distinct)} of {count} distinct supplied points")
+        length *= 2
+
+
+def _rest(masses: list[Fraction], count: int) -> list[list[list[Fraction]]]:
+    """``count`` exact 2 -> 1 points at sqrt(s) = the final mass (massless
+    beams): the beam axis turned by ``supplied_points.rotation`` for the first
+    ``CAMPAIGN_PREFIX`` points (the reference campaign's ``rest`` family),
+    then along rational unit vectors n = (2a, 2b, 1 - a^2 - b^2) / (1 + a^2 +
+    b^2) for rational (a, b) drawn from a fixed pseudo-random grid, every
+    direction distinct."""
+
+    _toolkit()
+    import supplied_points
+
+    if len(masses) != 3 or any(masses[:2]) or not masses[2]:
+        raise ValueError("a 2 -> 1 rest stream needs massless beams and a massive final particle")
+    pythagorean = supplied_points._PYTHAGOREAN
+    half, mass, zero = masses[2] / 2, masses[2], Fraction(0)
+
+    def turned(index: int) -> tuple[Fraction, Fraction, Fraction]:
+        # supplied_points.rotation(index) applied to the unit z vector, in
+        # exact rationals: R_x(c1, s1) R_y(c2, s2) e_z.
+        c1, s1 = pythagorean[index % len(pythagorean)]
+        c2, s2 = pythagorean[(3 * index + 1) % len(pythagorean)]
+        return (s2, -s1 * c2, c1 * c2)
+
+    directions: list[tuple[Fraction, Fraction, Fraction]] = []
+    for index in range(min(count, CAMPAIGN_PREFIX)):
+        directions.append(turned(index))
+    chooser = random.Random(RAMBO_SEED)
+    grid = [Fraction(p, q) for q in range(1, 13) for p in range(-24, 25)]
+    while len(directions) < count:
+        a, b = chooser.choice(grid), chooser.choice(grid)
+        norm = 1 + a * a + b * b
+        n = (2 * a / norm, 2 * b / norm, (1 - a * a - b * b) / norm)
+        if n not in directions:
+            directions.append(n)
     return [
-        [[Fraction(supplied_points.text(x)) for x in leg] for leg in point]
-        for point in printed
+        [
+            [half, half * n[0], half * n[1], half * n[2]],
+            [half, -half * n[0], -half * n[1], -half * n[2]],
+            [mass, zero, zero, zero],
+        ]
+        for n in directions
     ]
 
 
@@ -277,13 +377,24 @@ def _resonances(process: dict[str, Any]) -> list[str]:
     ]
 
 
+def _decay(key: str) -> bool:
+    """Whether ``key`` is a decay: a Born-interfered one of the reference
+    specification (``decay_keys``) or a ``processes.json`` process with
+    ``"initial": 1`` (the loop-induced decays)."""
+
+    if key in decay_keys():
+        return True
+    return key in keys() and spec(key).get("initial") == 1
+
+
 def make_decay_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
     """The frozen rest-frame stream of the decay ``key`` (module docstring)."""
 
     _, required_spec = _toolkit()
     import decay_points
 
-    process = required_spec.load_process(DECAY_SPEC, key)
+    source = SPEC if key in keys() else DECAY_SPEC
+    process = required_spec.load_process(source, key)
     masses = [Fraction(m) for m in required_spec.masses(process)]
     resonances = _resonances(process)
     points = decay_points.generate(masses, count, CUT, resonances, pdgs=process["pdgs"])
@@ -307,10 +418,12 @@ def make_decay_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
 
 
 def decay_campaign_agreement(key: str, stream: dict[str, Any]) -> bool | None:
-    """Whether the decay campaign's points (``required/dec/<key>.json``) are
-    the stream's first points printed to 32 digits (None without a fixture)."""
+    """Whether the decay campaign's points (``required/dec/<key>.json``, a
+    loop-induced decay's ``required/li/<key>.json``) are the stream's first
+    points printed to 32 digits (None without a fixture)."""
 
-    fixture = FIXTURES / "dec" / f"{key}.json"
+    induced = key in keys() and spec(key).get("loop_induced")
+    fixture = FIXTURES / ("li" if induced else "dec") / f"{key}.json"
     if not fixture.exists():
         return None
     _toolkit()
@@ -325,7 +438,7 @@ def decay_campaign_agreement(key: str, stream: dict[str, Any]) -> bool | None:
 def make_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
     """The frozen stream of ``key`` (module docstring)."""
 
-    if key in decay_keys():
+    if _decay(key):
         return make_decay_stream(key, count)
     exact_points, required_spec = _toolkit()
     process = spec(key)
@@ -348,7 +461,16 @@ def make_stream(key: str, count: int = STREAM_LENGTH) -> dict[str, Any]:
         for x in process.get("points", {}).get("scale_window", ("800", "4000"))
     )
     record = process.get("points", {})
-    if record.get("tool") == "supplied_points.py" and record.get("family") == "regular":
+    if record.get("tool") == "supplied_points.py" and record.get("family") == "rest":
+        # A 2 -> 1 process: the final particle at rest, the beam axis along
+        # distinct exact rational directions (module docstring).
+        points = _rest(masses, count)
+        construction = (
+            "2 -> 1 at rest: the beams along distinct exact rational directions "
+            "(the campaign's supplied_points rest rotations first, then rational "
+            "points of the unit sphere)"
+        )
+    elif record.get("tool") == "supplied_points.py" and record.get("family") == "regular":
         # A loop-induced specification whose mass pattern exact_points cannot
         # represent (g g > h h h, g g > z z z, g g > h z g): its listed
         # sqrt(s) values cycled, so the first points are the campaign's.
@@ -439,8 +561,10 @@ def fixture_name(key: str) -> str:
 
 def campaign_agreement(key: str, stream: dict[str, Any]) -> bool | None:
     """Whether the stream starts with the committed fixture's points (None
-    without a fixture)."""
+    without a fixture; a decay's printed points: ``decay_campaign_agreement``)."""
 
+    if stream.get("initial") == 1:
+        return decay_campaign_agreement(key, stream)
     # Loop-induced references: required/li (tools/loop_reference/li_references.py).
     sub = "li" if spec(key).get("loop_induced") else ""
     fixture = FIXTURES / sub / f"{key}.json"
