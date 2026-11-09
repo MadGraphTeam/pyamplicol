@@ -589,22 +589,27 @@ def collect(options: Any) -> int:
 
 
 def _stage_split(stages: dict[str, Any] | None, backend: str) -> dict[str, Any] | None:
-    """The instrumented run's per-stage seconds per point of ``backend``
-    (trees + CT kets, dressing, scatter, reduction, the rest), labelled."""
+    """The instrumented run's per-stage seconds per point of ``backend`` at
+    its largest B (the harness record's ``backend_runs``: trees + CT kets,
+    dressing, scatter, reduction, the rest of its call), labelled."""
 
     if stages is None:
         return None
-    for entry in stages.get("backends", []):
-        if entry.get("effective") != backend:
-            continue
-        per = entry.get("stages_per_point") or {}
-        main = {name: per.get(name, 0.0) for name in STAGES}
-        total = entry.get("seconds_per_point") or sum(
-            v for k, v in per.items() if ":" not in k
-        )
-        main["rest"] = max(total - sum(main.values()), 0.0)
-        return {"label": LABEL, "seconds_per_point": main, "total": total}
-    return None
+    entry = stages.get("backend_runs", {}).get(backend)
+    if not entry or not entry.get("batches"):
+        return None
+    size = max(entry["batches"], key=int)
+    summary = entry["batches"][size]
+    per = summary.get("stages_per_point") or {}
+    main = {name: per.get(name, 0.0) for name in STAGES}
+    total = summary["median_seconds_per_point"]
+    main["rest"] = max(total - sum(main.values()), 0.0)
+    return {
+        "label": LABEL,
+        "batch": int(size),
+        "seconds_per_point": main,
+        "total": total,
+    }
 
 
 # ------------------------------------------------------------------ CLI
