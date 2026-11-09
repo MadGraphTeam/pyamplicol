@@ -106,9 +106,11 @@ def timed_rows(checkout: Path) -> list[tuple[str, str]]:
 
 
 def idle_cores(count: int, exclude: set[int]) -> list[int]:
-    """``count`` cores with the least busy time over a one-second sample
-    (``/proc/stat``), physical siblings of a chosen core skipped where the
-    topology says so."""
+    """``count`` cores with the least busy physical core over a one-second
+    sample (``/proc/stat``): a core is ranked by the busiest of its SMT
+    siblings (a busy sibling slows a pinned thread by up to ~1.5x, as the
+    campaign of 2026-11-09 measured on li_gg_hgg: providers and pyAmpliCol
+    alike), and the siblings of a chosen core are skipped."""
 
     def sample() -> dict[int, tuple[int, int]]:
         out = {}
@@ -123,16 +125,13 @@ def idle_cores(count: int, exclude: set[int]) -> list[int]:
     first = sample()
     time.sleep(1.0)
     second = sample()
-    busy = []
+    load: dict[int, float] = {}
     for cpu, (total, idle) in second.items():
         dt = total - first[cpu][0]
         di = idle - first[cpu][1]
-        busy.append(((dt - di) / dt if dt else 1.0, cpu))
-    chosen: list[int] = []
-    taken = set(exclude)
-    for _load, cpu in sorted(busy):
-        if cpu in taken:
-            continue
+        load[cpu] = (dt - di) / dt if dt else 1.0
+
+    def group_of(cpu: int) -> set[int]:
         siblings = Path(
             f"/sys/devices/system/cpu/cpu{cpu}/topology/thread_siblings_list"
         )
@@ -141,6 +140,15 @@ def idle_cores(count: int, exclude: set[int]) -> list[int]:
             for part in siblings.read_text().strip().split(","):
                 lo, _, hi = part.partition("-")
                 group.update(range(int(lo), int(hi or lo) + 1))
+        return group
+
+    busy = [(max(load.get(c, 1.0) for c in group_of(cpu)), cpu) for cpu in load]
+    chosen: list[int] = []
+    taken = set(exclude)
+    for _load, cpu in sorted(busy):
+        if cpu in taken:
+            continue
+        group = group_of(cpu)
         if group & taken:
             continue
         chosen.append(cpu)
@@ -405,12 +413,20 @@ def row(options: Any) -> int:
             load_seconds[arm].append(time.perf_counter() - begin)
     record["load_seconds"] = load_seconds
 
+    cpu_share: dict[str, list[float]] = {arm: [] for arm in arms}
+
     def call(arm: str, i: int) -> tuple[float, Any]:
+        cpu = time.process_time()
         begin = time.perf_counter()
         result = runtimes[arm, i].evaluate(
             points, mu_r2=scales, poles="none", on_failure="return", **kwargs[arm]
         )
-        return time.perf_counter() - begin, result
+        elapsed = time.perf_counter() - begin
+        # The process's CPU time over the wall time of the call (below 1: the
+        # pinned core was shared with another process; an SMT sibling's load
+        # does not show here).
+        cpu_share[arm].append(round((time.process_time() - cpu) / elapsed, 3))
+        return elapsed, result
 
     # Untimed warm-up of every instance (kernels compiled, caches built).
     first: dict[str, Any] = {}
@@ -474,6 +490,7 @@ def row(options: Any) -> int:
         arm: {str(i): values for i, values in per.items()}
         for arm, per in seconds.items()
     }
+    record["cpu_share"] = cpu_share
     cells = {}
     for arm, per in seconds.items():
         medians = [statistics.median(v) for v in per.values() if v]
@@ -597,8 +614,9 @@ def _stages(options: Any) -> None:
 
 
 def collect(options: Any) -> int:
-    """The li-timing records of the campaign (one per row and backend), then
-    the summaries and the PDF."""
+    """The li-timing records of the campaign (one per row and explicit
+    backend; the "auto" pairing on the TIRust record of its row), then the
+    summaries and the PDF."""
 
     checkout = Path(options.checkout)
     out = Path(options.out)
@@ -607,6 +625,7 @@ def collect(options: Any) -> int:
     keys = dict(timed_rows(checkout))
     records = []
     heads: set[str] = set()
+    concurrency = len(list((out / "rows").glob("*.json")))
     for path in sorted((out / "rows").glob("*.json")):
         found = json.loads(path.read_text())
         process = found["process"]
@@ -618,50 +637,21 @@ def collect(options: Any) -> int:
         stages = json.loads(stages_path.read_text()) if stages_path.is_file() else None
         paired = paired_providers(process, found["providers"])
         for arm, cell in found["cells"].items():
+            if arm == "auto":
+                continue
             records.append(
-                {
-                    "key": keys.get(process, process),
-                    "process": process,
-                    "revision": timed,
-                    "lit_dress": found.get("lit_dress"),
-                    "configuration": "unchecked",
-                    "requested": found["arms"][arm]["requested"],
-                    "backend": found["arms"][arm]["effective"],
-                    "effective": found["arms"][arm]["effective"],
-                    "reason": found["arms"][arm]["reason"],
-                    "unchecked": True,
-                    "entry_point": "Runtime.load + evaluate (Python API)",
-                    "settings": found["settings"],
-                    "batch": found["batch"],
-                    "rounds": found["rounds"],
-                    "instances": found["instances"],
-                    "seconds_per_point": cell["median"],
-                    "instance_medians": cell["instance_medians"],
-                    "instance_spread": cell["instance_spread"],
-                    "failed_points": found["arms"][arm]["failed_points"],
-                    "failures": found["arms"][arm]["failures"],
-                    "fallback_points": found["arms"][arm]["fallback_points"],
-                    "tir_counts": found["tir_counts"] if arm != "ninjars" else None,
-                    "providers": paired,
-                    "gate": gate_of(
-                        process,
-                        found["arms"][arm]["effective"],
-                        cell,
-                        found["arms"][arm]["failed_points"],
-                        found["batch"],
-                        paired,
-                    ),
-                    "stages": _stage_split(stages, found["arms"][arm]["effective"]),
-                    "generation": None if stages is None else stages.get("generation"),
-                    "native_build": Path(options.native).name,
-                    "native_digest": digest,
-                    "host": found["host"],
-                    "core": found["core"],
-                    "date": found["date"],
-                    "source": "lit-unchecked re-time (tools/loop_benchmark/"
-                    "retime_unchecked.py): public API with the documented unchecked "
-                    "setting; stages from a separate instrumented run",
-                }
+                _record(
+                    found,
+                    arm,
+                    cell,
+                    stages,
+                    paired,
+                    key=keys.get(process, process),
+                    revision=timed,
+                    native=Path(options.native).name,
+                    digest=digest,
+                    concurrency=concurrency,
+                )
             )
     target = checkout / LI_TIMING
     data = json.loads(target.read_text())
@@ -672,6 +662,8 @@ def collect(options: Any) -> int:
     ] + records
     target.write_text(json.dumps(data, indent=1) + "\n")
     print(f"{len(records)} unchecked records into {target}")
+    if not options.render:
+        return 0
     for command in (
         [PYTHON, "docs/performance_reports/loop/scripts/build_summary.py"],
         [options.typst, "compile", "docs/performance_reports/loop/benchmarks.typ"],
@@ -679,6 +671,139 @@ def collect(options: Any) -> int:
         if subprocess.run(command, cwd=checkout, check=False).returncode:
             return 1
     return 0
+
+
+def _record(
+    found: dict[str, Any],
+    arm: str,
+    cell: dict[str, Any],
+    stages: dict[str, Any] | None,
+    paired: dict[str, Any],
+    **meta: Any,
+) -> dict[str, Any]:
+    """One li-timing record of a row's arm, in the shape of lit-perf's
+    records (build_summary.py's checks): a call that failed points was
+    timed whole and carries no time per point (``whole_call_seconds_per_
+    point``), its failed points per instance (deterministic: every call of
+    an instance evaluates the same points) and causes."""
+
+    process = found["process"]
+    outcome = found["arms"][arm]
+    failed = outcome["failed_points"]
+    batch = found["batch"]
+    causes: dict[str, int] = {}
+    for details in outcome["failures"].values():
+        cause = details[0] if details else "no detail"
+        causes[cause] = causes.get(cause, 0) + 1
+    record: dict[str, Any] = {
+        "key": meta["key"],
+        "process": process,
+        "revision": meta["revision"],
+        "lit_dress": found.get("lit_dress"),
+        "configuration": "unchecked",
+        "requested": outcome["requested"],
+        "backend": outcome["effective"],
+        "effective": outcome["effective"],
+        "reason": outcome["reason"],
+        "unchecked": outcome["unchecked"],
+        "entry_point": "Runtime.load + evaluate (Python API)",
+        "settings": found["settings"],
+        "replication": REPLICATION.format(process=process),
+        "batch": batch,
+        "rounds": found["rounds"],
+        "instances": found["instances"],
+        "failed_points": [failed] * found["instances"],
+        "served_fraction": 1 - failed / batch,
+        "fallback_points": outcome["fallback_points"],
+        "instance_medians": cell["instance_medians"],
+        "instance_spread": cell["instance_spread"],
+        "round_spread": cell["round_spread"],
+        "providers": paired,
+        "gate": gate_of(process, outcome["effective"], cell, failed, batch, paired),
+        "stages": _stage_split(stages, outcome["effective"]),
+        "generation": _generation(stages),
+        "native_build": meta["native"],
+        "native_digest": meta["digest"],
+        "host": found["host"],
+        "core": found["core"],
+        "concurrency": f"{meta['concurrency']} rows in parallel units, one pinned "
+        "core each (separate physical cores)",
+        "date": found["date"],
+        "source": "lit-unchecked re-time (tools/loop_benchmark/"
+        f"retime_unchecked.py; process {process}): public API with the "
+        "documented unchecked setting; stages from a separate instrumented run",
+    }
+    shares = (found.get("cpu_share") or {}).get(arm)
+    if shares:
+        # Per timed call (warm-up included): CPU time over wall time.
+        record["cpu_share"] = {
+            "min": min(shares),
+            "median": statistics.median(shares),
+        }
+    if failed:
+        record["whole_call_seconds_per_point"] = cell["median"]
+        record["failures"] = outcome["failures"]
+        record["failure_causes"] = causes
+    else:
+        record["seconds_per_point"] = cell["median"]
+    if outcome["effective"] == "tirust":
+        record["tir_counts"] = found["tir_counts"]
+        if "auto" in found["cells"]:
+            auto = found["arms"]["auto"]
+            record["auto_pairing"] = {
+                "requested": auto["requested"],
+                "effective": auto["effective"],
+                "reason": auto["reason"],
+                "values_bitwise_tirust": found.get("auto_bitwise_tirust"),
+                "fallback_points": auto["fallback_points"],
+                "failed_points": auto["failed_points"],
+                "seconds_per_point": found["cells"]["auto"]["median"],
+                "instance_medians": found["cells"]["auto"]["instance_medians"],
+                "ratio_to_tirust": found["cells"]["auto"]["median"] / cell["median"],
+            }
+    return record
+
+
+# The replication command a user runs (README: the unchecked Table 2).
+REPLICATION = (
+    'RAYON_NUM_THREADS=1 taskset -c <core> python -c "import pyamplicol; '
+    "rt = pyamplicol.Runtime.load('<artifact of {process}>', "
+    "reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', "
+    "reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points "
+    "of tools/loop_benchmark/streams/{process}.json)"
+)
+
+
+def _generation(stages: dict[str, Any] | None) -> dict[str, Any] | None:
+    """The engine's generation of the instrumented run (gate.py's fields:
+    generate + export + filter in ``seconds``, the validation probes apart in
+    ``probes_seconds``)."""
+
+    if stages is None or not stages.get("generation"):
+        return None
+    generation = stages["generation"]
+    stage = {
+        n: (generation.get(n) or {}).get("seconds", 0.0)
+        for n in ("generate", "export", "filter", "probes")
+    }
+    return {
+        "seconds": stage["generate"] + stage["export"] + stage["filter"],
+        "generate_seconds": stage["generate"],
+        "dressed_frame_seconds": (generation.get("generate") or {}).get(
+            "dressed_frame_seconds"
+        ),
+        "export_seconds": stage["export"],
+        "filter_seconds": stage["filter"],
+        "probes_seconds": stage["probes"],
+        "peak_gib": max(
+            (v.get("peak_gib") or 0.0)
+            for v in generation.values()
+            if isinstance(v, dict)
+        ),
+        "plan_mb": generation.get("plan_mb"),
+        "model_seconds": (generation.get("model") or {}).get("seconds"),
+        "source": LABEL,
+    }
 
 
 def paired_providers(process: str, rounds: list[dict[str, Any]]) -> dict[str, Any]:
@@ -904,6 +1029,12 @@ def main(argv: list[str] | None = None) -> int:
         "--typst",
         default="typst",
         help="Typst 0.15.1 (the report's renderer)",
+    )
+    gather.add_argument(
+        "--no-render",
+        dest="render",
+        action="store_false",
+        help="write the records only (no summaries, no PDF)",
     )
     options = parser.parse_args(argv)
     if options.command == "campaign":

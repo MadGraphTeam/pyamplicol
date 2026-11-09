@@ -154,21 +154,28 @@
 #let plain-chip(body) = box(fill: white, stroke: 0.4pt + luma(150), inset: (x: 2pt, y: 0.8pt), radius: 1.5pt, baseline: 0.8pt, text(5.9pt, fill: luma(80), weight: "bold", body))
 #let stage-keys = ("inputs", "numerator", "scatter", "ninjars", "masters", "glue", "untimed")
 #let stage-label = (inputs: [inputs], numerator: [numerator], scatter: [scatter], ninjars: [NinjaRS], masters: [masters], glue: [glue], untimed: [untimed])
-#let stage-bar(st, width: 2.0cm) = {
-  let vals = stage-keys.map(k => calc.max(st.at(k), 0))
+#let stage-bar(st, width: 2.0cm, keys: stage-keys, labels: stage-label, colours: seg-colours) = {
+  let vals = keys.map(k => calc.max(st.at(k), 0))
   let tot = vals.sum()
-  let top = stage-keys.zip(vals).sorted(key: x => x.at(1)).last()
+  let top = keys.zip(vals).sorted(key: x => x.at(1)).last()
   box(width: width, height: 4.6pt, baseline: 0.5pt, fill: white, outset: 0.8pt, radius: 1pt, {
     let x = 0pt
     for (k, v) in vals.enumerate() {
       let w = width * v / tot
-      if w > 0.9pt { place(dx: x, rect(width: w - 0.6pt, height: 4.6pt, fill: seg-colours.at(k), stroke: none)) }
+      if w > 0.9pt { place(dx: x, rect(width: w - 0.6pt, height: 4.6pt, fill: colours.at(k), stroke: none)) }
       x += w
     }
   })
   h(4pt)
-  box[#stage-label.at(top.at(0)) #fixed(100 * top.at(1) / tot, 0)~%]
+  box[#labels.at(top.at(0)) #fixed(100 * top.at(1) / tot, 0)~%]
 }
+// Table 2's stage bar (lit-unchecked): the stage split of the separate
+// instrumented run (summary-li.json timing.stages; never the timed call):
+// trees + CT kets, dressing, scatter, reduction, the rest of the call.
+#let li-stage-keys = ("trees", "dressing", "scatter", "reduction", "rest")
+#let li-stage-label = (trees: [trees], dressing: [dressing], scatter: [scatter], reduction: [reduction], rest: [rest])
+#let li-seg-colours = (seg-colours.at(0), seg-colours.at(1), seg-colours.at(2), seg-colours.at(3), luma(170))
+#let li-stage-bar(st) = if st == none [no instrumented run] else { stage-bar(st, width: 1.6cm, keys: li-stage-keys, labels: li-stage-label, colours: li-seg-colours) }
 #let cell-lines(lines) = for l in lines.filter(l => l != none) { v(2.7pt); block(spacing: 0pt, text(6.4pt, l)) }
 #let valued(fill: none, value, mult: none, ..lines) = table.cell(fill: fill, breakable: false, {
   set par(leading: 0.34em, justify: false)
@@ -657,18 +664,38 @@
   let gens = if p.status == "recorded" { p.generation } else { (:) }
   let pline = if gens.len() == 0 { none } else { gens.pairs().sorted(key: ((k, s)) => s).map(((k, s)) => [#pkey(k) #dur(s)]).join([~· ]) }
   if m.status == "measured" {
-    // The full production generate cost: generate + plan export + the
-    // mandatory generation-time probes, their time and share beneath.
+    // The engine's generation (generate + dressed-frame choice + plan
+    // export + exact helicity filter); the validation probes apart, with
+    // their status at this head (summary-li.json generation.probes_label).
     valued(fill: none, dur(m.seconds), mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
-      [incl. probes #dur(m.probes_seconds) (#fixed(100 * m.probe_share, 0)~%)],
+      [apart: #m.probes_label #dur(m.probes_seconds)],
       [#gib(m.peak_gib) peak#if m.plan_mb != none [ · plan #box[#sig(m.plan_mb)~MB]]], pline)
   } else {
     absent(li-title(m), m.at("reason", default: none), pline)
   }
 }
+// The other backend's line of an unchecked cell: its time (multiplier to
+// the fastest matched provider, uncoloured) where it served every point,
+// else its outcome; its stage bar.
+#let li-other-line(o) = [#text(weight: "bold", o.backend_label) (#raw(o.requested)) #if o.status == "served" [#dur(o.seconds_per_point)#if "ratio_to_fastest" in o [ #mult2(o.ratio_to_fastest)]] else [#o.label] #h(1fr) #li-stage-bar(o.at("stages", default: none))]
+// "auto" with the setting against the TIRust arm, paired in the same unit
+// (summary-li.json timing.auto_pairing).
+#let li-auto-line(a) = [`auto` with the setting: #if a.values_bitwise_tirust [values bitwise TIRust's] else [values *differ* from TIRust's], #a.fallback_points per-point fallbacks, time #mult2(a.ratio_to_tirust)]
 #let li-timing(r) = {
   let m = r.timing
-  if m.status == "measured" {
+  if m.status == "measured" and m.at("unchecked", default: false) {
+    // The unchecked re-time (lit-unchecked): TIRust with the setting, the
+    // cell; NinjaRS with the setting beside it; each with the stage bar of
+    // the separate instrumented run.
+    let o = m.at("other_backend", default: none)
+    valued(fill: if "ratio_to_fastest" in m { ratio-fill(m.ratio_to_fastest) } else { none }, dur(m.seconds_per_point),
+      mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
+      [#li-prov-line(r) #h(1fr) $B = #m.batch$ · #m.instances runtimes #mult2(m.instance_spread)],
+      li-match-line(r),
+      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label) (#raw(m.requested)) #h(1fr) #li-stage-bar(m.stages)],
+      if o != none { li-other-line(o) },
+      if "auto_pairing" in m { li-auto-line(m.auto_pairing) })
+  } else if m.status == "measured" {
     valued(fill: if "ratio_to_fastest" in m { ratio-fill(m.ratio_to_fastest) } else { none }, dur(m.seconds_per_point),
       mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
       [#li-prov-line(r) #h(1fr) $B = #m.batch$],
@@ -695,16 +722,19 @@
 #let li-our-hosts = li-timed.map(r => r.timing.host).dedup().sorted()
 #let li-hosts = li-rows.filter(r => r.providers.status == "recorded").map(r => r.providers.providers.values().filter(x => "host" in x).map(x => x.host)).flatten().dedup().sorted()
 #let li-engine = (revision: li-meta.engine_on_loop, native_build: li-meta.native_build_on_loop.name, native_digest: li-meta.native_build_on_loop.digest)
+// The protocol line of the unchecked re-time (lit-unchecked (4)).
+#let li-unchecked = li-meta.at("unchecked", default: none)
+#let li-protocol = if li-unchecked != none [*Protocol:* #raw(li-unchecked.setting) (`Runtime.load` / `evaluate` keyword; config `evaluation.reduction_unchecked`), explicit `tirust` and `ninjars`; `poles="none"`, no stability check, no rescue; $B = 128$ per call (median over rounds); one thread pinned to one core (`taskset`, `RAYON_NUM_THREADS=1`); the 128 distinct stream points; #li-unchecked.instances.map(str).join("/") fresh runtimes per arm in rotated order, the median of their medians (spread ×: largest/smallest); providers F4 most optimistic, timed in the same unit on the same core, alternating with pyAmpliCol; engine #li-unchecked.revisions.map(raw).join(", ")#if not li-unchecked.lit_dress.contains(true) [ (before `lit-dress`)]; replication: #raw(li-unchecked.replication)]
 #let li-head = {
   let ours = if li-builds.len() == 0 [no pyAmpliCol record at this head: every row *pending*, served by the package named in its cell · engine #raw(li-engine.revision)#native-of(li-engine)]
     else [*pyAmpliCol:* #li-builds.map(x => [engine #raw(x.revision)#native-of(x)]).join([, ]) on #li-our-hosts.join(", ")#if li-meta.landed.len() > 0 [ (packages landed: #li-meta.landed.map(raw).join(", "))]]
-  [#ours · cells: the backend `auto` serves; gate on #li-meta.default_backend (the loop-induced default) · providers: #if "optimistic" in li-meta.at("provider_protocols", default: ()) [each in its most optimistic settings (`lit-perf`; #super[p] `lit-ref`'s production record)] else [`lit-ref`'s production timing records]#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated]
+  if li-unchecked != none [#ours · cells: #li-meta.default_backend with the unchecked setting (= `auto` with it: shown paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")), NinjaRS unchecked beside; gate on #li-meta.default_backend · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated \ #li-protocol] else [#ours · cells: the backend `auto` serves; gate on #li-meta.default_backend (the loop-induced default) · providers: #if "optimistic" in li-meta.at("provider_protocols", default: ()) [each in its most optimistic settings (`lit-perf`; #super[p] `lit-ref`'s production record)] else [`lit-ref`'s production timing records]#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated]
 }
 // Table 2 starts a page: its caption never stays behind at the foot of
 // Table 1's last page.
 #pagebreak(weak: true)
 #figure(kind: table,
-  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary). How to read it: #link(<reading>)[after Table 3].],
+  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary)#if li-unchecked != none [, timed with the unchecked reduction setting#footnote[The setting is off by default. A default call (`reduction="auto"`, checks of the backends on) runs TIRust at the target accuracy ($10^(-5)$) with the per-point NinjaRS fallback; it does not get these times. Its served fractions and checked times are `lit-perf`'s records in `data/li-timing.json`.]]. How to read it: #link(<reading>)[after Table 3].],
   {
     set text(7pt, font: sans, stretch: 87.5%)
     set par(justify: false)
@@ -716,13 +746,13 @@
       stroke: (x, y) => (top: if y <= 3 { none } else { 0.6pt + white }, left: if x > 0 and y != 1 { 0.6pt + white } else { none }),
       fill: (x, y) => if y == 0 { navy } else if y == 1 { warm } else if y == 2 { pale } else { none },
       table.header(
-        [], [Process · validation], [Generation], [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
+        [], [Process · validation], [Generation], if li-unchecked != none [$|A_"loop"|^2$ · per point, batched, TIRust and NinjaRS unchecked] else [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
         table.cell(colspan: 4, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
         [],
         ..(
           [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
-          [generate + filter + plan export + probes (share), peak memory; provider generation],
-          [median per point at $B = 128$; provider times (#if "optimistic" in li-meta.at("provider_protocols", default: ()) [most optimistic, lit-perf] else [lit-ref]); gate (lit-perf) or rule; backend (request) · the other backend],
+          [engine: generate + plan export + filter; validation probes apart; peak memory; provider generation],
+          if li-unchecked != none [median per point at $B = 128$ (fresh runtimes, spread); providers paired (most optimistic); gate or rule on TIRust; stage bars: #li-stage-keys.enumerate().map(((k, n)) => box[#key-swatch(li-seg-colours.at(k))#h(1pt)#li-stage-label.at(n)]).join(h(2pt)) (instrumented run: stage shares, not the timed call)] else [median per point at $B = 128$; provider times (#if "optimistic" in li-meta.at("provider_protocols", default: ()) [most optimistic, lit-perf] else [lit-ref]); gate (lit-perf) or rule; backend (request) · the other backend],
         ).map(t => text(6.1pt, fill: ink2, t)),
       ),
       ..LI.groups.map(gr => (

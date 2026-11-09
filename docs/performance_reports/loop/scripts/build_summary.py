@@ -2772,6 +2772,87 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
     return out
 
 
+# The unchecked configuration (m-lit lit-unchecked; USER 2026-11-08 ~21:14,
+# ~22:34, DECISIONS 22:34 (1)): li-timing records with ``configuration``
+# "unchecked" carry the providers timed in the same unit on the same core
+# (F4 most optimistic, paired), which replace the fixture times of the row.
+LI_UNCHECKED = "unchecked"
+LI_PROBES_LABEL = "validation probes (mandatory at this head; opt-in after lit-probe)"
+
+
+def _li_paired(prov: dict, rec: dict) -> dict:
+    """The row's provider entries with the times paired with the record
+    ``rec`` (its ``providers.times``: the median over the unit's rounds,
+    same core, F4 most optimistic); the fixture entries' match status and
+    generation times kept, a provider the paired run did not time keeps its
+    fixture entry (listed, never filled)."""
+
+    paired = (rec.get("providers") or {}).get("times")
+    if not paired or prov.get("status") != "recorded":
+        return prov
+    providers = dict(prov["providers"])
+    src = f"{LI_TIMING} records[{rec['key']}, {rec['backend']}, {rec['revision'][:8]}]"
+    for k, x in paired.items():
+        if k not in PROVIDERS:
+            continue
+        entry = {
+            "seconds_per_point": x["seconds_per_point"],
+            "half_range": x.get("half_range"),
+            "rounds": len(x.get("rounds") or ()),
+            "source": f"{src}.providers.times.{k}",
+            "protocol": "optimistic",
+            "paired": True,
+            "host": rec["host"],
+        }
+        old = providers.get(k) or {}
+        for name in ("match", "values_excluded"):
+            if name in old:
+                entry[name] = old[name]
+        providers[k] = entry
+    out = {**prov, "providers": providers, "fastest": None, "paired": True}
+    out.pop("fastest_unmatched", None)
+    times = {
+        k: x["seconds_per_point"]
+        for k, x in providers.items()
+        if "seconds_per_point" in x
+    }
+    matched = {k: t for k, t in times.items() if not providers[k].get("match")}
+    if matched:
+        k = min(matched, key=matched.get)
+        out["fastest"] = {"key": k, "name": NAMES[k], "seconds_per_point": times[k]}
+    unmatched = {k: t for k, t in times.items() if k not in matched}
+    if unmatched:
+        k = min(unmatched, key=unmatched.get)
+        out["fastest_unmatched"] = {
+            "key": k,
+            "name": NAMES[k],
+            "seconds_per_point": unmatched[k],
+            "match": providers[k]["match"],
+        }
+    return out
+
+
+def _li_stages(rec: dict) -> dict | None:
+    """The stage split of the separate instrumented run beside an unchecked
+    record (its ``stages``: trees + CT kets, dressing, scatter, reduction,
+    rest; labelled, never the timed call)."""
+
+    st = rec.get("stages")
+    if not st:
+        return None
+    sec = st["seconds_per_point"]
+    return {
+        "trees": sec["trees + CT kets"],
+        "dressing": sec["dressing"],
+        "scatter": sec["scatter"],
+        "reduction": sec["reduction"],
+        "rest": sec["rest"],
+        "total": st["total"],
+        "label": st["label"],
+        "batch": st["batch"],
+    }
+
+
 def _li_records(
     row: dict, timing: dict | None, recency: Recency, default: str
 ) -> list[dict]:
@@ -2956,6 +3037,10 @@ def _li_other(r: dict) -> dict:
         out.update(_li_failed(r))
     if "tir_options" in r:
         out["tir_options"] = r["tir_options"]
+    if r.get("configuration") == LI_UNCHECKED:
+        out["unchecked"] = True
+        out["instance_spread"] = r["instance_spread"]
+        out["stages"] = _li_stages(r)
     return out
 
 
@@ -3108,6 +3193,11 @@ def _li_cells(
     batched = [r for r in recs if int(r["batch"]) == gate]
     main, named = _li_main(batched) if batched else (recs[0], recs[0])
     first = main or named
+    if first.get("configuration") == LI_UNCHECKED:
+        # The providers paired with the unchecked re-time (same unit, same
+        # core): the row's provider times, its ratio and its gate.
+        prov = _li_paired(prov, first)
+        out["providers"] = prov
     # A record names its effective backend, a stopped one its request.
     name = first.get("backend", first.get("requested"))
     at = f"{row['key']}, {name}, {first['revision'][:8]}"
@@ -3128,15 +3218,16 @@ def _li_cells(
             "reason": f"{src} has no generation-time probe time",
         }
     else:
-        # The full production `generate` cost: generate + plan export + the
-        # mandatory generation-time probes (their share shown).
-        total = gen["seconds"] + gen["probes_seconds"]
+        # The engine's generation (m-lit C-generation.md §1, lit-unchecked
+        # (4)): LoopSlice.generate + dressed-frame choice + plan export +
+        # exact helicity filter; the validation probes' time apart
+        # (LI_PROBES_LABEL), never added to it.
+        engine = gen["seconds"]
         out["generation"] = {
             "status": "measured",
-            "seconds": total,
-            "generate_seconds": gen["seconds"],
+            "seconds": engine,
             "probes_seconds": gen["probes_seconds"],
-            "probe_share": gen["probes_seconds"] / total if total else 0.0,
+            "probes_label": LI_PROBES_LABEL,
             "peak_gib": gen["peak_gib"],
             "plan_mb": gen.get("plan_mb"),
             "revision": first["revision"][:8],
@@ -3145,7 +3236,7 @@ def _li_cells(
         }
         fg = prov.get("fastest_generation")
         if fg is not None:
-            out["generation"]["ratio_to_fastest"] = total / fg["seconds"]
+            out["generation"]["ratio_to_fastest"] = engine / fg["seconds"]
     if not batched:
         # No B = 128 record at the newest revision (Table 1's rule): no
         # batched cell, the batches timed named.
@@ -3184,6 +3275,9 @@ def _li_cells(
         )
         if gated is not None and row["gate_class"] != "reported":
             out["timing"]["gate"] = _li_verdict(gated["gate"], gated, rule)
+        if named.get("configuration") == LI_UNCHECKED:
+            out["timing"]["unchecked"] = True
+            out["timing"]["stages"] = _li_stages(named)
         return out
     t = main["seconds_per_point"]
     cell = {
@@ -3214,6 +3308,31 @@ def _li_cells(
     fastest = prov.get("fastest")
     if fastest is not None:
         cell["ratio_to_fastest"] = t / fastest["seconds_per_point"]
+        o = cell.get("other_backend")
+        if o is not None and o["status"] == "served":
+            o["ratio_to_fastest"] = (
+                o["seconds_per_point"] / fastest["seconds_per_point"]
+            )
+    if main.get("configuration") == LI_UNCHECKED:
+        cell["lit_dress"] = main.get("lit_dress")
+        # Both backends unchecked: the instance control (median over fresh
+        # runtimes of each one's median over rounds, their spread) and the
+        # stage split of the separate instrumented run.
+        cell["unchecked"] = True
+        cell["instances"] = main["instances"]
+        cell["instance_spread"] = main["instance_spread"]
+        cell["stages"] = _li_stages(main)
+        pairing = main.get("auto_pairing")
+        if pairing is not None:
+            cell["auto_pairing"] = {
+                k: pairing[k]
+                for k in (
+                    "values_bitwise_tirust",
+                    "fallback_points",
+                    "ratio_to_tirust",
+                    "seconds_per_point",
+                )
+            }
     unmatched = prov.get("fastest_unmatched")
     if unmatched is not None:
         # A provider timed on the row that is not matched (LI_NOT_MATCHED):
@@ -3284,6 +3403,31 @@ def build_loop_induced(
             if r["timing"].get("date")
         }
     )
+    timed = [
+        r["timing"]
+        for g in groups
+        for r in g["rows"]
+        if r["timing"].get("unchecked") and r["timing"].get("status") == "measured"
+    ]
+    unchecked = None
+    if timed:
+        # The protocol line of the unchecked re-time (lit-unchecked (4)).
+        unchecked = {
+            "rows": len(timed),
+            "setting": "reduction_unchecked = true (default false)",
+            "revisions": sorted({c["revision"] for c in timed}),
+            "lit_dress": sorted({bool(c.get("lit_dress")) for c in timed}),
+            "instances": sorted({c["instances"] for c in timed}),
+            "auto_pairing": [
+                {"key": r["key"], **r["timing"]["auto_pairing"]}
+                for g in groups
+                for r in g["rows"]
+                if "auto_pairing" in r["timing"]
+            ],
+            "largest_instance_spread": max(c["instance_spread"] for c in timed),
+            "replication": "docs/performance_reports/loop/README.md"
+            " (unchecked Table 2)",
+        }
     return {
         "what": (
             "the loop-induced summary table <tab:summary-li> of"
@@ -3300,6 +3444,7 @@ def build_loop_induced(
                 k: (ms.get("native_build") or {}).get(k) for k in ("name", "digest")
             },
             "default_backend": LI_BACKENDS[reg["default_backend"]],
+            **({"unchecked": unchecked} if unchecked else {}),
             # The settings of the provider timings the table shows (m-lit
             # F4: "optimistic" where lit-perf re-timed them).
             "provider_protocols": sorted(
