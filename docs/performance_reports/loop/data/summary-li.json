@@ -1206,11 +1206,13 @@
        "unchecked": true,
        "instance_spread": 1.050220083969569,
        "stages": {
-        "trees": 7.0370703125e-06,
-        "dressing": 0.00010411116406250002,
+        "inputs": 7.0370703125e-06,
+        "numerator": 0.0001239315625,
         "scatter": 1.2437578124999999e-05,
-        "reduction": 0.0002709052109375,
-        "rest": 0.00017768305467799492,
+        "ninjars": 0.0001947206484375,
+        "masters": 7.618456250000002e-05,
+        "glue": 0.0001578038906154949,
+        "untimed": 0.0,
         "total": 0.0005721740781154949,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -1249,11 +1251,13 @@
       "instances": 3,
       "instance_spread": 1.0147144978114166,
       "stages": {
-       "trees": 7.336984375e-06,
-       "dressing": 0.000101023796875,
+       "inputs": 7.336984375e-06,
+       "numerator": 0.000117695265625,
        "scatter": 1.133075e-05,
-       "reduction": 9.8438609375e-05,
-       "rest": 0.00017589357049873657,
+       "moments": 9.15430546875e-05,
+       "contraction": 3.4778906249999995e-06,
+       "glue": 0.00016260664862373652,
+       "untimed": 0.0,
        "total": 0.0003940237111237366,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -2734,11 +2738,13 @@
        "unchecked": true,
        "instance_spread": 1.322356331574507,
        "stages": {
-        "trees": 6.77829453125e-05,
-        "dressing": 0.0019848042109375003,
+        "inputs": 6.77829453125e-05,
+        "numerator": 0.0022213853046875003,
         "scatter": 0.0004228960078125001,
-        "reduction": 0.0038331164765625,
-        "rest": 0.0011273306701235167,
+        "ninjars": 0.0032644657343750003,
+        "masters": 0.0005686507421875,
+        "glue": 0.0008907101154360178,
+        "untimed": 0.0,
         "total": 0.0074359303107485175,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -2777,11 +2783,13 @@
       "instances": 3,
       "instance_spread": 1.8477941956813684,
       "stages": {
-       "trees": 9.321578125e-05,
-       "dressing": 0.00198219725,
+       "inputs": 9.321578125e-05,
+       "numerator": 0.0022223829375,
        "scatter": 0.000410747203125,
-       "reduction": 0.00027973859375,
-       "rest": 0.0011912156635158233,
+       "moments": 0.00017046160156250002,
+       "contraction": 9.55418046875e-05,
+       "glue": 0.0009647236869533231,
+       "untimed": 0.0,
        "total": 0.003957114491640823,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -2930,11 +2938,13 @@
        "unchecked": true,
        "instance_spread": 1.0304237391545708,
        "stages": {
-        "trees": 2.0104140625e-05,
-        "dressing": 0.0013663308515625,
+        "inputs": 2.0104140625e-05,
+        "numerator": 0.0014774466953125,
         "scatter": 0.0002534241875,
-        "reduction": 0.0036140005546875,
-        "rest": 0.0004108031820128973,
+        "ninjars": 0.0026932098125,
+        "masters": 0.0009207907421875,
+        "glue": 0.00029961350232539635,
+        "untimed": 0.0,
         "total": 0.005664662916387897,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -2975,11 +2985,13 @@
       "instances": 3,
       "instance_spread": 1.0221046727544627,
       "stages": {
-       "trees": 1.87361015625e-05,
-       "dressing": 0.0013702927187500002,
+       "inputs": 1.87361015625e-05,
+       "numerator": 0.0014800258515625002,
        "scatter": 0.0002607769921875,
-       "reduction": 0.0027295207890625,
-       "rest": 0.0004166086253037764,
+       "moments": 0.0026525878749999996,
+       "contraction": 4.6551546875e-05,
+       "glue": 0.0003371210003037771,
+       "untimed": 0.0,
        "total": 0.004795935226866277,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -3132,11 +3144,13 @@
        "unchecked": true,
        "instance_spread": 1.0227173765720399,
        "stages": {
-        "trees": 0.0002501407421875,
-        "dressing": 0.01576638296875,
+        "inputs": 0.0002501407421875,
+        "numerator": 0.0161234076171875,
         "scatter": 0.0035976185546875003,
-        "reduction": 0.03845144446875,
-        "rest": 0.0030969485159574456,
+        "ninjars": 0.030844678851562498,
+        "masters": 0.0076067656171875005,
+        "glue": 0.00273984675814494,
+        "untimed": 0.0,
         "total": 0.06116253525033244,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -3175,11 +3189,13 @@
       "instances": 3,
       "instance_spread": 1.0512000265529498,
       "stages": {
-       "trees": 0.0002343331796875,
-       "dressing": 0.015582528609374998,
+       "inputs": 0.0002343331796875,
+       "numerator": 0.015918594617187497,
        "scatter": 0.0032551816484374997,
-       "reduction": 0.0069795136796875,
-       "rest": 0.0029622653419043993,
+       "moments": 0.005868678390625,
+       "contraction": 0.0007062867421875,
+       "glue": 0.003030679052841898,
+       "untimed": 0.0,
        "total": 0.029013822459091898,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -3337,11 +3353,13 @@
        "unchecked": true,
        "instance_spread": 1.0331617615887805,
        "stages": {
-        "trees": 8.69413046875e-05,
-        "dressing": 0.10181280250781252,
+        "inputs": 8.69413046875e-05,
+        "numerator": 0.10224843199218753,
         "scatter": 0.0103090961171875,
-        "reduction": 0.2807551714765625,
-        "rest": 0.002794444056532841,
+        "ninjars": 0.252050600875,
+        "masters": 0.028704570601562496,
+        "glue": 0.002358738322157883,
+        "untimed": 0.0,
         "total": 0.3957584554627829,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -3382,11 +3400,13 @@
       "instances": 3,
       "instance_spread": 1.0051685238698491,
       "stages": {
-       "trees": 8.491895312499999e-05,
-       "dressing": 0.09375154168749998,
+       "inputs": 8.491895312499999e-05,
+       "numerator": 0.09411511689843748,
        "scatter": 0.0089010289375,
-       "reduction": 0.018954570015625002,
-       "rest": 0.0024215403761099485,
+       "moments": 0.015763315554687497,
+       "contraction": 0.0029727928749999997,
+       "glue": 0.0022763600323599635,
+       "untimed": 0.0,
        "total": 0.12411359996985993,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -3538,11 +3558,13 @@
        "unchecked": true,
        "instance_spread": 1.062298928264514,
        "stages": {
-        "trees": 7.74296875e-05,
-        "dressing": 0.0526410903359375,
+        "inputs": 7.74296875e-05,
+        "numerator": 0.05330377371875,
         "scatter": 0.0041836179765625,
-        "reduction": 0.160741651125,
-        "rest": 0.0024103697395137513,
+        "ninjars": 0.14631277209375,
+        "masters": 0.01442887903125,
+        "glue": 0.001747600106701247,
+        "untimed": 0.0,
         "total": 0.22005415886451374,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -3583,11 +3605,13 @@
       "instances": 3,
       "instance_spread": 1.0949693062356964,
       "stages": {
-       "trees": 9.00056796875e-05,
-       "dressing": 0.058018119296875,
+       "inputs": 9.00056796875e-05,
+       "numerator": 0.0587136216328125,
        "scatter": 0.004383216210937501,
-       "reduction": 0.0105618514921875,
-       "rest": 0.0023241053663905775,
+       "moments": 0.0090259725,
+       "contraction": 0.0014045745234375,
+       "glue": 0.0017598232179530555,
+       "untimed": 0.0,
        "total": 0.07537729804607807,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -3739,11 +3763,13 @@
        "unchecked": true,
        "instance_spread": 1.0090154613157485,
        "stages": {
-        "trees": 0.0003322384140625,
-        "dressing": 0.10506373488281248,
+        "inputs": 0.0003322384140625,
+        "numerator": 0.10605441871093749,
         "scatter": 0.015515414781249999,
-        "reduction": 0.43053565604687494,
-        "rest": 0.004622226382578143,
+        "ninjars": 0.39176102978124994,
+        "masters": 0.038774626265625015,
+        "glue": 0.003631454898203157,
+        "untimed": 0.0,
         "total": 0.556069270507578,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -3784,11 +3810,13 @@
       "instances": 3,
       "instance_spread": 1.0392670326793132,
       "stages": {
-       "trees": 0.00033855914843749997,
-       "dressing": 0.1063162714609375,
+       "inputs": 0.00033855914843749997,
+       "numerator": 0.107352942765625,
        "scatter": 0.016320339289062496,
-       "reduction": 0.0554767239140625,
-       "rest": 0.004537159288254988,
+       "moments": 0.05001258055468751,
+       "contraction": 0.005206938249999999,
+       "glue": 0.003757597467942457,
+       "untimed": 0.0,
        "total": 0.18298905310075497,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -3949,11 +3977,13 @@
        "unchecked": true,
        "instance_spread": 1.1099654157923664,
        "stages": {
-        "trees": 2.71182265625e-05,
-        "dressing": 0.105088834046875,
+        "inputs": 2.71182265625e-05,
+        "numerator": 0.10549350470312499,
         "scatter": 0.007145169937499999,
-        "reduction": 0.22257114562500002,
-        "rest": 0.0026829316482496757,
+        "ninjars": 0.2021115528125,
+        "masters": 0.0204595928125,
+        "glue": 0.0022781672341871673,
+        "untimed": 0.0,
         "total": 0.3375151994841872,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -3995,11 +4025,13 @@
       "instances": 3,
       "instance_spread": 1.0220275048755567,
       "stages": {
-       "trees": 2.70147265625e-05,
-       "dressing": 0.1043422490234375,
+       "inputs": 2.70147265625e-05,
+       "numerator": 0.10470799509375,
        "scatter": 0.0061420971015625,
-       "reduction": 0.012370649945312501,
-       "rest": 0.0022813369981485865,
+       "moments": 0.009738047710937498,
+       "contraction": 0.0023284971015625003,
+       "glue": 0.002219608091898577,
+       "untimed": 0.0,
        "total": 0.12516334779502358,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -4161,11 +4193,13 @@
        "unchecked": true,
        "instance_spread": 1.038928709861117,
        "stages": {
-        "trees": 2.5016195312499998e-05,
-        "dressing": 0.0142894599375,
+        "inputs": 2.5016195312499998e-05,
+        "numerator": 0.0145350708359375,
         "scatter": 0.0015184309140625003,
-        "reduction": 0.028273087039062502,
-        "rest": 0.00093313499373128,
+        "ninjars": 0.023099742906250005,
+        "masters": 0.005173344132812499,
+        "glue": 0.0006874810484187727,
+        "untimed": 0.0,
         "total": 0.04503912907966878,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -4206,11 +4240,13 @@
       "instances": 3,
       "instance_spread": 1.0419236012539566,
       "stages": {
-       "trees": 2.4843312499999997e-05,
-       "dressing": 0.01515881303125,
+       "inputs": 2.4843312499999997e-05,
+       "numerator": 0.0154155803984375,
        "scatter": 0.0016261330312500003,
-       "reduction": 0.0026200125546875005,
-       "rest": 0.0009742312367270953,
+       "moments": 0.0018111122109375,
+       "contraction": 0.0005412386328125001,
+       "glue": 0.000985077392977091,
+       "untimed": 0.0,
        "total": 0.020404033166414592,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -4362,11 +4398,13 @@
        "unchecked": true,
        "instance_spread": 1.0184522067961368,
        "stages": {
-        "trees": 0.0002061323359375,
-        "dressing": 0.08112023466406248,
+        "inputs": 0.0002061323359375,
+        "numerator": 0.08202567669531248,
         "scatter": 0.021026537554687495,
-        "reduction": 0.17152413700000002,
-        "rest": 0.005781015437360426,
+        "ninjars": 0.1531523216796875,
+        "masters": 0.018371815320312502,
+        "glue": 0.004875521070172972,
+        "untimed": 0.0,
         "total": 0.27965805699204793,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -4407,11 +4445,13 @@
       "instances": 3,
       "instance_spread": 1.034238169701427,
       "stages": {
-       "trees": 0.0002072725,
-       "dressing": 0.082269128359375,
+       "inputs": 0.0002072725,
+       "numerator": 0.08319693189843749,
        "scatter": 0.022222908398437498,
-       "reduction": 0.009042250093749997,
-       "rest": 0.005578447092905683,
+       "moments": 0.006096499929687501,
+       "contraction": 0.0026873965546875,
+       "glue": 0.0049089394991556744,
+       "untimed": 0.0,
        "total": 0.11932000644446816,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -4554,11 +4594,13 @@
        "unchecked": true,
        "instance_spread": 1.029112678944666,
        "stages": {
-        "trees": 0.0001958585546875,
-        "dressing": 0.11441383301562498,
+        "inputs": 0.0001958585546875,
+        "numerator": 0.11506543040624997,
         "scatter": 0.036670022999999996,
-        "reduction": 0.24467680259374996,
-        "rest": 0.006663030475852816,
+        "ninjars": 0.21712934654687496,
+        "masters": 0.027547456046875002,
+        "glue": 0.006011384327415326,
+        "untimed": 0.0,
         "total": 0.40261954763991525,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -4599,11 +4641,13 @@
       "instances": 3,
       "instance_spread": 1.0340968390896148,
       "stages": {
-       "trees": 0.000210702046875,
-       "dressing": 0.1152689641484375,
+       "inputs": 0.000210702046875,
+       "numerator": 0.115924373875,
        "scatter": 0.0360127788125,
-       "reduction": 0.020269341945312495,
-       "rest": 0.006805469585247026,
+       "moments": 0.0161214081171875,
+       "contraction": 0.003907484374999999,
+       "glue": 0.006390455874309486,
+       "untimed": 0.0,
        "total": 0.17856725653837202,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -4755,11 +4799,13 @@
        "unchecked": true,
        "instance_spread": 1.2951477000621336,
        "stages": {
-        "trees": 2.06683671875e-05,
-        "dressing": 0.0003469910078125,
+        "inputs": 2.06683671875e-05,
+        "numerator": 0.000391798015625,
         "scatter": 0.0001131918125,
-        "reduction": 0.00100608125,
-        "rest": 0.0006479573778519257,
+        "ninjars": 0.0007304320468749998,
+        "masters": 0.00027564920312500005,
+        "glue": 0.0006031014559769255,
+        "untimed": 0.0,
         "total": 0.002134889815351926,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -4798,11 +4844,13 @@
       "instances": 3,
       "instance_spread": 1.6402877359574017,
       "stages": {
-       "trees": 2.0835710937499998e-05,
-       "dressing": 0.00033928114062499996,
+       "inputs": 2.0835710937499998e-05,
+       "numerator": 0.0003834506875,
        "scatter": 0.00011049859375,
-       "reduction": 0.0005011599453125,
-       "rest": 0.0006079390172283166,
+       "moments": 0.0004547347578125,
+       "contraction": 3.39656015625e-05,
+       "glue": 0.0005761928844158165,
+       "untimed": 0.0,
        "total": 0.0015797144078533165,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -4951,11 +4999,13 @@
        "unchecked": true,
        "instance_spread": 3.771549969959362,
        "stages": {
-        "trees": 1.01507421875e-05,
-        "dressing": 1.1656671875000002e-05,
+        "inputs": 1.01507421875e-05,
+        "numerator": 1.8639375e-05,
         "scatter": 8.54575e-06,
-        "reduction": 2.9862867187499997e-05,
-        "rest": 0.00038566517238187043,
+        "ninjars": 1.8481101562499995e-05,
+        "masters": 1.1381765625e-05,
+        "glue": 0.0003786695005068705,
+        "untimed": 0.0,
         "total": 0.00044588120363187045,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -4994,11 +5044,13 @@
       "instances": 3,
       "instance_spread": 4.216893916089857,
       "stages": {
-       "trees": 9.8489453125e-06,
-       "dressing": 1.1678539062500002e-05,
+       "inputs": 9.8489453125e-06,
+       "numerator": 1.895934375e-05,
        "scatter": 8.5729296875e-06,
-       "reduction": 7.152140625e-06,
-       "rest": 0.00039181443840491956,
+       "moments": 5.491124999999999e-06,
+       "contraction": 7.213359375000001e-07,
+       "glue": 0.0003854594071549196,
+       "untimed": 0.0,
        "total": 0.0004290669930924196,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -5151,11 +5203,13 @@
        "unchecked": true,
        "instance_spread": 1.0188180972237475,
        "stages": {
-        "trees": 0.0001849988984375,
-        "dressing": 0.11817726167968746,
+        "inputs": 0.0001849988984375,
+        "numerator": 0.11879127592187497,
         "scatter": 0.024301787015625,
-        "reduction": 0.6605760331796874,
-        "rest": 0.003317900454814837,
+        "ninjars": 0.6024713466640624,
+        "masters": 0.058104686515625,
+        "glue": 0.00270384097825227,
+        "untimed": 0.0,
         "total": 0.8065579812282522,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -5194,11 +5248,13 @@
       "instances": 3,
       "instance_spread": 1.0249108354287118,
       "stages": {
-       "trees": 0.00018763936718750002,
-       "dressing": 0.12674790434375,
+       "inputs": 0.00018763936718750002,
+       "numerator": 0.127358623359375,
        "scatter": 0.0254487093828125,
-       "reduction": 0.20266272898437507,
-       "rest": 0.003352259509778799,
+       "moments": 0.19636794044531253,
+       "contraction": 0.005649347281250001,
+       "glue": 0.003386930041028774,
+       "untimed": 0.0,
        "total": 0.3583992415879038,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -5349,11 +5405,13 @@
        "unchecked": true,
        "instance_spread": 1.052803999795161,
        "stages": {
-        "trees": 0.003889772859375,
-        "dressing": 0.5801923200078124,
+        "inputs": 0.003889772859375,
+        "numerator": 0.5821481885859374,
         "scatter": 0.54307735103125,
-        "reduction": 1.058971427625,
-        "rest": 0.031103100227392044,
+        "ninjars": 0.8748303250937499,
+        "masters": 0.18414110253125002,
+        "glue": 0.029147142828954475,
+        "untimed": 0.0,
         "total": 2.2172339717508294,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -5394,11 +5452,13 @@
       "instances": 3,
       "instance_spread": 1.085704452932233,
       "stages": {
-       "trees": 0.0037795458984375,
-       "dressing": 0.5891762398281251,
+       "inputs": 0.0037795458984375,
+       "numerator": 0.591300269078125,
        "scatter": 0.5473599153828125,
-       "reduction": 0.08484160664062501,
-       "rest": 0.030121135141721878,
+       "moments": 0.06007810102343752,
+       "contraction": 0.016126750796875002,
+       "glue": 0.0366337813995347,
+       "untimed": 0.0,
        "total": 1.255278442891722,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -5552,11 +5612,13 @@
        "unchecked": true,
        "instance_spread": 1.0181326841948726,
        "stages": {
-        "trees": 5.33645234375e-05,
-        "dressing": 0.0012925753671875,
+        "inputs": 5.33645234375e-05,
+        "numerator": 0.0014747070703125,
         "scatter": 0.00046056967968749994,
-        "reduction": 0.0017165830390625,
-        "rest": 0.0011295408423943614,
+        "ninjars": 0.0014162764453125,
+        "masters": 0.0003003065937500001,
+        "glue": 0.000947367029894361,
+        "untimed": 0.0,
         "total": 0.004652633451769361,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -5595,11 +5657,13 @@
       "instances": 3,
       "instance_spread": 1.4718997787950454,
       "stages": {
-       "trees": 5.4246171875e-05,
-       "dressing": 0.0013237639218749999,
+       "inputs": 5.4246171875e-05,
+       "numerator": 0.0015045298671874999,
        "scatter": 0.00046279986718750004,
-       "reduction": 0.00017798307812500003,
-       "rest": 0.0011715562027143577,
+       "moments": 0.00013832105468749998,
+       "contraction": 3.2126460937500005e-05,
+       "glue": 0.0009982904917768573,
+       "untimed": 0.0,
        "total": 0.0031903492417768575,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -5933,11 +5997,13 @@
        "unchecked": true,
        "instance_spread": 1.0442779591213656,
        "stages": {
-        "trees": 0.0001650242890625,
-        "dressing": 0.0481170954453125,
+        "inputs": 0.0001650242890625,
+        "numerator": 0.048705437546875,
         "scatter": 0.015776294359375,
-        "reduction": 0.11978140382812501,
-        "rest": 0.0037630712746938577,
+        "ninjars": 0.10783125342187501,
+        "masters": 0.011950150406250004,
+        "glue": 0.0031746737825063542,
+        "untimed": 0.0,
         "total": 0.18760288919656887,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
@@ -5976,11 +6042,13 @@
       "instances": 3,
       "instance_spread": 1.0847976752280013,
       "stages": {
-       "trees": 0.00013964746874999998,
-       "dressing": 0.047346296640624994,
+       "inputs": 0.00013964746874999998,
+       "numerator": 0.047932864132812496,
        "scatter": 0.0149294257890625,
-       "reduction": 0.013121093453125001,
-       "rest": 0.0036920838973686504,
+       "moments": 0.011653664812499997,
+       "contraction": 0.0013730438359375004,
+       "glue": 0.003199843319243629,
+       "untimed": 0.0,
        "total": 0.07922854724893114,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
@@ -6607,5 +6675,1733 @@
     "z_ggg"
    ]
   }
- }
+ },
+ "backends": {
+  "rule": "TIRust and NinjaRS each through the public API with reduction_unchecked = True (Runtime.load + evaluate, poles off, binary64, B = 128, one pinned thread); the ratio NinjaRS / TIRust; agreement: loop-induced each backend's largest relative error against the 256-bit truth (li-unchecked-accuracy.json; a row without a truth: the labelled cross-backend difference) and the L6 verdict of the checked default (lit.json); Born-interfered the largest TIRust-vs-NinjaRS relative difference at the timed points and LI-B1's L6 (lit.json); a value not measured prints its marker with the reason",
+  "loop_induced": {
+   "rows": [
+    {
+     "key": "gg_hh",
+     "math": "g g -> h h",
+     "group": "2->2",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.00043735139843192883,
+      "stages": {
+       "inputs": 7.336984375e-06,
+       "numerator": 0.000117695265625,
+       "scatter": 1.133075e-05,
+       "moments": 9.15430546875e-05,
+       "contraction": 3.4778906249999995e-06,
+       "glue": 0.00016260664862373652,
+       "untimed": 0.0,
+       "total": 0.0003940237111237366,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.41e-09,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hh].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.0006123689454398118,
+      "stages": {
+       "inputs": 7.0370703125e-06,
+       "numerator": 0.0001239315625,
+       "scatter": 1.2437578124999999e-05,
+       "ninjars": 0.0001947206484375,
+       "masters": 7.618456250000002e-05,
+       "glue": 0.0001578038906154949,
+       "untimed": 0.0,
+       "total": 0.0005721740781154949,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 8.82e-11,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hh].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_hh",
+        "status": "pass",
+        "tirust_served": 3,
+        "of": 3,
+        "finite_max_relative": 3.6215362982420813e-14
+       }
+      ],
+      "source": "lit.json rows[gg_hh].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_hh, tirust, ecc80899]",
+     "ratio": 1.4001760315283944
+    },
+    {
+     "key": "emep_ggg",
+     "math": "e^+ e^- -> g g g",
+     "group": "2->3",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.003419067077629734,
+      "stages": {
+       "inputs": 9.321578125e-05,
+       "numerator": 0.0022223829375,
+       "scatter": 0.000410747203125,
+       "moments": 0.00017046160156250002,
+       "contraction": 9.55418046875e-05,
+       "glue": 0.0009647236869533231,
+       "untimed": 0.0,
+       "total": 0.003957114491640823,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.46e-07,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_emep_ggg].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.007118539710063487,
+      "stages": {
+       "inputs": 6.77829453125e-05,
+       "numerator": 0.0022213853046875003,
+       "scatter": 0.0004228960078125001,
+       "ninjars": 0.0032644657343750003,
+       "masters": 0.0005686507421875,
+       "glue": 0.0008907101154360178,
+       "untimed": 0.0,
+       "total": 0.0074359303107485175,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 4.63e-10,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_emep_ggg].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_emep_ggg",
+        "status": "partial",
+        "tirust_served": 2,
+        "of": 3,
+        "finite_max_relative": 9.559717329172087e-08
+       }
+      ],
+      "source": "lit.json rows[emep_ggg].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[emep_ggg, tirust, ecc80899]",
+     "ratio": 2.08201229997465
+    },
+    {
+     "key": "gg_hhh",
+     "math": "g g -> h h h",
+     "group": "2->3",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.005203248772886582,
+      "stages": {
+       "inputs": 1.87361015625e-05,
+       "numerator": 0.0014800258515625002,
+       "scatter": 0.0002607769921875,
+       "moments": 0.0026525878749999996,
+       "contraction": 4.6551546875e-05,
+       "glue": 0.0003371210003037771,
+       "untimed": 0.0,
+       "total": 0.004795935226866277,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 7.62e-07,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hhh].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.00565011521030101,
+      "stages": {
+       "inputs": 2.0104140625e-05,
+       "numerator": 0.0014774466953125,
+       "scatter": 0.0002534241875,
+       "ninjars": 0.0026932098125,
+       "masters": 0.0009207907421875,
+       "glue": 0.00029961350232539635,
+       "untimed": 0.0,
+       "total": 0.005664662916387897,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 4.5e+64,
+       "lax": 1e-05,
+       "above": 2,
+       "worst": 4.5e+64,
+       "served_by": [
+        "checked refused"
+       ],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hhh].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_hhh",
+        "status": "pass",
+        "tirust_served": 3,
+        "of": 3,
+        "finite_max_relative": 6.566309988770677e-13
+       }
+      ],
+      "source": "lit.json rows[gg_hhh].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_hhh, tirust, ecc80899]",
+     "ratio": 1.0858821972424206
+    },
+    {
+     "key": "gg_hgg",
+     "math": "g g -> h g g",
+     "group": "2->3",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.029168721499445383,
+      "stages": {
+       "inputs": 0.0002343331796875,
+       "numerator": 0.015918594617187497,
+       "scatter": 0.0032551816484374997,
+       "moments": 0.005868678390625,
+       "contraction": 0.0007062867421875,
+       "glue": 0.003030679052841898,
+       "untimed": 0.0,
+       "total": 0.029013822459091898,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 9.24e-10,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "a678d177",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hgg].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.05933530682159471,
+      "stages": {
+       "inputs": 0.0002501407421875,
+       "numerator": 0.0161234076171875,
+       "scatter": 0.0035976185546875003,
+       "ninjars": 0.030844678851562498,
+       "masters": 0.0076067656171875005,
+       "glue": 0.00273984675814494,
+       "untimed": 0.0,
+       "total": 0.06116253525033244,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 7.98e-10,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "a678d177",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hgg].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_hgg",
+        "status": "pass",
+        "tirust_served": 3,
+        "of": 3,
+        "finite_max_relative": 2.746955412198573e-10
+       }
+      ],
+      "source": "lit.json rows[gg_hgg].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_hgg, tirust, ecc80899]",
+     "ratio": 2.0342100637740645
+    },
+    {
+     "key": "gg_zzg",
+     "math": "g g -> z z g",
+     "group": "2->3",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.1321541912839166,
+      "stages": {
+       "inputs": 8.491895312499999e-05,
+       "numerator": 0.09411511689843748,
+       "scatter": 0.0089010289375,
+       "moments": 0.015763315554687497,
+       "contraction": 0.0029727928749999997,
+       "glue": 0.0022763600323599635,
+       "untimed": 0.0,
+       "total": 0.12411359996985993,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 0.012,
+       "lax": 1e-05,
+       "above": 18,
+       "worst": 0.012,
+       "served_by": [
+        "last resort"
+       ],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "revision": "a678d177",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zzg].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.3860658808807784,
+      "stages": {
+       "inputs": 8.69413046875e-05,
+       "numerator": 0.10224843199218753,
+       "scatter": 0.0103090961171875,
+       "ninjars": 0.252050600875,
+       "masters": 0.028704570601562496,
+       "glue": 0.002358738322157883,
+       "untimed": 0.0,
+       "total": 0.3957584554627829,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 4.99e-08,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "a678d177",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zzg].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_zzg",
+        "status": "partial",
+        "tirust_served": 2,
+        "of": 3,
+        "finite_max_relative": 3.1752145289446384e-10
+       }
+      ],
+      "source": "lit.json rows[gg_zzg].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_zzg, tirust, ecc80899]",
+     "ratio": 2.921329071216248
+    },
+    {
+     "key": "gg_aag",
+     "math": "g g -> a a g",
+     "group": "2->3",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.07114760889089666,
+      "stages": {
+       "inputs": 9.00056796875e-05,
+       "numerator": 0.0587136216328125,
+       "scatter": 0.004383216210937501,
+       "moments": 0.0090259725,
+       "contraction": 0.0014045745234375,
+       "glue": 0.0017598232179530555,
+       "untimed": 0.0,
+       "total": 0.07537729804607807,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 6.99e-06,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "a678d177",
+       "source": "li-unchecked-accuracy.json rows[li_gg_aag].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.23313420831982512,
+      "stages": {
+       "inputs": 7.74296875e-05,
+       "numerator": 0.05330377371875,
+       "scatter": 0.0041836179765625,
+       "ninjars": 0.14631277209375,
+       "masters": 0.01442887903125,
+       "glue": 0.001747600106701247,
+       "untimed": 0.0,
+       "total": 0.22005415886451374,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 0.00314,
+       "lax": 1e-05,
+       "above": 1,
+       "worst": 0.00314,
+       "served_by": [
+        "checked served"
+       ],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "revision": "a678d177",
+       "source": "li-unchecked-accuracy.json rows[li_gg_aag].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_aag",
+        "status": "partial",
+        "tirust_served": 0,
+        "of": 3,
+        "finite_max_relative": null
+       }
+      ],
+      "source": "lit.json rows[gg_aag].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_aag, tirust, ecc80899]",
+     "ratio": 3.276768003227367
+    },
+    {
+     "key": "gg_wpwmg",
+     "math": "g g -> w^+ w^- g",
+     "group": "2->3",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.17803041389561258,
+      "stages": {
+       "inputs": 0.00033855914843749997,
+       "numerator": 0.107352942765625,
+       "scatter": 0.016320339289062496,
+       "moments": 0.05001258055468751,
+       "contraction": 0.005206938249999999,
+       "glue": 0.003757597467942457,
+       "untimed": 0.0,
+       "total": 0.18298905310075497,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 0.0136,
+       "lax": 1e-05,
+       "above": 24,
+       "worst": 0.0136,
+       "served_by": [
+        "last resort"
+       ],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_wpwmg].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.5404306432501471,
+      "stages": {
+       "inputs": 0.0003322384140625,
+       "numerator": 0.10605441871093749,
+       "scatter": 0.015515414781249999,
+       "ninjars": 0.39176102978124994,
+       "masters": 0.038774626265625015,
+       "glue": 0.003631454898203157,
+       "untimed": 0.0,
+       "total": 0.556069270507578,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 6.17e-08,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_wpwmg].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_wpwmg",
+        "status": "partial",
+        "tirust_served": 0,
+        "of": 3,
+        "finite_max_relative": null
+       }
+      ],
+      "source": "lit.json rows[gg_wpwmg].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_wpwmg, tirust, ecc80899]",
+     "ratio": 3.0356085312873926
+    },
+    {
+     "key": "gg_zzz",
+     "math": "g g -> z z z",
+     "group": "2->3",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.1972199119918514,
+      "stages": {
+       "inputs": 2.70147265625e-05,
+       "numerator": 0.10470799509375,
+       "scatter": 0.0061420971015625,
+       "moments": 0.009738047710937498,
+       "contraction": 0.0023284971015625003,
+       "glue": 0.002219608091898577,
+       "untimed": 0.0,
+       "total": 0.12516334779502358,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 2.25e-08,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zzz].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "failed closed",
+      "reason": "18/128 failed closed, lane status Unstable"
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_zzz",
+        "status": "pass",
+        "tirust_served": 3,
+        "of": 3,
+        "finite_max_relative": 5.318241760103763e-11
+       }
+      ],
+      "source": "lit.json rows[gg_zzz].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_zzz, tirust, ecc80899]"
+    },
+    {
+     "key": "gg_hzg",
+     "math": "g g -> h z g",
+     "group": "2->3",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.018408325780910673,
+      "stages": {
+       "inputs": 2.4843312499999997e-05,
+       "numerator": 0.0154155803984375,
+       "scatter": 0.0016261330312500003,
+       "moments": 0.0018111122109375,
+       "contraction": 0.0005412386328125001,
+       "glue": 0.000985077392977091,
+       "untimed": 0.0,
+       "total": 0.020404033166414592,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 8.18e-09,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hzg].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "failed closed",
+      "reason": "2/128 failed closed, lane status Unstable, lane status MasterFailed"
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_hzg",
+        "status": "pass",
+        "tirust_served": 3,
+        "of": 3,
+        "finite_max_relative": 3.751903589473008e-13
+       }
+      ],
+      "source": "lit.json rows[gg_hzg].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_hzg, tirust, ecc80899]"
+    },
+    {
+     "key": "gg_agg",
+     "math": "g g -> a g g",
+     "group": "2->3",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.114661227009492,
+      "stages": {
+       "inputs": 0.0002072725,
+       "numerator": 0.08319693189843749,
+       "scatter": 0.022222908398437498,
+       "moments": 0.006096499929687501,
+       "contraction": 0.0026873965546875,
+       "glue": 0.0049089394991556744,
+       "untimed": 0.0,
+       "total": 0.11932000644446816,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.33e-06,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_agg].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.26757264019033755,
+      "stages": {
+       "inputs": 0.0002061323359375,
+       "numerator": 0.08202567669531248,
+       "scatter": 0.021026537554687495,
+       "ninjars": 0.1531523216796875,
+       "masters": 0.018371815320312502,
+       "glue": 0.004875521070172972,
+       "untimed": 0.0,
+       "total": 0.27965805699204793,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 0.000683,
+       "lax": 1e-05,
+       "above": 1,
+       "worst": 0.000683,
+       "served_by": [
+        "checked served"
+       ],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_agg].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_agg",
+        "status": "partial",
+        "tirust_served": 0,
+        "of": 3,
+        "finite_max_relative": null
+       }
+      ],
+      "source": "lit.json rows[gg_agg].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_agg, tirust, ecc80899]",
+     "ratio": 2.3335930302593666
+    },
+    {
+     "key": "gg_zgg",
+     "math": "g g -> z g g",
+     "group": "2->3",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.19132477789753466,
+      "stages": {
+       "inputs": 0.000210702046875,
+       "numerator": 0.115924373875,
+       "scatter": 0.0360127788125,
+       "moments": 0.0161214081171875,
+       "contraction": 0.003907484374999999,
+       "glue": 0.006390455874309486,
+       "untimed": 0.0,
+       "total": 0.17856725653837202,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.12e-05,
+       "lax": 1e-05,
+       "above": 3,
+       "worst": 3.12e-05,
+       "served_by": [
+        "last resort"
+       ],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zgg].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.4177967920222727,
+      "stages": {
+       "inputs": 0.0001958585546875,
+       "numerator": 0.11506543040624997,
+       "scatter": 0.036670022999999996,
+       "ninjars": 0.21712934654687496,
+       "masters": 0.027547456046875002,
+       "glue": 0.006011384327415326,
+       "untimed": 0.0,
+       "total": 0.40261954763991525,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 6.17e-06,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zgg].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_zgg",
+        "status": "partial",
+        "tirust_served": 0,
+        "of": 3,
+        "finite_max_relative": null
+       }
+      ],
+      "source": "lit.json rows[gg_zgg].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_zgg, tirust, ecc80899]",
+     "ratio": 2.1837045709052214
+    },
+    {
+     "key": "uux_hgg",
+     "math": "u overline(u) -> h g g",
+     "group": "2->3",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.0016420337269664742,
+      "stages": {
+       "inputs": 2.0835710937499998e-05,
+       "numerator": 0.0003834506875,
+       "scatter": 0.00011049859375,
+       "moments": 0.0004547347578125,
+       "contraction": 3.39656015625e-05,
+       "glue": 0.0005761928844158165,
+       "untimed": 0.0,
+       "total": 0.0015797144078533165,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.66e-09,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_uux_hgg].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.0030502830377372447,
+      "stages": {
+       "inputs": 2.06683671875e-05,
+       "numerator": 0.000391798015625,
+       "scatter": 0.0001131918125,
+       "ninjars": 0.0007304320468749998,
+       "masters": 0.00027564920312500005,
+       "glue": 0.0006031014559769255,
+       "untimed": 0.0,
+       "total": 0.002134889815351926,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.48e-08,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_uux_hgg].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_uux_hgg",
+        "status": "partial",
+        "tirust_served": 2,
+        "of": 3,
+        "finite_max_relative": 3.1512974285948584e-11
+       }
+      ],
+      "source": "lit.json rows[uux_hgg].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[uux_hgg, tirust, ecc80899]",
+     "ratio": 1.8576250826299399
+    },
+    {
+     "key": "uux_ddxh",
+     "math": "u overline(u) -> d overline(d) h",
+     "group": "2->3",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.0004150616950937547,
+      "stages": {
+       "inputs": 9.8489453125e-06,
+       "numerator": 1.895934375e-05,
+       "scatter": 8.5729296875e-06,
+       "moments": 5.491124999999999e-06,
+       "contraction": 7.213359375000001e-07,
+       "glue": 0.0003854594071549196,
+       "untimed": 0.0,
+       "total": 0.0004290669930924196,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 4.14e-10,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_uux_ddxh].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.0004450601809367072,
+      "stages": {
+       "inputs": 1.01507421875e-05,
+       "numerator": 1.8639375e-05,
+       "scatter": 8.54575e-06,
+       "ninjars": 1.8481101562499995e-05,
+       "masters": 1.1381765625e-05,
+       "glue": 0.0003786695005068705,
+       "untimed": 0.0,
+       "total": 0.00044588120363187045,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 4.28e-09,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_uux_ddxh].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_uux_ddxh",
+        "status": "pass",
+        "tirust_served": 3,
+        "of": 3,
+        "finite_max_relative": 1.3106903193509067e-10
+       }
+      ],
+      "source": "lit.json rows[uux_ddxh].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[uux_ddxh, tirust, ecc80899]",
+     "ratio": 1.0722747634810685
+    },
+    {
+     "key": "gg_hhgg",
+     "math": "g g -> h h g g",
+     "group": "2->4",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.3445522512047319,
+      "stages": {
+       "inputs": 0.00018763936718750002,
+       "numerator": 0.127358623359375,
+       "scatter": 0.0254487093828125,
+       "moments": 0.19636794044531253,
+       "contraction": 0.005649347281250001,
+       "glue": 0.003386930041028774,
+       "untimed": 0.0,
+       "total": 0.3583992415879038,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 32,
+       "max_relative": 7.1e-07,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hhgg].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.7887141395985964,
+      "stages": {
+       "inputs": 0.0001849988984375,
+       "numerator": 0.11879127592187497,
+       "scatter": 0.024301787015625,
+       "ninjars": 0.6024713466640624,
+       "masters": 0.058104686515625,
+       "glue": 0.00270384097825227,
+       "untimed": 0.0,
+       "total": 0.8065579812282522,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 32,
+       "max_relative": 1.79e-06,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hhgg].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_hhgg",
+        "status": "partial",
+        "tirust_served": 1,
+        "of": 3,
+        "finite_max_relative": 2.963947056354439e-10
+       },
+       {
+        "run": "li_gg_hhgg_p15",
+        "status": "partial",
+        "tirust_served": 0,
+        "of": 1,
+        "finite_max_relative": null
+       }
+      ],
+      "source": "lit.json rows[gg_hhgg].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_hhgg, tirust, ecc80899]",
+     "ratio": 2.289098784990799
+    },
+    {
+     "key": "gg_hggg",
+     "math": "g g -> h g g g",
+     "group": "2->4",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 1.4365554161759064,
+      "stages": {
+       "inputs": 0.0037795458984375,
+       "numerator": 0.591300269078125,
+       "scatter": 0.5473599153828125,
+       "moments": 0.06007810102343752,
+       "contraction": 0.016126750796875002,
+       "glue": 0.0366337813995347,
+       "untimed": 0.0,
+       "total": 1.255278442891722,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 32,
+       "max_relative": 5.86e-08,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hggg].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 2.53216914762379,
+      "stages": {
+       "inputs": 0.003889772859375,
+       "numerator": 0.5821481885859374,
+       "scatter": 0.54307735103125,
+       "ninjars": 0.8748303250937499,
+       "masters": 0.18414110253125002,
+       "glue": 0.029147142828954475,
+       "untimed": 0.0,
+       "total": 2.2172339717508294,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 32,
+       "max_relative": 4.38e-05,
+       "lax": 1e-05,
+       "above": 2,
+       "worst": 4.38e-05,
+       "served_by": [
+        "checked served"
+       ],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hggg].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_hggg",
+        "status": "partial",
+        "tirust_served": 0,
+        "of": 3,
+        "finite_max_relative": null
+       }
+      ],
+      "source": "lit.json rows[gg_hggg].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_hggg, tirust, ecc80899]",
+     "ratio": 1.7626672240493129
+    },
+    {
+     "key": "gg_emepmupmum",
+     "math": "g g -> e^+ e^- mu^+ mu^-",
+     "group": "2->4",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.003753871813387377,
+      "stages": {
+       "inputs": 5.4246171875e-05,
+       "numerator": 0.0015045298671874999,
+       "scatter": 0.00046279986718750004,
+       "moments": 0.00013832105468749998,
+       "contraction": 3.2126460937500005e-05,
+       "glue": 0.0009982904917768573,
+       "untimed": 0.0,
+       "total": 0.0031903492417768575,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 32,
+       "max_relative": 5.45e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmum].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.005314696521963924,
+      "stages": {
+       "inputs": 5.33645234375e-05,
+       "numerator": 0.0014747070703125,
+       "scatter": 0.00046056967968749994,
+       "ninjars": 0.0014162764453125,
+       "masters": 0.0003003065937500001,
+       "glue": 0.000947367029894361,
+       "untimed": 0.0,
+       "total": 0.004652633451769361,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 32,
+       "max_relative": 4.93e-10,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmum].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_emepmupmum",
+        "status": "pass",
+        "tirust_served": 3,
+        "of": 3,
+        "finite_max_relative": 2.5894842079053367e-13
+       }
+      ],
+      "source": "lit.json rows[gg_emepmupmum].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_emepmupmum, tirust, ecc80899]",
+     "ratio": 1.4157906252979127
+    },
+    {
+     "key": "li51",
+     "math": "g g -> e^+ e^- mu^+ mu^- g",
+     "group": "2->5",
+     "revision": "ecc80899",
+     "tirust": {
+      "status": "measured",
+      "seconds_per_point": 0.07180896126737935,
+      "stages": {
+       "inputs": 0.00013964746874999998,
+       "numerator": 0.047932864132812496,
+       "scatter": 0.0149294257890625,
+       "moments": 0.011653664812499997,
+       "contraction": 0.0013730438359375004,
+       "glue": 0.003199843319243629,
+       "untimed": 0.0,
+       "total": 0.07922854724893114,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 16,
+       "max_relative": 8.27e-09,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmumg].tirust"
+      }
+     },
+     "ninjars": {
+      "status": "measured",
+      "seconds_per_point": 0.16749080642694025,
+      "stages": {
+       "inputs": 0.0001650242890625,
+       "numerator": 0.048705437546875,
+       "scatter": 0.015776294359375,
+       "ninjars": 0.10783125342187501,
+       "masters": 0.011950150406250004,
+       "glue": 0.0031746737825063542,
+       "untimed": 0.0,
+       "total": 0.18760288919656887,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 16,
+       "max_relative": 9.45e-08,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "ecc80899",
+       "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmumg].ninjars"
+      }
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_emepmupmumg",
+        "status": "pass",
+        "tirust_served": 3,
+        "of": 3,
+        "finite_max_relative": 6.881065239204697e-12
+       }
+      ],
+      "source": "lit.json rows[li51].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[li51, tirust, ecc80899]",
+     "ratio": 2.332449926455437
+    }
+   ],
+   "not_unchecked": [
+    "gg_h",
+    "h_gg",
+    "h_aa",
+    "h_za",
+    "aa_h",
+    "gg_aa",
+    "gg_zz",
+    "gg_wpwm",
+    "gg_za",
+    "gg_hz",
+    "gg_hg",
+    "uux_hg",
+    "ug_hu",
+    "gg_zg",
+    "gg_ag",
+    "emep_ha",
+    "aa_aa",
+    "aa_zz",
+    "aa_hh",
+    "emep_hh",
+    "h_ggg",
+    "z_ggg",
+    "gg_aagg",
+    "gg_zzzz",
+    "li_x1"
+   ],
+   "accuracy": "data/li-unchecked-accuracy.json"
+  },
+  "born_interfered": {
+   "rows": [
+    {
+     "key": "uux_ddxg",
+     "math": "u overline(u) -> d overline(d) g",
+     "group": "2->3",
+     "tirust": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     },
+     "ninjars": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     }
+    },
+    {
+     "key": "uux_uuxg",
+     "math": "u overline(u) -> u overline(u) g",
+     "group": "2->3",
+     "tirust": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     },
+     "ninjars": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     }
+    },
+    {
+     "key": "uux_emepg",
+     "math": "u overline(u) -> e^- e^+ g",
+     "group": "2->3",
+     "tirust": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     },
+     "ninjars": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     }
+    },
+    {
+     "key": "uux_ggg",
+     "math": "u overline(u) -> g g g",
+     "group": "2->3",
+     "tirust": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     },
+     "ninjars": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     }
+    },
+    {
+     "key": "gg_ggg",
+     "math": "g g -> g g g",
+     "group": "2->3",
+     "tirust": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     },
+     "ninjars": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     }
+    },
+    {
+     "key": "uux_emepgg",
+     "math": "u overline(u) -> e^- e^+ g g",
+     "group": "2->4",
+     "tirust": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     },
+     "ninjars": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     }
+    },
+    {
+     "key": "gg_ttxgg",
+     "math": "g g -> t overline(t) g g",
+     "group": "2->4",
+     "tirust": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     },
+     "ninjars": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     }
+    },
+    {
+     "key": "uux_gggg",
+     "math": "u overline(u) -> g g g g",
+     "group": "2->4",
+     "tirust": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     },
+     "ninjars": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     }
+    },
+    {
+     "key": "gg_gggg",
+     "math": "g g -> g g g g",
+     "group": "2->4",
+     "tirust": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     },
+     "ninjars": {
+      "status": "not timed",
+      "reason": "timed in lit-report's final re-time (public API, reduction_unchecked = True)"
+     }
+    }
+   ],
+   "l6": {
+    "status": "partial",
+    "rows": {
+     "pass": 85,
+     "not run": 7,
+     "partial": 115,
+     "pass (lax)": 9
+    },
+    "source": "lit.json ids['LI-B1'].campaigns"
+   },
+   "file": "data/backends-born.json",
+   "present": false
+  }
+ },
+ "missing": [
+  {
+   "kind": "no value",
+   "table": "1",
+   "text": "leading colour: not supported (refused by design: EW LC/NLC is never supported (user 2026-10-30, Q4)",
+   "rows": [
+    "g g -> t overline(t) e^- e^+ g"
+   ]
+  },
+  {
+   "kind": "no value",
+   "table": "1",
+   "text": "no matched provider time (no gate)",
+   "rows": [
+    "g g -> g g g g g"
+   ]
+  },
+  {
+   "kind": "no value",
+   "table": "2",
+   "text": "providers: not run (no provider timing record of the row in li_campaign.json)",
+   "rows": [
+    "g g -> h",
+    "g g -> a a",
+    "g g -> z z",
+    "g g -> w^+ w^-",
+    "g g -> z a",
+    "g g -> h z",
+    "g g -> h g",
+    "u overline(u) -> h g",
+    "u g -> h u",
+    "g g -> z g",
+    "g g -> a g"
+   ]
+  },
+  {
+   "kind": "no value",
+   "table": "2",
+   "text": "no matched provider time (not timed: no production timing yet / unavailable: decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries)",
+   "rows": [
+    "h -> g g",
+    "h -> a a",
+    "h -> z a",
+    "h -> g g g",
+    "z -> g g g"
+   ]
+  },
+  {
+   "kind": "no value",
+   "table": "2",
+   "text": "no matched provider time (not timed: no production timing yet / unavailable: no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b)))",
+   "rows": [
+    "a a -> h",
+    "e^+ e^- -> h a",
+    "a a -> a a",
+    "a a -> z z",
+    "a a -> h h",
+    "e^+ e^- -> h h"
+   ]
+  },
+  {
+   "kind": "no value",
+   "table": "2",
+   "text": "not run: generation beyond the 45-min rule (R9): generate + plan export + exact helicity-zero filter done in 14.0 s (peak 0.63 GiB)",
+   "rows": [
+    "g g -> a a g g"
+   ]
+  },
+  {
+   "kind": "no value",
+   "table": "2",
+   "text": "not run: generation beyond the 45-min rule (R9): generate + plan export + exact helicity-zero filter done in 9.8 s (peak 0.60 GiB)",
+   "rows": [
+    "g g -> z z z z"
+   ]
+  },
+  {
+   "kind": "no value",
+   "table": "2",
+   "text": "not timed: execution check only (user 2026-11-06 ~14:55): rank > N+2 has no correct R2 (no dim-8 model), so no reference, no benchmark and no timing claim",
+   "rows": [
+    "rank > N+2 EFT row (HC_NLO_X0 or SMEFT)"
+   ]
+  },
+  {
+   "kind": "gate",
+   "table": "2",
+   "text": "fail on TIRust",
+   "rows": [
+    "g g -> h g g",
+    "g g -> a g g",
+    "g g -> z g g",
+    "g g -> h h g g",
+    "g g -> h g g g"
+   ],
+   "ratio": [
+    1.203458846092036,
+    1.4310988694895102,
+    1.2211443636291714,
+    1.5460713330823463,
+    2.2512928203826403
+   ],
+   "dominant": [
+    {
+     "stage": "numerator",
+     "share": 0.5486568480473101
+    },
+    {
+     "stage": "numerator",
+     "share": 0.6972591988918104
+    },
+    {
+     "stage": "numerator",
+     "share": 0.6491918552899926
+    },
+    {
+     "stage": "moments",
+     "share": 0.5479028580190793
+    },
+    {
+     "stage": "numerator",
+     "share": 0.47105111203552363
+    }
+   ]
+  },
+  {
+   "kind": "gate",
+   "table": "2",
+   "text": "open on TIRust",
+   "rows": [
+    "g g -> w^+ w^- g"
+   ],
+   "ratio": [
+    1.401439711464367
+   ],
+   "dominant": [
+    {
+     "stage": "numerator",
+     "share": 0.5866635027955098
+    }
+   ]
+  },
+  {
+   "kind": "validation",
+   "table": "2",
+   "text": "partial: L3, L4, L5 (checked default; lit.json)",
+   "rows": [
+    "h -> g g g",
+    "z -> g g g",
+    "g g -> z z z"
+   ]
+  },
+  {
+   "kind": "validation",
+   "table": "2",
+   "text": "partial: L3, L4, L5, L6; TIRust fails 1 of 3 binary64 fixture points closed (checked default; lit.json)",
+   "rows": [
+    "e^+ e^- -> g g g",
+    "g g -> z z g",
+    "u overline(u) -> h g g"
+   ]
+  },
+  {
+   "kind": "validation",
+   "table": "2",
+   "text": "partial: L3, L4, L5, L6 (checked default; lit.json)",
+   "rows": [
+    "g g -> h g g"
+   ]
+  },
+  {
+   "kind": "validation",
+   "table": "2",
+   "text": "partial: L3, L4, L5, L6; TIRust fails 3 of 3 binary64 fixture points closed (checked default; lit.json)",
+   "rows": [
+    "g g -> a a g",
+    "g g -> w^+ w^- g",
+    "g g -> a g g",
+    "g g -> z g g",
+    "g g -> h g g g",
+    "g g -> a a g g",
+    "g g -> z z z z"
+   ]
+  },
+  {
+   "kind": "validation",
+   "table": "2",
+   "text": "partial: L3, L4, L5, L6; TIRust fails 2 of 3, 1 of 1 binary64 fixture points closed (checked default; lit.json)",
+   "rows": [
+    "g g -> h h g g"
+   ]
+  },
+  {
+   "kind": "accuracy",
+   "table": "2",
+   "text": "NinjaRS per amplitude unchecked: 2/128 points above 1e-05, worst 4.5e+64",
+   "rows": [
+    "g g -> h h h"
+   ]
+  },
+  {
+   "kind": "accuracy",
+   "table": "2",
+   "text": "TIRust unchecked: 18/128 points above 1e-05, worst 1.2e-02",
+   "rows": [
+    "g g -> z z g"
+   ]
+  },
+  {
+   "kind": "accuracy",
+   "table": "2",
+   "text": "NinjaRS per amplitude unchecked: 1/128 points above 1e-05, worst 3.1e-03",
+   "rows": [
+    "g g -> a a g"
+   ]
+  },
+  {
+   "kind": "accuracy",
+   "table": "2",
+   "text": "TIRust unchecked: 24/128 points above 1e-05, worst 1.4e-02",
+   "rows": [
+    "g g -> w^+ w^- g"
+   ]
+  },
+  {
+   "kind": "accuracy",
+   "table": "2",
+   "text": "NinjaRS per amplitude unchecked: 2/128 points above 1e-05, worst 7.0e+33; 18 points fail (Unstable)",
+   "rows": [
+    "g g -> z z z"
+   ]
+  },
+  {
+   "kind": "accuracy",
+   "table": "2",
+   "text": "NinjaRS per amplitude unchecked: 2 points fail (MasterFailed, Unstable)",
+   "rows": [
+    "g g -> h z g"
+   ]
+  },
+  {
+   "kind": "accuracy",
+   "table": "2",
+   "text": "NinjaRS per amplitude unchecked: 1/128 points above 1e-05, worst 6.8e-04",
+   "rows": [
+    "g g -> a g g"
+   ]
+  },
+  {
+   "kind": "accuracy",
+   "table": "2",
+   "text": "TIRust unchecked: 3/128 points above 1e-05, worst 3.1e-05",
+   "rows": [
+    "g g -> z g g"
+   ]
+  },
+  {
+   "kind": "accuracy",
+   "table": "2",
+   "text": "NinjaRS per amplitude unchecked: 2/32 points above 1e-05, worst 4.4e-05",
+   "rows": [
+    "g g -> h g g g"
+   ]
+  }
+ ]
 }

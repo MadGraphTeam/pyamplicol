@@ -14,7 +14,9 @@ every later milestone push. The report holds, in this order:
 | `<tab:summary>` | **Table 1**, Born-interfered one-loop processes, on the first pages | the summary table (user 2026-10-24) |
 | `<tab:summary-li>` | **Table 2**, loop-induced processes (\|A_loop\|²), Table 1's rules | the loop-induced summary table (user 2026-11-06 ~06:00) |
 | `<fig:gate>` | **Figure 1**, Table 1's batched full-colour times against the providers and the gate limit (log scale); beneath them, as diamonds, Table 2's rows with a pyAmpliCol time and a matched provider time (the others not drawn, counted in the key) | the only view of how far each row is from its limit (loop-induced rows: user 2026-11-07 ~10:40) |
-| `<tab:gate>` | **Table 3**, gate and stage split at B = 128: limit, binding provider, band, chip, ms per stage | the numbers behind Table 1's gate chips and stage bars (the table view of Figure 1 and of the bars) |
+| `<tab:backends>` | **Table 3**, TIRust against NinjaRS under the same public unchecked setting, both process types: time per point at B = 128 with each backend's stage bar, the ratio, the agreement (loop-induced: each backend against the 256-bit truth and the L6 verdict of the checked default; Born-interfered: the largest TIRust-vs-NinjaRS difference at the timed points, LI-B1's L6) | the backend comparison (m-lit Q40): what Table 2's NinjaRS line and the Born-interfered TIRust option need |
+| `<missing>` | **Missing or incomplete**, generated from the two summaries (`summary-li.json` `missing`, no hand text): one line per reason for the cells without a value, the gated rows whose verdict is fail or open (time ÷ limit and the stage that dominates pyAmpliCol's time), the partial validation cells and the accuracy notes above 1e-5, rows sharing a reason on one line | what is not (yet) measured or not passing, in one place |
+| `<tab:gate>` | **Table 4**, gate and stage split at B = 128: limit, binding provider, band, chip, ms per stage | the numbers behind Table 1's gate chips and stage bars (the table view of Figure 1 and of the bars) |
 | `<reading>` | "Reading the tables": one paragraph per table and marker | the explanations the summary pages leave out |
 
 Every value is the newest measurement of its cell. Not printed: historical
@@ -75,9 +77,20 @@ Update source, data and PDF together at each milestone push.
 ## Data
 
 `scripts/build_summary.py` writes `data/summary.json` (Table 1, Figure 1,
-Table 3) and `data/summary-li.json` (Table 2, and in `figure` Figure 1's
-loop-induced rows) from the campaign records below;
+Table 4) and `data/summary-li.json` (Table 2; in `figure` Figure 1's
+loop-induced rows, in `backends` Table 3, in `missing` the "Missing or
+incomplete" box) from the campaign records below;
 never edit either by hand. Every value names its `source`.
+
+**Stage split** (every bar and Table 4; `STAGE_ORDER`, `_split`; the
+MASTER_PLAN live-report stage-split rule): inputs, numerator, scatter, the
+reduction backend's own stages (NinjaRS: its expansions = the reduction
+without the masters, and the masters (oneloopmaster); TIRust: its tensor
+moments and contraction, and its master integrals only where a profiled arm
+recorded them), glue; one colour per stage in the whole report. Table 2's
+records carry the instrumented run's stages verbatim
+(`retime_unchecked.py` `_stage_split`) and the builder groups them as
+Table 1's.
 
 **Main-configuration rule** (`MAIN_RULE`, `Recency`): every Table 1 cell
 (generation, validation, full colour, leading colour) shows the most recent
@@ -128,7 +141,14 @@ providers' production timing records the manifest names (below
 7|6|1` only, their `host` in the provenance line; a provider whose record
 has `values_excluded` is timed and shown but no matched provider: never the
 fastest matched one or a limit, the multiplier to it beside the cell); `data/lit.json`
-(`lit-val`'s validation figures). An absent file reads as pending. The cell
+(`lit-val`'s validation figures: written by `python tools/loop_benchmark/li_manifest.py lit
+--records <run records> ...` from `lit-val`'s run records, its rules and the
+§4.1 checks that are not run or, by a user ruling, not applicable in
+`tests/fixtures/loop/required/li/lit-val/spec/campaign.json`; there is no
+separate builder script, `build_summary.py` reads it directly). A registry
+row may declare `untimed` (the reason; LI-X1, an execution check without a
+reference, USER 2026-11-06 ~14:55): its cells print "not timed" with it. An
+absent file reads as pending. The cell
 takes the newest revision's B = 128 record of the backend `auto` serves
 (records without a request: the default backend first), never one with failed
 points; the other backend's B = 128 record beside it with its served fraction
@@ -141,6 +161,7 @@ request, backend, batch and revision.
 | `g1.json`, `g1-values.json` | the G1 campaign: providers' production-mode times, pyAmpliCol configurations per batch with stages, uncertainty and gate verdicts, value comparisons, stability rows (`python -m tools.loop_benchmark gate`); the per-point values behind it | through `summary.json` (newest configuration only) |
 | `msm-g1.json`, `msm-g1-values.json` | the electroweak G1 row, the same gate tool; joined to `g1.json`'s integrated configuration when both timed the same engine | through `summary.json` |
 | `milestone.json` | hand-maintained registry, each block with its `source`: engine revision and native build, `ancestry`, `development`, `gate_decisions` (user decisions, `gate_batch`, `threshold_rule`), `validation_decisions`, `status_notes`, `pending`, `cell_notes`, `loop_induced` | through the summaries |
+| `backends-born.json` | Table 3's Born-interfered rows: TIRust and NinjaRS through the public API with `reduction_unchecked = True` on Table 1's 2 → 3 / 2 → 4 rows (time, stages, the largest TIRust-vs-NinjaRS difference at the timed points), written by `lit-report`'s final re-time; absent: those cells print "not timed" | through `summary-li.json` |
 | `measured.json` | development records (`scripts/collect_milestone.py`): required-set native validations, provider reference runs, NJet timings | through `summary.json` |
 | `2to6.json` | the 2 → 6 records (`scripts/build_2to6.py`): Table 1's `preliminary` rows | through `summary.json` |
 | `mqcd*.json`, `msm*.json` (other than `msm-g1*`), `dec*.json`, `hc.json`, `corr.json` | the QCD, electroweak and decay validation campaigns and their matrices (`scripts/build_mqcd.py`, `build_mqcd_matrix.py`, `build_msm_matrix.py`, `build_dec_matrix.py`, `build_hc.py`, `build_corr.py`), the HC_NLO_X0 and Recola correlation rows | no (campaign records) |

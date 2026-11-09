@@ -79,7 +79,6 @@ SETTINGS = {
         "pinned": "taskset -c <one idle core>",
     },
 }
-STAGES = ("trees + CT kets", "dressing", "scatter", "reduction")
 LABEL = "instrumented run: stage shares, not the timed call"
 
 
@@ -938,8 +937,11 @@ def gate_of(
 
 def _stage_split(stages: dict[str, Any] | None, backend: str) -> dict[str, Any] | None:
     """The instrumented run's per-stage seconds per point of ``backend`` at
-    its largest B (the harness record's ``backend_runs``: trees + CT kets,
-    dressing, scatter, reduction, the rest of its call), labelled."""
+    its largest B (the harness record's ``backend_runs``), verbatim: every
+    stage the native report and the harness timed, the reduction with its
+    backend's own sub-stages (TIRust: tensor moments, contraction; NinjaRS:
+    masters); the report groups them (build_summary.py ``_split``, the
+    MASTER_PLAN stage-split rule), labelled."""
 
     if stages is None:
         return None
@@ -948,15 +950,11 @@ def _stage_split(stages: dict[str, Any] | None, backend: str) -> dict[str, Any] 
         return None
     size = max(entry["batches"], key=int)
     summary = entry["batches"][size]
-    per = summary.get("stages_per_point") or {}
-    main = {name: per.get(name, 0.0) for name in STAGES}
-    total = summary["median_seconds_per_point"]
-    main["rest"] = max(total - sum(main.values()), 0.0)
     return {
         "label": LABEL,
         "batch": int(size),
-        "seconds_per_point": main,
-        "total": total,
+        "seconds_per_point": dict(summary.get("stages_per_point") or {}),
+        "total": summary["median_seconds_per_point"],
     }
 
 

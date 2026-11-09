@@ -316,7 +316,9 @@ class Recency:
 
 
 # Stage groups of the per-point split (the executor's stage names; see the
-# report's stage-split table for their definitions).
+# report's stage-split table for their definitions). The loop-induced
+# executor's inputs are the trees and counterterm kets of the amplitude
+# basis; its transport and squaring are glue.
 STAGE_GROUPS = {
     "inputs": (
         "python trees",
@@ -324,12 +326,28 @@ STAGE_GROUPS = {
         "python scalars",
         "python Born and counterterm components",
         "native trees",
+        "trees + CT kets",
     ),
     "numerator": ("seeds", "factors", "dressing"),
     "scatter": ("scatter",),
-    "masters": ("reduction: masters",),
-    "glue": ("python point parameters", "input conversion", "assembly", "other"),
+    "glue": (
+        "python point parameters",
+        "input conversion",
+        "assembly",
+        "transport",
+        "squaring",
+        "other",
+    ),
 }
+# The reduction backend's own stages (MASTER_PLAN's live-report stage-split
+# rule, amended by m-lit lit-report): NinjaRS = its expansions (the
+# reduction without the master integrals) and the masters (oneloopmaster);
+# TIRust = its tensor moments and the contraction, plus its master integrals
+# only where an arm recorded TIRust's profile (a part of the tensor moments,
+# shown apart; never inferred). One key per stage, one colour per key across
+# the report (benchmarks.typ stage-colour).
+REDUCTION_KEYS = ("ninjars", "moments", "contraction", "masters")
+STAGE_ORDER = ("inputs", "numerator", "scatter", *REDUCTION_KEYS, "glue", "untimed")
 
 
 def _load(path: Path) -> dict:
@@ -379,11 +397,38 @@ def _stage(stages: dict, names: tuple[str, ...]) -> float:
     return sum(stages.get(n, 0.0) for n in names)
 
 
+def _reduction(stages: dict) -> tuple[dict, float]:
+    """The reduction's own stages of a record (``REDUCTION_KEYS``) and the
+    rest of its reduction timer outside them: TIRust where its tensor-moment
+    timer is recorded, else NinjaRS (the reduction without its masters, and
+    the masters)."""
+
+    total = stages.get("reduction", 0.0)
+    if "reduction: tensor moments" in stages:
+        out = {
+            "moments": stages["reduction: tensor moments"],
+            "contraction": stages.get("reduction: contraction", 0.0),
+        }
+        if "reduction: TIR masters" in stages:
+            # TIRust's profile arm splits its tensor moments (geometry,
+            # masters, recursion, gather, output): the masters shown apart.
+            out["masters"] = stages["reduction: TIR masters"]
+            out["moments"] -= out["masters"]
+        return out, total - sum(out.values())
+    # NinjaRS: its expansions are the reduction without the masters, so
+    # nothing of the reduction timer is left over.
+    masters = stages.get("reduction: masters", 0.0)
+    return {"ninjars": total - masters, "masters": masters}, 0.0
+
+
 def _split(stages: dict) -> dict:
     out = {g: _stage(stages, names) for g, names in STAGE_GROUPS.items()}
-    out["ninjars"] = stages.get("reduction", 0.0) - stages.get(
-        "reduction: masters", 0.0
-    )
+    reduction, rest = _reduction(stages)
+    out.update(reduction)
+    # The reduction timer's rest outside its backend's sub-timers (TIRust's
+    # bookkeeping between moments and contraction): glue, never a stage.
+    if rest > 0:
+        out["glue"] += rest
     # A record without any per-point input timer (the build on loop before
     # lc-perf, 88657260: the native trees timer was a scratch commit of the
     # development campaign; since lc-perf the executor reports "trees")
@@ -393,8 +438,7 @@ def _split(stages: dict) -> dict:
     if not any(name in stages for name in STAGE_GROUPS["inputs"]):
         out["untimed"] = stages.get("other", 0.0)
         out["glue"] -= out["untimed"]
-    order = ("inputs", "numerator", "scatter", "ninjars", "masters", "glue", "untimed")
-    return {k: out[k] for k in order}
+    return {k: out[k] for k in STAGE_ORDER if k in out}
 
 
 # The gate batch (user 2026-10-28, slice-status DECISIONS ~08:20 item 2;
@@ -2888,19 +2932,22 @@ def _li_accuracy(acc: dict | None, key: str, backend: str) -> dict | None:
 
 def _li_stages(rec: dict) -> dict | None:
     """The stage split of the separate instrumented run beside an unchecked
-    record (its ``stages``: trees + CT kets, dressing, scatter, reduction,
-    rest; labelled, never the timed call)."""
+    record (its ``stages``: the run's stages per point, verbatim), grouped as
+    Table 1's (``_split``: inputs = trees + CT kets, numerator, scatter, the
+    reduction backend's own stages, glue); labelled, never the timed
+    call."""
 
     st = rec.get("stages")
     if not st:
         return None
-    sec = st["seconds_per_point"]
+    if "rest" in st["seconds_per_point"]:
+        raise ValueError(
+            f"{LI_TIMING} record of {rec['key']} at {rec['revision'][:8]}: stages"
+            " in the grouped form before lit-report (re-collect them verbatim:"
+            " retime_unchecked.py _stage_split)"
+        )
     return {
-        "trees": sec["trees + CT kets"],
-        "dressing": sec["dressing"],
-        "scatter": sec["scatter"],
-        "reduction": sec["reduction"],
-        "rest": sec["rest"],
+        **_split(st["seconds_per_point"]),
         "total": st["total"],
         "label": st["label"],
         "batch": st["batch"],
@@ -3788,6 +3835,304 @@ def build() -> tuple[dict, Recency]:
     return summary, recency
 
 
+# The backend-comparison table (m-lit Q40, PLAN §LIT-REPORT): TIRust and
+# NinjaRS under the same public unchecked setting (one no-pole binary64
+# evaluation per point, B = 128), for both process types. Loop-induced rows:
+# Table 2's unchecked records (each backend's time and stage split), each
+# backend's largest error against the 256-bit truth (LI_ACCURACY) and the
+# row's L6 verdict (lit.json, the checked default); Born-interfered rows:
+# Table 1's gated multiplicities, their two backend arms (BORN_BACKENDS,
+# written by lit-report's final re-time) with the largest TIRust-vs-NinjaRS
+# difference at the timed points, and LI-B1's L6 tally.
+BORN_BACKENDS = "backends-born.json"
+BACKEND_GROUPS = ("2->3", "2->4")
+BACKEND_RULE = (
+    "TIRust and NinjaRS each through the public API with reduction_unchecked"
+    " = True (Runtime.load + evaluate, poles off, binary64, B = 128, one"
+    " pinned thread); the ratio NinjaRS / TIRust; agreement: loop-induced each"
+    " backend's largest relative error against the 256-bit truth"
+    " (li-unchecked-accuracy.json; a row without a truth: the labelled"
+    " cross-backend difference) and the L6 verdict of the checked default"
+    " (lit.json); Born-interfered the largest TIRust-vs-NinjaRS relative"
+    " difference at the timed points and LI-B1's L6 (lit.json); a value"
+    " not measured prints its marker with the reason"
+)
+
+
+def _backend_cell(cell: dict | None, stages: dict | None) -> dict:
+    """One backend's entry of the backend table from a Table 2 cell (its
+    ``timing`` or ``timing.other_backend``)."""
+
+    if cell is None:
+        return {"status": "not timed", "reason": "no record of this backend"}
+    if cell.get("status") not in ("measured", "served") or "seconds_per_point" not in cell:
+        out = {"status": cell.get("status", "not timed")}
+        out["reason"] = cell.get("reason") or cell.get("label")
+        return out
+    return {
+        "status": "measured",
+        "seconds_per_point": cell["seconds_per_point"],
+        "stages": stages,
+        "accuracy": cell.get("accuracy"),
+    }
+
+
+def _li_l6(lit: dict | None, key: str) -> dict | None:
+    """A loop-induced row's L6 verdict (lit.json, binary64, the checked
+    default): status, TIRust's served points and the largest finite-part
+    difference of the two backends on the points both serve."""
+
+    if lit is None or key not in lit["rows"]:
+        return None
+    runs = lit["rows"][key].get("runs") or {}
+    out = []
+    for name, run in runs.items():
+        double = ((run.get("L6") or {}).get("double")) or {}
+        if "status" not in double:
+            continue
+        out.append(
+            {
+                "run": name,
+                "status": double["status"],
+                "tirust_served": double.get("tirust_served"),
+                "of": double.get("of"),
+                "finite_max_relative": double.get("finite_max_relative"),
+            }
+        )
+    return {"runs": out, "source": f"{LI_VALIDATION} rows[{key}].runs.*.L6.double"} if out else None
+
+
+def _born_l6(lit: dict | None) -> dict | None:
+    """LI-B1's L6 tally over its campaign rows (lit.json ids['LI-B1'])."""
+
+    if lit is None or "LI-B1" not in lit["ids"]:
+        return None
+    b1 = lit["ids"]["LI-B1"]
+    tally: dict[str, int] = {}
+    for campaign in (b1.get("campaigns") or {}).values():
+        for row in (campaign.get("rows") or {}).values():
+            tally[row["status"]] = tally.get(row["status"], 0) + 1
+    return {
+        "status": b1["status"],
+        "rows": tally,
+        "source": f"{LI_VALIDATION} ids['LI-B1'].campaigns",
+    }
+
+
+def build_backend_table(summary: dict, loop_induced: dict, data: Path = DATA) -> dict:
+    """The backend-comparison table (``BACKEND_RULE``) from the records
+    present: every value names its revision; what is not measured carries
+    its marker."""
+
+    lit = _li_input(data, LI_VALIDATION)
+    born = _li_input(data, BORN_BACKENDS)
+    li_rows = []
+    for g in loop_induced["groups"]:
+        for r in g["rows"]:
+            m = r["timing"]
+            if not m.get("unchecked"):
+                continue
+            # The cell is TIRust's (the default) unless only NinjaRS ran.
+            backends = {}
+            if m.get("backend"):
+                backends[m["backend"]] = _backend_cell(m, m.get("stages"))
+            o = m.get("other_backend")
+            if o is not None:
+                backends[o["backend"]] = _backend_cell(
+                    {**o, "status": o.get("status")}, o.get("stages")
+                )
+            ti, nj = backends.get("tirust"), backends.get("ninjars")
+            row = {
+                "key": r["key"],
+                "math": r["math"],
+                "group": g["name"],
+                "revision": m.get("revision"),
+                "tirust": ti or _backend_cell(None, None),
+                "ninjars": nj or _backend_cell(None, None),
+                "l6": _li_l6(lit, r["key"]),
+                "source": m.get("source"),
+            }
+            if ti and nj and "seconds_per_point" in ti and "seconds_per_point" in nj:
+                row["ratio"] = nj["seconds_per_point"] / ti["seconds_per_point"]
+            li_rows.append(row)
+    not_unchecked = [
+        r["key"]
+        for g in loop_induced["groups"]
+        for r in g["rows"]
+        if not r["timing"].get("unchecked")
+    ]
+    born_rows = []
+    records = {}
+    for rec in (born or {}).get("records", []):
+        records.setdefault(rec["key"], {})[rec["backend"]] = rec
+    for g in summary["groups"]:
+        if g["name"] not in BACKEND_GROUPS:
+            continue
+        for r in g["rows"]:
+            found = records.get(r["key"], {})
+            row = {"key": r["key"], "math": r["math"], "group": g["name"]}
+            for backend in ("tirust", "ninjars"):
+                rec = found.get(backend)
+                if rec is None:
+                    row[backend] = {
+                        "status": "not timed",
+                        "reason": "timed in lit-report's final re-time (public API,"
+                        " reduction_unchecked = True)",
+                    }
+                elif rec.get("missing"):
+                    row[backend] = {"status": "not run", "reason": rec["missing"]}
+                elif "seconds_per_point" not in rec:
+                    row[backend] = {
+                        "status": "failed closed",
+                        "reason": f"{rec.get('failed_points')} of {rec.get('batch')} points failed",
+                    }
+                else:
+                    row[backend] = {
+                        "status": "measured",
+                        "seconds_per_point": rec["seconds_per_point"],
+                        "stages": _split(rec["stages_per_point"])
+                        if rec.get("stages_per_point")
+                        else None,
+                        "revision": rec["revision"][:8],
+                        "source": f"{BORN_BACKENDS} records[{r['key']}, {backend}]",
+                    }
+            ti, nj = row["tirust"], row["ninjars"]
+            if "seconds_per_point" in ti and "seconds_per_point" in nj:
+                row["ratio"] = nj["seconds_per_point"] / ti["seconds_per_point"]
+            agreement = (found.get("tirust") or {}).get("agreement")
+            if agreement is not None:
+                row["agreement"] = agreement
+            born_rows.append(row)
+    return {
+        "rule": BACKEND_RULE,
+        "loop_induced": {
+            "rows": li_rows,
+            "not_unchecked": not_unchecked,
+            "accuracy": f"data/{LI_ACCURACY}",
+        },
+        "born_interfered": {
+            "rows": born_rows,
+            "l6": _born_l6(lit),
+            "file": f"data/{BORN_BACKENDS}",
+            "present": born is not None,
+        },
+    }
+
+
+# The "Missing or incomplete" box (PLAN §LIT-REPORT; the essentials form,
+# README 'The essentials rule'): generated from the two summaries, no hand
+# text. One line per reason: the cells without a value, the gated rows whose
+# verdict is fail or open (with the stage that dominates pyAmpliCol's time),
+# the partial validation cells and the accuracy notes above the lax
+# precision; rows sharing a line's reason are listed on it.
+MISSING_NOTE_CHARS = 160
+
+
+def _short(text: str | None) -> str:
+    """A data note's first clause, cut at ``MISSING_NOTE_CHARS``."""
+
+    first = (text or "").split("; ")[0]
+    if len(first) > MISSING_NOTE_CHARS:
+        first = first[: MISSING_NOTE_CHARS - 1].rstrip() + "…"
+    return first
+
+
+def _partial(note: str | None) -> str:
+    """The partial checks a lit.json note names (its 'Lk partial' clauses)
+    and TIRust's failed binary64 fixture points, without the run names."""
+
+    text = note or ""
+    checks = sorted(set(re.findall(r"\b(L\d+) partial", text)), key=lambda c: int(c[1:]))
+    failed = re.findall(r"TIRust fails (\d+) of (\d+) binary64 points closed", text)
+    served = re.findall(r"TIRust serves (\d+)/(\d+) points", text)
+    out = ", ".join(checks) if checks else _short(text)
+    if failed:
+        out += "; TIRust fails " + ", ".join(f"{a} of {b}" for a, b in failed) + " binary64 fixture points closed"
+    elif served:
+        out += "; TIRust serves " + ", ".join(f"{a}/{b}" for a, b in served) + " fixture points"
+    return out + " (checked default; lit.json)"
+
+
+def _dominant(stages: dict | None) -> dict | None:
+    """The stage with the largest share of a split (its key and share)."""
+
+    if not stages:
+        return None
+    shares = {k: stages[k] for k in STAGE_ORDER if stages.get(k, 0) > 0}
+    total = sum(shares.values())
+    if not total:
+        return None
+    k = max(shares, key=shares.get)
+    return {"stage": k, "share": shares[k] / total}
+
+
+def build_missing(summary: dict, loop_induced: dict) -> list[dict]:
+    """The box's lines (``kind``: no value, gate, validation, accuracy),
+    Table 1's first, each with its rows (``math`` labels) and its reason."""
+
+    lines: dict[tuple, dict] = {}
+
+    def add(kind: str, table: str, math: str, text: str, **extra: object) -> None:
+        entry = lines.setdefault(
+            (kind, table, text), {"kind": kind, "table": table, "text": text, "rows": []}
+        )
+        entry["rows"].append(math)
+        for k, v in extra.items():
+            entry.setdefault(k, []).append(v)
+
+    names = {"generation": "generation", "full_colour": "full colour",
+             "leading_colour": "leading colour"}
+    for g in summary["groups"]:
+        for r in g["rows"]:
+            for cell, word in names.items():
+                m = r[cell]["main"]
+                if m.get("status") != "measured":
+                    add("no value", "1", r["math"], f"{word}: {m.get('status')} ({_short(m.get('reason'))})")
+            fc = r["full_colour"]
+            gate = fc["main"].get("gate") or {}
+            if gate.get("status") in ("fail", "open"):
+                add("gate", "1", r["math"], f"{gate['status']}",
+                    ratio=gate.get("ratio_to_limit"), dominant=_dominant(fc["main"].get("stages")))
+            if fc["main"].get("status") == "measured" and fc.get("gate_rule", "").startswith("no gate (no matched"):
+                add("no value", "1", r["math"], "no matched provider time (no gate)")
+    for g in loop_induced["groups"]:
+        for r in g["rows"]:
+            label = r["math"] or r["label"]
+            gen, tim = r["generation"], r["timing"]
+            if gen.get("status") != "measured" and tim.get("status") != "measured" and gen.get("reason") == tim.get("reason"):
+                add("no value", "2", label, f"{tim['status']}: {_short(tim.get('reason'))}")
+            else:
+                for cell, m in (("generation", gen), ("time", tim)):
+                    if m.get("status") != "measured":
+                        add("no value", "2", label, f"{cell}: {m.get('status')} ({_short(m.get('reason') or m.get('label'))})")
+            prov = r["providers"]
+            if prov.get("status") not in ("recorded", "no reference"):
+                add("no value", "2", label, f"providers: {prov.get('status')} ({_short(prov.get('reason'))})")
+            elif prov.get("status") == "recorded" and prov.get("fastest") is None:
+                why = sorted(
+                    {f"{x['status']}: {x.get('reason')}" for x in prov["providers"].values() if "status" in x}
+                )
+                add("no value", "2", label, f"no matched provider time ({_short(' / '.join(why))})")
+            gate = tim.get("gate") or {}
+            if gate.get("status") in ("fail", "open"):
+                add("gate", "2", label, f"{gate['status']} on {gate.get('backend_label', 'TIRust')}",
+                    ratio=gate.get("ratio_to_limit"), dominant=_dominant(tim.get("stages")))
+            v = r["validation"]
+            if v.get("status") == "partial":
+                add("validation", "2", label, f"partial: {_partial(v.get('note'))}")
+            for c in (tim, tim.get("other_backend") or {}):
+                a = c.get("accuracy") or {}
+                if a.get("note"):
+                    parts = []
+                    if a["above"]:
+                        parts.append(f"{a['above']}/{a['points']} points above {a['lax']:g}, worst {a['worst']:.1e}")
+                    if a["failed"]:
+                        parts.append(f"{a['failed']} points fail ({', '.join(a['failed_classes'])})")
+                    add("accuracy", "2", label, f"{c.get('backend_label')} unchecked: {'; '.join(parts)}")
+    order = {"no value": 0, "gate": 1, "validation": 2, "accuracy": 3}
+    return sorted(lines.values(), key=lambda e: (e["table"], order[e["kind"]]))
+
+
 def report_meta(summary: dict, loop_induced: dict, recency: Recency, ms: dict) -> dict:
     """The report's own line (its running header and page-1 subtitle): its
     date (milestone.json date) and its newest measured engine revision, the
@@ -3833,6 +4178,8 @@ def main() -> None:
     ms = _load(DATA / "milestone.json")
     loop_induced = build_loop_induced(ms, recency)
     loop_induced["figure"] = li_figure(loop_induced, summary["meta"]["gate_factor"])
+    loop_induced["backends"] = build_backend_table(summary, loop_induced)
+    loop_induced["missing"] = build_missing(summary, loop_induced)
     summary["meta"]["report"] = report_meta(summary, loop_induced, recency, ms)
     out.write_text(json.dumps(summary, indent=1) + "\n")
     out_li.write_text(json.dumps(loop_induced, indent=1) + "\n")

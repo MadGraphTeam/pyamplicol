@@ -152,30 +152,39 @@
     text(5.9pt, fill: c, weight: "bold")[#word#if "decision" in g [‡] #mult2(g.ratio_to_limit)])
 }
 #let plain-chip(body) = box(fill: white, stroke: 0.4pt + luma(150), inset: (x: 2pt, y: 0.8pt), radius: 1.5pt, baseline: 0.8pt, text(5.9pt, fill: luma(80), weight: "bold", body))
-#let stage-keys = ("inputs", "numerator", "scatter", "ninjars", "masters", "glue", "untimed")
-#let stage-label = (inputs: [inputs], numerator: [numerator], scatter: [scatter], ninjars: [NinjaRS], masters: [masters], glue: [glue], untimed: [untimed])
-#let stage-bar(st, width: 2.0cm, keys: stage-keys, labels: stage-label, colours: seg-colours) = {
+#let key-swatch(fill) = box(baseline: 0.5pt, rect(width: 5pt, height: 5pt, fill: fill, stroke: 0.3pt + luma(200)))
+// The report's stages (scripts/build_summary.py STAGE_ORDER; the MASTER_PLAN
+// stage-split rule): one colour per stage in every bar, table and legend.
+// The reduction is split into its backend's own stages: NinjaRS (its
+// expansions) and the masters (oneloopmaster), or TIRust's tensor moments and
+// contraction (its masters only where a profiled arm recorded them).
+#let stage-keys = ("inputs", "numerator", "scatter", "ninjars", "moments", "contraction", "masters", "glue", "untimed")
+#let stage-label = (inputs: [inputs], numerator: [numerator], scatter: [scatter], ninjars: [NinjaRS], moments: [TIR moments], contraction: [contraction], masters: [masters], glue: [glue], untimed: [untimed])
+#let stage-colour = (inputs: seg-colours.at(0), numerator: seg-colours.at(1), scatter: seg-colours.at(2), ninjars: seg-colours.at(3), moments: rgb("#0a8f9e"), contraction: rgb("#9b6a2f"), masters: seg-colours.at(4), glue: seg-colours.at(5), untimed: seg-colours.at(6))
+// The stages a split carries (a stage another backend has is absent).
+#let stage-keys-of(st) = stage-keys.filter(k => k in st)
+#let stage-bar(st, width: 2.0cm) = {
+  let keys = stage-keys-of(st)
   let vals = keys.map(k => calc.max(st.at(k), 0))
   let tot = vals.sum()
   let top = keys.zip(vals).sorted(key: x => x.at(1)).last()
   box(width: width, height: 4.6pt, baseline: 0.5pt, fill: white, outset: 0.8pt, radius: 1pt, {
     let x = 0pt
-    for (k, v) in vals.enumerate() {
+    for (k, v) in keys.zip(vals) {
       let w = width * v / tot
-      if w > 0.9pt { place(dx: x, rect(width: w - 0.6pt, height: 4.6pt, fill: colours.at(k), stroke: none)) }
+      if w > 0.9pt { place(dx: x, rect(width: w - 0.6pt, height: 4.6pt, fill: stage-colour.at(k), stroke: none)) }
       x += w
     }
   })
   h(4pt)
-  box[#labels.at(top.at(0)) #fixed(100 * top.at(1) / tot, 0)~%]
+  box[#stage-label.at(top.at(0)) #fixed(100 * top.at(1) / tot, 0)~%]
 }
 // Table 2's stage bar (lit-unchecked): the stage split of the separate
-// instrumented run (summary-li.json timing.stages; never the timed call):
-// trees + CT kets, dressing, scatter, reduction, the rest of the call.
-#let li-stage-keys = ("trees", "dressing", "scatter", "reduction", "rest")
-#let li-stage-label = (trees: [trees], dressing: [dressing], scatter: [scatter], reduction: [reduction], rest: [rest])
-#let li-seg-colours = (seg-colours.at(0), seg-colours.at(1), seg-colours.at(2), seg-colours.at(3), luma(170))
-#let li-stage-bar(st) = if st == none [no instrumented run] else { stage-bar(st, width: 1.6cm, keys: li-stage-keys, labels: li-stage-label, colours: li-seg-colours) }
+// instrumented run (summary-li.json timing.stages; never the timed call),
+// grouped as Table 1's.
+#let li-stage-bar(st) = if st == none [no instrumented run] else { stage-bar(st, width: 1.6cm) }
+// A legend of stage swatches (the keys a table uses).
+#let stage-legend(keys) = keys.map(k => box[#key-swatch(stage-colour.at(k))#h(1pt)#stage-label.at(k)]).join(h(3pt))
 #let cell-lines(lines) = for l in lines.filter(l => l != none) { v(2.7pt); block(spacing: 0pt, text(6.4pt, l)) }
 #let valued(fill: none, value, mult: none, ..lines) = table.cell(fill: fill, breakable: false, {
   set par(leading: 0.34em, justify: false)
@@ -518,7 +527,9 @@
 
 // Compact visual legend of Table 1 (its text: "Reading the tables").
 #let m-rows = all-rows.filter(r => "adopted_schedule" in r.leading_colour.main)
-#let key-swatch(fill) = box(baseline: 0.5pt, rect(width: 5pt, height: 5pt, fill: fill, stroke: 0.3pt + luma(200)))
+// The stages Table 1's bars carry (its rows' backends; untimed only where a
+// build had no input timers).
+#let t1-stage-keys = stage-keys.filter(k => (k != "untimed" or t1-untimed) and all-rows.any(r => { let m = r.full_colour.main; m.status == "measured" and m.at("stages", default: none) != none and k in m.stages }))
 #block(breakable: false, width: 100%, above: 1.0em, below: 0.9em, {
   set text(6.9pt, font: sans, stretch: 87.5%)
   set par(justify: false, leading: 0.5em)
@@ -534,7 +545,7 @@
       [*Gate* #h(2pt) #gate-chip((status: "pass", ratio_to_limit: 0.25)) #gate-chip((status: "fail", ratio_to_limit: 1.4)) #gate-chip((status: "open", ratio_to_limit: 1.0)) #gate-chip((status: thr-rule.verdict, ratio_to_limit: 1.4)) #h(2pt) #text(fill: ink2)[time ÷ limit]]
       linebreak()
       [*Stages* #h(2pt) ]
-      for (k, n) in stage-keys.enumerate() { if n != "untimed" or t1-untimed { box[#key-swatch(seg-colours.at(k))#h(1.5pt)#stage-label.at(n)]; h(4pt) } }
+      for n in t1-stage-keys { box[#key-swatch(stage-colour.at(n))#h(1.5pt)#stage-label.at(n)]; h(4pt) }
       linebreak()
       [#key-swatch(neutral) missing (why) #h(4pt) #key-swatch(white) no colour: generation, LC #h(4pt) † within estimate #h(4pt) ¶ reference's own (DD)#if decided-rows.len() > 0 or accepted-rows.len() > 0 [ #h(4pt) ‡ user decision] #h(4pt) ML MadLoop · Rc Recola · OL OpenLoops]
     },
@@ -543,7 +554,7 @@
 
 
 #figure(kind: table,
-  caption: [*Born-interfered one-loop processes* (the one-loop amplitude interfered with the Born). How to read it: #link(<reading>)[after Table 3].],
+  caption: [*Born-interfered one-loop processes* (the one-loop amplitude interfered with the Born). How to read it: #link(<reading>)[at the end].],
   {
     set text(7pt, font: sans, stretch: 87.5%)
     set par(justify: false)
@@ -736,6 +747,8 @@
 #let li-our-hosts = li-timed.map(r => r.timing.host).dedup().sorted()
 #let li-hosts = li-rows.filter(r => r.providers.status == "recorded").map(r => r.providers.providers.values().filter(x => "host" in x).map(x => x.host)).flatten().dedup().sorted()
 #let li-engine = (revision: li-meta.engine_on_loop, native_build: li-meta.native_build_on_loop.name, native_digest: li-meta.native_build_on_loop.digest)
+// The stages Table 2's bars carry (both backends of every row).
+#let li-stage-used = stage-keys.filter(k => k != "untimed" and li-timed.any(r => (r.timing.at("stages", default: none), r.timing.at("other_backend", default: (:)).at("stages", default: none)).any(s => s != none and k in s and s.at(k) > 0)))
 // The protocol line of the unchecked re-time (lit-unchecked (4)).
 #let li-unchecked = li-meta.at("unchecked", default: none)
 #let li-protocol = if li-unchecked != none [*Protocol:* #raw(li-unchecked.setting) (`Runtime.load` / `evaluate` keyword; config `evaluation.reduction_unchecked`), explicit `tirust` and `ninjars`; `poles="none"`, no stability check, no rescue; $B = 128$ per call (median over rounds); one thread pinned to one core (`taskset`, `RAYON_NUM_THREADS=1`); the 128 distinct stream points; #li-unchecked.instances.map(str).join("/") fresh runtimes per arm in rotated order, the median of their medians (spread ×: largest/smallest); providers F4 most optimistic, timed in the same unit on the same core, alternating with pyAmpliCol; engine #li-unchecked.revisions.map(raw).join(", ")#if not li-unchecked.lit_dress.contains(true) [ (before `lit-dress`)]; replication: #raw(li-unchecked.replication)]
@@ -748,7 +761,7 @@
 // Table 1's last page.
 #pagebreak(weak: true)
 #figure(kind: table,
-  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary)#if li-unchecked != none [, timed with the unchecked reduction setting#footnote[The setting is off by default. A default call (`reduction="auto"`, checks of the backends on) runs TIRust at the target accuracy ($10^(-5)$) with the per-point NinjaRS fallback; it does not get these times. Its served fractions and checked times are `lit-perf`'s records in `data/li-timing.json`.]]. How to read it: #link(<reading>)[after Table 3].],
+  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary)#if li-unchecked != none [, timed with the unchecked reduction setting#footnote[The setting is off by default. A default call (`reduction="auto"`, checks of the backends on) runs TIRust at the target accuracy ($10^(-5)$) with the per-point NinjaRS fallback; it does not get these times. Its served fractions and checked times are `lit-perf`'s records in `data/li-timing.json`.]]. How to read it: #link(<reading>)[at the end].],
   {
     set text(7pt, font: sans, stretch: 87.5%)
     set par(justify: false)
@@ -766,7 +779,7 @@
         ..(
           [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
           [generate + filter + plan export; optional probes apart (carrier); peak memory; provider generation],
-          if li-unchecked != none [median per point at $B = 128$ (fresh runtimes, spread); providers paired (most optimistic); gate or rule on TIRust; stage bars: #li-stage-keys.enumerate().map(((k, n)) => box[#key-swatch(li-seg-colours.at(k))#h(1pt)#li-stage-label.at(n)]).join(h(2pt)) (instrumented run: stage shares, not the timed call)] else [median per point at $B = 128$; provider times (#if "optimistic" in li-meta.at("provider_protocols", default: ()) [most optimistic, lit-perf] else [lit-ref]); gate (lit-perf) or rule; backend (request) · the other backend],
+          if li-unchecked != none [median per point at $B = 128$ (fresh runtimes, spread); providers paired (most optimistic); gate or rule on TIRust; stage bars: #stage-legend(li-stage-used) (instrumented run: stage shares, not the timed call)] else [median per point at $B = 128$; provider times (#if "optimistic" in li-meta.at("provider_protocols", default: ()) [most optimistic, lit-perf] else [lit-ref]); gate (lit-perf) or rule; backend (request) · the other backend],
         ).map(t => text(6.1pt, fill: ink2, t)),
       ),
       ..LI.groups.map(gr => (
@@ -890,13 +903,97 @@
   },
 ) <fig:gate>
 
+// ======================================================== BACKEND TABLE ==
+// TIRust against NinjaRS under the same public unchecked setting, both
+// process types (m-lit Q40; summary-li.json backends, scripts/build_summary.py
+// build_backend_table): time per point at B = 128 with each backend's stage
+// bar, the ratio, and the agreement (loop-induced: each backend against the
+// 256-bit truth and the L6 verdict of the checked default; Born-interfered:
+// the largest TIRust-vs-NinjaRS difference at the timed points, LI-B1's L6).
+#let BK = LI.at("backends", default: none)
+#let bk-time(c) = if c.status == "measured" [#text(weight: "bold", dur(c.seconds_per_point)) #h(1fr) #if c.at("stages", default: none) != none { stage-bar(c.stages, width: 1.3cm) }] else { dim[#c.status#if c.at("reason", default: none) != none [: #c.reason]] }
+#let bk-acc(c) = { let a = c.at("accuracy", default: none); if a == none { dim[—] } else if a.note { text(fill: fail-ink, weight: "bold")[#esci(a.max_relative)#if a.above > 0 [ (#a.above/#a.points > #esci(a.lax))]#if a.failed > 0 [ #a.failed fail]] } else [#esci(a.max_relative)] }
+#let bk-l6(l) = if l == none { dim[—] } else { l.runs.map(x => [#x.status#if x.tirust_served != none [ (T #x.tirust_served/#x.of)]#if x.finite_max_relative != none [ #esci(x.finite_max_relative)]]).join([; ]) }
+#let bk-figure = if BK != none {
+  let li-b = BK.loop_induced.rows
+  let born-b = BK.born_interfered.rows
+  let l6b = BK.born_interfered.l6
+  figure(kind: table,
+    caption: [*TIRust and NinjaRS* (the two reduction backends) under the same public unchecked setting: time per point at
+      $B = 128$ with each backend's stage bar (instrumented run), the ratio NinjaRS ÷ TIRust, and their agreement. Loop-induced rows: the
+      re-timed rows of @tab:summary-li (#BK.loop_induced.not_unchecked.len() other rows not re-timed with the setting at this head), each backend's largest
+      relative error against TIRust at 256 bits (#raw(BK.loop_induced.accuracy)) and the binary64 L6 verdict of the checked default
+      (`lit.json`: status, TIRust's served points, the largest finite-part difference of the two backends). Born-interfered rows:
+      @tab:summary's $2 -> 3$ and $2 -> 4$ rows, with the largest TIRust-vs-NinjaRS difference at the timed points.],
+    {
+      set text(6.8pt, font: sans, stretch: 87.5%)
+      set par(justify: false, leading: 0.4em)
+      show table.cell.where(y: 0): set text(6.6pt, fill: white, weight: "bold")
+      table(
+        columns: (2.6cm, 3.1cm, 3.1cm, auto, auto, auto, 1fr),
+        align: (x, y) => if x in (3, 4, 5) { right + horizon } else { left + horizon },
+        inset: (x: 3pt, y: 2.4pt),
+        stroke: (x, y) => (top: if y <= 1 { none } else { hair }),
+        fill: (x, y) => if y == 0 { navy } else { none },
+        table.header([Process], [TIRust], [NinjaRS], [N ÷ T], [T vs truth], [N vs truth], [L6 (checked default)]),
+        table.cell(colspan: 7, fill: pale)[*Loop-induced* ($|A_"loop"|^2$) · stage bars: #stage-legend(stage-keys.filter(k => k != "untimed" and li-b.any(r => (r.tirust, r.ninjars).any(c => c.at("stages", default: none) != none and k in c.stages and c.stages.at(k) > 0))))],
+        ..li-b.map(r => (
+          text(8pt, font: "Libertinus Serif", math-label(r.math)),
+          bk-time(r.tirust), bk-time(r.ninjars),
+          if "ratio" in r [#mult2(r.ratio)] else { dim[—] },
+          bk-acc(r.tirust), bk-acc(r.ninjars), text(6.2pt, bk-l6(r.l6)),
+        )).flatten(),
+        table.cell(colspan: 7, fill: pale)[*Born-interfered* (@tab:summary's G1 rows) · LI-B1's L6 over its campaign rows: #if l6b == none [not recorded] else [#l6b.status (#l6b.rows.pairs().map(((k, v)) => [#v #k]).join(", "))]#if not BK.born_interfered.present [ · #raw(BK.born_interfered.file) not written yet]],
+        ..born-b.map(r => if r.tirust.status != "measured" and r.tirust == r.ninjars {
+          // Neither backend timed, for one reason: one marker over the row.
+          (text(8pt, font: "Libertinus Serif", math-label(r.math)), table.cell(colspan: 6, dim[#r.tirust.status: #r.tirust.reason]))
+        } else { (
+          text(8pt, font: "Libertinus Serif", math-label(r.math)),
+          bk-time(r.tirust), bk-time(r.ninjars),
+          if "ratio" in r [#mult2(r.ratio)] else { dim[—] },
+          table.cell(colspan: 3, if "agreement" in r [largest |T − N| ÷ max(|T|, |N|) #esci(r.agreement.max_relative) at #r.agreement.points points] else { dim[—] }),
+        ) }).flatten(),
+      )
+    },
+  )
+}
+#if BK != none [#(bk-figure) <tab:backends>]
+
+
+// ============================================== MISSING OR INCOMPLETE ==
+// Generated from the summaries (summary-li.json missing; build_summary.py
+// build_missing): the cells without a value, the gated rows that fail or stay
+// open (the stage dominating pyAmpliCol's time), the partial validation cells
+// and the accuracy notes above the lax precision; nothing else.
+#let MISS = LI.at("missing", default: ())
+#let miss-kind = ("no value": [no value], gate: [gate], validation: [validation], accuracy: [accuracy])
+#let miss-row(e, i) = {
+  let r = e.rows.at(i)
+  let lab = if r.contains("->") { box(text(7.6pt, font: "Libertinus Serif", math-label(r))) } else { r }
+  if e.kind == "gate" { let d = e.dominant.at(i); [#lab (#mult2(e.ratio.at(i))#if d != none [, #stage-label.at(d.stage) #fixed(100 * d.share, 0)~%])] } else { lab }
+}
+#if MISS.len() > 0 [
+  #block(breakable: true, width: 100%, inset: (x: 6pt, y: 5pt), fill: warm, radius: 2pt, stroke: 0.4pt + luma(210), {
+    set text(6.9pt, font: sans, stretch: 87.5%)
+    set par(justify: false, leading: 0.45em)
+    text(8pt, weight: "bold", fill: navy)[Missing or incomplete]
+    h(4pt)
+    dim[(generated from the tables' data; Table 1 then Table 2; gate lines: time ÷ limit and the stage that dominates pyAmpliCol's time)]
+    for e in MISS {
+      v(2.2pt)
+      block(spacing: 0pt)[#text(weight: "bold")[T#e.table · #miss-kind.at(e.kind)]: #e.text — #range(e.rows.len()).map(i => miss-row(e, i)).join([, ])]
+    }
+  }) <missing>
+]
+
+
 // ================================================================ TABLE 3 ==
 // The numbers behind Table 1's gate chips and stage bars and Figure 1: the
 // full-colour main cell of every row of Table 1 timed at B = 128
 // (data/summary.json full_colour.main: median, gate limit, binding provider,
 // band, verdict, stages).
 #let t3-rows = all-rows.filter(r => r.full_colour.main.status == "measured")
-#let t3-keys = stage-keys.filter(k => k != "untimed" or t1-untimed)
+#let t3-keys = t1-stage-keys
 #let t3-ms(t) = sig(t * 1000)
 #let t3-binding = (MadLoop: "ML", Recola: "Rc", OpenLoops: "OL")
 #block(breakable: false, width: 100%)[#figure(kind: table,
@@ -914,7 +1011,7 @@
       stroke: (x, y) => (top: if y <= 1 { none } else { hair }),
       fill: (x, y) => if y == 0 { navy } else { none },
       table.header([Process], [ms/pt], [Limit], [Band], [Gate],
-        ..t3-keys.map(k => [#key-swatch(seg-colours.at(stage-keys.position(x => x == k)))\ #stage-label.at(k)])),
+        ..t3-keys.map(k => [#key-swatch(stage-colour.at(k))\ #stage-label.at(k)])),
       ..t3-rows.map(r => {
         let m = r.full_colour.main
         let g = m.at("gate", default: none)
@@ -924,7 +1021,7 @@
           if g == none { dim[—] } else [#t3-ms(g.limit_seconds) #dim[#t3-binding.at(g.binding, default: g.binding)]],
           if g == none { dim[—] } else [#sig(g.band.at(0))–#sig(g.band.at(1))],
           if g != none { gate-chip(g) } else { plain-chip[#r.full_colour.gate_rule.replace("->", "→")] },
-          ..t3-keys.map(k => t3-ms(m.stages.at(k))),
+          ..t3-keys.map(k => if k in m.stages { t3-ms(m.stages.at(k)) } else { dim[—] }),
         )
       }).flatten(),
     )
@@ -956,10 +1053,14 @@ table's first row (engine, native build and digest, date, host); a cell from ano
 above 1, else *open*. A process below 5 ms per point has no blocking gate ("#thr-rule.short", user rule of 2026-10-24)
 and its chip keeps the measured ratio; $2 -> 2$ has no gate. The gate is taken at $B = 128$ only#for r in decided-rows.filter(r => decided-gate(r).status != thr-rule.verdict) { let x = decided-gate(r); [; ‡ #box(math-label(r.math)): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }.
 
-*Stage bars* (the full-colour cell names the largest share; @tab:gate gives every stage in ms): inputs = trees, Born and
-counterterm inputs; numerator = seeds, fused factors and the dressing of the open-loop objects; scatter = closures into
-NinjaRS lanes; NinjaRS = the reduction without the masters; masters = the master integrals (canonical arguments, cache,
-oneloopmaster); glue = point parameters, input conversion, assembly and the rest of the call#if t1-untimed [; untimed = the rest of the call of a build without input timers].#if m-rows.len() > 0 [ Times use the protocol's schedule B; "M:" gives the schedule G1 adopted for the class.]
+*Stage bars* (every bar of the report, one colour per stage; the cell names the largest share; @tab:gate gives every
+stage of @tab:summary in ms): inputs = trees, Born and counterterm inputs (loop-induced: the trees and counterterm kets
+of the amplitude basis); numerator = seeds, fused factors and the dressing of the open-loop objects; scatter = closures
+into the reduction lanes; then the reduction backend's own stages: NinjaRS = its expansions (the reduction without the
+masters) and masters = the master integrals (canonical arguments, cache, oneloopmaster), or TIR moments = TIRust's
+tensor moments and contraction = their contraction with the numerator (TIRust's master integrals, a part of its tensor
+moments, are shown apart only where a profiled run recorded them); glue = point parameters, input conversion, transport,
+squaring, assembly and the rest of the call#if t1-untimed [; untimed = the rest of the call of a build without input timers].#if m-rows.len() > 0 [ Times use the protocol's schedule B; "M:" gives the schedule G1 adopted for the class.]
 
 *Validation* (process cell): the largest deviation $|a - b| slash max(|a|, |b|, |B| alpha_s slash 2 pi)$ of the binary64
 finite part per reference at the timed points (NJet DD: NJet 3.1.2 in double-double), and the median over the points
@@ -1006,7 +1107,7 @@ stream points, poles off, one pinned thread); the spread (×, largest over small
 the setting is TIRust, bitwise and without fallback (paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")).
 Beneath, NinjaRS with the same setting: its time and multiplier where it served every point, else the points it
 failed with their cause (a call that fails points is timed whole: no served-point time). The coloured bars are the
-stage shares (trees + counterterm kets, dressing, scatter, reduction, the rest of the call) of a *separate
+stage shares (the stages of @tab:summary's bars, the reduction split into each backend's own stages) of a *separate
 instrumented run* with the same setting, points and $B$ on the same core, never the timed call. The setting has *no
 accuracy certificate*: it is a timing and benchmark mode. Beneath each backend's line, its measured accuracy on the
 row's first stream points (the same public call, binary64 finite part) against TIRust at 256 bits
