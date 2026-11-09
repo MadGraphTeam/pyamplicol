@@ -171,17 +171,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 6.0618719276972115,
-      "generate_seconds": 2.964356943964958,
-      "engine_seconds": 2.964356943964958,
-      "probes_seconds": 3.0975149837322533,
-      "probe_share": 0.5109832442317764,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 2.964356943964958,
       "peak_gib": 0.565,
       "plan_mb": 0.01,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_h, ninjars, e852f448].generation"
+      "source": "li-timing.json records[gg_h, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 3.0975149837322533,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -282,17 +281,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 6.028565690852702,
-      "generate_seconds": 2.947490833699703,
-      "engine_seconds": 2.947490833699703,
-      "probes_seconds": 3.0810748571529984,
-      "probe_share": 0.5110792541960674,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 2.947490833699703,
       "peak_gib": 0.565,
       "plan_mb": 0.01,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[h_gg, ninjars, e852f448].generation"
+      "source": "li-timing.json records[h_gg, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 3.0810748571529984,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -394,17 +392,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 145.78034562105313,
-      "generate_seconds": 72.05644930526614,
-      "engine_seconds": 72.05644930526614,
-      "probes_seconds": 73.72389631578699,
-      "probe_share": 0.5057190391592817,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 72.05644930526614,
       "peak_gib": 3.227,
       "plan_mb": 0.027,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[h_aa, ninjars, e852f448].generation"
+      "source": "li-timing.json records[h_aa, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 73.72389631578699,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -506,17 +503,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 254.35228580329567,
-      "generate_seconds": 75.03367369715124,
-      "engine_seconds": 75.03367369715124,
-      "probes_seconds": 179.31861210614443,
-      "probe_share": 0.7050009853059515,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 75.03367369715124,
       "peak_gib": 4.487,
       "plan_mb": 0.035,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[h_za, ninjars, e852f448].generation"
+      "source": "li-timing.json records[h_za, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 179.31861210614443,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -616,17 +612,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 146.03293990483508,
-      "generate_seconds": 72.42245093779638,
-      "engine_seconds": 72.42245093779638,
-      "probes_seconds": 73.61048896703869,
-      "probe_share": 0.5040677056492067,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 72.42245093779638,
       "peak_gib": 3.254,
       "plan_mb": 0.027,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[aa_h, ninjars, e852f448].generation"
+      "source": "li-timing.json records[aa_h, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 73.61048896703869,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -726,17 +721,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 11.00443246634677,
-      "generate_seconds": 4.059622294269502,
-      "engine_seconds": 4.059622294269502,
-      "probes_seconds": 6.944810172077268,
-      "probe_share": 0.6310920797883539,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 4.059622294269502,
       "peak_gib": 0.671,
       "plan_mb": 0.021,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_aa, ninjars, e852f448].generation"
+      "source": "li-timing.json records[gg_aa, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 6.944810172077268,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -825,17 +819,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 13.61197379603982,
-      "generate_seconds": 4.556427561212331,
-      "engine_seconds": 4.556427561212331,
-      "probes_seconds": 9.055546234827489,
-      "probe_share": 0.6652632726535259,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 4.556427561212331,
       "peak_gib": 0.701,
       "plan_mb": 0.029,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_zz, ninjars, e852f448].generation"
+      "source": "li-timing.json records[gg_zz, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 9.055546234827489,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -924,17 +917,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 15.440266400575638,
-      "generate_seconds": 4.996912003029138,
-      "engine_seconds": 4.996912003029138,
-      "probes_seconds": 10.4433543975465,
-      "probe_share": 0.6763713867758885,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 4.996912003029138,
       "peak_gib": 0.712,
       "plan_mb": 0.042,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_wpwm, ninjars, e852f448].generation"
+      "source": "li-timing.json records[gg_wpwm, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 10.4433543975465,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -1023,17 +1015,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 13.377873547375202,
-      "generate_seconds": 4.842215803451836,
-      "engine_seconds": 4.842215803451836,
-      "probes_seconds": 8.535657743923366,
-      "probe_share": 0.6380429381168803,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 4.842215803451836,
       "peak_gib": 0.688,
       "plan_mb": 0.036,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_za, ninjars, e852f448].generation"
+      "source": "li-timing.json records[gg_za, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 8.535657743923366,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -1161,19 +1152,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 8.506259408779442,
-      "generate_seconds": 3.4210000904276967,
-      "engine_seconds": 3.4210000904276967,
-      "probes_seconds": 5.085259318351746,
-      "probe_share": 0.5978255627971056,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 3.4210000904276967,
       "peak_gib": 0.599,
       "plan_mb": 0.01,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_hh, tirust, ecc80899].generation",
-      "ratio_to_fastest": 86.43321308596578,
-      "engine_ratio_to_fastest": 34.761228828486125
+      "validation": {
+       "seconds": 5.085259318351746,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 34.761228828486125
      },
      "timing": {
       "status": "measured",
@@ -1291,17 +1280,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 11.61853610817343,
-      "generate_seconds": 5.494672182016075,
-      "engine_seconds": 5.494672182016075,
-      "probes_seconds": 6.123863926157355,
-      "probe_share": 0.5270770662621884,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 5.494672182016075,
       "peak_gib": 0.683,
       "plan_mb": 0.028,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hz, ninjars, e852f448].generation"
+      "source": "li-timing.json records[gg_hz, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 6.123863926157355,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -1391,17 +1379,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 7.750973687041551,
-      "generate_seconds": 3.3000645427964628,
-      "engine_seconds": 3.3000645427964628,
-      "probes_seconds": 4.450909144245088,
-      "probe_share": 0.574238711671326,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 3.3000645427964628,
       "peak_gib": 0.599,
       "plan_mb": 0.011,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_hg, ninjars, e852f448].generation"
+      "source": "li-timing.json records[gg_hg, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 4.450909144245088,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -1491,17 +1478,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 6.8550602798350155,
-      "generate_seconds": 3.3419186947867274,
-      "engine_seconds": 3.3419186947867274,
-      "probes_seconds": 3.513141585048288,
-      "probe_share": 0.5124887953768426,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 3.3419186947867274,
       "peak_gib": 0.575,
       "plan_mb": 0.01,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[uux_hg, ninjars, e852f448].generation"
+      "source": "li-timing.json records[uux_hg, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 3.513141585048288,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -1590,17 +1576,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 7.003946606069803,
-      "generate_seconds": 3.4816898042336106,
-      "engine_seconds": 3.4816898042336106,
-      "probes_seconds": 3.5222568018361926,
-      "probe_share": 0.5028960099129985,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 3.4816898042336106,
       "peak_gib": 0.575,
       "plan_mb": 0.01,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[ug_hu, ninjars, e852f448].generation"
+      "source": "li-timing.json records[ug_hu, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 3.5222568018361926,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -1689,17 +1674,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 16.431701962836087,
-      "generate_seconds": 4.834190960042179,
-      "engine_seconds": 4.834190960042179,
-      "probes_seconds": 11.597511002793908,
-      "probe_share": 0.7058009589648251,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 4.834190960042179,
       "peak_gib": 0.703,
       "plan_mb": 0.029,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_zg, ninjars, e852f448].generation"
+      "source": "li-timing.json records[gg_zg, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 11.597511002793908,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -1788,17 +1772,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 14.976262989919633,
-      "generate_seconds": 4.593871674966067,
-      "engine_seconds": 4.593871674966067,
-      "probes_seconds": 10.382391314953566,
-      "probe_share": 0.6932564767286636,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 4.593871674966067,
       "peak_gib": 0.688,
       "plan_mb": 0.023,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[gg_ag, ninjars, e852f448].generation"
+      "source": "li-timing.json records[gg_ag, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 10.382391314953566,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -1895,17 +1878,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 247.69757184386253,
-      "generate_seconds": 120.29813861986622,
-      "engine_seconds": 120.29813861986622,
-      "probes_seconds": 127.39943322399631,
-      "probe_share": 0.5143346068176365,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 120.29813861986622,
       "peak_gib": 5.654,
       "plan_mb": 0.067,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[emep_ha, ninjars, e852f448].generation"
+      "source": "li-timing.json records[emep_ha, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 127.39943322399631,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -2007,17 +1989,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 227.3062975173816,
-      "generate_seconds": 111.81506986077875,
-      "engine_seconds": 111.81506986077875,
-      "probes_seconds": 115.49122765660286,
-      "probe_share": 0.5080863527231202,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 111.81506986077875,
       "peak_gib": 6.112,
       "plan_mb": 0.039,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[aa_aa, ninjars, e852f448].generation"
+      "source": "li-timing.json records[aa_aa, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 115.49122765660286,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -2112,17 +2093,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 431.68476089974865,
-      "generate_seconds": 126.5096895005554,
-      "engine_seconds": 126.5096895005554,
-      "probes_seconds": 305.17507139919326,
-      "probe_share": 0.706939644482991,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 126.5096895005554,
       "peak_gib": 6.828,
       "plan_mb": 0.092,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[aa_zz, ninjars, e852f448].generation"
+      "source": "li-timing.json records[aa_zz, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 305.17507139919326,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -2217,17 +2197,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 186.18159972131252,
-      "generate_seconds": 88.78831270011142,
-      "engine_seconds": 88.78831270011142,
-      "probes_seconds": 97.3932870212011,
-      "probe_share": 0.5231090890130123,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 88.78831270011142,
       "peak_gib": 3.656,
       "plan_mb": 0.034,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[aa_hh, ninjars, e852f448].generation"
+      "source": "li-timing.json records[aa_hh, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 97.3932870212011,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -2322,17 +2301,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 238.7301200288348,
-      "generate_seconds": 115.69303954578936,
-      "engine_seconds": 115.69303954578936,
-      "probes_seconds": 123.03708048304543,
-      "probe_share": 0.5153814712118626,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 115.69303954578936,
       "peak_gib": 5.634,
       "plan_mb": 0.039,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[emep_hh, ninjars, e852f448].generation"
+      "source": "li-timing.json records[emep_hh, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 123.03708048304543,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -2432,17 +2410,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 7.900573136284947,
-      "generate_seconds": 3.3143400023691356,
-      "engine_seconds": 3.3143400023691356,
-      "probes_seconds": 4.586233133915812,
-      "probe_share": 0.5804937255567735,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 3.3143400023691356,
       "peak_gib": 0.599,
       "plan_mb": 0.011,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[h_ggg, ninjars, e852f448].generation"
+      "source": "li-timing.json records[h_ggg, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 4.586233133915812,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -2537,17 +2514,16 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 15.463474765885621,
-      "generate_seconds": 4.784285442903638,
-      "engine_seconds": 4.784285442903638,
-      "probes_seconds": 10.679189322981983,
-      "probe_share": 0.6906073495551999,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 4.784285442903638,
       "peak_gib": 0.704,
       "plan_mb": 0.029,
       "revision": "e852f448",
       "host": "itphlies",
-      "source": "li-timing.json records[z_ggg, ninjars, e852f448].generation"
+      "source": "li-timing.json records[z_ggg, ninjars, e852f448].generation",
+      "validation": {
+       "seconds": 10.679189322981983,
+       "carrier": "double-double"
+      }
      },
      "timing": {
       "status": "measured",
@@ -2678,19 +2654,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 111.15808343654498,
-      "generate_seconds": 52.75942764431238,
-      "engine_seconds": 52.75942764431238,
-      "probes_seconds": 58.3986557922326,
-      "probe_share": 0.5253658032487551,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 52.75942764431238,
       "peak_gib": 3.677,
       "plan_mb": 0.038,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[emep_ggg, tirust, ecc80899].generation",
-      "ratio_to_fastest": 609.7128818051035,
-      "engine_ratio_to_fastest": 289.390583904452
+      "validation": {
+       "seconds": 58.3986557922326,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 289.390583904452
      },
      "timing": {
       "status": "measured",
@@ -2850,19 +2824,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 16.950385635253042,
-      "generate_seconds": 5.375786070246249,
-      "engine_seconds": 5.375786070246249,
-      "probes_seconds": 11.574599565006793,
-      "probe_share": 0.6828516951811523,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 5.375786070246249,
       "peak_gib": 0.676,
       "plan_mb": 0.012,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_hhh, tirust, ecc80899].generation",
-      "ratio_to_fastest": 148.64584206482567,
-      "engine_ratio_to_fastest": 47.142776829229625
+      "validation": {
+       "seconds": 11.574599565006793,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 47.142776829229625
      },
      "timing": {
       "status": "measured",
@@ -3026,19 +2998,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 45.008823215961456,
-      "generate_seconds": 6.9063668441958725,
-      "engine_seconds": 6.9063668441958725,
-      "probes_seconds": 38.102456371765584,
-      "probe_share": 0.8465552673737387,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 6.9063668441958725,
       "peak_gib": 0.766,
       "plan_mb": 0.019,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_hgg, tirust, ecc80899].generation",
-      "ratio_to_fastest": 240.64950489794407,
-      "engine_ratio_to_fastest": 36.92639893570721
+      "validation": {
+       "seconds": 38.102456371765584,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 36.92639893570721
      },
      "timing": {
       "status": "measured",
@@ -3207,19 +3177,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 236.04666728992015,
-      "generate_seconds": 6.720450364984572,
-      "engine_seconds": 6.720450364984572,
-      "probes_seconds": 229.32621692493558,
-      "probe_share": 0.9715291453078204,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 6.720450364984572,
       "peak_gib": 1.166,
       "plan_mb": 0.038,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_zzg, tirust, ecc80899].generation",
-      "ratio_to_fastest": 219.83190960391715,
-      "engine_ratio_to_fastest": 6.258802355037479
+      "validation": {
+       "seconds": 229.32621692493558,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 6.258802355037479
      },
      "timing": {
       "status": "measured",
@@ -3382,19 +3350,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 178.1053805728443,
-      "generate_seconds": 8.941114586777985,
-      "engine_seconds": 8.941114586777985,
-      "probes_seconds": 169.1642659860663,
-      "probe_share": 0.949798739611232,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 8.941114586777985,
       "peak_gib": 0.981,
       "plan_mb": 0.03,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_aag, tirust, ecc80899].generation",
-      "ratio_to_fastest": 567.233172827154,
-      "engine_ratio_to_fastest": 28.475820210243022
+      "validation": {
+       "seconds": 169.1642659860663,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 28.475820210243022
      },
      "timing": {
       "status": "measured",
@@ -3557,19 +3523,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 277.56792466389015,
-      "generate_seconds": 10.200197163969278,
-      "engine_seconds": 10.200197163969278,
-      "probes_seconds": 267.3677274999209,
-      "probe_share": 0.9632515277969499,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 10.200197163969278,
       "peak_gib": 1.212,
       "plan_mb": 0.058,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_wpwmg, tirust, ecc80899].generation",
-      "ratio_to_fastest": 183.81752054786585,
-      "engine_ratio_to_fastest": 6.7550130442868435
+      "validation": {
+       "seconds": 267.3677274999209,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 6.7550130442868435
      },
      "timing": {
       "status": "measured",
@@ -3732,19 +3696,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 223.09754209127277,
-      "generate_seconds": 22.2702599093318,
-      "engine_seconds": 22.2702599093318,
-      "probes_seconds": 200.82728218194097,
-      "probe_share": 0.9001770270502546,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 22.2702599093318,
       "peak_gib": 1.066,
       "plan_mb": 0.033,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_zzz, tirust, ecc80899].generation",
-      "ratio_to_fastest": 238.19061828934875,
-      "engine_ratio_to_fastest": 23.776895646380783
+      "validation": {
+       "seconds": 200.82728218194097,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 23.776895646380783
      },
      "timing": {
       "status": "measured",
@@ -3915,19 +3877,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 37.014150481671095,
-      "generate_seconds": 5.428766236640513,
-      "engine_seconds": 5.428766236640513,
-      "probes_seconds": 31.585384245030582,
-      "probe_share": 0.853332680448015,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 5.428766236640513,
       "peak_gib": 0.823,
       "plan_mb": 0.033,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_hzg, tirust, ecc80899].generation",
-      "ratio_to_fastest": 150.17639094269677,
-      "engine_ratio_to_fastest": 22.02596871955633
+      "validation": {
+       "seconds": 31.585384245030582,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 22.02596871955633
      },
      "timing": {
       "status": "measured",
@@ -4099,19 +4059,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 209.3359661004506,
-      "generate_seconds": 6.184659741818905,
-      "engine_seconds": 6.184659741818905,
-      "probes_seconds": 203.1513063586317,
-      "probe_share": 0.9704558186678195,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 6.184659741818905,
       "peak_gib": 1.354,
       "plan_mb": 0.046,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_agg, tirust, ecc80899].generation",
-      "ratio_to_fastest": 250.4591793448274,
-      "engine_ratio_to_fastest": 7.3996114108727
+      "validation": {
+       "seconds": 203.1513063586317,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 7.3996114108727
      },
      "timing": {
       "status": "measured",
@@ -4265,19 +4223,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 199.63273464282975,
-      "generate_seconds": 6.496474259998649,
-      "engine_seconds": 6.496474259998649,
-      "probes_seconds": 193.1362603828311,
-      "probe_share": 0.9674578707163345,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 6.496474259998649,
       "peak_gib": 1.465,
       "plan_mb": 0.052,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_zgg, tirust, ecc80899].generation",
-      "ratio_to_fastest": 115.88028047231148,
-      "engine_ratio_to_fastest": 3.770991068557376
+      "validation": {
+       "seconds": 193.1362603828311,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 3.770991068557376
      },
      "timing": {
       "status": "measured",
@@ -4440,19 +4396,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 9.490295393858105,
-      "generate_seconds": 3.874149473849684,
-      "engine_seconds": 3.874149473849684,
-      "probes_seconds": 5.616145920008421,
-      "probe_share": 0.5917777779228093,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 3.874149473849684,
       "peak_gib": 0.606,
       "plan_mb": 0.011,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[uux_hgg, tirust, ecc80899].generation",
-      "ratio_to_fastest": 9.88834608846142,
-      "engine_ratio_to_fastest": 4.036642612900018
+      "validation": {
+       "seconds": 5.616145920008421,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 4.036642612900018
      },
      "timing": {
       "status": "measured",
@@ -4612,19 +4566,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 8.45295503269881,
-      "generate_seconds": 4.225128155667335,
-      "engine_seconds": 4.225128155667335,
-      "probes_seconds": 4.227826877031475,
-      "probe_share": 0.500159631830153,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 4.225128155667335,
       "peak_gib": 0.577,
       "plan_mb": 0.01,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[uux_ddxh, tirust, ecc80899].generation",
-      "ratio_to_fastest": 28.870635862619793,
-      "engine_ratio_to_fastest": 14.430709258869467
+      "validation": {
+       "seconds": 4.227826877031475,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 14.430709258869467
      },
      "timing": {
       "status": "measured",
@@ -4788,19 +4740,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 517.7463416350074,
-      "generate_seconds": 6.12929394794628,
-      "engine_seconds": 6.12929394794628,
-      "probes_seconds": 511.61704768706113,
-      "probe_share": 0.9881615890735406,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 6.12929394794628,
       "peak_gib": 1.754,
       "plan_mb": 0.047,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_hhgg, tirust, ecc80899].generation",
-      "ratio_to_fastest": 1317.1742575724602,
-      "engine_ratio_to_fastest": 15.59325012289693
+      "validation": {
+       "seconds": 511.61704768706113,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 15.59325012289693
      },
      "timing": {
       "status": "measured",
@@ -4962,19 +4912,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 882.4128334741108,
-      "generate_seconds": 7.964392067398876,
-      "engine_seconds": 7.964392067398876,
-      "probes_seconds": 874.4484414067119,
-      "probe_share": 0.9909743016360691,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 7.964392067398876,
       "peak_gib": 5.223,
       "plan_mb": 0.1,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_hggg, tirust, ecc80899].generation",
-      "ratio_to_fastest": 254.89396324841584,
-      "engine_ratio_to_fastest": 2.3005960270670793
+      "validation": {
+       "seconds": 874.4484414067119,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 2.3005960270670793
      },
      "timing": {
       "status": "measured",
@@ -5139,19 +5087,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 14.103758734185249,
-      "generate_seconds": 5.855560757219791,
-      "engine_seconds": 5.855560757219791,
-      "probes_seconds": 8.248197976965457,
-      "probe_share": 0.5848226797139651,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 5.855560757219791,
       "peak_gib": 0.694,
       "plan_mb": 0.038,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[gg_emepmupmum, tirust, ecc80899].generation",
-      "ratio_to_fastest": 52.09109464931447,
-      "engine_ratio_to_fastest": 21.62704108726859
+      "validation": {
+       "seconds": 8.248197976965457,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 21.62704108726859
      },
      "timing": {
       "status": "measured",
@@ -5496,19 +5442,17 @@
      },
      "generation": {
       "status": "measured",
-      "seconds": 95.60075391968712,
-      "generate_seconds": 7.622033008374274,
-      "engine_seconds": 7.622033008374274,
-      "probes_seconds": 87.97872091131285,
-      "probe_share": 0.9202722499994358,
-      "probes_label": "validation probes (mandatory at this head; opt-in after lit-probe)",
+      "seconds": 7.622033008374274,
       "peak_gib": 1.136,
       "plan_mb": 0.053,
       "revision": "ecc80899",
       "host": "itphlies",
       "source": "li-timing.json records[li51, tirust, ecc80899].generation",
-      "ratio_to_fastest": 75.94804933794806,
-      "engine_ratio_to_fastest": 6.055167090646439
+      "validation": {
+       "seconds": 87.97872091131285,
+       "carrier": "double-double"
+      },
+      "ratio_to_fastest": 6.055167090646439
      },
      "timing": {
       "status": "measured",

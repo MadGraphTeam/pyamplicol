@@ -418,7 +418,13 @@ def card(
                 k: v for k, v in scheme["fixed_parameters"].items() if k in known
             }
         },
-        "generation": {"output": str(output), "emit_api_bundle": False},
+        # The campaign is validation: the generation-time probes run (off
+        # by default since DECISIONS 2026-11-08 22:34 (3)); L4 reads them.
+        "generation": {
+            "output": str(output),
+            "emit_api_bundle": False,
+            "loop_induced_probes": True,
+        },
         "generation.validation": {"post_build_validation": False},
     }
     if restriction is not None:
@@ -1314,6 +1320,21 @@ def _identity_l5(fixture_arm: dict, transformed: dict, zero: bool) -> dict:
     }
 
 
+def _probe_carriers(probes: dict) -> dict[str, str] | str | None:
+    """The carrier that decided each generation-time probe (binary64, or
+    double-double after a fallback: ``induced.generation_probes``); a record
+    before the per-probe carriers names its one carrier."""
+
+    if "probes" not in probes:
+        return probes.get("precision")
+    return {
+        entry["probe"] + (f" (leg {entry['leg']})" if "leg" in entry else ""): (
+            entry["carrier"]
+        )
+        for entry in probes["probes"]
+    }
+
+
 def judge(record: dict, entry: dict) -> dict:
     """The §4.0 checks of one run record (module docstring); per check its
     status and figures."""
@@ -1521,8 +1542,11 @@ def judge(record: dict, entry: dict) -> dict:
     # massive vectors where the artifact records it); its verdict is the
     # worst of them (TIRust's arms of an extension before lit-tir-mp wait).
     probes = record["generation"]["probes"] or {}
+    # A record without the probes ("status": "off", or none) is "not run",
+    # never a pass; a record before the status field ran them.
+    ran = probes.get("status", "run") == "run"
     generation = {
-        k: probes[k] for k in ("finiteness", "ward", "goldstone") if k in probes
+        k: probes[k] for k in ("finiteness", "ward", "goldstone") if k in probes and ran
     }
     wards = record.get("ward_probes")
     l4: dict[str, Any] = {}
@@ -1542,8 +1566,14 @@ def judge(record: dict, entry: dict) -> dict:
         l4["generation"] = {
             "status": "pass" if passed else "fail",
             "probes": generation,
-            "carrier": probes.get("precision"),
+            "carrier": _probe_carriers(probes),
             "widths": probes.get("widths"),
+        }
+    elif not probes.get("exact_colour_zero"):
+        l4["generation"] = {
+            "status": "not run",
+            "reason": "the artifact records no generation-time probes "
+            "(generation.loop_induced_probes off)",
         }
     if probes.get("exact_colour_zero") or (wards or {}).get("exact_colour_zero"):
         statuses.append("recorded")

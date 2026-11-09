@@ -2407,10 +2407,16 @@ def _preliminary() -> dict | None:
 #                         generation beyond the 45-min rule with its
 #                         progress; no time, no "effective"), "host",
 #                         "generation":
-#                         {"seconds" (generate + the exact helicity-zero
-#                         filter + plan export), "probes_seconds" (the
-#                         mandatory generation-time double-double probes,
-#                         m-lit Q12), "peak_gib" (over all of them),
+#                         {"seconds" (the engine's generation: generate +
+#                         the exact helicity-zero filter + plan export),
+#                         "probes_seconds"? (the optional generation-time
+#                         probes, m-lit Q12, off by default since DECISIONS
+#                         2026-11-08 22:34 (3): their time apart, never in
+#                         "seconds"; None or absent: not run),
+#                         "probes_split_seconds"? (their split: the engine
+#                         record's per-carrier passes "double" /
+#                         "double-double", or lit-perf's "probe runs
+#                         (<carrier>)"), "peak_gib" (over all of them),
 #                         "plan_mb"?}?, "native_build"?, "source", "gate"?
 #                         (lit-perf: {"status", "ratio_to_limit", "band"})}]};
 #   lit-ref's provider timings: the manifest tools/loop_reference/
@@ -2655,8 +2661,6 @@ def _li_input(data: Path, name: str) -> dict | None:
 # ``unmatched_providers``): timed and shown, never the fastest matched
 # provider, never a limit.
 LI_NOT_MATCHED = "not matched (values excluded)"
-# A provider record re-timed in the most optimistic settings (m-lit F4).
-LI_OPTIMISTIC = "-providers-optimistic.json"
 
 
 def _li_pending(what: str, reason: str) -> dict:
@@ -2694,19 +2698,17 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
         }
     providers, times, gens = {}, {}, {}
     for name in records:
-        if name.endswith(LI_OPTIMISTIC) and (
-            name.replace(LI_OPTIMISTIC, "-providers.json") in records
-        ):
-            # Listed beside its production record (li_campaign.json since
-            # 2026-11-09, make_li_campaign.py): applied there as its overlay,
-            # never a second timing of the same providers.
+        # make_li_campaign.py lists a row's optimistic record beside its
+        # production record; it is read once, as that record's overlay below.
+        base = name.replace("-providers-optimistic.json", "-providers.json")
+        if base != name and base in records:
             continue
         rec = _load(repo / LI_FIXTURES / name)
         # m-lit F4: a provider re-timed in its most optimistic settings
         # (providers.py --protocol optimistic, the record beside this one)
         # replaces its production timing; the others keep theirs.
         entries = {k: (name, x, rec) for k, x in rec["providers"].items()}
-        optimistic = name.replace("-providers.json", LI_OPTIMISTIC)
+        optimistic = name.replace("-providers.json", "-providers-optimistic.json")
         if optimistic != name and (repo / LI_FIXTURES / optimistic).is_file():
             better = _load(repo / LI_FIXTURES / optimistic)
             for k, x in better["providers"].items():
@@ -2786,7 +2788,6 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
 # "unchecked" carry the providers timed in the same unit on the same core
 # (F4 most optimistic, paired), which replace the fixture times of the row.
 LI_UNCHECKED = "unchecked"
-LI_PROBES_LABEL = "validation probes (mandatory at this head; opt-in after lit-probe)"
 
 
 def _li_paired(prov: dict, rec: dict) -> dict:
@@ -3145,6 +3146,32 @@ def _li_gate(
     return {"status": "no verdict", "label": "no verdict yet"}
 
 
+def _probe_carrier(split: dict | None) -> str:
+    """The carrier label of a record's generation-time probes, from their
+    split: the engine record's native passes per carrier ("double" first,
+    "double-double" for the fallback; lit-probe), or lit-perf's harness
+    stage names "probe runs (<carrier>)". A record without a split
+    predates lit-perf's harness split (e852f448, aaff892d): the probes then
+    had one carrier, double-double (``induced.generation_probes``'s default,
+    which no caller overrode before lit-probe)."""
+
+    if split is None:
+        return "double-double"
+    keys = set(split)
+    passes = [c for c in ("double", "double-double") if c in keys]
+    passes += sorted(
+        k[len("probe runs (") : -1]
+        for k in keys
+        if k.startswith("probe runs (") and k.endswith(")")
+    )
+    names = {"double": "binary64", "double-double": "double-double"}
+    if passes[:2] == ["double", "double-double"]:
+        return "binary64, double-double fallback"
+    if not passes:
+        return "no probe ran"
+    return names.get(passes[0], passes[0])
+
+
 def _li_cells(
     row: dict,
     landed: bool,
@@ -3219,41 +3246,29 @@ def _li_cells(
             "status": "not recorded",
             "reason": f"{src} has no generation",
         }
-    elif gen.get("probes_seconds") is None:
-        # The probes are part of every loop-induced generation (m-lit Q12):
-        # without their time the record holds no full production cost.
-        out["generation"] = {
-            "status": "not recorded",
-            "reason": f"{src} has no generation-time probe time",
-        }
     else:
-        # The full production `generate` cost: generate + plan export + the
-        # mandatory generation-time probes (``seconds``, their share), and
-        # the engine's generation the cell shows (m-lit C-generation.md §1,
-        # lit-unchecked (4): LoopSlice.generate + dressed-frame choice + plan
-        # export + exact helicity filter, ``engine_seconds``), the validation
-        # probes apart (LI_PROBES_LABEL), never added to it.
-        total = gen["seconds"] + gen["probes_seconds"]
+        # The engine's generation (generate + filter + plan export; model
+        # loading excluded), the provider ratio formed on it. The
+        # generation-time probes are validation, off by default (DECISIONS
+        # 2026-11-08 22:34 (3)): their time shown apart, with its carrier,
+        # only where a record ran them; a record without them is measured.
         out["generation"] = {
             "status": "measured",
-            "seconds": total,
-            "generate_seconds": gen["seconds"],
-            "engine_seconds": gen["seconds"],
-            "probes_seconds": gen["probes_seconds"],
-            "probe_share": gen["probes_seconds"] / total if total else 0.0,
-            "probes_label": LI_PROBES_LABEL,
+            "seconds": gen["seconds"],
             "peak_gib": gen["peak_gib"],
             "plan_mb": gen.get("plan_mb"),
             "revision": first["revision"][:8],
             "host": first["host"],
             "source": f"{src}.generation",
         }
+        if gen.get("probes_seconds") is not None:
+            out["generation"]["validation"] = {
+                "seconds": gen["probes_seconds"],
+                "carrier": _probe_carrier(gen.get("probes_split_seconds")),
+            }
         fg = prov.get("fastest_generation")
         if fg is not None:
-            out["generation"]["ratio_to_fastest"] = total / fg["seconds"]
-            out["generation"]["engine_ratio_to_fastest"] = (
-                gen["seconds"] / fg["seconds"]
-            )
+            out["generation"]["ratio_to_fastest"] = gen["seconds"] / fg["seconds"]
     if not batched:
         # No B = 128 record at the newest revision (Table 1's rule): no
         # batched cell, the batches timed named.

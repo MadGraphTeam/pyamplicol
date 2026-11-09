@@ -664,11 +664,11 @@
   let gens = if p.status == "recorded" { p.generation } else { (:) }
   let pline = if gens.len() == 0 { none } else { gens.pairs().sorted(key: ((k, s)) => s).map(((k, s)) => [#pkey(k) #dur(s)]).join([~· ]) }
   if m.status == "measured" {
-    // The engine's generation (generate + dressed-frame choice + plan
-    // export + exact helicity filter); the validation probes apart, with
-    // their status at this head (summary-li.json generation.probes_label).
-    valued(fill: none, dur(m.engine_seconds), mult: if "engine_ratio_to_fastest" in m { mult2(m.engine_ratio_to_fastest) },
-      [apart: #m.probes_label #dur(m.probes_seconds) (#fixed(100 * m.probe_share, 0)~% of #dur(m.seconds))],
+    // The engine's generation: generate + filter + plan export (the provider
+    // ratio on it); the optional generation-time probes (validation, off by
+    // default) apart beneath, with their carrier, where the record ran them.
+    valued(fill: none, dur(m.seconds), mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
+      if "validation" in m [validation probes #dur(m.validation.seconds) (#m.validation.carrier)] else [validation probes not run],
       [#gib(m.peak_gib) peak#if m.plan_mb != none [ · plan #box[#sig(m.plan_mb)~MB]]], pline)
   } else {
     absent(li-title(m), m.at("reason", default: none), pline)
@@ -751,7 +751,7 @@
         [],
         ..(
           [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
-          [engine: generate + plan export + filter; validation probes apart; peak memory; provider generation],
+          [generate + filter + plan export; optional probes apart (carrier); peak memory; provider generation],
           if li-unchecked != none [median per point at $B = 128$ (fresh runtimes, spread); providers paired (most optimistic); gate or rule on TIRust; stage bars: #li-stage-keys.enumerate().map(((k, n)) => box[#key-swatch(li-seg-colours.at(k))#h(1pt)#li-stage-label.at(n)]).join(h(2pt)) (instrumented run: stage shares, not the timed call)] else [median per point at $B = 128$; provider times (#if "optimistic" in li-meta.at("provider_protocols", default: ()) [most optimistic, lit-perf] else [lit-ref]); gate (lit-perf) or rule; backend (request) · the other backend],
         ).map(t => text(6.1pt, fill: ink2, t)),
       ),
@@ -1022,9 +1022,11 @@ reference (Recola's on-shell widths against the fixed-width scheme of the others
 and shown but is no matched provider (its values miss the 1e-5 agreement of `m-lit/PLAN.md` §4.0 L1; §4.1 names
 MadLoop and OpenLoops as the references of LI-43 and OpenLoops of LI-51): never the fastest matched provider and
 never a limit, the cell gives the multiplier to it, uncoloured. Generation, uncoloured, is the engine's generation
-(model loading excluded): generate (with the dressed-frame choice) + plan export + the exact helicity-zero filter; the
-generation-time validation probes (double-double finiteness and Ward), mandatory for every loop-induced process at this
-head and opt-in after `lit-probe`, are shown apart beneath it, never added; the peak memory is over all of them; the provenance line names pyAmpliCol's host and the providers'. Rows of four legs or fewer
+(model loading excluded): generate + the exact helicity-zero filter + plan export, the multiplier formed on it. The
+generation-time finiteness, Ward and Goldstone probes are validation, off by default (`lit-probe`; the user enables
+them, in binary64 with a double-double fallback): where a record ran them their time is shown apart beneath the value
+with its carrier (every record before `lit-probe` ran them in double-double), never in it; the peak memory is over all stages;
+the provenance line names pyAmpliCol's host and the providers'. Rows of four legs or fewer
 ($2 -> 1$, $1 -> 2$, $2 -> 2$, $1 -> 3$) are reported without a gate; from $2 -> 3$ upward the gate is @tab:summary's
 (faster than MadLoop and at most 1.30× each matched OpenLoops and Recola time, on TIRust), "#thr-rule.short" below
 5 ms per point, no gate without a matched provider; verdict chips come with the gate tool's records and are TIRust's
