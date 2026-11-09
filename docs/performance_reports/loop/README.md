@@ -160,3 +160,69 @@ request, backend, batch and revision.
 - the campaign files: their builders' docstrings.
 - then `python scripts/build_summary.py` and `typst compile benchmarks.typ
   benchmarks.pdf`.
+
+## Unchecked Table 2
+
+Table 2 is timed with the unchecked reduction setting (`m-lit` `lit-unchecked`;
+USER 2026-11-08 ~21:14 / ~22:34): both backends without their own acceptance
+or refusal checks, pyAmpliCol's checks off, in a configuration any user can
+set. The setting is off by default; a default call does not get these times.
+
+**Replication** (one row, one backend; the headline times are this call, with
+nothing else in the timed path):
+
+```sh
+pyamplicol <card.toml>              # the public generation (the row's run card)
+RAYON_NUM_THREADS=1 taskset -c <one idle core> python - <<'PY'
+from fractions import Fraction
+import pyamplicol
+from tools.loop_benchmark import streams          # the frozen stream points
+stream = streams.load("li_gg_zzg")                # any row of Table 2
+points = streams.binary64(stream, 128)            # B = 128 distinct points
+mu_r2 = [str(Fraction(m) ** 2) for m in stream["mu_r"][:128]]
+rt = pyamplicol.Runtime.load("<artifact>", reduction_unchecked=True)
+result = rt.evaluate(points, mu_r2=mu_r2, poles="none",
+                     reduction="tirust")          # or "ninjars", or "auto"
+PY
+```
+
+The settings, verbatim: `Runtime.load(..., reduction_unchecked=True)` (config
+`evaluation.reduction_unchecked = true`, CLI `--reduction-unchecked`, C ABI
+`rusticol_virtual_set_reduction_unchecked`), `evaluate(..., poles="none",
+reduction="tirust" | "ninjars")`, no `stability_checks`, no rescue policy, full
+colour, binary64, one thread. `reduction="auto"` with the setting gives the
+TIRust values bitwise with no per-point fallback (shown paired on one row in
+the records).
+
+**Re-time command** (all rows, one command; `lit-report` re-runs it after
+`lit-dress`):
+
+```sh
+python tools/loop_benchmark/retime_unchecked.py campaign \
+  --checkout <checkout with the staged native> --native <native build dir> \
+  --out <scratch dir> --artifacts <scratch dir>/artifacts \
+  --cards <dir of <row>/card.toml> [--rows li_gg_zzg ...] [--dry-run]
+python tools/loop_benchmark/retime_unchecked.py collect \
+  --checkout <this checkout> --native <native build dir> --out <scratch dir> \
+  --typst <typst 0.15.1>
+```
+
+`campaign` launches one `systemd-run --user` unit per row (rows: `lit-perf`'s
+timed loop-induced rows; one physical core each, its SMT siblings idle),
+waits (or `--no-wait`) and runs `collect`. A unit: the row's artifact through
+the public `Generator` from its card (reused when present), then rounds of
+the public calls above on every arm (`tirust`, `ninjars`; `auto` on
+`--auto-row`) over `--instances` fresh runtimes created in rotated order, the
+providers in their F4 most optimistic settings (`python -m tools.loop_benchmark
+providers <row> --protocol optimistic`) in the same unit on the same core,
+alternating with pyAmpliCol between rounds, then the separate instrumented
+run (`python -m tools.loop_benchmark pyamplicol <row> --unchecked`: stage
+shares and the engine's generation, never the timed call). `collect` writes one
+`data/li-timing.json` record per row and backend (`configuration`
+`"unchecked"`: the settings verbatim, `instance_medians`, `instance_spread`,
+`cpu_share`, the paired `providers` with their rounds, `gate` by `gate.py`'s
+rules unchanged, `stages` of the instrumented run, `generation`, `tir_counts`
+from a counters-only read outside the timed calls, `auto_pairing`), then the
+summaries and the PDF. The builder takes an unchecked record's paired
+providers as the row's provider times. Runtime: the rows run in parallel,
+the longest (`li_gg_hggg`) about 2.5 h; memory below 20 GiB per row.

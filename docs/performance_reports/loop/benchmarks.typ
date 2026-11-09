@@ -979,7 +979,26 @@ those not run or not asserted.
 *@tab:summary-li* follows @tab:summary's rules for loop-induced processes, $|A_"loop"|^2$ without a Born: one row per
 process of the M-LIT validation matrix (`m-lit/PLAN.md` §4.1; its ids in the process cell), grouped by multiplicity;
 the backend-unit, zero, identity, observable and complex-mass-scheme rows (#li-meta.validation_only.ids.join(", ")) are
-validation-only and not listed. The cell is the batched $B = #li-meta.gate_batch$ time per point (median over its
+validation-only and not listed. #if li-unchecked != none [The cell is the batched $B = #li-meta.gate_batch$ time per point of
+TIRust with the *unchecked reduction setting* (`reduction_unchecked`, a documented public setting, off by default):
+each backend reduces without its own acceptance or refusal checks. TIRust keeps its a priori conditioning gates and
+its method choice as method selection, computes no acceptance pass, and serves what the method choice refuses by
+plain Passarino--Veltman (gate 0); NinjaRS runs with zero stability thresholds; pyAmpliCol's own checks are off. Only
+what no scheme evaluates finitely (an exactly singular pivot, a non-finite output, a master failure, NinjaRS's NaN
+lanes) still fails. The time is the median over #li-unchecked.instances.map(str).join("/") fresh runtimes (created in
+rotated order) of each one's median over rounds of the public call (`Runtime.load` + `evaluate` on the 128 distinct
+stream points, poles off, one pinned thread); the spread (×, largest over smallest runtime) is beside $B$; `auto` with
+the setting is TIRust, bitwise and without fallback (paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")).
+Beneath, NinjaRS with the same setting: its time and multiplier where it served every point, else the points it
+failed with their cause (a call that fails points is timed whole: no served-point time). The coloured bars are the
+stage shares (trees + counterterm kets, dressing, scatter, reduction, the rest of the call) of a *separate
+instrumented run* with the same setting, points and $B$ on the same core, never the timed call. The accuracy of the
+unchecked values against the 256-bit truth is in `m-lit/lit-unchecked-report.md` §0 (g g > z z g: 18 of 128 points
+served through the last resort lie above $10^(-5)$, up to $1.2 times 10^(-2)$). The providers run in their most
+optimistic settings (m-lit F4: OpenLoops with its stability system off, MadLoop without its stability test, Recola
+without dynamic settings, in its release build), in the same unit on the same core as pyAmpliCol, alternating with
+it between rounds, their time the median over those rounds; the multiplier against the fastest matched provider
+colours the cell with @tab:summary's scale.] else [The cell is the batched $B = #li-meta.gate_batch$ time per point (median over its
 timing blocks after an untimed warm-up, finite part, one pinned thread, checks off) of the record the backend `auto`
 serves at the row's revision: its effective backend in bold, the request in brackets. #if li-auto-reasons.len() > 0 [At this head `auto` takes #li-auto-labels.join(" and ") on every timed row, with the runtime's reason (verbatim): #li-auto-reasons.map(x => ["#x"]).join([; ]).] Beside it, the other backend requested explicitly in the same
 process on the same points: its time and served fraction (#li-meta.gate_batch/#li-meta.gate_batch) where it served all #li-meta.gate_batch points of every block, else the points
@@ -996,14 +1015,14 @@ stability system off (one double-precision evaluation, where its loop-induced pr
 MadLoop without its stability test (one evaluation, not both loop directions), Recola without dynamic settings (its
 couplings and scales set once, outside the timer) in its release build; a provider time marked #super[p] is
 `lit-ref`'s production record, not re-timed. TIRust (†) runs at the slice's shipped TirOptions; its re-time at the
-user-set target accuracy (default $10^(-5)$) is `lit-tirust-default`'s.] else [ The providers run in production mode.] A provider whose timing record excludes its values as a
+user-set target accuracy (default $10^(-5)$) is `lit-tirust-default`'s.] else [ The providers run in production mode.]] A provider whose timing record excludes its values as a
 reference (Recola's on-shell widths against the fixed-width scheme of the others on the rows LI-43 and LI-51) is timed
 and shown but is no matched provider (its values miss the 1e-5 agreement of `m-lit/PLAN.md` §4.0 L1; §4.1 names
 MadLoop and OpenLoops as the references of LI-43 and OpenLoops of LI-51): never the fastest matched provider and
-never a limit, the cell gives the multiplier to it, uncoloured. Generation, uncoloured, is the full production `generate`
-cost (model loading excluded): generate + the exact helicity-zero filter + plan export + the generation-time
-double-double finiteness and Ward probes, which run for every loop-induced process (their time and share beneath the
-value), with the peak memory over all of them; the provenance line names pyAmpliCol's host and the providers'. Rows of four legs or fewer
+never a limit, the cell gives the multiplier to it, uncoloured. Generation, uncoloured, is the engine's generation
+(model loading excluded): generate (with the dressed-frame choice) + plan export + the exact helicity-zero filter; the
+generation-time validation probes (double-double finiteness and Ward), mandatory for every loop-induced process at this
+head and opt-in after `lit-probe`, are shown apart beneath it, never added; the peak memory is over all of them; the provenance line names pyAmpliCol's host and the providers'. Rows of four legs or fewer
 ($2 -> 1$, $1 -> 2$, $2 -> 2$, $1 -> 3$) are reported without a gate; from $2 -> 3$ upward the gate is @tab:summary's
 (faster than MadLoop and at most 1.30× each matched OpenLoops and Recola time, on TIRust), "#thr-rule.short" below
 5 ms per point, no gate without a matched provider; verdict chips come with the gate tool's records and are TIRust's
