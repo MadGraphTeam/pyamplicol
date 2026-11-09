@@ -2910,9 +2910,31 @@ def _li_accuracy(acc: dict | None, key: str, backend: str) -> dict | None:
     and the failed points with their classes; ``note`` where any point lies
     above it or fails (the cell's accuracy note)."""
 
-    if acc is None or key not in acc["rows"] or backend not in acc["rows"][key]:
+    if acc is None or key not in acc["rows"]:
         return None
     row = acc["rows"][key]
+    cross = row.get("cross_backend")
+    if backend not in row and cross is not None:
+        # A row whose 256-bit truth is not obtainable within its row budget
+        # (the reason recorded): the two backends' difference at the timed
+        # points, labelled, never a truth (lit-report R2).
+        return {
+            "points": cross["points"],
+            "max_relative": cross["max_relative"],
+            "lax": acc["lax"],
+            "above": cross["above_1e-5"],
+            "worst": cross["max_relative"] if cross["above_1e-5"] else None,
+            "served_by": [],
+            "failed": cross.get("failed", 0),
+            "failed_classes": [],
+            "note": bool(cross["above_1e-5"]),
+            "cross_backend": True,
+            "reason": cross.get("reason"),
+            "revision": row["revision"],
+            "source": f"{LI_ACCURACY} rows[{key}].cross_backend",
+        }
+    if backend not in row:
+        return None
     e = row[backend]
     above, failed = e["above_1e-5"], e["failed"]
     return {

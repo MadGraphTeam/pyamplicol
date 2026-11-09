@@ -615,6 +615,10 @@ def row(options: Any) -> int:
         record["auto_bitwise_tirust"] = repr(first["auto"].values) == repr(
             first["tirust"].values
         )
+    # The two backends' agreement at the timed points (the same public call;
+    # the accuracy line of a row without a truth, and the Born-interfered
+    # rows' agreement in the backend table).
+    record["cross_backend"] = cross_backend(first["tirust"], first["ninjars"])
     seconds: dict[str, dict[int, list[float]]] = {
         arm: {i: [] for i in range(options.instances)} for arm in arms
     }
@@ -681,6 +685,33 @@ def row(options: Any) -> int:
     if options.stages:
         _stages(options)
     return 0
+
+
+def cross_backend(tirust: Any, ninjars: Any) -> dict[str, Any]:
+    """Per point, |T - N| / max(|T|, |N|) of the finite part, the largest
+    over the squared-order sectors, on the points both backends served (a
+    point either fails is counted apart)."""
+
+    per: list[float | None] = []
+    for t, n in zip(tirust.values, ninjars.values, strict=True):
+        if t is None or n is None:
+            per.append(None)
+            continue
+        worst = 0.0
+        for a, b in zip(t, n, strict=True):
+            x, y = float(a[0]), float(b[0])
+            scale = max(abs(x), abs(y))
+            worst = max(worst, abs(x - y) / scale if scale else 0.0)
+        per.append(worst)
+    served = [v for v in per if v is not None]
+    return {
+        "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors",
+        "points": len(served),
+        "failed": len(per) - len(served),
+        "max_relative": max(served) if served else None,
+        "above_1e-5": sum(v > 1e-5 for v in served),
+        "per_point": per,
+    }
 
 
 def _providers(options: Any, round_: int) -> dict[str, Any]:
@@ -815,6 +846,13 @@ def collect(options: Any) -> int:
                     concurrency=concurrency,
                 )
             )
+    # Born-interfered rows (the backend table's, lit-report R4) go to their
+    # own file; the loop-induced ones to Table 2's records.
+    sys.path.insert(0, str(ROOT))
+    from tools.loop_benchmark import streams
+
+    born = [r for r in records if not streams.spec(r["process"]).get("loop_induced")]
+    records = [r for r in records if r not in born]
     target = checkout / LI_TIMING
     data = json.loads(target.read_text())
     data["records"] = [
@@ -824,6 +862,20 @@ def collect(options: Any) -> int:
     ] + records
     target.write_text(json.dumps(data, indent=1) + "\n")
     print(f"{len(records)} unchecked records into {target}")
+    if born:
+        target = checkout / BORN_BACKENDS
+        old = json.loads(target.read_text()) if target.is_file() else {"records": []}
+        old["what"] = (
+            "the backend table's Born-interfered rows (benchmarks.typ Table 3): TIRust"
+            " and NinjaRS through the public API with reduction_unchecked = True on"
+            " Table 1's 2->3 / 2->4 rows (tools/loop_benchmark/retime_unchecked.py,"
+            " written by collect)"
+        )
+        old["records"] = [
+            r for r in old["records"] if r.get("revision") not in heads
+        ] + [_born_record(r) for r in born]
+        target.write_text(json.dumps(old, indent=1) + "\n")
+        print(f"{len(born)} Born-interfered records into {target}")
     if not options.render:
         return 0
     for command in (
@@ -833,6 +885,52 @@ def collect(options: Any) -> int:
         if subprocess.run(command, cwd=checkout, check=False).returncode:
             return 1
     return 0
+
+
+BORN_BACKENDS = Path("docs/performance_reports/loop/data/backends-born.json")
+
+
+def _born_record(record: dict[str, Any]) -> dict[str, Any]:
+    """A Born-interfered row's record of one backend (build_summary.py
+    build_backend_table's fields)."""
+
+    out = {
+        k: record[k]
+        for k in (
+            "key",
+            "process",
+            "revision",
+            "backend",
+            "requested",
+            "reason",
+            "batch",
+            "instances",
+            "instance_medians",
+            "instance_spread",
+            "native_build",
+            "native_digest",
+            "host",
+            "core",
+            "date",
+            "concurrency",
+            "host_state",
+            "settings",
+            "source",
+        )
+        if k in record
+    }
+    if "seconds_per_point" in record:
+        out["seconds_per_point"] = record["seconds_per_point"]
+    else:
+        out["failed_points"] = record["failed_points"][0]
+    if record["backend"] == "tirust" and record.get("cross_backend"):
+        cross = record["cross_backend"]
+        out["agreement"] = {
+            "max_relative": cross["max_relative"],
+            "points": cross["points"],
+            "metric": cross["metric"],
+        }
+    return out
 
 
 def _record(
@@ -888,6 +986,12 @@ def _record(
         "generation": _generation(stages),
         "public_generation": found.get("public_generation_timing"),
         "host_state": found.get("host_state"),
+        "cross_backend": {
+            k: v
+            for k, v in (found.get("cross_backend") or {}).items()
+            if k != "per_point"
+        }
+        or None,
         "native_build": meta["native"],
         "native_digest": meta["digest"],
         "host": found["host"],
