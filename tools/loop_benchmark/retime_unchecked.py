@@ -228,6 +228,14 @@ def unit_command(options: Any, process: str, core: int) -> list[str]:
 
 
 def campaign(options: Any) -> int:
+    # Absolute paths: the units run from their own working directory.
+    for name in ("checkout", "native", "out", "artifacts", "cards"):
+        if getattr(options, name) is not None:
+            setattr(options, name, Path(getattr(options, name)).resolve())
+    options.pythonpath = ":".join(
+        str(options.checkout / "src") if part == "src" else part
+        for part in options.pythonpath.split(":")
+    )
     checkout = Path(options.checkout)
     rows = [(p, p) for p in options.rows] if options.rows else timed_rows(checkout)
     rows = [row for row in rows if row[0] not in set(options.skip or ())]
