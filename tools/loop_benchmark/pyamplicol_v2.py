@@ -645,6 +645,20 @@ def _git(*args: str) -> str:
     ).stdout.strip()
 
 
+# The one-loop preparation cache state of a generation stage (lit-ewprep):
+# the stages generate through ``LoopSlice.generate`` /
+# ``artifact.generate_process`` / ``induced.generation_probes`` without a
+# ``loops.preparation_cache.PreparationMemo``, so every preparation runs
+# afresh (the lowering once per preparation) and no persistent entry is read
+# or written: a user's cache never enters a generation record. The public
+# ``Generator`` shares and caches them (``[model] loop_preparation_cache``).
+PREPARATION_CACHE_STATE = {
+    "memo": False,
+    "persistent": False,
+    "route": "direct LoopSlice.generate (no PreparationMemo)",
+}
+
+
 def _native_build(directory: Path | None) -> dict[str, Any] | None:
     """The staged native build's ``build-info.json`` (``--native-build``)."""
 
@@ -781,6 +795,7 @@ class Run:
         }
         self.slice = slice_
         self.record["generation"] = stages
+        self.record["preparation_cache"] = dict(PREPARATION_CACHE_STATE)
         self.record["structure"] = {
             "families": len(slice_.plan.schedules),
             "b_trie_nodes": sum(
@@ -1703,6 +1718,7 @@ class InducedRun(Run):
             self.options, process, compiled, native, candidates
         )
         self.record["generation"] = stages
+        self.record["preparation_cache"] = dict(PREPARATION_CACHE_STATE)
         if error is not None:
             raise error
         scaleless = None
