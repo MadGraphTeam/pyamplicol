@@ -2698,6 +2698,11 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
         }
     providers, times, gens = {}, {}, {}
     for name in records:
+        # make_li_campaign.py lists a row's optimistic record beside its
+        # production record; it is read once, as that record's overlay below.
+        base = name.replace("-providers-optimistic.json", "-providers.json")
+        if base != name and base in records:
+            continue
         rec = _load(repo / LI_FIXTURES / name)
         # m-lit F4: a provider re-timed in its most optimistic settings
         # (providers.py --protocol optimistic, the record beside this one)
