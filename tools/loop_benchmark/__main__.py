@@ -248,7 +248,13 @@ def main(argv: list[str] | None = None) -> int:
         choices=["production", "optimistic"],
         default="production",
         help="the providers' settings: their production settings, or each in "
-        "its most optimistic settings (loop-induced rows; providers.py)",
+        "its most optimistic settings (providers.py)",
+    )
+    providers.add_argument(
+        "--production-json",
+        type=Path,
+        help="a production record of the row: every provider's finite values "
+        "are checked against it at the timed points (production_check)",
     )
     providers.add_argument("--json", type=Path)
 
