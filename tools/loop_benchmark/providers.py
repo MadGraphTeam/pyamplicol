@@ -48,9 +48,19 @@ before the generation, outside the timer, and with its build recorded
 (``build``: the CMake build type and Fortran flags of the libraries the run
 links; Recola's CMake files optimise every source with -O2 unless the build
 type is Debug, so a build without a build type is its release build). The
-finite part of a loop-induced process does not depend on the scales, so this
-protocol is defined for loop-induced rows; it is refused for the others. The
-record's ``protocol`` names the settings of every provider.
+finite part of a loop-induced process does not depend on the scales.
+
+**Born-interfered rows** (m-lit lit-report G5; DECISIONS 2026-11-09 14:12,
+F4 "every comparison"): the same settings, plus OpenLoops without its
+I-operator poles (``ir_on 0``, ``OPTIMISTIC_OPENLOOPS_BORN``); Recola's
+dynamic settings off keep the alpha_s and scale set before its generation
+(the first stream point's mu_R), so Recola times the stream points at that
+mu_R (``same_scale``: the per-point time does not depend on the scale's
+value, and those points' values are production's), recorded as
+``stream_points``. ``--production-json`` compares every provider's finite
+values with a production record of the same tool at the timed points
+(``production_check``, relative to the larger value). The record's
+``protocol`` names the settings of every provider.
 
 Caches are those of production (REQUIREMENTS_ADDENDUM D). The one exception
 is the documented COLLIER global-cache defect at N = 7 of the releases
@@ -146,7 +156,51 @@ COLLIER_CACHE_DEFECT = frozenset({"1.2.9", "1.2.10"})
 
 # The most optimistic settings (module docstring; ``--protocol optimistic``).
 OPTIMISTIC_OPENLOOPS = ("int expert_mode 1", "int stability_mode 11")
+# Born-interfered rows: the I-operator poles off as well (lit-report G5).
+OPTIMISTIC_OPENLOOPS_BORN = ("int ir_on 0",)
 OPTIMISTIC_MADLOOP = {"CTModeRun": "1"}
+
+
+def same_scale(points: dict[str, Any]) -> tuple[dict[str, Any], list[int]]:
+    """The points (toolkit format) whose mu_R is the first point's, and
+    their stream indices (0-based): what a provider whose scale is fixed at
+    its generation (Recola without dynamic settings) evaluates as production
+    would."""
+
+    first = points["mu_r"][0]
+    kept = [i for i, mu in enumerate(points["mu_r"]) if mu == first]
+    return {
+        **points,
+        "points": [points["points"][i] for i in kept],
+        "mu_r": [points["mu_r"][i] for i in kept],
+    }, kept
+
+
+def production_check(
+    result: dict[str, Any], production: dict[str, Any], tolerance: float = 1e-5
+) -> dict[str, Any]:
+    """A provider's finite values against a production record of the same
+    tool at the same stream points (``stream_points``, else the first n):
+    the largest relative deviation (to the larger value) and whether it is
+    within ``tolerance`` (the lax precision)."""
+
+    ours = result.get("rows") or []
+    theirs = production.get("rows") or []
+    indices = result.get("stream_points") or list(range(len(ours)))
+    worst, compared = 0.0, 0
+    for row, index in zip(ours, indices, strict=True):
+        if index >= len(theirs):
+            continue
+        a, b = float(row["finite"]), float(theirs[index]["finite"])
+        scale = max(abs(a), abs(b))
+        worst = max(worst, abs(a - b) / scale if scale else 0.0)
+        compared += 1
+    return {
+        "points": compared,
+        "max_relative": worst,
+        "tolerance": tolerance,
+        "passed": compared > 0 and worst <= tolerance,
+    }
 
 
 def optimistic_params(params: dict[str, str] | None) -> dict[str, str]:
@@ -434,7 +488,9 @@ def openloops(
         raise RuntimeError("the toolkit's OpenLoops commands changed")
     if protocol == "optimistic":
         at = next(i for i, c in enumerate(commands) if c.startswith("register "))
-        commands[at:at] = OPTIMISTIC_OPENLOOPS
+        commands[at:at] = OPTIMISTIC_OPENLOOPS + (
+            () if spec.get("loop_induced") else OPTIMISTIC_OPENLOOPS_BORN
+        )
     count = len(points["points"])
     lines = [*commands, f"points {count}", *references.point_lines(points)]
     stdin = "\n".join(lines) + "\n"
@@ -452,7 +508,9 @@ def openloops(
         "protocol": protocol,
         "mode": (
             "most optimistic: truepoles 0, stability system off (expert_mode 1, "
-            "stability_mode 11: one double-precision evaluation), Collier cache"
+            "stability_mode 11: one double-precision evaluation)"
+            + ("" if spec.get("loop_induced") else ", I-operator poles off (ir_on 0)")
+            + ", Collier cache"
             if protocol == "optimistic"
             else "production: truepoles 0 (Collier cache, I-operator poles, "
             "default stability)"
@@ -1298,12 +1356,8 @@ def main(options: Any) -> int:
         "providers": {},
     }
     protocol = getattr(options, "protocol", "production")
-    if protocol == "optimistic" and not spec.get("loop_induced"):
-        raise SystemExit(
-            f"{key}: the most optimistic protocol is defined for loop-induced rows "
-            "(their finite part does not depend on the scales Recola then keeps "
-            "from its generation)"
-        )
+    production = getattr(options, "production_json", None)
+    production = json.loads(production.read_text()) if production else None
     if options.json and options.json.exists():
         record = json.loads(options.json.read_text())
     record["protocol"] = protocol
@@ -1321,7 +1375,14 @@ def main(options: Any) -> int:
             elif provider == "openloops":
                 result = openloops(spec, points, work, options.cpu, trees, protocol)
             elif provider == "recola":
-                result = recola(spec, points, work, options.cpu, trees, protocol)
+                kept = None
+                timed = points
+                if protocol == "optimistic" and not spec.get("loop_induced"):
+                    # No dynamic settings: the generation's scale holds.
+                    timed, kept = same_scale(points)
+                result = recola(spec, timed, work, options.cpu, trees, protocol)
+                if kept is not None:
+                    result["stream_points"] = kept
             else:
                 export = trees.madloop_export(spec, options.madloop_export)
                 if export is None:
@@ -1356,6 +1417,9 @@ def main(options: Any) -> int:
             if field in spec.get(provider, {}) and "error" not in result:
                 result[field] = spec[provider][field]
         result["harness_wall_seconds"] = time.perf_counter() - start
+        reference = (production or {}).get("providers", {}).get(provider)
+        if reference is not None and "rows" in result and "rows" in reference:
+            result["production_check"] = production_check(result, reference)
         record["providers"][provider] = result
         mean = result.get("mean_seconds_per_point")
         if "error" in result:

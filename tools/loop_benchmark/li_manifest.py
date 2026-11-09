@@ -1032,7 +1032,9 @@ def _engine_slice(revision: str) -> str:
         ).stdout
 
     if not _SLICE_LINE:
-        _SLICE_LINE.append(set(git("rev-list", "--first-parent", "work/v2-slice").split()))
+        _SLICE_LINE.append(
+            set(git("rev-list", "--first-parent", "work/v2-slice").split())
+        )
     for commit in git("rev-list", revision).split():
         if commit in _SLICE_LINE[0]:
             return commit[:9]
