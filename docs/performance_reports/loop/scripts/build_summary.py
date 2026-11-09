@@ -2655,6 +2655,8 @@ def _li_input(data: Path, name: str) -> dict | None:
 # ``unmatched_providers``): timed and shown, never the fastest matched
 # provider, never a limit.
 LI_NOT_MATCHED = "not matched (values excluded)"
+# A provider record re-timed in the most optimistic settings (m-lit F4).
+LI_OPTIMISTIC = "-providers-optimistic.json"
 
 
 def _li_pending(what: str, reason: str) -> dict:
@@ -2692,12 +2694,19 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
         }
     providers, times, gens = {}, {}, {}
     for name in records:
+        if name.endswith(LI_OPTIMISTIC) and (
+            name.replace(LI_OPTIMISTIC, "-providers.json") in records
+        ):
+            # Listed beside its production record (li_campaign.json since
+            # 2026-11-09, make_li_campaign.py): applied there as its overlay,
+            # never a second timing of the same providers.
+            continue
         rec = _load(repo / LI_FIXTURES / name)
         # m-lit F4: a provider re-timed in its most optimistic settings
         # (providers.py --protocol optimistic, the record beside this one)
         # replaces its production timing; the others keep theirs.
         entries = {k: (name, x, rec) for k, x in rec["providers"].items()}
-        optimistic = name.replace("-providers.json", "-providers-optimistic.json")
+        optimistic = name.replace("-providers.json", LI_OPTIMISTIC)
         if optimistic != name and (repo / LI_FIXTURES / optimistic).is_file():
             better = _load(repo / LI_FIXTURES / optimistic)
             for k, x in better["providers"].items():
