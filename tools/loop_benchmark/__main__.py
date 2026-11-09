@@ -76,6 +76,13 @@ def main(argv: list[str] | None = None) -> int:
         "selection |A(h)|^2/avg: only its rows are dressed)",
     )
     v2.add_argument(
+        "--unchecked",
+        action="store_true",
+        help="loop-induced: every arm with the unchecked reduction setting "
+        "(reduction_unchecked: no backend acceptance or refusal checks; "
+        "m-lit lit-unchecked), recorded as 'unchecked'",
+    )
+    v2.add_argument(
         "--tir-profile",
         action="store_true",
         help="loop-induced: also one TIRust arm with TIRust's own stage "

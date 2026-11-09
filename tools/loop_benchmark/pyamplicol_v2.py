@@ -1605,6 +1605,11 @@ class InducedRun(Run):
         self.record["host"] = platform.node()
         self.record["date"] = time.strftime("%Y-%m-%d", time.gmtime())
         self.record["contribution"] = "loop-induced"
+        # The unchecked reduction setting of every arm (``--unchecked``, m-lit
+        # lit-unchecked); absent from the record when off.
+        self.unchecked = bool(getattr(options, "unchecked", False))
+        if self.unchecked:
+            self.record["unchecked"] = True
         self.record["kind"] = "pyamplicol-v2"
         self.native_seconds: dict[str, float] = {}
         self.parameters = {}
@@ -1862,6 +1867,17 @@ class InducedRun(Run):
         finally:
             executor.row_mask = None
 
+    def _running(self, effective: str) -> Any:
+        """``reduction.running`` of an arm's effective backend, with the
+        unchecked setting when ``--unchecked`` is given (else exactly the
+        call without it)."""
+
+        from pyamplicol.loops.v2.reduction import running
+
+        if self.unchecked:
+            return running(effective, unchecked=True)
+        return running(effective)
+
     def _indices(self, start: int, size: int) -> list[int]:
         count = len(self.stream["points"])
         return [(start + k) % count for k in range(size)]
@@ -1901,7 +1917,6 @@ class InducedRun(Run):
 
         from pyamplicol.api.errors import ReductionUnavailable
         from pyamplicol.loops.v2.plan_export import FailedPoints
-        from pyamplicol.loops.v2.reduction import running
 
         found = reference_fixture(self.key)
         if found is None:
@@ -1916,7 +1931,7 @@ class InducedRun(Run):
                 continue
             failures: dict[int, list[str]] = {}
             try:
-                with running(backend["effective"]):
+                with self._running(backend["effective"]):
                     results = self.executor.evaluate(
                         points,
                         scales,
@@ -1977,7 +1992,6 @@ class InducedRun(Run):
         """Paired rounds over every B and backend (class docstring)."""
 
         from pyamplicol.api.errors import ReductionUnavailable
-        from pyamplicol.loops.v2.reduction import running
 
         options = self.options
         batches = sorted(set(options.batches))
@@ -2033,7 +2047,7 @@ class InducedRun(Run):
             start = time.perf_counter()
             try:
                 with (
-                    running(arm["backend"]["effective"]),
+                    self._running(arm["backend"]["effective"]),
                     _profiled(arm["profile"]),
                     self._one_row(arm),
                 ):
@@ -2105,7 +2119,7 @@ class InducedRun(Run):
                     )
                     arm["offset"] += arm["size"]
                     with (
-                        running(arm["backend"]["effective"]),
+                        self._running(arm["backend"]["effective"]),
                         _profiled(arm["profile"]),
                         self._one_row(arm),
                     ):
@@ -2180,7 +2194,6 @@ class InducedRun(Run):
         the finite part's estimate E (the finiteness column of gate.py)."""
 
         from pyamplicol.loops.v2.plan_export import FailedPoints
-        from pyamplicol.loops.v2.reduction import running
 
         rows = []
         for backend in self.backends:
@@ -2192,7 +2205,7 @@ class InducedRun(Run):
                 scales = [str(Fraction(self.stream["mu_r"][i]) ** 2) for i in chunk]
                 failures: dict[int, list[str]] = {}
                 try:
-                    with running(backend["effective"]):
+                    with self._running(backend["effective"]):
                         results = self.executor.evaluate(
                             points,
                             scales,

@@ -45,15 +45,22 @@ The table rules:
   OpenLoops' and Recola's): pass or fail when the whole uncertainty band lies
   on one side of 1, else open; taken at B = 128 only (user 2026-10-28);
   below 5 ms per point not gated (user 2026-10-24); 2 → 2 not gated;
-- Table 2: the B = 128 record the backend `auto` serves (NinjaRS per amplitude
-  in this release, labelled, with the runtime's reason; slice-status DECISIONS
-  2026-11-07 21:50 R9 and 2026-11-08 11:17), TIRust beside it with its served
-  fraction and the recorded causes of its failed points; the gate chip is
-  `lit-perf`'s verdict on TIRust (the gated backend), "no verdict (gap)" where
-  TIRust failed points closed; generation is the full production `generate`
-  cost, the mandatory generation-time probes included (their share shown);
-  rows of four legs or fewer reported without a gate; *pending* where the serving package has not landed or the input file
-  does not exist yet, *not run* for a landed package without a record.
+- Table 2: on the rows re-timed with the unchecked reduction setting
+  ("Unchecked Table 2" below; `lit-perf`'s timed rows), TIRust unchecked as
+  the cell (= `auto` with the setting) and NinjaRS unchecked beneath, each
+  with its stage bar from a separate instrumented run and its measured
+  accuracy against the 256-bit truth (`data/li-unchecked-accuracy.json`; in
+  red the points above 1e-5 and the failed points); the providers paired in
+  the same unit on the same core; the gate chip is `gate.py`'s verdict on
+  TIRust (the gated backend). The other rows keep their earlier record
+  (labelled in the cell): the backend `auto` serves in its checked default,
+  with the other backend beside it. Generation is the engine's generation
+  (generate + filter + plan export); the optional generation-time validation
+  probes (off by default since `lit-probe`) are shown apart with their
+  carrier where a record ran them, never in it. Rows of four legs or fewer
+  are reported without a gate; *pending* where the serving package has not
+  landed or the input file does not exist yet, *not run* for a landed
+  package without a record.
 
 ## Build
 
@@ -160,3 +167,81 @@ request, backend, batch and revision.
 - the campaign files: their builders' docstrings.
 - then `python scripts/build_summary.py` and `typst compile benchmarks.typ
   benchmarks.pdf`.
+
+## Unchecked Table 2
+
+Table 2 is timed with the unchecked reduction setting (`m-lit` `lit-unchecked`;
+USER 2026-11-08 ~21:14 / ~22:34): both backends without their own acceptance
+or refusal checks, pyAmpliCol's checks off, in a configuration any user can
+set. The setting is off by default; a default call does not get these times.
+
+**Replication** (one row, one backend; the headline times are this call, with
+nothing else in the timed path):
+
+```sh
+pyamplicol <card.toml>              # the public generation (the row's run card)
+RAYON_NUM_THREADS=1 taskset -c <one idle core> python - <<'PY'
+from fractions import Fraction
+import pyamplicol
+from tools.loop_benchmark import streams          # the frozen stream points
+stream = streams.load("li_gg_zzg")                # any row of Table 2
+points = streams.binary64(stream, 128)            # B = 128 distinct points
+mu_r2 = [str(Fraction(m) ** 2) for m in stream["mu_r"][:128]]
+rt = pyamplicol.Runtime.load("<artifact>", reduction_unchecked=True)
+result = rt.evaluate(points, mu_r2=mu_r2, poles="none", on_failure="return",
+                     reduction="tirust")          # or "ninjars", or "auto"
+PY
+```
+
+The settings, verbatim: `Runtime.load(..., reduction_unchecked=True)` (config
+`evaluation.reduction_unchecked = true`, CLI `--reduction-unchecked`, C ABI
+`rusticol_virtual_set_reduction_unchecked`), `evaluate(..., poles="none",
+on_failure="return", reduction="tirust" | "ninjars")` (a call that fails
+points returns them as failed and is timed whole), no `stability_checks`, no
+rescue policy, full colour, binary64, one thread. The setting has no
+accuracy certificate: its measured accuracy per row is
+`data/li-unchecked-accuracy.json` (the same public call against TIRust at
+256 bits; shown in every re-timed cell). `reduction="auto"` with the setting gives the
+TIRust values bitwise with no per-point fallback (shown paired on one row in
+the records).
+
+**Re-time command** (all rows, one command; `lit-report` re-runs it after
+`lit-dress`):
+
+```sh
+python tools/loop_benchmark/retime_unchecked.py campaign \
+  --checkout <checkout with the staged native> --native <native build dir> \
+  --out <scratch dir> --artifacts <scratch dir>/artifacts \
+  --cards <dir of <row>/card.toml> [--rows li_gg_zzg ...] [--dry-run]
+python tools/loop_benchmark/retime_unchecked.py collect \
+  --checkout <this checkout> --native <native build dir> --out <scratch dir> \
+  --typst <typst 0.15.1>
+```
+
+`campaign` launches one `systemd-run --user` unit per row (rows: `lit-perf`'s
+timed loop-induced rows; one physical core each, its SMT siblings idle),
+waits (or `--no-wait`) and runs `collect`. A unit: the row's artifact through
+the public `Generator` from its card (reused when present), then rounds of
+the public calls above on every arm (`tirust`, `ninjars`; `auto` on
+`--auto-row`) over `--instances` fresh runtimes created in rotated order, the
+providers in their F4 most optimistic settings (`python -m tools.loop_benchmark
+providers <row> --protocol optimistic`) in the same unit on the same core,
+alternating with pyAmpliCol between rounds, then the separate instrumented
+run (`python -m tools.loop_benchmark pyamplicol <row> --unchecked`: stage
+shares and the engine's generation, never the timed call). `collect` writes one
+`data/li-timing.json` record per row and backend (`configuration`
+`"unchecked"`: the settings verbatim, `instance_medians`, `instance_spread`,
+`cpu_share`, the paired `providers` with their rounds, `gate` by `gate.py`'s
+rules unchanged, `stages` of the instrumented run, `generation`, `tir_counts`
+from a counters-only read outside the timed calls, `auto_pairing`), then the
+summaries and the PDF. The builder takes an unchecked record's paired
+providers as the row's provider times. Runtime: the rows run in parallel,
+the longest (`li_gg_hggg`, 2 rounds) about 2 h; memory up to ~30 GiB per row (`li_gg_hggg`, six runtimes in one
+process).
+
+Campaign `c1` (2026-11-09, engine `ecc80899`, before `lit-dress`): the
+records' `cpu_share` is empty (the field came after the timed revision);
+`li_gg_hggg` has 2 rounds per runtime (the row budget); g g > W+ W- g ended
+inconclusive (ratio 1.40, band 0.92-1.88, its provider rounds drifting by
+about 1.9× within the unit) and was not repeated: `lit-report` re-times
+every row after `lit-dress`.

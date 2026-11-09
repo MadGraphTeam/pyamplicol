@@ -28273,6 +28273,5234 @@
     }
    },
    "source": "lit-perf gate tool (tools/loop_benchmark gate; process li_gg_emepmupmumg, configuration native/full/tirust): PLAN \u00a75.1 protocol, binary64, finite part, checks off, native inputs, full colour, production route R2, one pinned thread; the 128 distinct points of the frozen stream (tools/loop_benchmark/streams/li_gg_emepmupmumg.json); median of 5 paired blocks after an untimed warm-up; requested backend resolved as the runtime resolves a call (reduction.resolve, SUMMED, double); pyAmpliCol most optimistic (m-lit F4: no poles, no stability checks, distinct points, batched as shipped), TIRust at the slice's shipped TirOptions"
+  },
+  {
+   "key": "emep_ggg",
+   "process": "li_emep_ggg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_emep_ggg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_emep_ggg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.0060728791722794995,
+    0.003419067077629734,
+    0.003286556038801791
+   ],
+   "instance_spread": 1.8477941956813684,
+   "round_spread": [
+    1.8929967665548186,
+    1.058253273115971,
+    1.9229156299488004
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.008452276000000002,
+      "rounds": [
+       0.009378735499999999,
+       0.008900117999999999,
+       0.008436286000000001,
+       0.008452276000000002,
+       0.008292595
+      ],
+      "half_range": 0.06425136259156698
+     },
+     "recola": {
+      "seconds_per_point": 0.003545015,
+      "rounds": [
+       0.003638126,
+       0.0035479350000000003,
+       0.0034723489999999996,
+       0.003545015,
+       0.003483825
+      ],
+      "half_range": 0.02338170642437347
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "below 5 ms: not gated (user 2026-10-24)",
+    "measured_status": "inconclusive",
+    "binding_provider": "recola",
+    "binding_limit": 0.0046085195,
+    "fastest_provider": "recola",
+    "floor_basis_seconds": 0.003419067077629734,
+    "ratio_to_limit": 0.7419014018774867,
+    "band": [
+     0.422253152717809,
+     1.0615496510371643
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 9.321578125e-05,
+     "dressing": 0.00198219725,
+     "scatter": 0.000410747203125,
+     "reduction": 0.00027973859375,
+     "rest": 0.0011912156635158233
+    },
+    "total": 0.003957114491640823
+   },
+   "generation": {
+    "seconds": 52.75942764431238,
+    "generate_seconds": 46.464064760133624,
+    "dressed_frame_seconds": 0.11416514683514833,
+    "export_seconds": 6.295185243245214,
+    "filter_seconds": 0.00017764093354344368,
+    "probes_seconds": 58.3986557922326,
+    "peak_gib": 3.677,
+    "plan_mb": 0.038,
+    "model_seconds": 6.865444182883948,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 153,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.003419067077629734,
+   "tir_counts": {
+    "tensor moment rows": 1555,
+    "TIR gate refusals": 16,
+    "TIR method-choice rows": 13,
+    "TIR last-resort rows": 3,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "emep_ggg",
+   "process": "li_emep_ggg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_emep_ggg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_emep_ggg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.007091803119692486,
+    0.0093778907576052,
+    0.007118539710063487
+   ],
+   "instance_spread": 1.322356331574507,
+   "round_spread": [
+    1.4366747345081052,
+    1.4370018651577627,
+    1.0507862494177673
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.008452276000000002,
+      "rounds": [
+       0.009378735499999999,
+       0.008900117999999999,
+       0.008436286000000001,
+       0.008452276000000002,
+       0.008292595
+      ],
+      "half_range": 0.06425136259156698
+     },
+     "recola": {
+      "seconds_per_point": 0.003545015,
+      "rounds": [
+       0.003638126,
+       0.0035479350000000003,
+       0.0034723489999999996,
+       0.003545015,
+       0.003483825
+      ],
+      "half_range": 0.02338170642437347
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "recola",
+    "binding_limit": 0.0046085195,
+    "fastest_provider": "recola",
+    "ratio_to_limit": 1.5446478440773632,
+    "band": [
+     1.260502919741618,
+     1.8287927684131084
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 6.77829453125e-05,
+     "dressing": 0.0019848042109375003,
+     "scatter": 0.0004228960078125001,
+     "reduction": 0.0038331164765625,
+     "rest": 0.0011273306701235167
+    },
+    "total": 0.0074359303107485175
+   },
+   "generation": {
+    "seconds": 52.75942764431238,
+    "generate_seconds": 46.464064760133624,
+    "dressed_frame_seconds": 0.11416514683514833,
+    "export_seconds": 6.295185243245214,
+    "filter_seconds": 0.00017764093354344368,
+    "probes_seconds": 58.3986557922326,
+    "peak_gib": 3.677,
+    "plan_mb": 0.038,
+    "model_seconds": 6.865444182883948,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 153,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.007118539710063487
+  },
+  {
+   "key": "gg_aag",
+   "process": "li_gg_aag",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_aag>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_aag.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.06901432132144691,
+    0.07114760889089666,
+    0.07556856353767216
+   ],
+   "instance_spread": 1.0949693062356964,
+   "round_spread": [
+    1.041997875641802,
+    1.0910319542924594,
+    1.0559855684834323
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.18443673300000002,
+      "rounds": [
+       0.185426222,
+       0.18443673300000002,
+       0.18074712650000002,
+       0.182826655,
+       0.18726515300000002
+      ],
+      "half_range": 0.01767008771511908
+     },
+     "openloops": {
+      "seconds_per_point": 0.06612107549999999,
+      "rounds": [
+       0.06612107549999999,
+       0.066154521,
+       0.0640276415,
+       0.06474974950000001,
+       0.06713329900000001
+      ],
+      "half_range": 0.023484626320090726
+     },
+     "recola": {
+      "seconds_per_point": 0.083239143,
+      "rounds": [
+       0.0845973595,
+       0.0856114885,
+       0.08265708599999999,
+       0.0820061275,
+       0.083239143
+      ],
+      "half_range": 0.021656644158385925
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "pass",
+    "binding_provider": "openloops",
+    "binding_limit": 0.08595739814999999,
+    "fastest_provider": "openloops",
+    "ratio_to_limit": 0.827707799702598,
+    "band": [
+     0.7701444459602151,
+     0.8852711534449809
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 9.00056796875e-05,
+     "dressing": 0.058018119296875,
+     "scatter": 0.004383216210937501,
+     "reduction": 0.0105618514921875,
+     "rest": 0.0023241053663905775
+    },
+    "total": 0.07537729804607807
+   },
+   "generation": {
+    "seconds": 8.941114586777985,
+    "generate_seconds": 8.274814886040986,
+    "dressed_frame_seconds": 0.6532800658605993,
+    "export_seconds": 0.6661003096960485,
+    "filter_seconds": 0.00019939104095101357,
+    "probes_seconds": 169.1642659860663,
+    "peak_gib": 0.981,
+    "plan_mb": 0.03,
+    "model_seconds": 4.842974655795842,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 48,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_aag): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.07114760889089666,
+   "tir_counts": {
+    "tensor moment rows": 6322,
+    "TIR gate refusals": 812,
+    "TIR method-choice rows": 678,
+    "TIR last-resort rows": 134,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_aag",
+   "process": "li_gg_aag",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_aag>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_aag.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.23037919489797787,
+    0.2447315718345635,
+    0.23313420831982512
+   ],
+   "instance_spread": 1.062298928264514,
+   "round_spread": [
+    1.2332468244978192,
+    1.1180447841147374,
+    1.0690320310331138
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.18443673300000002,
+      "rounds": [
+       0.185426222,
+       0.18443673300000002,
+       0.18074712650000002,
+       0.182826655,
+       0.18726515300000002
+      ],
+      "half_range": 0.01767008771511908
+     },
+     "openloops": {
+      "seconds_per_point": 0.06612107549999999,
+      "rounds": [
+       0.06612107549999999,
+       0.066154521,
+       0.0640276415,
+       0.06474974950000001,
+       0.06713329900000001
+      ],
+      "half_range": 0.023484626320090726
+     },
+     "recola": {
+      "seconds_per_point": 0.083239143,
+      "rounds": [
+       0.0845973595,
+       0.0856114885,
+       0.08265708599999999,
+       0.0820061275,
+       0.083239143
+      ],
+      "half_range": 0.021656644158385925
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "openloops",
+    "binding_limit": 0.08595739814999999,
+    "fastest_provider": "openloops",
+    "ratio_to_limit": 2.7122064340871996,
+    "band": [
+     2.5650258713270633,
+     2.859386996847336
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 7.74296875e-05,
+     "dressing": 0.0526410903359375,
+     "scatter": 0.0041836179765625,
+     "reduction": 0.160741651125,
+     "rest": 0.0024103697395137513
+    },
+    "total": 0.22005415886451374
+   },
+   "generation": {
+    "seconds": 8.941114586777985,
+    "generate_seconds": 8.274814886040986,
+    "dressed_frame_seconds": 0.6532800658605993,
+    "export_seconds": 0.6661003096960485,
+    "filter_seconds": 0.00019939104095101357,
+    "probes_seconds": 169.1642659860663,
+    "peak_gib": 0.981,
+    "plan_mb": 0.03,
+    "model_seconds": 4.842974655795842,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 48,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_aag): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.23313420831982512
+  },
+  {
+   "key": "gg_agg",
+   "process": "li_gg_agg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_agg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_agg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.11666146961943014,
+    0.11279942380497232,
+    0.114661227009492
+   ],
+   "instance_spread": 1.034238169701427,
+   "round_spread": [
+    1.0946571600018389,
+    1.0677388248135695,
+    1.0550456652279483
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.1352210275,
+      "rounds": [
+       0.1360218525,
+       0.136620045,
+       0.1352210275,
+       0.1327592825,
+       0.13489287249999998
+      ],
+      "half_range": 0.014275747534901712
+     },
+     "openloops": {
+      "seconds_per_point": 0.0616316215,
+      "rounds": [
+       0.062763106,
+       0.0616316215,
+       0.05917045,
+       0.058605783,
+       0.0616472255
+      ],
+      "half_range": 0.03372719148724651
+     },
+     "recola": {
+      "seconds_per_point": 0.0783655975,
+      "rounds": [
+       0.07813965649999999,
+       0.0783655975,
+       0.08267253499999999,
+       0.081103238,
+       0.0778038555
+      ],
+      "half_range": 0.03106388297492396
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "fail",
+    "binding_provider": "openloops",
+    "binding_limit": 0.08012110794999999,
+    "fastest_provider": "openloops",
+    "ratio_to_limit": 1.4310988694895102,
+    "band": [
+     1.3587306232795464,
+     1.503467115699474
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.0002072725,
+     "dressing": 0.082269128359375,
+     "scatter": 0.022222908398437498,
+     "reduction": 0.009042250093749997,
+     "rest": 0.005578447092905683
+    },
+    "total": 0.11932000644446816
+   },
+   "generation": {
+    "seconds": 6.184659741818905,
+    "generate_seconds": 5.581555651966482,
+    "dressed_frame_seconds": 0.7387565718963742,
+    "export_seconds": 0.6029263688251376,
+    "filter_seconds": 0.0001777210272848606,
+    "probes_seconds": 203.1513063586317,
+    "peak_gib": 1.354,
+    "plan_mb": 0.046,
+    "model_seconds": 3.2504466651007533,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 139,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_agg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.114661227009492,
+   "tir_counts": {
+    "tensor moment rows": 10425,
+    "TIR gate refusals": 818,
+    "TIR method-choice rows": 683,
+    "TIR last-resort rows": 135,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_agg",
+   "process": "li_gg_agg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_agg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_agg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.2712764261632401,
+    0.26757264019033755,
+    0.26636146925011417
+   ],
+   "instance_spread": 1.0184522067961368,
+   "round_spread": [
+    1.0478506876882918,
+    1.0656009649927287,
+    1.0270681294902422
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.1352210275,
+      "rounds": [
+       0.1360218525,
+       0.136620045,
+       0.1352210275,
+       0.1327592825,
+       0.13489287249999998
+      ],
+      "half_range": 0.014275747534901712
+     },
+     "openloops": {
+      "seconds_per_point": 0.0616316215,
+      "rounds": [
+       0.062763106,
+       0.0616316215,
+       0.05917045,
+       0.058605783,
+       0.0616472255
+      ],
+      "half_range": 0.03372719148724651
+     },
+     "recola": {
+      "seconds_per_point": 0.0783655975,
+      "rounds": [
+       0.07813965649999999,
+       0.0783655975,
+       0.08267253499999999,
+       0.081103238,
+       0.0778038555
+      ],
+      "half_range": 0.03106388297492396
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "openloops",
+    "binding_limit": 0.08012110794999999,
+    "fastest_provider": "openloops",
+    "ratio_to_limit": 3.3396023474527796,
+    "band": [
+     3.196294891742407,
+     3.482909803163152
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.0002061323359375,
+     "dressing": 0.08112023466406248,
+     "scatter": 0.021026537554687495,
+     "reduction": 0.17152413700000002,
+     "rest": 0.005781015437360426
+    },
+    "total": 0.27965805699204793
+   },
+   "generation": {
+    "seconds": 6.184659741818905,
+    "generate_seconds": 5.581555651966482,
+    "dressed_frame_seconds": 0.7387565718963742,
+    "export_seconds": 0.6029263688251376,
+    "filter_seconds": 0.0001777210272848606,
+    "probes_seconds": 203.1513063586317,
+    "peak_gib": 1.354,
+    "plan_mb": 0.046,
+    "model_seconds": 3.2504466651007533,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 139,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_agg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.26757264019033755
+  },
+  {
+   "key": "gg_emepmupmum",
+   "process": "li_gg_emepmupmum",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_emepmupmum>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_emepmupmum.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.0026322884295950644,
+    0.0038744647572457325,
+    0.003753871813387377
+   ],
+   "instance_spread": 1.4718997787950454,
+   "round_spread": [
+    1.6442830129692683,
+    1.0908135247981032,
+    1.1591450349953203
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.018002137,
+      "rounds": [
+       0.017977237,
+       0.018002137,
+       0.017846576,
+       0.0180035765,
+       0.018205402500000002
+      ],
+      "half_range": 0.00996621956604382
+     },
+     "openloops": {
+      "seconds_per_point": 0.0053448125,
+      "rounds": [
+       0.005392543499999999,
+       0.0053448125,
+       0.0052086975,
+       0.005328952499999999,
+       0.0053864724999999995
+      ],
+      "half_range": 0.01719854531847466
+     },
+     "recola": {
+      "seconds_per_point": 0.0029951674999999997,
+      "rounds": [
+       0.003040143,
+       0.0031373089999999996,
+       0.0029405025,
+       0.0029508925,
+       0.0029951674999999997
+      ],
+      "half_range": 0.03285400566078519
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "below 5 ms: not gated (user 2026-10-24)",
+    "measured_status": "pass",
+    "binding_provider": "openloops",
+    "binding_limit": 0.00694825625,
+    "fastest_provider": "openloops",
+    "not_matched": {
+     "recola": {
+      "seconds": 0.0029951674999999997,
+      "reason": "width convention: Recola's on-shell scheme with widths is not MG5/OpenLoops' fixed-width scheme (qcd-widths); its values are 3.0e-4 to 8.4e-4 at the reference points and 1.3e-4 to 1.0e-3 at the 16 stream points off MadLoop = OpenLoops, so they are no reference (all three agree to 2e-13 under the complex-mass scheme, li_gg_emepmupmum_cms). Its timing is of the same process and production work; whether it counts as a matched provider for the speed gate is lit-perf's / the coordinator's call",
+      "ratio": 1.2533094771452273
+     }
+    },
+    "floor_basis_seconds": 0.003753871813387377,
+    "ratio_to_limit": 0.5402609918693453,
+    "band": [
+     0.44158165799653054,
+     0.63894032574216
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 5.4246171875e-05,
+     "dressing": 0.0013237639218749999,
+     "scatter": 0.00046279986718750004,
+     "reduction": 0.00017798307812500003,
+     "rest": 0.0011715562027143577
+    },
+    "total": 0.0031903492417768575
+   },
+   "generation": {
+    "seconds": 5.855560757219791,
+    "generate_seconds": 4.598870652727783,
+    "dressed_frame_seconds": 0.08766366401687264,
+    "export_seconds": 1.2565237134695053,
+    "filter_seconds": 0.000166391022503376,
+    "probes_seconds": 8.248197976965457,
+    "peak_gib": 0.694,
+    "plan_mb": 0.038,
+    "model_seconds": 2.950983877759427,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 157,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_emepmupmum): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.003753871813387377,
+   "tir_counts": {
+    "tensor moment rows": 1024,
+    "TIR gate refusals": 0,
+    "TIR method-choice rows": 0,
+    "TIR last-resort rows": 0,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_emepmupmum",
+   "process": "li_gg_emepmupmum",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_emepmupmum>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_emepmupmum.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.005314696521963924,
+    0.005261675127258059,
+    0.005357083420676645
+   ],
+   "instance_spread": 1.0181326841948726,
+   "round_spread": [
+    1.4637655653503172,
+    1.0605138773090352,
+    1.0941069094295657
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.018002137,
+      "rounds": [
+       0.017977237,
+       0.018002137,
+       0.017846576,
+       0.0180035765,
+       0.018205402500000002
+      ],
+      "half_range": 0.00996621956604382
+     },
+     "openloops": {
+      "seconds_per_point": 0.0053448125,
+      "rounds": [
+       0.005392543499999999,
+       0.0053448125,
+       0.0052086975,
+       0.005328952499999999,
+       0.0053864724999999995
+      ],
+      "half_range": 0.01719854531847466
+     },
+     "recola": {
+      "seconds_per_point": 0.0029951674999999997,
+      "rounds": [
+       0.003040143,
+       0.0031373089999999996,
+       0.0029405025,
+       0.0029508925,
+       0.0029951674999999997
+      ],
+      "half_range": 0.03285400566078519
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "pass",
+    "binding_provider": "openloops",
+    "binding_limit": 0.00694825625,
+    "fastest_provider": "openloops",
+    "not_matched": {
+     "recola": {
+      "seconds": 0.0029951674999999997,
+      "reason": "width convention: Recola's on-shell scheme with widths is not MG5/OpenLoops' fixed-width scheme (qcd-widths); its values are 3.0e-4 to 8.4e-4 at the reference points and 1.3e-4 to 1.0e-3 at the 16 stream points off MadLoop = OpenLoops, so they are no reference (all three agree to 2e-13 under the complex-mass scheme, li_gg_emepmupmum_cms). Its timing is of the same process and production work; whether it counts as a matched provider for the speed gate is lit-perf's / the coordinator's call",
+      "ratio": 1.7744238083392414
+     }
+    },
+    "ratio_to_limit": 0.7648964475027709,
+    "band": [
+     0.744875712703845,
+     0.7849171823016967
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 5.33645234375e-05,
+     "dressing": 0.0012925753671875,
+     "scatter": 0.00046056967968749994,
+     "reduction": 0.0017165830390625,
+     "rest": 0.0011295408423943614
+    },
+    "total": 0.004652633451769361
+   },
+   "generation": {
+    "seconds": 5.855560757219791,
+    "generate_seconds": 4.598870652727783,
+    "dressed_frame_seconds": 0.08766366401687264,
+    "export_seconds": 1.2565237134695053,
+    "filter_seconds": 0.000166391022503376,
+    "probes_seconds": 8.248197976965457,
+    "peak_gib": 0.694,
+    "plan_mb": 0.038,
+    "model_seconds": 2.950983877759427,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 157,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_emepmupmum): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.005314696521963924
+  },
+  {
+   "key": "li51",
+   "process": "li_gg_emepmupmumg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_emepmupmumg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_emepmupmumg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.06886831914016511,
+    0.07470819250011118,
+    0.07180896126737935
+   ],
+   "instance_spread": 1.0847976752280013,
+   "round_spread": [
+    1.1793061933759814,
+    1.1239327967974824,
+    1.1813183800981502
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.614204466,
+      "rounds": [
+       0.600791694,
+       0.620846209,
+       0.614204466,
+       0.591432618,
+       0.6147775045
+      ],
+      "half_range": 0.02394446200591446
+     },
+     "openloops": {
+      "seconds_per_point": 0.17955433199999998,
+      "rounds": [
+       0.18304000850000002,
+       0.17879536,
+       0.17955433199999998,
+       0.1783785465,
+       0.186034623
+      ],
+      "half_range": 0.021319665236481173
+     },
+     "recola": {
+      "seconds_per_point": 0.056832741500000006,
+      "rounds": [
+       0.056031973,
+       0.0589524155,
+       0.056078683000000004,
+       0.056832741500000006,
+       0.058248567
+      ],
+      "half_range": 0.025693310079014944
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "pass",
+    "binding_provider": "openloops",
+    "binding_limit": 0.23342063159999998,
+    "fastest_provider": "openloops",
+    "not_matched": {
+     "recola": {
+      "seconds": 0.056832741500000006,
+      "reason": "width convention: Recola's on-shell scheme with widths is not MG5/OpenLoops' fixed-width scheme (qcd-widths); its values are 1.7e-4 to 3.6e-4 at the reference points and 5.1e-5 to 1.1e-3 at the 16 stream points off MadLoop = OpenLoops, so they are no reference (as on LI-43). Its timing is of the same process and production work; whether it counts as a matched provider for the speed gate is lit-perf's / the coordinator's call",
+      "ratio": 1.2635139423527428
+     }
+    },
+    "ratio_to_limit": 0.3076375930232011,
+    "band": [
+     0.28856952836814426,
+     0.326705657678258
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.00013964746874999998,
+     "dressing": 0.047346296640624994,
+     "scatter": 0.0149294257890625,
+     "reduction": 0.013121093453125001,
+     "rest": 0.0036920838973686504
+    },
+    "total": 0.07922854724893114
+   },
+   "generation": {
+    "seconds": 7.622033008374274,
+    "generate_seconds": 6.203077718149871,
+    "dressed_frame_seconds": 1.0145994881168008,
+    "export_seconds": 1.4185960292816162,
+    "filter_seconds": 0.000359260942786932,
+    "probes_seconds": 87.97872091131285,
+    "peak_gib": 1.136,
+    "plan_mb": 0.053,
+    "model_seconds": 3.088737754151225,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 195,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_emepmupmumg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.07180896126737935,
+   "tir_counts": {
+    "tensor moment rows": 8248,
+    "TIR gate refusals": 1114,
+    "TIR method-choice rows": 892,
+    "TIR last-resort rows": 222,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "li51",
+   "process": "li_gg_emepmupmumg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_emepmupmumg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_emepmupmumg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.16615775459285942,
+    0.17351488085841993,
+    0.16749080642694025
+   ],
+   "instance_spread": 1.0442779591213656,
+   "round_spread": [
+    1.1248197092752708,
+    1.0896986647862859,
+    1.1080358155318115
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.614204466,
+      "rounds": [
+       0.600791694,
+       0.620846209,
+       0.614204466,
+       0.591432618,
+       0.6147775045
+      ],
+      "half_range": 0.02394446200591446
+     },
+     "openloops": {
+      "seconds_per_point": 0.17955433199999998,
+      "rounds": [
+       0.18304000850000002,
+       0.17879536,
+       0.17955433199999998,
+       0.1783785465,
+       0.186034623
+      ],
+      "half_range": 0.021319665236481173
+     },
+     "recola": {
+      "seconds_per_point": 0.056832741500000006,
+      "rounds": [
+       0.056031973,
+       0.0589524155,
+       0.056078683000000004,
+       0.056832741500000006,
+       0.058248567
+      ],
+      "half_range": 0.025693310079014944
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "pass",
+    "binding_provider": "openloops",
+    "binding_limit": 0.23342063159999998,
+    "fastest_provider": "openloops",
+    "not_matched": {
+     "recola": {
+      "seconds": 0.056832741500000006,
+      "reason": "width convention: Recola's on-shell scheme with widths is not MG5/OpenLoops' fixed-width scheme (qcd-widths); its values are 1.7e-4 to 3.6e-4 at the reference points and 5.1e-5 to 1.1e-3 at the 16 stream points off MadLoop = OpenLoops, so they are no reference (as on LI-43). Its timing is of the same process and production work; whether it counts as a matched provider for the speed gate is lit-perf's / the coordinator's call",
+      "ratio": 2.947083001916074
+     }
+    },
+    "ratio_to_limit": 0.7175492812218929,
+    "band": [
+     0.6864919963268121,
+     0.7486065661169737
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.0001650242890625,
+     "dressing": 0.0481170954453125,
+     "scatter": 0.015776294359375,
+     "reduction": 0.11978140382812501,
+     "rest": 0.0037630712746938577
+    },
+    "total": 0.18760288919656887
+   },
+   "generation": {
+    "seconds": 7.622033008374274,
+    "generate_seconds": 6.203077718149871,
+    "dressed_frame_seconds": 1.0145994881168008,
+    "export_seconds": 1.4185960292816162,
+    "filter_seconds": 0.000359260942786932,
+    "probes_seconds": 87.97872091131285,
+    "peak_gib": 1.136,
+    "plan_mb": 0.053,
+    "model_seconds": 3.088737754151225,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 195,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_emepmupmumg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.16749080642694025
+  },
+  {
+   "key": "gg_hgg",
+   "process": "li_gg_hgg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hgg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.029168721499445383,
+    0.03021493601045222,
+    0.028743279344780603
+   ],
+   "instance_spread": 1.0512000265529498,
+   "round_spread": [
+    1.1521455611506026,
+    1.1799620351233604,
+    1.0892044086314674
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.052725974999999994,
+      "rounds": [
+       0.052725974999999994,
+       0.051836306,
+       0.053225391999999996,
+       0.0518534055,
+       0.058327567999999996
+      ],
+      "half_range": 0.06155658572458829
+     },
+     "openloops": {
+      "seconds_per_point": 0.018644159,
+      "rounds": [
+       0.018825265,
+       0.018584044,
+       0.0192955225,
+       0.018309378,
+       0.018644159
+      ],
+      "half_range": 0.02644647312866184
+     },
+     "recola": {
+      "seconds_per_point": 0.0264435675,
+      "rounds": [
+       0.0264435675,
+       0.025871295500000002,
+       0.0264509125,
+       0.0270599005,
+       0.0258008295
+      ],
+      "half_range": 0.023806753759680884
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "fail",
+    "binding_provider": "openloops",
+    "binding_limit": 0.024237406700000002,
+    "fastest_provider": "openloops",
+    "ratio_to_limit": 1.203458846092036,
+    "band": [
+     1.1412724017737865,
+     1.2656452904102853
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.0002343331796875,
+     "dressing": 0.015582528609374998,
+     "scatter": 0.0032551816484374997,
+     "reduction": 0.0069795136796875,
+     "rest": 0.0029622653419043993
+    },
+    "total": 0.029013822459091898
+   },
+   "generation": {
+    "seconds": 6.9063668441958725,
+    "generate_seconds": 6.329888632986695,
+    "dressed_frame_seconds": 0.3882637000642717,
+    "export_seconds": 0.5763095999136567,
+    "filter_seconds": 0.0001686112955212593,
+    "probes_seconds": 38.102456371765584,
+    "peak_gib": 0.766,
+    "plan_mb": 0.019,
+    "model_seconds": 4.311069854069501,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 9,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.029168721499445383,
+   "tir_counts": {
+    "tensor moment rows": 5874,
+    "TIR gate refusals": 1138,
+    "TIR method-choice rows": 1138,
+    "TIR last-resort rows": 0,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   },
+   "auto_pairing": {
+    "requested": "auto",
+    "effective": "tirust",
+    "reason": "auto: TIRust, the loop-induced default; a point it refuses or fails is evaluated again on NinjaRS (the per-point fallback, recorded per point)",
+    "values_bitwise_tirust": true,
+    "fallback_points": 0,
+    "failed_points": 0,
+    "seconds_per_point": 0.02863577250900562,
+    "instance_medians": [
+     0.02863577250900562,
+     0.028621740773814963,
+     0.02980860932075302
+    ],
+    "ratio_to_tirust": 0.9817287504202097
+   }
+  },
+  {
+   "key": "gg_hgg",
+   "process": "li_gg_hgg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hgg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.05955785663900315,
+    0.05933530682159471,
+    0.058234912208718015
+   ],
+   "instance_spread": 1.0227173765720399,
+   "round_spread": [
+    1.1498549997731298,
+    1.0362397725989623,
+    1.044206210411659
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.052725974999999994,
+      "rounds": [
+       0.052725974999999994,
+       0.051836306,
+       0.053225391999999996,
+       0.0518534055,
+       0.058327567999999996
+      ],
+      "half_range": 0.06155658572458829
+     },
+     "openloops": {
+      "seconds_per_point": 0.018644159,
+      "rounds": [
+       0.018825265,
+       0.018584044,
+       0.0192955225,
+       0.018309378,
+       0.018644159
+      ],
+      "half_range": 0.02644647312866184
+     },
+     "recola": {
+      "seconds_per_point": 0.0264435675,
+      "rounds": [
+       0.0264435675,
+       0.025871295500000002,
+       0.0264509125,
+       0.0270599005,
+       0.0258008295
+      ],
+      "half_range": 0.023806753759680884
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "openloops",
+    "binding_limit": 0.024237406700000002,
+    "fastest_provider": "openloops",
+    "ratio_to_limit": 2.4480880960583424,
+    "band": [
+     2.3560534225393814,
+     2.5401227695773034
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.0002501407421875,
+     "dressing": 0.01576638296875,
+     "scatter": 0.0035976185546875003,
+     "reduction": 0.03845144446875,
+     "rest": 0.0030969485159574456
+    },
+    "total": 0.06116253525033244
+   },
+   "generation": {
+    "seconds": 6.9063668441958725,
+    "generate_seconds": 6.329888632986695,
+    "dressed_frame_seconds": 0.3882637000642717,
+    "export_seconds": 0.5763095999136567,
+    "filter_seconds": 0.0001686112955212593,
+    "probes_seconds": 38.102456371765584,
+    "peak_gib": 0.766,
+    "plan_mb": 0.019,
+    "model_seconds": 4.311069854069501,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 9,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.05933530682159471
+  },
+  {
+   "key": "gg_hggg",
+   "process": "li_gg_hggg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hggg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hggg.json)",
+   "batch": 128,
+   "rounds": 2,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    1.3824095541567658,
+    1.4365554161759064,
+    1.5008882087240636
+   ],
+   "instance_spread": 1.085704452932233,
+   "round_spread": [
+    1.0114874946411174,
+    1.0033684275562091,
+    1.0183568206870974
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 2,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.99016617725,
+      "rounds": [
+       0.9879965995,
+       0.992335755
+      ],
+      "half_range": 0.002191124883729753
+     },
+     "openloops": {
+      "seconds_per_point": 0.5084835267500001,
+      "rounds": [
+       0.5084315105,
+       0.508535543
+      ],
+      "half_range": 0.00010229682430908515
+     },
+     "recola": {
+      "seconds_per_point": 0.490848022,
+      "rounds": [
+       0.4986002965,
+       0.4830957475
+      ],
+      "half_range": 0.015793635000122278
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "fail",
+    "binding_provider": "recola",
+    "binding_limit": 0.6381024286,
+    "fastest_provider": "recola",
+    "ratio_to_limit": 2.2512928203826403,
+    "band": [
+     2.1229000177350623,
+     2.3796856230302184
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.0037795458984375,
+     "dressing": 0.5891762398281251,
+     "scatter": 0.5473599153828125,
+     "reduction": 0.08484160664062501,
+     "rest": 0.030121135141721878
+    },
+    "total": 1.255278442891722
+   },
+   "generation": {
+    "seconds": 7.964392067398876,
+    "generate_seconds": 7.27090676734224,
+    "dressed_frame_seconds": 3.1603611297905445,
+    "export_seconds": 0.6932868994772434,
+    "filter_seconds": 0.00019840057939291,
+    "probes_seconds": 874.4484414067119,
+    "peak_gib": 5.223,
+    "plan_mb": 0.1,
+    "model_seconds": 2.8321018521673977,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 197,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 1.4365554161759064,
+   "tir_counts": {
+    "tensor moment rows": 49334,
+    "TIR gate refusals": 14774,
+    "TIR method-choice rows": 14774,
+    "TIR last-resort rows": 0,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_hggg",
+   "process": "li_gg_hggg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hggg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hggg.json)",
+   "batch": 128,
+   "rounds": 2,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    2.53216914762379,
+    2.60107839747252,
+    2.4706197905579756
+   ],
+   "instance_spread": 1.052803999795161,
+   "round_spread": [
+    1.024071938244952,
+    1.0454609427519654,
+    1.037024167526345
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 2,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.99016617725,
+      "rounds": [
+       0.9879965995,
+       0.992335755
+      ],
+      "half_range": 0.002191124883729753
+     },
+     "openloops": {
+      "seconds_per_point": 0.5084835267500001,
+      "rounds": [
+       0.5084315105,
+       0.508535543
+      ],
+      "half_range": 0.00010229682430908515
+     },
+     "recola": {
+      "seconds_per_point": 0.490848022,
+      "rounds": [
+       0.4986002965,
+       0.4830957475
+      ],
+      "half_range": 0.015793635000122278
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "recola",
+    "binding_limit": 0.6381024286,
+    "fastest_provider": "recola",
+    "ratio_to_limit": 3.9682800662260167,
+    "band": [
+     3.803382623405952,
+     4.133177509046082
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.003889772859375,
+     "dressing": 0.5801923200078124,
+     "scatter": 0.54307735103125,
+     "reduction": 1.058971427625,
+     "rest": 0.031103100227392044
+    },
+    "total": 2.2172339717508294
+   },
+   "generation": {
+    "seconds": 7.964392067398876,
+    "generate_seconds": 7.27090676734224,
+    "dressed_frame_seconds": 3.1603611297905445,
+    "export_seconds": 0.6932868994772434,
+    "filter_seconds": 0.00019840057939291,
+    "probes_seconds": 874.4484414067119,
+    "peak_gib": 5.223,
+    "plan_mb": 0.1,
+    "model_seconds": 2.8321018521673977,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 197,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 2.53216914762379
+  },
+  {
+   "key": "gg_hh",
+   "process": "li_gg_hh",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hh.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.00043735139843192883,
+    0.00044275345135247335,
+    0.00043633302993839607
+   ],
+   "instance_spread": 1.0147144978114166,
+   "round_spread": [
+    3.8763777785282247,
+    1.1039373688993441,
+    1.0511788277908614
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.0003306065,
+      "rounds": [
+       0.000340797,
+       0.00032766649999999996,
+       0.0003306065,
+       0.0003261315,
+       0.0003369815
+      ],
+      "half_range": 0.0221796909619139
+     },
+     "openloops": {
+      "seconds_per_point": 0.000625023,
+      "rounds": [
+       0.000629448,
+       0.0006179325,
+       0.0006181870000000001,
+       0.0006665130000000001,
+       0.000625023
+      ],
+      "half_range": 0.03886296984270984
+     },
+     "recola": {
+      "seconds_per_point": 0.0003680515,
+      "rounds": [
+       0.000372817,
+       0.000372417,
+       0.0003680515,
+       0.00036465149999999997,
+       0.00036604149999999995
+      ],
+      "half_range": 0.011092876947927172
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "below 5 ms: not gated (user 2026-10-24)",
+    "measured_status": "fail",
+    "binding_provider": "madloop",
+    "binding_limit": 0.0003306065,
+    "fastest_provider": "madloop",
+    "floor_basis_seconds": 0.00043735139843192883,
+    "ratio_to_limit": 1.322875982268736,
+    "band": [
+     1.2838249364906895,
+     1.3619270280467826
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 7.336984375e-06,
+     "dressing": 0.000101023796875,
+     "scatter": 1.133075e-05,
+     "reduction": 9.8438609375e-05,
+     "rest": 0.00017589357049873657
+    },
+    "total": 0.0003940237111237366
+   },
+   "generation": {
+    "seconds": 3.4210000904276967,
+    "generate_seconds": 3.183039285708219,
+    "dressed_frame_seconds": 0.015557357110083103,
+    "export_seconds": 0.23784172488376498,
+    "filter_seconds": 0.0001190798357129097,
+    "probes_seconds": 5.085259318351746,
+    "peak_gib": 0.599,
+    "plan_mb": 0.01,
+    "model_seconds": 3.007854768075049,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 1,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.00043735139843192883,
+   "tir_counts": {
+    "tensor moment rows": 516,
+    "TIR gate refusals": 4,
+    "TIR method-choice rows": 4,
+    "TIR last-resort rows": 0,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_hh",
+   "process": "li_gg_hh",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hh.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.0006343951245071366,
+    0.0006123689454398118,
+    0.0006040592197678052
+   ],
+   "instance_spread": 1.050220083969569,
+   "round_spread": [
+    1.0695420074984046,
+    3.3284357385667267,
+    1.0157182256856299
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.0003306065,
+      "rounds": [
+       0.000340797,
+       0.00032766649999999996,
+       0.0003306065,
+       0.0003261315,
+       0.0003369815
+      ],
+      "half_range": 0.0221796909619139
+     },
+     "openloops": {
+      "seconds_per_point": 0.000625023,
+      "rounds": [
+       0.000629448,
+       0.0006179325,
+       0.0006181870000000001,
+       0.0006665130000000001,
+       0.000625023
+      ],
+      "half_range": 0.03886296984270984
+     },
+     "recola": {
+      "seconds_per_point": 0.0003680515,
+      "rounds": [
+       0.000372817,
+       0.000372417,
+       0.0003680515,
+       0.00036465149999999997,
+       0.00036604149999999995
+      ],
+      "half_range": 0.011092876947927172
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "madloop",
+    "binding_limit": 0.0003306065,
+    "fastest_provider": "madloop",
+    "floor_basis_seconds": 0.0006123689454398118,
+    "ratio_to_limit": 1.8522592430572653,
+    "band": [
+     1.7652975337920396,
+     1.9392209523224908
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 7.0370703125e-06,
+     "dressing": 0.00010411116406250002,
+     "scatter": 1.2437578124999999e-05,
+     "reduction": 0.0002709052109375,
+     "rest": 0.00017768305467799492
+    },
+    "total": 0.0005721740781154949
+   },
+   "generation": {
+    "seconds": 3.4210000904276967,
+    "generate_seconds": 3.183039285708219,
+    "dressed_frame_seconds": 0.015557357110083103,
+    "export_seconds": 0.23784172488376498,
+    "filter_seconds": 0.0001190798357129097,
+    "probes_seconds": 5.085259318351746,
+    "peak_gib": 0.599,
+    "plan_mb": 0.01,
+    "model_seconds": 3.007854768075049,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 1,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.0006123689454398118
+  },
+  {
+   "key": "gg_hhgg",
+   "process": "li_gg_hhgg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hhgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hhgg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.33828899634318077,
+    0.34671605785842985,
+    0.3445522512047319
+   ],
+   "instance_spread": 1.0249108354287118,
+   "round_spread": [
+    1.0358811459796249,
+    1.044442387469427,
+    1.0355323944008927
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.36469458450000003,
+      "rounds": [
+       0.3671121925,
+       0.36469458450000003,
+       0.3577316585,
+       0.3600238185,
+       0.3715521
+      ],
+      "half_range": 0.018947966445605393
+     },
+     "openloops": {
+      "seconds_per_point": 0.30249341750000003,
+      "rounds": [
+       0.3025314415,
+       0.30249341750000003,
+       0.296720453,
+       0.296250366,
+       0.30993928400000004
+      ],
+      "half_range": 0.022626803110517353
+     },
+     "recola": {
+      "seconds_per_point": 0.171428179,
+      "rounds": [
+       0.1742704655,
+       0.171428179,
+       0.1704585435,
+       0.1682311145,
+       0.178717313
+      ],
+      "half_range": 0.03058481563874043
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "fail",
+    "binding_provider": "recola",
+    "binding_limit": 0.22285663270000003,
+    "fastest_provider": "recola",
+    "ratio_to_limit": 1.5460713330823463,
+    "band": [
+     1.4798781143303956,
+     1.6122645518342973
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.00018763936718750002,
+     "dressing": 0.12674790434375,
+     "scatter": 0.0254487093828125,
+     "reduction": 0.20266272898437507,
+     "rest": 0.003352259509778799
+    },
+    "total": 0.3583992415879038
+   },
+   "generation": {
+    "seconds": 6.12929394794628,
+    "generate_seconds": 5.658508986234665,
+    "dressed_frame_seconds": 1.5146767562255263,
+    "export_seconds": 0.4706493318080902,
+    "filter_seconds": 0.00013562990352511406,
+    "probes_seconds": 511.61704768706113,
+    "peak_gib": 1.754,
+    "plan_mb": 0.047,
+    "model_seconds": 3.1931205727159977,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 154,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hhgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.3445522512047319,
+   "tir_counts": {
+    "tensor moment rows": 40696,
+    "TIR gate refusals": 16376,
+    "TIR method-choice rows": 16376,
+    "TIR last-resort rows": 0,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_hhgg",
+   "process": "li_gg_hhgg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hhgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hhgg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.7866468161555531,
+    0.8014500124227197,
+    0.7887141395985964
+   ],
+   "instance_spread": 1.0188180972237475,
+   "round_spread": [
+    1.0694967725716744,
+    1.0558325904643144,
+    1.0491912808669464
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.36469458450000003,
+      "rounds": [
+       0.3671121925,
+       0.36469458450000003,
+       0.3577316585,
+       0.3600238185,
+       0.3715521
+      ],
+      "half_range": 0.018947966445605393
+     },
+     "openloops": {
+      "seconds_per_point": 0.30249341750000003,
+      "rounds": [
+       0.3025314415,
+       0.30249341750000003,
+       0.296720453,
+       0.296250366,
+       0.30993928400000004
+      ],
+      "half_range": 0.022626803110517353
+     },
+     "recola": {
+      "seconds_per_point": 0.171428179,
+      "rounds": [
+       0.1742704655,
+       0.171428179,
+       0.1704585435,
+       0.1682311145,
+       0.178717313
+      ],
+      "half_range": 0.03058481563874043
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "recola",
+    "binding_limit": 0.22285663270000003,
+    "fastest_provider": "recola",
+    "ratio_to_limit": 3.5391100100679043,
+    "band": [
+     3.397654607538733,
+     3.6805654125970753
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.0001849988984375,
+     "dressing": 0.11817726167968746,
+     "scatter": 0.024301787015625,
+     "reduction": 0.6605760331796874,
+     "rest": 0.003317900454814837
+    },
+    "total": 0.8065579812282522
+   },
+   "generation": {
+    "seconds": 6.12929394794628,
+    "generate_seconds": 5.658508986234665,
+    "dressed_frame_seconds": 1.5146767562255263,
+    "export_seconds": 0.4706493318080902,
+    "filter_seconds": 0.00013562990352511406,
+    "probes_seconds": 511.61704768706113,
+    "peak_gib": 1.754,
+    "plan_mb": 0.047,
+    "model_seconds": 3.1931205727159977,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 154,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hhgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.7887141395985964
+  },
+  {
+   "key": "gg_hhh",
+   "process": "li_gg_hhh",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hhh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hhh.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.005203248772886582,
+    0.005155985130841145,
+    0.005269956494885264
+   ],
+   "instance_spread": 1.0221046727544627,
+   "round_spread": [
+    1.3635539994362622,
+    1.036936519528421,
+    1.403186217867848
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.011068241999999999,
+      "rounds": [
+       0.011262968,
+       0.010977947,
+       0.011520974,
+       0.010797316500000001,
+       0.011068241999999999
+      ],
+      "half_range": 0.03269071547224929
+     },
+     "openloops": {
+      "seconds_per_point": 0.016128103999999997,
+      "rounds": [
+       0.016128103999999997,
+       0.0155759515,
+       0.016224319,
+       0.01635729,
+       0.0158129775
+      ],
+      "half_range": 0.024222887575625733
+     },
+     "recola": {
+      "seconds_per_point": 0.009162949,
+      "rounds": [
+       0.009162949,
+       0.008875178000000001,
+       0.009411345500000001,
+       0.009189784,
+       0.0081435745
+      ],
+      "half_range": 0.06917920202327879
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "pass",
+    "binding_provider": "madloop",
+    "binding_limit": 0.011068241999999999,
+    "fastest_provider": "recola",
+    "ratio_to_limit": 0.47010616255829807,
+    "band": [
+     0.4495894800365548,
+     0.49062284508004134
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 1.87361015625e-05,
+     "dressing": 0.0013702927187500002,
+     "scatter": 0.0002607769921875,
+     "reduction": 0.0027295207890625,
+     "rest": 0.0004166086253037764
+    },
+    "total": 0.004795935226866277
+   },
+   "generation": {
+    "seconds": 5.375786070246249,
+    "generate_seconds": 4.995508666615933,
+    "dressed_frame_seconds": 0.12484901305288076,
+    "export_seconds": 0.380122993607074,
+    "filter_seconds": 0.00015441002324223518,
+    "probes_seconds": 11.574599565006793,
+    "peak_gib": 0.676,
+    "plan_mb": 0.012,
+    "model_seconds": 4.650455647148192,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 43,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hhh): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.005203248772886582,
+   "tir_counts": {
+    "tensor moment rows": 2996,
+    "TIR gate refusals": 180,
+    "TIR method-choice rows": 180,
+    "TIR last-resort rows": 0,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_hhh",
+   "process": "li_gg_hhh",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hhh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hhh.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.00565011521030101,
+    0.005799144993943628,
+    0.005627922546409536
+   ],
+   "instance_spread": 1.0304237391545708,
+   "round_spread": [
+    1.3523493410080756,
+    1.046143053610984,
+    1.0665241744515186
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.011068241999999999,
+      "rounds": [
+       0.011262968,
+       0.010977947,
+       0.011520974,
+       0.010797316500000001,
+       0.011068241999999999
+      ],
+      "half_range": 0.03269071547224929
+     },
+     "openloops": {
+      "seconds_per_point": 0.016128103999999997,
+      "rounds": [
+       0.016128103999999997,
+       0.0155759515,
+       0.016224319,
+       0.01635729,
+       0.0158129775
+      ],
+      "half_range": 0.024222887575625733
+     },
+     "recola": {
+      "seconds_per_point": 0.009162949,
+      "rounds": [
+       0.009162949,
+       0.008875178000000001,
+       0.009411345500000001,
+       0.009189784,
+       0.0081435745
+      ],
+      "half_range": 0.06917920202327879
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "pass",
+    "binding_provider": "madloop",
+    "binding_limit": 0.011068241999999999,
+    "fastest_provider": "recola",
+    "ratio_to_limit": 0.5104799127360072,
+    "band": [
+     0.4860571062512534,
+     0.5349027192207609
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 2.0104140625e-05,
+     "dressing": 0.0013663308515625,
+     "scatter": 0.0002534241875,
+     "reduction": 0.0036140005546875,
+     "rest": 0.0004108031820128973
+    },
+    "total": 0.005664662916387897
+   },
+   "generation": {
+    "seconds": 5.375786070246249,
+    "generate_seconds": 4.995508666615933,
+    "dressed_frame_seconds": 0.12484901305288076,
+    "export_seconds": 0.380122993607074,
+    "filter_seconds": 0.00015441002324223518,
+    "probes_seconds": 11.574599565006793,
+    "peak_gib": 0.676,
+    "plan_mb": 0.012,
+    "model_seconds": 4.650455647148192,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 43,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hhh): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.00565011521030101
+  },
+  {
+   "key": "gg_hzg",
+   "process": "li_gg_hzg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hzg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hzg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.018347283476032317,
+    0.018408325780910673,
+    0.0191164676725748
+   ],
+   "instance_spread": 1.0419236012539566,
+   "round_spread": [
+    1.2400915678334294,
+    1.1653176908670875,
+    1.1483290559747719
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.043626206,
+      "rounds": [
+       0.042592416499999994,
+       0.043626206,
+       0.0463949525,
+       0.045246453,
+       0.041443371500000006
+      ],
+      "half_range": 0.056750075860367004
+     },
+     "openloops": {
+      "seconds_per_point": 0.0235338255,
+      "rounds": [
+       0.022838282,
+       0.0235338255,
+       0.0243624535,
+       0.0239579825,
+       0.023046258
+      ],
+      "half_range": 0.032382569931097636
+     },
+     "recola": {
+      "seconds_per_point": 0.0187872345,
+      "rounds": [
+       0.018586279,
+       0.018739475,
+       0.0188431655,
+       0.018965336,
+       0.0187872345
+      ],
+      "half_range": 0.010088153208499064
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "pass",
+    "binding_provider": "recola",
+    "binding_limit": 0.02442340485,
+    "fastest_provider": "recola",
+    "ratio_to_limit": 0.7537166047882415,
+    "band": [
+     0.7303661295959576,
+     0.7770670799805255
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 2.4843312499999997e-05,
+     "dressing": 0.01515881303125,
+     "scatter": 0.0016261330312500003,
+     "reduction": 0.0026200125546875005,
+     "rest": 0.0009742312367270953
+    },
+    "total": 0.020404033166414592
+   },
+   "generation": {
+    "seconds": 5.428766236640513,
+    "generate_seconds": 4.612645532004535,
+    "dressed_frame_seconds": 0.19227194925770164,
+    "export_seconds": 0.8160013346932828,
+    "filter_seconds": 0.00011936994269490242,
+    "probes_seconds": 31.585384245030582,
+    "peak_gib": 0.823,
+    "plan_mb": 0.033,
+    "model_seconds": 2.858538392931223,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 137,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hzg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.018408325780910673,
+   "tir_counts": {
+    "tensor moment rows": 4443,
+    "TIR gate refusals": 219,
+    "TIR method-choice rows": 219,
+    "TIR last-resort rows": 0,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_hzg",
+   "process": "li_gg_hzg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_hzg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_hzg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    2,
+    2,
+    2
+   ],
+   "served_fraction": 0.984375,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.04334884267154848,
+    0.04203852908540284,
+    0.04367503478715662
+   ],
+   "instance_spread": 1.038928709861117,
+   "round_spread": [
+    1.1002170402750642,
+    1.1358841830928816,
+    1.1175612020050545
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.043626206,
+      "rounds": [
+       0.042592416499999994,
+       0.043626206,
+       0.0463949525,
+       0.045246453,
+       0.041443371500000006
+      ],
+      "half_range": 0.056750075860367004
+     },
+     "openloops": {
+      "seconds_per_point": 0.0235338255,
+      "rounds": [
+       0.022838282,
+       0.0235338255,
+       0.0243624535,
+       0.0239579825,
+       0.023046258
+      ],
+      "half_range": 0.032382569931097636
+     },
+     "recola": {
+      "seconds_per_point": 0.0187872345,
+      "rounds": [
+       0.018586279,
+       0.018739475,
+       0.0188431655,
+       0.018965336,
+       0.0187872345
+      ],
+      "half_range": 0.010088153208499064
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "recola",
+    "binding_limit": 0.02442340485,
+    "fastest_provider": "recola",
+    "served_fraction": 0.984375,
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 2.5016195312499998e-05,
+     "dressing": 0.0142894599375,
+     "scatter": 0.0015184309140625003,
+     "reduction": 0.028273087039062502,
+     "rest": 0.00093313499373128
+    },
+    "total": 0.04503912907966878
+   },
+   "generation": {
+    "seconds": 5.428766236640513,
+    "generate_seconds": 4.612645532004535,
+    "dressed_frame_seconds": 0.19227194925770164,
+    "export_seconds": 0.8160013346932828,
+    "filter_seconds": 0.00011936994269490242,
+    "probes_seconds": 31.585384245030582,
+    "peak_gib": 0.823,
+    "plan_mb": 0.033,
+    "model_seconds": 2.858538392931223,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 137,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hzg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "whole_call_seconds_per_point": 0.04334884267154848,
+   "failures": {
+    "29": "lane status Unstable (48 lanes; families 29, 30)",
+    "62": "lane status MasterFailed (24 lanes; families 30)"
+   },
+   "failure_causes": {
+    "lane status Unstable": 1,
+    "lane status MasterFailed": 1
+   }
+  },
+  {
+   "key": "gg_wpwmg",
+   "process": "li_gg_wpwmg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_wpwmg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_wpwmg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.18254480133691686,
+    0.1756476397276856,
+    0.17803041389561258
+   ],
+   "instance_spread": 1.0392670326793132,
+   "round_spread": [
+    1.284550025932908,
+    1.339230958791368,
+    1.3636727231322026
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.2943154535,
+      "rounds": [
+       0.19980995750000002,
+       0.1987191925,
+       0.2943154535,
+       0.311261534,
+       0.3405137035
+      ],
+      "half_range": 0.24088866098225453
+     },
+     "openloops": {
+      "seconds_per_point": 0.0977184185,
+      "rounds": [
+       0.064454338,
+       0.060993053000000005,
+       0.11349891649999999,
+       0.0977184185,
+       0.124187377
+      ],
+      "half_range": 0.3233490930883209
+     },
+     "recola": {
+      "seconds_per_point": 0.110268754,
+      "rounds": [
+       0.0756882405,
+       0.071854105,
+       0.1276479145,
+       0.110268754,
+       0.128977727
+      ],
+      "half_range": 0.25901998493607714
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "inconclusive",
+    "binding_provider": "openloops",
+    "binding_limit": 0.12703394405000001,
+    "fastest_provider": "openloops",
+    "ratio_to_limit": 1.401439711464367,
+    "band": [
+     0.9211385279012928,
+     1.8817408950274415
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.00033855914843749997,
+     "dressing": 0.1063162714609375,
+     "scatter": 0.016320339289062496,
+     "reduction": 0.0554767239140625,
+     "rest": 0.004537159288254988
+    },
+    "total": 0.18298905310075497
+   },
+   "generation": {
+    "seconds": 10.200197163969278,
+    "generate_seconds": 8.427322214003652,
+    "dressed_frame_seconds": 1.2133510978892446,
+    "export_seconds": 1.7726440490223467,
+    "filter_seconds": 0.00023090094327926636,
+    "probes_seconds": 267.3677274999209,
+    "peak_gib": 1.212,
+    "plan_mb": 0.058,
+    "model_seconds": 4.407470167148858,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 50,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_wpwmg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.17803041389561258,
+   "tir_counts": {
+    "tensor moment rows": 14926,
+    "TIR gate refusals": 4909,
+    "TIR method-choice rows": 4492,
+    "TIR last-resort rows": 417,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_wpwmg",
+   "process": "li_gg_wpwmg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_wpwmg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_wpwmg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.545124745243811,
+    0.5402541052571905,
+    0.5404306432501471
+   ],
+   "instance_spread": 1.0090154613157485,
+   "round_spread": [
+    1.5880551481401715,
+    1.6492075442511287,
+    1.5328563654975413
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.2943154535,
+      "rounds": [
+       0.19980995750000002,
+       0.1987191925,
+       0.2943154535,
+       0.311261534,
+       0.3405137035
+      ],
+      "half_range": 0.24088866098225453
+     },
+     "openloops": {
+      "seconds_per_point": 0.0977184185,
+      "rounds": [
+       0.064454338,
+       0.060993053000000005,
+       0.11349891649999999,
+       0.0977184185,
+       0.124187377
+      ],
+      "half_range": 0.3233490930883209
+     },
+     "recola": {
+      "seconds_per_point": 0.110268754,
+      "rounds": [
+       0.0756882405,
+       0.071854105,
+       0.1276479145,
+       0.110268754,
+       0.128977727
+      ],
+      "half_range": 0.25901998493607714
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "openloops",
+    "binding_limit": 0.12703394405000001,
+    "fastest_provider": "openloops",
+    "ratio_to_limit": 4.254222344206175,
+    "band": [
+     2.8594527832796506,
+     5.648991905132699
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.0003322384140625,
+     "dressing": 0.10506373488281248,
+     "scatter": 0.015515414781249999,
+     "reduction": 0.43053565604687494,
+     "rest": 0.004622226382578143
+    },
+    "total": 0.556069270507578
+   },
+   "generation": {
+    "seconds": 10.200197163969278,
+    "generate_seconds": 8.427322214003652,
+    "dressed_frame_seconds": 1.2133510978892446,
+    "export_seconds": 1.7726440490223467,
+    "filter_seconds": 0.00023090094327926636,
+    "probes_seconds": 267.3677274999209,
+    "peak_gib": 1.212,
+    "plan_mb": 0.058,
+    "model_seconds": 4.407470167148858,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 50,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_wpwmg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.5404306432501471
+  },
+  {
+   "key": "gg_zgg",
+   "process": "li_gg_zgg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zgg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.19656579182264977,
+    0.19132477789753466,
+    0.1900845108430076
+   ],
+   "instance_spread": 1.0340968390896148,
+   "round_spread": [
+    1.1234765666652238,
+    1.0349687425745528,
+    1.1422151069921804
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.242863993,
+      "rounds": [
+       0.2468565415,
+       0.24892368450000002,
+       0.242147156,
+       0.2417473755,
+       0.242863993
+      ],
+      "half_range": 0.014774337091624817
+     },
+     "recola": {
+      "seconds_per_point": 0.120520481,
+      "rounds": [
+       0.124833674,
+       0.123440648,
+       0.11861951800000001,
+       0.120520481,
+       0.1202221645
+      ],
+      "half_range": 0.025780497839201284
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "fail",
+    "binding_provider": "recola",
+    "binding_limit": 0.1566766253,
+    "fastest_provider": "recola",
+    "ratio_to_limit": 1.2211443636291714,
+    "band": [
+     1.1689790294745421,
+     1.2733096977838008
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.000210702046875,
+     "dressing": 0.1152689641484375,
+     "scatter": 0.0360127788125,
+     "reduction": 0.020269341945312495,
+     "rest": 0.006805469585247026
+    },
+    "total": 0.17856725653837202
+   },
+   "generation": {
+    "seconds": 6.496474259998649,
+    "generate_seconds": 5.547507755924016,
+    "dressed_frame_seconds": 0.7999159749597311,
+    "export_seconds": 0.9488123129121959,
+    "filter_seconds": 0.00015419116243720055,
+    "probes_seconds": 193.1362603828311,
+    "peak_gib": 1.465,
+    "plan_mb": 0.052,
+    "model_seconds": 2.8765609841793776,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 140,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.19132477789753466,
+   "tir_counts": {
+    "tensor moment rows": 13181,
+    "TIR gate refusals": 3500,
+    "TIR method-choice rows": 3291,
+    "TIR last-resort rows": 209,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_zgg",
+   "process": "li_gg_zgg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zgg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.4177967920222727,
+    0.40837053889845265,
+    0.42025929928786354
+   ],
+   "instance_spread": 1.029112678944666,
+   "round_spread": [
+    1.0362508288768972,
+    1.092651121064882,
+    1.0561662604548734
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.242863993,
+      "rounds": [
+       0.2468565415,
+       0.24892368450000002,
+       0.242147156,
+       0.2417473755,
+       0.242863993
+      ],
+      "half_range": 0.014774337091624817
+     },
+     "recola": {
+      "seconds_per_point": 0.120520481,
+      "rounds": [
+       0.124833674,
+       0.123440648,
+       0.11861951800000001,
+       0.120520481,
+       0.1202221645
+      ],
+      "half_range": 0.025780497839201284
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "recola",
+    "binding_limit": 0.1566766253,
+    "fastest_provider": "recola",
+    "ratio_to_limit": 2.6666185285921697,
+    "band": [
+     2.559931334783555,
+     2.773305722400785
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 0.0001958585546875,
+     "dressing": 0.11441383301562498,
+     "scatter": 0.036670022999999996,
+     "reduction": 0.24467680259374996,
+     "rest": 0.006663030475852816
+    },
+    "total": 0.40261954763991525
+   },
+   "generation": {
+    "seconds": 6.496474259998649,
+    "generate_seconds": 5.547507755924016,
+    "dressed_frame_seconds": 0.7999159749597311,
+    "export_seconds": 0.9488123129121959,
+    "filter_seconds": 0.00015419116243720055,
+    "probes_seconds": 193.1362603828311,
+    "peak_gib": 1.465,
+    "plan_mb": 0.052,
+    "model_seconds": 2.8765609841793776,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 140,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.4177967920222727
+  },
+  {
+   "key": "gg_zzg",
+   "process": "li_gg_zzg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.1321386620074918,
+    0.13282162383620744,
+    0.1321541912839166
+   ],
+   "instance_spread": 1.0051685238698491,
+   "round_spread": [
+    1.2135503861090269,
+    1.3029375878168266,
+    1.2341016618494276
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.4003716185,
+      "rounds": [
+       0.4017971885,
+       0.405134457,
+       0.4003716185,
+       0.39515393050000003,
+       0.292597507
+      ],
+      "half_range": 0.14054061876516358
+     },
+     "openloops": {
+      "seconds_per_point": 0.17923476,
+      "rounds": [
+       0.1808279675,
+       0.17923476,
+       0.12817983449999998,
+       0.191732943,
+       0.124754491
+      ],
+      "half_range": 0.1868455984765455
+     },
+     "recola": {
+      "seconds_per_point": 0.1951497975,
+      "rounds": [
+       0.19801824,
+       0.1951497975,
+       0.1215588925,
+       0.206127856,
+       0.1312200535
+      ],
+      "half_range": 0.216677046513461
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "pass",
+    "binding_provider": "openloops",
+    "binding_limit": 0.233005188,
+    "fastest_provider": "openloops",
+    "ratio_to_limit": 0.5671727415954214,
+    "band": [
+     0.45973346056110775,
+     0.6746120226297351
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 8.491895312499999e-05,
+     "dressing": 0.09375154168749998,
+     "scatter": 0.0089010289375,
+     "reduction": 0.018954570015625002,
+     "rest": 0.0024215403761099485
+    },
+    "total": 0.12411359996985993
+   },
+   "generation": {
+    "seconds": 6.720450364984572,
+    "generate_seconds": 5.87610635580495,
+    "dressed_frame_seconds": 0.4669146449305117,
+    "export_seconds": 0.8441790090873837,
+    "filter_seconds": 0.0001650000922381878,
+    "probes_seconds": 229.32621692493558,
+    "peak_gib": 1.166,
+    "plan_mb": 0.038,
+    "model_seconds": 3.446997224818915,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 18,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zzg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.1321541912839166,
+   "tir_counts": {
+    "tensor moment rows": 9317,
+    "TIR gate refusals": 2960,
+    "TIR method-choice rows": 2747,
+    "TIR last-resort rows": 213,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_zzg",
+   "process": "li_gg_zzg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.3860658808807784,
+    0.38481674905415275,
+    0.3975779503416561
+   ],
+   "instance_spread": 1.0331617615887805,
+   "round_spread": [
+    1.5015409691647381,
+    1.5470714624611577,
+    1.2742570944351872
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.4003716185,
+      "rounds": [
+       0.4017971885,
+       0.405134457,
+       0.4003716185,
+       0.39515393050000003,
+       0.292597507
+      ],
+      "half_range": 0.14054061876516358
+     },
+     "openloops": {
+      "seconds_per_point": 0.17923476,
+      "rounds": [
+       0.1808279675,
+       0.17923476,
+       0.12817983449999998,
+       0.191732943,
+       0.124754491
+      ],
+      "half_range": 0.1868455984765455
+     },
+     "recola": {
+      "seconds_per_point": 0.1951497975,
+      "rounds": [
+       0.19801824,
+       0.1951497975,
+       0.1215588925,
+       0.206127856,
+       0.1312200535
+      ],
+      "half_range": 0.216677046513461
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "openloops",
+    "binding_limit": 0.233005188,
+    "fastest_provider": "openloops",
+    "ratio_to_limit": 1.6568982184241254,
+    "band": [
+     1.3199301368022884,
+     1.9938663000459622
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 8.69413046875e-05,
+     "dressing": 0.10181280250781252,
+     "scatter": 0.0103090961171875,
+     "reduction": 0.2807551714765625,
+     "rest": 0.002794444056532841
+    },
+    "total": 0.3957584554627829
+   },
+   "generation": {
+    "seconds": 6.720450364984572,
+    "generate_seconds": 5.87610635580495,
+    "dressed_frame_seconds": 0.4669146449305117,
+    "export_seconds": 0.8441790090873837,
+    "filter_seconds": 0.0001650000922381878,
+    "probes_seconds": 229.32621692493558,
+    "peak_gib": 1.166,
+    "plan_mb": 0.038,
+    "model_seconds": 3.446997224818915,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 18,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zzg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.3860658808807784
+  },
+  {
+   "key": "gg_zzz",
+   "process": "li_gg_zzz",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzz>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzz.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.19939450708625372,
+    0.1972199119918514,
+    0.1950970068173774
+   ],
+   "instance_spread": 1.0220275048755567,
+   "round_spread": [
+    1.080700206809463,
+    1.1343607174778778,
+    1.082499295363562
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.4456722145,
+      "rounds": [
+       0.431705955,
+       0.4434545445,
+       0.45073775800000004,
+       0.448143656,
+       0.4456722145
+      ],
+      "half_range": 0.021351794413919056
+     },
+     "openloops": {
+      "seconds_per_point": 0.201982195,
+      "rounds": [
+       0.2059730985,
+       0.1871659035,
+       0.191644402,
+       0.201982195,
+       0.207862832
+      ],
+      "half_range": 0.05123453703431629
+     },
+     "recola": {
+      "seconds_per_point": 0.215877401,
+      "rounds": [
+       0.213211724,
+       0.21483911049999999,
+       0.223735932,
+       0.220164904,
+       0.215877401
+      ],
+      "half_range": 0.024375427791999422
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "pass",
+    "binding_provider": "openloops",
+    "binding_limit": 0.26257685350000004,
+    "fastest_provider": "openloops",
+    "ratio_to_limit": 0.7510940487062062,
+    "band": [
+     0.7044287739268005,
+     0.7977593234856121
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 2.70147265625e-05,
+     "dressing": 0.1043422490234375,
+     "scatter": 0.0061420971015625,
+     "reduction": 0.012370649945312501,
+     "rest": 0.0022813369981485865
+    },
+    "total": 0.12516334779502358
+   },
+   "generation": {
+    "seconds": 22.2702599093318,
+    "generate_seconds": 7.398172873072326,
+    "dressed_frame_seconds": 0.5670966762118042,
+    "export_seconds": 1.3221291722729802,
+    "filter_seconds": 13.549957863986492,
+    "probes_seconds": 200.82728218194097,
+    "peak_gib": 1.066,
+    "plan_mb": 0.033,
+    "model_seconds": 4.805510830134153,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 63,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zzz): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.1972199119918514,
+   "tir_counts": {
+    "tensor moment rows": 5467,
+    "TIR gate refusals": 985,
+    "TIR method-choice rows": 983,
+    "TIR last-resort rows": 2,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_zzz",
+   "process": "li_gg_zzz",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzz>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzz.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    18,
+    18,
+    18
+   ],
+   "served_fraction": 0.859375,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.36113568142900476,
+    0.3725953872417449,
+    0.4008481167948048
+   ],
+   "instance_spread": 1.1099654157923664,
+   "round_spread": [
+    1.0922777625972373,
+    1.1541542143500667,
+    1.0737283280032772
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.4456722145,
+      "rounds": [
+       0.431705955,
+       0.4434545445,
+       0.45073775800000004,
+       0.448143656,
+       0.4456722145
+      ],
+      "half_range": 0.021351794413919056
+     },
+     "openloops": {
+      "seconds_per_point": 0.201982195,
+      "rounds": [
+       0.2059730985,
+       0.1871659035,
+       0.191644402,
+       0.201982195,
+       0.207862832
+      ],
+      "half_range": 0.05123453703431629
+     },
+     "recola": {
+      "seconds_per_point": 0.215877401,
+      "rounds": [
+       0.213211724,
+       0.21483911049999999,
+       0.223735932,
+       0.220164904,
+       0.215877401
+      ],
+      "half_range": 0.024375427791999422
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "openloops",
+    "binding_limit": 0.26257685350000004,
+    "fastest_provider": "openloops",
+    "served_fraction": 0.859375,
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 2.71182265625e-05,
+     "dressing": 0.105088834046875,
+     "scatter": 0.007145169937499999,
+     "reduction": 0.22257114562500002,
+     "rest": 0.0026829316482496757
+    },
+    "total": 0.3375151994841872
+   },
+   "generation": {
+    "seconds": 22.2702599093318,
+    "generate_seconds": 7.398172873072326,
+    "dressed_frame_seconds": 0.5670966762118042,
+    "export_seconds": 1.3221291722729802,
+    "filter_seconds": 13.549957863986492,
+    "probes_seconds": 200.82728218194097,
+    "peak_gib": 1.066,
+    "plan_mb": 0.033,
+    "model_seconds": 4.805510830134153,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 63,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zzz): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "whole_call_seconds_per_point": 0.3725953872417449,
+   "failures": {
+    "16": "lane status Unstable (216 lanes; families 5, 21)",
+    "19": "lane status Unstable (216 lanes; families 0, 13)",
+    "29": "lane status Unstable (648 lanes; families 0, 7, 10, 13, 26, 30)",
+    "30": "lane status Unstable (432 lanes; families 0, 7, 13, 26)",
+    "34": "lane status Unstable (648 lanes; families 1, 2, 8, 14, 16, 27)",
+    "35": "lane status Unstable (432 lanes; families 0, 8, 13, 27)",
+    "44": "lane status Unstable (432 lanes; families 2, 3, 16, 17)",
+    "62": "lane status Unstable (2376 lanes; families 0, 1, 2, 3, 4, 5, 7, 9, 10, 11, 12, 13, 14, 16, 17, 20, 21, 26, 29, 30, 31, 33)",
+    "69": "lane status Unstable (432 lanes; families 2, 10, 16, 30)",
+    "72": "lane status Unstable (648 lanes; families 5, 7, 12, 21, 26, 33)",
+    "79": "lane status Unstable (864 lanes; families 1, 8, 9, 12, 14, 27, 29, 33)",
+    "98": "lane status Unstable (216 lanes; families 1, 14)",
+    "102": "lane status Unstable (432 lanes; families 9, 11, 29, 31)",
+    "107": "lane status Unstable (648 lanes; families 5, 10, 12, 21, 30, 33)",
+    "110": "lane status Unstable (432 lanes; families 4, 9, 20, 29)",
+    "114": "lane status Unstable (432 lanes; families 10, 11, 30, 31)",
+    "116": "lane status Unstable (216 lanes; families 5, 21)",
+    "118": "lane status Unstable (864 lanes; families 5, 7, 10, 12, 21, 26, 30, 33)"
+   },
+   "failure_causes": {
+    "lane status Unstable": 18
+   }
+  },
+  {
+   "key": "uux_ddxh",
+   "process": "li_uux_ddxh",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_uux_ddxh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_uux_ddxh.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.0004018153122160584,
+    0.0004150616950937547,
+    0.0016944125454756431
+   ],
+   "instance_spread": 4.216893916089857,
+   "round_spread": [
+    4.509036585067771,
+    4.579656767073268,
+    4.505890982150776
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 8.14355e-05,
+      "rounds": [
+       7.95305e-05,
+       8.20705e-05,
+       8.13905e-05,
+       8.14355e-05,
+       8.1445e-05
+      ],
+      "half_range": 0.015595164271110261
+     },
+     "openloops": {
+      "seconds_per_point": 0.000129125,
+      "rounds": [
+       0.0001263805,
+       0.00013117549999999998,
+       0.00013132550000000002,
+       0.0001281255,
+       0.000129125
+      ],
+      "half_range": 0.019148112294288536
+     },
+     "recola": {
+      "seconds_per_point": 5.4004999999999995e-05,
+      "rounds": [
+       5.5444999999999995e-05,
+       5.3385000000000005e-05,
+       5.3765e-05,
+       5.4710500000000004e-05,
+       5.4004999999999995e-05
+      ],
+      "half_range": 0.019072308119618468
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "below 5 ms: not gated (user 2026-10-24)",
+    "measured_status": "inconclusive",
+    "binding_provider": "recola",
+    "binding_limit": 7.020649999999999e-05,
+    "fastest_provider": "recola",
+    "floor_basis_seconds": 0.0004150616950937547,
+    "ratio_to_limit": 5.912012350619312,
+    "band": [
+     -3.406423993127658,
+     15.230448694366283
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 9.8489453125e-06,
+     "dressing": 1.1678539062500002e-05,
+     "scatter": 8.5729296875e-06,
+     "reduction": 7.152140625e-06,
+     "rest": 0.00039181443840491956
+    },
+    "total": 0.0004290669930924196
+   },
+   "generation": {
+    "seconds": 4.225128155667335,
+    "generate_seconds": 3.948394334875047,
+    "dressed_frame_seconds": 0.00622696615755558,
+    "export_seconds": 0.2766156308352947,
+    "filter_seconds": 0.00011818995699286461,
+    "probes_seconds": 4.227826877031475,
+    "peak_gib": 0.577,
+    "plan_mb": 0.01,
+    "model_seconds": 2.8876838251017034,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 145,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_uux_ddxh): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.0004150616950937547,
+   "tir_counts": {
+    "tensor moment rows": 128,
+    "TIR gate refusals": 0,
+    "TIR method-choice rows": 0,
+    "TIR last-resort rows": 0,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "uux_ddxh",
+   "process": "li_uux_ddxh",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_uux_ddxh>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_uux_ddxh.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.00167500965835643,
+    0.0004441170531208627,
+    0.0004450601809367072
+   ],
+   "instance_spread": 3.771549969959362,
+   "round_spread": [
+    4.680053948326029,
+    4.247327667753835,
+    4.254463745983251
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 8.14355e-05,
+      "rounds": [
+       7.95305e-05,
+       8.20705e-05,
+       8.13905e-05,
+       8.14355e-05,
+       8.1445e-05
+      ],
+      "half_range": 0.015595164271110261
+     },
+     "openloops": {
+      "seconds_per_point": 0.000129125,
+      "rounds": [
+       0.0001263805,
+       0.00013117549999999998,
+       0.00013132550000000002,
+       0.0001281255,
+       0.000129125
+      ],
+      "half_range": 0.019148112294288536
+     },
+     "recola": {
+      "seconds_per_point": 5.4004999999999995e-05,
+      "rounds": [
+       5.5444999999999995e-05,
+       5.3385000000000005e-05,
+       5.3765e-05,
+       5.4710500000000004e-05,
+       5.4004999999999995e-05
+      ],
+      "half_range": 0.019072308119618468
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "inconclusive",
+    "binding_provider": "recola",
+    "binding_limit": 7.020649999999999e-05,
+    "fastest_provider": "recola",
+    "floor_basis_seconds": 0.0004450601809367072,
+    "ratio_to_limit": 6.339301644957478,
+    "band": [
+     -2.547833129178559,
+     15.226436419093517
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 1.01507421875e-05,
+     "dressing": 1.1656671875000002e-05,
+     "scatter": 8.54575e-06,
+     "reduction": 2.9862867187499997e-05,
+     "rest": 0.00038566517238187043
+    },
+    "total": 0.00044588120363187045
+   },
+   "generation": {
+    "seconds": 4.225128155667335,
+    "generate_seconds": 3.948394334875047,
+    "dressed_frame_seconds": 0.00622696615755558,
+    "export_seconds": 0.2766156308352947,
+    "filter_seconds": 0.00011818995699286461,
+    "probes_seconds": 4.227826877031475,
+    "peak_gib": 0.577,
+    "plan_mb": 0.01,
+    "model_seconds": 2.8876838251017034,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 145,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_uux_ddxh): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.0004450601809367072
+  },
+  {
+   "key": "uux_hgg",
+   "process": "li_uux_hgg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_uux_hgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_uux_hgg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.0026169385309913196,
+    0.0016420337269664742,
+    0.0015954143127601128
+   ],
+   "instance_spread": 1.6402877359574017,
+   "round_spread": [
+    2.2768322195315203,
+    2.2735901313326545,
+    2.3889745336517003
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.0015456110000000001,
+      "rounds": [
+       0.0015213115,
+       0.0015312715,
+       0.0017951730000000002,
+       0.001580302,
+       0.0015456110000000001
+      ],
+      "half_range": 0.08859328123311758
+     },
+     "openloops": {
+      "seconds_per_point": 0.0008217985,
+      "rounds": [
+       0.000834219,
+       0.0008052635,
+       0.0008217985,
+       0.000838274,
+       0.0008013429999999999
+      ],
+      "half_range": 0.022469619985921143
+     },
+     "recola": {
+      "seconds_per_point": 0.0008920289999999999,
+      "rounds": [
+       0.000885144,
+       0.0008920289999999999,
+       0.0009148839999999999,
+       0.000925634,
+       0.000888594
+      ],
+      "half_range": 0.022695450484233146
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "below 5 ms: not gated (user 2026-10-24)",
+    "measured_status": "fail",
+    "binding_provider": "openloops",
+    "binding_limit": 0.00106833805,
+    "fastest_provider": "openloops",
+    "floor_basis_seconds": 0.0016420337269664742,
+    "ratio_to_limit": 1.5369982628312022,
+    "band": [
+     1.0243721488735407,
+     2.0496243767888638
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 2.0835710937499998e-05,
+     "dressing": 0.00033928114062499996,
+     "scatter": 0.00011049859375,
+     "reduction": 0.0005011599453125,
+     "rest": 0.0006079390172283166
+    },
+    "total": 0.0015797144078533165
+   },
+   "generation": {
+    "seconds": 3.874149473849684,
+    "generate_seconds": 3.5146202575415373,
+    "dressed_frame_seconds": 0.036874706856906414,
+    "export_seconds": 0.35934704542160034,
+    "filter_seconds": 0.00018217088654637337,
+    "probes_seconds": 5.616145920008421,
+    "peak_gib": 0.606,
+    "plan_mb": 0.011,
+    "model_seconds": 2.8853729218244553,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 144,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_uux_hgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.0016420337269664742,
+   "tir_counts": {
+    "tensor moment rows": 912,
+    "TIR gate refusals": 144,
+    "TIR method-choice rows": 144,
+    "TIR last-resort rows": 0,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "uux_hgg",
+   "process": "li_uux_hgg",
+   "revision": "ecc80899580913acf614a8ae46fe8fab781321b0",
+   "lit_dress": false,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_uux_hgg>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_uux_hgg.json)",
+   "batch": 128,
+   "rounds": 5,
+   "instances": 3,
+   "failed_points": [
+    0,
+    0,
+    0
+   ],
+   "served_fraction": 1.0,
+   "fallback_points": 0,
+   "instance_medians": [
+    0.0023839158930059057,
+    0.0030875231859681662,
+    0.0030502830377372447
+   ],
+   "instance_spread": 1.2951477000621336,
+   "round_spread": [
+    1.895962034787423,
+    1.4392609263524792,
+    1.7810530188643983
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 5,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 0.0015456110000000001,
+      "rounds": [
+       0.0015213115,
+       0.0015312715,
+       0.0017951730000000002,
+       0.001580302,
+       0.0015456110000000001
+      ],
+      "half_range": 0.08859328123311758
+     },
+     "openloops": {
+      "seconds_per_point": 0.0008217985,
+      "rounds": [
+       0.000834219,
+       0.0008052635,
+       0.0008217985,
+       0.000838274,
+       0.0008013429999999999
+      ],
+      "half_range": 0.022469619985921143
+     },
+     "recola": {
+      "seconds_per_point": 0.0008920289999999999,
+      "rounds": [
+       0.000885144,
+       0.0008920289999999999,
+       0.0009148839999999999,
+       0.000925634,
+       0.000888594
+      ],
+      "half_range": 0.022695450484233146
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "openloops",
+    "binding_limit": 0.00106833805,
+    "fastest_provider": "openloops",
+    "floor_basis_seconds": 0.0030502830377372447,
+    "ratio_to_limit": 2.8551665249938862,
+    "band": [
+     2.461712086870497,
+     3.2486209631172756
+    ],
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "openloops": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "trees + CT kets": 2.06683671875e-05,
+     "dressing": 0.0003469910078125,
+     "scatter": 0.0001131918125,
+     "reduction": 0.00100608125,
+     "rest": 0.0006479573778519257
+    },
+    "total": 0.002134889815351926
+   },
+   "generation": {
+    "seconds": 3.874149473849684,
+    "generate_seconds": 3.5146202575415373,
+    "dressed_frame_seconds": 0.036874706856906414,
+    "export_seconds": 0.35934704542160034,
+    "filter_seconds": 0.00018217088654637337,
+    "probes_seconds": 5.616145920008421,
+    "peak_gib": 0.606,
+    "plan_mb": 0.011,
+    "model_seconds": 2.8853729218244553,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "native_build": "loop-native-lit-unchecked-b308254d",
+   "native_digest": "0d26af4aca7a4e3fc4d7a3c741f95a2c5d99fd63defc7430c1d2d3d6be5439b1",
+   "host": "itphlies",
+   "core": 144,
+   "concurrency": "17 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-09",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_uux_hgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.0030502830377372447
   }
  ]
 }

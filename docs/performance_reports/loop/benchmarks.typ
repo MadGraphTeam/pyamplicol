@@ -154,21 +154,28 @@
 #let plain-chip(body) = box(fill: white, stroke: 0.4pt + luma(150), inset: (x: 2pt, y: 0.8pt), radius: 1.5pt, baseline: 0.8pt, text(5.9pt, fill: luma(80), weight: "bold", body))
 #let stage-keys = ("inputs", "numerator", "scatter", "ninjars", "masters", "glue", "untimed")
 #let stage-label = (inputs: [inputs], numerator: [numerator], scatter: [scatter], ninjars: [NinjaRS], masters: [masters], glue: [glue], untimed: [untimed])
-#let stage-bar(st, width: 2.0cm) = {
-  let vals = stage-keys.map(k => calc.max(st.at(k), 0))
+#let stage-bar(st, width: 2.0cm, keys: stage-keys, labels: stage-label, colours: seg-colours) = {
+  let vals = keys.map(k => calc.max(st.at(k), 0))
   let tot = vals.sum()
-  let top = stage-keys.zip(vals).sorted(key: x => x.at(1)).last()
+  let top = keys.zip(vals).sorted(key: x => x.at(1)).last()
   box(width: width, height: 4.6pt, baseline: 0.5pt, fill: white, outset: 0.8pt, radius: 1pt, {
     let x = 0pt
     for (k, v) in vals.enumerate() {
       let w = width * v / tot
-      if w > 0.9pt { place(dx: x, rect(width: w - 0.6pt, height: 4.6pt, fill: seg-colours.at(k), stroke: none)) }
+      if w > 0.9pt { place(dx: x, rect(width: w - 0.6pt, height: 4.6pt, fill: colours.at(k), stroke: none)) }
       x += w
     }
   })
   h(4pt)
-  box[#stage-label.at(top.at(0)) #fixed(100 * top.at(1) / tot, 0)~%]
+  box[#labels.at(top.at(0)) #fixed(100 * top.at(1) / tot, 0)~%]
 }
+// Table 2's stage bar (lit-unchecked): the stage split of the separate
+// instrumented run (summary-li.json timing.stages; never the timed call):
+// trees + CT kets, dressing, scatter, reduction, the rest of the call.
+#let li-stage-keys = ("trees", "dressing", "scatter", "reduction", "rest")
+#let li-stage-label = (trees: [trees], dressing: [dressing], scatter: [scatter], reduction: [reduction], rest: [rest])
+#let li-seg-colours = (seg-colours.at(0), seg-colours.at(1), seg-colours.at(2), seg-colours.at(3), luma(170))
+#let li-stage-bar(st) = if st == none [no instrumented run] else { stage-bar(st, width: 1.6cm, keys: li-stage-keys, labels: li-stage-label, colours: li-seg-colours) }
 #let cell-lines(lines) = for l in lines.filter(l => l != none) { v(2.7pt); block(spacing: 0pt, text(6.4pt, l)) }
 #let valued(fill: none, value, mult: none, ..lines) = table.cell(fill: fill, breakable: false, {
   set par(leading: 0.34em, justify: false)
@@ -667,14 +674,46 @@
     absent(li-title(m), m.at("reason", default: none), pline)
   }
 }
+// The other backend's line of an unchecked cell: its time (multiplier to
+// the fastest matched provider, uncoloured) where it served every point,
+// else its outcome; its stage bar.
+#let li-other-line(o) = [#text(weight: "bold", o.backend_label) (#raw(o.requested)) #if o.status == "served" [#dur(o.seconds_per_point)#if "ratio_to_fastest" in o [ #mult2(o.ratio_to_fastest)]] else [#o.label] #h(1fr) #li-stage-bar(o.at("stages", default: none))]
+// A backend's measured accuracy with the unchecked setting (summary-li.json
+// timing.accuracy, timing.other_backend.accuracy; data/li-unchecked-
+// accuracy.json, DECISIONS 2026-11-09 04:18): against the 256-bit truth, the
+// largest error; the note where points lie above the lax precision or fail.
+#let li-acc-served(a) = if a.served_by == ("last resort",) [, all served by the gate-0 PV last resort] else if a.served_by == ("checked refused",) [, finite values where the checked mode refuses] else if a.served_by == ("checked served",) [, also in the checked mode] else []
+#let li-acc-line(a) = if a == none { none } else if not a.note { dim[vs 256-bit truth (#a.points pts): max #esci(a.max_relative)] } else {
+  text(fill: fail-ink, weight: "bold")[accuracy: #if a.above > 0 [#a.above/#a.points pts above #esci(a.lax), worst #esci(a.worst)#li-acc-served(a)]#if a.above > 0 and a.failed > 0 [; ]#if a.failed > 0 [#a.failed pts fail (#a.failed_classes.join(", ")), the call timed whole]]
+}
+// "auto" with the setting against the TIRust arm, paired in the same unit
+// (summary-li.json timing.auto_pairing).
+#let li-auto-line(a) = [`auto` with the setting: #if a.values_bitwise_tirust [values bitwise TIRust's] else [values *differ* from TIRust's], #a.fallback_points per-point fallbacks, time #mult2(a.ratio_to_tirust)]
 #let li-timing(r) = {
   let m = r.timing
-  if m.status == "measured" {
+  if m.status == "measured" and m.at("unchecked", default: false) {
+    // The unchecked re-time (lit-unchecked): TIRust with the setting, the
+    // cell; NinjaRS with the setting beside it; each with the stage bar of
+    // the separate instrumented run.
+    let o = m.at("other_backend", default: none)
+    valued(fill: if "ratio_to_fastest" in m { ratio-fill(m.ratio_to_fastest) } else { none }, dur(m.seconds_per_point),
+      mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
+      [#li-prov-line(r) #h(1fr) $B = #m.batch$ · #m.instances runtimes #mult2(m.instance_spread)],
+      li-match-line(r),
+      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label) (#raw(m.requested)) #h(1fr) #li-stage-bar(m.stages)],
+      li-acc-line(m.at("accuracy", default: none)),
+      if o != none { li-other-line(o) },
+      if o != none { li-acc-line(o.at("accuracy", default: none)) },
+      if "auto_pairing" in m { li-auto-line(m.auto_pairing) })
+  } else if m.status == "measured" {
     valued(fill: if "ratio_to_fastest" in m { ratio-fill(m.ratio_to_fastest) } else { none }, dur(m.seconds_per_point),
       mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
       [#li-prov-line(r) #h(1fr) $B = #m.batch$],
       li-match-line(r),
-      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "requested" in m [ (#raw(m.requested))]#if "other_backend" in m [ · #li-other(m.other_backend)]])
+      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "requested" in m [ (#raw(m.requested))]#if "other_backend" in m [ · #li-other(m.other_backend)]],
+      // Beside the unchecked re-time, a row it did not re-time keeps its
+      // earlier record: its configuration said in the cell.
+      if li-meta.at("unchecked", default: none) != none { dim[earlier record: checked backends, not re-timed unchecked] })
   } else {
     absent(li-title(m), if "requested" in m [#raw(m.requested) (#if "backend_label" in m { m.backend_label } else [backend #m.at("effective", default: "not resolved")]): #m.at("reason", default: m.label)] else { m.at("reason", default: none) }, li-prov-line(r),
       // The gated backend's verdict and the other backend beside a failed
@@ -696,16 +735,19 @@
 #let li-our-hosts = li-timed.map(r => r.timing.host).dedup().sorted()
 #let li-hosts = li-rows.filter(r => r.providers.status == "recorded").map(r => r.providers.providers.values().filter(x => "host" in x).map(x => x.host)).flatten().dedup().sorted()
 #let li-engine = (revision: li-meta.engine_on_loop, native_build: li-meta.native_build_on_loop.name, native_digest: li-meta.native_build_on_loop.digest)
+// The protocol line of the unchecked re-time (lit-unchecked (4)).
+#let li-unchecked = li-meta.at("unchecked", default: none)
+#let li-protocol = if li-unchecked != none [*Protocol:* #raw(li-unchecked.setting) (`Runtime.load` / `evaluate` keyword; config `evaluation.reduction_unchecked`), explicit `tirust` and `ninjars`; `poles="none"`, no stability check, no rescue; $B = 128$ per call (median over rounds); one thread pinned to one core (`taskset`, `RAYON_NUM_THREADS=1`); the 128 distinct stream points; #li-unchecked.instances.map(str).join("/") fresh runtimes per arm in rotated order, the median of their medians (spread ×: largest/smallest); providers F4 most optimistic, timed in the same unit on the same core, alternating with pyAmpliCol; engine #li-unchecked.revisions.map(raw).join(", ")#if not li-unchecked.lit_dress.contains(true) [ (before `lit-dress`)]; replication: #raw(li-unchecked.replication)]
 #let li-head = {
   let ours = if li-builds.len() == 0 [no pyAmpliCol record at this head: every row *pending*, served by the package named in its cell · engine #raw(li-engine.revision)#native-of(li-engine)]
     else [*pyAmpliCol:* #li-builds.map(x => [engine #raw(x.revision)#native-of(x)]).join([, ]) on #li-our-hosts.join(", ")#if li-meta.landed.len() > 0 [ (packages landed: #li-meta.landed.map(raw).join(", "))]]
-  [#ours · cells: the backend `auto` serves; gate on #li-meta.default_backend (the loop-induced default) · providers: #if "optimistic" in li-meta.at("provider_protocols", default: ()) [each in its most optimistic settings (`lit-perf`; #super[p] `lit-ref`'s production record)] else [`lit-ref`'s production timing records]#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated]
+  if li-unchecked != none [#ours · cells of the #li-unchecked.rows re-timed rows: #li-meta.default_backend with the unchecked setting (= `auto` with it: shown paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")), NinjaRS unchecked beside; the other rows keep their earlier record (`auto`, checked); gate on #li-meta.default_backend · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated \ #li-protocol] else [#ours · cells: the backend `auto` serves; gate on #li-meta.default_backend (the loop-induced default) · providers: #if "optimistic" in li-meta.at("provider_protocols", default: ()) [each in its most optimistic settings (`lit-perf`; #super[p] `lit-ref`'s production record)] else [`lit-ref`'s production timing records]#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated]
 }
 // Table 2 starts a page: its caption never stays behind at the foot of
 // Table 1's last page.
 #pagebreak(weak: true)
 #figure(kind: table,
-  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary). How to read it: #link(<reading>)[after Table 3].],
+  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary)#if li-unchecked != none [, timed with the unchecked reduction setting#footnote[The setting is off by default. A default call (`reduction="auto"`, checks of the backends on) runs TIRust at the target accuracy ($10^(-5)$) with the per-point NinjaRS fallback; it does not get these times. Its served fractions and checked times are `lit-perf`'s records in `data/li-timing.json`.]]. How to read it: #link(<reading>)[after Table 3].],
   {
     set text(7pt, font: sans, stretch: 87.5%)
     set par(justify: false)
@@ -717,13 +759,13 @@
       stroke: (x, y) => (top: if y <= 3 { none } else { 0.6pt + white }, left: if x > 0 and y != 1 { 0.6pt + white } else { none }),
       fill: (x, y) => if y == 0 { navy } else if y == 1 { warm } else if y == 2 { pale } else { none },
       table.header(
-        [], [Process · validation], [Generation], [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
+        [], [Process · validation], [Generation], if li-unchecked != none [$|A_"loop"|^2$ · per point, batched, TIRust and NinjaRS unchecked (re-timed rows)] else [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
         table.cell(colspan: 4, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
         [],
         ..(
           [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
           [generate + filter + plan export; optional probes apart (carrier); peak memory; provider generation],
-          [median per point at $B = 128$; provider times (#if "optimistic" in li-meta.at("provider_protocols", default: ()) [most optimistic, lit-perf] else [lit-ref]); gate (lit-perf) or rule; backend (request) · the other backend],
+          if li-unchecked != none [median per point at $B = 128$ (fresh runtimes, spread); providers paired (most optimistic); gate or rule on TIRust; stage bars: #li-stage-keys.enumerate().map(((k, n)) => box[#key-swatch(li-seg-colours.at(k))#h(1pt)#li-stage-label.at(n)]).join(h(2pt)) (instrumented run: stage shares, not the timed call)] else [median per point at $B = 128$; provider times (#if "optimistic" in li-meta.at("provider_protocols", default: ()) [most optimistic, lit-perf] else [lit-ref]); gate (lit-perf) or rule; backend (request) · the other backend],
         ).map(t => text(6.1pt, fill: ink2, t)),
       ),
       ..LI.groups.map(gr => (
@@ -950,7 +992,30 @@ those not run or not asserted.
 *@tab:summary-li* follows @tab:summary's rules for loop-induced processes, $|A_"loop"|^2$ without a Born: one row per
 process of the M-LIT validation matrix (`m-lit/PLAN.md` §4.1; its ids in the process cell), grouped by multiplicity;
 the backend-unit, zero, identity, observable and complex-mass-scheme rows (#li-meta.validation_only.ids.join(", ")) are
-validation-only and not listed. The cell is the batched $B = #li-meta.gate_batch$ time per point (median over its
+validation-only and not listed. #if li-unchecked != none [On the #li-unchecked.rows rows re-timed with the setting (`lit-perf`'s timed rows; the
+other rows keep their earlier record: the backend `auto` serves, in its checked default), the cell is the batched $B = #li-meta.gate_batch$ time per point of
+TIRust with the *unchecked reduction setting* (`reduction_unchecked`, a documented public setting, off by default):
+each backend reduces without its own acceptance or refusal checks. TIRust keeps its a priori conditioning gates and
+its method choice as method selection, computes no acceptance pass, and serves what the method choice refuses by
+plain Passarino--Veltman (gate 0); NinjaRS runs with zero stability thresholds; pyAmpliCol's own checks are off. Only
+what no scheme evaluates finitely (an exactly singular pivot, a non-finite output, a master failure, a NinjaRS lane
+whose tested quantity is exactly zero or NaN, `Unstable`) still fails. The time is the median over #li-unchecked.instances.map(str).join("/") fresh runtimes (created in
+rotated order) of each one's median over rounds of the public call (`Runtime.load` + `evaluate` on the 128 distinct
+stream points, poles off, one pinned thread); the spread (×, largest over smallest runtime) is beside $B$; `auto` with
+the setting is TIRust, bitwise and without fallback (paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")).
+Beneath, NinjaRS with the same setting: its time and multiplier where it served every point, else the points it
+failed with their cause (a call that fails points is timed whole: no served-point time). The coloured bars are the
+stage shares (trees + counterterm kets, dressing, scatter, reduction, the rest of the call) of a *separate
+instrumented run* with the same setting, points and $B$ on the same core, never the timed call. The setting has *no
+accuracy certificate*: it is a timing and benchmark mode. Beneath each backend's line, its measured accuracy on the
+row's first stream points (the same public call, binary64 finite part) against TIRust at 256 bits
+(#raw(li-unchecked.at("accuracy", default: (source: "—")).source)): the largest relative error, or in red the points
+above $10^(-5)$ with the worst and how they were served (TIRust: by the gate-0 PV last resort; NinjaRS: values the
+checked mode refuses, or also in the checked mode) and the points that fail. The providers run in their most
+optimistic settings (m-lit F4: OpenLoops with its stability system off, MadLoop without its stability test, Recola
+without dynamic settings, in its release build), in the same unit on the same core as pyAmpliCol, alternating with
+it between rounds, their time the median over those rounds; the multiplier against the fastest matched provider
+colours the cell with @tab:summary's scale.] else [The cell is the batched $B = #li-meta.gate_batch$ time per point (median over its
 timing blocks after an untimed warm-up, finite part, one pinned thread, checks off) of the record the backend `auto`
 serves at the row's revision: its effective backend in bold, the request in brackets. #if li-auto-reasons.len() > 0 [At this head `auto` takes #li-auto-labels.join(" and ") on every timed row, with the runtime's reason (verbatim): #li-auto-reasons.map(x => ["#x"]).join([; ]).] Beside it, the other backend requested explicitly in the same
 process on the same points: its time and served fraction (#li-meta.gate_batch/#li-meta.gate_batch) where it served all #li-meta.gate_batch points of every block, else the points
@@ -967,7 +1032,7 @@ stability system off (one double-precision evaluation, where its loop-induced pr
 MadLoop without its stability test (one evaluation, not both loop directions), Recola without dynamic settings (its
 couplings and scales set once, outside the timer) in its release build; a provider time marked #super[p] is
 `lit-ref`'s production record, not re-timed. TIRust (†) runs at the slice's shipped TirOptions; its re-time at the
-user-set target accuracy (default $10^(-5)$) is `lit-tirust-default`'s.] else [ The providers run in production mode.] A provider whose timing record excludes its values as a
+user-set target accuracy (default $10^(-5)$) is `lit-tirust-default`'s.] else [ The providers run in production mode.]] A provider whose timing record excludes its values as a
 reference (Recola's on-shell widths against the fixed-width scheme of the others on the rows LI-43 and LI-51) is timed
 and shown but is no matched provider (its values miss the 1e-5 agreement of `m-lit/PLAN.md` §4.0 L1; §4.1 names
 MadLoop and OpenLoops as the references of LI-43 and OpenLoops of LI-51): never the fastest matched provider and
