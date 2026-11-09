@@ -218,7 +218,7 @@ def unit_command(options: Any, process: str, core: int) -> list[str]:
     return [
         "systemd-run",
         "--user",
-        f"--unit=lit-retime-{options.tag}-{process.replace('_', '-')}",
+        f"--unit={options.unit_prefix}-{options.tag}-{process.replace('_', '-')}",
         "--collect",
         f"-p MemoryMax={options.memory_max}",
         "bash",
@@ -849,6 +849,11 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--no-stages", dest="stages", action="store_false")
     run.add_argument("--exclude-cores", type=int, nargs="*")
     run.add_argument("--tag", default=time.strftime("%Y%m%dT%H%M", time.gmtime()))
+    run.add_argument(
+        "--unit-prefix",
+        default="lit-lit-unchecked-retime",
+        help="systemd unit name prefix (the host's memguard governs lit-*)",
+    )
     run.add_argument("--memory-max", default="150G")
     run.add_argument("--wait-hours", type=float, default=6.0)
     run.add_argument("--env", type=Path, default=workspace / "env.sh")
