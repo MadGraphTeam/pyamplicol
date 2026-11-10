@@ -6,7 +6,8 @@
 !   cache <mode>                                         (set_cache_mode_rcl)
 !   collier_mode <k>                    (set_collier_mode_rcl: 1 COLI, 2 DD, 3 COLI+DD)
 !   tis_accuracy <required> <critical>  (COLLIER TI accuracies; after generate)
-!   onshell | complex_mass                               (mass renormalization scheme)
+!   onshell | complex_mass                               (mass renormalization scheme; required
+!                                     before generate: Recola's own default is complex-mass)
 !   legs <n>    born_gs <n>    loop_gs <n>    pow_lo <n>    pow_nlo <n>
 !   loop_induced                     (no Born: |A1|^2 of a loop-induced process; no born_gs/pow_lo,
 !                                     'NLO' at pow_nlo = the alpha_s power of |A1|^2; the LO column is 0)
@@ -30,6 +31,7 @@ program recola_reference
   real(dp) :: result(4), stored_alpha_s = -1d0
   integer :: stored_nf = -1
   logical :: loop_induced = .false.
+  logical :: scheme_set = .false.
   process = ''
   do
     read(*, '(A)', iostat=ios) line
@@ -58,8 +60,10 @@ program recola_reference
       call set_mu_ir_rcl(mu)
     case ('onshell')
       call set_on_shell_scheme_rcl()
+      scheme_set = .true.
     case ('complex_mass')
       call set_complex_mass_scheme_rcl()
+      scheme_set = .true.
     case ('cache')
       read(line, *) keyword, k
       call set_cache_mode_rcl(k)
@@ -90,6 +94,7 @@ program recola_reference
       if (stored_nf < 0 .or. legs < 3 .or. loop_gs < 0 .or. pow_nlo < 0 .or. len_trim(process) == 0 &
           .or. (.not. loop_induced .and. (born_gs < 0 .or. pow_lo < 0))) &
         stop 'recola driver: incomplete process definition'
+      if (.not. scheme_set) stop 'recola driver: no mass scheme (onshell | complex_mass)'
       call set_delta_uv_rcl(0d0)
       call set_delta_ir_rcl(0d0, 0d0)
       call set_dynamic_settings_rcl(1)
