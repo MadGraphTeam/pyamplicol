@@ -3,7 +3,8 @@
  "lax": 1e-05,
  "native": {
   "a678d177": "loop-native-lit-unchecked-a678d177 (digest 0be1df46)",
-  "ecc80899": "loop-native-lit-unchecked-b308254d (digest 0d26af4a)"
+  "ecc80899": "loop-native-lit-unchecked-b308254d (digest 0d26af4a)",
+  "90059342": "loop-native-lit-ninja-planar-90059342 (digest 52a3c64f; NinjaRS 71eddb15, the box mu-expansion's conditioning bound, decided a posteriori in binary64): the NinjaRS halves"
  },
  "date": "2026-11-08 / 2026-11-09",
  "rows": {
@@ -25,7 +26,8 @@
     "p99_relative": 3.02e-10,
     "median_relative": 4.1e-13,
     "above_1e-5": [],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_aag": {
@@ -52,7 +54,8 @@
       "served_by": "checked served"
      }
     ],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_agg": {
@@ -79,7 +82,8 @@
       "served_by": "checked served"
      }
     ],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_emepmupmum": {
@@ -100,7 +104,8 @@
     "p99_relative": 4.93e-10,
     "median_relative": 9.79e-14,
     "above_1e-5": [],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_emepmupmumg": {
@@ -121,7 +126,8 @@
     "p99_relative": 9.45e-08,
     "median_relative": 1.26e-12,
     "above_1e-5": [],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_hgg": {
@@ -142,7 +148,8 @@
     "p99_relative": 4.11e-10,
     "median_relative": 8.06e-12,
     "above_1e-5": [],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_hggg": {
@@ -174,7 +181,8 @@
       "served_by": "checked served"
      }
     ],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_hh": {
@@ -195,7 +203,8 @@
     "p99_relative": 3.7e-11,
     "median_relative": 2.19e-14,
     "above_1e-5": [],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_hhgg": {
@@ -216,7 +225,8 @@
     "p99_relative": 1.79e-06,
     "median_relative": 2.44e-11,
     "above_1e-5": [],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_hhh": {
@@ -248,7 +258,8 @@
       "served_by": "checked refused"
      }
     ],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_hzg": {
@@ -278,7 +289,8 @@
       "point": 62,
       "class": "MasterFailed"
      }
-    ]
+    ],
+    "revision": "90059342"
    }
   },
   "li_gg_wpwmg": {
@@ -420,7 +432,8 @@
     "p99_relative": 5.87e-08,
     "median_relative": 3.76e-10,
     "above_1e-5": [],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_zgg": {
@@ -457,7 +470,8 @@
     "p99_relative": 6.05e-06,
     "median_relative": 1.05e-11,
     "above_1e-5": [],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_zzg": {
@@ -569,7 +583,8 @@
     "p99_relative": 4.59e-08,
     "median_relative": 3.64e-10,
     "above_1e-5": [],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_gg_zzz": {
@@ -585,22 +600,11 @@
     "last_resort_points": 1
    },
    "ninjars": {
-    "served": 110,
-    "max_relative": 6.99e+33,
-    "p99_relative": 4.13e+30,
+    "served": 108,
+    "max_relative": 1.83e-09,
+    "p99_relative": 2.36e-10,
     "median_relative": 6.56e-13,
-    "above_1e-5": [
-     {
-      "point": 109,
-      "relative": 6.99e+33,
-      "served_by": "checked refused"
-     },
-     {
-      "point": 57,
-      "relative": 4.13e+30,
-      "served_by": "checked refused"
-     }
-    ],
+    "above_1e-5": [],
     "failed": [
      {
       "point": 16,
@@ -628,6 +632,10 @@
      },
      {
       "point": 44,
+      "class": "Unstable"
+     },
+     {
+      "point": 57,
       "class": "Unstable"
      },
      {
@@ -659,6 +667,10 @@
       "class": "Unstable"
      },
      {
+      "point": 109,
+      "class": "Unstable"
+     },
+     {
       "point": 110,
       "class": "Unstable"
      },
@@ -674,7 +686,8 @@
       "point": 118,
       "class": "Unstable"
      }
-    ]
+    ],
+    "revision": "90059342"
    }
   },
   "li_uux_ddxh": {
@@ -695,7 +708,8 @@
     "p99_relative": 1.8e-09,
     "median_relative": 8.6e-13,
     "above_1e-5": [],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   },
   "li_uux_hgg": {
@@ -716,7 +730,8 @@
     "p99_relative": 7.13e-09,
     "median_relative": 7.21e-11,
     "above_1e-5": [],
-    "failed": []
+    "failed": [],
+    "revision": "90059342"
    }
   }
  }
