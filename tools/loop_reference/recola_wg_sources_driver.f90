@@ -21,6 +21,8 @@ program wg_polarizations
   call set_mu_uv_rcl(1000d0);call set_mu_ir_rcl(1000d0)
   call set_delta_uv_rcl(0d0);call set_delta_ir_rcl(0d0,0d0)
   call set_dynamic_settings_rcl(1);call set_compute_ir_poles_rcl(1)
+  ! The scheme stated explicitly: Recola's own default is complex-mass.
+  call set_on_shell_scheme_rcl()
   call set_cache_mode_rcl(0)
   names=[character(30)::'u d~ -> W+ g','u d~ -> W+[-] g', &
     'u d~ -> W+[0] g','u d~ -> W+[+] g', &

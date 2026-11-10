@@ -21,6 +21,8 @@ subroutine reference_recola_init(alpha_s, mu, mt, mb, inverse_alpha_em) bind(C)
   call set_delta_ir_rcl(0d0, 0d0)
   call set_dynamic_settings_rcl(1)
   call set_compute_ir_poles_rcl(1)
+  ! The scheme stated explicitly: Recola's own default is complex-mass.
+  call set_on_shell_scheme_rcl()
 #ifdef LOOP_REFERENCE_DRELL_YAN
   call use_alpha0_scheme_rcl(1d0 / inverse_alpha_em)
   call set_pole_mass_electron_rcl(0d0)
