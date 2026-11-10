@@ -3,7 +3,8 @@
 ! for correlated Borns and Born-virtual interferences (no timing). It reads
 ! the scheme and process commands of recola_driver.f90 (mass, alpha0, alphaz,
 ! gfermi, alphas, onshell, complex_mass, cache, legs, born_gs, loop_gs,
-! pow_lo, pow_nlo, process, generate), then
+! pow_lo, pow_nlo, process, generate; onshell or complex_mass is required before
+! generate: Recola's own default is complex-mass), then
 !   points <n>    followed by n lines "mu E1 px1 py1 pz1 ... En pxn pyn pzn"
 !   requests <m>  followed by m lines "kind i j point vr0 vi0 vr1 vi1 vr2 vi2 vr3 vi3"
 ! with kind
@@ -33,6 +34,7 @@ program recola_correlations
   real(dp) :: stored_alpha_s = -1d0
   integer :: stored_nf = -1
   logical :: ok, loop_induced = .false.
+  logical :: scheme_set = .false.
   complex(dp) :: v(0:3)
   process = ''
   do
@@ -62,8 +64,10 @@ program recola_correlations
       call set_mu_ir_rcl(mu)
     case ('onshell')
       call set_on_shell_scheme_rcl()
+      scheme_set = .true.
     case ('complex_mass')
       call set_complex_mass_scheme_rcl()
+      scheme_set = .true.
     case ('cache')
       read(line, *) keyword, k
       call set_cache_mode_rcl(k)
@@ -87,6 +91,7 @@ program recola_correlations
       if (stored_nf < 0 .or. legs < 3 .or. loop_gs < 0 .or. pow_nlo < 0 .or. len_trim(process) == 0 &
           .or. (.not. loop_induced .and. (born_gs < 0 .or. pow_lo < 0))) &
         stop 'recola correlations: incomplete process definition'
+      if (.not. scheme_set) stop 'recola correlations: no mass scheme (onshell | complex_mass)'
       call set_delta_uv_rcl(0d0)
       call set_delta_ir_rcl(0d0, 0d0)
       call set_dynamic_settings_rcl(1)
