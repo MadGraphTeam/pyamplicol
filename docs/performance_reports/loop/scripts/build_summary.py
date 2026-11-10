@@ -2903,7 +2903,8 @@ def _li_paired(prov: dict, rec: dict) -> dict:
 # "p99_relative", "median_relative", "above_1e-5": [{"point", "relative",
 # "served_by"}] (worst first; TIRust "last resort" / "direct / method
 # choice", NinjaRS "checked refused" / "checked served"), "failed":
-# [{"point", "class"}], "last_resort_points"? (TIRust)}}}}.
+# [{"point", "class"}], "last_resort_points"? (TIRust), "revision"? (a
+# backend re-measured at another revision than the row's)}}}}.
 LI_ACCURACY = "li-unchecked-accuracy.json"
 
 
@@ -2951,7 +2952,8 @@ def _li_accuracy(acc: dict | None, key: str, backend: str) -> dict | None:
         "failed": len(failed),
         "failed_classes": sorted({f["class"] for f in failed}),
         "note": bool(above or failed),
-        "revision": row["revision"],
+        # A backend re-measured at another revision carries its own.
+        "revision": e.get("revision", row["revision"]),
         "source": f"{LI_ACCURACY} rows[{key}].{backend}",
     }
 

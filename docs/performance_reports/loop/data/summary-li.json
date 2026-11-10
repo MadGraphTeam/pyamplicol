@@ -1228,7 +1228,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_hh].ninjars"
        }
       },
@@ -2760,7 +2760,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_emep_ggg].ninjars"
        }
       },
@@ -2962,7 +2962,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": true,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_hhh].ninjars"
        }
       },
@@ -3166,7 +3166,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "a678d177",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_hgg].ninjars"
        }
       },
@@ -3375,7 +3375,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "a678d177",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_zzg].ninjars"
        }
       },
@@ -3582,7 +3582,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": true,
-        "revision": "a678d177",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_aag].ninjars"
        }
       },
@@ -3785,7 +3785,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_wpwmg].ninjars"
        }
       },
@@ -3990,19 +3990,17 @@
        },
        "accuracy": {
         "points": 128,
-        "max_relative": 6.99e+33,
+        "max_relative": 1.83e-09,
         "lax": 1e-05,
-        "above": 2,
-        "worst": 6.99e+33,
-        "served_by": [
-         "checked refused"
-        ],
-        "failed": 18,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 20,
         "failed_classes": [
          "Unstable"
         ],
         "note": true,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_zzz].ninjars"
        }
       },
@@ -4217,7 +4215,7 @@
          "Unstable"
         ],
         "note": true,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_hzg].ninjars"
        }
       },
@@ -4422,7 +4420,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": true,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_agg].ninjars"
        }
       },
@@ -4616,7 +4614,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_zgg].ninjars"
        }
       },
@@ -4821,7 +4819,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_uux_hgg].ninjars"
        }
       },
@@ -5021,7 +5019,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_uux_ddxh].ninjars"
        }
       },
@@ -5225,7 +5223,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_hhgg].ninjars"
        }
       },
@@ -5429,7 +5427,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": true,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_hggg].ninjars"
        }
       },
@@ -5634,7 +5632,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmum].ninjars"
        }
       },
@@ -6019,7 +6017,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "ecc80899",
+        "revision": "90059342",
         "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmumg].ninjars"
        }
       },
@@ -6739,7 +6737,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_gg_hh].ninjars"
       }
      },
@@ -6817,7 +6815,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_emep_ggg].ninjars"
       }
      },
@@ -6897,7 +6895,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "ecc80899",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_gg_hhh].ninjars"
       }
      },
@@ -6975,7 +6973,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "a678d177",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_gg_hgg].ninjars"
       }
      },
@@ -7055,7 +7053,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "a678d177",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_gg_zzg].ninjars"
       }
      },
@@ -7135,7 +7133,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "a678d177",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_gg_aag].ninjars"
       }
      },
@@ -7215,7 +7213,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_gg_wpwmg].ninjars"
       }
      },
@@ -7399,7 +7397,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "ecc80899",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_gg_agg].ninjars"
       }
      },
@@ -7479,7 +7477,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_gg_zgg].ninjars"
       }
      },
@@ -7557,7 +7555,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_uux_hgg].ninjars"
       }
      },
@@ -7635,7 +7633,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_uux_ddxh].ninjars"
       }
      },
@@ -7713,7 +7711,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_gg_hhgg].ninjars"
       }
      },
@@ -7800,7 +7798,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "ecc80899",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_gg_hggg].ninjars"
       }
      },
@@ -7878,7 +7876,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmum].ninjars"
       }
      },
@@ -7956,7 +7954,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "90059342",
        "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmumg].ninjars"
       }
      },
@@ -8366,7 +8364,7 @@
   {
    "kind": "accuracy",
    "table": "2",
-   "text": "NinjaRS per amplitude unchecked: 2/128 points above 1e-05, worst 7.0e+33; 18 points fail (Unstable)",
+   "text": "NinjaRS per amplitude unchecked: 20 points fail (Unstable)",
    "rows": [
     "g g -> z z z"
    ]
