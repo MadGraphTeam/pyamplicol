@@ -1024,7 +1024,12 @@ def _engine_slice(revision: str) -> str:
     newest commit of work/v2-slice's first-parent line among the
     revision's ancestors (the engine it ran, this package changing no engine
     code; unlike a merge base it stays the same after the package's own
-    integration), else the revision itself."""
+    integration), else the revision itself.
+
+    It reads the LOCAL branch work/v2-slice of the checkout (memoised per
+    process in ``_SLICE_LINE``): regenerating lit.json in a clone without
+    that branch, or with it at another tip, names bare revisions or other
+    slice commits, so regenerate in the integration worktree's repository."""
 
     def git(*args: str) -> str:
         return subprocess.run(
