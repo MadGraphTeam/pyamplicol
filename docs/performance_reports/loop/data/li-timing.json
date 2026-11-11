@@ -34131,7 +34131,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 16,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_aa): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -34339,7 +34339,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 16,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_aa): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -34540,7 +34540,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 21,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_h): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -34749,7 +34749,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 21,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_h): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -34946,7 +34946,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 143,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -35150,7 +35150,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 143,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -35334,7 +35334,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 156,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_zz): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -35525,7 +35525,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 156,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_zz): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -35729,7 +35729,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 37,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -35943,7 +35943,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 37,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -36144,7 +36144,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 17,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_ha): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -36353,7 +36353,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 17,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_ha): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -36550,7 +36550,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 149,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -36754,7 +36754,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 149,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -36972,7 +36972,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 23,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_aa): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -37199,7 +37199,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 23,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_aa): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -37416,7 +37416,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 111,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_aag): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -37642,7 +37642,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 111,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_aag): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -37850,7 +37850,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 105,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_aagg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -38038,7 +38038,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 105,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_aagg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -38252,7 +38252,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 36,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_ag): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -38474,7 +38474,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 36,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_ag): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -38682,7 +38682,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 167,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_agg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -38899,7 +38899,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 167,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_agg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -39119,7 +39119,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 26,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_emepmupmum): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -39346,7 +39346,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 26,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_emepmupmum): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -39564,7 +39564,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 65,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_emepmupmumg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -39796,7 +39796,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 65,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_emepmupmumg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -40015,7 +40015,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 2,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_h): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -40237,7 +40237,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 2,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_h): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -40451,7 +40451,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 109,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -40673,7 +40673,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 109,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -40881,7 +40881,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 231,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hgg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -41113,7 +41113,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 231,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hgg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -41325,7 +41325,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 34,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hggg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -41546,7 +41546,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 34,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hggg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -41756,7 +41756,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 146,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -41979,7 +41979,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 146,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -42196,7 +42196,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 87,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hhgg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -42422,7 +42422,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 87,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hhgg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -42641,7 +42641,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 91,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hhh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -42862,7 +42862,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 91,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hhh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -43076,7 +43076,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 68,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hz): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -43303,7 +43303,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 68,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hz): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -43520,7 +43520,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 87,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hzg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -43737,7 +43737,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 87,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hzg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -43955,7 +43955,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 229,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_wpwm): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -44172,7 +44172,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 229,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_wpwm): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -44380,7 +44380,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 232,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_wpwmg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -44597,7 +44597,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 232,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_wpwmg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -44807,7 +44807,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 174,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_za): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -45025,7 +45025,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 174,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_za): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -45239,7 +45239,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 7,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -45465,7 +45465,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 7,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -45666,7 +45666,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 254,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zgg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -45871,7 +45871,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 254,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zgg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -46081,7 +46081,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 128,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zz): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -46302,7 +46302,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 128,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zz): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -46518,7 +46518,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 13,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zzg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -46739,7 +46739,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 13,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zzg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -46951,7 +46951,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 4,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zzz): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -47168,7 +47168,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 4,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zzz): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -47200,6 +47200,402 @@
    },
    "failure_causes": {
     "lane status Unstable": 20
+   }
+  },
+  {
+   "key": "gg_zzzz",
+   "process": "li_gg_zzzz",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "lit_dress": true,
+   "configuration": "unchecked",
+   "requested": "tirust",
+   "backend": "tirust",
+   "effective": "tirust",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzzz>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzzz.json)",
+   "batch": 128,
+   "rounds": 2,
+   "instances": 3,
+   "failed_points": [
+    4,
+    4,
+    4
+   ],
+   "served_fraction": 0.96875,
+   "fallback_points": 0,
+   "instance_medians": [
+    1.501054431342709,
+    1.577583067397427,
+    1.5374450330491527
+   ],
+   "instance_spread": 1.0509832518107036,
+   "round_spread": [
+    1.2065146926538837,
+    1.4038813519172348,
+    1.5660696094424154
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 2,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 9.843737127499999,
+      "rounds": [
+       9.87790914,
+       9.809565115
+      ],
+      "half_range": 0.0034714470792332744
+     },
+     "recola": {
+      "seconds_per_point": 6.1913696824999995,
+      "rounds": [
+       7.761633495,
+       4.62110587
+      ],
+      "half_range": 0.2536213944611278
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "failed closed on part of the stream: no verdict (gap)",
+    "measured_status": "pass",
+    "binding_provider": "recola",
+    "binding_limit": 8.04878058725,
+    "fastest_provider": "recola",
+    "served_fraction": 0.96875,
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "assembly": 0.0005330628300725948,
+     "dressing": 0.7258335327500001,
+     "factors": 0.0008033133203124999,
+     "input conversion": 1.4542794815497473e-05,
+     "other": 0.0006147098756628111,
+     "python point parameters": 4.322055247030221e-05,
+     "reduction": 0.2886014228125,
+     "reduction: contraction": 0.04926955942968749,
+     "reduction: tensor moments": 0.23178198381250004,
+     "scatter": 0.18346542820312503,
+     "seed contraction": 1.0484375e-07,
+     "seeds": 3.8784039062500007e-05,
+     "squaring": 0.0005890223765163682,
+     "transport": 0.011292757349087967,
+     "trees + CT kets": 0.00046121879687499996,
+     "trees: closures": 0.000303706703125,
+     "trees: interferences": 1.5144984375e-05,
+     "trees: programs": 0.000130445578125
+    },
+    "total": 1.2122911205442506
+   },
+   "generation": {
+    "seconds": 9.154616704210639,
+    "generate_seconds": 8.098907532170415,
+    "dressed_frame_seconds": 4.120456472039223,
+    "export_seconds": 1.055031469091773,
+    "filter_seconds": 0.0006777029484510422,
+    "probes_seconds": null,
+    "peak_gib": 0.591,
+    "plan_mb": 0.063,
+    "model_seconds": 2.7514975327067077,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "public_generation": {
+    "entry_point": "Generator(resolve_config(card)).generate(...) (Python API)",
+    "cache": "PYAMPLICOL_CACHE_DIR=<fresh scratch directory> (model and preparation caches; docs/user/configuration.md)",
+    "settings": "the run card's (generation.loop_induced_probes off, SymJIT optimization_level as shipped)",
+    "cold": {
+     "seconds": 238.1971739679575,
+     "peak_gib": 3.8277816772460938
+    },
+    "warm": {
+     "seconds": 235.817477542907,
+     "peak_gib": 3.7835311889648438
+    }
+   },
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "334.96",
+      "343.54",
+      "335.14"
+     ],
+     "mem_available_gib": 260.4,
+     "core_busy": 0.162,
+     "siblings_busy": {
+      "274": 0.0
+     }
+    },
+    "end": {
+     "loadavg": [
+      "203.42",
+      "194.47",
+      "169.84"
+     ],
+     "mem_available_gib": 309.4,
+     "core_busy": 0.0,
+     "siblings_busy": {
+      "274": 0.0
+     }
+    }
+   },
+   "cross_backend": {
+    "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors",
+    "points": 112,
+    "failed": 16,
+    "max_relative": 4.9021203496784175e-06,
+    "above_1e-5": 0
+   },
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 18,
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-11",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zzzz): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "cpu_share": {
+    "min": 0.975,
+    "median": 0.979
+   },
+   "whole_call_seconds_per_point": 1.5374450330491527,
+   "failures": {
+    "6": "lane status TIRust Unstable (3564 lanes; families 0, 46, 56, 67, 69, 72, 128, 129, 188, 212, 215)",
+    "12": "lane status TIRust Unstable (2916 lanes; families 2, 5, 17, 54, 75, 122, 169, 175, 184)",
+    "111": "lane status TIRust Unstable (4860 lanes; families 1, 3, 7, 15, 24, 33, 36, 50, 73, 86, 104, 124, 154, 175, 181)",
+    "119": "lane status TIRust Unstable (3564 lanes; families 0, 1, 2, 7, 12, 58, 72, 73, 75, 85, 93)"
+   },
+   "failure_causes": {
+    "lane status TIRust Unstable": 4
+   },
+   "tir_counts": {
+    "tensor moment rows": 44048,
+    "TIR gate refusals": 14640,
+    "TIR method-choice rows": 14160,
+    "TIR last-resort rows": 434,
+    "TIR method-choice check rows": 0,
+    "TIR method-choice lanes refused by their check": 0
+   }
+  },
+  {
+   "key": "gg_zzzz",
+   "process": "li_gg_zzzz",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "lit_dress": true,
+   "configuration": "unchecked",
+   "requested": "ninjars",
+   "backend": "ninjars",
+   "effective": "ninjars",
+   "reason": "requested",
+   "unchecked": true,
+   "entry_point": "Runtime.load + evaluate (Python API)",
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "replication": "RAYON_NUM_THREADS=1 taskset -c <core> python -c \"import pyamplicol; rt = pyamplicol.Runtime.load('<artifact of li_gg_zzzz>', reduction_unchecked=True); rt.evaluate(points, mu_r2=mu_r2, poles='none', on_failure='return', reduction='tirust' | 'ninjars' | 'auto')\" (points: the 128 stream points of tools/loop_benchmark/streams/li_gg_zzzz.json)",
+   "batch": 128,
+   "rounds": 2,
+   "instances": 3,
+   "failed_points": [
+    16,
+    16,
+    16
+   ],
+   "served_fraction": 0.875,
+   "fallback_points": 0,
+   "instance_medians": [
+    10.498052702223504,
+    11.046760859169808,
+    9.955114641785258
+   ],
+   "instance_spread": 1.1096568203044606,
+   "round_spread": [
+    1.5586358414739407,
+    1.7366698264402571,
+    1.3961388106213044
+   ],
+   "providers": {
+    "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
+    "pairing": "same unit and core as the pyAmpliCol arms, back-to-back, the order of the two blocks alternating between rounds",
+    "rounds": 2,
+    "times": {
+     "madloop": {
+      "seconds_per_point": 9.843737127499999,
+      "rounds": [
+       9.87790914,
+       9.809565115
+      ],
+      "half_range": 0.0034714470792332744
+     },
+     "recola": {
+      "seconds_per_point": 6.1913696824999995,
+      "rounds": [
+       7.761633495,
+       4.62110587
+      ],
+      "half_range": 0.2536213944611278
+     }
+    },
+    "errors": []
+   },
+   "gate": {
+    "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
+    "measured_status": "fail",
+    "binding_provider": "recola",
+    "binding_limit": 8.04878058725,
+    "fastest_provider": "recola",
+    "served_fraction": 0.875,
+    "provider_protocols": {
+     "madloop": "optimistic",
+     "recola": "optimistic"
+    }
+   },
+   "stages": null,
+   "generation": {
+    "seconds": 9.154616704210639,
+    "generate_seconds": 8.098907532170415,
+    "dressed_frame_seconds": 4.120456472039223,
+    "export_seconds": 1.055031469091773,
+    "filter_seconds": 0.0006777029484510422,
+    "probes_seconds": null,
+    "peak_gib": 0.591,
+    "plan_mb": 0.063,
+    "model_seconds": 2.7514975327067077,
+    "source": "instrumented run: stage shares, not the timed call"
+   },
+   "public_generation": {
+    "entry_point": "Generator(resolve_config(card)).generate(...) (Python API)",
+    "cache": "PYAMPLICOL_CACHE_DIR=<fresh scratch directory> (model and preparation caches; docs/user/configuration.md)",
+    "settings": "the run card's (generation.loop_induced_probes off, SymJIT optimization_level as shipped)",
+    "cold": {
+     "seconds": 238.1971739679575,
+     "peak_gib": 3.8277816772460938
+    },
+    "warm": {
+     "seconds": 235.817477542907,
+     "peak_gib": 3.7835311889648438
+    }
+   },
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "334.96",
+      "343.54",
+      "335.14"
+     ],
+     "mem_available_gib": 260.4,
+     "core_busy": 0.162,
+     "siblings_busy": {
+      "274": 0.0
+     }
+    },
+    "end": {
+     "loadavg": [
+      "203.42",
+      "194.47",
+      "169.84"
+     ],
+     "mem_available_gib": 309.4,
+     "core_busy": 0.0,
+     "siblings_busy": {
+      "274": 0.0
+     }
+    }
+   },
+   "cross_backend": {
+    "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors",
+    "points": 112,
+    "failed": 16,
+    "max_relative": 4.9021203496784175e-06,
+    "above_1e-5": 0
+   },
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 18,
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
+   "date": "2026-11-11",
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zzzz): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "cpu_share": {
+    "min": 0.965,
+    "median": 0.978
+   },
+   "whole_call_seconds_per_point": 10.498052702223504,
+   "failures": {
+    "6": "lane status Unstable (38880 lanes; families 0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 32, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 67, 68, 69, 70, 72, 73, 75, 76, 79, 80, 85, 86, 88, 89, 92, 93, 101, 102, 104, 105, 108, 109, 121, 122, 124, 125, 128, 129, 147, 148, 150, 151, 154, 155, 160, 161, 163, 164, 165, 166, 168, 169, 171, 172, 174, 175, 178, 179, 181, 184, 188, 189, 191, 192, 193, 195, 197, 199, 206, 208, 212, 214, 215, 217)",
+    "12": "lane status Unstable (38880 lanes; families 0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 32, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 67, 68, 69, 70, 72, 73, 75, 76, 79, 80, 85, 86, 88, 89, 92, 93, 101, 102, 104, 105, 108, 109, 121, 122, 124, 125, 128, 129, 147, 148, 150, 151, 154, 155, 160, 161, 163, 164, 165, 166, 168, 169, 171, 172, 174, 175, 178, 179, 181, 184, 188, 189, 191, 192, 193, 195, 197, 199, 206, 208, 212, 214, 215, 217)",
+    "13": "lane status Unstable (15552 lanes; families 0, 1, 3, 5, 7, 8, 10, 12, 18, 19, 26, 27, 32, 33, 35, 37, 39, 40, 46, 50, 51, 52, 56, 57, 72, 73, 76, 80, 85, 86, 89, 93, 108, 109, 128, 129, 147, 148, 151, 155, 160, 161, 169, 175, 178, 179, 188, 189)",
+    "23": "lane status Unstable (15552 lanes; families 0, 1, 3, 5, 7, 8, 10, 12, 18, 19, 26, 27, 32, 33, 35, 37, 39, 40, 46, 50, 51, 52, 56, 57, 72, 73, 76, 80, 85, 86, 89, 93, 108, 109, 128, 129, 147, 148, 151, 155, 160, 161, 169, 175, 178, 179, 188, 189)",
+    "26": "lane status Unstable (15552 lanes; families 0, 1, 3, 5, 7, 8, 10, 12, 18, 19, 26, 27, 32, 33, 35, 37, 39, 40, 46, 50, 51, 52, 56, 57, 72, 73, 76, 80, 85, 86, 89, 93, 108, 109, 128, 129, 147, 148, 151, 155, 160, 161, 169, 175, 178, 179, 188, 189)",
+    "39": "lane status Unstable (15552 lanes; families 0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 72, 73, 75, 76, 79, 80, 85, 86, 88, 89, 92, 93, 101, 102, 104, 105, 108, 109, 121, 122, 124, 125, 128, 129)",
+    "46": "lane status Unstable (15552 lanes; families 0, 1, 3, 5, 7, 8, 10, 12, 18, 19, 26, 27, 32, 33, 35, 37, 39, 40, 46, 50, 51, 52, 56, 57, 72, 73, 76, 80, 85, 86, 89, 93, 108, 109, 128, 129, 147, 148, 151, 155, 160, 161, 169, 175, 178, 179, 188, 189)",
+    "49": "lane status Unstable (15552 lanes; families 0, 1, 3, 5, 7, 8, 10, 12, 18, 19, 26, 27, 32, 33, 35, 37, 39, 40, 46, 50, 51, 52, 56, 57, 72, 73, 76, 80, 85, 86, 89, 93, 108, 109, 128, 129, 147, 148, 151, 155, 160, 161, 169, 175, 178, 179, 188, 189)",
+    "55": "lane status Unstable (15552 lanes; families 0, 1, 3, 5, 7, 8, 10, 12, 18, 19, 26, 27, 32, 33, 35, 37, 39, 40, 46, 50, 51, 52, 56, 57, 72, 73, 76, 80, 85, 86, 89, 93, 108, 109, 128, 129, 147, 148, 151, 155, 160, 161, 169, 175, 178, 179, 188, 189)",
+    "60": "lane status Unstable (15552 lanes; families 0, 1, 3, 5, 7, 8, 10, 12, 18, 19, 26, 27, 32, 33, 35, 37, 39, 40, 46, 50, 51, 52, 56, 57, 72, 73, 76, 80, 85, 86, 89, 93, 108, 109, 128, 129, 147, 148, 151, 155, 160, 161, 169, 175, 178, 179, 188, 189)",
+    "68": "lane status Unstable (15552 lanes; families 0, 1, 3, 5, 7, 8, 10, 12, 18, 19, 26, 27, 32, 33, 35, 37, 39, 40, 46, 50, 51, 52, 56, 57, 72, 73, 76, 80, 85, 86, 89, 93, 108, 109, 128, 129, 147, 148, 151, 155, 160, 161, 169, 175, 178, 179, 188, 189)",
+    "74": "lane status Unstable (15552 lanes; families 0, 1, 3, 5, 7, 8, 10, 12, 18, 19, 26, 27, 32, 33, 35, 37, 39, 40, 46, 50, 51, 52, 56, 57, 72, 73, 76, 80, 85, 86, 89, 93, 108, 109, 128, 129, 147, 148, 151, 155, 160, 161, 169, 175, 178, 179, 188, 189)",
+    "82": "lane status Unstable (15552 lanes; families 0, 1, 3, 5, 7, 8, 10, 12, 18, 19, 26, 27, 32, 33, 35, 37, 39, 40, 46, 50, 51, 52, 56, 57, 72, 73, 76, 80, 85, 86, 89, 93, 108, 109, 128, 129, 147, 148, 151, 155, 160, 161, 169, 175, 178, 179, 188, 189)",
+    "85": "lane status Unstable (15552 lanes; families 0, 1, 3, 5, 7, 8, 10, 12, 18, 19, 26, 27, 32, 33, 35, 37, 39, 40, 46, 50, 51, 52, 56, 57, 72, 73, 76, 80, 85, 86, 89, 93, 108, 109, 128, 129, 147, 148, 151, 155, 160, 161, 169, 175, 178, 179, 188, 189)",
+    "111": "lane status Unstable (38880 lanes; families 0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 32, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 67, 68, 69, 70, 72, 73, 75, 76, 79, 80, 85, 86, 88, 89, 92, 93, 101, 102, 104, 105, 108, 109, 121, 122, 124, 125, 128, 129, 147, 148, 150, 151, 154, 155, 160, 161, 163, 164, 165, 166, 168, 169, 171, 172, 174, 175, 178, 179, 181, 184, 188, 189, 191, 192, 193, 195, 197, 199, 206, 208, 212, 214, 215, 217)",
+    "119": "lane status Unstable (38880 lanes; families 0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 32, 33, 34, 35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 67, 68, 69, 70, 72, 73, 75, 76, 79, 80, 85, 86, 88, 89, 92, 93, 101, 102, 104, 105, 108, 109, 121, 122, 124, 125, 128, 129, 147, 148, 150, 151, 154, 155, 160, 161, 163, 164, 165, 166, 168, 169, 171, 172, 174, 175, 178, 179, 181, 184, 188, 189, 191, 192, 193, 195, 197, 199, 206, 208, 212, 214, 215, 217)"
+   },
+   "failure_causes": {
+    "lane status Unstable": 16
    }
   },
   {
@@ -47389,7 +47785,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 7,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_h_aa): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -47593,7 +47989,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 7,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_h_aa): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -47795,7 +48191,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 5,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_h_gg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -48005,7 +48401,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 5,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_h_gg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -48207,7 +48603,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 116,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_h_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -48417,7 +48813,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 116,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_h_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -48613,7 +49009,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 52,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_h_za): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -48817,7 +49213,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 52,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_h_za): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -49031,7 +49427,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 51,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_ug_hu): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -49258,7 +49654,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 51,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_ug_hu): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -49477,7 +49873,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 118,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_uux_ddxh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -49699,7 +50095,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 118,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_uux_ddxh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -49913,7 +50309,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 49,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_uux_hg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -50135,7 +50531,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 49,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_uux_hg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -50349,7 +50745,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 111,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_uux_hgg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -50571,7 +50967,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 111,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_uux_hgg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
@@ -50773,7 +51169,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 81,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_z_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {
@@ -50987,7 +51383,7 @@
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
    "core": 81,
-   "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
+   "concurrency": "41 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_z_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
    "retimed": {

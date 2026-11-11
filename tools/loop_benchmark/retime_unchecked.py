@@ -1043,7 +1043,10 @@ def _cause(detail: str) -> tuple[str, str]:
     of a per-lane detail ("family F lane LaneKey {...}: Status; ..."), with
     the families and the lane count, else the detail's first line."""
 
-    lanes = re.findall(r"family (\d+) lane LaneKey \{[^}]*\}: (\w+)", detail)
+    # A TIRust status names its backend ("TIRust Unstable: ..."): kept whole.
+    lanes = re.findall(
+        r"family (\d+) lane LaneKey \{[^}]*\}: ((?:TIRust )?\w+)", detail
+    )
     if not lanes:
         return detail.splitlines()[0][:200], ""
     statuses = sorted({status for _family, status in lanes})

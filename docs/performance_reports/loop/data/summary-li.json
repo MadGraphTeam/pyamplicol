@@ -34,9 +34,9 @@
    ],
    "largest_instance_spread": 4.12869970545333,
    "host_state": {
-    "concurrency_max": 40,
+    "concurrency_max": 41,
     "load_1min": [
-     252.29,
+     203.42,
      630.13
     ],
     "mem_available_gib_min": 247.9,
@@ -7777,16 +7777,21 @@
       "status": "recorded",
       "providers": {
        "madloop": {
-        "seconds_per_point": 21.379494049999998,
-        "source": "required/li/timing/li_gg_zzzz-providers-optimistic.json providers.madloop",
+        "seconds_per_point": 9.843737127499999,
+        "half_range": 0.0034714470792332744,
+        "rounds": 2,
+        "source": "li-timing.json records[gg_zzzz, tirust, 524e6cfa].providers.times.madloop",
         "protocol": "optimistic",
-        "setting": "MLReductionLib 7|6|1",
+        "paired": true,
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 5.603843725,
-        "source": "required/li/timing/li_gg_zzzz-providers-optimistic.json providers.recola",
+        "seconds_per_point": 6.1913696824999995,
+        "half_range": 0.2536213944611278,
+        "rounds": 2,
+        "source": "li-timing.json records[gg_zzzz, tirust, 524e6cfa].providers.times.recola",
         "protocol": "optimistic",
+        "paired": true,
         "host": "itphlies"
        },
        "openloops": {
@@ -7798,7 +7803,7 @@
       "fastest": {
        "key": "recola",
        "name": "Recola",
-       "seconds_per_point": 5.603843725
+       "seconds_per_point": 6.1913696824999995
       },
       "unmatched": false,
       "generation": {
@@ -7808,7 +7813,8 @@
        "key": "recola",
        "name": "Recola",
        "seconds": 26.9980293
-      }
+      },
+      "paired": true
      },
      "validation": {
       "status": "partial",
@@ -7824,17 +7830,111 @@
       "source": "lit.json rows[gg_zzzz]"
      },
      "generation": {
-      "status": "not run",
-      "reason": "generation beyond the 45-min rule (R9): generate + plan export + exact helicity-zero filter done in 9.8 s (peak 0.60 GiB); the mandatory double-double generation-time probes still running when stopped at 45 min 45 s (3.7 GB RSS; 23:03 UTC); no time"
+      "status": "measured",
+      "public": true,
+      "seconds": 235.817477542907,
+      "peak_gib": 3.7835311889648438,
+      "cold": {
+       "seconds": 238.1971739679575,
+       "peak_gib": 3.8277816772460938
+      },
+      "plan_mb": 0.063,
+      "revision": "524e6cfa",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_zzzz, tirust, 524e6cfa].public_generation",
+      "ratio_to_fastest": 8.73461817981311
      },
      "timing": {
-      "status": "not run",
-      "reason": "generation beyond the 45-min rule (R9): generate + plan export + exact helicity-zero filter done in 9.8 s (peak 0.60 GiB); the mandatory double-double generation-time probes still running when stopped at 45 min 45 s (3.7 GB RSS; 23:03 UTC); no time",
-      "label": "not run",
-      "requested": "auto",
-      "revision": "e852f448",
-      "source": "li-timing.json records[gg_zzzz, auto, e852f448]",
-      "effective": "not resolved"
+      "status": "failed closed",
+      "batch": 128,
+      "blocks": 3,
+      "failed_points": [
+       4,
+       4
+      ],
+      "served_fraction": 0.96875,
+      "every_point": false,
+      "causes": {
+       "lane status TIRust Unstable": 4
+      },
+      "label": "4/128 failed closed, lane status TIRust Unstable",
+      "requested": "tirust",
+      "revision": "524e6cfa",
+      "source": "li-timing.json records[gg_zzzz, tirust, 524e6cfa]",
+      "backend": "tirust",
+      "backend_label": "TIRust",
+      "other_backend": {
+       "backend": "ninjars",
+       "backend_label": "NinjaRS per amplitude",
+       "requested": "ninjars",
+       "status": "failed closed",
+       "batch": 128,
+       "blocks": 3,
+       "failed_points": [
+        16,
+        16
+       ],
+       "served_fraction": 0.875,
+       "every_point": false,
+       "causes": {
+        "lane status Unstable": 16
+       },
+       "label": "16/128 failed closed, lane status Unstable",
+       "unchecked": true,
+       "instance_spread": 1.1096568203044606,
+       "stages": null,
+       "accuracy": {
+        "points": 112,
+        "max_relative": 4.9021203496784175e-06,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 16,
+        "failed_classes": [],
+        "note": false,
+        "cross_backend": true,
+        "reason": "TIRust at 256 bits takes 764 s per point (measured 1-point probe; 32 points 6.8 h > the 3600 s row budget)",
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_gg_zzzz].cross_backend"
+       }
+      },
+      "gate": {
+       "status": "gap",
+       "label": "no verdict: TIRust failed closed 4/128 (gap)",
+       "served_fraction": 0.96875,
+       "backend": "tirust",
+       "backend_label": "TIRust",
+       "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zzzz): public API with the documented unchecked setting; stages from a separate instrumented run (lit-perf gate tool)"
+      },
+      "unchecked": true,
+      "stages": {
+       "inputs": 0.00046121879687499996,
+       "numerator": 0.7266756301093751,
+       "scatter": 0.18346542820312503,
+       "moments": 0.23178198381250004,
+       "contraction": 0.04926955942968749,
+       "glue": 0.020637195348938042,
+       "untimed": 0.0,
+       "total": 1.2122911205442506,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 112,
+       "max_relative": 4.9021203496784175e-06,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 16,
+       "failed_classes": [],
+       "note": false,
+       "cross_backend": true,
+       "reason": "TIRust at 256 bits takes 764 s per point (measured 1-point probe; 32 points 6.8 h > the 3600 s row budget)",
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zzzz].cross_backend"
+      }
      }
     }
    ]
@@ -12159,6 +12259,33 @@
      "ratio": 7.629409273201324
     },
     {
+     "key": "gg_zzzz",
+     "math": "g g -> z z z z",
+     "group": "2->4",
+     "revision": "524e6cfa",
+     "tirust": {
+      "status": "failed closed",
+      "reason": "4/128 failed closed, lane status TIRust Unstable"
+     },
+     "ninjars": {
+      "status": "failed closed",
+      "reason": "16/128 failed closed, lane status Unstable"
+     },
+     "l6": {
+      "runs": [
+       {
+        "run": "li_gg_zzzz",
+        "status": "partial",
+        "tirust_served": 0,
+        "of": 3,
+        "finite_max_relative": null
+       }
+      ],
+      "source": "lit.json rows[gg_zzzz].runs.*.L6.double"
+     },
+     "source": "li-timing.json records[gg_zzzz, tirust, 524e6cfa]"
+    },
+    {
      "key": "li51",
      "math": "g g -> e^+ e^- mu^+ mu^- g",
      "group": "2->5",
@@ -12238,7 +12365,6 @@
     }
    ],
    "not_unchecked": [
-    "gg_zzzz",
     "li_x1"
    ],
    "accuracy": "data/li-unchecked-accuracy.json"
@@ -12505,7 +12631,7 @@
   {
    "kind": "no value",
    "table": "2",
-   "text": "not run: generation beyond the 45-min rule (R9): generate + plan export + exact helicity-zero filter done in 9.8 s (peak 0.60 GiB)",
+   "text": "time: failed closed (4/128 failed closed, lane status TIRust Unstable)",
    "rows": [
     "g g -> z z z z"
    ]

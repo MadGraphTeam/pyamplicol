@@ -1001,6 +1001,18 @@
     ]
    }
   },
+  "li_gg_zzzz": {
+   "points": 128,
+   "revision": "524e6cfa",
+   "cross_backend": {
+    "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors",
+    "points": 112,
+    "failed": 16,
+    "max_relative": 4.9021203496784175e-06,
+    "above_1e-5": 0,
+    "reason": "TIRust at 256 bits takes 764 s per point (measured 1-point probe; 32 points 6.8 h > the 3600 s row budget)"
+   }
+  },
   "li_h_aa": {
    "points": 128,
    "revision": "524e6cfa",
