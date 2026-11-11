@@ -41,12 +41,15 @@ Rules (§4.0 with the rulings of the brief, m-lit DECISIONS): L1 binary64 vs
 each designated provider <= 1e-5 relative (lax; digits recorded; a fixture
 point marked ``l1_caution`` whose provider deviates beyond it is left out of
 the L1 verdict and recorded with its binary64 vs double-double deviation,
-which the E check judges); L2 binary64 <= 1e-9 and double-double / AP <=
-1e-12 against the analytic oracle (targets: a deviation below ~1e-5 is
-recorded and reported, never a failure, R5); L3 the amplitude-level
-finiteness probe (``induced.probe`` at every fixture point: per (loop order,
-row) the poles against their estimate on the row's term floor, x10),
-both backends in binary64 and double-double (the lanes' public
+which the E check judges; a point where binary64's own estimate covers its
+deviation beyond it, |b64 - provider| <= 10 E_abs as the E check's rule,
+is judged on its double-double value against the provider instead, the
+binary64 deviation recorded and judged by E); L2 binary64 <= 1e-9 and
+double-double / AP <= 1e-12 against the analytic oracle (targets: a
+deviation below ~1e-5 is recorded and reported, never a failure, R5); L3
+the amplitude-level finiteness probe (``induced.probe`` at every fixture
+point: per (loop order, row) the poles against their estimate on the
+row's term floor, x10), both backends in binary64 and double-double (the lanes' public
 ``finiteness`` ratios, formed with checks only, recorded beside it); L4/W1
 the Ward probe epsilon_j -> p_j / E_j at every fixture point on every
 external massless gauge-boson leg, both backends in binary64 and
@@ -210,7 +213,8 @@ def registry() -> dict:
 def runs(campaign: dict | None = None, reg: dict | None = None) -> list[dict]:
     """The run matrix: one entry per fixture of a §4.1 row's reference runs
     (a fixture several rows list, e.g. li_h_aa of LI-A3 and LI-E1, runs
-    once), with every row id, tier and check that lists it, the registry key
+    once), with every row id, tier and check that lists it (L2 where the run
+    designates the analytic oracle), the registry key
     whose ids and process it serves (None: validation-only), the designated
     providers (the run's providers less its excluded ones) and whether it is
     its tier's AP run."""
@@ -245,6 +249,13 @@ def runs(campaign: dict | None = None, reg: dict | None = None) -> list[dict]:
             if row["tier"] not in entry["tiers"]:
                 entry["tiers"].append(row["tier"])
             for check in row["checks"]:
+                # L2 compares with the analytic oracle, so it is the check of
+                # the runs the row designates one for (the run's providers
+                # name "analytic"): a row lists its checks once for all its
+                # processes, and its references name AN for some of them only
+                # (LI-A4 for h > z a, LI-C1 for g g > a a and a a > a a).
+                if check == "L2" and "analytic" not in run.get("providers", []):
+                    continue
                 if check not in entry["checks"]:
                     entry["checks"].append(check)
             excluded = {**run.get("excluded", {})}
@@ -1068,7 +1079,10 @@ def provenance(records: dict[str, dict]) -> dict:
         if native is None and record.get("revision"):
             # A record of the format before it named its native: the engine
             # slice it ran (the campaign source names that slice's native).
-            native = f"engine slice {_engine_slice(record['revision'])} (native not recorded by the record)"
+            native = (
+                f"engine slice {_engine_slice(record['revision'])} "
+                "(native not recorded by the record)"
+            )
         native = native or "not recorded"
         out["native"][native] = out["native"].get(native, 0) + 1
         python = record.get("python_symbolica") or "not recorded"
@@ -1391,6 +1405,12 @@ def judge(record: dict, entry: dict) -> dict:
     refs: dict[str, float] = {}
     caution: list[dict] = []
     tir_refs: dict[str, float] = {}
+    # A point where binary64 is known to its estimate only (the E check's x10
+    # rule covers its deviation from the provider, beyond LAX): L1 judges the
+    # double-double value there (the carrier E judges binary64 against).
+    covered: list[dict] = []
+    high_refs: dict[str, float] = {}
+    n_dd_served = _served(ndd)
     for p, row in enumerate(data["rows"]):
         if p >= count:
             break
@@ -1421,6 +1441,29 @@ def judge(record: dict, entry: dict) -> dict:
                     }
                 )
                 continue
+            estimate = (
+                _abs_finite(n64c["points"][p]["estimate"]) if n_served[p] else None
+            )
+            if (
+                dev > LAX
+                and estimate
+                and p < len(n_dd_served)
+                and n_dd_served[p]
+                and abs(float(value) - float(reference)) <= FACTOR * estimate
+            ):
+                dd_dev = _rel(_total(ndd["points"][p]["values"]), reference)
+                covered.append(
+                    {
+                        "point": p,
+                        "provider": provider,
+                        "deviation": dev,
+                        "deviation_over_10E": abs(float(value) - float(reference))
+                        / (FACTOR * estimate),
+                        "double_double_deviation": dd_dev,
+                    }
+                )
+                high_refs[provider] = max(high_refs.get(provider, 0.0), dd_dev)
+                continue
             refs[provider] = max(refs.get(provider, 0.0), dev)
             if tvalue is not None:
                 tir_refs[provider] = max(
@@ -1443,14 +1486,17 @@ def judge(record: dict, entry: dict) -> dict:
             },
         }
         refs = {}
-    elif refs or "L1" in entry["checks"]:
-        worst = max(refs.values(), default=None)
+    elif refs or high_refs or "L1" in entry["checks"]:
+        worst = max([*refs.values(), *high_refs.values()], default=None)
         out["L1"] = {
             "status": "not run" if worst is None else _verdict(worst <= LAX, False),
             "max_relative": dict(refs),
             "tirust_max_relative": tir_refs,
             "caution_points": caution,
         }
+        if covered:
+            out["L1"]["estimate_covered_points"] = covered
+            out["L1"]["double_double_max_relative"] = high_refs
     # L2 analytic (binary64 / double-double / AP).
     analytic = [
         row["providers"]["analytic"]["decimal"]
