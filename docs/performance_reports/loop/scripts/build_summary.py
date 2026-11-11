@@ -2998,6 +2998,13 @@ def _li_accuracy(acc: dict | None, key: str, backend: str) -> dict | None:
             "failed_classes": [],
             "note": bool(cross["above_1e-5"]),
             "cross_backend": True,
+            # Where measured: both backends against the 256-bit truth at the
+            # row's largest-difference points (which backend deviates).
+            **(
+                {"truth_at_points": cross["truth_at_points"]}
+                if cross.get("truth_at_points")
+                else {}
+            ),
             "reason": cross.get("reason"),
             "revision": row["revision"],
             "source": f"{LI_ACCURACY} rows[{key}].cross_backend",
@@ -4289,9 +4296,17 @@ def build_missing(summary: dict, loop_induced: dict) -> list[dict]:
                 if a.get("note") and a.get("cross_backend"):
                     # No 256-bit truth: the two backends' difference, one
                     # labelled line per row, never an error of either.
+                    at = a.get("truth_at_points")
                     add("accuracy", "2", label,
                         f"TIRust vs NinjaRS unchecked (no 256-bit truth, cross-backend, not a truth): "
-                        f"{a['above']}/{a['points']} points differ above {a['lax']:g}, largest {a['worst']:.1e}")
+                        f"{a['above']}/{a['points']} points differ above {a['lax']:g}, largest {a['worst']:.1e}"
+                        + (
+                            f"; at its {len(at['points'])} largest-difference points against the 256-bit"
+                            f" truth: TIRust {at['tirust_max_relative']:.1e}, NinjaRS"
+                            f" {at['ninjars_max_relative']:.1e}"
+                            if at
+                            else ""
+                        ))
                     break
                 if a.get("note"):
                     parts = []

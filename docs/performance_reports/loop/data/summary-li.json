@@ -7702,6 +7702,15 @@
         "failed_classes": [],
         "note": true,
         "cross_backend": true,
+        "truth_at_points": {
+         "points": [
+          104,
+          107
+         ],
+         "tirust_max_relative": 0.00013018746571411764,
+         "ninjars_max_relative": 0.07577658372986881,
+         "source": "TIRust at 256 bits, the same public unchecked call, at the row's largest cross-backend points"
+        },
         "reason": "TIRust at 256 bits takes 405 s per point (measured 1-point probe; 32 points 3.6 h > the 3600 s row budget)",
         "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_aagg].cross_backend"
@@ -7720,6 +7729,15 @@
        "failed_classes": [],
        "note": true,
        "cross_backend": true,
+       "truth_at_points": {
+        "points": [
+         104,
+         107
+        ],
+        "tirust_max_relative": 0.00013018746571411764,
+        "ninjars_max_relative": 0.07577658372986881,
+        "source": "TIRust at 256 bits, the same public unchecked call, at the row's largest cross-backend points"
+       },
        "reason": "TIRust at 256 bits takes 405 s per point (measured 1-point probe; 32 points 3.6 h > the 3600 s row budget)",
        "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_aagg].cross_backend"
@@ -12223,6 +12241,15 @@
        "failed_classes": [],
        "note": true,
        "cross_backend": true,
+       "truth_at_points": {
+        "points": [
+         104,
+         107
+        ],
+        "tirust_max_relative": 0.00013018746571411764,
+        "ninjars_max_relative": 0.07577658372986881,
+        "source": "TIRust at 256 bits, the same public unchecked call, at the row's largest cross-backend points"
+       },
        "reason": "TIRust at 256 bits takes 405 s per point (measured 1-point probe; 32 points 3.6 h > the 3600 s row budget)",
        "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_aagg].cross_backend"
@@ -12244,6 +12271,15 @@
        "failed_classes": [],
        "note": true,
        "cross_backend": true,
+       "truth_at_points": {
+        "points": [
+         104,
+         107
+        ],
+        "tirust_max_relative": 0.00013018746571411764,
+        "ninjars_max_relative": 0.07577658372986881,
+        "source": "TIRust at 256 bits, the same public unchecked call, at the row's largest cross-backend points"
+       },
        "reason": "TIRust at 256 bits takes 405 s per point (measured 1-point probe; 32 points 3.6 h > the 3600 s row budget)",
        "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_aagg].cross_backend"
@@ -12798,7 +12834,7 @@
   {
    "kind": "accuracy",
    "table": "2",
-   "text": "TIRust vs NinjaRS unchecked (no 256-bit truth, cross-backend, not a truth): 23/128 points differ above 1e-05, largest 7.0e-02",
+   "text": "TIRust vs NinjaRS unchecked (no 256-bit truth, cross-backend, not a truth): 23/128 points differ above 1e-05, largest 7.0e-02; at its 2 largest-difference points against the 256-bit truth: TIRust 1.3e-04, NinjaRS 7.6e-02",
    "rows": [
     "g g -> a a g g"
    ]

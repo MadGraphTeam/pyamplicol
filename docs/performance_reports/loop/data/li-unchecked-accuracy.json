@@ -211,7 +211,16 @@
     "failed": 0,
     "max_relative": 0.0703179427849954,
     "above_1e-5": 23,
-    "reason": "TIRust at 256 bits takes 405 s per point (measured 1-point probe; 32 points 3.6 h > the 3600 s row budget)"
+    "reason": "TIRust at 256 bits takes 405 s per point (measured 1-point probe; 32 points 3.6 h > the 3600 s row budget)",
+    "truth_at_points": {
+     "points": [
+      104,
+      107
+     ],
+     "tirust_max_relative": 0.00013018746571411764,
+     "ninjars_max_relative": 0.07577658372986881,
+     "source": "TIRust at 256 bits, the same public unchecked call, at the row's largest cross-backend points"
+    }
    }
   },
   "li_gg_ag": {
