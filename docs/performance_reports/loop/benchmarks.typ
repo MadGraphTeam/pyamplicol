@@ -1070,7 +1070,7 @@ $B = 128$, finite part, binary64, one pinned thread, no stability check or rescu
 loading excluded) with its peak memory and plan size.#if t1-optimistic [ The providers run in their most optimistic
 settings (m-lit F4; `tools/loop_benchmark providers --protocol optimistic`), timed on pyAmpliCol's core: MadLoop 3.7.0
 (ML) without its stability test (`CTModeRun 1`), Recola 2.2.5 with COLLIER (Rc) without dynamic settings (alpha_s and
-the scale set before its generation, outside the timer, so it times the stream points at the first point's $mu_R$#{ let rp = S.meta.at("provider_points", default: (:)).at("recola", default: none); if rp != none [: #if rp.at(0) == rp.at(1) [#rp.at(0)] else [#rp.at(0)–#rp.at(1)] points per row, against #S.meta.provider_points.values().map(x => x.at(1)).fold(0, calc.max) for the other providers] }),
+the scale set before its generation, outside the timer, so it times the stream points at the first point's $mu_R$#{ let rp = S.meta.at("provider_points", default: (:)).at("recola", default: none); if rp != none [: #if rp.at(0) == rp.at(1) [#rp.at(0)] else [#rp.at(0)–#rp.at(1)] points per row, against up to #S.meta.provider_points.values().map(x => x.at(1)).fold(0, calc.max) for the other providers] }),
 `compute_ir_poles 0`, release build, OpenLoops 2.1.5 from prebuilt libraries (OL: no generation time) with its
 stability system and I-operator poles off; each optimistic value equals the provider's production value at the timed
 points. A provider time marked #super[p] is its production record, not re-timed (#S.meta.at("provider_kept", default: "no reason recorded")).] else [ The providers run in production mode: MadLoop 3.7.0 (ML),
