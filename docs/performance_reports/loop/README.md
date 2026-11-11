@@ -144,7 +144,7 @@ request, backend, batch and revision.
 | `measured.json` | development records (`scripts/collect_milestone.py`): required-set native validations, provider reference runs, NJet timings | through `summary.json` |
 | `2to6.json` | the 2 → 6 records (`scripts/build_2to6.py`): Table 1's `preliminary` rows | through `summary.json` |
 | `mqcd*.json`, `msm*.json` (other than `msm-g1*`), `dec*.json`, `hc.json`, `corr.json` | the QCD, electroweak and decay validation campaigns and their matrices (`scripts/build_mqcd.py`, `build_mqcd_matrix.py`, `build_msm_matrix.py`, `build_dec_matrix.py`, `build_hc.py`, `build_corr.py`), the HC_NLO_X0 and Recola correlation rows | no (campaign records) |
-| `rounds-7leg.json`, `measurements.json`, `provider-cold.json`, `legacy-labels.json`, `colour-measurements.json`, `figures/*.svg` | the seven-leg optimisation rounds, the legacy engine's timings and labels (`measurements.json` and `colour-measurements.json` are cited by `docs/development/loop_v2/DESIGN.md`), example graphs (`scripts/draw_graphs.py`) | no (records) |
+| `rounds-7leg.json`, `measurements.json`, `provider-cold.json`, `legacy-labels.json`, `colour-measurements.json` | the seven-leg optimisation rounds, the legacy engine's timings and labels (`measurements.json` and `colour-measurements.json` are cited by `docs/development/loop_v2/DESIGN.md`) | no (records) |
 
 ## Regenerate
 
