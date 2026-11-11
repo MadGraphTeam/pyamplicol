@@ -557,6 +557,16 @@ def _verdict(
     return verdict
 
 
+def stream_indices(result: dict[str, Any]) -> Any:
+    """The stream index of each of a provider's rows: its ``stream_points``
+    where it timed a subset of the stream (providers.py's Born-interfered
+    most optimistic arm: Recola at its generation's scale), else the first
+    points in order."""
+
+    points = result.get("stream_points")
+    return points if points is not None else range(len(result.get("rows") or []))
+
+
 def _provider_values(key: str, record: dict[str, Any]) -> dict[str, dict[int, tuple]]:
     """(born, finite in MadLoop's convention) per provider and stream index."""
 
@@ -581,7 +591,7 @@ def _provider_values(key: str, record: dict[str, Any]) -> dict[str, dict[int, tu
         if not rows or (name == "recola" and factor is None):
             continue
         values = {}
-        for index, row in enumerate(rows):
+        for index, row in zip(stream_indices(result), rows, strict=False):
             finite = row["finite"]
             if name == "recola":
                 raw = row["raw"]["finite"]
@@ -1100,7 +1110,13 @@ def build(
             elif record["accuracy"] != "full":
                 # Providers time full colour: LC/NLC carry no ratio.
                 ungated = "no gate (colour approximation)"
-            effective = (record.get("reduction") or {}).get("effective")
+            # A loop-induced configuration carries its resolved request (a
+            # dict); a Born-interfered run names its one explicit backend (a
+            # string, pyamplicol_v2.main since lit-tir).
+            reduction = record.get("reduction")
+            effective = (
+                reduction.get("effective") if isinstance(reduction, dict) else reduction
+            )
             if induced_row:
                 # Only the blocks that had their core (``valid_blocks``).
                 record["batches"] = {
@@ -1274,7 +1290,11 @@ def build(
                                 ),
                                 "seconds": row["seconds"],
                             }
-                            for index, row in enumerate(result.get("rows") or [])
+                            for index, row in zip(
+                                stream_indices(result),
+                                result.get("rows") or [],
+                                strict=False,
+                            )
                         ]
                         for name, result in run["providers"].items()
                     },

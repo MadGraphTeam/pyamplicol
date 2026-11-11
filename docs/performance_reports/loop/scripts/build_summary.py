@@ -76,6 +76,7 @@ as is; re-run this script after regenerating any input.
 from __future__ import annotations
 
 import json
+import statistics
 import re
 import subprocess
 import sys
@@ -316,7 +317,9 @@ class Recency:
 
 
 # Stage groups of the per-point split (the executor's stage names; see the
-# report's stage-split table for their definitions).
+# report's stage-split table for their definitions). The loop-induced
+# executor's inputs are the trees and counterterm kets of the amplitude
+# basis; its transport and squaring are glue.
 STAGE_GROUPS = {
     "inputs": (
         "python trees",
@@ -324,12 +327,28 @@ STAGE_GROUPS = {
         "python scalars",
         "python Born and counterterm components",
         "native trees",
+        "trees + CT kets",
     ),
     "numerator": ("seeds", "factors", "dressing"),
     "scatter": ("scatter",),
-    "masters": ("reduction: masters",),
-    "glue": ("python point parameters", "input conversion", "assembly", "other"),
+    "glue": (
+        "python point parameters",
+        "input conversion",
+        "assembly",
+        "transport",
+        "squaring",
+        "other",
+    ),
 }
+# The reduction backend's own stages (MASTER_PLAN's live-report stage-split
+# rule, amended by m-lit lit-report): NinjaRS = its expansions (the
+# reduction without the master integrals) and the masters (oneloopmaster);
+# TIRust = its tensor moments and the contraction, plus its master integrals
+# only where an arm recorded TIRust's profile (a part of the tensor moments,
+# shown apart; never inferred). One key per stage, one colour per key across
+# the report (benchmarks.typ stage-colour).
+REDUCTION_KEYS = ("ninjars", "moments", "contraction", "masters")
+STAGE_ORDER = ("inputs", "numerator", "scatter", *REDUCTION_KEYS, "glue", "untimed")
 
 
 def _load(path: Path) -> dict:
@@ -379,11 +398,38 @@ def _stage(stages: dict, names: tuple[str, ...]) -> float:
     return sum(stages.get(n, 0.0) for n in names)
 
 
+def _reduction(stages: dict) -> tuple[dict, float]:
+    """The reduction's own stages of a record (``REDUCTION_KEYS``) and the
+    rest of its reduction timer outside them: TIRust where its tensor-moment
+    timer is recorded, else NinjaRS (the reduction without its masters, and
+    the masters)."""
+
+    total = stages.get("reduction", 0.0)
+    if "reduction: tensor moments" in stages:
+        out = {
+            "moments": stages["reduction: tensor moments"],
+            "contraction": stages.get("reduction: contraction", 0.0),
+        }
+        if "reduction: TIR masters" in stages:
+            # TIRust's profile arm splits its tensor moments (geometry,
+            # masters, recursion, gather, output): the masters shown apart.
+            out["masters"] = stages["reduction: TIR masters"]
+            out["moments"] -= out["masters"]
+        return out, total - sum(out.values())
+    # NinjaRS: its expansions are the reduction without the masters, so
+    # nothing of the reduction timer is left over.
+    masters = stages.get("reduction: masters", 0.0)
+    return {"ninjars": total - masters, "masters": masters}, 0.0
+
+
 def _split(stages: dict) -> dict:
     out = {g: _stage(stages, names) for g, names in STAGE_GROUPS.items()}
-    out["ninjars"] = stages.get("reduction", 0.0) - stages.get(
-        "reduction: masters", 0.0
-    )
+    reduction, rest = _reduction(stages)
+    out.update(reduction)
+    # The reduction timer's rest outside its backend's sub-timers (TIRust's
+    # bookkeeping between moments and contraction): glue, never a stage.
+    if rest > 0:
+        out["glue"] += rest
     # A record without any per-point input timer (the build on loop before
     # lc-perf, 88657260: the native trees timer was a scratch commit of the
     # development campaign; since lc-perf the executor reports "trees")
@@ -393,8 +439,7 @@ def _split(stages: dict) -> dict:
     if not any(name in stages for name in STAGE_GROUPS["inputs"]):
         out["untimed"] = stages.get("other", 0.0)
         out["glue"] -= out["untimed"]
-    order = ("inputs", "numerator", "scatter", "ninjars", "masters", "glue", "untimed")
-    return {k: out[k] for k in order}
+    return {k: out[k] for k in STAGE_ORDER if k in out}
 
 
 # The gate batch (user 2026-10-28, slice-status DECISIONS ~08:20 item 2;
@@ -457,6 +502,10 @@ def _provider_runtime(proc: dict) -> dict:
                 "seconds_per_point": rec["median_seconds_per_point"],
                 "points": rec["points"],
                 "mode": rec["mode"],
+                # The settings of the timing (providers.py: "optimistic" =
+                # m-lit F4's most optimistic settings; a record without
+                # one is a production run).
+                "protocol": rec.get("protocol", "production"),
             }
             if name == "openloops":
                 entry["library"] = rec["library"]["name"]
@@ -2673,6 +2722,10 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
     the providers its runs record as unavailable, and the fastest matched
     one."""
     expected = [LI_SHORT[k] for k in row["references"] if k != "analytic"]
+    if not row["references"]:
+        # A row without any reference (LI-X1, an execution check: USER
+        # 2026-11-06 ~14:55): no provider is expected.
+        return {"status": "no reference", "reason": "no reference provider", "expected": []}
     if manifest is None:
         return {
             "status": "pending",
@@ -2790,16 +2843,40 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
 LI_UNCHECKED = "unchecked"
 
 
-def _li_paired(prov: dict, rec: dict) -> dict:
+# A provider of a row without a fixture timing record is matched when the
+# row's validation (lit.json) agrees with it within m-lit PLAN §4.0 L1.
+LI_MATCH_L1 = 1e-5
+
+
+def _li_paired(prov: dict, rec: dict, validation: dict | None = None) -> dict:
     """The row's provider entries with the times paired with the record
     ``rec`` (its ``providers.times``: the median over the unit's rounds,
     same core, F4 most optimistic); the fixture entries' match status and
     generation times kept, a provider the paired run did not time keeps its
-    fixture entry (listed, never filled)."""
+    fixture entry (listed, never filled). A row without a fixture provider
+    timing record (status "not run") takes the paired times alone; each is
+    matched when the row's validation (``validation``, lit.json) agrees
+    with that provider within LI_MATCH_L1, else shown unmatched with the
+    reason (no agreement recorded, or its deviation)."""
 
     paired = (rec.get("providers") or {}).get("times")
-    if not paired or prov.get("status") != "recorded":
+    if not paired or prov.get("status") not in ("recorded", "not run"):
         return prov
+    if prov.get("status") == "not run":
+        agree = {x["key"]: x["max_relative"] for x in (validation or {}).get("references", ())}
+        fixture = {}
+        for k in paired:
+            if k not in PROVIDERS:
+                continue
+            dev = agree.get(k)
+            if dev is None:
+                fixture[k] = {"match": "not matched (no agreement recorded in lit.json)"}
+            elif dev > LI_MATCH_L1:
+                fixture[k] = {"match": f"not matched (lit.json deviation {dev:.1e})"}
+            else:
+                fixture[k] = {}
+        prov = {**prov, "status": "recorded", "providers": fixture, "generation": {}}
+        prov.pop("reason", None)
     providers = dict(prov["providers"])
     src = f"{LI_TIMING} records[{rec['key']}, {rec['backend']}, {rec['revision'][:8]}]"
     for k, x in paired.items():
@@ -2842,6 +2919,41 @@ def _li_paired(prov: dict, rec: dict) -> dict:
     return out
 
 
+def _li_host_state(timing: dict | None, revisions: set) -> dict | None:
+    """The concurrency and host state of the unchecked records at
+    ``revisions`` (one compact provenance line): the units' concurrency, the
+    1-minute load average and MemAvailable over the rows' start and end, the
+    smallest per-row median CPU share of the timed calls, and how many rows
+    were re-timed once (a disturbed first sample)."""
+
+    recs = [
+        r
+        for r in (timing or {}).get("records", ())
+        if r.get("configuration") == LI_UNCHECKED
+        and any(str(r.get("revision", "")).startswith(v) for v in revisions)
+    ]
+    states = [s for r in recs for s in (r.get("host_state") or {}).values()]
+    if not states:
+        return None
+    loads = [float(s["loadavg"][0]) for s in states if s.get("loadavg")]
+    mem = [s["mem_available_gib"] for s in states if "mem_available_gib" in s]
+    shares = [r["cpu_share"]["median"] for r in recs if r.get("cpu_share")]
+    return {
+        "concurrency_max": max(
+            (
+                int(m.group())
+                for r in recs
+                if (m := re.match(r"\d+", str(r.get("concurrency") or "")))
+            ),
+            default=None,
+        ),
+        "load_1min": [min(loads), max(loads)] if loads else None,
+        "mem_available_gib_min": round(min(mem), 1) if mem else None,
+        "cpu_share_min": round(min(shares), 3) if shares else None,
+        "re_timed": len({r["key"] for r in recs if r.get("retimed")}),
+    }
+
+
 # The measured accuracy of the unchecked setting (lit-unchecked; DECISIONS
 # 2026-11-09 04:18): per row and backend, the binary64 finite part through
 # the public API against TIRust at 256 bits with supplied invariants
@@ -2863,9 +2975,42 @@ def _li_accuracy(acc: dict | None, key: str, backend: str) -> dict | None:
     and the failed points with their classes; ``note`` where any point lies
     above it or fails (the cell's accuracy note)."""
 
-    if acc is None or key not in acc["rows"] or backend not in acc["rows"][key]:
+    if acc is None or key not in acc["rows"]:
         return None
     row = acc["rows"][key]
+    cross = row.get("cross_backend")
+    if backend not in row and cross is not None:
+        # A row whose 256-bit truth is not obtainable within its row budget
+        # (the reason recorded): the two backends' difference at the timed
+        # points, labelled, never a truth (lit-report R2).
+        return {
+            "points": cross["points"],
+            "max_relative": cross["max_relative"],
+            "lax": acc["lax"],
+            "above": cross["above_1e-5"],
+            "worst": cross["max_relative"] if cross["above_1e-5"] else None,
+            "served_by": [],
+            # Points where either backend failed: not compared, and not
+            # either backend's own failure count (the timing record has
+            # those).
+            "failed": None,
+            "not_compared": cross.get("failed", 0),
+            "failed_classes": [],
+            "note": bool(cross["above_1e-5"]),
+            "cross_backend": True,
+            # Where measured: both backends against the 256-bit truth at the
+            # row's largest-difference points (which backend deviates).
+            **(
+                {"truth_at_points": cross["truth_at_points"]}
+                if cross.get("truth_at_points")
+                else {}
+            ),
+            "reason": cross.get("reason"),
+            "revision": row["revision"],
+            "source": f"{LI_ACCURACY} rows[{key}].cross_backend",
+        }
+    if backend not in row:
+        return None
     e = row[backend]
     above, failed = e["above_1e-5"], e["failed"]
     return {
@@ -2886,19 +3031,22 @@ def _li_accuracy(acc: dict | None, key: str, backend: str) -> dict | None:
 
 def _li_stages(rec: dict) -> dict | None:
     """The stage split of the separate instrumented run beside an unchecked
-    record (its ``stages``: trees + CT kets, dressing, scatter, reduction,
-    rest; labelled, never the timed call)."""
+    record (its ``stages``: the run's stages per point, verbatim), grouped as
+    Table 1's (``_split``: inputs = trees + CT kets, numerator, scatter, the
+    reduction backend's own stages, glue); labelled, never the timed
+    call."""
 
     st = rec.get("stages")
     if not st:
         return None
-    sec = st["seconds_per_point"]
+    if "rest" in st["seconds_per_point"]:
+        raise ValueError(
+            f"{LI_TIMING} record of {rec['key']} at {rec['revision'][:8]}: stages"
+            " in the grouped form before lit-report (re-collect them verbatim:"
+            " retime_unchecked.py _stage_split)"
+        )
     return {
-        "trees": sec["trees + CT kets"],
-        "dressing": sec["dressing"],
-        "scatter": sec["scatter"],
-        "reduction": sec["reduction"],
-        "rest": sec["rest"],
+        **_split(st["seconds_per_point"]),
         "total": st["total"],
         "label": st["label"],
         "batch": st["batch"],
@@ -3254,6 +3402,13 @@ def _li_cells(
         out["generation"] = _li_pending("generation", pending_pkg)
         out["timing"] = _li_pending("timing", pending_pkg)
         return out
+    if row.get("untimed"):
+        # A row the registry declares untimed (LI-X1, an execution check
+        # without a reference, USER 2026-11-06 ~14:55): its explicit marker
+        # with the registry's reason, never a time.
+        out["generation"] = {"status": "not timed", "reason": row["untimed"]}
+        out["timing"] = {"status": "not timed", "reason": row["untimed"]}
+        return out
     if files[LI_TIMING] is None:
         why = f"{LI_TIMING} not written yet ({row['served_by']})"
         out["generation"] = _li_pending("generation", why)
@@ -3274,14 +3429,38 @@ def _li_cells(
     if first.get("configuration") == LI_UNCHECKED:
         # The providers paired with the unchecked re-time (same unit, same
         # core): the row's provider times, its ratio and its gate.
-        prov = _li_paired(prov, first)
+        prov = _li_paired(prov, first, out.get("validation"))
         out["providers"] = prov
     # A record names its effective backend, a stopped one its request.
     name = first.get("backend", first.get("requested"))
     at = f"{row['key']}, {name}, {first['revision'][:8]}"
     src = f"{LI_TIMING} records[{at}]"
     gen = first.get("generation")
-    if gen is None and first.get("missing"):
+    pub = first.get("public_generation") or {}
+    if "seconds" in (pub.get("warm") or {}) and "seconds" in (pub.get("cold") or {}):
+        # The generation as a user runs it (lit-ewprep (5)): the public
+        # Generator from the row's card, warm (the cell: a second generation
+        # in the same cache) and cold (an empty cache: the model compiled and
+        # prepared), each with its peak RSS; the plan size from the
+        # instrumented run's engine generation.
+        out["generation"] = {
+            "status": "measured",
+            "public": True,
+            "seconds": pub["warm"]["seconds"],
+            "peak_gib": pub["warm"]["peak_gib"],
+            "cold": {k: pub["cold"][k] for k in ("seconds", "peak_gib")},
+            "plan_mb": (gen or {}).get("plan_mb"),
+            "revision": first["revision"][:8],
+            "host": first["host"],
+            "source": f"{src}.public_generation",
+        }
+        fg = prov.get("fastest_generation")
+        if fg is not None:
+            out["generation"]["ratio_to_fastest"] = (
+                out["generation"]["seconds"] / fg["seconds"]
+            )
+        gen = None
+    elif gen is None and first.get("missing"):
         out["generation"] = {"status": "not run", "reason": first["missing"]}
     elif gen is None:
         out["generation"] = {
@@ -3513,6 +3692,10 @@ def build_loop_induced(
                 if "auto_pairing" in r["timing"]
             ],
             "largest_instance_spread": max(c["instance_spread"] for c in timed),
+            # The runs' concurrency and host state (the provenance line).
+            "host_state": _li_host_state(
+                files[LI_TIMING], {c["revision"] for c in timed}
+            ),
             "replication": "docs/performance_reports/loop/README.md"
             " (unchecked Table 2)",
             # The cells' measured accuracy (DECISIONS 2026-11-09 04:18): no
@@ -3770,6 +3953,50 @@ def build() -> tuple[dict, Recency]:
             "configurations": configurations,
             "gate_decisions": decisions,
             "validation_decisions": ms.get("validation_decisions"),
+            # The settings of the provider timings Table 1 shows (m-lit F4,
+            # lit-report G5: "optimistic" where re-timed so).
+            "provider_protocols": sorted(
+                {
+                    x["protocol"]
+                    for g in groups
+                    for r in g["rows"]
+                    for x in (r["full_colour"].get("providers") or {}).values()
+                    if "protocol" in x
+                }
+            ),
+            # The timed points per optimistic provider record (smallest,
+            # largest): Recola's optimistic arm times only the stream points
+            # at the first point's scale (providers.py same_scale), stated
+            # beside its ratios.
+            "provider_points": {
+                name: [min(counts), max(counts)]
+                for name in sorted(
+                    {
+                        n
+                        for g in groups
+                        for r in g["rows"]
+                        for n in (r["full_colour"].get("providers") or {})
+                    }
+                )
+                if (
+                    counts := [
+                        x["points"]
+                        for g in groups
+                        for r in g["rows"]
+                        for n, x in (r["full_colour"].get("providers") or {}).items()
+                        if n == name
+                        and x.get("protocol") == "optimistic"
+                        and isinstance(x.get("points"), int)
+                    ]
+                )
+            },
+            # Why a provider kept its production record (g1.json meta label
+            # ``provider_kept``, written with the re-time's gate run).
+            **(
+                {"provider_kept": g1["provider_kept"]}
+                if g1.get("provider_kept")
+                else {}
+            ),
         },
         "groups": groups,
     }
@@ -3777,6 +4004,337 @@ def build() -> tuple[dict, Recency]:
     if six is not None:
         summary["preliminary"] = six
     return summary, recency
+
+
+# The backend-comparison table (m-lit Q40, PLAN §LIT-REPORT): TIRust and
+# NinjaRS under the same public unchecked setting (one no-pole binary64
+# evaluation per point, B = 128), for both process types. Loop-induced rows:
+# Table 2's unchecked records (each backend's time and stage split), each
+# backend's largest error against the 256-bit truth (LI_ACCURACY) and the
+# row's L6 verdict (lit.json, the checked default); Born-interfered rows:
+# Table 1's gated multiplicities, their two backend arms (BORN_BACKENDS,
+# written by lit-report's final re-time) with the largest TIRust-vs-NinjaRS
+# difference at the timed points, and LI-B1's L6 tally.
+BORN_BACKENDS = "backends-born.json"
+BACKEND_GROUPS = ("2->3", "2->4")
+BACKEND_RULE = (
+    "TIRust and NinjaRS each through the public API with reduction_unchecked"
+    " = True (Runtime.load + evaluate, poles off, binary64, B = 128, one"
+    " pinned thread); the ratio NinjaRS / TIRust; agreement: loop-induced each"
+    " backend's largest relative error against the 256-bit truth"
+    " (li-unchecked-accuracy.json; a row without a truth: the labelled"
+    " cross-backend difference) and the L6 verdict of the checked default"
+    " (lit.json); Born-interfered the largest TIRust-vs-NinjaRS relative"
+    " difference at the timed points and LI-B1's L6 (lit.json); a value"
+    " not measured prints its marker with the reason"
+)
+
+
+def _backend_cell(cell: dict | None, stages: dict | None) -> dict:
+    """One backend's entry of the backend table from a Table 2 cell (its
+    ``timing`` or ``timing.other_backend``)."""
+
+    if cell is None:
+        return {"status": "not timed", "reason": "no record of this backend"}
+    if cell.get("status") not in ("measured", "served") or "seconds_per_point" not in cell:
+        out = {"status": cell.get("status", "not timed")}
+        out["reason"] = cell.get("reason") or cell.get("label")
+        return out
+    return {
+        "status": "measured",
+        "seconds_per_point": cell["seconds_per_point"],
+        "stages": stages,
+        "accuracy": cell.get("accuracy"),
+    }
+
+
+def _li_l6(lit: dict | None, key: str) -> dict | None:
+    """A loop-induced row's L6 verdict (lit.json, binary64, the checked
+    default): status, TIRust's served points and the largest finite-part
+    difference of the two backends on the points both serve."""
+
+    if lit is None or key not in lit["rows"]:
+        return None
+    runs = lit["rows"][key].get("runs") or {}
+    out = []
+    for name, run in runs.items():
+        double = ((run.get("L6") or {}).get("double")) or {}
+        if "status" not in double:
+            continue
+        out.append(
+            {
+                "run": name,
+                "status": double["status"],
+                "tirust_served": double.get("tirust_served"),
+                "of": double.get("of"),
+                "finite_max_relative": double.get("finite_max_relative"),
+            }
+        )
+    return {"runs": out, "source": f"{LI_VALIDATION} rows[{key}].runs.*.L6.double"} if out else None
+
+
+def _born_l6(lit: dict | None) -> dict | None:
+    """LI-B1's L6 tally over its campaign rows (lit.json ids['LI-B1'])."""
+
+    if lit is None or "LI-B1" not in lit["ids"]:
+        return None
+    b1 = lit["ids"]["LI-B1"]
+    tally: dict[str, int] = {}
+    for campaign in (b1.get("campaigns") or {}).values():
+        for row in (campaign.get("rows") or {}).values():
+            tally[row["status"]] = tally.get(row["status"], 0) + 1
+    return {
+        "status": b1["status"],
+        "rows": tally,
+        "source": f"{LI_VALIDATION} ids['LI-B1'].campaigns",
+    }
+
+
+def build_backend_table(summary: dict, loop_induced: dict, data: Path = DATA) -> dict:
+    """The backend-comparison table (``BACKEND_RULE``) from the records
+    present: every value names its revision; what is not measured carries
+    its marker."""
+
+    lit = _li_input(data, LI_VALIDATION)
+    born = _li_input(data, BORN_BACKENDS)
+    # The lax precision of the accuracy record: a Born-interfered TIRust-vs-
+    # NinjaRS difference above it carries its note (DECISIONS 06:21 (1)).
+    lax = (_li_input(data, LI_ACCURACY) or {}).get("lax")
+    li_rows = []
+    for g in loop_induced["groups"]:
+        for r in g["rows"]:
+            m = r["timing"]
+            if not m.get("unchecked"):
+                continue
+            # The cell is TIRust's (the default) unless only NinjaRS ran.
+            backends = {}
+            if m.get("backend"):
+                backends[m["backend"]] = _backend_cell(m, m.get("stages"))
+            o = m.get("other_backend")
+            if o is not None:
+                backends[o["backend"]] = _backend_cell(
+                    {**o, "status": o.get("status")}, o.get("stages")
+                )
+            ti, nj = backends.get("tirust"), backends.get("ninjars")
+            row = {
+                "key": r["key"],
+                "math": r["math"],
+                "group": g["name"],
+                "revision": m.get("revision"),
+                "tirust": ti or _backend_cell(None, None),
+                "ninjars": nj or _backend_cell(None, None),
+                "l6": _li_l6(lit, r["key"]),
+                "source": m.get("source"),
+            }
+            if ti and nj and "seconds_per_point" in ti and "seconds_per_point" in nj:
+                row["ratio"] = nj["seconds_per_point"] / ti["seconds_per_point"]
+            li_rows.append(row)
+    not_unchecked = [
+        r["key"]
+        for g in loop_induced["groups"]
+        for r in g["rows"]
+        if not r["timing"].get("unchecked")
+    ]
+    born_rows = []
+    records = {}
+    for rec in (born or {}).get("records", []):
+        records.setdefault(rec["key"], {})[rec["backend"]] = rec
+    for g in summary["groups"]:
+        if g["name"] not in BACKEND_GROUPS:
+            continue
+        for r in g["rows"]:
+            found = records.get(r["key"], {})
+            row = {"key": r["key"], "math": r["math"], "group": g["name"]}
+            for backend in ("tirust", "ninjars"):
+                rec = found.get(backend)
+                if rec is None:
+                    row[backend] = {
+                        "status": "not timed",
+                        "reason": "timed in lit-report's final re-time (public API,"
+                        " reduction_unchecked = True)",
+                    }
+                elif rec.get("missing"):
+                    row[backend] = {"status": "not run", "reason": rec["missing"]}
+                elif "seconds_per_point" not in rec:
+                    row[backend] = {
+                        "status": "failed closed",
+                        "reason": f"{rec.get('failed_points')} of {rec.get('batch')} points failed",
+                    }
+                else:
+                    row[backend] = {
+                        "status": "measured",
+                        "seconds_per_point": rec["seconds_per_point"],
+                        "stages": _split(rec["stages_per_point"])
+                        if rec.get("stages_per_point")
+                        else None,
+                        "revision": rec["revision"][:8],
+                        "source": f"{BORN_BACKENDS} records[{r['key']}, {backend}]",
+                    }
+            ti, nj = row["tirust"], row["ninjars"]
+            if "seconds_per_point" in ti and "seconds_per_point" in nj:
+                row["ratio"] = nj["seconds_per_point"] / ti["seconds_per_point"]
+            agreement = (found.get("tirust") or {}).get("agreement")
+            if agreement is not None:
+                row["agreement"] = {
+                    **agreement,
+                    "lax": lax,
+                    "note": lax is not None and agreement["max_relative"] > lax,
+                }
+            born_rows.append(row)
+    return {
+        "rule": BACKEND_RULE,
+        "loop_induced": {
+            "rows": li_rows,
+            "not_unchecked": not_unchecked,
+            "accuracy": f"data/{LI_ACCURACY}",
+        },
+        "born_interfered": {
+            "rows": born_rows,
+            "l6": _born_l6(lit),
+            "file": f"data/{BORN_BACKENDS}",
+            "present": born is not None,
+        },
+    }
+
+
+# The "Missing or incomplete" box (PLAN §LIT-REPORT; the essentials form,
+# README 'The essentials rule'): generated from the two summaries, no hand
+# text. One line per reason: the cells without a value, the gated rows whose
+# verdict is fail or open (with the stage that dominates pyAmpliCol's time),
+# the partial validation cells and the accuracy notes above the lax
+# precision; rows sharing a line's reason are listed on it.
+MISSING_NOTE_CHARS = 160
+
+
+def _short(text: str | None) -> str:
+    """A data note's first clause, cut at ``MISSING_NOTE_CHARS``."""
+
+    first = (text or "").split("; ")[0]
+    if len(first) > MISSING_NOTE_CHARS:
+        first = first[: MISSING_NOTE_CHARS - 1].rstrip() + "…"
+    return first
+
+
+def _partial(note: str | None) -> str:
+    """The partial checks a lit.json note names (its 'Lk partial' clauses)
+    and TIRust's failed binary64 fixture points, without the run names."""
+
+    text = note or ""
+    checks = sorted(set(re.findall(r"\b(L\d+) partial", text)), key=lambda c: int(c[1:]))
+    failed = re.findall(r"TIRust fails (\d+) of (\d+) binary64 points closed", text)
+    served = re.findall(r"TIRust serves (\d+)/(\d+) points", text)
+    out = ", ".join(checks) if checks else _short(text)
+    if failed:
+        out += "; TIRust fails " + ", ".join(f"{a} of {b}" for a, b in failed) + " binary64 fixture points closed"
+    elif served:
+        out += "; TIRust serves " + ", ".join(f"{a}/{b}" for a, b in served) + " fixture points"
+    return out + " (checked default; lit.json)"
+
+
+def _dominant(stages: dict | None) -> dict | None:
+    """The stage with the largest share of a split (its key and share)."""
+
+    if not stages:
+        return None
+    shares = {k: stages[k] for k in STAGE_ORDER if stages.get(k, 0) > 0}
+    total = sum(shares.values())
+    if not total:
+        return None
+    k = max(shares, key=shares.get)
+    return {"stage": k, "share": shares[k] / total}
+
+
+def build_missing(summary: dict, loop_induced: dict) -> list[dict]:
+    """The box's lines (``kind``: no value, gate, validation, accuracy),
+    Table 1's first, each with its rows (``math`` labels) and its reason."""
+
+    lines: dict[tuple, dict] = {}
+
+    def add(kind: str, table: str, math: str, text: str, **extra: object) -> None:
+        entry = lines.setdefault(
+            (kind, table, text), {"kind": kind, "table": table, "text": text, "rows": []}
+        )
+        entry["rows"].append(math)
+        for k, v in extra.items():
+            entry.setdefault(k, []).append(v)
+
+    names = {"generation": "generation", "full_colour": "full colour",
+             "leading_colour": "leading colour"}
+    for g in summary["groups"]:
+        for r in g["rows"]:
+            for cell, word in names.items():
+                m = r[cell]["main"]
+                if m.get("status") != "measured":
+                    add("no value", "1", r["math"], f"{word}: {m.get('status')} ({_short(m.get('reason'))})")
+            fc = r["full_colour"]
+            gate = fc["main"].get("gate") or {}
+            if gate.get("status") in ("fail", "open"):
+                add("gate", "1", r["math"], f"{gate['status']}",
+                    ratio=gate.get("ratio_to_limit"), dominant=_dominant(fc["main"].get("stages")))
+            if fc["main"].get("status") == "measured" and fc.get("gate_rule", "").startswith("no gate (no matched"):
+                add("no value", "1", r["math"], "no matched provider time (no gate)")
+    for g in loop_induced["groups"]:
+        for r in g["rows"]:
+            label = r["math"] or r["label"]
+            gen, tim = r["generation"], r["timing"]
+            if gen.get("status") != "measured" and tim.get("status") != "measured" and gen.get("reason") == tim.get("reason"):
+                add("no value", "2", label, f"{tim['status']}: {_short(tim.get('reason'))}")
+            else:
+                for cell, m in (("generation", gen), ("time", tim)):
+                    if m.get("status") != "measured":
+                        add("no value", "2", label, f"{cell}: {m.get('status')} ({_short(m.get('reason') or m.get('label'))})")
+            prov = r["providers"]
+            if prov.get("status") not in ("recorded", "no reference"):
+                add("no value", "2", label, f"providers: {prov.get('status')} ({_short(prov.get('reason'))})")
+            elif prov.get("status") == "recorded" and prov.get("fastest") is None:
+                why = sorted(
+                    {f"{x['status']}: {x.get('reason')}" for x in prov["providers"].values() if "status" in x}
+                )
+                add("no value", "2", label, f"no matched provider time ({_short(' / '.join(why))})")
+            gate = tim.get("gate") or {}
+            if gate.get("status") in ("fail", "open"):
+                add("gate", "2", label, f"{gate['status']} on {gate.get('backend_label', 'TIRust')}",
+                    ratio=gate.get("ratio_to_limit"), dominant=_dominant(tim.get("stages")))
+            o = tim.get("other_backend") or {}
+            if "status" in o and o["status"] not in ("measured", "served") and not (o.get("accuracy") or {}).get("failed"):
+                # The other backend's cell without a value whose failures no
+                # accuracy line below names.
+                add("no value", "2", label, f"{o.get('backend_label')} time: {o.get('status')} ({_short(o.get('reason') or o.get('label'))})")
+            v = r["validation"]
+            if v.get("status") == "partial":
+                add("validation", "2", label, f"partial: {_partial(v.get('note'))}")
+            for c in (tim, tim.get("other_backend") or {}):
+                a = c.get("accuracy") or {}
+                if a.get("note") and a.get("cross_backend"):
+                    # No 256-bit truth: the two backends' difference, one
+                    # labelled line per row, never an error of either.
+                    at = a.get("truth_at_points")
+                    add("accuracy", "2", label,
+                        f"TIRust vs NinjaRS unchecked (no 256-bit truth, cross-backend, not a truth): "
+                        f"{a['above']}/{a['points']} points differ above {a['lax']:g}, largest {a['worst']:.1e}"
+                        + (
+                            f"; at its {len(at['points'])} largest-difference points against the 256-bit"
+                            f" truth: TIRust {at['tirust_max_relative']:.1e}, NinjaRS"
+                            f" {at['ninjars_max_relative']:.1e}"
+                            if at
+                            else ""
+                        ))
+                    break
+                if a.get("note"):
+                    parts = []
+                    if a["above"]:
+                        parts.append(f"{a['above']}/{a['points']} points above {a['lax']:g}, worst {a['worst']:.1e}")
+                    if a["failed"]:
+                        parts.append(f"{a['failed']} points fail ({', '.join(a['failed_classes'])})")
+                    add("accuracy", "2", label, f"{c.get('backend_label')} unchecked: {'; '.join(parts)}")
+    for r in (loop_induced.get("backends") or {}).get("born_interfered", {}).get("rows", []):
+        a = r.get("agreement") or {}
+        if a.get("note"):
+            add("accuracy", "3", r["math"],
+                f"Born-interfered TIRust vs NinjaRS unchecked (cross-backend, not a truth): largest difference"
+                f" {a['max_relative']:.1e} over {a['points']} points, above {a['lax']:g}")
+    order = {"no value": 0, "gate": 1, "validation": 2, "accuracy": 3}
+    return sorted(lines.values(), key=lambda e: (e["table"], order[e["kind"]]))
 
 
 def report_meta(summary: dict, loop_induced: dict, recency: Recency, ms: dict) -> dict:
@@ -3824,6 +4382,8 @@ def main() -> None:
     ms = _load(DATA / "milestone.json")
     loop_induced = build_loop_induced(ms, recency)
     loop_induced["figure"] = li_figure(loop_induced, summary["meta"]["gate_factor"])
+    loop_induced["backends"] = build_backend_table(summary, loop_induced)
+    loop_induced["missing"] = build_missing(summary, loop_induced)
     summary["meta"]["report"] = report_meta(summary, loop_induced, recency, ms)
     out.write_text(json.dumps(summary, indent=1) + "\n")
     out_li.write_text(json.dumps(loop_induced, indent=1) + "\n")

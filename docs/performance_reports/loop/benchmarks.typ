@@ -152,30 +152,39 @@
     text(5.9pt, fill: c, weight: "bold")[#word#if "decision" in g [‡] #mult2(g.ratio_to_limit)])
 }
 #let plain-chip(body) = box(fill: white, stroke: 0.4pt + luma(150), inset: (x: 2pt, y: 0.8pt), radius: 1.5pt, baseline: 0.8pt, text(5.9pt, fill: luma(80), weight: "bold", body))
-#let stage-keys = ("inputs", "numerator", "scatter", "ninjars", "masters", "glue", "untimed")
-#let stage-label = (inputs: [inputs], numerator: [numerator], scatter: [scatter], ninjars: [NinjaRS], masters: [masters], glue: [glue], untimed: [untimed])
-#let stage-bar(st, width: 2.0cm, keys: stage-keys, labels: stage-label, colours: seg-colours) = {
+#let key-swatch(fill) = box(baseline: 0.5pt, rect(width: 5pt, height: 5pt, fill: fill, stroke: 0.3pt + luma(200)))
+// The report's stages (scripts/build_summary.py STAGE_ORDER; the MASTER_PLAN
+// stage-split rule): one colour per stage in every bar, table and legend.
+// The reduction is split into its backend's own stages: NinjaRS (its
+// expansions) and the masters (oneloopmaster), or TIRust's tensor moments and
+// contraction (its masters only where a profiled arm recorded them).
+#let stage-keys = ("inputs", "numerator", "scatter", "ninjars", "moments", "contraction", "masters", "glue", "untimed")
+#let stage-label = (inputs: [inputs], numerator: [numerator], scatter: [scatter], ninjars: [NinjaRS], moments: [TIR moments], contraction: [contraction], masters: [masters], glue: [glue], untimed: [untimed])
+#let stage-colour = (inputs: seg-colours.at(0), numerator: seg-colours.at(1), scatter: seg-colours.at(2), ninjars: seg-colours.at(3), moments: rgb("#0a8f9e"), contraction: rgb("#9b6a2f"), masters: seg-colours.at(4), glue: seg-colours.at(5), untimed: seg-colours.at(6))
+// The stages a split carries (a stage another backend has is absent).
+#let stage-keys-of(st) = stage-keys.filter(k => k in st)
+#let stage-bar(st, width: 2.0cm) = {
+  let keys = stage-keys-of(st)
   let vals = keys.map(k => calc.max(st.at(k), 0))
   let tot = vals.sum()
   let top = keys.zip(vals).sorted(key: x => x.at(1)).last()
   box(width: width, height: 4.6pt, baseline: 0.5pt, fill: white, outset: 0.8pt, radius: 1pt, {
     let x = 0pt
-    for (k, v) in vals.enumerate() {
+    for (k, v) in keys.zip(vals) {
       let w = width * v / tot
-      if w > 0.9pt { place(dx: x, rect(width: w - 0.6pt, height: 4.6pt, fill: colours.at(k), stroke: none)) }
+      if w > 0.9pt { place(dx: x, rect(width: w - 0.6pt, height: 4.6pt, fill: stage-colour.at(k), stroke: none)) }
       x += w
     }
   })
   h(4pt)
-  box[#labels.at(top.at(0)) #fixed(100 * top.at(1) / tot, 0)~%]
+  box[#stage-label.at(top.at(0)) #fixed(100 * top.at(1) / tot, 0)~%]
 }
 // Table 2's stage bar (lit-unchecked): the stage split of the separate
-// instrumented run (summary-li.json timing.stages; never the timed call):
-// trees + CT kets, dressing, scatter, reduction, the rest of the call.
-#let li-stage-keys = ("trees", "dressing", "scatter", "reduction", "rest")
-#let li-stage-label = (trees: [trees], dressing: [dressing], scatter: [scatter], reduction: [reduction], rest: [rest])
-#let li-seg-colours = (seg-colours.at(0), seg-colours.at(1), seg-colours.at(2), seg-colours.at(3), luma(170))
-#let li-stage-bar(st) = if st == none [no instrumented run] else { stage-bar(st, width: 1.6cm, keys: li-stage-keys, labels: li-stage-label, colours: li-seg-colours) }
+// instrumented run (summary-li.json timing.stages; never the timed call),
+// grouped as Table 1's.
+#let li-stage-bar(st) = if st == none [no instrumented run] else { stage-bar(st, width: 1.6cm) }
+// A legend of stage swatches (the keys a table uses).
+#let stage-legend(keys) = keys.map(k => box[#key-swatch(stage-colour.at(k))#h(1pt)#stage-label.at(k)]).join(h(3pt))
 #let cell-lines(lines) = for l in lines.filter(l => l != none) { v(2.7pt); block(spacing: 0pt, text(6.4pt, l)) }
 #let valued(fill: none, value, mult: none, ..lines) = table.cell(fill: fill, breakable: false, {
   set par(leading: 0.34em, justify: false)
@@ -379,15 +388,19 @@
   }
 }
 
-// Full-colour column.
+// Full-colour column. ᵖ: a production timing beside providers re-timed in
+// their most optimistic settings (m-lit F4, lit-report G5; summary.json
+// meta.provider_protocols and each provider's protocol).
+#let t1-optimistic = "optimistic" in S.meta.at("provider_protocols", default: ())
+#let t1-mark(x) = if t1-optimistic and x.at("protocol", default: "production") == "production" [#super[p]]
 #let t1-fc(r) = {
   let c = r.full_colour
   let (m, f) = (c.main, c.at("fastest", default: none))
   let prov-line = if f == none { none } else {
-    let rest = c.providers.pairs().filter(((k, x)) => k != f.key and "seconds_per_point" in x).sorted(key: ((k, x)) => x.seconds_per_point).map(((k, x)) => [#pkey(k) #dur(x.seconds_per_point)])
+    let rest = c.providers.pairs().filter(((k, x)) => k != f.key and "seconds_per_point" in x).sorted(key: ((k, x)) => x.seconds_per_point).map(((k, x)) => [#pkey(k) #dur(x.seconds_per_point)#t1-mark(x)])
     let gone = c.providers.pairs().filter(((k, x)) => x.status == "unavailable" and k != f.key).map(((k, x)) => if "outside_protocol" in x [#pkey(k) #dur(x.outside_protocol.seconds_per_point) outside protocol] else if k == "openloops" [#pkey(k) no library] else [#pkey(k) no production timing])
     let nr = c.providers.pairs().filter(((k, x)) => x.status == "not run").map(((k, x)) => [#pkey(k) not exported])
-    let best = if f.at("bound", default: none) == "upper" [#pkey(f.key) ≤#dur(f.seconds_per_point)] else [#pkey(f.key) #dur(f.seconds_per_point)]
+    let best = if f.at("bound", default: none) == "upper" [#pkey(f.key) ≤#dur(f.seconds_per_point)] else [#pkey(f.key) #dur(f.seconds_per_point)#t1-mark(c.providers.at(f.key))]
     ((text(weight: "bold", best),) + rest + gone + nr).join([~· ])
   }
   // Rows without a G1 record: the providers' production references (text
@@ -518,7 +531,9 @@
 
 // Compact visual legend of Table 1 (its text: "Reading the tables").
 #let m-rows = all-rows.filter(r => "adopted_schedule" in r.leading_colour.main)
-#let key-swatch(fill) = box(baseline: 0.5pt, rect(width: 5pt, height: 5pt, fill: fill, stroke: 0.3pt + luma(200)))
+// The stages Table 1's bars carry (its rows' backends; untimed only where a
+// build had no input timers).
+#let t1-stage-keys = stage-keys.filter(k => (k != "untimed" or t1-untimed) and all-rows.any(r => { let m = r.full_colour.main; m.status == "measured" and m.at("stages", default: none) != none and k in m.stages }))
 #block(breakable: false, width: 100%, above: 1.0em, below: 0.9em, {
   set text(6.9pt, font: sans, stretch: 87.5%)
   set par(justify: false, leading: 0.5em)
@@ -534,7 +549,7 @@
       [*Gate* #h(2pt) #gate-chip((status: "pass", ratio_to_limit: 0.25)) #gate-chip((status: "fail", ratio_to_limit: 1.4)) #gate-chip((status: "open", ratio_to_limit: 1.0)) #gate-chip((status: thr-rule.verdict, ratio_to_limit: 1.4)) #h(2pt) #text(fill: ink2)[time ÷ limit]]
       linebreak()
       [*Stages* #h(2pt) ]
-      for (k, n) in stage-keys.enumerate() { if n != "untimed" or t1-untimed { box[#key-swatch(seg-colours.at(k))#h(1.5pt)#stage-label.at(n)]; h(4pt) } }
+      for n in t1-stage-keys { box[#key-swatch(stage-colour.at(n))#h(1.5pt)#stage-label.at(n)]; h(4pt) }
       linebreak()
       [#key-swatch(neutral) missing (why) #h(4pt) #key-swatch(white) no colour: generation, LC #h(4pt) † within estimate #h(4pt) ¶ reference's own (DD)#if decided-rows.len() > 0 or accepted-rows.len() > 0 [ #h(4pt) ‡ user decision] #h(4pt) ML MadLoop · Rc Recola · OL OpenLoops]
     },
@@ -543,7 +558,7 @@
 
 
 #figure(kind: table,
-  caption: [*Born-interfered one-loop processes* (the one-loop amplitude interfered with the Born). How to read it: #link(<reading>)[after Table 3].],
+  caption: [*Born-interfered one-loop processes* (the one-loop amplitude interfered with the Born). How to read it: #link(<reading>)[at the end].],
   {
     set text(7pt, font: sans, stretch: 87.5%)
     set par(justify: false)
@@ -601,15 +616,12 @@
 // middle dot; any name milestone.json declares).
 #let li-group-title(name) = name.split(" / ").map(part => { let xs = part.split("->"); if xs.len() == 2 and xs.all(x => x.trim().len() > 0) { $#xs.at(0).trim() -> #xs.at(1).trim()$ } else { part } }).join([ · ])
 // Missing-cell titles; the batch statuses take Table 1's words (status-title).
-#let li-title(c) = if c.status in ("not batched", "no gate batch") { status-title(c) } else { (pending: [pending], "not run": [not run], "not recorded": [not recorded], "failed closed": [failed closed], refused: [refused]).at(c.status, default: c.status) }
+#let li-title(c) = if c.status in ("not batched", "no gate batch") { status-title(c) } else { (pending: [pending], "not run": [not run], "not timed": [not timed], "not recorded": [not recorded], "failed closed": [failed closed], refused: [refused]).at(c.status, default: c.status) }
 // The other backend beside the cell: its time where it served every point
 // of every block, else its outcome (points failed closed per block and the
 // recorded causes, or the refusal): never a time of a call that failed
 // points (summary-li.json other_backend).
-// † marks TIRust at the slice's shipped TirOptions (m-lit F4; the re-time at
-// F3's target accuracy is lit-tirust-default's).
-#let li-tir-mark(x) = if x.at("tir_options", default: none) == "shipped" [†]
-#let li-other(o) = if o.status == "served" { box[#o.backend_label#li-tir-mark(o) #dur(o.seconds_per_point) (#o.label)] } else [#o.backend_label#li-tir-mark(o): #o.label]
+#let li-other(o) = if o.status == "served" { box[#o.backend_label #dur(o.seconds_per_point) (#o.label)] } else [#o.backend_label: #o.label]
 // A provider timed on the row that is not matched (its values no
 // reference, summary-li.json providers.fastest_unmatched): said in the cell
 // with the multiplier to it (uncoloured, never the gate's).
@@ -622,6 +634,7 @@
 #let li-prov-line(r) = {
   let p = r.providers
   if p.status == "pending" [providers pending (lit-ref): #p.expected.join(" · ")]
+  else if p.status == "no reference" [#p.reason]
   else if p.status == "not run" [#p.expected.join(" · "): #p.reason]
   else {
     // Timed providers by time (the fastest in bold), then the others grouped
@@ -646,7 +659,7 @@
 #let li-chip(g) = {
   if g.status in ("pass", "fail", "open") { gate-chip((status: g.status, ratio_to_limit: g.ratio_to_limit)) } else { plain-chip[#g.label.replace("->", "→")] }
   // lit-perf's verdict is the gated backend's (TIRust, PLAN §5.2).
-  if "backend_label" in g { text(5.6pt, fill: ink2)[ on #g.backend_label#li-tir-mark(g)] }
+  if "backend_label" in g { text(5.6pt, fill: ink2)[ on #g.backend_label] }
 }
 #let li-process(r) = table.cell(breakable: false, {
   set par(leading: 0.34em, justify: false)
@@ -663,7 +676,14 @@
   let p = r.providers
   let gens = if p.status == "recorded" { p.generation } else { (:) }
   let pline = if gens.len() == 0 { none } else { gens.pairs().sorted(key: ((k, s)) => s).map(((k, s)) => [#pkey(k) #dur(s)]).join([~· ]) }
-  if m.status == "measured" {
+  if m.status == "measured" and m.at("public", default: false) {
+    // The public Generator from the row's card (lit-ewprep (5)): warm, the
+    // cell (a second generation in the same cache), cold beneath (an empty
+    // cache: the model compiled and prepared), each with its peak RSS.
+    valued(fill: none, dur(m.seconds), mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
+      [cold #dur(m.cold.seconds) · #gib(m.cold.peak_gib) peak],
+      [warm #gib(m.peak_gib) peak#if m.plan_mb != none [ · plan #box[#sig(m.plan_mb)~MB]]], pline)
+  } else if m.status == "measured" {
     // The engine's generation: generate + filter + plan export (the provider
     // ratio on it); the optional generation-time probes (validation, off by
     // default) apart beneath, with their carrier, where the record ran them.
@@ -683,7 +703,7 @@
 // accuracy.json, DECISIONS 2026-11-09 04:18): against the 256-bit truth, the
 // largest error; the note where points lie above the lax precision or fail.
 #let li-acc-served(a) = if a.served_by == ("last resort",) [, all served by the gate-0 PV last resort] else if a.served_by == ("checked refused",) [, finite values where the checked mode refuses] else if a.served_by == ("checked served",) [, also in the checked mode] else []
-#let li-acc-line(a) = if a == none { none } else if not a.note { dim[vs 256-bit truth (#a.points pts): max #esci(a.max_relative)] } else {
+#let li-acc-line(a) = if a == none { none } else if a.at("cross_backend", default: false) { (if a.note { text.with(fill: fail-ink, weight: "bold") } else { dim })[TIRust vs NinjaRS (#a.points pts; no 256-bit truth within the row budget): max #esci(a.max_relative)#if a.above > 0 [, #a.above pts above #esci(a.lax)]#if a.at("not_compared", default: 0) > 0 [; #a.not_compared pts not compared (a backend failed them)]#{ let at = a.at("truth_at_points", default: none); if at != none [; vs 256-bit truth at its #at.points.len() largest-difference pts: TIRust #esci(at.tirust_max_relative), NinjaRS #esci(at.ninjars_max_relative)] }] } else if not a.note { dim[vs 256-bit truth (#a.points pts): max #esci(a.max_relative)] } else {
   text(fill: fail-ink, weight: "bold")[accuracy: #if a.above > 0 [#a.above/#a.points pts above #esci(a.lax), worst #esci(a.worst)#li-acc-served(a)]#if a.above > 0 and a.failed > 0 [; ]#if a.failed > 0 [#a.failed pts fail (#a.failed_classes.join(", ")), the call timed whole]]
 }
 // "auto" with the setting against the TIRust arm, paired in the same unit
@@ -703,17 +723,16 @@
       [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label) (#raw(m.requested)) #h(1fr) #li-stage-bar(m.stages)],
       li-acc-line(m.at("accuracy", default: none)),
       if o != none { li-other-line(o) },
-      if o != none { li-acc-line(o.at("accuracy", default: none)) },
+      // A cross-backend difference belongs to neither backend: printed once,
+      // under the TIRust line (DECISIONS 2026-11-11 06:46 T3).
+      if o != none { let oa = o.at("accuracy", default: none); if oa != none and oa.at("cross_backend", default: false) and m.at("accuracy", default: none) != none { none } else { li-acc-line(oa) } },
       if "auto_pairing" in m { li-auto-line(m.auto_pairing) })
   } else if m.status == "measured" {
     valued(fill: if "ratio_to_fastest" in m { ratio-fill(m.ratio_to_fastest) } else { none }, dur(m.seconds_per_point),
       mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
       [#li-prov-line(r) #h(1fr) $B = #m.batch$],
       li-match-line(r),
-      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "requested" in m [ (#raw(m.requested))]#if "other_backend" in m [ · #li-other(m.other_backend)]],
-      // Beside the unchecked re-time, a row it did not re-time keeps its
-      // earlier record: its configuration said in the cell.
-      if li-meta.at("unchecked", default: none) != none { dim[earlier record: checked backends, not re-timed unchecked] })
+      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "requested" in m [ (#raw(m.requested))]#if "other_backend" in m [ · #li-other(m.other_backend)]])
   } else {
     absent(li-title(m), if "requested" in m [#raw(m.requested) (#if "backend_label" in m { m.backend_label } else [backend #m.at("effective", default: "not resolved")]): #m.at("reason", default: m.label)] else { m.at("reason", default: none) }, li-prov-line(r),
       // The gated backend's verdict and the other backend beside a failed
@@ -723,7 +742,7 @@
 }
 // Generation and timing pending, or not run, for the same reason: one
 // marker over both.
-#let li-cells(r) = if r.generation.status in ("pending", "not run") and r.timing.status == r.generation.status and r.generation.at("reason", default: none) == r.timing.at("reason", default: none) {
+#let li-cells(r) = if r.generation.status in ("pending", "not run", "not timed") and r.timing.status == r.generation.status and r.generation.at("reason", default: none) == r.timing.at("reason", default: none) {
   (absent(li-title(r.timing), colspan: 2, r.timing.reason, li-prov-line(r)),)
 } else { (li-generation(r), li-timing(r)) }
 // The provenance row of the loop-induced table (one line): pyAmpliCol's
@@ -735,42 +754,45 @@
 #let li-our-hosts = li-timed.map(r => r.timing.host).dedup().sorted()
 #let li-hosts = li-rows.filter(r => r.providers.status == "recorded").map(r => r.providers.providers.values().filter(x => "host" in x).map(x => x.host)).flatten().dedup().sorted()
 #let li-engine = (revision: li-meta.engine_on_loop, native_build: li-meta.native_build_on_loop.name, native_digest: li-meta.native_build_on_loop.digest)
+// The stages Table 2's bars carry (both backends of every row).
+#let li-stage-used = stage-keys.filter(k => k != "untimed" and li-timed.any(r => (r.timing.at("stages", default: none), r.timing.at("other_backend", default: (:)).at("stages", default: none)).any(s => s != none and k in s and s.at(k) > 0)))
 // The protocol line of the unchecked re-time (lit-unchecked (4)).
 #let li-unchecked = li-meta.at("unchecked", default: none)
 #let li-protocol = if li-unchecked != none [*Protocol:* #raw(li-unchecked.setting) (`Runtime.load` / `evaluate` keyword; config `evaluation.reduction_unchecked`), explicit `tirust` and `ninjars`; `poles="none"`, no stability check, no rescue; $B = 128$ per call (median over rounds); one thread pinned to one core (`taskset`, `RAYON_NUM_THREADS=1`); the 128 distinct stream points; #li-unchecked.instances.map(str).join("/") fresh runtimes per arm in rotated order, the median of their medians (spread ×: largest/smallest); providers F4 most optimistic, timed in the same unit on the same core, alternating with pyAmpliCol; engine #li-unchecked.revisions.map(raw).join(", ")#if not li-unchecked.lit_dress.contains(true) [ (before `lit-dress`)]; replication: #raw(li-unchecked.replication)]
 #let li-head = {
   let ours = if li-builds.len() == 0 [no pyAmpliCol record at this head: every row *pending*, served by the package named in its cell · engine #raw(li-engine.revision)#native-of(li-engine)]
     else [*pyAmpliCol:* #li-builds.map(x => [engine #raw(x.revision)#native-of(x)]).join([, ]) on #li-our-hosts.join(", ")#if li-meta.landed.len() > 0 [ (packages landed: #li-meta.landed.map(raw).join(", "))]]
-  if li-unchecked != none [#ours · cells of the #li-unchecked.rows re-timed rows: #li-meta.default_backend with the unchecked setting (= `auto` with it: shown paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")), NinjaRS unchecked beside; the other rows keep their earlier record (`auto`, checked); gate on #li-meta.default_backend · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated \ #li-protocol] else [#ours · cells: the backend `auto` serves; gate on #li-meta.default_backend (the loop-induced default) · providers: #if "optimistic" in li-meta.at("provider_protocols", default: ()) [each in its most optimistic settings (`lit-perf`; #super[p] `lit-ref`'s production record)] else [`lit-ref`'s production timing records]#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated]
+  if li-unchecked != none [#ours · cells: #li-meta.default_backend with the unchecked setting (= `auto` with it: shown paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")), NinjaRS unchecked beside#if li-unchecked.rows < li-timed.len() [; #(li-timed.len() - li-unchecked.rows) other rows keep their earlier record (`auto`, checked)]; gate on #li-meta.default_backend · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ")#{ let hs = li-unchecked.at("host_state", default: none); if hs != none [ · host state: up to #hs.concurrency_max rows timed in parallel units, 1-min load #hs.load_1min.map(x => str(calc.round(x))).join("–"), MemAvailable ≥ #hs.mem_available_gib_min GiB, CPU share of the timed calls ≥ #hs.cpu_share_min (median per row)#if hs.re_timed > 0 [, #hs.re_timed rows re-timed once on another core (a disturbed first sample, or a stream regenerated; named in their records)]] } · nothing estimated \ #li-protocol] else [#ours · cells: the backend `auto` serves; gate on #li-meta.default_backend (the loop-induced default) · providers: #if "optimistic" in li-meta.at("provider_protocols", default: ()) [each in its most optimistic settings (`lit-perf`; #super[p] `lit-ref`'s production record)] else [`lit-ref`'s production timing records]#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated]
 }
 // Table 2 starts a page: its caption never stays behind at the foot of
 // Table 1's last page.
 #pagebreak(weak: true)
 #figure(kind: table,
-  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary)#if li-unchecked != none [, timed with the unchecked reduction setting#footnote[The setting is off by default. A default call (`reduction="auto"`, checks of the backends on) runs TIRust at the target accuracy ($10^(-5)$) with the per-point NinjaRS fallback; it does not get these times. Its served fractions and checked times are `lit-perf`'s records in `data/li-timing.json`.]]. How to read it: #link(<reading>)[after Table 3].],
+  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary)#if li-unchecked != none [, timed with the unchecked reduction setting#footnote[The setting is off by default. A default call (`reduction="auto"`, checks of the backends on) runs TIRust at the target accuracy ($10^(-5)$) with the per-point NinjaRS fallback; it does not get these times.]]. How to read it: #link(<reading>)[at the end].],
   {
     set text(7pt, font: sans, stretch: 87.5%)
     set par(justify: false)
     show table.cell.where(y: 0): set text(fill: white, weight: "bold", size: 8pt)
     table(
-      columns: (0.5cm, 4.8cm, 4.0cm, 1fr),
+      columns: (5.1cm, 4.0cm, 1fr),
       align: left + std.top,
       inset: (x: 4.5pt, y: 4.2pt),
       stroke: (x, y) => (top: if y <= 3 { none } else { 0.6pt + white }, left: if x > 0 and y != 1 { 0.6pt + white } else { none }),
       fill: (x, y) => if y == 0 { navy } else if y == 1 { warm } else if y == 2 { pale } else { none },
       table.header(
-        [], [Process · validation], [Generation], if li-unchecked != none [$|A_"loop"|^2$ · per point, batched, TIRust and NinjaRS unchecked (re-timed rows)] else [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
-        table.cell(colspan: 4, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
-        [],
+        [Process · validation], [Generation], if li-unchecked != none [$|A_"loop"|^2$ · per point, batched, TIRust and NinjaRS unchecked] else [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
+        table.cell(colspan: 3, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
         ..(
           [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
           [generate + filter + plan export; optional probes apart (carrier); peak memory; provider generation],
-          if li-unchecked != none [median per point at $B = 128$ (fresh runtimes, spread); providers paired (most optimistic); gate or rule on TIRust; stage bars: #li-stage-keys.enumerate().map(((k, n)) => box[#key-swatch(li-seg-colours.at(k))#h(1pt)#li-stage-label.at(n)]).join(h(2pt)) (instrumented run: stage shares, not the timed call)] else [median per point at $B = 128$; provider times (#if "optimistic" in li-meta.at("provider_protocols", default: ()) [most optimistic, lit-perf] else [lit-ref]); gate (lit-perf) or rule; backend (request) · the other backend],
+          if li-unchecked != none [median per point at $B = 128$ (fresh runtimes, spread); providers paired (most optimistic); gate or rule on TIRust; stage bars: #stage-legend(li-stage-used) (instrumented run: stage shares, not the timed call)] else [median per point at $B = 128$; provider times (#if "optimistic" in li-meta.at("provider_protocols", default: ()) [most optimistic, lit-perf] else [lit-ref]); gate (lit-perf) or rule; backend (request) · the other backend],
         ).map(t => text(6.1pt, fill: ink2, t)),
       ),
+      // Each multiplicity group opens with its own header row, repeated at
+      // the top of every page the group continues on.
       ..LI.groups.map(gr => (
-        table.cell(rowspan: gr.rows.len(), fill: luma(226), inset: 0pt, align: center + horizon,
-          rotate(-90deg, reflow: true, text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", li-group-title(gr.name)))),
+        table.header(level: 2, table.cell(colspan: 3, fill: luma(226), inset: (x: 4.5pt, y: 2.2pt),
+          text(8.4pt, weight: "bold", fill: navy, font: "Libertinus Serif", li-group-title(gr.name)))),
         ..gr.rows.map(r => (li-process(r), ..li-cells(r))).flatten(),
       )).flatten(),
     )
@@ -889,13 +911,104 @@
   },
 ) <fig:gate>
 
+// ======================================================== BACKEND TABLE ==
+// TIRust against NinjaRS under the same public unchecked setting, both
+// process types (m-lit Q40; summary-li.json backends, scripts/build_summary.py
+// build_backend_table): time per point at B = 128 with each backend's stage
+// bar, the ratio, and the agreement (loop-induced: each backend against the
+// 256-bit truth and the L6 verdict of the checked default; Born-interfered:
+// the largest TIRust-vs-NinjaRS difference at the timed points, LI-B1's L6).
+#let BK = LI.at("backends", default: none)
+#let bk-time(c) = if c.status == "measured" [#text(weight: "bold", dur(c.seconds_per_point)) #h(1fr) #if c.at("stages", default: none) != none { stage-bar(c.stages, width: 1.3cm) }] else { dim[#c.status#if c.at("reason", default: none) != none [: #c.reason]] }
+#let bk-acc(c) = { let a = c.at("accuracy", default: none); if a == none { dim[—] } else if a.at("cross_backend", default: false) { (if a.note { text.with(fill: fail-ink, weight: "bold") } else { dim })[TIRust vs NinjaRS (no truth): #esci(a.max_relative)#if a.above > 0 [ (#a.above/#a.points > #esci(a.lax))]#{ let at = a.at("truth_at_points", default: none); if at != none [; vs truth at #at.points.len() pts: T #esci(at.tirust_max_relative), N #esci(at.ninjars_max_relative)] }] } else if a.note { text(fill: fail-ink, weight: "bold")[#esci(a.max_relative)#if a.above > 0 [ (#a.above/#a.points > #esci(a.lax))]#if a.failed > 0 [ #a.failed fail]] } else [#esci(a.max_relative)] }
+#let bk-l6(l) = if l == none { dim[—] } else { l.runs.map(x => [#x.status#if x.tirust_served != none [ (T #x.tirust_served/#x.of)]#if x.finite_max_relative != none [ #esci(x.finite_max_relative)]]).join([; ]) }
+#let bk-figure = if BK != none {
+  let li-b = BK.loop_induced.rows
+  let born-b = BK.born_interfered.rows
+  let l6b = BK.born_interfered.l6
+  figure(kind: table,
+    caption: [*TIRust and NinjaRS* (the two reduction backends) under the same public unchecked setting: time per point at
+      $B = 128$ with each backend's stage bar (instrumented run), the ratio NinjaRS ÷ TIRust, and their agreement. Loop-induced rows: the
+      timed rows of @tab:summary-li#if BK.loop_induced.not_unchecked.len() > 0 [ (not shown: #BK.loop_induced.not_unchecked.len() row#if BK.loop_induced.not_unchecked.len() > 1 [s] without an unchecked time, its marker in @tab:summary-li)], each backend's largest
+      relative error against TIRust at 256 bits (#raw(BK.loop_induced.accuracy)) and the binary64 L6 verdict of the checked default
+      (`lit.json`: status, TIRust's served points, the largest finite-part difference of the two backends). Born-interfered rows:
+      @tab:summary's $2 -> 3$ and $2 -> 4$ rows, with the largest TIRust-vs-NinjaRS difference at the timed points (a cross-backend
+      difference, not a truth; in red above the lax precision, its line in the Missing box)#if born-b.all(r => (r.tirust, r.ninjars).all(c => c.at("stages", default: none) == none)) [; no instrumented run of their backend arms, so no stage bar (@tab:summary carries the default backend's stage split)].
+      A loop-induced row without a 256-bit truth shows the two backends' difference once, over both columns.],
+    {
+      set text(6.8pt, font: sans, stretch: 87.5%)
+      set par(justify: false, leading: 0.4em)
+      show table.cell.where(y: 0): set text(6.6pt, fill: white, weight: "bold")
+      table(
+        columns: (2.6cm, 3.1cm, 3.1cm, auto, 1.7cm, 1.7cm, 1fr),
+        align: (x, y) => if x in (3, 4, 5) { right + horizon } else { left + horizon },
+        inset: (x: 3pt, y: 2.4pt),
+        stroke: (x, y) => (top: if y <= 1 { none } else { hair }),
+        fill: (x, y) => if y == 0 { navy } else { none },
+        table.header([Process], [TIRust], [NinjaRS], [N ÷ T], [T vs truth], [N vs truth], [L6 (checked default)]),
+        table.cell(colspan: 7, fill: pale)[*Loop-induced* ($|A_"loop"|^2$) · stage bars: #stage-legend(stage-keys.filter(k => k != "untimed" and li-b.any(r => (r.tirust, r.ninjars).any(c => c.at("stages", default: none) != none and k in c.stages and c.stages.at(k) > 0))))],
+        ..li-b.map(r => (
+          text(8pt, font: "Libertinus Serif", math-label(r.math)),
+          bk-time(r.tirust), bk-time(r.ninjars),
+          if "ratio" in r [#mult2(r.ratio)] else { dim[—] },
+          ..if r.tirust.at("accuracy", default: none) != none and r.tirust.accuracy.at("cross_backend", default: false) {
+            // One difference of the two backends (no truth): one cell over both.
+            (table.cell(colspan: 2, align: left + horizon, bk-acc(r.tirust)),)
+          } else { (bk-acc(r.tirust), bk-acc(r.ninjars)) },
+          text(6.2pt, bk-l6(r.l6)),
+        )).flatten(),
+        table.cell(colspan: 7, fill: pale)[*Born-interfered* (@tab:summary's G1 rows) · LI-B1's L6 over its campaign rows: #if l6b == none [not recorded] else [#l6b.status (#l6b.rows.pairs().map(((k, v)) => [#v #k]).join(", "))]#if not BK.born_interfered.present [ · #raw(BK.born_interfered.file) not written yet]],
+        ..born-b.map(r => if r.tirust.status != "measured" and r.tirust == r.ninjars {
+          // Neither backend timed, for one reason: one marker over the row.
+          (text(8pt, font: "Libertinus Serif", math-label(r.math)), table.cell(colspan: 6, dim[#r.tirust.status: #r.tirust.reason]))
+        } else { (
+          text(8pt, font: "Libertinus Serif", math-label(r.math)),
+          bk-time(r.tirust), bk-time(r.ninjars),
+          if "ratio" in r [#mult2(r.ratio)] else { dim[—] },
+          table.cell(colspan: 3, if "agreement" in r { (if r.agreement.note { text.with(fill: fail-ink, weight: "bold") } else { (x) => x })[largest |T − N| ÷ max(|T|, |N|) #esci(r.agreement.max_relative) over #r.agreement.points points] } else { dim[—] }),
+        ) }).flatten(),
+      )
+    },
+  )
+}
+// Its own page: the table runs over a page, never a header orphaned below Figure 1.
+#if BK != none [#pagebreak(weak: true)#(bk-figure) <tab:backends>]
+
+
+// ============================================== MISSING OR INCOMPLETE ==
+// Generated from the summaries (summary-li.json missing; build_summary.py
+// build_missing): the cells without a value, the gated rows that fail or stay
+// open (the stage dominating pyAmpliCol's time), the partial validation cells
+// and the accuracy notes above the lax precision; nothing else.
+#let MISS = LI.at("missing", default: ())
+#let miss-kind = ("no value": [no value], gate: [gate], validation: [validation], accuracy: [accuracy])
+#let miss-row(e, i) = {
+  let r = e.rows.at(i)
+  let lab = if r.contains("->") { box(text(7.6pt, font: "Libertinus Serif", math-label(r))) } else { r }
+  if e.kind == "gate" { let d = e.dominant.at(i); [#lab (#mult2(e.ratio.at(i))#if d != none [, #stage-label.at(d.stage) #fixed(100 * d.share, 0)~%])] } else { lab }
+}
+#if MISS.len() > 0 [
+  #block(breakable: true, width: 100%, inset: (x: 6pt, y: 5pt), fill: warm, radius: 2pt, stroke: 0.4pt + luma(210), {
+    set text(6.9pt, font: sans, stretch: 87.5%)
+    set par(justify: false, leading: 0.45em)
+    text(8pt, weight: "bold", fill: navy)[Missing or incomplete]
+    h(4pt)
+    dim[(generated from the tables' data; Table 1, Table 2, then Table 3; gate lines: time ÷ limit and the stage that dominates pyAmpliCol's time)]
+    for e in MISS {
+      v(2.2pt)
+      block(spacing: 0pt)[#text(weight: "bold")[T#e.table · #miss-kind.at(e.kind)]: #e.text — #range(e.rows.len()).map(i => miss-row(e, i)).join([, ])]
+    }
+  }) <missing>
+]
+
+
 // ================================================================ TABLE 3 ==
 // The numbers behind Table 1's gate chips and stage bars and Figure 1: the
 // full-colour main cell of every row of Table 1 timed at B = 128
 // (data/summary.json full_colour.main: median, gate limit, binding provider,
 // band, verdict, stages).
 #let t3-rows = all-rows.filter(r => r.full_colour.main.status == "measured")
-#let t3-keys = stage-keys.filter(k => k != "untimed" or t1-untimed)
+#let t3-keys = t1-stage-keys
 #let t3-ms(t) = sig(t * 1000)
 #let t3-binding = (MadLoop: "ML", Recola: "Rc", OpenLoops: "OL")
 #block(breakable: false, width: 100%)[#figure(kind: table,
@@ -913,7 +1026,7 @@
       stroke: (x, y) => (top: if y <= 1 { none } else { hair }),
       fill: (x, y) => if y == 0 { navy } else { none },
       table.header([Process], [ms/pt], [Limit], [Band], [Gate],
-        ..t3-keys.map(k => [#key-swatch(seg-colours.at(stage-keys.position(x => x == k)))\ #stage-label.at(k)])),
+        ..t3-keys.map(k => [#key-swatch(stage-colour.at(k))\ #stage-label.at(k)])),
       ..t3-rows.map(r => {
         let m = r.full_colour.main
         let g = m.at("gate", default: none)
@@ -923,7 +1036,7 @@
           if g == none { dim[—] } else [#t3-ms(g.limit_seconds) #dim[#t3-binding.at(g.binding, default: g.binding)]],
           if g == none { dim[—] } else [#sig(g.band.at(0))–#sig(g.band.at(1))],
           if g != none { gate-chip(g) } else { plain-chip[#r.full_colour.gate_rule.replace("->", "→")] },
-          ..t3-keys.map(k => t3-ms(m.stages.at(k))),
+          ..t3-keys.map(k => if k in m.stages { t3-ms(m.stages.at(k)) } else { dim[—] }),
         )
       }).flatten(),
     )
@@ -939,14 +1052,38 @@
 #set par(justify: true)
 // Rows whose fastest provider time is an upper bound (summary.json fastest.bound).
 #let bound-rows = all-rows.filter(r => { let f = r.full_colour.at("fastest", default: none); f != none and f.at("bound", default: none) == "upper" })
+*Timing settings* (every time in @tab:summary-li, @tab:backends and @fig:gate's loop-induced rows: most optimistic, no stability check,
+reached through settings a user sets; nothing modified; @tab:summary as stated below; the stored $2 -> 6$ rows of
+@tab:summary are outside this protocol: internal checks and rescue, labelled in their rows). *pyAmpliCol* (binary64, SymJIT `-O2` evaluators as shipped, `RAYON_NUM_THREADS=1`, one core
+by `taskset`): @tab:summary-li and @tab:backends time `Runtime.load(artifact, reduction_unchecked=True)` then
+`evaluate(points, mu_r2=…, poles="none", on_failure="return", reduction="tirust" | "ninjars")`, with no
+`stability_checks`, no `stability` rescue policy and `kinematics_improvement_binary64` off (the defaults); @tab:summary
+times the same public path through the benchmark harness (`python -m tools.loop_benchmark pyamplicol <row> --inputs
+native --batches 128`, values bitwise those of `Runtime.evaluate`), poles off, no stability check or rescue, the
+default reduction setting (`reduction_unchecked = false`, NinjaRS: its per-point acceptance test runs, with no rescue
+behind it). On the nine $2 -> 3$ and $2 -> 4$ rows a paired same-core A/B against `reduction_unchecked = True` (3
+fresh instances per arm, 128 points) gives bitwise-identical values and unchecked ÷ default ×0.92–×1.25 (×1.25 a
+noisy g g → g g g sample; the others ×0.92–×1.05): these times equal the no-check setup within the timing noise. *OpenLoops* 2.1.5: `expert_mode 1`, `stability_mode 11` (stability system off),
+`truepoles 0`, and `ir_on 0` on the Born-interfered rows. *MadLoop* (MG5_aMC 3.7.0): `CTModeRun 1` in
+`MadLoopParams.dat` (no stability test). *Recola* 2.2.5 with COLLIER: `set_dynamic_settings_rcl(0)`,
+`set_compute_ir_poles_rcl(0)`, release build. A provider time marked #super[p] is a production record (named in its
+table's legend).
+
 *@tab:summary* (Born-interfered one-loop processes) has one row per test process, by multiplicity. A cell gives
 pyAmpliCol's value in bold and, at its right, the multiplier _pyAmpliCol ÷ the fastest provider_ on this host (in bold
 among the provider values).#if bound-rows.len() > 0 [ A provider time marked ≤ (#row-names(bound-rows.map(r => r.key))) comes from a run outside the protocol that does the production work and more (Recola's reference run evaluates the IR poles too), so it bounds that provider's production time from above, and the multiplier against it is a lower bound (≥); it is never a gate limit.] Only run times are coloured: green faster, white at parity, red slower (log₂ scale, clamped at
 ×1/16 and ×16). Generation multipliers are uncoloured (generation time is not the main metric) and leading colour (LC)
 has no provider ratio. Grey cells say why a value is missing. Run times are medians per phase-space point at
-$B = 128$, finite part, binary64, one pinned thread, stability checks off; generation is generate + plan export (model
-loading excluded) with its peak memory and plan size. The providers run in production mode: MadLoop 3.7.0 (ML),
-Recola 2.2.5 with COLLIER (Rc), OpenLoops 2.1.5 from prebuilt libraries (OL: no generation time). Each cell shows the
+$B = 128$, finite part, binary64, one pinned thread, no stability check or rescue, the default reduction setting
+(`reduction_unchecked = false`: NinjaRS's per-point acceptance test runs; see _Timing settings_); generation is generate + plan export (model
+loading excluded) with its peak memory and plan size.#if t1-optimistic [ The providers run in their most optimistic
+settings (m-lit F4; `tools/loop_benchmark providers --protocol optimistic`), timed on pyAmpliCol's core: MadLoop 3.7.0
+(ML) without its stability test (`CTModeRun 1`), Recola 2.2.5 with COLLIER (Rc) without dynamic settings (alpha_s and
+the scale set before its generation, outside the timer, so it times the stream points at the first point's $mu_R$#{ let rp = S.meta.at("provider_points", default: (:)).at("recola", default: none); if rp != none [: #if rp.at(0) == rp.at(1) [#rp.at(0)] else [#rp.at(0)–#rp.at(1)] points per row, against up to #S.meta.provider_points.values().map(x => x.at(1)).fold(0, calc.max) for the other providers] }),
+`compute_ir_poles 0`, release build, OpenLoops 2.1.5 from prebuilt libraries (OL: no generation time) with its
+stability system and I-operator poles off; each optimistic value equals the provider's production value at the timed
+points. A provider time marked #super[p] is its production record, not re-timed (#S.meta.at("provider_kept", default: "no reason recorded")).] else [ The providers run in production mode: MadLoop 3.7.0 (ML),
+Recola 2.2.5 with COLLIER (Rc), OpenLoops 2.1.5 from prebuilt libraries (OL: no generation time).] Each cell shows the
 most recent measured configuration (`scripts/build_summary.py`, by git ancestry of the revisions), named once in the
 table's first row (engine, native build and digest, date, host); a cell from another configuration names its origin.#if no-ratio-rows.len() > 0 [ A newer development record's generation in a G1 row has no multiplier (its provider generation is G1's).]
 
@@ -955,10 +1092,14 @@ table's first row (engine, native build and digest, date, host); a cell from ano
 above 1, else *open*. A process below 5 ms per point has no blocking gate ("#thr-rule.short", user rule of 2026-10-24)
 and its chip keeps the measured ratio; $2 -> 2$ has no gate. The gate is taken at $B = 128$ only#for r in decided-rows.filter(r => decided-gate(r).status != thr-rule.verdict) { let x = decided-gate(r); [; ‡ #box(math-label(r.math)): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }.
 
-*Stage bars* (the full-colour cell names the largest share; @tab:gate gives every stage in ms): inputs = trees, Born and
-counterterm inputs; numerator = seeds, fused factors and the dressing of the open-loop objects; scatter = closures into
-NinjaRS lanes; NinjaRS = the reduction without the masters; masters = the master integrals (canonical arguments, cache,
-oneloopmaster); glue = point parameters, input conversion, assembly and the rest of the call#if t1-untimed [; untimed = the rest of the call of a build without input timers].#if m-rows.len() > 0 [ Times use the protocol's schedule B; "M:" gives the schedule G1 adopted for the class.]
+*Stage bars* (every bar of the report, one colour per stage; the cell names the largest share; @tab:gate gives every
+stage of @tab:summary in ms): inputs = trees, Born and counterterm inputs (loop-induced: the trees and counterterm kets
+of the amplitude basis); numerator = seeds, fused factors and the dressing of the open-loop objects; scatter = closures
+into the reduction lanes; then the reduction backend's own stages: NinjaRS = its expansions (the reduction without the
+masters) and masters = the master integrals (canonical arguments, cache, oneloopmaster), or TIR moments = TIRust's
+tensor moments and contraction = their contraction with the numerator (TIRust's master integrals, a part of its tensor
+moments, are shown apart only where a profiled run recorded them); glue = point parameters, input conversion, transport,
+squaring, assembly and the rest of the call#if t1-untimed [; untimed = the rest of the call of a build without input timers].#if m-rows.len() > 0 [ Times use the protocol's schedule B; "M:" gives the schedule G1 adopted for the class.]
 
 *Validation* (process cell): the largest deviation $|a - b| slash max(|a|, |b|, |B| alpha_s slash 2 pi)$ of the binary64
 finite part per reference at the timed points (NJet DD: NJet 3.1.2 in double-double), and the median over the points
@@ -992,8 +1133,8 @@ those not run or not asserted.
 *@tab:summary-li* follows @tab:summary's rules for loop-induced processes, $|A_"loop"|^2$ without a Born: one row per
 process of the M-LIT validation matrix (`m-lit/PLAN.md` §4.1; its ids in the process cell), grouped by multiplicity;
 the backend-unit, zero, identity, observable and complex-mass-scheme rows (#li-meta.validation_only.ids.join(", ")) are
-validation-only and not listed. #if li-unchecked != none [On the #li-unchecked.rows rows re-timed with the setting (`lit-perf`'s timed rows; the
-other rows keep their earlier record: the backend `auto` serves, in its checked default), the cell is the batched $B = #li-meta.gate_batch$ time per point of
+validation-only and not listed. #if li-unchecked != none [On #if li-unchecked.rows < li-timed.len() [the #li-unchecked.rows rows re-timed with the setting (the
+other rows keep their earlier record: the backend `auto` serves, in its checked default)] else [every timed row], the cell is the batched $B = #li-meta.gate_batch$ time per point of
 TIRust with the *unchecked reduction setting* (`reduction_unchecked`, a documented public setting, off by default):
 each backend reduces without its own acceptance or refusal checks. TIRust keeps its a priori conditioning gates and
 its method choice as method selection, computes no acceptance pass, and serves what the method choice refuses by
@@ -1005,7 +1146,7 @@ stream points, poles off, one pinned thread); the spread (×, largest over small
 the setting is TIRust, bitwise and without fallback (paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")).
 Beneath, NinjaRS with the same setting: its time and multiplier where it served every point, else the points it
 failed with their cause (a call that fails points is timed whole: no served-point time). The coloured bars are the
-stage shares (trees + counterterm kets, dressing, scatter, reduction, the rest of the call) of a *separate
+stage shares (the stages of @tab:summary's bars, the reduction split into each backend's own stages) of a *separate
 instrumented run* with the same setting, points and $B$ on the same core, never the timed call. The setting has *no
 accuracy certificate*: it is a timing and benchmark mode. Beneath each backend's line, its measured accuracy on the
 row's first stream points (the same public call, binary64 finite part) against TIRust at 256 bits
@@ -1015,24 +1156,7 @@ checked mode refuses, or also in the checked mode) and the points that fail. The
 optimistic settings (m-lit F4: OpenLoops with its stability system off, MadLoop without its stability test, Recola
 without dynamic settings, in its release build), in the same unit on the same core as pyAmpliCol, alternating with
 it between rounds, their time the median over those rounds; the multiplier against the fastest matched provider
-colours the cell with @tab:summary's scale.] else [The cell is the batched $B = #li-meta.gate_batch$ time per point (median over its
-timing blocks after an untimed warm-up, finite part, one pinned thread, checks off) of the record the backend `auto`
-serves at the row's revision: its effective backend in bold, the request in brackets. #if li-auto-reasons.len() > 0 [At this head `auto` takes #li-auto-labels.join(" and ") on every timed row, with the runtime's reason (verbatim): #li-auto-reasons.map(x => ["#x"]).join([; ]).] Beside it, the other backend requested explicitly in the same
-process on the same points: its time and served fraction (#li-meta.gate_batch/#li-meta.gate_batch) where it served all #li-meta.gate_batch points of every block, else the points
-it failed closed per block of #li-meta.gate_batch with the recorded cause (TIRust: rows its conditioning gates refuse
-whose method-choice lanes its acceptance check refuses, lanes off by about $10^(-9)$ of their term scale against
-TIRust's expansion tolerance $2^(-30)$, and gate-refused rows whose small-Gram expansion its method choice refuses;
-NinjaRS: lanes its binary64 fast engine marks unstable, nothing rescued at this protocol; a call that fails points
-is timed whole, which is no served-point time, and its time on the points it served is shown beside it); a record
-with a failed point is never the cell, never coloured and never drawn in @fig:gate. The multiplier
-against the fastest matched provider (MadLoop at its loop-induced library order 7|6|1, OpenLoops `ls`, Recola) colours
-the cell with @tab:summary's scale.#if "optimistic" in li-meta.at("provider_protocols", default: ()) [ Both sides run in their most optimistic settings
-(m-lit F4): pyAmpliCol without poles or stability checks on distinct points, batched as shipped; OpenLoops with its
-stability system off (one double-precision evaluation, where its loop-induced preset evaluates every point twice),
-MadLoop without its stability test (one evaluation, not both loop directions), Recola without dynamic settings (its
-couplings and scales set once, outside the timer) in its release build; a provider time marked #super[p] is
-`lit-ref`'s production record, not re-timed. TIRust (†) runs at the slice's shipped TirOptions; its re-time at the
-user-set target accuracy (default $10^(-5)$) is `lit-tirust-default`'s.] else [ The providers run in production mode.]] A provider whose timing record excludes its values as a
+colours the cell with @tab:summary's scale.] else [The cell is the batched $B = #li-meta.gate_batch$ time per point of the record the backend `auto` serves at the row's revision, coloured by the multiplier against the fastest matched provider.] A provider whose timing record excludes its values as a
 reference (Recola's on-shell widths against the fixed-width scheme of the others on the rows LI-43 and LI-51) is timed
 and shown but is no matched provider (its values miss the 1e-5 agreement of `m-lit/PLAN.md` §4.0 L1; §4.1 names
 MadLoop and OpenLoops as the references of LI-43 and OpenLoops of LI-51): never the fastest matched provider and
@@ -1048,8 +1172,7 @@ the provenance line names pyAmpliCol's host and the providers'. Rows of four leg
 (the gated backend, "on TIRust"); where TIRust failed points closed the chip says "no verdict … (gap)": its time is
 no served-point time and how a verdict is given there is not ruled ("no verdict yet" before the gate tool's records,
 "no provider time yet" while no provider of the row is timed). Grey cells are explicit markers:
-*pending* (the package that serves the row, named in the cell, has not landed at this head, or the input file that
-fills the cell does not exist yet), *not run* (a landed package without a record of the row, or a run stopped before its timing, with its measured
+*not run* (a landed package without a record of the row, or a run stopped before its timing, with its measured
 progress, e.g. a generation beyond the 45-min rule), *failed closed* or
 *refused* (the record of the cell's request failed points or was refused: no time), and a provider's reason where it
 has no matched time. Nothing is estimated or extrapolated; each cell shows the newest record of its row. At

@@ -1,0 +1,1392 @@
+{
+ "records": [
+  {
+   "key": "gg_ggg",
+   "process": "gg_ggg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "tirust",
+   "requested": "tirust",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.035253799200290814,
+    0.026152535148867173,
+    0.03261459927307442
+   ],
+   "instance_spread": 1.3480069522750597,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 17,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "346.96",
+      "344.90",
+      "333.59"
+     ],
+     "mem_available_gib": 264.0,
+     "core_busy": 0.069,
+     "siblings_busy": {
+      "273": 0.99
+     }
+    },
+    "end": {
+     "loadavg": [
+      "339.89",
+      "345.06",
+      "335.38"
+     ],
+     "mem_available_gib": 259.8,
+     "core_busy": 0.624,
+     "siblings_busy": {
+      "273": 1.0
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process gg_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.03261459927307442,
+   "agreement": {
+    "max_relative": 0.0020653818102109576,
+    "points": 128,
+    "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors"
+   }
+  },
+  {
+   "key": "gg_ggg",
+   "process": "gg_ggg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "ninjars",
+   "requested": "ninjars",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.020727266375615727,
+    0.025926233047357528,
+    0.026723073151515564
+   ],
+   "instance_spread": 1.289271468183258,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 17,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "346.96",
+      "344.90",
+      "333.59"
+     ],
+     "mem_available_gib": 264.0,
+     "core_busy": 0.069,
+     "siblings_busy": {
+      "273": 0.99
+     }
+    },
+    "end": {
+     "loadavg": [
+      "339.89",
+      "345.06",
+      "335.38"
+     ],
+     "mem_available_gib": 259.8,
+     "core_busy": 0.624,
+     "siblings_busy": {
+      "273": 1.0
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process gg_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.025926233047357528
+  },
+  {
+   "key": "gg_gggg",
+   "process": "gg_gggg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "tirust",
+   "requested": "tirust",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    1.3158197270095116,
+    1.3270624991782825,
+    1.3561857796812546
+   ],
+   "instance_spread": 1.0306774946773931,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 219,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "364.72",
+      "348.65",
+      "334.98"
+     ],
+     "mem_available_gib": 253.8,
+     "core_busy": 0.13,
+     "siblings_busy": {}
+    },
+    "end": {
+     "loadavg": [
+      "1446.78",
+      "717.99",
+      "481.06"
+     ],
+     "mem_available_gib": 274.7,
+     "core_busy": 0.208,
+     "siblings_busy": {}
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process gg_gggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 1.3270624991782825,
+   "agreement": {
+    "max_relative": 0.0018279330764487804,
+    "points": 128,
+    "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors"
+   }
+  },
+  {
+   "key": "gg_gggg",
+   "process": "gg_gggg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "ninjars",
+   "requested": "ninjars",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.6322259574008058,
+    0.6205049207019329,
+    0.6064695225541072
+   ],
+   "instance_spread": 1.0424694628317461,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 219,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "364.72",
+      "348.65",
+      "334.98"
+     ],
+     "mem_available_gib": 253.8,
+     "core_busy": 0.13,
+     "siblings_busy": {}
+    },
+    "end": {
+     "loadavg": [
+      "1446.78",
+      "717.99",
+      "481.06"
+     ],
+     "mem_available_gib": 274.7,
+     "core_busy": 0.208,
+     "siblings_busy": {}
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process gg_gggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.6205049207019329
+  },
+  {
+   "key": "gg_ttxgg",
+   "process": "gg_ttxgg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "tirust",
+   "requested": "tirust",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.40958367251369054,
+    0.32644548310054233,
+    0.422748182725627
+   ],
+   "instance_spread": 1.2950039274871028,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 16,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "345.81",
+      "344.71",
+      "333.65"
+     ],
+     "mem_available_gib": 254.3,
+     "core_busy": 0.828,
+     "siblings_busy": {
+      "272": 1.0
+     }
+    },
+    "end": {
+     "loadavg": [
+      "321.31",
+      "341.13",
+      "354.26"
+     ],
+     "mem_available_gib": 243.4,
+     "core_busy": 0.18,
+     "siblings_busy": {
+      "272": 0.951
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process gg_ttxgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.40958367251369054,
+   "agreement": {
+    "max_relative": 2.681011737370775e-08,
+    "points": 128,
+    "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors"
+   }
+  },
+  {
+   "key": "gg_ttxgg",
+   "process": "gg_ttxgg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "ninjars",
+   "requested": "ninjars",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.1285299448572914,
+    0.1067853509739507,
+    0.12921240303330706
+   ],
+   "instance_spread": 1.2100199311498,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 16,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "345.81",
+      "344.71",
+      "333.65"
+     ],
+     "mem_available_gib": 254.3,
+     "core_busy": 0.828,
+     "siblings_busy": {
+      "272": 1.0
+     }
+    },
+    "end": {
+     "loadavg": [
+      "321.31",
+      "341.13",
+      "354.26"
+     ],
+     "mem_available_gib": 243.4,
+     "core_busy": 0.18,
+     "siblings_busy": {
+      "272": 0.951
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process gg_ttxgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.1285299448572914
+  },
+  {
+   "key": "uux_ddxg",
+   "process": "uux_ddxg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "tirust",
+   "requested": "tirust",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.0024135315397870727,
+    0.0025073811411857605,
+    0.002316569178219652
+   ],
+   "instance_spread": 1.0823683422710273,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 19,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "345.81",
+      "344.71",
+      "333.65"
+     ],
+     "mem_available_gib": 253.7,
+     "core_busy": 0.15,
+     "siblings_busy": {
+      "275": 1.0
+     }
+    },
+    "end": {
+     "loadavg": [
+      "367.86",
+      "349.86",
+      "335.52"
+     ],
+     "mem_available_gib": 258.1,
+     "core_busy": 0.091,
+     "siblings_busy": {
+      "275": 1.0
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process uux_ddxg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.0024135315397870727,
+   "agreement": {
+    "max_relative": 1.3535354586527917e-09,
+    "points": 128,
+    "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors"
+   }
+  },
+  {
+   "key": "uux_ddxg",
+   "process": "uux_ddxg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "ninjars",
+   "requested": "ninjars",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.0022867252300784457,
+    0.004096146920346655,
+    0.002252985239465488
+   ],
+   "instance_spread": 1.8180975394754249,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 19,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "345.81",
+      "344.71",
+      "333.65"
+     ],
+     "mem_available_gib": 253.7,
+     "core_busy": 0.15,
+     "siblings_busy": {
+      "275": 1.0
+     }
+    },
+    "end": {
+     "loadavg": [
+      "367.86",
+      "349.86",
+      "335.52"
+     ],
+     "mem_available_gib": 258.1,
+     "core_busy": 0.091,
+     "siblings_busy": {
+      "275": 1.0
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process uux_ddxg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.0022867252300784457
+  },
+  {
+   "key": "uux_emepg",
+   "process": "uux_emepg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "tirust",
+   "requested": "tirust",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.000566873284697067,
+    0.0006390291237039492,
+    0.0006451054759963881
+   ],
+   "instance_spread": 1.138006488242126,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 71,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "344.26",
+      "344.34",
+      "333.35"
+     ],
+     "mem_available_gib": 264.5,
+     "core_busy": 0.04,
+     "siblings_busy": {
+      "327": 1.0
+     }
+    },
+    "end": {
+     "loadavg": [
+      "345.45",
+      "344.62",
+      "333.56"
+     ],
+     "mem_available_gib": 251.3,
+     "core_busy": 0.089,
+     "siblings_busy": {
+      "327": 0.697
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process uux_emepg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.0006390291237039492,
+   "agreement": {
+    "max_relative": 8.24515844506487e-12,
+    "points": 128,
+    "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors"
+   }
+  },
+  {
+   "key": "uux_emepg",
+   "process": "uux_emepg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "ninjars",
+   "requested": "ninjars",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.0005630926425510552,
+    0.0006096892357163597,
+    0.0006654273565800395
+   ],
+   "instance_spread": 1.1817369048996333,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 71,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "344.26",
+      "344.34",
+      "333.35"
+     ],
+     "mem_available_gib": 264.5,
+     "core_busy": 0.04,
+     "siblings_busy": {
+      "327": 1.0
+     }
+    },
+    "end": {
+     "loadavg": [
+      "345.45",
+      "344.62",
+      "333.56"
+     ],
+     "mem_available_gib": 251.3,
+     "core_busy": 0.089,
+     "siblings_busy": {
+      "327": 0.697
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process uux_emepg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.0006096892357163597
+  },
+  {
+   "key": "uux_emepgg",
+   "process": "uux_emepgg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "tirust",
+   "requested": "tirust",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.012169794008514145,
+    0.011255406570853665,
+    0.011348158048349433
+   ],
+   "instance_spread": 1.081239840773795,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 84,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "332.10",
+      "328.77",
+      "339.44"
+     ],
+     "mem_available_gib": 277.3,
+     "core_busy": 0.31,
+     "siblings_busy": {
+      "340": 0.04
+     }
+    },
+    "end": {
+     "loadavg": [
+      "361.69",
+      "337.98",
+      "342.06"
+     ],
+     "mem_available_gib": 269.3,
+     "core_busy": 0.28,
+     "siblings_busy": {
+      "340": 0.68
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process uux_emepgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.011348158048349433,
+   "agreement": {
+    "max_relative": 2.0707519392045962e-08,
+    "points": 128,
+    "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors"
+   }
+  },
+  {
+   "key": "uux_emepgg",
+   "process": "uux_emepgg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "ninjars",
+   "requested": "ninjars",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.0049431043735239655,
+    0.0048789065367600415,
+    0.005517785815754905
+   ],
+   "instance_spread": 1.1309472264289628,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 84,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "332.10",
+      "328.77",
+      "339.44"
+     ],
+     "mem_available_gib": 277.3,
+     "core_busy": 0.31,
+     "siblings_busy": {
+      "340": 0.04
+     }
+    },
+    "end": {
+     "loadavg": [
+      "361.69",
+      "337.98",
+      "342.06"
+     ],
+     "mem_available_gib": 269.3,
+     "core_busy": 0.28,
+     "siblings_busy": {
+      "340": 0.68
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process uux_emepgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.0049431043735239655
+  },
+  {
+   "key": "uux_ggg",
+   "process": "uux_ggg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "tirust",
+   "requested": "tirust",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.008407458321016748,
+    0.00992458466134849,
+    0.009993574571126373
+   ],
+   "instance_spread": 1.1886558564488738,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 110,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "344.26",
+      "344.34",
+      "333.35"
+     ],
+     "mem_available_gib": 266.4,
+     "core_busy": 0.091,
+     "siblings_busy": {
+      "366": 1.0
+     }
+    },
+    "end": {
+     "loadavg": [
+      "368.10",
+      "350.79",
+      "336.05"
+     ],
+     "mem_available_gib": 256.9,
+     "core_busy": 0.05,
+     "siblings_busy": {
+      "366": 1.0
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process uux_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.00992458466134849,
+   "agreement": {
+    "max_relative": 1.7912400458544126e-09,
+    "points": 128,
+    "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors"
+   }
+  },
+  {
+   "key": "uux_ggg",
+   "process": "uux_ggg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "ninjars",
+   "requested": "ninjars",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.006410089288692689,
+    0.006469770622061333,
+    0.006840996069513494
+   ],
+   "instance_spread": 1.0672232103819395,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 110,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "344.26",
+      "344.34",
+      "333.35"
+     ],
+     "mem_available_gib": 266.4,
+     "core_busy": 0.091,
+     "siblings_busy": {
+      "366": 1.0
+     }
+    },
+    "end": {
+     "loadavg": [
+      "368.10",
+      "350.79",
+      "336.05"
+     ],
+     "mem_available_gib": 256.9,
+     "core_busy": 0.05,
+     "siblings_busy": {
+      "366": 1.0
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process uux_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.006469770622061333
+  },
+  {
+   "key": "uux_gggg",
+   "process": "uux_gggg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "tirust",
+   "requested": "tirust",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.2862571008990926,
+    0.31129698756922153,
+    0.27878297955248854
+   ],
+   "instance_spread": 1.1166283826542263,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 117,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "345.45",
+      "344.62",
+      "333.56"
+     ],
+     "mem_available_gib": 252.9,
+     "core_busy": 0.202,
+     "siblings_busy": {
+      "373": 1.0
+     }
+    },
+    "end": {
+     "loadavg": [
+      "328.70",
+      "372.10",
+      "365.86"
+     ],
+     "mem_available_gib": 269.7,
+     "core_busy": 0.04,
+     "siblings_busy": {
+      "373": 1.0
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process uux_gggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.2862571008990926,
+   "agreement": {
+    "max_relative": 5.617357456179309e-06,
+    "points": 128,
+    "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors"
+   }
+  },
+  {
+   "key": "uux_gggg",
+   "process": "uux_gggg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "ninjars",
+   "requested": "ninjars",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.07946029680533684,
+    0.0816672843611741,
+    0.08323911831394071
+   ],
+   "instance_spread": 1.04755609606973,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 117,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "345.45",
+      "344.62",
+      "333.56"
+     ],
+     "mem_available_gib": 252.9,
+     "core_busy": 0.202,
+     "siblings_busy": {
+      "373": 1.0
+     }
+    },
+    "end": {
+     "loadavg": [
+      "328.70",
+      "372.10",
+      "365.86"
+     ],
+     "mem_available_gib": 269.7,
+     "core_busy": 0.04,
+     "siblings_busy": {
+      "373": 1.0
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process uux_gggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.0816672843611741
+  },
+  {
+   "key": "uux_uuxg",
+   "process": "uux_uuxg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "tirust",
+   "requested": "tirust",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.002561097062425688,
+    0.003881200718751643,
+    0.0023171235552581493
+   ],
+   "instance_spread": 1.6750080978393234,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 65,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "344.26",
+      "344.34",
+      "333.35"
+     ],
+     "mem_available_gib": 265.6,
+     "core_busy": 0.82,
+     "siblings_busy": {
+      "321": 0.25
+     }
+    },
+    "end": {
+     "loadavg": [
+      "364.72",
+      "348.65",
+      "334.98"
+     ],
+     "mem_available_gib": 254.6,
+     "core_busy": 0.4,
+     "siblings_busy": {
+      "321": 0.28
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process uux_uuxg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.002561097062425688,
+   "agreement": {
+    "max_relative": 4.701409075541257e-06,
+    "points": 128,
+    "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors"
+   }
+  },
+  {
+   "key": "uux_uuxg",
+   "process": "uux_uuxg",
+   "revision": "524e6cfaa78cc150fc40e2e5f7381626f199390a",
+   "backend": "ninjars",
+   "requested": "ninjars",
+   "reason": "requested",
+   "batch": 128,
+   "instances": 3,
+   "instance_medians": [
+    0.002518457593396306,
+    0.003451658478297759,
+    0.0034929915382235777
+   ],
+   "instance_spread": 1.3869566624360143,
+   "native_build": "loop-native-v2-slice-678c4749",
+   "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+   "host": "itphlies",
+   "core": 65,
+   "date": "2026-11-11",
+   "concurrency": "9 rows in parallel units, one pinned core each (separate physical cores)",
+   "host_state": {
+    "start": {
+     "loadavg": [
+      "344.26",
+      "344.34",
+      "333.35"
+     ],
+     "mem_available_gib": 265.6,
+     "core_busy": 0.82,
+     "siblings_busy": {
+      "321": 0.25
+     }
+    },
+    "end": {
+     "loadavg": [
+      "364.72",
+      "348.65",
+      "334.98"
+     ],
+     "mem_available_gib": 254.6,
+     "core_busy": 0.4,
+     "siblings_busy": {
+      "321": 0.28
+     }
+    }
+   },
+   "settings": {
+    "Runtime.load": {
+     "reduction_unchecked": true
+    },
+    "evaluate": {
+     "poles": "none",
+     "on_failure": "return"
+    },
+    "arms": {
+     "tirust": {
+      "reduction": "tirust"
+     },
+     "ninjars": {
+      "reduction": "ninjars"
+     }
+    },
+    "auto arm": {
+     "reduction": "auto (the default backend choice)"
+    },
+    "points": "the 128 distinct stream points (tools/loop_benchmark/streams/<row>.json) as binary64 texts, mu_r2 their stream mu_R^2; B = 128 (one call)",
+    "environment": {
+     "RAYON_NUM_THREADS": "1",
+     "pinned": "taskset -c <one idle core>"
+    }
+   },
+   "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process uux_uuxg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "seconds_per_point": 0.003451658478297759
+  }
+ ],
+ "what": "the backend table's Born-interfered rows (benchmarks.typ Table 3): TIRust and NinjaRS through the public API with reduction_unchecked = True on Table 1's 2->3 / 2->4 rows (tools/loop_benchmark/retime_unchecked.py, written by collect)"
+}
