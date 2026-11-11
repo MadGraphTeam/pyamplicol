@@ -1,13 +1,13 @@
 {
- "date": "2026-11-08",
- "engine_revision": "ca602436",
+ "date": "2026-11-11",
+ "engine_revision": "524e6cfa",
  "previous_loop": "7266c160",
  "previous_engine": "c8885cc5",
  "native_build": {
-  "name": "loop-native-v2-slice-ca602436",
-  "digest": "4cbb549f",
-  "profile": "release, codegen-units 1, thin LTO, rustc 1.97.1",
-  "source": "workspace/reports/engine-v2/slice-status.md, lit-w0 (DECISIONS 2026-11-06 ~07:32 UTC): the slice build of ca602436 (native_digest 4cbb549f..., _rusticol.so 621b57a7), the engine of origin/main = origin/loop = origin/loop_induced_tir_support at the M-LIT green light; the final G1 retime (lit-retime, M-LIT-a0) ran on it: the baseline of M-LIT's no-regression A/Bs. The 2->6 records ran on 2f3f76d9 (loop-native-mf-2to6-2f3f76d9-lto). Python: Community builds/community-release-python-20a9da94 or PyPI symbolica 3.0.3. Release natives need glibc >= 2.38 with a typed load-time error below (glibc-floor, 5301e24a)"
+  "name": "loop-native-v2-slice-678c4749",
+  "digest": "9de26a2e",
+  "profile": "release, codegen-units 1, thin LTO, rustc 1.97.1, tir on",
+  "source": "workspace/reports/engine-v2/slice-status.md DECISIONS 2026-11-11 01:21 (lit-report RE-TIME GO at 678c47498): the slice build of 678c47498 (native_build_inputs_sha256 9de26a2e57d025ac...); timed at work/v2-lit-report 524e6cfa = that slice tip merged (no code change)"
  },
  "development": {
   "source": "git: 889af02c and the G1 scratch commit 39824f9b (tag g1-native-inputs-39824f9b) are on work/v2-generation-scale; work/v2-generation-scale d7e40cfb was integrated into work/v2-slice at 4e9b5a9e (G-int; 889af02c, fef92189, 0ea83af2 and 6f5a64cc are ancestors of 4e9b5a9e, the scratch commit 39824f9b is not); workspace/reports/engine-v2/slice-status.md, G-int integration block and DECISIONS 2026-10-24 ~21:50 UTC; label and integration: HANDOFF_24_10_2026.md section 6.2 (WP3.1 generation-scale, integration package G-int)",
@@ -1390,22 +1390,22 @@
   ]
  },
  "cell_notes": {
-  "source": "data/msm-g1.json ew_model (the final G1 retime, lit-retime M-LIT-a0, records workspace/reports/engine-v2/measure-g1/records/mlita0; M-SM's G1 used the same model copy)",
+  "source": "data/msm-g1.json ew_model (the final G1 re-time at the M-LIT close, lit-report R3, scratch workspace/tmp/lit-report/r3; lit-retime M-LIT-a0 and M-SM used the same model copy)",
   "what": "notes on single measured cells of Table 1: each names its process, cell (generation, full_colour, leading_colour), G1 configuration and revision; scripts/build_summary.py attaches it to that main cell (summary.json <cell>.main.note) and stops the build when the cell's main value is not that configuration at that revision; the value stays as measured",
   "notes": [
    {
     "process": "gg_ttxemepg_ew",
     "cell": "full_colour",
     "configuration": "native/full",
-    "revision": "ca602436",
+    "revision": "524e6cfa",
     "kind": "run conditions",
     "label": "model: the workspace's py3 G_mu copy",
     "reason": "timed on reference/models/loop_qcd_qed_sm_Gmu_py3 (the harness's processes.json default, as at M-SM), not on the shipped patched UFO (UFOmodeldb 6ca4b120 + the user's issue-1 patch) that the M-SM campaign validated; the speed gate is taken on this timing",
-    "source": "the final G1 retime lit-retime (msm-g1.json ew_model, STATE.md)"
+    "source": "the final G1 re-time lit-report R3 (msm-g1.json ew_model)"
    }
   ]
  },
- "milestone": "M-LIT-b (mlit-b)",
+ "milestone": "M-LIT close (lit-report)",
  "loop_induced": {
   "source": "workspace/reports/engine-v2/m-lit/PLAN.md revision 2d: \u00a74.1 (the process rows, their ids and references), \u00a75.2 and \u00a74.1's tier column (gate classes), \u00a73.3 LIT-AMP 'Rows', \u00a73.4 LIT-EW 'Scope', \u00a73.5 LIT-EFT and \u00a73.7 'Pushes' (the serving package: M-LIT-a lit-amp's rows; M-LIT-b lit-ew's EW rows and the production route lit-r2's other rows; LI-X1 lit-eft); USER 2026-11-06 ~06:00 (the table, every row pending at M-LIT-a0); LI-X1 an execution check without a reference or timing (USER 2026-11-06 ~14:55; lit-report)",
   "what": "row registry of the loop-induced summary table (<tab:summary-li>, data/summary-li.json, scripts/build_summary.py build_loop_induced): every process row of PLAN \u00a74.1 by multiplicity group with its ids, corrections, gate class, the references \u00a74.1 names and the package that serves it; hand-maintained by the milestone steps (PLAN \u00a73.7 'Pushes'), checked against lit-ref's manifest tools/loop_reference/li_campaign.json once it exists. 'landed' lists the serving packages integrated at this head: a row of a package not landed prints 'pending'",

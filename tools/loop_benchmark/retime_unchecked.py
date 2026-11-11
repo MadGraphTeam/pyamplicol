@@ -1003,6 +1003,10 @@ def _record(
         f"retime_unchecked.py; process {process}): public API with the "
         "documented unchecked setting; stages from a separate instrumented run",
     }
+    if found.get("retimed"):
+        # A row re-timed once on another core (its first sample disturbed:
+        # CPU share well below 1 or an instance spread beyond the noise).
+        record["retimed"] = found["retimed"]
     shares = (found.get("cpu_share") or {}).get(arm)
     if shares:
         # Per timed call (warm-up included): CPU time over wall time.

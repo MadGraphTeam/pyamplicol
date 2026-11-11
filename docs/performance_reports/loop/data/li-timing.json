@@ -34134,6 +34134,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_aa): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 140,
+    "first_median_cpu_share": 0.491,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.972,
     "median": 0.977
@@ -34337,6 +34342,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_aa): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 140,
+    "first_median_cpu_share": 0.491,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.973,
     "median": 0.975
@@ -34533,6 +34543,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_h): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 144,
+    "first_median_cpu_share": 0.499,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.97,
     "median": 0.975
@@ -34737,6 +34752,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_h): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 144,
+    "first_median_cpu_share": 0.499,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.968,
     "median": 0.9755
@@ -34929,6 +34949,10 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 233,
+    "reason": "stream regenerated: two beam-collinear points (pT = 0) replaced (streams.py _pair_points)"
+   },
    "cpu_share": {
     "min": 0.973,
     "median": 0.984
@@ -35129,6 +35153,10 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 233,
+    "reason": "stream regenerated: two beam-collinear points (pT = 0) replaced (streams.py _pair_points)"
+   },
    "cpu_share": {
     "min": 0.982,
     "median": 0.984
@@ -35309,6 +35337,10 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_zz): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 255,
+    "reason": "stream regenerated: two beam-collinear points (pT = 0) replaced (streams.py _pair_points)"
+   },
    "cpu_share": {
     "min": 0.98,
     "median": 0.9844999999999999
@@ -35496,6 +35528,10 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_zz): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 255,
+    "reason": "stream regenerated: two beam-collinear points (pT = 0) replaced (streams.py _pair_points)"
+   },
    "cpu_share": {
     "min": 0.981,
     "median": 0.9844999999999999
@@ -35696,6 +35732,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 151,
+    "first_median_cpu_share": 0.602,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.971,
     "median": 0.975
@@ -35905,6 +35946,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 151,
+    "first_median_cpu_share": 0.602,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.971,
     "median": 0.975
@@ -36101,6 +36147,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_ha): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 186,
+    "first_median_cpu_share": 0.491,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.959,
     "median": 0.972
@@ -36305,6 +36356,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_ha): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 186,
+    "first_median_cpu_share": 0.491,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.918,
     "median": 0.971
@@ -36497,6 +36553,10 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 120,
+    "reason": "stream regenerated: two beam-collinear points (pT = 0) replaced (streams.py _pair_points)"
+   },
    "cpu_share": {
     "min": 0.984,
     "median": 0.985
@@ -36697,6 +36757,10 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 120,
+    "reason": "stream regenerated: two beam-collinear points (pT = 0) replaced (streams.py _pair_points)"
+   },
    "cpu_share": {
     "min": 0.982,
     "median": 0.985
@@ -36911,6 +36975,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_aa): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 148,
+    "first_median_cpu_share": 0.489,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.965,
     "median": 0.9764999999999999
@@ -37133,6 +37202,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_aa): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 148,
+    "first_median_cpu_share": 0.489,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.971,
     "median": 0.9755
@@ -37345,6 +37419,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_aag): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 188,
+    "first_median_cpu_share": 0.601,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.709,
     "median": 0.971
@@ -37566,6 +37645,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_aag): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 188,
+    "first_median_cpu_share": 0.601,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.813,
     "median": 0.9695
@@ -39483,6 +39567,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_emepmupmumg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 221,
+    "first_median_cpu_share": 0.49,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.931,
     "median": 0.974
@@ -39710,6 +39799,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_emepmupmumg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 221,
+    "first_median_cpu_share": 0.49,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.866,
     "median": 0.975
@@ -41665,6 +41759,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 216,
+    "first_median_cpu_share": 0.526,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.481,
     "median": 0.9735
@@ -41883,6 +41982,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 216,
+    "first_median_cpu_share": 0.526,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.68,
     "median": 0.8380000000000001
@@ -42095,6 +42199,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hhgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 3,
+    "first_median_cpu_share": 0.978,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.935,
     "median": 0.977
@@ -42316,6 +42425,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hhgg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 3,
+    "first_median_cpu_share": 0.978,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.936,
     "median": 0.977
@@ -42965,6 +43079,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hz): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 227,
+    "first_median_cpu_share": 0.495,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.967,
     "median": 0.976
@@ -43187,6 +43306,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_hz): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 227,
+    "first_median_cpu_share": 0.495,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.967,
     "median": 0.976
@@ -45118,6 +45242,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 220,
+    "first_median_cpu_share": 0.577,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.97,
     "median": 0.975
@@ -45339,6 +45468,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 220,
+    "first_median_cpu_share": 0.577,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.969,
     "median": 0.973
@@ -45950,6 +46084,10 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zz): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 66,
+    "reason": "stream regenerated: two beam-collinear points (pT = 0) replaced (streams.py _pair_points)"
+   },
    "cpu_share": {
     "min": 0.892,
     "median": 0.983
@@ -46167,6 +46305,10 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zz): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 66,
+    "reason": "stream regenerated: two beam-collinear points (pT = 0) replaced (streams.py _pair_points)"
+   },
    "cpu_share": {
     "min": 0.91,
     "median": 0.9824999999999999
@@ -48892,6 +49034,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_ug_hu): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 131,
+    "first_median_cpu_share": 0.894,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.957,
     "median": 0.9804999999999999
@@ -49114,6 +49261,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_ug_hu): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 131,
+    "first_median_cpu_share": 0.894,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.958,
     "median": 0.9784999999999999
@@ -50624,6 +50776,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_z_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 137,
+    "first_median_cpu_share": 0.49,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.62,
     "median": 0.976
@@ -50833,6 +50990,11 @@
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_z_ggg): public API with the documented unchecked setting; stages from a separate instrumented run",
+   "retimed": {
+    "first_core": 137,
+    "first_median_cpu_share": 0.49,
+    "reason": "disturbed first sample (scripts/disturbed.py)"
+   },
    "cpu_share": {
     "min": 0.847,
     "median": 0.9755

@@ -224,7 +224,10 @@ points returns them as failed and is timed whole), no `stability_checks`, no
 rescue policy, full colour, binary64, one thread. The setting has no
 accuracy certificate: its measured accuracy per row is
 `data/li-unchecked-accuracy.json` (the same public call against TIRust at
-256 bits; shown in every re-timed cell). `reduction="auto"` with the setting gives the
+256 bits; shown in every re-timed cell; at a numerical zero, a truth below
+2^-52 times the sector's median over the row's points, the error is absolute
+over that median; a row without a truth within its row budget carries the
+labelled TIRust-vs-NinjaRS difference instead). `reduction="auto"` with the setting gives the
 TIRust values bitwise with no per-point fallback (shown paired on one row in
 the records).
 

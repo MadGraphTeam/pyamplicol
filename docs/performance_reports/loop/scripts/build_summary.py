@@ -76,6 +76,7 @@ as is; re-run this script after regenerating any input.
 from __future__ import annotations
 
 import json
+import statistics
 import re
 import subprocess
 import sys
@@ -2918,6 +2919,41 @@ def _li_paired(prov: dict, rec: dict, validation: dict | None = None) -> dict:
     return out
 
 
+def _li_host_state(timing: dict | None, revisions: set) -> dict | None:
+    """The concurrency and host state of the unchecked records at
+    ``revisions`` (one compact provenance line): the units' concurrency, the
+    1-minute load average and MemAvailable over the rows' start and end, the
+    smallest per-row median CPU share of the timed calls, and how many rows
+    were re-timed once (a disturbed first sample)."""
+
+    recs = [
+        r
+        for r in (timing or {}).get("records", ())
+        if r.get("configuration") == LI_UNCHECKED
+        and any(str(r.get("revision", "")).startswith(v) for v in revisions)
+    ]
+    states = [s for r in recs for s in (r.get("host_state") or {}).values()]
+    if not states:
+        return None
+    loads = [float(s["loadavg"][0]) for s in states if s.get("loadavg")]
+    mem = [s["mem_available_gib"] for s in states if "mem_available_gib" in s]
+    shares = [r["cpu_share"]["median"] for r in recs if r.get("cpu_share")]
+    return {
+        "concurrency_max": max(
+            (
+                int(m.group())
+                for r in recs
+                if (m := re.match(r"\d+", str(r.get("concurrency") or "")))
+            ),
+            default=None,
+        ),
+        "load_1min": [min(loads), max(loads)] if loads else None,
+        "mem_available_gib_min": round(min(mem), 1) if mem else None,
+        "cpu_share_min": round(min(shares), 3) if shares else None,
+        "re_timed": len({r["key"] for r in recs if r.get("retimed")}),
+    }
+
+
 # The measured accuracy of the unchecked setting (lit-unchecked; DECISIONS
 # 2026-11-09 04:18): per row and backend, the binary64 finite part through
 # the public API against TIRust at 256 bits with supplied invariants
@@ -3645,6 +3681,10 @@ def build_loop_induced(
                 if "auto_pairing" in r["timing"]
             ],
             "largest_instance_spread": max(c["instance_spread"] for c in timed),
+            # The runs' concurrency and host state (the provenance line).
+            "host_state": _li_host_state(
+                files[LI_TIMING], {c["revision"] for c in timed}
+            ),
             "replication": "docs/performance_reports/loop/README.md"
             " (unchecked Table 2)",
             # The cells' measured accuracy (DECISIONS 2026-11-09 04:18): no

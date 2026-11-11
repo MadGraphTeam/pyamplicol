@@ -1,14 +1,14 @@
 {
  "what": "the loop-induced summary table <tab:summary-li> of docs/performance_reports/loop/benchmarks.typ, written by scripts/build_summary.py (build_loop_induced); do not edit by hand",
  "meta": {
-  "date": "2026-11-08",
+  "date": "2026-11-11",
   "measured": [
    "2026-11-11"
   ],
-  "engine_on_loop": "ca602436",
+  "engine_on_loop": "524e6cfa",
   "native_build_on_loop": {
-   "name": "loop-native-v2-slice-ca602436",
-   "digest": "4cbb549f"
+   "name": "loop-native-v2-slice-678c4749",
+   "digest": "9de26a2e"
   },
   "default_backend": "TIRust",
   "unchecked": {
@@ -33,6 +33,16 @@
     }
    ],
    "largest_instance_spread": 4.12869970545333,
+   "host_state": {
+    "concurrency_max": 40,
+    "load_1min": [
+     252.29,
+     630.13
+    ],
+    "mem_available_gib_min": 247.9,
+    "cpu_share_min": 0.838,
+    "re_timed": 17
+   },
    "replication": "docs/performance_reports/loop/README.md (unchecked Table 2)",
    "accuracy": {
     "source": "data/li-unchecked-accuracy.json",
