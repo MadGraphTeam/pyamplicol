@@ -621,10 +621,7 @@
 // of every block, else its outcome (points failed closed per block and the
 // recorded causes, or the refusal): never a time of a call that failed
 // points (summary-li.json other_backend).
-// † marks TIRust at the slice's shipped TirOptions (m-lit F4; the re-time at
-// F3's target accuracy is lit-tirust-default's).
-#let li-tir-mark(x) = if x.at("tir_options", default: none) == "shipped" [†]
-#let li-other(o) = if o.status == "served" { box[#o.backend_label#li-tir-mark(o) #dur(o.seconds_per_point) (#o.label)] } else [#o.backend_label#li-tir-mark(o): #o.label]
+#let li-other(o) = if o.status == "served" { box[#o.backend_label #dur(o.seconds_per_point) (#o.label)] } else [#o.backend_label: #o.label]
 // A provider timed on the row that is not matched (its values no
 // reference, summary-li.json providers.fastest_unmatched): said in the cell
 // with the multiplier to it (uncoloured, never the gate's).
@@ -662,7 +659,7 @@
 #let li-chip(g) = {
   if g.status in ("pass", "fail", "open") { gate-chip((status: g.status, ratio_to_limit: g.ratio_to_limit)) } else { plain-chip[#g.label.replace("->", "→")] }
   // lit-perf's verdict is the gated backend's (TIRust, PLAN §5.2).
-  if "backend_label" in g { text(5.6pt, fill: ink2)[ on #g.backend_label#li-tir-mark(g)] }
+  if "backend_label" in g { text(5.6pt, fill: ink2)[ on #g.backend_label] }
 }
 #let li-process(r) = table.cell(breakable: false, {
   set par(leading: 0.34em, justify: false)
@@ -733,10 +730,7 @@
       mult: if "ratio_to_fastest" in m { mult2(m.ratio_to_fastest) },
       [#li-prov-line(r) #h(1fr) $B = #m.batch$],
       li-match-line(r),
-      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "requested" in m [ (#raw(m.requested))]#if "other_backend" in m [ · #li-other(m.other_backend)]],
-      // Beside the unchecked re-time, a row it did not re-time keeps its
-      // earlier record: its configuration said in the cell.
-      if li-meta.at("unchecked", default: none) != none { dim[earlier record: checked backends, not re-timed unchecked] })
+      [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label)#if "requested" in m [ (#raw(m.requested))]#if "other_backend" in m [ · #li-other(m.other_backend)]])
   } else {
     absent(li-title(m), if "requested" in m [#raw(m.requested) (#if "backend_label" in m { m.backend_label } else [backend #m.at("effective", default: "not resolved")]): #m.at("reason", default: m.label)] else { m.at("reason", default: none) }, li-prov-line(r),
       // The gated backend's verdict and the other backend beside a failed
@@ -766,7 +760,7 @@
 #let li-head = {
   let ours = if li-builds.len() == 0 [no pyAmpliCol record at this head: every row *pending*, served by the package named in its cell · engine #raw(li-engine.revision)#native-of(li-engine)]
     else [*pyAmpliCol:* #li-builds.map(x => [engine #raw(x.revision)#native-of(x)]).join([, ]) on #li-our-hosts.join(", ")#if li-meta.landed.len() > 0 [ (packages landed: #li-meta.landed.map(raw).join(", "))]]
-  if li-unchecked != none [#ours · cells of the #li-unchecked.rows re-timed rows: #li-meta.default_backend with the unchecked setting (= `auto` with it: shown paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")), NinjaRS unchecked beside; the other rows keep their earlier record (`auto`, checked); gate on #li-meta.default_backend · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated \ #li-protocol] else [#ours · cells: the backend `auto` serves; gate on #li-meta.default_backend (the loop-induced default) · providers: #if "optimistic" in li-meta.at("provider_protocols", default: ()) [each in its most optimistic settings (`lit-perf`; #super[p] `lit-ref`'s production record)] else [`lit-ref`'s production timing records]#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated]
+  if li-unchecked != none [#ours · cells: #li-meta.default_backend with the unchecked setting (= `auto` with it: shown paired on #li-unchecked.auto_pairing.map(a => a.key).join(", ")), NinjaRS unchecked beside#if li-unchecked.rows < li-timed.len() [; #(li-timed.len() - li-unchecked.rows) other rows keep their earlier record (`auto`, checked)]; gate on #li-meta.default_backend · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated \ #li-protocol] else [#ours · cells: the backend `auto` serves; gate on #li-meta.default_backend (the loop-induced default) · providers: #if "optimistic" in li-meta.at("provider_protocols", default: ()) [each in its most optimistic settings (`lit-perf`; #super[p] `lit-ref`'s production record)] else [`lit-ref`'s production timing records]#if li-hosts.len() > 0 [ on #li-hosts.join(", ")] · measured #li-meta.at("measured", default: (li-meta.date,)).join(", ") · nothing estimated]
 }
 // Table 2 starts a page: its caption never stays behind at the foot of
 // Table 1's last page.
@@ -784,7 +778,7 @@
       stroke: (x, y) => (top: if y <= 3 { none } else { 0.6pt + white }, left: if x > 0 and y != 1 { 0.6pt + white } else { none }),
       fill: (x, y) => if y == 0 { navy } else if y == 1 { warm } else if y == 2 { pale } else { none },
       table.header(
-        [Process · validation], [Generation], if li-unchecked != none [$|A_"loop"|^2$ · per point, batched, TIRust and NinjaRS unchecked (re-timed rows)] else [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
+        [Process · validation], [Generation], if li-unchecked != none [$|A_"loop"|^2$ · per point, batched, TIRust and NinjaRS unchecked] else [$|A_"loop"|^2$ · per point, batched, backend `auto` serves],
         table.cell(colspan: 3, inset: (x: 4.5pt, y: 2.6pt), { show raw: set text(6.3pt); text(6.6pt, fill: amber, li-head) }),
         ..(
           [legs · corrections · PLAN §4.1 ids; largest deviation per reference (lit-val)],
@@ -933,7 +927,7 @@
   figure(kind: table,
     caption: [*TIRust and NinjaRS* (the two reduction backends) under the same public unchecked setting: time per point at
       $B = 128$ with each backend's stage bar (instrumented run), the ratio NinjaRS ÷ TIRust, and their agreement. Loop-induced rows: the
-      re-timed rows of @tab:summary-li (#BK.loop_induced.not_unchecked.len() other rows not re-timed with the setting at this head), each backend's largest
+      timed rows of @tab:summary-li#if BK.loop_induced.not_unchecked.len() > 0 [ (#BK.loop_induced.not_unchecked.len() other rows not re-timed with the setting at this head)], each backend's largest
       relative error against TIRust at 256 bits (#raw(BK.loop_induced.accuracy)) and the binary64 L6 verdict of the checked default
       (`lit.json`: status, TIRust's served points, the largest finite-part difference of the two backends). Born-interfered rows:
       @tab:summary's $2 -> 3$ and $2 -> 4$ rows, with the largest TIRust-vs-NinjaRS difference at the timed points.],
@@ -1049,6 +1043,19 @@
 #set par(justify: true)
 // Rows whose fastest provider time is an upper bound (summary.json fastest.bound).
 #let bound-rows = all-rows.filter(r => { let f = r.full_colour.at("fastest", default: none); f != none and f.at("bound", default: none) == "upper" })
+*Timing settings* (every time in this report: most optimistic, no stability check, reached through settings a user
+sets; nothing modified). *pyAmpliCol* (binary64, SymJIT `-O2` evaluators as shipped, `RAYON_NUM_THREADS=1`, one core
+by `taskset`): @tab:summary-li and @tab:backends time `Runtime.load(artifact, reduction_unchecked=True)` then
+`evaluate(points, mu_r2=…, poles="none", on_failure="return", reduction="tirust" | "ninjars")`, with no
+`stability_checks`, no `stability` rescue policy and `kinematics_improvement_binary64` off (the defaults); @tab:summary
+times the same public path through the benchmark harness (`python -m tools.loop_benchmark pyamplicol <row> --inputs
+native --batches 128`, values bitwise those of `Runtime.evaluate`), poles off, no stability check or rescue, the
+default reduction (NinjaRS). *OpenLoops* 2.1.5: `expert_mode 1`, `stability_mode 11` (stability system off),
+`truepoles 0`, and `ir_on 0` on the Born-interfered rows. *MadLoop* (MG5_aMC 3.7.0): `CTModeRun 1` in
+`MadLoopParams.dat` (no stability test). *Recola* 2.2.5 with COLLIER: `set_dynamic_settings_rcl(0)`,
+`set_compute_ir_poles_rcl(0)`, release build. A provider time marked #super[p] is a production record (named in its
+table's legend).
+
 *@tab:summary* (Born-interfered one-loop processes) has one row per test process, by multiplicity. A cell gives
 pyAmpliCol's value in bold and, at its right, the multiplier _pyAmpliCol ÷ the fastest provider_ on this host (in bold
 among the provider values).#if bound-rows.len() > 0 [ A provider time marked ≤ (#row-names(bound-rows.map(r => r.key))) comes from a run outside the protocol that does the production work and more (Recola's reference run evaluates the IR poles too), so it bounds that provider's production time from above, and the multiplier against it is a lower bound (≥); it is never a gate limit.] Only run times are coloured: green faster, white at parity, red slower (log₂ scale, clamped at
@@ -1112,8 +1119,8 @@ those not run or not asserted.
 *@tab:summary-li* follows @tab:summary's rules for loop-induced processes, $|A_"loop"|^2$ without a Born: one row per
 process of the M-LIT validation matrix (`m-lit/PLAN.md` §4.1; its ids in the process cell), grouped by multiplicity;
 the backend-unit, zero, identity, observable and complex-mass-scheme rows (#li-meta.validation_only.ids.join(", ")) are
-validation-only and not listed. #if li-unchecked != none [On the #li-unchecked.rows rows re-timed with the setting (`lit-perf`'s timed rows; the
-other rows keep their earlier record: the backend `auto` serves, in its checked default), the cell is the batched $B = #li-meta.gate_batch$ time per point of
+validation-only and not listed. #if li-unchecked != none [On #if li-unchecked.rows < li-timed.len() [the #li-unchecked.rows rows re-timed with the setting (the
+other rows keep their earlier record: the backend `auto` serves, in its checked default)] else [every timed row], the cell is the batched $B = #li-meta.gate_batch$ time per point of
 TIRust with the *unchecked reduction setting* (`reduction_unchecked`, a documented public setting, off by default):
 each backend reduces without its own acceptance or refusal checks. TIRust keeps its a priori conditioning gates and
 its method choice as method selection, computes no acceptance pass, and serves what the method choice refuses by
@@ -1135,24 +1142,7 @@ checked mode refuses, or also in the checked mode) and the points that fail. The
 optimistic settings (m-lit F4: OpenLoops with its stability system off, MadLoop without its stability test, Recola
 without dynamic settings, in its release build), in the same unit on the same core as pyAmpliCol, alternating with
 it between rounds, their time the median over those rounds; the multiplier against the fastest matched provider
-colours the cell with @tab:summary's scale.] else [The cell is the batched $B = #li-meta.gate_batch$ time per point (median over its
-timing blocks after an untimed warm-up, finite part, one pinned thread, checks off) of the record the backend `auto`
-serves at the row's revision: its effective backend in bold, the request in brackets. #if li-auto-reasons.len() > 0 [At this head `auto` takes #li-auto-labels.join(" and ") on every timed row, with the runtime's reason (verbatim): #li-auto-reasons.map(x => ["#x"]).join([; ]).] Beside it, the other backend requested explicitly in the same
-process on the same points: its time and served fraction (#li-meta.gate_batch/#li-meta.gate_batch) where it served all #li-meta.gate_batch points of every block, else the points
-it failed closed per block of #li-meta.gate_batch with the recorded cause (TIRust: rows its conditioning gates refuse
-whose method-choice lanes its acceptance check refuses, lanes off by about $10^(-9)$ of their term scale against
-TIRust's expansion tolerance $2^(-30)$, and gate-refused rows whose small-Gram expansion its method choice refuses;
-NinjaRS: lanes its binary64 fast engine marks unstable, nothing rescued at this protocol; a call that fails points
-is timed whole, which is no served-point time, and its time on the points it served is shown beside it); a record
-with a failed point is never the cell, never coloured and never drawn in @fig:gate. The multiplier
-against the fastest matched provider (MadLoop at its loop-induced library order 7|6|1, OpenLoops `ls`, Recola) colours
-the cell with @tab:summary's scale.#if "optimistic" in li-meta.at("provider_protocols", default: ()) [ Both sides run in their most optimistic settings
-(m-lit F4): pyAmpliCol without poles or stability checks on distinct points, batched as shipped; OpenLoops with its
-stability system off (one double-precision evaluation, where its loop-induced preset evaluates every point twice),
-MadLoop without its stability test (one evaluation, not both loop directions), Recola without dynamic settings (its
-couplings and scales set once, outside the timer) in its release build; a provider time marked #super[p] is
-`lit-ref`'s production record, not re-timed. TIRust (†) runs at the slice's shipped TirOptions; its re-time at the
-user-set target accuracy (default $10^(-5)$) is `lit-tirust-default`'s.] else [ The providers run in production mode.]] A provider whose timing record excludes its values as a
+colours the cell with @tab:summary's scale.] else [The cell is the batched $B = #li-meta.gate_batch$ time per point of the record the backend `auto` serves at the row's revision, coloured by the multiplier against the fastest matched provider.] A provider whose timing record excludes its values as a
 reference (Recola's on-shell widths against the fixed-width scheme of the others on the rows LI-43 and LI-51) is timed
 and shown but is no matched provider (its values miss the 1e-5 agreement of `m-lit/PLAN.md` §4.0 L1; §4.1 names
 MadLoop and OpenLoops as the references of LI-43 and OpenLoops of LI-51): never the fastest matched provider and

@@ -190,7 +190,14 @@ def _pair_points(
         half, zero = sqrt_s / 2, Fraction(0)
         point = [[half, zero, zero, half], [half, zero, zero, -half], rest[1], rest[2]]
         key = tuple(x for p in point for x in p)
-        if key in seen or not _invariants_pass(point):
+        # A final momentum exactly along the beam (zero transverse momentum)
+        # is the measure-zero forward configuration, where the boxes' Gram
+        # determinants vanish exactly: no generic test point (lit-report: two
+        # such points of the equal-mass construction failed both backends in
+        # binary64).
+        if key in seen or not _invariants_pass(point) or any(
+            p[1] == 0 and p[2] == 0 for p in point[2:]
+        ):
             continue
         exact_points.check(point, masses, 2)
         out.append(point)

@@ -234,9 +234,9 @@
   ],
   "report": {
    "date": "2026-11-08",
-   "head": "ecc80899",
+   "head": "524e6cfa",
    "table1": "ca602436",
-   "table2": "ecc80899",
+   "table2": "524e6cfa",
    "source": "milestone.json date; the newest revision of the measured cells of summary.json and summary-li.json (git ancestry: milestone.json ancestry)"
   }
  },

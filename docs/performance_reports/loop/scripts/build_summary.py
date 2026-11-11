@@ -2842,16 +2842,40 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
 LI_UNCHECKED = "unchecked"
 
 
-def _li_paired(prov: dict, rec: dict) -> dict:
+# A provider of a row without a fixture timing record is matched when the
+# row's validation (lit.json) agrees with it within m-lit PLAN §4.0 L1.
+LI_MATCH_L1 = 1e-5
+
+
+def _li_paired(prov: dict, rec: dict, validation: dict | None = None) -> dict:
     """The row's provider entries with the times paired with the record
     ``rec`` (its ``providers.times``: the median over the unit's rounds,
     same core, F4 most optimistic); the fixture entries' match status and
     generation times kept, a provider the paired run did not time keeps its
-    fixture entry (listed, never filled)."""
+    fixture entry (listed, never filled). A row without a fixture provider
+    timing record (status "not run") takes the paired times alone; each is
+    matched when the row's validation (``validation``, lit.json) agrees
+    with that provider within LI_MATCH_L1, else shown unmatched with the
+    reason (no agreement recorded, or its deviation)."""
 
     paired = (rec.get("providers") or {}).get("times")
-    if not paired or prov.get("status") != "recorded":
+    if not paired or prov.get("status") not in ("recorded", "not run"):
         return prov
+    if prov.get("status") == "not run":
+        agree = {x["key"]: x["max_relative"] for x in (validation or {}).get("references", ())}
+        fixture = {}
+        for k in paired:
+            if k not in PROVIDERS:
+                continue
+            dev = agree.get(k)
+            if dev is None:
+                fixture[k] = {"match": "not matched (no agreement recorded in lit.json)"}
+            elif dev > LI_MATCH_L1:
+                fixture[k] = {"match": f"not matched (lit.json deviation {dev:.1e})"}
+            else:
+                fixture[k] = {}
+        prov = {**prov, "status": "recorded", "providers": fixture, "generation": {}}
+        prov.pop("reason", None)
     providers = dict(prov["providers"])
     src = f"{LI_TIMING} records[{rec['key']}, {rec['backend']}, {rec['revision'][:8]}]"
     for k, x in paired.items():
@@ -3358,7 +3382,7 @@ def _li_cells(
     if first.get("configuration") == LI_UNCHECKED:
         # The providers paired with the unchecked re-time (same unit, same
         # core): the row's provider times, its ratio and its gate.
-        prov = _li_paired(prov, first)
+        prov = _li_paired(prov, first, out.get("validation"))
         out["providers"] = prov
     # A record names its effective backend, a stopped one its request.
     name = first.get("backend", first.get("requested"))
