@@ -247,7 +247,7 @@
     6
    ]
   },
-  "provider_kept": "gg_gggg recola (not re-run); uux_ggggg madloop (its recorded generation / initial call 6006 s: beyond the 45-minute rule, HANDOFF 0.1); uux_ggggg recola (its recorded generation / initial call 10220 s: beyond the 45-minute rule, HANDOFF 0.1)",
+  "provider_kept": "gg_gggg recola (its optimistic run stopped as hopeless after 88 min under the 45-minute rule (HANDOFF 0.1): still in Recola's generation / first call at ~51 % of its core); uux_ggggg madloop (its recorded generation / initial call 6006 s: beyond the 45-minute rule, HANDOFF 0.1); uux_ggggg recola (its recorded generation / initial call 10220 s: beyond the 45-minute rule, HANDOFF 0.1)",
   "report": {
    "date": "2026-11-11",
    "head": "524e6cfa",

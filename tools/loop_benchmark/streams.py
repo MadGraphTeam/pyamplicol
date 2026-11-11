@@ -292,6 +292,7 @@ def _supplied(
 
     listed = [Fraction(s) for s in record["sqrt_s"]]
     length = count
+    found = -1
     while True:
         values = list(itertools.islice(itertools.cycle(listed), length))
         with localcontext() as context:
@@ -313,10 +314,13 @@ def _supplied(
                 distinct.append(exact)
         if len(distinct) >= count:
             return distinct[:count]
-        if length > 100 * count:
+        if len(distinct) == found:
+            # A doubling of the cycle added no distinct point: the
+            # construction repeats (derived from the data, no fixed cap).
             raise RuntimeError(
                 f"only {len(distinct)} of {count} distinct supplied points"
             )
+        found = len(distinct)
         length *= 2
 
 

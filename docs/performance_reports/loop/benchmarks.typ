@@ -723,7 +723,9 @@
       [#li-chip(m.gate) #h(4pt) #text(weight: "bold", m.backend_label) (#raw(m.requested)) #h(1fr) #li-stage-bar(m.stages)],
       li-acc-line(m.at("accuracy", default: none)),
       if o != none { li-other-line(o) },
-      if o != none { li-acc-line(o.at("accuracy", default: none)) },
+      // A cross-backend difference belongs to neither backend: printed once,
+      // under the TIRust line (DECISIONS 2026-11-11 06:46 T3).
+      if o != none { let oa = o.at("accuracy", default: none); if oa != none and oa.at("cross_backend", default: false) and m.at("accuracy", default: none) != none { none } else { li-acc-line(oa) } },
       if "auto_pairing" in m { li-auto-line(m.auto_pairing) })
   } else if m.status == "measured" {
     valued(fill: if "ratio_to_fastest" in m { ratio-fill(m.ratio_to_fastest) } else { none }, dur(m.seconds_per_point),
@@ -766,7 +768,7 @@
 // Table 1's last page.
 #pagebreak(weak: true)
 #figure(kind: table,
-  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary)#if li-unchecked != none [, timed with the unchecked reduction setting#footnote[The setting is off by default. A default call (`reduction="auto"`, checks of the backends on) runs TIRust at the target accuracy ($10^(-5)$) with the per-point NinjaRS fallback; it does not get these times. Its served fractions and checked times are `lit-perf`'s records in `data/li-timing.json`.]]. How to read it: #link(<reading>)[at the end].],
+  caption: [*Loop-induced processes* ($|A_"loop"|^2$; the equivalent of @tab:summary)#if li-unchecked != none [, timed with the unchecked reduction setting#footnote[The setting is off by default. A default call (`reduction="auto"`, checks of the backends on) runs TIRust at the target accuracy ($10^(-5)$) with the per-point NinjaRS fallback; it does not get these times.]]. How to read it: #link(<reading>)[at the end].],
   {
     set text(7pt, font: sans, stretch: 87.5%)
     set par(justify: false)
@@ -918,7 +920,7 @@
 // the largest TIRust-vs-NinjaRS difference at the timed points, LI-B1's L6).
 #let BK = LI.at("backends", default: none)
 #let bk-time(c) = if c.status == "measured" [#text(weight: "bold", dur(c.seconds_per_point)) #h(1fr) #if c.at("stages", default: none) != none { stage-bar(c.stages, width: 1.3cm) }] else { dim[#c.status#if c.at("reason", default: none) != none [: #c.reason]] }
-#let bk-acc(c) = { let a = c.at("accuracy", default: none); if a == none { dim[—] } else if a.at("cross_backend", default: false) { (if a.note { text.with(fill: fail-ink, weight: "bold") } else { dim })[T vs N #esci(a.max_relative)#if a.above > 0 [ (#a.above/#a.points > #esci(a.lax))] (no truth)] } else if a.note { text(fill: fail-ink, weight: "bold")[#esci(a.max_relative)#if a.above > 0 [ (#a.above/#a.points > #esci(a.lax))]#if a.failed > 0 [ #a.failed fail]] } else [#esci(a.max_relative)] }
+#let bk-acc(c) = { let a = c.at("accuracy", default: none); if a == none { dim[—] } else if a.at("cross_backend", default: false) { (if a.note { text.with(fill: fail-ink, weight: "bold") } else { dim })[TIRust vs NinjaRS (no truth): #esci(a.max_relative)#if a.above > 0 [ (#a.above/#a.points > #esci(a.lax))]#{ let at = a.at("truth_at_points", default: none); if at != none [; vs truth at #at.points.len() pts: T #esci(at.tirust_max_relative), N #esci(at.ninjars_max_relative)] }] } else if a.note { text(fill: fail-ink, weight: "bold")[#esci(a.max_relative)#if a.above > 0 [ (#a.above/#a.points > #esci(a.lax))]#if a.failed > 0 [ #a.failed fail]] } else [#esci(a.max_relative)] }
 #let bk-l6(l) = if l == none { dim[—] } else { l.runs.map(x => [#x.status#if x.tirust_served != none [ (T #x.tirust_served/#x.of)]#if x.finite_max_relative != none [ #esci(x.finite_max_relative)]]).join([; ]) }
 #let bk-figure = if BK != none {
   let li-b = BK.loop_induced.rows
@@ -930,13 +932,15 @@
       timed rows of @tab:summary-li#if BK.loop_induced.not_unchecked.len() > 0 [ (not shown: #BK.loop_induced.not_unchecked.len() row#if BK.loop_induced.not_unchecked.len() > 1 [s] without an unchecked time, its marker in @tab:summary-li)], each backend's largest
       relative error against TIRust at 256 bits (#raw(BK.loop_induced.accuracy)) and the binary64 L6 verdict of the checked default
       (`lit.json`: status, TIRust's served points, the largest finite-part difference of the two backends). Born-interfered rows:
-      @tab:summary's $2 -> 3$ and $2 -> 4$ rows, with the largest TIRust-vs-NinjaRS difference at the timed points.],
+      @tab:summary's $2 -> 3$ and $2 -> 4$ rows, with the largest TIRust-vs-NinjaRS difference at the timed points (a cross-backend
+      difference, not a truth; in red above the lax precision, its line in the Missing box)#if born-b.all(r => (r.tirust, r.ninjars).all(c => c.at("stages", default: none) == none)) [; no instrumented run of their backend arms, so no stage bar (@tab:summary carries the default backend's stage split)].
+      A loop-induced row without a 256-bit truth shows the two backends' difference once, over both columns.],
     {
       set text(6.8pt, font: sans, stretch: 87.5%)
       set par(justify: false, leading: 0.4em)
       show table.cell.where(y: 0): set text(6.6pt, fill: white, weight: "bold")
       table(
-        columns: (2.6cm, 3.1cm, 3.1cm, auto, auto, auto, 1fr),
+        columns: (2.6cm, 3.1cm, 3.1cm, auto, 1.7cm, 1.7cm, 1fr),
         align: (x, y) => if x in (3, 4, 5) { right + horizon } else { left + horizon },
         inset: (x: 3pt, y: 2.4pt),
         stroke: (x, y) => (top: if y <= 1 { none } else { hair }),
@@ -947,7 +951,11 @@
           text(8pt, font: "Libertinus Serif", math-label(r.math)),
           bk-time(r.tirust), bk-time(r.ninjars),
           if "ratio" in r [#mult2(r.ratio)] else { dim[—] },
-          bk-acc(r.tirust), bk-acc(r.ninjars), text(6.2pt, bk-l6(r.l6)),
+          ..if r.tirust.at("accuracy", default: none) != none and r.tirust.accuracy.at("cross_backend", default: false) {
+            // One difference of the two backends (no truth): one cell over both.
+            (table.cell(colspan: 2, align: left + horizon, bk-acc(r.tirust)),)
+          } else { (bk-acc(r.tirust), bk-acc(r.ninjars)) },
+          text(6.2pt, bk-l6(r.l6)),
         )).flatten(),
         table.cell(colspan: 7, fill: pale)[*Born-interfered* (@tab:summary's G1 rows) · LI-B1's L6 over its campaign rows: #if l6b == none [not recorded] else [#l6b.status (#l6b.rows.pairs().map(((k, v)) => [#v #k]).join(", "))]#if not BK.born_interfered.present [ · #raw(BK.born_interfered.file) not written yet]],
         ..born-b.map(r => if r.tirust.status != "measured" and r.tirust == r.ninjars {
@@ -957,13 +965,14 @@
           text(8pt, font: "Libertinus Serif", math-label(r.math)),
           bk-time(r.tirust), bk-time(r.ninjars),
           if "ratio" in r [#mult2(r.ratio)] else { dim[—] },
-          table.cell(colspan: 3, if "agreement" in r [largest |T − N| ÷ max(|T|, |N|) #esci(r.agreement.max_relative) at #r.agreement.points points] else { dim[—] }),
+          table.cell(colspan: 3, if "agreement" in r { (if r.agreement.note { text.with(fill: fail-ink, weight: "bold") } else { (x) => x })[largest |T − N| ÷ max(|T|, |N|) #esci(r.agreement.max_relative) over #r.agreement.points points] } else { dim[—] }),
         ) }).flatten(),
       )
     },
   )
 }
-#if BK != none [#(bk-figure) <tab:backends>]
+// Its own page: the table runs over a page, never a header orphaned below Figure 1.
+#if BK != none [#pagebreak(weak: true)#(bk-figure) <tab:backends>]
 
 
 // ============================================== MISSING OR INCOMPLETE ==
@@ -984,7 +993,7 @@
     set par(justify: false, leading: 0.45em)
     text(8pt, weight: "bold", fill: navy)[Missing or incomplete]
     h(4pt)
-    dim[(generated from the tables' data; Table 1 then Table 2; gate lines: time ÷ limit and the stage that dominates pyAmpliCol's time)]
+    dim[(generated from the tables' data; Table 1, Table 2, then Table 3; gate lines: time ÷ limit and the stage that dominates pyAmpliCol's time)]
     for e in MISS {
       v(2.2pt)
       block(spacing: 0pt)[#text(weight: "bold")[T#e.table · #miss-kind.at(e.kind)]: #e.text — #range(e.rows.len()).map(i => miss-row(e, i)).join([, ])]

@@ -4097,6 +4097,9 @@ def build_backend_table(summary: dict, loop_induced: dict, data: Path = DATA) ->
 
     lit = _li_input(data, LI_VALIDATION)
     born = _li_input(data, BORN_BACKENDS)
+    # The lax precision of the accuracy record: a Born-interfered TIRust-vs-
+    # NinjaRS difference above it carries its note (DECISIONS 06:21 (1)).
+    lax = (_li_input(data, LI_ACCURACY) or {}).get("lax")
     li_rows = []
     for g in loop_induced["groups"]:
         for r in g["rows"]:
@@ -4172,7 +4175,11 @@ def build_backend_table(summary: dict, loop_induced: dict, data: Path = DATA) ->
                 row["ratio"] = nj["seconds_per_point"] / ti["seconds_per_point"]
             agreement = (found.get("tirust") or {}).get("agreement")
             if agreement is not None:
-                row["agreement"] = agreement
+                row["agreement"] = {
+                    **agreement,
+                    "lax": lax,
+                    "note": lax is not None and agreement["max_relative"] > lax,
+                }
             born_rows.append(row)
     return {
         "rule": BACKEND_RULE,
@@ -4288,6 +4295,11 @@ def build_missing(summary: dict, loop_induced: dict) -> list[dict]:
             if gate.get("status") in ("fail", "open"):
                 add("gate", "2", label, f"{gate['status']} on {gate.get('backend_label', 'TIRust')}",
                     ratio=gate.get("ratio_to_limit"), dominant=_dominant(tim.get("stages")))
+            o = tim.get("other_backend") or {}
+            if "status" in o and o["status"] not in ("measured", "served") and not (o.get("accuracy") or {}).get("failed"):
+                # The other backend's cell without a value whose failures no
+                # accuracy line below names.
+                add("no value", "2", label, f"{o.get('backend_label')} time: {o.get('status')} ({_short(o.get('reason') or o.get('label'))})")
             v = r["validation"]
             if v.get("status") == "partial":
                 add("validation", "2", label, f"partial: {_partial(v.get('note'))}")
@@ -4315,6 +4327,12 @@ def build_missing(summary: dict, loop_induced: dict) -> list[dict]:
                     if a["failed"]:
                         parts.append(f"{a['failed']} points fail ({', '.join(a['failed_classes'])})")
                     add("accuracy", "2", label, f"{c.get('backend_label')} unchecked: {'; '.join(parts)}")
+    for r in (loop_induced.get("backends") or {}).get("born_interfered", {}).get("rows", []):
+        a = r.get("agreement") or {}
+        if a.get("note"):
+            add("accuracy", "3", r["math"],
+                f"Born-interfered TIRust vs NinjaRS unchecked (cross-backend, not a truth): largest difference"
+                f" {a['max_relative']:.1e} over {a['points']} points, above {a['lax']:g}")
     order = {"no value": 0, "gate": 1, "validation": 2, "accuracy": 3}
     return sorted(lines.values(), key=lambda e: (e["table"], order[e["kind"]]))
 
