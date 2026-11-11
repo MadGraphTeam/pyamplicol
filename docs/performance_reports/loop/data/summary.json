@@ -233,6 +233,20 @@
    "optimistic",
    "production"
   ],
+  "provider_points": {
+   "madloop": [
+    8,
+    16
+   ],
+   "openloops": [
+    8,
+    16
+   ],
+   "recola": [
+    6,
+    6
+   ]
+  },
   "provider_kept": "gg_gggg recola (not re-run); uux_ggggg madloop (its recorded generation / initial call 6006 s: beyond the 45-minute rule, HANDOFF 0.1); uux_ggggg recola (its recorded generation / initial call 10220 s: beyond the 45-minute rule, HANDOFF 0.1)",
   "report": {
    "date": "2026-11-11",

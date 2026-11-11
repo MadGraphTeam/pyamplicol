@@ -7697,7 +7697,8 @@
         "above": 23,
         "worst": 0.0703179427849954,
         "served_by": [],
-        "failed": 0,
+        "failed": null,
+        "not_compared": 0,
         "failed_classes": [],
         "note": true,
         "cross_backend": true,
@@ -7714,7 +7715,8 @@
        "above": 23,
        "worst": 0.0703179427849954,
        "served_by": [],
-       "failed": 0,
+       "failed": null,
+       "not_compared": 0,
        "failed_classes": [],
        "note": true,
        "cross_backend": true,
@@ -7890,7 +7892,8 @@
         "above": 0,
         "worst": null,
         "served_by": [],
-        "failed": 16,
+        "failed": null,
+        "not_compared": 16,
         "failed_classes": [],
         "note": false,
         "cross_backend": true,
@@ -7927,7 +7930,8 @@
        "above": 0,
        "worst": null,
        "served_by": [],
-       "failed": 16,
+       "failed": null,
+       "not_compared": 16,
        "failed_classes": [],
        "note": false,
        "cross_backend": true,
@@ -12214,7 +12218,8 @@
        "above": 23,
        "worst": 0.0703179427849954,
        "served_by": [],
-       "failed": 0,
+       "failed": null,
+       "not_compared": 0,
        "failed_classes": [],
        "note": true,
        "cross_backend": true,
@@ -12234,7 +12239,8 @@
        "above": 23,
        "worst": 0.0703179427849954,
        "served_by": [],
-       "failed": 0,
+       "failed": null,
+       "not_compared": 0,
        "failed_classes": [],
        "note": true,
        "cross_backend": true,
@@ -12792,15 +12798,7 @@
   {
    "kind": "accuracy",
    "table": "2",
-   "text": "TIRust unchecked: 23/128 points above 1e-05, worst 7.0e-02",
-   "rows": [
-    "g g -> a a g g"
-   ]
-  },
-  {
-   "kind": "accuracy",
-   "table": "2",
-   "text": "NinjaRS per amplitude unchecked: 23/128 points above 1e-05, worst 7.0e-02",
+   "text": "TIRust vs NinjaRS unchecked (no 256-bit truth, cross-backend, not a truth): 23/128 points differ above 1e-05, largest 7.0e-02",
    "rows": [
     "g g -> a a g g"
    ]

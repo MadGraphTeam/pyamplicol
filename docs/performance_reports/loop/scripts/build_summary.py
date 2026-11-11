@@ -2990,7 +2990,11 @@ def _li_accuracy(acc: dict | None, key: str, backend: str) -> dict | None:
             "above": cross["above_1e-5"],
             "worst": cross["max_relative"] if cross["above_1e-5"] else None,
             "served_by": [],
-            "failed": cross.get("failed", 0),
+            # Points where either backend failed: not compared, and not
+            # either backend's own failure count (the timing record has
+            # those).
+            "failed": None,
+            "not_compared": cross.get("failed", 0),
             "failed_classes": [],
             "note": bool(cross["above_1e-5"]),
             "cross_backend": True,
@@ -3953,6 +3957,32 @@ def build() -> tuple[dict, Recency]:
                     if "protocol" in x
                 }
             ),
+            # The timed points per optimistic provider record (smallest,
+            # largest): Recola's optimistic arm times only the stream points
+            # at the first point's scale (providers.py same_scale), stated
+            # beside its ratios.
+            "provider_points": {
+                name: [min(counts), max(counts)]
+                for name in sorted(
+                    {
+                        n
+                        for g in groups
+                        for r in g["rows"]
+                        for n in (r["full_colour"].get("providers") or {})
+                    }
+                )
+                if (
+                    counts := [
+                        x["points"]
+                        for g in groups
+                        for r in g["rows"]
+                        for n, x in (r["full_colour"].get("providers") or {}).items()
+                        if n == name
+                        and x.get("protocol") == "optimistic"
+                        and isinstance(x.get("points"), int)
+                    ]
+                )
+            },
             # Why a provider kept its production record (g1.json meta label
             # ``provider_kept``, written with the re-time's gate run).
             **(
@@ -4256,6 +4286,13 @@ def build_missing(summary: dict, loop_induced: dict) -> list[dict]:
                 add("validation", "2", label, f"partial: {_partial(v.get('note'))}")
             for c in (tim, tim.get("other_backend") or {}):
                 a = c.get("accuracy") or {}
+                if a.get("note") and a.get("cross_backend"):
+                    # No 256-bit truth: the two backends' difference, one
+                    # labelled line per row, never an error of either.
+                    add("accuracy", "2", label,
+                        f"TIRust vs NinjaRS unchecked (no 256-bit truth, cross-backend, not a truth): "
+                        f"{a['above']}/{a['points']} points differ above {a['lax']:g}, largest {a['worst']:.1e}")
+                    break
                 if a.get("note"):
                     parts = []
                     if a["above"]:

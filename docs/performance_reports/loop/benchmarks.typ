@@ -703,7 +703,7 @@
 // accuracy.json, DECISIONS 2026-11-09 04:18): against the 256-bit truth, the
 // largest error; the note where points lie above the lax precision or fail.
 #let li-acc-served(a) = if a.served_by == ("last resort",) [, all served by the gate-0 PV last resort] else if a.served_by == ("checked refused",) [, finite values where the checked mode refuses] else if a.served_by == ("checked served",) [, also in the checked mode] else []
-#let li-acc-line(a) = if a == none { none } else if a.at("cross_backend", default: false) { (if a.note { text.with(fill: fail-ink, weight: "bold") } else { dim })[TIRust vs NinjaRS (#a.points pts; no 256-bit truth within the row budget): max #esci(a.max_relative)#if a.above > 0 [, #a.above pts above #esci(a.lax)]] } else if not a.note { dim[vs 256-bit truth (#a.points pts): max #esci(a.max_relative)] } else {
+#let li-acc-line(a) = if a == none { none } else if a.at("cross_backend", default: false) { (if a.note { text.with(fill: fail-ink, weight: "bold") } else { dim })[TIRust vs NinjaRS (#a.points pts; no 256-bit truth within the row budget): max #esci(a.max_relative)#if a.above > 0 [, #a.above pts above #esci(a.lax)]#if a.at("not_compared", default: 0) > 0 [; #a.not_compared pts not compared (a backend failed them)]] } else if not a.note { dim[vs 256-bit truth (#a.points pts): max #esci(a.max_relative)] } else {
   text(fill: fail-ink, weight: "bold")[accuracy: #if a.above > 0 [#a.above/#a.points pts above #esci(a.lax), worst #esci(a.worst)#li-acc-served(a)]#if a.above > 0 and a.failed > 0 [; ]#if a.failed > 0 [#a.failed pts fail (#a.failed_classes.join(", ")), the call timed whole]]
 }
 // "auto" with the setting against the TIRust arm, paired in the same unit
@@ -918,7 +918,7 @@
 // the largest TIRust-vs-NinjaRS difference at the timed points, LI-B1's L6).
 #let BK = LI.at("backends", default: none)
 #let bk-time(c) = if c.status == "measured" [#text(weight: "bold", dur(c.seconds_per_point)) #h(1fr) #if c.at("stages", default: none) != none { stage-bar(c.stages, width: 1.3cm) }] else { dim[#c.status#if c.at("reason", default: none) != none [: #c.reason]] }
-#let bk-acc(c) = { let a = c.at("accuracy", default: none); if a == none { dim[—] } else if a.note { text(fill: fail-ink, weight: "bold")[#esci(a.max_relative)#if a.above > 0 [ (#a.above/#a.points > #esci(a.lax))]#if a.failed > 0 [ #a.failed fail]] } else [#esci(a.max_relative)] }
+#let bk-acc(c) = { let a = c.at("accuracy", default: none); if a == none { dim[—] } else if a.at("cross_backend", default: false) { (if a.note { text.with(fill: fail-ink, weight: "bold") } else { dim })[T vs N #esci(a.max_relative)#if a.above > 0 [ (#a.above/#a.points > #esci(a.lax))] (no truth)] } else if a.note { text(fill: fail-ink, weight: "bold")[#esci(a.max_relative)#if a.above > 0 [ (#a.above/#a.points > #esci(a.lax))]#if a.failed > 0 [ #a.failed fail]] } else [#esci(a.max_relative)] }
 #let bk-l6(l) = if l == none { dim[—] } else { l.runs.map(x => [#x.status#if x.tirust_served != none [ (T #x.tirust_served/#x.of)]#if x.finite_max_relative != none [ #esci(x.finite_max_relative)]]).join([; ]) }
 #let bk-figure = if BK != none {
   let li-b = BK.loop_induced.rows
@@ -927,7 +927,7 @@
   figure(kind: table,
     caption: [*TIRust and NinjaRS* (the two reduction backends) under the same public unchecked setting: time per point at
       $B = 128$ with each backend's stage bar (instrumented run), the ratio NinjaRS ÷ TIRust, and their agreement. Loop-induced rows: the
-      timed rows of @tab:summary-li#if BK.loop_induced.not_unchecked.len() > 0 [ (#BK.loop_induced.not_unchecked.len() other rows not re-timed with the setting at this head)], each backend's largest
+      timed rows of @tab:summary-li#if BK.loop_induced.not_unchecked.len() > 0 [ (not shown: #BK.loop_induced.not_unchecked.len() row#if BK.loop_induced.not_unchecked.len() > 1 [s] without an unchecked time, its marker in @tab:summary-li)], each backend's largest
       relative error against TIRust at 256 bits (#raw(BK.loop_induced.accuracy)) and the binary64 L6 verdict of the checked default
       (`lit.json`: status, TIRust's served points, the largest finite-part difference of the two backends). Born-interfered rows:
       @tab:summary's $2 -> 3$ and $2 -> 4$ rows, with the largest TIRust-vs-NinjaRS difference at the timed points.],
@@ -1043,14 +1043,18 @@
 #set par(justify: true)
 // Rows whose fastest provider time is an upper bound (summary.json fastest.bound).
 #let bound-rows = all-rows.filter(r => { let f = r.full_colour.at("fastest", default: none); f != none and f.at("bound", default: none) == "upper" })
-*Timing settings* (every time in this report: most optimistic, no stability check, reached through settings a user
-sets; nothing modified). *pyAmpliCol* (binary64, SymJIT `-O2` evaluators as shipped, `RAYON_NUM_THREADS=1`, one core
+*Timing settings* (every time in @tab:summary-li, @tab:backends and @fig:gate's loop-induced rows: most optimistic, no stability check,
+reached through settings a user sets; nothing modified; @tab:summary as stated below; the stored $2 -> 6$ rows of
+@tab:summary are outside this protocol: internal checks and rescue, labelled in their rows). *pyAmpliCol* (binary64, SymJIT `-O2` evaluators as shipped, `RAYON_NUM_THREADS=1`, one core
 by `taskset`): @tab:summary-li and @tab:backends time `Runtime.load(artifact, reduction_unchecked=True)` then
 `evaluate(points, mu_r2=…, poles="none", on_failure="return", reduction="tirust" | "ninjars")`, with no
 `stability_checks`, no `stability` rescue policy and `kinematics_improvement_binary64` off (the defaults); @tab:summary
 times the same public path through the benchmark harness (`python -m tools.loop_benchmark pyamplicol <row> --inputs
 native --batches 128`, values bitwise those of `Runtime.evaluate`), poles off, no stability check or rescue, the
-default reduction (NinjaRS). *OpenLoops* 2.1.5: `expert_mode 1`, `stability_mode 11` (stability system off),
+default reduction setting (`reduction_unchecked = false`, NinjaRS: its per-point acceptance test runs, with no rescue
+behind it). On the nine $2 -> 3$ and $2 -> 4$ rows a paired same-core A/B against `reduction_unchecked = True` (3
+fresh instances per arm, 128 points) gives bitwise-identical values and unchecked ÷ default ×0.92–×1.25 (×1.25 a
+noisy g g → g g g sample; the others ×0.92–×1.05): these times equal the no-check setup within the timing noise. *OpenLoops* 2.1.5: `expert_mode 1`, `stability_mode 11` (stability system off),
 `truepoles 0`, and `ir_on 0` on the Born-interfered rows. *MadLoop* (MG5_aMC 3.7.0): `CTModeRun 1` in
 `MadLoopParams.dat` (no stability test). *Recola* 2.2.5 with COLLIER: `set_dynamic_settings_rcl(0)`,
 `set_compute_ir_poles_rcl(0)`, release build. A provider time marked #super[p] is a production record (named in its
@@ -1061,11 +1065,12 @@ pyAmpliCol's value in bold and, at its right, the multiplier _pyAmpliCol ÷ the 
 among the provider values).#if bound-rows.len() > 0 [ A provider time marked ≤ (#row-names(bound-rows.map(r => r.key))) comes from a run outside the protocol that does the production work and more (Recola's reference run evaluates the IR poles too), so it bounds that provider's production time from above, and the multiplier against it is a lower bound (≥); it is never a gate limit.] Only run times are coloured: green faster, white at parity, red slower (log₂ scale, clamped at
 ×1/16 and ×16). Generation multipliers are uncoloured (generation time is not the main metric) and leading colour (LC)
 has no provider ratio. Grey cells say why a value is missing. Run times are medians per phase-space point at
-$B = 128$, finite part, binary64, one pinned thread, stability checks off; generation is generate + plan export (model
+$B = 128$, finite part, binary64, one pinned thread, no stability check or rescue, the default reduction setting
+(`reduction_unchecked = false`: NinjaRS's per-point acceptance test runs; see _Timing settings_); generation is generate + plan export (model
 loading excluded) with its peak memory and plan size.#if t1-optimistic [ The providers run in their most optimistic
 settings (m-lit F4; `tools/loop_benchmark providers --protocol optimistic`), timed on pyAmpliCol's core: MadLoop 3.7.0
 (ML) without its stability test (`CTModeRun 1`), Recola 2.2.5 with COLLIER (Rc) without dynamic settings (alpha_s and
-the scale set before its generation, outside the timer, so it times the stream points at the first point's $mu_R$),
+the scale set before its generation, outside the timer, so it times the stream points at the first point's $mu_R$#{ let rp = S.meta.at("provider_points", default: (:)).at("recola", default: none); if rp != none [: #if rp.at(0) == rp.at(1) [#rp.at(0)] else [#rp.at(0)–#rp.at(1)] points per row, against #S.meta.provider_points.values().map(x => x.at(1)).fold(0, calc.max) for the other providers] }),
 `compute_ir_poles 0`, release build, OpenLoops 2.1.5 from prebuilt libraries (OL: no generation time) with its
 stability system and I-operator poles off; each optimistic value equals the provider's production value at the timed
 points. A provider time marked #super[p] is its production record, not re-timed (#S.meta.at("provider_kept", default: "no reason recorded")).] else [ The providers run in production mode: MadLoop 3.7.0 (ML),
@@ -1158,8 +1163,7 @@ the provenance line names pyAmpliCol's host and the providers'. Rows of four leg
 (the gated backend, "on TIRust"); where TIRust failed points closed the chip says "no verdict … (gap)": its time is
 no served-point time and how a verdict is given there is not ruled ("no verdict yet" before the gate tool's records,
 "no provider time yet" while no provider of the row is timed). Grey cells are explicit markers:
-*pending* (the package that serves the row, named in the cell, has not landed at this head, or the input file that
-fills the cell does not exist yet), *not run* (a landed package without a record of the row, or a run stopped before its timing, with its measured
+*not run* (a landed package without a record of the row, or a run stopped before its timing, with its measured
 progress, e.g. a generation beyond the 45-min rule), *failed closed* or
 *refused* (the record of the cell's request failed points or was refused: no time), and a provider's reason where it
 has no matched time. Nothing is estimated or extrapolated; each cell shows the newest record of its row. At
