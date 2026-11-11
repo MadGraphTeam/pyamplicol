@@ -12,7 +12,7 @@
   },
   "default_backend": "TIRust",
   "unchecked": {
-   "rows": 37,
+   "rows": 40,
    "setting": "reduction_unchecked = true (default false)",
    "revisions": [
     "524e6cfa"
@@ -39,6 +39,8 @@
     "lax": 1e-05,
     "noted": [
      "gg_aag:ninjars",
+     "gg_aagg:ninjars",
+     "gg_aagg:tirust",
      "gg_agg:ninjars",
      "gg_hggg:ninjars",
      "gg_hhh:ninjars",
@@ -272,10 +274,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 5.153333668801187,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 1.24e-12,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_gg_h].ninjars"
+       }
       },
       "ratio_to_fastest": 4.885760250168711,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.18e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_h].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -433,10 +459,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 5.2866515216781655,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 1.13e-12,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_h_gg].ninjars"
+       }
       },
       "ratio_to_fastest": 5.03838537544084,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.02e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_h_gg].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -595,10 +645,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 7.35561832554131,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 4.18e-13,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_h_aa].ninjars"
+       }
       },
       "ratio_to_fastest": 6.846785781748806,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 2.42e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_h_aa].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -757,10 +831,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 4.8324309275388995,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 1.57e-12,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_h_za].ninjars"
+       }
       },
       "ratio_to_fastest": 4.5454658108680315,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.16e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_h_za].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -917,10 +1015,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 6.529293251606567,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 1.62e-13,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_aa_h].ninjars"
+       }
       },
       "ratio_to_fastest": 6.232201748741138,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.39e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_aa_h].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -1097,10 +1219,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 1.8648190279407084,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 2.44e-13,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_gg_aa].ninjars"
+       }
       },
       "ratio_to_fastest": 0.5949481175827128,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 6.55e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_aa].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -1156,8 +1302,8 @@
       ],
       "providers": {
        "madloop": {
-        "seconds_per_point": 0.006037984,
-        "half_range": 0.20147991448801458,
+        "seconds_per_point": 0.0032491595,
+        "half_range": 0.015835710743039803,
         "rounds": 5,
         "source": "li-timing.json records[gg_zz, tirust, 524e6cfa].providers.times.madloop",
         "protocol": "optimistic",
@@ -1165,8 +1311,8 @@
         "host": "itphlies"
        },
        "openloops": {
-        "seconds_per_point": 0.0078911815,
-        "half_range": 0.21995084006114923,
+        "seconds_per_point": 0.004124194,
+        "half_range": 0.014076689893831375,
         "rounds": 5,
         "source": "li-timing.json records[gg_zz, tirust, 524e6cfa].providers.times.openloops",
         "protocol": "optimistic",
@@ -1174,8 +1320,8 @@
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.010427102,
-        "half_range": 0.20286904741125575,
+        "seconds_per_point": 0.00545991,
+        "half_range": 0.02886508202516158,
         "rounds": 5,
         "source": "li-timing.json records[gg_zz, tirust, 524e6cfa].providers.times.recola",
         "protocol": "optimistic",
@@ -1187,7 +1333,7 @@
       "fastest": {
        "key": "madloop",
        "name": "MadLoop",
-       "seconds_per_point": 0.006037984
+       "seconds_per_point": 0.0032491595
       },
       "paired": true
      },
@@ -1229,71 +1375,91 @@
       "source": "li-timing.json records[gg_zz, tirust, 524e6cfa].public_generation"
      },
      "timing": {
-      "status": "failed closed",
+      "status": "measured",
       "batch": 128,
-      "blocks": 3,
-      "failed_points": [
-       1,
-       1
-      ],
-      "served_fraction": 0.9921875,
-      "every_point": false,
-      "causes": {
-       "lane status TIRust": 1
-      },
-      "label": "1/128 failed closed, lane status TIRust",
-      "requested": "tirust",
-      "revision": "524e6cfa",
-      "source": "li-timing.json records[gg_zz, tirust, 524e6cfa]",
+      "seconds_per_point": 0.0023564499606436584,
       "backend": "tirust",
       "backend_label": "TIRust",
+      "default_backend": true,
+      "revision": "524e6cfa",
+      "native_build": "loop-native-v2-slice-678c4749",
+      "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+      "host": "itphlies",
+      "source": "li-timing.json records[gg_zz, tirust, 524e6cfa]",
+      "date": "2026-11-11",
+      "requested": "tirust",
+      "reason": "requested",
       "other_backend": {
        "backend": "ninjars",
        "backend_label": "NinjaRS per amplitude",
        "requested": "ninjars",
-       "status": "failed closed",
-       "batch": 128,
-       "blocks": 3,
-       "failed_points": [
-        2,
-        2
-       ],
-       "served_fraction": 0.984375,
-       "every_point": false,
-       "causes": {
-        "lane status Unstable": 2
-       },
-       "label": "2/128 failed closed, lane status Unstable",
+       "status": "served",
+       "served_fraction": 1.0,
+       "label": "128/128",
+       "seconds_per_point": 0.006095645898312796,
        "unchecked": true,
-       "instance_spread": 1.0345202165488308,
+       "instance_spread": 1.1560880549781596,
        "stages": {
-        "inputs": 2.8390429687500002e-05,
-        "numerator": 0.0011307257890625002,
-        "scatter": 0.00015950207031250002,
-        "ninjars": 0.0045331887890625,
-        "masters": 0.0006594068203125001,
-        "glue": 0.0005791009548984545,
+        "inputs": 2.0546875e-05,
+        "numerator": 0.0008608969921875,
+        "scatter": 0.00010986001562499999,
+        "ninjars": 0.0031845565,
+        "masters": 0.0005913734296875,
+        "glue": 0.0004360665930561586,
         "untimed": 0.0,
-        "total": 0.007090390790835954,
+        "total": 0.005203350639931159,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "accuracy": null
+       "ratio_to_fastest": 1.8760685335123732,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 8.76e-11,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_gg_zz].ninjars"
+       }
       },
+      "ratio_to_fastest": 0.7252490869234516,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 5.49e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zz].tirust"
+      },
+      "lit_dress": true,
       "unchecked": true,
+      "instances": 3,
+      "instance_spread": 1.36076138464208,
       "stages": {
-       "inputs": 4.09808046875e-05,
-       "numerator": 0.0011804564609375,
-       "scatter": 0.0001645826953125,
-       "moments": 0.000183691140625,
-       "contraction": 8.422167968749999e-05,
-       "glue": 0.0007717159913425649,
+       "inputs": 2.2050171875e-05,
+       "numerator": 0.0008665558515625002,
+       "scatter": 0.00010993549218749998,
+       "moments": 0.00012591932812500002,
+       "contraction": 6.687115625e-05,
+       "glue": 0.0004818520012287813,
        "untimed": 0.0,
-       "total": 0.002425727139780065,
+       "total": 0.0016732389231037814,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -1439,10 +1605,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 2.8943493447783726,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 5.22e-12,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_gg_wpwm].ninjars"
+       }
       },
       "ratio_to_fastest": 0.6520219041580226,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.23e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_wpwm].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -1608,10 +1798,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 1.4248419949817723,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 6.39e-12,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_gg_za].ninjars"
+       }
       },
       "ratio_to_fastest": 0.49909075352205784,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 6.76e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_za].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -1792,7 +2006,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_hh].ninjars"
        }
       },
@@ -1807,7 +2021,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hh].tirust"
       },
       "lit_dress": true,
@@ -1975,10 +2189,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 0.632323981303166,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 1.41e-12,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_gg_hz].ninjars"
+       }
       },
       "ratio_to_fastest": 0.3652378637806184,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.42e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hz].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -2145,10 +2383,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 1.6488199740519762,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 7.3e-13,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_gg_hg].ninjars"
+       }
       },
       "ratio_to_fastest": 1.0179164853975562,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 2.4e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hg].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -2315,10 +2577,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 7.153860482430412,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 1.54e-13,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_uux_hg].ninjars"
+       }
       },
       "ratio_to_fastest": 6.545185341622751,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.08e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_uux_hg].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -2484,10 +2770,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 6.497761229148316,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 1.08e-13,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_ug_hu].ninjars"
+       }
       },
       "ratio_to_fastest": 6.1268837749699,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.23e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_ug_hu].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -2653,10 +2963,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 3.4097979366795776,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 9.74e-12,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_gg_zg].ninjars"
+       }
       },
       "ratio_to_fastest": 0.8964671283710396,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 9.42e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zg].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -2822,10 +3156,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 1.6071459530231877,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 1.71e-12,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_gg_ag].ninjars"
+       }
       },
       "ratio_to_fastest": 0.6005273361958192,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 2.26e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_ag].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -2979,10 +3337,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 4.377905004274708,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 1.85e-13,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_emep_ha].ninjars"
+       }
       },
       "ratio_to_fastest": 4.107330636682521,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.77e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_emep_ha].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -3141,10 +3523,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 1.1684713890612972,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 4.92e-14,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_aa_aa].ninjars"
+       }
       },
       "ratio_to_fastest": 0.34229619843541137,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.83e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_aa_aa].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -3203,8 +3609,8 @@
         "reason": "no production timing yet"
        },
        "recola": {
-        "seconds_per_point": 0.010491153,
-        "half_range": 0.021295895694210174,
+        "seconds_per_point": 0.010290977,
+        "half_range": 0.02810653934995679,
         "rounds": 5,
         "source": "li-timing.json records[aa_zz, tirust, 524e6cfa].providers.times.recola",
         "protocol": "optimistic",
@@ -3215,7 +3621,7 @@
       "fastest": {
        "key": "recola",
        "name": "Recola",
-       "seconds_per_point": 0.010491153
+       "seconds_per_point": 0.010290977
       },
       "unmatched": false,
       "generation": {},
@@ -3254,71 +3660,91 @@
       "source": "li-timing.json records[aa_zz, tirust, 524e6cfa].public_generation"
      },
      "timing": {
-      "status": "failed closed",
+      "status": "measured",
       "batch": 128,
-      "blocks": 3,
-      "failed_points": [
-       1,
-       1
-      ],
-      "served_fraction": 0.9921875,
-      "every_point": false,
-      "causes": {
-       "lane status TIRust": 1
-      },
-      "label": "1/128 failed closed, lane status TIRust",
-      "requested": "tirust",
-      "revision": "524e6cfa",
-      "source": "li-timing.json records[aa_zz, tirust, 524e6cfa]",
+      "seconds_per_point": 0.004277584663213929,
       "backend": "tirust",
       "backend_label": "TIRust",
+      "default_backend": true,
+      "revision": "524e6cfa",
+      "native_build": "loop-native-v2-slice-678c4749",
+      "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+      "host": "itphlies",
+      "source": "li-timing.json records[aa_zz, tirust, 524e6cfa]",
+      "date": "2026-11-11",
+      "requested": "tirust",
+      "reason": "requested",
       "other_backend": {
        "backend": "ninjars",
        "backend_label": "NinjaRS per amplitude",
        "requested": "ninjars",
-       "status": "failed closed",
-       "batch": 128,
-       "blocks": 3,
-       "failed_points": [
-        2,
-        2
-       ],
-       "served_fraction": 0.984375,
-       "every_point": false,
-       "causes": {
-        "lane status Unstable": 2
-       },
-       "label": "2/128 failed closed, lane status Unstable",
+       "status": "served",
+       "served_fraction": 1.0,
+       "label": "128/128",
+       "seconds_per_point": 0.011827830763650127,
        "unchecked": true,
-       "instance_spread": 1.038141660276916,
+       "instance_spread": 1.1056558419674716,
        "stages": {
-        "inputs": 0.00039897079687499997,
-        "numerator": 4.90625e-07,
+        "inputs": 0.0003645699765625,
+        "numerator": 4.2234374999999995e-07,
         "scatter": 0.0,
         "ninjars": 0.0,
         "masters": 0.0,
-        "glue": 0.00038200502643539016,
+        "glue": 0.0002699771394631397,
         "untimed": 0.0,
-        "total": 0.0007814824639353901,
+        "total": 0.0006349821160256397,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "accuracy": null
+       "ratio_to_fastest": 1.1493399279436858,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 7.41e-13,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_aa_zz].ninjars"
+       }
       },
+      "ratio_to_fastest": 0.4156636112600319,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.46e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_aa_zz].tirust"
+      },
+      "lit_dress": true,
       "unchecked": true,
+      "instances": 3,
+      "instance_spread": 1.4077127756922008,
       "stages": {
-       "inputs": 0.0004060116015625,
-       "numerator": 4.717890625e-07,
+       "inputs": 0.0003690652265625,
+       "numerator": 3.9796875e-07,
        "scatter": 0.0,
        "ninjars": 0.0,
        "masters": 0.0,
-       "glue": 0.0011040051264123135,
+       "glue": 0.0002673526110214908,
        "untimed": 0.0,
-       "total": 0.0015105010170373134,
+       "total": 0.0006368296344589908,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -3353,8 +3779,8 @@
         "source": "li_campaign.json runs[li_aa_hh]"
        },
        "madloop": {
-        "seconds_per_point": 0.001849783,
-        "half_range": 0.11869689579804762,
+        "seconds_per_point": 0.001865759,
+        "half_range": 0.09053178893951477,
         "rounds": 5,
         "source": "li-timing.json records[aa_hh, tirust, 524e6cfa].providers.times.madloop",
         "protocol": "optimistic",
@@ -3362,8 +3788,8 @@
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.000763838,
-        "half_range": 0.017857516908035494,
+        "seconds_per_point": 0.0007456085,
+        "half_range": 0.018337036125526972,
         "rounds": 5,
         "source": "li-timing.json records[aa_hh, tirust, 524e6cfa].providers.times.recola",
         "protocol": "optimistic",
@@ -3374,7 +3800,7 @@
       "fastest": {
        "key": "recola",
        "name": "Recola",
-       "seconds_per_point": 0.000763838
+       "seconds_per_point": 0.0007456085
       },
       "unmatched": false,
       "generation": {},
@@ -3413,71 +3839,91 @@
       "source": "li-timing.json records[aa_hh, tirust, 524e6cfa].public_generation"
      },
      "timing": {
-      "status": "failed closed",
+      "status": "measured",
       "batch": 128,
-      "blocks": 3,
-      "failed_points": [
-       1,
-       1
-      ],
-      "served_fraction": 0.9921875,
-      "every_point": false,
-      "causes": {
-       "lane status TIRust": 1
-      },
-      "label": "1/128 failed closed, lane status TIRust",
-      "requested": "tirust",
-      "revision": "524e6cfa",
-      "source": "li-timing.json records[aa_hh, tirust, 524e6cfa]",
+      "seconds_per_point": 0.0010972453455906361,
       "backend": "tirust",
       "backend_label": "TIRust",
+      "default_backend": true,
+      "revision": "524e6cfa",
+      "native_build": "loop-native-v2-slice-678c4749",
+      "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
+      "host": "itphlies",
+      "source": "li-timing.json records[aa_hh, tirust, 524e6cfa]",
+      "date": "2026-11-11",
+      "requested": "tirust",
+      "reason": "requested",
       "other_backend": {
        "backend": "ninjars",
        "backend_label": "NinjaRS per amplitude",
        "requested": "ninjars",
-       "status": "failed closed",
-       "batch": 128,
-       "blocks": 3,
-       "failed_points": [
-        2,
-        2
-       ],
-       "served_fraction": 0.984375,
-       "every_point": false,
-       "causes": {
-        "lane status Unstable": 2
-       },
-       "label": "2/128 failed closed, lane status Unstable",
+       "status": "served",
+       "served_fraction": 1.0,
+       "label": "128/128",
+       "seconds_per_point": 0.0015534022568317596,
        "unchecked": true,
-       "instance_spread": 1.0773541891123743,
+       "instance_spread": 1.010574563451667,
        "stages": {
-        "inputs": 0.00037614265624999997,
-        "numerator": 6.8515625e-07,
+        "inputs": 0.000362290140625,
+        "numerator": 3.4976562499999995e-07,
         "scatter": 0.0,
         "ninjars": 0.0,
         "masters": 0.0,
-        "glue": 0.00014043831389050002,
+        "glue": 0.00012443632895239257,
         "untimed": 0.0,
-        "total": 0.0005172805795155,
+        "total": 0.00048709037582739256,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "accuracy": null
+       "ratio_to_fastest": 2.0834020224176086,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 9.13e-11,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_aa_hh].ninjars"
+       }
       },
+      "ratio_to_fastest": 1.4716105645129263,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 8.76e-11,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_aa_hh].tirust"
+      },
+      "lit_dress": true,
       "unchecked": true,
+      "instances": 3,
+      "instance_spread": 1.0264325384757,
       "stages": {
-       "inputs": 0.000366454875,
-       "numerator": 5.977343749999999e-07,
+       "inputs": 0.00036093496875,
+       "numerator": 3.243046875e-07,
        "scatter": 0.0,
        "ninjars": 0.0,
        "masters": 0.0,
-       "glue": 0.00014123379015201516,
+       "glue": 0.00012810056953400744,
        "untimed": 0.0,
-       "total": 0.0005083007745270152,
+       "total": 0.0004893734367215075,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "gate": {
+       "status": "reported",
+       "label": "no gate (2->2)"
+      }
      }
     },
     {
@@ -3512,8 +3958,8 @@
         "source": "li_campaign.json runs[li_emep_hh]"
        },
        "madloop": {
-        "seconds_per_point": 0.000737468,
-        "half_range": 0.2202614215125267,
+        "seconds_per_point": 0.0005009929999999999,
+        "half_range": 0.026059246336775272,
         "rounds": 5,
         "source": "li-timing.json records[emep_hh, tirust, 524e6cfa].providers.times.madloop",
         "protocol": "optimistic",
@@ -3521,8 +3967,8 @@
         "host": "itphlies"
        },
        "recola": {
-        "seconds_per_point": 0.00036416650000000003,
-        "half_range": 0.24173832573836418,
+        "seconds_per_point": 0.000200276,
+        "half_range": 0.015728294952964884,
         "rounds": 5,
         "source": "li-timing.json records[emep_hh, tirust, 524e6cfa].providers.times.recola",
         "protocol": "optimistic",
@@ -3533,7 +3979,7 @@
       "fastest": {
        "key": "recola",
        "name": "Recola",
-       "seconds_per_point": 0.00036416650000000003
+       "seconds_per_point": 0.000200276
       },
       "unmatched": false,
       "generation": {},
@@ -3574,7 +4020,7 @@
      "timing": {
       "status": "measured",
       "batch": 128,
-      "seconds_per_point": 0.0016758819365350064,
+      "seconds_per_point": 0.0010037427418865263,
       "backend": "tirust",
       "backend_label": "TIRust",
       "default_backend": true,
@@ -3590,50 +4036,66 @@
        "backend": "ninjars",
        "backend_label": "NinjaRS per amplitude",
        "requested": "ninjars",
-       "status": "failed closed",
-       "batch": 128,
-       "blocks": 3,
-       "failed_points": [
-        2,
-        2
-       ],
-       "served_fraction": 0.984375,
-       "every_point": false,
-       "causes": {
-        "lane status Unstable": 2
-       },
-       "label": "2/128 failed closed, lane status Unstable",
+       "status": "served",
+       "served_fraction": 1.0,
+       "label": "128/128",
+       "seconds_per_point": 0.0010217428134637885,
        "unchecked": true,
-       "instance_spread": 1.0171632388016782,
+       "instance_spread": 1.0172121546628927,
        "stages": {
-        "inputs": 0.00057552715625,
-        "numerator": 3.51328125e-07,
+        "inputs": 0.000539901078125,
+        "numerator": 3.1023437500000003e-07,
         "scatter": 0.0,
         "ninjars": 0.0,
         "masters": 0.0,
-        "glue": 0.00014382176673424622,
+        "glue": 0.0001321577125371657,
         "untimed": 0.0,
-        "total": 0.0007197131417342462,
+        "total": 0.0006723803453496657,
         "label": "instrumented run: stage shares, not the timed call",
         "batch": 128
        },
-       "accuracy": null
+       "ratio_to_fastest": 5.101673757533546,
+       "accuracy": {
+        "points": 128,
+        "max_relative": 1.27e-10,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_emep_hh].ninjars"
+       }
       },
-      "ratio_to_fastest": 4.60196623394795,
-      "accuracy": null,
+      "ratio_to_fastest": 5.011797428980639,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.27e-10,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_emep_hh].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
-      "instance_spread": 1.0146295938664263,
+      "instance_spread": 1.0161184093997897,
       "stages": {
-       "inputs": 0.000564037265625,
-       "numerator": 3.3203125e-07,
+       "inputs": 0.0005416609296875001,
+       "numerator": 3.04546875e-07,
        "scatter": 0.0,
        "ninjars": 0.0,
        "masters": 0.0,
-       "glue": 0.00013976737593620085,
+       "glue": 0.0001256697818835899,
        "untimed": 0.0,
-       "total": 0.0007041485478112008,
+       "total": 0.0006676465709460899,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
@@ -3777,10 +4239,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 0.5973063761917293,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 1.5e-12,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_h_ggg].ninjars"
+       }
       },
       "ratio_to_fastest": 0.4965530697596959,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 6.65e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_h_ggg].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -3932,10 +4418,34 @@
         "batch": 128
        },
        "ratio_to_fastest": 1.5636278555124856,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 3.75e-10,
+        "lax": 1e-05,
+        "above": 0,
+        "worst": null,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": false,
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_z_ggg].ninjars"
+       }
       },
       "ratio_to_fastest": 0.587872154907515,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 5.53e-11,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_z_ggg].tirust"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
@@ -4102,7 +4612,7 @@
        "ratio_to_fastest": 2.248585815024131,
        "accuracy": {
         "points": 128,
-        "max_relative": 4.63e-10,
+        "max_relative": 3.16e-10,
         "lax": 1e-05,
         "above": 0,
         "worst": null,
@@ -4110,7 +4620,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_emep_ggg].ninjars"
        }
       },
@@ -4125,7 +4635,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_emep_ggg].tirust"
       },
       "lit_dress": true,
@@ -4316,7 +4826,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": true,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_hhh].ninjars"
        }
       },
@@ -4331,7 +4841,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hhh].tirust"
       },
       "lit_dress": true,
@@ -4518,7 +5028,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_hgg].ninjars"
        }
       },
@@ -4533,7 +5043,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "a678d177",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hgg].tirust"
       },
       "lit_dress": true,
@@ -4728,7 +5238,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_zzg].ninjars"
        }
       },
@@ -4745,7 +5255,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "a678d177",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_zzg].tirust"
       },
       "lit_dress": true,
@@ -4926,17 +5436,17 @@
        "ratio_to_fastest": 2.05079466544562,
        "accuracy": {
         "points": 128,
-        "max_relative": 0.00314,
+        "max_relative": 0.00101,
         "lax": 1e-05,
         "above": 1,
-        "worst": 0.00314,
+        "worst": 0.00101,
         "served_by": [
          "checked served"
         ],
         "failed": 0,
         "failed_classes": [],
         "note": true,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_aag].ninjars"
        }
       },
@@ -4951,7 +5461,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "a678d177",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_aag].tirust"
       },
       "lit_dress": true,
@@ -5140,7 +5650,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_wpwmg].ninjars"
        }
       },
@@ -5157,7 +5667,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_wpwmg].tirust"
       },
       "lit_dress": true,
@@ -5356,7 +5866,7 @@
          "Unstable"
         ],
         "note": true,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_zzz].ninjars"
        }
       },
@@ -5371,7 +5881,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_zzz].tirust"
       },
       "lit_dress": true,
@@ -5572,7 +6082,7 @@
          "Unstable"
         ],
         "note": true,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_hzg].ninjars"
        }
       },
@@ -5587,7 +6097,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hzg].tirust"
       },
       "lit_dress": true,
@@ -5768,17 +6278,17 @@
        "ratio_to_fastest": 1.4002125414416011,
        "accuracy": {
         "points": 128,
-        "max_relative": 0.000683,
+        "max_relative": 0.000196,
         "lax": 1e-05,
         "above": 1,
-        "worst": 0.000683,
+        "worst": 0.000196,
         "served_by": [
          "checked served"
         ],
         "failed": 0,
         "failed_classes": [],
         "note": true,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_agg].ninjars"
        }
       },
@@ -5793,7 +6303,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_agg].tirust"
       },
       "lit_dress": true,
@@ -5973,7 +6483,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_zgg].ninjars"
        }
       },
@@ -5990,7 +6500,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_zgg].tirust"
       },
       "lit_dress": true,
@@ -6179,7 +6689,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_uux_hgg].ninjars"
        }
       },
@@ -6194,7 +6704,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_uux_hgg].tirust"
       },
       "lit_dress": true,
@@ -6372,7 +6882,7 @@
        "ratio_to_fastest": 10.504614808221161,
        "accuracy": {
         "points": 128,
-        "max_relative": 4.28e-09,
+        "max_relative": 4.29e-09,
         "lax": 1e-05,
         "above": 0,
         "worst": null,
@@ -6380,7 +6890,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_uux_ddxh].ninjars"
        }
       },
@@ -6395,7 +6905,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_uux_ddxh].tirust"
       },
       "lit_dress": true,
@@ -6577,7 +7087,7 @@
        "ratio_to_fastest": 3.06664661091716,
        "accuracy": {
         "points": 32,
-        "max_relative": 1.79e-06,
+        "max_relative": 6.97e-07,
         "lax": 1e-05,
         "above": 0,
         "worst": null,
@@ -6585,7 +7095,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_hhgg].ninjars"
        }
       },
@@ -6600,7 +7110,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hhgg].tirust"
       },
       "lit_dress": true,
@@ -6780,17 +7290,17 @@
        "ratio_to_fastest": 1.3022684446789954,
        "accuracy": {
         "points": 32,
-        "max_relative": 4.38e-05,
+        "max_relative": 4.17e-05,
         "lax": 1e-05,
         "above": 2,
-        "worst": 4.38e-05,
+        "worst": 4.17e-05,
         "served_by": [
          "checked served"
         ],
         "failed": 0,
         "failed_classes": [],
         "note": true,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_hggg].ninjars"
        }
       },
@@ -6805,7 +7315,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hggg].tirust"
       },
       "lit_dress": true,
@@ -6988,7 +7498,7 @@
        "ratio_to_fastest": 0.5779686040818065,
        "accuracy": {
         "points": 32,
-        "max_relative": 4.93e-10,
+        "max_relative": 6.47e-10,
         "lax": 1e-05,
         "above": 0,
         "worst": null,
@@ -6996,14 +7506,14 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmum].ninjars"
        }
       },
       "ratio_to_fastest": 0.3699493993295318,
       "accuracy": {
        "points": 32,
-       "max_relative": 5.45e-12,
+       "max_relative": 5.43e-12,
        "lax": 1e-05,
        "above": 0,
        "worst": null,
@@ -7011,7 +7521,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmum].tirust"
       },
       "lit_dress": true,
@@ -7170,15 +7680,54 @@
        "instance_spread": 1.1333986301595869,
        "stages": null,
        "ratio_to_fastest": 2.392222054377199,
-       "accuracy": null
+       "accuracy": {
+        "points": 128,
+        "max_relative": 0.0703179427849954,
+        "lax": 1e-05,
+        "above": 23,
+        "worst": 0.0703179427849954,
+        "served_by": [],
+        "failed": 0,
+        "failed_classes": [],
+        "note": true,
+        "cross_backend": true,
+        "reason": "TIRust at 256 bits takes 405 s per point (measured 1-point probe; 32 points 3.6 h > the 3600 s row budget)",
+        "revision": "524e6cfa",
+        "source": "li-unchecked-accuracy.json rows[li_gg_aagg].cross_backend"
+       }
       },
       "ratio_to_fastest": 0.31355272324687006,
-      "accuracy": null,
+      "accuracy": {
+       "points": 128,
+       "max_relative": 0.0703179427849954,
+       "lax": 1e-05,
+       "above": 23,
+       "worst": 0.0703179427849954,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "cross_backend": true,
+       "reason": "TIRust at 256 bits takes 405 s per point (measured 1-point probe; 32 points 3.6 h > the 3600 s row budget)",
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_aagg].cross_backend"
+      },
       "lit_dress": true,
       "unchecked": true,
       "instances": 3,
       "instance_spread": 1.171505467301624,
-      "stages": null,
+      "stages": {
+       "inputs": 0.00135115909375,
+       "numerator": 0.4998071370859375,
+       "scatter": 0.17935236531249998,
+       "moments": 0.37092529449999995,
+       "contraction": 0.04445397389843751,
+       "glue": 0.01772524748496923,
+       "untimed": 0.0,
+       "total": 1.1136153193365317,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
       "gate": {
        "status": "pass",
        "ratio_to_limit": 0.24119440249759236,
@@ -7433,7 +7982,7 @@
        "ratio_to_fastest": 0.6075670928021377,
        "accuracy": {
         "points": 16,
-        "max_relative": 9.45e-08,
+        "max_relative": 7.03e-09,
         "lax": 1e-05,
         "above": 0,
         "worst": null,
@@ -7441,7 +7990,7 @@
         "failed": 0,
         "failed_classes": [],
         "note": false,
-        "revision": "90059342",
+        "revision": "524e6cfa",
         "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmumg].ninjars"
        }
       },
@@ -7456,7 +8005,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmumg].tirust"
       },
       "lit_dress": true,
@@ -7668,6 +8217,28 @@
      "label": "no gate (2->2)"
     },
     "source": "groups[2->2].rows[gg_aa].timing"
+   },
+   {
+    "key": "gg_zz",
+    "group": "2->2",
+    "math": "g g -> z z",
+    "corrections": "QCD",
+    "seconds_per_point": 0.0023564499606436584,
+    "backend_label": "TIRust",
+    "ratio_to_fastest": 0.7252490869234516,
+    "providers": {
+     "madloop": 0.0032491595,
+     "openloops": 0.004124194,
+     "recola": 0.00545991
+    },
+    "fastest": "madloop",
+    "not_matched": [],
+    "limit": null,
+    "gate": {
+     "status": "reported",
+     "label": "no gate (2->2)"
+    },
+    "source": "groups[2->2].rows[gg_zz].timing"
    },
    {
     "key": "gg_wpwm",
@@ -7910,16 +8481,57 @@
     "source": "groups[2->2].rows[aa_aa].timing"
    },
    {
+    "key": "aa_zz",
+    "group": "2->2",
+    "math": "a a -> z z",
+    "corrections": "QED",
+    "seconds_per_point": 0.004277584663213929,
+    "backend_label": "TIRust",
+    "ratio_to_fastest": 0.4156636112600319,
+    "providers": {
+     "recola": 0.010290977
+    },
+    "fastest": "recola",
+    "not_matched": [],
+    "limit": null,
+    "gate": {
+     "status": "reported",
+     "label": "no gate (2->2)"
+    },
+    "source": "groups[2->2].rows[aa_zz].timing"
+   },
+   {
+    "key": "aa_hh",
+    "group": "2->2",
+    "math": "a a -> h h",
+    "corrections": "QED",
+    "seconds_per_point": 0.0010972453455906361,
+    "backend_label": "TIRust",
+    "ratio_to_fastest": 1.4716105645129263,
+    "providers": {
+     "madloop": 0.001865759,
+     "recola": 0.0007456085
+    },
+    "fastest": "recola",
+    "not_matched": [],
+    "limit": null,
+    "gate": {
+     "status": "reported",
+     "label": "no gate (2->2)"
+    },
+    "source": "groups[2->2].rows[aa_hh].timing"
+   },
+   {
     "key": "emep_hh",
     "group": "2->2",
     "math": "e^+ e^- -> h h",
     "corrections": "QED",
-    "seconds_per_point": 0.0016758819365350064,
+    "seconds_per_point": 0.0010037427418865263,
     "backend_label": "TIRust",
-    "ratio_to_fastest": 4.60196623394795,
+    "ratio_to_fastest": 5.011797428980639,
     "providers": {
-     "madloop": 0.000737468,
-     "recola": 0.00036416650000000003
+     "madloop": 0.0005009929999999999,
+     "recola": 0.000200276
     },
     "fastest": "recola",
     "not_matched": [],
@@ -8509,9 +9121,6 @@
   ],
   "not_drawn": {
    "no pyAmpliCol time at B = 128": [
-    "gg_zz",
-    "aa_zz",
-    "aa_hh",
     "gg_zzzz",
     "li_x1"
    ]
@@ -8541,7 +9150,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.18e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_h].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -8558,7 +9179,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.24e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_h].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -8602,7 +9235,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.02e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_h_gg].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -8619,7 +9264,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.13e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_h_gg].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -8656,7 +9313,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 2.42e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_h_aa].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -8673,7 +9342,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 4.18e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_h_aa].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -8710,7 +9391,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.16e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_h_za].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -8727,7 +9420,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.57e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_h_za].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -8764,7 +9469,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.39e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_aa_h].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -8781,7 +9498,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.62e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_aa_h].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -8818,7 +9547,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 6.55e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_aa].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -8835,7 +9576,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 2.44e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_aa].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -8865,12 +9618,62 @@
      "group": "2->2",
      "revision": "524e6cfa",
      "tirust": {
-      "status": "failed closed",
-      "reason": "1/128 failed closed, lane status TIRust"
+      "status": "measured",
+      "seconds_per_point": 0.0023564499606436584,
+      "stages": {
+       "inputs": 2.2050171875e-05,
+       "numerator": 0.0008665558515625002,
+       "scatter": 0.00010993549218749998,
+       "moments": 0.00012591932812500002,
+       "contraction": 6.687115625e-05,
+       "glue": 0.0004818520012287813,
+       "untimed": 0.0,
+       "total": 0.0016732389231037814,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 5.49e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zz].tirust"
+      }
      },
      "ninjars": {
-      "status": "failed closed",
-      "reason": "2/128 failed closed, lane status Unstable"
+      "status": "measured",
+      "seconds_per_point": 0.006095645898312796,
+      "stages": {
+       "inputs": 2.0546875e-05,
+       "numerator": 0.0008608969921875,
+       "scatter": 0.00010986001562499999,
+       "ninjars": 0.0031845565,
+       "masters": 0.0005913734296875,
+       "glue": 0.0004360665930561586,
+       "untimed": 0.0,
+       "total": 0.005203350639931159,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 8.76e-11,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zz].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -8884,7 +9687,8 @@
       ],
       "source": "lit.json rows[gg_zz].runs.*.L6.double"
      },
-     "source": "li-timing.json records[gg_zz, tirust, 524e6cfa]"
+     "source": "li-timing.json records[gg_zz, tirust, 524e6cfa]",
+     "ratio": 2.586791996486013
     },
     {
      "key": "gg_wpwm",
@@ -8906,7 +9710,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.23e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_wpwm].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -8923,7 +9739,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 5.22e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_wpwm].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -8960,7 +9788,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 6.76e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_za].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -8977,7 +9817,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 6.39e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_za].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9024,7 +9876,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hh].tirust"
       }
      },
@@ -9053,7 +9905,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hh].ninjars"
       }
      },
@@ -9092,7 +9944,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.42e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hz].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -9109,7 +9973,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.41e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hz].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9146,7 +10022,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 2.4e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hg].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -9163,7 +10051,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 7.3e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_hg].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9200,7 +10100,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.08e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_uux_hg].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -9217,7 +10129,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.54e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_uux_hg].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9254,7 +10178,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.23e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_ug_hu].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -9271,7 +10207,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.08e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_ug_hu].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9308,7 +10256,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 9.42e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zg].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -9325,7 +10285,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 9.74e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_zg].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9362,7 +10334,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 2.26e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_ag].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -9379,7 +10363,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.71e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_ag].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9416,7 +10412,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.77e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_emep_ha].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -9433,7 +10441,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.85e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_emep_ha].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9470,7 +10490,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.83e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_aa_aa].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -9487,7 +10519,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 4.92e-14,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_aa_aa].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9510,12 +10554,62 @@
      "group": "2->2",
      "revision": "524e6cfa",
      "tirust": {
-      "status": "failed closed",
-      "reason": "1/128 failed closed, lane status TIRust"
+      "status": "measured",
+      "seconds_per_point": 0.004277584663213929,
+      "stages": {
+       "inputs": 0.0003690652265625,
+       "numerator": 3.9796875e-07,
+       "scatter": 0.0,
+       "ninjars": 0.0,
+       "masters": 0.0,
+       "glue": 0.0002673526110214908,
+       "untimed": 0.0,
+       "total": 0.0006368296344589908,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.46e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_aa_zz].tirust"
+      }
      },
      "ninjars": {
-      "status": "failed closed",
-      "reason": "2/128 failed closed, lane status Unstable"
+      "status": "measured",
+      "seconds_per_point": 0.011827830763650127,
+      "stages": {
+       "inputs": 0.0003645699765625,
+       "numerator": 4.2234374999999995e-07,
+       "scatter": 0.0,
+       "ninjars": 0.0,
+       "masters": 0.0,
+       "glue": 0.0002699771394631397,
+       "untimed": 0.0,
+       "total": 0.0006349821160256397,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 7.41e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_aa_zz].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9529,7 +10623,8 @@
       ],
       "source": "lit.json rows[aa_zz].runs.*.L6.double"
      },
-     "source": "li-timing.json records[aa_zz, tirust, 524e6cfa]"
+     "source": "li-timing.json records[aa_zz, tirust, 524e6cfa]",
+     "ratio": 2.7650722767374476
     },
     {
      "key": "aa_hh",
@@ -9537,12 +10632,62 @@
      "group": "2->2",
      "revision": "524e6cfa",
      "tirust": {
-      "status": "failed closed",
-      "reason": "1/128 failed closed, lane status TIRust"
+      "status": "measured",
+      "seconds_per_point": 0.0010972453455906361,
+      "stages": {
+       "inputs": 0.00036093496875,
+       "numerator": 3.243046875e-07,
+       "scatter": 0.0,
+       "ninjars": 0.0,
+       "masters": 0.0,
+       "glue": 0.00012810056953400744,
+       "untimed": 0.0,
+       "total": 0.0004893734367215075,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 8.76e-11,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_aa_hh].tirust"
+      }
      },
      "ninjars": {
-      "status": "failed closed",
-      "reason": "2/128 failed closed, lane status Unstable"
+      "status": "measured",
+      "seconds_per_point": 0.0015534022568317596,
+      "stages": {
+       "inputs": 0.000362290140625,
+       "numerator": 3.4976562499999995e-07,
+       "scatter": 0.0,
+       "ninjars": 0.0,
+       "masters": 0.0,
+       "glue": 0.00012443632895239257,
+       "untimed": 0.0,
+       "total": 0.00048709037582739256,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 9.13e-11,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_aa_hh].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9556,7 +10701,8 @@
       ],
       "source": "lit.json rows[aa_hh].runs.*.L6.double"
      },
-     "source": "li-timing.json records[aa_hh, tirust, 524e6cfa]"
+     "source": "li-timing.json records[aa_hh, tirust, 524e6cfa]",
+     "ratio": 1.4157291831532708
     },
     {
      "key": "emep_hh",
@@ -9565,24 +10711,61 @@
      "revision": "524e6cfa",
      "tirust": {
       "status": "measured",
-      "seconds_per_point": 0.0016758819365350064,
+      "seconds_per_point": 0.0010037427418865263,
       "stages": {
-       "inputs": 0.000564037265625,
-       "numerator": 3.3203125e-07,
+       "inputs": 0.0005416609296875001,
+       "numerator": 3.04546875e-07,
        "scatter": 0.0,
        "ninjars": 0.0,
        "masters": 0.0,
-       "glue": 0.00013976737593620085,
+       "glue": 0.0001256697818835899,
        "untimed": 0.0,
-       "total": 0.0007041485478112008,
+       "total": 0.0006676465709460899,
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.27e-10,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_emep_hh].tirust"
+      }
      },
      "ninjars": {
-      "status": "failed closed",
-      "reason": "2/128 failed closed, lane status Unstable"
+      "status": "measured",
+      "seconds_per_point": 0.0010217428134637885,
+      "stages": {
+       "inputs": 0.000539901078125,
+       "numerator": 3.1023437500000003e-07,
+       "scatter": 0.0,
+       "ninjars": 0.0,
+       "masters": 0.0,
+       "glue": 0.0001321577125371657,
+       "untimed": 0.0,
+       "total": 0.0006723803453496657,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.27e-10,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_emep_hh].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9596,7 +10779,8 @@
       ],
       "source": "lit.json rows[emep_hh].runs.*.L6.double"
      },
-     "source": "li-timing.json records[emep_hh, tirust, 524e6cfa]"
+     "source": "li-timing.json records[emep_hh, tirust, 524e6cfa]",
+     "ratio": 1.0179329531623125
     },
     {
      "key": "h_ggg",
@@ -9618,7 +10802,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 6.65e-13,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_h_ggg].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -9635,7 +10831,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 1.5e-12,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_h_ggg].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9672,7 +10880,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 5.53e-11,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_z_ggg].tirust"
+      }
      },
      "ninjars": {
       "status": "measured",
@@ -9689,7 +10909,19 @@
        "label": "instrumented run: stage shares, not the timed call",
        "batch": 128
       },
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 3.75e-10,
+       "lax": 1e-05,
+       "above": 0,
+       "worst": null,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": false,
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_z_ggg].ninjars"
+      }
      },
      "l6": {
       "runs": [
@@ -9736,7 +10968,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_emep_ggg].tirust"
       }
      },
@@ -9757,7 +10989,7 @@
       },
       "accuracy": {
        "points": 128,
-       "max_relative": 4.63e-10,
+       "max_relative": 3.16e-10,
        "lax": 1e-05,
        "above": 0,
        "worst": null,
@@ -9765,7 +10997,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_emep_ggg].ninjars"
       }
      },
@@ -9814,7 +11046,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hhh].tirust"
       }
      },
@@ -9845,7 +11077,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hhh].ninjars"
       }
      },
@@ -9894,7 +11126,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "a678d177",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hgg].tirust"
       }
      },
@@ -9923,7 +11155,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hgg].ninjars"
       }
      },
@@ -9974,7 +11206,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "a678d177",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_zzg].tirust"
       }
      },
@@ -10003,7 +11235,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_zzg].ninjars"
       }
      },
@@ -10052,7 +11284,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "a678d177",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_aag].tirust"
       }
      },
@@ -10073,17 +11305,17 @@
       },
       "accuracy": {
        "points": 128,
-       "max_relative": 0.00314,
+       "max_relative": 0.00101,
        "lax": 1e-05,
        "above": 1,
-       "worst": 0.00314,
+       "worst": 0.00101,
        "served_by": [
         "checked served"
        ],
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_aag].ninjars"
       }
      },
@@ -10134,7 +11366,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_wpwmg].tirust"
       }
      },
@@ -10163,7 +11395,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_wpwmg].ninjars"
       }
      },
@@ -10212,7 +11444,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_zzz].tirust"
       }
      },
@@ -10264,7 +11496,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hzg].tirust"
       }
      },
@@ -10316,7 +11548,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_agg].tirust"
       }
      },
@@ -10337,17 +11569,17 @@
       },
       "accuracy": {
        "points": 128,
-       "max_relative": 0.000683,
+       "max_relative": 0.000196,
        "lax": 1e-05,
        "above": 1,
-       "worst": 0.000683,
+       "worst": 0.000196,
        "served_by": [
         "checked served"
        ],
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_agg].ninjars"
       }
      },
@@ -10398,7 +11630,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_zgg].tirust"
       }
      },
@@ -10427,7 +11659,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_zgg].ninjars"
       }
      },
@@ -10476,7 +11708,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_uux_hgg].tirust"
       }
      },
@@ -10505,7 +11737,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_uux_hgg].ninjars"
       }
      },
@@ -10554,7 +11786,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_uux_ddxh].tirust"
       }
      },
@@ -10575,7 +11807,7 @@
       },
       "accuracy": {
        "points": 128,
-       "max_relative": 4.28e-09,
+       "max_relative": 4.29e-09,
        "lax": 1e-05,
        "above": 0,
        "worst": null,
@@ -10583,7 +11815,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_uux_ddxh].ninjars"
       }
      },
@@ -10632,7 +11864,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hhgg].tirust"
       }
      },
@@ -10653,7 +11885,7 @@
       },
       "accuracy": {
        "points": 32,
-       "max_relative": 1.79e-06,
+       "max_relative": 6.97e-07,
        "lax": 1e-05,
        "above": 0,
        "worst": null,
@@ -10661,7 +11893,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hhgg].ninjars"
       }
      },
@@ -10717,7 +11949,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hggg].tirust"
       }
      },
@@ -10738,17 +11970,17 @@
       },
       "accuracy": {
        "points": 32,
-       "max_relative": 4.38e-05,
+       "max_relative": 4.17e-05,
        "lax": 1e-05,
        "above": 2,
-       "worst": 4.38e-05,
+       "worst": 4.17e-05,
        "served_by": [
         "checked served"
        ],
        "failed": 0,
        "failed_classes": [],
        "note": true,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_hggg].ninjars"
       }
      },
@@ -10789,7 +12021,7 @@
       },
       "accuracy": {
        "points": 32,
-       "max_relative": 5.45e-12,
+       "max_relative": 5.43e-12,
        "lax": 1e-05,
        "above": 0,
        "worst": null,
@@ -10797,7 +12029,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmum].tirust"
       }
      },
@@ -10818,7 +12050,7 @@
       },
       "accuracy": {
        "points": 32,
-       "max_relative": 4.93e-10,
+       "max_relative": 6.47e-10,
        "lax": 1e-05,
        "above": 0,
        "worst": null,
@@ -10826,7 +12058,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmum].ninjars"
       }
      },
@@ -10853,14 +12085,53 @@
      "tirust": {
       "status": "measured",
       "seconds_per_point": 0.7202615012156457,
-      "stages": null,
-      "accuracy": null
+      "stages": {
+       "inputs": 0.00135115909375,
+       "numerator": 0.4998071370859375,
+       "scatter": 0.17935236531249998,
+       "moments": 0.37092529449999995,
+       "contraction": 0.04445397389843751,
+       "glue": 0.01772524748496923,
+       "untimed": 0.0,
+       "total": 1.1136153193365317,
+       "label": "instrumented run: stage shares, not the timed call",
+       "batch": 128
+      },
+      "accuracy": {
+       "points": 128,
+       "max_relative": 0.0703179427849954,
+       "lax": 1e-05,
+       "above": 23,
+       "worst": 0.0703179427849954,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "cross_backend": true,
+       "reason": "TIRust at 256 bits takes 405 s per point (measured 1-point probe; 32 points 3.6 h > the 3600 s row budget)",
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_aagg].cross_backend"
+      }
      },
      "ninjars": {
       "status": "measured",
       "seconds_per_point": 5.495169776504554,
       "stages": null,
-      "accuracy": null
+      "accuracy": {
+       "points": 128,
+       "max_relative": 0.0703179427849954,
+       "lax": 1e-05,
+       "above": 23,
+       "worst": 0.0703179427849954,
+       "served_by": [],
+       "failed": 0,
+       "failed_classes": [],
+       "note": true,
+       "cross_backend": true,
+       "reason": "TIRust at 256 bits takes 405 s per point (measured 1-point probe; 32 points 3.6 h > the 3600 s row budget)",
+       "revision": "524e6cfa",
+       "source": "li-unchecked-accuracy.json rows[li_gg_aagg].cross_backend"
+      }
      },
      "l6": {
       "runs": [
@@ -10907,7 +12178,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "ecc80899",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmumg].tirust"
       }
      },
@@ -10928,7 +12199,7 @@
       },
       "accuracy": {
        "points": 16,
-       "max_relative": 9.45e-08,
+       "max_relative": 7.03e-09,
        "lax": 1e-05,
        "above": 0,
        "worst": null,
@@ -10936,7 +12207,7 @@
        "failed": 0,
        "failed_classes": [],
        "note": false,
-       "revision": "90059342",
+       "revision": "524e6cfa",
        "source": "li-unchecked-accuracy.json rows[li_gg_emepmupmumg].ninjars"
       }
      },
@@ -11224,16 +12495,6 @@
   {
    "kind": "no value",
    "table": "2",
-   "text": "time: failed closed (1/128 failed closed, lane status TIRust)",
-   "rows": [
-    "g g -> z z",
-    "a a -> z z",
-    "a a -> h h"
-   ]
-  },
-  {
-   "kind": "no value",
-   "table": "2",
    "text": "not run: generation beyond the 45-min rule (R9): generate + plan export + exact helicity-zero filter done in 9.8 s (peak 0.60 GiB)",
    "rows": [
     "g g -> z z z z"
@@ -11339,7 +12600,7 @@
   {
    "kind": "accuracy",
    "table": "2",
-   "text": "NinjaRS per amplitude unchecked: 1/128 points above 1e-05, worst 3.1e-03",
+   "text": "NinjaRS per amplitude unchecked: 1/128 points above 1e-05, worst 1.0e-03",
    "rows": [
     "g g -> a a g"
    ]
@@ -11371,7 +12632,7 @@
   {
    "kind": "accuracy",
    "table": "2",
-   "text": "NinjaRS per amplitude unchecked: 1/128 points above 1e-05, worst 6.8e-04",
+   "text": "NinjaRS per amplitude unchecked: 1/128 points above 1e-05, worst 2.0e-04",
    "rows": [
     "g g -> a g g"
    ]
@@ -11387,9 +12648,25 @@
   {
    "kind": "accuracy",
    "table": "2",
-   "text": "NinjaRS per amplitude unchecked: 2/32 points above 1e-05, worst 4.4e-05",
+   "text": "NinjaRS per amplitude unchecked: 2/32 points above 1e-05, worst 4.2e-05",
    "rows": [
     "g g -> h g g g"
+   ]
+  },
+  {
+   "kind": "accuracy",
+   "table": "2",
+   "text": "TIRust unchecked: 23/128 points above 1e-05, worst 7.0e-02",
+   "rows": [
+    "g g -> a a g g"
+   ]
+  },
+  {
+   "kind": "accuracy",
+   "table": "2",
+   "text": "NinjaRS per amplitude unchecked: 23/128 points above 1e-05, worst 7.0e-02",
+   "rows": [
+    "g g -> a a g g"
    ]
   }
  ]

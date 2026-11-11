@@ -34785,22 +34785,22 @@
    "rounds": 5,
    "instances": 3,
    "failed_points": [
-    1,
-    1,
-    1
+    0,
+    0,
+    0
    ],
-   "served_fraction": 0.9921875,
+   "served_fraction": 1.0,
    "fallback_points": 0,
    "instance_medians": [
-    0.0011197901076229755,
-    0.0010893241087615024,
-    0.001121374483773252
+    0.0011198971697012894,
+    0.0010910577439062763,
+    0.0010972453455906361
    ],
-   "instance_spread": 1.0294222580350205,
+   "instance_spread": 1.0264325384757,
    "round_spread": [
-    1.1213469143722883,
-    1.2102743552017818,
-    1.1987681688083265
+    1.1135559587492978,
+    1.050103351953585,
+    1.0310917879529196
    ],
    "providers": {
     "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
@@ -34808,26 +34808,26 @@
     "rounds": 5,
     "times": {
      "madloop": {
-      "seconds_per_point": 0.001849783,
+      "seconds_per_point": 0.001865759,
       "rounds": [
-       0.002010904,
-       0.001625967,
-       0.0017288124999999999,
-       0.001849783,
-       0.002065094
+       0.001730008,
+       0.0018684984999999999,
+       0.0017912330000000001,
+       0.001865759,
+       0.002067829
       ],
-      "half_range": 0.11869689579804762
+      "half_range": 0.09053178893951477
      },
      "recola": {
-      "seconds_per_point": 0.000763838,
+      "seconds_per_point": 0.0007456085,
       "rounds": [
-       0.000765153,
-       0.0007721685,
-       0.0007449025,
-       0.000763838,
-       0.000744888
+       0.0007427435,
+       0.0007305135000000001,
+       0.000754438,
+       0.000757858,
+       0.0007456085
       ],
-      "half_range": 0.017857516908035494
+      "half_range": 0.018337036125526972
      }
     },
     "errors": []
@@ -34836,14 +34836,13 @@
     "status": "below 5 ms: not gated (user 2026-10-24)",
     "measured_status": "fail",
     "binding_provider": "recola",
-    "binding_limit": 0.0009929894,
+    "binding_limit": 0.0009692910500000001,
     "fastest_provider": "recola",
-    "served_fraction": 0.9921875,
-    "floor_basis_seconds": 0.0011197901076229755,
-    "ratio_to_limit": 1.127695932728965,
+    "floor_basis_seconds": 0.0010972453455906361,
+    "ratio_to_limit": 1.1320081265484048,
     "band": [
-     1.0914197566829742,
-     1.163972108774956
+     1.0963738963157328,
+     1.1676423567810768
     ],
     "provider_protocols": {
      "madloop": "optimistic",
@@ -34854,31 +34853,31 @@
     "label": "instrumented run: stage shares, not the timed call",
     "batch": 128,
     "seconds_per_point": {
-     "assembly": 2.067855530185625e-05,
-     "input conversion": 1.2960757885593921e-05,
-     "other": 2.381328522460535e-05,
-     "python point parameters": 3.974704668507911e-05,
-     "seed contraction": 1.4375e-08,
-     "seeds": 5.977343749999999e-07,
-     "squaring": 1.4232220564736053e-05,
-     "transport": 2.9801924490144467e-05,
-     "trees + CT kets": 0.000366454875,
-     "trees: closures": 1.9661015625e-06,
-     "trees: interferences": 7.4921875e-07,
-     "trees: programs": 3.447671875e-06
+     "assembly": 1.9353221432538703e-05,
+     "input conversion": 1.1280826583970338e-05,
+     "other": 2.2039839677745476e-05,
+     "python point parameters": 3.5439064959064126e-05,
+     "seed contraction": 1.3593750000000002e-08,
+     "seeds": 3.243046875e-07,
+     "squaring": 1.2884836905868724e-05,
+     "transport": 2.7102779974820068e-05,
+     "trees + CT kets": 0.00036093496875,
+     "trees: closures": 1.5537578125e-06,
+     "trees: interferences": 3.3015625e-07,
+     "trees: programs": 2.9015703125e-06
     },
-    "total": 0.0005083007745270152
+    "total": 0.0004893734367215075
    },
    "generation": {
-    "seconds": 86.79716783063486,
-    "generate_seconds": 59.370918933767825,
-    "dressed_frame_seconds": 0.005298521835356951,
-    "export_seconds": 27.426096707116812,
-    "filter_seconds": 0.00015218975022435188,
+    "seconds": 61.05417518084869,
+    "generate_seconds": 36.706686242017895,
+    "dressed_frame_seconds": 0.0009649540297687054,
+    "export_seconds": 24.347362007945776,
+    "filter_seconds": 0.00012693088501691818,
     "probes_seconds": null,
-    "peak_gib": 2.933,
+    "peak_gib": 3.143,
     "plan_mb": 0.004,
-    "model_seconds": 7.567335082683712,
+    "model_seconds": 7.144086657091975,
     "source": "instrumented run: stage shares, not the timed call"
    },
    "public_generation": {
@@ -34897,55 +34896,49 @@
    "host_state": {
     "start": {
      "loadavg": [
-      "342.93",
-      "346.24",
-      "335.20"
+      "253.44",
+      "278.23",
+      "467.00"
      ],
-     "mem_available_gib": 275.5,
-     "core_busy": 0.778,
+     "mem_available_gib": 345.2,
+     "core_busy": 0.141,
      "siblings_busy": {}
     },
     "end": {
      "loadavg": [
-      "354.21",
-      "345.38",
-      "337.53"
+      "252.29",
+      "276.33",
+      "462.35"
      ],
-     "mem_available_gib": 271.1,
-     "core_busy": 0.47,
+     "mem_available_gib": 340.9,
+     "core_busy": 0.95,
      "siblings_busy": {}
     }
    },
    "cross_backend": {
     "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors",
-    "points": 126,
-    "failed": 2,
-    "max_relative": 1.0712514426954572e-11,
+    "points": 128,
+    "failed": 0,
+    "max_relative": 1.0811704375351239e-11,
     "above_1e-5": 0
    },
    "native_build": "loop-native-v2-slice-678c4749",
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
-   "core": 233,
+   "core": 143,
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
-    "min": 0.977,
-    "median": 0.979
+    "min": 0.973,
+    "median": 0.984
    },
-   "whole_call_seconds_per_point": 0.0011197901076229755,
-   "failures": {
-    "45": "lane status TIRust (4 lanes; families 7)"
-   },
-   "failure_causes": {
-    "lane status TIRust": 1
-   },
+   "seconds_per_point": 0.0010972453455906361,
    "tir_counts": {
     "tensor moment rows": 2816,
-    "TIR gate refusals": 4,
-    "TIR method-choice rows": 2,
-    "TIR last-resort rows": 1,
+    "TIR gate refusals": 0,
+    "TIR method-choice rows": 0,
+    "TIR last-resort rows": 0,
     "TIR method-choice check rows": 0,
     "TIR method-choice lanes refused by their check": 0
    }
@@ -34992,22 +34985,22 @@
    "rounds": 5,
    "instances": 3,
    "failed_points": [
-    2,
-    2,
-    2
+    0,
+    0,
+    0
    ],
-   "served_fraction": 0.984375,
+   "served_fraction": 1.0,
    "fallback_points": 0,
    "instance_medians": [
-    0.0015230128665280063,
-    0.0015392852037621196,
-    0.001640824291825993
+    0.00155848718713969,
+    0.0015534022568317596,
+    0.0015421793141285889
    ],
-   "instance_spread": 1.0773541891123743,
+   "instance_spread": 1.010574563451667,
    "round_spread": [
-    1.213992775452141,
-    1.2326348077404232,
-    2.53611090314938
+    2.212650361553246,
+    2.0330310954767854,
+    1.045194613570938
    ],
    "providers": {
     "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
@@ -35015,26 +35008,26 @@
     "rounds": 5,
     "times": {
      "madloop": {
-      "seconds_per_point": 0.001849783,
+      "seconds_per_point": 0.001865759,
       "rounds": [
-       0.002010904,
-       0.001625967,
-       0.0017288124999999999,
-       0.001849783,
-       0.002065094
+       0.001730008,
+       0.0018684984999999999,
+       0.0017912330000000001,
+       0.001865759,
+       0.002067829
       ],
-      "half_range": 0.11869689579804762
+      "half_range": 0.09053178893951477
      },
      "recola": {
-      "seconds_per_point": 0.000763838,
+      "seconds_per_point": 0.0007456085,
       "rounds": [
-       0.000765153,
-       0.0007721685,
-       0.0007449025,
-       0.000763838,
-       0.000744888
+       0.0007427435,
+       0.0007305135000000001,
+       0.000754438,
+       0.000757858,
+       0.0007456085
       ],
-      "half_range": 0.017857516908035494
+      "half_range": 0.018337036125526972
      }
     },
     "errors": []
@@ -35043,14 +35036,13 @@
     "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
     "measured_status": "fail",
     "binding_provider": "recola",
-    "binding_limit": 0.0009929894,
+    "binding_limit": 0.0009692910500000001,
     "fastest_provider": "recola",
-    "served_fraction": 0.984375,
-    "floor_basis_seconds": 0.0015392852037621196,
-    "ratio_to_limit": 1.550152704310962,
+    "floor_basis_seconds": 0.0015534022568317596,
+    "ratio_to_limit": 1.6026169403212374,
     "band": [
-     1.4631492335775742,
-     1.6371561750443497
+     1.5648174271548363,
+     1.6404164534876384
     ],
     "provider_protocols": {
      "madloop": "optimistic",
@@ -35061,31 +35053,31 @@
     "label": "instrumented run: stage shares, not the timed call",
     "batch": 128,
     "seconds_per_point": {
-     "assembly": 2.1152005501789972e-05,
-     "input conversion": 1.1108473700005561e-05,
-     "other": 2.5501547497697175e-05,
-     "python point parameters": 4.518331115832552e-05,
-     "seed contraction": 1.4453125000000002e-08,
-     "seeds": 6.8515625e-07,
-     "squaring": 1.4501907571684569e-05,
-     "transport": 2.2991068460997217e-05,
-     "trees + CT kets": 0.00037614265624999997,
-     "trees: closures": 2.1004765625e-06,
-     "trees: interferences": 1.0398515625e-06,
-     "trees: programs": 4.556890625e-06
+     "assembly": 1.8776125216390938e-05,
+     "input conversion": 1.0589890734991059e-05,
+     "other": 2.1626205125357956e-05,
+     "python point parameters": 3.9583377656526864e-05,
+     "seed contraction": 1.4140625e-08,
+     "seeds": 3.4976562499999995e-07,
+     "squaring": 1.3151675375411287e-05,
+     "transport": 2.070905484371447e-05,
+     "trees + CT kets": 0.000362290140625,
+     "trees: closures": 1.6772734375e-06,
+     "trees: interferences": 3.1421875e-07,
+     "trees: programs": 2.8673515625e-06
     },
-    "total": 0.0005172805795155
+    "total": 0.00048709037582739256
    },
    "generation": {
-    "seconds": 86.79716783063486,
-    "generate_seconds": 59.370918933767825,
-    "dressed_frame_seconds": 0.005298521835356951,
-    "export_seconds": 27.426096707116812,
-    "filter_seconds": 0.00015218975022435188,
+    "seconds": 61.05417518084869,
+    "generate_seconds": 36.706686242017895,
+    "dressed_frame_seconds": 0.0009649540297687054,
+    "export_seconds": 24.347362007945776,
+    "filter_seconds": 0.00012693088501691818,
     "probes_seconds": null,
-    "peak_gib": 2.933,
+    "peak_gib": 3.143,
     "plan_mb": 0.004,
-    "model_seconds": 7.567335082683712,
+    "model_seconds": 7.144086657091975,
     "source": "instrumented run: stage shares, not the timed call"
    },
    "public_generation": {
@@ -35104,51 +35096,44 @@
    "host_state": {
     "start": {
      "loadavg": [
-      "342.93",
-      "346.24",
-      "335.20"
+      "253.44",
+      "278.23",
+      "467.00"
      ],
-     "mem_available_gib": 275.5,
-     "core_busy": 0.778,
+     "mem_available_gib": 345.2,
+     "core_busy": 0.141,
      "siblings_busy": {}
     },
     "end": {
      "loadavg": [
-      "354.21",
-      "345.38",
-      "337.53"
+      "252.29",
+      "276.33",
+      "462.35"
      ],
-     "mem_available_gib": 271.1,
-     "core_busy": 0.47,
+     "mem_available_gib": 340.9,
+     "core_busy": 0.95,
      "siblings_busy": {}
     }
    },
    "cross_backend": {
     "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors",
-    "points": 126,
-    "failed": 2,
-    "max_relative": 1.0712514426954572e-11,
+    "points": 128,
+    "failed": 0,
+    "max_relative": 1.0811704375351239e-11,
     "above_1e-5": 0
    },
    "native_build": "loop-native-v2-slice-678c4749",
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
-   "core": 233,
+   "core": 143,
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
-    "min": 0.975,
-    "median": 0.979
+    "min": 0.982,
+    "median": 0.984
    },
-   "whole_call_seconds_per_point": 0.0015392852037621196,
-   "failures": {
-    "45": "lane status Unstable (12 lanes; families 4, 5, 7)",
-    "113": "lane status Unstable (12 lanes; families 4, 5, 7)"
-   },
-   "failure_causes": {
-    "lane status Unstable": 2
-   }
+   "seconds_per_point": 0.0015534022568317596
   },
   {
    "key": "aa_zz",
@@ -35192,22 +35177,22 @@
    "rounds": 5,
    "instances": 3,
    "failed_points": [
-    1,
-    1,
-    1
+    0,
+    0,
+    0
    ],
-   "served_fraction": 0.9921875,
+   "served_fraction": 1.0,
    "fallback_points": 0,
    "instance_medians": [
-    0.0038302580469462555,
-    0.0038576069127884693,
-    0.0038057221718190704
+    0.004277584663213929,
+    0.0031314148436649702,
+    0.004408132681419374
    ],
-   "instance_spread": 1.0136333496316676,
+   "instance_spread": 1.4077127756922008,
    "round_spread": [
-    1.7226260894262202,
-    2.044963083267566,
-    2.1715919859986696
+    1.4629625894613763,
+    1.0565120862682185,
+    1.4328884383863232
    ],
    "providers": {
     "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
@@ -35215,15 +35200,15 @@
     "rounds": 5,
     "times": {
      "recola": {
-      "seconds_per_point": 0.010491153,
+      "seconds_per_point": 0.010290977,
       "rounds": [
-       0.0103421475,
-       0.010515833,
-       0.0107206595,
-       0.010491153,
-       0.0102738225
+       0.010290977,
+       0.010506077499999999,
+       0.0102679305,
+       0.010696343,
+       0.0101178555
       ],
-      "half_range": 0.021295895694210174
+      "half_range": 0.02810653934995679
      }
     },
     "errors": []
@@ -35232,14 +35217,13 @@
     "status": "below 5 ms: not gated (user 2026-10-24)",
     "measured_status": "pass",
     "binding_provider": "recola",
-    "binding_limit": 0.0136384989,
+    "binding_limit": 0.0133782701,
     "fastest_provider": "recola",
-    "served_fraction": 0.9921875,
-    "floor_basis_seconds": 0.0038302580469462555,
-    "ratio_to_limit": 0.280841614244384,
+    "floor_basis_seconds": 0.004277584663213929,
+    "ratio_to_limit": 0.31974123943079374,
     "band": [
-     0.2729586978675402,
-     0.28872453062122777
+     0.26303831634235975,
+     0.3764441625192277
     ],
     "provider_protocols": {
      "recola": "optimistic"
@@ -35249,31 +35233,31 @@
     "label": "instrumented run: stage shares, not the timed call",
     "batch": 128,
     "seconds_per_point": {
-     "assembly": 0.0003777391211770009,
-     "input conversion": 1.3989276339998469e-05,
-     "other": 5.744640657212585e-05,
-     "python point parameters": 3.8260233850451186e-05,
-     "seed contraction": 1.25e-08,
-     "seeds": 4.717890625e-07,
-     "squaring": 0.00019389076260267757,
-     "transport": 0.0004226793258700594,
-     "trees + CT kets": 0.0004060116015625,
-     "trees: closures": 1.46545859375e-05,
-     "trees: interferences": 1.3973515625e-06,
-     "trees: programs": 5.4249453125e-06
+     "assembly": 5.5110420362325385e-05,
+     "input conversion": 9.465820767218247e-06,
+     "other": 2.7945308829657733e-05,
+     "python point parameters": 3.239998477511108e-05,
+     "seed contraction": 1.3828125e-08,
+     "seeds": 3.9796875e-07,
+     "squaring": 5.598947245744057e-05,
+     "transport": 8.644160382973777e-05,
+     "trees + CT kets": 0.0003690652265625,
+     "trees: closures": 1.30068515625e-05,
+     "trees: interferences": 1.32953125e-06,
+     "trees: programs": 4.3305625e-06
     },
-    "total": 0.0015105010170373134
+    "total": 0.0006368296344589908
    },
    "generation": {
-    "seconds": 67.4017149019055,
-    "generate_seconds": 40.27181797102094,
-    "dressed_frame_seconds": 0.0012821448035538197,
-    "export_seconds": 27.129721940029413,
-    "filter_seconds": 0.00017499085515737534,
+    "seconds": 60.647834938019514,
+    "generate_seconds": 36.0762331970036,
+    "dressed_frame_seconds": 0.0010349438525736332,
+    "export_seconds": 24.57144583016634,
+    "filter_seconds": 0.00015591084957122803,
     "probes_seconds": null,
-    "peak_gib": 3.221,
+    "peak_gib": 3.15,
     "plan_mb": 0.005,
-    "model_seconds": 11.774665799923241,
+    "model_seconds": 6.6112647680565715,
     "source": "instrumented run: stage shares, not the timed call"
    },
    "public_generation": {
@@ -35292,55 +35276,49 @@
    "host_state": {
     "start": {
      "loadavg": [
-      "337.22",
-      "344.13",
-      "335.28"
+      "253.44",
+      "278.23",
+      "467.00"
      ],
-     "mem_available_gib": 264.7,
-     "core_busy": 0.369,
+     "mem_available_gib": 345.2,
+     "core_busy": 0.0,
      "siblings_busy": {}
     },
     "end": {
      "loadavg": [
-      "335.83",
-      "407.91",
-      "374.17"
+      "269.99",
+      "277.79",
+      "454.99"
      ],
-     "mem_available_gib": 282.4,
-     "core_busy": 0.02,
+     "mem_available_gib": 335.0,
+     "core_busy": 0.01,
      "siblings_busy": {}
     }
    },
    "cross_backend": {
     "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors",
-    "points": 126,
-    "failed": 2,
+    "points": 128,
+    "failed": 0,
     "max_relative": 7.304563868783512e-13,
     "above_1e-5": 0
    },
    "native_build": "loop-native-v2-slice-678c4749",
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
-   "core": 255,
+   "core": 156,
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_zz): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
-    "min": 0.967,
-    "median": 0.979
+    "min": 0.98,
+    "median": 0.9844999999999999
    },
-   "whole_call_seconds_per_point": 0.0038302580469462555,
-   "failures": {
-    "45": "lane status TIRust (108 lanes; families 6, 10, 14)"
-   },
-   "failure_causes": {
-    "lane status TIRust": 1
-   },
+   "seconds_per_point": 0.004277584663213929,
    "tir_counts": {
-    "tensor moment rows": 3216,
-    "TIR gate refusals": 8,
+    "tensor moment rows": 3200,
+    "TIR gate refusals": 0,
     "TIR method-choice rows": 0,
-    "TIR last-resort rows": 5,
+    "TIR last-resort rows": 0,
     "TIR method-choice check rows": 0,
     "TIR method-choice lanes refused by their check": 0
    }
@@ -35387,22 +35365,22 @@
    "rounds": 5,
    "instances": 3,
    "failed_points": [
-    2,
-    2,
-    2
+    0,
+    0,
+    0
    ],
-   "served_fraction": 0.984375,
+   "served_fraction": 1.0,
    "fallback_points": 0,
    "instance_medians": [
-    0.014014483509527054,
-    0.013499586853868095,
-    0.013518010946427239
+    0.012925130544317653,
+    0.011827830763650127,
+    0.011690012437611585
    ],
-   "instance_spread": 1.038141660276916,
+   "instance_spread": 1.1056558419674716,
    "round_spread": [
-    1.780320059720901,
-    1.248486346358716,
-    1.5364454200692017
+    1.1343597355273454,
+    1.1571244125832798,
+    1.0297660652879628
    ],
    "providers": {
     "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
@@ -35410,26 +35388,30 @@
     "rounds": 5,
     "times": {
      "recola": {
-      "seconds_per_point": 0.010491153,
+      "seconds_per_point": 0.010290977,
       "rounds": [
-       0.0103421475,
-       0.010515833,
-       0.0107206595,
-       0.010491153,
-       0.0102738225
+       0.010290977,
+       0.010506077499999999,
+       0.0102679305,
+       0.010696343,
+       0.0101178555
       ],
-      "half_range": 0.021295895694210174
+      "half_range": 0.02810653934995679
      }
     },
     "errors": []
    },
    "gate": {
     "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
-    "measured_status": "inconclusive",
+    "measured_status": "pass",
     "binding_provider": "recola",
-    "binding_limit": 0.0136384989,
+    "binding_limit": 0.0133782701,
     "fastest_provider": "recola",
-    "served_fraction": 0.984375,
+    "ratio_to_limit": 0.8841076368797581,
+    "band": [
+     0.8130970774400743,
+     0.9551181963194421
+    ],
     "provider_protocols": {
      "recola": "optimistic"
     }
@@ -35438,31 +35420,31 @@
     "label": "instrumented run: stage shares, not the timed call",
     "batch": 128,
     "seconds_per_point": {
-     "assembly": 7.086170808179304e-05,
-     "input conversion": 1.3190288882469758e-05,
-     "other": 5.546789543586783e-05,
-     "python point parameters": 3.9357586501864716e-05,
-     "seed contraction": 1.6015625e-08,
-     "seeds": 4.90625e-07,
-     "squaring": 8.494016947224736e-05,
-     "transport": 0.00011818737806114745,
-     "trees + CT kets": 0.00039897079687499997,
-     "trees: closures": 1.43468515625e-05,
-     "trees: interferences": 1.2896953125e-06,
-     "trees: programs": 5.0622109375e-06
+     "assembly": 5.688453165930696e-05,
+     "input conversion": 9.717939974507317e-06,
+     "other": 3.0956274713389575e-05,
+     "python point parameters": 3.275178823969327e-05,
+     "seed contraction": 1.2656250000000001e-08,
+     "seeds": 4.2234374999999995e-07,
+     "squaring": 5.715804945793934e-05,
+     "transport": 8.250855541830322e-05,
+     "trees + CT kets": 0.0003645699765625,
+     "trees: closures": 1.292396875e-05,
+     "trees: interferences": 1.1340703125e-06,
+     "trees: programs": 4.1549375e-06
     },
-    "total": 0.0007814824639353901
+    "total": 0.0006349821160256397
    },
    "generation": {
-    "seconds": 67.4017149019055,
-    "generate_seconds": 40.27181797102094,
-    "dressed_frame_seconds": 0.0012821448035538197,
-    "export_seconds": 27.129721940029413,
-    "filter_seconds": 0.00017499085515737534,
+    "seconds": 60.647834938019514,
+    "generate_seconds": 36.0762331970036,
+    "dressed_frame_seconds": 0.0010349438525736332,
+    "export_seconds": 24.57144583016634,
+    "filter_seconds": 0.00015591084957122803,
     "probes_seconds": null,
-    "peak_gib": 3.221,
+    "peak_gib": 3.15,
     "plan_mb": 0.005,
-    "model_seconds": 11.774665799923241,
+    "model_seconds": 6.6112647680565715,
     "source": "instrumented run: stage shares, not the timed call"
    },
    "public_generation": {
@@ -35481,51 +35463,44 @@
    "host_state": {
     "start": {
      "loadavg": [
-      "337.22",
-      "344.13",
-      "335.28"
+      "253.44",
+      "278.23",
+      "467.00"
      ],
-     "mem_available_gib": 264.7,
-     "core_busy": 0.369,
+     "mem_available_gib": 345.2,
+     "core_busy": 0.0,
      "siblings_busy": {}
     },
     "end": {
      "loadavg": [
-      "335.83",
-      "407.91",
-      "374.17"
+      "269.99",
+      "277.79",
+      "454.99"
      ],
-     "mem_available_gib": 282.4,
-     "core_busy": 0.02,
+     "mem_available_gib": 335.0,
+     "core_busy": 0.01,
      "siblings_busy": {}
     }
    },
    "cross_backend": {
     "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors",
-    "points": 126,
-    "failed": 2,
+    "points": 128,
+    "failed": 0,
     "max_relative": 7.304563868783512e-13,
     "above_1e-5": 0
    },
    "native_build": "loop-native-v2-slice-678c4749",
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
-   "core": 255,
+   "core": 156,
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_aa_zz): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
-    "min": 0.866,
-    "median": 0.978
+    "min": 0.981,
+    "median": 0.9844999999999999
    },
-   "whole_call_seconds_per_point": 0.013518010946427239,
-   "failures": {
-    "45": "lane status Unstable (432 lanes; families 0, 1, 2, 3, 4, 6, 7, 8, 10, 11, 12, 14)",
-    "113": "lane status Unstable (432 lanes; families 0, 1, 2, 3, 4, 6, 7, 8, 10, 11, 12, 14)"
-   },
-   "failure_causes": {
-    "lane status Unstable": 2
-   }
+   "seconds_per_point": 0.011827830763650127
   },
   {
    "key": "emep_ggg",
@@ -36385,15 +36360,15 @@
    "served_fraction": 1.0,
    "fallback_points": 0,
    "instance_medians": [
-    0.0016837359580677003,
-    0.0016758819365350064,
-    0.001659458750509657
+    0.0009888625245366711,
+    0.0010048014155472629,
+    0.0010037427418865263
    ],
-   "instance_spread": 1.0146295938664263,
+   "instance_spread": 1.0161184093997897,
    "round_spread": [
-    5.54263718846433,
-    1.7440458735959392,
-    1.8023468218399494
+    1.0487073039064065,
+    1.0434776324524226,
+    1.0431321773356461
    ],
    "providers": {
     "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
@@ -36401,26 +36376,26 @@
     "rounds": 5,
     "times": {
      "madloop": {
-      "seconds_per_point": 0.000737468,
+      "seconds_per_point": 0.0005009929999999999,
       "rounds": [
-       0.000559687,
-       0.000874633,
-       0.0008845585000000001,
-       0.000737468,
-       0.0005905579999999999
+       0.0005009929999999999,
+       0.0004918769999999999,
+       0.000509128,
+       0.000517988,
+       0.0005006324999999999
       ],
-      "half_range": 0.2202614215125267
+      "half_range": 0.026059246336775272
      },
      "recola": {
-      "seconds_per_point": 0.00036416650000000003,
+      "seconds_per_point": 0.000200276,
       "rounds": [
-       0.000210096,
-       0.000213691,
-       0.000366316,
-       0.00036416650000000003,
-       0.000386162
+       0.000204126,
+       0.000197826,
+       0.00020257549999999999,
+       0.000200276,
+       0.000197986
       ],
-      "half_range": 0.24173832573836418
+      "half_range": 0.015728294952964884
      }
     },
     "errors": []
@@ -36429,13 +36404,13 @@
     "status": "below 5 ms: not gated (user 2026-10-24)",
     "measured_status": "fail",
     "binding_provider": "recola",
-    "binding_limit": 0.00047341645000000004,
+    "binding_limit": 0.0002603588,
     "fastest_provider": "recola",
-    "floor_basis_seconds": 0.0016758819365350064,
-    "ratio_to_limit": 3.539974026113808,
+    "floor_basis_seconds": 0.0010037427418865263,
+    "ratio_to_limit": 3.8552287915235683,
     "band": [
-     2.6585861967467435,
-     4.421361855480873
+     3.763983143569342,
+     3.9464744394777944
     ],
     "provider_protocols": {
      "madloop": "optimistic",
@@ -36446,31 +36421,31 @@
     "label": "instrumented run: stage shares, not the timed call",
     "batch": 128,
     "seconds_per_point": {
-     "assembly": 2.0636754925362766e-05,
-     "input conversion": 1.2345280993031338e-05,
-     "other": 2.4410157493548468e-05,
-     "python point parameters": 3.96757859562058e-05,
-     "seed contraction": 1.1874999999999999e-08,
-     "seeds": 3.3203125e-07,
-     "squaring": 1.4459787053056061e-05,
-     "transport": 2.8239609514996416e-05,
-     "trees + CT kets": 0.000564037265625,
-     "trees: closures": 4.7796875e-07,
-     "trees: interferences": 3.604765625e-07,
-     "trees: programs": 3.2139140625e-06
+     "assembly": 1.9294537196401507e-05,
+     "input conversion": 1.0245672456221655e-05,
+     "other": 2.1313295292202383e-05,
+     "python point parameters": 3.668603312689811e-05,
+     "seed contraction": 1.1312500000000003e-08,
+     "seeds": 3.04546875e-07,
+     "squaring": 1.2609842087840661e-05,
+     "transport": 2.5520401724025586e-05,
+     "trees + CT kets": 0.0005416609296875001,
+     "trees: closures": 4.030546875e-07,
+     "trees: interferences": 3.50234375e-07,
+     "trees: programs": 2.852125e-06
     },
-    "total": 0.0007041485478112008
+    "total": 0.0006676465709460899
    },
    "generation": {
-    "seconds": 83.67346129426733,
-    "generate_seconds": 49.26382934814319,
-    "dressed_frame_seconds": 0.0015685870312154293,
-    "export_seconds": 34.40947669604793,
-    "filter_seconds": 0.00015525007620453835,
+    "seconds": 63.49994501611218,
+    "generate_seconds": 37.0197534780018,
+    "dressed_frame_seconds": 0.0009499136358499527,
+    "export_seconds": 26.480087707284838,
+    "filter_seconds": 0.00010383082553744316,
     "probes_seconds": null,
-    "peak_gib": 3.082,
+    "peak_gib": 3.149,
     "plan_mb": 0.004,
-    "model_seconds": 11.373869232833385,
+    "model_seconds": 7.208129873033613,
     "source": "instrumented run: stage shares, not the timed call"
    },
    "public_generation": {
@@ -36489,48 +36464,44 @@
    "host_state": {
     "start": {
      "loadavg": [
-      "334.19",
-      "342.73",
-      "335.05"
+      "253.44",
+      "278.23",
+      "467.00"
      ],
-     "mem_available_gib": 265.8,
-     "core_busy": 0.85,
-     "siblings_busy": {
-      "376": 0.461
-     }
+     "mem_available_gib": 345.2,
+     "core_busy": 0.97,
+     "siblings_busy": {}
     },
     "end": {
      "loadavg": [
-      "324.29",
-      "396.94",
-      "371.74"
+      "252.29",
+      "276.33",
+      "462.35"
      ],
-     "mem_available_gib": 281.5,
-     "core_busy": 0.869,
-     "siblings_busy": {
-      "376": 0.218
-     }
+     "mem_available_gib": 341.4,
+     "core_busy": 0.73,
+     "siblings_busy": {}
     }
    },
    "cross_backend": {
     "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors",
-    "points": 126,
-    "failed": 2,
+    "points": 128,
+    "failed": 0,
     "max_relative": 1.0,
     "above_1e-5": 4
    },
    "native_build": "loop-native-v2-slice-678c4749",
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
-   "core": 120,
+   "core": 149,
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
-    "min": 0.965,
-    "median": 0.976
+    "min": 0.984,
+    "median": 0.985
    },
-   "seconds_per_point": 0.0016758819365350064,
+   "seconds_per_point": 0.0010037427418865263,
    "tir_counts": {
     "tensor moment rows": 1408,
     "TIR gate refusals": 0,
@@ -36582,22 +36553,22 @@
    "rounds": 5,
    "instances": 3,
    "failed_points": [
-    2,
-    2,
-    2
+    0,
+    0,
+    0
    ],
-   "served_fraction": 0.984375,
+   "served_fraction": 1.0,
    "fallback_points": 0,
    "instance_medians": [
-    0.0016735145836719312,
-    0.0017022375141095836,
-    0.0016789978144515771
+    0.0010217428134637885,
+    0.0010330924014851917,
+    0.0010156115386052988
    ],
-   "instance_spread": 1.0171632388016782,
+   "instance_spread": 1.0172121546628927,
    "round_spread": [
-    1.7661263866968642,
-    1.7609500358782846,
-    1.8186044974828368
+    1.038218268719024,
+    1.0699331793812838,
+    2.458123878041733
    ],
    "providers": {
     "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
@@ -36605,26 +36576,26 @@
     "rounds": 5,
     "times": {
      "madloop": {
-      "seconds_per_point": 0.000737468,
+      "seconds_per_point": 0.0005009929999999999,
       "rounds": [
-       0.000559687,
-       0.000874633,
-       0.0008845585000000001,
-       0.000737468,
-       0.0005905579999999999
+       0.0005009929999999999,
+       0.0004918769999999999,
+       0.000509128,
+       0.000517988,
+       0.0005006324999999999
       ],
-      "half_range": 0.2202614215125267
+      "half_range": 0.026059246336775272
      },
      "recola": {
-      "seconds_per_point": 0.00036416650000000003,
+      "seconds_per_point": 0.000200276,
       "rounds": [
-       0.000210096,
-       0.000213691,
-       0.000366316,
-       0.00036416650000000003,
-       0.000386162
+       0.000204126,
+       0.000197826,
+       0.00020257549999999999,
+       0.000200276,
+       0.000197986
       ],
-      "half_range": 0.24173832573836418
+      "half_range": 0.015728294952964884
      }
     },
     "errors": []
@@ -36633,14 +36604,13 @@
     "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
     "measured_status": "fail",
     "binding_provider": "recola",
-    "binding_limit": 0.00047341645000000004,
+    "binding_limit": 0.0002603588,
     "fastest_provider": "recola",
-    "served_fraction": 0.984375,
-    "floor_basis_seconds": 0.0016789978144515771,
-    "ratio_to_limit": 3.546555711048015,
+    "floor_basis_seconds": 0.0010217428134637885,
+    "ratio_to_limit": 3.924364428871959,
     "band": [
-     2.6588814745428766,
-     4.434229947553153
+     3.8290701512205905,
+     4.019658706523327
     ],
     "provider_protocols": {
      "madloop": "optimistic",
@@ -36651,31 +36621,31 @@
     "label": "instrumented run: stage shares, not the timed call",
     "batch": 128,
     "seconds_per_point": {
-     "assembly": 1.9998537027277052e-05,
-     "input conversion": 1.1857235222123563e-05,
-     "other": 2.3714761482551694e-05,
-     "python point parameters": 3.8330548704834655e-05,
-     "seed contraction": 1.2890624999999999e-08,
-     "seeds": 3.51328125e-07,
-     "squaring": 2.21388581849169e-05,
-     "transport": 2.7781826112542357e-05,
-     "trees + CT kets": 0.00057552715625,
-     "trees: closures": 5.0109375e-07,
-     "trees: interferences": 3.6953125e-07,
-     "trees: programs": 3.1909453125e-06
+     "assembly": 1.9216797227272764e-05,
+     "input conversion": 1.0636533261276782e-05,
+     "other": 2.0312883862061426e-05,
+     "python point parameters": 3.690899393404834e-05,
+     "seed contraction": 1.1320312499999998e-08,
+     "seeds": 3.1023437500000003e-07,
+     "squaring": 1.8837436073226854e-05,
+     "transport": 2.624506817927954e-05,
+     "trees + CT kets": 0.000539901078125,
+     "trees: closures": 4.37578125e-07,
+     "trees: interferences": 3.28671875e-07,
+     "trees: programs": 2.962046875e-06
     },
-    "total": 0.0007197131417342462
+    "total": 0.0006723803453496657
    },
    "generation": {
-    "seconds": 83.67346129426733,
-    "generate_seconds": 49.26382934814319,
-    "dressed_frame_seconds": 0.0015685870312154293,
-    "export_seconds": 34.40947669604793,
-    "filter_seconds": 0.00015525007620453835,
+    "seconds": 63.49994501611218,
+    "generate_seconds": 37.0197534780018,
+    "dressed_frame_seconds": 0.0009499136358499527,
+    "export_seconds": 26.480087707284838,
+    "filter_seconds": 0.00010383082553744316,
     "probes_seconds": null,
-    "peak_gib": 3.082,
+    "peak_gib": 3.149,
     "plan_mb": 0.004,
-    "model_seconds": 11.373869232833385,
+    "model_seconds": 7.208129873033613,
     "source": "instrumented run: stage shares, not the timed call"
    },
    "public_generation": {
@@ -36694,55 +36664,44 @@
    "host_state": {
     "start": {
      "loadavg": [
-      "334.19",
-      "342.73",
-      "335.05"
+      "253.44",
+      "278.23",
+      "467.00"
      ],
-     "mem_available_gib": 265.8,
-     "core_busy": 0.85,
-     "siblings_busy": {
-      "376": 0.461
-     }
+     "mem_available_gib": 345.2,
+     "core_busy": 0.97,
+     "siblings_busy": {}
     },
     "end": {
      "loadavg": [
-      "324.29",
-      "396.94",
-      "371.74"
+      "252.29",
+      "276.33",
+      "462.35"
      ],
-     "mem_available_gib": 281.5,
-     "core_busy": 0.869,
-     "siblings_busy": {
-      "376": 0.218
-     }
+     "mem_available_gib": 341.4,
+     "core_busy": 0.73,
+     "siblings_busy": {}
     }
    },
    "cross_backend": {
     "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors",
-    "points": 126,
-    "failed": 2,
+    "points": 128,
+    "failed": 0,
     "max_relative": 1.0,
     "above_1e-5": 4
    },
    "native_build": "loop-native-v2-slice-678c4749",
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
-   "core": 120,
+   "core": 149,
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_emep_hh): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
-    "min": 0.971,
-    "median": 0.976
+    "min": 0.982,
+    "median": 0.985
    },
-   "whole_call_seconds_per_point": 0.0016789978144515771,
-   "failures": {
-    "45": "lane status Unstable (6 lanes; families 0, 1, 3, 4)",
-    "113": "lane status Unstable (6 lanes; families 0, 1, 3, 4)"
-   },
-   "failure_causes": {
-    "lane status Unstable": 2
-   }
+   "seconds_per_point": 0.0010217428134637885
   },
   {
    "key": "gg_aa",
@@ -37720,7 +37679,31 @@
      "recola": "optimistic"
     }
    },
-   "stages": null,
+   "stages": {
+    "label": "instrumented run: stage shares, not the timed call",
+    "batch": 128,
+    "seconds_per_point": {
+     "assembly": 0.0005958678339084145,
+     "dressing": 0.4966212891875,
+     "factors": 0.0030624169843749996,
+     "input conversion": 5.187232818570919e-05,
+     "other": 0.00027251265782979317,
+     "python point parameters": 0.00012061879533575848,
+     "reduction": 0.4175565637578126,
+     "reduction: contraction": 0.04445397389843751,
+     "reduction: tensor moments": 0.37092529449999995,
+     "scatter": 0.17935236531249998,
+     "seed contraction": 1.4196093749999997e-07,
+     "seeds": 0.0001234309140625,
+     "squaring": 0.0012367322269710712,
+     "transport": 0.013270348283363376,
+     "trees + CT kets": 0.00135115909375,
+     "trees: closures": 0.0003923935390625,
+     "trees: interferences": 2.49685390625e-05,
+     "trees: programs": 0.00077510696875
+    },
+    "total": 1.1136153193365317
+   },
    "generation": {
     "seconds": 13.84901764523238,
     "generate_seconds": 12.254844673909247,
@@ -45805,22 +45788,22 @@
    "rounds": 5,
    "instances": 3,
    "failed_points": [
-    1,
-    1,
-    1
+    0,
+    0,
+    0
    ],
-   "served_fraction": 0.9921875,
+   "served_fraction": 1.0,
    "fallback_points": 0,
    "instance_medians": [
-    0.0048053610807983205,
-    0.004691521171480417,
-    0.003630548329965677
+    0.0018371477417531423,
+    0.0023564499606436584,
+    0.0024999197048600763
    ],
-   "instance_spread": 1.3235909961963652,
+   "instance_spread": 1.36076138464208,
    "round_spread": [
-    1.685419072407478,
-    1.244254310865764,
-    1.8570507133360987
+    1.6033678556091635,
+    1.712295197833911,
+    1.8096391495333997
    ],
    "providers": {
     "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
@@ -45828,53 +45811,52 @@
     "rounds": 5,
     "times": {
      "madloop": {
-      "seconds_per_point": 0.006037984,
+      "seconds_per_point": 0.0032491595,
       "rounds": [
-       0.006037984,
-       0.006137294,
-       0.00619596,
-       0.003891235,
-       0.003762895
+       0.003252895,
+       0.0032491595,
+       0.00332315,
+       0.0032202445000000003,
+       0.0032220695
       ],
-      "half_range": 0.20147991448801458
+      "half_range": 0.015835710743039803
      },
      "openloops": {
-      "seconds_per_point": 0.0078911815,
+      "seconds_per_point": 0.004124194,
       "rounds": [
-       0.0078911815,
-       0.007792066,
-       0.008193763,
-       0.007903516999999999,
-       0.004722419
+       0.004052669,
+       0.004124194,
+       0.004111598,
+       0.004168779,
+       0.004140148
       ],
-      "half_range": 0.21995084006114923
+      "half_range": 0.014076689893831375
      },
      "recola": {
-      "seconds_per_point": 0.010427102,
+      "seconds_per_point": 0.00545991,
       "rounds": [
-       0.0102869565,
-       0.010427102,
-       0.0109492845,
-       0.0110164245,
-       0.006785752000000001
+       0.005282419,
+       0.00557759,
+       0.0053478894999999995,
+       0.0055976205,
+       0.00545991
       ],
-      "half_range": 0.20286904741125575
+      "half_range": 0.02886508202516158
      }
     },
     "errors": []
    },
    "gate": {
     "status": "below 5 ms: not gated (user 2026-10-24)",
-    "measured_status": "inconclusive",
+    "measured_status": "pass",
     "binding_provider": "madloop",
-    "binding_limit": 0.006037984,
+    "binding_limit": 0.0032491595,
     "fastest_provider": "madloop",
-    "served_fraction": 0.9921875,
-    "floor_basis_seconds": 0.004691521171480417,
-    "ratio_to_limit": 0.777001259274688,
+    "floor_basis_seconds": 0.0023564499606436584,
+    "ratio_to_limit": 0.7252490869234516,
     "band": [
-     0.523165929491617,
-     1.0308365890577589
+     0.6117729582475071,
+     0.8387252155993961
     ],
     "provider_protocols": {
      "madloop": "optimistic",
@@ -45886,37 +45868,37 @@
     "label": "instrumented run: stage shares, not the timed call",
     "batch": 128,
     "seconds_per_point": {
-     "assembly": 0.00011726425509550609,
-     "dressing": 0.0010866347421875,
-     "factors": 9.08521015625e-05,
-     "input conversion": 2.3256976419361308e-05,
-     "other": 8.403586980421053e-05,
-     "python point parameters": 4.9429265345679596e-05,
-     "reduction": 0.00028344579687499997,
-     "reduction: contraction": 8.422167968749999e-05,
-     "reduction: tensor moments": 0.000183691140625,
-     "scatter": 0.0001645826953125,
-     "seed contraction": 7.836718750000001e-08,
-     "seeds": 2.9696171875000003e-06,
-     "squaring": 0.0002243668095616158,
-     "transport": 0.00025782983855369155,
-     "trees + CT kets": 4.09808046875e-05,
-     "trees: closures": 1.68253828125e-05,
-     "trees: interferences": 3.720015625e-06,
-     "trees: programs": 5.4001015625e-06
+     "assembly": 9.02970859897323e-05,
+     "dressing": 0.0007899896484375001,
+     "factors": 7.50968203125e-05,
+     "input conversion": 1.1017469660146162e-05,
+     "other": 5.135545143275522e-05,
+     "python point parameters": 3.5690634831553325e-05,
+     "reduction": 0.0002024380234375,
+     "reduction: contraction": 6.687115625e-05,
+     "reduction: tensor moments": 0.00012591932812500002,
+     "scatter": 0.00010993549218749998,
+     "seed contraction": 5.4921875000000004e-08,
+     "seeds": 1.4693828125000001e-06,
+     "squaring": 9.928756117005832e-05,
+     "transport": 0.000184556259082036,
+     "trees + CT kets": 2.2050171875e-05,
+     "trees: closures": 1.059934375e-05,
+     "trees: interferences": 1.8327421875e-06,
+     "trees: programs": 2.647125e-06
     },
-    "total": 0.002425727139780065
+    "total": 0.0016732389231037814
    },
    "generation": {
-    "seconds": 7.337610712274909,
-    "generate_seconds": 6.2633007010445,
-    "dressed_frame_seconds": 0.06073101097717881,
-    "export_seconds": 1.074119030032307,
-    "filter_seconds": 0.0001909811981022358,
+    "seconds": 5.024396758992225,
+    "generate_seconds": 4.25824924511835,
+    "dressed_frame_seconds": 0.050188494846224785,
+    "export_seconds": 0.766018332913518,
+    "filter_seconds": 0.00012918096035718918,
     "probes_seconds": null,
-    "peak_gib": 0.585,
+    "peak_gib": 0.586,
     "plan_mb": 0.029,
-    "model_seconds": 5.378827318083495,
+    "model_seconds": 3.1883277129381895,
     "source": "instrumented run: stage shares, not the timed call"
    },
    "public_generation": {
@@ -45935,59 +45917,49 @@
    "host_state": {
     "start": {
      "loadavg": [
-      "327.16",
-      "327.72",
-      "339.22"
+      "253.44",
+      "278.23",
+      "467.00"
      ],
-     "mem_available_gib": 287.3,
-     "core_busy": 0.29,
-     "siblings_busy": {
-      "322": 0.64
-     }
+     "mem_available_gib": 345.2,
+     "core_busy": 0.598,
+     "siblings_busy": {}
     },
     "end": {
      "loadavg": [
-      "361.69",
-      "337.98",
-      "342.06"
+      "257.29",
+      "276.28",
+      "459.35"
      ],
-     "mem_available_gib": 274.5,
-     "core_busy": 0.84,
-     "siblings_busy": {
-      "322": 0.04
-     }
+     "mem_available_gib": 340.1,
+     "core_busy": 0.108,
+     "siblings_busy": {}
     }
    },
    "cross_backend": {
     "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors",
-    "points": 126,
-    "failed": 2,
+    "points": 128,
+    "failed": 0,
     "max_relative": 8.733310560362633e-11,
     "above_1e-5": 0
    },
    "native_build": "loop-native-v2-slice-678c4749",
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
-   "core": 66,
+   "core": 128,
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zz): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
-    "min": 0.904,
-    "median": 0.9684999999999999
+    "min": 0.892,
+    "median": 0.983
    },
-   "whole_call_seconds_per_point": 0.004691521171480417,
-   "failures": {
-    "45": "lane status TIRust (36 lanes; families 6)"
-   },
-   "failure_causes": {
-    "lane status TIRust": 1
-   },
+   "seconds_per_point": 0.0023564499606436584,
    "tir_counts": {
-    "tensor moment rows": 904,
-    "TIR gate refusals": 4,
+    "tensor moment rows": 896,
+    "TIR gate refusals": 0,
     "TIR method-choice rows": 0,
-    "TIR last-resort rows": 3,
+    "TIR last-resort rows": 0,
     "TIR method-choice check rows": 0,
     "TIR method-choice lanes refused by their check": 0
    }
@@ -46034,22 +46006,22 @@
    "rounds": 5,
    "instances": 3,
    "failed_points": [
-    2,
-    2,
-    2
+    0,
+    0,
+    0
    ],
-   "served_fraction": 0.984375,
+   "served_fraction": 1.0,
    "fallback_points": 0,
    "instance_medians": [
-    0.010533769320318243,
-    0.010897397318331059,
-    0.01084723783787922
+    0.006095645898312796,
+    0.005489912047778489,
+    0.006346821741317399
    ],
-   "instance_spread": 1.0345202165488308,
+   "instance_spread": 1.1560880549781596,
    "round_spread": [
-    1.4439783419045065,
-    1.534004609446436,
-    1.3401348970444544
+    1.3375235492169486,
+    1.1978416681417965,
+    1.2758347420168712
    ],
    "providers": {
     "protocol": "optimistic (m-lit F4; lit-perf's providers --protocol optimistic)",
@@ -46057,37 +46029,37 @@
     "rounds": 5,
     "times": {
      "madloop": {
-      "seconds_per_point": 0.006037984,
+      "seconds_per_point": 0.0032491595,
       "rounds": [
-       0.006037984,
-       0.006137294,
-       0.00619596,
-       0.003891235,
-       0.003762895
+       0.003252895,
+       0.0032491595,
+       0.00332315,
+       0.0032202445000000003,
+       0.0032220695
       ],
-      "half_range": 0.20147991448801458
+      "half_range": 0.015835710743039803
      },
      "openloops": {
-      "seconds_per_point": 0.0078911815,
+      "seconds_per_point": 0.004124194,
       "rounds": [
-       0.0078911815,
-       0.007792066,
-       0.008193763,
-       0.007903516999999999,
-       0.004722419
+       0.004052669,
+       0.004124194,
+       0.004111598,
+       0.004168779,
+       0.004140148
       ],
-      "half_range": 0.21995084006114923
+      "half_range": 0.014076689893831375
      },
      "recola": {
-      "seconds_per_point": 0.010427102,
+      "seconds_per_point": 0.00545991,
       "rounds": [
-       0.0102869565,
-       0.010427102,
-       0.0109492845,
-       0.0110164245,
-       0.006785752000000001
+       0.005282419,
+       0.00557759,
+       0.0053478894999999995,
+       0.0055976205,
+       0.00545991
       ],
-      "half_range": 0.20286904741125575
+      "half_range": 0.02886508202516158
      }
     },
     "errors": []
@@ -46096,9 +46068,13 @@
     "status": "reported (NinjaRS per amplitude: the second mode, PLAN \u00a75.2)",
     "measured_status": "fail",
     "binding_provider": "madloop",
-    "binding_limit": 0.006037984,
+    "binding_limit": 0.0032491595,
     "fastest_provider": "madloop",
-    "served_fraction": 0.984375,
+    "ratio_to_limit": 1.8760685335123732,
+    "band": [
+     1.7144932916668643,
+     2.0376437753578824
+    ],
     "provider_protocols": {
      "madloop": "optimistic",
      "openloops": "optimistic",
@@ -46109,37 +46085,37 @@
     "label": "instrumented run: stage shares, not the timed call",
     "batch": 128,
     "seconds_per_point": {
-     "assembly": 0.00011399434515624307,
-     "dressing": 0.0010366893750000002,
-     "factors": 9.155725781249999e-05,
-     "input conversion": 1.4984827430453151e-05,
-     "other": 8.078759128693404e-05,
-     "python point parameters": 4.321236701798625e-05,
-     "reduction": 0.005192595609375,
-     "reduction: masters": 0.0006594068203125001,
-     "reduction: masters (oneloopmaster)": 5.86972265625e-05,
-     "scatter": 0.00015950207031250002,
-     "seed contraction": 7.59375e-08,
-     "seeds": 2.4791562500000002e-06,
-     "squaring": 6.81627971061971e-05,
-     "transport": 0.0002579590269006409,
-     "trees + CT kets": 2.8390429687500002e-05,
-     "trees: closures": 1.38029453125e-05,
-     "trees: interferences": 2.62821875e-06,
-     "trees: programs": 3.47134375e-06
+     "assembly": 9.258514182874933e-05,
+     "dressing": 0.0007935988046875,
+     "factors": 6.58755234375e-05,
+     "input conversion": 1.0529034625506029e-05,
+     "other": 5.3120111260795966e-05,
+     "python point parameters": 3.696375642903149e-05,
+     "reduction": 0.0037759299296875,
+     "reduction: masters": 0.0005913734296875,
+     "reduction: masters (oneloopmaster)": 4.9402531250000004e-05,
+     "scatter": 0.00010986001562499999,
+     "seed contraction": 5.0234375e-08,
+     "seeds": 1.4226640625e-06,
+     "squaring": 5.6184580898843706e-05,
+     "transport": 0.00018668396801323206,
+     "trees + CT kets": 2.0546875e-05,
+     "trees: closures": 9.4914453125e-06,
+     "trees: interferences": 1.8728984375e-06,
+     "trees: programs": 2.6268125e-06
     },
-    "total": 0.007090390790835954
+    "total": 0.005203350639931159
    },
    "generation": {
-    "seconds": 7.337610712274909,
-    "generate_seconds": 6.2633007010445,
-    "dressed_frame_seconds": 0.06073101097717881,
-    "export_seconds": 1.074119030032307,
-    "filter_seconds": 0.0001909811981022358,
+    "seconds": 5.024396758992225,
+    "generate_seconds": 4.25824924511835,
+    "dressed_frame_seconds": 0.050188494846224785,
+    "export_seconds": 0.766018332913518,
+    "filter_seconds": 0.00012918096035718918,
     "probes_seconds": null,
-    "peak_gib": 0.585,
+    "peak_gib": 0.586,
     "plan_mb": 0.029,
-    "model_seconds": 5.378827318083495,
+    "model_seconds": 3.1883277129381895,
     "source": "instrumented run: stage shares, not the timed call"
    },
    "public_generation": {
@@ -46158,55 +46134,44 @@
    "host_state": {
     "start": {
      "loadavg": [
-      "327.16",
-      "327.72",
-      "339.22"
+      "253.44",
+      "278.23",
+      "467.00"
      ],
-     "mem_available_gib": 287.3,
-     "core_busy": 0.29,
-     "siblings_busy": {
-      "322": 0.64
-     }
+     "mem_available_gib": 345.2,
+     "core_busy": 0.598,
+     "siblings_busy": {}
     },
     "end": {
      "loadavg": [
-      "361.69",
-      "337.98",
-      "342.06"
+      "257.29",
+      "276.28",
+      "459.35"
      ],
-     "mem_available_gib": 274.5,
-     "core_busy": 0.84,
-     "siblings_busy": {
-      "322": 0.04
-     }
+     "mem_available_gib": 340.1,
+     "core_busy": 0.108,
+     "siblings_busy": {}
     }
    },
    "cross_backend": {
     "metric": "|T - N| / max(|T|, |N|), finite part, largest over sectors",
-    "points": 126,
-    "failed": 2,
+    "points": 128,
+    "failed": 0,
     "max_relative": 8.733310560362633e-11,
     "above_1e-5": 0
    },
    "native_build": "loop-native-v2-slice-678c4749",
    "native_digest": "9de26a2e57d025ac6a4876a0d8c677e18cede4675ed193e63d8359eff95a84b8",
    "host": "itphlies",
-   "core": 66,
+   "core": 128,
    "concurrency": "40 rows in parallel units, one pinned core each (separate physical cores)",
    "date": "2026-11-11",
    "source": "lit-unchecked re-time (tools/loop_benchmark/retime_unchecked.py; process li_gg_zz): public API with the documented unchecked setting; stages from a separate instrumented run",
    "cpu_share": {
-    "min": 0.831,
-    "median": 0.949
+    "min": 0.91,
+    "median": 0.9824999999999999
    },
-   "whole_call_seconds_per_point": 0.01084723783787922,
-   "failures": {
-    "45": "lane status Unstable (216 lanes; families 0, 1, 2, 3, 4, 6)",
-    "113": "lane status Unstable (216 lanes; families 0, 1, 2, 3, 4, 6)"
-   },
-   "failure_causes": {
-    "lane status Unstable": 2
-   }
+   "seconds_per_point": 0.006095645898312796
   },
   {
    "key": "gg_zzg",
