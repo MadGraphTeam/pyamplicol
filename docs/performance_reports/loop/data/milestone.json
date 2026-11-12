@@ -1,5 +1,42 @@
 {
- "date": "2026-11-11",
+ "date": "2026-11-12",
+ "provenance": {
+  "shipped": {
+   "version": "1.0.3",
+   "revision": "779f4931",
+   "dependencies": {
+    "TIRust": "bc94b496",
+    "NinjaRS": "5fe7f392",
+    "oneloopmaster": "bd703d09",
+    "Symbolica": "dfe6bd97"
+   }
+  },
+  "timed": {
+   "revision": "524e6cfa",
+   "dependencies": {
+    "TIRust": "fefb5f2b",
+    "NinjaRS": "71eddb15",
+    "oneloopmaster": "bd703d09",
+    "Symbolica": "dfe6bd97"
+   }
+  },
+  "timing_check": "the times are the same at the shipped commit (paired same-core check on two rows, B = 128: \u00d70.98 and \u00d71.01, within the timing noise), and Table 3's loop-induced agreement check is measured there.",
+  "older": [
+   {
+    "what": "Table 3's Born-interfered agreement check",
+    "date": "2026-11-08"
+   },
+   {
+    "what": "the validation of the loop-induced processes where TIRust served every point (not re-run)",
+    "date": "2026-11-08"
+   },
+   {
+    "what": "the double-double and arbitrary-precision checks of g g \u2192 a a g g, g g \u2192 h g g g, g g \u2192 h h g g and g g \u2192 z z z z (multi-hour, not re-run)",
+    "date": "2026-11-08"
+   }
+  ],
+  "source": "dependencies/manifest.json at 779f4931 and 524e6cfa (NinjaRS 71eddb15 and 5fe7f392 have the same source tree); timing check: report3 (tmp/report3/ab: 3 alternating rounds, natives loop-native-v2-slice-678c4749 and loop-native-v2-slice-779f4931); agreement check: lit-val's records re-run at 779f4931 by report3"
+ },
  "engine_revision": "524e6cfa",
  "previous_loop": "7266c160",
  "previous_engine": "c8885cc5",
