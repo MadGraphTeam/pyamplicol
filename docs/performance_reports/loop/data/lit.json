@@ -246,7 +246,7 @@
    "runs": {
     "li_h_ggg": {
      "row": "h_ggg",
-     "status": "pass"
+     "status": "partial"
     },
     "li_z_ggg": {
      "row": "z_ggg",
@@ -16670,10 +16670,18 @@
      },
      "L5": {
       "double_double_max_relative": 9.657787027716738e-27,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 1,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "term scale of family # monomial #: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2
+       },
+       "served": 2,
+       "status": "partial",
+       "worst_ratio_to_10E": 1.5545944111902714e-06
       },
       "transformed_estimate_relative": 0.0010852388548858376,
       "worst_ratio_to_10E": 1.691493813887725e-07
@@ -17036,10 +17044,22 @@
      },
      "L5": {
       "double_double_max_relative": 5.113721362122708e-27,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2,
+        "term scale of family # monomial #: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 0.052170474802749105,
       "worst_ratio_to_10E": 4.412827315172658e-08
@@ -17470,10 +17490,10 @@
    "runs": {
     "li_emep_ggg": {
      "row": "emep_ggg",
-     "status": "pass (lax)"
+     "status": "partial"
     }
    },
-   "status": "pass (lax)"
+   "status": "partial"
   },
   "LI-L1": {
    "check": "L5",
@@ -17575,20 +17595,33 @@
     "li_emep_ggg": {
      "double_double_max_relative": 1.092211405113724e-26,
      "row": "emep_ggg",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 1,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 2,
+      "served": 2,
+      "status": "partial",
+      "worst_ratio_to_10E": 1.4286784245156091e-06
      },
      "transformed_estimate_relative": 0.0010820765030176852,
      "worst_ratio_to_10E": 1.7420759274542618e-07
     },
     "li_emep_ggg_cms": {
      "double_double_max_relative": 9.657787027716738e-27,
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 1,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons": {
+       "term scale of family # monomial #: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1,
+       "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2
+      },
+      "served": 2,
+      "status": "partial",
+      "worst_ratio_to_10E": 1.5545944111902714e-06
      },
      "transformed_estimate_relative": 0.0010852388548858376,
      "worst_ratio_to_10E": 1.691493813887725e-07
@@ -17676,8 +17709,13 @@
      "double_double_max_relative": 0.0,
      "status": "recorded",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 0,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons": {},
+      "served": 3,
+      "status": "recorded",
+      "worst_ratio_to_10E": 0.0
      },
      "transformed_estimate_relative": 0.0,
      "worst_ratio_to_10E": 0.0
@@ -17685,20 +17723,37 @@
     "li_gg_aag": {
      "double_double_max_relative": 5.694093575073782e-27,
      "row": "gg_aag",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 3,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 19,
+      "served": 0,
+      "status": "partial",
+      "worst_ratio_to_10E": null
      },
      "transformed_estimate_relative": 0.052230732467779935,
      "worst_ratio_to_10E": 5.052243497206445e-08
     },
     "li_gg_aag_cms": {
      "double_double_max_relative": 5.113721362122708e-27,
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 3,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons": {
+       "family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+       "family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2,
+       "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+       "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2,
+       "term scale of family # monomial #: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6,
+       "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2
+      },
+      "served": 0,
+      "status": "partial",
+      "worst_ratio_to_10E": null
      },
      "transformed_estimate_relative": 0.052170474802749105,
      "worst_ratio_to_10E": 4.412827315172658e-08
@@ -17706,10 +17761,15 @@
     "li_gg_aagg": {
      "double_double_max_relative": 1.2985244300550439e-20,
      "row": "gg_aagg",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 3,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 22,
+      "served": 0,
+      "status": "partial",
+      "worst_ratio_to_10E": null
      },
      "transformed_estimate_relative": 17.90830779425142,
      "worst_ratio_to_10E": 0.004793058835509147
@@ -17733,10 +17793,15 @@
     "li_gg_agg": {
      "double_double_max_relative": 3.9279626727612095e-27,
      "row": "gg_agg",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 3,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 19,
+      "served": 0,
+      "status": "partial",
+      "worst_ratio_to_10E": null
      },
      "transformed_estimate_relative": 0.11455551608829824,
      "worst_ratio_to_10E": 4.525896655879593e-08
@@ -17854,10 +17919,15 @@
     "li_gg_hgg": {
      "double_double_max_relative": 2.66902846095086e-26,
      "row": "gg_hgg",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 1,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 2,
+      "served": 2,
+      "status": "partial",
+      "worst_ratio_to_10E": 0.030850286839041577
      },
      "transformed_estimate_relative": 1.3617207287240156e-07,
      "worst_ratio_to_10E": 0.008454602350050456
@@ -17865,10 +17935,15 @@
     "li_gg_hggg": {
      "double_double_max_relative": 3.970390919873718e-27,
      "row": "gg_hggg",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 3,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 8,
+      "served": 0,
+      "status": "partial",
+      "worst_ratio_to_10E": null
      },
      "transformed_estimate_relative": 1.184729005610319e-08,
      "worst_ratio_to_10E": 0.004361378445509199
@@ -17892,10 +17967,15 @@
     "li_gg_hhgg": {
      "double_double_max_relative": 1.144611526705161e-25,
      "row": "gg_hhgg",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 3,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 8,
+      "served": 0,
+      "status": "partial",
+      "worst_ratio_to_10E": null
      },
      "transformed_estimate_relative": 5.10325195118647e-06,
      "worst_ratio_to_10E": 0.00304711287266114
@@ -17967,10 +18047,15 @@
     "li_gg_wpwmg": {
      "double_double_max_relative": 5.392310515606025e-26,
      "row": "gg_wpwmg",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 3,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 14,
+      "served": 0,
+      "status": "partial",
+      "worst_ratio_to_10E": null
      },
      "transformed_estimate_relative": 3.8579811367312242,
      "worst_ratio_to_10E": 3.712805147155526e-06
@@ -18025,10 +18110,15 @@
     "li_gg_zgg": {
      "double_double_max_relative": 2.728763637762284e-22,
      "row": "gg_zgg",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 3,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 6,
+      "served": 0,
+      "status": "partial",
+      "worst_ratio_to_10E": null
      },
      "transformed_estimate_relative": 0.0003465551317297658,
      "worst_ratio_to_10E": 0.01466107531302229
@@ -18067,10 +18157,15 @@
     "li_gg_zzg": {
      "double_double_max_relative": 2.1462627134393318e-23,
      "row": "gg_zzg",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 3,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 5,
+      "served": 0,
+      "status": "partial",
+      "worst_ratio_to_10E": null
      },
      "transformed_estimate_relative": 0.0076734926542022805,
      "worst_ratio_to_10E": 0.0011328870520309587
@@ -18080,8 +18175,13 @@
      "row": "gg_zzz",
      "status": "pass",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 0,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 0,
+      "served": 3,
+      "status": "pass",
+      "worst_ratio_to_10E": 8.518436443226656e-07
      },
      "transformed_estimate_relative": 0.08737174406108981,
      "worst_ratio_to_10E": 8.765559862613202e-08
@@ -18090,10 +18190,15 @@
      "double_double_max_relative": null,
      "double_double_not_run": "skipped: the double-double side of L5 is recorded information only (L5 is judged in binary64); about 41 min on this run",
      "row": "gg_zzzz",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 3,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 7,
+      "served": 0,
+      "status": "partial",
+      "worst_ratio_to_10E": null
      },
      "transformed_estimate_relative": 216.38627487340395,
      "worst_ratio_to_10E": 1.0948393013838396e-07
@@ -18148,10 +18253,15 @@
     "li_h_ggg": {
      "double_double_max_relative": 6.63976960241079e-29,
      "row": "h_ggg",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 1,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 1,
+      "served": 2,
+      "status": "partial",
+      "worst_ratio_to_10E": 0.00017009513023795366
      },
      "transformed_estimate_relative": 4.634550560642695e-11,
      "worst_ratio_to_10E": 0.0012450275223880069
@@ -18223,10 +18333,15 @@
     "li_uux_hgg": {
      "double_double_max_relative": 1.0882178222901627e-27,
      "row": "uux_hgg",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 2,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 4,
+      "served": 1,
+      "status": "partial",
+      "worst_ratio_to_10E": 0.001066568053672538
      },
      "transformed_estimate_relative": 2.3866392965659722e-09,
      "worst_ratio_to_10E": 0.0007972301494320191
@@ -18264,16 +18379,21 @@
     "li_z_ggg": {
      "double_double_max_relative": 2.3155556245517936e-28,
      "row": "z_ggg",
-     "status": "pass",
+     "status": "partial",
      "tirust": {
-      "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-      "status": "not run"
+      "bitwise_record": true,
+      "failed_points": 1,
+      "native": "loop-native-v2-slice-779f4931",
+      "reasons_count": 2,
+      "served": 2,
+      "status": "partial",
+      "worst_ratio_to_10E": 1.497485707008748e-14
      },
      "transformed_estimate_relative": 0.00018540149901237905,
      "worst_ratio_to_10E": 1.9911287816501453e-13
     }
    },
-   "status": "pass"
+   "status": "partial"
   },
   "LI-O1": {
    "arbitrary": "lit-tir-mp's obs/ap (40 digits, f1e8c98e): 48 outputs beyond 1e-24 of the sector, all numerical zeros near 1e-70 on both backends; li_gg_hgg worst 9.2e-18 of the bound",
@@ -24072,8 +24192,13 @@
       "double_double_max_relative": 0.0,
       "status": "recorded",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 0,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {},
+       "served": 3,
+       "status": "recorded",
+       "worst_ratio_to_10E": 0.0
       },
       "transformed_estimate_relative": 0.0,
       "worst_ratio_to_10E": 0.0
@@ -25268,10 +25393,19 @@
      },
      "L5": {
       "double_double_max_relative": null,
-      "status": "not run",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1,
+        "term scale of family # monomial #: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": null,
       "worst_ratio_to_10E": null
@@ -25508,10 +25642,19 @@
      },
      "L5": {
       "double_double_max_relative": null,
-      "status": "not run",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1,
+        "term scale of family # monomial #: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": null,
       "worst_ratio_to_10E": null
@@ -25932,10 +26075,17 @@
      },
      "L5": {
       "double_double_max_relative": 1.616565018655587e-12,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 2,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4
+       },
+       "served": 1,
+       "status": "partial",
+       "worst_ratio_to_10E": 0.0002697589512425614
       },
       "transformed_estimate_relative": 681.3842160537333,
       "worst_ratio_to_10E": 0.01599013789027343
@@ -26146,10 +26296,19 @@
      },
      "L5": {
       "double_double_max_relative": 2.940063901593671e-16,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 32.06207214322133,
       "worst_ratio_to_10E": 0.013183336268736858
@@ -26552,10 +26711,22 @@
      },
      "L5": {
       "double_double_max_relative": 1.7616648108303562e-10,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6,
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1,
+        "term scale of family # monomial #: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 645392577.2997022,
       "worst_ratio_to_10E": 0.0017414743553400556
@@ -26941,10 +27112,22 @@
      },
      "L5": {
       "double_double_max_relative": 6.450303367475018e-11,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 3,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2,
+        "term scale of family # monomial #: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 339609307.6256713,
       "worst_ratio_to_10E": 0.019712229105383276
@@ -27957,7 +28140,7 @@
    "waits_on": []
   },
   "emep_ggg": {
-   "note": null,
+   "note": "li_emep_ggg: L5 partial",
    "points": 3,
    "references": {
     "madloop": 1.1514735781547052e-10,
@@ -28092,10 +28275,18 @@
      },
      "L5": {
       "double_double_max_relative": 1.092211405113724e-26,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 1,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "term scale of family # monomial #: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1
+       },
+       "served": 2,
+       "status": "partial",
+       "worst_ratio_to_10E": 1.4286784245156091e-06
       },
       "transformed_estimate_relative": 0.0010820765030176852,
       "worst_ratio_to_10E": 1.7420759274542618e-07
@@ -28140,7 +28331,7 @@
     }
    },
    "source": "report3 2026-11-12: the records whose TIRust binary64 arms failed points re-run at 779f4931 (records at 779f4931 or at this package's commits on it, which change no engine code; native loop-native-v2-slice-779f4931, digest 1e822908; TIRust bc94b496 with the verified last resort, NinjaRS 5fe7f392) through the public route, artifacts regenerated at 1.0.3, afresh on both backends where NinjaRS binary64 changed since (li_z_ggg, li_gg_zgg: TIRust arms refreshed, NinjaRS binary64 bitwise): li_emep_ggg li_emep_ggg_cms li_gg_aaa li_gg_aag li_gg_aag_cms li_gg_aagg li_gg_agg li_gg_hgg li_gg_hggg li_gg_hhgg li_gg_hhgg_p15 li_gg_wpwmg li_gg_zgg li_gg_zzg li_gg_zzz li_gg_zzzz li_h_ggg li_stress_gg_aa_forward li_stress_gg_ag_forward li_stress_gg_hh_forward li_stress_gg_hh_threshold li_stress_gg_wpwm_pt li_stress_gg_zz_pt li_uux_hgg li_z_ggg; records workspace/tmp/report3/runs/<fixture>/record.json; li_gg_aagg, li_gg_hggg, li_gg_hhgg, li_gg_zzzz keep lit-val's double-double / arbitrary-precision arms, probes and Ward arms where their re-run skipped them (multi-hour NinjaRS cost; each record's 'merged'). Every other input as before: lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS binary64 bitwise across the three natives, N0; NinjaRS double-double values of loop-induced rows vary with the process history at ~1e-31 relative), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json; LI-L1 TIRust arms (identity-tirust) and LI-27 (fabc) at loop-native-v2-slice-f4d75a56 (the TIRust binary64 fixture arm bitwise the record's on every run); Fig. 7 matched a with the calibration tool's RAMBO, b with the previous RAMBO of 5cca8136 (the same construction, points equal to rounding); LI-B1 campaign rows (born-l6) at loop-native-v2-slice-e80d31e4, every row whose binary64 screen flags a lane (beyond 10x the reduction-direction re-test or >= 1e-5 relative: 106 rows) re-run with the L6 estimate stage at loop-native-v2-slice-f4d75a56 (lit-cache: store off by default, TIRust and NinjaRS bitwise vs e80d31e4 per its report; each record names its native and lit-tir's li_b1.py sha256), Python Symbolica Community dfe6bd97, records workspace/tmp/lit-val/born/out-r3/<campaign>-<row>.json (fix round 2 records born/out, the re-run ones born/out3); LI-A7 / LI-A1 heavy-top scans (runs/limits.json) re-run at loop-native-v2-slice-f4d75a56 with the HEFT trees at the loop run's colour accuracy (full; lit-heft fda43a16), the first scan's leading-colour trees kept in runs/limits-r2.json",
-   "status": "pass (lax)",
+   "status": "partial",
    "waits_on": []
   },
   "emep_ha": {
@@ -28803,7 +28994,7 @@
    "waits_on": []
   },
   "gg_aag": {
-   "note": "li_gg_aag: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L6 partial (TIRust fails 2 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+   "note": "li_gg_aag: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L5 partial; li_gg_aag: L6 partial (TIRust fails 2 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
    "points": 3,
    "references": {
     "madloop": 2.641349401147518e-11,
@@ -28958,10 +29149,22 @@
      },
      "L5": {
       "double_double_max_relative": 5.694093575073782e-27,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2,
+        "term scale of family # monomial #: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 0.052230732467779935,
       "worst_ratio_to_10E": 5.052243497206445e-08
@@ -28998,7 +29201,7 @@
    "waits_on": []
   },
   "gg_aagg": {
-   "note": "li_gg_aagg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aagg: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_aagg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial; arbitrary not run); li_gg_aagg: L7 not run (stopped: the 40-digit AP arm of this 2->4 optional run extrapolates to about 6.9 h (its double-double arm 7405 s times the AP / double-double ratio 3.35 of li_gg_hhgg); L7 at six legs is li_gg_hhgg's)",
+   "note": "li_gg_aagg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aagg: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_aagg: L5 partial; li_gg_aagg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial; arbitrary not run); li_gg_aagg: L7 not run (stopped: the 40-digit AP arm of this 2->4 optional run extrapolates to about 6.9 h (its double-double arm 7405 s times the AP / double-double ratio 3.35 of li_gg_hhgg); L7 at six legs is li_gg_hhgg's)",
    "points": 3,
    "references": {
     "openloops": 1.4489403707469513e-09,
@@ -29158,10 +29361,21 @@
      },
      "L5": {
       "double_double_max_relative": 1.2985244300550439e-20,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2,
+        "term scale of family # monomial #: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 17.90830779425142,
       "worst_ratio_to_10E": 0.004793058835509147
@@ -29387,7 +29601,7 @@
    "waits_on": []
   },
   "gg_agg": {
-   "note": "li_gg_agg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L6 partial (TIRust fails 2 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+   "note": "li_gg_agg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L5 partial; li_gg_agg: L6 partial (TIRust fails 2 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
    "points": 3,
    "references": {
     "madloop": 2.5710962540726568e-11,
@@ -29542,10 +29756,22 @@
      },
      "L5": {
       "double_double_max_relative": 3.9279626727612095e-27,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2,
+        "term scale of family # monomial #: TIRust last-resort (gate-# plain PV) lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 0.11455551608829824,
       "worst_ratio_to_10E": 4.525896655879593e-08
@@ -30607,7 +30833,7 @@
    "waits_on": []
   },
   "gg_hgg": {
-   "note": "li_gg_hgg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_hgg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_hgg: L6 partial (double-double partial)",
+   "note": "li_gg_hgg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_hgg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_hgg: L5 partial; li_gg_hgg: L6 partial (double-double partial)",
    "points": 3,
    "references": {
     "madloop": 2.740860434292355e-10,
@@ -30754,10 +30980,17 @@
      },
      "L5": {
       "double_double_max_relative": 2.66902846095086e-26,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 1,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2
+       },
+       "served": 2,
+       "status": "partial",
+       "worst_ratio_to_10E": 0.030850286839041577
       },
       "transformed_estimate_relative": 1.3617207287240156e-07,
       "worst_ratio_to_10E": 0.008454602350050456
@@ -30897,7 +31130,7 @@
    "waits_on": []
   },
   "gg_hggg": {
-   "note": "li_gg_hggg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
+   "note": "li_gg_hggg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L5 partial; li_gg_hggg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
    "points": 3,
    "references": {
     "madloop": 2.9893207152342354e-11,
@@ -31045,10 +31278,18 @@
      },
      "L5": {
       "double_double_max_relative": 3.970390919873718e-27,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 1.184729005610319e-08,
       "worst_ratio_to_10E": 0.004361378445509199
@@ -31369,7 +31610,7 @@
    "waits_on": []
   },
   "gg_hhgg": {
-   "note": "li_gg_hhgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial); li_gg_hhgg_p15: L3 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L4 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L6 partial (double-double not run); li_gg_hhgg_p15: E not run",
+   "note": "li_gg_hhgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L5 partial; li_gg_hhgg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial); li_gg_hhgg_p15: L3 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L4 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L6 partial (double-double not run); li_gg_hhgg_p15: E not run",
    "points": 4,
    "references": {
     "madloop": 2.7847606729792735e-09,
@@ -31520,10 +31761,18 @@
      },
      "L5": {
       "double_double_max_relative": 1.144611526705161e-25,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 5.10325195118647e-06,
       "worst_ratio_to_10E": 0.00304711287266114
@@ -32396,7 +32645,7 @@
    "waits_on": []
   },
   "gg_wpwmg": {
-   "note": "li_gg_wpwmg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+   "note": "li_gg_wpwmg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L5 partial; li_gg_wpwmg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
    "points": 3,
    "references": {
     "madloop": 8.383123345315758e-10,
@@ -32546,10 +32795,19 @@
      },
      "L5": {
       "double_double_max_relative": 5.392310515606025e-26,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 3.8579811367312242,
       "worst_ratio_to_10E": 3.712805147155526e-06
@@ -32935,7 +33193,7 @@
    "waits_on": []
   },
   "gg_zgg": {
-   "note": "li_gg_zgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L6 partial (double-double partial)",
+   "note": "li_gg_zgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L5 partial; li_gg_zgg: L6 partial (double-double partial)",
    "points": 3,
    "references": {
     "madloop": 2.9133212812835567e-06,
@@ -33072,10 +33330,17 @@
      },
      "L5": {
       "double_double_max_relative": 2.728763637762284e-22,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 0.0003465551317297658,
       "worst_ratio_to_10E": 0.01466107531302229
@@ -33288,7 +33553,7 @@
    "waits_on": []
   },
   "gg_zzg": {
-   "note": "li_gg_zzg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L6 partial (double-double partial)",
+   "note": "li_gg_zzg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L5 partial; li_gg_zzg: L6 partial (double-double partial)",
    "points": 3,
    "references": {
     "madloop": 1.9567171895453702e-08,
@@ -33434,10 +33699,17 @@
      },
      "L5": {
       "double_double_max_relative": 2.1462627134393318e-23,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 5
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 0.0076734926542022805,
       "worst_ratio_to_10E": 0.0011328870520309587
@@ -33609,8 +33881,13 @@
       "double_double_max_relative": 3.388568082233444e-27,
       "status": "pass",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 0,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {},
+       "served": 3,
+       "status": "pass",
+       "worst_ratio_to_10E": 8.518436443226656e-07
       },
       "transformed_estimate_relative": 0.08737174406108981,
       "worst_ratio_to_10E": 8.765559862613202e-08
@@ -33645,7 +33922,7 @@
    "waits_on": []
   },
   "gg_zzzz": {
-   "note": "li_gg_zzzz: L3 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+   "note": "li_gg_zzzz: L3 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L5 partial; li_gg_zzzz: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
    "points": 3,
    "references": {
     "recola": 5.178423343592309e-06
@@ -33769,10 +34046,18 @@
      "L5": {
       "double_double_max_relative": null,
       "double_double_not_run": "skipped: the double-double side of L5 is recorded information only (L5 is judged in binary64); about 41 min on this run",
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 3,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "rotation-#: family # lane LaneKey { family: #, order: #, column: # }: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1,
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 6
+       },
+       "served": 0,
+       "status": "partial",
+       "worst_ratio_to_10E": null
       },
       "transformed_estimate_relative": 216.38627487340395,
       "worst_ratio_to_10E": 1.0948393013838396e-07
@@ -34180,7 +34465,7 @@
    "waits_on": []
   },
   "h_ggg": {
-   "note": null,
+   "note": "li_h_ggg: L5 partial",
    "points": 3,
    "references": {
     "madloop": 7.0696963051481495e-12,
@@ -34315,10 +34600,17 @@
      },
      "L5": {
       "double_double_max_relative": 6.63976960241079e-29,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 1,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 1
+       },
+       "served": 2,
+       "status": "partial",
+       "worst_ratio_to_10E": 0.00017009513023795366
       },
       "transformed_estimate_relative": 4.634550560642695e-11,
       "worst_ratio_to_10E": 0.0012450275223880069
@@ -34363,7 +34655,7 @@
     }
    },
    "source": "report3 2026-11-12: the records whose TIRust binary64 arms failed points re-run at 779f4931 (records at 779f4931 or at this package's commits on it, which change no engine code; native loop-native-v2-slice-779f4931, digest 1e822908; TIRust bc94b496 with the verified last resort, NinjaRS 5fe7f392) through the public route, artifacts regenerated at 1.0.3, afresh on both backends where NinjaRS binary64 changed since (li_z_ggg, li_gg_zgg: TIRust arms refreshed, NinjaRS binary64 bitwise): li_emep_ggg li_emep_ggg_cms li_gg_aaa li_gg_aag li_gg_aag_cms li_gg_aagg li_gg_agg li_gg_hgg li_gg_hggg li_gg_hhgg li_gg_hhgg_p15 li_gg_wpwmg li_gg_zgg li_gg_zzg li_gg_zzz li_gg_zzzz li_h_ggg li_stress_gg_aa_forward li_stress_gg_ag_forward li_stress_gg_hh_forward li_stress_gg_hh_threshold li_stress_gg_wpwm_pt li_stress_gg_zz_pt li_uux_hgg li_z_ggg; records workspace/tmp/report3/runs/<fixture>/record.json; li_gg_aagg, li_gg_hggg, li_gg_hhgg, li_gg_zzzz keep lit-val's double-double / arbitrary-precision arms, probes and Ward arms where their re-run skipped them (multi-hour NinjaRS cost; each record's 'merged'). Every other input as before: lit-val campaign 2026-11-07/08: public route, reduction ninjars and tirust requested explicitly, binary64 + DD, AP 40 digits on each tier's AP run, E = tools/loop_v2_observables_backends.checks(); NinjaRS arms at native loop-native-v2-slice-e852f448 (digest c3fda0c4, tir on), Python Symbolica Community 20a9da94; TIRust arms, TIRust L3 probes and the crossing at loop-native-v2-slice-e80d31e4 (digest b367124c; lit-tir-mp's TIRust in binary64/DD/MPFR with the binary64 method choice on, and lit-stab-t-b's rotation copy; bitwise the same TIRust arms, probes and crossing as at f1e8c98e), the fixture-point Ward probes (L4) NinjaRS at f1e8c98e (NinjaRS binary64 bitwise across the three natives, N0; NinjaRS double-double values of loop-induced rows vary with the process history at ~1e-31 relative), Python Symbolica Community dfe6bd97 (records' provenance and 'refreshed' entries); raw records workspace/tmp/lit-val/runs/<fixture>/record.json; LI-L1 TIRust arms (identity-tirust) and LI-27 (fabc) at loop-native-v2-slice-f4d75a56 (the TIRust binary64 fixture arm bitwise the record's on every run); Fig. 7 matched a with the calibration tool's RAMBO, b with the previous RAMBO of 5cca8136 (the same construction, points equal to rounding); LI-B1 campaign rows (born-l6) at loop-native-v2-slice-e80d31e4, every row whose binary64 screen flags a lane (beyond 10x the reduction-direction re-test or >= 1e-5 relative: 106 rows) re-run with the L6 estimate stage at loop-native-v2-slice-f4d75a56 (lit-cache: store off by default, TIRust and NinjaRS bitwise vs e80d31e4 per its report; each record names its native and lit-tir's li_b1.py sha256), Python Symbolica Community dfe6bd97, records workspace/tmp/lit-val/born/out-r3/<campaign>-<row>.json (fix round 2 records born/out, the re-run ones born/out3); LI-A7 / LI-A1 heavy-top scans (runs/limits.json) re-run at loop-native-v2-slice-f4d75a56 with the HEFT trees at the loop run's colour accuracy (full; lit-heft fda43a16), the first scan's leading-colour trees kept in runs/limits-r2.json",
-   "status": "pass",
+   "status": "partial",
    "waits_on": []
   },
   "h_za": {
@@ -35336,7 +35628,7 @@
    "waits_on": []
   },
   "uux_hgg": {
-   "note": "li_uux_hgg: L3 partial (tirust/double partial (1/3 points), tirust/double-double partial (1/3 points)); li_uux_hgg: L4 partial (tirust/double partial (1/3 points), tirust/double-double partial (1/3 points))",
+   "note": "li_uux_hgg: L3 partial (tirust/double partial (1/3 points), tirust/double-double partial (1/3 points)); li_uux_hgg: L4 partial (tirust/double partial (1/3 points), tirust/double-double partial (1/3 points)); li_uux_hgg: L5 partial",
    "points": 3,
    "references": {
     "madloop": 7.746694543314283e-10,
@@ -35481,10 +35773,17 @@
      },
      "L5": {
       "double_double_max_relative": 1.0882178222901627e-27,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 2,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 4
+       },
+       "served": 1,
+       "status": "partial",
+       "worst_ratio_to_10E": 0.001066568053672538
       },
       "transformed_estimate_relative": 2.3866392965659722e-09,
       "worst_ratio_to_10E": 0.0007972301494320191
@@ -35519,7 +35818,7 @@
    "waits_on": []
   },
   "z_ggg": {
-   "note": "li_z_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_z_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points))",
+   "note": "li_z_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_z_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_z_ggg: L5 partial",
    "points": 3,
    "references": {
     "madloop": 7.791045445706497e-12,
@@ -35655,10 +35954,17 @@
      },
      "L5": {
       "double_double_max_relative": 2.3155556245517936e-28,
-      "status": "pass",
+      "status": "partial",
       "tirust": {
-       "reason": "no TIRust identity arm in the record (li_manifest.py identity-tirust)",
-       "status": "not run"
+       "bitwise_record": true,
+       "failed_points": 1,
+       "native": "loop-native-v2-slice-779f4931",
+       "reasons": {
+        "term scale of family # monomial #: TIRust method-choice lane refused by its check: deviation # of term scale # between its two frames exceeds # (+# more like this)": 2
+       },
+       "served": 2,
+       "status": "partial",
+       "worst_ratio_to_10E": 1.497485707008748e-14
       },
       "transformed_estimate_relative": 0.00018540149901237905,
       "worst_ratio_to_10E": 1.9911287816501453e-13

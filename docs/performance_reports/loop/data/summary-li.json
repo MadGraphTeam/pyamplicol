@@ -4180,7 +4180,7 @@
       "paired": true
      },
      "validation": {
-      "status": "pass",
+      "status": "partial",
       "references": [
        {
         "key": "recola",
@@ -4194,7 +4194,7 @@
        }
       ],
       "points": 3,
-      "note": null,
+      "note": "li_h_ggg: L5 partial",
       "source": "lit.json rows[h_ggg]"
      },
      "generation": {
@@ -4373,7 +4373,7 @@
        }
       ],
       "points": 3,
-      "note": "li_z_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_z_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points))",
+      "note": "li_z_ggg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_z_ggg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_z_ggg: L5 partial",
       "source": "lit.json rows[z_ggg]"
      },
      "generation": {
@@ -4550,7 +4550,7 @@
       "paired": true
      },
      "validation": {
-      "status": "pass (lax)",
+      "status": "partial",
       "references": [
        {
         "key": "madloop",
@@ -4564,7 +4564,7 @@
        }
       ],
       "points": 3,
-      "note": null,
+      "note": "li_emep_ggg: L5 partial",
       "source": "lit.json rows[emep_ggg]"
      },
      "generation": {
@@ -4972,7 +4972,7 @@
        }
       ],
       "points": 3,
-      "note": "li_gg_hgg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_hgg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_hgg: L6 partial (double-double partial)",
+      "note": "li_gg_hgg: L3 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_hgg: L4 partial (tirust/double partial (2/3 points), tirust/double-double partial (2/3 points)); li_gg_hgg: L5 partial; li_gg_hgg: L6 partial (double-double partial)",
       "source": "lit.json rows[gg_hgg]"
      },
      "generation": {
@@ -5182,7 +5182,7 @@
        }
       ],
       "points": 3,
-      "note": "li_gg_zzg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L6 partial (double-double partial)",
+      "note": "li_gg_zzg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zzg: L5 partial; li_gg_zzg: L6 partial (double-double partial)",
       "source": "lit.json rows[gg_zzg]"
      },
      "generation": {
@@ -5388,7 +5388,7 @@
        }
       ],
       "points": 3,
-      "note": "li_gg_aag: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L6 partial (TIRust fails 2 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "note": "li_gg_aag: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aag: L5 partial; li_gg_aag: L6 partial (TIRust fails 2 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
       "source": "lit.json rows[gg_aag]"
      },
      "generation": {
@@ -5594,7 +5594,7 @@
        }
       ],
       "points": 3,
-      "note": "li_gg_wpwmg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "note": "li_gg_wpwmg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_wpwmg: L5 partial; li_gg_wpwmg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
       "source": "lit.json rows[gg_wpwmg]"
      },
      "generation": {
@@ -6230,7 +6230,7 @@
        }
       ],
       "points": 3,
-      "note": "li_gg_agg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L6 partial (TIRust fails 2 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "note": "li_gg_agg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_agg: L5 partial; li_gg_agg: L6 partial (TIRust fails 2 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
       "source": "lit.json rows[gg_agg]"
      },
      "generation": {
@@ -6427,7 +6427,7 @@
        }
       ],
       "points": 3,
-      "note": "li_gg_zgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L6 partial (double-double partial)",
+      "note": "li_gg_zgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_zgg: L5 partial; li_gg_zgg: L6 partial (double-double partial)",
       "source": "lit.json rows[gg_zgg]"
      },
      "generation": {
@@ -6633,7 +6633,7 @@
        }
       ],
       "points": 3,
-      "note": "li_uux_hgg: L3 partial (tirust/double partial (1/3 points), tirust/double-double partial (1/3 points)); li_uux_hgg: L4 partial (tirust/double partial (1/3 points), tirust/double-double partial (1/3 points))",
+      "note": "li_uux_hgg: L3 partial (tirust/double partial (1/3 points), tirust/double-double partial (1/3 points)); li_uux_hgg: L4 partial (tirust/double partial (1/3 points), tirust/double-double partial (1/3 points)); li_uux_hgg: L5 partial",
       "source": "lit.json rows[uux_hgg]"
      },
      "generation": {
@@ -7039,7 +7039,7 @@
        }
       ],
       "points": 4,
-      "note": "li_gg_hhgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial); li_gg_hhgg_p15: L3 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L4 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L6 partial (double-double not run); li_gg_hhgg_p15: E not run",
+      "note": "li_gg_hhgg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hhgg: L5 partial; li_gg_hhgg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial); li_gg_hhgg_p15: L3 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L4 partial (tirust/double partial (0/1 points)); li_gg_hhgg_p15: L6 partial (double-double not run); li_gg_hhgg_p15: E not run",
       "source": "lit.json rows[gg_hhgg]"
      },
      "generation": {
@@ -7242,7 +7242,7 @@
        }
       ],
       "points": 3,
-      "note": "li_gg_hggg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
+      "note": "li_gg_hggg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L4 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_hggg: L5 partial; li_gg_hggg: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial)",
       "source": "lit.json rows[gg_hggg]"
      },
      "generation": {
@@ -7645,7 +7645,7 @@
        }
       ],
       "points": 3,
-      "note": "li_gg_aagg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aagg: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_aagg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial; arbitrary not run); li_gg_aagg: L7 not run (stopped: the 40-digit AP arm of this 2->4 optional run extrapolates to about 6.9 h (its double-double arm 7405 s times the AP / double-double ratio 3.35 of li_gg_hhgg); L7 at six legs is li_gg_hhgg's)",
+      "note": "li_gg_aagg: L3 partial (tirust/double partial (0/3 points), tirust/double-double partial (0/3 points)); li_gg_aagg: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_aagg: L5 partial; li_gg_aagg: L6 partial (TIRust fails 3 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons); double-double partial; arbitrary not run); li_gg_aagg: L7 not run (stopped: the 40-digit AP arm of this 2->4 optional run extrapolates to about 6.9 h (its double-double arm 7405 s times the AP / double-double ratio 3.35 of li_gg_hhgg); L7 at six legs is li_gg_hhgg's)",
       "source": "lit.json rows[gg_aagg]"
      },
      "generation": {
@@ -7846,7 +7846,7 @@
        }
       ],
       "points": 3,
-      "note": "li_gg_zzzz: L3 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
+      "note": "li_gg_zzzz: L3 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L4 partial (ninjars/double-double not run, tirust/double partial (0/3 points), tirust/double-double not run); li_gg_zzzz: L5 partial; li_gg_zzzz: L6 partial (TIRust fails 1 of 3 binary64 points closed (typed: L6.double.tirust_failed_reasons))",
       "source": "lit.json rows[gg_zzzz]"
      },
      "generation": {
@@ -12738,7 +12738,16 @@
   {
    "kind": "validation",
    "table": "2",
-   "text": "partial: pole cancellation, Ward identity (checked default)",
+   "text": "partial: rotation (checked default)",
+   "rows": [
+    "h -> g g g",
+    "e^+ e^- -> g g g"
+   ]
+  },
+  {
+   "kind": "validation",
+   "table": "2",
+   "text": "partial: pole cancellation, Ward identity, rotation (checked default)",
    "rows": [
     "z -> g g g",
     "u overline(u) -> h g g"
@@ -12747,7 +12756,7 @@
   {
    "kind": "validation",
    "table": "2",
-   "text": "partial: pole cancellation, Ward identity, TIRust-NinjaRS agreement (checked default)",
+   "text": "partial: pole cancellation, Ward identity, rotation, TIRust-NinjaRS agreement (checked default)",
    "rows": [
     "g g -> h g g",
     "g g -> z z g",
@@ -12757,7 +12766,7 @@
   {
    "kind": "validation",
    "table": "2",
-   "text": "partial: pole cancellation, Ward identity, TIRust-NinjaRS agreement; TIRust fails 2 of 3 binary64 validation points (checked default)",
+   "text": "partial: pole cancellation, Ward identity, rotation, TIRust-NinjaRS agreement; TIRust fails 2 of 3 binary64 validation points (checked default)",
    "rows": [
     "g g -> a a g",
     "g g -> a g g"
@@ -12766,7 +12775,7 @@
   {
    "kind": "validation",
    "table": "2",
-   "text": "partial: pole cancellation, Ward identity, TIRust-NinjaRS agreement; TIRust fails 1 of 3 binary64 validation points (checked default)",
+   "text": "partial: pole cancellation, Ward identity, rotation, TIRust-NinjaRS agreement; TIRust fails 1 of 3 binary64 validation points (checked default)",
    "rows": [
     "g g -> w^+ w^- g",
     "g g -> h h g g",
@@ -12777,7 +12786,7 @@
   {
    "kind": "validation",
    "table": "2",
-   "text": "partial: pole cancellation, Ward identity, TIRust-NinjaRS agreement; TIRust fails 3 of 3 binary64 validation points (checked default)",
+   "text": "partial: pole cancellation, Ward identity, rotation, TIRust-NinjaRS agreement; TIRust fails 3 of 3 binary64 validation points (checked default)",
    "rows": [
     "g g -> a a g g"
    ]

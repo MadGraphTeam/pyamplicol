@@ -33,7 +33,7 @@
 #set page(paper: "a4", margin: (x: 1.6cm, top: 1.7cm, bottom: 1.6cm), numbering: "1 / 1",
   header: context if counter(page).get().first() > 1 {
     set text(8pt, fill: luma(110))
-    [pyAmpliCol at one loop: benchmarks #h(1fr) report #rep.date, newest engine #raw(rep.head) · Table 1: engine #raw(sm.engine_on_loop), timed #sm.date]
+    [pyAmpliCol at one loop: benchmarks #h(1fr) report #rep.date, times at #raw(rep.head) · Table 1: engine #raw(sm.engine_on_loop), timed #sm.date]
   })
 #set text(font: "Libertinus Serif", size: 10.5pt, lang: "en")
 #set par(justify: true, leading: 0.62em)
@@ -547,7 +547,7 @@
   #v(-0.6em)
   #text(11.5pt, fill: luma(80))[Benchmarks of the recursive one-loop engine against MadLoop, Recola and OpenLoops]
   #v(-0.4em)
-  #text(8.6pt, fill: luma(105))[report #rep.date · newest engine measured #raw(rep.head) · finite part, binary64, one pinned thread, $B = 128$ \ Table 1: engine #raw(sm.engine_on_loop), timed #sm.date, #sm.host.split(",").first(), shared host · #t2-engine]
+  #text(8.6pt, fill: luma(105))[report #rep.date · #if prov == none [newest engine measured #raw(rep.head) · ]finite part, binary64, one pinned thread, $B = 128$ \ Table 1: engine #raw(sm.engine_on_loop), timed #sm.date, #sm.host.split(",").first(), shared host · #t2-engine]
   #if prov != none {
     v(-0.5em)
     block(width: 92%, text(7.6pt, fill: luma(105))[*Code:* pyAmpliCol #prov.shipped.version, commit #raw(prov.shipped.revision) (#prov-deps(prov.shipped.dependencies)). Times measured at #raw(prov.timed.revision) (#prov-deps(prov.timed.dependencies)); #prov.timing_check#if prov.older.len() > 0 [ Older measurements kept: #prov.older.map(o => [#o.what (#o.date)]).join("; ").]])
@@ -970,7 +970,7 @@
       points (verdict; T k/n: points TIRust served; the largest finite-part difference of the two backends). Two known TIRust
       limitations of this release make verdicts partial: a binary64 point whose last-resort reduction fails its accuracy check
       is refused (a default call takes it from NinjaRS, an explicit `reduction="tirust"` returns it as best-effort, e.g. on
-      $u overline(u) -> z g g g$), and in double-double TIRust has no alternative method for an ill-conditioned integral, so
+      $g g -> a a g$), and in double-double TIRust has no alternative method for an ill-conditioned integral, so
       some points have no double-double TIRust value. *Born-interfered:*
       the $2 -> 3$ and $2 -> 4$ rows of @tab:summary, with the largest TIRust–NinjaRS difference at the timed points (no truth; in red above $10^(-5)$)#if born-b.all(r => (r.tirust, r.ninjars).all(c => c.at("stages", default: none) == none)) [; no instrumented run, so no stage bar].],
     {
