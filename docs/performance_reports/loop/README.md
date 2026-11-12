@@ -73,7 +73,12 @@ kind of conditions (`GENERATION_RULE`). `meta.configurations` gives each
 configuration's revision, native build and digest, date and the rows it
 supplies; `meta.host` and `meta.date` the G1 host and date; `meta.report` the
 report's date (`milestone.json` `date`) and the newest revision of the
-measured cells of both tables (`report_meta`, by the recorded ancestry).
+measured cells of both tables (`report_meta`, by the recorded ancestry);
+`meta.report.provenance` the code the numbers come from, printed once on
+page 1 (`milestone.json` `provenance`, hand-maintained with its source: the
+shipped commit and its dependency revisions, the commit the times were
+measured at with its own, the paired timing check that ties the two, and the
+cells kept at an older measurement with their dates).
 
 **Loop-induced table** (`build_loop_induced`): the row registry
 `milestone.json` `loop_induced` (every process row of the loop-induced validation set by
