@@ -4443,11 +4443,14 @@ def provenance_meta(block: dict | None) -> dict | None:
     if block is None:
         return None
     missing = [k for k in PROVENANCE_KEYS if k not in block]
-    if missing or not {"revision", "dependencies"} <= set(block["shipped"]) or not {
-        "revision",
-        "dependencies",
-    } <= set(block["timed"]):
-        raise SystemExit(f"milestone.json provenance: missing {missing or 'revision/dependencies'}")
+    missing += [
+        f"{side}.{field}"
+        for side in ("shipped", "timed")
+        for field in ("revision", "dependencies")
+        if side in block and field not in block[side]
+    ]
+    if missing:
+        raise SystemExit(f"milestone.json provenance: missing {', '.join(missing)}")
     return {k: block[k] for k in (*PROVENANCE_KEYS, "source") if k in block}
 
 
