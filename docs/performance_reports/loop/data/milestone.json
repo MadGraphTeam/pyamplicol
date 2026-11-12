@@ -1318,7 +1318,7 @@
   "what": "short attributions of the registry: a refusal attributed to the engine on loop (with its basis where it is inferred), a capability in development that no configuration generates yet, or one nobody has started, printed in Table 1 only where the most recent configuration of the row refuses or no configuration has a record (scripts/build_summary.py, main-configuration rule); short labels of records and the configuration of a development record where the record does not carry it; measured numbers never come from here",
   "notes": {
    "gg_ttxemepg_ew": {
-    "leading_colour": "refused by design: EW LC/NLC is never supported (user 2026-10-30, Q4; typed colour-declaration-coverage)",
+    "leading_colour": "refused by design: no leading-colour expansion for electroweak corrections",
     "ew_model": "loop_qcd_qed_sm_Gmu (reference/models/loop_qcd_qed_sm_Gmu_py3, msm-g1.json ew_model)"
    },
    "uux_gggg": {
@@ -1383,8 +1383,8 @@
      8
     ],
     "tolerance": 2e-08,
-    "label": "accepted (user 2026-10-25): binary64 within the estimate, DD = NJet",
-    "short": "accepted (user 2026-10-25)",
+    "label": "accepted: binary64 within the estimate, DD = NJet",
+    "short": "accepted",
     "reason": "binary64 deviations from NJet's double-double values 3.73e-8 (fixture point 4) and 2.2e-8 (point 8) at the fixture's mu_R = 1000 GeV, each within pyAmpliCol's binary64 estimate E (rotation and reduction direction); pyAmpliCol's double-double values equal NJet's double-double values at both points; at the final retime (M-LIT-a0, ca602436) the binary64 deviations are 1.5e-7 (point 4) and 2.6e-8 (point 8), still the only points above the tolerance, within E (1.5e-6 and 3.4e-7) and with pyAmpliCol's double-double values equal to NJet's: the binary64 values moved with the accepted rounding-level changes since M-SM (g1.json values_note), amplified at these conditioned points; below the user's lax precision rule (~1e-5)"
    }
   ]
@@ -1399,8 +1399,8 @@
     "configuration": "native/full",
     "revision": "524e6cfa",
     "kind": "run conditions",
-    "label": "model: the workspace's py3 G_mu copy",
-    "reason": "timed on reference/models/loop_qcd_qed_sm_Gmu_py3 (the harness's processes.json default, as at M-SM), not on the shipped patched UFO (UFOmodeldb 6ca4b120 + the user's issue-1 patch) that the M-SM campaign validated; the speed gate is taken on this timing",
+    "label": "model: unpatched G_mu UFO",
+    "reason": "timed with the benchmark tool's default copy of the loop_qcd_qed_sm_Gmu UFO model, not with the patched model that pyAmpliCol ships and validated (UFOmodeldb 6ca4b120 with fixes to an R2 coupling, the CKM matrix and a b-mass counterterm); the gate is taken on this timing",
     "source": "the final G1 re-time lit-report R3 (msm-g1.json ew_model)"
    }
   ]
@@ -2329,9 +2329,9 @@
      "tirust"
     ],
     "references": [],
-    "label": "rank > N+2 EFT row (HC_NLO_X0 or SMEFT)",
+    "label": "EFT process at loop tensor rank > N+2 (HC_NLO_X0 or SMEFT)",
     "note": "TIR-only artifact (NinjaRS refuses it typed)",
-    "untimed": "execution check only (user 2026-11-06 ~14:55): rank > N+2 has no correct R2 (no dim-8 model), so no reference, no benchmark and no timing claim; lit-eft ran it (two dim-6 insertions through TIRust)"
+    "untimed": "execution check only: no reference, benchmark or timing, since at tensor rank > N+2 the R2 terms would need a dimension-8 model, which does not exist; evaluated through TIRust with two dimension-6 insertions"
    }
   ]
  }

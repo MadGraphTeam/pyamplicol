@@ -363,7 +363,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries",
+        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 -> n scattering only",
         "source": "li_campaign.json runs[li_h_gg]"
        },
        "madloop": {
@@ -549,7 +549,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries",
+        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 -> n scattering only",
         "source": "li_campaign.json runs[li_h_aa]"
        },
        "madloop": {
@@ -735,7 +735,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries",
+        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 -> n scattering only",
         "source": "li_campaign.json runs[li_h_za]"
        },
        "madloop": {
@@ -919,7 +919,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "reason": "no OpenLoops loop-squared library serves this process",
         "source": "li_campaign.json runs[li_aa_h]"
        },
        "madloop": {
@@ -3246,7 +3246,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "reason": "no OpenLoops loop-squared library serves this process",
         "source": "li_campaign.json runs[li_emep_ha]"
        },
        "madloop": {
@@ -3427,7 +3427,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "reason": "no OpenLoops loop-squared library serves this process",
         "source": "li_campaign.json runs[li_aa_aa]"
        },
        "madloop": {
@@ -3611,7 +3611,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "reason": "no OpenLoops loop-squared library serves this process",
         "source": "li_campaign.json runs[li_aa_zz]"
        },
        "madloop": {
@@ -3785,7 +3785,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "reason": "no OpenLoops loop-squared library serves this process",
         "source": "li_campaign.json runs[li_aa_hh]"
        },
        "madloop": {
@@ -3964,7 +3964,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "reason": "no OpenLoops loop-squared library serves this process",
         "source": "li_campaign.json runs[li_emep_hh]"
        },
        "madloop": {
@@ -4148,7 +4148,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries",
+        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 -> n scattering only",
         "source": "li_campaign.json runs[li_h_ggg]"
        },
        "madloop": {
@@ -4327,7 +4327,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries",
+        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 -> n scattering only",
         "source": "li_campaign.json runs[li_z_ggg]"
        },
        "madloop": {
@@ -4529,7 +4529,7 @@
        },
        "openloops": {
         "status": "unavailable",
-        "reason": "no designated OpenLoops loop-squared (ls) library serves this process (PLAN \u00a74.1, Q34 = (b))",
+        "reason": "no OpenLoops loop-squared library serves this process",
         "source": "li_campaign.json runs[li_emep_ggg]"
        }
       },
@@ -5849,7 +5849,7 @@
        "causes": {
         "lane status Unstable": 20
        },
-       "label": "20/128 failed closed, lane status Unstable",
+       "label": "20/128 failed closed, status Unstable",
        "unchecked": true,
        "instance_spread": 1.0535232039407676,
        "stages": {
@@ -6064,7 +6064,7 @@
         "lane status Unstable": 1,
         "lane status MasterFailed": 1
        },
-       "label": "2/128 failed closed, lane status Unstable, lane status MasterFailed",
+       "label": "2/128 failed closed, status Unstable, status MasterFailed",
        "unchecked": true,
        "instance_spread": 1.2662743977656947,
        "stages": {
@@ -6392,7 +6392,7 @@
        },
        "openloops": {
         "status": "unavailable",
-        "reason": "no OpenLoops ls library serves g g > z g g: the public channel database of OpenLoops 2.1.5 (proclib/channels_public.rinfo, 2026-11-06) has zgg/zggg (ppvj2) but no zgggg channel; row ML/RC only (PLAN \u00a73.2)",
+        "reason": "no OpenLoops loop-squared library serves g g > z g g (none in the public process list of OpenLoops 2.1.5)",
         "source": "li_campaign.json runs[li_gg_zgg]"
        }
       },
@@ -7816,7 +7816,7 @@
        },
        "openloops": {
         "status": "unavailable",
-        "reason": "no OpenLoops ls library serves g g > z z z z (public channel database of OpenLoops 2.1.5, 2026-11-06); row ML/RC only (PLAN \u00a73.2)",
+        "reason": "no OpenLoops loop-squared library serves g g > z z z z (none in the public process list of OpenLoops 2.1.5)",
         "source": "li_campaign.json runs[li_gg_zzzz]"
        }
       },
@@ -7877,7 +7877,7 @@
       "causes": {
        "lane status TIRust Unstable": 4
       },
-      "label": "4/128 failed closed, lane status TIRust Unstable",
+      "label": "4/128 failed closed, TIRust status Unstable",
       "requested": "tirust",
       "revision": "524e6cfa",
       "source": "li-timing.json records[gg_zzzz, tirust, 524e6cfa]",
@@ -7899,7 +7899,7 @@
        "causes": {
         "lane status Unstable": 16
        },
-       "label": "16/128 failed closed, lane status Unstable",
+       "label": "16/128 failed closed, status Unstable",
        "unchecked": true,
        "instance_spread": 1.1096568203044606,
        "stages": null,
@@ -7922,7 +7922,7 @@
       },
       "gate": {
        "status": "gap",
-       "label": "no verdict: TIRust failed closed 4/128 (gap)",
+       "label": "no verdict: TIRust failed closed 4/128",
        "served_fraction": 0.96875,
        "backend": "tirust",
        "backend_label": "TIRust",
@@ -8179,7 +8179,7 @@
      "key": "li_x1",
      "process": null,
      "math": null,
-     "label": "rank > N+2 EFT row (HC_NLO_X0 or SMEFT)",
+     "label": "EFT process at loop tensor rank > N+2 (HC_NLO_X0 or SMEFT)",
      "alternative": null,
      "ids": [
       "LI-X1"
@@ -8200,7 +8200,7 @@
       "expected": []
      },
      "validation": {
-      "status": "delegated (lit-eft)",
+      "status": "execution check",
       "references": [],
       "points": null,
       "note": "run-only check, outside the rows and L6 (USER 2026-11-06 ~14:55)",
@@ -8208,11 +8208,11 @@
      },
      "generation": {
       "status": "not timed",
-      "reason": "execution check only (user 2026-11-06 ~14:55): rank > N+2 has no correct R2 (no dim-8 model), so no reference, no benchmark and no timing claim; lit-eft ran it (two dim-6 insertions through TIRust)"
+      "reason": "execution check only: no reference, benchmark or timing, since at tensor rank > N+2 the R2 terms would need a dimension-8 model, which does not exist; evaluated through TIRust with two dimension-6 insertions"
      },
      "timing": {
       "status": "not timed",
-      "reason": "execution check only (user 2026-11-06 ~14:55): rank > N+2 has no correct R2 (no dim-8 model), so no reference, no benchmark and no timing claim; lit-eft ran it (two dim-6 insertions through TIRust)"
+      "reason": "execution check only: no reference, benchmark or timing, since at tensor rank > N+2 the R2 terms would need a dimension-8 model, which does not exist; evaluated through TIRust with two dimension-6 insertions"
      }
     }
    ]
@@ -11582,7 +11582,7 @@
      },
      "ninjars": {
       "status": "failed closed",
-      "reason": "20/128 failed closed, lane status Unstable"
+      "reason": "20/128 failed closed, status Unstable"
      },
      "l6": {
       "runs": [
@@ -11634,7 +11634,7 @@
      },
      "ninjars": {
       "status": "failed closed",
-      "reason": "2/128 failed closed, lane status Unstable, lane status MasterFailed"
+      "reason": "2/128 failed closed, status Unstable, status MasterFailed"
      },
      "l6": {
       "runs": [
@@ -12307,11 +12307,11 @@
      "revision": "524e6cfa",
      "tirust": {
       "status": "failed closed",
-      "reason": "4/128 failed closed, lane status TIRust Unstable"
+      "reason": "4/128 failed closed, TIRust status Unstable"
      },
      "ninjars": {
       "status": "failed closed",
-      "reason": "16/128 failed closed, lane status Unstable"
+      "reason": "16/128 failed closed, status Unstable"
      },
      "l6": {
       "runs": [
@@ -12675,7 +12675,7 @@
   {
    "kind": "no value",
    "table": "1",
-   "text": "leading colour: not supported (refused by design: EW LC/NLC is never supported (user 2026-10-30, Q4)",
+   "text": "leading colour: not supported (refused by design: no leading-colour expansion for electroweak corrections)",
    "rows": [
     "g g -> t overline(t) e^- e^+ g"
    ]
@@ -12691,7 +12691,7 @@
   {
    "kind": "no value",
    "table": "2",
-   "text": "time: failed closed (4/128 failed closed, lane status TIRust Unstable)",
+   "text": "time: failed closed (4/128 failed closed, TIRust status Unstable)",
    "rows": [
     "g g -> z z z z"
    ]
@@ -12699,7 +12699,7 @@
   {
    "kind": "no value",
    "table": "2",
-   "text": "NinjaRS per amplitude time: failed closed (16/128 failed closed, lane status Unstable)",
+   "text": "NinjaRS per amplitude time: failed closed (16/128 failed closed, status Unstable)",
    "rows": [
     "g g -> z z z z"
    ]
@@ -12707,9 +12707,9 @@
   {
    "kind": "no value",
    "table": "2",
-   "text": "not timed: execution check only (user 2026-11-06 ~14:55): rank > N+2 has no correct R2 (no dim-8 model), so no reference, no benchmark and no timing claim",
+   "text": "not timed: execution check only: no reference, benchmark or timing, since at tensor rank > N+2 the R2 terms would need a dimension-8 model, which does not exist",
    "rows": [
-    "rank > N+2 EFT row (HC_NLO_X0 or SMEFT)"
+    "EFT process at loop tensor rank > N+2 (HC_NLO_X0 or SMEFT)"
    ]
   },
   {
@@ -12738,7 +12738,7 @@
   {
    "kind": "validation",
    "table": "2",
-   "text": "partial: L3, L4, L5 (checked default; lit.json)",
+   "text": "partial: pole cancellation, Ward identity, rotation (checked default)",
    "rows": [
     "h -> g g g",
     "z -> g g g",
@@ -12748,7 +12748,7 @@
   {
    "kind": "validation",
    "table": "2",
-   "text": "partial: L3, L4, L5, L6; TIRust fails 1 of 3 binary64 fixture points closed (checked default; lit.json)",
+   "text": "partial: pole cancellation, Ward identity, rotation, TIRust-NinjaRS agreement; TIRust fails 1 of 3 binary64 validation points (checked default)",
    "rows": [
     "e^+ e^- -> g g g",
     "g g -> z z g",
@@ -12758,7 +12758,7 @@
   {
    "kind": "validation",
    "table": "2",
-   "text": "partial: L3, L4, L5, L6 (checked default; lit.json)",
+   "text": "partial: pole cancellation, Ward identity, rotation, TIRust-NinjaRS agreement (checked default)",
    "rows": [
     "g g -> h g g"
    ]
@@ -12766,7 +12766,7 @@
   {
    "kind": "validation",
    "table": "2",
-   "text": "partial: L3, L4, L5, L6; TIRust fails 3 of 3 binary64 fixture points closed (checked default; lit.json)",
+   "text": "partial: pole cancellation, Ward identity, rotation, TIRust-NinjaRS agreement; TIRust fails 3 of 3 binary64 validation points (checked default)",
    "rows": [
     "g g -> a a g",
     "g g -> w^+ w^- g",
@@ -12780,7 +12780,7 @@
   {
    "kind": "validation",
    "table": "2",
-   "text": "partial: L3, L4, L5, L6; TIRust fails 2 of 3, 1 of 1 binary64 fixture points closed (checked default; lit.json)",
+   "text": "partial: pole cancellation, Ward identity, rotation, TIRust-NinjaRS agreement; TIRust fails 2 of 3, 1 of 1 binary64 validation points (checked default)",
    "rows": [
     "g g -> h h g g"
    ]
@@ -12860,7 +12860,7 @@
   {
    "kind": "accuracy",
    "table": "2",
-   "text": "TIRust vs NinjaRS unchecked (no 256-bit truth, cross-backend, not a truth): 23/128 points differ above 1e-05, largest 7.0e-02; at its 2 largest-difference points against the 256-bit truth: TIRust 1.3e-04, NinjaRS 7.6e-02",
+   "text": "TIRust vs NinjaRS unchecked, no 256-bit truth (a difference, not an error): 23/128 points differ above 1e-05, largest 7.0e-02; at its 2 largest-difference points against the 256-bit truth: TIRust 1.3e-04, NinjaRS 7.6e-02",
    "rows": [
     "g g -> a a g g"
    ]
@@ -12868,7 +12868,7 @@
   {
    "kind": "accuracy",
    "table": "3",
-   "text": "Born-interfered TIRust vs NinjaRS unchecked (cross-backend, not a truth): largest difference 2.1e-03 over 128 points, above 1e-05",
+   "text": "Born-interfered, TIRust vs NinjaRS unchecked (a difference, not an error): largest 2.1e-03 over 128 points, above 1e-05",
    "rows": [
     "g g -> g g g"
    ]
@@ -12876,7 +12876,7 @@
   {
    "kind": "accuracy",
    "table": "3",
-   "text": "Born-interfered TIRust vs NinjaRS unchecked (cross-backend, not a truth): largest difference 1.8e-03 over 128 points, above 1e-05",
+   "text": "Born-interfered, TIRust vs NinjaRS unchecked (a difference, not an error): largest 1.8e-03 over 128 points, above 1e-05",
    "rows": [
     "g g -> g g g g"
    ]
