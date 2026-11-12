@@ -1415,6 +1415,8 @@ TIR_COUNTS = (
     "TIR method-choice rows with expansions",
     "TIR method-choice check rows",
     "TIR method-choice lanes refused by their check",
+    "TIR last-resort rows",
+    "TIR last-resort lanes refused by their check",
     "TIR capability refusals",
 )
 
@@ -1454,6 +1456,11 @@ FAILURE_CLASSES = (
         "TIRust acceptance (method-choice lane off its second frame)",
     ),
     ("method-choice lane unverified", "TIRust acceptance row refused"),
+    (
+        "last-resort (gate-0 plain PV) lane refused by its check",
+        "TIRust acceptance (gate-0 last-resort lane off its second frame)",
+    ),
+    ("last-resort (gate-0 plain PV) lane unverified", "TIRust acceptance row refused"),
     ("ill-conditioned Gram matrix", "TIRust gates and method choice"),
     ("ImpreciseResult", "imprecise master"),
     ("not finite", "non-finite numerator"),
