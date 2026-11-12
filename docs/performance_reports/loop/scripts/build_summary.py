@@ -2516,6 +2516,43 @@ LI_FIXTURES = Path("tests") / "fixtures" / "loop"
 # (the 6|7|1 OPP column) are detailed-section columns.
 LI_MADLOOP_PRODUCTION = "7|6|1"
 LI_BACKENDS = {"tirust": "TIRust", "ninjars": "NinjaRS per amplitude"}
+# Reader wording of the free-text strings that the campaign records carry
+# into the tables (provider reasons, validation statuses, failure causes):
+# the records keep their words, the report prints these. Applied in order;
+# the planning references and project shorthand are dropped, the physical
+# or technical reason is kept.
+READER_WORDS = (
+    (re.compile(r"\s*\(PLAN §[^()]*(?:\([^()]*\)[^()]*)*\)"), ""),
+    (re.compile(r"; row ML/RC only"), ""),
+    (
+        re.compile(r"^decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries$"),
+        "a decay: OpenLoops' loop-squared libraries cover 2 \u2192 n scattering only",
+    ),
+    (re.compile(r"\bdesignated "), ""),
+    (re.compile(r"loop-squared \(ls\) librar"), "loop-squared librar"),
+    (re.compile(r"\bls librar"), "loop-squared librar"),
+    (
+        re.compile(
+            r":? \(?(?:the )?public channel database of (OpenLoops [\d.]+)"
+            r"(?: \([^()]*\))?(?:, [\d-]+\))?(?: has .* but no \w+ channel)?$"
+        ),
+        r" (none in the public process list of \1)",
+    ),
+    (re.compile(r"^lane status (TIRust )?"), r"\1status "),
+    (re.compile(r"^delegated \(lit-[\w-]+\)$"), "execution check"),
+)
+
+
+def _reader_text(text: str | None) -> str | None:
+    """A record's free text in the report's words (READER_WORDS)."""
+
+    if text is None:
+        return None
+    for pattern, words in READER_WORDS:
+        text = pattern.sub(words, text)
+    return text
+
+
 LI_REFERENCES = ("analytic", "madloop", "openloops", "recola")
 LI_SHORT = {"analytic": "AN", **{k: SHORT[k] for k in PROVIDERS}}
 # The serving package of each input file (the "pending" marker's owner).
@@ -2803,7 +2840,7 @@ def _li_providers(row: dict, manifest: dict | None, repo: Path) -> dict:
             if k in PROVIDERS and k not in providers:
                 providers[k] = {
                     "status": "unavailable",
-                    "reason": reason,
+                    "reason": _reader_text(reason),
                     "source": f"{LI_CAMPAIGN.name} runs[{r.get('process')}]",
                 }
     for k in row["references"]:
@@ -3207,7 +3244,7 @@ def _li_failed(r: dict) -> dict:
         "causes": causes,
         # The cell's words: the points failed closed per block of the batch
         # and the recorded causes.
-        "label": ", ".join([label, *causes]),
+        "label": ", ".join([label, *map(_reader_text, causes)]),
     }
     served = r.get("served_points")
     if served is not None:
@@ -3286,7 +3323,7 @@ def _li_verdict(g: dict, rec: dict, rule: dict) -> dict:
         return {
             "status": "gap",
             "label": f"no verdict: {LI_BACKENDS[rec['backend']]} failed closed"
-            f" {count}/{rec['batch']} (gap)",
+            f" {count}/{rec['batch']}",
             "served_fraction": rec["served_fraction"],
             **backend,
         }
@@ -3389,7 +3426,7 @@ def _li_cells(
         v = val["rows"][row["key"]]
         refs = {k: x for k, x in v["references"].items() if k in LI_SHORT}
         out["validation"] = {
-            "status": v["status"],
+            "status": _reader_text(v["status"]),
             "references": [
                 {"key": k, "short": LI_SHORT[k], "max_relative": refs[k]}
                 for k in sorted(refs, key=refs.get)
@@ -4215,20 +4252,34 @@ def _short(text: str | None) -> str:
     return first
 
 
+# The validation checks a lit.json note names by level (m-lit PLAN §4.0),
+# in the report's words.
+CHECK_NAMES = {
+    "L1": "provider comparison",
+    "L2": "analytic comparison",
+    "L3": "pole cancellation",
+    "L4": "Ward identity",
+    "L5": "rotation",
+    "L6": "TIRust-NinjaRS agreement",
+    "L7": "double-double vs arbitrary precision",
+}
+
+
 def _partial(note: str | None) -> str:
-    """The partial checks a lit.json note names (its 'Lk partial' clauses)
-    and TIRust's failed binary64 fixture points, without the run names."""
+    """The partial checks a lit.json note names (its 'Lk partial' clauses,
+    by name) and TIRust's failed binary64 validation points, without the
+    run names."""
 
     text = note or ""
     checks = sorted(set(re.findall(r"\b(L\d+) partial", text)), key=lambda c: int(c[1:]))
     failed = re.findall(r"TIRust fails (\d+) of (\d+) binary64 points closed", text)
     served = re.findall(r"TIRust serves (\d+)/(\d+) points", text)
-    out = ", ".join(checks) if checks else _short(text)
+    out = ", ".join(CHECK_NAMES.get(c, c) for c in checks) if checks else _short(text)
     if failed:
-        out += "; TIRust fails " + ", ".join(f"{a} of {b}" for a, b in failed) + " binary64 fixture points closed"
+        out += "; TIRust fails " + ", ".join(f"{a} of {b}" for a, b in failed) + " binary64 validation points"
     elif served:
-        out += "; TIRust serves " + ", ".join(f"{a}/{b}" for a, b in served) + " fixture points"
-    return out + " (checked default; lit.json)"
+        out += "; TIRust serves " + ", ".join(f"{a}/{b}" for a, b in served) + " validation points"
+    return out + " (checked default)"
 
 
 def _dominant(stages: dict | None) -> dict | None:
@@ -4310,7 +4361,7 @@ def build_missing(summary: dict, loop_induced: dict) -> list[dict]:
                     # labelled line per row, never an error of either.
                     at = a.get("truth_at_points")
                     add("accuracy", "2", label,
-                        f"TIRust vs NinjaRS unchecked (no 256-bit truth, cross-backend, not a truth): "
+                        f"TIRust vs NinjaRS unchecked, no 256-bit truth (a difference, not an error): "
                         f"{a['above']}/{a['points']} points differ above {a['lax']:g}, largest {a['worst']:.1e}"
                         + (
                             f"; at its {len(at['points'])} largest-difference points against the 256-bit"
@@ -4331,7 +4382,7 @@ def build_missing(summary: dict, loop_induced: dict) -> list[dict]:
         a = r.get("agreement") or {}
         if a.get("note"):
             add("accuracy", "3", r["math"],
-                f"Born-interfered TIRust vs NinjaRS unchecked (cross-backend, not a truth): largest difference"
+                f"Born-interfered, TIRust vs NinjaRS unchecked (a difference, not an error): largest"
                 f" {a['max_relative']:.1e} over {a['points']} points, above {a['lax']:g}")
     order = {"no value": 0, "gate": 1, "validation": 2, "accuracy": 3}
     return sorted(lines.values(), key=lambda e: (e["table"], order[e["kind"]]))
