@@ -1832,7 +1832,9 @@ def judge(record: dict, entry: dict) -> dict:
         (
             _rel(_total(t64["points"][p]["values"]), _total(n64["points"][p]["values"]))
             for p in range(count)
-            if t_served[p]
+            # a point either backend fails has no difference (NinjaRS can
+            # fail a point TIRust serves, e.g. a forward stress point)
+            if t_served[p] and n64["points"][p]["values"] is not None
         ),
         default=None,
     )

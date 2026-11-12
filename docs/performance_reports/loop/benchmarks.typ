@@ -16,6 +16,9 @@
 // measured engine revision, beside Table 1's configuration, labelled as such.
 #let rep = sm.report
 #let t2-engine = if rep.table2 == none [Table 2: no record yet] else [Table 2: engine #raw(rep.table2)]
+// The code the numbers come from, once (summary.json meta.report.provenance).
+#let prov = rep.at("provenance", default: none)
+#let prov-deps(d) = d.pairs().map(((k, v)) => [#k #raw(v)]).join(", ")
 
 
 // ------------------------------------------------------------------ style --
@@ -545,6 +548,10 @@
   #text(11.5pt, fill: luma(80))[Benchmarks of the recursive one-loop engine against MadLoop, Recola and OpenLoops]
   #v(-0.4em)
   #text(8.6pt, fill: luma(105))[report #rep.date · newest engine measured #raw(rep.head) · finite part, binary64, one pinned thread, $B = 128$ \ Table 1: engine #raw(sm.engine_on_loop), timed #sm.date, #sm.host.split(",").first(), shared host · #t2-engine]
+  #if prov != none {
+    v(-0.5em)
+    block(width: 92%, text(7.6pt, fill: luma(105))[*Code:* pyAmpliCol #prov.shipped.version, commit #raw(prov.shipped.revision) (#prov-deps(prov.shipped.dependencies)). Times measured at #raw(prov.timed.revision) (#prov-deps(prov.timed.dependencies)); #prov.timing_check#if prov.older.len() > 0 [ Older measurements kept: #prov.older.map(o => [#o.what (#o.date)]).join("; ").]])
+  }
 ]
 
 // Compact visual legend of Table 1 (its text: "Reading the tables").
@@ -960,7 +967,11 @@
       timed rows of @tab:summary-li#if BK.loop_induced.not_unchecked.len() > 0 [ (not shown: #BK.loop_induced.not_unchecked.len() row#if BK.loop_induced.not_unchecked.len() > 1 [s] without an unchecked time)]. "vs truth": the largest
       relative error against TIRust at 256 bits, in red above $10^(-5)$; without a truth, the TIRust–NinjaRS difference,
       once over both columns. Agreement check: the binary64 TIRust–NinjaRS check of the checked default on the validation
-      points (verdict; T k/n: points TIRust served; the largest finite-part difference of the two backends). *Born-interfered:*
+      points (verdict; T k/n: points TIRust served; the largest finite-part difference of the two backends). Two known TIRust
+      limitations of this release make verdicts partial: a binary64 point whose last-resort reduction fails its accuracy check
+      is refused (a default call takes it from NinjaRS, an explicit `reduction="tirust"` returns it as best-effort, e.g. on
+      $u overline(u) -> z g g g$), and in double-double TIRust has no alternative method for an ill-conditioned integral, so
+      some points have no double-double TIRust value. *Born-interfered:*
       the $2 -> 3$ and $2 -> 4$ rows of @tab:summary, with the largest TIRust–NinjaRS difference at the timed points (no truth; in red above $10^(-5)$)#if born-b.all(r => (r.tirust, r.ninjars).all(c => c.at("stages", default: none) == none)) [; no instrumented run, so no stage bar].],
     {
       set text(6.8pt, font: sans, stretch: 87.5%)

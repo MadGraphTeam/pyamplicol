@@ -4420,10 +4420,35 @@ def report_meta(summary: dict, loop_induced: dict, recency: Recency, ms: dict) -
         "head": newest([x for x in (one, two) if x]),
         "table1": one,
         "table2": two,
-        "source": "milestone.json date; the newest revision of the measured"
-        " cells of summary.json and summary-li.json (git ancestry:"
-        " milestone.json ancestry)",
+        # The code the numbers come from, printed once on page 1: the shipped
+        # commit and its dependency revisions, the commit the times were
+        # measured at and the check that ties the two (milestone.json
+        # provenance, hand-maintained with its source).
+        "provenance": provenance_meta(ms.get("provenance")),
+        "source": "milestone.json date and provenance; the newest revision of"
+        " the measured cells of summary.json and summary-li.json (git"
+        " ancestry: milestone.json ancestry)",
     }
+
+
+PROVENANCE_KEYS = ("shipped", "timed", "timing_check", "older")
+
+
+def provenance_meta(block: dict | None) -> dict | None:
+    """milestone.json ``provenance`` as the report prints it: ``shipped`` and
+    ``timed`` (each ``revision`` and ``dependencies`` {name: revision}),
+    ``timing_check`` (one sentence), ``older`` (cells left at an older
+    measurement: ``what``, ``date``). Absent: None (the line is omitted)."""
+
+    if block is None:
+        return None
+    missing = [k for k in PROVENANCE_KEYS if k not in block]
+    if missing or not {"revision", "dependencies"} <= set(block["shipped"]) or not {
+        "revision",
+        "dependencies",
+    } <= set(block["timed"]):
+        raise SystemExit(f"milestone.json provenance: missing {missing or 'revision/dependencies'}")
+    return {k: block[k] for k in (*PROVENANCE_KEYS, "source") if k in block}
 
 
 def main() -> None:
