@@ -223,8 +223,8 @@
       8
      ],
      "tolerance": 2e-08,
-     "label": "accepted (user 2026-10-25): binary64 within the estimate, DD = NJet",
-     "short": "accepted (user 2026-10-25)",
+     "label": "accepted: binary64 within the estimate, DD = NJet",
+     "short": "accepted",
      "reason": "binary64 deviations from NJet's double-double values 3.73e-8 (fixture point 4) and 2.2e-8 (point 8) at the fixture's mu_R = 1000 GeV, each within pyAmpliCol's binary64 estimate E (rotation and reduction direction); pyAmpliCol's double-double values equal NJet's double-double values at both points; at the final retime (M-LIT-a0, ca602436) the binary64 deviations are 1.5e-7 (point 4) and 2.6e-8 (point 8), still the only points above the tolerance, within E (1.5e-6 and 3.4e-7) and with pyAmpliCol's double-double values equal to NJet's: the binary64 values moved with the accepted rounding-level changes since M-SM (g1.json values_note), amplified at these conditioned points; below the user's lax precision rule (~1e-5)"
     }
    ]
@@ -3083,8 +3083,8 @@
        ],
        "note": {
         "kind": "run conditions",
-        "label": "model: the workspace's py3 G_mu copy",
-        "reason": "timed on reference/models/loop_qcd_qed_sm_Gmu_py3 (the harness's processes.json default, as at M-SM), not on the shipped patched UFO (UFOmodeldb 6ca4b120 + the user's issue-1 patch) that the M-SM campaign validated; the speed gate is taken on this timing",
+        "label": "model: unpatched G_mu UFO",
+        "reason": "timed with the benchmark tool's default copy of the loop_qcd_qed_sm_Gmu UFO model, not with the patched model that pyAmpliCol ships and validated (UFOmodeldb 6ca4b120 with fixes to an R2 coupling, the CKM matrix and a b-mass counterterm); the gate is taken on this timing",
         "source": "milestone.json cell_notes (the final G1 re-time lit-report R3 (msm-g1.json ew_model))"
        }
       },
@@ -3122,7 +3122,7 @@
      "leading_colour": {
       "main": {
        "status": "not supported",
-       "reason": "refused by design: EW LC/NLC is never supported (user 2026-10-30, Q4; typed colour-declaration-coverage)",
+       "reason": "refused by design: no leading-colour expansion for electroweak corrections",
        "source": "milestone.json status_notes.notes[gg_ttxemepg_ew]"
       }
      },
@@ -3417,8 +3417,8 @@
        }
       ],
       "accepted": {
-       "status": "accepted (user 2026-10-25): binary64 within the estimate, DD = NJet",
-       "short": "accepted (user 2026-10-25)",
+       "status": "accepted: binary64 within the estimate, DD = NJet",
+       "short": "accepted",
        "points": [
         {
          "index": 4,
