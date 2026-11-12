@@ -363,7 +363,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 -> n scattering only",
+        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 \u2192 n scattering only",
         "source": "li_campaign.json runs[li_h_gg]"
        },
        "madloop": {
@@ -549,7 +549,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 -> n scattering only",
+        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 \u2192 n scattering only",
         "source": "li_campaign.json runs[li_h_aa]"
        },
        "madloop": {
@@ -735,7 +735,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 -> n scattering only",
+        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 \u2192 n scattering only",
         "source": "li_campaign.json runs[li_h_za]"
        },
        "madloop": {
@@ -4148,7 +4148,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 -> n scattering only",
+        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 \u2192 n scattering only",
         "source": "li_campaign.json runs[li_h_ggg]"
        },
        "madloop": {
@@ -4327,7 +4327,7 @@
       "providers": {
        "openloops": {
         "status": "unavailable",
-        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 -> n scattering only",
+        "reason": "a decay: OpenLoops' loop-squared libraries cover 2 \u2192 n scattering only",
         "source": "li_campaign.json runs[li_z_ggg]"
        },
        "madloop": {

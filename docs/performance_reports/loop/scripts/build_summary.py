@@ -2526,7 +2526,7 @@ READER_WORDS = (
     (re.compile(r"; row ML/RC only"), ""),
     (
         re.compile(r"^decay: the designated OpenLoops ls libraries are 2 -> n scattering libraries$"),
-        "a decay: OpenLoops' loop-squared libraries cover 2 -> n scattering only",
+        "a decay: OpenLoops' loop-squared libraries cover 2 \u2192 n scattering only",
     ),
     (re.compile(r"\bdesignated "), ""),
     (re.compile(r"loop-squared \(ls\) librar"), "loop-squared librar"),

@@ -1,24 +1,23 @@
 # pyAmpliCol one-loop benchmark report
 
 `benchmarks.typ` is the source of `benchmarks.pdf`, the one-loop benchmark
-report, updated at every milestone push.
+report, rebuilt whenever its data change.
 
 ## The essentials rule
 
-Binding user rule (2026-11-06): the report holds the tables and only the text
-needed to read them. Its items, in order:
+The report holds the tables and only the text needed to read them. Its items, in order:
 
 | Label | Content |
 |---|---|
 | `<tab:summary>` | **Table 1**, Born-interfered one-loop processes |
 | `<tab:summary-li>` | **Table 2**, loop-induced processes (\|A_loop\|²), read as Table 1 |
-| `<fig:gate>` | **Figure 1**, batched full-colour times against the providers and the gate limit (log scale): Table 1's rows, then Table 2's rows with a pyAmpliCol and a matched provider time |
+| `<fig:gate>` | **Figure 1**, batched times per point against the providers and the gate limit (log scale): Table 1's rows, then Table 2's rows with a pyAmpliCol and a matched provider time |
 | `<tab:backends>` | **Table 3**, TIRust against NinjaRS with the unchecked setting, both process types: time, ratio, agreement |
 | `<missing>` | **Missing or incomplete**, generated from `summary-li.json` `missing`: cells without a value, failing or open gates, partial validation, accuracy above 1e-5 |
 | `<tab:gate>` | **Table 4**, gate and stage split at B = 128: the numbers behind Table 1's chips and bars |
 | `<reading>` | **Reading the tables**: settings, symbols and caveats |
 
-Every value is the newest measurement of its cell; no history, milestone
+Every value is the newest measurement of its cell; no history, project
 narrative or architecture text. Each table states its provenance in its first
 row (engine revision, native build and digest, host, date); the running header
 and the page-1 subtitle give the report's date and newest engine revision
@@ -35,7 +34,7 @@ python scripts/build_summary.py                  # data/summary.json, data/summa
 typst compile benchmarks.typ benchmarks.pdf      # Typst 0.15
 ```
 
-Update source, data and PDF together at each milestone push.
+Update source, data and PDF together.
 
 ## Data
 
@@ -45,8 +44,7 @@ loop-induced rows, in `backends` Table 3, in `missing` the "Missing or
 incomplete" box) from the campaign records below;
 never edit either by hand. Every value names its `source`.
 
-**Stage split** (every bar and Table 4; `STAGE_ORDER`, `_split`; the
-MASTER_PLAN live-report stage-split rule): inputs, numerator, scatter, the
+**Stage split** (every bar and Table 4; `STAGE_ORDER`, `_split`): inputs, numerator, scatter, the
 reduction backend's own stages (NinjaRS: its expansions = the reduction
 without the masters, and the masters (oneloopmaster); TIRust: its tensor
 moments and contraction, and its master integrals only where a profiled arm
@@ -57,8 +55,9 @@ Table 1's.
 
 **Main-configuration rule** (`MAIN_RULE`, `Recency`): every Table 1 cell
 (generation, validation, full colour, leading colour) shows the most recent
-configuration that measured it: a G1 campaign's development side (gate `--meta
-native_revision`, `native_commit`), its integrated side (`slice_revision`), the
+configuration that measured it: the development side of a G1 campaign (G1:
+Table 1's gate timing campaign, `g1.json`; gate `--meta native_revision`,
+`native_commit`), its integrated side (`slice_revision`), the
 development validation records (`measured.json` `required_native`) and last
 the registry (`milestone.json` `status_notes`: a refusal, or a capability
 nobody has started). A is newer than B if B's revision is an ancestor of A's
@@ -78,7 +77,7 @@ measured cells of both tables (`report_meta`, by the recorded ancestry).
 
 **Loop-induced table** (`build_loop_induced`): the row registry
 `milestone.json` `loop_induced` (every process row of the loop-induced validation set by
-multiplicity group, ids, gate class, references, serving package; `landed`),
+multiplicity group, ids, gate class, references, `served_by`, `landed`),
 checked against the provider manifest `tools/loop_reference/li_campaign.json`;
 pyAmpliCol's records `data/li-timing.json` (per record `key`, `revision`,
 `backend` `tirust` or `ninjars` (the effective one; absent on a `missing`
@@ -106,11 +105,11 @@ has `values_excluded` is timed and shown but no matched provider: never the
 fastest matched one or a limit, the multiplier to it beside the cell); `data/lit.json`
 (the validation figures: written by `python tools/loop_benchmark/li_manifest.py lit
 --records <run records> ...` from the validation run records, its rules and the
-checks that are not run or, by a user ruling, not applicable in
+checks that are not run or not applicable in
 `tests/fixtures/loop/required/li/lit-val/spec/campaign.json`; there is no
 separate builder script, `build_summary.py` reads it directly). A registry
-row may declare `untimed` (the reason; LI-X1, an execution check without a
-reference, USER 2026-11-06 ~14:55): its cells print "not timed" with it. An
+row may declare `untimed` (the reason; the EFT execution check without a
+reference): its cells print "not timed" with it. An
 absent file reads as pending. The cell
 takes the newest revision's B = 128 record of the backend `auto` serves
 (records without a request: the default backend first), never one with failed
@@ -123,7 +122,7 @@ request, backend, batch and revision.
 | `summary.json`, `summary-li.json` | the report's data (above) | yes |
 | `g1.json`, `g1-values.json` | the G1 campaign: providers' times (each with its `protocol`), pyAmpliCol configurations per batch with stages, uncertainty and gate verdicts, value comparisons, stability rows (`python -m tools.loop_benchmark gate`); the per-point values behind it | through `summary.json` (newest configuration only) |
 | `msm-g1.json`, `msm-g1-values.json` | the electroweak G1 row, the same gate tool; joined to `g1.json`'s integrated configuration when both timed the same engine | through `summary.json` |
-| `milestone.json` | hand-maintained registry, each block with its `source`: engine revision and native build, `ancestry`, `development`, `gate_decisions` (user decisions, `gate_batch`, `threshold_rule`), `validation_decisions`, `status_notes`, `pending`, `cell_notes`, `loop_induced` | through the summaries |
+| `milestone.json` | hand-maintained registry, each block with its `source`: engine revision and native build, `ancestry`, `development`, `gate_decisions` (gate decisions, `gate_batch`, `threshold_rule`), `validation_decisions`, `status_notes`, `pending`, `cell_notes`, `loop_induced` | through the summaries |
 | `backends-born.json` | Table 3's Born-interfered rows: TIRust and NinjaRS through the public API with `reduction_unchecked = True` on Table 1's 2 → 3 / 2 → 4 rows (time, stages, the largest TIRust-vs-NinjaRS difference at the timed points), written by the final timing; absent: those cells print "not timed" | through `summary-li.json` |
 | `measured.json` | development records (`scripts/collect_milestone.py`): required-set native validations, provider reference runs, NJet timings | through `summary.json` |
 | `2to6.json` | the 2 → 6 records (`scripts/build_2to6.py`): Table 1's `preliminary` rows | through `summary.json` |
@@ -137,12 +136,11 @@ request, backend, batch and revision.
   cores, then `… gate <records> --json data/g1.json --values-json
   data/g1-values.json --reference-root ROOT --meta date=… slice_revision=…
   slice_lc_revision=… slice_build=… slice_native_digest=…` (the module
-  docstrings of `tools/loop_benchmark` give the protocol; records of each
-  retime are archived under `workspace/reports/engine-v2/measure-g1/records/`).
+  docstrings of `tools/loop_benchmark` give the protocol).
 - `msm-g1.json`, `msm-g1-values.json`: the same `gate` over the EW records with
   `--host-spread <g1.json host_provider_spread>`.
 - `measured.json`: `python scripts/collect_milestone.py <workspace>`.
-- `2to6.json`: `python3 -I scripts/build_2to6.py json …` from the mf-2to6 run
+- `2to6.json`: `python3 -I scripts/build_2to6.py json …` from the 2 → 6 run
   records (see its docstring).
 - `data/li-timing.json`: `retime_unchecked.py collect` (below), in the record
   format above.
@@ -155,9 +153,10 @@ request, backend, batch and revision.
 Tables 2 and 3 are timed with the unchecked reduction setting: both backends
 without their own acceptance or refusal checks, pyAmpliCol's checks off,
 through public options only. The setting is off by default and has no
-accuracy guarantee; a default call does not get these times. (A default call
-returns a point that no backend accepts with its unchecked value, status
-`best-effort` and an uncertainty, `on_failure="best-effort"`; a runtime loaded
+accuracy guarantee; a default call does not get these times. (With `on_failure="best-effort"`, the default, a
+point that no backend accepts is returned with status `best-effort`, its
+unchecked value and an uncertainty where the unchecked re-evaluation gives a
+value, and stays a failed point without a value otherwise; a runtime loaded
 with the unchecked setting has no check left to skip, so its failed points
 stay failed under every policy.)
 
