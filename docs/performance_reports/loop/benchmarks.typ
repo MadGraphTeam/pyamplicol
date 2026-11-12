@@ -1128,8 +1128,8 @@ else *open*. Below 5 ms per point a process is not gated ("#thr-rule.short"); it
 $2 -> 2$ has no gate. Gates are taken at $B = 128$ only#for r in decided-rows.filter(r => decided-gate(r).status != thr-rule.verdict) { let x = decided-gate(r); [; ‡ #box(math-label(r.math)): #x.status (#x.decision), measured #x.measured_status at #fixed(x.ratio_to_limit, 2), band #fixed(x.band.at(0), 2)–#fixed(x.band.at(1), 2)] }.
 
 *Stage bars* (one colour per stage; the cell names the largest share; @tab:gate lists the stages of @tab:summary in ms).
-inputs: trees, Born and counterterm inputs (loop-induced: trees and counterterm kets of the amplitude basis). numerator:
-seeds, fused factors and the dressing of the open-loop objects. scatter: closures into the reduction lanes. NinjaRS:
+inputs: trees, Born and counterterm inputs (loop-induced: the trees and counterterms of each amplitude component). numerator:
+seeds, fused factors and the dressing of the open-loop objects. scatter: handing the numerator closures to the reduction. NinjaRS:
 its expansions (the reduction without the masters). masters: the master integrals (oneloopmaster). TIR moments:
 TIRust's tensor moments, its master integrals included unless recorded apart. contraction: their contraction with the
 numerator. glue: point parameters, input conversion, transport, squaring, assembly and the rest of the
